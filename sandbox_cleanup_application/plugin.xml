@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+<!-- =================================================================================== -->
+<!-- Extension: Java Cleanup                                                      -->
+<!-- =================================================================================== -->
+<extension
+      id="org.sandbox.jdt.core.JavaCleanup"
+      point="org.eclipse.core.runtime.applications">
+        <application>
+          <run class="org.sandbox.jdt.core.cleanupapp.CodeCleanupApplicationWrapper" />
+        </application>
+</extension>
+</plugin>

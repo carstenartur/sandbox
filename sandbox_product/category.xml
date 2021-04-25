@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <feature id="sandbox_encoding_quickfix_feature">
+      <category name="Sandbox"/>
+   </feature>
+   <feature id="sandbox_extra_search_feature">
+      <category name="Sandbox"/>
+   </feature>
+   <feature id="sandbox_usage_view_feature">
+      <category name="Sandbox"/>
+   </feature>
+   <category-def name="Sandbox" label="Sandbox">
+      <description>
+         Description of sandbox category
+      </description>
+   </category-def>
+   <repository-reference location="https://download.eclipse.org/releases/latest" enabled="true" />
+   <repository-reference location="https://download.eclipse.org/technology/babel/update-site/latest/" enabled="true" />
+</site>

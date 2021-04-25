@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.sandbox</groupId>
+		<artifactId>central</artifactId>
+		<version>1.0.0-SNAPSHOT</version>
+	</parent>
+	<artifactId>sandbox_web</artifactId>
+	<name>RCP Sandbox p2 update site</name>
+	<packaging>war</packaging>
+	<dependencies>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_encoding_quickfix_feature</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_extra_search_feature</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_usage_view_feature</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_product</artifactId>
+			<type>zip</type>
+			<version>1.0.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>javax.servlet-api</artifactId>
+			<version>3.1.0</version>
+		</dependency>
+	</dependencies>
+	<build>
+		<finalName>sandbox-updates</finalName>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<version>3.1.1</version>
+				<executions>
+					<execution>
+						<id>copy</id>
+						<?m2e execute?>
+						<phase>compile</phase>
+						<goals>
+							<goal>unpack-dependencies</goal>
+						</goals>
+						<configuration>
+							<excludeScope>provided</excludeScope>
+							<artifactItems combine.self="override">
+								<artifactItem>
+									<groupId>${project.groupId}</groupId>
+									<artifactId>${project.artifactId} </artifactId>
+									<version>${project.version}</version>
+									<type>${project.packaging}</type>
+									<overWrite>true</overWrite>
+									<excludeScope>provided</excludeScope>
+									<excludes>META-INF/*.SF</excludes>
+									<excludes>META-INF/*.DSA</excludes>
+									<excludes>META-INF/*.RSA</excludes>
+									<excludeGroupIds>junit,org.hamcrest</excludeGroupIds>
+									<outputDirectory>${releasedirectory}\everything
+									</outputDirectory>
+								</artifactItem>
+							</artifactItems>
+							<excludeTransitive>true</excludeTransitive>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-war-plugin</artifactId>
+				<version>3.2.2</version>
+				<configuration><!-- -->
+					<packagingExcludes>WEB-INF/lib/*.jar</packagingExcludes>
+					<packagingExcludes>org</packagingExcludes>
+					<packagingExcludes>junit</packagingExcludes>
+					<webResources>
+						<resource>
+							<!-- this is relative to the pom.xml directory -->
+							<directory>target/dependency</directory>
+						</resource>
+					</webResources>
+				</configuration>
+				<executions>
+					<execution>
+						<phase>package</phase> <!-- append to the packaging phase. -->
+						<goals>
+							<goal>war</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+</project>
