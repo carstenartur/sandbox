@@ -34,6 +34,7 @@ see https://bugs.eclipse.org/bugs/show_bug.cgi?id=75333
 2) sandbox_encoding_quickfix
 
 Partly implementation what should help to make usage of platform encoding visible by change of api use.
+See https://openjdk.java.net/jeps/400 for affected api when *not* specifying default encoding.
 
 3) sandbox_extra_search
 

@@ -13,6 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.io.BufferedWriter;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
@@ -35,7 +36,7 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
  * Change
  *
  * Writer fw=new PrintWriter("file.txt")
- * Writer fw=new OutputStreamWriter(new FileOutputStream("file.txt"),defaultCharset);
+ * Writer fw=new BufferedWriter(new OutputStreamWriter(new FileOutputStream("file.txt"),defaultCharset)));
  *
  * Charset.defaultCharset() is available since Java 1.5
  *
@@ -86,14 +87,20 @@ public class PrintWriterExplicitEncoding extends AbstractExplicitEncoding<ClassI
 		oswclassInstance.setType(ast.newSimpleType(addImport(OutputStreamWriter.class.getCanonicalName(), cuRewrite, ast)));
 		oswclassInstance.arguments().add(fosclassInstance);
 		oswclassInstance.arguments().add(callToCharsetDefaultCharset);
+		/**
+		 * new BufferedWriter(new OutputStreamWriter(new FileOutputStream(<filename>)))
+		 */
+		ClassInstanceCreation bwclassInstance= ast.newClassInstanceCreation();
+		bwclassInstance.setType(ast.newSimpleType(addImport(BufferedWriter.class.getCanonicalName(), cuRewrite, ast)));
+		bwclassInstance.arguments().add(oswclassInstance);
 
-		ASTNodes.replaceButKeepComment(rewrite, visited, oswclassInstance, group);
+		ASTNodes.replaceButKeepComment(rewrite, visited, bwclassInstance, group);
 	}
 
 	@Override
 	public String getPreview(boolean afterRefactoring,ChangeBehavior cb) {
 		if(afterRefactoring) {
-			return "Writer w=new OutputStreamWriter(new FileOutputStream(outputfile),"+computeCharsetforPreview(cb)+");\n"; //$NON-NLS-1$ //$NON-NLS-2$
+			return "Writer w=new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputfile),"+computeCharsetforPreview(cb)+"));\n"; //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		return "Writer w=new PrintWriter(outputfile);\n"; //$NON-NLS-1$
 	}

@@ -9,7 +9,7 @@
       <page
             showScopeSection="true"
             canSearchEnclosingProjects="true"
-            label="%TestSearchPage.label"
+            label="%page.label"
             icon="$nl$/icons/full/obj16/jsearch_obj.png"
             extensions="java:90, jav:90"
             class="org.sandbox.jdt.internal.ui.search.UpdateNeededSearchPage"

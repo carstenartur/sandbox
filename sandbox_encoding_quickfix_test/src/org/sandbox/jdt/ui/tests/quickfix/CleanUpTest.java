@@ -2,13 +2,11 @@ package org.sandbox.jdt.ui.tests.quickfix;
 
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
-import org.eclipse.jdt.internal.corext.fix.CleanUpConstants;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.sandbox.jdt.internal.corext.fix.MYCleanUpConstants;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.sandbox.jdt.internal.corext.fix.MYCleanUpConstants;
 
 public class CleanUpTest {
 		
@@ -16,44 +14,7 @@ public class CleanUpTest {
 	EclipseJava11 context= new EclipseJava11();
 	
 	enum ExplicitEncodingPatterns {
-		STRINGGETBYTES("" //
-				+ "package test1;\n"
-				+ "\n" //
-				+ "import java.io.ByteArrayOutputStream;\n"
-				+ "import java.io.InputStreamReader;\n"
-				+ "import java.io.FileInputStream;\n"
-				+ "import java.io.FileReader;\n"
-				+ "import java.io.Reader;\n"
-				+ "import java.io.FileNotFoundException;\n" //
-				+ "\n" //
-				+ "public class E1 {\n" //
-				+ "    void method(String filename) {\n" //
-				+ "        String s=\"asdf\"; //$NON-NLS-1$\n"
-				+ "        byte[] bytes= s.getBytes();\n"
-				+ "        System.out.println(bytes.length);\n"
-				+ "       }\n" //
-				+ "    }\n" //
-				+ "}\n",
-				
-				"" //
-				+ "package test1;\n" //
-				+ "\n" //
-				+ "import java.io.ByteArrayOutputStream;\n"
-				+ "import java.io.InputStreamReader;\n"
-				+ "import java.io.FileInputStream;\n"
-				+ "import java.io.FileReader;\n"
-				+ "import java.io.Reader;\n"
-				+ "import java.nio.charset.Charset;\n"
-				+ "import java.io.FileNotFoundException;\n" //
-				+ "\n" //
-				+ "public class E1 {\n" //
-				+ "    void method(String filename) {\n" //
-				+ "        String s=\"asdf\"; //$NON-NLS-1$\n" //
-				+ "        byte[] bytes= s.getBytes(Charset.defaultCharset());\n" //
-				+ "        System.out.println(bytes.length);\n" //
-				+ "       }\n" //
-				+ "    }\n" //
-				+ "}\n"),
+
 		BYTEARRAYOUTSTREAM("" //
 				+ "package test1;\n"
 				+ "\n" //
@@ -90,10 +51,87 @@ public class CleanUpTest {
 				+ "       }\n" //
 				+ "    }\n" //
 				+ "}\n"),
+		FILEREADER("" //
+				+ "package test1;\n"
+				+ "\n" //
+				+ "import java.io.InputStreamReader;\n"
+				+ "import java.io.FileInputStream;\n"
+				+ "import java.io.FileReader;\n"
+				+ "import java.io.Reader;\n"
+				+ "import java.io.FileNotFoundException;\n" //
+				+ "\n" //
+				+ "public class E1 {\n" //
+				+ "    void method(String filename) {\n" //
+				+ "        try {\n"
+				+ "            Reader is=new FileReader(filename);\n"
+				+ "            } catch (FileNotFoundException e) {\n"
+				+ "            e.printStackTrace();\n"
+				+ "            }\n" //
+				+ "       }\n" //
+				+ "    }\n" //
+				+ "}\n",
+				
+				"" //
+				+ "package test1;\n" //
+				+ "\n" //
+				+ "import java.io.InputStreamReader;\n"
+				+ "import java.io.FileInputStream;\n"
+				+ "import java.io.FileReader;\n"
+				+ "import java.io.Reader;\n"
+				+ "import java.nio.charset.Charset;\n"
+				+ "import java.io.FileNotFoundException;\n" //
+				+ "\n" //
+				+ "public class E1 {\n" //
+				+ "    void method(String filename) {\n" //
+				+ "        try {\n"
+				+ "            Reader is=new InputStreamReader(new FileInputStream(filename), Charset.defaultCharset());\n"
+				+ "            } catch (FileNotFoundException e) {\n"
+				+ "            e.printStackTrace();\n"
+				+ "            }\n" //
+				+ "       }\n" //
+				+ "    }\n" //
+				+ "}\n"),
+		FILEWRITER("" //
+				+ "package test1;\n"
+				+ "\n" //
+				+ "import java.io.FileWriter;\n"
+				+ "import java.io.Writer;\n"
+				+ "import java.io.FileNotFoundException;\n" //
+				+ "\n" //
+				+ "public class E1 {\n" //
+				+ "    void method(String filename) {\n" //
+				+ "        try {\n"
+				+ "            Writer fw=new FileWriter(filename);\n"
+				+ "            } catch (FileNotFoundException e) {\n"
+				+ "            e.printStackTrace();\n"
+				+ "            }\n" //
+				+ "       }\n" //
+				+ "    }\n" //
+				+ "}\n",
+				
+				"" //
+				+ "package test1;\n" //
+				+ "\n" //
+				+ "import java.io.FileWriter;\n"
+				+ "import java.io.OutputStreamWriter;\n"
+				+ "import java.io.Writer;\n"
+				+ "import java.nio.charset.Charset;\n"
+				+ "import java.io.FileNotFoundException;\n" //
+				+ "import java.io.FileOutputStream;\n"
+				+ "\n" //
+				+ "public class E1 {\n" //
+				+ "    void method(String filename) {\n" //
+				+ "        try {\n"
+				+ "            Writer fw=new OutputStreamWriter(new FileOutputStream(filename), Charset.defaultCharset());\n"
+				+ "            } catch (FileNotFoundException e) {\n"
+				+ "            e.printStackTrace();\n"
+				+ "            }\n" //
+				+ "       }\n" //
+				+ "    }\n" //
+				+ "}\n"),
 		INPUTSTREAMREADER("" //
 				+ "package test1;\n"
 				+ "\n" //
-				+ "import java.io.ByteArrayOutputStream;\n"
 				+ "import java.io.InputStreamReader;\n"
 				+ "import java.io.FileInputStream;\n"
 				+ "import java.io.FileReader;\n"
@@ -114,7 +152,6 @@ public class CleanUpTest {
 				"" //
 				+ "package test1;\n" //
 				+ "\n" //
-				+ "import java.io.ByteArrayOutputStream;\n"
 				+ "import java.io.InputStreamReader;\n"
 				+ "import java.io.FileInputStream;\n"
 				+ "import java.io.FileReader;\n"
@@ -174,7 +211,46 @@ public class CleanUpTest {
 				+ "       }\n" //
 				+ "    }\n" //
 				+ "}\n"),
-		FILEREADER("" //
+		PRINTWRITER("" //
+				+ "package test1;\n"
+				+ "\n" //
+				+ "import java.io.PrintWriter;\n"
+				+ "import java.io.Writer;\n"
+				+ "import java.io.FileNotFoundException;\n" //
+				+ "\n" //
+				+ "public class E1 {\n" //
+				+ "    void method(String filename) {\n" //
+				+ "        try {\n"
+				+ "            Writer w=new PrintWriter(filename);\n"
+				+ "            } catch (FileNotFoundException e) {\n"
+				+ "            e.printStackTrace();\n"
+				+ "            }\n" //
+				+ "       }\n" //
+				+ "    }\n" //
+				+ "}\n",
+				
+				"" //
+				+ "package test1;\n" //
+				+ "\n" //
+				+ "import java.io.PrintWriter;\n"
+				+ "import java.io.Writer;\n"
+				+ "import java.nio.charset.Charset;\n"
+				+ "import java.io.BufferedWriter;\n" //
+				+ "import java.io.FileNotFoundException;\n" //
+				+ "import java.io.FileOutputStream;\n"
+				+ "import java.io.OutputStreamWriter;\n"
+				+ "\n" //
+				+ "public class E1 {\n" //
+				+ "    void method(String filename) {\n" //
+				+ "        try {\n"
+				+ "            Writer w=new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filename), Charset.defaultCharset()));\n"
+				+ "            } catch (FileNotFoundException e) {\n"
+				+ "            e.printStackTrace();\n"
+				+ "            }\n" //
+				+ "       }\n" //
+				+ "    }\n" //
+				+ "}\n"),
+		STRINGGETBYTES("" //
 				+ "package test1;\n"
 				+ "\n" //
 				+ "import java.io.ByteArrayOutputStream;\n"
@@ -186,11 +262,9 @@ public class CleanUpTest {
 				+ "\n" //
 				+ "public class E1 {\n" //
 				+ "    void method(String filename) {\n" //
-				+ "        try {\n"
-				+ "            Reader is=new FileReader(filename);\n"
-				+ "            } catch (FileNotFoundException e) {\n"
-				+ "            e.printStackTrace();\n"
-				+ "            }\n" //
+				+ "        String s=\"asdf\"; //$NON-NLS-1$\n"
+				+ "        byte[] bytes= s.getBytes();\n"
+				+ "        System.out.println(bytes.length);\n"
 				+ "       }\n" //
 				+ "    }\n" //
 				+ "}\n",
@@ -208,11 +282,9 @@ public class CleanUpTest {
 				+ "\n" //
 				+ "public class E1 {\n" //
 				+ "    void method(String filename) {\n" //
-				+ "        try {\n"
-				+ "            Reader is=new InputStreamReader(new FileInputStream(filename), Charset.defaultCharset());\n"
-				+ "            } catch (FileNotFoundException e) {\n"
-				+ "            e.printStackTrace();\n"
-				+ "            }\n" //
+				+ "        String s=\"asdf\"; //$NON-NLS-1$\n" //
+				+ "        byte[] bytes= s.getBytes(Charset.defaultCharset());\n" //
+				+ "        System.out.println(bytes.length);\n" //
 				+ "       }\n" //
 				+ "    }\n" //
 				+ "}\n"),

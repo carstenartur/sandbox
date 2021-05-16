@@ -1,13 +1,12 @@
 package org.sandbox.jdt.ui.tests.quickfix;
 
+import static org.eclipse.jdt.internal.corext.fix.CleanUpConstants.DEFAULT_CLEAN_UP_OPTIONS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.File;
-import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -26,13 +25,10 @@ import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jdt.core.IClasspathAttribute;
 import org.eclipse.jdt.core.IClasspathEntry;
@@ -112,12 +108,10 @@ public class EclipseJava11 implements AfterEachCallback, BeforeEachCallback {
 		IPath[] rtJarPath= findRtJar(new Path(TESTRESOURCES_RTSTUBS18_JAR));
 		return new IClasspathEntry[] {  JavaCore.newLibraryEntry(rtJarPath[0], rtJarPath[1], rtJarPath[2], true) };
 	}
+
 	private void disableAll() throws CoreException {
 		Map<String, String> settings= fProfile.getSettings();
-		CleanUpOptions options= JavaPlugin.getDefault().getCleanUpRegistry().getDefaultOptions(CleanUpConstants.DEFAULT_CLEAN_UP_OPTIONS);
-		for (String key : options.getKeys()) {
-			settings.put(key, CleanUpOptions.FALSE);
-		}
+		JavaPlugin.getDefault().getCleanUpRegistry().getDefaultOptions(DEFAULT_CLEAN_UP_OPTIONS).getKeys().forEach(a->settings.put(a, CleanUpOptions.FALSE));
 		commitProfile();
 	}
 	/**
@@ -171,7 +165,6 @@ public class EclipseJava11 implements AfterEachCallback, BeforeEachCallback {
 	 * @throws CoreException
 	 */
 	public IPath[] findRtJar(IPath rtStubsPath) throws CoreException {
-//		File rtStubs= getFileInPlugin(rtStubsPath);
 		File rtStubs= rtStubsPath.toFile().getAbsoluteFile();
 		assertNotNull(rtStubs);
 		assertTrue(rtStubs.exists());
@@ -181,19 +174,7 @@ public class EclipseJava11 implements AfterEachCallback, BeforeEachCallback {
 			null
 		};
 	}
-	
-//	public File getFileInPlugin(IPath path) throws CoreException {
-//		try {
-//			URL installURL= new URL(
-//					getBundle().getEntry("/"), 
-//					path.toString());
-//			URL localURL= FileLocator.toFileURL(installURL);
-//			return new File(localURL.getFile());
-//		} catch (IOException e) {
-//			throw new CoreException(new Status(IStatus.ERROR, "tests_sandbox_fragment", IStatus.ERROR, e.getMessage(), e));
-//		}
-//	}
-	
+
 	/**
 	 * Returns the bundle associated with this plug-in.
 	 *
@@ -221,11 +202,9 @@ public class EclipseJava11 implements AfterEachCallback, BeforeEachCallback {
 		} else {
 			project.refreshLocal(IResource.DEPTH_INFINITE, null);
 		}
-
 		if (!project.isOpen()) {
 			project.open(null);
 		}
-
 		IPath outputLocation;
 		if (binFolderName != null && binFolderName.length() > 0) {
 			IFolder binFolder= project.getFolder(binFolderName);
@@ -236,16 +215,12 @@ public class EclipseJava11 implements AfterEachCallback, BeforeEachCallback {
 		} else {
 			outputLocation= project.getFullPath();
 		}
-
 		if (!project.hasNature(JavaCore.NATURE_ID)) {
 			addNatureToProject(project, JavaCore.NATURE_ID, null);
 		}
-
 		IJavaProject jproject= JavaCore.create(project);
-
 		jproject.setOutputLocation(outputLocation, null);
 		jproject.setRawClasspath(new IClasspathEntry[0], null);
-
 		return jproject;
 	}
 	
@@ -312,15 +287,12 @@ public class EclipseJava11 implements AfterEachCallback, BeforeEachCallback {
 
 	protected RefactoringStatus assertRefactoringResultAsExpected(ICompilationUnit[] cus, String[] expected, Set<String> setOfExpectedGroupCategories) throws CoreException {
 		RefactoringStatus status= performRefactoring(cus, setOfExpectedGroupCategories);
-
 		String[] previews= new String[cus.length];
 		for (int i= 0; i < cus.length; i++) {
 			ICompilationUnit cu= cus[i];
 			previews[i]= cu.getBuffer().getContents();
 		}
-
 		assertEqualStringsIgnoreOrder(previews, expected);
-
 		return status;
 	}
 	
@@ -333,11 +305,9 @@ public class EclipseJava11 implements AfterEachCallback, BeforeEachCallback {
 	
 	protected RefactoringStatus assertRefactoringHasNoChangeEventWithError(ICompilationUnit[] cus) throws CoreException {
 		String[] expected= new String[cus.length];
-
 		for (int i= 0; i < cus.length; i++) {
 			expected[i]= cus[i].getBuffer().getContents();
 		}
-
 		return assertRefactoringResultAsExpected(cus, expected, null);
 	}
 	
@@ -397,7 +367,6 @@ public class EclipseJava11 implements AfterEachCallback, BeforeEachCallback {
 				}
 			}
 			String expected= buf.toString();
-
 			assertEquals(expected, actual);
 		}
 	}
@@ -405,9 +374,7 @@ public class EclipseJava11 implements AfterEachCallback, BeforeEachCallback {
 	protected final RefactoringStatus performRefactoring(ICompilationUnit[] cus, Set<String> setOfExpectedGroupCategories) throws CoreException {
 		final CleanUpRefactoring ref= new CleanUpRefactoring();
 		ref.setUseOptionsFromProfile(true);
-		ICleanUp[] cleanUps= JavaPlugin.getDefault().getCleanUpRegistry().createCleanUps();
-
-		return performRefactoring(ref, cus, cleanUps, setOfExpectedGroupCategories);
+		return performRefactoring(ref, cus, JavaPlugin.getDefault().getCleanUpRegistry().createCleanUps(), setOfExpectedGroupCategories);
 	}
 	
 	protected RefactoringStatus performRefactoring(final CleanUpRefactoring ref, ICompilationUnit[] cus, ICleanUp[] cleanUps, Set<String> setOfExpectedGroupCategories) throws CoreException {
@@ -417,30 +384,23 @@ public class EclipseJava11 implements AfterEachCallback, BeforeEachCallback {
 		for (ICleanUp cleanUp : cleanUps) {
 			ref.addCleanUp(cleanUp);
 		}
-
 		IUndoManager undoManager= RefactoringCore.getUndoManager();
 		undoManager.flush();
 		final CreateChangeOperation create= new CreateChangeOperation(
 			new CheckConditionsOperation(ref, CheckConditionsOperation.ALL_CONDITIONS),
 			RefactoringStatus.FATAL);
-
 		final PerformChangeOperation perform= new PerformChangeOperation(create);
 		perform.setUndoManager(undoManager, ref.getName());
-
 		IWorkspace workspace= ResourcesPlugin.getWorkspace();
 		workspace.run(perform, new NullProgressMonitor());
-		
 		RefactoringStatus status= create.getConditionCheckingStatus();
 		if (status.hasFatalError()) {
 			throw new CoreException(new StatusInfo(status.getSeverity(), status.getMessageMatchingSeverity(status.getSeverity())));
 		}
-
 		assertTrue(perform.changeExecuted(),"Change wasn't executed");
-
 		Change undo= perform.getUndoChange();
 		assertNotNull(undo, "Undo doesn't exist");
 		assertTrue(undoManager.anythingToUndo(),"Undo manager is empty");
-
 		if (setOfExpectedGroupCategories != null) {
 			Change change= create.getChange();
 			Set<GroupCategory> actualCategories= new HashSet<>();
@@ -450,7 +410,6 @@ public class EclipseJava11 implements AfterEachCallback, BeforeEachCallback {
 						() -> "Unexpected group category: " + actualCategory.getName() + ", should find: " + String.join(", ", setOfExpectedGroupCategories));
 			});
 		}
-
 		return status;
 	}
 	
@@ -474,11 +433,9 @@ public class EclipseJava11 implements AfterEachCallback, BeforeEachCallback {
 	private void commitProfile() throws CoreException {
 		List<Profile> profiles= CleanUpPreferenceUtil.getBuiltInProfiles();
 		profiles.add(fProfile);
-
 		CleanUpProfileVersioner versioner= new CleanUpProfileVersioner();
 		ProfileStore profileStore= new ProfileStore(CleanUpConstants.CLEANUP_PROFILES, versioner);
 		profileStore.writeProfiles(profiles, InstanceScope.INSTANCE);
-
 		CleanUpPreferenceUtil.saveSaveParticipantOptions(InstanceScope.INSTANCE, fProfile.getSettings());
 	}
 }

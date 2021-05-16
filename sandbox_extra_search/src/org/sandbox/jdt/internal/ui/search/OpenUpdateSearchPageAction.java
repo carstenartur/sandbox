@@ -44,7 +44,7 @@ public class OpenUpdateSearchPageAction implements IWorkbenchWindowActionDelegat
 	public void run(IAction action) {
 		if (fWindow == null || fWindow.getActivePage() == null) {
 			beep();
-			JavaPlugin.logErrorMessage("Could not open the update search dialog - for some reason the window handle was null"); //$NON-NLS-1$
+			JavaPlugin.logErrorMessage(Messages.OpenUpdateSearchPageAction_0); 
 			return;
 		}
 		NewSearchUI.openSearchDialog(fWindow, UPDATENEEDED_SEARCH_PAGE_ID);
