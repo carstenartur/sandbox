@@ -46,3 +46,12 @@ when updating a java code base to newer eclipse and java version.
 Table view that lists all objects in the code and sorts it by name. That should help to find uses of the similar variable name for 
 what in fact is refering to the same object. Sometimes in an old code base you find deviations like camelcase or not, underscores and other small changes.
 These changes are able to confuse a developer 
+
+# Installation
+
+You can use the p2 update site 
+
+https://github.com/carstenartur/sandbox/raw/main
+
+Only use it on a separate fresh installation that you can throw away after a test as it may destroy your eclipse installation.
+Don't tell me nobody has warned you...

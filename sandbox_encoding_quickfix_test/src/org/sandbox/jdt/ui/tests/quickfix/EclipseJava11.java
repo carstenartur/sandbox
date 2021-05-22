@@ -9,8 +9,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -88,7 +88,7 @@ public class EclipseJava11 implements AfterEachCallback, BeforeEachCallback {
 		JavaCore.setComplianceOptions(JavaCore.VERSION_1_8, options);
 		javaProject.setOptions(options);
 		fSourceFolder= EclipseJava11.addSourceContainer(getProject(TEST_SETUP_PROJECT), "src", new Path[0], new Path[0], null, new IClasspathAttribute[0]);
-		Map<String, String> settings= new Hashtable<>();
+		Map<String, String> settings= new HashMap<>();
 		fProfile= new ProfileManager.CustomProfile("testProfile", settings, CleanUpProfileVersioner.CURRENT_VERSION, CleanUpProfileVersioner.PROFILE_KIND);
 		InstanceScope.INSTANCE.getNode(JavaUI.ID_PLUGIN).put(CleanUpConstants.CLEANUP_PROFILE, fProfile.getID());
 		InstanceScope.INSTANCE.getNode(JavaUI.ID_PLUGIN).put(CleanUpConstants.SAVE_PARTICIPANT_PROFILE, fProfile.getID());
