@@ -48,5 +48,15 @@
 			<artifactId>sandbox_encoding_quickfix_test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_platform_helper</artifactId>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_platform_helper_test</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 </project>

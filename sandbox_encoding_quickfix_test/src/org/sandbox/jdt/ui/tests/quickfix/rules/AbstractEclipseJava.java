@@ -1,4 +1,4 @@
-package org.sandbox.jdt.ui.tests.quickfix;
+package org.sandbox.jdt.ui.tests.quickfix.rules;
 
 import static org.eclipse.jdt.internal.corext.fix.CleanUpConstants.DEFAULT_CLEAN_UP_OPTIONS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -73,21 +73,27 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleReference;
 
-public class EclipseJava11 implements AfterEachCallback, BeforeEachCallback {
+public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallback {
 
-	private static final String TESTRESOURCES_RTSTUBS18_JAR = "testresources/rtstubs18.jar";
+	private String testresources_stubs;
+	private String compliance;
 	private static final String TEST_SETUP_PROJECT = "TestSetupProject";
 	public IPackageFragmentRoot fSourceFolder;
 	private CustomProfile fProfile;
+
+	public AbstractEclipseJava(String stubs, String compilerversion) {
+		this.testresources_stubs=stubs;
+		this.compliance=compilerversion;
+	}
 
 	@Override
 	public void beforeEach(ExtensionContext context) throws Exception {
 		IJavaProject javaProject= createJavaProject(TEST_SETUP_PROJECT, "bin");
 		javaProject.setRawClasspath(getDefaultClasspath(), null);
 		Map<String, String> options= javaProject.getOptions(false);
-		JavaCore.setComplianceOptions(JavaCore.VERSION_1_8, options);
+		JavaCore.setComplianceOptions(compliance, options);
 		javaProject.setOptions(options);
-		fSourceFolder= EclipseJava11.addSourceContainer(getProject(TEST_SETUP_PROJECT), "src", new Path[0], new Path[0], null, new IClasspathAttribute[0]);
+		fSourceFolder= AbstractEclipseJava.addSourceContainer(getProject(TEST_SETUP_PROJECT), "src", new Path[0], new Path[0], null, new IClasspathAttribute[0]);
 		Map<String, String> settings= new HashMap<>();
 		fProfile= new ProfileManager.CustomProfile("testProfile", settings, CleanUpProfileVersioner.CURRENT_VERSION, CleanUpProfileVersioner.PROFILE_KIND);
 		InstanceScope.INSTANCE.getNode(JavaUI.ID_PLUGIN).put(CleanUpConstants.CLEANUP_PROFILE, fProfile.getID());
@@ -105,11 +111,11 @@ public class EclipseJava11 implements AfterEachCallback, BeforeEachCallback {
 	}
 	
 	public IClasspathEntry[] getDefaultClasspath() throws CoreException {
-		IPath[] rtJarPath= findRtJar(new Path(TESTRESOURCES_RTSTUBS18_JAR));
+		IPath[] rtJarPath= findRtJar(new Path(testresources_stubs));
 		return new IClasspathEntry[] {  JavaCore.newLibraryEntry(rtJarPath[0], rtJarPath[1], rtJarPath[2], true) };
 	}
 
-	private void disableAll() throws CoreException {
+	protected void disableAll() throws CoreException {
 		Map<String, String> settings= fProfile.getSettings();
 		JavaPlugin.getDefault().getCleanUpRegistry().getDefaultOptions(DEFAULT_CLEAN_UP_OPTIONS).getKeys().forEach(a->settings.put(a, CleanUpOptions.FALSE));
 		commitProfile();
@@ -285,7 +291,7 @@ public class EclipseJava11 implements AfterEachCallback, BeforeEachCallback {
 		jproject.setRawClasspath(newEntries, null);
 	}
 
-	protected RefactoringStatus assertRefactoringResultAsExpected(ICompilationUnit[] cus, String[] expected, Set<String> setOfExpectedGroupCategories) throws CoreException {
+	public RefactoringStatus assertRefactoringResultAsExpected(ICompilationUnit[] cus, String[] expected, Set<String> setOfExpectedGroupCategories) throws CoreException {
 		RefactoringStatus status= performRefactoring(cus, setOfExpectedGroupCategories);
 		String[] previews= new String[cus.length];
 		for (int i= 0; i < cus.length; i++) {
@@ -296,7 +302,7 @@ public class EclipseJava11 implements AfterEachCallback, BeforeEachCallback {
 		return status;
 	}
 	
-	protected RefactoringStatus assertRefactoringHasNoChange(ICompilationUnit[] cus) throws CoreException {
+	public RefactoringStatus assertRefactoringHasNoChange(ICompilationUnit[] cus) throws CoreException {
 		for (ICompilationUnit cu : cus) {
 			assertNoCompilationError(cu);
 		}
@@ -425,7 +431,7 @@ public class EclipseJava11 implements AfterEachCallback, BeforeEachCallback {
 		}
 	}
 	
-	protected void enable(String key) throws CoreException {
+	public void enable(String key) throws CoreException {
 		fProfile.getSettings().put(key, CleanUpOptions.TRUE);
 		commitProfile();
 	}

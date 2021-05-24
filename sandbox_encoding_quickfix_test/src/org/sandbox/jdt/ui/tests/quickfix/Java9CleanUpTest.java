@@ -7,11 +7,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.sandbox.jdt.internal.corext.fix.MYCleanUpConstants;
+import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
+import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava9;
 
-public class CleanUpTest {
+public class Java9CleanUpTest {
 		
 	@RegisterExtension
-	EclipseJava11 context= new EclipseJava11();
+	AbstractEclipseJava context= new EclipseJava9();
 	
 	enum ExplicitEncodingPatterns {
 

@@ -47,6 +47,11 @@ Table view that lists all objects in the code and sorts it by name. That should 
 what in fact is refering to the same object. Sometimes in an old code base you find deviations like camelcase or not, underscores and other small changes.
 These changes are able to confuse a developer 
 
+5) sandbox_platform_helper
+
+Poc for quickfix to change code according to new possibilities in 
+https://www.eclipse.org/eclipse/news/4.20/platform_isv.php#simpler-status-creation.
+
 # Installation
 
 You can use the p2 update site 
