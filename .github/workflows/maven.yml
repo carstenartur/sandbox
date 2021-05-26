@@ -21,6 +21,7 @@ jobs:
       with:
         java-version: '11'
         distribution: 'adopt'
+    - run: sudo apt-get install xvfb
     - name: Cache Maven packages
       uses: actions/cache@v2
       with:
@@ -28,4 +29,4 @@ jobs:
         key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
         restore-keys: ${{ runner.os }}-m2
     - name: Build with Maven
-      run: mvn --batch-mode --update-snapshots -P web package
+      run: xvfb-run mvn --batch-mode --update-snapshots -P web package
