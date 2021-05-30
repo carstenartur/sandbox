@@ -24,7 +24,6 @@
 <unit id="org.eclipse.wst.xml_userdoc.feature.feature.group" version="0.0.0"/>
 <unit id="org.eclipse.zest.feature.group" version="0.0.0"/>
 <unit id="org.eclipse.jdt.feature.group" version="0.0.0"/>
-<unit id="org.eclipse.pde.feature.group" version="0.0.0"/>
 <unit id="org.eclipse.sdk.feature.group" version="0.0.0"/>
 <unit id="org.eclipse.rcp.feature.group" version="0.0.0"/>
 <unit id="org.eclipse.rcp.sdk.id" version="0.0.0"/>
@@ -42,7 +41,6 @@
 <unit id="org.eclipse.emf.compare.diagram.gmf.feature.group" version="0.0.0"/>
 <unit id="org.eclipse.epp.package.modeling.feature.feature.group" version="0.0.0"/>
 <unit id="org.eclipse.gmf.feature.group" version="0.0.0"/>
-<unit id="org.eclipse.papyrus.emf.feature.feature.group" version="0.0.0"/>
 <unit id="org.eclipse.egit.gitflow.feature.feature.group" version="0.0.0"/>
 <unit id="org.eclipse.ecf.core.feature.source.feature.group" version="0.0.0"/>
 	<unit id="org.eclipse.ecf.core.feature.feature.group" version="0.0.0"/>

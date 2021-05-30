@@ -24,11 +24,13 @@
 		<module>sandbox_encoding_quickfix</module>
 		<module>sandbox_encoding_quickfix_feature</module>
 		<module>sandbox_encoding_quickfix_test</module>
+		<module>sandbox_extra_search</module>
+		<module>sandbox_extra_search_feature</module>
+		<module>sandbox_functional_converter</module>
+		<module>sandbox_functional_converter_test</module>
 		<module>sandbox_platform_helper</module>
 		<module>sandbox_platform_helper_feature</module>
 		<module>sandbox_platform_helper_test</module>
-		<module>sandbox_extra_search</module>
-		<module>sandbox_extra_search_feature</module>
 		<module>sandbox_usage_view</module>
 		<module>sandbox_usage_view_feature</module>
 		<module>sandbox_product</module>
@@ -206,6 +208,16 @@
 			<dependency>
 				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_extra_search_feature</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_functional_converter</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_functional_converter_test</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>

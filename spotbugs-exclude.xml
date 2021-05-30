@@ -30,4 +30,13 @@ ION,EI_EXPOSE_REP,EI_EXPOSE_REP2,MS_PKGPROTECT,MS_MUTABLE_ARRAY"/>
     <Bug pattern="SE_BAD_FIELD"/>
     <Class name="~edu.umd.cs.findbugs.gui.*"/>
   </Match>
+   <Match>
+    <Bug pattern="UWF_UNWRITTEN_PUBLIC_OR_PROTECTED_FIELD"/>
+  </Match>
+   <Match>
+    <Bug pattern="DLS_DEAD_LOCAL_STORE"/>
+  </Match>
+   <Match>
+    <Bug pattern="URF_UNREAD_FIELD"/>
+  </Match>
 </FindBugsFilter>
