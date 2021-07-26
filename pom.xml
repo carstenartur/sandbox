@@ -21,6 +21,7 @@
 		<module>sandbox_target</module>
 		<module>sandbox_cleanup_application</module>
 		<module>sandbox_cleanup_application_feature</module>
+		<module>sandbox_common</module>
 		<module>sandbox_encoding_quickfix</module>
 		<module>sandbox_encoding_quickfix_feature</module>
 		<module>sandbox_encoding_quickfix_test</module>
@@ -31,6 +32,8 @@
 		<module>sandbox_platform_helper</module>
 		<module>sandbox_platform_helper_feature</module>
 		<module>sandbox_platform_helper_test</module>
+		<module>sandbox_tools</module>
+		<module>sandbox_tools_test</module>
 		<module>sandbox_usage_view</module>
 		<module>sandbox_usage_view_feature</module>
 		<module>sandbox_product</module>
@@ -187,6 +190,11 @@
 			</dependency>
 			<dependency>
 				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_common</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_encoding_quickfix</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -233,6 +241,16 @@
 			<dependency>
 				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_platform_helper_test</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_tools</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_tools_test</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
