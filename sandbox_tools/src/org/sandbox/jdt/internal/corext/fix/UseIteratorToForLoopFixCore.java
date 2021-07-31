@@ -26,6 +26,7 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.fix.helper.AbstractTool;
+import org.sandbox.jdt.internal.corext.fix.helper.Hit;
 import org.sandbox.jdt.internal.corext.fix.helper.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.helper.WhileToForEach;
 import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
@@ -34,11 +35,11 @@ public enum UseIteratorToForLoopFixCore {
 
 	LOOP(new WhileToForEach());
 
-	AbstractTool<ASTNode> iteratortofor;
+	AbstractTool<Hit> iteratortofor;
 
 	@SuppressWarnings("unchecked")
-	UseIteratorToForLoopFixCore(AbstractTool<? extends ASTNode> explicitencoding) {
-		this.iteratortofor=(AbstractTool<ASTNode>) explicitencoding;
+	UseIteratorToForLoopFixCore(AbstractTool<? extends Hit> explicitencoding) {
+		this.iteratortofor=(AbstractTool<Hit>) explicitencoding;
 	}
 
 	public String getPreview(boolean i) {
@@ -55,13 +56,13 @@ public enum UseIteratorToForLoopFixCore {
 		iteratortofor.find(this, compilationUnit, operations, nodesprocessed);
 	}
 
-	public CompilationUnitRewriteOperation rewrite(final ReferenceHolder holder) {
+	public CompilationUnitRewriteOperation rewrite(final Hit hit) {
 		return new CompilationUnitRewriteOperation() {
 			@Override
 			public void rewriteAST(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel) throws CoreException {
 				TextEditGroup group= createTextEditGroup(Messages.format(MultiFixMessages.ToolsCleanUp_description,new Object[] {UseIteratorToForLoopFixCore.this.toString()}), cuRewrite);
 				cuRewrite.getASTRewrite().setTargetSourceRangeComputer(computer);
-				iteratortofor.rewrite(UseIteratorToForLoopFixCore.this, holder, cuRewrite, group);
+				iteratortofor.rewrite(UseIteratorToForLoopFixCore.this, hit, cuRewrite, group);
 			}
 		};
 	}

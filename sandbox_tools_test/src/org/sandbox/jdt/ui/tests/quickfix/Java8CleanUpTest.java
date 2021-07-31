@@ -19,7 +19,6 @@ import org.eclipse.jdt.internal.corext.fix.CleanUpConstants;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava8;
 
@@ -53,7 +52,7 @@ public class Java8CleanUpTest {
                         + "    }\n"
                         + "}\n"),
 		whileGenericSubtype("package test;\n"
-                + "import java.util.*;"
+                + "import java.util.*;\n"
                 + "public class Test {\n"
                 + "    void m(List<ArrayList<String>> lists) {\n"
                 + "        Iterator it = lists.iterator();\n"
@@ -65,7 +64,7 @@ public class Java8CleanUpTest {
                 + "}\n",
 
                 "package test;\n"
-                        + "import java.util.*;"
+                        + "import java.util.*;\n"
                         + "public class Test {\n"
                         + "    void m(List<ArrayList<String>> lists) {\n"
                         + "        for (List<String> list : lists) {\n"
@@ -74,7 +73,7 @@ public class Java8CleanUpTest {
                         + "    }\n"
                         + "}\n"),
 		whileFix("package test;\n"
-                + "import java.util.*;"
+                + "import java.util.*;\n"
                 + "public class Test {\n"
                 + "    void m(List<String> strings) {\n"
                 + "        Collections.reverse(strings);\n"
@@ -90,12 +89,96 @@ public class Java8CleanUpTest {
                 + "}\n",
 
                 "package test;\n"
-                        + "import java.util.*;"
+                        + "import java.util.*;\n"
                         + "public class Test {\n"
                         + "    void m(List<String> strings) {\n"
                         + "        Collections.reverse(strings);\n"
                         + "        for (String s : strings) {\n"
                         + "            System.out.println(s);\n"
+                        + "            // OK\n"
+                        + "            System.err.println(s);\n"
+                        + "        }\n"
+                        + "        System.out.println();\n"
+                        + "    }\n"
+                        + "}\n"),
+		whileFixTwice("package test;\n"
+                + "import java.util.*;\n"
+                + "public class Test {\n"
+                + "    void m(List<String> strings) {\n"
+                + "        Collections.reverse(strings);\n"
+                + "        Iterator it = strings.iterator();\n"
+                + "        while (it.hasNext()) {\n"
+                + "            String s = (String) it.next();\n"
+                + "            System.out.println(s);\n"
+                + "            // OK\n"
+                + "            System.err.println(s);\n"
+                + "        }\n"
+                + "        System.out.println();\n"
+                + "    }\n"
+                + "    void n(List<String> strings) {\n"
+                + "        Collections.reverse(strings);\n"
+                + "        Iterator it = strings.iterator();\n"
+                + "        while (it.hasNext()) {\n"
+                + "            String s = (String) it.next();\n"
+                + "            System.out.println(s);\n"
+                + "            // OK\n"
+                + "            System.err.println(s);\n"
+                + "        }\n"
+                + "        System.out.println();\n"
+                + "    }\n"
+                + "}\n",
+
+                "package test;\n"
+                        + "import java.util.*;\n"
+                        + "public class Test {\n"
+                        + "    void m(List<String> strings) {\n"
+                        + "        Collections.reverse(strings);\n"
+                        + "        for (String s : strings) {\n"
+                        + "            System.out.println(s);\n"
+                        + "            // OK\n"
+                        + "            System.err.println(s);\n"
+                        + "        }\n"
+                        + "        System.out.println();\n"
+                        + "    }\n"
+                        + "    void n(List<String> strings) {\n"
+                        + "        Collections.reverse(strings);\n"
+                        + "        for (String s : strings) {\n"
+                        + "            System.out.println(s);\n"
+                        + "            // OK\n"
+                        + "            System.err.println(s);\n"
+                        + "        }\n"
+                        + "        System.out.println();\n"
+                        + "    }\n"
+                        + "}\n"),
+		whileFixNested("package test;\n"
+                + "import java.util.*;\n"
+                + "public class Test {\n"
+                + "    void m(List<String> strings,List<String> strings2) {\n"
+                + "        Collections.reverse(strings);\n"
+                + "        Iterator it = strings.iterator();\n"
+                + "        while (it.hasNext()) {\n"
+                + "            String s = (String) it.next();\n"
+                + "            Iterator it2 = strings2.iterator();\n"
+                + "            while (it2.hasNext()) {\n"
+                + "                String s2 = (String) it2.next();\n"
+                + "                System.out.println(s2);\n"
+                + "            }\n"
+                + "            // OK\n"
+                + "            System.err.println(s);\n"
+                + "        }\n"
+                + "        System.out.println();\n"
+                + "    }\n"
+                + "}\n",
+
+                "package test;\n"
+                        + "import java.util.*;\n"
+                        + "public class Test {\n"
+                        + "    void m(List<String> strings,List<String> strings2) {\n"
+                        + "        Collections.reverse(strings);\n"
+                        + "        for (String s : strings) {\n"
+                        + "            for (String s2 : strings2) {\n"
+                        + "                System.out.println(s2);\n"
+                        + "            }\n"
                         + "            // OK\n"
                         + "            System.err.println(s);\n"
                         + "        }\n"
@@ -120,152 +203,139 @@ public class Java8CleanUpTest {
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);	
 	}
 
+	enum NO_While2EnhancedForLoop {
+		whileWarning(
+		"package test;\n"
+		+ "import java.util.*;\n"
+		+ "public class Test {\n"
+		+ "    void m(List<String> strings) {\n"
+		+ "        Iterator it = strings.iterator();\n"
+		+ "        while (it.hasNext()) {\n"
+		+ "            String s = (String) it.next();\n"
+		+ "            System.out.println(s);\n"
+		+ "            System.err.println(s);\n"
+		+ "        }\n"
+		+ "    }\n"
+		+ "}\n")
+		,
+		whileUsedSpecially(
+		"package test;\n"
+		+ "import java.util.*;\n"
+		+ "public class Test {\n"
+		+ "    void m(List<String> strings) {\n"
+		+ "        Iterator it = strings.iterator();\n"
+		+ "        while (it.hasNext()) {\n"
+		+ "            String s = (String) it.next();\n"
+		+ "            if (s.isEmpty()) {\n"
+		+ "                it.remove();\n"
+		+ "            } else {\n"
+		+ "                System.out.println(s);\n"
+		+ "            }\n"
+		+ "        }\n"
+		+ "    }\n"
+		+ "}\n")
+		,
+		whileRaw(
+		"package test;\n"
+		+ "import java.util.*;\n"
+		+ "public class Test {\n"
+		+ "    void m(List strings) {\n"
+		+ "        Iterator it = strings.iterator();\n"
+		+ "        while (it.hasNext()) {\n"
+		+ "            String s = (String) it.next();\n"
+		+ "            System.out.println(s);\n"
+		+ "            System.err.println(s);\n"
+		+ "        }\n"
+		+ "    }\n"
+		+ "}\n")
+		,
+		whileWrongType(
+		"package test;\n"
+        + "import java.util.*;\n"
+        + "public class Test {\n"
+        + "    void m(List<java.net.URL> strings) {\n"
+        + "        Iterator it = strings.iterator();\n"
+        + "        while (it.hasNext()) {\n"
+        + "            String s = (String) it.next();\n"
+        + "            System.out.println(s);\n"
+        + "            System.err.println(s);\n"
+        + "        }\n"
+        + "    }\n"
+        + "}\n")
+		,
+		whileNotRaw(
+		"package test;\n"
+        + "import java.util.*;\n"
+        + "public class Test {\n"
+        + "    void m(MyList strings) {\n"
+        + "        Iterator it = strings.iterator();\n"
+        + "        while (it.hasNext()) {\n"
+        + "            String s = (String) it.next();\n"
+        + "            System.out.println(s);\n"
+        + "            System.err.println(s);\n"
+        + "        }\n"
+        + "    }\n"
+        + "    static class MyList extends ArrayList<String> {}\n"
+        + "}\n")
+		,
+		whileNotIterable(
+		"package test;\n"
+        + "import java.util.*;\n"
+        + "public class Test {\n"
+        + "    void m(MyList strings) {\n"
+        + "        Iterator it = strings.iterator();\n"
+        + "        while (it.hasNext()) {\n"
+        + "            String s = (String) it.next();\n"
+        + "            System.out.println(s);\n"
+        + "            System.err.println(s);\n"
+        + "        }\n"
+        + "    }\n"
+        + "    interface MyList {\n"
+        + "        Iterator<String> iterator();\n"
+        + "    }\n"
+        + "}\n")
+		,
+		whileSubtype(
+		"package test;\n"
+        + "import java.util.*;\n"
+        + "public class Test {\n"
+        + "    void m(List<PropertyResourceBundle> bundles) {\n"
+        + "        Iterator it = bundles.iterator();\n"
+        + "        while (it.hasNext()) {\n"
+        + "            ResourceBundle bundle = (ResourceBundle) it.next();\n"
+        + "            System.out.println(bundle);\n"
+        + "            System.err.println(bundle);\n"
+        + "        }\n"
+        + "    }\n"
+        + "}\n")
+		,
+		whileNotSubtype(
+		"package test;\n"
+        + "import java.util.*;\n"
+        + "public class Test {\n"
+        + "    void m(List<ResourceBundle> bundles) {\n"
+        + "        Iterator it = bundles.iterator();\n"
+        + "        while (it.hasNext()) {\n"
+        + "            PropertyResourceBundle bundle = (PropertyResourceBundle) it.next();\n"
+        + "            System.out.println(bundle);\n"
+        + "            System.err.println(bundle);\n"
+        + "        }\n"
+        + "    }\n"
+        + "}\n");
+        
+        NO_While2EnhancedForLoop(String given) {
+			this.given=given;
+		}
+
+		String given;
+	}
+	
 	@ParameterizedTest
-	@ValueSource(strings = {
-			/**
-			 * whileWarning
-			 */
-			"package test;\n"
-			+ "import java.util.*;\n"
-			+ "public class Test {\n"
-			+ "    void m(List<String> strings) {\n"
-			+ "        Iterator it = strings.iterator();\n"
-			+ "        while (it.hasNext()) {\n"
-			+ "            String s = (String) it.next();\n"
-			+ "            System.out.println(s);\n"
-			+ "            System.err.println(s);\n"
-			+ "        }\n"
-			+ "    }\n"
-			+ "}\n"
-			,
-			/**
-			 * whileUsedSpecially
-			 */
-			"package test;\n"
-			+ "import java.util.*;\n"
-			+ "public class Test {\n"
-			+ "    void m(List<String> strings) {\n"
-			+ "        Iterator it = strings.iterator();\n"
-			+ "        while (it.hasNext()) {\n"
-			+ "            String s = (String) it.next();\n"
-			+ "            if (s.isEmpty()) {\n"
-			+ "                it.remove();\n"
-			+ "            } else {\n"
-			+ "                System.out.println(s);\n"
-			+ "            }\n"
-			+ "        }\n"
-			+ "    }\n"
-			+ "}\n"
-			,
-			/**
-			 * whileRaw
-			 */
-			"package test;\n"
-			+ "import java.util.*;\n"
-			+ "public class Test {\n"
-			+ "    void m(List strings) {\n"
-			+ "        Iterator it = strings.iterator();\n"
-			+ "        while (it.hasNext()) {\n"
-			+ "            String s = (String) it.next();\n"
-			+ "            System.out.println(s);\n"
-			+ "            System.err.println(s);\n"
-			+ "        }\n"
-			+ "    }\n"
-			+ "}\n"
-			,
-			/**
-			 * whileWrongType
-			 */
-			"package test;\n"
-            + "import java.util.*;\n"
-            + "public class Test {\n"
-            + "    void m(List<java.net.URL> strings) {\n"
-            + "        Iterator it = strings.iterator();\n"
-            + "        while (it.hasNext()) {\n"
-            + "            String s = (String) it.next();\n"
-            + "            System.out.println(s);\n"
-            + "            System.err.println(s);\n"
-            + "        }\n"
-            + "    }\n"
-            + "}\n"
-			,
-			/**
-			 * whileNotRaw
-			 */
-			"package test;\n"
-            + "import java.util.*;\n"
-            + "public class Test {\n"
-            + "    void m(MyList strings) {\n"
-            + "        Iterator it = strings.iterator();\n"
-            + "        while (it.hasNext()) {\n"
-            + "            String s = (String) it.next();\n"
-            + "            System.out.println(s);\n"
-            + "            System.err.println(s);\n"
-            + "        }\n"
-            + "    }\n"
-            + "    static class MyList extends ArrayList<String> {}\n"
-            + "}\n"
-			,
-			/**
-			 * whileNotIterable
-			 */
-			"package test;\n"
-            + "import java.util.*;\n"
-            + "public class Test {\n"
-            + "    void m(MyList strings) {\n"
-            + "        Iterator it = strings.iterator();\n"
-            + "        while (it.hasNext()) {\n"
-            + "            String s = (String) it.next();\n"
-            + "            System.out.println(s);\n"
-            + "            System.err.println(s);\n"
-            + "        }\n"
-            + "    }\n"
-            + "    interface MyList {\n"
-            + "        Iterator<String> iterator();\n"
-            + "    }\n"
-            + "}\n"
-			,
-			/**
-			 * whileSubtype
-			 */
-			"package test;\n"
-            + "import java.util.*;\n"
-            + "public class Test {\n"
-            + "    void m(List<PropertyResourceBundle> bundles) {\n"
-            + "        Iterator it = bundles.iterator();\n"
-            + "        while (it.hasNext()) {\n"
-            + "            ResourceBundle bundle = (ResourceBundle) it.next();\n"
-            + "            System.out.println(bundle);\n"
-            + "            System.err.println(bundle);\n"
-            + "        }\n"
-            + "    }\n"
-            + "}\n"
-			,
-			/**
-			 * whileNotSubtype
-			 */
-			"package test;\n"
-            + "import java.util.*;\n"
-            + "public class Test {\n"
-            + "    void m(List<ResourceBundle> bundles) {\n"
-            + "        Iterator it = bundles.iterator();\n"
-            + "        while (it.hasNext()) {\n"
-            + "            PropertyResourceBundle bundle = (PropertyResourceBundle) it.next();\n"
-            + "            System.out.println(bundle);\n"
-            + "            System.err.println(bundle);\n"
-            + "        }\n"
-            + "    }\n"
-            + "}\n"
-	})
-
-	public void testWhile2enhancedForLoop_donttouch(String dontchange) throws Exception {
+	@EnumSource(NO_While2EnhancedForLoop.class)
+	public void testWhile2enhancedForLoop_donttouch(NO_While2EnhancedForLoop test) throws Exception {
 		IPackageFragment pack= context.fSourceFolder.createPackageFragment("test", false, null);
-		ICompilationUnit cu= pack.createCompilationUnit("Test.java",
-				dontchange,
-				false, null);
-
+		ICompilationUnit cu= pack.createCompilationUnit("Test.java",test.given,false, null);
 		context.enable(CleanUpConstants.CONTROL_STATEMENTS_CONVERT_FOR_LOOP_TO_ENHANCED);
-
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 }

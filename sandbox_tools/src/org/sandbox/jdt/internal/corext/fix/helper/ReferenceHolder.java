@@ -1,12 +1,12 @@
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-//import org.eclipse.jdt.core.dom.Type;
-import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
-import org.eclipse.jdt.core.dom.WhileStatement;
+import java.util.HashMap;
 
-public class ReferenceHolder {
-	public VariableDeclarationStatement iteratordeclaration;
-	public String iteratorvariablename;
-	protected WhileStatement whilestatement;
-//	public Type type;
+public class ReferenceHolder extends HashMap<String,Hit> {
+
+	public Hit possibleHit(String string) {
+		Hit hit=new Hit();
+		put(string, hit);
+		return hit;		
+	}
 }

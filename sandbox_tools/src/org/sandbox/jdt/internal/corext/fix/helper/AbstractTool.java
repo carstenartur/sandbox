@@ -29,7 +29,7 @@ import org.sandbox.jdt.internal.corext.fix.UseIteratorToForLoopFixCore;
 /**
  * @param <T> Type found in Visitor
  */
-public abstract class AbstractTool<T extends ASTNode> {
+public abstract class AbstractTool<T> {
 
 	protected static boolean isOfType(ITypeBinding typeBinding, String typename) {
 		if (typeBinding == null) {
@@ -43,7 +43,7 @@ public abstract class AbstractTool<T extends ASTNode> {
 
 	public abstract void find(UseIteratorToForLoopFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed);
 
-	public abstract void rewrite(UseIteratorToForLoopFixCore useExplicitEncodingFixCore, ReferenceHolder holder, CompilationUnitRewrite cuRewrite,
+	public abstract void rewrite(UseIteratorToForLoopFixCore useExplicitEncodingFixCore, T holder, CompilationUnitRewrite cuRewrite,
 			TextEditGroup group);
 
 	/**

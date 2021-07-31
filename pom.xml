@@ -33,6 +33,7 @@
 		<module>sandbox_platform_helper_feature</module>
 		<module>sandbox_platform_helper_test</module>
 		<module>sandbox_tools</module>
+		<module>sandbox_tools_feature</module>
 		<module>sandbox_tools_test</module>
 		<module>sandbox_usage_view</module>
 		<module>sandbox_usage_view_feature</module>
@@ -246,6 +247,11 @@
 			<dependency>
 				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_tools</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_tools_feature</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
