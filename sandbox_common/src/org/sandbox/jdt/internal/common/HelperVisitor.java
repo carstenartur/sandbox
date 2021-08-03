@@ -15,6 +15,8 @@ package org.sandbox.jdt.internal.common;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import org.eclipse.jdt.core.dom.*;
 
@@ -26,1543 +28,952 @@ import org.eclipse.jdt.core.dom.*;
  *
  * @param <E>
  */
-public class HelperVisitor<E> {
+public class HelperVisitor<E extends HelperVisitorProvider> {
+	
+	private static final long serialVersionUID = 1L;
 
 	ASTVisitor astvisitor;
 	public E dataholder;
-
-	enum Visitor {
-		AnnotationTypeDeclaration,
-		AnnotationTypeMemberDeclaration,
-		AnonymousClassDeclaration,
-		ArrayAccess,
-		ArrayCreation,
-		ArrayInitializer,
-		ArrayType,
-		AssertStatement,
-		Assignment,
-		Block,
-		BlockComment,
-		BooleanLiteral,
-		BreakStatement,
-		CastExpression,
-		CatchClause,
-		CharacterLiteral,
-		ClassInstanceCreation,
-		CompilationUnit,
-		ConditionalExpression,
-		ConstructorInvocation,
-		ContinueStatement,
-		CreationReference,
-		Dimension,
-		DoStatement,
-		EmptyStatement,
-		EnhancedForStatement,
-		EnumConstantDeclaration,
-		EnumDeclaration,
-		ExportsDirective,
-		ExpressionMethodReference,
-		ExpressionStatement,
-		FieldAccess,
-		FieldDeclaration,
-		ForStatement,
-		IfStatement,
-		ImportDeclaration,
-		InfixExpression,
-		Initializer,
-		InstanceofExpression,
-		IntersectionType,
-		Javadoc,
-		LabeledStatement,
-		LambdaExpression,
-		LineComment,
-		MarkerAnnotation,
-		MemberRef,
-		MemberValuePair,
-		MethodRef,
-		MethodRefParameter,
-		MethodDeclaration,
-		MethodInvocation,
-		Modifier,
-		ModuleDeclaration,
-		ModuleModifier,
-		NameQualifiedType,
-		NormalAnnotation,
-		NullLiteral,
-		NumberLiteral,
-		OpensDirective,
-		PackageDeclaration,
-		ParameterizedType,
-		ParenthesizedExpression,
-		PatternInstanceofExpression,
-		PostfixExpression,
-		PrefixExpression,
-		ProvidesDirective,
-		PrimitiveType,
-		QualifiedName,
-		QualifiedType,
-		ModuleQualifiedName,
-		RequiresDirective,
-		RecordDeclaration,
-		ReturnStatement,
-		SimpleName,
-		SimpleType,
-		SingleMemberAnnotation,
-		SingleVariableDeclaration,
-		StringLiteral,
-		SuperConstructorInvocation,
-		SuperFieldAccess,
-		SuperMethodInvocation,
-		SuperMethodReference,
-		SwitchCase,
-		SwitchExpression,
-		SwitchStatement,
-		SynchronizedStatement,
-		TagElement,
-		TextBlock,
-		TextElement,
-		ThisExpression,
-		ThrowStatement,
-		TryStatement,
-		TypeDeclaration,
-		TypeDeclarationStatement,
-		TypeLiteral,
-		TypeMethodReference,
-		TypeParameter,
-		UnionType,
-		UsesDirective,
-		VariableDeclarationExpression,
-		VariableDeclarationStatement,
-		VariableDeclarationFragment,
-		WhileStatement,
-		WildcardType,
-		YieldStatement
-	};
 
 	/**
 	 * This map contains one VisitorSupplier per kind if supplied Each BiFunction is
 	 * called with two parameters 1) ASTNode 2) your data object Call is processed
 	 * when build(CompilationUnit) is called.
 	 */
-	Map<Visitor, BiFunction<? extends ASTNode, E, Boolean>> suppliermap;
+	Map<VisitorEnum, BiFunction<? extends ASTNode, E, Boolean>> suppliermap;
+	public Map<VisitorEnum, BiFunction<? extends ASTNode, E, Boolean>> getSuppliermap() {
+		return suppliermap;
+	}
 
-	public HelperVisitor(E dataholder) {
-		suppliermap = new LinkedHashMap<>();
+	public Map<VisitorEnum, BiConsumer<? extends ASTNode, E>> getConsumermap() {
+		return consumermap;
+	}
+
+	Map<VisitorEnum, BiConsumer<? extends ASTNode, E>> consumermap;
+	public Set<ASTNode> nodesprocessed;
+
+	public Set<ASTNode> getNodesprocessed() {
+		return nodesprocessed;
+	}
+
+	public HelperVisitor(Set<ASTNode> nodesprocessed, E dataholder) {
+		this.suppliermap = new LinkedHashMap<>();
+		this.consumermap = new LinkedHashMap<>();
 		this.dataholder = dataholder;
+		dataholder.setHelperVisitor(this);
+		this.nodesprocessed = nodesprocessed;
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addAnnotationTypeDeclaration(
 			BiFunction<AnnotationTypeDeclaration, E, Boolean> bs) {
-		return suppliermap.put(Visitor.AnnotationTypeDeclaration, bs);
+		return suppliermap.put(VisitorEnum.AnnotationTypeDeclaration, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addAnnotationTypeMemberDeclaration(
 			BiFunction<AnnotationTypeMemberDeclaration, E, Boolean> bs) {
-		return suppliermap.put(Visitor.AnnotationTypeMemberDeclaration, bs);
+		return suppliermap.put(VisitorEnum.AnnotationTypeMemberDeclaration, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addAnonymousClassDeclaration(
 			BiFunction<AnonymousClassDeclaration, E, Boolean> bs) {
-		return suppliermap.put(Visitor.AnonymousClassDeclaration, bs);
+		return suppliermap.put(VisitorEnum.AnonymousClassDeclaration, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addArrayAccess(BiFunction<ArrayAccess, E, Boolean> bs) {
-		return suppliermap.put(Visitor.ArrayAccess, bs);
+		return suppliermap.put(VisitorEnum.ArrayAccess, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addArrayCreation(BiFunction<ArrayCreation, E, Boolean> bs) {
-		return suppliermap.put(Visitor.ArrayCreation, bs);
+		return suppliermap.put(VisitorEnum.ArrayCreation, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addArrayInitializer(BiFunction<ArrayInitializer, E, Boolean> bs) {
-		return suppliermap.put(Visitor.ArrayInitializer, bs);
+		return suppliermap.put(VisitorEnum.ArrayInitializer, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addArrayType(BiFunction<ArrayType, E, Boolean> bs) {
-		return suppliermap.put(Visitor.ArrayType, bs);
+		return suppliermap.put(VisitorEnum.ArrayType, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addAssertStatement(BiFunction<AssertStatement, E, Boolean> bs) {
-		return suppliermap.put(Visitor.AssertStatement, bs);
+		return suppliermap.put(VisitorEnum.AssertStatement, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addAssignment(BiFunction<Assignment, E, Boolean> bs) {
-		return suppliermap.put(Visitor.Assignment, bs);
+		return suppliermap.put(VisitorEnum.Assignment, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addBlock(BiFunction<Block, E, Boolean> bs) {
-		return suppliermap.put(Visitor.Block, bs);
+		return suppliermap.put(VisitorEnum.Block, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addBlockComment(BiFunction<BlockComment, E, Boolean> bs) {
-		return suppliermap.put(Visitor.BlockComment, bs);
+		return suppliermap.put(VisitorEnum.BlockComment, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addBooleanLiteral(BiFunction<BooleanLiteral, E, Boolean> bs) {
-		return suppliermap.put(Visitor.BooleanLiteral, bs);
+		return suppliermap.put(VisitorEnum.BooleanLiteral, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addBreakStatement(BiFunction<BreakStatement, E, Boolean> bs) {
-		return suppliermap.put(Visitor.BreakStatement, bs);
+		return suppliermap.put(VisitorEnum.BreakStatement, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addCastExpression(BiFunction<CastExpression, E, Boolean> bs) {
-		return suppliermap.put(Visitor.CastExpression, bs);
+		return suppliermap.put(VisitorEnum.CastExpression, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addCatchClause(BiFunction<CatchClause, E, Boolean> bs) {
-		return suppliermap.put(Visitor.CatchClause, bs);
+		return suppliermap.put(VisitorEnum.CatchClause, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addCharacterLiteral(BiFunction<CharacterLiteral, E, Boolean> bs) {
-		return suppliermap.put(Visitor.CharacterLiteral, bs);
+		return suppliermap.put(VisitorEnum.CharacterLiteral, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addClassInstanceCreation(
 			BiFunction<ClassInstanceCreation, E, Boolean> bs) {
-		return suppliermap.put(Visitor.ClassInstanceCreation, bs);
+		return suppliermap.put(VisitorEnum.ClassInstanceCreation, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addCompilationUnit(BiFunction<CompilationUnit, E, Boolean> bs) {
-		return suppliermap.put(Visitor.CompilationUnit, bs);
+		return suppliermap.put(VisitorEnum.CompilationUnit, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addConditionalExpression(
 			BiFunction<ConditionalExpression, E, Boolean> bs) {
-		return suppliermap.put(Visitor.ConditionalExpression, bs);
+		return suppliermap.put(VisitorEnum.ConditionalExpression, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addConstructorInvocation(
 			BiFunction<ConstructorInvocation, E, Boolean> bs) {
-		return suppliermap.put(Visitor.ConstructorInvocation, bs);
+		return suppliermap.put(VisitorEnum.ConstructorInvocation, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addContinueStatement(
 			BiFunction<ContinueStatement, E, Boolean> bs) {
-		return suppliermap.put(Visitor.ContinueStatement, bs);
+		return suppliermap.put(VisitorEnum.ContinueStatement, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addCreationReference(
 			BiFunction<CreationReference, E, Boolean> bs) {
-		return suppliermap.put(Visitor.CreationReference, bs);
+		return suppliermap.put(VisitorEnum.CreationReference, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addDimension(BiFunction<Dimension, E, Boolean> bs) {
-		return suppliermap.put(Visitor.Dimension, bs);
+		return suppliermap.put(VisitorEnum.Dimension, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addDoStatement(BiFunction<DoStatement, E, Boolean> bs) {
-		return suppliermap.put(Visitor.DoStatement, bs);
+		return suppliermap.put(VisitorEnum.DoStatement, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addEmptyStatement(BiFunction<EmptyStatement, E, Boolean> bs) {
-		return suppliermap.put(Visitor.EmptyStatement, bs);
+		return suppliermap.put(VisitorEnum.EmptyStatement, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addEnhancedForStatement(
 			BiFunction<EnhancedForStatement, E, Boolean> bs) {
-		return suppliermap.put(Visitor.EnhancedForStatement, bs);
+		return suppliermap.put(VisitorEnum.EnhancedForStatement, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addEnumConstantDeclaration(
 			BiFunction<EnumConstantDeclaration, E, Boolean> bs) {
-		return suppliermap.put(Visitor.EnumConstantDeclaration, bs);
+		return suppliermap.put(VisitorEnum.EnumConstantDeclaration, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addEnumDeclaration(BiFunction<EnumDeclaration, E, Boolean> bs) {
-		return suppliermap.put(Visitor.EnumDeclaration, bs);
+		return suppliermap.put(VisitorEnum.EnumDeclaration, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addExportsDirective(BiFunction<ExportsDirective, E, Boolean> bs) {
-		return suppliermap.put(Visitor.ExportsDirective, bs);
+		return suppliermap.put(VisitorEnum.ExportsDirective, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addExpressionMethodReference(
 			BiFunction<ExpressionMethodReference, E, Boolean> bs) {
-		return suppliermap.put(Visitor.ExpressionMethodReference, bs);
+		return suppliermap.put(VisitorEnum.ExpressionMethodReference, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addExpressionStatement(
 			BiFunction<ExpressionStatement, E, Boolean> bs) {
-		return suppliermap.put(Visitor.ExpressionStatement, bs);
+		return suppliermap.put(VisitorEnum.ExpressionStatement, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addFieldAccess(BiFunction<FieldAccess, E, Boolean> bs) {
-		return suppliermap.put(Visitor.FieldAccess, bs);
+		return suppliermap.put(VisitorEnum.FieldAccess, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addFieldDeclaration(BiFunction<FieldDeclaration, E, Boolean> bs) {
-		return suppliermap.put(Visitor.FieldDeclaration, bs);
+		return suppliermap.put(VisitorEnum.FieldDeclaration, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addForStatement(BiFunction<ForStatement, E, Boolean> bs) {
-		return suppliermap.put(Visitor.ForStatement, bs);
+		return suppliermap.put(VisitorEnum.ForStatement, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addIfStatement(BiFunction<IfStatement, E, Boolean> bs) {
-		return suppliermap.put(Visitor.IfStatement, bs);
+		return suppliermap.put(VisitorEnum.IfStatement, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addImportDeclaration(
 			BiFunction<ImportDeclaration, E, Boolean> bs) {
-		return suppliermap.put(Visitor.ImportDeclaration, bs);
+		return suppliermap.put(VisitorEnum.ImportDeclaration, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addInfixExpression(BiFunction<InfixExpression, E, Boolean> bs) {
-		return suppliermap.put(Visitor.InfixExpression, bs);
+		return suppliermap.put(VisitorEnum.InfixExpression, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addInitializer(BiFunction<Initializer, E, Boolean> bs) {
-		return suppliermap.put(Visitor.Initializer, bs);
+		return suppliermap.put(VisitorEnum.Initializer, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addInstanceofExpression(
 			BiFunction<InstanceofExpression, E, Boolean> bs) {
-		return suppliermap.put(Visitor.InstanceofExpression, bs);
+		return suppliermap.put(VisitorEnum.InstanceofExpression, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addIntersectionType(BiFunction<IntersectionType, E, Boolean> bs) {
-		return suppliermap.put(Visitor.IntersectionType, bs);
+		return suppliermap.put(VisitorEnum.IntersectionType, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addJavadoc(BiFunction<Javadoc, E, Boolean> bs) {
-		return suppliermap.put(Visitor.Javadoc, bs);
+		return suppliermap.put(VisitorEnum.Javadoc, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addLabeledStatement(BiFunction<LabeledStatement, E, Boolean> bs) {
-		return suppliermap.put(Visitor.LabeledStatement, bs);
+		return suppliermap.put(VisitorEnum.LabeledStatement, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addLambdaExpression(BiFunction<LambdaExpression, E, Boolean> bs) {
-		return suppliermap.put(Visitor.LambdaExpression, bs);
+		return suppliermap.put(VisitorEnum.LambdaExpression, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addLineComment(BiFunction<LineComment, E, Boolean> bs) {
-		return suppliermap.put(Visitor.LineComment, bs);
+		return suppliermap.put(VisitorEnum.LineComment, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addMarkerAnnotation(BiFunction<MarkerAnnotation, E, Boolean> bs) {
-		return suppliermap.put(Visitor.MarkerAnnotation, bs);
+		return suppliermap.put(VisitorEnum.MarkerAnnotation, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addMemberRef(BiFunction<MemberRef, E, Boolean> bs) {
-		return suppliermap.put(Visitor.MemberRef, bs);
+		return suppliermap.put(VisitorEnum.MemberRef, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addMemberValuePair(BiFunction<MemberValuePair, E, Boolean> bs) {
-		return suppliermap.put(Visitor.MemberValuePair, bs);
+		return suppliermap.put(VisitorEnum.MemberValuePair, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addMethodRef(BiFunction<MethodRef, E, Boolean> bs) {
-		return suppliermap.put(Visitor.MethodRef, bs);
+		return suppliermap.put(VisitorEnum.MethodRef, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addMethodRefParameter(
 			BiFunction<MethodRefParameter, E, Boolean> bs) {
-		return suppliermap.put(Visitor.MethodRefParameter, bs);
+		return suppliermap.put(VisitorEnum.MethodRefParameter, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addMethodDeclaration(
 			BiFunction<MethodDeclaration, E, Boolean> bs) {
-		return suppliermap.put(Visitor.MethodDeclaration, bs);
+		return suppliermap.put(VisitorEnum.MethodDeclaration, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addMethodInvocation(BiFunction<MethodInvocation, E, Boolean> bs) {
-		return suppliermap.put(Visitor.MethodInvocation, bs);
+		return suppliermap.put(VisitorEnum.MethodInvocation, bs);
+	}
+	
+	public BiFunction<? extends ASTNode, E, Boolean> addMethodInvocation(String methodname, BiFunction<MethodInvocation, E, Boolean> bs) {
+		this.dataholder.setNodeData(VisitorEnum.MethodInvocation,methodname);
+		return suppliermap.put(VisitorEnum.MethodInvocation, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addModifier(BiFunction<Modifier, E, Boolean> bs) {
-		return suppliermap.put(Visitor.Modifier, bs);
+		return suppliermap.put(VisitorEnum.Modifier, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addModuleDeclaration(
 			BiFunction<ModuleDeclaration, E, Boolean> bs) {
-		return suppliermap.put(Visitor.ModuleDeclaration, bs);
+		return suppliermap.put(VisitorEnum.ModuleDeclaration, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addModuleModifier(BiFunction<ModuleModifier, E, Boolean> bs) {
-		return suppliermap.put(Visitor.ModuleModifier, bs);
+		return suppliermap.put(VisitorEnum.ModuleModifier, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addNameQualifiedType(
 			BiFunction<NameQualifiedType, E, Boolean> bs) {
-		return suppliermap.put(Visitor.NameQualifiedType, bs);
+		return suppliermap.put(VisitorEnum.NameQualifiedType, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addNormalAnnotation(BiFunction<NormalAnnotation, E, Boolean> bs) {
-		return suppliermap.put(Visitor.NormalAnnotation, bs);
+		return suppliermap.put(VisitorEnum.NormalAnnotation, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addNullLiteral(BiFunction<NullLiteral, E, Boolean> bs) {
-		return suppliermap.put(Visitor.NullLiteral, bs);
+		return suppliermap.put(VisitorEnum.NullLiteral, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addNumberLiteral(BiFunction<NumberLiteral, E, Boolean> bs) {
-		return suppliermap.put(Visitor.NumberLiteral, bs);
+		return suppliermap.put(VisitorEnum.NumberLiteral, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addOpensDirective(BiFunction<OpensDirective, E, Boolean> bs) {
-		return suppliermap.put(Visitor.OpensDirective, bs);
+		return suppliermap.put(VisitorEnum.OpensDirective, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addPackageDeclaration(
 			BiFunction<PackageDeclaration, E, Boolean> bs) {
-		return suppliermap.put(Visitor.PackageDeclaration, bs);
+		return suppliermap.put(VisitorEnum.PackageDeclaration, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addParameterizedType(
 			BiFunction<ParameterizedType, E, Boolean> bs) {
-		return suppliermap.put(Visitor.ParameterizedType, bs);
+		return suppliermap.put(VisitorEnum.ParameterizedType, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addParenthesizedExpression(
 			BiFunction<ParenthesizedExpression, E, Boolean> bs) {
-		return suppliermap.put(Visitor.ParenthesizedExpression, bs);
+		return suppliermap.put(VisitorEnum.ParenthesizedExpression, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addPatternInstanceofExpression(
 			BiFunction<PatternInstanceofExpression, E, Boolean> bs) {
-		return suppliermap.put(Visitor.PatternInstanceofExpression, bs);
+		return suppliermap.put(VisitorEnum.PatternInstanceofExpression, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addPostfixExpression(
 			BiFunction<PostfixExpression, E, Boolean> bs) {
-		return suppliermap.put(Visitor.PostfixExpression, bs);
+		return suppliermap.put(VisitorEnum.PostfixExpression, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addPrefixExpression(BiFunction<PrefixExpression, E, Boolean> bs) {
-		return suppliermap.put(Visitor.PrefixExpression, bs);
+		return suppliermap.put(VisitorEnum.PrefixExpression, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addProvidesDirective(
 			BiFunction<ProvidesDirective, E, Boolean> bs) {
-		return suppliermap.put(Visitor.ProvidesDirective, bs);
+		return suppliermap.put(VisitorEnum.ProvidesDirective, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addPrimitiveType(BiFunction<PrimitiveType, E, Boolean> bs) {
-		return suppliermap.put(Visitor.PrimitiveType, bs);
+		return suppliermap.put(VisitorEnum.PrimitiveType, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addQualifiedName(BiFunction<QualifiedName, E, Boolean> bs) {
-		return suppliermap.put(Visitor.QualifiedName, bs);
+		return suppliermap.put(VisitorEnum.QualifiedName, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addQualifiedType(BiFunction<QualifiedType, E, Boolean> bs) {
-		return suppliermap.put(Visitor.QualifiedType, bs);
+		return suppliermap.put(VisitorEnum.QualifiedType, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addModuleQualifiedName(
 			BiFunction<ModuleQualifiedName, E, Boolean> bs) {
-		return suppliermap.put(Visitor.ModuleQualifiedName, bs);
+		return suppliermap.put(VisitorEnum.ModuleQualifiedName, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addRequiresDirective(
 			BiFunction<RequiresDirective, E, Boolean> bs) {
-		return suppliermap.put(Visitor.RequiresDirective, bs);
+		return suppliermap.put(VisitorEnum.RequiresDirective, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addRecordDeclaration(
 			BiFunction<RecordDeclaration, E, Boolean> bs) {
-		return suppliermap.put(Visitor.RecordDeclaration, bs);
+		return suppliermap.put(VisitorEnum.RecordDeclaration, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addReturnStatement(BiFunction<ReturnStatement, E, Boolean> bs) {
-		return suppliermap.put(Visitor.ReturnStatement, bs);
+		return suppliermap.put(VisitorEnum.ReturnStatement, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addSimpleName(BiFunction<SimpleName, E, Boolean> bs) {
-		return suppliermap.put(Visitor.SimpleName, bs);
+		return suppliermap.put(VisitorEnum.SimpleName, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addSimpleType(BiFunction<SimpleType, E, Boolean> bs) {
-		return suppliermap.put(Visitor.SimpleType, bs);
+		return suppliermap.put(VisitorEnum.SimpleType, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addSingleMemberAnnotation(
 			BiFunction<SingleMemberAnnotation, E, Boolean> bs) {
-		return suppliermap.put(Visitor.SingleMemberAnnotation, bs);
+		return suppliermap.put(VisitorEnum.SingleMemberAnnotation, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addSingleVariableDeclaration(
 			BiFunction<SingleVariableDeclaration, E, Boolean> bs) {
-		return suppliermap.put(Visitor.SingleVariableDeclaration, bs);
+		return suppliermap.put(VisitorEnum.SingleVariableDeclaration, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addStringLiteral(BiFunction<StringLiteral, E, Boolean> bs) {
-		return suppliermap.put(Visitor.StringLiteral, bs);
+		return suppliermap.put(VisitorEnum.StringLiteral, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addSuperConstructorInvocation(
 			BiFunction<SuperConstructorInvocation, E, Boolean> bs) {
-		return suppliermap.put(Visitor.SuperConstructorInvocation, bs);
+		return suppliermap.put(VisitorEnum.SuperConstructorInvocation, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addSuperFieldAccess(BiFunction<SuperFieldAccess, E, Boolean> bs) {
-		return suppliermap.put(Visitor.SuperFieldAccess, bs);
+		return suppliermap.put(VisitorEnum.SuperFieldAccess, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addSuperMethodInvocation(
 			BiFunction<SuperMethodInvocation, E, Boolean> bs) {
-		return suppliermap.put(Visitor.SuperMethodInvocation, bs);
+		return suppliermap.put(VisitorEnum.SuperMethodInvocation, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addSuperMethodReference(
 			BiFunction<SuperMethodReference, E, Boolean> bs) {
-		return suppliermap.put(Visitor.SuperMethodReference, bs);
+		return suppliermap.put(VisitorEnum.SuperMethodReference, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addSwitchCase(BiFunction<SwitchCase, E, Boolean> bs) {
-		return suppliermap.put(Visitor.SwitchCase, bs);
+		return suppliermap.put(VisitorEnum.SwitchCase, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addSwitchExpression(BiFunction<SwitchExpression, E, Boolean> bs) {
-		return suppliermap.put(Visitor.SwitchExpression, bs);
+		return suppliermap.put(VisitorEnum.SwitchExpression, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addSwitchStatement(BiFunction<SwitchStatement, E, Boolean> bs) {
-		return suppliermap.put(Visitor.SwitchStatement, bs);
+		return suppliermap.put(VisitorEnum.SwitchStatement, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addSynchronizedStatement(
 			BiFunction<SynchronizedStatement, E, Boolean> bs) {
-		return suppliermap.put(Visitor.SynchronizedStatement, bs);
+		return suppliermap.put(VisitorEnum.SynchronizedStatement, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addTagElement(BiFunction<TagElement, E, Boolean> bs) {
-		return suppliermap.put(Visitor.TagElement, bs);
+		return suppliermap.put(VisitorEnum.TagElement, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addTextBlock(BiFunction<TextBlock, E, Boolean> bs) {
-		return suppliermap.put(Visitor.TextBlock, bs);
+		return suppliermap.put(VisitorEnum.TextBlock, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addTextElement(BiFunction<TextElement, E, Boolean> bs) {
-		return suppliermap.put(Visitor.TextElement, bs);
+		return suppliermap.put(VisitorEnum.TextElement, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addThisExpression(BiFunction<ThisExpression, E, Boolean> bs) {
-		return suppliermap.put(Visitor.ThisExpression, bs);
+		return suppliermap.put(VisitorEnum.ThisExpression, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addThrowStatement(BiFunction<ThrowStatement, E, Boolean> bs) {
-		return suppliermap.put(Visitor.ThrowStatement, bs);
+		return suppliermap.put(VisitorEnum.ThrowStatement, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addTryStatement(BiFunction<TryStatement, E, Boolean> bs) {
-		return suppliermap.put(Visitor.TryStatement, bs);
+		return suppliermap.put(VisitorEnum.TryStatement, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addTypeDeclaration(BiFunction<TypeDeclaration, E, Boolean> bs) {
-		return suppliermap.put(Visitor.TypeDeclaration, bs);
+		return suppliermap.put(VisitorEnum.TypeDeclaration, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addTypeDeclarationStatement(
 			BiFunction<TypeDeclarationStatement, E, Boolean> bs) {
-		return suppliermap.put(Visitor.TypeDeclarationStatement, bs);
+		return suppliermap.put(VisitorEnum.TypeDeclarationStatement, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addTypeLiteral(BiFunction<TypeLiteral, E, Boolean> bs) {
-		return suppliermap.put(Visitor.TypeLiteral, bs);
+		return suppliermap.put(VisitorEnum.TypeLiteral, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addTypeMethodReference(
 			BiFunction<TypeMethodReference, E, Boolean> bs) {
-		return suppliermap.put(Visitor.TypeMethodReference, bs);
+		return suppliermap.put(VisitorEnum.TypeMethodReference, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addTypeParameter(BiFunction<TypeParameter, E, Boolean> bs) {
-		return suppliermap.put(Visitor.TypeParameter, bs);
+		return suppliermap.put(VisitorEnum.TypeParameter, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addUnionType(BiFunction<UnionType, E, Boolean> bs) {
-		return suppliermap.put(Visitor.UnionType, bs);
+		return suppliermap.put(VisitorEnum.UnionType, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addUsesDirective(BiFunction<UsesDirective, E, Boolean> bs) {
-		return suppliermap.put(Visitor.UsesDirective, bs);
+		return suppliermap.put(VisitorEnum.UsesDirective, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addVariableDeclarationExpression(
 			BiFunction<VariableDeclarationExpression, E, Boolean> bs) {
-		return suppliermap.put(Visitor.VariableDeclarationExpression, bs);
+		return suppliermap.put(VisitorEnum.VariableDeclarationExpression, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addVariableDeclarationStatement(
 			BiFunction<VariableDeclarationStatement, E, Boolean> bs) {
-		return suppliermap.put(Visitor.VariableDeclarationStatement, bs);
+		return suppliermap.put(VisitorEnum.VariableDeclarationStatement, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addVariableDeclarationFragment(
 			BiFunction<VariableDeclarationFragment, E, Boolean> bs) {
-		return suppliermap.put(Visitor.VariableDeclarationFragment, bs);
+		return suppliermap.put(VisitorEnum.VariableDeclarationFragment, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addWhileStatement(BiFunction<WhileStatement, E, Boolean> bs) {
-		return suppliermap.put(Visitor.WhileStatement, bs);
+		return suppliermap.put(VisitorEnum.WhileStatement, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addWildcardType(BiFunction<WildcardType, E, Boolean> bs) {
-		return suppliermap.put(Visitor.WildcardType, bs);
+		return suppliermap.put(VisitorEnum.WildcardType, bs);
 	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addYieldStatement(BiFunction<YieldStatement, E, Boolean> bs) {
-		return suppliermap.put(Visitor.YieldStatement, bs);
+		return suppliermap.put(VisitorEnum.YieldStatement, bs);
 	}
 
-	public BiFunction<? extends ASTNode, E, Boolean> add(Visitor key, BiFunction<ASTNode, E, Boolean> bs) {
+	public BiFunction<? extends ASTNode, E, Boolean> add(VisitorEnum key, BiFunction<ASTNode, E, Boolean> bs) {
 		return suppliermap.put(key, bs);
 	}
 
+	public BiConsumer<? extends ASTNode, E> addAnnotationTypeDeclaration(BiConsumer<AnnotationTypeDeclaration, E> bc) {
+		return consumermap.put(VisitorEnum.AnnotationTypeDeclaration, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addAnnotationTypeMemberDeclaration(
+			BiConsumer<AnnotationTypeMemberDeclaration, E> bc) {
+		return consumermap.put(VisitorEnum.AnnotationTypeMemberDeclaration, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addAnonymousClassDeclaration(BiConsumer<AnonymousClassDeclaration, E> bc) {
+		return consumermap.put(VisitorEnum.AnonymousClassDeclaration, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addArrayAccess(BiConsumer<ArrayAccess, E> bc) {
+		return consumermap.put(VisitorEnum.ArrayAccess, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addArrayCreation(BiConsumer<ArrayCreation, E> bc) {
+		return consumermap.put(VisitorEnum.ArrayCreation, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addArrayInitializer(BiConsumer<ArrayInitializer, E> bc) {
+		return consumermap.put(VisitorEnum.ArrayInitializer, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addArrayType(BiConsumer<ArrayType, E> bc) {
+		return consumermap.put(VisitorEnum.ArrayType, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addAssertStatement(BiConsumer<AssertStatement, E> bc) {
+		return consumermap.put(VisitorEnum.AssertStatement, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addAssignment(BiConsumer<Assignment, E> bc) {
+		return consumermap.put(VisitorEnum.Assignment, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addBlock(BiConsumer<Block, E> bc) {
+		return consumermap.put(VisitorEnum.Block, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addBlockComment(BiConsumer<BlockComment, E> bc) {
+		return consumermap.put(VisitorEnum.BlockComment, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addBooleanLiteral(BiConsumer<BooleanLiteral, E> bc) {
+		return consumermap.put(VisitorEnum.BooleanLiteral, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addBreakStatement(BiConsumer<BreakStatement, E> bc) {
+		return consumermap.put(VisitorEnum.BreakStatement, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addCastExpression(BiConsumer<CastExpression, E> bc) {
+		return consumermap.put(VisitorEnum.CastExpression, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addCatchClause(BiConsumer<CatchClause, E> bc) {
+		return consumermap.put(VisitorEnum.CatchClause, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addCharacterLiteral(BiConsumer<CharacterLiteral, E> bc) {
+		return consumermap.put(VisitorEnum.CharacterLiteral, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addClassInstanceCreation(BiConsumer<ClassInstanceCreation, E> bc) {
+		return consumermap.put(VisitorEnum.ClassInstanceCreation, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addCompilationUnit(BiConsumer<CompilationUnit, E> bc) {
+		return consumermap.put(VisitorEnum.CompilationUnit, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addConditionalExpression(BiConsumer<ConditionalExpression, E> bc) {
+		return consumermap.put(VisitorEnum.ConditionalExpression, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addConstructorInvocation(BiConsumer<ConstructorInvocation, E> bc) {
+		return consumermap.put(VisitorEnum.ConstructorInvocation, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addContinueStatement(BiConsumer<ContinueStatement, E> bc) {
+		return consumermap.put(VisitorEnum.ContinueStatement, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addCreationReference(BiConsumer<CreationReference, E> bc) {
+		return consumermap.put(VisitorEnum.CreationReference, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addDimension(BiConsumer<Dimension, E> bc) {
+		return consumermap.put(VisitorEnum.Dimension, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addDoStatement(BiConsumer<DoStatement, E> bc) {
+		return consumermap.put(VisitorEnum.DoStatement, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addEmptyStatement(BiConsumer<EmptyStatement, E> bc) {
+		return consumermap.put(VisitorEnum.EmptyStatement, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addEnhancedForStatement(BiConsumer<EnhancedForStatement, E> bc) {
+		return consumermap.put(VisitorEnum.EnhancedForStatement, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addEnumConstantDeclaration(BiConsumer<EnumConstantDeclaration, E> bc) {
+		return consumermap.put(VisitorEnum.EnumConstantDeclaration, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addEnumDeclaration(BiConsumer<EnumDeclaration, E> bc) {
+		return consumermap.put(VisitorEnum.EnumDeclaration, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addExportsDirective(BiConsumer<ExportsDirective, E> bc) {
+		return consumermap.put(VisitorEnum.ExportsDirective, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addExpressionMethodReference(BiConsumer<ExpressionMethodReference, E> bc) {
+		return consumermap.put(VisitorEnum.ExpressionMethodReference, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addExpressionStatement(BiConsumer<ExpressionStatement, E> bc) {
+		return consumermap.put(VisitorEnum.ExpressionStatement, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addFieldAccess(BiConsumer<FieldAccess, E> bc) {
+		return consumermap.put(VisitorEnum.FieldAccess, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addFieldDeclaration(BiConsumer<FieldDeclaration, E> bc) {
+		return consumermap.put(VisitorEnum.FieldDeclaration, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addForStatement(BiConsumer<ForStatement, E> bc) {
+		return consumermap.put(VisitorEnum.ForStatement, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addIfStatement(BiConsumer<IfStatement, E> bc) {
+		return consumermap.put(VisitorEnum.IfStatement, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addImportDeclaration(BiConsumer<ImportDeclaration, E> bc) {
+		return consumermap.put(VisitorEnum.ImportDeclaration, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addInfixExpression(BiConsumer<InfixExpression, E> bc) {
+		return consumermap.put(VisitorEnum.InfixExpression, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addInitializer(BiConsumer<Initializer, E> bc) {
+		return consumermap.put(VisitorEnum.Initializer, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addInstanceofExpression(BiConsumer<InstanceofExpression, E> bc) {
+		return consumermap.put(VisitorEnum.InstanceofExpression, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addIntersectionType(BiConsumer<IntersectionType, E> bc) {
+		return consumermap.put(VisitorEnum.IntersectionType, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addJavadoc(BiConsumer<Javadoc, E> bc) {
+		return consumermap.put(VisitorEnum.Javadoc, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addLabeledStatement(BiConsumer<LabeledStatement, E> bc) {
+		return consumermap.put(VisitorEnum.LabeledStatement, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addLambdaExpression(BiConsumer<LambdaExpression, E> bc) {
+		return consumermap.put(VisitorEnum.LambdaExpression, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addLineComment(BiConsumer<LineComment, E> bc) {
+		return consumermap.put(VisitorEnum.LineComment, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addMarkerAnnotation(BiConsumer<MarkerAnnotation, E> bc) {
+		return consumermap.put(VisitorEnum.MarkerAnnotation, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addMemberRef(BiConsumer<MemberRef, E> bc) {
+		return consumermap.put(VisitorEnum.MemberRef, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addMemberValuePair(BiConsumer<MemberValuePair, E> bc) {
+		return consumermap.put(VisitorEnum.MemberValuePair, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addMethodRef(BiConsumer<MethodRef, E> bc) {
+		return consumermap.put(VisitorEnum.MethodRef, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addMethodRefParameter(BiConsumer<MethodRefParameter, E> bc) {
+		return consumermap.put(VisitorEnum.MethodRefParameter, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addMethodDeclaration(BiConsumer<MethodDeclaration, E> bc) {
+		return consumermap.put(VisitorEnum.MethodDeclaration, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addMethodInvocation(BiConsumer<MethodInvocation, E> bc) {
+		return consumermap.put(VisitorEnum.MethodInvocation, bc);
+	}
+	
+	public BiConsumer<? extends ASTNode, E> addMethodInvocation(String methodname, BiConsumer<MethodInvocation, E> bc) {
+		this.dataholder.setNodeData(VisitorEnum.MethodInvocation,methodname);
+		return consumermap.put(VisitorEnum.MethodInvocation, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addModifier(BiConsumer<Modifier, E> bc) {
+		return consumermap.put(VisitorEnum.Modifier, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addModuleDeclaration(BiConsumer<ModuleDeclaration, E> bc) {
+		return consumermap.put(VisitorEnum.ModuleDeclaration, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addModuleModifier(BiConsumer<ModuleModifier, E> bc) {
+		return consumermap.put(VisitorEnum.ModuleModifier, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addNameQualifiedType(BiConsumer<NameQualifiedType, E> bc) {
+		return consumermap.put(VisitorEnum.NameQualifiedType, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addNormalAnnotation(BiConsumer<NormalAnnotation, E> bc) {
+		return consumermap.put(VisitorEnum.NormalAnnotation, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addNullLiteral(BiConsumer<NullLiteral, E> bc) {
+		return consumermap.put(VisitorEnum.NullLiteral, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addNumberLiteral(BiConsumer<NumberLiteral, E> bc) {
+		return consumermap.put(VisitorEnum.NumberLiteral, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addOpensDirective(BiConsumer<OpensDirective, E> bc) {
+		return consumermap.put(VisitorEnum.OpensDirective, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addPackageDeclaration(BiConsumer<PackageDeclaration, E> bc) {
+		return consumermap.put(VisitorEnum.PackageDeclaration, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addParameterizedType(BiConsumer<ParameterizedType, E> bc) {
+		return consumermap.put(VisitorEnum.ParameterizedType, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addParenthesizedExpression(BiConsumer<ParenthesizedExpression, E> bc) {
+		return consumermap.put(VisitorEnum.ParenthesizedExpression, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addPatternInstanceofExpression(
+			BiConsumer<PatternInstanceofExpression, E> bc) {
+		return consumermap.put(VisitorEnum.PatternInstanceofExpression, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addPostfixExpression(BiConsumer<PostfixExpression, E> bc) {
+		return consumermap.put(VisitorEnum.PostfixExpression, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addPrefixExpression(BiConsumer<PrefixExpression, E> bc) {
+		return consumermap.put(VisitorEnum.PrefixExpression, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addProvidesDirective(BiConsumer<ProvidesDirective, E> bc) {
+		return consumermap.put(VisitorEnum.ProvidesDirective, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addPrimitiveType(BiConsumer<PrimitiveType, E> bc) {
+		return consumermap.put(VisitorEnum.PrimitiveType, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addQualifiedName(BiConsumer<QualifiedName, E> bc) {
+		return consumermap.put(VisitorEnum.QualifiedName, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addQualifiedType(BiConsumer<QualifiedType, E> bc) {
+		return consumermap.put(VisitorEnum.QualifiedType, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addModuleQualifiedName(BiConsumer<ModuleQualifiedName, E> bc) {
+		return consumermap.put(VisitorEnum.ModuleQualifiedName, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addRequiresDirective(BiConsumer<RequiresDirective, E> bc) {
+		return consumermap.put(VisitorEnum.RequiresDirective, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addRecordDeclaration(BiConsumer<RecordDeclaration, E> bc) {
+		return consumermap.put(VisitorEnum.RecordDeclaration, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addReturnStatement(BiConsumer<ReturnStatement, E> bc) {
+		return consumermap.put(VisitorEnum.ReturnStatement, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addSimpleName(BiConsumer<SimpleName, E> bc) {
+		return consumermap.put(VisitorEnum.SimpleName, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addSimpleType(BiConsumer<SimpleType, E> bc) {
+		return consumermap.put(VisitorEnum.SimpleType, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addSingleMemberAnnotation(BiConsumer<SingleMemberAnnotation, E> bc) {
+		return consumermap.put(VisitorEnum.SingleMemberAnnotation, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addSingleVariableDeclaration(BiConsumer<SingleVariableDeclaration, E> bc) {
+		return consumermap.put(VisitorEnum.SingleVariableDeclaration, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addStringLiteral(BiConsumer<StringLiteral, E> bc) {
+		return consumermap.put(VisitorEnum.StringLiteral, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addSuperConstructorInvocation(
+			BiConsumer<SuperConstructorInvocation, E> bc) {
+		return consumermap.put(VisitorEnum.SuperConstructorInvocation, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addSuperFieldAccess(BiConsumer<SuperFieldAccess, E> bc) {
+		return consumermap.put(VisitorEnum.SuperFieldAccess, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addSuperMethodInvocation(BiConsumer<SuperMethodInvocation, E> bc) {
+		return consumermap.put(VisitorEnum.SuperMethodInvocation, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addSuperMethodReference(BiConsumer<SuperMethodReference, E> bc) {
+		return consumermap.put(VisitorEnum.SuperMethodReference, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addSwitchCase(BiConsumer<SwitchCase, E> bc) {
+		return consumermap.put(VisitorEnum.SwitchCase, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addSwitchExpression(BiConsumer<SwitchExpression, E> bc) {
+		return consumermap.put(VisitorEnum.SwitchExpression, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addSwitchStatement(BiConsumer<SwitchStatement, E> bc) {
+		return consumermap.put(VisitorEnum.SwitchStatement, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addSynchronizedStatement(BiConsumer<SynchronizedStatement, E> bc) {
+		return consumermap.put(VisitorEnum.SynchronizedStatement, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addTagElement(BiConsumer<TagElement, E> bc) {
+		return consumermap.put(VisitorEnum.TagElement, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addTextBlock(BiConsumer<TextBlock, E> bc) {
+		return consumermap.put(VisitorEnum.TextBlock, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addTextElement(BiConsumer<TextElement, E> bc) {
+		return consumermap.put(VisitorEnum.TextElement, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addThisExpression(BiConsumer<ThisExpression, E> bc) {
+		return consumermap.put(VisitorEnum.ThisExpression, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addThrowStatement(BiConsumer<ThrowStatement, E> bc) {
+		return consumermap.put(VisitorEnum.ThrowStatement, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addTryStatement(BiConsumer<TryStatement, E> bc) {
+		return consumermap.put(VisitorEnum.TryStatement, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addTypeDeclaration(BiConsumer<TypeDeclaration, E> bc) {
+		return consumermap.put(VisitorEnum.TypeDeclaration, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addTypeDeclarationStatement(BiConsumer<TypeDeclarationStatement, E> bc) {
+		return consumermap.put(VisitorEnum.TypeDeclarationStatement, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addTypeLiteral(BiConsumer<TypeLiteral, E> bc) {
+		return consumermap.put(VisitorEnum.TypeLiteral, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addTypeMethodReference(BiConsumer<TypeMethodReference, E> bc) {
+		return consumermap.put(VisitorEnum.TypeMethodReference, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addTypeParameter(BiConsumer<TypeParameter, E> bc) {
+		return consumermap.put(VisitorEnum.TypeParameter, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addUnionType(BiConsumer<UnionType, E> bc) {
+		return consumermap.put(VisitorEnum.UnionType, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addUsesDirective(BiConsumer<UsesDirective, E> bc) {
+		return consumermap.put(VisitorEnum.UsesDirective, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addVariableDeclarationExpression(
+			BiConsumer<VariableDeclarationExpression, E> bc) {
+		return consumermap.put(VisitorEnum.VariableDeclarationExpression, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addVariableDeclarationStatement(
+			BiConsumer<VariableDeclarationStatement, E> bc) {
+		return consumermap.put(VisitorEnum.VariableDeclarationStatement, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addVariableDeclarationFragment(
+			BiConsumer<VariableDeclarationFragment, E> bc) {
+		return consumermap.put(VisitorEnum.VariableDeclarationFragment, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addWhileStatement(BiConsumer<WhileStatement, E> bc) {
+		return consumermap.put(VisitorEnum.WhileStatement, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addWildcardType(BiConsumer<WildcardType, E> bc) {
+		return consumermap.put(VisitorEnum.WildcardType, bc);
+	}
+
+	public BiConsumer<? extends ASTNode, E> addYieldStatement(BiConsumer<YieldStatement, E> bc) {
+		return consumermap.put(VisitorEnum.YieldStatement, bc);
+	}
+	
+	public BiConsumer<? extends ASTNode, E> add(VisitorEnum key, BiConsumer<ASTNode, E> bc) {
+		return consumermap.put(key, bc);
+	}
+
 	public HelperVisitor<E> build(CompilationUnit compilationUnit) {
-		astvisitor = new ASTVisitor() {
-
-			@Override
-			public boolean visit(AnnotationTypeDeclaration node) {
-				if (suppliermap.containsKey(Visitor.AnnotationTypeDeclaration)) {
-					return ((BiFunction<AnnotationTypeDeclaration, E, Boolean>) (suppliermap
-							.get(Visitor.AnnotationTypeDeclaration))).apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(AnnotationTypeMemberDeclaration node) {
-				if (suppliermap.containsKey(Visitor.AnnotationTypeMemberDeclaration)) {
-					return ((BiFunction<AnnotationTypeMemberDeclaration, E, Boolean>) (suppliermap
-							.get(Visitor.AnnotationTypeMemberDeclaration))).apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(AnonymousClassDeclaration node) {
-				if (suppliermap.containsKey(Visitor.AnonymousClassDeclaration)) {
-					return ((BiFunction<AnonymousClassDeclaration, E, Boolean>) (suppliermap
-							.get(Visitor.AnonymousClassDeclaration))).apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(ArrayAccess node) {
-				if (suppliermap.containsKey(Visitor.ArrayAccess)) {
-					return ((BiFunction<ArrayAccess, E, Boolean>) (suppliermap.get(Visitor.ArrayAccess)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(ArrayCreation node) {
-				if (suppliermap.containsKey(Visitor.ArrayCreation)) {
-					return ((BiFunction<ArrayCreation, E, Boolean>) (suppliermap.get(Visitor.ArrayCreation)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(ArrayInitializer node) {
-				if (suppliermap.containsKey(Visitor.ArrayInitializer)) {
-					return ((BiFunction<ArrayInitializer, E, Boolean>) (suppliermap.get(Visitor.ArrayInitializer)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(ArrayType node) {
-				if (suppliermap.containsKey(Visitor.ArrayType)) {
-					return ((BiFunction<ArrayType, E, Boolean>) (suppliermap.get(Visitor.ArrayType)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(AssertStatement node) {
-				if (suppliermap.containsKey(Visitor.AssertStatement)) {
-					return ((BiFunction<AssertStatement, E, Boolean>) (suppliermap.get(Visitor.AssertStatement)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(Assignment node) {
-				if (suppliermap.containsKey(Visitor.Assignment)) {
-					return ((BiFunction<Assignment, E, Boolean>) (suppliermap.get(Visitor.Assignment)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(Block node) {
-				if (suppliermap.containsKey(Visitor.Block)) {
-					return ((BiFunction<Block, E, Boolean>) (suppliermap.get(Visitor.Block))).apply(node, dataholder)
-							.booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(BlockComment node) {
-				if (suppliermap.containsKey(Visitor.BlockComment)) {
-					return ((BiFunction<BlockComment, E, Boolean>) (suppliermap.get(Visitor.BlockComment)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(BooleanLiteral node) {
-				if (suppliermap.containsKey(Visitor.BooleanLiteral)) {
-					return ((BiFunction<BooleanLiteral, E, Boolean>) (suppliermap.get(Visitor.BooleanLiteral)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(BreakStatement node) {
-				if (suppliermap.containsKey(Visitor.BreakStatement)) {
-					return ((BiFunction<BreakStatement, E, Boolean>) (suppliermap.get(Visitor.BreakStatement)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(CastExpression node) {
-				if (suppliermap.containsKey(Visitor.CastExpression)) {
-					return ((BiFunction<CastExpression, E, Boolean>) (suppliermap.get(Visitor.CastExpression)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(CatchClause node) {
-				if (suppliermap.containsKey(Visitor.CatchClause)) {
-					return ((BiFunction<CatchClause, E, Boolean>) (suppliermap.get(Visitor.CatchClause)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(CharacterLiteral node) {
-				if (suppliermap.containsKey(Visitor.CharacterLiteral)) {
-					return ((BiFunction<CharacterLiteral, E, Boolean>) (suppliermap.get(Visitor.CharacterLiteral)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(ClassInstanceCreation node) {
-				if (suppliermap.containsKey(Visitor.ClassInstanceCreation)) {
-					return ((BiFunction<ClassInstanceCreation, E, Boolean>) (suppliermap
-							.get(Visitor.ClassInstanceCreation))).apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(CompilationUnit node) {
-				if (suppliermap.containsKey(Visitor.CompilationUnit)) {
-					return ((BiFunction<CompilationUnit, E, Boolean>) (suppliermap.get(Visitor.CompilationUnit)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(ConditionalExpression node) {
-				if (suppliermap.containsKey(Visitor.ConditionalExpression)) {
-					return ((BiFunction<ConditionalExpression, E, Boolean>) (suppliermap
-							.get(Visitor.ConditionalExpression))).apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(ConstructorInvocation node) {
-				if (suppliermap.containsKey(Visitor.ConstructorInvocation)) {
-					return ((BiFunction<ConstructorInvocation, E, Boolean>) (suppliermap
-							.get(Visitor.ConstructorInvocation))).apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(ContinueStatement node) {
-				if (suppliermap.containsKey(Visitor.ContinueStatement)) {
-					return ((BiFunction<ContinueStatement, E, Boolean>) (suppliermap.get(Visitor.ContinueStatement)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(CreationReference node) {
-				if (suppliermap.containsKey(Visitor.CreationReference)) {
-					return ((BiFunction<CreationReference, E, Boolean>) (suppliermap.get(Visitor.CreationReference)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(Dimension node) {
-				if (suppliermap.containsKey(Visitor.Dimension)) {
-					return ((BiFunction<Dimension, E, Boolean>) (suppliermap.get(Visitor.Dimension)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(DoStatement node) {
-				if (suppliermap.containsKey(Visitor.DoStatement)) {
-					return ((BiFunction<DoStatement, E, Boolean>) (suppliermap.get(Visitor.DoStatement)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(EmptyStatement node) {
-				if (suppliermap.containsKey(Visitor.EmptyStatement)) {
-					return ((BiFunction<EmptyStatement, E, Boolean>) (suppliermap.get(Visitor.EmptyStatement)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(EnhancedForStatement node) {
-				if (suppliermap.containsKey(Visitor.EnhancedForStatement)) {
-					return ((BiFunction<EnhancedForStatement, E, Boolean>) (suppliermap
-							.get(Visitor.EnhancedForStatement))).apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(EnumConstantDeclaration node) {
-				if (suppliermap.containsKey(Visitor.EnumConstantDeclaration)) {
-					return ((BiFunction<EnumConstantDeclaration, E, Boolean>) (suppliermap
-							.get(Visitor.EnumConstantDeclaration))).apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(EnumDeclaration node) {
-				if (suppliermap.containsKey(Visitor.EnumDeclaration)) {
-					return ((BiFunction<EnumDeclaration, E, Boolean>) (suppliermap.get(Visitor.EnumDeclaration)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(ExportsDirective node) {
-				if (suppliermap.containsKey(Visitor.ExportsDirective)) {
-					return ((BiFunction<ExportsDirective, E, Boolean>) (suppliermap.get(Visitor.ExportsDirective)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(ExpressionMethodReference node) {
-				if (suppliermap.containsKey(Visitor.BreakStatement)) {
-					return ((BiFunction<ExpressionMethodReference, E, Boolean>) (suppliermap
-							.get(Visitor.ExpressionMethodReference))).apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(ExpressionStatement node) {
-				if (suppliermap.containsKey(Visitor.ExpressionStatement)) {
-					return ((BiFunction<ExpressionStatement, E, Boolean>) (suppliermap
-							.get(Visitor.ExpressionStatement))).apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(FieldAccess node) {
-				if (suppliermap.containsKey(Visitor.FieldAccess)) {
-					return ((BiFunction<FieldAccess, E, Boolean>) (suppliermap.get(Visitor.FieldAccess)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(FieldDeclaration node) {
-				if (suppliermap.containsKey(Visitor.FieldDeclaration)) {
-					return ((BiFunction<FieldDeclaration, E, Boolean>) (suppliermap.get(Visitor.FieldDeclaration)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(ForStatement node) {
-				if (suppliermap.containsKey(Visitor.ForStatement)) {
-					return ((BiFunction<ForStatement, E, Boolean>) (suppliermap.get(Visitor.ForStatement)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(IfStatement node) {
-				if (suppliermap.containsKey(Visitor.IfStatement)) {
-					return ((BiFunction<IfStatement, E, Boolean>) (suppliermap.get(Visitor.IfStatement)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(ImportDeclaration node) {
-				if (suppliermap.containsKey(Visitor.ImportDeclaration)) {
-					return ((BiFunction<ImportDeclaration, E, Boolean>) (suppliermap.get(Visitor.ImportDeclaration)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(InfixExpression node) {
-				if (suppliermap.containsKey(Visitor.InfixExpression)) {
-					return ((BiFunction<InfixExpression, E, Boolean>) (suppliermap.get(Visitor.InfixExpression)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(Initializer node) {
-				if (suppliermap.containsKey(Visitor.Initializer)) {
-					return ((BiFunction<Initializer, E, Boolean>) (suppliermap.get(Visitor.Initializer)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(InstanceofExpression node) {
-				if (suppliermap.containsKey(Visitor.InstanceofExpression)) {
-					return ((BiFunction<InstanceofExpression, E, Boolean>) (suppliermap
-							.get(Visitor.InstanceofExpression))).apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(IntersectionType node) {
-				if (suppliermap.containsKey(Visitor.IntersectionType)) {
-					return ((BiFunction<IntersectionType, E, Boolean>) (suppliermap.get(Visitor.IntersectionType)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(Javadoc node) {
-				if (suppliermap.containsKey(Visitor.Javadoc)) {
-					return ((BiFunction<Javadoc, E, Boolean>) (suppliermap.get(Visitor.Javadoc)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(LabeledStatement node) {
-				if (suppliermap.containsKey(Visitor.LabeledStatement)) {
-					return ((BiFunction<LabeledStatement, E, Boolean>) (suppliermap.get(Visitor.LabeledStatement)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(LambdaExpression node) {
-				if (suppliermap.containsKey(Visitor.LambdaExpression)) {
-					return ((BiFunction<LambdaExpression, E, Boolean>) (suppliermap.get(Visitor.LambdaExpression)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(LineComment node) {
-				if (suppliermap.containsKey(Visitor.LineComment)) {
-					return ((BiFunction<LineComment, E, Boolean>) (suppliermap.get(Visitor.LineComment)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(MarkerAnnotation node) {
-				if (suppliermap.containsKey(Visitor.MarkerAnnotation)) {
-					return ((BiFunction<MarkerAnnotation, E, Boolean>) (suppliermap.get(Visitor.MarkerAnnotation)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(MemberRef node) {
-				if (suppliermap.containsKey(Visitor.MemberRef)) {
-					return ((BiFunction<MemberRef, E, Boolean>) (suppliermap.get(Visitor.MemberRef)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(MemberValuePair node) {
-				if (suppliermap.containsKey(Visitor.MemberValuePair)) {
-					return ((BiFunction<MemberValuePair, E, Boolean>) (suppliermap.get(Visitor.MemberValuePair)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(MethodRef node) {
-				if (suppliermap.containsKey(Visitor.MethodRef)) {
-					return ((BiFunction<MethodRef, E, Boolean>) (suppliermap.get(Visitor.MethodRef)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(MethodRefParameter node) {
-				if (suppliermap.containsKey(Visitor.MethodRefParameter)) {
-					return ((BiFunction<MethodRefParameter, E, Boolean>) (suppliermap.get(Visitor.MethodRefParameter)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(MethodDeclaration node) {
-				if (suppliermap.containsKey(Visitor.MethodDeclaration)) {
-					return ((BiFunction<MethodDeclaration, E, Boolean>) (suppliermap.get(Visitor.MethodDeclaration)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(MethodInvocation node) {
-				if (suppliermap.containsKey(Visitor.MethodInvocation)) {
-					return ((BiFunction<MethodInvocation, E, Boolean>) (suppliermap.get(Visitor.MethodInvocation)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(Modifier node) {
-				if (suppliermap.containsKey(Visitor.Modifier)) {
-					return ((BiFunction<Modifier, E, Boolean>) (suppliermap.get(Visitor.Modifier)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(ModuleDeclaration node) {
-				if (suppliermap.containsKey(Visitor.ModuleDeclaration)) {
-					return ((BiFunction<ModuleDeclaration, E, Boolean>) (suppliermap.get(Visitor.ModuleDeclaration)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(ModuleModifier node) {
-				if (suppliermap.containsKey(Visitor.ModuleModifier)) {
-					return ((BiFunction<ModuleModifier, E, Boolean>) (suppliermap.get(Visitor.ModuleModifier)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(NameQualifiedType node) {
-				if (suppliermap.containsKey(Visitor.NameQualifiedType)) {
-					return ((BiFunction<NameQualifiedType, E, Boolean>) (suppliermap.get(Visitor.NameQualifiedType)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(NormalAnnotation node) {
-				if (suppliermap.containsKey(Visitor.NormalAnnotation)) {
-					return ((BiFunction<NormalAnnotation, E, Boolean>) (suppliermap.get(Visitor.NormalAnnotation)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(NullLiteral node) {
-				if (suppliermap.containsKey(Visitor.NullLiteral)) {
-					return ((BiFunction<NullLiteral, E, Boolean>) (suppliermap.get(Visitor.NullLiteral)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(NumberLiteral node) {
-				if (suppliermap.containsKey(Visitor.NumberLiteral)) {
-					return ((BiFunction<NumberLiteral, E, Boolean>) (suppliermap.get(Visitor.NumberLiteral)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(OpensDirective node) {
-				if (suppliermap.containsKey(Visitor.OpensDirective)) {
-					return ((BiFunction<OpensDirective, E, Boolean>) (suppliermap.get(Visitor.OpensDirective)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(PackageDeclaration node) {
-				if (suppliermap.containsKey(Visitor.PackageDeclaration)) {
-					return ((BiFunction<PackageDeclaration, E, Boolean>) (suppliermap.get(Visitor.PackageDeclaration)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(ParameterizedType node) {
-				if (suppliermap.containsKey(Visitor.ParameterizedType)) {
-					return ((BiFunction<ParameterizedType, E, Boolean>) (suppliermap.get(Visitor.ParameterizedType)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(ParenthesizedExpression node) {
-				if (suppliermap.containsKey(Visitor.ParenthesizedExpression)) {
-					return ((BiFunction<ParenthesizedExpression, E, Boolean>) (suppliermap
-							.get(Visitor.ParenthesizedExpression))).apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(PatternInstanceofExpression node) {
-				if (suppliermap.containsKey(Visitor.PatternInstanceofExpression)) {
-					return ((BiFunction<PatternInstanceofExpression, E, Boolean>) (suppliermap
-							.get(Visitor.PatternInstanceofExpression))).apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(PostfixExpression node) {
-				if (suppliermap.containsKey(Visitor.PostfixExpression)) {
-					return ((BiFunction<PostfixExpression, E, Boolean>) (suppliermap.get(Visitor.PostfixExpression)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(PrefixExpression node) {
-				if (suppliermap.containsKey(Visitor.PrefixExpression)) {
-					return ((BiFunction<PrefixExpression, E, Boolean>) (suppliermap.get(Visitor.PrefixExpression)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(ProvidesDirective node) {
-				if (suppliermap.containsKey(Visitor.ProvidesDirective)) {
-					return ((BiFunction<ProvidesDirective, E, Boolean>) (suppliermap.get(Visitor.ProvidesDirective)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(PrimitiveType node) {
-				if (suppliermap.containsKey(Visitor.PrimitiveType)) {
-					return ((BiFunction<PrimitiveType, E, Boolean>) (suppliermap.get(Visitor.PrimitiveType)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(QualifiedName node) {
-				if (suppliermap.containsKey(Visitor.QualifiedName)) {
-					return ((BiFunction<QualifiedName, E, Boolean>) (suppliermap.get(Visitor.QualifiedName)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(QualifiedType node) {
-				if (suppliermap.containsKey(Visitor.QualifiedType)) {
-					return ((BiFunction<QualifiedType, E, Boolean>) (suppliermap.get(Visitor.QualifiedType)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(ModuleQualifiedName node) {
-				if (suppliermap.containsKey(Visitor.ModuleQualifiedName)) {
-					return ((BiFunction<ModuleQualifiedName, E, Boolean>) (suppliermap
-							.get(Visitor.ModuleQualifiedName))).apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(RequiresDirective node) {
-				if (suppliermap.containsKey(Visitor.RequiresDirective)) {
-					return ((BiFunction<RequiresDirective, E, Boolean>) (suppliermap.get(Visitor.RequiresDirective)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(RecordDeclaration node) {
-				if (suppliermap.containsKey(Visitor.RecordDeclaration)) {
-					return ((BiFunction<RecordDeclaration, E, Boolean>) (suppliermap.get(Visitor.RecordDeclaration)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(ReturnStatement node) {
-				if (suppliermap.containsKey(Visitor.ReturnStatement)) {
-					return ((BiFunction<ReturnStatement, E, Boolean>) (suppliermap.get(Visitor.ReturnStatement)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(SimpleName node) {
-				if (suppliermap.containsKey(Visitor.SimpleName)) {
-					return ((BiFunction<SimpleName, E, Boolean>) (suppliermap.get(Visitor.SimpleName)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(SimpleType node) {
-				if (suppliermap.containsKey(Visitor.SimpleType)) {
-					return ((BiFunction<SimpleType, E, Boolean>) (suppliermap.get(Visitor.SimpleType)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(SingleMemberAnnotation node) {
-				if (suppliermap.containsKey(Visitor.SingleMemberAnnotation)) {
-					return ((BiFunction<SingleMemberAnnotation, E, Boolean>) (suppliermap
-							.get(Visitor.SingleMemberAnnotation))).apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(SingleVariableDeclaration node) {
-				if (suppliermap.containsKey(Visitor.SingleVariableDeclaration)) {
-					return ((BiFunction<SingleVariableDeclaration, E, Boolean>) (suppliermap
-							.get(Visitor.SingleVariableDeclaration))).apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(StringLiteral node) {
-				if (suppliermap.containsKey(Visitor.StringLiteral)) {
-					return ((BiFunction<StringLiteral, E, Boolean>) (suppliermap.get(Visitor.StringLiteral)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(SuperConstructorInvocation node) {
-				if (suppliermap.containsKey(Visitor.SuperConstructorInvocation)) {
-					return ((BiFunction<SuperConstructorInvocation, E, Boolean>) (suppliermap
-							.get(Visitor.SuperConstructorInvocation))).apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(SuperFieldAccess node) {
-				if (suppliermap.containsKey(Visitor.SuperFieldAccess)) {
-					return ((BiFunction<SuperFieldAccess, E, Boolean>) (suppliermap.get(Visitor.SuperFieldAccess)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(SuperMethodInvocation node) {
-				if (suppliermap.containsKey(Visitor.SuperMethodInvocation)) {
-					return ((BiFunction<SuperMethodInvocation, E, Boolean>) (suppliermap
-							.get(Visitor.SuperMethodInvocation))).apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(SuperMethodReference node) {
-				if (suppliermap.containsKey(Visitor.SuperMethodReference)) {
-					return ((BiFunction<SuperMethodReference, E, Boolean>) (suppliermap
-							.get(Visitor.SuperMethodReference))).apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(SwitchCase node) {
-				if (suppliermap.containsKey(Visitor.SwitchCase)) {
-					return ((BiFunction<SwitchCase, E, Boolean>) (suppliermap.get(Visitor.SwitchCase)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(SwitchExpression node) {
-				if (suppliermap.containsKey(Visitor.SwitchExpression)) {
-					return ((BiFunction<SwitchExpression, E, Boolean>) (suppliermap.get(Visitor.SwitchExpression)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(SwitchStatement node) {
-				if (suppliermap.containsKey(Visitor.SwitchStatement)) {
-					return ((BiFunction<SwitchStatement, E, Boolean>) (suppliermap.get(Visitor.SwitchStatement)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(SynchronizedStatement node) {
-				if (suppliermap.containsKey(Visitor.SynchronizedStatement)) {
-					return ((BiFunction<SynchronizedStatement, E, Boolean>) (suppliermap
-							.get(Visitor.SynchronizedStatement))).apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(TagElement node) {
-				if (suppliermap.containsKey(Visitor.TagElement)) {
-					return ((BiFunction<TagElement, E, Boolean>) (suppliermap.get(Visitor.TagElement)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(TextBlock node) {
-				if (suppliermap.containsKey(Visitor.TextBlock)) {
-					return ((BiFunction<TextBlock, E, Boolean>) (suppliermap.get(Visitor.TextBlock)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(TextElement node) {
-				if (suppliermap.containsKey(Visitor.TextElement)) {
-					return ((BiFunction<TextElement, E, Boolean>) (suppliermap.get(Visitor.TextElement)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(ThisExpression node) {
-				if (suppliermap.containsKey(Visitor.ThisExpression)) {
-					return ((BiFunction<ThisExpression, E, Boolean>) (suppliermap.get(Visitor.ThisExpression)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(ThrowStatement node) {
-				if (suppliermap.containsKey(Visitor.ThrowStatement)) {
-					return ((BiFunction<ThrowStatement, E, Boolean>) (suppliermap.get(Visitor.ThrowStatement)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(TryStatement node) {
-				if (suppliermap.containsKey(Visitor.TryStatement)) {
-					return ((BiFunction<TryStatement, E, Boolean>) (suppliermap.get(Visitor.TryStatement)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(TypeDeclaration node) {
-				if (suppliermap.containsKey(Visitor.TypeDeclaration)) {
-					return ((BiFunction<TypeDeclaration, E, Boolean>) (suppliermap.get(Visitor.TypeDeclaration)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(TypeDeclarationStatement node) {
-				if (suppliermap.containsKey(Visitor.TypeDeclarationStatement)) {
-					return ((BiFunction<TypeDeclarationStatement, E, Boolean>) (suppliermap
-							.get(Visitor.TypeDeclarationStatement))).apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(TypeLiteral node) {
-				if (suppliermap.containsKey(Visitor.TypeLiteral)) {
-					return ((BiFunction<TypeLiteral, E, Boolean>) (suppliermap.get(Visitor.TypeLiteral)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(TypeMethodReference node) {
-				if (suppliermap.containsKey(Visitor.TypeMethodReference)) {
-					return ((BiFunction<TypeMethodReference, E, Boolean>) (suppliermap
-							.get(Visitor.TypeMethodReference))).apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(TypeParameter node) {
-				if (suppliermap.containsKey(Visitor.TypeParameter)) {
-					return ((BiFunction<TypeParameter, E, Boolean>) (suppliermap.get(Visitor.TypeParameter)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(UnionType node) {
-				if (suppliermap.containsKey(Visitor.UnionType)) {
-					return ((BiFunction<UnionType, E, Boolean>) (suppliermap.get(Visitor.UnionType)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(UsesDirective node) {
-				if (suppliermap.containsKey(Visitor.UsesDirective)) {
-					return ((BiFunction<UsesDirective, E, Boolean>) (suppliermap.get(Visitor.UsesDirective)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(VariableDeclarationExpression node) {
-				if (suppliermap.containsKey(Visitor.VariableDeclarationExpression)) {
-					return ((BiFunction<VariableDeclarationExpression, E, Boolean>) (suppliermap
-							.get(Visitor.VariableDeclarationExpression))).apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(VariableDeclarationStatement node) {
-				if (suppliermap.containsKey(Visitor.VariableDeclarationStatement)) {
-					return ((BiFunction<VariableDeclarationStatement, E, Boolean>) (suppliermap
-							.get(Visitor.VariableDeclarationStatement))).apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(VariableDeclarationFragment node) {
-				if (suppliermap.containsKey(Visitor.VariableDeclarationFragment)) {
-					return ((BiFunction<VariableDeclarationFragment, E, Boolean>) (suppliermap
-							.get(Visitor.VariableDeclarationFragment))).apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(WhileStatement node) {
-				if (suppliermap.containsKey(Visitor.WhileStatement)) {
-					return ((BiFunction<WhileStatement, E, Boolean>) (suppliermap.get(Visitor.WhileStatement)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(WildcardType node) {
-				if (suppliermap.containsKey(Visitor.WildcardType)) {
-					return ((BiFunction<WildcardType, E, Boolean>) (suppliermap.get(Visitor.WildcardType)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(YieldStatement node) {
-				if (suppliermap.containsKey(Visitor.YieldStatement)) {
-					return ((BiFunction<YieldStatement, E, Boolean>) (suppliermap.get(Visitor.YieldStatement)))
-							.apply(node, dataholder).booleanValue();
-				}
-				return true;
-			}
-
-		};
+		astvisitor = new LambdaASTVisitor<>(this);
 		compilationUnit.accept(astvisitor);
 		return this;
+	}
+	
+	public void removeVisitor(VisitorEnum ve) {
+		this.suppliermap.remove(ve);
+		this.consumermap.remove(ve);
 	}
 }

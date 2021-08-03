@@ -11,19 +11,16 @@
  * Contributors:
  *     Carsten Hammer
  *******************************************************************************/
-package org.sandbox.jdt.internal.corext.fix.helper;
+package org.sandbox.jdt.internal.common;
 
-import org.eclipse.jdt.core.dom.SimpleName;
-import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
-import org.eclipse.jdt.core.dom.WhileStatement;
-
-public class Hit {
-
-	public boolean self;
-	public VariableDeclarationStatement iteratordeclaration;
-	public SimpleName collectionsimplename;
-	public String loopvarname;
-	public VariableDeclarationStatement loopvardeclaration;
-	public WhileStatement whilestatement;
-
+/**
+ * 
+ * @author chammer
+ *
+ */
+public interface HelperVisitorProvider<F> {
+	HelperVisitor<ReferenceHolder<F>> getHelperVisitor();
+	void setHelperVisitor(HelperVisitor<ReferenceHolder<F>> hv);
+	Object getNodeData(VisitorEnum node);
+	void setNodeData(VisitorEnum node, Object date);
 }

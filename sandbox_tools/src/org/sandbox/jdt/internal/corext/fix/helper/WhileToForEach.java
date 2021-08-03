@@ -25,7 +25,6 @@ import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
-import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.ParameterizedType;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SimpleType;
@@ -52,21 +51,26 @@ import org.sandbox.jdt.internal.corext.fix.UseIteratorToForLoopFixCore;
 public class WhileToForEach extends AbstractTool<Hit> {
 	private static final String ITERATOR_NAME = Iterator.class.getCanonicalName();
 
-	HelperVisitor<ReferenceHolder> hv;
-
 	@Override
 	public void find(UseIteratorToForLoopFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed) {
-		hv = new HelperVisitor<>(new ReferenceHolder());
+		HelperVisitor<MyReferenceHolder> hv = new HelperVisitor<>(nodesprocessed, new MyReferenceHolder());
 		hv.addVariableDeclarationStatement((assignment, holder) -> {
-			return processVariableDeclarationStatement(fixcore, operations, nodesprocessed, assignment, holder);
+			return processVariableDeclarationStatement(fixcore, operations, assignment, holder);
 		});
 		hv.addWhileStatement(this::processWhileStatement);
+		hv.addWhileStatement((assignment, holder) -> {
+			System.out.println(assignment);
+		});
+		hv.addMethodInvocation((assignment, holder) -> {
+			return true;
+		});
 		hv.build(compilationUnit);
 	}
 
-	private Boolean processVariableDeclarationStatement(UseIteratorToForLoopFixCore fixcore, Set<CompilationUnitRewriteOperation> operations,
-			Set<ASTNode> nodesprocessed, VariableDeclarationStatement assignment, ReferenceHolder holder) {
+	private Boolean processVariableDeclarationStatement(UseIteratorToForLoopFixCore fixcore,
+			Set<CompilationUnitRewriteOperation> operations, VariableDeclarationStatement assignment,
+			MyReferenceHolder holder) {
 		VariableDeclarationFragment bli = (VariableDeclarationFragment) assignment.fragments().get(0);
 		Expression exp = bli.getInitializer();
 		String qualifiedName = bli.resolveBinding().getType().getErasure().getQualifiedName();
@@ -79,7 +83,6 @@ public class WhileToForEach extends AbstractTool<Hit> {
 					Hit hit = holder.possibleHit(name);
 					hit.self = true;
 					hit.iteratordeclaration = assignment;
-//					hit.iteratorvariablename = name;
 					return true;
 				}
 				if (element instanceof SimpleName) {
@@ -89,7 +92,6 @@ public class WhileToForEach extends AbstractTool<Hit> {
 						Hit hit = holder.possibleHit(name);
 						hit.collectionsimplename = sn;
 						hit.iteratordeclaration = assignment;
-//						hit.iteratorvariablename = name;
 					}
 				}
 			}
@@ -100,27 +102,34 @@ public class WhileToForEach extends AbstractTool<Hit> {
 				MethodInvocation mi = (MethodInvocation) element;
 				if (mi.getName().toString().equals("next")) {
 					Expression element2 = mi.getExpression();
-					SimpleName sn = (SimpleName) element2;
-//						sn.resolveBinding().getName();
-					System.out.println(sn.getFullyQualifiedName());
-					if (holder.containsKey(sn.getIdentifier())) {
-						Hit hit = holder.get(sn.getIdentifier());
-						String identifier = bli.getName().getIdentifier();
-						hit.loopvarname = identifier;
-						hit.loopvardeclaration = assignment;
-						operations.add(fixcore.rewrite(hit));
-						nodesprocessed.add(hit.whilestatement);
-						System.out.println("" + hit.iteratordeclaration);
-						holder.remove(identifier);
+					if (element2 instanceof SimpleName) {
+						SimpleName sn = (SimpleName) element2;
+						// sn.resolveBinding().getName();
+						System.out.println(sn.getFullyQualifiedName());
+						if (holder.containsKey(sn.getIdentifier())) {
+							Hit hit = holder.get(sn.getIdentifier());
+							String identifier = sn.getIdentifier();
+//							if(holder.containsKey(identifier)) {
+							if (holder.getHelperVisitor().nodesprocessed.contains(hit.whilestatement)) {
+								holder.remove(identifier);
+								return true;
+							}
+							hit.loopvarname = bli.getName().getIdentifier();
+							hit.loopvardeclaration = assignment;
+							operations.add(fixcore.rewrite(hit));
+							holder.getHelperVisitor().nodesprocessed.add(hit.whilestatement);
+							System.out.println("" + hit.iteratordeclaration);
+							holder.remove(identifier);
+//							}
+						}
 					}
 				}
 			}
-
 		}
 		return true;
 	}
 
-	private Boolean processWhileStatement(WhileStatement whilestatement, ReferenceHolder holder) {
+	private Boolean processWhileStatement(WhileStatement whilestatement, MyReferenceHolder holder) {
 		Expression exp = whilestatement.getExpression();
 		if (exp instanceof MethodInvocation) {
 			MethodInvocation mi = (MethodInvocation) exp;
@@ -138,8 +147,8 @@ public class WhileToForEach extends AbstractTool<Hit> {
 			if (holder.containsKey(name) && ITERATOR_NAME.equals(mytype)) {
 				Hit hit = holder.get(name);
 				hit.whilestatement = whilestatement;
-				//						operations.add(fixcore.rewrite(holder));
-				//						nodesprocessed.add(visited);
+				// operations.add(fixcore.rewrite(holder));
+				// nodesprocessed.add(visited);
 				return true;
 			}
 		}
@@ -201,18 +210,5 @@ public class WhileToForEach extends AbstractTool<Hit> {
 			return "\nfor (String s : strings) {\n\n	System.out.println(s);\n}\n\n";
 		}
 		return "Iterator it = lists.iterator();\nwhile (it.hasNext()) {\n    String s = (String) it.next();\n	System.out.println(s);\n}\n\n";
-	}
-
-	/**
-	 * Adds an import to the class. This method should be used for every class
-	 * reference added to the generated code.
-	 *
-	 * @param typeName a fully qualified name of a type
-	 * @return simple name of a class if the import was added and fully qualified
-	 *         name if there was a conflict
-	 */
-	protected Name addImport(String typeName, final CompilationUnitRewrite cuRewrite, AST ast) {
-		String importedName = cuRewrite.getImportRewrite().addImport(typeName);
-		return ast.newName(importedName);
 	}
 }

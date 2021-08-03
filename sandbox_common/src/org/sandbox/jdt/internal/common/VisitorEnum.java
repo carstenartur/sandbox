@@ -1,0 +1,128 @@
+/*******************************************************************************
+ * Copyright (c) 2021 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.common;
+
+import java.util.stream.Stream;
+
+public enum VisitorEnum {
+	AnnotationTypeDeclaration,
+	AnnotationTypeMemberDeclaration,
+	AnonymousClassDeclaration,
+	ArrayAccess,
+	ArrayCreation,
+	ArrayInitializer,
+	ArrayType,
+	AssertStatement,
+	Assignment,
+	Block,
+	BlockComment,
+	BooleanLiteral,
+	BreakStatement,
+	CastExpression,
+	CatchClause,
+	CharacterLiteral,
+	ClassInstanceCreation,
+	CompilationUnit,
+	ConditionalExpression,
+	ConstructorInvocation,
+	ContinueStatement,
+	CreationReference,
+	Dimension,
+	DoStatement,
+	EmptyStatement,
+	EnhancedForStatement,
+	EnumConstantDeclaration,
+	EnumDeclaration,
+	ExportsDirective,
+	ExpressionMethodReference,
+	ExpressionStatement,
+	FieldAccess,
+	FieldDeclaration,
+	ForStatement,
+	IfStatement,
+	ImportDeclaration,
+	InfixExpression,
+	Initializer,
+	InstanceofExpression,
+	IntersectionType,
+	Javadoc,
+	LabeledStatement,
+	LambdaExpression,
+	LineComment,
+	MarkerAnnotation,
+	MemberRef,
+	MemberValuePair,
+	MethodRef,
+	MethodRefParameter,
+	MethodDeclaration,
+	MethodInvocation,
+	Modifier,
+	ModuleDeclaration,
+	ModuleModifier,
+	NameQualifiedType,
+	NormalAnnotation,
+	NullLiteral,
+	NumberLiteral,
+	OpensDirective,
+	PackageDeclaration,
+	ParameterizedType,
+	ParenthesizedExpression,
+	PatternInstanceofExpression,
+	PostfixExpression,
+	PrefixExpression,
+	ProvidesDirective,
+	PrimitiveType,
+	QualifiedName,
+	QualifiedType,
+	ModuleQualifiedName,
+	RequiresDirective,
+	RecordDeclaration,
+	ReturnStatement,
+	SimpleName,
+	SimpleType,
+	SingleMemberAnnotation,
+	SingleVariableDeclaration,
+	StringLiteral,
+	SuperConstructorInvocation,
+	SuperFieldAccess,
+	SuperMethodInvocation,
+	SuperMethodReference,
+	SwitchCase,
+	SwitchExpression,
+	SwitchStatement,
+	SynchronizedStatement,
+	TagElement,
+	TextBlock,
+	TextElement,
+	ThisExpression,
+	ThrowStatement,
+	TryStatement,
+	TypeDeclaration,
+	TypeDeclarationStatement,
+	TypeLiteral,
+	TypeMethodReference,
+	TypeParameter,
+	UnionType,
+	UsesDirective,
+	VariableDeclarationExpression,
+	VariableDeclarationStatement,
+	VariableDeclarationFragment,
+	WhileStatement,
+	WildcardType,
+	YieldStatement;
+	
+	public static Stream<VisitorEnum> stream() {
+        return Stream.of(VisitorEnum.values()); 
+    }
+}
