@@ -13,6 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.common;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -29,7 +30,7 @@ import org.eclipse.jdt.core.dom.*;
  * @param <E>
  */
 public class HelperVisitor<E extends HelperVisitorProvider> {
-	
+
 	private static final long serialVersionUID = 1L;
 
 	ASTVisitor astvisitor;
@@ -41,6 +42,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 	 * when build(CompilationUnit) is called.
 	 */
 	Map<VisitorEnum, BiFunction<? extends ASTNode, E, Boolean>> suppliermap;
+	/**
+	 * This map contains one VisitorConsumer per kind if supplied Each BiConsumer is
+	 * called with two parameters 1) ASTNode 2) your data object Call is processed
+	 * when build(CompilationUnit) is called.
+	 * Because the "visitend" does not return a boolean we need a consumer instead of a supplier here.
+	 */
+	Map<VisitorEnum, BiConsumer<? extends ASTNode, E>> consumermap;
+	Map<VisitorEnum, Object> supplierdata;
+	Map<VisitorEnum, Object> consumerdata;
+
 	public Map<VisitorEnum, BiFunction<? extends ASTNode, E, Boolean>> getSuppliermap() {
 		return suppliermap;
 	}
@@ -49,7 +60,7 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		return consumermap;
 	}
 
-	Map<VisitorEnum, BiConsumer<? extends ASTNode, E>> consumermap;
+	
 	public Set<ASTNode> nodesprocessed;
 
 	public Set<ASTNode> getNodesprocessed() {
@@ -59,6 +70,9 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 	public HelperVisitor(Set<ASTNode> nodesprocessed, E dataholder) {
 		this.suppliermap = new LinkedHashMap<>();
 		this.consumermap = new LinkedHashMap<>();
+		this.supplierdata = new HashMap<>();
+		this.consumerdata = new HashMap<>();
+		
 		this.dataholder = dataholder;
 		dataholder.setHelperVisitor(this);
 		this.nodesprocessed = nodesprocessed;
@@ -283,9 +297,10 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 	public BiFunction<? extends ASTNode, E, Boolean> addMethodInvocation(BiFunction<MethodInvocation, E, Boolean> bs) {
 		return suppliermap.put(VisitorEnum.MethodInvocation, bs);
 	}
-	
-	public BiFunction<? extends ASTNode, E, Boolean> addMethodInvocation(String methodname, BiFunction<MethodInvocation, E, Boolean> bs) {
-		this.dataholder.setNodeData(VisitorEnum.MethodInvocation,methodname);
+
+	public BiFunction<? extends ASTNode, E, Boolean> addMethodInvocation(String methodname,
+			BiFunction<MethodInvocation, E, Boolean> bs) {
+		this.supplierdata.put(VisitorEnum.MethodInvocation, methodname);
 		return suppliermap.put(VisitorEnum.MethodInvocation, bs);
 	}
 
@@ -369,10 +384,10 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		return suppliermap.put(VisitorEnum.QualifiedType, bs);
 	}
 
-	public BiFunction<? extends ASTNode, E, Boolean> addModuleQualifiedName(
-			BiFunction<ModuleQualifiedName, E, Boolean> bs) {
-		return suppliermap.put(VisitorEnum.ModuleQualifiedName, bs);
-	}
+//	public BiFunction<? extends ASTNode, E, Boolean> addModuleQualifiedName(
+//			BiFunction<ModuleQualifiedName, E, Boolean> bs) {
+//		return suppliermap.put(VisitorEnum.ModuleQualifiedName, bs);
+//	}
 
 	public BiFunction<? extends ASTNode, E, Boolean> addRequiresDirective(
 			BiFunction<RequiresDirective, E, Boolean> bs) {
@@ -735,9 +750,9 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 	public BiConsumer<? extends ASTNode, E> addMethodInvocation(BiConsumer<MethodInvocation, E> bc) {
 		return consumermap.put(VisitorEnum.MethodInvocation, bc);
 	}
-	
+
 	public BiConsumer<? extends ASTNode, E> addMethodInvocation(String methodname, BiConsumer<MethodInvocation, E> bc) {
-		this.dataholder.setNodeData(VisitorEnum.MethodInvocation,methodname);
+		this.consumerdata.put(VisitorEnum.MethodInvocation, methodname);
 		return consumermap.put(VisitorEnum.MethodInvocation, bc);
 	}
 
@@ -814,9 +829,9 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		return consumermap.put(VisitorEnum.QualifiedType, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addModuleQualifiedName(BiConsumer<ModuleQualifiedName, E> bc) {
-		return consumermap.put(VisitorEnum.ModuleQualifiedName, bc);
-	}
+//	public BiConsumer<? extends ASTNode, E> addModuleQualifiedName(BiConsumer<ModuleQualifiedName, E> bc) {
+//		return consumermap.put(VisitorEnum.ModuleQualifiedName, bc);
+//	}
 
 	public BiConsumer<? extends ASTNode, E> addRequiresDirective(BiConsumer<RequiresDirective, E> bc) {
 		return consumermap.put(VisitorEnum.RequiresDirective, bc);
@@ -961,9 +976,583 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 	public BiConsumer<? extends ASTNode, E> addYieldStatement(BiConsumer<YieldStatement, E> bc) {
 		return consumermap.put(VisitorEnum.YieldStatement, bc);
 	}
-	
+
 	public BiConsumer<? extends ASTNode, E> add(VisitorEnum key, BiConsumer<ASTNode, E> bc) {
 		return consumermap.put(key, bc);
+	}
+
+	public void addAnnotationTypeDeclaration(BiFunction<AnnotationTypeDeclaration, E, Boolean> bs,
+			BiConsumer<AnnotationTypeDeclaration, E> bc) {
+		suppliermap.put(VisitorEnum.AnnotationTypeDeclaration, bs);
+		consumermap.put(VisitorEnum.AnnotationTypeDeclaration, bc);
+	}
+
+	public void addAnnotationTypeMemberDeclaration(BiFunction<AnnotationTypeMemberDeclaration, E, Boolean> bs,
+			BiConsumer<AnnotationTypeMemberDeclaration, E> bc) {
+		suppliermap.put(VisitorEnum.AnnotationTypeMemberDeclaration, bs);
+		consumermap.put(VisitorEnum.AnnotationTypeMemberDeclaration, bc);
+	}
+
+	public void addAnonymousClassDeclaration(BiFunction<AnonymousClassDeclaration, E, Boolean> bs,
+			BiConsumer<AnonymousClassDeclaration, E> bc) {
+		suppliermap.put(VisitorEnum.AnonymousClassDeclaration, bs);
+		consumermap.put(VisitorEnum.AnonymousClassDeclaration, bc);
+	}
+
+	public void addArrayAccess(BiFunction<ArrayAccess, E, Boolean> bs, BiConsumer<ArrayAccess, E> bc) {
+		suppliermap.put(VisitorEnum.ArrayAccess, bs);
+		consumermap.put(VisitorEnum.ArrayAccess, bc);
+	}
+
+	public void addArrayCreation(BiFunction<ArrayCreation, E, Boolean> bs, BiConsumer<ArrayCreation, E> bc) {
+		suppliermap.put(VisitorEnum.ArrayCreation, bs);
+		consumermap.put(VisitorEnum.ArrayCreation, bc);
+	}
+
+	public void addArrayInitializer(BiFunction<ArrayInitializer, E, Boolean> bs, BiConsumer<ArrayInitializer, E> bc) {
+		suppliermap.put(VisitorEnum.ArrayInitializer, bs);
+		consumermap.put(VisitorEnum.ArrayInitializer, bc);
+	}
+
+	public void addArrayType(BiFunction<ArrayType, E, Boolean> bs, BiConsumer<ArrayType, E> bc) {
+		suppliermap.put(VisitorEnum.ArrayType, bs);
+		consumermap.put(VisitorEnum.ArrayType, bc);
+	}
+
+	public void addAssertStatement(BiFunction<AssertStatement, E, Boolean> bs, BiConsumer<AssertStatement, E> bc) {
+		suppliermap.put(VisitorEnum.AssertStatement, bs);
+		consumermap.put(VisitorEnum.AssertStatement, bc);
+	}
+
+	public void addAssignment(BiFunction<Assignment, E, Boolean> bs, BiConsumer<Assignment, E> bc) {
+		suppliermap.put(VisitorEnum.Assignment, bs);
+		consumermap.put(VisitorEnum.Assignment, bc);
+	}
+
+	public void addBlock(BiFunction<Block, E, Boolean> bs, BiConsumer<Block, E> bc) {
+		suppliermap.put(VisitorEnum.Block, bs);
+		consumermap.put(VisitorEnum.Block, bc);
+	}
+
+	public void addBlockComment(BiFunction<BlockComment, E, Boolean> bs, BiConsumer<BlockComment, E> bc) {
+		suppliermap.put(VisitorEnum.BlockComment, bs);
+		consumermap.put(VisitorEnum.BlockComment, bc);
+	}
+
+	public void addBooleanLiteral(BiFunction<BooleanLiteral, E, Boolean> bs, BiConsumer<BooleanLiteral, E> bc) {
+		suppliermap.put(VisitorEnum.BooleanLiteral, bs);
+		consumermap.put(VisitorEnum.BooleanLiteral, bc);
+	}
+
+	public void addBreakStatement(BiFunction<BreakStatement, E, Boolean> bs, BiConsumer<BreakStatement, E> bc) {
+		suppliermap.put(VisitorEnum.BreakStatement, bs);
+		consumermap.put(VisitorEnum.BreakStatement, bc);
+	}
+
+	public void addCastExpression(BiFunction<CastExpression, E, Boolean> bs, BiConsumer<CastExpression, E> bc) {
+		suppliermap.put(VisitorEnum.CastExpression, bs);
+		consumermap.put(VisitorEnum.CastExpression, bc);
+	}
+
+	public void addCatchClause(BiFunction<CatchClause, E, Boolean> bs, BiConsumer<CatchClause, E> bc) {
+		suppliermap.put(VisitorEnum.CatchClause, bs);
+		consumermap.put(VisitorEnum.CatchClause, bc);
+	}
+
+	public void addCharacterLiteral(BiFunction<CharacterLiteral, E, Boolean> bs, BiConsumer<CharacterLiteral, E> bc) {
+		suppliermap.put(VisitorEnum.CharacterLiteral, bs);
+		consumermap.put(VisitorEnum.CharacterLiteral, bc);
+	}
+
+	public void addClassInstanceCreation(BiFunction<ClassInstanceCreation, E, Boolean> bs,
+			BiConsumer<ClassInstanceCreation, E> bc) {
+		suppliermap.put(VisitorEnum.ClassInstanceCreation, bs);
+		consumermap.put(VisitorEnum.ClassInstanceCreation, bc);
+	}
+
+	public void addCompilationUnit(BiFunction<CompilationUnit, E, Boolean> bs, BiConsumer<CompilationUnit, E> bc) {
+		suppliermap.put(VisitorEnum.CompilationUnit, bs);
+		consumermap.put(VisitorEnum.CompilationUnit, bc);
+	}
+
+	public void addConditionalExpression(BiFunction<ConditionalExpression, E, Boolean> bs,
+			BiConsumer<ConditionalExpression, E> bc) {
+		suppliermap.put(VisitorEnum.ConditionalExpression, bs);
+		consumermap.put(VisitorEnum.ConditionalExpression, bc);
+	}
+
+	public void addConstructorInvocation(BiFunction<ConstructorInvocation, E, Boolean> bs,
+			BiConsumer<ConstructorInvocation, E> bc) {
+		suppliermap.put(VisitorEnum.ConstructorInvocation, bs);
+		consumermap.put(VisitorEnum.ConstructorInvocation, bc);
+	}
+
+	public void addContinueStatement(BiFunction<ContinueStatement, E, Boolean> bs,
+			BiConsumer<ContinueStatement, E> bc) {
+		suppliermap.put(VisitorEnum.ContinueStatement, bs);
+		consumermap.put(VisitorEnum.ContinueStatement, bc);
+	}
+
+	public void addCreationReference(BiFunction<CreationReference, E, Boolean> bs,
+			BiConsumer<CreationReference, E> bc) {
+		suppliermap.put(VisitorEnum.CreationReference, bs);
+		consumermap.put(VisitorEnum.CreationReference, bc);
+	}
+
+	public void addDimension(BiFunction<Dimension, E, Boolean> bs, BiConsumer<Dimension, E> bc) {
+		suppliermap.put(VisitorEnum.Dimension, bs);
+		consumermap.put(VisitorEnum.Dimension, bc);
+	}
+
+	public void addDoStatement(BiFunction<DoStatement, E, Boolean> bs, BiConsumer<DoStatement, E> bc) {
+		suppliermap.put(VisitorEnum.DoStatement, bs);
+		consumermap.put(VisitorEnum.DoStatement, bc);
+	}
+
+	public void addEmptyStatement(BiFunction<EmptyStatement, E, Boolean> bs, BiConsumer<EmptyStatement, E> bc) {
+		suppliermap.put(VisitorEnum.EmptyStatement, bs);
+		consumermap.put(VisitorEnum.EmptyStatement, bc);
+	}
+
+	public void addEnhancedForStatement(BiFunction<EnhancedForStatement, E, Boolean> bs,
+			BiConsumer<EnhancedForStatement, E> bc) {
+		suppliermap.put(VisitorEnum.EnhancedForStatement, bs);
+		consumermap.put(VisitorEnum.EnhancedForStatement, bc);
+	}
+
+	public void addEnumConstantDeclaration(BiFunction<EnumConstantDeclaration, E, Boolean> bs,
+			BiConsumer<EnumConstantDeclaration, E> bc) {
+		suppliermap.put(VisitorEnum.EnumConstantDeclaration, bs);
+		consumermap.put(VisitorEnum.EnumConstantDeclaration, bc);
+	}
+
+	public void addEnumDeclaration(BiFunction<EnumDeclaration, E, Boolean> bs, BiConsumer<EnumDeclaration, E> bc) {
+		suppliermap.put(VisitorEnum.EnumDeclaration, bs);
+		consumermap.put(VisitorEnum.EnumDeclaration, bc);
+	}
+
+	public void addExportsDirective(BiFunction<ExportsDirective, E, Boolean> bs, BiConsumer<ExportsDirective, E> bc) {
+		suppliermap.put(VisitorEnum.ExportsDirective, bs);
+		consumermap.put(VisitorEnum.ExportsDirective, bc);
+	}
+
+	public void addExpressionMethodReference(BiFunction<ExpressionMethodReference, E, Boolean> bs,
+			BiConsumer<ExpressionMethodReference, E> bc) {
+		suppliermap.put(VisitorEnum.ExpressionMethodReference, bs);
+		consumermap.put(VisitorEnum.ExpressionMethodReference, bc);
+	}
+
+	public void addExpressionStatement(BiFunction<ExpressionStatement, E, Boolean> bs,
+			BiConsumer<ExpressionStatement, E> bc) {
+		suppliermap.put(VisitorEnum.ExpressionStatement, bs);
+		consumermap.put(VisitorEnum.ExpressionStatement, bc);
+	}
+
+	public void addFieldAccess(BiFunction<FieldAccess, E, Boolean> bs, BiConsumer<FieldAccess, E> bc) {
+		suppliermap.put(VisitorEnum.FieldAccess, bs);
+		consumermap.put(VisitorEnum.FieldAccess, bc);
+	}
+
+	public void addFieldDeclaration(BiFunction<FieldDeclaration, E, Boolean> bs, BiConsumer<FieldDeclaration, E> bc) {
+		suppliermap.put(VisitorEnum.FieldDeclaration, bs);
+		consumermap.put(VisitorEnum.FieldDeclaration, bc);
+	}
+
+	public void addForStatement(BiFunction<ForStatement, E, Boolean> bs, BiConsumer<ForStatement, E> bc) {
+		suppliermap.put(VisitorEnum.ForStatement, bs);
+		consumermap.put(VisitorEnum.ForStatement, bc);
+	}
+
+	public void addIfStatement(BiFunction<IfStatement, E, Boolean> bs, BiConsumer<IfStatement, E> bc) {
+		suppliermap.put(VisitorEnum.IfStatement, bs);
+		consumermap.put(VisitorEnum.IfStatement, bc);
+	}
+
+	public void addImportDeclaration(BiFunction<ImportDeclaration, E, Boolean> bs,
+			BiConsumer<ImportDeclaration, E> bc) {
+		suppliermap.put(VisitorEnum.ImportDeclaration, bs);
+		consumermap.put(VisitorEnum.ImportDeclaration, bc);
+	}
+
+	public void addInfixExpression(BiFunction<InfixExpression, E, Boolean> bs, BiConsumer<InfixExpression, E> bc) {
+		suppliermap.put(VisitorEnum.InfixExpression, bs);
+		consumermap.put(VisitorEnum.InfixExpression, bc);
+	}
+
+	public void addInitializer(BiFunction<Initializer, E, Boolean> bs, BiConsumer<Initializer, E> bc) {
+		suppliermap.put(VisitorEnum.Initializer, bs);
+		consumermap.put(VisitorEnum.Initializer, bc);
+	}
+
+	public void addInstanceofExpression(BiFunction<InstanceofExpression, E, Boolean> bs,
+			BiConsumer<InstanceofExpression, E> bc) {
+		suppliermap.put(VisitorEnum.InstanceofExpression, bs);
+		consumermap.put(VisitorEnum.InstanceofExpression, bc);
+	}
+
+	public void addIntersectionType(BiFunction<IntersectionType, E, Boolean> bs, BiConsumer<IntersectionType, E> bc) {
+		suppliermap.put(VisitorEnum.IntersectionType, bs);
+		consumermap.put(VisitorEnum.IntersectionType, bc);
+	}
+
+	public void addJavadoc(BiFunction<Javadoc, E, Boolean> bs, BiConsumer<Javadoc, E> bc) {
+		suppliermap.put(VisitorEnum.Javadoc, bs);
+		consumermap.put(VisitorEnum.Javadoc, bc);
+	}
+
+	public void addLabeledStatement(BiFunction<LabeledStatement, E, Boolean> bs, BiConsumer<LabeledStatement, E> bc) {
+		suppliermap.put(VisitorEnum.LabeledStatement, bs);
+		consumermap.put(VisitorEnum.LabeledStatement, bc);
+	}
+
+	public void addLambdaExpression(BiFunction<LambdaExpression, E, Boolean> bs, BiConsumer<LambdaExpression, E> bc) {
+		suppliermap.put(VisitorEnum.LambdaExpression, bs);
+		consumermap.put(VisitorEnum.LambdaExpression, bc);
+	}
+
+	public void addLineComment(BiFunction<LineComment, E, Boolean> bs, BiConsumer<LineComment, E> bc) {
+		suppliermap.put(VisitorEnum.LineComment, bs);
+		consumermap.put(VisitorEnum.LineComment, bc);
+	}
+
+	public void addMarkerAnnotation(BiFunction<MarkerAnnotation, E, Boolean> bs, BiConsumer<MarkerAnnotation, E> bc) {
+		suppliermap.put(VisitorEnum.MarkerAnnotation, bs);
+		consumermap.put(VisitorEnum.MarkerAnnotation, bc);
+	}
+
+	public void addMemberRef(BiFunction<MemberRef, E, Boolean> bs, BiConsumer<MemberRef, E> bc) {
+		suppliermap.put(VisitorEnum.MemberRef, bs);
+		consumermap.put(VisitorEnum.MemberRef, bc);
+	}
+
+	public void addMemberValuePair(BiFunction<MemberValuePair, E, Boolean> bs, BiConsumer<MemberValuePair, E> bc) {
+		suppliermap.put(VisitorEnum.MemberValuePair, bs);
+		consumermap.put(VisitorEnum.MemberValuePair, bc);
+	}
+
+	public void addMethodRef(BiFunction<MethodRef, E, Boolean> bs, BiConsumer<MethodRef, E> bc) {
+		suppliermap.put(VisitorEnum.MethodRef, bs);
+		consumermap.put(VisitorEnum.MethodRef, bc);
+	}
+
+	public void addMethodRefParameter(BiFunction<MethodRefParameter, E, Boolean> bs,
+			BiConsumer<MethodRefParameter, E> bc) {
+		suppliermap.put(VisitorEnum.MethodRefParameter, bs);
+		consumermap.put(VisitorEnum.MethodRefParameter, bc);
+	}
+
+	public void addMethodDeclaration(BiFunction<MethodDeclaration, E, Boolean> bs,
+			BiConsumer<MethodDeclaration, E> bc) {
+		suppliermap.put(VisitorEnum.MethodDeclaration, bs);
+		consumermap.put(VisitorEnum.MethodDeclaration, bc);
+	}
+	
+	public void addMethodInvocation(String methodname, BiFunction<MethodInvocation, E, Boolean> bs, BiConsumer<MethodInvocation, E> bc) {
+		this.supplierdata.put(VisitorEnum.MethodInvocation, methodname);
+		suppliermap.put(VisitorEnum.MethodInvocation, bs);
+		consumermap.put(VisitorEnum.MethodInvocation, bc);
+	}
+	
+	public void addMethodInvocation(BiFunction<MethodInvocation, E, Boolean> bs, BiConsumer<MethodInvocation, E> bc) {
+		suppliermap.put(VisitorEnum.MethodInvocation, bs);
+		consumermap.put(VisitorEnum.MethodInvocation, bc);
+	}
+
+	public void addModifier(BiFunction<Modifier, E, Boolean> bs, BiConsumer<Modifier, E> bc) {
+		suppliermap.put(VisitorEnum.Modifier, bs);
+		consumermap.put(VisitorEnum.Modifier, bc);
+	}
+
+	public void addModuleDeclaration(BiFunction<ModuleDeclaration, E, Boolean> bs,
+			BiConsumer<ModuleDeclaration, E> bc) {
+		suppliermap.put(VisitorEnum.ModuleDeclaration, bs);
+		consumermap.put(VisitorEnum.ModuleDeclaration, bc);
+	}
+
+	public void addModuleModifier(BiFunction<ModuleModifier, E, Boolean> bs, BiConsumer<ModuleModifier, E> bc) {
+		suppliermap.put(VisitorEnum.ModuleModifier, bs);
+		consumermap.put(VisitorEnum.ModuleModifier, bc);
+	}
+
+	public void addNameQualifiedType(BiFunction<NameQualifiedType, E, Boolean> bs,
+			BiConsumer<NameQualifiedType, E> bc) {
+		suppliermap.put(VisitorEnum.NameQualifiedType, bs);
+		consumermap.put(VisitorEnum.NameQualifiedType, bc);
+	}
+
+	public void addNormalAnnotation(BiFunction<NormalAnnotation, E, Boolean> bs, BiConsumer<NormalAnnotation, E> bc) {
+		suppliermap.put(VisitorEnum.NormalAnnotation, bs);
+		consumermap.put(VisitorEnum.NormalAnnotation, bc);
+	}
+
+	public void addNullLiteral(BiFunction<NullLiteral, E, Boolean> bs, BiConsumer<NullLiteral, E> bc) {
+		suppliermap.put(VisitorEnum.NullLiteral, bs);
+		consumermap.put(VisitorEnum.NullLiteral, bc);
+	}
+
+	public void addNumberLiteral(BiFunction<NumberLiteral, E, Boolean> bs, BiConsumer<NumberLiteral, E> bc) {
+		suppliermap.put(VisitorEnum.NumberLiteral, bs);
+		consumermap.put(VisitorEnum.NumberLiteral, bc);
+	}
+
+	public void addOpensDirective(BiFunction<OpensDirective, E, Boolean> bs, BiConsumer<OpensDirective, E> bc) {
+		suppliermap.put(VisitorEnum.OpensDirective, bs);
+		consumermap.put(VisitorEnum.OpensDirective, bc);
+	}
+
+	public void addPackageDeclaration(BiFunction<PackageDeclaration, E, Boolean> bs,
+			BiConsumer<PackageDeclaration, E> bc) {
+		suppliermap.put(VisitorEnum.PackageDeclaration, bs);
+		consumermap.put(VisitorEnum.PackageDeclaration, bc);
+	}
+
+	public void addParameterizedType(BiFunction<ParameterizedType, E, Boolean> bs,
+			BiConsumer<ParameterizedType, E> bc) {
+		suppliermap.put(VisitorEnum.ParameterizedType, bs);
+		consumermap.put(VisitorEnum.ParameterizedType, bc);
+	}
+
+	public void addParenthesizedExpression(BiFunction<ParenthesizedExpression, E, Boolean> bs,
+			BiConsumer<ParenthesizedExpression, E> bc) {
+		suppliermap.put(VisitorEnum.ParenthesizedExpression, bs);
+		consumermap.put(VisitorEnum.ParenthesizedExpression, bc);
+	}
+
+	public void addPatternInstanceofExpression(BiFunction<PatternInstanceofExpression, E, Boolean> bs,
+			BiConsumer<PatternInstanceofExpression, E> bc) {
+		suppliermap.put(VisitorEnum.PatternInstanceofExpression, bs);
+		consumermap.put(VisitorEnum.PatternInstanceofExpression, bc);
+	}
+
+	public void addPostfixExpression(BiFunction<PostfixExpression, E, Boolean> bs,
+			BiConsumer<PostfixExpression, E> bc) {
+		suppliermap.put(VisitorEnum.PostfixExpression, bs);
+		consumermap.put(VisitorEnum.PostfixExpression, bc);
+	}
+
+	public void addPrefixExpression(BiFunction<PrefixExpression, E, Boolean> bs, BiConsumer<PrefixExpression, E> bc) {
+		suppliermap.put(VisitorEnum.PrefixExpression, bs);
+		consumermap.put(VisitorEnum.PrefixExpression, bc);
+	}
+
+	public void addProvidesDirective(BiFunction<ProvidesDirective, E, Boolean> bs,
+			BiConsumer<ProvidesDirective, E> bc) {
+		suppliermap.put(VisitorEnum.ProvidesDirective, bs);
+		consumermap.put(VisitorEnum.ProvidesDirective, bc);
+	}
+
+	public void addPrimitiveType(BiFunction<PrimitiveType, E, Boolean> bs, BiConsumer<PrimitiveType, E> bc) {
+		suppliermap.put(VisitorEnum.PrimitiveType, bs);
+		consumermap.put(VisitorEnum.PrimitiveType, bc);
+	}
+
+	public void addQualifiedName(BiFunction<QualifiedName, E, Boolean> bs, BiConsumer<QualifiedName, E> bc) {
+		suppliermap.put(VisitorEnum.QualifiedName, bs);
+		consumermap.put(VisitorEnum.QualifiedName, bc);
+	}
+
+	public void addQualifiedType(BiFunction<QualifiedType, E, Boolean> bs, BiConsumer<QualifiedType, E> bc) {
+		suppliermap.put(VisitorEnum.QualifiedType, bs);
+		consumermap.put(VisitorEnum.QualifiedType, bc);
+	}
+
+//	public void addModuleQualifiedName(BiFunction<ModuleQualifiedName, E, Boolean> bs,
+//			BiConsumer<ModuleQualifiedName, E> bc) {
+//		suppliermap.put(VisitorEnum.ModuleQualifiedName, bs);
+//		consumermap.put(VisitorEnum.ModuleQualifiedName, bc);
+//	}
+
+	public void addRequiresDirective(BiFunction<RequiresDirective, E, Boolean> bs,
+			BiConsumer<RequiresDirective, E> bc) {
+		suppliermap.put(VisitorEnum.RequiresDirective, bs);
+		consumermap.put(VisitorEnum.RequiresDirective, bc);
+	}
+
+	public void addRecordDeclaration(BiFunction<RecordDeclaration, E, Boolean> bs,
+			BiConsumer<RecordDeclaration, E> bc) {
+		suppliermap.put(VisitorEnum.RecordDeclaration, bs);
+		consumermap.put(VisitorEnum.RecordDeclaration, bc);
+	}
+
+	public void addReturnStatement(BiFunction<ReturnStatement, E, Boolean> bs, BiConsumer<ReturnStatement, E> bc) {
+		suppliermap.put(VisitorEnum.ReturnStatement, bs);
+		consumermap.put(VisitorEnum.ReturnStatement, bc);
+	}
+
+	public void addSimpleName(BiFunction<SimpleName, E, Boolean> bs, BiConsumer<SimpleName, E> bc) {
+		suppliermap.put(VisitorEnum.SimpleName, bs);
+		consumermap.put(VisitorEnum.SimpleName, bc);
+	}
+
+	public void addSimpleType(BiFunction<SimpleType, E, Boolean> bs, BiConsumer<SimpleType, E> bc) {
+		suppliermap.put(VisitorEnum.SimpleType, bs);
+		consumermap.put(VisitorEnum.SimpleType, bc);
+	}
+
+	public void addSingleMemberAnnotation(BiFunction<SingleMemberAnnotation, E, Boolean> bs,
+			BiConsumer<SingleMemberAnnotation, E> bc) {
+		suppliermap.put(VisitorEnum.SingleMemberAnnotation, bs);
+		consumermap.put(VisitorEnum.SingleMemberAnnotation, bc);
+	}
+
+	public void addSingleVariableDeclaration(BiFunction<SingleVariableDeclaration, E, Boolean> bs,
+			BiConsumer<SingleVariableDeclaration, E> bc) {
+		suppliermap.put(VisitorEnum.SingleVariableDeclaration, bs);
+		consumermap.put(VisitorEnum.SingleVariableDeclaration, bc);
+	}
+
+	public void addStringLiteral(BiFunction<StringLiteral, E, Boolean> bs, BiConsumer<StringLiteral, E> bc) {
+		suppliermap.put(VisitorEnum.StringLiteral, bs);
+		consumermap.put(VisitorEnum.StringLiteral, bc);
+	}
+
+	public void addSuperConstructorInvocation(BiFunction<SuperConstructorInvocation, E, Boolean> bs,
+			BiConsumer<SuperConstructorInvocation, E> bc) {
+		suppliermap.put(VisitorEnum.SuperConstructorInvocation, bs);
+		consumermap.put(VisitorEnum.SuperConstructorInvocation, bc);
+	}
+
+	public void addSuperFieldAccess(BiFunction<SuperFieldAccess, E, Boolean> bs, BiConsumer<SuperFieldAccess, E> bc) {
+		suppliermap.put(VisitorEnum.SuperFieldAccess, bs);
+		consumermap.put(VisitorEnum.SuperFieldAccess, bc);
+	}
+
+	public void addSuperMethodInvocation(BiFunction<SuperMethodInvocation, E, Boolean> bs,
+			BiConsumer<SuperMethodInvocation, E> bc) {
+		suppliermap.put(VisitorEnum.SuperMethodInvocation, bs);
+		consumermap.put(VisitorEnum.SuperMethodInvocation, bc);
+	}
+
+	public void addSuperMethodReference(BiFunction<SuperMethodReference, E, Boolean> bs,
+			BiConsumer<SuperMethodReference, E> bc) {
+		suppliermap.put(VisitorEnum.SuperMethodReference, bs);
+		consumermap.put(VisitorEnum.SuperMethodReference, bc);
+	}
+
+	public void addSwitchCase(BiFunction<SwitchCase, E, Boolean> bs, BiConsumer<SwitchCase, E> bc) {
+		suppliermap.put(VisitorEnum.SwitchCase, bs);
+		consumermap.put(VisitorEnum.SwitchCase, bc);
+	}
+
+	public void addSwitchExpression(BiFunction<SwitchExpression, E, Boolean> bs, BiConsumer<SwitchExpression, E> bc) {
+		suppliermap.put(VisitorEnum.SwitchExpression, bs);
+		consumermap.put(VisitorEnum.SwitchExpression, bc);
+	}
+
+	public void addSwitchStatement(BiFunction<SwitchStatement, E, Boolean> bs, BiConsumer<SwitchStatement, E> bc) {
+		suppliermap.put(VisitorEnum.SwitchStatement, bs);
+		consumermap.put(VisitorEnum.SwitchStatement, bc);
+	}
+
+	public void addSynchronizedStatement(BiFunction<SynchronizedStatement, E, Boolean> bs,
+			BiConsumer<SynchronizedStatement, E> bc) {
+		suppliermap.put(VisitorEnum.SynchronizedStatement, bs);
+		consumermap.put(VisitorEnum.SynchronizedStatement, bc);
+	}
+
+	public void addTagElement(BiFunction<TagElement, E, Boolean> bs, BiConsumer<TagElement, E> bc) {
+		suppliermap.put(VisitorEnum.TagElement, bs);
+		consumermap.put(VisitorEnum.TagElement, bc);
+	}
+
+	public void addTextBlock(BiFunction<TextBlock, E, Boolean> bs, BiConsumer<TextBlock, E> bc) {
+		suppliermap.put(VisitorEnum.TextBlock, bs);
+		consumermap.put(VisitorEnum.TextBlock, bc);
+	}
+
+	public void addTextElement(BiFunction<TextElement, E, Boolean> bs, BiConsumer<TextElement, E> bc) {
+		suppliermap.put(VisitorEnum.TextElement, bs);
+		consumermap.put(VisitorEnum.TextElement, bc);
+	}
+
+	public void addThisExpression(BiFunction<ThisExpression, E, Boolean> bs, BiConsumer<ThisExpression, E> bc) {
+		suppliermap.put(VisitorEnum.ThisExpression, bs);
+		consumermap.put(VisitorEnum.ThisExpression, bc);
+	}
+
+	public void addThrowStatement(BiFunction<ThrowStatement, E, Boolean> bs, BiConsumer<ThrowStatement, E> bc) {
+		suppliermap.put(VisitorEnum.ThrowStatement, bs);
+		consumermap.put(VisitorEnum.ThrowStatement, bc);
+	}
+
+	public void addTryStatement(BiFunction<TryStatement, E, Boolean> bs, BiConsumer<TryStatement, E> bc) {
+		suppliermap.put(VisitorEnum.TryStatement, bs);
+		consumermap.put(VisitorEnum.TryStatement, bc);
+	}
+
+	public void addTypeDeclaration(BiFunction<TypeDeclaration, E, Boolean> bs, BiConsumer<TypeDeclaration, E> bc) {
+		suppliermap.put(VisitorEnum.TypeDeclaration, bs);
+		consumermap.put(VisitorEnum.TypeDeclaration, bc);
+	}
+
+	public void addTypeDeclarationStatement(BiFunction<TypeDeclarationStatement, E, Boolean> bs,
+			BiConsumer<TypeDeclarationStatement, E> bc) {
+		suppliermap.put(VisitorEnum.TypeDeclarationStatement, bs);
+		consumermap.put(VisitorEnum.TypeDeclarationStatement, bc);
+	}
+
+	public void addTypeLiteral(BiFunction<TypeLiteral, E, Boolean> bs, BiConsumer<TypeLiteral, E> bc) {
+		suppliermap.put(VisitorEnum.TypeLiteral, bs);
+		consumermap.put(VisitorEnum.TypeLiteral, bc);
+	}
+
+	public void addTypeMethodReference(BiFunction<TypeMethodReference, E, Boolean> bs,
+			BiConsumer<TypeMethodReference, E> bc) {
+		suppliermap.put(VisitorEnum.TypeMethodReference, bs);
+		consumermap.put(VisitorEnum.TypeMethodReference, bc);
+	}
+
+	public void addTypeParameter(BiFunction<TypeParameter, E, Boolean> bs, BiConsumer<TypeParameter, E> bc) {
+		suppliermap.put(VisitorEnum.TypeParameter, bs);
+		consumermap.put(VisitorEnum.TypeParameter, bc);
+	}
+
+	public void addUnionType(BiFunction<UnionType, E, Boolean> bs, BiConsumer<UnionType, E> bc) {
+		suppliermap.put(VisitorEnum.UnionType, bs);
+		consumermap.put(VisitorEnum.UnionType, bc);
+	}
+
+	public void addUsesDirective(BiFunction<UsesDirective, E, Boolean> bs, BiConsumer<UsesDirective, E> bc) {
+		suppliermap.put(VisitorEnum.UsesDirective, bs);
+		consumermap.put(VisitorEnum.UsesDirective, bc);
+	}
+
+	public void addVariableDeclarationExpression(BiFunction<VariableDeclarationExpression, E, Boolean> bs,
+			BiConsumer<VariableDeclarationExpression, E> bc) {
+		suppliermap.put(VisitorEnum.VariableDeclarationExpression, bs);
+		consumermap.put(VisitorEnum.VariableDeclarationExpression, bc);
+	}
+
+	public void addVariableDeclarationStatement(BiFunction<VariableDeclarationStatement, E, Boolean> bs,
+			BiConsumer<VariableDeclarationStatement, E> bc) {
+		suppliermap.put(VisitorEnum.VariableDeclarationStatement, bs);
+		consumermap.put(VisitorEnum.VariableDeclarationStatement, bc);
+	}
+
+	public void addVariableDeclarationFragment(BiFunction<VariableDeclarationFragment, E, Boolean> bs,
+			BiConsumer<VariableDeclarationFragment, E> bc) {
+		suppliermap.put(VisitorEnum.VariableDeclarationFragment, bs);
+		consumermap.put(VisitorEnum.VariableDeclarationFragment, bc);
+	}
+
+	public void addWhileStatement(BiFunction<WhileStatement, E, Boolean> bs, BiConsumer<WhileStatement, E> bc) {
+		suppliermap.put(VisitorEnum.WhileStatement, bs);
+		consumermap.put(VisitorEnum.WhileStatement, bc);
+	}
+
+	public void addWildcardType(BiFunction<WildcardType, E, Boolean> bs, BiConsumer<WildcardType, E> bc) {
+		suppliermap.put(VisitorEnum.WildcardType, bs);
+		consumermap.put(VisitorEnum.WildcardType, bc);
+	}
+
+	public void addYieldStatement(BiFunction<YieldStatement, E, Boolean> bs, BiConsumer<YieldStatement, E> bc) {
+		suppliermap.put(VisitorEnum.YieldStatement, bs);
+		consumermap.put(VisitorEnum.YieldStatement, bc);
+	}
+	
+	public void add(VisitorEnum key, BiFunction<ASTNode, E, Boolean> bs,BiConsumer<ASTNode, E> bc) {
+		suppliermap.put(key, bs);
+		consumermap.put(key, bc);
 	}
 
 	public HelperVisitor<E> build(CompilationUnit compilationUnit) {
@@ -971,9 +1560,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		compilationUnit.accept(astvisitor);
 		return this;
 	}
-	
+
 	public void removeVisitor(VisitorEnum ve) {
 		this.suppliermap.remove(ve);
 		this.consumermap.remove(ve);
+	}
+
+	protected Map<VisitorEnum, Object> getConsumerData() {
+		return this.consumerdata;
+	}
+
+	protected Map<VisitorEnum, Object> getSupplierData() {
+		return this.supplierdata;
 	}
 }

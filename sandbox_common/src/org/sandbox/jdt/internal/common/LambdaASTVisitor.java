@@ -490,7 +490,7 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider> extends ASTVisito
 	@Override
 	public boolean visit(MethodInvocation node) {
 		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.MethodInvocation)) {
-			String data=(String) this.helperVisitor.dataholder.getNodeData(VisitorEnum.MethodInvocation);
+			String data=(String) this.helperVisitor.getSupplierData().get(VisitorEnum.MethodInvocation);
 			if (data!= null && !node.getName().getIdentifier().equals(data)) {
 				return true;
 			}
@@ -661,14 +661,14 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider> extends ASTVisito
 		return true;
 	}
 
-	@Override
-	public boolean visit(ModuleQualifiedName node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.ModuleQualifiedName)) {
-			return ((BiFunction<ModuleQualifiedName, E, Boolean>) (this.helperVisitor.suppliermap
-					.get(VisitorEnum.ModuleQualifiedName))).apply(node, this.helperVisitor.dataholder).booleanValue();
-		}
-		return true;
-	}
+//	@Override
+//	public boolean visit(ModuleQualifiedName node) {
+//		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.ModuleQualifiedName)) {
+//			return ((BiFunction<ModuleQualifiedName, E, Boolean>) (this.helperVisitor.suppliermap
+//					.get(VisitorEnum.ModuleQualifiedName))).apply(node, this.helperVisitor.dataholder).booleanValue();
+//		}
+//		return true;
+//	}
 
 	@Override
 	public boolean visit(RequiresDirective node) {
@@ -1371,7 +1371,7 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider> extends ASTVisito
 	@Override
 	public void endVisit(MethodInvocation node) {
 		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.MethodInvocation)) {
-			String data=(String) this.helperVisitor.dataholder.getNodeData(VisitorEnum.MethodInvocation);
+			String data=(String) this.helperVisitor.getConsumerData().get(VisitorEnum.MethodInvocation);
 			if (data!= null && !node.getName().getIdentifier().equals(data)) {
 				return;
 			}
@@ -1518,13 +1518,13 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider> extends ASTVisito
 		}
 	}
 
-	@Override
-	public void endVisit(ModuleQualifiedName node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ModuleQualifiedName)) {
-			((BiConsumer<ModuleQualifiedName, E>) (this.helperVisitor.consumermap.get(VisitorEnum.ModuleQualifiedName))).accept(node,
-					this.helperVisitor.dataholder);
-		}
-	}
+//	@Override
+//	public void endVisit(ModuleQualifiedName node) {
+//		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ModuleQualifiedName)) {
+//			((BiConsumer<ModuleQualifiedName, E>) (this.helperVisitor.consumermap.get(VisitorEnum.ModuleQualifiedName))).accept(node,
+//					this.helperVisitor.dataholder);
+//		}
+//	}
 
 	@Override
 	public void endVisit(RequiresDirective node) {

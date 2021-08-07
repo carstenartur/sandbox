@@ -88,7 +88,7 @@ public class WhileToForEach extends AbstractTool<Hit> {
 				if (element instanceof SimpleName) {
 					SimpleName sn = (SimpleName) element;
 					System.out.println(mi.getName());
-					if (mi.getName().toString().equals("iterator")) {
+					if (mi.getName().toString().equals("iterator")) { //$NON-NLS-1$
 						Hit hit = holder.possibleHit(name);
 						hit.collectionsimplename = sn;
 						hit.iteratordeclaration = assignment;
@@ -100,7 +100,7 @@ public class WhileToForEach extends AbstractTool<Hit> {
 			Expression element = ce.getExpression();
 			if (element instanceof MethodInvocation) {
 				MethodInvocation mi = (MethodInvocation) element;
-				if (mi.getName().toString().equals("next")) {
+				if (mi.getName().toString().equals("next")) { //$NON-NLS-1$
 					Expression element2 = mi.getExpression();
 					if (element2 instanceof SimpleName) {
 						SimpleName sn = (SimpleName) element2;
@@ -118,7 +118,7 @@ public class WhileToForEach extends AbstractTool<Hit> {
 							hit.loopvardeclaration = assignment;
 							operations.add(fixcore.rewrite(hit));
 							holder.getHelperVisitor().nodesprocessed.add(hit.whilestatement);
-							System.out.println("" + hit.iteratordeclaration);
+							System.out.println("" + hit.iteratordeclaration); //$NON-NLS-1$
 							holder.remove(identifier);
 //							}
 						}
@@ -134,7 +134,7 @@ public class WhileToForEach extends AbstractTool<Hit> {
 		if (exp instanceof MethodInvocation) {
 			MethodInvocation mi = (MethodInvocation) exp;
 			Expression expression = mi.getExpression();
-			if (!mi.getName().getIdentifier().equals("hasNext")) {
+			if (!mi.getName().getIdentifier().equals("hasNext")) { //$NON-NLS-1$
 				return true;
 			}
 			ITypeBinding resolveTypeBinding = expression.resolveTypeBinding();
@@ -207,8 +207,8 @@ public class WhileToForEach extends AbstractTool<Hit> {
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {
-			return "\nfor (String s : strings) {\n\n	System.out.println(s);\n}\n\n";
+			return "\nfor (String s : strings) {\n\n	System.out.println(s);\n}\n\n"; //$NON-NLS-1$
 		}
-		return "Iterator it = lists.iterator();\nwhile (it.hasNext()) {\n    String s = (String) it.next();\n	System.out.println(s);\n}\n\n";
+		return "Iterator it = lists.iterator();\nwhile (it.hasNext()) {\n    String s = (String) it.next();\n	System.out.println(s);\n}\n\n"; //$NON-NLS-1$
 	}
 }

@@ -16,27 +16,34 @@ package org.sandbox.jdt.internal.common;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-public class ReferenceHolder<T> extends HashMap<String,T> implements HelperVisitorProvider<T> {
+/**
+ * This class does not allow null to be used as a key or value because it is derived from ConcurrentHashMap. 
+ * 
+ * @author chammer
+ *
+ * @param <V>
+ * @param <T>
+ */
+public class ReferenceHolder<V,T> extends ConcurrentHashMap<V,T> implements HelperVisitorProvider<V,T> {
+
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-	HelperVisitor<ReferenceHolder<T>> hv;
-	Map<VisitorEnum,Object> vistor2data=new HashMap<>();
+	HelperVisitor<ReferenceHolder<V,T>> hv;
 	
 	public ReferenceHolder() {
 	}
 
 	@Override
-	public HelperVisitor<ReferenceHolder<T>> getHelperVisitor() {
+	public HelperVisitor<ReferenceHolder<V,T>> getHelperVisitor() {
 		return hv;
 	}
 
 	@Override
-	public void setHelperVisitor(HelperVisitor<ReferenceHolder<T>> hv) {
+	public void setHelperVisitor(HelperVisitor<ReferenceHolder<V,T>> hv) {
 		this.hv=hv;
 	}
 	
@@ -50,13 +57,13 @@ public class ReferenceHolder<T> extends HashMap<String,T> implements HelperVisit
 	    stream.defaultReadObject();
 	}
 
-	public Object getNodeData(VisitorEnum node) {
-		return vistor2data.get(node);
+	@Override
+	public int hashCode() {
+		return super.hashCode();
 	}
 
 	@Override
-	public void setNodeData(VisitorEnum node, Object data) {
-		this.vistor2data.put(node, data);
+	public boolean equals(Object o) {
+		return super.equals(o);
 	}
-
 }

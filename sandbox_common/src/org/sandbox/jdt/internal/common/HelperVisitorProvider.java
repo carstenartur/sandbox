@@ -18,9 +18,7 @@ package org.sandbox.jdt.internal.common;
  * @author chammer
  *
  */
-public interface HelperVisitorProvider<F> {
-	HelperVisitor<ReferenceHolder<F>> getHelperVisitor();
-	void setHelperVisitor(HelperVisitor<ReferenceHolder<F>> hv);
-	Object getNodeData(VisitorEnum node);
-	void setNodeData(VisitorEnum node, Object date);
+public interface HelperVisitorProvider<V,T> {
+	HelperVisitor<ReferenceHolder<V,T>> getHelperVisitor();
+	void setHelperVisitor(HelperVisitor<ReferenceHolder<V,T>> hv);
 }
