@@ -1,0 +1,1 @@
+awk '{print "@Override	public void endVisit(" $0 " node) {	if (consumermap.containsKey(Visitor." $0 ")){((BiConsumer<" $0 ", E>) (consumermap.get(Visitor." $0 "))).accept(node, dataholder);}}\n"}' <input.txt >output.txt

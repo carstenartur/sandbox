@@ -14,7 +14,7 @@
 package org.sandbox.jdt.internal.common;
 
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 
 import org.eclipse.jdt.core.dom.*;
 
@@ -39,624 +39,624 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider> extends ASTVisito
 
 	@Override
 	public boolean visit(AnnotationTypeDeclaration node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.AnnotationTypeDeclaration)) {
-			return ((BiFunction<AnnotationTypeDeclaration, E, Boolean>) (this.helperVisitor.suppliermap
-					.get(VisitorEnum.AnnotationTypeDeclaration))).apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.AnnotationTypeDeclaration)) {
+			return ((BiPredicate<AnnotationTypeDeclaration, E>) (this.helperVisitor.predicatemap
+					.get(VisitorEnum.AnnotationTypeDeclaration))).test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(AnnotationTypeMemberDeclaration node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.AnnotationTypeMemberDeclaration)) {
-			return ((BiFunction<AnnotationTypeMemberDeclaration, E, Boolean>) (this.helperVisitor.suppliermap
-					.get(VisitorEnum.AnnotationTypeMemberDeclaration))).apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.AnnotationTypeMemberDeclaration)) {
+			return ((BiPredicate<AnnotationTypeMemberDeclaration, E>) (this.helperVisitor.predicatemap
+					.get(VisitorEnum.AnnotationTypeMemberDeclaration))).test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(AnonymousClassDeclaration node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.AnonymousClassDeclaration)) {
-			return ((BiFunction<AnonymousClassDeclaration, E, Boolean>) (this.helperVisitor.suppliermap
-					.get(VisitorEnum.AnonymousClassDeclaration))).apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.AnonymousClassDeclaration)) {
+			return ((BiPredicate<AnonymousClassDeclaration, E>) (this.helperVisitor.predicatemap
+					.get(VisitorEnum.AnonymousClassDeclaration))).test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ArrayAccess node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.ArrayAccess)) {
-			return ((BiFunction<ArrayAccess, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.ArrayAccess)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ArrayAccess)) {
+			return ((BiPredicate<ArrayAccess, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ArrayAccess)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ArrayCreation node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.ArrayCreation)) {
-			return ((BiFunction<ArrayCreation, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.ArrayCreation)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ArrayCreation)) {
+			return ((BiPredicate<ArrayCreation, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ArrayCreation)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ArrayInitializer node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.ArrayInitializer)) {
-			return ((BiFunction<ArrayInitializer, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.ArrayInitializer)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ArrayInitializer)) {
+			return ((BiPredicate<ArrayInitializer, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ArrayInitializer)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ArrayType node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.ArrayType)) {
-			return ((BiFunction<ArrayType, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.ArrayType)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ArrayType)) {
+			return ((BiPredicate<ArrayType, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ArrayType)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(AssertStatement node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.AssertStatement)) {
-			return ((BiFunction<AssertStatement, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.AssertStatement)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.AssertStatement)) {
+			return ((BiPredicate<AssertStatement, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.AssertStatement)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(Assignment node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.Assignment)) {
-			return ((BiFunction<Assignment, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.Assignment)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.Assignment)) {
+			return ((BiPredicate<Assignment, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.Assignment)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(Block node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.Block)) {
-			return ((BiFunction<Block, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.Block))).apply(node, this.helperVisitor.dataholder)
-					.booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.Block)) {
+			return ((BiPredicate<Block, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.Block))).test(node, this.helperVisitor.dataholder)
+					;
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(BlockComment node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.BlockComment)) {
-			return ((BiFunction<BlockComment, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.BlockComment)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.BlockComment)) {
+			return ((BiPredicate<BlockComment, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.BlockComment)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(BooleanLiteral node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.BooleanLiteral)) {
-			return ((BiFunction<BooleanLiteral, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.BooleanLiteral)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.BooleanLiteral)) {
+			return ((BiPredicate<BooleanLiteral, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.BooleanLiteral)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(BreakStatement node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.BreakStatement)) {
-			return ((BiFunction<BreakStatement, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.BreakStatement)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.BreakStatement)) {
+			return ((BiPredicate<BreakStatement, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.BreakStatement)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(CastExpression node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.CastExpression)) {
-			return ((BiFunction<CastExpression, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.CastExpression)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.CastExpression)) {
+			return ((BiPredicate<CastExpression, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.CastExpression)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(CatchClause node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.CatchClause)) {
-			return ((BiFunction<CatchClause, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.CatchClause)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.CatchClause)) {
+			return ((BiPredicate<CatchClause, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.CatchClause)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(CharacterLiteral node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.CharacterLiteral)) {
-			return ((BiFunction<CharacterLiteral, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.CharacterLiteral)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.CharacterLiteral)) {
+			return ((BiPredicate<CharacterLiteral, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.CharacterLiteral)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ClassInstanceCreation node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.ClassInstanceCreation)) {
-			return ((BiFunction<ClassInstanceCreation, E, Boolean>) (this.helperVisitor.suppliermap
-					.get(VisitorEnum.ClassInstanceCreation))).apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ClassInstanceCreation)) {
+			return ((BiPredicate<ClassInstanceCreation, E>) (this.helperVisitor.predicatemap
+					.get(VisitorEnum.ClassInstanceCreation))).test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(CompilationUnit node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.CompilationUnit)) {
-			return ((BiFunction<CompilationUnit, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.CompilationUnit)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.CompilationUnit)) {
+			return ((BiPredicate<CompilationUnit, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.CompilationUnit)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ConditionalExpression node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.ConditionalExpression)) {
-			return ((BiFunction<ConditionalExpression, E, Boolean>) (this.helperVisitor.suppliermap
-					.get(VisitorEnum.ConditionalExpression))).apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ConditionalExpression)) {
+			return ((BiPredicate<ConditionalExpression, E>) (this.helperVisitor.predicatemap
+					.get(VisitorEnum.ConditionalExpression))).test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ConstructorInvocation node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.ConstructorInvocation)) {
-			return ((BiFunction<ConstructorInvocation, E, Boolean>) (this.helperVisitor.suppliermap
-					.get(VisitorEnum.ConstructorInvocation))).apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ConstructorInvocation)) {
+			return ((BiPredicate<ConstructorInvocation, E>) (this.helperVisitor.predicatemap
+					.get(VisitorEnum.ConstructorInvocation))).test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ContinueStatement node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.ContinueStatement)) {
-			return ((BiFunction<ContinueStatement, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.ContinueStatement)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ContinueStatement)) {
+			return ((BiPredicate<ContinueStatement, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ContinueStatement)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(CreationReference node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.CreationReference)) {
-			return ((BiFunction<CreationReference, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.CreationReference)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.CreationReference)) {
+			return ((BiPredicate<CreationReference, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.CreationReference)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(Dimension node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.Dimension)) {
-			return ((BiFunction<Dimension, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.Dimension)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.Dimension)) {
+			return ((BiPredicate<Dimension, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.Dimension)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(DoStatement node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.DoStatement)) {
-			return ((BiFunction<DoStatement, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.DoStatement)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.DoStatement)) {
+			return ((BiPredicate<DoStatement, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.DoStatement)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(EmptyStatement node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.EmptyStatement)) {
-			return ((BiFunction<EmptyStatement, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.EmptyStatement)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.EmptyStatement)) {
+			return ((BiPredicate<EmptyStatement, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.EmptyStatement)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(EnhancedForStatement node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.EnhancedForStatement)) {
-			return ((BiFunction<EnhancedForStatement, E, Boolean>) (this.helperVisitor.suppliermap
-					.get(VisitorEnum.EnhancedForStatement))).apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.EnhancedForStatement)) {
+			return ((BiPredicate<EnhancedForStatement, E>) (this.helperVisitor.predicatemap
+					.get(VisitorEnum.EnhancedForStatement))).test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(EnumConstantDeclaration node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.EnumConstantDeclaration)) {
-			return ((BiFunction<EnumConstantDeclaration, E, Boolean>) (this.helperVisitor.suppliermap
-					.get(VisitorEnum.EnumConstantDeclaration))).apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.EnumConstantDeclaration)) {
+			return ((BiPredicate<EnumConstantDeclaration, E>) (this.helperVisitor.predicatemap
+					.get(VisitorEnum.EnumConstantDeclaration))).test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(EnumDeclaration node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.EnumDeclaration)) {
-			return ((BiFunction<EnumDeclaration, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.EnumDeclaration)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.EnumDeclaration)) {
+			return ((BiPredicate<EnumDeclaration, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.EnumDeclaration)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ExportsDirective node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.ExportsDirective)) {
-			return ((BiFunction<ExportsDirective, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.ExportsDirective)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ExportsDirective)) {
+			return ((BiPredicate<ExportsDirective, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ExportsDirective)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ExpressionMethodReference node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.BreakStatement)) {
-			return ((BiFunction<ExpressionMethodReference, E, Boolean>) (this.helperVisitor.suppliermap
-					.get(VisitorEnum.ExpressionMethodReference))).apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.BreakStatement)) {
+			return ((BiPredicate<ExpressionMethodReference, E>) (this.helperVisitor.predicatemap
+					.get(VisitorEnum.ExpressionMethodReference))).test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ExpressionStatement node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.ExpressionStatement)) {
-			return ((BiFunction<ExpressionStatement, E, Boolean>) (this.helperVisitor.suppliermap
-					.get(VisitorEnum.ExpressionStatement))).apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ExpressionStatement)) {
+			return ((BiPredicate<ExpressionStatement, E>) (this.helperVisitor.predicatemap
+					.get(VisitorEnum.ExpressionStatement))).test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(FieldAccess node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.FieldAccess)) {
-			return ((BiFunction<FieldAccess, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.FieldAccess)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.FieldAccess)) {
+			return ((BiPredicate<FieldAccess, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.FieldAccess)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(FieldDeclaration node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.FieldDeclaration)) {
-			return ((BiFunction<FieldDeclaration, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.FieldDeclaration)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.FieldDeclaration)) {
+			return ((BiPredicate<FieldDeclaration, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.FieldDeclaration)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ForStatement node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.ForStatement)) {
-			return ((BiFunction<ForStatement, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.ForStatement)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ForStatement)) {
+			return ((BiPredicate<ForStatement, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ForStatement)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(IfStatement node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.IfStatement)) {
-			return ((BiFunction<IfStatement, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.IfStatement)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.IfStatement)) {
+			return ((BiPredicate<IfStatement, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.IfStatement)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ImportDeclaration node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.ImportDeclaration)) {
-			return ((BiFunction<ImportDeclaration, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.ImportDeclaration)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ImportDeclaration)) {
+			return ((BiPredicate<ImportDeclaration, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ImportDeclaration)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(InfixExpression node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.InfixExpression)) {
-			return ((BiFunction<InfixExpression, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.InfixExpression)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.InfixExpression)) {
+			return ((BiPredicate<InfixExpression, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.InfixExpression)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(Initializer node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.Initializer)) {
-			return ((BiFunction<Initializer, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.Initializer)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.Initializer)) {
+			return ((BiPredicate<Initializer, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.Initializer)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(InstanceofExpression node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.InstanceofExpression)) {
-			return ((BiFunction<InstanceofExpression, E, Boolean>) (this.helperVisitor.suppliermap
-					.get(VisitorEnum.InstanceofExpression))).apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.InstanceofExpression)) {
+			return ((BiPredicate<InstanceofExpression, E>) (this.helperVisitor.predicatemap
+					.get(VisitorEnum.InstanceofExpression))).test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(IntersectionType node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.IntersectionType)) {
-			return ((BiFunction<IntersectionType, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.IntersectionType)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.IntersectionType)) {
+			return ((BiPredicate<IntersectionType, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.IntersectionType)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(Javadoc node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.Javadoc)) {
-			return ((BiFunction<Javadoc, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.Javadoc)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.Javadoc)) {
+			return ((BiPredicate<Javadoc, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.Javadoc)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(LabeledStatement node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.LabeledStatement)) {
-			return ((BiFunction<LabeledStatement, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.LabeledStatement)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.LabeledStatement)) {
+			return ((BiPredicate<LabeledStatement, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.LabeledStatement)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(LambdaExpression node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.LambdaExpression)) {
-			return ((BiFunction<LambdaExpression, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.LambdaExpression)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.LambdaExpression)) {
+			return ((BiPredicate<LambdaExpression, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.LambdaExpression)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(LineComment node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.LineComment)) {
-			return ((BiFunction<LineComment, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.LineComment)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.LineComment)) {
+			return ((BiPredicate<LineComment, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.LineComment)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(MarkerAnnotation node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.MarkerAnnotation)) {
-			return ((BiFunction<MarkerAnnotation, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.MarkerAnnotation)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.MarkerAnnotation)) {
+			return ((BiPredicate<MarkerAnnotation, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.MarkerAnnotation)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(MemberRef node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.MemberRef)) {
-			return ((BiFunction<MemberRef, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.MemberRef)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.MemberRef)) {
+			return ((BiPredicate<MemberRef, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.MemberRef)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(MemberValuePair node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.MemberValuePair)) {
-			return ((BiFunction<MemberValuePair, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.MemberValuePair)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.MemberValuePair)) {
+			return ((BiPredicate<MemberValuePair, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.MemberValuePair)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(MethodRef node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.MethodRef)) {
-			return ((BiFunction<MethodRef, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.MethodRef)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.MethodRef)) {
+			return ((BiPredicate<MethodRef, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.MethodRef)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(MethodRefParameter node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.MethodRefParameter)) {
-			return ((BiFunction<MethodRefParameter, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.MethodRefParameter)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.MethodRefParameter)) {
+			return ((BiPredicate<MethodRefParameter, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.MethodRefParameter)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(MethodDeclaration node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.MethodDeclaration)) {
-			return ((BiFunction<MethodDeclaration, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.MethodDeclaration)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.MethodDeclaration)) {
+			return ((BiPredicate<MethodDeclaration, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.MethodDeclaration)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(MethodInvocation node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.MethodInvocation)) {
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.MethodInvocation)) {
 			String data=(String) this.helperVisitor.getSupplierData().get(VisitorEnum.MethodInvocation);
 			if (data!= null && !node.getName().getIdentifier().equals(data)) {
 				return true;
 			}
-			return ((BiFunction<MethodInvocation, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.MethodInvocation))).apply(node, this.helperVisitor.dataholder).booleanValue();
+			return ((BiPredicate<MethodInvocation, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.MethodInvocation))).test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(Modifier node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.Modifier)) {
-			return ((BiFunction<Modifier, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.Modifier)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.Modifier)) {
+			return ((BiPredicate<Modifier, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.Modifier)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ModuleDeclaration node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.ModuleDeclaration)) {
-			return ((BiFunction<ModuleDeclaration, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.ModuleDeclaration)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ModuleDeclaration)) {
+			return ((BiPredicate<ModuleDeclaration, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ModuleDeclaration)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ModuleModifier node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.ModuleModifier)) {
-			return ((BiFunction<ModuleModifier, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.ModuleModifier)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ModuleModifier)) {
+			return ((BiPredicate<ModuleModifier, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ModuleModifier)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(NameQualifiedType node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.NameQualifiedType)) {
-			return ((BiFunction<NameQualifiedType, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.NameQualifiedType)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.NameQualifiedType)) {
+			return ((BiPredicate<NameQualifiedType, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.NameQualifiedType)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(NormalAnnotation node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.NormalAnnotation)) {
-			return ((BiFunction<NormalAnnotation, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.NormalAnnotation)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.NormalAnnotation)) {
+			return ((BiPredicate<NormalAnnotation, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.NormalAnnotation)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(NullLiteral node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.NullLiteral)) {
-			return ((BiFunction<NullLiteral, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.NullLiteral)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.NullLiteral)) {
+			return ((BiPredicate<NullLiteral, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.NullLiteral)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(NumberLiteral node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.NumberLiteral)) {
-			return ((BiFunction<NumberLiteral, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.NumberLiteral)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.NumberLiteral)) {
+			return ((BiPredicate<NumberLiteral, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.NumberLiteral)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(OpensDirective node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.OpensDirective)) {
-			return ((BiFunction<OpensDirective, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.OpensDirective)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.OpensDirective)) {
+			return ((BiPredicate<OpensDirective, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.OpensDirective)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(PackageDeclaration node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.PackageDeclaration)) {
-			return ((BiFunction<PackageDeclaration, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.PackageDeclaration)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.PackageDeclaration)) {
+			return ((BiPredicate<PackageDeclaration, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.PackageDeclaration)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ParameterizedType node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.ParameterizedType)) {
-			return ((BiFunction<ParameterizedType, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.ParameterizedType)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ParameterizedType)) {
+			return ((BiPredicate<ParameterizedType, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ParameterizedType)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ParenthesizedExpression node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.ParenthesizedExpression)) {
-			return ((BiFunction<ParenthesizedExpression, E, Boolean>) (this.helperVisitor.suppliermap
-					.get(VisitorEnum.ParenthesizedExpression))).apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ParenthesizedExpression)) {
+			return ((BiPredicate<ParenthesizedExpression, E>) (this.helperVisitor.predicatemap
+					.get(VisitorEnum.ParenthesizedExpression))).test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(PatternInstanceofExpression node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.PatternInstanceofExpression)) {
-			return ((BiFunction<PatternInstanceofExpression, E, Boolean>) (this.helperVisitor.suppliermap
-					.get(VisitorEnum.PatternInstanceofExpression))).apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.PatternInstanceofExpression)) {
+			return ((BiPredicate<PatternInstanceofExpression, E>) (this.helperVisitor.predicatemap
+					.get(VisitorEnum.PatternInstanceofExpression))).test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(PostfixExpression node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.PostfixExpression)) {
-			return ((BiFunction<PostfixExpression, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.PostfixExpression)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.PostfixExpression)) {
+			return ((BiPredicate<PostfixExpression, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.PostfixExpression)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(PrefixExpression node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.PrefixExpression)) {
-			return ((BiFunction<PrefixExpression, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.PrefixExpression)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.PrefixExpression)) {
+			return ((BiPredicate<PrefixExpression, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.PrefixExpression)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ProvidesDirective node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.ProvidesDirective)) {
-			return ((BiFunction<ProvidesDirective, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.ProvidesDirective)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ProvidesDirective)) {
+			return ((BiPredicate<ProvidesDirective, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ProvidesDirective)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(PrimitiveType node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.PrimitiveType)) {
-			return ((BiFunction<PrimitiveType, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.PrimitiveType)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.PrimitiveType)) {
+			return ((BiPredicate<PrimitiveType, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.PrimitiveType)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(QualifiedName node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.QualifiedName)) {
-			return ((BiFunction<QualifiedName, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.QualifiedName)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.QualifiedName)) {
+			return ((BiPredicate<QualifiedName, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.QualifiedName)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(QualifiedType node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.QualifiedType)) {
-			return ((BiFunction<QualifiedType, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.QualifiedType)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.QualifiedType)) {
+			return ((BiPredicate<QualifiedType, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.QualifiedType)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
@@ -664,323 +664,323 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider> extends ASTVisito
 //	@Override
 //	public boolean visit(ModuleQualifiedName node) {
 //		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.ModuleQualifiedName)) {
-//			return ((BiFunction<ModuleQualifiedName, E, Boolean>) (this.helperVisitor.suppliermap
-//					.get(VisitorEnum.ModuleQualifiedName))).apply(node, this.helperVisitor.dataholder).booleanValue();
+//			return ((BiPredicate<ModuleQualifiedName, E>) (this.helperVisitor.suppliermap
+//					.get(VisitorEnum.ModuleQualifiedName))).test(node, this.helperVisitor.dataholder);
 //		}
 //		return true;
 //	}
 
 	@Override
 	public boolean visit(RequiresDirective node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.RequiresDirective)) {
-			return ((BiFunction<RequiresDirective, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.RequiresDirective)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.RequiresDirective)) {
+			return ((BiPredicate<RequiresDirective, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.RequiresDirective)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(RecordDeclaration node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.RecordDeclaration)) {
-			return ((BiFunction<RecordDeclaration, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.RecordDeclaration)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.RecordDeclaration)) {
+			return ((BiPredicate<RecordDeclaration, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.RecordDeclaration)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ReturnStatement node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.ReturnStatement)) {
-			return ((BiFunction<ReturnStatement, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.ReturnStatement)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ReturnStatement)) {
+			return ((BiPredicate<ReturnStatement, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ReturnStatement)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(SimpleName node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.SimpleName)) {
-			return ((BiFunction<SimpleName, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.SimpleName)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SimpleName)) {
+			return ((BiPredicate<SimpleName, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.SimpleName)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(SimpleType node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.SimpleType)) {
-			return ((BiFunction<SimpleType, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.SimpleType)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SimpleType)) {
+			return ((BiPredicate<SimpleType, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.SimpleType)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(SingleMemberAnnotation node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.SingleMemberAnnotation)) {
-			return ((BiFunction<SingleMemberAnnotation, E, Boolean>) (this.helperVisitor.suppliermap
-					.get(VisitorEnum.SingleMemberAnnotation))).apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SingleMemberAnnotation)) {
+			return ((BiPredicate<SingleMemberAnnotation, E>) (this.helperVisitor.predicatemap
+					.get(VisitorEnum.SingleMemberAnnotation))).test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(SingleVariableDeclaration node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.SingleVariableDeclaration)) {
-			return ((BiFunction<SingleVariableDeclaration, E, Boolean>) (this.helperVisitor.suppliermap
-					.get(VisitorEnum.SingleVariableDeclaration))).apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SingleVariableDeclaration)) {
+			return ((BiPredicate<SingleVariableDeclaration, E>) (this.helperVisitor.predicatemap
+					.get(VisitorEnum.SingleVariableDeclaration))).test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(StringLiteral node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.StringLiteral)) {
-			return ((BiFunction<StringLiteral, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.StringLiteral)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.StringLiteral)) {
+			return ((BiPredicate<StringLiteral, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.StringLiteral)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(SuperConstructorInvocation node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.SuperConstructorInvocation)) {
-			return ((BiFunction<SuperConstructorInvocation, E, Boolean>) (this.helperVisitor.suppliermap
-					.get(VisitorEnum.SuperConstructorInvocation))).apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SuperConstructorInvocation)) {
+			return ((BiPredicate<SuperConstructorInvocation, E>) (this.helperVisitor.predicatemap
+					.get(VisitorEnum.SuperConstructorInvocation))).test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(SuperFieldAccess node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.SuperFieldAccess)) {
-			return ((BiFunction<SuperFieldAccess, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.SuperFieldAccess)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SuperFieldAccess)) {
+			return ((BiPredicate<SuperFieldAccess, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.SuperFieldAccess)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(SuperMethodInvocation node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.SuperMethodInvocation)) {
-			return ((BiFunction<SuperMethodInvocation, E, Boolean>) (this.helperVisitor.suppliermap
-					.get(VisitorEnum.SuperMethodInvocation))).apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SuperMethodInvocation)) {
+			return ((BiPredicate<SuperMethodInvocation, E>) (this.helperVisitor.predicatemap
+					.get(VisitorEnum.SuperMethodInvocation))).test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(SuperMethodReference node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.SuperMethodReference)) {
-			return ((BiFunction<SuperMethodReference, E, Boolean>) (this.helperVisitor.suppliermap
-					.get(VisitorEnum.SuperMethodReference))).apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SuperMethodReference)) {
+			return ((BiPredicate<SuperMethodReference, E>) (this.helperVisitor.predicatemap
+					.get(VisitorEnum.SuperMethodReference))).test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(SwitchCase node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.SwitchCase)) {
-			return ((BiFunction<SwitchCase, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.SwitchCase)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SwitchCase)) {
+			return ((BiPredicate<SwitchCase, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.SwitchCase)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(SwitchExpression node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.SwitchExpression)) {
-			return ((BiFunction<SwitchExpression, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.SwitchExpression)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SwitchExpression)) {
+			return ((BiPredicate<SwitchExpression, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.SwitchExpression)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(SwitchStatement node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.SwitchStatement)) {
-			return ((BiFunction<SwitchStatement, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.SwitchStatement)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SwitchStatement)) {
+			return ((BiPredicate<SwitchStatement, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.SwitchStatement)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(SynchronizedStatement node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.SynchronizedStatement)) {
-			return ((BiFunction<SynchronizedStatement, E, Boolean>) (this.helperVisitor.suppliermap
-					.get(VisitorEnum.SynchronizedStatement))).apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SynchronizedStatement)) {
+			return ((BiPredicate<SynchronizedStatement, E>) (this.helperVisitor.predicatemap
+					.get(VisitorEnum.SynchronizedStatement))).test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(TagElement node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.TagElement)) {
-			return ((BiFunction<TagElement, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.TagElement)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.TagElement)) {
+			return ((BiPredicate<TagElement, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.TagElement)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(TextBlock node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.TextBlock)) {
-			return ((BiFunction<TextBlock, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.TextBlock)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.TextBlock)) {
+			return ((BiPredicate<TextBlock, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.TextBlock)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(TextElement node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.TextElement)) {
-			return ((BiFunction<TextElement, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.TextElement)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.TextElement)) {
+			return ((BiPredicate<TextElement, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.TextElement)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ThisExpression node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.ThisExpression)) {
-			return ((BiFunction<ThisExpression, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.ThisExpression)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ThisExpression)) {
+			return ((BiPredicate<ThisExpression, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ThisExpression)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ThrowStatement node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.ThrowStatement)) {
-			return ((BiFunction<ThrowStatement, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.ThrowStatement)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ThrowStatement)) {
+			return ((BiPredicate<ThrowStatement, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ThrowStatement)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(TryStatement node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.TryStatement)) {
-			return ((BiFunction<TryStatement, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.TryStatement)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.TryStatement)) {
+			return ((BiPredicate<TryStatement, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.TryStatement)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(TypeDeclaration node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.TypeDeclaration)) {
-			return ((BiFunction<TypeDeclaration, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.TypeDeclaration)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.TypeDeclaration)) {
+			return ((BiPredicate<TypeDeclaration, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.TypeDeclaration)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(TypeDeclarationStatement node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.TypeDeclarationStatement)) {
-			return ((BiFunction<TypeDeclarationStatement, E, Boolean>) (this.helperVisitor.suppliermap
-					.get(VisitorEnum.TypeDeclarationStatement))).apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.TypeDeclarationStatement)) {
+			return ((BiPredicate<TypeDeclarationStatement, E>) (this.helperVisitor.predicatemap
+					.get(VisitorEnum.TypeDeclarationStatement))).test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(TypeLiteral node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.TypeLiteral)) {
-			return ((BiFunction<TypeLiteral, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.TypeLiteral)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.TypeLiteral)) {
+			return ((BiPredicate<TypeLiteral, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.TypeLiteral)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(TypeMethodReference node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.TypeMethodReference)) {
-			return ((BiFunction<TypeMethodReference, E, Boolean>) (this.helperVisitor.suppliermap
-					.get(VisitorEnum.TypeMethodReference))).apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.TypeMethodReference)) {
+			return ((BiPredicate<TypeMethodReference, E>) (this.helperVisitor.predicatemap
+					.get(VisitorEnum.TypeMethodReference))).test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(TypeParameter node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.TypeParameter)) {
-			return ((BiFunction<TypeParameter, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.TypeParameter)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.TypeParameter)) {
+			return ((BiPredicate<TypeParameter, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.TypeParameter)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(UnionType node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.UnionType)) {
-			return ((BiFunction<UnionType, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.UnionType)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.UnionType)) {
+			return ((BiPredicate<UnionType, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.UnionType)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(UsesDirective node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.UsesDirective)) {
-			return ((BiFunction<UsesDirective, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.UsesDirective)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.UsesDirective)) {
+			return ((BiPredicate<UsesDirective, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.UsesDirective)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(VariableDeclarationExpression node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.VariableDeclarationExpression)) {
-			return ((BiFunction<VariableDeclarationExpression, E, Boolean>) (this.helperVisitor.suppliermap
-					.get(VisitorEnum.VariableDeclarationExpression))).apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.VariableDeclarationExpression)) {
+			return ((BiPredicate<VariableDeclarationExpression, E>) (this.helperVisitor.predicatemap
+					.get(VisitorEnum.VariableDeclarationExpression))).test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(VariableDeclarationStatement node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.VariableDeclarationStatement)) {
-			return ((BiFunction<VariableDeclarationStatement, E, Boolean>) (this.helperVisitor.suppliermap
-					.get(VisitorEnum.VariableDeclarationStatement))).apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.VariableDeclarationStatement)) {
+			return ((BiPredicate<VariableDeclarationStatement, E>) (this.helperVisitor.predicatemap
+					.get(VisitorEnum.VariableDeclarationStatement))).test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(VariableDeclarationFragment node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.VariableDeclarationFragment)) {
-			return ((BiFunction<VariableDeclarationFragment, E, Boolean>) (this.helperVisitor.suppliermap
-					.get(VisitorEnum.VariableDeclarationFragment))).apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.VariableDeclarationFragment)) {
+			return ((BiPredicate<VariableDeclarationFragment, E>) (this.helperVisitor.predicatemap
+					.get(VisitorEnum.VariableDeclarationFragment))).test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(WhileStatement node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.WhileStatement)) {
-			return ((BiFunction<WhileStatement, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.WhileStatement)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.WhileStatement)) {
+			return ((BiPredicate<WhileStatement, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.WhileStatement)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(WildcardType node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.WildcardType)) {
-			return ((BiFunction<WildcardType, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.WildcardType)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.WildcardType)) {
+			return ((BiPredicate<WildcardType, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.WildcardType)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(YieldStatement node) {
-		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.YieldStatement)) {
-			return ((BiFunction<YieldStatement, E, Boolean>) (this.helperVisitor.suppliermap.get(VisitorEnum.YieldStatement)))
-					.apply(node, this.helperVisitor.dataholder).booleanValue();
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.YieldStatement)) {
+			return ((BiPredicate<YieldStatement, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.YieldStatement)))
+					.test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}

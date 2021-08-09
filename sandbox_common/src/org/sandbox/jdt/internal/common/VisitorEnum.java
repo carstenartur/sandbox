@@ -148,4 +148,8 @@ public enum VisitorEnum {
 	public static VisitorEnum fromNodetype(final int nodetype) {
 	    return values.get(nodetype);
 	  }
+
+	public static VisitorEnum fromNode(ASTNode node) {
+		return fromNodetype(node.getNodeType());
+	}
 }

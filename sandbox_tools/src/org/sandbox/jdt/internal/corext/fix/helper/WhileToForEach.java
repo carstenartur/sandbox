@@ -71,7 +71,7 @@ public class WhileToForEach extends AbstractTool<Hit> {
 	private Boolean processVariableDeclarationStatement(UseIteratorToForLoopFixCore fixcore,
 			Set<CompilationUnitRewriteOperation> operations, VariableDeclarationStatement assignment,
 			MyReferenceHolder holder) {
-		VariableDeclarationFragment bli = (VariableDeclarationFragment) assignment.fragments().get(0);
+		VariableDeclarationFragment bli = fetchVDFragment(assignment);
 		Expression exp = bli.getInitializer();
 		String qualifiedName = bli.resolveBinding().getType().getErasure().getQualifiedName();
 		if (ITERATOR_NAME.equals(qualifiedName)) {
@@ -102,8 +102,8 @@ public class WhileToForEach extends AbstractTool<Hit> {
 				MethodInvocation mi = (MethodInvocation) element;
 				if (mi.getName().toString().equals("next")) { //$NON-NLS-1$
 					Expression element2 = mi.getExpression();
-					if (element2 instanceof SimpleName) {
-						SimpleName sn = (SimpleName) element2;
+					SimpleName sn= ASTNodes.as(element2, SimpleName.class);
+					if (sn !=null) {
 						// sn.resolveBinding().getName();
 						System.out.println(sn.getFullyQualifiedName());
 						if (holder.containsKey(sn.getIdentifier())) {
@@ -129,6 +129,10 @@ public class WhileToForEach extends AbstractTool<Hit> {
 		return true;
 	}
 
+	private VariableDeclarationFragment fetchVDFragment(VariableDeclarationStatement assignment) {
+		return (VariableDeclarationFragment) assignment.fragments().get(0);
+	}
+
 	private Boolean processWhileStatement(WhileStatement whilestatement, MyReferenceHolder holder) {
 		Expression exp = whilestatement.getExpression();
 		if (exp instanceof MethodInvocation) {
@@ -139,8 +143,9 @@ public class WhileToForEach extends AbstractTool<Hit> {
 			}
 			ITypeBinding resolveTypeBinding = expression.resolveTypeBinding();
 			String name = null;
-			if (expression instanceof SimpleName) {
-				IBinding resolveBinding = ((SimpleName) expression).resolveBinding();
+			SimpleName variable= ASTNodes.as(expression, SimpleName.class);
+			if (variable != null) {
+				IBinding resolveBinding = variable.resolveBinding();
 				name = resolveBinding.getName();
 			}
 			String mytype = resolveTypeBinding.getErasure().getQualifiedName();
