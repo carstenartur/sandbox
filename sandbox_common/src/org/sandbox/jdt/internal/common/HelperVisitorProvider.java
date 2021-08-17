@@ -16,6 +16,8 @@ package org.sandbox.jdt.internal.common;
 /**
  * 
  * @author chammer
+ * @param <V>
+ * @param <T>
  *
  */
 public interface HelperVisitorProvider<V,T> {

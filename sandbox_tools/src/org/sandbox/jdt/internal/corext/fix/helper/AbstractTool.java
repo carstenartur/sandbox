@@ -13,6 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.util.Collection;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
@@ -21,6 +22,7 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.internal.corext.dom.AbortSearchException;
+import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
@@ -63,4 +65,10 @@ public abstract class AbstractTool<T> {
 
 
 	public abstract String getPreview(boolean afterRefactoring);
+	
+	public static Collection<String> getUsedVariableNames(ASTNode node) {
+		CompilationUnit root= (CompilationUnit) node.getRoot();
+		Collection<String> res= (new ScopeAnalyzer(root)).getUsedVariableNames(node.getStartPosition(), node.getLength());
+		return res;
+	}
 }

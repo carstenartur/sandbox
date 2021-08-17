@@ -23,8 +23,10 @@ import org.eclipse.jdt.core.dom.*;
  * @author chammer
  *
  * @param <E>
+ * @param <V>
+ * @param <T>
  */
-public class LambdaASTVisitor<E extends HelperVisitorProvider> extends ASTVisitor {
+public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T>, V, T> extends ASTVisitor {
 	/**
 	 * 
 	 */
@@ -34,6 +36,12 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider> extends ASTVisito
 	 * @param helperVisitor
 	 */
 	LambdaASTVisitor(HelperVisitor<E> helperVisitor) {
+		super(false);
+		this.helperVisitor = helperVisitor;
+	}
+	
+	LambdaASTVisitor(HelperVisitor<E> helperVisitor, boolean visitjavadoc) {
+		super(visitjavadoc);
 		this.helperVisitor = helperVisitor;
 	}
 
@@ -663,9 +671,9 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider> extends ASTVisito
 
 //	@Override
 //	public boolean visit(ModuleQualifiedName node) {
-//		if (this.helperVisitor.suppliermap.containsKey(VisitorEnum.ModuleQualifiedName)) {
-//			return ((BiPredicate<ModuleQualifiedName, E>) (this.helperVisitor.suppliermap
-//					.get(VisitorEnum.ModuleQualifiedName))).test(node, this.helperVisitor.dataholder);
+//		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ModuleQualifiedName)) {
+//			return ((BiPredicate<ModuleQualifiedName, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ModuleQualifiedName)))
+//					.test(node, this.helperVisitor.dataholder);
 //		}
 //		return true;
 //	}

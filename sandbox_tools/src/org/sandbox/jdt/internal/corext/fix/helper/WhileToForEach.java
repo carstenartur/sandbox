@@ -13,6 +13,9 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -35,6 +38,7 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.WhileStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.internal.core.manipulation.dom.ASTResolving;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
@@ -59,19 +63,19 @@ public class WhileToForEach extends AbstractTool<Hit> {
 			return processVariableDeclarationStatement(fixcore, operations, assignment, holder);
 		});
 		hv.addWhileStatement(this::processWhileStatement);
-		hv.addWhileStatement((assignment, holder) -> {
-			System.out.println(assignment);
-		});
-		hv.addMethodInvocation((assignment, holder) -> {
-			return true;
-		});
+//		hv.addWhileStatement((assignment, holder) -> {
+//			System.out.println(assignment);
+//		});
+//		hv.addMethodInvocation((assignment, holder) -> {
+//			return true;
+//		});
 		hv.build(compilationUnit);
 	}
 
 	private Boolean processVariableDeclarationStatement(UseIteratorToForLoopFixCore fixcore,
 			Set<CompilationUnitRewriteOperation> operations, VariableDeclarationStatement assignment,
 			MyReferenceHolder holder) {
-		VariableDeclarationFragment bli = fetchVDFragment(assignment);
+		VariableDeclarationFragment bli = (VariableDeclarationFragment) assignment.fragments().get(0);
 		Expression exp = bli.getInitializer();
 		String qualifiedName = bli.resolveBinding().getType().getErasure().getQualifiedName();
 		if (ITERATOR_NAME.equals(qualifiedName)) {
@@ -129,12 +133,9 @@ public class WhileToForEach extends AbstractTool<Hit> {
 		return true;
 	}
 
-	private VariableDeclarationFragment fetchVDFragment(VariableDeclarationStatement assignment) {
-		return (VariableDeclarationFragment) assignment.fragments().get(0);
-	}
-
 	private Boolean processWhileStatement(WhileStatement whilestatement, MyReferenceHolder holder) {
 		Expression exp = whilestatement.getExpression();
+		Collection<String> usedVarNames= getUsedVariableNames(whilestatement.getBody());
 		if (exp instanceof MethodInvocation) {
 			MethodInvocation mi = (MethodInvocation) exp;
 			Expression expression = mi.getExpression();
@@ -150,6 +151,7 @@ public class WhileToForEach extends AbstractTool<Hit> {
 			}
 			String mytype = resolveTypeBinding.getErasure().getQualifiedName();
 			if (holder.containsKey(name) && ITERATOR_NAME.equals(mytype)) {
+//				usedVarNames.co
 				Hit hit = holder.get(name);
 				hit.whilestatement = whilestatement;
 				// operations.add(fixcore.rewrite(holder));
