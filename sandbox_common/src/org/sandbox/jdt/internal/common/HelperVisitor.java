@@ -29,15 +29,17 @@ import org.eclipse.jdt.core.dom.*;
  * @author chammer
  *
  * @param <E>
- * @param <T>
- * @param <V>
  */
 public class HelperVisitor<E extends HelperVisitorProvider> {
 
 	private static final long serialVersionUID = 1L;
 
 	ASTVisitor astvisitor;
-	public E dataholder;
+
+    /**
+     *
+     */
+    public E dataholder;
 
 	/**
 	 * This map contains one VisitorSupplier per kind if supplied Each BiPredicate
@@ -59,21 +61,41 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 	Map<VisitorEnum, Object> predicatedata;
 	Map<VisitorEnum, Object> consumerdata;
 
-	public Map<VisitorEnum, BiPredicate<? extends ASTNode, E>> getSuppliermap() {
+    /**
+     *
+     * @return
+     */
+    public Map<VisitorEnum, BiPredicate<? extends ASTNode, E>> getSuppliermap() {
 		return predicatemap;
 	}
 
-	public Map<VisitorEnum, BiConsumer<? extends ASTNode, E>> getConsumermap() {
+    /**
+     *
+     * @return
+     */
+    public Map<VisitorEnum, BiConsumer<? extends ASTNode, E>> getConsumermap() {
 		return consumermap;
 	}
 
-	public Set<ASTNode> nodesprocessed;
+    /**
+     *
+     */
+    public Set<ASTNode> nodesprocessed;
 
-	public Set<ASTNode> getNodesprocessed() {
+    /**
+     *
+     * @return
+     */
+    public Set<ASTNode> getNodesprocessed() {
 		return nodesprocessed;
 	}
 
-	public HelperVisitor(Set<ASTNode> nodesprocessed, E dataholder) {
+    /**
+     *
+     * @param nodesprocessed
+     * @param dataholder
+     */
+    public HelperVisitor(Set<ASTNode> nodesprocessed, E dataholder) {
 		this.predicatemap = new LinkedHashMap<>();
 		this.consumermap = new LinkedHashMap<>();
 		this.predicatedata = new HashMap<>();
@@ -84,300 +106,662 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		this.nodesprocessed = nodesprocessed;
 	}
 	
-	public HelperVisitor<E> build(ASTNode node) {
+    /**
+     *
+     * @param node
+     * @return
+     */
+    public HelperVisitor<E> build(ASTNode node) {
 		return build(node,false);
 	}
 	
-	public HelperVisitor<E> build(ASTNode node, boolean visitjavadoc) {
+    /**
+     *
+     * @param node
+     * @param visitjavadoc
+     * @return
+     */
+    public HelperVisitor<E> build(ASTNode node, boolean visitjavadoc) {
 		astvisitor = new LambdaASTVisitor<>(this, visitjavadoc);
 		node.accept(astvisitor);
 		return this;
 	}
 
-	public BiPredicate<? extends ASTNode, E> addAnnotationTypeDeclaration(
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addAnnotationTypeDeclaration(
 			BiPredicate<AnnotationTypeDeclaration, E> bs) {
 		return predicatemap.put(VisitorEnum.AnnotationTypeDeclaration, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addAnnotationTypeMemberDeclaration(
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addAnnotationTypeMemberDeclaration(
 			BiPredicate<AnnotationTypeMemberDeclaration, E> bs) {
 		return predicatemap.put(VisitorEnum.AnnotationTypeMemberDeclaration, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addAnonymousClassDeclaration(
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addAnonymousClassDeclaration(
 			BiPredicate<AnonymousClassDeclaration, E> bs) {
 		return predicatemap.put(VisitorEnum.AnonymousClassDeclaration, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addArrayAccess(BiPredicate<ArrayAccess, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addArrayAccess(BiPredicate<ArrayAccess, E> bs) {
 		return predicatemap.put(VisitorEnum.ArrayAccess, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addArrayCreation(BiPredicate<ArrayCreation, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addArrayCreation(BiPredicate<ArrayCreation, E> bs) {
 		return predicatemap.put(VisitorEnum.ArrayCreation, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addArrayInitializer(BiPredicate<ArrayInitializer, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addArrayInitializer(BiPredicate<ArrayInitializer, E> bs) {
 		return predicatemap.put(VisitorEnum.ArrayInitializer, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addArrayType(BiPredicate<ArrayType, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addArrayType(BiPredicate<ArrayType, E> bs) {
 		return predicatemap.put(VisitorEnum.ArrayType, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addAssertStatement(BiPredicate<AssertStatement, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addAssertStatement(BiPredicate<AssertStatement, E> bs) {
 		return predicatemap.put(VisitorEnum.AssertStatement, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addAssignment(BiPredicate<Assignment, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addAssignment(BiPredicate<Assignment, E> bs) {
 		return predicatemap.put(VisitorEnum.Assignment, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addBlock(BiPredicate<Block, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addBlock(BiPredicate<Block, E> bs) {
 		return predicatemap.put(VisitorEnum.Block, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addBlockComment(BiPredicate<BlockComment, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addBlockComment(BiPredicate<BlockComment, E> bs) {
 		return predicatemap.put(VisitorEnum.BlockComment, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addBooleanLiteral(BiPredicate<BooleanLiteral, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addBooleanLiteral(BiPredicate<BooleanLiteral, E> bs) {
 		return predicatemap.put(VisitorEnum.BooleanLiteral, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addBreakStatement(BiPredicate<BreakStatement, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addBreakStatement(BiPredicate<BreakStatement, E> bs) {
 		return predicatemap.put(VisitorEnum.BreakStatement, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addCastExpression(BiPredicate<CastExpression, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addCastExpression(BiPredicate<CastExpression, E> bs) {
 		return predicatemap.put(VisitorEnum.CastExpression, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addCatchClause(BiPredicate<CatchClause, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addCatchClause(BiPredicate<CatchClause, E> bs) {
 		return predicatemap.put(VisitorEnum.CatchClause, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addCharacterLiteral(BiPredicate<CharacterLiteral, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addCharacterLiteral(BiPredicate<CharacterLiteral, E> bs) {
 		return predicatemap.put(VisitorEnum.CharacterLiteral, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addClassInstanceCreation(BiPredicate<ClassInstanceCreation, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addClassInstanceCreation(BiPredicate<ClassInstanceCreation, E> bs) {
 		return predicatemap.put(VisitorEnum.ClassInstanceCreation, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addCompilationUnit(BiPredicate<CompilationUnit, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addCompilationUnit(BiPredicate<CompilationUnit, E> bs) {
 		return predicatemap.put(VisitorEnum.CompilationUnit, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addConditionalExpression(BiPredicate<ConditionalExpression, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addConditionalExpression(BiPredicate<ConditionalExpression, E> bs) {
 		return predicatemap.put(VisitorEnum.ConditionalExpression, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addConstructorInvocation(BiPredicate<ConstructorInvocation, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addConstructorInvocation(BiPredicate<ConstructorInvocation, E> bs) {
 		return predicatemap.put(VisitorEnum.ConstructorInvocation, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addContinueStatement(BiPredicate<ContinueStatement, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addContinueStatement(BiPredicate<ContinueStatement, E> bs) {
 		return predicatemap.put(VisitorEnum.ContinueStatement, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addCreationReference(BiPredicate<CreationReference, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addCreationReference(BiPredicate<CreationReference, E> bs) {
 		return predicatemap.put(VisitorEnum.CreationReference, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addDimension(BiPredicate<Dimension, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addDimension(BiPredicate<Dimension, E> bs) {
 		return predicatemap.put(VisitorEnum.Dimension, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addDoStatement(BiPredicate<DoStatement, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addDoStatement(BiPredicate<DoStatement, E> bs) {
 		return predicatemap.put(VisitorEnum.DoStatement, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addEmptyStatement(BiPredicate<EmptyStatement, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addEmptyStatement(BiPredicate<EmptyStatement, E> bs) {
 		return predicatemap.put(VisitorEnum.EmptyStatement, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addEnhancedForStatement(BiPredicate<EnhancedForStatement, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addEnhancedForStatement(BiPredicate<EnhancedForStatement, E> bs) {
 		return predicatemap.put(VisitorEnum.EnhancedForStatement, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addEnumConstantDeclaration(BiPredicate<EnumConstantDeclaration, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addEnumConstantDeclaration(BiPredicate<EnumConstantDeclaration, E> bs) {
 		return predicatemap.put(VisitorEnum.EnumConstantDeclaration, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addEnumDeclaration(BiPredicate<EnumDeclaration, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addEnumDeclaration(BiPredicate<EnumDeclaration, E> bs) {
 		return predicatemap.put(VisitorEnum.EnumDeclaration, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addExportsDirective(BiPredicate<ExportsDirective, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addExportsDirective(BiPredicate<ExportsDirective, E> bs) {
 		return predicatemap.put(VisitorEnum.ExportsDirective, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addExpressionMethodReference(
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addExpressionMethodReference(
 			BiPredicate<ExpressionMethodReference, E> bs) {
 		return predicatemap.put(VisitorEnum.ExpressionMethodReference, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addExpressionStatement(BiPredicate<ExpressionStatement, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addExpressionStatement(BiPredicate<ExpressionStatement, E> bs) {
 		return predicatemap.put(VisitorEnum.ExpressionStatement, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addFieldAccess(BiPredicate<FieldAccess, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addFieldAccess(BiPredicate<FieldAccess, E> bs) {
 		return predicatemap.put(VisitorEnum.FieldAccess, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addFieldDeclaration(BiPredicate<FieldDeclaration, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addFieldDeclaration(BiPredicate<FieldDeclaration, E> bs) {
 		return predicatemap.put(VisitorEnum.FieldDeclaration, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addForStatement(BiPredicate<ForStatement, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addForStatement(BiPredicate<ForStatement, E> bs) {
 		return predicatemap.put(VisitorEnum.ForStatement, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addIfStatement(BiPredicate<IfStatement, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addIfStatement(BiPredicate<IfStatement, E> bs) {
 		return predicatemap.put(VisitorEnum.IfStatement, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addImportDeclaration(BiPredicate<ImportDeclaration, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addImportDeclaration(BiPredicate<ImportDeclaration, E> bs) {
 		return predicatemap.put(VisitorEnum.ImportDeclaration, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addInfixExpression(BiPredicate<InfixExpression, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addInfixExpression(BiPredicate<InfixExpression, E> bs) {
 		return predicatemap.put(VisitorEnum.InfixExpression, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addInitializer(BiPredicate<Initializer, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addInitializer(BiPredicate<Initializer, E> bs) {
 		return predicatemap.put(VisitorEnum.Initializer, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addInstanceofExpression(BiPredicate<InstanceofExpression, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addInstanceofExpression(BiPredicate<InstanceofExpression, E> bs) {
 		return predicatemap.put(VisitorEnum.InstanceofExpression, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addIntersectionType(BiPredicate<IntersectionType, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addIntersectionType(BiPredicate<IntersectionType, E> bs) {
 		return predicatemap.put(VisitorEnum.IntersectionType, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addJavadoc(BiPredicate<Javadoc, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addJavadoc(BiPredicate<Javadoc, E> bs) {
 		return predicatemap.put(VisitorEnum.Javadoc, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addLabeledStatement(BiPredicate<LabeledStatement, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addLabeledStatement(BiPredicate<LabeledStatement, E> bs) {
 		return predicatemap.put(VisitorEnum.LabeledStatement, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addLambdaExpression(BiPredicate<LambdaExpression, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addLambdaExpression(BiPredicate<LambdaExpression, E> bs) {
 		return predicatemap.put(VisitorEnum.LambdaExpression, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addLineComment(BiPredicate<LineComment, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addLineComment(BiPredicate<LineComment, E> bs) {
 		return predicatemap.put(VisitorEnum.LineComment, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addMarkerAnnotation(BiPredicate<MarkerAnnotation, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addMarkerAnnotation(BiPredicate<MarkerAnnotation, E> bs) {
 		return predicatemap.put(VisitorEnum.MarkerAnnotation, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addMemberRef(BiPredicate<MemberRef, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addMemberRef(BiPredicate<MemberRef, E> bs) {
 		return predicatemap.put(VisitorEnum.MemberRef, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addMemberValuePair(BiPredicate<MemberValuePair, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addMemberValuePair(BiPredicate<MemberValuePair, E> bs) {
 		return predicatemap.put(VisitorEnum.MemberValuePair, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addMethodRef(BiPredicate<MethodRef, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addMethodRef(BiPredicate<MethodRef, E> bs) {
 		return predicatemap.put(VisitorEnum.MethodRef, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addMethodRefParameter(BiPredicate<MethodRefParameter, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addMethodRefParameter(BiPredicate<MethodRefParameter, E> bs) {
 		return predicatemap.put(VisitorEnum.MethodRefParameter, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addMethodDeclaration(BiPredicate<MethodDeclaration, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addMethodDeclaration(BiPredicate<MethodDeclaration, E> bs) {
 		return predicatemap.put(VisitorEnum.MethodDeclaration, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addMethodInvocation(BiPredicate<MethodInvocation, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addMethodInvocation(BiPredicate<MethodInvocation, E> bs) {
 		return predicatemap.put(VisitorEnum.MethodInvocation, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addMethodInvocation(String methodname,
+    /**
+     *
+     * @param methodname
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addMethodInvocation(String methodname,
 			BiPredicate<MethodInvocation, E> bs) {
 		this.predicatedata.put(VisitorEnum.MethodInvocation, methodname);
 		return predicatemap.put(VisitorEnum.MethodInvocation, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addModifier(BiPredicate<Modifier, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addModifier(BiPredicate<Modifier, E> bs) {
 		return predicatemap.put(VisitorEnum.Modifier, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addModuleDeclaration(BiPredicate<ModuleDeclaration, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addModuleDeclaration(BiPredicate<ModuleDeclaration, E> bs) {
 		return predicatemap.put(VisitorEnum.ModuleDeclaration, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addModuleModifier(BiPredicate<ModuleModifier, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addModuleModifier(BiPredicate<ModuleModifier, E> bs) {
 		return predicatemap.put(VisitorEnum.ModuleModifier, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addNameQualifiedType(BiPredicate<NameQualifiedType, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addNameQualifiedType(BiPredicate<NameQualifiedType, E> bs) {
 		return predicatemap.put(VisitorEnum.NameQualifiedType, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addNormalAnnotation(BiPredicate<NormalAnnotation, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addNormalAnnotation(BiPredicate<NormalAnnotation, E> bs) {
 		return predicatemap.put(VisitorEnum.NormalAnnotation, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addNullLiteral(BiPredicate<NullLiteral, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addNullLiteral(BiPredicate<NullLiteral, E> bs) {
 		return predicatemap.put(VisitorEnum.NullLiteral, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addNumberLiteral(BiPredicate<NumberLiteral, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addNumberLiteral(BiPredicate<NumberLiteral, E> bs) {
 		return predicatemap.put(VisitorEnum.NumberLiteral, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addOpensDirective(BiPredicate<OpensDirective, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addOpensDirective(BiPredicate<OpensDirective, E> bs) {
 		return predicatemap.put(VisitorEnum.OpensDirective, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addPackageDeclaration(BiPredicate<PackageDeclaration, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addPackageDeclaration(BiPredicate<PackageDeclaration, E> bs) {
 		return predicatemap.put(VisitorEnum.PackageDeclaration, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addParameterizedType(BiPredicate<ParameterizedType, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addParameterizedType(BiPredicate<ParameterizedType, E> bs) {
 		return predicatemap.put(VisitorEnum.ParameterizedType, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addParenthesizedExpression(BiPredicate<ParenthesizedExpression, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addParenthesizedExpression(BiPredicate<ParenthesizedExpression, E> bs) {
 		return predicatemap.put(VisitorEnum.ParenthesizedExpression, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addPatternInstanceofExpression(
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addPatternInstanceofExpression(
 			BiPredicate<PatternInstanceofExpression, E> bs) {
 		return predicatemap.put(VisitorEnum.PatternInstanceofExpression, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addPostfixExpression(BiPredicate<PostfixExpression, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addPostfixExpression(BiPredicate<PostfixExpression, E> bs) {
 		return predicatemap.put(VisitorEnum.PostfixExpression, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addPrefixExpression(BiPredicate<PrefixExpression, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addPrefixExpression(BiPredicate<PrefixExpression, E> bs) {
 		return predicatemap.put(VisitorEnum.PrefixExpression, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addProvidesDirective(BiPredicate<ProvidesDirective, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addProvidesDirective(BiPredicate<ProvidesDirective, E> bs) {
 		return predicatemap.put(VisitorEnum.ProvidesDirective, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addPrimitiveType(BiPredicate<PrimitiveType, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addPrimitiveType(BiPredicate<PrimitiveType, E> bs) {
 		return predicatemap.put(VisitorEnum.PrimitiveType, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addQualifiedName(BiPredicate<QualifiedName, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addQualifiedName(BiPredicate<QualifiedName, E> bs) {
 		return predicatemap.put(VisitorEnum.QualifiedName, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addQualifiedType(BiPredicate<QualifiedType, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addQualifiedType(BiPredicate<QualifiedType, E> bs) {
 		return predicatemap.put(VisitorEnum.QualifiedType, bs);
 	}
 
@@ -386,442 +770,980 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 //		return predicatemap.put(VisitorEnum.ModuleQualifiedName, bs);
 //	}
 
+    /**
+     *
+     * @param bs
+     * @return
+     */
+
 	public BiPredicate<? extends ASTNode, E> addRequiresDirective(BiPredicate<RequiresDirective, E> bs) {
 		return predicatemap.put(VisitorEnum.RequiresDirective, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addRecordDeclaration(BiPredicate<RecordDeclaration, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addRecordDeclaration(BiPredicate<RecordDeclaration, E> bs) {
 		return predicatemap.put(VisitorEnum.RecordDeclaration, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addReturnStatement(BiPredicate<ReturnStatement, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addReturnStatement(BiPredicate<ReturnStatement, E> bs) {
 		return predicatemap.put(VisitorEnum.ReturnStatement, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addSimpleName(BiPredicate<SimpleName, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addSimpleName(BiPredicate<SimpleName, E> bs) {
 		return predicatemap.put(VisitorEnum.SimpleName, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addSimpleType(BiPredicate<SimpleType, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addSimpleType(BiPredicate<SimpleType, E> bs) {
 		return predicatemap.put(VisitorEnum.SimpleType, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addSingleMemberAnnotation(BiPredicate<SingleMemberAnnotation, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addSingleMemberAnnotation(BiPredicate<SingleMemberAnnotation, E> bs) {
 		return predicatemap.put(VisitorEnum.SingleMemberAnnotation, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addSingleVariableDeclaration(
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addSingleVariableDeclaration(
 			BiPredicate<SingleVariableDeclaration, E> bs) {
 		return predicatemap.put(VisitorEnum.SingleVariableDeclaration, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addStringLiteral(BiPredicate<StringLiteral, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addStringLiteral(BiPredicate<StringLiteral, E> bs) {
 		return predicatemap.put(VisitorEnum.StringLiteral, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addSuperConstructorInvocation(
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addSuperConstructorInvocation(
 			BiPredicate<SuperConstructorInvocation, E> bs) {
 		return predicatemap.put(VisitorEnum.SuperConstructorInvocation, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addSuperFieldAccess(BiPredicate<SuperFieldAccess, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addSuperFieldAccess(BiPredicate<SuperFieldAccess, E> bs) {
 		return predicatemap.put(VisitorEnum.SuperFieldAccess, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addSuperMethodInvocation(BiPredicate<SuperMethodInvocation, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addSuperMethodInvocation(BiPredicate<SuperMethodInvocation, E> bs) {
 		return predicatemap.put(VisitorEnum.SuperMethodInvocation, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addSuperMethodReference(BiPredicate<SuperMethodReference, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addSuperMethodReference(BiPredicate<SuperMethodReference, E> bs) {
 		return predicatemap.put(VisitorEnum.SuperMethodReference, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addSwitchCase(BiPredicate<SwitchCase, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addSwitchCase(BiPredicate<SwitchCase, E> bs) {
 		return predicatemap.put(VisitorEnum.SwitchCase, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addSwitchExpression(BiPredicate<SwitchExpression, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addSwitchExpression(BiPredicate<SwitchExpression, E> bs) {
 		return predicatemap.put(VisitorEnum.SwitchExpression, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addSwitchStatement(BiPredicate<SwitchStatement, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addSwitchStatement(BiPredicate<SwitchStatement, E> bs) {
 		return predicatemap.put(VisitorEnum.SwitchStatement, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addSynchronizedStatement(BiPredicate<SynchronizedStatement, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addSynchronizedStatement(BiPredicate<SynchronizedStatement, E> bs) {
 		return predicatemap.put(VisitorEnum.SynchronizedStatement, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addTagElement(BiPredicate<TagElement, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addTagElement(BiPredicate<TagElement, E> bs) {
 		return predicatemap.put(VisitorEnum.TagElement, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addTextBlock(BiPredicate<TextBlock, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addTextBlock(BiPredicate<TextBlock, E> bs) {
 		return predicatemap.put(VisitorEnum.TextBlock, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addTextElement(BiPredicate<TextElement, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addTextElement(BiPredicate<TextElement, E> bs) {
 		return predicatemap.put(VisitorEnum.TextElement, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addThisExpression(BiPredicate<ThisExpression, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addThisExpression(BiPredicate<ThisExpression, E> bs) {
 		return predicatemap.put(VisitorEnum.ThisExpression, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addThrowStatement(BiPredicate<ThrowStatement, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addThrowStatement(BiPredicate<ThrowStatement, E> bs) {
 		return predicatemap.put(VisitorEnum.ThrowStatement, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addTryStatement(BiPredicate<TryStatement, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addTryStatement(BiPredicate<TryStatement, E> bs) {
 		return predicatemap.put(VisitorEnum.TryStatement, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addTypeDeclaration(BiPredicate<TypeDeclaration, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addTypeDeclaration(BiPredicate<TypeDeclaration, E> bs) {
 		return predicatemap.put(VisitorEnum.TypeDeclaration, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addTypeDeclarationStatement(BiPredicate<TypeDeclarationStatement, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addTypeDeclarationStatement(BiPredicate<TypeDeclarationStatement, E> bs) {
 		return predicatemap.put(VisitorEnum.TypeDeclarationStatement, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addTypeLiteral(BiPredicate<TypeLiteral, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addTypeLiteral(BiPredicate<TypeLiteral, E> bs) {
 		return predicatemap.put(VisitorEnum.TypeLiteral, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addTypeMethodReference(BiPredicate<TypeMethodReference, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addTypeMethodReference(BiPredicate<TypeMethodReference, E> bs) {
 		return predicatemap.put(VisitorEnum.TypeMethodReference, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addTypeParameter(BiPredicate<TypeParameter, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addTypeParameter(BiPredicate<TypeParameter, E> bs) {
 		return predicatemap.put(VisitorEnum.TypeParameter, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addUnionType(BiPredicate<UnionType, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addUnionType(BiPredicate<UnionType, E> bs) {
 		return predicatemap.put(VisitorEnum.UnionType, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addUsesDirective(BiPredicate<UsesDirective, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addUsesDirective(BiPredicate<UsesDirective, E> bs) {
 		return predicatemap.put(VisitorEnum.UsesDirective, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addVariableDeclarationExpression(
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addVariableDeclarationExpression(
 			BiPredicate<VariableDeclarationExpression, E> bs) {
 		return predicatemap.put(VisitorEnum.VariableDeclarationExpression, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addVariableDeclarationStatement(
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addVariableDeclarationStatement(
 			BiPredicate<VariableDeclarationStatement, E> bs) {
 		return predicatemap.put(VisitorEnum.VariableDeclarationStatement, bs);
 	}
 	
-	public BiPredicate<? extends ASTNode, E> addVariableDeclarationStatement(Class<?> class1,
+    /**
+     *
+     * @param class1
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addVariableDeclarationStatement(Class<?> class1,
 			BiPredicate<VariableDeclarationStatement, E> bs) {
 		this.predicatedata.put(VisitorEnum.VariableDeclarationStatement, class1);
 		return predicatemap.put(VisitorEnum.VariableDeclarationStatement, bs);
 	}
 	
-
-	public BiPredicate<? extends ASTNode, E> addVariableDeclarationFragment(
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addVariableDeclarationFragment(
 			BiPredicate<VariableDeclarationFragment, E> bs) {
 		return predicatemap.put(VisitorEnum.VariableDeclarationFragment, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addWhileStatement(BiPredicate<WhileStatement, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addWhileStatement(BiPredicate<WhileStatement, E> bs) {
 		return predicatemap.put(VisitorEnum.WhileStatement, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addWildcardType(BiPredicate<WildcardType, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addWildcardType(BiPredicate<WildcardType, E> bs) {
 		return predicatemap.put(VisitorEnum.WildcardType, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> addYieldStatement(BiPredicate<YieldStatement, E> bs) {
+    /**
+     *
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> addYieldStatement(BiPredicate<YieldStatement, E> bs) {
 		return predicatemap.put(VisitorEnum.YieldStatement, bs);
 	}
 
-	public BiPredicate<? extends ASTNode, E> add(VisitorEnum key, BiPredicate<ASTNode, E> bs) {
+    /**
+     *
+     * @param key
+     * @param bs
+     * @return
+     */
+    public BiPredicate<? extends ASTNode, E> add(VisitorEnum key, BiPredicate<ASTNode, E> bs) {
 		return predicatemap.put(key, bs);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addAnnotationTypeDeclaration(BiConsumer<AnnotationTypeDeclaration, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addAnnotationTypeDeclaration(BiConsumer<AnnotationTypeDeclaration, E> bc) {
 		return consumermap.put(VisitorEnum.AnnotationTypeDeclaration, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addAnnotationTypeMemberDeclaration(
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addAnnotationTypeMemberDeclaration(
 			BiConsumer<AnnotationTypeMemberDeclaration, E> bc) {
 		return consumermap.put(VisitorEnum.AnnotationTypeMemberDeclaration, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addAnonymousClassDeclaration(BiConsumer<AnonymousClassDeclaration, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addAnonymousClassDeclaration(BiConsumer<AnonymousClassDeclaration, E> bc) {
 		return consumermap.put(VisitorEnum.AnonymousClassDeclaration, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addArrayAccess(BiConsumer<ArrayAccess, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addArrayAccess(BiConsumer<ArrayAccess, E> bc) {
 		return consumermap.put(VisitorEnum.ArrayAccess, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addArrayCreation(BiConsumer<ArrayCreation, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addArrayCreation(BiConsumer<ArrayCreation, E> bc) {
 		return consumermap.put(VisitorEnum.ArrayCreation, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addArrayInitializer(BiConsumer<ArrayInitializer, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addArrayInitializer(BiConsumer<ArrayInitializer, E> bc) {
 		return consumermap.put(VisitorEnum.ArrayInitializer, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addArrayType(BiConsumer<ArrayType, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addArrayType(BiConsumer<ArrayType, E> bc) {
 		return consumermap.put(VisitorEnum.ArrayType, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addAssertStatement(BiConsumer<AssertStatement, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addAssertStatement(BiConsumer<AssertStatement, E> bc) {
 		return consumermap.put(VisitorEnum.AssertStatement, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addAssignment(BiConsumer<Assignment, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addAssignment(BiConsumer<Assignment, E> bc) {
 		return consumermap.put(VisitorEnum.Assignment, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addBlock(BiConsumer<Block, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addBlock(BiConsumer<Block, E> bc) {
 		return consumermap.put(VisitorEnum.Block, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addBlockComment(BiConsumer<BlockComment, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addBlockComment(BiConsumer<BlockComment, E> bc) {
 		return consumermap.put(VisitorEnum.BlockComment, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addBooleanLiteral(BiConsumer<BooleanLiteral, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addBooleanLiteral(BiConsumer<BooleanLiteral, E> bc) {
 		return consumermap.put(VisitorEnum.BooleanLiteral, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addBreakStatement(BiConsumer<BreakStatement, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addBreakStatement(BiConsumer<BreakStatement, E> bc) {
 		return consumermap.put(VisitorEnum.BreakStatement, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addCastExpression(BiConsumer<CastExpression, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addCastExpression(BiConsumer<CastExpression, E> bc) {
 		return consumermap.put(VisitorEnum.CastExpression, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addCatchClause(BiConsumer<CatchClause, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addCatchClause(BiConsumer<CatchClause, E> bc) {
 		return consumermap.put(VisitorEnum.CatchClause, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addCharacterLiteral(BiConsumer<CharacterLiteral, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addCharacterLiteral(BiConsumer<CharacterLiteral, E> bc) {
 		return consumermap.put(VisitorEnum.CharacterLiteral, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addClassInstanceCreation(BiConsumer<ClassInstanceCreation, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addClassInstanceCreation(BiConsumer<ClassInstanceCreation, E> bc) {
 		return consumermap.put(VisitorEnum.ClassInstanceCreation, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addCompilationUnit(BiConsumer<CompilationUnit, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addCompilationUnit(BiConsumer<CompilationUnit, E> bc) {
 		return consumermap.put(VisitorEnum.CompilationUnit, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addConditionalExpression(BiConsumer<ConditionalExpression, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addConditionalExpression(BiConsumer<ConditionalExpression, E> bc) {
 		return consumermap.put(VisitorEnum.ConditionalExpression, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addConstructorInvocation(BiConsumer<ConstructorInvocation, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addConstructorInvocation(BiConsumer<ConstructorInvocation, E> bc) {
 		return consumermap.put(VisitorEnum.ConstructorInvocation, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addContinueStatement(BiConsumer<ContinueStatement, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addContinueStatement(BiConsumer<ContinueStatement, E> bc) {
 		return consumermap.put(VisitorEnum.ContinueStatement, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addCreationReference(BiConsumer<CreationReference, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addCreationReference(BiConsumer<CreationReference, E> bc) {
 		return consumermap.put(VisitorEnum.CreationReference, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addDimension(BiConsumer<Dimension, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addDimension(BiConsumer<Dimension, E> bc) {
 		return consumermap.put(VisitorEnum.Dimension, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addDoStatement(BiConsumer<DoStatement, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addDoStatement(BiConsumer<DoStatement, E> bc) {
 		return consumermap.put(VisitorEnum.DoStatement, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addEmptyStatement(BiConsumer<EmptyStatement, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addEmptyStatement(BiConsumer<EmptyStatement, E> bc) {
 		return consumermap.put(VisitorEnum.EmptyStatement, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addEnhancedForStatement(BiConsumer<EnhancedForStatement, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addEnhancedForStatement(BiConsumer<EnhancedForStatement, E> bc) {
 		return consumermap.put(VisitorEnum.EnhancedForStatement, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addEnumConstantDeclaration(BiConsumer<EnumConstantDeclaration, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addEnumConstantDeclaration(BiConsumer<EnumConstantDeclaration, E> bc) {
 		return consumermap.put(VisitorEnum.EnumConstantDeclaration, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addEnumDeclaration(BiConsumer<EnumDeclaration, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addEnumDeclaration(BiConsumer<EnumDeclaration, E> bc) {
 		return consumermap.put(VisitorEnum.EnumDeclaration, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addExportsDirective(BiConsumer<ExportsDirective, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addExportsDirective(BiConsumer<ExportsDirective, E> bc) {
 		return consumermap.put(VisitorEnum.ExportsDirective, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addExpressionMethodReference(BiConsumer<ExpressionMethodReference, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addExpressionMethodReference(BiConsumer<ExpressionMethodReference, E> bc) {
 		return consumermap.put(VisitorEnum.ExpressionMethodReference, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addExpressionStatement(BiConsumer<ExpressionStatement, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addExpressionStatement(BiConsumer<ExpressionStatement, E> bc) {
 		return consumermap.put(VisitorEnum.ExpressionStatement, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addFieldAccess(BiConsumer<FieldAccess, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addFieldAccess(BiConsumer<FieldAccess, E> bc) {
 		return consumermap.put(VisitorEnum.FieldAccess, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addFieldDeclaration(BiConsumer<FieldDeclaration, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addFieldDeclaration(BiConsumer<FieldDeclaration, E> bc) {
 		return consumermap.put(VisitorEnum.FieldDeclaration, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addForStatement(BiConsumer<ForStatement, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addForStatement(BiConsumer<ForStatement, E> bc) {
 		return consumermap.put(VisitorEnum.ForStatement, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addIfStatement(BiConsumer<IfStatement, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addIfStatement(BiConsumer<IfStatement, E> bc) {
 		return consumermap.put(VisitorEnum.IfStatement, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addImportDeclaration(BiConsumer<ImportDeclaration, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addImportDeclaration(BiConsumer<ImportDeclaration, E> bc) {
 		return consumermap.put(VisitorEnum.ImportDeclaration, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addInfixExpression(BiConsumer<InfixExpression, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addInfixExpression(BiConsumer<InfixExpression, E> bc) {
 		return consumermap.put(VisitorEnum.InfixExpression, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addInitializer(BiConsumer<Initializer, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addInitializer(BiConsumer<Initializer, E> bc) {
 		return consumermap.put(VisitorEnum.Initializer, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addInstanceofExpression(BiConsumer<InstanceofExpression, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addInstanceofExpression(BiConsumer<InstanceofExpression, E> bc) {
 		return consumermap.put(VisitorEnum.InstanceofExpression, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addIntersectionType(BiConsumer<IntersectionType, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addIntersectionType(BiConsumer<IntersectionType, E> bc) {
 		return consumermap.put(VisitorEnum.IntersectionType, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addJavadoc(BiConsumer<Javadoc, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addJavadoc(BiConsumer<Javadoc, E> bc) {
 		return consumermap.put(VisitorEnum.Javadoc, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addLabeledStatement(BiConsumer<LabeledStatement, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addLabeledStatement(BiConsumer<LabeledStatement, E> bc) {
 		return consumermap.put(VisitorEnum.LabeledStatement, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addLambdaExpression(BiConsumer<LambdaExpression, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addLambdaExpression(BiConsumer<LambdaExpression, E> bc) {
 		return consumermap.put(VisitorEnum.LambdaExpression, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addLineComment(BiConsumer<LineComment, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addLineComment(BiConsumer<LineComment, E> bc) {
 		return consumermap.put(VisitorEnum.LineComment, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addMarkerAnnotation(BiConsumer<MarkerAnnotation, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addMarkerAnnotation(BiConsumer<MarkerAnnotation, E> bc) {
 		return consumermap.put(VisitorEnum.MarkerAnnotation, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addMemberRef(BiConsumer<MemberRef, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addMemberRef(BiConsumer<MemberRef, E> bc) {
 		return consumermap.put(VisitorEnum.MemberRef, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addMemberValuePair(BiConsumer<MemberValuePair, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addMemberValuePair(BiConsumer<MemberValuePair, E> bc) {
 		return consumermap.put(VisitorEnum.MemberValuePair, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addMethodRef(BiConsumer<MethodRef, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addMethodRef(BiConsumer<MethodRef, E> bc) {
 		return consumermap.put(VisitorEnum.MethodRef, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addMethodRefParameter(BiConsumer<MethodRefParameter, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addMethodRefParameter(BiConsumer<MethodRefParameter, E> bc) {
 		return consumermap.put(VisitorEnum.MethodRefParameter, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addMethodDeclaration(BiConsumer<MethodDeclaration, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addMethodDeclaration(BiConsumer<MethodDeclaration, E> bc) {
 		return consumermap.put(VisitorEnum.MethodDeclaration, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addMethodInvocation(BiConsumer<MethodInvocation, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addMethodInvocation(BiConsumer<MethodInvocation, E> bc) {
 		return consumermap.put(VisitorEnum.MethodInvocation, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addMethodInvocation(String methodname, BiConsumer<MethodInvocation, E> bc) {
+    /**
+     *
+     * @param methodname
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addMethodInvocation(String methodname, BiConsumer<MethodInvocation, E> bc) {
 		this.consumerdata.put(VisitorEnum.MethodInvocation, methodname);
 		return consumermap.put(VisitorEnum.MethodInvocation, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addModifier(BiConsumer<Modifier, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addModifier(BiConsumer<Modifier, E> bc) {
 		return consumermap.put(VisitorEnum.Modifier, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addModuleDeclaration(BiConsumer<ModuleDeclaration, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addModuleDeclaration(BiConsumer<ModuleDeclaration, E> bc) {
 		return consumermap.put(VisitorEnum.ModuleDeclaration, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addModuleModifier(BiConsumer<ModuleModifier, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addModuleModifier(BiConsumer<ModuleModifier, E> bc) {
 		return consumermap.put(VisitorEnum.ModuleModifier, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addNameQualifiedType(BiConsumer<NameQualifiedType, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addNameQualifiedType(BiConsumer<NameQualifiedType, E> bc) {
 		return consumermap.put(VisitorEnum.NameQualifiedType, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addNormalAnnotation(BiConsumer<NormalAnnotation, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addNormalAnnotation(BiConsumer<NormalAnnotation, E> bc) {
 		return consumermap.put(VisitorEnum.NormalAnnotation, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addNullLiteral(BiConsumer<NullLiteral, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addNullLiteral(BiConsumer<NullLiteral, E> bc) {
 		return consumermap.put(VisitorEnum.NullLiteral, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addNumberLiteral(BiConsumer<NumberLiteral, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addNumberLiteral(BiConsumer<NumberLiteral, E> bc) {
 		return consumermap.put(VisitorEnum.NumberLiteral, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addOpensDirective(BiConsumer<OpensDirective, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addOpensDirective(BiConsumer<OpensDirective, E> bc) {
 		return consumermap.put(VisitorEnum.OpensDirective, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addPackageDeclaration(BiConsumer<PackageDeclaration, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addPackageDeclaration(BiConsumer<PackageDeclaration, E> bc) {
 		return consumermap.put(VisitorEnum.PackageDeclaration, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addParameterizedType(BiConsumer<ParameterizedType, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addParameterizedType(BiConsumer<ParameterizedType, E> bc) {
 		return consumermap.put(VisitorEnum.ParameterizedType, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addParenthesizedExpression(BiConsumer<ParenthesizedExpression, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addParenthesizedExpression(BiConsumer<ParenthesizedExpression, E> bc) {
 		return consumermap.put(VisitorEnum.ParenthesizedExpression, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addPatternInstanceofExpression(
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addPatternInstanceofExpression(
 			BiConsumer<PatternInstanceofExpression, E> bc) {
 		return consumermap.put(VisitorEnum.PatternInstanceofExpression, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addPostfixExpression(BiConsumer<PostfixExpression, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addPostfixExpression(BiConsumer<PostfixExpression, E> bc) {
 		return consumermap.put(VisitorEnum.PostfixExpression, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addPrefixExpression(BiConsumer<PrefixExpression, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addPrefixExpression(BiConsumer<PrefixExpression, E> bc) {
 		return consumermap.put(VisitorEnum.PrefixExpression, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addProvidesDirective(BiConsumer<ProvidesDirective, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addProvidesDirective(BiConsumer<ProvidesDirective, E> bc) {
 		return consumermap.put(VisitorEnum.ProvidesDirective, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addPrimitiveType(BiConsumer<PrimitiveType, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addPrimitiveType(BiConsumer<PrimitiveType, E> bc) {
 		return consumermap.put(VisitorEnum.PrimitiveType, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addQualifiedName(BiConsumer<QualifiedName, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addQualifiedName(BiConsumer<QualifiedName, E> bc) {
 		return consumermap.put(VisitorEnum.QualifiedName, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addQualifiedType(BiConsumer<QualifiedType, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addQualifiedType(BiConsumer<QualifiedType, E> bc) {
 		return consumermap.put(VisitorEnum.QualifiedType, bc);
 	}
 
@@ -829,520 +1751,1059 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 //		return consumermap.put(VisitorEnum.ModuleQualifiedName, bc);
 //	}
 
+    /**
+     *
+     * @param bc
+     * @return
+     */
+
 	public BiConsumer<? extends ASTNode, E> addRequiresDirective(BiConsumer<RequiresDirective, E> bc) {
 		return consumermap.put(VisitorEnum.RequiresDirective, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addRecordDeclaration(BiConsumer<RecordDeclaration, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addRecordDeclaration(BiConsumer<RecordDeclaration, E> bc) {
 		return consumermap.put(VisitorEnum.RecordDeclaration, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addReturnStatement(BiConsumer<ReturnStatement, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addReturnStatement(BiConsumer<ReturnStatement, E> bc) {
 		return consumermap.put(VisitorEnum.ReturnStatement, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addSimpleName(BiConsumer<SimpleName, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addSimpleName(BiConsumer<SimpleName, E> bc) {
 		return consumermap.put(VisitorEnum.SimpleName, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addSimpleType(BiConsumer<SimpleType, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addSimpleType(BiConsumer<SimpleType, E> bc) {
 		return consumermap.put(VisitorEnum.SimpleType, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addSingleMemberAnnotation(BiConsumer<SingleMemberAnnotation, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addSingleMemberAnnotation(BiConsumer<SingleMemberAnnotation, E> bc) {
 		return consumermap.put(VisitorEnum.SingleMemberAnnotation, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addSingleVariableDeclaration(BiConsumer<SingleVariableDeclaration, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addSingleVariableDeclaration(BiConsumer<SingleVariableDeclaration, E> bc) {
 		return consumermap.put(VisitorEnum.SingleVariableDeclaration, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addStringLiteral(BiConsumer<StringLiteral, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addStringLiteral(BiConsumer<StringLiteral, E> bc) {
 		return consumermap.put(VisitorEnum.StringLiteral, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addSuperConstructorInvocation(
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addSuperConstructorInvocation(
 			BiConsumer<SuperConstructorInvocation, E> bc) {
 		return consumermap.put(VisitorEnum.SuperConstructorInvocation, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addSuperFieldAccess(BiConsumer<SuperFieldAccess, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addSuperFieldAccess(BiConsumer<SuperFieldAccess, E> bc) {
 		return consumermap.put(VisitorEnum.SuperFieldAccess, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addSuperMethodInvocation(BiConsumer<SuperMethodInvocation, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addSuperMethodInvocation(BiConsumer<SuperMethodInvocation, E> bc) {
 		return consumermap.put(VisitorEnum.SuperMethodInvocation, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addSuperMethodReference(BiConsumer<SuperMethodReference, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addSuperMethodReference(BiConsumer<SuperMethodReference, E> bc) {
 		return consumermap.put(VisitorEnum.SuperMethodReference, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addSwitchCase(BiConsumer<SwitchCase, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addSwitchCase(BiConsumer<SwitchCase, E> bc) {
 		return consumermap.put(VisitorEnum.SwitchCase, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addSwitchExpression(BiConsumer<SwitchExpression, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addSwitchExpression(BiConsumer<SwitchExpression, E> bc) {
 		return consumermap.put(VisitorEnum.SwitchExpression, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addSwitchStatement(BiConsumer<SwitchStatement, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addSwitchStatement(BiConsumer<SwitchStatement, E> bc) {
 		return consumermap.put(VisitorEnum.SwitchStatement, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addSynchronizedStatement(BiConsumer<SynchronizedStatement, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addSynchronizedStatement(BiConsumer<SynchronizedStatement, E> bc) {
 		return consumermap.put(VisitorEnum.SynchronizedStatement, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addTagElement(BiConsumer<TagElement, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addTagElement(BiConsumer<TagElement, E> bc) {
 		return consumermap.put(VisitorEnum.TagElement, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addTextBlock(BiConsumer<TextBlock, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addTextBlock(BiConsumer<TextBlock, E> bc) {
 		return consumermap.put(VisitorEnum.TextBlock, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addTextElement(BiConsumer<TextElement, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addTextElement(BiConsumer<TextElement, E> bc) {
 		return consumermap.put(VisitorEnum.TextElement, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addThisExpression(BiConsumer<ThisExpression, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addThisExpression(BiConsumer<ThisExpression, E> bc) {
 		return consumermap.put(VisitorEnum.ThisExpression, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addThrowStatement(BiConsumer<ThrowStatement, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addThrowStatement(BiConsumer<ThrowStatement, E> bc) {
 		return consumermap.put(VisitorEnum.ThrowStatement, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addTryStatement(BiConsumer<TryStatement, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addTryStatement(BiConsumer<TryStatement, E> bc) {
 		return consumermap.put(VisitorEnum.TryStatement, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addTypeDeclaration(BiConsumer<TypeDeclaration, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addTypeDeclaration(BiConsumer<TypeDeclaration, E> bc) {
 		return consumermap.put(VisitorEnum.TypeDeclaration, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addTypeDeclarationStatement(BiConsumer<TypeDeclarationStatement, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addTypeDeclarationStatement(BiConsumer<TypeDeclarationStatement, E> bc) {
 		return consumermap.put(VisitorEnum.TypeDeclarationStatement, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addTypeLiteral(BiConsumer<TypeLiteral, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addTypeLiteral(BiConsumer<TypeLiteral, E> bc) {
 		return consumermap.put(VisitorEnum.TypeLiteral, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addTypeMethodReference(BiConsumer<TypeMethodReference, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addTypeMethodReference(BiConsumer<TypeMethodReference, E> bc) {
 		return consumermap.put(VisitorEnum.TypeMethodReference, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addTypeParameter(BiConsumer<TypeParameter, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addTypeParameter(BiConsumer<TypeParameter, E> bc) {
 		return consumermap.put(VisitorEnum.TypeParameter, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addUnionType(BiConsumer<UnionType, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addUnionType(BiConsumer<UnionType, E> bc) {
 		return consumermap.put(VisitorEnum.UnionType, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addUsesDirective(BiConsumer<UsesDirective, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addUsesDirective(BiConsumer<UsesDirective, E> bc) {
 		return consumermap.put(VisitorEnum.UsesDirective, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addVariableDeclarationExpression(
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addVariableDeclarationExpression(
 			BiConsumer<VariableDeclarationExpression, E> bc) {
 		return consumermap.put(VisitorEnum.VariableDeclarationExpression, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addVariableDeclarationStatement(
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addVariableDeclarationStatement(
 			BiConsumer<VariableDeclarationStatement, E> bc) {
 		return consumermap.put(VisitorEnum.VariableDeclarationStatement, bc);
 	}
 	
-	public BiConsumer<? extends ASTNode, E> addVariableDeclarationStatement(Class<?> class1,
+    /**
+     *
+     * @param class1
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addVariableDeclarationStatement(Class<?> class1,
 			BiConsumer<VariableDeclarationStatement, E> bc) {
 		this.consumerdata.put(VisitorEnum.VariableDeclarationStatement, class1);
 		return consumermap.put(VisitorEnum.VariableDeclarationStatement, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addVariableDeclarationFragment(
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addVariableDeclarationFragment(
 			BiConsumer<VariableDeclarationFragment, E> bc) {
 		return consumermap.put(VisitorEnum.VariableDeclarationFragment, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addWhileStatement(BiConsumer<WhileStatement, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addWhileStatement(BiConsumer<WhileStatement, E> bc) {
 		return consumermap.put(VisitorEnum.WhileStatement, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addWildcardType(BiConsumer<WildcardType, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addWildcardType(BiConsumer<WildcardType, E> bc) {
 		return consumermap.put(VisitorEnum.WildcardType, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> addYieldStatement(BiConsumer<YieldStatement, E> bc) {
+    /**
+     *
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> addYieldStatement(BiConsumer<YieldStatement, E> bc) {
 		return consumermap.put(VisitorEnum.YieldStatement, bc);
 	}
 
-	public BiConsumer<? extends ASTNode, E> add(VisitorEnum key, BiConsumer<ASTNode, E> bc) {
+    /**
+     *
+     * @param key
+     * @param bc
+     * @return
+     */
+    public BiConsumer<? extends ASTNode, E> add(VisitorEnum key, BiConsumer<ASTNode, E> bc) {
 		return consumermap.put(key, bc);
 	}
 
-	public void addAnnotationTypeDeclaration(BiPredicate<AnnotationTypeDeclaration, E> bs,
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addAnnotationTypeDeclaration(BiPredicate<AnnotationTypeDeclaration, E> bs,
 			BiConsumer<AnnotationTypeDeclaration, E> bc) {
 		predicatemap.put(VisitorEnum.AnnotationTypeDeclaration, bs);
 		consumermap.put(VisitorEnum.AnnotationTypeDeclaration, bc);
 	}
 
-	public void addAnnotationTypeMemberDeclaration(BiPredicate<AnnotationTypeMemberDeclaration, E> bs,
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addAnnotationTypeMemberDeclaration(BiPredicate<AnnotationTypeMemberDeclaration, E> bs,
 			BiConsumer<AnnotationTypeMemberDeclaration, E> bc) {
 		predicatemap.put(VisitorEnum.AnnotationTypeMemberDeclaration, bs);
 		consumermap.put(VisitorEnum.AnnotationTypeMemberDeclaration, bc);
 	}
 
-	public void addAnonymousClassDeclaration(BiPredicate<AnonymousClassDeclaration, E> bs,
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addAnonymousClassDeclaration(BiPredicate<AnonymousClassDeclaration, E> bs,
 			BiConsumer<AnonymousClassDeclaration, E> bc) {
 		predicatemap.put(VisitorEnum.AnonymousClassDeclaration, bs);
 		consumermap.put(VisitorEnum.AnonymousClassDeclaration, bc);
 	}
 
-	public void addArrayAccess(BiPredicate<ArrayAccess, E> bs, BiConsumer<ArrayAccess, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addArrayAccess(BiPredicate<ArrayAccess, E> bs, BiConsumer<ArrayAccess, E> bc) {
 		predicatemap.put(VisitorEnum.ArrayAccess, bs);
 		consumermap.put(VisitorEnum.ArrayAccess, bc);
 	}
 
-	public void addArrayCreation(BiPredicate<ArrayCreation, E> bs, BiConsumer<ArrayCreation, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addArrayCreation(BiPredicate<ArrayCreation, E> bs, BiConsumer<ArrayCreation, E> bc) {
 		predicatemap.put(VisitorEnum.ArrayCreation, bs);
 		consumermap.put(VisitorEnum.ArrayCreation, bc);
 	}
 
-	public void addArrayInitializer(BiPredicate<ArrayInitializer, E> bs, BiConsumer<ArrayInitializer, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addArrayInitializer(BiPredicate<ArrayInitializer, E> bs, BiConsumer<ArrayInitializer, E> bc) {
 		predicatemap.put(VisitorEnum.ArrayInitializer, bs);
 		consumermap.put(VisitorEnum.ArrayInitializer, bc);
 	}
 
-	public void addArrayType(BiPredicate<ArrayType, E> bs, BiConsumer<ArrayType, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addArrayType(BiPredicate<ArrayType, E> bs, BiConsumer<ArrayType, E> bc) {
 		predicatemap.put(VisitorEnum.ArrayType, bs);
 		consumermap.put(VisitorEnum.ArrayType, bc);
 	}
 
-	public void addAssertStatement(BiPredicate<AssertStatement, E> bs, BiConsumer<AssertStatement, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addAssertStatement(BiPredicate<AssertStatement, E> bs, BiConsumer<AssertStatement, E> bc) {
 		predicatemap.put(VisitorEnum.AssertStatement, bs);
 		consumermap.put(VisitorEnum.AssertStatement, bc);
 	}
 
-	public void addAssignment(BiPredicate<Assignment, E> bs, BiConsumer<Assignment, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addAssignment(BiPredicate<Assignment, E> bs, BiConsumer<Assignment, E> bc) {
 		predicatemap.put(VisitorEnum.Assignment, bs);
 		consumermap.put(VisitorEnum.Assignment, bc);
 	}
 
-	public void addBlock(BiPredicate<Block, E> bs, BiConsumer<Block, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addBlock(BiPredicate<Block, E> bs, BiConsumer<Block, E> bc) {
 		predicatemap.put(VisitorEnum.Block, bs);
 		consumermap.put(VisitorEnum.Block, bc);
 	}
 
-	public void addBlockComment(BiPredicate<BlockComment, E> bs, BiConsumer<BlockComment, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addBlockComment(BiPredicate<BlockComment, E> bs, BiConsumer<BlockComment, E> bc) {
 		predicatemap.put(VisitorEnum.BlockComment, bs);
 		consumermap.put(VisitorEnum.BlockComment, bc);
 	}
 
-	public void addBooleanLiteral(BiPredicate<BooleanLiteral, E> bs, BiConsumer<BooleanLiteral, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addBooleanLiteral(BiPredicate<BooleanLiteral, E> bs, BiConsumer<BooleanLiteral, E> bc) {
 		predicatemap.put(VisitorEnum.BooleanLiteral, bs);
 		consumermap.put(VisitorEnum.BooleanLiteral, bc);
 	}
 
-	public void addBreakStatement(BiPredicate<BreakStatement, E> bs, BiConsumer<BreakStatement, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addBreakStatement(BiPredicate<BreakStatement, E> bs, BiConsumer<BreakStatement, E> bc) {
 		predicatemap.put(VisitorEnum.BreakStatement, bs);
 		consumermap.put(VisitorEnum.BreakStatement, bc);
 	}
 
-	public void addCastExpression(BiPredicate<CastExpression, E> bs, BiConsumer<CastExpression, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addCastExpression(BiPredicate<CastExpression, E> bs, BiConsumer<CastExpression, E> bc) {
 		predicatemap.put(VisitorEnum.CastExpression, bs);
 		consumermap.put(VisitorEnum.CastExpression, bc);
 	}
 
-	public void addCatchClause(BiPredicate<CatchClause, E> bs, BiConsumer<CatchClause, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addCatchClause(BiPredicate<CatchClause, E> bs, BiConsumer<CatchClause, E> bc) {
 		predicatemap.put(VisitorEnum.CatchClause, bs);
 		consumermap.put(VisitorEnum.CatchClause, bc);
 	}
 
-	public void addCharacterLiteral(BiPredicate<CharacterLiteral, E> bs, BiConsumer<CharacterLiteral, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addCharacterLiteral(BiPredicate<CharacterLiteral, E> bs, BiConsumer<CharacterLiteral, E> bc) {
 		predicatemap.put(VisitorEnum.CharacterLiteral, bs);
 		consumermap.put(VisitorEnum.CharacterLiteral, bc);
 	}
 
-	public void addClassInstanceCreation(BiPredicate<ClassInstanceCreation, E> bs,
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addClassInstanceCreation(BiPredicate<ClassInstanceCreation, E> bs,
 			BiConsumer<ClassInstanceCreation, E> bc) {
 		predicatemap.put(VisitorEnum.ClassInstanceCreation, bs);
 		consumermap.put(VisitorEnum.ClassInstanceCreation, bc);
 	}
 
-	public void addCompilationUnit(BiPredicate<CompilationUnit, E> bs, BiConsumer<CompilationUnit, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addCompilationUnit(BiPredicate<CompilationUnit, E> bs, BiConsumer<CompilationUnit, E> bc) {
 		predicatemap.put(VisitorEnum.CompilationUnit, bs);
 		consumermap.put(VisitorEnum.CompilationUnit, bc);
 	}
 
-	public void addConditionalExpression(BiPredicate<ConditionalExpression, E> bs,
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addConditionalExpression(BiPredicate<ConditionalExpression, E> bs,
 			BiConsumer<ConditionalExpression, E> bc) {
 		predicatemap.put(VisitorEnum.ConditionalExpression, bs);
 		consumermap.put(VisitorEnum.ConditionalExpression, bc);
 	}
 
-	public void addConstructorInvocation(BiPredicate<ConstructorInvocation, E> bs,
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addConstructorInvocation(BiPredicate<ConstructorInvocation, E> bs,
 			BiConsumer<ConstructorInvocation, E> bc) {
 		predicatemap.put(VisitorEnum.ConstructorInvocation, bs);
 		consumermap.put(VisitorEnum.ConstructorInvocation, bc);
 	}
 
-	public void addContinueStatement(BiPredicate<ContinueStatement, E> bs, BiConsumer<ContinueStatement, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addContinueStatement(BiPredicate<ContinueStatement, E> bs, BiConsumer<ContinueStatement, E> bc) {
 		predicatemap.put(VisitorEnum.ContinueStatement, bs);
 		consumermap.put(VisitorEnum.ContinueStatement, bc);
 	}
 
-	public void addCreationReference(BiPredicate<CreationReference, E> bs, BiConsumer<CreationReference, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addCreationReference(BiPredicate<CreationReference, E> bs, BiConsumer<CreationReference, E> bc) {
 		predicatemap.put(VisitorEnum.CreationReference, bs);
 		consumermap.put(VisitorEnum.CreationReference, bc);
 	}
 
-	public void addDimension(BiPredicate<Dimension, E> bs, BiConsumer<Dimension, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addDimension(BiPredicate<Dimension, E> bs, BiConsumer<Dimension, E> bc) {
 		predicatemap.put(VisitorEnum.Dimension, bs);
 		consumermap.put(VisitorEnum.Dimension, bc);
 	}
 
-	public void addDoStatement(BiPredicate<DoStatement, E> bs, BiConsumer<DoStatement, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addDoStatement(BiPredicate<DoStatement, E> bs, BiConsumer<DoStatement, E> bc) {
 		predicatemap.put(VisitorEnum.DoStatement, bs);
 		consumermap.put(VisitorEnum.DoStatement, bc);
 	}
 
-	public void addEmptyStatement(BiPredicate<EmptyStatement, E> bs, BiConsumer<EmptyStatement, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addEmptyStatement(BiPredicate<EmptyStatement, E> bs, BiConsumer<EmptyStatement, E> bc) {
 		predicatemap.put(VisitorEnum.EmptyStatement, bs);
 		consumermap.put(VisitorEnum.EmptyStatement, bc);
 	}
 
-	public void addEnhancedForStatement(BiPredicate<EnhancedForStatement, E> bs,
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addEnhancedForStatement(BiPredicate<EnhancedForStatement, E> bs,
 			BiConsumer<EnhancedForStatement, E> bc) {
 		predicatemap.put(VisitorEnum.EnhancedForStatement, bs);
 		consumermap.put(VisitorEnum.EnhancedForStatement, bc);
 	}
 
-	public void addEnumConstantDeclaration(BiPredicate<EnumConstantDeclaration, E> bs,
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addEnumConstantDeclaration(BiPredicate<EnumConstantDeclaration, E> bs,
 			BiConsumer<EnumConstantDeclaration, E> bc) {
 		predicatemap.put(VisitorEnum.EnumConstantDeclaration, bs);
 		consumermap.put(VisitorEnum.EnumConstantDeclaration, bc);
 	}
 
-	public void addEnumDeclaration(BiPredicate<EnumDeclaration, E> bs, BiConsumer<EnumDeclaration, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addEnumDeclaration(BiPredicate<EnumDeclaration, E> bs, BiConsumer<EnumDeclaration, E> bc) {
 		predicatemap.put(VisitorEnum.EnumDeclaration, bs);
 		consumermap.put(VisitorEnum.EnumDeclaration, bc);
 	}
 
-	public void addExportsDirective(BiPredicate<ExportsDirective, E> bs, BiConsumer<ExportsDirective, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addExportsDirective(BiPredicate<ExportsDirective, E> bs, BiConsumer<ExportsDirective, E> bc) {
 		predicatemap.put(VisitorEnum.ExportsDirective, bs);
 		consumermap.put(VisitorEnum.ExportsDirective, bc);
 	}
 
-	public void addExpressionMethodReference(BiPredicate<ExpressionMethodReference, E> bs,
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addExpressionMethodReference(BiPredicate<ExpressionMethodReference, E> bs,
 			BiConsumer<ExpressionMethodReference, E> bc) {
 		predicatemap.put(VisitorEnum.ExpressionMethodReference, bs);
 		consumermap.put(VisitorEnum.ExpressionMethodReference, bc);
 	}
 
-	public void addExpressionStatement(BiPredicate<ExpressionStatement, E> bs, BiConsumer<ExpressionStatement, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addExpressionStatement(BiPredicate<ExpressionStatement, E> bs, BiConsumer<ExpressionStatement, E> bc) {
 		predicatemap.put(VisitorEnum.ExpressionStatement, bs);
 		consumermap.put(VisitorEnum.ExpressionStatement, bc);
 	}
 
-	public void addFieldAccess(BiPredicate<FieldAccess, E> bs, BiConsumer<FieldAccess, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addFieldAccess(BiPredicate<FieldAccess, E> bs, BiConsumer<FieldAccess, E> bc) {
 		predicatemap.put(VisitorEnum.FieldAccess, bs);
 		consumermap.put(VisitorEnum.FieldAccess, bc);
 	}
 
-	public void addFieldDeclaration(BiPredicate<FieldDeclaration, E> bs, BiConsumer<FieldDeclaration, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addFieldDeclaration(BiPredicate<FieldDeclaration, E> bs, BiConsumer<FieldDeclaration, E> bc) {
 		predicatemap.put(VisitorEnum.FieldDeclaration, bs);
 		consumermap.put(VisitorEnum.FieldDeclaration, bc);
 	}
 
-	public void addForStatement(BiPredicate<ForStatement, E> bs, BiConsumer<ForStatement, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addForStatement(BiPredicate<ForStatement, E> bs, BiConsumer<ForStatement, E> bc) {
 		predicatemap.put(VisitorEnum.ForStatement, bs);
 		consumermap.put(VisitorEnum.ForStatement, bc);
 	}
 
-	public void addIfStatement(BiPredicate<IfStatement, E> bs, BiConsumer<IfStatement, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addIfStatement(BiPredicate<IfStatement, E> bs, BiConsumer<IfStatement, E> bc) {
 		predicatemap.put(VisitorEnum.IfStatement, bs);
 		consumermap.put(VisitorEnum.IfStatement, bc);
 	}
 
-	public void addImportDeclaration(BiPredicate<ImportDeclaration, E> bs, BiConsumer<ImportDeclaration, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addImportDeclaration(BiPredicate<ImportDeclaration, E> bs, BiConsumer<ImportDeclaration, E> bc) {
 		predicatemap.put(VisitorEnum.ImportDeclaration, bs);
 		consumermap.put(VisitorEnum.ImportDeclaration, bc);
 	}
 
-	public void addInfixExpression(BiPredicate<InfixExpression, E> bs, BiConsumer<InfixExpression, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addInfixExpression(BiPredicate<InfixExpression, E> bs, BiConsumer<InfixExpression, E> bc) {
 		predicatemap.put(VisitorEnum.InfixExpression, bs);
 		consumermap.put(VisitorEnum.InfixExpression, bc);
 	}
 
-	public void addInitializer(BiPredicate<Initializer, E> bs, BiConsumer<Initializer, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addInitializer(BiPredicate<Initializer, E> bs, BiConsumer<Initializer, E> bc) {
 		predicatemap.put(VisitorEnum.Initializer, bs);
 		consumermap.put(VisitorEnum.Initializer, bc);
 	}
 
-	public void addInstanceofExpression(BiPredicate<InstanceofExpression, E> bs,
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addInstanceofExpression(BiPredicate<InstanceofExpression, E> bs,
 			BiConsumer<InstanceofExpression, E> bc) {
 		predicatemap.put(VisitorEnum.InstanceofExpression, bs);
 		consumermap.put(VisitorEnum.InstanceofExpression, bc);
 	}
 
-	public void addIntersectionType(BiPredicate<IntersectionType, E> bs, BiConsumer<IntersectionType, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addIntersectionType(BiPredicate<IntersectionType, E> bs, BiConsumer<IntersectionType, E> bc) {
 		predicatemap.put(VisitorEnum.IntersectionType, bs);
 		consumermap.put(VisitorEnum.IntersectionType, bc);
 	}
 
-	public void addJavadoc(BiPredicate<Javadoc, E> bs, BiConsumer<Javadoc, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addJavadoc(BiPredicate<Javadoc, E> bs, BiConsumer<Javadoc, E> bc) {
 		predicatemap.put(VisitorEnum.Javadoc, bs);
 		consumermap.put(VisitorEnum.Javadoc, bc);
 	}
 
-	public void addLabeledStatement(BiPredicate<LabeledStatement, E> bs, BiConsumer<LabeledStatement, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addLabeledStatement(BiPredicate<LabeledStatement, E> bs, BiConsumer<LabeledStatement, E> bc) {
 		predicatemap.put(VisitorEnum.LabeledStatement, bs);
 		consumermap.put(VisitorEnum.LabeledStatement, bc);
 	}
 
-	public void addLambdaExpression(BiPredicate<LambdaExpression, E> bs, BiConsumer<LambdaExpression, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addLambdaExpression(BiPredicate<LambdaExpression, E> bs, BiConsumer<LambdaExpression, E> bc) {
 		predicatemap.put(VisitorEnum.LambdaExpression, bs);
 		consumermap.put(VisitorEnum.LambdaExpression, bc);
 	}
 
-	public void addLineComment(BiPredicate<LineComment, E> bs, BiConsumer<LineComment, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addLineComment(BiPredicate<LineComment, E> bs, BiConsumer<LineComment, E> bc) {
 		predicatemap.put(VisitorEnum.LineComment, bs);
 		consumermap.put(VisitorEnum.LineComment, bc);
 	}
 
-	public void addMarkerAnnotation(BiPredicate<MarkerAnnotation, E> bs, BiConsumer<MarkerAnnotation, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addMarkerAnnotation(BiPredicate<MarkerAnnotation, E> bs, BiConsumer<MarkerAnnotation, E> bc) {
 		predicatemap.put(VisitorEnum.MarkerAnnotation, bs);
 		consumermap.put(VisitorEnum.MarkerAnnotation, bc);
 	}
 
-	public void addMemberRef(BiPredicate<MemberRef, E> bs, BiConsumer<MemberRef, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addMemberRef(BiPredicate<MemberRef, E> bs, BiConsumer<MemberRef, E> bc) {
 		predicatemap.put(VisitorEnum.MemberRef, bs);
 		consumermap.put(VisitorEnum.MemberRef, bc);
 	}
 
-	public void addMemberValuePair(BiPredicate<MemberValuePair, E> bs, BiConsumer<MemberValuePair, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addMemberValuePair(BiPredicate<MemberValuePair, E> bs, BiConsumer<MemberValuePair, E> bc) {
 		predicatemap.put(VisitorEnum.MemberValuePair, bs);
 		consumermap.put(VisitorEnum.MemberValuePair, bc);
 	}
 
-	public void addMethodRef(BiPredicate<MethodRef, E> bs, BiConsumer<MethodRef, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addMethodRef(BiPredicate<MethodRef, E> bs, BiConsumer<MethodRef, E> bc) {
 		predicatemap.put(VisitorEnum.MethodRef, bs);
 		consumermap.put(VisitorEnum.MethodRef, bc);
 	}
 
-	public void addMethodRefParameter(BiPredicate<MethodRefParameter, E> bs, BiConsumer<MethodRefParameter, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addMethodRefParameter(BiPredicate<MethodRefParameter, E> bs, BiConsumer<MethodRefParameter, E> bc) {
 		predicatemap.put(VisitorEnum.MethodRefParameter, bs);
 		consumermap.put(VisitorEnum.MethodRefParameter, bc);
 	}
 
-	public void addMethodDeclaration(BiPredicate<MethodDeclaration, E> bs, BiConsumer<MethodDeclaration, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addMethodDeclaration(BiPredicate<MethodDeclaration, E> bs, BiConsumer<MethodDeclaration, E> bc) {
 		predicatemap.put(VisitorEnum.MethodDeclaration, bs);
 		consumermap.put(VisitorEnum.MethodDeclaration, bc);
 	}
 
-	public void addMethodInvocation(String methodname, BiPredicate<MethodInvocation, E> bs,
+    /**
+     *
+     * @param methodname
+     * @param bs
+     * @param bc
+     */
+    public void addMethodInvocation(String methodname, BiPredicate<MethodInvocation, E> bs,
 			BiConsumer<MethodInvocation, E> bc) {
 		this.predicatedata.put(VisitorEnum.MethodInvocation, methodname);
 		predicatemap.put(VisitorEnum.MethodInvocation, bs);
 		consumermap.put(VisitorEnum.MethodInvocation, bc);
 	}
 
-	public void addMethodInvocation(BiPredicate<MethodInvocation, E> bs, BiConsumer<MethodInvocation, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addMethodInvocation(BiPredicate<MethodInvocation, E> bs, BiConsumer<MethodInvocation, E> bc) {
 		predicatemap.put(VisitorEnum.MethodInvocation, bs);
 		consumermap.put(VisitorEnum.MethodInvocation, bc);
 	}
 
-	public void addModifier(BiPredicate<Modifier, E> bs, BiConsumer<Modifier, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addModifier(BiPredicate<Modifier, E> bs, BiConsumer<Modifier, E> bc) {
 		predicatemap.put(VisitorEnum.Modifier, bs);
 		consumermap.put(VisitorEnum.Modifier, bc);
 	}
 
-	public void addModuleDeclaration(BiPredicate<ModuleDeclaration, E> bs, BiConsumer<ModuleDeclaration, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addModuleDeclaration(BiPredicate<ModuleDeclaration, E> bs, BiConsumer<ModuleDeclaration, E> bc) {
 		predicatemap.put(VisitorEnum.ModuleDeclaration, bs);
 		consumermap.put(VisitorEnum.ModuleDeclaration, bc);
 	}
 
-	public void addModuleModifier(BiPredicate<ModuleModifier, E> bs, BiConsumer<ModuleModifier, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addModuleModifier(BiPredicate<ModuleModifier, E> bs, BiConsumer<ModuleModifier, E> bc) {
 		predicatemap.put(VisitorEnum.ModuleModifier, bs);
 		consumermap.put(VisitorEnum.ModuleModifier, bc);
 	}
 
-	public void addNameQualifiedType(BiPredicate<NameQualifiedType, E> bs, BiConsumer<NameQualifiedType, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addNameQualifiedType(BiPredicate<NameQualifiedType, E> bs, BiConsumer<NameQualifiedType, E> bc) {
 		predicatemap.put(VisitorEnum.NameQualifiedType, bs);
 		consumermap.put(VisitorEnum.NameQualifiedType, bc);
 	}
 
-	public void addNormalAnnotation(BiPredicate<NormalAnnotation, E> bs, BiConsumer<NormalAnnotation, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addNormalAnnotation(BiPredicate<NormalAnnotation, E> bs, BiConsumer<NormalAnnotation, E> bc) {
 		predicatemap.put(VisitorEnum.NormalAnnotation, bs);
 		consumermap.put(VisitorEnum.NormalAnnotation, bc);
 	}
 
-	public void addNullLiteral(BiPredicate<NullLiteral, E> bs, BiConsumer<NullLiteral, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addNullLiteral(BiPredicate<NullLiteral, E> bs, BiConsumer<NullLiteral, E> bc) {
 		predicatemap.put(VisitorEnum.NullLiteral, bs);
 		consumermap.put(VisitorEnum.NullLiteral, bc);
 	}
 
-	public void addNumberLiteral(BiPredicate<NumberLiteral, E> bs, BiConsumer<NumberLiteral, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addNumberLiteral(BiPredicate<NumberLiteral, E> bs, BiConsumer<NumberLiteral, E> bc) {
 		predicatemap.put(VisitorEnum.NumberLiteral, bs);
 		consumermap.put(VisitorEnum.NumberLiteral, bc);
 	}
 
-	public void addOpensDirective(BiPredicate<OpensDirective, E> bs, BiConsumer<OpensDirective, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addOpensDirective(BiPredicate<OpensDirective, E> bs, BiConsumer<OpensDirective, E> bc) {
 		predicatemap.put(VisitorEnum.OpensDirective, bs);
 		consumermap.put(VisitorEnum.OpensDirective, bc);
 	}
 
-	public void addPackageDeclaration(BiPredicate<PackageDeclaration, E> bs, BiConsumer<PackageDeclaration, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addPackageDeclaration(BiPredicate<PackageDeclaration, E> bs, BiConsumer<PackageDeclaration, E> bc) {
 		predicatemap.put(VisitorEnum.PackageDeclaration, bs);
 		consumermap.put(VisitorEnum.PackageDeclaration, bc);
 	}
 
-	public void addParameterizedType(BiPredicate<ParameterizedType, E> bs, BiConsumer<ParameterizedType, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addParameterizedType(BiPredicate<ParameterizedType, E> bs, BiConsumer<ParameterizedType, E> bc) {
 		predicatemap.put(VisitorEnum.ParameterizedType, bs);
 		consumermap.put(VisitorEnum.ParameterizedType, bc);
 	}
 
-	public void addParenthesizedExpression(BiPredicate<ParenthesizedExpression, E> bs,
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addParenthesizedExpression(BiPredicate<ParenthesizedExpression, E> bs,
 			BiConsumer<ParenthesizedExpression, E> bc) {
 		predicatemap.put(VisitorEnum.ParenthesizedExpression, bs);
 		consumermap.put(VisitorEnum.ParenthesizedExpression, bc);
 	}
 
-	public void addPatternInstanceofExpression(BiPredicate<PatternInstanceofExpression, E> bs,
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addPatternInstanceofExpression(BiPredicate<PatternInstanceofExpression, E> bs,
 			BiConsumer<PatternInstanceofExpression, E> bc) {
 		predicatemap.put(VisitorEnum.PatternInstanceofExpression, bs);
 		consumermap.put(VisitorEnum.PatternInstanceofExpression, bc);
 	}
 
-	public void addPostfixExpression(BiPredicate<PostfixExpression, E> bs, BiConsumer<PostfixExpression, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addPostfixExpression(BiPredicate<PostfixExpression, E> bs, BiConsumer<PostfixExpression, E> bc) {
 		predicatemap.put(VisitorEnum.PostfixExpression, bs);
 		consumermap.put(VisitorEnum.PostfixExpression, bc);
 	}
 
-	public void addPrefixExpression(BiPredicate<PrefixExpression, E> bs, BiConsumer<PrefixExpression, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addPrefixExpression(BiPredicate<PrefixExpression, E> bs, BiConsumer<PrefixExpression, E> bc) {
 		predicatemap.put(VisitorEnum.PrefixExpression, bs);
 		consumermap.put(VisitorEnum.PrefixExpression, bc);
 	}
 
-	public void addProvidesDirective(BiPredicate<ProvidesDirective, E> bs, BiConsumer<ProvidesDirective, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addProvidesDirective(BiPredicate<ProvidesDirective, E> bs, BiConsumer<ProvidesDirective, E> bc) {
 		predicatemap.put(VisitorEnum.ProvidesDirective, bs);
 		consumermap.put(VisitorEnum.ProvidesDirective, bc);
 	}
 
-	public void addPrimitiveType(BiPredicate<PrimitiveType, E> bs, BiConsumer<PrimitiveType, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addPrimitiveType(BiPredicate<PrimitiveType, E> bs, BiConsumer<PrimitiveType, E> bc) {
 		predicatemap.put(VisitorEnum.PrimitiveType, bs);
 		consumermap.put(VisitorEnum.PrimitiveType, bc);
 	}
 
-	public void addQualifiedName(BiPredicate<QualifiedName, E> bs, BiConsumer<QualifiedName, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addQualifiedName(BiPredicate<QualifiedName, E> bs, BiConsumer<QualifiedName, E> bc) {
 		predicatemap.put(VisitorEnum.QualifiedName, bs);
 		consumermap.put(VisitorEnum.QualifiedName, bc);
 	}
 
-	public void addQualifiedType(BiPredicate<QualifiedType, E> bs, BiConsumer<QualifiedType, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addQualifiedType(BiPredicate<QualifiedType, E> bs, BiConsumer<QualifiedType, E> bc) {
 		predicatemap.put(VisitorEnum.QualifiedType, bs);
 		consumermap.put(VisitorEnum.QualifiedType, bc);
 	}
@@ -1353,171 +2814,333 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 //		consumermap.put(VisitorEnum.ModuleQualifiedName, bc);
 //	}
 
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+
 	public void addRequiresDirective(BiPredicate<RequiresDirective, E> bs, BiConsumer<RequiresDirective, E> bc) {
 		predicatemap.put(VisitorEnum.RequiresDirective, bs);
 		consumermap.put(VisitorEnum.RequiresDirective, bc);
 	}
 
-	public void addRecordDeclaration(BiPredicate<RecordDeclaration, E> bs, BiConsumer<RecordDeclaration, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addRecordDeclaration(BiPredicate<RecordDeclaration, E> bs, BiConsumer<RecordDeclaration, E> bc) {
 		predicatemap.put(VisitorEnum.RecordDeclaration, bs);
 		consumermap.put(VisitorEnum.RecordDeclaration, bc);
 	}
 
-	public void addReturnStatement(BiPredicate<ReturnStatement, E> bs, BiConsumer<ReturnStatement, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addReturnStatement(BiPredicate<ReturnStatement, E> bs, BiConsumer<ReturnStatement, E> bc) {
 		predicatemap.put(VisitorEnum.ReturnStatement, bs);
 		consumermap.put(VisitorEnum.ReturnStatement, bc);
 	}
 
-	public void addSimpleName(BiPredicate<SimpleName, E> bs, BiConsumer<SimpleName, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addSimpleName(BiPredicate<SimpleName, E> bs, BiConsumer<SimpleName, E> bc) {
 		predicatemap.put(VisitorEnum.SimpleName, bs);
 		consumermap.put(VisitorEnum.SimpleName, bc);
 	}
 
-	public void addSimpleType(BiPredicate<SimpleType, E> bs, BiConsumer<SimpleType, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addSimpleType(BiPredicate<SimpleType, E> bs, BiConsumer<SimpleType, E> bc) {
 		predicatemap.put(VisitorEnum.SimpleType, bs);
 		consumermap.put(VisitorEnum.SimpleType, bc);
 	}
 
-	public void addSingleMemberAnnotation(BiPredicate<SingleMemberAnnotation, E> bs,
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addSingleMemberAnnotation(BiPredicate<SingleMemberAnnotation, E> bs,
 			BiConsumer<SingleMemberAnnotation, E> bc) {
 		predicatemap.put(VisitorEnum.SingleMemberAnnotation, bs);
 		consumermap.put(VisitorEnum.SingleMemberAnnotation, bc);
 	}
 
-	public void addSingleVariableDeclaration(BiPredicate<SingleVariableDeclaration, E> bs,
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addSingleVariableDeclaration(BiPredicate<SingleVariableDeclaration, E> bs,
 			BiConsumer<SingleVariableDeclaration, E> bc) {
 		predicatemap.put(VisitorEnum.SingleVariableDeclaration, bs);
 		consumermap.put(VisitorEnum.SingleVariableDeclaration, bc);
 	}
 
-	public void addStringLiteral(BiPredicate<StringLiteral, E> bs, BiConsumer<StringLiteral, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addStringLiteral(BiPredicate<StringLiteral, E> bs, BiConsumer<StringLiteral, E> bc) {
 		predicatemap.put(VisitorEnum.StringLiteral, bs);
 		consumermap.put(VisitorEnum.StringLiteral, bc);
 	}
 
-	public void addSuperConstructorInvocation(BiPredicate<SuperConstructorInvocation, E> bs,
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addSuperConstructorInvocation(BiPredicate<SuperConstructorInvocation, E> bs,
 			BiConsumer<SuperConstructorInvocation, E> bc) {
 		predicatemap.put(VisitorEnum.SuperConstructorInvocation, bs);
 		consumermap.put(VisitorEnum.SuperConstructorInvocation, bc);
 	}
 
-	public void addSuperFieldAccess(BiPredicate<SuperFieldAccess, E> bs, BiConsumer<SuperFieldAccess, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addSuperFieldAccess(BiPredicate<SuperFieldAccess, E> bs, BiConsumer<SuperFieldAccess, E> bc) {
 		predicatemap.put(VisitorEnum.SuperFieldAccess, bs);
 		consumermap.put(VisitorEnum.SuperFieldAccess, bc);
 	}
 
-	public void addSuperMethodInvocation(BiPredicate<SuperMethodInvocation, E> bs,
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addSuperMethodInvocation(BiPredicate<SuperMethodInvocation, E> bs,
 			BiConsumer<SuperMethodInvocation, E> bc) {
 		predicatemap.put(VisitorEnum.SuperMethodInvocation, bs);
 		consumermap.put(VisitorEnum.SuperMethodInvocation, bc);
 	}
 
-	public void addSuperMethodReference(BiPredicate<SuperMethodReference, E> bs,
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addSuperMethodReference(BiPredicate<SuperMethodReference, E> bs,
 			BiConsumer<SuperMethodReference, E> bc) {
 		predicatemap.put(VisitorEnum.SuperMethodReference, bs);
 		consumermap.put(VisitorEnum.SuperMethodReference, bc);
 	}
 
-	public void addSwitchCase(BiPredicate<SwitchCase, E> bs, BiConsumer<SwitchCase, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addSwitchCase(BiPredicate<SwitchCase, E> bs, BiConsumer<SwitchCase, E> bc) {
 		predicatemap.put(VisitorEnum.SwitchCase, bs);
 		consumermap.put(VisitorEnum.SwitchCase, bc);
 	}
 
-	public void addSwitchExpression(BiPredicate<SwitchExpression, E> bs, BiConsumer<SwitchExpression, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addSwitchExpression(BiPredicate<SwitchExpression, E> bs, BiConsumer<SwitchExpression, E> bc) {
 		predicatemap.put(VisitorEnum.SwitchExpression, bs);
 		consumermap.put(VisitorEnum.SwitchExpression, bc);
 	}
 
-	public void addSwitchStatement(BiPredicate<SwitchStatement, E> bs, BiConsumer<SwitchStatement, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addSwitchStatement(BiPredicate<SwitchStatement, E> bs, BiConsumer<SwitchStatement, E> bc) {
 		predicatemap.put(VisitorEnum.SwitchStatement, bs);
 		consumermap.put(VisitorEnum.SwitchStatement, bc);
 	}
 
-	public void addSynchronizedStatement(BiPredicate<SynchronizedStatement, E> bs,
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addSynchronizedStatement(BiPredicate<SynchronizedStatement, E> bs,
 			BiConsumer<SynchronizedStatement, E> bc) {
 		predicatemap.put(VisitorEnum.SynchronizedStatement, bs);
 		consumermap.put(VisitorEnum.SynchronizedStatement, bc);
 	}
 
-	public void addTagElement(BiPredicate<TagElement, E> bs, BiConsumer<TagElement, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addTagElement(BiPredicate<TagElement, E> bs, BiConsumer<TagElement, E> bc) {
 		predicatemap.put(VisitorEnum.TagElement, bs);
 		consumermap.put(VisitorEnum.TagElement, bc);
 	}
 
-	public void addTextBlock(BiPredicate<TextBlock, E> bs, BiConsumer<TextBlock, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addTextBlock(BiPredicate<TextBlock, E> bs, BiConsumer<TextBlock, E> bc) {
 		predicatemap.put(VisitorEnum.TextBlock, bs);
 		consumermap.put(VisitorEnum.TextBlock, bc);
 	}
 
-	public void addTextElement(BiPredicate<TextElement, E> bs, BiConsumer<TextElement, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addTextElement(BiPredicate<TextElement, E> bs, BiConsumer<TextElement, E> bc) {
 		predicatemap.put(VisitorEnum.TextElement, bs);
 		consumermap.put(VisitorEnum.TextElement, bc);
 	}
 
-	public void addThisExpression(BiPredicate<ThisExpression, E> bs, BiConsumer<ThisExpression, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addThisExpression(BiPredicate<ThisExpression, E> bs, BiConsumer<ThisExpression, E> bc) {
 		predicatemap.put(VisitorEnum.ThisExpression, bs);
 		consumermap.put(VisitorEnum.ThisExpression, bc);
 	}
 
-	public void addThrowStatement(BiPredicate<ThrowStatement, E> bs, BiConsumer<ThrowStatement, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addThrowStatement(BiPredicate<ThrowStatement, E> bs, BiConsumer<ThrowStatement, E> bc) {
 		predicatemap.put(VisitorEnum.ThrowStatement, bs);
 		consumermap.put(VisitorEnum.ThrowStatement, bc);
 	}
 
-	public void addTryStatement(BiPredicate<TryStatement, E> bs, BiConsumer<TryStatement, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addTryStatement(BiPredicate<TryStatement, E> bs, BiConsumer<TryStatement, E> bc) {
 		predicatemap.put(VisitorEnum.TryStatement, bs);
 		consumermap.put(VisitorEnum.TryStatement, bc);
 	}
 
-	public void addTypeDeclaration(BiPredicate<TypeDeclaration, E> bs, BiConsumer<TypeDeclaration, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addTypeDeclaration(BiPredicate<TypeDeclaration, E> bs, BiConsumer<TypeDeclaration, E> bc) {
 		predicatemap.put(VisitorEnum.TypeDeclaration, bs);
 		consumermap.put(VisitorEnum.TypeDeclaration, bc);
 	}
 
-	public void addTypeDeclarationStatement(BiPredicate<TypeDeclarationStatement, E> bs,
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addTypeDeclarationStatement(BiPredicate<TypeDeclarationStatement, E> bs,
 			BiConsumer<TypeDeclarationStatement, E> bc) {
 		predicatemap.put(VisitorEnum.TypeDeclarationStatement, bs);
 		consumermap.put(VisitorEnum.TypeDeclarationStatement, bc);
 	}
 
-	public void addTypeLiteral(BiPredicate<TypeLiteral, E> bs, BiConsumer<TypeLiteral, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addTypeLiteral(BiPredicate<TypeLiteral, E> bs, BiConsumer<TypeLiteral, E> bc) {
 		predicatemap.put(VisitorEnum.TypeLiteral, bs);
 		consumermap.put(VisitorEnum.TypeLiteral, bc);
 	}
 
-	public void addTypeMethodReference(BiPredicate<TypeMethodReference, E> bs, BiConsumer<TypeMethodReference, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addTypeMethodReference(BiPredicate<TypeMethodReference, E> bs, BiConsumer<TypeMethodReference, E> bc) {
 		predicatemap.put(VisitorEnum.TypeMethodReference, bs);
 		consumermap.put(VisitorEnum.TypeMethodReference, bc);
 	}
 
-	public void addTypeParameter(BiPredicate<TypeParameter, E> bs, BiConsumer<TypeParameter, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addTypeParameter(BiPredicate<TypeParameter, E> bs, BiConsumer<TypeParameter, E> bc) {
 		predicatemap.put(VisitorEnum.TypeParameter, bs);
 		consumermap.put(VisitorEnum.TypeParameter, bc);
 	}
 
-	public void addUnionType(BiPredicate<UnionType, E> bs, BiConsumer<UnionType, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addUnionType(BiPredicate<UnionType, E> bs, BiConsumer<UnionType, E> bc) {
 		predicatemap.put(VisitorEnum.UnionType, bs);
 		consumermap.put(VisitorEnum.UnionType, bc);
 	}
 
-	public void addUsesDirective(BiPredicate<UsesDirective, E> bs, BiConsumer<UsesDirective, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addUsesDirective(BiPredicate<UsesDirective, E> bs, BiConsumer<UsesDirective, E> bc) {
 		predicatemap.put(VisitorEnum.UsesDirective, bs);
 		consumermap.put(VisitorEnum.UsesDirective, bc);
 	}
 
-	public void addVariableDeclarationExpression(BiPredicate<VariableDeclarationExpression, E> bs,
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addVariableDeclarationExpression(BiPredicate<VariableDeclarationExpression, E> bs,
 			BiConsumer<VariableDeclarationExpression, E> bc) {
 		predicatemap.put(VisitorEnum.VariableDeclarationExpression, bs);
 		consumermap.put(VisitorEnum.VariableDeclarationExpression, bc);
 	}
 
-	public void addVariableDeclarationStatement(BiPredicate<VariableDeclarationStatement, E> bs,
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addVariableDeclarationStatement(BiPredicate<VariableDeclarationStatement, E> bs,
 			BiConsumer<VariableDeclarationStatement, E> bc) {
 		predicatemap.put(VisitorEnum.VariableDeclarationStatement, bs);
 		consumermap.put(VisitorEnum.VariableDeclarationStatement, bc);
 	}
 	
-	public void addVariableDeclarationStatement(Class<?> class1, BiPredicate<VariableDeclarationStatement, E> bs,
+    /**
+     *
+     * @param class1
+     * @param bs
+     * @param bc
+     */
+    public void addVariableDeclarationStatement(Class<?> class1, BiPredicate<VariableDeclarationStatement, E> bs,
 			BiConsumer<VariableDeclarationStatement, E> bc) {
 		predicatedata.put(VisitorEnum.VariableDeclarationStatement, class1);
 		consumerdata.put(VisitorEnum.VariableDeclarationStatement, class1);
@@ -1525,46 +3148,95 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		consumermap.put(VisitorEnum.VariableDeclarationStatement, bc);
 	}
 
-	public void addVariableDeclarationFragment(BiPredicate<VariableDeclarationFragment, E> bs,
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addVariableDeclarationFragment(BiPredicate<VariableDeclarationFragment, E> bs,
 			BiConsumer<VariableDeclarationFragment, E> bc) {
 		predicatemap.put(VisitorEnum.VariableDeclarationFragment, bs);
 		consumermap.put(VisitorEnum.VariableDeclarationFragment, bc);
 	}
 
-	public void addWhileStatement(BiPredicate<WhileStatement, E> bs, BiConsumer<WhileStatement, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addWhileStatement(BiPredicate<WhileStatement, E> bs, BiConsumer<WhileStatement, E> bc) {
 		predicatemap.put(VisitorEnum.WhileStatement, bs);
 		consumermap.put(VisitorEnum.WhileStatement, bc);
 	}
 
-	public void addWildcardType(BiPredicate<WildcardType, E> bs, BiConsumer<WildcardType, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addWildcardType(BiPredicate<WildcardType, E> bs, BiConsumer<WildcardType, E> bc) {
 		predicatemap.put(VisitorEnum.WildcardType, bs);
 		consumermap.put(VisitorEnum.WildcardType, bc);
 	}
 
-	public void addYieldStatement(BiPredicate<YieldStatement, E> bs, BiConsumer<YieldStatement, E> bc) {
+    /**
+     *
+     * @param bs
+     * @param bc
+     */
+    public void addYieldStatement(BiPredicate<YieldStatement, E> bs, BiConsumer<YieldStatement, E> bc) {
 		predicatemap.put(VisitorEnum.YieldStatement, bs);
 		consumermap.put(VisitorEnum.YieldStatement, bc);
 	}
 
-	public void add(VisitorEnum key, BiPredicate<ASTNode, E> bs, BiConsumer<ASTNode, E> bc) {
+    /**
+     *
+     * @param key
+     * @param bs
+     * @param bc
+     */
+    public void add(VisitorEnum key, BiPredicate<ASTNode, E> bs, BiConsumer<ASTNode, E> bc) {
 		predicatemap.put(key, bs);
 		consumermap.put(key, bc);
 	}
 
-	public void removeVisitor(VisitorEnum ve) {
+    /**
+     *
+     * @param ve
+     */
+    public void removeVisitor(VisitorEnum ve) {
 		this.predicatemap.remove(ve);
 		this.consumermap.remove(ve);
 	}
 
-	protected Map<VisitorEnum, Object> getConsumerData() {
+    /**
+     *
+     * @return
+     */
+    protected Map<VisitorEnum, Object> getConsumerData() {
 		return this.consumerdata;
 	}
 
-	protected Map<VisitorEnum, Object> getSupplierData() {
+    /**
+     *
+     * @return
+     */
+    protected Map<VisitorEnum, Object> getSupplierData() {
 		return this.predicatedata;
 	}
 
-	public static <V, T> void callVisitor(ASTNode cu, EnumSet<VisitorEnum> myset, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param cu
+     * @param myset
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callVisitor(ASTNode cu, EnumSet<VisitorEnum> myset, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ASTNode, ReferenceHolder<V, T>> bs, BiConsumer<ASTNode, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1574,7 +3246,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(cu);
 	}
 
-	public static <V, T> void callVisitor(ASTNode cu, EnumSet<VisitorEnum> myset, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param cu
+     * @param myset
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callVisitor(ASTNode cu, EnumSet<VisitorEnum> myset, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ASTNode, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1584,7 +3266,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(cu);
 	}
 
-	public static <V, T> void callVisitor(ASTNode cu, EnumSet<VisitorEnum> myset, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param cu
+     * @param myset
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callVisitor(ASTNode cu, EnumSet<VisitorEnum> myset, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<ASTNode, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1594,7 +3286,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(cu);
 	}
 
-	public static <V, T> void callAnnotationTypeDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callAnnotationTypeDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<AnnotationTypeDeclaration, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1602,7 +3303,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callAnnotationTypeMemberDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callAnnotationTypeMemberDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<AnnotationTypeMemberDeclaration, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1610,7 +3320,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callAnonymousClassDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callAnonymousClassDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<AnonymousClassDeclaration, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1618,7 +3337,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callArrayAccessVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callArrayAccessVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ArrayAccess, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1626,7 +3354,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callArrayCreationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callArrayCreationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ArrayCreation, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1634,7 +3371,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callArrayInitializerVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callArrayInitializerVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ArrayInitializer, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1642,7 +3388,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callArrayTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callArrayTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ArrayType, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1650,7 +3405,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callAssertStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callAssertStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<AssertStatement, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1658,7 +3422,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callAssignmentVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callAssignmentVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<Assignment, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1666,7 +3439,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callBlockVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callBlockVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<Block, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1674,7 +3456,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callBlockCommentVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callBlockCommentVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<BlockComment, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1682,7 +3473,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callBooleanLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callBooleanLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<BooleanLiteral, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1690,7 +3490,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callBreakStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callBreakStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<BreakStatement, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1698,7 +3507,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callCastExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callCastExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<CastExpression, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1706,7 +3524,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callCatchClauseVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callCatchClauseVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<CatchClause, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1714,7 +3541,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callCharacterLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callCharacterLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<CharacterLiteral, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1722,7 +3558,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callClassInstanceCreationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callClassInstanceCreationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ClassInstanceCreation, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1730,7 +3575,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callCompilationUnitVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callCompilationUnitVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<CompilationUnit, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1738,7 +3592,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callConditionalExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callConditionalExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ConditionalExpression, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1746,7 +3609,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callConstructorInvocationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callConstructorInvocationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ConstructorInvocation, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1754,7 +3626,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callContinueStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callContinueStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ContinueStatement, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1762,7 +3643,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callCreationReferenceVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callCreationReferenceVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<CreationReference, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1770,7 +3660,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callDimensionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callDimensionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<Dimension, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1778,7 +3677,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callDoStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callDoStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<DoStatement, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1786,7 +3694,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callEmptyStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callEmptyStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<EmptyStatement, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1794,7 +3711,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callEnhancedForStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callEnhancedForStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<EnhancedForStatement, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1802,7 +3728,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callEnumConstantDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callEnumConstantDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<EnumConstantDeclaration, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1810,7 +3745,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callEnumDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callEnumDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<EnumDeclaration, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1818,7 +3762,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callExportsDirectiveVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callExportsDirectiveVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ExportsDirective, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1826,7 +3779,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callExpressionMethodReferenceVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callExpressionMethodReferenceVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ExpressionMethodReference, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1834,7 +3796,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callExpressionStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callExpressionStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ExpressionStatement, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1842,7 +3813,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callFieldAccessVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callFieldAccessVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<FieldAccess, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1850,7 +3830,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callFieldDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callFieldDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<FieldDeclaration, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1858,7 +3847,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callForStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callForStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ForStatement, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1866,7 +3864,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callIfStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callIfStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<IfStatement, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1874,7 +3881,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callImportDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callImportDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ImportDeclaration, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1882,7 +3898,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callInfixExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callInfixExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<InfixExpression, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1890,7 +3915,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callInitializerVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callInitializerVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<Initializer, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1898,7 +3932,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callInstanceofExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callInstanceofExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<InstanceofExpression, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1906,7 +3949,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callIntersectionTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callIntersectionTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<IntersectionType, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1914,7 +3966,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callJavadocVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callJavadocVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<Javadoc, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1922,7 +3983,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callLabeledStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callLabeledStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<LabeledStatement, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1930,7 +4000,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callLambdaExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callLambdaExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<LambdaExpression, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1938,7 +4017,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callLineCommentVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callLineCommentVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<LineComment, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1946,7 +4034,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callMarkerAnnotationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callMarkerAnnotationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<MarkerAnnotation, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1954,7 +4051,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callMemberRefVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callMemberRefVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<MemberRef, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1962,7 +4068,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callMemberValuePairVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callMemberValuePairVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<MemberValuePair, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1970,7 +4085,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callMethodRefVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callMethodRefVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<MethodRef, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1978,7 +4102,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callMethodRefParameterVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callMethodRefParameterVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<MethodRefParameter, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1986,7 +4119,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callMethodDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callMethodDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<MethodDeclaration, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -1994,7 +4136,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callMethodInvocationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callMethodInvocationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<MethodInvocation, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2002,7 +4153,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 	
-	public static <V, T> void callMethodInvocationVisitor(String methodname, ASTNode node, ReferenceHolder<V, T> dataholder,Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param methodname
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callMethodInvocationVisitor(String methodname, ASTNode node, ReferenceHolder<V, T> dataholder,Set<ASTNode> nodesprocessed,
 			BiPredicate<MethodInvocation, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2010,7 +4171,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 	
-	public static <V, T> void callModifierVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callModifierVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<Modifier, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2018,7 +4188,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callModuleDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callModuleDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ModuleDeclaration, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2026,7 +4205,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callModuleModifierVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callModuleModifierVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ModuleModifier, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2034,7 +4222,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callNameQualifiedTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callNameQualifiedTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<NameQualifiedType, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2042,7 +4239,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callNormalAnnotationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callNormalAnnotationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<NormalAnnotation, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2050,7 +4256,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callNullLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callNullLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<NullLiteral, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2058,7 +4273,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callNumberLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callNumberLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<NumberLiteral, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2066,7 +4290,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callOpensDirectiveVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callOpensDirectiveVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<OpensDirective, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2074,7 +4307,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callPackageDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callPackageDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<PackageDeclaration, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2082,7 +4324,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callParameterizedTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callParameterizedTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ParameterizedType, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2090,7 +4341,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callParenthesizedExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callParenthesizedExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ParenthesizedExpression, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2098,7 +4358,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callPatternInstanceofExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callPatternInstanceofExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<PatternInstanceofExpression, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2106,7 +4375,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callPostfixExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callPostfixExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<PostfixExpression, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2114,7 +4392,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callPrefixExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callPrefixExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<PrefixExpression, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2122,7 +4409,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callProvidesDirectiveVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callProvidesDirectiveVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ProvidesDirective, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2130,7 +4426,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callPrimitiveTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callPrimitiveTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<PrimitiveType, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2138,7 +4443,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callQualifiedNameVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callQualifiedNameVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<QualifiedName, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2146,7 +4460,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callQualifiedTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callQualifiedTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<QualifiedType, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2156,6 +4479,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 
 //	public static <V,T> void callModuleQualifiedNameVisitor(ASTNode node, ReferenceHolder<V,T> dataholder, BiPredicate<ModuleQualifiedName, ReferenceHolder<V,T>> bs) {  HelperVisitor<ReferenceHolder<V,T>> hv = new HelperVisitor<>(nodesprocessed, dataholder); hv.addModuleQualifiedName(bs); hv.build(node);}
 
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+
 	public static <V, T> void callRequiresDirectiveVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<RequiresDirective, ReferenceHolder<V, T>> bs) {
 		
@@ -2164,7 +4497,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callRecordDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callRecordDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<RecordDeclaration, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2172,7 +4514,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callReturnStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callReturnStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ReturnStatement, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2180,7 +4531,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSimpleNameVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callSimpleNameVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<SimpleName, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2188,7 +4548,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSimpleTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callSimpleTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<SimpleType, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2196,7 +4565,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSingleMemberAnnotationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callSingleMemberAnnotationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<SingleMemberAnnotation, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2204,7 +4582,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSingleVariableDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callSingleVariableDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<SingleVariableDeclaration, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2212,7 +4599,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callStringLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callStringLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<StringLiteral, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2220,7 +4616,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSuperConstructorInvocationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callSuperConstructorInvocationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<SuperConstructorInvocation, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2228,7 +4633,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSuperFieldAccessVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callSuperFieldAccessVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<SuperFieldAccess, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2236,7 +4650,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSuperMethodInvocationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callSuperMethodInvocationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<SuperMethodInvocation, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2244,7 +4667,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSuperMethodReferenceVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callSuperMethodReferenceVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<SuperMethodReference, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2252,7 +4684,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSwitchCaseVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callSwitchCaseVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<SwitchCase, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2260,7 +4701,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSwitchExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callSwitchExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<SwitchExpression, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2268,7 +4718,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSwitchStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callSwitchStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<SwitchStatement, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2276,7 +4735,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSynchronizedStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callSynchronizedStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<SynchronizedStatement, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2284,7 +4752,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callTagElementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callTagElementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<TagElement, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2292,7 +4769,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callTextBlockVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callTextBlockVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<TextBlock, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2300,7 +4786,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callTextElementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callTextElementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<TextElement, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2308,7 +4803,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callThisExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callThisExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ThisExpression, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2316,7 +4820,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callThrowStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callThrowStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ThrowStatement, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2324,7 +4837,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callTryStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callTryStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<TryStatement, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2332,7 +4854,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callTypeDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callTypeDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<TypeDeclaration, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2340,7 +4871,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callTypeDeclarationStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callTypeDeclarationStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<TypeDeclarationStatement, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2348,7 +4888,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callTypeLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callTypeLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<TypeLiteral, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2356,7 +4905,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callTypeMethodReferenceVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callTypeMethodReferenceVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<TypeMethodReference, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2364,7 +4922,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callTypeParameterVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callTypeParameterVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<TypeParameter, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2372,7 +4939,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callUnionTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callUnionTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<UnionType, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2380,7 +4956,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callUsesDirectiveVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callUsesDirectiveVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<UsesDirective, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2388,7 +4973,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callVariableDeclarationExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callVariableDeclarationExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<VariableDeclarationExpression, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2396,7 +4990,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callVariableDeclarationStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callVariableDeclarationStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<VariableDeclarationStatement, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2404,7 +5007,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 	
-	public static <V, T> void callVariableDeclarationStatementVisitor(Class<?> class1, ASTNode node, ReferenceHolder<V, T> dataholder,Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param class1
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callVariableDeclarationStatementVisitor(Class<?> class1, ASTNode node, ReferenceHolder<V, T> dataholder,Set<ASTNode> nodesprocessed,
 			BiPredicate<VariableDeclarationStatement, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2412,7 +5025,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callVariableDeclarationFragmentVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callVariableDeclarationFragmentVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<VariableDeclarationFragment, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2420,7 +5042,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callWhileStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callWhileStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<WhileStatement, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2428,7 +5059,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callWildcardTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callWildcardTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<WildcardType, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2436,7 +5076,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callYieldStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     */
+    public static <V, T> void callYieldStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<YieldStatement, ReferenceHolder<V, T>> bs) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2444,7 +5093,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callAnnotationTypeDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callAnnotationTypeDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<AnnotationTypeDeclaration, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2452,7 +5110,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callAnnotationTypeMemberDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callAnnotationTypeMemberDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<AnnotationTypeMemberDeclaration, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2460,7 +5127,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callAnonymousClassDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callAnonymousClassDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<AnonymousClassDeclaration, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2468,7 +5144,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callArrayAccessVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callArrayAccessVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<ArrayAccess, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2476,7 +5161,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callArrayCreationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callArrayCreationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<ArrayCreation, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2484,7 +5178,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callArrayInitializerVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callArrayInitializerVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<ArrayInitializer, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2492,7 +5195,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callArrayTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callArrayTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<ArrayType, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2500,7 +5212,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callAssertStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callAssertStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<AssertStatement, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2508,7 +5229,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callAssignmentVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callAssignmentVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<Assignment, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2516,7 +5246,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callBlockVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callBlockVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<Block, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2524,7 +5263,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callBlockCommentVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callBlockCommentVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<BlockComment, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2532,7 +5280,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callBooleanLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callBooleanLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<BooleanLiteral, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2540,7 +5297,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callBreakStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callBreakStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<BreakStatement, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2548,7 +5314,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callCastExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callCastExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<CastExpression, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2556,7 +5331,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callCatchClauseVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callCatchClauseVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<CatchClause, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2564,7 +5348,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callCharacterLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callCharacterLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<CharacterLiteral, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2572,7 +5365,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callClassInstanceCreationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callClassInstanceCreationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<ClassInstanceCreation, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2580,7 +5382,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callCompilationUnitVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callCompilationUnitVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<CompilationUnit, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2588,7 +5399,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callConditionalExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callConditionalExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<ConditionalExpression, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2596,7 +5416,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callConstructorInvocationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callConstructorInvocationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<ConstructorInvocation, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2604,7 +5433,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callContinueStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callContinueStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<ContinueStatement, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2612,7 +5450,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callCreationReferenceVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callCreationReferenceVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<CreationReference, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2620,7 +5467,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callDimensionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callDimensionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<Dimension, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2628,7 +5484,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callDoStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callDoStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<DoStatement, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2636,7 +5501,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callEmptyStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callEmptyStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<EmptyStatement, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2644,7 +5518,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callEnhancedForStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callEnhancedForStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<EnhancedForStatement, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2652,7 +5535,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callEnumConstantDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callEnumConstantDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<EnumConstantDeclaration, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2660,7 +5552,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callEnumDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callEnumDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<EnumDeclaration, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2668,7 +5569,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callExportsDirectiveVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callExportsDirectiveVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<ExportsDirective, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2676,7 +5586,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callExpressionMethodReferenceVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callExpressionMethodReferenceVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<ExpressionMethodReference, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2684,7 +5603,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callExpressionStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callExpressionStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<ExpressionStatement, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2692,7 +5620,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callFieldAccessVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callFieldAccessVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<FieldAccess, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2700,7 +5637,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callFieldDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callFieldDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<FieldDeclaration, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2708,7 +5654,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callForStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callForStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<ForStatement, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2716,7 +5671,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callIfStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callIfStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<IfStatement, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2724,7 +5688,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callImportDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callImportDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<ImportDeclaration, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2732,7 +5705,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callInfixExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callInfixExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<InfixExpression, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2740,7 +5722,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callInitializerVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callInitializerVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<Initializer, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2748,7 +5739,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callInstanceofExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callInstanceofExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<InstanceofExpression, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2756,7 +5756,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callIntersectionTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callIntersectionTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<IntersectionType, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2764,7 +5773,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callJavadocVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callJavadocVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<Javadoc, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2772,7 +5790,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callLabeledStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callLabeledStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<LabeledStatement, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2780,7 +5807,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callLambdaExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callLambdaExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<LambdaExpression, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2788,7 +5824,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callLineCommentVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callLineCommentVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<LineComment, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2796,7 +5841,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callMarkerAnnotationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callMarkerAnnotationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<MarkerAnnotation, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2804,7 +5858,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callMemberRefVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callMemberRefVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<MemberRef, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2812,7 +5875,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callMemberValuePairVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callMemberValuePairVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<MemberValuePair, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2820,7 +5892,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callMethodRefVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callMethodRefVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<MethodRef, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2828,7 +5909,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callMethodRefParameterVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callMethodRefParameterVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<MethodRefParameter, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2836,7 +5926,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callMethodDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callMethodDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<MethodDeclaration, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2844,7 +5943,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callMethodInvocationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callMethodInvocationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<MethodInvocation, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2852,7 +5960,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callModifierVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callModifierVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<Modifier, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2860,7 +5977,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callModuleDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callModuleDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<ModuleDeclaration, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2868,7 +5994,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callModuleModifierVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callModuleModifierVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<ModuleModifier, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2876,7 +6011,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callNameQualifiedTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callNameQualifiedTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<NameQualifiedType, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2884,7 +6028,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callNormalAnnotationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callNormalAnnotationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<NormalAnnotation, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2892,7 +6045,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callNullLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callNullLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<NullLiteral, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2900,7 +6062,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callNumberLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callNumberLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<NumberLiteral, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2908,7 +6079,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callOpensDirectiveVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callOpensDirectiveVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<OpensDirective, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2916,7 +6096,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callPackageDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callPackageDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<PackageDeclaration, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2924,7 +6113,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callParameterizedTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callParameterizedTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<ParameterizedType, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2932,7 +6130,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callParenthesizedExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callParenthesizedExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<ParenthesizedExpression, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2940,7 +6147,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callPatternInstanceofExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callPatternInstanceofExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<PatternInstanceofExpression, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2948,7 +6164,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callPostfixExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callPostfixExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<PostfixExpression, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2956,7 +6181,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callPrefixExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callPrefixExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<PrefixExpression, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2964,7 +6198,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callProvidesDirectiveVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callProvidesDirectiveVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<ProvidesDirective, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2972,7 +6215,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callPrimitiveTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callPrimitiveTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<PrimitiveType, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2980,7 +6232,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callQualifiedNameVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callQualifiedNameVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<QualifiedName, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2988,7 +6249,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callQualifiedTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callQualifiedTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<QualifiedType, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -2998,6 +6268,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 
 //	public static <V,T> void callModuleQualifiedNameVisitor(ASTNode node, ReferenceHolder<V,T> dataholder, BiConsumer<ModuleQualifiedName, ReferenceHolder<V,T>> bc) {  HelperVisitor<ReferenceHolder<V,T>> hv = new HelperVisitor<>(nodesprocessed, dataholder); hv.addModuleQualifiedName(bc); hv.build(node);}
 
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+
 	public static <V, T> void callRequiresDirectiveVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<RequiresDirective, ReferenceHolder<V, T>> bc) {
 		
@@ -3006,7 +6286,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callRecordDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callRecordDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<RecordDeclaration, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3014,7 +6303,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callReturnStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callReturnStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<ReturnStatement, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3022,7 +6320,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSimpleNameVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callSimpleNameVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<SimpleName, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3030,7 +6337,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSimpleTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callSimpleTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<SimpleType, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3038,7 +6354,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSingleMemberAnnotationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callSingleMemberAnnotationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<SingleMemberAnnotation, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3046,7 +6371,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSingleVariableDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callSingleVariableDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<SingleVariableDeclaration, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3054,7 +6388,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callStringLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callStringLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<StringLiteral, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3062,7 +6405,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSuperConstructorInvocationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callSuperConstructorInvocationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<SuperConstructorInvocation, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3070,7 +6422,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSuperFieldAccessVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callSuperFieldAccessVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<SuperFieldAccess, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3078,7 +6439,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSuperMethodInvocationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callSuperMethodInvocationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<SuperMethodInvocation, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3086,7 +6456,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSuperMethodReferenceVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callSuperMethodReferenceVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<SuperMethodReference, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3094,7 +6473,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSwitchCaseVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callSwitchCaseVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<SwitchCase, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3102,7 +6490,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSwitchExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callSwitchExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<SwitchExpression, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3110,7 +6507,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSwitchStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callSwitchStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<SwitchStatement, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3118,7 +6524,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSynchronizedStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callSynchronizedStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<SynchronizedStatement, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3126,7 +6541,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callTagElementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callTagElementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<TagElement, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3134,7 +6558,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callTextBlockVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callTextBlockVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<TextBlock, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3142,7 +6575,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callTextElementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callTextElementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<TextElement, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3150,7 +6592,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callThisExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callThisExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<ThisExpression, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3158,7 +6609,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callThrowStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callThrowStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<ThrowStatement, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3166,7 +6626,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callTryStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callTryStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<TryStatement, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3174,7 +6643,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callTypeDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callTypeDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<TypeDeclaration, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3182,7 +6660,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callTypeDeclarationStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callTypeDeclarationStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<TypeDeclarationStatement, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3190,7 +6677,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callTypeLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callTypeLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<TypeLiteral, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3198,7 +6694,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callTypeMethodReferenceVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callTypeMethodReferenceVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<TypeMethodReference, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3206,7 +6711,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callTypeParameterVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callTypeParameterVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<TypeParameter, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3214,7 +6728,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callUnionTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callUnionTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<UnionType, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3222,7 +6745,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callUsesDirectiveVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callUsesDirectiveVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<UsesDirective, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3230,7 +6762,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callVariableDeclarationExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callVariableDeclarationExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<VariableDeclarationExpression, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3238,7 +6779,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callVariableDeclarationStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callVariableDeclarationStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<VariableDeclarationStatement, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3246,7 +6796,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 	
-	public static <V, T> void callVariableDeclarationStatementVisitor(Class<?> class1, ASTNode node, ReferenceHolder<V, T> dataholder,Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param class1
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callVariableDeclarationStatementVisitor(Class<?> class1, ASTNode node, ReferenceHolder<V, T> dataholder,Set<ASTNode> nodesprocessed,
 			BiConsumer<VariableDeclarationStatement, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3254,7 +6814,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callVariableDeclarationFragmentVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callVariableDeclarationFragmentVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<VariableDeclarationFragment, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3262,7 +6831,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callWhileStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callWhileStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<WhileStatement, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3270,7 +6848,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callWildcardTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callWildcardTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<WildcardType, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3278,7 +6865,16 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callYieldStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bc
+     */
+    public static <V, T> void callYieldStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiConsumer<YieldStatement, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3286,7 +6882,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callAnnotationTypeDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callAnnotationTypeDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<AnnotationTypeDeclaration, ReferenceHolder<V, T>> bs,
 			BiConsumer<AnnotationTypeDeclaration, ReferenceHolder<V, T>> bc) {
 		
@@ -3295,7 +6901,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callAnnotationTypeMemberDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callAnnotationTypeMemberDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<AnnotationTypeMemberDeclaration, ReferenceHolder<V, T>> bs,
 			BiConsumer<AnnotationTypeMemberDeclaration, ReferenceHolder<V, T>> bc) {
 		
@@ -3304,7 +6920,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callAnonymousClassDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callAnonymousClassDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<AnonymousClassDeclaration, ReferenceHolder<V, T>> bs,
 			BiConsumer<AnonymousClassDeclaration, ReferenceHolder<V, T>> bc) {
 		
@@ -3313,7 +6939,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callArrayAccessVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callArrayAccessVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ArrayAccess, ReferenceHolder<V, T>> bs, BiConsumer<ArrayAccess, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3321,7 +6957,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callArrayCreationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callArrayCreationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ArrayCreation, ReferenceHolder<V, T>> bs, BiConsumer<ArrayCreation, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3329,7 +6975,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callArrayInitializerVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callArrayInitializerVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ArrayInitializer, ReferenceHolder<V, T>> bs,
 			BiConsumer<ArrayInitializer, ReferenceHolder<V, T>> bc) {
 		
@@ -3338,7 +6994,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callArrayTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callArrayTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ArrayType, ReferenceHolder<V, T>> bs, BiConsumer<ArrayType, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3346,7 +7012,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callAssertStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callAssertStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<AssertStatement, ReferenceHolder<V, T>> bs,
 			BiConsumer<AssertStatement, ReferenceHolder<V, T>> bc) {
 		
@@ -3355,7 +7031,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callAssignmentVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callAssignmentVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<Assignment, ReferenceHolder<V, T>> bs, BiConsumer<Assignment, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3363,7 +7049,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callBlockVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callBlockVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<Block, ReferenceHolder<V, T>> bs, BiConsumer<Block, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3371,7 +7067,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callBlockCommentVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callBlockCommentVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<BlockComment, ReferenceHolder<V, T>> bs, BiConsumer<BlockComment, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3379,7 +7085,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callBooleanLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callBooleanLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<BooleanLiteral, ReferenceHolder<V, T>> bs,
 			BiConsumer<BooleanLiteral, ReferenceHolder<V, T>> bc) {
 		
@@ -3388,7 +7104,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callBreakStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callBreakStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<BreakStatement, ReferenceHolder<V, T>> bs,
 			BiConsumer<BreakStatement, ReferenceHolder<V, T>> bc) {
 		
@@ -3397,7 +7123,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callCastExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callCastExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<CastExpression, ReferenceHolder<V, T>> bs,
 			BiConsumer<CastExpression, ReferenceHolder<V, T>> bc) {
 		
@@ -3406,7 +7142,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callCatchClauseVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callCatchClauseVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<CatchClause, ReferenceHolder<V, T>> bs, BiConsumer<CatchClause, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3414,7 +7160,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callCharacterLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callCharacterLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<CharacterLiteral, ReferenceHolder<V, T>> bs,
 			BiConsumer<CharacterLiteral, ReferenceHolder<V, T>> bc) {
 		
@@ -3423,7 +7179,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callClassInstanceCreationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callClassInstanceCreationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ClassInstanceCreation, ReferenceHolder<V, T>> bs,
 			BiConsumer<ClassInstanceCreation, ReferenceHolder<V, T>> bc) {
 		
@@ -3432,7 +7198,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callCompilationUnitVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callCompilationUnitVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<CompilationUnit, ReferenceHolder<V, T>> bs,
 			BiConsumer<CompilationUnit, ReferenceHolder<V, T>> bc) {
 		
@@ -3441,7 +7217,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callConditionalExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callConditionalExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ConditionalExpression, ReferenceHolder<V, T>> bs,
 			BiConsumer<ConditionalExpression, ReferenceHolder<V, T>> bc) {
 		
@@ -3450,7 +7236,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callConstructorInvocationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callConstructorInvocationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ConstructorInvocation, ReferenceHolder<V, T>> bs,
 			BiConsumer<ConstructorInvocation, ReferenceHolder<V, T>> bc) {
 		
@@ -3459,7 +7255,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callContinueStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callContinueStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ContinueStatement, ReferenceHolder<V, T>> bs,
 			BiConsumer<ContinueStatement, ReferenceHolder<V, T>> bc) {
 		
@@ -3468,7 +7274,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callCreationReferenceVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callCreationReferenceVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<CreationReference, ReferenceHolder<V, T>> bs,
 			BiConsumer<CreationReference, ReferenceHolder<V, T>> bc) {
 		
@@ -3477,7 +7293,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callDimensionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callDimensionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<Dimension, ReferenceHolder<V, T>> bs, BiConsumer<Dimension, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3485,7 +7311,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callDoStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callDoStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<DoStatement, ReferenceHolder<V, T>> bs, BiConsumer<DoStatement, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3493,7 +7329,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callEmptyStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callEmptyStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<EmptyStatement, ReferenceHolder<V, T>> bs,
 			BiConsumer<EmptyStatement, ReferenceHolder<V, T>> bc) {
 		
@@ -3502,7 +7348,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callEnhancedForStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callEnhancedForStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<EnhancedForStatement, ReferenceHolder<V, T>> bs,
 			BiConsumer<EnhancedForStatement, ReferenceHolder<V, T>> bc) {
 		
@@ -3511,7 +7367,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callEnumConstantDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callEnumConstantDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<EnumConstantDeclaration, ReferenceHolder<V, T>> bs,
 			BiConsumer<EnumConstantDeclaration, ReferenceHolder<V, T>> bc) {
 		
@@ -3520,7 +7386,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callEnumDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callEnumDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<EnumDeclaration, ReferenceHolder<V, T>> bs,
 			BiConsumer<EnumDeclaration, ReferenceHolder<V, T>> bc) {
 		
@@ -3529,7 +7405,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callExportsDirectiveVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callExportsDirectiveVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ExportsDirective, ReferenceHolder<V, T>> bs,
 			BiConsumer<ExportsDirective, ReferenceHolder<V, T>> bc) {
 		
@@ -3538,7 +7424,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callExpressionMethodReferenceVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callExpressionMethodReferenceVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ExpressionMethodReference, ReferenceHolder<V, T>> bs,
 			BiConsumer<ExpressionMethodReference, ReferenceHolder<V, T>> bc) {
 		
@@ -3547,7 +7443,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callExpressionStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callExpressionStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ExpressionStatement, ReferenceHolder<V, T>> bs,
 			BiConsumer<ExpressionStatement, ReferenceHolder<V, T>> bc) {
 		
@@ -3556,7 +7462,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callFieldAccessVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callFieldAccessVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<FieldAccess, ReferenceHolder<V, T>> bs, BiConsumer<FieldAccess, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3564,7 +7480,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callFieldDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callFieldDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<FieldDeclaration, ReferenceHolder<V, T>> bs,
 			BiConsumer<FieldDeclaration, ReferenceHolder<V, T>> bc) {
 		
@@ -3573,7 +7499,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callForStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callForStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ForStatement, ReferenceHolder<V, T>> bs, BiConsumer<ForStatement, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3581,7 +7517,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callIfStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callIfStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<IfStatement, ReferenceHolder<V, T>> bs, BiConsumer<IfStatement, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3589,7 +7535,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callImportDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callImportDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ImportDeclaration, ReferenceHolder<V, T>> bs,
 			BiConsumer<ImportDeclaration, ReferenceHolder<V, T>> bc) {
 		
@@ -3598,7 +7554,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callInfixExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callInfixExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<InfixExpression, ReferenceHolder<V, T>> bs,
 			BiConsumer<InfixExpression, ReferenceHolder<V, T>> bc) {
 		
@@ -3607,7 +7573,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callInitializerVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callInitializerVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<Initializer, ReferenceHolder<V, T>> bs, BiConsumer<Initializer, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3615,7 +7591,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callInstanceofExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callInstanceofExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<InstanceofExpression, ReferenceHolder<V, T>> bs,
 			BiConsumer<InstanceofExpression, ReferenceHolder<V, T>> bc) {
 		
@@ -3624,7 +7610,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callIntersectionTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callIntersectionTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<IntersectionType, ReferenceHolder<V, T>> bs,
 			BiConsumer<IntersectionType, ReferenceHolder<V, T>> bc) {
 		
@@ -3633,7 +7629,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callJavadocVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callJavadocVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<Javadoc, ReferenceHolder<V, T>> bs, BiConsumer<Javadoc, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3641,7 +7647,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callLabeledStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callLabeledStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<LabeledStatement, ReferenceHolder<V, T>> bs,
 			BiConsumer<LabeledStatement, ReferenceHolder<V, T>> bc) {
 		
@@ -3650,7 +7666,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callLambdaExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callLambdaExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<LambdaExpression, ReferenceHolder<V, T>> bs,
 			BiConsumer<LambdaExpression, ReferenceHolder<V, T>> bc) {
 		
@@ -3659,7 +7685,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callLineCommentVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callLineCommentVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<LineComment, ReferenceHolder<V, T>> bs, BiConsumer<LineComment, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3667,7 +7703,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callMarkerAnnotationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callMarkerAnnotationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<MarkerAnnotation, ReferenceHolder<V, T>> bs,
 			BiConsumer<MarkerAnnotation, ReferenceHolder<V, T>> bc) {
 		
@@ -3676,7 +7722,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callMemberRefVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callMemberRefVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<MemberRef, ReferenceHolder<V, T>> bs, BiConsumer<MemberRef, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3684,7 +7740,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callMemberValuePairVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callMemberValuePairVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<MemberValuePair, ReferenceHolder<V, T>> bs,
 			BiConsumer<MemberValuePair, ReferenceHolder<V, T>> bc) {
 		
@@ -3693,7 +7759,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callMethodRefVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callMethodRefVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<MethodRef, ReferenceHolder<V, T>> bs, BiConsumer<MethodRef, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3701,7 +7777,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callMethodRefParameterVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callMethodRefParameterVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<MethodRefParameter, ReferenceHolder<V, T>> bs,
 			BiConsumer<MethodRefParameter, ReferenceHolder<V, T>> bc) {
 		
@@ -3710,7 +7796,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callMethodDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callMethodDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<MethodDeclaration, ReferenceHolder<V, T>> bs,
 			BiConsumer<MethodDeclaration, ReferenceHolder<V, T>> bc) {
 		
@@ -3719,7 +7815,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callMethodInvocationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callMethodInvocationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<MethodInvocation, ReferenceHolder<V, T>> bs,
 			BiConsumer<MethodInvocation, ReferenceHolder<V, T>> bc) {
 		
@@ -3728,7 +7834,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callModifierVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callModifierVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<Modifier, ReferenceHolder<V, T>> bs, BiConsumer<Modifier, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3736,7 +7852,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callModuleDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callModuleDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ModuleDeclaration, ReferenceHolder<V, T>> bs,
 			BiConsumer<ModuleDeclaration, ReferenceHolder<V, T>> bc) {
 		
@@ -3745,7 +7871,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callModuleModifierVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callModuleModifierVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ModuleModifier, ReferenceHolder<V, T>> bs,
 			BiConsumer<ModuleModifier, ReferenceHolder<V, T>> bc) {
 		
@@ -3754,7 +7890,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callNameQualifiedTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callNameQualifiedTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<NameQualifiedType, ReferenceHolder<V, T>> bs,
 			BiConsumer<NameQualifiedType, ReferenceHolder<V, T>> bc) {
 		
@@ -3763,7 +7909,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callNormalAnnotationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callNormalAnnotationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<NormalAnnotation, ReferenceHolder<V, T>> bs,
 			BiConsumer<NormalAnnotation, ReferenceHolder<V, T>> bc) {
 		
@@ -3772,7 +7928,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callNullLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callNullLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<NullLiteral, ReferenceHolder<V, T>> bs, BiConsumer<NullLiteral, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3780,7 +7946,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callNumberLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callNumberLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<NumberLiteral, ReferenceHolder<V, T>> bs, BiConsumer<NumberLiteral, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3788,7 +7964,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callOpensDirectiveVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callOpensDirectiveVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<OpensDirective, ReferenceHolder<V, T>> bs,
 			BiConsumer<OpensDirective, ReferenceHolder<V, T>> bc) {
 		
@@ -3797,7 +7983,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callPackageDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callPackageDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<PackageDeclaration, ReferenceHolder<V, T>> bs,
 			BiConsumer<PackageDeclaration, ReferenceHolder<V, T>> bc) {
 		
@@ -3806,7 +8002,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callParameterizedTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callParameterizedTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ParameterizedType, ReferenceHolder<V, T>> bs,
 			BiConsumer<ParameterizedType, ReferenceHolder<V, T>> bc) {
 		
@@ -3815,7 +8021,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callParenthesizedExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callParenthesizedExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ParenthesizedExpression, ReferenceHolder<V, T>> bs,
 			BiConsumer<ParenthesizedExpression, ReferenceHolder<V, T>> bc) {
 		
@@ -3824,7 +8040,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callPatternInstanceofExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callPatternInstanceofExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<PatternInstanceofExpression, ReferenceHolder<V, T>> bs,
 			BiConsumer<PatternInstanceofExpression, ReferenceHolder<V, T>> bc) {
 		
@@ -3833,7 +8059,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callPostfixExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callPostfixExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<PostfixExpression, ReferenceHolder<V, T>> bs,
 			BiConsumer<PostfixExpression, ReferenceHolder<V, T>> bc) {
 		
@@ -3842,7 +8078,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callPrefixExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callPrefixExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<PrefixExpression, ReferenceHolder<V, T>> bs,
 			BiConsumer<PrefixExpression, ReferenceHolder<V, T>> bc) {
 		
@@ -3851,7 +8097,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callProvidesDirectiveVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callProvidesDirectiveVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ProvidesDirective, ReferenceHolder<V, T>> bs,
 			BiConsumer<ProvidesDirective, ReferenceHolder<V, T>> bc) {
 		
@@ -3860,7 +8116,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callPrimitiveTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callPrimitiveTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<PrimitiveType, ReferenceHolder<V, T>> bs, BiConsumer<PrimitiveType, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3868,7 +8134,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callQualifiedNameVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callQualifiedNameVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<QualifiedName, ReferenceHolder<V, T>> bs, BiConsumer<QualifiedName, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3876,7 +8152,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callQualifiedTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callQualifiedTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<QualifiedType, ReferenceHolder<V, T>> bs, BiConsumer<QualifiedType, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3885,6 +8171,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 	}
 
 //	public static <V,T> void callModuleQualifiedNameVisitor(ASTNode node, ReferenceHolder<V,T> dataholder, BiPredicate<ModuleQualifiedName, ReferenceHolder<V,T>> bs, BiConsumer<ModuleQualifiedName, ReferenceHolder<V,T>> bc) {  HelperVisitor<ReferenceHolder<V,T>> hv = new HelperVisitor<>(nodesprocessed, dataholder); hv.addModuleQualifiedName(bs,bc); hv.build(node);}
+
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
 
 	public static <V, T> void callRequiresDirectiveVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<RequiresDirective, ReferenceHolder<V, T>> bs,
@@ -3895,7 +8192,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callRecordDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callRecordDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<RecordDeclaration, ReferenceHolder<V, T>> bs,
 			BiConsumer<RecordDeclaration, ReferenceHolder<V, T>> bc) {
 		
@@ -3904,7 +8211,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callReturnStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callReturnStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ReturnStatement, ReferenceHolder<V, T>> bs,
 			BiConsumer<ReturnStatement, ReferenceHolder<V, T>> bc) {
 		
@@ -3913,7 +8230,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSimpleNameVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callSimpleNameVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<SimpleName, ReferenceHolder<V, T>> bs, BiConsumer<SimpleName, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3921,7 +8248,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSimpleTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callSimpleTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<SimpleType, ReferenceHolder<V, T>> bs, BiConsumer<SimpleType, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3929,7 +8266,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSingleMemberAnnotationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callSingleMemberAnnotationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<SingleMemberAnnotation, ReferenceHolder<V, T>> bs,
 			BiConsumer<SingleMemberAnnotation, ReferenceHolder<V, T>> bc) {
 		
@@ -3938,7 +8285,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSingleVariableDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callSingleVariableDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<SingleVariableDeclaration, ReferenceHolder<V, T>> bs,
 			BiConsumer<SingleVariableDeclaration, ReferenceHolder<V, T>> bc) {
 		
@@ -3947,7 +8304,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callStringLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callStringLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<StringLiteral, ReferenceHolder<V, T>> bs, BiConsumer<StringLiteral, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3955,7 +8322,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSuperConstructorInvocationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callSuperConstructorInvocationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<SuperConstructorInvocation, ReferenceHolder<V, T>> bs,
 			BiConsumer<SuperConstructorInvocation, ReferenceHolder<V, T>> bc) {
 		
@@ -3964,7 +8341,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSuperFieldAccessVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callSuperFieldAccessVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<SuperFieldAccess, ReferenceHolder<V, T>> bs,
 			BiConsumer<SuperFieldAccess, ReferenceHolder<V, T>> bc) {
 		
@@ -3973,7 +8360,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSuperMethodInvocationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callSuperMethodInvocationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<SuperMethodInvocation, ReferenceHolder<V, T>> bs,
 			BiConsumer<SuperMethodInvocation, ReferenceHolder<V, T>> bc) {
 		
@@ -3982,7 +8379,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSuperMethodReferenceVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callSuperMethodReferenceVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<SuperMethodReference, ReferenceHolder<V, T>> bs,
 			BiConsumer<SuperMethodReference, ReferenceHolder<V, T>> bc) {
 		
@@ -3991,7 +8398,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSwitchCaseVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callSwitchCaseVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<SwitchCase, ReferenceHolder<V, T>> bs, BiConsumer<SwitchCase, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -3999,7 +8416,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSwitchExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callSwitchExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<SwitchExpression, ReferenceHolder<V, T>> bs,
 			BiConsumer<SwitchExpression, ReferenceHolder<V, T>> bc) {
 		
@@ -4008,7 +8435,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSwitchStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callSwitchStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<SwitchStatement, ReferenceHolder<V, T>> bs,
 			BiConsumer<SwitchStatement, ReferenceHolder<V, T>> bc) {
 		
@@ -4017,7 +8454,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callSynchronizedStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callSynchronizedStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<SynchronizedStatement, ReferenceHolder<V, T>> bs,
 			BiConsumer<SynchronizedStatement, ReferenceHolder<V, T>> bc) {
 		
@@ -4026,7 +8473,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callTagElementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callTagElementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<TagElement, ReferenceHolder<V, T>> bs, BiConsumer<TagElement, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -4034,7 +8491,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callTextBlockVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callTextBlockVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<TextBlock, ReferenceHolder<V, T>> bs, BiConsumer<TextBlock, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -4042,7 +8509,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callTextElementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callTextElementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<TextElement, ReferenceHolder<V, T>> bs, BiConsumer<TextElement, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -4050,7 +8527,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callThisExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callThisExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ThisExpression, ReferenceHolder<V, T>> bs,
 			BiConsumer<ThisExpression, ReferenceHolder<V, T>> bc) {
 		
@@ -4059,7 +8546,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callThrowStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callThrowStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<ThrowStatement, ReferenceHolder<V, T>> bs,
 			BiConsumer<ThrowStatement, ReferenceHolder<V, T>> bc) {
 		
@@ -4068,7 +8565,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callTryStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callTryStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<TryStatement, ReferenceHolder<V, T>> bs, BiConsumer<TryStatement, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -4076,7 +8583,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callTypeDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callTypeDeclarationVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<TypeDeclaration, ReferenceHolder<V, T>> bs,
 			BiConsumer<TypeDeclaration, ReferenceHolder<V, T>> bc) {
 		
@@ -4085,7 +8602,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callTypeDeclarationStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callTypeDeclarationStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<TypeDeclarationStatement, ReferenceHolder<V, T>> bs,
 			BiConsumer<TypeDeclarationStatement, ReferenceHolder<V, T>> bc) {
 		
@@ -4094,7 +8621,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callTypeLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callTypeLiteralVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<TypeLiteral, ReferenceHolder<V, T>> bs, BiConsumer<TypeLiteral, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -4102,7 +8639,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callTypeMethodReferenceVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callTypeMethodReferenceVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<TypeMethodReference, ReferenceHolder<V, T>> bs,
 			BiConsumer<TypeMethodReference, ReferenceHolder<V, T>> bc) {
 		
@@ -4111,7 +8658,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callTypeParameterVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callTypeParameterVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<TypeParameter, ReferenceHolder<V, T>> bs, BiConsumer<TypeParameter, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -4119,7 +8676,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callUnionTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callUnionTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<UnionType, ReferenceHolder<V, T>> bs, BiConsumer<UnionType, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -4127,7 +8694,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callUsesDirectiveVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callUsesDirectiveVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<UsesDirective, ReferenceHolder<V, T>> bs, BiConsumer<UsesDirective, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -4135,7 +8712,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callVariableDeclarationExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callVariableDeclarationExpressionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<VariableDeclarationExpression, ReferenceHolder<V, T>> bs,
 			BiConsumer<VariableDeclarationExpression, ReferenceHolder<V, T>> bc) {
 		
@@ -4144,7 +8731,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callVariableDeclarationStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callVariableDeclarationStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<VariableDeclarationStatement, ReferenceHolder<V, T>> bs,
 			BiConsumer<VariableDeclarationStatement, ReferenceHolder<V, T>> bc) {
 		
@@ -4153,7 +8750,18 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 	
-	public static <V, T> void callVariableDeclarationStatementVisitor(Class<?> class1, ASTNode node, ReferenceHolder<V, T> dataholder,Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param class1
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callVariableDeclarationStatementVisitor(Class<?> class1, ASTNode node, ReferenceHolder<V, T> dataholder,Set<ASTNode> nodesprocessed,
 			BiPredicate<VariableDeclarationStatement, ReferenceHolder<V, T>> bs,
 			BiConsumer<VariableDeclarationStatement, ReferenceHolder<V, T>> bc) {
 		
@@ -4162,7 +8770,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callVariableDeclarationFragmentVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callVariableDeclarationFragmentVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<VariableDeclarationFragment, ReferenceHolder<V, T>> bs,
 			BiConsumer<VariableDeclarationFragment, ReferenceHolder<V, T>> bc) {
 		
@@ -4171,7 +8789,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callWhileStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callWhileStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<WhileStatement, ReferenceHolder<V, T>> bs,
 			BiConsumer<WhileStatement, ReferenceHolder<V, T>> bc) {
 		
@@ -4180,7 +8808,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callWildcardTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callWildcardTypeVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<WildcardType, ReferenceHolder<V, T>> bs, BiConsumer<WildcardType, ReferenceHolder<V, T>> bc) {
 		
 		HelperVisitor<ReferenceHolder<V, T>> hv = new HelperVisitor<>(nodesprocessed, dataholder);
@@ -4188,7 +8826,17 @@ public class HelperVisitor<E extends HelperVisitorProvider> {
 		hv.build(node);
 	}
 
-	public static <V, T> void callYieldStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+    /**
+     *
+     * @param <V>
+     * @param <T>
+     * @param node
+     * @param dataholder
+     * @param nodesprocessed
+     * @param bs
+     * @param bc
+     */
+    public static <V, T> void callYieldStatementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<YieldStatement, ReferenceHolder<V, T>> bs,
 			BiConsumer<YieldStatement, ReferenceHolder<V, T>> bc) {
 		

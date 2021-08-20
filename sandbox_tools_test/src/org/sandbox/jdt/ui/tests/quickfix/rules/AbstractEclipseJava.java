@@ -75,8 +75,8 @@ import org.osgi.framework.BundleReference;
 
 public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallback {
 
-	private String testresources_stubs;
-	private String compliance;
+	private final String testresources_stubs;
+	private final String compliance;
 	private static final String TEST_SETUP_PROJECT = "TestSetupProject";
 	public IPackageFragmentRoot fSourceFolder;
 	private CustomProfile fProfile;
@@ -332,7 +332,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		}
 		if (hasProblems) {
 			StringBuilder builder= new StringBuilder();
-			builder.append(cu.getElementName() + " has compilation problems: \n");
+			builder.append(cu.getElementName()).append(" has compilation problems: \n");
 			for (IProblem prob : problems) {
 				builder.append(prob.getMessage()).append('\n');
 			}
