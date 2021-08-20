@@ -13,6 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.WhileStatement;
@@ -23,7 +24,8 @@ public class Hit {
 	public VariableDeclarationStatement iteratordeclaration;
 	public SimpleName collectionsimplename;
 	public String loopvarname;
-	public VariableDeclarationStatement loopvardeclaration;
+	public MethodInvocation loopvardeclaration;
 	public WhileStatement whilestatement;
+	public boolean nextwithoutvariabledeclation;
 
 }

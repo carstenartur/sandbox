@@ -951,6 +951,17 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T>, V, T> extend
 	@Override
 	public boolean visit(VariableDeclarationStatement node) {
 		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.VariableDeclarationStatement)) {
+			Class<?> data=(Class<?>) this.helperVisitor.getSupplierData().get(VisitorEnum.VariableDeclarationStatement);
+			if (data!= null) {
+				VariableDeclarationFragment bli = (VariableDeclarationFragment) node.fragments().get(0);
+				IVariableBinding resolveBinding = bli.resolveBinding();
+				if(resolveBinding!=null) {
+					String qualifiedName = resolveBinding.getType().getErasure().getQualifiedName();
+					if (!data.getCanonicalName().equals(qualifiedName)) {
+						return true;
+					}
+				}
+			}
 			return ((BiPredicate<VariableDeclarationStatement, E>) (this.helperVisitor.predicatemap
 					.get(VisitorEnum.VariableDeclarationStatement))).test(node, this.helperVisitor.dataholder);
 		}
@@ -1765,6 +1776,17 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T>, V, T> extend
 	@Override
 	public void endVisit(VariableDeclarationStatement node) {
 		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.VariableDeclarationStatement)) {
+			Class<?> data=(Class<?>) this.helperVisitor.getConsumerData().get(VisitorEnum.VariableDeclarationStatement);
+			if (data!= null) {
+				VariableDeclarationFragment bli = (VariableDeclarationFragment) node.fragments().get(0);
+				IVariableBinding resolveBinding = bli.resolveBinding();
+				if(resolveBinding!=null) {
+					String qualifiedName = resolveBinding.getType().getErasure().getQualifiedName();
+					if (!data.getCanonicalName().equals(qualifiedName)) {
+						return;
+					}
+				}
+			}
 			((BiConsumer<VariableDeclarationStatement, E>) (this.helperVisitor.consumermap
 					.get(VisitorEnum.VariableDeclarationStatement))).accept(node, this.helperVisitor.dataholder);
 		}

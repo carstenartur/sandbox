@@ -32,7 +32,6 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.IBinding;
-import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
@@ -291,7 +290,7 @@ public class VisitorTest {
 		BiConsumer<ASTNode, ReferenceHolder<ASTNode, String>> bc = (node,holder)->{
 			System.out.printf("%-40s %s%n","End   "+node.getNodeType() + " :" + node,ASTNode.nodeClassForType(node.getNodeType()));
 		};
-		HelperVisitor.callVisitor(result, myset, dataholder, bs, bc);
+		HelperVisitor.callVisitor(result, myset, dataholder,null, bs, bc);
 	}
 
 	
@@ -331,7 +330,7 @@ public class VisitorTest {
 	@Test
 	public void simpleTest5b() {
 		ReferenceHolder<VisitorEnum, Integer> dataholder = new ReferenceHolder<>();
-		HelperVisitor.callVisitor(result, EnumSet.allOf(VisitorEnum.class), dataholder, this::countVisits);
+		HelperVisitor.callVisitor(result, EnumSet.allOf(VisitorEnum.class), dataholder,null, this::countVisits);
 
 		/**
 		 * Presenting result
@@ -352,7 +351,7 @@ public class VisitorTest {
 				VisitorEnum.SingleVariableDeclaration, 
 				VisitorEnum.VariableDeclarationExpression,
 				VisitorEnum.VariableDeclarationStatement,
-				VisitorEnum.VariableDeclarationFragment), dataholder, (node,holder)->{
+				VisitorEnum.VariableDeclarationFragment), dataholder,null, (node,holder)->{
 			holder.put(node, node.getStartPosition());
 		});
 
@@ -371,7 +370,7 @@ public class VisitorTest {
 				VisitorEnum.SingleVariableDeclaration, 
 				VisitorEnum.VariableDeclarationExpression,
 				VisitorEnum.VariableDeclarationStatement,
-				VisitorEnum.VariableDeclarationFragment), dataholder, (node,holder)->{
+				VisitorEnum.VariableDeclarationFragment), dataholder,null, (node,holder)->{
 			Map<String, Object> pernodemap = holder.computeIfAbsent(node, k -> new HashMap<>());
 			switch(VisitorEnum.fromNode(node)) {
 			case SingleVariableDeclaration:
@@ -410,36 +409,56 @@ public class VisitorTest {
 	@Test
 	public void simpleTest5e() {
 		ReferenceHolder<ASTNode, Map<String,Object>> dataholder = new ReferenceHolder<>();
-		HelperVisitor.callVariableDeclarationStatementVisitor(result2, dataholder, (node_a,holder_a)->{
-			System.out.println(">>>>>>>>>>>>>");
-			System.out.println(node_a);
-			List<String> computeVarName = computeVarName(node_a, Iterator.class);
-			System.out.print(computeVarName.get(0)+",");
-			if(computeVarName.size()>1)
-				System.out.println(computeVarName.get(1));
-			else
-				System.out.println();
-			HelperVisitor.callWhileStatementVisitor(node_a.getParent(), dataholder, (whilestatement,holder)->{
-				Map<String, Object> pernodemap = holder.computeIfAbsent(whilestatement, k -> new HashMap<>());
-				Expression svd_initializer = whilestatement.getExpression();
-				pernodemap.put("init", svd_initializer);
-				System.out.println("###############");
-				System.out.println(whilestatement);
+		HelperVisitor.callVariableDeclarationStatementVisitor(Iterator.class, result2, dataholder,null, (init_iterator,holder_a)->{
+			List<String> computeVarName = computeVarName(init_iterator);
+			HelperVisitor.callWhileStatementVisitor(init_iterator.getParent(), dataholder,null, (whilestatement,holder)->{
 				String name = computeNextVarname(whilestatement);
-				System.out.println(name);
 				if(computeVarName.get(0).equals(name)) {
-					HelperVisitor.callVariableDeclarationStatementVisitor(whilestatement,dataholder, (vds,holder2)->{
-						Map<String, Object> pernodemap2 = holder2.computeIfAbsent(vds, k -> new HashMap<>());
-						VariableDeclarationFragment vdf=(VariableDeclarationFragment) vds.fragments().get(0);
-						pernodemap2.put("init", vdf);
-						System.out.println("=============");
-						System.out.println(vds);
+					HelperVisitor.callMethodInvocationVisitor("next", whilestatement.getBody() ,dataholder,null, (mi,holder2)->{
+						Map<String, Object> pernodemap2 = holder2.computeIfAbsent(whilestatement, k -> new HashMap<>());
+						Expression element2 = mi.getExpression();
+						SimpleName sn= ASTNodes.as(element2, SimpleName.class);
+						if (sn !=null) {
+							String identifier = sn.getIdentifier();
+							if(!name.equals(identifier))
+								return true;
+							//										if (holder.containsKey(sn.getIdentifier())) {
+//							Map<String, Object> hit = holder2.get(identifier);								
+							pernodemap2.put("init", init_iterator);
+							pernodemap2.put("while", whilestatement);
+							pernodemap2.put("next", mi);
+							pernodemap2.put("name", identifier);
+//							System.out.println("=============");
+//							System.out.println(init_iterator);
+//							System.out.println(whilestatement);
+//							System.out.println(mi);
+//							System.out.println(identifier);
+							return true;					
+							//											if(holder.containsKey(identifier)) {
+							//											if (holder.getHelperVisitor().nodesprocessed.contains(hit.whilestatement)) {
+							//												holder.remove(identifier);
+							//												return true;
+							//											}
+						}
 						return true;
 					});
 				}
 				return true;
 			});
 			return true;
+		});
+		/**
+		 * Presenting result
+		 */
+		System.out.println("#################");
+		dataholder.entrySet().stream().forEach(entry->{
+			System.out.println("=============");
+			System.out.println(entry.getKey());
+			System.out.println("init ===>"+entry.getValue().get("init"));
+			System.out.println("while ===>"+entry.getValue().get("while"));
+			System.out.println("next ===>"+entry.getValue().get("next"));
+			System.out.println("name ===>"+entry.getValue().get("name"));
+			System.out.println();
 		});
 	}
 
@@ -457,31 +476,23 @@ public class VisitorTest {
 					IBinding resolveBinding = variable.resolveBinding();
 					name = resolveBinding.getName();
 				}
-//				mytype = resolveTypeBinding.getErasure().getQualifiedName();
 			}
 		}
 		return name;
 	}
 
-	private static List<String> computeVarName(VariableDeclarationStatement node_a, Class<?> class1) {
+	private static List<String> computeVarName(VariableDeclarationStatement node_a) {
 		List<String> name = new ArrayList<>();
 		VariableDeclarationFragment bli = (VariableDeclarationFragment) node_a.fragments().get(0);
 		name.add(bli.getName().getIdentifier());
-		IVariableBinding resolveBinding = bli.resolveBinding();
-		if(resolveBinding!=null) {
-			String qualifiedName = resolveBinding.getType().getErasure().getQualifiedName();
-			if (class1.getCanonicalName().equals(qualifiedName)) {
-				Expression exp = bli.getInitializer();
-				if (exp instanceof MethodInvocation) {
-					MethodInvocation mi = (MethodInvocation) exp;
-					Expression element = mi.getExpression();{
-						if (element instanceof SimpleName) {
-							SimpleName sn = (SimpleName) element;
-							//						System.out.println(mi.getName());
-							if (mi.getName().toString().equals("iterator")) { //$NON-NLS-1$
-								name.add(sn.getIdentifier());
-							}
-						}
+		Expression exp = bli.getInitializer();
+		if (exp instanceof MethodInvocation) {
+			MethodInvocation mi = (MethodInvocation) exp;
+			Expression element = mi.getExpression();{
+				if (element instanceof SimpleName) {
+					SimpleName sn = (SimpleName) element;
+					if (mi.getName().toString().equals("iterator")) { //$NON-NLS-1$
+						name.add(sn.getIdentifier());
 					}
 				}
 			}
