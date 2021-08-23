@@ -19,28 +19,30 @@ import java.util.function.BiPredicate;
 import org.eclipse.jdt.core.dom.*;
 
 /**
- * 
+ *
  * @author chammer
  *
  * @param <E>
  * @param <V>
  * @param <T>
+ * @since 1.15
  */
-public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T>, V, T> extends ASTVisitor {
+@SuppressWarnings("unchecked")
+public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> extends ASTVisitor {
 	/**
-	 * 
+	 *
 	 */
-	private final HelperVisitor<E> helperVisitor;
+	private final HelperVisitor<E,V,T> helperVisitor;
 
 	/**
 	 * @param helperVisitor
 	 */
-	LambdaASTVisitor(HelperVisitor<E> helperVisitor) {
+	LambdaASTVisitor(HelperVisitor<E,V,T> helperVisitor) {
 		super(false);
 		this.helperVisitor = helperVisitor;
 	}
-	
-	LambdaASTVisitor(HelperVisitor<E> helperVisitor, boolean visitjavadoc) {
+
+	LambdaASTVisitor(HelperVisitor<E,V,T> helperVisitor, boolean visitjavadoc) {
 		super(visitjavadoc);
 		this.helperVisitor = helperVisitor;
 	}
@@ -669,14 +671,14 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T>, V, T> extend
 		return true;
 	}
 
-//	@Override
-//	public boolean visit(ModuleQualifiedName node) {
-//		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ModuleQualifiedName)) {
-//			return ((BiPredicate<ModuleQualifiedName, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ModuleQualifiedName)))
-//					.test(node, this.helperVisitor.dataholder);
-//		}
-//		return true;
-//	}
+	@Override
+	public boolean visit(ModuleQualifiedName node) {
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ModuleQualifiedName)) {
+			return ((BiPredicate<ModuleQualifiedName, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ModuleQualifiedName)))
+					.test(node, this.helperVisitor.dataholder);
+		}
+		return true;
+	}
 
 	@Override
 	public boolean visit(RequiresDirective node) {
@@ -1537,13 +1539,13 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T>, V, T> extend
 		}
 	}
 
-//	@Override
-//	public void endVisit(ModuleQualifiedName node) {
-//		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ModuleQualifiedName)) {
-//			((BiConsumer<ModuleQualifiedName, E>) (this.helperVisitor.consumermap.get(VisitorEnum.ModuleQualifiedName))).accept(node,
-//					this.helperVisitor.dataholder);
-//		}
-//	}
+	@Override
+	public void endVisit(ModuleQualifiedName node) {
+		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ModuleQualifiedName)) {
+			((BiConsumer<ModuleQualifiedName, E>) (this.helperVisitor.consumermap.get(VisitorEnum.ModuleQualifiedName))).accept(node,
+					this.helperVisitor.dataholder);
+		}
+	}
 
 	@Override
 	public void endVisit(RequiresDirective node) {

@@ -52,8 +52,7 @@ import org.sandbox.jdt.internal.corext.fix.UseIteratorToForLoopFixCore;
  *
  */
 public class WhileToForEach extends AbstractTool<Hit> {
-	private static final String ITERATOR_NAME = Iterator.class.getCanonicalName();
-
+	
 	@Override
 	public void find(UseIteratorToForLoopFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed) {
@@ -83,11 +82,15 @@ public class WhileToForEach extends AbstractTool<Hit> {
 									VariableDeclarationFragment vdf=(VariableDeclarationFragment) typedAncestor.fragments().get(0);
 									hit.loopvarname=vdf.getName().getIdentifier();
 								} else {
-									hit.loopvarname=ConvertLoopOperation.modifybasename(hit.collectionsimplename.getIdentifier());
+									if(hit.self) {
+										hit.loopvarname=ConvertLoopOperation.modifybasename("i"); //$NON-NLS-1$
+									}else {
+										hit.loopvarname=ConvertLoopOperation.modifybasename(hit.collectionsimplename.getIdentifier());
+									}
 									hit.nextwithoutvariabledeclation=true;
 								}
 								operations.add(fixcore.rewrite(hit));
-								HelperVisitor<ReferenceHolder<ASTNode, Hit>> helperVisitor = holder.getHelperVisitor();
+								HelperVisitor<ReferenceHolder<ASTNode, Hit>,ASTNode,Hit> helperVisitor = holder.getHelperVisitor();
 								helperVisitor.nodesprocessed.add(whilestatement);
 								holder2.remove(whilestatement);
 								return true;					

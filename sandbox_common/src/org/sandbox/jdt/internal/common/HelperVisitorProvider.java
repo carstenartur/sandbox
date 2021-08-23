@@ -14,13 +14,21 @@
 package org.sandbox.jdt.internal.common;
 
 /**
- * 
+ *
  * @author chammer
  * @param <V>
  * @param <T>
+ * @param <E>
+ * @since 1.15
  *
  */
-public interface HelperVisitorProvider<V,T> {
-	HelperVisitor<ReferenceHolder<V,T>> getHelperVisitor();
-	void setHelperVisitor(HelperVisitor<ReferenceHolder<V,T>> hv);
+public interface HelperVisitorProvider<V,T,E extends HelperVisitorProvider<V, T, E>> {
+	/**
+	 * @return HelperVisitor
+	 */
+	HelperVisitor<E,V,T> getHelperVisitor();
+	/**
+	 * @param hv
+	 */
+	void setHelperVisitor(HelperVisitor<E,V,T> hv);
 }
