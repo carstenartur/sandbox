@@ -12,6 +12,9 @@
    <feature id="sandbox_platform_helper_feature">
       <category name="Sandbox"/>
    </feature>
+   <feature id="sandbox_tools_feature">
+      <category name="Sandbox"/>
+   </feature>
    <category-def name="Sandbox" label="Sandbox">
       <description>
          Description of sandbox category
