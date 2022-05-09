@@ -8,6 +8,8 @@ mvn -Dinclude=web -Pjacoco verify
 
 The product can be found in "sandbox_product/target" and the war file in "sandbox_web/target".
 
+[![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)
+
 # What is included
 
 Code based on Java 11
