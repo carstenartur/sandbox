@@ -9,7 +9,7 @@
 	<version>1.0.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<properties>
-		<tycho-version>2.3.0</tycho-version>
+		<tycho-version>2.7.3</tycho-version>
 		<rcp-version>eclipse</rcp-version>
 		<jacoco-version>0.8.7</jacoco-version>
 		<!-- <rcp-version>2021-03</rcp-version> -->
