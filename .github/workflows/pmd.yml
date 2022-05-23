@@ -29,25 +29,14 @@ jobs:
         with:
           java-version: '11'
           distribution: 'temurin'
-      - name: Run PMD common
+      - name: Run PMD 
         id: pmdcommon
         uses: pmd/pmd-github-action@967a81f8b657c87f7c3e96b62301cb1a48efef29
         with:
           rulesets: 'rulesets/java/quickstart.xml'
-          sourcePath: 'sandbox_common/src'
+          
           analyzeModifiedFilesOnly: false
-      - name: Upload SARIF file common
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: pmd-report.sarif
-      - name: Run PMD tools
-        id: pmdtools
-        uses: pmd/pmd-github-action@967a81f8b657c87f7c3e96b62301cb1a48efef29
-        with:
-          rulesets: 'rulesets/java/quickstart.xml'
-          sourcePath: 'sandbox_tools/src'
-          analyzeModifiedFilesOnly: false
-      - name: Upload SARIF file tools
+      - name: Upload SARIF file 
         uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: pmd-report.sarif
