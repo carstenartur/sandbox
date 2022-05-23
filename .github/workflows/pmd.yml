@@ -29,14 +29,14 @@ jobs:
         with:
           java-version: '11'
           distribution: 'temurin'
-      - name: Run PMD
+      - name: Run PMD common
         id: pmd
         uses: pmd/pmd-github-action@967a81f8b657c87f7c3e96b62301cb1a48efef29
         with:
           rulesets: 'rulesets/java/quickstart.xml'
           sourcePath: 'sandbox_common/src'
           analyzeModifiedFilesOnly: false
-      - name: Run PMD
+      - name: Run PMD tools
         id: pmd2
         uses: pmd/pmd-github-action@967a81f8b657c87f7c3e96b62301cb1a48efef29
         with:
