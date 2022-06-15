@@ -14,6 +14,9 @@ The product can be found in "sandbox_product/target" and the war file in "sandbo
 
 [![Codacy Security Scan](https://github.com/carstenartur/sandbox/actions/workflows/codacy.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/codacy.yml)
 
+[![pmd](https://github.com/carstenartur/sandbox/actions/workflows/pmd.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/pmd.yml)
+
+
 # What is included
 
 Code based on Java 11
