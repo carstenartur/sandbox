@@ -21,7 +21,7 @@ jobs:
       with:
         java-version: '11'
         distribution: 'adopt'
-    - run: sudo apt-get install xvfb
+    - run: sudo apt-get verify xvfb
     - name: Cache Maven packages
       uses: actions/cache@v2
       with:
