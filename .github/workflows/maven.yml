@@ -33,6 +33,6 @@ jobs:
         key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
         restore-keys: ${{ runner.os }}-m2
     - name: Build with Maven
-      run: xvfb-run --auto-servernum mvn -V --batch-mode -Pweb,jacoco clean install
+      run: xvfb-run --auto-servernum mvn -e -V --batch-mode -Pweb,jacoco clean install
     - name: Cleanup xvfb pidx
       uses: bcomnes/cleanup-xvfb@v1
