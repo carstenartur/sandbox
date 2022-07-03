@@ -13,7 +13,8 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-
+    env:
+      DISPLAY: :0
     steps:
     - uses: actions/checkout@v2
     - name: Set up JDK 11
@@ -21,7 +22,10 @@ jobs:
       with:
         java-version: '11'
         distribution: 'adopt'
-    - run: sudo apt-get install xvfb
+    - run: |
+        sudo apt-get install xvfb
+        # start xvfb in the background
+        sudo /usr/bin/Xvfb $DISPLAY -screen 0 1280x1024x24 &
     - name: Cache Maven packages
       uses: actions/cache@v2
       with:
