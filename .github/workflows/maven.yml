@@ -30,3 +30,5 @@ jobs:
         restore-keys: ${{ runner.os }}-m2
     - name: Build with Maven
       run: xvfb-run --auto-servernum mvn -V --batch-mode -Pweb,jacoco clean verify
+    - name: Cleanup xvfb pidx
+      uses: bcomnes/cleanup-xvfb@v1
