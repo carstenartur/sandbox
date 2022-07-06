@@ -1,5 +1,6 @@
 package org.sandbox.jdt.ui.tests.quickfix;
 
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.junit.jupiter.api.Test;
@@ -123,7 +124,7 @@ public class Java8CleanUpTest {
 
 	@ParameterizedTest
 	@EnumSource(PlatformStatusPatterns.class)
-	public void testPlatformStatusParametrized(PlatformStatusPatterns test) throws Exception {
+	public void testPlatformStatusParametrized(PlatformStatusPatterns test) throws CoreException {
 		IPackageFragment pack= context.fSourceFolder.createPackageFragment("test1", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("E1.java", test.given, false, null);
 		context.enable(MYCleanUpConstants.SIMPLIFY_STATUS_CLEANUP);
@@ -131,7 +132,7 @@ public class Java8CleanUpTest {
 	}
 
 	@Test
-	public void testPlatformStatus_donttouch() throws Exception {
+	public void testPlatformStatus_donttouch() throws CoreException {
 		IPackageFragment pack= context.fSourceFolder.createPackageFragment("test1", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("E2.java",
 				"" //
