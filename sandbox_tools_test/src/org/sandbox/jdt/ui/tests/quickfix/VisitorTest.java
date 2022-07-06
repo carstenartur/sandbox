@@ -25,12 +25,6 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.sandbox.jdt.internal.common.ASTProcessor;
-import org.sandbox.jdt.internal.common.HelperVisitor;
-import org.sandbox.jdt.internal.common.ReferenceHolder;
-import org.sandbox.jdt.internal.common.VisitorEnum;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -49,9 +43,14 @@ import org.eclipse.jdt.core.dom.VariableDeclarationExpression;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.WhileStatement;
-
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.sandbox.jdt.internal.common.ASTProcessor;
+import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.sandbox.jdt.internal.common.VisitorEnum;
 
 public class VisitorTest {
 
@@ -88,30 +87,30 @@ public class VisitorTest {
 
 
 		String code2="package test;\n"
-        + "import java.util.*;\n"
-        + "public class Test {\n"
-        + "    void m(List<String> strings,List<String> strings2) {\n"
-        + "        Collections.reverse(strings);\n"
-        + "        Iterator it = strings.iterator();\n"
-        + "        while (it.hasNext()) {\n"
-        + "            Iterator it2 = strings2.iterator();\n"
-        + "            while (it2.hasNext()) {\n"
-        + "                String s2 = (String) it2.next();\n"
-        + "                System.out.println(s2);\n"
-        + "            }\n"
-        + "            // OK\n"
-        + "            System.out.println(it.next());\n"
-        + "        }\n"
-        + "        System.out.println();\n"
-        + "    }\n"
-        + "}\n";
+				+ "import java.util.*;\n"
+				+ "public class Test {\n"
+				+ "    void m(List<String> strings,List<String> strings2) {\n"
+				+ "        Collections.reverse(strings);\n"
+				+ "        Iterator it = strings.iterator();\n"
+				+ "        while (it.hasNext()) {\n"
+				+ "            Iterator it2 = strings2.iterator();\n"
+				+ "            while (it2.hasNext()) {\n"
+				+ "                String s2 = (String) it2.next();\n"
+				+ "                System.out.println(s2);\n"
+				+ "            }\n"
+				+ "            // OK\n"
+				+ "            System.out.println(it.next());\n"
+				+ "        }\n"
+				+ "        System.out.println();\n"
+				+ "    }\n"
+				+ "}\n";
 		parser.setEnvironment(new String[]{}, new String[]{}, null, true);
 		parser.setBindingsRecovery(true);
 		parser.setResolveBindings(true);
 		parser.setUnitName("Test");
 		parser.setSource(code2.toCharArray());
 		cunit2 = (CompilationUnit) parser.createAST(null);
-//		System.out.println(result.toString());
+		//		System.out.println(result.toString());
 	}
 
 	private void astnodeprocessorend(ASTNode node, ReferenceHolder<String,NodeFound> holder) {
@@ -120,7 +119,7 @@ public class VisitorTest {
 	}
 
 	private Boolean astnodeprocessor(ASTNode node, ReferenceHolder<String,NodeFound> holder) {
-//		NodeFound nodeFound = holder.get(VisitorEnum.fromNodetype(node.getNodeType()));
+		//		NodeFound nodeFound = holder.get(VisitorEnum.fromNodetype(node.getNodeType()));
 		String x = "Start "+node.getNodeType() + " :" + node;
 		System.out.printf("%-40s %s%n",x,ASTNode.nodeClassForType(node.getNodeType()));
 		return true;
@@ -141,7 +140,7 @@ public class VisitorTest {
 		hv.addMethodInvocation(this::handleMethodInvocation);
 		hv.build(cunit1);
 	}
-	
+
 	@Test
 	public void simpleTest_oldway() {
 		ASTVisitor astvisitor=new ASTVisitor() {
@@ -152,7 +151,7 @@ public class VisitorTest {
 		};
 		cunit1.accept(astvisitor);
 	}
-	
+
 
 	/**
 	 * For methodinvocation there is a method that allows to specify the method name.
@@ -165,15 +164,15 @@ public class VisitorTest {
 		hv.build(cunit1);
 
 
-//		Function<Integer, Integer> multiply = this::extracted;
-//		BiFunction<Integer, Integer, Integer> add      = this::extracted2;
-//
-//		BiFunction<Integer, Integer, Integer> multiplyThenAdd = add.andThen(multiply);
-//
-//		Integer result2 = multiplyThenAdd.apply(3, 3);
-//		System.out.println(result2);
+		//		Function<Integer, Integer> multiply = this::extracted;
+		//		BiFunction<Integer, Integer, Integer> add      = this::extracted2;
+		//
+		//		BiFunction<Integer, Integer, Integer> multiplyThenAdd = add.andThen(multiply);
+		//
+		//		Integer result2 = multiplyThenAdd.apply(3, 3);
+		//		System.out.println(result2);
 	}
-	
+
 	@Test
 	public void simpleTest2_oldway() {
 		String name ="add";
@@ -188,22 +187,20 @@ public class VisitorTest {
 		cunit1.accept(astvisitor);
 	}
 
-//	private Integer extracted2(Integer value,Integer value2) {
-//		return value + value2;
-//	}
-//
-//	private Integer extracted(Integer value) {
-//		return value * 2;
-//	}
+	//	private Integer extracted2(Integer value,Integer value2) {
+	//		return value + value2;
+	//	}
+	//
+	//	private Integer extracted(Integer value) {
+	//		return value * 2;
+	//	}
 
 	@Test
 	public void simpleTest2b() {
 		Set<ASTNode> nodesprocessed = null;
 		HelperVisitor<ReferenceHolder<String,NodeFound>,String,NodeFound> hv = new HelperVisitor<>(nodesprocessed, new ReferenceHolder<>());
 		BiPredicate<MethodInvocation, ReferenceHolder<String, NodeFound>> bs = this::handleMethodInvocation;
-		BiPredicate<MethodInvocation, ReferenceHolder<String, NodeFound>> after = (mi,rh)->{
-			return true;
-		};
+		BiPredicate<MethodInvocation, ReferenceHolder<String, NodeFound>> after = (mi, rh) -> true;
 		BiPredicate<MethodInvocation, ReferenceHolder<String, NodeFound>> bs2= bs.or(after);
 		hv.addMethodInvocation("add", bs2);
 		hv.build(cunit1);
@@ -223,15 +220,15 @@ public class VisitorTest {
 		ASTVisitor astvisitor2=new ASTVisitor() {
 			@Override
 			public boolean visit(MethodInvocation node) {
-				if(!node.getName().getIdentifier().equals(name))
-					return true;
+				if(!node.getName().getIdentifier().equals(name)) {
+				}
 				return true;
 			}
 		};
 		cunit1.accept(astvisitor);
 		cunit1.accept(astvisitor2);
 	}
-	
+
 	@Test
 	public void simpleTest3() {
 		Set<ASTNode> nodesprocessed = null;
@@ -244,11 +241,11 @@ public class VisitorTest {
 		});
 		hv.build(cunit1);
 	}
-	
+
 	@Test
 	public void simpleTest3_oldway() {
 		ASTVisitor astvisitor=new ASTVisitor() {
-			
+
 			@Override
 			public void endVisit(AnnotationTypeDeclaration node) {
 				VisitorTest.this.astnodeprocessorend(node,null);
@@ -258,17 +255,17 @@ public class VisitorTest {
 			public boolean visit(AnnotationTypeDeclaration node) {
 				return VisitorTest.this.astnodeprocessor(node,null);
 			}
-			
+
 			@Override
 			public void endVisit(AnonymousClassDeclaration node) {
 				VisitorTest.this.astnodeprocessorend(node,null);
 			}
-			
+
 			@Override
 			public boolean visit(AnonymousClassDeclaration node) {
 				return VisitorTest.this.astnodeprocessor(node,null);
 			}
-			
+
 			// all other method stubs to be added ...
 		};
 		cunit1.accept(astvisitor);
@@ -286,11 +283,11 @@ public class VisitorTest {
 		});
 		hv.build(cunit2);
 	}
-	
+
 	@Test
 	public void simpleTest3b_oldway() {
 		ASTVisitor astvisitor=new ASTVisitor() {
-			
+
 			@Override
 			public void endVisit(AnnotationTypeDeclaration node) {
 				VisitorTest.this.astnodeprocessorend(node,null);
@@ -300,22 +297,22 @@ public class VisitorTest {
 			public boolean visit(AnnotationTypeDeclaration node) {
 				return VisitorTest.this.astnodeprocessor(node,null);
 			}
-			
+
 			@Override
 			public void endVisit(AnonymousClassDeclaration node) {
 				VisitorTest.this.astnodeprocessorend(node,null);
 			}
-			
+
 			@Override
 			public boolean visit(AnonymousClassDeclaration node) {
 				return VisitorTest.this.astnodeprocessor(node,null);
 			}
-			
+
 			// all other method stubs to be added ...
 		};
 		cunit1.accept(astvisitor);
 	}
-	
+
 
 
 	/**
@@ -466,8 +463,8 @@ public class VisitorTest {
 				VisitorEnum.VariableDeclarationExpression,
 				VisitorEnum.VariableDeclarationStatement,
 				VisitorEnum.VariableDeclarationFragment), dataholder,null, (node,holder)->{
-			holder.put(node, node.getStartPosition());
-		});
+					holder.put(node, node.getStartPosition());
+				});
 
 		/**
 		 * Presenting result
@@ -485,31 +482,31 @@ public class VisitorTest {
 				VisitorEnum.VariableDeclarationExpression,
 				VisitorEnum.VariableDeclarationStatement,
 				VisitorEnum.VariableDeclarationFragment), dataholder,null, (node,holder)->{
-			Map<String, Object> pernodemap = holder.computeIfAbsent(node, k -> new HashMap<>());
-			switch(VisitorEnum.fromNode(node)) {
-			case SingleVariableDeclaration:
-				SingleVariableDeclaration svd=(SingleVariableDeclaration) node;
-				Expression svd_initializer = svd.getInitializer();
-				pernodemap.put("init", svd_initializer);
-				break;
-			case VariableDeclarationExpression:
-				VariableDeclarationExpression vde=(VariableDeclarationExpression) node;
-				ASTNodes.getTypedAncestor(node, Statement.class);
-				break;
-			case VariableDeclarationStatement:
-				VariableDeclarationStatement vds=(VariableDeclarationStatement) node;
+					Map<String, Object> pernodemap = holder.computeIfAbsent(node, k -> new HashMap<>());
+					switch(VisitorEnum.fromNode(node)) {
+					case SingleVariableDeclaration:
+						SingleVariableDeclaration svd=(SingleVariableDeclaration) node;
+						Expression svd_initializer = svd.getInitializer();
+						pernodemap.put("init", svd_initializer);
+						break;
+					case VariableDeclarationExpression:
+						VariableDeclarationExpression vde=(VariableDeclarationExpression) node;
+						ASTNodes.getTypedAncestor(node, Statement.class);
+						break;
+					case VariableDeclarationStatement:
+						VariableDeclarationStatement vds=(VariableDeclarationStatement) node;
 
-				break;
-			case VariableDeclarationFragment:
-				VariableDeclarationFragment vdf=(VariableDeclarationFragment) node;
-				Expression vdf_initializer = vdf.getInitializer();
-				pernodemap.put("init", vdf_initializer);
-				break;
-					//$CASES-OMITTED$
-				default:
-				break;
-			}
-		});
+						break;
+					case VariableDeclarationFragment:
+						VariableDeclarationFragment vdf=(VariableDeclarationFragment) node;
+						Expression vdf_initializer = vdf.getInitializer();
+						pernodemap.put("init", vdf_initializer);
+						break;
+						//$CASES-OMITTED$
+					default:
+						break;
+					}
+				});
 
 		/**
 		 * Presenting result
@@ -541,12 +538,6 @@ public class VisitorTest {
 							pernodemap2.put("while", whilestatement);
 							pernodemap2.put("next", mi);
 							pernodemap2.put("name", identifier);
-							return true;
-							//											if(holder.containsKey(identifier)) {
-							//											if (holder.getHelperVisitor().nodesprocessed.contains(hit.whilestatement)) {
-							//												holder.remove(identifier);
-							//												return true;
-							//											}
 						}
 						return true;
 					});
@@ -573,12 +564,12 @@ public class VisitorTest {
 	private static String computeNextVarname(WhileStatement whilestatement) {
 		String name = null;
 		Expression exp = whilestatement.getExpression();
-//		Collection<String> usedVarNames= getUsedVariableNames(whilestatement.getBody());
+		//		Collection<String> usedVarNames= getUsedVariableNames(whilestatement.getBody());
 		if (exp instanceof MethodInvocation) {
 			MethodInvocation mi = (MethodInvocation) exp;
 			Expression expression = mi.getExpression();
 			if (mi.getName().getIdentifier().equals("hasNext")) { //$NON-NLS-1$
-//				ITypeBinding resolveTypeBinding = expression.resolveTypeBinding();
+				//				ITypeBinding resolveTypeBinding = expression.resolveTypeBinding();
 				SimpleName variable= ASTNodes.as(expression, SimpleName.class);
 				if (variable != null) {
 					IBinding resolveBinding = variable.resolveBinding();
@@ -640,7 +631,7 @@ public class VisitorTest {
 			List<String> computeVarName = computeVarName((VariableDeclarationStatement)node);
 			holder.put("initvarname", computeVarName.get(0));
 			return true;
-		},s -> s.getParent())
+		},ASTNode::getParent)
 		.callWhileStatementVisitor((node,holder) -> {
 			/**
 			 * This lambda expression is called for all WhileStatements below the parent of each VariableDeclarationStatement
@@ -738,7 +729,6 @@ public class VisitorTest {
 
 	Collection<String> getUsedVariableNames(ASTNode node) {
 		CompilationUnit root= (CompilationUnit) node.getRoot();
-		Collection<String> res= (new ScopeAnalyzer(root)).getUsedVariableNames(node.getStartPosition(), node.getLength());
-		return res;
+		return (new ScopeAnalyzer(root)).getUsedVariableNames(node.getStartPosition(), node.getLength());
 	}
 }

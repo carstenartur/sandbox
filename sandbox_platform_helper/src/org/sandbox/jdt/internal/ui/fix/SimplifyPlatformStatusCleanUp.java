@@ -24,7 +24,7 @@ import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 /**
- * New static methods to ease Status creation 	
+ * New static methods to ease Status creation
 
 New API methods in Status (org.eclipse.core.runtime.Status) makes it easier and less verbose to make Status object for error handling. There are methods called info, warning and error for creating status objects of those severities. These methods simplify the API by using StackWalker API (introdcued in Java 9) to automatically determine the Plug-in ID. The existing constructors for more fine grained control still continue to exist and may be the most suitable when using Status objects in non-error handling cases as explicitly passing the plug-in id in by String can be faster than automatically determining it.
 

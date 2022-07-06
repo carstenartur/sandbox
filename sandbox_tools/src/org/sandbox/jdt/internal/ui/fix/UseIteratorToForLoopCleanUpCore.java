@@ -64,10 +64,7 @@ public class UseIteratorToForLoopCleanUpCore extends AbstractCleanUpCore {
 			return null;
 		}
 		EnumSet<UseIteratorToForLoopFixCore> computeFixSet = computeFixSet();
-		if (!isEnabled(CONTROL_STATEMENTS_CONVERT_FOR_LOOP_TO_ENHANCED) || computeFixSet.isEmpty()) {
-			return null;
-		}
-		if (!JavaModelUtil.is1d8OrHigher(compilationUnit.getJavaElement().getJavaProject())) {
+		if (!isEnabled(CONTROL_STATEMENTS_CONVERT_FOR_LOOP_TO_ENHANCED) || computeFixSet.isEmpty() || !JavaModelUtil.is1d8OrHigher(compilationUnit.getJavaElement().getJavaProject())) {
 			return null;
 		}
 		Set<CompilationUnitRewriteOperation> operations = new LinkedHashSet<>();

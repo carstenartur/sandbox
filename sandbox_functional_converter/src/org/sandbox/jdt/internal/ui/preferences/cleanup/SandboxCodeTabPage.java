@@ -30,8 +30,8 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 	 * Constant array for boolean selection
 	 */
 	static final String[] FALSE_TRUE = {
-		CleanUpOptions.FALSE,
-		CleanUpOptions.TRUE
+			CleanUpOptions.FALSE,
+			CleanUpOptions.TRUE
 	};
 
 	public static final String ID= "org.eclipse.jdt.ui.cleanup.tabpage.sandbox"; //$NON-NLS-1$

@@ -25,6 +25,29 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IWorkspaceRoot;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.search.IJavaSearchConstants;
+import org.eclipse.jdt.core.search.IJavaSearchScope;
+import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
+import org.eclipse.jdt.internal.ui.JavaPlugin;
+import org.eclipse.jdt.internal.ui.search.JavaSearchQuery;
+import org.eclipse.jdt.internal.ui.search.JavaSearchScopeFactory;
+import org.eclipse.jdt.internal.ui.search.SearchUtil;
+import org.eclipse.jdt.ui.search.ElementQuerySpecification;
+import org.eclipse.jdt.ui.search.QuerySpecification;
+import org.eclipse.jface.dialogs.DialogPage;
+import org.eclipse.jface.dialogs.IDialogSettings;
+import org.eclipse.search.ui.ISearchPage;
+import org.eclipse.search.ui.ISearchPageContainer;
+import org.eclipse.search.ui.NewSearchUI;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -33,39 +56,7 @@ import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
-
-import org.eclipse.core.runtime.CoreException;
-
-import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IWorkspaceRoot;
-import org.eclipse.core.resources.ResourcesPlugin;
-
-import org.eclipse.jface.dialogs.DialogPage;
-import org.eclipse.jface.dialogs.IDialogSettings;
-
 import org.eclipse.ui.IWorkingSet;
-
-import org.eclipse.search.ui.ISearchPage;
-import org.eclipse.search.ui.ISearchPageContainer;
-import org.eclipse.search.ui.NewSearchUI;
-
-import org.eclipse.jdt.core.IJavaElement;
-import org.eclipse.jdt.core.IJavaProject;
-import org.eclipse.jdt.core.IType;
-import org.eclipse.jdt.core.JavaCore;
-import org.eclipse.jdt.core.search.IJavaSearchConstants;
-import org.eclipse.jdt.core.search.IJavaSearchScope;
-
-import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
-
-import org.eclipse.jdt.ui.search.ElementQuerySpecification;
-import org.eclipse.jdt.ui.search.QuerySpecification;
-
-import org.eclipse.jdt.internal.ui.JavaPlugin;
-import org.eclipse.jdt.internal.ui.search.JavaSearchQuery;
-import org.eclipse.jdt.internal.ui.search.JavaSearchScopeFactory;
-import org.eclipse.jdt.internal.ui.search.SearchUtil;
 
 
 public class UpdateNeededSearchPage extends DialogPage implements ISearchPage {
@@ -77,7 +68,6 @@ public class UpdateNeededSearchPage extends DialogPage implements ISearchPage {
 		private static final long serialVersionUID= 1L;
 
 		public SearchSettingsData(int limitTo, int includeMask, int scope) {
-			super();
 			this.limitTo= limitTo;
 			this.includeMask= includeMask;
 			this.scope= scope;
@@ -246,53 +236,53 @@ public class UpdateNeededSearchPage extends DialogPage implements ISearchPage {
 		JavaSearchScopeFactory factory= JavaSearchScopeFactory.getInstance();
 
 		switch (getContainer().getSelectedScope()) {
-			case ISearchPageContainer.WORKSPACE_SCOPE:
-				scopeDescription= factory.getWorkspaceScopeDescription(includeMask);
-				scope= factory.createWorkspaceScope(includeMask);
-				break;
+		case ISearchPageContainer.WORKSPACE_SCOPE:
+			scopeDescription= factory.getWorkspaceScopeDescription(includeMask);
+			scope= factory.createWorkspaceScope(includeMask);
+			break;
 
-			case ISearchPageContainer.SELECTION_SCOPE:
-				IJavaElement[] javaElements= {};
+		case ISearchPageContainer.SELECTION_SCOPE:
+			IJavaElement[] javaElements= {};
 
-				if (getContainer().getActiveEditorInput() != null) {
-					IFile file= getContainer().getActiveEditorInput().getAdapter(IFile.class);
+			if (getContainer().getActiveEditorInput() != null) {
+				IFile file= getContainer().getActiveEditorInput().getAdapter(IFile.class);
 
-					if (file != null && file.exists()) {
-						IJavaElement javaElement= JavaCore.create(file);
+				if (file != null && file.exists()) {
+					IJavaElement javaElement= JavaCore.create(file);
 
-						if (javaElement != null) {
-							javaElements= new IJavaElement[] { javaElement };
-						}
+					if (javaElement != null) {
+						javaElements= new IJavaElement[] { javaElement };
 					}
-				} else {
-					javaElements= factory.getJavaElements(getContainer().getSelection());
 				}
+			} else {
+				javaElements= factory.getJavaElements(getContainer().getSelection());
+			}
 
-				scope= factory.createJavaSearchScope(javaElements, includeMask);
-				scopeDescription= factory.getSelectionScopeDescription(javaElements, includeMask);
-				break;
+			scope= factory.createJavaSearchScope(javaElements, includeMask);
+			scopeDescription= factory.getSelectionScopeDescription(javaElements, includeMask);
+			break;
 
-			case ISearchPageContainer.SELECTED_PROJECTS_SCOPE:
-				String[] projectNames= getContainer().getSelectedProjectNames();
-				scope= factory.createJavaProjectSearchScope(projectNames, includeMask);
-				scopeDescription= factory.getProjectScopeDescription(projectNames, includeMask);
-				break;
+		case ISearchPageContainer.SELECTED_PROJECTS_SCOPE:
+			String[] projectNames= getContainer().getSelectedProjectNames();
+			scope= factory.createJavaProjectSearchScope(projectNames, includeMask);
+			scopeDescription= factory.getProjectScopeDescription(projectNames, includeMask);
+			break;
 
-			case ISearchPageContainer.WORKING_SET_SCOPE:
-				IWorkingSet[] workingSets= getContainer().getSelectedWorkingSets();
+		case ISearchPageContainer.WORKING_SET_SCOPE:
+			IWorkingSet[] workingSets= getContainer().getSelectedWorkingSets();
 
-				// Should not happen - just to be sure
-				if (workingSets == null || workingSets.length < 1) {
-					return false;
-				}
+			// Should not happen - just to be sure
+			if (workingSets == null || workingSets.length < 1) {
+				return false;
+			}
 
-				scopeDescription= factory.getWorkingSetScopeDescription(workingSets, includeMask);
-				scope= factory.createJavaSearchScope(workingSets, includeMask);
-				SearchUtil.updateLRUWorkingSets(workingSets);
-				break;
+			scopeDescription= factory.getWorkingSetScopeDescription(workingSets, includeMask);
+			scope= factory.createJavaSearchScope(workingSets, includeMask);
+			SearchUtil.updateLRUWorkingSets(workingSets);
+			break;
 
-			default:
-				break;
+		default:
+			break;
 		}
 
 		IJavaElement element= null;

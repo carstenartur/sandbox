@@ -69,7 +69,7 @@ import org.sandbox.jdt.internal.corext.fix.UseIteratorToForLoopFixCore;
  *
  */
 public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
-	
+
 	@Override
 	public void find(UseIteratorToForLoopFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, boolean createForOnlyIfVarUsed) {
@@ -97,12 +97,10 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 							hit.whileStatement= whilestatement;
 							if (hit.self) {
 								hit.loopVarName= ConvertLoopOperation.modifybasename("i"); //$NON-NLS-1$
+							} else if (hit.collectionExpression instanceof SimpleName) {
+								hit.loopVarName= ConvertLoopOperation.modifybasename(((SimpleName)hit.collectionExpression).getIdentifier());
 							} else {
-								if (hit.collectionExpression instanceof SimpleName) {
-									hit.loopVarName= ConvertLoopOperation.modifybasename(((SimpleName)hit.collectionExpression).getIdentifier());
-								} else {
-									hit.loopVarName= ConvertLoopOperation.modifybasename("element"); //$NON-NLS-1$
-								}
+								hit.loopVarName= ConvertLoopOperation.modifybasename("element"); //$NON-NLS-1$
 							}
 							operationsMap.put(whilestatement, hit);
 						}
@@ -148,12 +146,10 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 								} else {
 									if (hit.self) {
 										hit.loopVarName= ConvertLoopOperation.modifybasename("i"); //$NON-NLS-1$
+									} else if (hit.collectionExpression instanceof SimpleName) {
+										hit.loopVarName= ConvertLoopOperation.modifybasename(((SimpleName)hit.collectionExpression).getIdentifier());
 									} else {
-										if (hit.collectionExpression instanceof SimpleName) {
-											hit.loopVarName= ConvertLoopOperation.modifybasename(((SimpleName)hit.collectionExpression).getIdentifier());
-										} else {
-											hit.loopVarName= ConvertLoopOperation.modifybasename("element"); //$NON-NLS-1$
-										}
+										hit.loopVarName= ConvertLoopOperation.modifybasename("element"); //$NON-NLS-1$
 									}
 									hit.nextWithoutVariableDeclaration= true;
 								}
@@ -161,7 +157,6 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 								HelperVisitor<ReferenceHolder<ASTNode, WhileLoopToChangeHit>, ASTNode, WhileLoopToChangeHit> helperVisitor= holder.getHelperVisitor();
 								helperVisitor.nodesprocessed.add(whilestatement);
 								holder2.remove(whilestatement);
-								return true;
 							}
 							return true;
 						});
@@ -290,16 +285,11 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 							IBinding binding= sn.resolveBinding();
 							if (binding.isEqualTo(bliBinding)) {
 								MethodInvocation mi= ASTNodes.as(assignment.getRightHandSide(), MethodInvocation.class);
-								if (mi == null || !mi.getName().getIdentifier().equals("iterator")) { //$NON-NLS-1$
+								if (mi == null || !mi.getName().getIdentifier().equals("iterator") || (dataholder.get(node_a) != null)) { //$NON-NLS-1$
 									dataholder.put(node_a, Invalid);
 									throw new AbortSearchException();
-								} else {
-									if (dataholder.get(node_a) != null) {
-										dataholder.put(node_a, Invalid);
-										throw new AbortSearchException();
-									}
-									dataholder.put(node_a, mi);
 								}
+								dataholder.put(node_a, mi);
 							}
 						}
 					}
@@ -311,9 +301,8 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 			Object holderObject= dataholder.get(node_a);
 			if (holderObject == Invalid || holderObject == null) {
 				return null;
-			} else {
-				return (MethodInvocation)holderObject;
 			}
+			return (MethodInvocation)holderObject;
 		}
 		return ASTNodes.as(exp, MethodInvocation.class);
 	}
@@ -342,9 +331,8 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 								if (mi == null || !mi.getName().getIdentifier().equals("iterator")) { //$NON-NLS-1$
 									dataholder.put(node_a, Invalid);
 									throw new AbortSearchException();
-								} else {
-									dataholder.put(node_a, mi);
 								}
+								dataholder.put(node_a, mi);
 							}
 						}
 					}
@@ -356,9 +344,8 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 			Object holderObject= dataholder.get(node_a);
 			if (holderObject == Invalid || holderObject == null) {
 				return null;
-			} else {
-				exp= (Expression)dataholder.get(node_a);
 			}
+			exp= (Expression)dataholder.get(node_a);
 		}
 		MethodInvocation mi= ASTNodes.as(exp, MethodInvocation.class);
 		if (mi != null && mi.getName().toString().equals("iterator")) { //$NON-NLS-1$

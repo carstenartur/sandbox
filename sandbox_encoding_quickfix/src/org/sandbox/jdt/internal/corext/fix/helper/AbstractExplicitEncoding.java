@@ -50,18 +50,18 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	protected Expression computeCharsetASTNode(final CompilationUnitRewrite cuRewrite, ChangeBehavior cb, AST ast) {
 		Expression callToCharsetDefaultCharset=null;
 		switch(cb) {
-			case KEEP:
-				// needs Java 1.5
-				callToCharsetDefaultCharset= addCharsetComputation(cuRewrite, ast);
-				break;
-			case USE_UTF8_AGGREGATE:
-				/**
-				 * @TODO not implemented
-				 */
-			case USE_UTF8:
-				// needs Java 1.7
-				callToCharsetDefaultCharset= addCharsetUTF8(cuRewrite, ast);
-				break;
+		case KEEP:
+			// needs Java 1.5
+			callToCharsetDefaultCharset= addCharsetComputation(cuRewrite, ast);
+			break;
+		case USE_UTF8_AGGREGATE:
+			/**
+			 * @TODO not implemented
+			 */
+		case USE_UTF8:
+			// needs Java 1.7
+			callToCharsetDefaultCharset= addCharsetUTF8(cuRewrite, ast);
+			break;
 		}
 		return callToCharsetDefaultCharset;
 	}
@@ -69,15 +69,15 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	protected String computeCharsetforPreview(ChangeBehavior cb) {
 		String insert=""; //$NON-NLS-1$
 		switch(cb) {
-			case KEEP:
-				insert="Charset.defaultCharset()"; //$NON-NLS-1$
-				break;
-			case USE_UTF8_AGGREGATE:
-//				insert="charset_constant"; //$NON-NLS-1$
-				//$FALL-THROUGH$
-			case USE_UTF8:
-				insert="StandardCharsets.UTF_8"; //$NON-NLS-1$
-				break;
+		case KEEP:
+			insert="Charset.defaultCharset()"; //$NON-NLS-1$
+			break;
+		case USE_UTF8_AGGREGATE:
+			//				insert="charset_constant"; //$NON-NLS-1$
+			//$FALL-THROUGH$
+		case USE_UTF8:
+			insert="StandardCharsets.UTF_8"; //$NON-NLS-1$
+			break;
 		}
 		return insert;
 	}

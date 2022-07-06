@@ -12,10 +12,10 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava8;
 
 public class Java8CleanUpTest {
-		
+
 	@RegisterExtension
 	AbstractEclipseJava context= new EclipseJava8();
-	
+
 	enum PlatformStatusPatterns {
 
 		STATUSWARNING3("package test1;\n"
@@ -128,7 +128,7 @@ public class Java8CleanUpTest {
 		IPackageFragment pack= context.fSourceFolder.createPackageFragment("test1", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("E1.java", test.given, false, null);
 		context.enable(MYCleanUpConstants.SIMPLIFY_STATUS_CLEANUP);
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);	
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
 	}
 
 	@Test

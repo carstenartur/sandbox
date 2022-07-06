@@ -63,10 +63,7 @@ public class SimplifyPlatformStatusCleanUpCore extends AbstractCleanUpCore {
 			return null;
 		}
 		EnumSet<SimplifyPlatformStatusFixCore> computeFixSet = computeFixSet();
-		if (!isEnabled(SIMPLIFY_STATUS_CLEANUP) || computeFixSet.isEmpty()) {
-			return null;
-		}
-		if (!JavaModelUtil.is9OrHigher(compilationUnit.getJavaElement().getJavaProject())) {
+		if (!isEnabled(SIMPLIFY_STATUS_CLEANUP) || computeFixSet.isEmpty() || !JavaModelUtil.is9OrHigher(compilationUnit.getJavaElement().getJavaProject())) {
 			return null;
 		}
 		Set<CompilationUnitRewriteOperation> operations = new LinkedHashSet<>();
@@ -101,7 +98,7 @@ public class SimplifyPlatformStatusCleanUpCore extends AbstractCleanUpCore {
 		StringBuilder sb = new StringBuilder();
 		EnumSet<SimplifyPlatformStatusFixCore> computeFixSet = computeFixSet();
 		EnumSet.allOf(SimplifyPlatformStatusFixCore.class)
-				.forEach(e -> sb.append(e.getPreview(computeFixSet.contains(e))));
+		.forEach(e -> sb.append(e.getPreview(computeFixSet.contains(e))));
 		return sb.toString();
 	}
 

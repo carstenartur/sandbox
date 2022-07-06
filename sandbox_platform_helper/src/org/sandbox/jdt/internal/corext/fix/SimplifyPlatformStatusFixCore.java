@@ -54,7 +54,7 @@ public enum SimplifyPlatformStatusFixCore {
 	 * @param compilationUnit unit to search in
 	 * @param operations set of all CompilationUnitRewriteOperations created already
 	 * @param nodesprocessed list to remember nodes already processed
-	 * @throws CoreException 
+	 * @throws CoreException
 	 */
 	public void findOperations(final CompilationUnit compilationUnit,final Set<CompilationUnitRewriteOperation> operations,final Set<ASTNode> nodesprocessed) throws CoreException {
 		explicitencoding.find(this, compilationUnit, operations, nodesprocessed);

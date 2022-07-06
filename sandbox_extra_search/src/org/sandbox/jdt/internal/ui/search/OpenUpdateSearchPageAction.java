@@ -28,7 +28,7 @@ import org.eclipse.ui.PlatformUI;
 public class OpenUpdateSearchPageAction implements IWorkbenchWindowActionDelegate {
 
 	private static final String UPDATENEEDED_SEARCH_PAGE_ID= "org.eclipse.jdt.ui.UpdateNeededSearchPage"; //$NON-NLS-1$
-//	Logger logger = PlatformUI.getWorkbench().getService(org.eclipse.e4.core.services.log.Logger.class);
+	//	Logger logger = PlatformUI.getWorkbench().getService(org.eclipse.e4.core.services.log.Logger.class);
 
 	private IWorkbenchWindow fWindow;
 
@@ -44,7 +44,7 @@ public class OpenUpdateSearchPageAction implements IWorkbenchWindowActionDelegat
 	public void run(IAction action) {
 		if (fWindow == null || fWindow.getActivePage() == null) {
 			beep();
-			JavaPlugin.logErrorMessage(Messages.OpenUpdateSearchPageAction_0); 
+			JavaPlugin.logErrorMessage(Messages.OpenUpdateSearchPageAction_0);
 			return;
 		}
 		NewSearchUI.openSearchDialog(fWindow, UPDATENEEDED_SEARCH_PAGE_ID);

@@ -66,10 +66,9 @@ public abstract class AbstractTool<T> {
 
 
 	public abstract String getPreview(boolean afterRefactoring);
-	
+
 	public static Collection<String> getUsedVariableNames(ASTNode node) {
 		CompilationUnit root= (CompilationUnit) node.getRoot();
-		Collection<String> res= (new ScopeAnalyzer(root)).getUsedVariableNames(node.getStartPosition(), node.getLength());
-		return res;
+		return (new ScopeAnalyzer(root)).getUsedVariableNames(node.getStartPosition(), node.getLength());
 	}
 }

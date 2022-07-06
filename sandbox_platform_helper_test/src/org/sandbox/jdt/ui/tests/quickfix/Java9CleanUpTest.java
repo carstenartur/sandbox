@@ -11,10 +11,10 @@ import org.sandbox.jdt.internal.corext.fix.MYCleanUpConstants;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava9;
 
 public class Java9CleanUpTest {
-		
+
 	@RegisterExtension
 	EclipseJava9 context= new EclipseJava9();
-	
+
 	enum PlatformStatusPatterns {
 
 		STATUSWARNING3("package test1;\n"
@@ -127,7 +127,7 @@ public class Java9CleanUpTest {
 		IPackageFragment pack= context.fSourceFolder.createPackageFragment("test1", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("E1.java", test.given, false, null);
 		context.enable(MYCleanUpConstants.SIMPLIFY_STATUS_CLEANUP);
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);	
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
 	}
 
 	@Test

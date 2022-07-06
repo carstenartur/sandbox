@@ -13,8 +13,6 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix;
 
-import org.eclipse.jdt.core.manipulation.CleanUpOptionsCore;
-
 public class MYCleanUpConstants {
 
 	public static final String USEFUNCTIONALLOOP_CLEANUP= "cleanup.functionalloop"; //$NON-NLS-1$

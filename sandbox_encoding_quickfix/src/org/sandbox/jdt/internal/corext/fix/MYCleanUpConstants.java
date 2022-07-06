@@ -13,8 +13,6 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix;
 
-import org.eclipse.jdt.core.manipulation.CleanUpOptionsCore;
-
 public class MYCleanUpConstants {
 
 	public static final String EXPLICITENCODING_CLEANUP= "cleanup.explicit_encoding"; //$NON-NLS-1$

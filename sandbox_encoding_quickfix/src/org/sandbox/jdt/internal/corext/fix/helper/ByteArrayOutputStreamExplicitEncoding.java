@@ -90,15 +90,15 @@ public class ByteArrayOutputStreamExplicitEncoding extends AbstractExplicitEncod
 	public String getPreview(boolean afterRefactoring,ChangeBehavior cb) {
 		String insert=""; //$NON-NLS-1$
 		switch(cb) {
-			case KEEP:
-				insert="Charset.defaultCharset().displayName()"; //$NON-NLS-1$
-				break;
-			case USE_UTF8_AGGREGATE:
-//				insert="charset_constant"; //$NON-NLS-1$
-				//$FALL-THROUGH$
-			case USE_UTF8:
-				insert="StandardCharsets.UTF_8.displayName()"; //$NON-NLS-1$
-				break;
+		case KEEP:
+			insert="Charset.defaultCharset().displayName()"; //$NON-NLS-1$
+			break;
+		case USE_UTF8_AGGREGATE:
+			//				insert="charset_constant"; //$NON-NLS-1$
+			//$FALL-THROUGH$
+		case USE_UTF8:
+			insert="StandardCharsets.UTF_8.displayName()"; //$NON-NLS-1$
+			break;
 		}
 		if(afterRefactoring) {
 			return "ByteArrayOutputStream ba=new ByteArrayOutputStream();\n" //$NON-NLS-1$

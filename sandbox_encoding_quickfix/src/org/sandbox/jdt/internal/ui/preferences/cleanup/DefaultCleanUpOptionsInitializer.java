@@ -21,11 +21,11 @@ public class DefaultCleanUpOptionsInitializer implements ICleanUpOptionsInitiali
 
 	@Override
 	public void setDefaultOptions(CleanUpOptions options) {
-//		for (String elem: options.getKeys()) {
-//			if(elem.startsWith("cleanup.ex")) { //$NON-NLS-1$
-//				System.out.println("found:"+elem); //$NON-NLS-1$
-//			}
-//		}
+		//		for (String elem: options.getKeys()) {
+		//			if(elem.startsWith("cleanup.ex")) { //$NON-NLS-1$
+		//				System.out.println("found:"+elem); //$NON-NLS-1$
+		//			}
+		//		}
 		options.setOption(MYCleanUpConstants.EXPLICITENCODING_CLEANUP, CleanUpOptions.FALSE);
 	}
 }

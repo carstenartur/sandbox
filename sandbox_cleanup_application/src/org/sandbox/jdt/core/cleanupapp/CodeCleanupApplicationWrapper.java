@@ -108,7 +108,7 @@ public class CodeCleanupApplicationWrapper implements IApplication {
 		}
 
 		// Workspace is available, so launch the  Code Cleanup Application
-//		return new CodeCleanupApplication().start(context);
+		//		return new CodeCleanupApplication().start(context);
 		return null;
 	}
 

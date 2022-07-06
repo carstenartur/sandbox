@@ -14,7 +14,7 @@ import org.sandbox.jdt.internal.common.HelperVisitorProvider;
 public class ExpectationTracer extends ConcurrentHashMap<ASTNode,SimpleName> implements HelperVisitorProvider<ASTNode,SimpleName,ExpectationTracer>{
 
 	public Stack<Integer> stack = new Stack<>();
-    
+
 	/**
 	 *
 	 */
@@ -38,13 +38,13 @@ public class ExpectationTracer extends ConcurrentHashMap<ASTNode,SimpleName> imp
 	}
 
 	private void writeObject(ObjectOutputStream stream)
-	        throws IOException {
-	    stream.defaultWriteObject();
+			throws IOException {
+		stream.defaultWriteObject();
 	}
 
 	private void readObject(ObjectInputStream stream)
-	        throws IOException, ClassNotFoundException {
-	    stream.defaultReadObject();
+			throws IOException, ClassNotFoundException {
+		stream.defaultReadObject();
 	}
 
 	@Override

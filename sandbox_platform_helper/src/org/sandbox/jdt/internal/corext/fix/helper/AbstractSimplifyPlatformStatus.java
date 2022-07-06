@@ -33,7 +33,6 @@ import org.eclipse.jdt.internal.corext.dom.ASTNodeFactory;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
-import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.fix.SimplifyPlatformStatusFixCore;
 
@@ -72,11 +71,8 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 			compilationUnit.accept(new ASTVisitor() {
 				@Override
 				public boolean visit(final ClassInstanceCreation visited) {
-					if (nodesprocessed.contains(visited)) {
-						return false;
-					}
-					if ((visited.arguments().size() != 3) && (visited.arguments().size() != 4)
-							&& (visited.arguments().size() != 5)) {
+					if (nodesprocessed.contains(visited) || ((visited.arguments().size() != 3) && (visited.arguments().size() != 4)
+							&& (visited.arguments().size() != 5))) {
 						return false;
 					}
 

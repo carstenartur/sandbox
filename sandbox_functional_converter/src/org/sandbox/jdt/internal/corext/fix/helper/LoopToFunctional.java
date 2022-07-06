@@ -32,7 +32,7 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
  * 		  System.out.println(l);
  * 		}
  *
- * Rewrite: ls.forEach(l -> { 
+ * Rewrite: ls.forEach(l -> {
  * 			System.out.println(l);
  * 		});
  *
@@ -43,7 +43,7 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 	public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed) {
 		compilationUnit.accept(new ASTVisitor() {
-			
+
 			@Override
 			public final boolean visit(final EnhancedForStatement visited) {
 				operations.add(fixcore.rewrite(visited));
@@ -58,18 +58,18 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
 		ASTRewrite rewrite = cuRewrite.getASTRewrite();
 		AST ast = cuRewrite.getRoot().getAST();
-/**
- * for (Integer l : ls){
- * 		  System.out.println(l);
- * 		}
- * 
- * loopBody= {  System.out.println(l);	}
- * 
- * parameter= Integer l
- * 
- * expr= ls
- * 
- */
+		/**
+		 * for (Integer l : ls){
+		 * 		  System.out.println(l);
+		 * 		}
+		 *
+		 * loopBody= {  System.out.println(l);	}
+		 *
+		 * parameter= Integer l
+		 *
+		 * expr= ls
+		 *
+		 */
 
 		PreconditionsChecker pc = new PreconditionsChecker(loop, ast);
 		Refactorer refactorer = new Refactorer(loop, ast, pc,rewrite);
@@ -81,8 +81,8 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {
-			return "ls.forEach(l -> {\n	System.out.println(l);\n});\n"; //$NON-NLS-3$
+			return "ls.forEach(l -> {\n	System.out.println(l);\n});\n";
 		}
-		return "for (Integer l : ls)\n	System.out.println(l);\n\n"; //$NON-NLS-3$
+		return "for (Integer l : ls)\n	System.out.println(l);\n\n";
 	}
 }

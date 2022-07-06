@@ -22,16 +22,16 @@ import org.eclipse.jdt.core.dom.ClassInstanceCreation;
  *
  * IStatus status = new Status(IStatus.ERROR, UIPlugin.PLUGIN_ID, IStatus.OK,
  * message, e);
- * 
+ *
  * to
- * 
+ *
  * IStatus status = Status.error(message,e);
  *
  * since Java 9
  *
  */
 public class StatusErrorSimplifyPlatformStatus extends AbstractSimplifyPlatformStatus<ClassInstanceCreation> {
-	
+
 	public StatusErrorSimplifyPlatformStatus() {
 		super(METHOD_ERROR,"IStatus.ERROR");
 	}

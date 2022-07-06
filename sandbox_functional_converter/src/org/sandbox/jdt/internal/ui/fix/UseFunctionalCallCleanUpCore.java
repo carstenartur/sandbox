@@ -63,10 +63,7 @@ public class UseFunctionalCallCleanUpCore extends AbstractCleanUpCore {
 			return null;
 		}
 		EnumSet<UseFunctionalCallFixCore> computeFixSet = computeFixSet();
-		if (!isEnabled(USEFUNCTIONALLOOP_CLEANUP) || computeFixSet.isEmpty()) {
-			return null;
-		}
-		if (!JavaModelUtil.is1d8OrHigher(compilationUnit.getJavaElement().getJavaProject())) {
+		if (!isEnabled(USEFUNCTIONALLOOP_CLEANUP) || computeFixSet.isEmpty() || !JavaModelUtil.is1d8OrHigher(compilationUnit.getJavaElement().getJavaProject())) {
 			return null;
 		}
 		Set<CompilationUnitRewriteOperation> operations = new LinkedHashSet<>();
