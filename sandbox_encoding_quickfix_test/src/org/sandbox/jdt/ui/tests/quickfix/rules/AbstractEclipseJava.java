@@ -102,14 +102,14 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	}
 
 	@Override
-	public void afterEach(ExtensionContext context) throws Exception {
+	public void afterEach(ExtensionContext context) throws CoreException {
 		delete(fSourceFolder);
 	}
-	
+
 	public IJavaProject getProject(String projectname) {
 		return JavaCore.create(ResourcesPlugin.getWorkspace().getRoot().getProject(projectname));
 	}
-	
+
 	public IClasspathEntry[] getDefaultClasspath() throws CoreException {
 		IPath[] rtJarPath= findRtJar(new Path(testresources_stubs));
 		return new IClasspathEntry[] {  JavaCore.newLibraryEntry(rtJarPath[0], rtJarPath[1], rtJarPath[2], true) };
@@ -175,9 +175,9 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		assertNotNull(rtStubs);
 		assertTrue(rtStubs.exists());
 		return new IPath[] {
-			Path.fromOSString(rtStubs.getPath()),
-			null,
-			null
+				Path.fromOSString(rtStubs.getPath()),
+				null,
+				null
 		};
 	}
 
@@ -229,7 +229,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		jproject.setRawClasspath(new IClasspathEntry[0], null);
 		return jproject;
 	}
-	
+
 	private static void addNatureToProject(IProject proj, String natureId, IProgressMonitor monitor) throws CoreException {
 		IProjectDescription description = proj.getDescription();
 		String[] prevNatures= description.getNatureIds();
@@ -276,7 +276,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		addToClasspath(jproject, cpe);
 		return root;
 	}
-	
+
 	public static void addToClasspath(IJavaProject jproject, IClasspathEntry cpe) throws JavaModelException {
 		IClasspathEntry[] oldEntries= jproject.getRawClasspath();
 		for (IClasspathEntry oldEntry : oldEntries) {
@@ -301,14 +301,14 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		assertEqualStringsIgnoreOrder(previews, expected);
 		return status;
 	}
-	
+
 	public RefactoringStatus assertRefactoringHasNoChange(ICompilationUnit[] cus) throws CoreException {
 		for (ICompilationUnit cu : cus) {
 			assertNoCompilationError(cu);
 		}
 		return assertRefactoringHasNoChangeEventWithError(cus);
 	}
-	
+
 	protected RefactoringStatus assertRefactoringHasNoChangeEventWithError(ICompilationUnit[] cus) throws CoreException {
 		String[] expected= new String[cus.length];
 		for (int i= 0; i < cus.length; i++) {
@@ -316,7 +316,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		}
 		return assertRefactoringResultAsExpected(cus, expected, null);
 	}
-	
+
 	protected CompilationUnit assertNoCompilationError(ICompilationUnit cu) {
 		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);
 		parser.setSource(cu);
@@ -340,7 +340,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		}
 		return root;
 	}
-	
+
 	public static void assertEqualStringsIgnoreOrder(String[] actuals, String[] expecteds) {
 		ArrayList<String> list1= new ArrayList<>(Arrays.asList(actuals));
 		ArrayList<String> list2= new ArrayList<>(Arrays.asList(expecteds));
@@ -376,13 +376,13 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 			assertEquals(expected, actual);
 		}
 	}
-	
+
 	protected final RefactoringStatus performRefactoring(ICompilationUnit[] cus, Set<String> setOfExpectedGroupCategories) throws CoreException {
 		final CleanUpRefactoring ref= new CleanUpRefactoring();
 		ref.setUseOptionsFromProfile(true);
 		return performRefactoring(ref, cus, JavaPlugin.getDefault().getCleanUpRegistry().createCleanUps(), setOfExpectedGroupCategories);
 	}
-	
+
 	protected RefactoringStatus performRefactoring(final CleanUpRefactoring ref, ICompilationUnit[] cus, ICleanUp[] cleanUps, Set<String> setOfExpectedGroupCategories) throws CoreException {
 		for (ICompilationUnit cu : cus) {
 			ref.addCompilationUnit(cu);
@@ -393,8 +393,8 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		IUndoManager undoManager= RefactoringCore.getUndoManager();
 		undoManager.flush();
 		final CreateChangeOperation create= new CreateChangeOperation(
-			new CheckConditionsOperation(ref, CheckConditionsOperation.ALL_CONDITIONS),
-			RefactoringStatus.FATAL);
+				new CheckConditionsOperation(ref, CheckConditionsOperation.ALL_CONDITIONS),
+				RefactoringStatus.FATAL);
 		final PerformChangeOperation perform= new PerformChangeOperation(create);
 		perform.setUndoManager(undoManager, ref.getName());
 		IWorkspace workspace= ResourcesPlugin.getWorkspace();
@@ -418,7 +418,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		}
 		return status;
 	}
-	
+
 	private void collectGroupCategories(Set<GroupCategory> result, Change change) {
 		if (change instanceof TextEditBasedChange) {
 			for (TextEditBasedChangeGroup group : ((TextEditBasedChange)change).getChangeGroups()) {
@@ -430,7 +430,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 			}
 		}
 	}
-	
+
 	public void enable(String key) throws CoreException {
 		fProfile.getSettings().put(key, CleanUpOptions.TRUE);
 		commitProfile();
