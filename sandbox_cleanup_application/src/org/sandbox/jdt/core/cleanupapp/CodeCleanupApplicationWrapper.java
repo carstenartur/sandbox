@@ -78,7 +78,7 @@ public class CodeCleanupApplicationWrapper implements IApplication {
 		}
 	}
 	@Override
-	public Object start(IApplicationContext context) throws Exception {
+	public Object start(IApplicationContext context) throws NoClassDefFoundError {
 		String[] arguments = (String[]) context.getArguments().get(IApplicationContext.APPLICATION_ARGS);
 		List<String> args = Arrays.asList(arguments);
 		if (args.isEmpty() || args.contains("-help") || args.contains("--help")) { //$NON-NLS-1$ //$NON-NLS-2$
