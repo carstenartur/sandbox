@@ -16,6 +16,7 @@ package org.sandbox.jdt.ui.tests.quickfix;
 
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -1144,6 +1145,7 @@ public class Java8CleanUpTest {
 		String given, expected;
 	}
 
+	@Disabled
 	@ParameterizedTest
 	@EnumSource(UseFunctionalLoop.class)
 	public void testExplicitEncodingParametrized(UseFunctionalLoop test) throws Exception {
@@ -1153,6 +1155,7 @@ public class Java8CleanUpTest {
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);	
 	}
 
+	@Disabled
 	@ParameterizedTest
 	@ValueSource(strings = {
 			/**
