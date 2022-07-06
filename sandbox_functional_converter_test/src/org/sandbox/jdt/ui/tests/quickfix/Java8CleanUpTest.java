@@ -14,8 +14,10 @@
  *******************************************************************************/
 package org.sandbox.jdt.ui.tests.quickfix;
 
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
+import org.eclipse.jdt.core.JavaModelException;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -1148,7 +1150,7 @@ public class Java8CleanUpTest {
 	@Disabled
 	@ParameterizedTest
 	@EnumSource(UseFunctionalLoop.class)
-	public void testExplicitEncodingParametrized(UseFunctionalLoop test) throws Exception {
+	public void testExplicitEncodingParametrized(UseFunctionalLoop test) throws CoreException {
 		IPackageFragment pack= context.fSourceFolder.createPackageFragment("test1", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("TestDemo.java", test.given, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
@@ -1608,7 +1610,7 @@ public class Java8CleanUpTest {
                                             + "}"
                                             
                                             })
-	public void testExplicitEncoding_donttouch(String dontchange) throws Exception {
+	public void testExplicitEncoding_donttouch(String dontchange) throws CoreException  {
 		IPackageFragment pack= context.fSourceFolder.createPackageFragment("testdemo", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("TestDemo.java",
 				dontchange,
