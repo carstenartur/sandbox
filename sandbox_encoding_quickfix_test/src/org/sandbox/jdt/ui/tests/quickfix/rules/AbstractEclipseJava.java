@@ -87,7 +87,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	}
 
 	@Override
-	public void beforeEach(ExtensionContext context) throws Exception {
+	public void beforeEach(ExtensionContext context) throws CoreException{
 		IJavaProject javaProject= createJavaProject(TEST_SETUP_PROJECT, "bin");
 		javaProject.setRawClasspath(getDefaultClasspath(), null);
 		Map<String, String> options= javaProject.getOptions(false);

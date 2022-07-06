@@ -1,7 +1,9 @@
 package org.sandbox.jdt.ui.tests.quickfix;
 
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
+import org.eclipse.jdt.core.JavaModelException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -381,7 +383,7 @@ public class Java9CleanUpTest {
 	}
 
 	@Test
-	public void testExplicitEncoding_donttouch() throws Exception {
+	public void testExplicitEncoding_donttouch() throws CoreException{
 		IPackageFragment pack= context.fSourceFolder.createPackageFragment("test1", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("E2.java",
 				"" //
