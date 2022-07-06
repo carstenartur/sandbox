@@ -18,15 +18,14 @@ import java.util.Set;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.rewrite.TargetSourceRangeComputer;
-import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
-import org.eclipse.jdt.internal.corext.util.Messages;
+import org.eclipse.jdt.internal.corext.refactoring.util.TightSourceRangeComputer;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.fix.helper.AbstractTool;
-import org.sandbox.jdt.internal.corext.fix.helper.Hit;
+import org.sandbox.jdt.internal.corext.fix.helper.WhileLoopToChangeHit;
 import org.sandbox.jdt.internal.corext.fix.helper.WhileToForEach;
 import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
@@ -34,45 +33,45 @@ public enum UseIteratorToForLoopFixCore {
 
 	LOOP(new WhileToForEach());
 
-	AbstractTool<Hit> iteratortofor;
+	AbstractTool<WhileLoopToChangeHit> iteratortofor;
 
 	@SuppressWarnings("unchecked")
-	UseIteratorToForLoopFixCore(AbstractTool<? extends Hit> explicitencoding) {
-		this.iteratortofor=(AbstractTool<Hit>) explicitencoding;
+	UseIteratorToForLoopFixCore(AbstractTool<? extends WhileLoopToChangeHit> explicitencoding) {
+		this.iteratortofor=(AbstractTool<WhileLoopToChangeHit>) explicitencoding;
 	}
 
 	public String getPreview(boolean i) {
 		return iteratortofor.getPreview(i);
 	}
 	/**
-	 * Compute set of CompilationUnitRewriteOperation to refactor supported situations using default encoding to make use of explicit calls
+	 * Compute set of CompilationUnitRewriteOperation to refactor supported situations
 	 *
 	 * @param compilationUnit unit to search in
 	 * @param operations set of all CompilationUnitRewriteOperations created already
 	 * @param nodesprocessed list to remember nodes already processed
+	 * @param createForOnlyIfVarUsed true if for loop should be created only only if loop var used within
 	 */
-	public void findOperations(final CompilationUnit compilationUnit,final Set<CompilationUnitRewriteOperation> operations,final Set<ASTNode> nodesprocessed) {
-		iteratortofor.find(this, compilationUnit, operations, nodesprocessed);
+	public void findOperations(final CompilationUnit compilationUnit, final Set<CompilationUnitRewriteOperation> operations,
+			final Set<ASTNode> nodesprocessed, boolean createForOnlyIfVarUsed) {
+		iteratortofor.find(this, compilationUnit, operations, nodesprocessed, createForOnlyIfVarUsed);
 	}
 
-	public CompilationUnitRewriteOperation rewrite(final Hit hit) {
+	public CompilationUnitRewriteOperation rewrite(final WhileLoopToChangeHit hit) {
 		return new CompilationUnitRewriteOperation() {
 			@Override
 			public void rewriteAST(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel) throws CoreException {
-				TextEditGroup group= createTextEditGroup(Messages.format(MultiFixMessages.ToolsCleanUp_description,new Object[] {UseIteratorToForLoopFixCore.this.toString()}), cuRewrite);
-				cuRewrite.getASTRewrite().setTargetSourceRangeComputer(computer);
+				TextEditGroup group= createTextEditGroup(MultiFixMessages.ToolsCleanUp_description, cuRewrite);
+				TightSourceRangeComputer rangeComputer;
+				ASTRewrite rewrite= cuRewrite.getASTRewrite();
+				if (rewrite.getExtendedSourceRangeComputer() instanceof TightSourceRangeComputer) {
+					rangeComputer= (TightSourceRangeComputer)rewrite.getExtendedSourceRangeComputer();
+				} else {
+					rangeComputer= new TightSourceRangeComputer();
+				}
+				rangeComputer.addTightSourceNode(hit.whileStatement);
+				rewrite.setTargetSourceRangeComputer(rangeComputer);
 				iteratortofor.rewrite(UseIteratorToForLoopFixCore.this, hit, cuRewrite, group);
 			}
 		};
 	}
-
-	final static TargetSourceRangeComputer computer= new TargetSourceRangeComputer() {
-		@Override
-		public SourceRange computeSourceRange(final ASTNode nodeWithComment) {
-			if (Boolean.TRUE.equals(nodeWithComment.getProperty(ASTNodes.UNTOUCH_COMMENT))) {
-				return new SourceRange(nodeWithComment.getStartPosition(), nodeWithComment.getLength());
-			}
-			return super.computeSourceRange(nodeWithComment);
-		}
-	};
 }

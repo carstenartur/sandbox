@@ -3,7 +3,7 @@
 <target includeMode="Feature" name="target platform for sandbox">
 <locations>
 <location includeAllPlatforms="false" includeConfigurePhase="false" includeMode="slicer" includeSource="true" type="InstallableUnit">
-<repository location="https://download.eclipse.org/releases/2022-03/"/>
+<repository location="https://download.eclipse.org/releases/2022-06/"/>
 <unit id="org.eclipse.draw2d.feature.group" version="0.0.0"/>
 <unit id="org.eclipse.egit.feature.group" version="0.0.0"/>
 <unit id="org.eclipse.emf.compare.egit.feature.group" version="0.0.0"/>
@@ -108,9 +108,6 @@ Failed to resolve target definition C:\Users\chammer\git\sandbox\sandbox_target\
       <unit id="com.jcraft.jzlib" version="0.0.0"/>
       <unit id="javaewah" version="0.0.0"/>
       <unit id="javax.activation" version="0.0.0"/>
-      <unit id="javax.servlet" version="0.0.0"/>
-      <unit id="javax.xml.bind" version="0.0.0"/>
-      <unit id="javax.xml.stream" version="0.0.0"/>
       <unit id="net.i2p.crypto.eddsa" version="0.0.0"/>
       <unit id="org.apache.ant" version="0.0.0"/>
       <unit id="org.apache.commons.codec" version="0.0.0"/>
@@ -125,14 +122,11 @@ Failed to resolve target definition C:\Users\chammer\git\sandbox\sandbox_target\
       <unit id="org.bouncycastle.bcpg" version="0.0.0"/>
       <unit id="org.bouncycastle.bcpkix" version="0.0.0"/>
       <unit id="org.bouncycastle.bcprov" version="0.0.0"/>
-      <unit id="org.hamcrest.generator" version="0.0.0"/>
-      <unit id="org.hamcrest.integration" version="0.0.0"/>
-      <unit id="org.hamcrest.text" version="0.0.0"/>
       <unit id="org.kohsuke.args4j" version="0.0.0"/>
       <unit id="org.slf4j.api" version="0.0.0"/>
      <unit id="org.slf4j.binding.log4j12" version="0.0.0"/>
       <unit id="org.tukaani.xz" version="0.0.0"/>
-<repository location="https://download.eclipse.org/tools/orbit/downloads/drops/R20210825222808/repository/"/>
+<repository location="https://download.eclipse.org/tools/orbit/downloads/drops/R20220531185310/repository/"/>
 </location>
 <location includeAllPlatforms="false" includeConfigurePhase="false" includeMode="slicer" includeSource="true" type="InstallableUnit">
 <unit id="org.eclipse.swtbot.eclipse.feature.group" version="0.0.0"/>
@@ -143,7 +137,7 @@ Failed to resolve target definition C:\Users\chammer\git\sandbox\sandbox_target\
 <repository location="https://download.eclipse.org/technology/swtbot/releases/latest/"/>
 </location>
 <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="slicer" includeSource="true" type="InstallableUnit">
-    <repository location="https://download.eclipse.org/justj/jres/16/updates/release/latest/"/>
+    <repository location="https://download.eclipse.org/justj/jres/17/updates/release/latest/"/>
 	<unit id="org.eclipse.justj.openjdk.hotspot.jre.base.feature.group" version="0.0.0"/>
 </location>
 </locations>

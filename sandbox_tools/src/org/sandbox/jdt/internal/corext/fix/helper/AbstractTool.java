@@ -43,7 +43,8 @@ public abstract class AbstractTool<T> {
 		return typeBinding.getQualifiedName().equals(typename);
 	}
 
-	public abstract void find(UseIteratorToForLoopFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed);
+	public abstract void find(UseIteratorToForLoopFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations,
+			Set<ASTNode> nodesprocessed, boolean createForIfVarNotUsed);
 
 	public abstract void rewrite(UseIteratorToForLoopFixCore useExplicitEncodingFixCore, T holder, CompilationUnitRewrite cuRewrite,
 			TextEditGroup group);

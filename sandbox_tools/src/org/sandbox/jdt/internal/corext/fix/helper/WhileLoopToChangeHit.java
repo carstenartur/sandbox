@@ -13,19 +13,32 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
-import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.WhileStatement;
 
-public class Hit {
+public class WhileLoopToChangeHit {
 
 	public boolean self;
-	public VariableDeclarationStatement iteratordeclaration;
-	public SimpleName collectionsimplename;
-	public String loopvarname;
-	public MethodInvocation loopvardeclaration;
-	public WhileStatement whilestatement;
-	public boolean nextwithoutvariabledeclation;
+	public VariableDeclarationStatement iteratorDeclaration;
+	public Statement iteratorCall;
+	public Expression collectionExpression;
+	public String loopVarName;
+	public MethodInvocation loopVarDeclaration;
+	public WhileStatement whileStatement;
+	public boolean nextWithoutVariableDeclaration;
+	public boolean nextFound;
+	public String iteratorName;
+	public boolean isInvalid;
+
+	public WhileLoopToChangeHit(boolean isInvalid) {
+		this.isInvalid= isInvalid;
+	}
+
+	public WhileLoopToChangeHit() {
+
+	}
 
 }
