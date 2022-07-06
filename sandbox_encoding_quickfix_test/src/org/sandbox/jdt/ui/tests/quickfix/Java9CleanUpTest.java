@@ -3,7 +3,6 @@ package org.sandbox.jdt.ui.tests.quickfix;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
-import org.eclipse.jdt.core.JavaModelException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -13,10 +12,10 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava9;
 
 public class Java9CleanUpTest {
-		
+
 	@RegisterExtension
 	AbstractEclipseJava context= new EclipseJava9();
-	
+
 	enum ExplicitEncodingPatterns {
 
 		BYTEARRAYOUTSTREAM("" //
@@ -36,7 +35,7 @@ public class Java9CleanUpTest {
 				+ "       }\n" //
 				+ "    }\n" //
 				+ "}\n",
-				
+
 				"" //
 				+ "package test1;\n" //
 				+ "\n" //
@@ -74,7 +73,7 @@ public class Java9CleanUpTest {
 				+ "       }\n" //
 				+ "    }\n" //
 				+ "}\n",
-				
+
 				"" //
 				+ "package test1;\n" //
 				+ "\n" //
@@ -112,7 +111,7 @@ public class Java9CleanUpTest {
 				+ "       }\n" //
 				+ "    }\n" //
 				+ "}\n",
-				
+
 				"" //
 				+ "package test1;\n" //
 				+ "\n" //
@@ -152,7 +151,7 @@ public class Java9CleanUpTest {
 				+ "       }\n" //
 				+ "    }\n" //
 				+ "}\n",
-				
+
 				"" //
 				+ "package test1;\n" //
 				+ "\n" //
@@ -193,7 +192,7 @@ public class Java9CleanUpTest {
 				+ "       }\n" //
 				+ "    }\n" //
 				+ "}\n",
-				
+
 				"" //
 				+ "package test1;\n" //
 				+ "\n" //
@@ -232,7 +231,7 @@ public class Java9CleanUpTest {
 				+ "       }\n" //
 				+ "    }\n" //
 				+ "}\n",
-				
+
 				"" //
 				+ "package test1;\n" //
 				+ "\n" //
@@ -272,7 +271,7 @@ public class Java9CleanUpTest {
 				+ "       }\n" //
 				+ "    }\n" //
 				+ "}\n",
-				
+
 				"" //
 				+ "package test1;\n" //
 				+ "\n" //
@@ -327,7 +326,7 @@ public class Java9CleanUpTest {
 				+ "       }\n" //
 				+ "    }\n" //
 				+ "}\n",
-				
+
 				"" //
 				+ "package test1;\n" //
 				+ "\n" //
@@ -364,7 +363,7 @@ public class Java9CleanUpTest {
 				+ "       }\n" //
 				+ "    }\n" //
 				+ "}\n");
-		
+
 		ExplicitEncodingPatterns(String given, String expected) {
 			this.given=given;
 			this.expected=expected;
@@ -375,11 +374,11 @@ public class Java9CleanUpTest {
 
 	@ParameterizedTest
 	@EnumSource(ExplicitEncodingPatterns.class)
-	public void testExplicitEncodingParametrized(ExplicitEncodingPatterns test) throws Exception {
+	public void testExplicitEncodingParametrized(ExplicitEncodingPatterns test) throws CoreException {
 		IPackageFragment pack= context.fSourceFolder.createPackageFragment("test1", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("E1.java", test.given, false, null);
 		context.enable(MYCleanUpConstants.EXPLICITENCODING_CLEANUP);
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);	
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
 	}
 
 	@Test
