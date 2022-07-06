@@ -60,6 +60,16 @@
 		</dependency>
 		<dependency>
 			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_functional_converter</artifactId>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_functional_converter_test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
 			<artifactId>sandbox_tools</artifactId>
 			<scope>compile</scope>
 		</dependency>
