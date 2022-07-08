@@ -49,6 +49,7 @@ import org.eclipse.jdt.internal.ui.JavaPlugin;
 import org.eclipse.jdt.internal.ui.dialogs.StatusInfo;
 import org.eclipse.jdt.internal.ui.preferences.cleanup.CleanUpProfileVersioner;
 import org.eclipse.jdt.internal.ui.preferences.formatter.ProfileManager;
+//import org.eclipse.jdt.internal.ui.preferences.formatter.ProfileManager$CustomProfile;
 import org.eclipse.jdt.internal.ui.preferences.formatter.ProfileManager.CustomProfile;
 import org.eclipse.jdt.internal.ui.preferences.formatter.ProfileManager.Profile;
 import org.eclipse.jdt.internal.ui.preferences.formatter.ProfileStore;
@@ -154,11 +155,11 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 				i= MAX_RETRY;
 			} catch (CoreException e) {
 				if (i == MAX_RETRY - 1) {
-					JavaPlugin.log(e);
+//					JavaPlugin.log(e);
 					throw e;
 				}
 				try {
-					JavaPlugin.log(new IllegalStateException("sleep before retrying JavaProjectHelper.delete() for " + resource.getLocationURI()));
+//					JavaPlugin.log(new IllegalStateException("sleep before retrying JavaProjectHelper.delete() for " + resource.getLocationURI()));
 					Thread.sleep(RETRY_DELAY); // give other threads time to close the file
 				} catch (InterruptedException e1) {
 				}
