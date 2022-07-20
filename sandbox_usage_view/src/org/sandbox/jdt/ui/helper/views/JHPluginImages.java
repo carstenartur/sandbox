@@ -20,10 +20,9 @@ import java.net.URL;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.osgi.framework.FrameworkUtil;
 
-
 public class JHPluginImages {
 
-	private static final URL fgIconBaseURL=  FrameworkUtil.getBundle(JHPluginImages.class).getEntry("/icons/"); //$NON-NLS-1$
+	private static final URL fgIconBaseURL= FrameworkUtil.getBundle(JHPluginImages.class).getEntry("/icons/"); //$NON-NLS-1$
 
 	public static final String CHILDREN= "children.png";
 	public static final String INFO= "info.png";

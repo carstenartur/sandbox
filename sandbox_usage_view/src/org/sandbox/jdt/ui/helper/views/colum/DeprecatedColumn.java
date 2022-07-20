@@ -19,8 +19,8 @@ import org.eclipse.jface.viewers.TableViewer;
 
 public class DeprecatedColumn extends AbstractColumn {
 
-	private static final int bounds = 100;
-	private static final String title = "Deprecated";
+	private static final int bounds= 100;
+	private static final String title= "Deprecated";
 
 	public DeprecatedColumn() {
 	}
@@ -31,7 +31,7 @@ public class DeprecatedColumn extends AbstractColumn {
 		createTableViewerColumn(viewer, title, bounds, pos).setLabelProvider(new AlternatingColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
-				IVariableBinding p = (IVariableBinding) element;
+				IVariableBinding p= (IVariableBinding) element;
 				return String.valueOf(p.isDeprecated());
 			}
 		});
@@ -39,9 +39,9 @@ public class DeprecatedColumn extends AbstractColumn {
 
 	@Override
 	protected int compare(IVariableBinding p1, IVariableBinding p2) {
-		ITypeBinding declaringClass1 = p1.getDeclaringClass();
-		ITypeBinding declaringClass2 = p2.getDeclaringClass();
-		if (declaringClass1 != null && declaringClass2!= null) {
+		ITypeBinding declaringClass1= p1.getDeclaringClass();
+		ITypeBinding declaringClass2= p2.getDeclaringClass();
+		if (declaringClass1 != null && declaringClass2 != null) {
 			return Boolean.compare(declaringClass1.isDeprecated(), declaringClass2.isDeprecated());
 		}
 		return 0;

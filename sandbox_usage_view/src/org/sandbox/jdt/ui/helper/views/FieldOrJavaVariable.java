@@ -16,28 +16,35 @@ package org.sandbox.jdt.ui.helper.views;
 public class FieldOrJavaVariable {
 
 	public FieldOrJavaVariable(String variablename, Class<?> variabletype, int numberofusages) {
-		this.variablename = variablename;
-		this.variabletype = variabletype;
-		this.numberofusages = numberofusages;
+		this.variablename= variablename;
+		this.variabletype= variabletype;
+		this.numberofusages= numberofusages;
 	}
+
 	public String getVariablename() {
 		return variablename;
 	}
+
 	public void setVariablename(String variablename) {
-		this.variablename = variablename;
+		this.variablename= variablename;
 	}
+
 	public Class<?> getVariabletype() {
 		return variabletype;
 	}
+
 	public void setVariabletype(Class<?> variabletype) {
-		this.variabletype = variabletype;
+		this.variabletype= variabletype;
 	}
+
 	public int getNumberofusages() {
 		return numberofusages;
 	}
+
 	public void setNumberofusages(int numberofusages) {
-		this.numberofusages = numberofusages;
+		this.numberofusages= numberofusages;
 	}
+
 	String variablename;
 	Class<?> variabletype;
 	int numberofusages;

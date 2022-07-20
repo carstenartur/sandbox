@@ -4507,7 +4507,7 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 		hv.build(node);
 	}
 
-//	public static <V,T> void callModuleQualifiedNameVisitor(ASTNode node, ReferenceHolder<V,T> dataholder, BiPredicate<ModuleQualifiedName, ReferenceHolder<V,T>> bs) {  HelperVisitor<ReferenceHolder<V,T>> hv = new HelperVisitor<>(nodesprocessed, dataholder); hv.addModuleQualifiedName(bs); hv.build(node);}
+	//	public static <V,T> void callModuleQualifiedNameVisitor(ASTNode node, ReferenceHolder<V,T> dataholder, BiPredicate<ModuleQualifiedName, ReferenceHolder<V,T>> bs) {  HelperVisitor<ReferenceHolder<V,T>> hv = new HelperVisitor<>(nodesprocessed, dataholder); hv.addModuleQualifiedName(bs); hv.build(node);}
 
 	/**
 	 *
@@ -6296,7 +6296,7 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 		hv.build(node);
 	}
 
-//	public static <V,T> void callModuleQualifiedNameVisitor(ASTNode node, ReferenceHolder<V,T> dataholder, BiConsumer<ModuleQualifiedName, ReferenceHolder<V,T>> bc) {  HelperVisitor<ReferenceHolder<V,T>> hv = new HelperVisitor<>(nodesprocessed, dataholder); hv.addModuleQualifiedName(bc); hv.build(node);}
+	//	public static <V,T> void callModuleQualifiedNameVisitor(ASTNode node, ReferenceHolder<V,T> dataholder, BiConsumer<ModuleQualifiedName, ReferenceHolder<V,T>> bc) {  HelperVisitor<ReferenceHolder<V,T>> hv = new HelperVisitor<>(nodesprocessed, dataholder); hv.addModuleQualifiedName(bc); hv.build(node);}
 
 	/**
 	 *
@@ -8200,7 +8200,7 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 		hv.build(node);
 	}
 
-//	public static <V,T> void callModuleQualifiedNameVisitor(ASTNode node, ReferenceHolder<V,T> dataholder, BiPredicate<ModuleQualifiedName, ReferenceHolder<V,T>> bs, BiConsumer<ModuleQualifiedName, ReferenceHolder<V,T>> bc) {  HelperVisitor<ReferenceHolder<V,T>> hv = new HelperVisitor<>(nodesprocessed, dataholder); hv.addModuleQualifiedName(bs,bc); hv.build(node);}
+	//	public static <V,T> void callModuleQualifiedNameVisitor(ASTNode node, ReferenceHolder<V,T> dataholder, BiPredicate<ModuleQualifiedName, ReferenceHolder<V,T>> bs, BiConsumer<ModuleQualifiedName, ReferenceHolder<V,T>> bc) {  HelperVisitor<ReferenceHolder<V,T>> hv = new HelperVisitor<>(nodesprocessed, dataholder); hv.addModuleQualifiedName(bs,bc); hv.build(node);}
 
 	/**
 	 *

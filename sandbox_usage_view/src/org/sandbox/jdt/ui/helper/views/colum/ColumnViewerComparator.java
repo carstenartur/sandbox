@@ -22,13 +22,13 @@ import org.eclipse.swt.SWT;
 
 public class ColumnViewerComparator extends ViewerComparator {
 	private int propertyIndex;
-	private static final int DESCENDING = 1;
-	private int direction = DESCENDING;
-	static ArrayList<AbstractColumn> ar=new ArrayList<>();
+	private static final int DESCENDING= 1;
+	private int direction= DESCENDING;
+	static ArrayList<AbstractColumn> ar= new ArrayList<>();
 
 	public ColumnViewerComparator() {
-		this.propertyIndex = 0;
-		direction = DESCENDING;
+		this.propertyIndex= 0;
+		direction= DESCENDING;
 	}
 
 	public int getDirection() {
@@ -38,21 +38,21 @@ public class ColumnViewerComparator extends ViewerComparator {
 	public void setColumn(int column) {
 		if (column == this.propertyIndex) {
 			// Same column as last sort; toggle the direction
-			direction = 1 - direction;
+			direction= 1 - direction;
 		} else {
 			// New column; do an ascending sort
-			this.propertyIndex = column;
-			direction = DESCENDING;
+			this.propertyIndex= column;
+			direction= DESCENDING;
 		}
 	}
 
 	@Override
 	public int compare(Viewer viewer, Object e1, Object e2) {
-		int rc = 0;
+		int rc= 0;
 		if (direction == DESCENDING) {
-		   rc=ar.get(propertyIndex).compare((IVariableBinding) e2,(IVariableBinding) e1);
+			rc= ar.get(propertyIndex).compare((IVariableBinding) e2, (IVariableBinding) e1);
 		} else {
-			rc=ar.get(propertyIndex).compare((IVariableBinding) e1,(IVariableBinding) e2);
+			rc= ar.get(propertyIndex).compare((IVariableBinding) e1, (IVariableBinding) e2);
 		}
 		return rc;
 	}

@@ -32,31 +32,30 @@ import org.eclipse.jface.viewers.TableViewer;
 class JHViewSelectionProvider implements ISelectionProvider {
 	private final TableViewer fViewer;
 
-	ListenerList<ISelectionChangedListener> fSelectionChangedListeners = new ListenerList<>();
+	ListenerList<ISelectionChangedListener> fSelectionChangedListeners= new ListenerList<>();
 	private IStructuredSelection fLastSelection;
 
 	public JHViewSelectionProvider(TableViewer viewer) {
-		fViewer = viewer;
+		fViewer= viewer;
 		fViewer.addSelectionChangedListener(event -> fireSelectionChanged());
 	}
 
 	void fireSelectionChanged() {
 		if (fSelectionChangedListeners != null) {
-			IStructuredSelection selection = getSelection();
+			IStructuredSelection selection= getSelection();
 
 			if (fLastSelection != null) {
-				List<?> newSelection = selection.toList();
-				List<?> oldSelection = fLastSelection.toList();
-				int size = newSelection.size();
+				List<?> newSelection= selection.toList();
+				List<?> oldSelection= fLastSelection.toList();
+				int size= newSelection.size();
 				if (size == oldSelection.size()) {
-					for (int i = 0; i < size; i++) {
-						Object newElement = newSelection.get(i);
-						Object oldElement = oldSelection.get(i);
+					for (int i= 0; i < size; i++) {
+						Object newElement= newSelection.get(i);
+						Object oldElement= oldSelection.get(i);
 						if (newElement != oldElement && newElement.equals(oldElement)
 								&& newElement instanceof IJavaElement) {
 							// send out a fake selection event to make the Properties view update getKey():
-							SelectionChangedEvent event = new SelectionChangedEvent(this,
-									StructuredSelection.EMPTY);
+							SelectionChangedEvent event= new SelectionChangedEvent(this, StructuredSelection.EMPTY);
 							for (ISelectionChangedListener listener : fSelectionChangedListeners) {
 								listener.selectionChanged(event);
 							}
@@ -65,9 +64,9 @@ class JHViewSelectionProvider implements ISelectionProvider {
 					}
 				}
 			}
-			fLastSelection = selection;
+			fLastSelection= selection;
 
-			SelectionChangedEvent event = new SelectionChangedEvent(this, selection);
+			SelectionChangedEvent event= new SelectionChangedEvent(this, selection);
 
 			for (ISelectionChangedListener listener : fSelectionChangedListeners) {
 				listener.selectionChanged(event);
@@ -82,29 +81,29 @@ class JHViewSelectionProvider implements ISelectionProvider {
 
 	@Override
 	public IStructuredSelection getSelection() {
-		IStructuredSelection selection = (IStructuredSelection) fViewer.getSelection();
+		IStructuredSelection selection= (IStructuredSelection) fViewer.getSelection();
 		System.out.println("out:" + selection);
-		ArrayList<Object> externalSelection = new ArrayList<>();
+		ArrayList<Object> externalSelection= new ArrayList<>();
 		for (Object element : selection) {
-//			if (element instanceof JavaElement) {
-//				IJavaElement javaElement = ((JavaElement) element).getJavaElement();
-//				if (javaElement != null && !(javaElement instanceof IJavaModel)) {
-//					// assume getJavaProject() is
-//					// non-null
-//					externalSelection.add(javaElement);
-//				}
-//			} else if (element instanceof JEResource) {
-//				IResource resource = ((JEResource) element).getResource();
-//				if (resource != null && !(resource instanceof IWorkspaceRoot)) {
-//					// getProject() is non-null
-//					externalSelection.add(resource);
-//				}
-//			} else if (element instanceof JEAttribute) {
-//				Object wrappedObject = ((JEAttribute) element).getWrappedObject();
-//				if (wrappedObject != null) {
-//					externalSelection.add(wrappedObject);
-//				}
-//			}
+			//			if (element instanceof JavaElement) {
+			//				IJavaElement javaElement = ((JavaElement) element).getJavaElement();
+			//				if (javaElement != null && !(javaElement instanceof IJavaModel)) {
+			//					// assume getJavaProject() is
+			//					// non-null
+			//					externalSelection.add(javaElement);
+			//				}
+			//			} else if (element instanceof JEResource) {
+			//				IResource resource = ((JEResource) element).getResource();
+			//				if (resource != null && !(resource instanceof IWorkspaceRoot)) {
+			//					// getProject() is non-null
+			//					externalSelection.add(resource);
+			//				}
+			//			} else if (element instanceof JEAttribute) {
+			//				Object wrappedObject = ((JEAttribute) element).getWrappedObject();
+			//				if (wrappedObject != null) {
+			//					externalSelection.add(wrappedObject);
+			//				}
+			//			}
 		}
 		return new StructuredSelection(externalSelection);
 	}

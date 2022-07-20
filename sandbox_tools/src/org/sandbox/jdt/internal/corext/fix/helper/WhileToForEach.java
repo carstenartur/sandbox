@@ -72,100 +72,125 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 
 	@Override
 	public void find(UseIteratorToForLoopFixCore fixcore, CompilationUnit compilationUnit,
-			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, boolean createForOnlyIfVarUsed) {
+			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed,
+			boolean createForOnlyIfVarUsed) {
 		ReferenceHolder<ASTNode, WhileLoopToChangeHit> dataholder= new ReferenceHolder<>();
 		Map<ASTNode, WhileLoopToChangeHit> operationsMap= new LinkedHashMap<>();
 		WhileLoopToChangeHit invalidHit= new WhileLoopToChangeHit(true);
-		HelperVisitor.callVariableDeclarationStatementVisitor(Iterator.class, compilationUnit, dataholder, nodesprocessed, (init_iterator, holder_a) -> {
-			List<Object> computeVarName= computeVarName(init_iterator);
-			MethodInvocation iteratorCall= computeIteratorCall(init_iterator);
-			if (computeVarName != null && iteratorCall != null) {
-				Statement iteratorAssignment= (Statement)ASTNodes.getFirstAncestorOrNull(iteratorCall, Statement.class);
-				HelperVisitor.callWhileStatementVisitor(init_iterator.getParent(), dataholder, nodesprocessed, (whilestatement, holder) -> {
-					String name= computeNextVarname(whilestatement);
-					if (computeVarName.get(0).equals(name) && iteratorCall.getStartPosition() < whilestatement.getStartPosition()) {
-						WhileLoopToChangeHit hit= holder.computeIfAbsent(whilestatement, k -> new WhileLoopToChangeHit());
-						if (!createForOnlyIfVarUsed) {
-							hit.iteratorDeclaration= init_iterator;
-							hit.iteratorCall= iteratorAssignment;
-							hit.iteratorName= name;
-							if (computeVarName.size() == 1) {
-								hit.self= true;
-							} else {
-								hit.collectionExpression= (Expression) computeVarName.get(1);
-							}
-							hit.whileStatement= whilestatement;
-							if (hit.self) {
-								hit.loopVarName= ConvertLoopOperation.modifybasename("i"); //$NON-NLS-1$
-							} else if (hit.collectionExpression instanceof SimpleName) {
-								hit.loopVarName= ConvertLoopOperation.modifybasename(((SimpleName)hit.collectionExpression).getIdentifier());
-							} else {
-								hit.loopVarName= ConvertLoopOperation.modifybasename("element"); //$NON-NLS-1$
-							}
-							operationsMap.put(whilestatement, hit);
-						}
-						HelperVisitor.callMethodInvocationVisitor(whilestatement.getBody(), dataholder, nodesprocessed, (mi, holder2) -> {
-							SimpleName sn= ASTNodes.as(mi.getExpression(), SimpleName.class);
-							if (sn != null) {
-								String identifier= sn.getIdentifier();
-								if (!name.equals(identifier))
-									return true;
-								String method= mi.getName().getFullyQualifiedName();
-								WhileLoopToChangeHit previousHit= operationsMap.get(whilestatement);
-								if (previousHit != null && (previousHit == invalidHit || previousHit.nextFound || !method.equals("next"))) { //$NON-NLS-1$
-									operationsMap.put(whilestatement, invalidHit);
-									return true;
-								}
-								if (ASTNodes.getFirstAncestorOrNull(mi, ExpressionStatement.class) != null
-										&& createForOnlyIfVarUsed) {
-									operationsMap.put(whilestatement, invalidHit);
-									return true;
-								}
-								hit.nextFound= true;
-								hit.iteratorName= name;
-								hit.iteratorDeclaration= init_iterator;
-								hit.iteratorCall= iteratorAssignment;
-								hit.whileStatement= whilestatement;
-								hit.loopVarDeclaration= mi;
-								if (computeVarName.size() == 1) {
-									hit.self= true;
-								} else {
-									hit.collectionExpression= (Expression) computeVarName.get(1);
-								}
-								VariableDeclarationStatement typedAncestor= ASTNodes.getTypedAncestor(mi, VariableDeclarationStatement.class);
-								if (typedAncestor != null) {
-									ITypeBinding iteratorTypeArgument= computeTypeArgument(init_iterator);
-									ITypeBinding varTypeBinding= typedAncestor.getType().resolveBinding();
-									if (varTypeBinding == null || iteratorTypeArgument == null ||
-											(!varTypeBinding.isEqualTo(iteratorTypeArgument) && !Bindings.isSuperType(varTypeBinding, iteratorTypeArgument))) {
-										operationsMap.put(whilestatement, invalidHit);
-										return true;
+		HelperVisitor.callVariableDeclarationStatementVisitor(Iterator.class, compilationUnit, dataholder,
+				nodesprocessed, (init_iterator, holder_a) -> {
+					List<Object> computeVarName= computeVarName(init_iterator);
+					MethodInvocation iteratorCall= computeIteratorCall(init_iterator);
+					if (computeVarName != null && iteratorCall != null) {
+						Statement iteratorAssignment= (Statement) ASTNodes.getFirstAncestorOrNull(iteratorCall,
+								Statement.class);
+						HelperVisitor.callWhileStatementVisitor(init_iterator.getParent(), dataholder, nodesprocessed,
+								(whilestatement, holder) -> {
+									String name= computeNextVarname(whilestatement);
+									if (computeVarName.get(0).equals(name)
+											&& iteratorCall.getStartPosition() < whilestatement.getStartPosition()) {
+										WhileLoopToChangeHit hit= holder.computeIfAbsent(whilestatement,
+												k -> new WhileLoopToChangeHit());
+										if (!createForOnlyIfVarUsed) {
+											hit.iteratorDeclaration= init_iterator;
+											hit.iteratorCall= iteratorAssignment;
+											hit.iteratorName= name;
+											if (computeVarName.size() == 1) {
+												hit.self= true;
+											} else {
+												hit.collectionExpression= (Expression) computeVarName.get(1);
+											}
+											hit.whileStatement= whilestatement;
+											if (hit.self) {
+												hit.loopVarName= ConvertLoopOperation.modifybasename("i"); //$NON-NLS-1$
+											} else if (hit.collectionExpression instanceof SimpleName) {
+												hit.loopVarName= ConvertLoopOperation.modifybasename(
+														((SimpleName) hit.collectionExpression).getIdentifier());
+											} else {
+												hit.loopVarName= ConvertLoopOperation.modifybasename("element"); //$NON-NLS-1$
+											}
+											operationsMap.put(whilestatement, hit);
+										}
+										HelperVisitor.callMethodInvocationVisitor(whilestatement.getBody(), dataholder,
+												nodesprocessed, (mi, holder2) -> {
+													SimpleName sn= ASTNodes.as(mi.getExpression(), SimpleName.class);
+													if (sn != null) {
+														String identifier= sn.getIdentifier();
+														if (!name.equals(identifier)) {
+															return true;
+														}
+														String method= mi.getName().getFullyQualifiedName();
+														WhileLoopToChangeHit previousHit= operationsMap
+																.get(whilestatement);
+														if (previousHit != null && (previousHit == invalidHit
+																|| previousHit.nextFound || !method.equals("next"))) { //$NON-NLS-1$
+															operationsMap.put(whilestatement, invalidHit);
+															return true;
+														}
+														if (ASTNodes.getFirstAncestorOrNull(mi,
+																ExpressionStatement.class) != null
+																&& createForOnlyIfVarUsed) {
+															operationsMap.put(whilestatement, invalidHit);
+															return true;
+														}
+														hit.nextFound= true;
+														hit.iteratorName= name;
+														hit.iteratorDeclaration= init_iterator;
+														hit.iteratorCall= iteratorAssignment;
+														hit.whileStatement= whilestatement;
+														hit.loopVarDeclaration= mi;
+														if (computeVarName.size() == 1) {
+															hit.self= true;
+														} else {
+															hit.collectionExpression= (Expression) computeVarName
+																	.get(1);
+														}
+														VariableDeclarationStatement typedAncestor= ASTNodes
+																.getTypedAncestor(mi,
+																		VariableDeclarationStatement.class);
+														if (typedAncestor != null) {
+															ITypeBinding iteratorTypeArgument= computeTypeArgument(
+																	init_iterator);
+															ITypeBinding varTypeBinding= typedAncestor.getType()
+																	.resolveBinding();
+															if (varTypeBinding == null || iteratorTypeArgument == null
+																	|| (!varTypeBinding.isEqualTo(iteratorTypeArgument)
+																			&& !Bindings.isSuperType(varTypeBinding,
+																					iteratorTypeArgument))) {
+																operationsMap.put(whilestatement, invalidHit);
+																return true;
+															}
+															VariableDeclarationFragment vdf= (VariableDeclarationFragment) typedAncestor
+																	.fragments().get(0);
+															hit.loopVarName= vdf.getName().getIdentifier();
+														} else {
+															if (hit.self) {
+																hit.loopVarName= ConvertLoopOperation
+																		.modifybasename("i"); //$NON-NLS-1$
+															} else if (hit.collectionExpression instanceof SimpleName) {
+																hit.loopVarName= ConvertLoopOperation.modifybasename(
+																		((SimpleName) hit.collectionExpression)
+																		.getIdentifier());
+															} else {
+																hit.loopVarName= ConvertLoopOperation
+																		.modifybasename("element"); //$NON-NLS-1$
+															}
+															hit.nextWithoutVariableDeclaration= true;
+														}
+														operationsMap.put(whilestatement, hit);
+														HelperVisitor<ReferenceHolder<ASTNode, WhileLoopToChangeHit>, ASTNode, WhileLoopToChangeHit> helperVisitor= holder
+																.getHelperVisitor();
+														helperVisitor.nodesprocessed.add(whilestatement);
+														holder2.remove(whilestatement);
+													}
+													return true;
+												});
 									}
-									VariableDeclarationFragment vdf= (VariableDeclarationFragment) typedAncestor.fragments().get(0);
-									hit.loopVarName= vdf.getName().getIdentifier();
-								} else {
-									if (hit.self) {
-										hit.loopVarName= ConvertLoopOperation.modifybasename("i"); //$NON-NLS-1$
-									} else if (hit.collectionExpression instanceof SimpleName) {
-										hit.loopVarName= ConvertLoopOperation.modifybasename(((SimpleName)hit.collectionExpression).getIdentifier());
-									} else {
-										hit.loopVarName= ConvertLoopOperation.modifybasename("element"); //$NON-NLS-1$
-									}
-									hit.nextWithoutVariableDeclaration= true;
-								}
-								operationsMap.put(whilestatement, hit);
-								HelperVisitor<ReferenceHolder<ASTNode, WhileLoopToChangeHit>, ASTNode, WhileLoopToChangeHit> helperVisitor= holder.getHelperVisitor();
-								helperVisitor.nodesprocessed.add(whilestatement);
-								holder2.remove(whilestatement);
-							}
-							return true;
-						});
+									return true;
+								});
 					}
 					return true;
 				});
-			}
-			return true;
-		});
 		for (WhileLoopToChangeHit hit : operationsMap.values()) {
 			if (!hit.isInvalid && validate(hit)) {
 				operations.add(fixcore.rewrite(hit));
@@ -188,7 +213,8 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 		}
 		ReferenceHolder<ASTNode, WhileLoopToChangeHit> dataholder= new ReferenceHolder<>();
 		Set<ASTNode> nodesprocessed= new HashSet<>();
-		VariableDeclarationFragment iterDeclFragment= (VariableDeclarationFragment) hit.iteratorDeclaration.fragments().get(0);
+		VariableDeclarationFragment iterDeclFragment= (VariableDeclarationFragment) hit.iteratorDeclaration.fragments()
+				.get(0);
 		IVariableBinding iterBinding= iterDeclFragment.resolveBinding();
 		if (iterBinding == null) {
 			return false;
@@ -203,7 +229,7 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 			} else if (mi.getName().getIdentifier().equals("iterator")) { //$NON-NLS-1$
 				ASTNode assignment= ASTNodes.getFirstAncestorOrNull(mi, Assignment.class);
 				if (assignment instanceof Assignment) {
-					Expression leftSide= ((Assignment)assignment).getLeftHandSide();
+					Expression leftSide= ((Assignment) assignment).getLeftHandSide();
 					SimpleName assignedVar= ASTNodes.as(leftSide, SimpleName.class);
 					if (assignedVar != null && assignedVar.getIdentifier().equals(hit.iteratorName)) {
 						Statement stmt= (Statement) ASTNodes.getFirstAncestorOrNull(assignment, Statement.class);
@@ -218,6 +244,7 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 		});
 		return !hit.isInvalid;
 	}
+
 	private static String computeNextVarname(WhileStatement whilestatement) {
 		String name= null;
 		Expression exp= whilestatement.getExpression();
@@ -252,7 +279,8 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 		ITypeBinding iterableAncestor= null;
 		IMethodBinding miBinding= mi.resolveMethodBinding();
 		if (miBinding != null) {
-			iterableAncestor= ASTNodes.findImplementedType(miBinding.getDeclaringClass(), Iterable.class.getCanonicalName());
+			iterableAncestor= ASTNodes.findImplementedType(miBinding.getDeclaringClass(),
+					Iterable.class.getCanonicalName());
 		}
 		if (iterableAncestor == null || iterableAncestor.isRawType()) {
 			return null;
@@ -285,7 +313,8 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 							IBinding binding= sn.resolveBinding();
 							if (binding.isEqualTo(bliBinding)) {
 								MethodInvocation mi= ASTNodes.as(assignment.getRightHandSide(), MethodInvocation.class);
-								if (mi == null || !mi.getName().getIdentifier().equals("iterator") || (dataholder.get(node_a) != null)) { //$NON-NLS-1$
+								if (mi == null || !mi.getName().getIdentifier().equals("iterator") //$NON-NLS-1$
+										|| (dataholder.get(node_a) != null)) {
 									dataholder.put(node_a, Invalid);
 									throw new AbortSearchException();
 								}
@@ -302,7 +331,7 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 			if (holderObject == Invalid || holderObject == null) {
 				return null;
 			}
-			return (MethodInvocation)holderObject;
+			return (MethodInvocation) holderObject;
 		}
 		return ASTNodes.as(exp, MethodInvocation.class);
 	}
@@ -345,14 +374,15 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 			if (holderObject == Invalid || holderObject == null) {
 				return null;
 			}
-			exp= (Expression)dataholder.get(node_a);
+			exp= (Expression) dataholder.get(node_a);
 		}
 		MethodInvocation mi= ASTNodes.as(exp, MethodInvocation.class);
 		if (mi != null && mi.getName().toString().equals("iterator")) { //$NON-NLS-1$
 			ITypeBinding iterableAncestor= null;
 			IMethodBinding miBinding= mi.resolveMethodBinding();
 			if (miBinding != null) {
-				iterableAncestor= ASTNodes.findImplementedType(miBinding.getDeclaringClass(), Iterable.class.getCanonicalName());
+				iterableAncestor= ASTNodes.findImplementedType(miBinding.getDeclaringClass(),
+						Iterable.class.getCanonicalName());
 			}
 			if (iterableAncestor != null) {
 				ITypeBinding[] typeArgs= iterableAncestor.getTypeArguments();
@@ -373,8 +403,8 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 	}
 
 	@Override
-	public void rewrite(UseIteratorToForLoopFixCore upp, final WhileLoopToChangeHit hit, final CompilationUnitRewrite cuRewrite,
-			TextEditGroup group) {
+	public void rewrite(UseIteratorToForLoopFixCore upp, final WhileLoopToChangeHit hit,
+			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
 
@@ -397,7 +427,8 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 			Expression expression= hit.loopVarDeclaration.getExpression();
 			SimpleName variable= ASTNodes.as(expression, SimpleName.class);
 			looptargettype= variable.resolveTypeBinding().getErasure().getQualifiedName();
-			VariableDeclarationStatement typedAncestor= ASTNodes.getTypedAncestor(hit.loopVarDeclaration, VariableDeclarationStatement.class);
+			VariableDeclarationStatement typedAncestor= ASTNodes.getTypedAncestor(hit.loopVarDeclaration,
+					VariableDeclarationStatement.class);
 			type= typedAncestor.getType();
 			varBinding= type.resolveBinding();
 		}
@@ -416,7 +447,8 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 			}
 			result.setType(collectionType);
 		} else {
-			Type importType= importType(varBinding, hit.iteratorDeclaration, importRewrite, (CompilationUnit)hit.iteratorDeclaration.getRoot(), TypeLocation.LOCAL_VARIABLE);
+			Type importType= importType(varBinding, hit.iteratorDeclaration, importRewrite,
+					(CompilationUnit) hit.iteratorDeclaration.getRoot(), TypeLocation.LOCAL_VARIABLE);
 			remover.registerAddedImports(importType);
 
 			result.setType(importType);
@@ -426,7 +458,7 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 			ThisExpression newThisExpression= ast.newThisExpression();
 			newEnhancedForStatement.setExpression(newThisExpression);
 		} else {
-			Expression loopExpression= (Expression)rewrite.createCopyTarget(hit.collectionExpression);
+			Expression loopExpression= (Expression) rewrite.createCopyTarget(hit.collectionExpression);
 			newEnhancedForStatement.setExpression(loopExpression);
 		}
 		ASTNodes.removeButKeepComment(rewrite, hit.iteratorDeclaration, group);
@@ -479,16 +511,17 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 				typeArgs.add(argType);
 			}
 			pType.typeArguments().addAll(typeArgs);
-			collectionType = pType;
+			collectionType= pType;
 		}
 		return collectionType;
 	}
 
-	private Type importType(final ITypeBinding toImport, final ASTNode accessor, ImportRewrite imports, final CompilationUnit compilationUnit, TypeLocation location) {
-		ImportRewriteContext importContext= new ContextSensitiveImportRewriteContext(compilationUnit, accessor.getStartPosition(), imports);
+	private Type importType(final ITypeBinding toImport, final ASTNode accessor, ImportRewrite imports,
+			final CompilationUnit compilationUnit, TypeLocation location) {
+		ImportRewriteContext importContext= new ContextSensitiveImportRewriteContext(compilationUnit,
+				accessor.getStartPosition(), imports);
 		return imports.addImport(toImport, compilationUnit.getAST(), importContext, location);
 	}
-
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {

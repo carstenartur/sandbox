@@ -19,13 +19,13 @@ import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.widgets.Display;
 
 public class AlternatingColumnLabelProvider extends ColumnLabelProvider {
-	Color grayColor = Display.getDefault().getSystemColor(SWT.COLOR_WIDGET_LIGHT_SHADOW);
+	Color grayColor= Display.getDefault().getSystemColor(SWT.COLOR_WIDGET_LIGHT_SHADOW);
 
-	boolean alternatingcolor = false;
+	boolean alternatingcolor= false;
 
 	@Override
 	public Color getBackground(Object element) {
-		alternatingcolor = !alternatingcolor;
+		alternatingcolor= !alternatingcolor;
 		if (alternatingcolor) {
 			return grayColor;
 		}

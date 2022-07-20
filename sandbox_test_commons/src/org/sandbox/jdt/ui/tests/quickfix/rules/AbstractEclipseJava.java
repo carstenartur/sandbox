@@ -78,13 +78,13 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 
 	private final String testresources_stubs;
 	private final String compliance;
-	private static final String TEST_SETUP_PROJECT = "TestSetupProject";
+	private static final String TEST_SETUP_PROJECT= "TestSetupProject";
 	public IPackageFragmentRoot fSourceFolder;
 	private CustomProfile fProfile;
 
 	public AbstractEclipseJava(String stubs, String compilerversion) {
-		this.testresources_stubs=stubs;
-		this.compliance=compilerversion;
+		this.testresources_stubs= stubs;
+		this.compliance= compilerversion;
 	}
 
 	@Override
@@ -94,11 +94,14 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		Map<String, String> options= javaProject.getOptions(false);
 		JavaCore.setComplianceOptions(compliance, options);
 		javaProject.setOptions(options);
-		fSourceFolder= AbstractEclipseJava.addSourceContainer(getProject(TEST_SETUP_PROJECT), "src", new Path[0], new Path[0], null, new IClasspathAttribute[0]);
+		fSourceFolder= AbstractEclipseJava.addSourceContainer(getProject(TEST_SETUP_PROJECT), "src", new Path[0],
+				new Path[0], null, new IClasspathAttribute[0]);
 		Map<String, String> settings= new HashMap<>();
-		fProfile= new ProfileManager.CustomProfile("testProfile", settings, CleanUpProfileVersioner.CURRENT_VERSION, CleanUpProfileVersioner.PROFILE_KIND);
+		fProfile= new ProfileManager.CustomProfile("testProfile", settings, CleanUpProfileVersioner.CURRENT_VERSION,
+				CleanUpProfileVersioner.PROFILE_KIND);
 		InstanceScope.INSTANCE.getNode(JavaUI.ID_PLUGIN).put(CleanUpConstants.CLEANUP_PROFILE, fProfile.getID());
-		InstanceScope.INSTANCE.getNode(JavaUI.ID_PLUGIN).put(CleanUpConstants.SAVE_PARTICIPANT_PROFILE, fProfile.getID());
+		InstanceScope.INSTANCE.getNode(JavaUI.ID_PLUGIN).put(CleanUpConstants.SAVE_PARTICIPANT_PROFILE,
+				fProfile.getID());
 		disableAll();
 	}
 
@@ -113,17 +116,19 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 
 	public IClasspathEntry[] getDefaultClasspath() throws CoreException {
 		IPath[] rtJarPath= findRtJar(new Path(testresources_stubs));
-		return new IClasspathEntry[] {  JavaCore.newLibraryEntry(rtJarPath[0], rtJarPath[1], rtJarPath[2], true) };
+		return new IClasspathEntry[] { JavaCore.newLibraryEntry(rtJarPath[0], rtJarPath[1], rtJarPath[2], true) };
 	}
 
 	protected void disableAll() throws CoreException {
 		Map<String, String> settings= fProfile.getSettings();
-		JavaPlugin.getDefault().getCleanUpRegistry().getDefaultOptions(DEFAULT_CLEAN_UP_OPTIONS).getKeys().forEach(a->settings.put(a, CleanUpOptions.FALSE));
+		JavaPlugin.getDefault().getCleanUpRegistry().getDefaultOptions(DEFAULT_CLEAN_UP_OPTIONS).getKeys()
+		.forEach(a -> settings.put(a, CleanUpOptions.FALSE));
 		commitProfile();
 	}
+
 	/**
-	 * Removes an IJavaElement's resource. Retries if deletion failed (e.g. because the indexer
-	 * still locks the file).
+	 * Removes an IJavaElement's resource. Retries if deletion failed (e.g. because
+	 * the indexer still locks the file).
 	 *
 	 * @param elem the element to delete
 	 * @throws CoreException if operation failed
@@ -139,8 +144,10 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		};
 		ResourcesPlugin.getWorkspace().run(runnable, null);
 	}
+
 	private static final int MAX_RETRY= 5;
 	private static final int RETRY_DELAY= 1000;
+
 	/**
 	 * Removes a resource. Retries if deletion failed (e.g. because the indexer
 	 * still locks the file).
@@ -155,17 +162,18 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 				i= MAX_RETRY;
 			} catch (CoreException e) {
 				if (i == MAX_RETRY - 1) {
-//					JavaPlugin.log(e);
+					//					JavaPlugin.log(e);
 					throw e;
 				}
 				try {
-//					JavaPlugin.log(new IllegalStateException("sleep before retrying JavaProjectHelper.delete() for " + resource.getLocationURI()));
+					//					JavaPlugin.log(new IllegalStateException("sleep before retrying JavaProjectHelper.delete() for " + resource.getLocationURI()));
 					Thread.sleep(RETRY_DELAY); // give other threads time to close the file
 				} catch (InterruptedException e1) {
 				}
 			}
 		}
 	}
+
 	/**
 	 * @param rtStubsPath the path to the RT stubs
 	 * @return a rt.jar (stubs only)
@@ -175,11 +183,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		File rtStubs= rtStubsPath.toFile().getAbsoluteFile();
 		assertNotNull(rtStubs);
 		assertTrue(rtStubs.exists());
-		return new IPath[] {
-				Path.fromOSString(rtStubs.getPath()),
-				null,
-				null
-		};
+		return new IPath[] { Path.fromOSString(rtStubs.getPath()), null, null };
 	}
 
 	/**
@@ -189,14 +193,17 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @since 3.0
 	 */
 	public final Bundle getBundle() {
-		ClassLoader cl = getClass().getClassLoader();
-		if (cl instanceof BundleReference)
+		ClassLoader cl= getClass().getClassLoader();
+		if (cl instanceof BundleReference) {
 			return ((BundleReference) cl).getBundle();
+		}
 		return null;
 	}
+
 	/**
 	 * Creates a IJavaProject.
-	 * @param projectName The name of the project
+	 *
+	 * @param projectName   The name of the project
 	 * @param binFolderName Name of the output folder
 	 * @return Returns the Java project handle
 	 * @throws CoreException Project creation failed
@@ -231,8 +238,9 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		return jproject;
 	}
 
-	private static void addNatureToProject(IProject proj, String natureId, IProgressMonitor monitor) throws CoreException {
-		IProjectDescription description = proj.getDescription();
+	private static void addNatureToProject(IProject proj, String natureId, IProgressMonitor monitor)
+			throws CoreException {
+		IProjectDescription description= proj.getDescription();
 		String[] prevNatures= description.getNatureIds();
 		String[] newNatures= new String[prevNatures.length + 1];
 		System.arraycopy(prevNatures, 0, newNatures, 0, prevNatures.length);
@@ -240,18 +248,23 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		description.setNatureIds(newNatures);
 		proj.setDescription(description, monitor);
 	}
+
 	/**
 	 * Adds a source container to a IJavaProject.
-	 * @param jproject The parent project
-	 * @param containerName The name of the new source container
+	 *
+	 * @param jproject         The parent project
+	 * @param containerName    The name of the new source container
 	 * @param inclusionFilters Inclusion filters to set
 	 * @param exclusionFilters Exclusion filters to set
-	 * @param outputLocation The location where class files are written to, <b>null</b> for project output folder
-	 * @param attributes The classpath attributes to set
+	 * @param outputLocation   The location where class files are written to,
+	 *                         <b>null</b> for project output folder
+	 * @param attributes       The classpath attributes to set
 	 * @return The handle to the new source container
 	 * @throws CoreException Creation failed
 	 */
-	public static IPackageFragmentRoot addSourceContainer(IJavaProject jproject, String containerName, IPath[] inclusionFilters, IPath[] exclusionFilters, String outputLocation, IClasspathAttribute[] attributes) throws CoreException {
+	public static IPackageFragmentRoot addSourceContainer(IJavaProject jproject, String containerName,
+			IPath[] inclusionFilters, IPath[] exclusionFilters, String outputLocation, IClasspathAttribute[] attributes)
+					throws CoreException {
 		IProject project= jproject.getProject();
 		IContainer container;
 		if (containerName == null || containerName.length() == 0) {
@@ -273,7 +286,8 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 			}
 			outputPath= folder.getFullPath();
 		}
-		IClasspathEntry cpe= JavaCore.newSourceEntry(root.getPath(), inclusionFilters, exclusionFilters, outputPath, attributes);
+		IClasspathEntry cpe= JavaCore.newSourceEntry(root.getPath(), inclusionFilters, exclusionFilters, outputPath,
+				attributes);
 		addToClasspath(jproject, cpe);
 		return root;
 	}
@@ -292,7 +306,8 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		jproject.setRawClasspath(newEntries, null);
 	}
 
-	public RefactoringStatus assertRefactoringResultAsExpected(ICompilationUnit[] cus, String[] expected, Set<String> setOfExpectedGroupCategories) throws CoreException {
+	public RefactoringStatus assertRefactoringResultAsExpected(ICompilationUnit[] cus, String[] expected,
+			Set<String> setOfExpectedGroupCategories) throws CoreException {
 		RefactoringStatus status= performRefactoring(cus, setOfExpectedGroupCategories);
 		String[] previews= new String[cus.length];
 		for (int i= 0; i < cus.length; i++) {
@@ -310,7 +325,8 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		return assertRefactoringHasNoChangeEventWithError(cus);
 	}
 
-	protected RefactoringStatus assertRefactoringHasNoChangeEventWithError(ICompilationUnit[] cus) throws CoreException {
+	protected RefactoringStatus assertRefactoringHasNoChangeEventWithError(ICompilationUnit[] cus)
+			throws CoreException {
 		String[] expected= new String[cus.length];
 		for (int i= 0; i < cus.length; i++) {
 			expected[i]= cus[i].getBuffer().getContents();
@@ -378,13 +394,16 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		}
 	}
 
-	protected final RefactoringStatus performRefactoring(ICompilationUnit[] cus, Set<String> setOfExpectedGroupCategories) throws CoreException {
+	protected final RefactoringStatus performRefactoring(ICompilationUnit[] cus,
+			Set<String> setOfExpectedGroupCategories) throws CoreException {
 		final CleanUpRefactoring ref= new CleanUpRefactoring();
 		ref.setUseOptionsFromProfile(true);
-		return performRefactoring(ref, cus, JavaPlugin.getDefault().getCleanUpRegistry().createCleanUps(), setOfExpectedGroupCategories);
+		return performRefactoring(ref, cus, JavaPlugin.getDefault().getCleanUpRegistry().createCleanUps(),
+				setOfExpectedGroupCategories);
 	}
 
-	protected RefactoringStatus performRefactoring(final CleanUpRefactoring ref, ICompilationUnit[] cus, ICleanUp[] cleanUps, Set<String> setOfExpectedGroupCategories) throws CoreException {
+	protected RefactoringStatus performRefactoring(final CleanUpRefactoring ref, ICompilationUnit[] cus,
+			ICleanUp[] cleanUps, Set<String> setOfExpectedGroupCategories) throws CoreException {
 		for (ICompilationUnit cu : cus) {
 			ref.addCompilationUnit(cu);
 		}
@@ -394,27 +413,28 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		IUndoManager undoManager= RefactoringCore.getUndoManager();
 		undoManager.flush();
 		final CreateChangeOperation create= new CreateChangeOperation(
-				new CheckConditionsOperation(ref, CheckConditionsOperation.ALL_CONDITIONS),
-				RefactoringStatus.FATAL);
+				new CheckConditionsOperation(ref, CheckConditionsOperation.ALL_CONDITIONS), RefactoringStatus.FATAL);
 		final PerformChangeOperation perform= new PerformChangeOperation(create);
 		perform.setUndoManager(undoManager, ref.getName());
 		IWorkspace workspace= ResourcesPlugin.getWorkspace();
 		workspace.run(perform, new NullProgressMonitor());
 		RefactoringStatus status= create.getConditionCheckingStatus();
 		if (status.hasFatalError()) {
-			throw new CoreException(new StatusInfo(status.getSeverity(), status.getMessageMatchingSeverity(status.getSeverity())));
+			throw new CoreException(
+					new StatusInfo(status.getSeverity(), status.getMessageMatchingSeverity(status.getSeverity())));
 		}
-		assertTrue(perform.changeExecuted(),"Change wasn't executed");
+		assertTrue(perform.changeExecuted(), "Change wasn't executed");
 		Change undo= perform.getUndoChange();
 		assertNotNull(undo, "Undo doesn't exist");
-		assertTrue(undoManager.anythingToUndo(),"Undo manager is empty");
+		assertTrue(undoManager.anythingToUndo(), "Undo manager is empty");
 		if (setOfExpectedGroupCategories != null) {
 			Change change= create.getChange();
 			Set<GroupCategory> actualCategories= new HashSet<>();
 			collectGroupCategories(actualCategories, change);
 			actualCategories.forEach(actualCategory -> {
 				assertTrue(setOfExpectedGroupCategories.contains(actualCategory.getName()),
-						() -> "Unexpected group category: " + actualCategory.getName() + ", should find: " + String.join(", ", setOfExpectedGroupCategories));
+						() -> "Unexpected group category: " + actualCategory.getName() + ", should find: "
+								+ String.join(", ", setOfExpectedGroupCategories));
 			});
 		}
 		return status;
@@ -422,11 +442,11 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 
 	private void collectGroupCategories(Set<GroupCategory> result, Change change) {
 		if (change instanceof TextEditBasedChange) {
-			for (TextEditBasedChangeGroup group : ((TextEditBasedChange)change).getChangeGroups()) {
+			for (TextEditBasedChangeGroup group : ((TextEditBasedChange) change).getChangeGroups()) {
 				result.addAll(group.getGroupCategorySet().asList());
 			}
 		} else if (change instanceof CompositeChange) {
-			for (Change child : ((CompositeChange)change).getChildren()) {
+			for (Change child : ((CompositeChange) change).getChildren()) {
 				collectGroupCategories(result, child);
 			}
 		}

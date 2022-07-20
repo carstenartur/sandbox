@@ -42,29 +42,38 @@ public enum SimplifyPlatformStatusFixCore {
 
 	@SuppressWarnings("unchecked")
 	SimplifyPlatformStatusFixCore(AbstractSimplifyPlatformStatus<? extends ASTNode> explicitencoding) {
-		this.explicitencoding=(AbstractSimplifyPlatformStatus<ASTNode>) explicitencoding;
+		this.explicitencoding= (AbstractSimplifyPlatformStatus<ASTNode>) explicitencoding;
 	}
 
 	public String getPreview(boolean i) {
 		return explicitencoding.getPreview(i);
 	}
+
 	/**
-	 * Compute set of CompilationUnitRewriteOperation to refactor supported situations using platform status instantiation
+	 * Compute set of CompilationUnitRewriteOperation to refactor supported
+	 * situations using platform status instantiation
 	 *
 	 * @param compilationUnit unit to search in
-	 * @param operations set of all CompilationUnitRewriteOperations created already
-	 * @param nodesprocessed list to remember nodes already processed
+	 * @param operations      set of all CompilationUnitRewriteOperations created
+	 *                        already
+	 * @param nodesprocessed  list to remember nodes already processed
 	 * @throws CoreException
 	 */
-	public void findOperations(final CompilationUnit compilationUnit,final Set<CompilationUnitRewriteOperation> operations,final Set<ASTNode> nodesprocessed) throws CoreException {
+	public void findOperations(final CompilationUnit compilationUnit,
+			final Set<CompilationUnitRewriteOperation> operations, final Set<ASTNode> nodesprocessed)
+					throws CoreException {
 		explicitencoding.find(this, compilationUnit, operations, nodesprocessed);
 	}
 
 	public CompilationUnitRewriteOperation rewrite(final ClassInstanceCreation visited) {
 		return new CompilationUnitRewriteOperation() {
 			@Override
-			public void rewriteAST(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel) throws CoreException {
-				TextEditGroup group= createTextEditGroup(Messages.format(MultiFixMessages.PlatformStatusCleanUp_description,new Object[] {SimplifyPlatformStatusFixCore.this.toString()}), cuRewrite);
+			public void rewriteAST(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel)
+					throws CoreException {
+				TextEditGroup group= createTextEditGroup(
+						Messages.format(MultiFixMessages.PlatformStatusCleanUp_description,
+								new Object[] { SimplifyPlatformStatusFixCore.this.toString() }),
+						cuRewrite);
 				cuRewrite.getASTRewrite().setTargetSourceRangeComputer(computer);
 				explicitencoding.rewrite(SimplifyPlatformStatusFixCore.this, visited, cuRewrite, group);
 			}

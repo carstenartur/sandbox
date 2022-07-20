@@ -22,14 +22,14 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.widgets.TableColumn;
 
 public abstract class AbstractColumn {
-	static int i=0;
-	private static final ColumnViewerComparator comparator = new ColumnViewerComparator();
+	static int i= 0;
+	private static final ColumnViewerComparator comparator= new ColumnViewerComparator();
 
 	protected TableViewerColumn createTableViewerColumn(TableViewer viewer, String title, int bound,
 			final int colNumber) {
-//		TableColumn column = WidgetFactory.tableColumn(SWT.NONE).create(table);
-		final TableViewerColumn viewerColumn = new TableViewerColumn(viewer, SWT.NONE);
-		final TableColumn column = viewerColumn.getColumn();
+		//		TableColumn column = WidgetFactory.tableColumn(SWT.NONE).create(table);
+		final TableViewerColumn viewerColumn= new TableViewerColumn(viewer, SWT.NONE);
+		final TableColumn column= viewerColumn.getColumn();
 		column.setText(title);
 		column.setWidth(bound);
 		column.setResizable(true);
@@ -45,7 +45,7 @@ public abstract class AbstractColumn {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				comparator.setColumn(index);
-				int dir = comparator.getDirection();
+				int dir= comparator.getDirection();
 				viewer.getTable().setSortDirection(dir);
 				viewer.getTable().setSortColumn(column);
 				viewer.refresh();
@@ -57,7 +57,7 @@ public abstract class AbstractColumn {
 		return comparator;
 	}
 
-	public static void addColumn(TableViewer viewer,AbstractColumn column) {
+	public static void addColumn(TableViewer viewer, AbstractColumn column) {
 		ColumnViewerComparator.addColumn(column);
 		column.createColumn(viewer, i++);
 	}

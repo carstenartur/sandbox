@@ -20,8 +20,8 @@ import org.eclipse.jface.viewers.TableViewer;
 
 public class PackageColumn extends AbstractColumn {
 
-	private static final int bounds = 100;
-	private static final String title = "Class and Package";
+	private static final int bounds= 100;
+	private static final String title= "Class and Package";
 
 	public PackageColumn() {
 	}
@@ -32,12 +32,12 @@ public class PackageColumn extends AbstractColumn {
 		createTableViewerColumn(viewer, title, bounds, pos).setLabelProvider(new AlternatingColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
-				IVariableBinding p = (IVariableBinding) element;
-				ITypeBinding declaringClass = p.getDeclaringClass();
+				IVariableBinding p= (IVariableBinding) element;
+				ITypeBinding declaringClass= p.getDeclaringClass();
 				if (declaringClass != null) {
 					return declaringClass.getQualifiedName();
 				}
-				IJavaElement javaElement = p.getJavaElement();
+				IJavaElement javaElement= p.getJavaElement();
 				if (javaElement != null) {
 					return javaElement.getElementName();
 				}
@@ -48,9 +48,9 @@ public class PackageColumn extends AbstractColumn {
 
 	@Override
 	protected int compare(IVariableBinding p1, IVariableBinding p2) {
-		ITypeBinding declaringClass1 = p1.getDeclaringClass();
-		ITypeBinding declaringClass2 = p2.getDeclaringClass();
-		if (declaringClass1 != null && declaringClass2!= null) {
+		ITypeBinding declaringClass1= p1.getDeclaringClass();
+		ITypeBinding declaringClass2= p2.getDeclaringClass();
+		if (declaringClass1 != null && declaringClass2 != null) {
 			return declaringClass1.getQualifiedName().compareTo(declaringClass2.getQualifiedName());
 		}
 		return 0;

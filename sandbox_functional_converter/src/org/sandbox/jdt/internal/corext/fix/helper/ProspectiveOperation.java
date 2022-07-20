@@ -184,8 +184,6 @@ class ProspectiveOperation {
 				lambda= newLambdaExpression;
 			}
 
-			args.add(lambda);
-
 
 		} else if (TreeUtilities.isCompoundAssignementAssignement(this.correspondingTree)) {
 			ASTNode type = null;//treeMaker.Type("Integer");
@@ -207,11 +205,10 @@ class ProspectiveOperation {
 			{
 				lambda = makeSimpleExplicitReducer(this.correspondingTree, var, var1);
 			}
-
-			args.add(lambda);
 		} else {
 			return null;
 		}
+		args.add(lambda);
 		return args;
 	}
 
@@ -386,8 +383,9 @@ class ProspectiveOperation {
 			current.beautify(needed);
 		}
 		for (Iterator<ProspectiveOperation> it = ls.iterator(); it.hasNext();) {
-			if (it.next().correspondingTree == null)
+			if (it.next().correspondingTree == null) {
 				it.remove();
+			}
 		}
 	}
 

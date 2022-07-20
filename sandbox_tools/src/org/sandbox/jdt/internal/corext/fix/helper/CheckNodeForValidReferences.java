@@ -32,7 +32,6 @@ class CheckNodeForValidReferences {
 	public boolean isValid() {
 		ASTVisitor visitor= new ASTVisitor() {
 
-
 			@Override
 			public boolean visit(FieldAccess visitedField) {
 				IVariableBinding binding= visitedField.resolveFieldBinding();
@@ -40,7 +39,7 @@ class CheckNodeForValidReferences {
 					throw new AbortSearchException();
 				}
 				if (fLocalVarsOnly && visitedField.getLocationInParent() == MethodInvocation.EXPRESSION_PROPERTY) {
-					MethodInvocation methodInvocation= (MethodInvocation)visitedField.getParent();
+					MethodInvocation methodInvocation= (MethodInvocation) visitedField.getParent();
 					IMethodBinding methodInvocationBinding= methodInvocation.resolveMethodBinding();
 					if (methodInvocationBinding == null) {
 						throw new AbortSearchException();
@@ -60,7 +59,7 @@ class CheckNodeForValidReferences {
 					throw new AbortSearchException();
 				}
 				if (fLocalVarsOnly && visitedField.getLocationInParent() == MethodInvocation.EXPRESSION_PROPERTY) {
-					MethodInvocation methodInvocation= (MethodInvocation)visitedField.getParent();
+					MethodInvocation methodInvocation= (MethodInvocation) visitedField.getParent();
 					IMethodBinding methodInvocationBinding= methodInvocation.resolveMethodBinding();
 					if (methodInvocationBinding == null) {
 						throw new AbortSearchException();
@@ -84,12 +83,11 @@ class CheckNodeForValidReferences {
 					if (AbstractTool.isOfType(methodTypeBinding, ITERATOR_NAME)) {
 						Expression exp= methodInvocation.getExpression();
 						if (exp instanceof SimpleName) {
-							IBinding binding= ((SimpleName)exp).resolveBinding();
-							if (binding instanceof IVariableBinding &&
-									!((IVariableBinding)binding).isField() &&
-									!((IVariableBinding)binding).isParameter() &&
-									!((IVariableBinding)binding).isRecordComponent()) {
-								ITypeBinding typeBinding= ((IVariableBinding)binding).getType();
+							IBinding binding= ((SimpleName) exp).resolveBinding();
+							if (binding instanceof IVariableBinding && !((IVariableBinding) binding).isField()
+									&& !((IVariableBinding) binding).isParameter()
+									&& !((IVariableBinding) binding).isRecordComponent()) {
+								ITypeBinding typeBinding= ((IVariableBinding) binding).getType();
 								if (AbstractTool.isOfType(typeBinding, ITERATOR_NAME)) {
 									return true;
 								}
@@ -108,19 +106,15 @@ class CheckNodeForValidReferences {
 				if (AbstractTool.isOfType(typeBinding, ITERATOR_NAME)) {
 					Expression exp= castExpression.getExpression();
 					if (exp instanceof Name) {
-						IBinding binding= ((Name)exp).resolveBinding();
+						IBinding binding= ((Name) exp).resolveBinding();
 						if (binding instanceof IVariableBinding) {
-							IVariableBinding simpleNameVarBinding= (IVariableBinding)binding;
+							IVariableBinding simpleNameVarBinding= (IVariableBinding) binding;
 							if (!fLocalVarsOnly) {
 								if (!simpleNameVarBinding.isField() && !simpleNameVarBinding.isParameter()
 										&& !simpleNameVarBinding.isRecordComponent()) {
-									throw new AbortSearchException();
 								}
-							} else {
-								if (simpleNameVarBinding.isField() || simpleNameVarBinding.isParameter()
-										|| simpleNameVarBinding.isRecordComponent()) {
-									throw new AbortSearchException();
-								}
+							} else if (simpleNameVarBinding.isField() || simpleNameVarBinding.isParameter()
+									|| simpleNameVarBinding.isRecordComponent()) {
 							}
 						}
 					}
@@ -136,17 +130,17 @@ class CheckNodeForValidReferences {
 					throw new AbortSearchException();
 				}
 				if (simpleNameBinding instanceof IVariableBinding) {
-					IVariableBinding simpleNameVarBinding= (IVariableBinding)simpleNameBinding;
+					IVariableBinding simpleNameVarBinding= (IVariableBinding) simpleNameBinding;
 					ITypeBinding simpleNameTypeBinding= simpleNameVarBinding.getType();
-					if (AbstractTool.isOfType(simpleNameTypeBinding,ITERATOR_NAME)) {
+					if (AbstractTool.isOfType(simpleNameTypeBinding, ITERATOR_NAME)) {
 						if (simpleName.getLocationInParent() == MethodInvocation.EXPRESSION_PROPERTY) {
-							MethodInvocation methodInvocation= (MethodInvocation)simpleName.getParent();
+							MethodInvocation methodInvocation= (MethodInvocation) simpleName.getParent();
 							IMethodBinding methodInvocationBinding= methodInvocation.resolveMethodBinding();
 							if (methodInvocationBinding == null) {
 								throw new AbortSearchException();
 							}
 							ITypeBinding methodInvocationReturnType= methodInvocationBinding.getReturnType();
-							if (!AbstractTool.isOfType(methodInvocationReturnType,ITERATOR_NAME)) {
+							if (!AbstractTool.isOfType(methodInvocationReturnType, ITERATOR_NAME)) {
 								return true;
 							}
 						}
@@ -155,11 +149,9 @@ class CheckNodeForValidReferences {
 									&& !simpleNameVarBinding.isRecordComponent()) {
 								throw new AbortSearchException();
 							}
-						} else {
-							if (simpleNameVarBinding.isField() || simpleNameVarBinding.isParameter()
-									|| simpleNameVarBinding.isRecordComponent()) {
-								throw new AbortSearchException();
-							}
+						} else if (simpleNameVarBinding.isField() || simpleNameVarBinding.isParameter()
+								|| simpleNameVarBinding.isRecordComponent()) {
+							throw new AbortSearchException();
 						}
 					}
 				}

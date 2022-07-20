@@ -173,10 +173,11 @@ public class UpdateNeededSearchPage extends DialogPage implements ISearchPage {
 				@Override
 				public void widgetSelected(SelectionEvent e) {
 					Button button= (Button) e.widget;
-					if (button.getSelection())
+					if (button.getSelection()) {
 						leaveoutsearch.put(lc, Boolean.FALSE);
-					else
+					} else {
 						leaveoutsearch.put(lc, Boolean.TRUE);
+					}
 				}
 			});
 		});

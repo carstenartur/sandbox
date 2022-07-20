@@ -54,14 +54,14 @@ public class ReferenceHolder<V,T> extends ConcurrentHashMap<V,T> implements Help
 
 	@SuppressWarnings("static-method")
 	private void writeObject(ObjectOutputStream stream)
-	        throws IOException {
-	    stream.defaultWriteObject();
+			throws IOException {
+		stream.defaultWriteObject();
 	}
 
 	@SuppressWarnings("static-method")
 	private void readObject(ObjectInputStream stream)
-	        throws IOException, ClassNotFoundException {
-	    stream.defaultReadObject();
+			throws IOException, ClassNotFoundException {
+		stream.defaultReadObject();
 	}
 
 	@Override

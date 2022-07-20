@@ -63,7 +63,8 @@ public class OpenUpdateSearchPageAction implements IWorkbenchWindowActionDelegat
 	protected void beep() {
 		IWorkbenchWindow activeWorkbenchWindow = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
 		Shell shell= activeWorkbenchWindow.getShell();
-		if (shell != null && shell.getDisplay() != null)
+		if (shell != null && shell.getDisplay() != null) {
 			shell.getDisplay().beep();
+		}
 	}
 }

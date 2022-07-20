@@ -86,15 +86,15 @@ import org.sandbox.jdt.ui.helper.views.colum.QualifiednameColumn;
 
 public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTarget {
 
-	Logger logger = PlatformUI.getWorkbench().getService(org.eclipse.e4.core.services.log.Logger.class);
+	Logger logger= PlatformUI.getWorkbench().getService(org.eclipse.e4.core.services.log.Logger.class);
 	TableViewer tableViewer;
 	private Table table;
-//	private JERoot fInput;
+	//	private JERoot fInput;
 	private Action fRefreshAction;
 	private Action fResetAction;
 	private Action fElementAtAction;
 	private Action fPropertiesAction;
-//	private Action fFocusAction;
+	//	private Action fFocusAction;
 
 	private Action fCodeSelectAction;
 
@@ -105,21 +105,21 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 	public void createPartControl(Composite parent) {
 		parent.setLayout(new GridLayout(1, false));
 
-		tableViewer = new TableViewer(parent, SWT.BORDER | SWT.FULL_SELECTION);
+		tableViewer= new TableViewer(parent, SWT.BORDER | SWT.FULL_SELECTION);
 		tableViewer.setColumnProperties(new String[] {});
 		tableViewer.setUseHashlookup(true);
-		table = tableViewer.getTable();
+		table= tableViewer.getTable();
 		table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
 		table.setHeaderVisible(true);
 		table.setHeaderBackground(parent.getDisplay().getSystemColor(SWT.COLOR_TITLE_BACKGROUND));
 		table.setLinesVisible(true);
 		tableViewer.setContentProvider(new JHViewContentProvider());
 		// This will create the columns for the table
-		AbstractColumn.addColumn(tableViewer,new NameColumn());
-		AbstractColumn.addColumn(tableViewer,new QualifiednameColumn());
-		AbstractColumn.addColumn(tableViewer,new PackageColumn());
-		AbstractColumn.addColumn(tableViewer,new DeprecatedColumn());
-		AbstractColumn.addColumn(tableViewer,new DeclaringMethodColumn());
+		AbstractColumn.addColumn(tableViewer, new NameColumn());
+		AbstractColumn.addColumn(tableViewer, new QualifiednameColumn());
+		AbstractColumn.addColumn(tableViewer, new PackageColumn());
+		AbstractColumn.addColumn(tableViewer, new DeprecatedColumn());
+		AbstractColumn.addColumn(tableViewer, new DeclaringMethodColumn());
 
 		tableViewer.setComparator(AbstractColumn.getComparator());
 		reset();
@@ -127,16 +127,18 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 		hookContextMenu();
 		getSite().setSelectionProvider(new JHViewSelectionProvider(tableViewer));
 		contributeToActionBars();
-		//		tableViewer.addSelectionChangedListener(event -> fCopyAction.setEnabled(! event.getSelection().isEmpty()));
-		//		tableViewer.addSelectionChangedListener(event -> fCopyAction.setEnabled(! event.getSelection().isEmpty()));
+		// tableViewer.addSelectionChangedListener(event -> fCopyAction.setEnabled(!
+		// event.getSelection().isEmpty()));
+		// tableViewer.addSelectionChangedListener(event -> fCopyAction.setEnabled(!
+		// event.getSelection().isEmpty()));
 	}
 
 	private void contributeToActionBars() {
-		IActionBars bars = getViewSite().getActionBars();
+		IActionBars bars= getViewSite().getActionBars();
 		fillLocalPullDown(bars.getMenuManager());
 		fillLocalToolBar(bars.getToolBarManager());
 		bars.setGlobalActionHandler(ActionFactory.REFRESH.getId(), fRefreshAction);
-		//		bars.setGlobalActionHandler(ActionFactory.COPY.getId(), fCopyAction);
+		// bars.setGlobalActionHandler(ActionFactory.COPY.getId(), fCopyAction);
 		bars.setGlobalActionHandler(ActionFactory.PROPERTIES.getId(), fPropertiesAction);
 	}
 
@@ -146,41 +148,40 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 		manager.add(fResetAction);
 		manager.add(fRefreshAction);
 		manager.add(new Separator());
-		//		fDrillDownAdapter.addNavigationActions(manager);
+		// fDrillDownAdapter.addNavigationActions(manager);
 	}
 
 	private void fillLocalPullDown(IMenuManager manager) {
 		manager.add(fCodeSelectAction);
 		manager.add(fElementAtAction);
-		//		manager.add(fCreateFromHandleAction);
+		// manager.add(fCreateFromHandleAction);
 		manager.add(fResetAction);
-		//		manager.add(fLogDeltasAction);
+		// manager.add(fLogDeltasAction);
 		manager.add(new Separator());
 		manager.add(fRefreshAction);
 	}
 
 	private void makeActions() {
-		fCodeSelectAction = new Action("Set Input from Editor (&codeSelect)",
-				JHPluginImages.IMG_SET_FOCUS_CODE_SELECT) {
+		fCodeSelectAction= new Action("Set Input from Editor (&codeSelect)", JHPluginImages.IMG_SET_FOCUS_CODE_SELECT) {
 			@Override
 			public void run() {
-				IEditorPart editor = getSite().getPage().getActiveEditor();
+				IEditorPart editor= getSite().getPage().getActiveEditor();
 				if (editor == null) {
 					setEmptyInput();
 					return;
 				}
-				IEditorInput input = editor.getEditorInput();
-				ISelectionProvider selectionProvider = editor.getSite().getSelectionProvider();
+				IEditorInput input= editor.getEditorInput();
+				ISelectionProvider selectionProvider= editor.getSite().getSelectionProvider();
 				if (input == null || selectionProvider == null) {
 					setEmptyInput();
 					return;
 				}
-				ISelection selection = selectionProvider.getSelection();
+				ISelection selection= selectionProvider.getSelection();
 				if (!(selection instanceof ITextSelection)) {
 					setEmptyInput();
 					return;
 				}
-				IJavaElement javaElement = input.getAdapter(IJavaElement.class);
+				IJavaElement javaElement= input.getAdapter(IJavaElement.class);
 				if (javaElement == null) {
 					setEmptyInput();
 					return;
@@ -188,7 +189,7 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 
 				IJavaElement[] resolved;
 				try {
-					resolved = codeResolve(javaElement, (ITextSelection) selection);
+					resolved= codeResolve(javaElement, (ITextSelection) selection);
 				} catch (JavaModelException e) {
 					setEmptyInput();
 					return;
@@ -198,32 +199,32 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 					return;
 				}
 
-				List<IJavaElement> asList = Arrays.asList(resolved);
+				List<IJavaElement> asList= Arrays.asList(resolved);
 
 				setInput(asList);
 			}
 		};
 		fCodeSelectAction.setToolTipText("Set input from current editor's selection (codeSelect)");
-//		fFocusAction = new Action() {
-//			@Override
-//			public void run() {
-//				Object selected = ((IStructuredSelection) tableViewer.getSelection()).getFirstElement();
-//				if (selected instanceof JavaElement) {
-//					setSingleInput((IJavaModel) ((JavaElement) selected).getJavaElement());
-//				} else if (selected instanceof JEResource) {
-//					setSingleInput((IJavaModel) ((JEResource) selected).getResource());
-//				}
-//			}
-//		};
-//		fFocusAction.setToolTipText("Focus on Selection");
-		fPropertiesAction = new Action("&Properties", JHPluginImages.IMG_PROPERTIES) {
+		//		fFocusAction = new Action() {
+		//			@Override
+		//			public void run() {
+		//				Object selected = ((IStructuredSelection) tableViewer.getSelection()).getFirstElement();
+		//				if (selected instanceof JavaElement) {
+		//					setSingleInput((IJavaModel) ((JavaElement) selected).getJavaElement());
+		//				} else if (selected instanceof JEResource) {
+		//					setSingleInput((IJavaModel) ((JEResource) selected).getResource());
+		//				}
+		//			}
+		//		};
+		//		fFocusAction.setToolTipText("Focus on Selection");
+		fPropertiesAction= new Action("&Properties", JHPluginImages.IMG_PROPERTIES) {
 			@Override
 			public void run() {
-				String viewId = IPageLayout.ID_PROP_SHEET;
-				IWorkbenchPage page = getViewSite().getPage();
+				String viewId= IPageLayout.ID_PROP_SHEET;
+				IWorkbenchPage page= getViewSite().getPage();
 				IViewPart view;
 				try {
-					view = page.showView(viewId);
+					view= page.showView(viewId);
 					page.activate(JavaHelperView.this);
 					page.bringToTop(view);
 				} catch (PartInitException e) {
@@ -232,14 +233,14 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 			}
 		};
 		fPropertiesAction.setActionDefinitionId(IWorkbenchCommandConstants.FILE_PROPERTIES);
-		fResetAction = new Action("&Reset View", getJavaModelImageDescriptor()) {
+		fResetAction= new Action("&Reset View", getJavaModelImageDescriptor()) {
 			@Override
 			public void run() {
 				reset();
 			}
 		};
 		fResetAction.setToolTipText("Reset View to JavaModel");
-		fRefreshAction = new Action("Re&fresh", JHPluginImages.IMG_REFRESH) {
+		fRefreshAction= new Action("Re&fresh", JHPluginImages.IMG_REFRESH) {
 			@Override
 			public void run() {
 				BusyIndicator.showWhile(getSite().getShell().getDisplay(), () -> tableViewer.refresh());
@@ -247,26 +248,26 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 		};
 		fRefreshAction.setToolTipText("Refresh");
 		fRefreshAction.setActionDefinitionId("org.eclipse.ui.file.refresh");
-		fElementAtAction = new Action("Set Input from Editor location (&getElementAt)", JHPluginImages.IMG_SET_FOCUS) {
+		fElementAtAction= new Action("Set Input from Editor location (&getElementAt)", JHPluginImages.IMG_SET_FOCUS) {
 			@Override
 			public void run() {
-				IEditorPart editor = getSite().getPage().getActiveEditor();
+				IEditorPart editor= getSite().getPage().getActiveEditor();
 				if (editor == null) {
 					setEmptyInput();
 					return;
 				}
-				IEditorInput input = editor.getEditorInput();
-				ISelectionProvider selectionProvider = editor.getSite().getSelectionProvider();
+				IEditorInput input= editor.getEditorInput();
+				ISelectionProvider selectionProvider= editor.getSite().getSelectionProvider();
 				if (input == null || selectionProvider == null) {
 					setEmptyInput();
 					return;
 				}
-				ISelection selection = selectionProvider.getSelection();
+				ISelection selection= selectionProvider.getSelection();
 				if (!(selection instanceof ITextSelection)) {
 					setEmptyInput();
 					return;
 				}
-				IJavaElement javaElement = input.getAdapter(IJavaElement.class);
+				IJavaElement javaElement= input.getAdapter(IJavaElement.class);
 				if (javaElement == null) {
 					setEmptyInput();
 					return;
@@ -274,7 +275,7 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 
 				IJavaElement resolved;
 				try {
-					resolved = getElementAtOffset(javaElement, (ITextSelection) selection);
+					resolved= getElementAtOffset(javaElement, (ITextSelection) selection);
 				} catch (JavaModelException e) {
 					setEmptyInput();
 					return;
@@ -284,7 +285,7 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 					return;
 				}
 
-				IResource correspondingResource = resolved.getResource();
+				IResource correspondingResource= resolved.getResource();
 				setSingleInput(correspondingResource);
 
 			}
@@ -302,7 +303,7 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 			if (input instanceof ICompilationUnit) {
 				reconcile((ICompilationUnit) input);
 			}
-			IJavaElement[] elements = ((ICodeAssist) input).codeSelect(selection.getOffset(), selection.getLength());
+			IJavaElement[] elements= ((ICodeAssist) input).codeSelect(selection.getOffset(), selection.getLength());
 			if (elements != null && elements.length > 0) {
 				return elements;
 			}
@@ -312,16 +313,16 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 
 	static IJavaElement getElementAtOffset(IJavaElement input, ITextSelection selection) throws JavaModelException {
 		if (input instanceof ICompilationUnit) {
-			ICompilationUnit cunit = (ICompilationUnit) input;
+			ICompilationUnit cunit= (ICompilationUnit) input;
 			reconcile(cunit);
-			IJavaElement ref = cunit.getElementAt(selection.getOffset());
+			IJavaElement ref= cunit.getElementAt(selection.getOffset());
 			if (ref == null) {
 				return input;
 			}
 			return ref;
 		}
 		if (input instanceof IClassFile) {
-			IJavaElement ref = ((IClassFile) input).getElementAt(selection.getOffset());
+			IJavaElement ref= ((IClassFile) input).getElementAt(selection.getOffset());
 			if (ref != null) {
 				return ref;
 			}
@@ -329,29 +330,29 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 		return input;
 	}
 
-//	private void addFocusActionOrNot(IMenuManager manager) {
-//		if (tableViewer.getSelection() instanceof IStructuredSelection) {
-//			IStructuredSelection structuredSelection = (IStructuredSelection) tableViewer.getSelection();
-//			if (structuredSelection.size() == 1) {
-//				Object first = structuredSelection.getFirstElement();
-//				if (first instanceof JavaElement) {
-//					IJavaElement javaElement = ((JavaElement) first).getJavaElement();
-//					if (javaElement != null) {
-//						String name = javaElement.getElementName();
-//						fFocusAction.setText("Fo&cus On '" + name + '\'');
-//						manager.add(fFocusAction);
-//					}
-//				} else if (first instanceof JEResource) {
-//					IResource resource = ((JEResource) first).getResource();
-//					if (resource != null) {
-//						String name = resource.getName();
-//						fFocusAction.setText("Fo&cus On '" + name + '\'');
-//						manager.add(fFocusAction);
-//					}
-//				}
-//			}
-//		}
-//	}
+	//	private void addFocusActionOrNot(IMenuManager manager) {
+	//		if (tableViewer.getSelection() instanceof IStructuredSelection) {
+	//			IStructuredSelection structuredSelection = (IStructuredSelection) tableViewer.getSelection();
+	//			if (structuredSelection.size() == 1) {
+	//				Object first = structuredSelection.getFirstElement();
+	//				if (first instanceof JavaElement) {
+	//					IJavaElement javaElement = ((JavaElement) first).getJavaElement();
+	//					if (javaElement != null) {
+	//						String name = javaElement.getElementName();
+	//						fFocusAction.setText("Fo&cus On '" + name + '\'');
+	//						manager.add(fFocusAction);
+	//					}
+	//				} else if (first instanceof JEResource) {
+	//					IResource resource = ((JEResource) first).getResource();
+	//					if (resource != null) {
+	//						String name = resource.getName();
+	//						fFocusAction.setText("Fo&cus On '" + name + '\'');
+	//						manager.add(fFocusAction);
+	//					}
+	//				}
+	//			}
+	//		}
+	//	}
 
 	/* see JavaModelUtil.reconcile((ICompilationUnit) input) */
 	static void reconcile(ICompilationUnit unit) throws JavaModelException {
@@ -362,9 +363,9 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 	}
 
 	private ImageDescriptor getJavaModelImageDescriptor() {
-		JavaElementLabelProvider lp = new JavaElementLabelProvider(JavaElementLabelProvider.SHOW_SMALL_ICONS);
-		Image modelImage = lp.getImage(getJavaModel());
-		ImageDescriptor modelImageDescriptor = ImageDescriptor.createFromImage(modelImage);
+		JavaElementLabelProvider lp= new JavaElementLabelProvider(JavaElementLabelProvider.SHOW_SMALL_ICONS);
+		Image modelImage= lp.getImage(getJavaModel());
+		ImageDescriptor modelImageDescriptor= ImageDescriptor.createFromImage(modelImage);
 		lp.dispose();
 		return modelImageDescriptor;
 	}
@@ -374,59 +375,58 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 	}
 
 	private IResource getJavaModel() {
-//		return JavaCore.create(ResourcesPlugin.getWorkspace().getRoot());
+		//		return JavaCore.create(ResourcesPlugin.getWorkspace().getRoot());
 		return ResourcesPlugin.getWorkspace().getRoot();
-//		return null;
+		//		return null;
 	}
 
 	private void hookContextMenu() {
-		MenuManager menuMgr = new MenuManager("#PopupMenu");
+		MenuManager menuMgr= new MenuManager("#PopupMenu");
 		menuMgr.setRemoveAllWhenShown(true);
 		menuMgr.addMenuListener(this::fillContextMenu);
-		Menu menu = menuMgr.createContextMenu(tableViewer.getControl());
+		Menu menu= menuMgr.createContextMenu(tableViewer.getControl());
 		tableViewer.getControl().setMenu(menu);
 		getSite().registerContextMenu(menuMgr, tableViewer);
 	}
 
 	void fillContextMenu(IMenuManager manager) {
-//		addFocusActionOrNot(manager);
+		//		addFocusActionOrNot(manager);
 		manager.add(fResetAction);
 		manager.add(fRefreshAction);
 		manager.add(new Separator());
 
 		if (!getSite().getSelectionProvider().getSelection().isEmpty()) {
-			MenuManager showInSubMenu = new MenuManager(getShowInMenuLabel());
-			IWorkbenchWindow workbenchWindow = getSite().getWorkbenchWindow();
+			MenuManager showInSubMenu= new MenuManager(getShowInMenuLabel());
+			IWorkbenchWindow workbenchWindow= getSite().getWorkbenchWindow();
 			showInSubMenu.add(ContributionItemFactory.VIEWS_SHOW_IN.create(workbenchWindow));
 			manager.add(showInSubMenu);
 		}
-		//		addElementActionsOrNot(manager);
+		// addElementActionsOrNot(manager);
 		manager.add(new Separator());
 
-		//		manager.add(fCopyAction);
+		// manager.add(fCopyAction);
 		manager.add(new Separator());
 
-		//		fDrillDownAdapter.addNavigationActions(manager);
+		// fDrillDownAdapter.addNavigationActions(manager);
 		manager.add(new Separator());
 		// Other plug-ins can contribute there actions here
 		manager.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
 		manager.add(new Separator());
-		//		addCompareActionOrNot(manager);
+		// addCompareActionOrNot(manager);
 		manager.add(fPropertiesAction);
 	}
 
 	private String getShowInMenuLabel() {
-		String keyBinding = null;
+		String keyBinding= null;
 
-		IBindingService bindingService = PlatformUI.getWorkbench().getAdapter(IBindingService.class);
+		IBindingService bindingService= PlatformUI.getWorkbench().getAdapter(IBindingService.class);
 		if (bindingService != null) {
-			keyBinding = bindingService
+			keyBinding= bindingService
 					.getBestActiveBindingFormattedFor(IWorkbenchCommandConstants.NAVIGATE_SHOW_IN_QUICK_MENU);
 		}
 
-		if (keyBinding == null)
-		{
-			keyBinding = ""; //$NON-NLS-1$
+		if (keyBinding == null) {
+			keyBinding= ""; //$NON-NLS-1$
 		}
 
 		return "Sho&w In" + '\t' + keyBinding;
@@ -442,11 +442,11 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 
 	@Override
 	public boolean show(ShowInContext context) {
-		ISelection selection = context.getSelection();
+		ISelection selection= context.getSelection();
 		if (selection instanceof IStructuredSelection) {
-			IStructuredSelection structuredSelection = (IStructuredSelection) selection;
+			IStructuredSelection structuredSelection= (IStructuredSelection) selection;
 			if (structuredSelection.size() >= 1) {
-				List<Object> input = new ArrayList<>();
+				List<Object> input= new ArrayList<>();
 				for (Object item : structuredSelection) {
 					if (item instanceof IJavaElement || item instanceof IResource
 							|| item instanceof IJarEntryResource) {
@@ -460,11 +460,11 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 			}
 		}
 
-		Object input = context.getInput();
+		Object input= context.getInput();
 		if (input instanceof IEditorInput) {
-			SourceType elementOfInput = (SourceType) getElementOfInput((IEditorInput) context.getInput());
+			SourceType elementOfInput= (SourceType) getElementOfInput((IEditorInput) context.getInput());
 			if (elementOfInput != null) {
-//				setSingleInput(elementOfInput);
+				//				setSingleInput(elementOfInput);
 				return true;
 			}
 		}
@@ -477,14 +477,14 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 	}
 
 	Object getElementOfInput(IEditorInput input) {
-		Object adapted = input.getAdapter(IClassFile.class);
+		Object adapted= input.getAdapter(IClassFile.class);
 		if (adapted != null) {
 			return adapted;
 		}
 
 		if (input instanceof IFileEditorInput) {
-			IFile file = ((IFileEditorInput) input).getFile();
-			IJavaElement javaElement = JavaCore.create(file);
+			IFile file= ((IFileEditorInput) input).getFile();
+			IJavaElement javaElement= JavaCore.create(file);
 			if (javaElement != null) {
 				return javaElement;
 			}
@@ -501,11 +501,11 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 
 	@Override
 	public ShowInContext getShowInContext() {
-		IWorkbenchPartSite site = getSite();
+		IWorkbenchPartSite site= getSite();
 		if (site == null) {
 			return null;
 		}
-		ISelectionProvider selectionProvider = site.getSelectionProvider();
+		ISelectionProvider selectionProvider= site.getSelectionProvider();
 		if (selectionProvider == null) {
 			return null;
 		}
@@ -513,27 +513,26 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 	}
 
 	void setInput(List<?> javaElementsOrResources) {
-//		fInput = new JERoot(javaElementsOrResources);
-//		tableViewer.setInput(fInput);
+		//		fInput = new JERoot(javaElementsOrResources);
+		//		tableViewer.setInput(fInput);
 		tableViewer.setInput(javaElementsOrResources);
-			JHViewContentProvider tcp = (JHViewContentProvider) tableViewer.getContentProvider();
-		Object[] elements = tcp.getElements(javaElementsOrResources);
+		JHViewContentProvider tcp= (JHViewContentProvider) tableViewer.getContentProvider();
+		Object[] elements= tcp.getElements(javaElementsOrResources);
 		if (elements.length > 0) {
 			tableViewer.setSelection(new StructuredSelection(elements[0]));
-			//			if (elements.length == 1) {
-			//				tableViewer.setExpandedState(elements[0], true);
-			//			}
+			// if (elements.length == 1) {
+			// tableViewer.setExpandedState(elements[0], true);
+			// }
 		}
-		//		fDrillDownAdapter.reset();
+		// fDrillDownAdapter.reset();
 	}
 
 	@Override
 	public <T> T getAdapter(Class<T> adapter) {
-		//		if (adapter == IPropertySheetPage.class) {
-		//			return (T) getPropertySheetPage();
-		//		}
+		// if (adapter == IPropertySheetPage.class) {
+		// return (T) getPropertySheetPage();
+		// }
 		return super.getAdapter(adapter);
 	}
-
 
 }

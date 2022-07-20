@@ -59,17 +59,19 @@ public class UseIteratorToForLoopCleanUpCore extends AbstractCleanUpCore {
 
 	@Override
 	public ICleanUpFixCore createFixCore(final CleanUpContextCore context) throws CoreException {
-		CompilationUnit compilationUnit = context.getAST();
+		CompilationUnit compilationUnit= context.getAST();
 		if (compilationUnit == null) {
 			return null;
 		}
-		EnumSet<UseIteratorToForLoopFixCore> computeFixSet = computeFixSet();
-		if (!isEnabled(CONTROL_STATEMENTS_CONVERT_FOR_LOOP_TO_ENHANCED) || computeFixSet.isEmpty() || !JavaModelUtil.is1d8OrHigher(compilationUnit.getJavaElement().getJavaProject())) {
+		EnumSet<UseIteratorToForLoopFixCore> computeFixSet= computeFixSet();
+		if (!isEnabled(CONTROL_STATEMENTS_CONVERT_FOR_LOOP_TO_ENHANCED) || computeFixSet.isEmpty()
+				|| !JavaModelUtil.is1d8OrHigher(compilationUnit.getJavaElement().getJavaProject())) {
 			return null;
 		}
-		Set<CompilationUnitRewriteOperation> operations = new LinkedHashSet<>();
-		Set<ASTNode> nodesprocessed = new HashSet<>();
-		computeFixSet.forEach(i -> i.findOperations(compilationUnit, operations, nodesprocessed, isEnabled(CONTROL_STATEMENTS_CONVERT_FOR_LOOP_ONLY_IF_LOOP_VAR_USED)));
+		Set<CompilationUnitRewriteOperation> operations= new LinkedHashSet<>();
+		Set<ASTNode> nodesprocessed= new HashSet<>();
+		computeFixSet.forEach(i -> i.findOperations(compilationUnit, operations, nodesprocessed,
+				isEnabled(CONTROL_STATEMENTS_CONVERT_FOR_LOOP_ONLY_IF_LOOP_VAR_USED)));
 		if (operations.isEmpty()) {
 			return null;
 		}
@@ -79,27 +81,29 @@ public class UseIteratorToForLoopCleanUpCore extends AbstractCleanUpCore {
 
 	@Override
 	public String[] getStepDescriptions() {
-		List<String> result = new ArrayList<>();
+		List<String> result= new ArrayList<>();
 		if (isEnabled(CONTROL_STATEMENTS_CONVERT_FOR_LOOP_TO_ENHANCED)) {
 			result.add(Messages.format(ToolsCleanUp_description, new Object[] { String.join(",", //$NON-NLS-1$
-					computeFixSet().stream().map(UseIteratorToForLoopFixCore::toString).collect(Collectors.toList())) }));
+					computeFixSet().stream().map(UseIteratorToForLoopFixCore::toString)
+					.collect(Collectors.toList())) }));
 		}
 		return result.toArray(new String[0]);
 	}
 
 	@Override
 	public String getPreview() {
-		StringBuilder sb = new StringBuilder();
-		EnumSet<UseIteratorToForLoopFixCore> computeFixSet = computeFixSet();
-		EnumSet.allOf(UseIteratorToForLoopFixCore.class).forEach(e -> sb.append(e.getPreview(computeFixSet.contains(e))));
+		StringBuilder sb= new StringBuilder();
+		EnumSet<UseIteratorToForLoopFixCore> computeFixSet= computeFixSet();
+		EnumSet.allOf(UseIteratorToForLoopFixCore.class)
+		.forEach(e -> sb.append(e.getPreview(computeFixSet.contains(e))));
 		return sb.toString();
 	}
 
 	private EnumSet<UseIteratorToForLoopFixCore> computeFixSet() {
-		EnumSet<UseIteratorToForLoopFixCore> fixSet = EnumSet.noneOf(UseIteratorToForLoopFixCore.class);
+		EnumSet<UseIteratorToForLoopFixCore> fixSet= EnumSet.noneOf(UseIteratorToForLoopFixCore.class);
 
 		if (isEnabled(CONTROL_STATEMENTS_CONVERT_FOR_LOOP_TO_ENHANCED)) {
-			fixSet = EnumSet.allOf(UseIteratorToForLoopFixCore.class);
+			fixSet= EnumSet.allOf(UseIteratorToForLoopFixCore.class);
 		}
 		return fixSet;
 	}

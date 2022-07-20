@@ -179,8 +179,9 @@ public class VisitorTest {
 		ASTVisitor astvisitor=new ASTVisitor() {
 			@Override
 			public boolean visit(MethodInvocation node) {
-				if(!node.getName().getIdentifier().equals(name))
+				if(!node.getName().getIdentifier().equals(name)) {
 					return true;
+				}
 				return VisitorTest.this.handleMethodInvocation(node,null);
 			}
 		};
@@ -212,8 +213,9 @@ public class VisitorTest {
 		ASTVisitor astvisitor=new ASTVisitor() {
 			@Override
 			public boolean visit(MethodInvocation node) {
-				if(!node.getName().getIdentifier().equals(name))
+				if(!node.getName().getIdentifier().equals(name)) {
 					return true;
+				}
 				return VisitorTest.this.handleMethodInvocation(node,null);
 			}
 		};
@@ -532,8 +534,9 @@ public class VisitorTest {
 						SimpleName sn= ASTNodes.as(element2, SimpleName.class);
 						if (sn !=null) {
 							String identifier = sn.getIdentifier();
-							if(!name.equals(identifier))
+							if(!name.equals(identifier)) {
 								return true;
+							}
 							pernodemap2.put("init", init_iterator);
 							pernodemap2.put("while", whilestatement);
 							pernodemap2.put("next", mi);
@@ -650,8 +653,9 @@ public class VisitorTest {
 			SimpleName sn= ASTNodes.as(element2, SimpleName.class);
 			if (sn !=null) {
 				String identifier = sn.getIdentifier();
-				if(!name.equals(identifier))
+				if(!name.equals(identifier)) {
 					return true;
+				}
 				if(name.equals(holder.get("whilevarname"))) {
 					System.out.println("=====================");
 					System.out.println("iterator: "+holder.get("init").toString().trim());

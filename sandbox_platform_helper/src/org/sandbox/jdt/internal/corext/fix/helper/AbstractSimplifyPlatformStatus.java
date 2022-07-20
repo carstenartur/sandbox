@@ -44,8 +44,8 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 	String istatus;
 
 	public AbstractSimplifyPlatformStatus(String methodname, String istatus) {
-		this.methodname = methodname;
-		this.istatus = istatus;
+		this.methodname= methodname;
+		this.istatus= istatus;
 	}
 
 	/**
@@ -59,7 +59,7 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 	 *         name if there was a conflict
 	 */
 	protected Name addImport(String typeName, final CompilationUnitRewrite cuRewrite, AST ast) {
-		String importedName = cuRewrite.getImportRewrite().addImport(typeName);
+		String importedName= cuRewrite.getImportRewrite().addImport(typeName);
 		return ast.newName(importedName);
 	}
 
@@ -71,14 +71,14 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 			compilationUnit.accept(new ASTVisitor() {
 				@Override
 				public boolean visit(final ClassInstanceCreation visited) {
-					if (nodesprocessed.contains(visited) || ((visited.arguments().size() != 3) && (visited.arguments().size() != 4)
-							&& (visited.arguments().size() != 5))) {
+					if (nodesprocessed.contains(visited) || ((visited.arguments().size() != 3)
+							&& (visited.arguments().size() != 4) && (visited.arguments().size() != 5))) {
 						return false;
 					}
 
-					ITypeBinding binding = visited.resolveTypeBinding();
-					if ((binding!=null) && (Status.class.getSimpleName().equals(binding.getName()))) {
-						List<Expression> arguments = visited.arguments();
+					ITypeBinding binding= visited.resolveTypeBinding();
+					if ((binding != null) && (Status.class.getSimpleName().equals(binding.getName()))) {
+						List<Expression> arguments= visited.arguments();
 						if (istatus.equals(arguments.get(0).toString())) {
 							operations.add(fixcore.rewrite(visited));
 							nodesprocessed.add(visited);
@@ -96,29 +96,31 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 
 	public void rewrite(SimplifyPlatformStatusFixCore upp, final ClassInstanceCreation visited,
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
-		ASTRewrite rewrite = cuRewrite.getASTRewrite();
-		AST ast = cuRewrite.getRoot().getAST();
+		ASTRewrite rewrite= cuRewrite.getASTRewrite();
+		AST ast= cuRewrite.getRoot().getAST();
 		/**
 		 * Add call to Status.warning(),Status.error() and Status.info()
 		 */
-		MethodInvocation staticCall = ast.newMethodInvocation();
+		MethodInvocation staticCall= ast.newMethodInvocation();
 		staticCall.setExpression(ASTNodeFactory.newName(ast, Status.class.getSimpleName()));
 		staticCall.setName(ast.newSimpleName(methodname));
-		List<ASTNode> arguments = visited.arguments();
-		List<ASTNode> staticCallArguments = staticCall.arguments();
-		int positionmessage = arguments.size() == 5 ? 3 : 2;
+		List<ASTNode> arguments= visited.arguments();
+		List<ASTNode> staticCallArguments= staticCall.arguments();
+		int positionmessage= arguments.size() == 5 ? 3 : 2;
 		staticCallArguments.add(ASTNodes.createMoveTarget(rewrite,
 				ASTNodes.getUnparenthesedExpression(arguments.get(positionmessage))));
 		switch (arguments.size()) {
 		case 4:
-			ASTNode node = arguments.get(3);
-			if (!node.toString().equals("null"))
+			ASTNode node= arguments.get(3);
+			if (!node.toString().equals("null")) {
 				staticCallArguments.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(node)));
+			}
 			break;
 		case 5:
-			ASTNode node2 = arguments.get(4);
-			if (!node2.toString().equals("null"))
+			ASTNode node2= arguments.get(4);
+			if (!node2.toString().equals("null")) {
 				staticCallArguments.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(node2)));
+			}
 			break;
 		case 3:
 		default:

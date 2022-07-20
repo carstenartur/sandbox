@@ -19,8 +19,8 @@ import org.eclipse.jface.viewers.TableViewer;
 
 public class DeclaringMethodColumn extends AbstractColumn {
 
-	private static final int bounds = 100;
-	private static final String title = "DeclaringMethod";
+	private static final int bounds= 100;
+	private static final String title= "DeclaringMethod";
 
 	public DeclaringMethodColumn() {
 	}
@@ -31,8 +31,8 @@ public class DeclaringMethodColumn extends AbstractColumn {
 		createTableViewerColumn(viewer, title, bounds, pos).setLabelProvider(new AlternatingColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
-				IVariableBinding p = (IVariableBinding) element;
-				IMethodBinding declaringMethod = p.getDeclaringMethod();
+				IVariableBinding p= (IVariableBinding) element;
+				IMethodBinding declaringMethod= p.getDeclaringMethod();
 				if (declaringMethod != null) {
 					return declaringMethod.getName();
 				}
@@ -43,9 +43,9 @@ public class DeclaringMethodColumn extends AbstractColumn {
 
 	@Override
 	protected int compare(IVariableBinding p1, IVariableBinding p2) {
-		IMethodBinding declaringMethod1 = p1.getDeclaringMethod();
-		IMethodBinding declaringMethod2 = p2.getDeclaringMethod();
-		if (declaringMethod1 != null && declaringMethod2!= null) {
+		IMethodBinding declaringMethod1= p1.getDeclaringMethod();
+		IMethodBinding declaringMethod2= p2.getDeclaringMethod();
+		if (declaringMethod1 != null && declaringMethod2 != null) {
 			return declaringMethod1.getName().compareTo(declaringMethod2.getName());
 		}
 		return 0;

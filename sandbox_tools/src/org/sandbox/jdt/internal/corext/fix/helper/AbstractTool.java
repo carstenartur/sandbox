@@ -43,27 +43,27 @@ public abstract class AbstractTool<T> {
 		return typeBinding.getQualifiedName().equals(typename);
 	}
 
-	public abstract void find(UseIteratorToForLoopFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations,
-			Set<ASTNode> nodesprocessed, boolean createForIfVarNotUsed);
+	public abstract void find(UseIteratorToForLoopFixCore fixcore, CompilationUnit compilationUnit,
+			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed,
+			boolean createForIfVarNotUsed);
 
-	public abstract void rewrite(UseIteratorToForLoopFixCore useExplicitEncodingFixCore, T holder, CompilationUnitRewrite cuRewrite,
-			TextEditGroup group);
+	public abstract void rewrite(UseIteratorToForLoopFixCore useExplicitEncodingFixCore, T holder,
+			CompilationUnitRewrite cuRewrite, TextEditGroup group);
 
 	/**
-	 * Adds an import to the class. This method should be used for every class reference added to
-	 * the generated code.
+	 * Adds an import to the class. This method should be used for every class
+	 * reference added to the generated code.
 	 *
-	 * @param typeName a fully qualified name of a type
+	 * @param typeName  a fully qualified name of a type
 	 * @param cuRewrite CompilationUnitRewrite
-	 * @param ast AST
-	 * @return simple name of a class if the import was added and fully qualified name if there was
-	 *         a conflict
+	 * @param ast       AST
+	 * @return simple name of a class if the import was added and fully qualified
+	 *         name if there was a conflict
 	 */
 	protected Name addImport(String typeName, final CompilationUnitRewrite cuRewrite, AST ast) {
 		String importedName= cuRewrite.getImportRewrite().addImport(typeName);
 		return ast.newName(importedName);
 	}
-
 
 	public abstract String getPreview(boolean afterRefactoring);
 

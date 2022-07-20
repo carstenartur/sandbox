@@ -13,7 +13,6 @@
  *******************************************************************************/
 package org.sandbox.jdt.ui.helper.views;
 
-
 import java.util.Arrays;
 import java.util.List;
 
@@ -38,55 +37,57 @@ import org.eclipse.jface.viewers.Viewer;
 
 public class JHViewContentProvider implements IStructuredContentProvider {
 
-//	protected static final JEAttribute[] EMPTY = new JEAttribute[0];
+	//	protected static final JEAttribute[] EMPTY = new JEAttribute[0];
 
 	@Override
 	public Object[] getElements(Object inputElement) {
-		VarVisitor visitor = new VarVisitor(this);
-//		if (inputElement instanceof JEAttribute) {
-//			JEAttribute jeAttribute = (JEAttribute) inputElement;
-//			if (jeAttribute instanceof JERoot) {
-//				JERoot wrappedObject = (JERoot) jeAttribute;
-//				JEAttribute ja = wrappedObject.getChildren()[0];
-//				JavaElement label = (JavaElement) ja;
+		VarVisitor visitor= new VarVisitor(this);
+		//		if (inputElement instanceof JEAttribute) {
+		//			JEAttribute jeAttribute = (JEAttribute) inputElement;
+		//			if (jeAttribute instanceof JERoot) {
+		//				JERoot wrappedObject = (JERoot) jeAttribute;
+		//				JEAttribute ja = wrappedObject.getChildren()[0];
+		//				JavaElement label = (JavaElement) ja;
 		if (inputElement instanceof List) {
-			List list=(List)inputElement;
-			if(list.size()==1) {
+			List list= (List) inputElement;
+			if (list.size() == 1) {
 
-				Object object = list.get(0);
-				if(object==null)return new Object[0];
-				if(object instanceof WorkspaceRoot) {
-					WorkspaceRoot root=(WorkspaceRoot) object;
+				Object object= list.get(0);
+				if (object == null) {
+					return new Object[0];
+				}
+				if (object instanceof WorkspaceRoot) {
+					WorkspaceRoot root= (WorkspaceRoot) object;
 					System.err.println(root.getName());
 
 				} else if (object instanceof File) {
-					File file=(File) object;
+					File file= (File) object;
 					System.err.println(file.getName());
-				} else
-			if (object instanceof JavaElement) {
-				IJavaElement javaElement = (IJavaElement)object;
-				if (javaElement instanceof ICompilationUnit) {
-					// now create the AST for the ICompilationUnits
-					CompilationUnit parse = parse((ICompilationUnit) javaElement);
-					parse.accept(visitor);
-				} else if (javaElement instanceof IJavaProject) {
-					// now create the AST for the ICompilationUnits
-					IJavaProject jproject = (IJavaProject) javaElement;
-					try {
-						Arrays.asList(jproject.getAllPackageFragmentRoots()).parallelStream().forEach(pfr -> {
-							extracted(visitor, pfr);
-						});
-					} catch (JavaModelException e) {
-						e.printStackTrace();
+				} else if (object instanceof JavaElement) {
+					IJavaElement javaElement= (IJavaElement) object;
+					if (javaElement instanceof ICompilationUnit) {
+						// now create the AST for the ICompilationUnits
+						CompilationUnit parse= parse((ICompilationUnit) javaElement);
+						parse.accept(visitor);
+					} else if (javaElement instanceof IJavaProject) {
+						// now create the AST for the ICompilationUnits
+						IJavaProject jproject= (IJavaProject) javaElement;
+						try {
+							Arrays.asList(jproject.getAllPackageFragmentRoots()).parallelStream().forEach(pfr -> {
+								extracted(visitor, pfr);
+							});
+						} catch (JavaModelException e) {
+							e.printStackTrace();
+						}
+					} else if (javaElement instanceof IPackageFragment) {
+						IPackageFragment pf= (IPackageFragment) javaElement;
+						extracted(visitor, pf);
+					} else if (javaElement instanceof IPackageFragmentRoot) {
+						IPackageFragmentRoot pf= (IPackageFragmentRoot) javaElement;
+						extracted(visitor, pf);
 					}
-				} else if (javaElement instanceof IPackageFragment) {
-					IPackageFragment pf = (IPackageFragment) javaElement;
-					extracted(visitor, pf);
-				} else if (javaElement instanceof IPackageFragmentRoot) {
-					IPackageFragmentRoot pf = (IPackageFragmentRoot) javaElement;
-					extracted(visitor, pf);
 				}
-			}}
+			}
 		}
 		for (IVariableBinding binding : visitor.getVars()) {
 			System.out.println("Var name: " + binding.getName() + " Return type: " + binding.toString());
@@ -114,7 +115,7 @@ public class JHViewContentProvider implements IStructuredContentProvider {
 		try {
 			for (ICompilationUnit unit : pf.getCompilationUnits()) {
 				// now create the AST for the ICompilationUnits
-				CompilationUnit parse = parse(unit);
+				CompilationUnit parse= parse(unit);
 				parse.accept(visitor);
 			}
 		} catch (JavaModelException e1) {
@@ -123,7 +124,7 @@ public class JHViewContentProvider implements IStructuredContentProvider {
 	}
 
 	private static CompilationUnit parse(ICompilationUnit unit) {
-		ASTParser parser = ASTParser.newParser(AST.JLS_Latest);
+		ASTParser parser= ASTParser.newParser(AST.JLS_Latest);
 		parser.setKind(ASTParser.K_COMPILATION_UNIT);
 		parser.setSource(unit);
 		parser.setResolveBindings(true);

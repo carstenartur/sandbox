@@ -8,7 +8,6 @@ public class MultiFixMessages {
 	public static String PlatformStatusCleanUp_description;
 	public static String PlatformStatusCleanUpFix_refactor;
 
-
 	static {
 		// initialize resource bundle
 		NLS.initializeMessages(BUNDLE_NAME, MultiFixMessages.class);

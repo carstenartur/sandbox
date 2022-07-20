@@ -33,7 +33,7 @@ import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 public class StatusWarningSimplifyPlatformStatus extends AbstractSimplifyPlatformStatus<ClassInstanceCreation> {
 
 	public StatusWarningSimplifyPlatformStatus() {
-		super(METHOD_WARNING,"IStatus.WARNING");
+		super(METHOD_WARNING, "IStatus.WARNING");
 	}
 
 	@Override

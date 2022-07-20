@@ -18,8 +18,8 @@ import org.eclipse.jface.viewers.TableViewer;
 
 public class NameColumn extends AbstractColumn {
 
-	private static final int bounds = 100;
-	private static final String title = "Variable name";
+	private static final int bounds= 100;
+	private static final String title= "Variable name";
 
 	public NameColumn() {
 	}
@@ -30,7 +30,7 @@ public class NameColumn extends AbstractColumn {
 		createTableViewerColumn(viewer, title, bounds, pos).setLabelProvider(new AlternatingColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
-				IVariableBinding p = (IVariableBinding) element;
+				IVariableBinding p= (IVariableBinding) element;
 				return p.getName();
 			}
 		});

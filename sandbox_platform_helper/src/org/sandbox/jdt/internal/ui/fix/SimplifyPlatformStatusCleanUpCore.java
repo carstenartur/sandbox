@@ -58,17 +58,18 @@ public class SimplifyPlatformStatusCleanUpCore extends AbstractCleanUpCore {
 
 	@Override
 	public ICleanUpFixCore createFixCore(final CleanUpContextCore context) throws CoreException {
-		CompilationUnit compilationUnit = context.getAST();
+		CompilationUnit compilationUnit= context.getAST();
 		if (compilationUnit == null) {
 			return null;
 		}
-		EnumSet<SimplifyPlatformStatusFixCore> computeFixSet = computeFixSet();
-		if (!isEnabled(SIMPLIFY_STATUS_CLEANUP) || computeFixSet.isEmpty() || !JavaModelUtil.is9OrHigher(compilationUnit.getJavaElement().getJavaProject())) {
+		EnumSet<SimplifyPlatformStatusFixCore> computeFixSet= computeFixSet();
+		if (!isEnabled(SIMPLIFY_STATUS_CLEANUP) || computeFixSet.isEmpty()
+				|| !JavaModelUtil.is9OrHigher(compilationUnit.getJavaElement().getJavaProject())) {
 			return null;
 		}
-		Set<CompilationUnitRewriteOperation> operations = new LinkedHashSet<>();
-		Set<ASTNode> nodesprocessed = new HashSet<>();
-		for (var i:computeFixSet) {
+		Set<CompilationUnitRewriteOperation> operations= new LinkedHashSet<>();
+		Set<ASTNode> nodesprocessed= new HashSet<>();
+		for (var i : computeFixSet) {
 			i.findOperations(compilationUnit, operations, nodesprocessed);
 		}
 		if (operations.isEmpty()) {
@@ -80,14 +81,13 @@ public class SimplifyPlatformStatusCleanUpCore extends AbstractCleanUpCore {
 
 	@Override
 	public String[] getStepDescriptions() {
-		List<String> result = new ArrayList<>();
+		List<String> result= new ArrayList<>();
 		if (isEnabled(SIMPLIFY_STATUS_CLEANUP)) {
-			String with = "";
+			String with= "";
 			result.add(
 					Messages.format(PlatformStatusCleanUp_description,
-							new Object[] {
-									String.join(",", computeFixSet().stream() //$NON-NLS-1$
-											.map(SimplifyPlatformStatusFixCore::toString).collect(Collectors.toList())),
+							new Object[] { String.join(",", computeFixSet().stream() //$NON-NLS-1$
+									.map(SimplifyPlatformStatusFixCore::toString).collect(Collectors.toList())),
 									with }));
 		}
 		return result.toArray(new String[0]);
@@ -95,18 +95,18 @@ public class SimplifyPlatformStatusCleanUpCore extends AbstractCleanUpCore {
 
 	@Override
 	public String getPreview() {
-		StringBuilder sb = new StringBuilder();
-		EnumSet<SimplifyPlatformStatusFixCore> computeFixSet = computeFixSet();
+		StringBuilder sb= new StringBuilder();
+		EnumSet<SimplifyPlatformStatusFixCore> computeFixSet= computeFixSet();
 		EnumSet.allOf(SimplifyPlatformStatusFixCore.class)
 		.forEach(e -> sb.append(e.getPreview(computeFixSet.contains(e))));
 		return sb.toString();
 	}
 
 	private EnumSet<SimplifyPlatformStatusFixCore> computeFixSet() {
-		EnumSet<SimplifyPlatformStatusFixCore> fixSet = EnumSet.noneOf(SimplifyPlatformStatusFixCore.class);
+		EnumSet<SimplifyPlatformStatusFixCore> fixSet= EnumSet.noneOf(SimplifyPlatformStatusFixCore.class);
 
 		if (isEnabled(SIMPLIFY_STATUS_CLEANUP)) {
-			fixSet = EnumSet.allOf(SimplifyPlatformStatusFixCore.class);
+			fixSet= EnumSet.allOf(SimplifyPlatformStatusFixCore.class);
 		}
 		return fixSet;
 	}

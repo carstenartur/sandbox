@@ -18,8 +18,8 @@ import org.eclipse.jface.viewers.TableViewer;
 
 public class QualifiednameColumn extends AbstractColumn {
 
-	private static final int bounds = 100;
-	private static final String title = "Type";
+	private static final int bounds= 100;
+	private static final String title= "Type";
 
 	public QualifiednameColumn() {
 	}
@@ -30,7 +30,7 @@ public class QualifiednameColumn extends AbstractColumn {
 		createTableViewerColumn(viewer, title, bounds, pos).setLabelProvider(new AlternatingColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
-				IVariableBinding p = (IVariableBinding) element;
+				IVariableBinding p= (IVariableBinding) element;
 				return p.getType().getQualifiedName();
 			}
 		});
@@ -38,8 +38,8 @@ public class QualifiednameColumn extends AbstractColumn {
 
 	@Override
 	protected int compare(IVariableBinding p1, IVariableBinding p2) {
-		String qname1 = p1.getType().getQualifiedName();
-		String qname2 = p2.getType().getQualifiedName();
+		String qname1= p1.getType().getQualifiedName();
+		String qname2= p2.getType().getQualifiedName();
 		if (qname1 != null && qname2 != null) {
 			return qname1.compareTo(qname2);
 		}

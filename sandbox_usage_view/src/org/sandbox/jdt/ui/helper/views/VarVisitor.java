@@ -31,16 +31,16 @@ final class VarVisitor extends ASTVisitor {
 	 * @param jhViewContentProvider
 	 */
 	VarVisitor(JHViewContentProvider jhViewContentProvider) {
-		varvisitor = jhViewContentProvider;
+		varvisitor= jhViewContentProvider;
 	}
 
-	Set<IVariableBinding> methods = new HashSet<>();
+	Set<IVariableBinding> methods= new HashSet<>();
 
 	@Override
 	public boolean visit(SimpleName node) {
-		IBinding binding = node.resolveBinding();
+		IBinding binding= node.resolveBinding();
 		if (binding instanceof IVariableBinding) {
-			IVariableBinding varBinding = (IVariableBinding) binding;
+			IVariableBinding varBinding= (IVariableBinding) binding;
 			methods.add(varBinding);
 		}
 		return true;

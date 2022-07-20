@@ -373,7 +373,7 @@ public enum VisitorEnum {
 	 */
 	QualifiedType(ASTNode.QUALIFIED_TYPE),
 	/**
-	 * 
+	 *
 	 */
 	ModuleQualifiedName(ASTNode.MODULE_QUALIFIED_NAME),
 

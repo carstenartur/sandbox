@@ -37,34 +37,40 @@ public enum UseIteratorToForLoopFixCore {
 
 	@SuppressWarnings("unchecked")
 	UseIteratorToForLoopFixCore(AbstractTool<? extends WhileLoopToChangeHit> explicitencoding) {
-		this.iteratortofor=(AbstractTool<WhileLoopToChangeHit>) explicitencoding;
+		this.iteratortofor= (AbstractTool<WhileLoopToChangeHit>) explicitencoding;
 	}
 
 	public String getPreview(boolean i) {
 		return iteratortofor.getPreview(i);
 	}
+
 	/**
-	 * Compute set of CompilationUnitRewriteOperation to refactor supported situations
+	 * Compute set of CompilationUnitRewriteOperation to refactor supported
+	 * situations
 	 *
-	 * @param compilationUnit unit to search in
-	 * @param operations set of all CompilationUnitRewriteOperations created already
-	 * @param nodesprocessed list to remember nodes already processed
-	 * @param createForOnlyIfVarUsed true if for loop should be created only only if loop var used within
+	 * @param compilationUnit        unit to search in
+	 * @param operations             set of all CompilationUnitRewriteOperations
+	 *                               created already
+	 * @param nodesprocessed         list to remember nodes already processed
+	 * @param createForOnlyIfVarUsed true if for loop should be created only only if
+	 *                               loop var used within
 	 */
-	public void findOperations(final CompilationUnit compilationUnit, final Set<CompilationUnitRewriteOperation> operations,
-			final Set<ASTNode> nodesprocessed, boolean createForOnlyIfVarUsed) {
+	public void findOperations(final CompilationUnit compilationUnit,
+			final Set<CompilationUnitRewriteOperation> operations, final Set<ASTNode> nodesprocessed,
+			boolean createForOnlyIfVarUsed) {
 		iteratortofor.find(this, compilationUnit, operations, nodesprocessed, createForOnlyIfVarUsed);
 	}
 
 	public CompilationUnitRewriteOperation rewrite(final WhileLoopToChangeHit hit) {
 		return new CompilationUnitRewriteOperation() {
 			@Override
-			public void rewriteAST(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel) throws CoreException {
+			public void rewriteAST(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel)
+					throws CoreException {
 				TextEditGroup group= createTextEditGroup(MultiFixMessages.ToolsCleanUp_description, cuRewrite);
 				TightSourceRangeComputer rangeComputer;
 				ASTRewrite rewrite= cuRewrite.getASTRewrite();
 				if (rewrite.getExtendedSourceRangeComputer() instanceof TightSourceRangeComputer) {
-					rangeComputer= (TightSourceRangeComputer)rewrite.getExtendedSourceRangeComputer();
+					rangeComputer= (TightSourceRangeComputer) rewrite.getExtendedSourceRangeComputer();
 				} else {
 					rangeComputer= new TightSourceRangeComputer();
 				}

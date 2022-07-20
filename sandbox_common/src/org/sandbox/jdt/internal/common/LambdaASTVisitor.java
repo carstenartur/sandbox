@@ -1010,7 +1010,7 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	public void endVisit(AnnotationTypeDeclaration node) {
 		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.AnnotationTypeDeclaration)) {
 			((BiConsumer<AnnotationTypeDeclaration, E>) (this.helperVisitor.consumermap.get(VisitorEnum.AnnotationTypeDeclaration)))
-					.accept(node, this.helperVisitor.dataholder);
+			.accept(node, this.helperVisitor.dataholder);
 		}
 	}
 
@@ -1026,7 +1026,7 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	public void endVisit(AnonymousClassDeclaration node) {
 		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.AnonymousClassDeclaration)) {
 			((BiConsumer<AnonymousClassDeclaration, E>) (this.helperVisitor.consumermap.get(VisitorEnum.AnonymousClassDeclaration)))
-					.accept(node, this.helperVisitor.dataholder);
+			.accept(node, this.helperVisitor.dataholder);
 		}
 	}
 
@@ -1131,7 +1131,7 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	public void endVisit(ClassInstanceCreation node) {
 		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ClassInstanceCreation)) {
 			((BiConsumer<ClassInstanceCreation, E>) (this.helperVisitor.consumermap.get(VisitorEnum.ClassInstanceCreation)))
-					.accept(node, this.helperVisitor.dataholder);
+			.accept(node, this.helperVisitor.dataholder);
 		}
 	}
 
@@ -1147,7 +1147,7 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	public void endVisit(ConditionalExpression node) {
 		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ConditionalExpression)) {
 			((BiConsumer<ConditionalExpression, E>) (this.helperVisitor.consumermap.get(VisitorEnum.ConditionalExpression)))
-					.accept(node, this.helperVisitor.dataholder);
+			.accept(node, this.helperVisitor.dataholder);
 		}
 	}
 
@@ -1155,7 +1155,7 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	public void endVisit(ConstructorInvocation node) {
 		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ConstructorInvocation)) {
 			((BiConsumer<ConstructorInvocation, E>) (this.helperVisitor.consumermap.get(VisitorEnum.ConstructorInvocation)))
-					.accept(node, this.helperVisitor.dataholder);
+			.accept(node, this.helperVisitor.dataholder);
 		}
 	}
 
@@ -1209,7 +1209,7 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	public void endVisit(EnumConstantDeclaration node) {
 		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.EnumConstantDeclaration)) {
 			((BiConsumer<EnumConstantDeclaration, E>) (this.helperVisitor.consumermap.get(VisitorEnum.EnumConstantDeclaration)))
-					.accept(node, this.helperVisitor.dataholder);
+			.accept(node, this.helperVisitor.dataholder);
 		}
 	}
 
@@ -1233,7 +1233,7 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	public void endVisit(ExpressionMethodReference node) {
 		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ExpressionMethodReference)) {
 			((BiConsumer<ExpressionMethodReference, E>) (this.helperVisitor.consumermap.get(VisitorEnum.ExpressionMethodReference)))
-					.accept(node, this.helperVisitor.dataholder);
+			.accept(node, this.helperVisitor.dataholder);
 		}
 	}
 
@@ -1482,7 +1482,7 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	public void endVisit(ParenthesizedExpression node) {
 		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ParenthesizedExpression)) {
 			((BiConsumer<ParenthesizedExpression, E>) (this.helperVisitor.consumermap.get(VisitorEnum.ParenthesizedExpression)))
-					.accept(node, this.helperVisitor.dataholder);
+			.accept(node, this.helperVisitor.dataholder);
 		}
 	}
 
@@ -1589,7 +1589,7 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	public void endVisit(SingleMemberAnnotation node) {
 		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.SingleMemberAnnotation)) {
 			((BiConsumer<SingleMemberAnnotation, E>) (this.helperVisitor.consumermap.get(VisitorEnum.SingleMemberAnnotation)))
-					.accept(node, this.helperVisitor.dataholder);
+			.accept(node, this.helperVisitor.dataholder);
 		}
 	}
 
@@ -1597,7 +1597,7 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	public void endVisit(SingleVariableDeclaration node) {
 		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.SingleVariableDeclaration)) {
 			((BiConsumer<SingleVariableDeclaration, E>) (this.helperVisitor.consumermap.get(VisitorEnum.SingleVariableDeclaration)))
-					.accept(node, this.helperVisitor.dataholder);
+			.accept(node, this.helperVisitor.dataholder);
 		}
 	}
 
@@ -1612,7 +1612,7 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	public void endVisit(SuperConstructorInvocation node) {
 		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.SuperConstructorInvocation)) {
 			((BiConsumer<SuperConstructorInvocation, E>) (this.helperVisitor.consumermap.get(VisitorEnum.SuperConstructorInvocation)))
-					.accept(node, this.helperVisitor.dataholder);
+			.accept(node, this.helperVisitor.dataholder);
 		}
 	}
 
@@ -1628,7 +1628,7 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	public void endVisit(SuperMethodInvocation node) {
 		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.SuperMethodInvocation)) {
 			((BiConsumer<SuperMethodInvocation, E>) (this.helperVisitor.consumermap.get(VisitorEnum.SuperMethodInvocation)))
-					.accept(node, this.helperVisitor.dataholder);
+			.accept(node, this.helperVisitor.dataholder);
 		}
 	}
 
@@ -1667,7 +1667,7 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	public void endVisit(SynchronizedStatement node) {
 		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.SynchronizedStatement)) {
 			((BiConsumer<SynchronizedStatement, E>) (this.helperVisitor.consumermap.get(VisitorEnum.SynchronizedStatement)))
-					.accept(node, this.helperVisitor.dataholder);
+			.accept(node, this.helperVisitor.dataholder);
 		}
 	}
 
@@ -1727,7 +1727,7 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	public void endVisit(TypeDeclarationStatement node) {
 		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.TypeDeclarationStatement)) {
 			((BiConsumer<TypeDeclarationStatement, E>) (this.helperVisitor.consumermap.get(VisitorEnum.TypeDeclarationStatement)))
-					.accept(node, this.helperVisitor.dataholder);
+			.accept(node, this.helperVisitor.dataholder);
 		}
 	}
 
