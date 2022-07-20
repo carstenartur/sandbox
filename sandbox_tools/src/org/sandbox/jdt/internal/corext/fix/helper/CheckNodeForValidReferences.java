@@ -112,9 +112,13 @@ class CheckNodeForValidReferences {
 							if (!fLocalVarsOnly) {
 								if (!simpleNameVarBinding.isField() && !simpleNameVarBinding.isParameter()
 										&& !simpleNameVarBinding.isRecordComponent()) {
+									throw new AbortSearchException();
 								}
-							} else if (simpleNameVarBinding.isField() || simpleNameVarBinding.isParameter()
-									|| simpleNameVarBinding.isRecordComponent()) {
+							} else {
+								if (simpleNameVarBinding.isField() || simpleNameVarBinding.isParameter()
+										|| simpleNameVarBinding.isRecordComponent()) {
+									throw new AbortSearchException();
+								}
 							}
 						}
 					}
