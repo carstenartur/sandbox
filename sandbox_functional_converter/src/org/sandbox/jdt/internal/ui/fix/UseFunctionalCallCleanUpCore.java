@@ -13,7 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.fix;
 
-import static org.sandbox.jdt.internal.corext.fix.MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP;
+import static org.sandbox.jdt.internal.common.MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.FunctionalCallCleanUpFix_refactor;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.FunctionalCallCleanUp_description;
 

@@ -13,10 +13,10 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.fix;
 
-import static org.sandbox.jdt.internal.corext.fix.MYCleanUpConstants.EXPLICITENCODING_AGGREGATE_TO_UTF8;
-import static org.sandbox.jdt.internal.corext.fix.MYCleanUpConstants.EXPLICITENCODING_CLEANUP;
-import static org.sandbox.jdt.internal.corext.fix.MYCleanUpConstants.EXPLICITENCODING_INSERT_UTF8;
-import static org.sandbox.jdt.internal.corext.fix.MYCleanUpConstants.EXPLICITENCODING_KEEP_BEHAVIOR;
+import static org.sandbox.jdt.internal.common.MYCleanUpConstants.EXPLICITENCODING_AGGREGATE_TO_UTF8;
+import static org.sandbox.jdt.internal.common.MYCleanUpConstants.EXPLICITENCODING_CLEANUP;
+import static org.sandbox.jdt.internal.common.MYCleanUpConstants.EXPLICITENCODING_INSERT_UTF8;
+import static org.sandbox.jdt.internal.common.MYCleanUpConstants.EXPLICITENCODING_KEEP_BEHAVIOR;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.ExplicitEncodingCleanUpFix_refactor;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.ExplicitEncodingCleanUp_description;
 
