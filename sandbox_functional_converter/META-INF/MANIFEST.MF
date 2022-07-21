@@ -16,8 +16,10 @@ Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.swt,
  org.eclipse.jface,
  org.eclipse.ui.workbench,
- org.eclipse.jdt.core.manipulation
+ org.eclipse.jdt.core.manipulation,
+ sandbox_common;bundle-version="1.0.0"
 Bundle-ActivationPolicy: lazy
 Eclipse-RegisterBuddy: org.eclipse.jdt.core.manipulation
 Eclipse-BuddyPolicy: global
 Automatic-Module-Name: sandbox.functional.converter
+Import-Package: org.sandbox.jdt.internal.common

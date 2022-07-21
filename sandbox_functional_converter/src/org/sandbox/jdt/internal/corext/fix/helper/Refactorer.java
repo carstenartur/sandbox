@@ -14,7 +14,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import static org.sandbox.jdt.internal.corext.fix.LibStandardNames.METHOD_FOREACH;
+import static org.sandbox.jdt.internal.common.LibStandardNames.METHOD_FOREACH;
 
 //import com.sun.source.tree.BlockTree;
 //import com.sun.source.tree.EnhancedForLoopTree;

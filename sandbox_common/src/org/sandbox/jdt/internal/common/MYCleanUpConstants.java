@@ -11,10 +11,17 @@
  * Contributors:
  *     Carsten Hammer
  *******************************************************************************/
-package org.sandbox.jdt.internal.corext.fix;
+package org.sandbox.jdt.internal.common;
 
+/**
+ * @author chammer
+ *
+ */
 public class MYCleanUpConstants {
 
+	/**
+	 * 
+	 */
 	public static final String EXPLICITENCODING_CLEANUP= "cleanup.explicit_encoding"; //$NON-NLS-1$
 
 	/**
@@ -55,4 +62,13 @@ public class MYCleanUpConstants {
 	 */
 	public static final String EXPLICITENCODING_AGGREGATE_TO_UTF8= "cleanup.explicit_encoding_aggregate_to_utf8"; //$NON-NLS-1$
 
+	/**
+	 * 
+	 */
+	public static final String SIMPLIFY_STATUS_CLEANUP= "cleanup.simplify_status_creation"; //$NON-NLS-1$
+	
+	/**
+	 * 
+	 */
+	public static final String USEFUNCTIONALLOOP_CLEANUP= "cleanup.functionalloop"; //$NON-NLS-1$
 }

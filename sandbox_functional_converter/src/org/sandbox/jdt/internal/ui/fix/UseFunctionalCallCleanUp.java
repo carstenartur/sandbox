@@ -25,7 +25,6 @@ import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 /**
  */
-@SuppressWarnings("restriction")
 public class UseFunctionalCallCleanUp extends AbstractCleanUp {
 	private final UseFunctionalCallCleanUpCore coreCleanUp= new UseFunctionalCallCleanUpCore();
 	public UseFunctionalCallCleanUp(final Map<String, String> options) {

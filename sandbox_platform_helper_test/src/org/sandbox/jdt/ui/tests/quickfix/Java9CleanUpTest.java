@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.sandbox.jdt.internal.corext.fix.MYCleanUpConstants;
+import org.sandbox.jdt.internal.common.MYCleanUpConstants;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava9;
 
 public class Java9CleanUpTest {

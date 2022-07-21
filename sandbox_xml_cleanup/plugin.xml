@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin>
+	<extension point="org.eclipse.jdt.ui.cleanUps">
+		<cleanUp class="org.sandbox.jdt.internal.ui.fix.XMLCleanUp" id="org.eclipse.jdt.ui.cleanup.xmlcleanup" />
+		<!--      runAfter="org.eclipse.jdt.ui.cleanup.unboxing" -->
+	</extension>
+</plugin>
