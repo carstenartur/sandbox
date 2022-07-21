@@ -13,7 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import static org.sandbox.jdt.internal.corext.fix.LibStandardNames.METHOD_GET_BYTES;
+import static org.sandbox.jdt.internal.common.LibStandardNames.METHOD_GET_BYTES;
 
 import java.util.Set;
 

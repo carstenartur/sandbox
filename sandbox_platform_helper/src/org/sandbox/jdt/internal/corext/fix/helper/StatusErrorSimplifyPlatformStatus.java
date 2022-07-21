@@ -13,7 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import static org.sandbox.jdt.internal.corext.fix.LibStandardNames.METHOD_ERROR;
+import static org.sandbox.jdt.internal.common.LibStandardNames.METHOD_ERROR;
 
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 

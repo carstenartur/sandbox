@@ -13,8 +13,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import static org.sandbox.jdt.internal.corext.fix.LibStandardNames.METHOD_DEFAULT_CHARSET;
-import static org.sandbox.jdt.internal.corext.fix.LibStandardNames.METHOD_DISPLAY_NAME;
+import static org.sandbox.jdt.internal.common.LibStandardNames.METHOD_DEFAULT_CHARSET;
+import static org.sandbox.jdt.internal.common.LibStandardNames.METHOD_DISPLAY_NAME;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -32,7 +32,7 @@ import org.eclipse.jdt.internal.corext.dom.ASTNodeFactory;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
-import org.sandbox.jdt.internal.corext.fix.LibStandardNames;
+import org.sandbox.jdt.internal.common.LibStandardNames;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 
 /**

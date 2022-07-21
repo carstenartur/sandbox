@@ -29,7 +29,6 @@ import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
  * is active platform encoding might be different than UTF-8.
  * So it can be dangerous not to use explicit encoding.
  */
-@SuppressWarnings("restriction")
 public class UseExplicitEncodingCleanUp extends AbstractCleanUp {
 	private final UseExplicitEncodingCleanUpCore coreCleanUp= new UseExplicitEncodingCleanUpCore();
 	public UseExplicitEncodingCleanUp(final Map<String, String> options) {

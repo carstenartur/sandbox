@@ -23,7 +23,6 @@ import org.eclipse.swt.widgets.Group;
 import org.sandbox.jdt.internal.corext.fix.MYCleanUpConstants;
 import org.sandbox.jdt.internal.ui.fix.UseExplicitEncodingCleanUp;
 
-@SuppressWarnings("restriction")
 public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 
 	/**

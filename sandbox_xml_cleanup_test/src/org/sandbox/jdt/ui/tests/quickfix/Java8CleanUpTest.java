@@ -65,9 +65,9 @@ public class Java8CleanUpTest {
 	@Disabled
 	@ParameterizedTest
 	@EnumSource(XMLCleanupCases.class)
-	public void testWhile2enhancedForLoopParametrized(XMLCleanupCases test) throws CoreException {
-		IPackageFragment pack= context.fSourceFolder.createPackageFragment("test1", false, null);
-		ICompilationUnit cu= pack.createCompilationUnit("TestDemo.java", test.given, false, null);
+	public void testXMLCleanupParametrized(XMLCleanupCases test) throws CoreException {
+		IPackageFragment pack= context.fSourceFolder.createPackageFragment("test", false, null);
+		ICompilationUnit cu= pack.createCompilationUnit("Test.java", test.given, false, null);
 		context.enable(CleanUpConstants.CONTROL_STATEMENTS_CONVERT_FOR_LOOP_TO_ENHANCED);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
 	}
@@ -102,7 +102,7 @@ public class Java8CleanUpTest {
 	@Disabled
 	@ParameterizedTest
 	@EnumSource(NO_XMLCleanupCases.class)
-	public void testWhile2enhancedForLoop_donttouch(NO_XMLCleanupCases test) throws CoreException {
+	public void testXMLCleanup_donttouch(NO_XMLCleanupCases test) throws CoreException {
 		IPackageFragment pack= context.fSourceFolder.createPackageFragment("test", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("Test.java",test.given,false, null);
 		context.enable(CleanUpConstants.CONTROL_STATEMENTS_CONVERT_FOR_LOOP_TO_ENHANCED);

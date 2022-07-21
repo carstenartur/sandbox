@@ -26,7 +26,6 @@ import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 
 /**
  */
-@SuppressWarnings("restriction")
 public class UseIteratorToForLoopCleanUp extends AbstractCleanUp {
 	private final UseIteratorToForLoopCleanUpCore coreCleanUp= new UseIteratorToForLoopCleanUpCore();
 
