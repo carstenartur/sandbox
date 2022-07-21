@@ -36,6 +36,9 @@
 		<module>sandbox_tools</module>
 		<module>sandbox_tools_feature</module>
 		<module>sandbox_tools_test</module>
+		<module>sandbox_xml_cleanup</module>
+		<module>sandbox_xml_cleanup_feature</module>
+		<module>sandbox_xml_cleanup_test</module>
 		<module>sandbox_usage_view</module>
 		<module>sandbox_usage_view_feature</module>
 		<module>sandbox_product</module>
@@ -262,6 +265,21 @@
 			</dependency>
 			<dependency>
 				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_xml_cleanup</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_xml_cleanup_feature</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_xml_cleanup_test</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_usage_view</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -282,6 +300,13 @@
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
+<!--	<distributionManagement>
+		<repository>
+			<id>github</id>
+			<name>GitHub carstenartur Apache Maven Packages</name>
+			<url>https://maven.pkg.github.com/carstenartur/repository</url>
+		</repository>
+	</distributionManagement> -->
 	<profiles>
 		<profile>
 			<id>web</id>
