@@ -13,7 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.fix;
 
-import static org.sandbox.jdt.internal.corext.fix.MYCleanUpConstants.SIMPLIFY_STATUS_CLEANUP;
+import static org.sandbox.jdt.internal.common.MYCleanUpConstants.SIMPLIFY_STATUS_CLEANUP;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.PlatformStatusCleanUpFix_refactor;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.PlatformStatusCleanUp_description;
 

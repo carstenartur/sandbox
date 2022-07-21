@@ -12,7 +12,7 @@ public class MatcherTest {
 
 	@Test
 	public void matcherTest() {
-		ASTParser parser = ASTParser.newParser(AST.JLS_Latest);
+		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
 		String code = "import java.util.Collection;\n"
 				+ "\n"
 				+ "public class E {\n"
@@ -25,7 +25,7 @@ public class MatcherTest {
 				+ "}";
 		char[] source = code.toCharArray();
 		parser.setSource(source);
-		Map options = JavaCore.getOptions();
+		Map<String, String> options = JavaCore.getOptions();
 		JavaCore.setComplianceOptions(JavaCore.VERSION_11, options);
 		parser.setCompilerOptions(options);
 		CompilationUnit result = (CompilationUnit) parser.createAST(null);

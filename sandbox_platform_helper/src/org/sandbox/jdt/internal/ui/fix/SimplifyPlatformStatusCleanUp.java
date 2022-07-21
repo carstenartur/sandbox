@@ -59,7 +59,6 @@ import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
  *
  *
  */
-@SuppressWarnings("restriction")
 public class SimplifyPlatformStatusCleanUp extends AbstractCleanUp {
 	private final SimplifyPlatformStatusCleanUpCore coreCleanUp= new SimplifyPlatformStatusCleanUpCore();
 
