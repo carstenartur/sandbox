@@ -22,4 +22,5 @@ Automatic-Module-Name: sandbox_plugin
 Bundle-ActivationPolicy: lazy
 Eclipse-RegisterBuddy: org.eclipse.jdt.core.manipulation
 Eclipse-BuddyPolicy: global
-Import-Package: org.sandbox.jdt.internal.common
+Import-Package: org.sandbox.jdt.internal.common,
+ org.sandbox.jdt.internal.corext.fix2

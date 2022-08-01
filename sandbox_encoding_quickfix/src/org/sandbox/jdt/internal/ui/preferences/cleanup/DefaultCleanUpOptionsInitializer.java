@@ -15,7 +15,7 @@ package org.sandbox.jdt.internal.ui.preferences.cleanup;
 
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.jdt.ui.cleanup.ICleanUpOptionsInitializer;
-import org.sandbox.jdt.internal.common.MYCleanUpConstants;
+import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 
 public class DefaultCleanUpOptionsInitializer implements ICleanUpOptionsInitializer {
 
