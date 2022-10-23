@@ -14,8 +14,8 @@
 package org.sandbox.jdt.internal.ui.fix;
 
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.XML_CLEANUP;
-import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.ToolsCleanUpFix_refactor;
-import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.ToolsCleanUp_description;
+import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.XMLCleanUpFix_refactor;
+import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.XMLCleanUp_description;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -74,7 +74,7 @@ public class XMLCleanUpCore extends AbstractCleanUpCore {
 		if (operations.isEmpty()) {
 			return null;
 		}
-		return new CompilationUnitRewriteOperationsFixCore(ToolsCleanUpFix_refactor, compilationUnit,
+		return new CompilationUnitRewriteOperationsFixCore(XMLCleanUpFix_refactor, compilationUnit,
 				operations.toArray(new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]));
 	}
 
@@ -82,7 +82,7 @@ public class XMLCleanUpCore extends AbstractCleanUpCore {
 	public String[] getStepDescriptions() {
 		List<String> result= new ArrayList<>();
 		if (isEnabled(XML_CLEANUP)) {
-			result.add(Messages.format(ToolsCleanUp_description, new Object[] { String.join(",", //$NON-NLS-1$
+			result.add(Messages.format(XMLCleanUp_description, new Object[] { String.join(",", //$NON-NLS-1$
 					computeFixSet().stream().map(XMLCleanUpFixCore::toString)
 					.collect(Collectors.toList())) }));
 		}
@@ -95,7 +95,8 @@ public class XMLCleanUpCore extends AbstractCleanUpCore {
 		EnumSet<XMLCleanUpFixCore> computeFixSet= computeFixSet();
 		EnumSet.allOf(XMLCleanUpFixCore.class)
 		.forEach(e -> sb.append(e.getPreview(computeFixSet.contains(e))));
-		return sb.toString();
+		return 
+				sb.toString();
 	}
 
 	private EnumSet<XMLCleanUpFixCore> computeFixSet() {

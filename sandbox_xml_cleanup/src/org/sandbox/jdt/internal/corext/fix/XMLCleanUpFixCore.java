@@ -25,7 +25,7 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 import org.eclipse.jdt.internal.corext.refactoring.util.TightSourceRangeComputer;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.fix.helper.AbstractTool;
-import org.sandbox.jdt.internal.corext.fix.helper.WhileLoopToChangeHit;
+import org.sandbox.jdt.internal.corext.fix.helper.XMLCandidateHit;
 import org.sandbox.jdt.internal.corext.fix.helper.XMLPlugin;
 import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
@@ -33,15 +33,15 @@ public enum XMLCleanUpFixCore {
 
 	ECLIPSEPLUGIN(new XMLPlugin());
 
-	AbstractTool<WhileLoopToChangeHit> iteratortofor;
+	AbstractTool<XMLCandidateHit> xmlfound;
 
 	@SuppressWarnings("unchecked")
-	XMLCleanUpFixCore(AbstractTool<? extends WhileLoopToChangeHit> explicitencoding) {
-		this.iteratortofor= (AbstractTool<WhileLoopToChangeHit>) explicitencoding;
+	XMLCleanUpFixCore(AbstractTool<? extends XMLCandidateHit> explicitencoding) {
+		this.xmlfound= (AbstractTool<XMLCandidateHit>) explicitencoding;
 	}
 
 	public String getPreview(boolean i) {
-		return iteratortofor.getPreview(i);
+		return xmlfound.getPreview(i);
 	}
 
 	/**
@@ -58,15 +58,15 @@ public enum XMLCleanUpFixCore {
 	public void findOperations(final CompilationUnit compilationUnit,
 			final Set<CompilationUnitRewriteOperation> operations, final Set<ASTNode> nodesprocessed,
 			boolean createForOnlyIfVarUsed) {
-		iteratortofor.find(this, compilationUnit, operations, nodesprocessed, createForOnlyIfVarUsed);
+		xmlfound.find(this, compilationUnit, operations, nodesprocessed, createForOnlyIfVarUsed);
 	}
 
-	public CompilationUnitRewriteOperation rewrite(final WhileLoopToChangeHit hit) {
+	public CompilationUnitRewriteOperation rewrite(final XMLCandidateHit hit) {
 		return new CompilationUnitRewriteOperation() {
 			@Override
 			public void rewriteAST(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel)
 					throws CoreException {
-				TextEditGroup group= createTextEditGroup(MultiFixMessages.ToolsCleanUp_description, cuRewrite);
+				TextEditGroup group= createTextEditGroup(MultiFixMessages.XMLCleanUp_description, cuRewrite);
 				TightSourceRangeComputer rangeComputer;
 				ASTRewrite rewrite= cuRewrite.getASTRewrite();
 				if (rewrite.getExtendedSourceRangeComputer() instanceof TightSourceRangeComputer) {
@@ -76,7 +76,7 @@ public enum XMLCleanUpFixCore {
 				}
 				rangeComputer.addTightSourceNode(hit.whileStatement);
 				rewrite.setTargetSourceRangeComputer(rangeComputer);
-				iteratortofor.rewrite(XMLCleanUpFixCore.this, hit, cuRewrite, group);
+				xmlfound.rewrite(XMLCleanUpFixCore.this, hit, cuRewrite, group);
 			}
 		};
 	}

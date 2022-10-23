@@ -5,8 +5,8 @@ import org.eclipse.osgi.util.NLS;
 public class MultiFixMessages {
 	private static final String BUNDLE_NAME= "org.sandbox.jdt.internal.ui.fix.MultiFixMessages"; //$NON-NLS-1$
 
-	public static String ToolsCleanUp_description;
-	public static String ToolsCleanUpFix_refactor;
+	public static String XMLCleanUp_description;
+	public static String XMLCleanUpFix_refactor;
 
 	static {
 		// initialize resource bundle
