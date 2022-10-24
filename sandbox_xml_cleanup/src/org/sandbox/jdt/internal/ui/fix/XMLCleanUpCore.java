@@ -43,7 +43,9 @@ public class XMLCleanUpCore extends AbstractCleanUpCore {
 	public XMLCleanUpCore(final Map<String, String> options) {
 		super(options);
 	}
-
+	/**
+	 * 
+	 */
 	public XMLCleanUpCore() {
 	}
 

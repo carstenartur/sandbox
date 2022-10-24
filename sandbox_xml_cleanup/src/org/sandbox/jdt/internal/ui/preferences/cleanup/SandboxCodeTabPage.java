@@ -30,7 +30,7 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 	 */
 	static final String[] FALSE_TRUE= { CleanUpOptions.FALSE, CleanUpOptions.TRUE };
 
-	public static final String ID= "org.eclipse.jdt.ui.cleanup.tabpage.platform"; //$NON-NLS-1$
+	public static final String ID= "org.eclipse.jdt.ui.cleanup.tabpage.sandbox"; //$NON-NLS-1$
 
 	@Override
 	protected AbstractCleanUp[] createPreviewCleanUps(Map<String, String> values) {
@@ -40,10 +40,10 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 	@Override
 	protected void doCreatePreferences(Composite composite, int numColumns) {
 		Group java1d8Group= createGroup(numColumns, composite, CleanUpMessages.JavaFeatureTabPage_GroupName_Java1d8);
-		final CheckboxPreference explicit_encoding= createCheckboxPref(java1d8Group, numColumns,
+		final CheckboxPreference xmlsimplify= createCheckboxPref(java1d8Group, numColumns,
 				CleanUpMessages.JavaFeatureTabPage_CheckboxName_XML_CLEANUP,
 				MYCleanUpConstants.XML_CLEANUP, FALSE_TRUE);
 		intent(java1d8Group);
-		registerPreference(explicit_encoding);
+		registerPreference(xmlsimplify);
 	}
 }

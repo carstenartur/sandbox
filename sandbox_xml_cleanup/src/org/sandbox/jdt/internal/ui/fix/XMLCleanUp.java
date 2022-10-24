@@ -33,6 +33,9 @@ public class XMLCleanUp extends AbstractCleanUp {
 		setOptions(options);
 	}
 
+	/**
+	 * 
+	 */
 	public XMLCleanUp() {
 	}
 

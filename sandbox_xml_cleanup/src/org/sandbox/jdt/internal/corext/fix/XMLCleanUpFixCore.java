@@ -36,8 +36,8 @@ public enum XMLCleanUpFixCore {
 	AbstractTool<XMLCandidateHit> xmlfound;
 
 	@SuppressWarnings("unchecked")
-	XMLCleanUpFixCore(AbstractTool<? extends XMLCandidateHit> explicitencoding) {
-		this.xmlfound= (AbstractTool<XMLCandidateHit>) explicitencoding;
+	XMLCleanUpFixCore(AbstractTool<? extends XMLCandidateHit> xmlsimplify) {
+		this.xmlfound= (AbstractTool<XMLCandidateHit>) xmlsimplify;
 	}
 
 	public String getPreview(boolean i) {
