@@ -20,4 +20,7 @@ Require-Bundle: org.eclipse.core.runtime,
  sandbox_common
 Bundle-ActivationPolicy: lazy
 Eclipse-RegisterBuddy: org.eclipse.jdt.core.manipulation
+Import-Package: org.sandbox.jdt.internal.common,
+ org.sandbox.jdt.internal.corext.fix2
 Eclipse-BuddyPolicy: global
+Automatic-Module-Name: sandbox.xml.cleanup

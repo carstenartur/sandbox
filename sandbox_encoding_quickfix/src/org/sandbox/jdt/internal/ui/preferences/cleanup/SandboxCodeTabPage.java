@@ -20,7 +20,7 @@ import org.eclipse.jdt.internal.ui.preferences.cleanup.AbstractCleanUpTabPage;
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
-import org.sandbox.jdt.internal.common.MYCleanUpConstants;
+import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.internal.ui.fix.UseExplicitEncodingCleanUp;
 
 public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
