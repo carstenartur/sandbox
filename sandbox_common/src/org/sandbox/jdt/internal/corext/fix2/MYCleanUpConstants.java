@@ -11,7 +11,7 @@
  * Contributors:
  *     Carsten Hammer
  *******************************************************************************/
-package org.sandbox.jdt.internal.common;
+package org.sandbox.jdt.internal.corext.fix2;
 
 /**
  * @author chammer
@@ -66,6 +66,11 @@ public class MYCleanUpConstants {
 	 * 
 	 */
 	public static final String SIMPLIFY_STATUS_CLEANUP= "cleanup.simplify_status_creation"; //$NON-NLS-1$
+	
+	/**
+	 * 
+	 */
+	public static final String XML_CLEANUP= "cleanup.xmlcleanup"; //$NON-NLS-1$
 	
 	/**
 	 * 
