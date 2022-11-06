@@ -71,6 +71,10 @@ public class MYCleanUpConstants {
 	 * 
 	 */
 	public static final String XML_CLEANUP= "cleanup.xmlcleanup"; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JFACE_CLEANUP= "cleanup.jfacecleanup"; //$NON-NLS-1$
 	
 	/**
 	 * 
