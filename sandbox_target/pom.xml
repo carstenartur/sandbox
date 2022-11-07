@@ -54,7 +54,7 @@
 							</targetFiles>
 							<failOnError>false</failOnError>
 							<checkDependencies>false</checkDependencies>
-							<executionEnvironment>JavaSE-11</executionEnvironment>
+							<executionEnvironment>JavaSE-17</executionEnvironment>
 						</configuration>
 					</execution>
 				</executions>

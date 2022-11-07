@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: sandbox_common
 Bundle-SymbolicName: sandbox_common;singleton:=true
 Bundle-Version: 1.0.0.qualifier
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Bundle-ActivationPolicy: lazy
 Eclipse-BuddyPolicy: global
 Require-Bundle: org.eclipse.core.runtime,

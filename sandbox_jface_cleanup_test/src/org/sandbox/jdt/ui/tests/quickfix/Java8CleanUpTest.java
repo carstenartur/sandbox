@@ -16,9 +16,7 @@ package org.sandbox.jdt.ui.tests.quickfix;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
-import org.eclipse.jdt.internal.corext.fix.CleanUpConstants;
 import org.junit.jupiter.api.Disabled;
-
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -35,7 +33,7 @@ public class Java8CleanUpTest {
 //	JUnitPlatform asdf;
 	
 	enum JFaceCleanupCases{
-		whileWarningSelf("package test;\n"
+		PositiveCase("package test;\n"
 				+ "import java.util.*;\n"
 				+ "import org.eclipse.core.runtime.CoreException;\n"
 				+ "import org.eclipse.core.runtime.IProgressMonitor;\n"
@@ -71,10 +69,10 @@ public class Java8CleanUpTest {
 		String given, expected;
 	}
 
-//	@Disabled
+	@Disabled
 	@ParameterizedTest
 	@EnumSource(JFaceCleanupCases.class)
-	public void testXMLCleanupParametrized(JFaceCleanupCases test) throws CoreException {
+	public void testJFaceCleanupParametrized(JFaceCleanupCases test) throws CoreException {
 		IPackageFragment pack= context.fSourceFolder.createPackageFragment("test", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("Test.java", test.given, false, null);
 		context.enable(MYCleanUpConstants.JFACE_CLEANUP);
@@ -83,7 +81,7 @@ public class Java8CleanUpTest {
 
 	enum NO_JFaceCleanupCases {
 
-		whileUsedSpecially(
+		NOCase(
 				"package test;\n"
 						+ "import java.util.*;\n"
 						+ "public class Test {\n"
@@ -111,10 +109,10 @@ public class Java8CleanUpTest {
 //	@Disabled
 	@ParameterizedTest
 	@EnumSource(NO_JFaceCleanupCases.class)
-	public void testXMLCleanup_donttouch(NO_JFaceCleanupCases test) throws CoreException {
+	public void testJFaceCleanup_donttouch(NO_JFaceCleanupCases test) throws CoreException {
 		IPackageFragment pack= context.fSourceFolder.createPackageFragment("test", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("Test.java",test.given,false, null);
-		context.enable(CleanUpConstants.CONTROL_STATEMENTS_CONVERT_FOR_LOOP_TO_ENHANCED);
+		context.enable(MYCleanUpConstants.JFACE_CLEANUP);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 }
