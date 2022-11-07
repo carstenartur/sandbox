@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: sandbox test commons
 Bundle-SymbolicName: sandbox_test_commons;singleton:=true
 Bundle-Version: 1.0.0.qualifier
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Automatic-Module-Name: sandbox.test.commons.singleton.true
 Eclipse-BuddyPolicy: global
 Eclipse-BundleShape: dir

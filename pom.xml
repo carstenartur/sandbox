@@ -39,6 +39,9 @@
 		<module>sandbox_xml_cleanup</module>
 		<module>sandbox_xml_cleanup_feature</module>
 		<module>sandbox_xml_cleanup_test</module>
+		<module>sandbox_jface_cleanup</module>
+		<module>sandbox_jface_cleanup_feature</module>
+		<module>sandbox_jface_cleanup_test</module>
 		<module>sandbox_usage_view</module>
 		<module>sandbox_usage_view_feature</module>
 		<module>sandbox_product</module>
@@ -87,7 +90,7 @@
 				<artifactId>target-platform-configuration</artifactId>
 				<version>${tycho-version}</version>
 				<configuration>
-					<executionEnvironment>JavaSE-11</executionEnvironment>
+					<executionEnvironment>JavaSE-17</executionEnvironment>
 					<target>
 						<artifact>
 							<groupId>org.sandbox</groupId>
@@ -276,6 +279,21 @@
 			<dependency>
 				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_xml_cleanup_test</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_jface_cleanup</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_jface_cleanup_feature</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_jface_cleanup_test</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
