@@ -13,6 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.ui.tests.quickfix;
 
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -60,20 +61,20 @@ public class VisitorTest {
 	@BeforeAll
 	public static void init() {
 		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
-		String code ="package test;\n"
-				+"import java.util.Collection;\n"
-				+ "\n"
-				+ "public class E {\n"
-				+ "	public void hui(Collection<String> arr) {\n"
-				+ "		Collection coll = null;\n"
-				+ "		for (String var : arr) {\n"
-				+ "			 coll.add(var);\n"
-				+ "			 System.out.println(var);\n"
-				+ "			 System.err.println(var);\n"
-				+ "		}\n"
-				+ "		System.out.println(arr);\n"
-				+ "	}\n"
-				+ "}";
+		String code ="package test;\n" //$NON-NLS-1$
+				+"import java.util.Collection;\n" //$NON-NLS-1$
+				+ "\n" //$NON-NLS-1$
+				+ "public class E {\n" //$NON-NLS-1$
+				+ "	public void hui(Collection<String> arr) {\n" //$NON-NLS-1$
+				+ "		Collection coll = null;\n" //$NON-NLS-1$
+				+ "		for (String var : arr) {\n" //$NON-NLS-1$
+				+ "			 coll.add(var);\n" //$NON-NLS-1$
+				+ "			 System.out.println(var);\n" //$NON-NLS-1$
+				+ "			 System.err.println(var);\n" //$NON-NLS-1$
+				+ "		}\n" //$NON-NLS-1$
+				+ "		System.out.println(arr);\n" //$NON-NLS-1$
+				+ "	}\n" //$NON-NLS-1$
+				+ "}"; //$NON-NLS-1$
 		parser.setKind(ASTParser.K_COMPILATION_UNIT);
 		parser.setEnvironment(new String[]{}, new String[]{}, null, true);
 		parser.setBindingsRecovery(true);
@@ -81,47 +82,50 @@ public class VisitorTest {
 		Map<String, String> options = JavaCore.getOptions();
 		JavaCore.setComplianceOptions(JavaCore.VERSION_11, options);
 		parser.setCompilerOptions(options);
-		parser.setUnitName("E");
+		parser.setUnitName("E"); //$NON-NLS-1$
 		parser.setSource(code.toCharArray());
 		cunit1 = (CompilationUnit) parser.createAST(null);
 
 
-		String code2="package test;\n"
-				+ "import java.util.*;\n"
-				+ "public class Test {\n"
-				+ "    void m(List<String> strings,List<String> strings2) {\n"
-				+ "        Collections.reverse(strings);\n"
-				+ "        Iterator it = strings.iterator();\n"
-				+ "        while (it.hasNext()) {\n"
-				+ "            Iterator it2 = strings2.iterator();\n"
-				+ "            while (it2.hasNext()) {\n"
-				+ "                String s2 = (String) it2.next();\n"
-				+ "                System.out.println(s2);\n"
-				+ "            }\n"
-				+ "            // OK\n"
-				+ "            System.out.println(it.next());\n"
-				+ "        }\n"
-				+ "        System.out.println();\n"
-				+ "    }\n"
-				+ "}\n";
+		String code2="package test;\n" //$NON-NLS-1$
+				+ "import java.util.*;\n" //$NON-NLS-1$
+				+ "public class Test {\n" //$NON-NLS-1$
+				+ "    void println(String strings) {\n" //$NON-NLS-1$
+				+ "    }\n" //$NON-NLS-1$
+				+ "    void m(List<String> strings,List<String> strings2) {\n" //$NON-NLS-1$
+				+ "        Collections.reverse(strings);\n" //$NON-NLS-1$
+				+ "        Iterator it = strings.iterator();\n" //$NON-NLS-1$
+				+ "        while (it.hasNext()) {\n" //$NON-NLS-1$
+				+ "            Iterator it2 = strings2.iterator();\n" //$NON-NLS-1$
+				+ "            while (it2.hasNext()) {\n" //$NON-NLS-1$
+				+ "                String s2 = (String) it2.next();\n" //$NON-NLS-1$
+				+ "                System.out.println(s2);\n" //$NON-NLS-1$
+				+ "            }\n" //$NON-NLS-1$
+				+ "            // OK\n" //$NON-NLS-1$
+				+ "            System.out.println(it.next());\n" //$NON-NLS-1$
+				+ "            println(it.next());\n" //$NON-NLS-1$
+				+ "        }\n" //$NON-NLS-1$
+				+ "        System.out.println();\n" //$NON-NLS-1$
+				+ "    }\n" //$NON-NLS-1$
+				+ "}\n"; //$NON-NLS-1$
 		parser.setEnvironment(new String[]{}, new String[]{}, null, true);
 		parser.setBindingsRecovery(true);
 		parser.setResolveBindings(true);
-		parser.setUnitName("Test");
+		parser.setUnitName("Test"); //$NON-NLS-1$
 		parser.setSource(code2.toCharArray());
 		cunit2 = (CompilationUnit) parser.createAST(null);
 		//		System.out.println(result.toString());
 	}
 
 	private void astnodeprocessorend(ASTNode node, ReferenceHolder<String,NodeFound> holder) {
-		String x = "End   "+node.getNodeType() + " :" + node;
-		System.out.printf("%-40s %s%n",x,ASTNode.nodeClassForType(node.getNodeType()));
+		String x = "End   "+node.getNodeType() + " :" + node; //$NON-NLS-1$ //$NON-NLS-2$
+		System.out.printf("%-40s %s%n",x,ASTNode.nodeClassForType(node.getNodeType())); //$NON-NLS-1$
 	}
 
 	private Boolean astnodeprocessor(ASTNode node, ReferenceHolder<String,NodeFound> holder) {
 		//		NodeFound nodeFound = holder.get(VisitorEnum.fromNodetype(node.getNodeType()));
-		String x = "Start "+node.getNodeType() + " :" + node;
-		System.out.printf("%-40s %s%n",x,ASTNode.nodeClassForType(node.getNodeType()));
+		String x = "Start "+node.getNodeType() + " :" + node; //$NON-NLS-1$ //$NON-NLS-2$
+		System.out.printf("%-40s %s%n",x,ASTNode.nodeClassForType(node.getNodeType())); //$NON-NLS-1$
 		return true;
 	}
 
@@ -160,7 +164,7 @@ public class VisitorTest {
 	public void simpleTest2() {
 		Set<ASTNode> nodesprocessed = null;
 		HelperVisitor<ReferenceHolder<String,NodeFound>,String,NodeFound> hv = new HelperVisitor<>(nodesprocessed, new ReferenceHolder<>());
-		hv.addMethodInvocation("add", this::handleMethodInvocation);
+		hv.addMethodInvocation("add", this::handleMethodInvocation); //$NON-NLS-1$
 		hv.build(cunit1);
 
 
@@ -175,7 +179,7 @@ public class VisitorTest {
 
 	@Test
 	public void simpleTest2_oldway() {
-		String name ="add";
+		String name ="add"; //$NON-NLS-1$
 		ASTVisitor astvisitor=new ASTVisitor() {
 			@Override
 			public boolean visit(MethodInvocation node) {
@@ -203,13 +207,13 @@ public class VisitorTest {
 		BiPredicate<MethodInvocation, ReferenceHolder<String, NodeFound>> bs = this::handleMethodInvocation;
 		BiPredicate<MethodInvocation, ReferenceHolder<String, NodeFound>> after = (mi, rh) -> true;
 		BiPredicate<MethodInvocation, ReferenceHolder<String, NodeFound>> bs2= bs.or(after);
-		hv.addMethodInvocation("add", bs2);
+		hv.addMethodInvocation("add", bs2); //$NON-NLS-1$
 		hv.build(cunit1);
 	}
 
 	@Test
 	public void simpleTest2b_oldway() {
-		String name ="add";
+		String name ="add"; //$NON-NLS-1$
 		ASTVisitor astvisitor=new ASTVisitor() {
 			@Override
 			public boolean visit(MethodInvocation node) {
@@ -337,15 +341,15 @@ public class VisitorTest {
 		HelperVisitor<ReferenceHolder<String,NodeFound>,String,NodeFound> hv = new HelperVisitor<>(nodesprocessed, new ReferenceHolder<String, NodeFound>());
 		VisitorEnum.stream().forEach(ve -> {
 			hv.add(ve, (node, holder) -> {
-				String x = "Start "+node.getNodeType() + " :" + node;
-				System.out.printf("%-40s %s%n",x,ASTNode.nodeClassForType(node.getNodeType()));
+				String x = "Start "+node.getNodeType() + " :" + node; //$NON-NLS-1$ //$NON-NLS-2$
+				System.out.printf("%-40s %s%n",x,ASTNode.nodeClassForType(node.getNodeType())); //$NON-NLS-1$
 				return true;
 			});
 		});
 		VisitorEnum.stream().forEach(ve -> {
 			hv.addEnd(ve, (node, holder) -> {
-				String x = "End   "+node.getNodeType() + " :" + node;
-				System.out.printf("%-40s %s%n",x,ASTNode.nodeClassForType(node.getNodeType()));
+				String x = "End   "+node.getNodeType() + " :" + node; //$NON-NLS-1$ //$NON-NLS-2$
+				System.out.printf("%-40s %s%n",x,ASTNode.nodeClassForType(node.getNodeType())); //$NON-NLS-1$
 			});
 		});
 		hv.build(cunit1);
@@ -397,11 +401,11 @@ public class VisitorTest {
 				VisitorEnum.VariableDeclarationFragment);
 		ReferenceHolder<ASTNode, String> dataholder = new ReferenceHolder<>();
 		BiPredicate<ASTNode, ReferenceHolder<ASTNode, String>> bs =(node,holder)->{
-			System.out.printf("%-40s %s%n","Start "+node.getNodeType() + " :" + node,ASTNode.nodeClassForType(node.getNodeType()));
+			System.out.printf("%-40s %s%n","Start "+node.getNodeType() + " :" + node,ASTNode.nodeClassForType(node.getNodeType())); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			return false;
 		};
 		BiConsumer<ASTNode, ReferenceHolder<ASTNode, String>> bc = (node,holder)->{
-			System.out.printf("%-40s %s%n","End   "+node.getNodeType() + " :" + node,ASTNode.nodeClassForType(node.getNodeType()));
+			System.out.printf("%-40s %s%n","End   "+node.getNodeType() + " :" + node,ASTNode.nodeClassForType(node.getNodeType())); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		};
 		HelperVisitor.callVisitor(cunit1, myset, dataholder,null, bs, bc);
 	}
@@ -430,7 +434,7 @@ public class VisitorTest {
 		});
 		hv.build(cunit1);
 		for(VisitorEnum ve: dataholder.keySet()) {
-			System.out.println(dataholder.get(ve)+"\t"+ve.name());
+			System.out.println(dataholder.get(ve)+"\t"+ve.name()); //$NON-NLS-1$
 		}
 	}
 
@@ -449,7 +453,7 @@ public class VisitorTest {
 		 * Presenting result
 		 */
 		dataholder.entrySet().stream().forEach(entry->{
-			System.out.println(entry.getValue()+"\t"+entry.getKey().name());
+			System.out.println(entry.getValue()+"\t"+entry.getKey().name()); //$NON-NLS-1$
 		});
 	}
 
@@ -472,7 +476,7 @@ public class VisitorTest {
 		 * Presenting result
 		 */
 		dataholder.entrySet().stream().forEach(entry->{
-			System.out.println(entry.getKey()+"\t"+entry.getValue()+"\t"+ASTNode.nodeClassForType(entry.getKey().getNodeType()));
+			System.out.println(entry.getKey()+"\t"+entry.getValue()+"\t"+ASTNode.nodeClassForType(entry.getKey().getNodeType())); //$NON-NLS-1$ //$NON-NLS-2$
 		});
 	}
 
@@ -489,7 +493,7 @@ public class VisitorTest {
 					case SingleVariableDeclaration:
 						SingleVariableDeclaration svd=(SingleVariableDeclaration) node;
 						Expression svd_initializer = svd.getInitializer();
-						pernodemap.put("init", svd_initializer);
+						pernodemap.put("init", svd_initializer); //$NON-NLS-1$
 						break;
 					case VariableDeclarationExpression:
 						VariableDeclarationExpression vde=(VariableDeclarationExpression) node;
@@ -502,7 +506,7 @@ public class VisitorTest {
 					case VariableDeclarationFragment:
 						VariableDeclarationFragment vdf=(VariableDeclarationFragment) node;
 						Expression vdf_initializer = vdf.getInitializer();
-						pernodemap.put("init", vdf_initializer);
+						pernodemap.put("init", vdf_initializer); //$NON-NLS-1$
 						break;
 						//$CASES-OMITTED$
 					default:
@@ -514,8 +518,8 @@ public class VisitorTest {
 		 * Presenting result
 		 */
 		dataholder.entrySet().stream().forEach(entry->{
-			System.out.println(entry.getKey()+"\t"+ASTNode.nodeClassForType(entry.getKey().getNodeType()));
-			System.out.println("===>"+entry.getValue().get("init"));
+			System.out.println(entry.getKey()+"\t"+ASTNode.nodeClassForType(entry.getKey().getNodeType())); //$NON-NLS-1$
+			System.out.println("===>"+entry.getValue().get("init")); //$NON-NLS-1$ //$NON-NLS-2$
 			System.out.println();
 		});
 	}
@@ -528,7 +532,7 @@ public class VisitorTest {
 			HelperVisitor.callWhileStatementVisitor(init_iterator.getParent(), dataholder,null, (whilestatement,holder)->{
 				String name = computeNextVarname(whilestatement);
 				if(computeVarName.get(0).equals(name)) {
-					HelperVisitor.callMethodInvocationVisitor("next", whilestatement.getBody() ,dataholder,null, (mi,holder2)->{
+					HelperVisitor.callMethodInvocationVisitor("next", whilestatement.getBody() ,dataholder,null, (mi,holder2)->{ //$NON-NLS-1$
 						Map<String, Object> pernodemap2 = holder2.computeIfAbsent(whilestatement, k -> new HashMap<>());
 						Expression element2 = mi.getExpression();
 						SimpleName sn= ASTNodes.as(element2, SimpleName.class);
@@ -537,10 +541,10 @@ public class VisitorTest {
 							if(!name.equals(identifier)) {
 								return true;
 							}
-							pernodemap2.put("init", init_iterator);
-							pernodemap2.put("while", whilestatement);
-							pernodemap2.put("next", mi);
-							pernodemap2.put("name", identifier);
+							pernodemap2.put("init", init_iterator); //$NON-NLS-1$
+							pernodemap2.put("while", whilestatement); //$NON-NLS-1$
+							pernodemap2.put("next", mi); //$NON-NLS-1$
+							pernodemap2.put("name", identifier); //$NON-NLS-1$
 						}
 						return true;
 					});
@@ -552,14 +556,14 @@ public class VisitorTest {
 		/**
 		 * Presenting result
 		 */
-		System.out.println("#################");
+		System.out.println("#################"); //$NON-NLS-1$
 		dataholder.entrySet().stream().forEach(entry->{
-			System.out.println("=============");
+			System.out.println("============="); //$NON-NLS-1$
 			System.out.println(entry.getKey());
-			System.out.println("init ===>"+entry.getValue().get("init"));
-			System.out.println("while ===>"+entry.getValue().get("while"));
-			System.out.println("next ===>"+entry.getValue().get("next"));
-			System.out.println("name ===>"+entry.getValue().get("name"));
+			System.out.println("init ===>"+entry.getValue().get("init")); //$NON-NLS-1$ //$NON-NLS-2$
+			System.out.println("while ===>"+entry.getValue().get("while")); //$NON-NLS-1$ //$NON-NLS-2$
+			System.out.println("next ===>"+entry.getValue().get("next")); //$NON-NLS-1$ //$NON-NLS-2$
+			System.out.println("name ===>"+entry.getValue().get("name")); //$NON-NLS-1$ //$NON-NLS-2$
 			System.out.println();
 		});
 	}
@@ -630,25 +634,25 @@ public class VisitorTest {
 			/**
 			 * This lambda expression is called for all VariableDeclarationStatement of type Iterator
 			 */
-			holder.put("init", node);
+			holder.put("init", node); //$NON-NLS-1$
 			List<String> computeVarName = computeVarName((VariableDeclarationStatement)node);
-			holder.put("initvarname", computeVarName.get(0));
+			holder.put("initvarname", computeVarName.get(0)); //$NON-NLS-1$
 			return true;
 		},ASTNode::getParent)
 		.callWhileStatementVisitor((node,holder) -> {
 			/**
 			 * This lambda expression is called for all WhileStatements below the parent of each VariableDeclarationStatement
 			 */
-			holder.put("while", node);
+			holder.put("while", node); //$NON-NLS-1$
 			String name = computeNextVarname((WhileStatement)node);
-			holder.put("whilevarname", name);
+			holder.put("whilevarname", name); //$NON-NLS-1$
 			return true;
 		}, s -> ((WhileStatement)s).getBody())
-		.callMethodInvocationVisitor("next",(node,holder) -> {
+		.callMethodInvocationVisitor("next",(node,holder) -> { //$NON-NLS-1$
 			/**
 			 * This lambda expression is called for all MethodInvocations "next()" in each Body of WhileStatements found above
 			 */
-			String name=(String) holder.get("initvarname");
+			String name=(String) holder.get("initvarname"); //$NON-NLS-1$
 			Expression element2 = ((MethodInvocation)node).getExpression();
 			SimpleName sn= ASTNodes.as(element2, SimpleName.class);
 			if (sn !=null) {
@@ -656,11 +660,11 @@ public class VisitorTest {
 				if(!name.equals(identifier)) {
 					return true;
 				}
-				if(name.equals(holder.get("whilevarname"))) {
-					System.out.println("=====================");
-					System.out.println("iterator: "+holder.get("init").toString().trim());
-					System.out.println("while: "+holder.get("while").toString().trim());
-					System.out.println("next: "+node.toString().trim());
+				if(name.equals(holder.get("whilevarname"))) { //$NON-NLS-1$
+					System.out.println("====================="); //$NON-NLS-1$
+					System.out.println("iterator: "+holder.get("init").toString().trim()); //$NON-NLS-1$ //$NON-NLS-2$
+					System.out.println("while: "+holder.get("while").toString().trim()); //$NON-NLS-1$ //$NON-NLS-2$
+					System.out.println("next: "+node.toString().trim()); //$NON-NLS-1$
 				}
 			}
 			return true;
@@ -672,10 +676,10 @@ public class VisitorTest {
 		ReferenceHolder<String, Object> dataholder = new ReferenceHolder<>();
 		ASTProcessor<ReferenceHolder<String, Object>,String,Object> astp=new ASTProcessor<>(dataholder, null);
 		astp.callVariableDeclarationStatementVisitor(Iterator.class,(node,holder) -> {
-			holder.put("init", node);
+			holder.put("init", node); //$NON-NLS-1$
 			List<String> computeVarName = computeVarName((VariableDeclarationStatement)node);
-			holder.put("initvarname", computeVarName.get(0));
-			System.out.println("init "+node.getNodeType() + " :" + node);
+			holder.put("initvarname", computeVarName.get(0)); //$NON-NLS-1$
+			System.out.println("init "+node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$
 			return true;
 		}).build(cunit2);
 	}
@@ -687,12 +691,12 @@ public class VisitorTest {
 	public void modifyTest1() {
 		Set<ASTNode> nodesprocessed = null;
 		HelperVisitor<ReferenceHolder<String,NodeFound>,String,NodeFound> hv = new HelperVisitor<>(nodesprocessed, new ReferenceHolder<>());
-		hv.addMethodInvocation("println",(node, holder) -> {
-			System.out.println("Start "+node.getNodeType() + " :" + node);
+		hv.addMethodInvocation("println",(node, holder) -> { //$NON-NLS-1$
+			System.out.println("Start "+node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$
 			return true;
 		});
 		hv.addMethodInvocation((node, holder) -> {
-			System.out.println("End "+node.getNodeType() + " :" + node);
+			System.out.println("End "+node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$
 			holder.getHelperVisitor().removeVisitor(VisitorEnum.MethodInvocation);
 		});
 		hv.build(cunit1);
@@ -723,9 +727,9 @@ public class VisitorTest {
 			Collection<String> usedVarNames= getUsedVariableNames(node.getBody());
 			System.out.println(usedVarNames);
 		});
-		hv.addMethodInvocation("next",(methodinvocationnode, myholder) -> {
-			String x = "Start "+methodinvocationnode.getNodeType() + " :" + methodinvocationnode;
-			System.out.printf("%-40s %s%n",x,ASTNode.nodeClassForType(methodinvocationnode.getNodeType()));
+		hv.addMethodInvocation("next",(methodinvocationnode, myholder) -> { //$NON-NLS-1$
+			String x = "Start "+methodinvocationnode.getNodeType() + " :" + methodinvocationnode; //$NON-NLS-1$ //$NON-NLS-2$
+			System.out.printf("%-40s %s%n",x,ASTNode.nodeClassForType(methodinvocationnode.getNodeType())); //$NON-NLS-1$
 			return true;
 		});
 		hv.build(cunit2);
@@ -734,5 +738,17 @@ public class VisitorTest {
 	Collection<String> getUsedVariableNames(ASTNode node) {
 		CompilationUnit root= (CompilationUnit) node.getRoot();
 		return (new ScopeAnalyzer(root)).getUsedVariableNames(node.getStartPosition(), node.getLength());
+	}
+	
+	@Test
+	public void methodinvocationTest() {
+		Set<ASTNode> nodesprocessed = null;
+		HelperVisitor<ReferenceHolder<String,NodeFound>,String,NodeFound> hv = new HelperVisitor<>(nodesprocessed, new ReferenceHolder<>());
+		hv.addMethodInvocation(PrintStream.class, "println", (methodinvocationnode, myholder)->{ //$NON-NLS-1$
+			String x = "Start "+methodinvocationnode.getNodeType() + " :" + methodinvocationnode; //$NON-NLS-1$ //$NON-NLS-2$
+			System.out.printf("%-40s %s%n",x,ASTNode.nodeClassForType(methodinvocationnode.getNodeType())); //$NON-NLS-1$
+			return true;
+		});
+		hv.build(cunit2);
 	}
 }

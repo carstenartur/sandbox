@@ -13,11 +13,11 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 
 public class JfaceCandidateHit {
 
-	public ASTNode monitor;
+	public MethodInvocation monitor;
 
 	/**
 	 * 

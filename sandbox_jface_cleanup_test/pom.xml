@@ -15,8 +15,7 @@
 		<dependency>
 			<groupId>org.sandbox</groupId>
 			<artifactId>sandbox_jface_cleanup</artifactId>
-			<version>1.0.0-SNAPSHOT</version>
-		</dependency>
+			</dependency>
 	</dependencies>
 	<build>
 		<testSourceDirectory>src</testSourceDirectory>
