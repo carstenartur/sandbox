@@ -13,8 +13,10 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.common;
 
+import java.util.AbstractMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
@@ -1140,7 +1142,49 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor<E, V, T> callMethodInvocationVisitor(String methodname, BiPredicate<ASTNode, E> bs) {
-		nodetypelist.put(VisitorEnum.MethodInvocation, new NodeHolder(bs, null, methodname));
+		Map<String, Object> map = Map.ofEntries(
+				  new AbstractMap.SimpleEntry<String, Object>(HelperVisitor.METHODNAME, methodname)
+				);
+		nodetypelist.put(VisitorEnum.MethodInvocation, new NodeHolder(bs, null, map));
+		return this;
+	}
+	
+	/**
+	 * @param typeof 
+	 * @param bs
+	 * @return a reference to this object.
+	 */
+	public ASTProcessor<E, V, T> callMethodInvocationVisitor(Class typeof, BiPredicate<ASTNode, E> bs) {
+		Map<String, Object> map = Map.ofEntries(
+				new AbstractMap.SimpleEntry<String, Object>(HelperVisitor.TYPEOF, typeof)
+				);
+		nodetypelist.put(VisitorEnum.MethodInvocation, new NodeHolder(bs, null, map));
+		return this;
+	}
+	
+	/**
+	 * @param typeof 
+	 * @param methodname
+	 * @param bs
+	 * @return a reference to this object.
+	 */
+	public ASTProcessor<E, V, T> callMethodInvocationVisitor(Class typeof,String methodname, BiPredicate<ASTNode, E> bs) {
+		return callMethodInvocationVisitor(typeof,methodname,bs,null);
+	}
+	
+	/**
+	 * @param typeof 
+	 * @param methodname
+	 * @param bs
+	 * @param navigate 
+	 * @return a reference to this object.
+	 */
+	public ASTProcessor<E, V, T> callMethodInvocationVisitor(Class typeof,String methodname, BiPredicate<ASTNode, E> bs, Function<ASTNode, ASTNode> navigate) {
+		Map<String, Object> map = Map.ofEntries(
+				new AbstractMap.SimpleEntry<String, Object>(HelperVisitor.METHODNAME, methodname),
+				new AbstractMap.SimpleEntry<String, Object>(HelperVisitor.TYPEOF, typeof)
+				);
+		nodetypelist.put(VisitorEnum.MethodInvocation, new NodeHolder(bs, navigate, map));
 		return this;
 	}
 
@@ -1152,7 +1196,10 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 */
 	public ASTProcessor<E, V, T> callMethodInvocationVisitor(String methodname, BiPredicate<ASTNode, E> bs,
 			Function<ASTNode, ASTNode> navigate) {
-		nodetypelist.put(VisitorEnum.MethodInvocation, new NodeHolder(bs, navigate, methodname));
+		Map<String, Object> map = Map.ofEntries(
+				  new AbstractMap.SimpleEntry<String, Object>(HelperVisitor.METHODNAME, methodname)
+				);
+		nodetypelist.put(VisitorEnum.MethodInvocation, new NodeHolder(bs, navigate, map));
 		return this;
 	}
 

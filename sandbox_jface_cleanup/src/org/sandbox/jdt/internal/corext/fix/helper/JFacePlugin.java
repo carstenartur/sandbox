@@ -17,10 +17,10 @@ import java.util.Set;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.IBinding;
-import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.IVariableBinding;
@@ -29,6 +29,7 @@ import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCo
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.refactoring.structure.ImportRemover;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.ASTProcessor;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JfaceCleanUpFixCore;
@@ -43,30 +44,42 @@ public class JFacePlugin extends AbstractTool<JfaceCandidateHit> {
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed,
 			boolean createForOnlyIfVarUsed) {
 
-		HelperVisitor.callMethodInvocationVisitor(IProgressMonitor.class,"beginTask",compilationUnit,new ReferenceHolder<ASTNode, JfaceCandidateHit>(),
-				nodesprocessed, (visited, holder) -> {
-					if(visited.arguments().size()!=2) {
-						return true;
-					}
-					ExpressionStatement expr= ASTNodes.getTypedAncestor(visited, ExpressionStatement.class);
-					String name = null;
-					SimpleName sn= ASTNodes.as(visited.getExpression(), SimpleName.class);
-					if (sn != null) {
-						IBinding ibinding= sn.resolveBinding();
-						name= ibinding.getName();
-						IVariableBinding vb=(IVariableBinding) ibinding;
-						//						ITypeBinding binding= vb.getType();
-						//						if ((binding != null) && (IProgressMonitor.class.getSimpleName().equals(binding.getName()))) {
-						JfaceCandidateHit invalidHit= new JfaceCandidateHit();
-						invalidHit.monitor=visited;
-						operations.add(fixcore.rewrite(invalidHit));
-						nodesprocessed.add(visited);
-						System.out.println("asdf"+name + " " + vb+" " +visited);	
-						return false;
-						//						}
-					}
-					return true;
-				});
+		ReferenceHolder<String, Object> dataholder = new ReferenceHolder<>();
+		ASTProcessor<ReferenceHolder<String, Object>,String,Object> astp=new ASTProcessor<>(dataholder, null);
+		astp
+		.callMethodInvocationVisitor(IProgressMonitor.class,"beginTask",(node,holder) -> { //$NON-NLS-1$
+			System.out.println("init "+node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$
+			return true;
+		},s -> ASTNodes.getTypedAncestor(s, Block.class))
+		.callClassInstanceCreationVisitor((node,holder) -> {
+			System.out.println("init "+node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$
+			return true;
+		}).build(compilationUnit);
+		
+//		HelperVisitor.callMethodInvocationVisitor(IProgressMonitor.class,"beginTask",compilationUnit,new ReferenceHolder<ASTNode, JfaceCandidateHit>(),
+//				nodesprocessed, (visited, holder) -> {
+//					if(visited.arguments().size()!=2) {
+//						return true;
+//					}
+//					ExpressionStatement expr= ASTNodes.getTypedAncestor(visited, ExpressionStatement.class);
+//					String name = null;
+//					SimpleName sn= ASTNodes.as(visited.getExpression(), SimpleName.class);
+//					if (sn != null) {
+//						IBinding ibinding= sn.resolveBinding();
+//						name= ibinding.getName();
+//						IVariableBinding vb=(IVariableBinding) ibinding;
+//						//						ITypeBinding binding= vb.getType();
+//						//						if ((binding != null) && (IProgressMonitor.class.getSimpleName().equals(binding.getName()))) {
+//						JfaceCandidateHit invalidHit= new JfaceCandidateHit();
+//						invalidHit.monitor=visited;
+//						operations.add(fixcore.rewrite(invalidHit));
+//						nodesprocessed.add(visited);
+//						System.out.println("asdf"+name + " " + vb+" " +visited);	
+//						return false;
+//						//						}
+//					}
+//					return true;
+//				});
 	}
 
 	@Override

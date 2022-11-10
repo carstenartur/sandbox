@@ -13,7 +13,6 @@
  *******************************************************************************/
 package org.sandbox.jdt.ui.tests.quickfix;
 
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -26,6 +25,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -33,6 +33,7 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.AnnotationTypeDeclaration;
 import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
+import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.IBinding;
@@ -53,15 +54,25 @@ import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.common.VisitorEnum;
 
+/**
+ * Testing different aspects of the new api
+ * 
+ * @author Carsten Hammer
+ *
+ */
 public class VisitorTest {
 
-	private static CompilationUnit cunit1;
-	private static CompilationUnit cunit2;
+	private static CompilationUnit cunit1,cunit2,cunit3;
 
 	@BeforeAll
 	public static void init() {
 		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
-		String code ="package test;\n" //$NON-NLS-1$
+		parser.setKind(ASTParser.K_COMPILATION_UNIT);
+		Map<String, String> options = JavaCore.getOptions();
+		JavaCore.setComplianceOptions(JavaCore.VERSION_17, options);
+		parser.setCompilerOptions(options);
+		
+		cunit1 = createunit(parser,"package test;\n"  //$NON-NLS-1$
 				+"import java.util.Collection;\n" //$NON-NLS-1$
 				+ "\n" //$NON-NLS-1$
 				+ "public class E {\n" //$NON-NLS-1$
@@ -74,20 +85,10 @@ public class VisitorTest {
 				+ "		}\n" //$NON-NLS-1$
 				+ "		System.out.println(arr);\n" //$NON-NLS-1$
 				+ "	}\n" //$NON-NLS-1$
-				+ "}"; //$NON-NLS-1$
-		parser.setKind(ASTParser.K_COMPILATION_UNIT);
-		parser.setEnvironment(new String[]{}, new String[]{}, null, true);
-		parser.setBindingsRecovery(true);
-		parser.setResolveBindings(true);
-		Map<String, String> options = JavaCore.getOptions();
-		JavaCore.setComplianceOptions(JavaCore.VERSION_11, options);
-		parser.setCompilerOptions(options);
-		parser.setUnitName("E"); //$NON-NLS-1$
-		parser.setSource(code.toCharArray());
-		cunit1 = (CompilationUnit) parser.createAST(null);
+				+ "}", "E"); //$NON-NLS-1$ //$NON-NLS-2$
 
 
-		String code2="package test;\n" //$NON-NLS-1$
+		cunit2 =createunit(parser,"package test;\n" //$NON-NLS-1$
 				+ "import java.util.*;\n" //$NON-NLS-1$
 				+ "public class Test {\n" //$NON-NLS-1$
 				+ "    void println(String strings) {\n" //$NON-NLS-1$
@@ -107,14 +108,31 @@ public class VisitorTest {
 				+ "        }\n" //$NON-NLS-1$
 				+ "        System.out.println();\n" //$NON-NLS-1$
 				+ "    }\n" //$NON-NLS-1$
-				+ "}\n"; //$NON-NLS-1$
+				+ "}\n", "Test"); //$NON-NLS-1$ //$NON-NLS-2$
+		
+		cunit3 =createunit(parser,"package test;\n" //$NON-NLS-1$
+				+ "import java.util.*;\n" //$NON-NLS-1$
+				+ "import org.eclipse.core.runtime.CoreException;\n" //$NON-NLS-1$
+				+ "import org.eclipse.core.runtime.IProgressMonitor;\n" //$NON-NLS-1$
+				+ "import org.eclipse.core.runtime.SubProgressMonitor;\n" //$NON-NLS-1$
+				+ "import org.eclipse.jdt.internal.ui.wizards.NewWizardMessages;\n" //$NON-NLS-1$
+				+ "public class Test extends ArrayList<String> {\n" //$NON-NLS-1$
+				+ "    public void createPackageFragmentRoot(IProgressMonitor monitor) throws CoreException, InterruptedException {\n" //$NON-NLS-1$
+				+ "		monitor.beginTask(NewWizardMessages.NewSourceFolderWizardPage_operation, 3);\n" //$NON-NLS-1$
+				+ "		IProgressMonitor subProgressMonitor= new SubProgressMonitor(monitor, 1);\n" //$NON-NLS-1$
+				+ "		IProgressMonitor subProgressMonitor2= new SubProgressMonitor(monitor, 2);\n" //$NON-NLS-1$
+				+ "	}\n" //$NON-NLS-1$
+				+ "}\n", "Test"); //$NON-NLS-1$ //$NON-NLS-2$
+
+	}
+
+	private static CompilationUnit createunit(ASTParser parser,String code, String name) {
 		parser.setEnvironment(new String[]{}, new String[]{}, null, true);
 		parser.setBindingsRecovery(true);
 		parser.setResolveBindings(true);
-		parser.setUnitName("Test"); //$NON-NLS-1$
-		parser.setSource(code2.toCharArray());
-		cunit2 = (CompilationUnit) parser.createAST(null);
-		//		System.out.println(result.toString());
+		parser.setUnitName(name);
+		parser.setSource(code.toCharArray());
+		return (CompilationUnit) parser.createAST(null);
 	}
 
 	private void astnodeprocessorend(ASTNode node, ReferenceHolder<String,NodeFound> holder) {
@@ -594,14 +612,13 @@ public class VisitorTest {
 		Expression exp = bli.getInitializer();
 		if (exp instanceof MethodInvocation) {
 			MethodInvocation mi = (MethodInvocation) exp;
-			Expression element = mi.getExpression();{
+			Expression element = mi.getExpression();
 				if (element instanceof SimpleName) {
 					SimpleName sn = (SimpleName) element;
 					if (mi.getName().toString().equals("iterator")) { //$NON-NLS-1$
 						name.add(sn.getIdentifier());
 					}
 				}
-			}
 		}
 		return name;
 	}
@@ -737,18 +754,33 @@ public class VisitorTest {
 
 	Collection<String> getUsedVariableNames(ASTNode node) {
 		CompilationUnit root= (CompilationUnit) node.getRoot();
-		return (new ScopeAnalyzer(root)).getUsedVariableNames(node.getStartPosition(), node.getLength());
+		return new ScopeAnalyzer(root).getUsedVariableNames(node.getStartPosition(), node.getLength());
 	}
 	
 	@Test
 	public void methodinvocationTest() {
 		Set<ASTNode> nodesprocessed = null;
 		HelperVisitor<ReferenceHolder<String,NodeFound>,String,NodeFound> hv = new HelperVisitor<>(nodesprocessed, new ReferenceHolder<>());
-		hv.addMethodInvocation(PrintStream.class, "println", (methodinvocationnode, myholder)->{ //$NON-NLS-1$
+		hv.addMethodInvocation(IProgressMonitor.class, "beginTask", (methodinvocationnode, myholder)->{ //$NON-NLS-1$
 			String x = "Start "+methodinvocationnode.getNodeType() + " :" + methodinvocationnode; //$NON-NLS-1$ //$NON-NLS-2$
 			System.out.printf("%-40s %s%n",x,ASTNode.nodeClassForType(methodinvocationnode.getNodeType())); //$NON-NLS-1$
 			return true;
 		});
-		hv.build(cunit2);
+		hv.build(cunit3);
+	}
+
+	@Test
+	public void methodinvocationTest_b() {
+		ReferenceHolder<String, Object> dataholder = new ReferenceHolder<>();
+		ASTProcessor<ReferenceHolder<String, Object>,String,Object> astp=new ASTProcessor<>(dataholder, null);
+		astp
+		.callMethodInvocationVisitor(IProgressMonitor.class,"beginTask",(node,holder) -> { //$NON-NLS-1$
+			System.out.println("init "+node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$
+			return true;
+		},s -> ASTNodes.getTypedAncestor(s, Block.class))
+		.callClassInstanceCreationVisitor((node,holder) -> {
+			System.out.println("init "+node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$
+			return true;
+		}).build(cunit3);
 	}
 }
