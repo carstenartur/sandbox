@@ -18,6 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 
@@ -44,8 +45,15 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 			this.navigate= navigate;
 			this.object= object;
 		}
+		
+		public NodeHolder(BiConsumer<ASTNode, E> callee_end) {
+			this.callee_end= callee_end;
+//			this.object= object;
+		}
 
 		public BiPredicate<ASTNode, E> callee;
+		
+		public BiConsumer<ASTNode, E> callee_end;
 
 		public Function<ASTNode, ASTNode> navigate;
 
@@ -267,7 +275,17 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	public ASTProcessor<E, V, T> callBlockVisitor(BiPredicate<ASTNode, E> bs) {
 		return callBlockVisitor(bs, null);
 	}
-
+	
+	/**
+	 *
+	 * @param bc 
+	 * @return a reference to this object.
+	 */
+	public ASTProcessor<E, V, T> callBlockVisitor(BiConsumer<ASTNode, E> bc) {
+		nodetypelist.put(VisitorEnum.Block, new NodeHolder(bc));
+		return this;
+	}
+	
 	/**
 	 *
 	 * @param bs
@@ -412,6 +430,20 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 */
 	public ASTProcessor<E, V, T> callClassInstanceCreationVisitor(BiPredicate<ASTNode, E> bs) {
 		return callClassInstanceCreationVisitor(bs, null);
+	}
+	
+	/**
+	 *
+	 * @param typeof 
+	 * @param bs
+	 * @return a reference to this object.
+	 */
+	public ASTProcessor<E, V, T> callClassInstanceCreationVisitor(Class typeof,BiPredicate<ASTNode, E> bs) {
+		Map<String, Object> map = Map.ofEntries(
+				new AbstractMap.SimpleEntry<String, Object>(HelperVisitor.TYPEOF, typeof)
+				);
+		nodetypelist.put(VisitorEnum.ClassInstanceCreation, new NodeHolder(bs, null, map));
+		return this;
 	}
 
 	/**
@@ -2372,8 +2404,19 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 		final VisitorEnum next= nodetypekeylist.get(i);
 		ASTProcessor<E, V, T>.NodeHolder nodeHolder= nodetypelist.get(next);
 		BiPredicate<ASTNode, E> biPredicate= nodeHolder.callee;
+		BiConsumer<ASTNode, E> bcConsumer= nodeHolder.callee_end;
 		HelperVisitor<E, V, T> hv= new HelperVisitor<>(nodesprocessed, dataholder);
-		if (nodeHolder.object != null) {
+		if(bcConsumer!=null) {
+			hv.addEnd(next, (node, holder) -> {
+				bcConsumer.accept(node, holder);
+				if (nodeHolder.navigate != null) {
+					process(nodeHolder.navigate.apply(node), i + 1);
+				} else {
+					process(node, i + 1);
+				}
+				return;
+			});
+		} else if (nodeHolder.object != null) {
 			hv.add(nodeHolder.object, next, (node, holder) -> {
 				boolean test= biPredicate.test(node, holder);
 				if (nodeHolder.navigate != null) {
@@ -2383,7 +2426,7 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 				}
 				return test;
 			});
-		} else {
+		} else  {
 			hv.add(next, (node, holder) -> {
 				boolean test= biPredicate.test(node, holder);
 				if (nodeHolder.navigate != null) {

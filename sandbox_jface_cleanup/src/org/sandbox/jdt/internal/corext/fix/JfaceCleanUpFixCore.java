@@ -24,8 +24,8 @@ import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.refactoring.util.TightSourceRangeComputer;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.helper.AbstractTool;
-import org.sandbox.jdt.internal.corext.fix.helper.JfaceCandidateHit;
 import org.sandbox.jdt.internal.corext.fix.helper.JFacePlugin;
 import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
@@ -33,11 +33,11 @@ public enum JfaceCleanUpFixCore {
 
 	MONITOR(new JFacePlugin());
 
-	AbstractTool<JfaceCandidateHit> jfacefound;
+	AbstractTool<ReferenceHolder<String, ASTNode>> jfacefound;
 
 	@SuppressWarnings("unchecked")
-	JfaceCleanUpFixCore(AbstractTool<? extends JfaceCandidateHit> xmlsimplify) {
-		this.jfacefound= (AbstractTool<JfaceCandidateHit>) xmlsimplify;
+	JfaceCleanUpFixCore(AbstractTool<? extends ReferenceHolder<String, ASTNode>> xmlsimplify) {
+		this.jfacefound= (AbstractTool<ReferenceHolder<String, ASTNode>>) xmlsimplify;
 	}
 
 	public String getPreview(boolean i) {
@@ -61,7 +61,7 @@ public enum JfaceCleanUpFixCore {
 		jfacefound.find(this, compilationUnit, operations, nodesprocessed, createForOnlyIfVarUsed);
 	}
 
-	public CompilationUnitRewriteOperation rewrite(final JfaceCandidateHit hit) {
+	public CompilationUnitRewriteOperation rewrite(final ReferenceHolder<String, ASTNode> hit) {
 		return new CompilationUnitRewriteOperation() {
 			@Override
 			public void rewriteAST(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel)
@@ -74,7 +74,7 @@ public enum JfaceCleanUpFixCore {
 				} else {
 					rangeComputer= new TightSourceRangeComputer();
 				}
-				rangeComputer.addTightSourceNode(hit.monitor);
+				rangeComputer.addTightSourceNode((ASTNode) hit.get(JFacePlugin.METHODINVOCATION));
 				rewrite.setTargetSourceRangeComputer(rangeComputer);
 				jfacefound.rewrite(JfaceCleanUpFixCore.this, hit, cuRewrite, group);
 			}
