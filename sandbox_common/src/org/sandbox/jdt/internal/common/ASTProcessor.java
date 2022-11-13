@@ -23,6 +23,8 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 
 /**
  *
@@ -35,19 +37,19 @@ import org.eclipse.jdt.core.dom.ASTNode;
 public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 
 	class NodeHolder {
-		public NodeHolder(BiPredicate<ASTNode, E> callee, Function<ASTNode, ASTNode> navigate) {
-			this.callee= callee;
+		public NodeHolder(BiPredicate<? extends ASTNode, E> callee, Function<ASTNode, ASTNode> navigate) {
+			this.callee= (BiPredicate<ASTNode, E>) callee;
 			this.navigate= navigate;
 		}
 
-		public NodeHolder(BiPredicate<ASTNode, E> callee, Function<ASTNode, ASTNode> navigate, Object object) {
-			this.callee= callee;
+		public NodeHolder(BiPredicate<? extends ASTNode, E> callee, Function<ASTNode, ASTNode> navigate, Object object) {
+			this.callee= (BiPredicate<ASTNode, E>) callee;
 			this.navigate= navigate;
 			this.object= object;
 		}
 		
-		public NodeHolder(BiConsumer<ASTNode, E> callee_end) {
-			this.callee_end= callee_end;
+		public NodeHolder(BiConsumer<? extends ASTNode, E> callee_end) {
+			this.callee_end= (BiConsumer<ASTNode, E>) callee_end;
 //			this.object= object;
 		}
 
@@ -428,7 +430,7 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 * @param bs
 	 * @return a reference to this object.
 	 */
-	public ASTProcessor<E, V, T> callClassInstanceCreationVisitor(BiPredicate<ASTNode, E> bs) {
+	public ASTProcessor<E, V, T> callClassInstanceCreationVisitor(BiPredicate<ClassInstanceCreation, E> bs) {
 		return callClassInstanceCreationVisitor(bs, null);
 	}
 	
@@ -438,7 +440,7 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 * @param bs
 	 * @return a reference to this object.
 	 */
-	public ASTProcessor<E, V, T> callClassInstanceCreationVisitor(Class typeof,BiPredicate<ASTNode, E> bs) {
+	public ASTProcessor<E, V, T> callClassInstanceCreationVisitor(Class typeof,BiPredicate<ClassInstanceCreation, E> bs) {
 		Map<String, Object> map = Map.ofEntries(
 				new AbstractMap.SimpleEntry<String, Object>(HelperVisitor.TYPEOF, typeof)
 				);
@@ -452,7 +454,7 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 * @param navigate
 	 * @return a reference to this object.
 	 */
-	public ASTProcessor<E, V, T> callClassInstanceCreationVisitor(BiPredicate<ASTNode, E> bs,
+	public ASTProcessor<E, V, T> callClassInstanceCreationVisitor(BiPredicate<ClassInstanceCreation, E> bs,
 			Function<ASTNode, ASTNode> navigate) {
 		nodetypelist.put(VisitorEnum.ClassInstanceCreation, new NodeHolder(bs, navigate));
 		return this;
@@ -1200,7 +1202,7 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 * @param bs
 	 * @return a reference to this object.
 	 */
-	public ASTProcessor<E, V, T> callMethodInvocationVisitor(Class typeof,String methodname, BiPredicate<ASTNode, E> bs) {
+	public ASTProcessor<E, V, T> callMethodInvocationVisitor(Class typeof,String methodname, BiPredicate<MethodInvocation, E> bs) {
 		return callMethodInvocationVisitor(typeof,methodname,bs,null);
 	}
 	
@@ -1211,7 +1213,7 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 * @param navigate 
 	 * @return a reference to this object.
 	 */
-	public ASTProcessor<E, V, T> callMethodInvocationVisitor(Class typeof,String methodname, BiPredicate<ASTNode, E> bs, Function<ASTNode, ASTNode> navigate) {
+	public ASTProcessor<E, V, T> callMethodInvocationVisitor(Class typeof,String methodname, BiPredicate<MethodInvocation, E> bs, Function<ASTNode, ASTNode> navigate) {
 		Map<String, Object> map = Map.ofEntries(
 				new AbstractMap.SimpleEntry<String, Object>(HelperVisitor.METHODNAME, methodname),
 				new AbstractMap.SimpleEntry<String, Object>(HelperVisitor.TYPEOF, typeof)

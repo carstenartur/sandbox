@@ -33,11 +33,11 @@ public enum JfaceCleanUpFixCore {
 
 	MONITOR(new JFacePlugin());
 
-	AbstractTool<ReferenceHolder<String, ASTNode>> jfacefound;
+	AbstractTool<ReferenceHolder<String, Object>> jfacefound;
 
 	@SuppressWarnings("unchecked")
-	JfaceCleanUpFixCore(AbstractTool<? extends ReferenceHolder<String, ASTNode>> xmlsimplify) {
-		this.jfacefound= (AbstractTool<ReferenceHolder<String, ASTNode>>) xmlsimplify;
+	JfaceCleanUpFixCore(AbstractTool<? extends ReferenceHolder<String, Object>> xmlsimplify) {
+		this.jfacefound= (AbstractTool<ReferenceHolder<String, Object>>) xmlsimplify;
 	}
 
 	public String getPreview(boolean i) {
@@ -61,7 +61,7 @@ public enum JfaceCleanUpFixCore {
 		jfacefound.find(this, compilationUnit, operations, nodesprocessed, createForOnlyIfVarUsed);
 	}
 
-	public CompilationUnitRewriteOperation rewrite(final ReferenceHolder<String, ASTNode> hit) {
+	public CompilationUnitRewriteOperation rewrite(final ReferenceHolder<String, Object> hit) {
 		return new CompilationUnitRewriteOperation() {
 			@Override
 			public void rewriteAST(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel)
