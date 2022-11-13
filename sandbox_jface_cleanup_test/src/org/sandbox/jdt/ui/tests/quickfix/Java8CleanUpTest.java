@@ -25,12 +25,10 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava8;
 
 
-//@RunWith(JUnitPlatform.class)
 public class Java8CleanUpTest {
 
 	@RegisterExtension
 	AbstractEclipseJava context= new EclipseJava8();
-//	JUnitPlatform asdf;
 	
 	enum JFaceCleanupCases{
 		PositiveCase("package test;\n"
@@ -51,11 +49,12 @@ public class Java8CleanUpTest {
 						+ "import java.util.*;\n"
 						+ "import org.eclipse.core.runtime.CoreException;\n"
 						+ "import org.eclipse.core.runtime.IProgressMonitor;\n"
+						+ "import org.eclipse.core.runtime.SubMonitor;\n"
 						+ "import org.eclipse.core.runtime.SubProgressMonitor;\n"
 						+ "import org.eclipse.jdt.internal.ui.wizards.NewWizardMessages;\n"
 						+ "public class Test extends ArrayList<String> {\n"
 						+ "    public void createPackageFragmentRoot(IProgressMonitor monitor) throws CoreException, InterruptedException {\n"
-						+ "		SubMonitor subMonitor = SubMonitor.convert(monitor,NewWizardMessages.NewSourceFolderWizardPage_operation, 3);\n"
+						+ "		SubMonitor subMonitor=SubMonitor.convert(monitor,NewWizardMessages.NewSourceFolderWizardPage_operation,3);\n"
 						+ "		IProgressMonitor subProgressMonitor= subMonitor.split(1);\n"
 						+ "		IProgressMonitor subProgressMonitor2= subMonitor.split(2);\n"
 						+ "	}\n"
@@ -106,7 +105,7 @@ public class Java8CleanUpTest {
 		String given;
 	}
 
-//	@Disabled
+	@Disabled
 	@ParameterizedTest
 	@EnumSource(NO_JFaceCleanupCases.class)
 	public void testJFaceCleanup_donttouch(NO_JFaceCleanupCases test) throws CoreException {
