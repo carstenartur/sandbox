@@ -13,13 +13,11 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import java.io.FileInputStream;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.jdt.core.dom.AST;
@@ -31,8 +29,6 @@ import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
-import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
-import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodeFactory;
@@ -77,34 +73,20 @@ public class JFacePlugin extends AbstractTool<ReferenceHolder<String, Object>> {
 			return true;
 		},s -> ASTNodes.getTypedAncestor(s, Block.class))
 		.callClassInstanceCreationVisitor(SubProgressMonitor.class,(node,holder) -> {
+			String name = (String) holder.get(METHODINVOCATION+"_varname");
+			List<?> arguments = node.arguments();
+			SimpleName simplename = (SimpleName) arguments.get(0);
+			if(!name.equals(simplename.getIdentifier())){
+				return true;
+			}
 			System.out.println("init "+node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$
 			Set<ClassInstanceCreation> nodeset=(Set<ClassInstanceCreation>) holder.computeIfAbsent(CLASS_INSTANCE_CREATION, k->new HashSet<ClassInstanceCreation>());
 			nodeset.add(node);
+			operations.add(fixcore.rewrite(dataholder));
+			nodesprocessed.add((ASTNode) dataholder.get(METHODINVOCATION));
 			return true;
 		})
 		.build(compilationUnit);
-		operations.add(fixcore.rewrite(dataholder));
-		nodesprocessed.add((ASTNode) dataholder.get(METHODINVOCATION));
-
-//		HelperVisitor.callMethodInvocationVisitor(IProgressMonitor.class,"beginTask",compilationUnit,new ReferenceHolder<ASTNode, JfaceCandidateHit>(),
-//				nodesprocessed, (visited, holder) -> {
-//					name
-//					ExpressionStatement expr= ASTNodes.getTypedAncestor(visited, ExpressionStatement.class);
-//					String name = null;
-//					SimpleName sn= ASTNodes.as(visited.getExpression(), SimpleName.class);
-//					if (sn != null) {
-//						IBinding ibinding= sn.resolveBinding();
-//						name= ibinding.getName();
-//						IVariableBinding vb=(IVariableBinding) ibinding;
-//						//						ITypeBinding binding= vb.getType();
-//						//						if ((binding != null) && (IProgressMonitor.class.getSimpleName().equals(binding.getName()))) {
-
-//						System.out.println("asdf"+name + " " + vb+" " +visited);	
-//						return false;
-//						//						}
-//					}
-//					return true;
-//				});
 	}
 
 	@Override
@@ -116,22 +98,19 @@ public class JFacePlugin extends AbstractTool<ReferenceHolder<String, Object>> {
 		ImportRewrite importRewrite= cuRewrite.getImportRewrite();
 		ImportRemover remover= cuRewrite.getImportRemover();
 		System.out.println("rewrite"+hit);	
-		String name = (String) hit.get(METHODINVOCATION+"_varname");
+//		String name = (String) hit.get(METHODINVOCATION+"_varname");
 		MethodInvocation minv= (MethodInvocation) hit.get(METHODINVOCATION);
 		List<ASTNode> arguments= minv.arguments();
-		Set<ClassInstanceCreation> nodeset=(Set<ClassInstanceCreation>) hit.get(CLASS_INSTANCE_CREATION);
 		
 		// monitor.beginTask(NewWizardMessages.NewSourceFolderWizardPage_operation, 3);
-		// IProgressMonitor subProgressMonitor= new SubProgressMonitor(monitor, 1);
-		
 		// SubMonitor subMonitor = SubMonitor.convert(monitor,NewWizardMessages.NewSourceFolderWizardPage_operation, 3);
-		// IProgressMonitor subProgressMonitor= subMonitor.split(1);
-
+		
 		SingleVariableDeclaration newVariableDeclarationStatement = ast.newSingleVariableDeclaration();
-		newVariableDeclarationStatement.setName(ast.newSimpleName("subMonitor"));
+		String identifier = "subMonitor";
+		newVariableDeclarationStatement.setName(ast.newSimpleName(identifier));
 		newVariableDeclarationStatement.setType(ast.newSimpleType(addImport(SubMonitor.class.getCanonicalName(),cuRewrite,ast)));
 		
-		MethodInvocation staticCall= ast.newMethodInvocation();
+		MethodInvocation staticCall = ast.newMethodInvocation();
 		staticCall.setExpression(ASTNodeFactory.newName(ast, SubMonitor.class.getSimpleName()));
 		staticCall.setName(ast.newSimpleName("convert"));
 		List<ASTNode> staticCallArguments= staticCall.arguments();
@@ -144,7 +123,22 @@ public class JFacePlugin extends AbstractTool<ReferenceHolder<String, Object>> {
 		newVariableDeclarationStatement.setInitializer(staticCall);
 		
 		ASTNodes.replaceButKeepComment(rewrite, minv, newVariableDeclarationStatement, group);
-		System.out.println("result"+staticCall);	
+		System.out.println("result"+staticCall);
+		
+		Set<ClassInstanceCreation> nodeset=(Set<ClassInstanceCreation>) hit.get(CLASS_INSTANCE_CREATION);
+		for(ClassInstanceCreation submon:nodeset) {
+			ASTNode origarg = (ASTNode) submon.arguments().get(1);
+			// IProgressMonitor subProgressMonitor= new SubProgressMonitor(monitor, 1);
+			// IProgressMonitor subProgressMonitor= subMonitor.split(1);
+			MethodInvocation newMethodInvocation2 = ast.newMethodInvocation();
+			newMethodInvocation2.setName(ast.newSimpleName("split"));
+			newMethodInvocation2.setExpression(ASTNodeFactory.newName(ast, identifier));
+			List<ASTNode> splitCallArguments= newMethodInvocation2.arguments();
+
+			splitCallArguments.add(ASTNodes.createMoveTarget(rewrite,
+					ASTNodes.getUnparenthesedExpression(origarg)));
+			ASTNodes.replaceButKeepComment(rewrite,submon, newMethodInvocation2, group);
+		}
 		remover.applyRemoves(importRewrite);
 	}
 
