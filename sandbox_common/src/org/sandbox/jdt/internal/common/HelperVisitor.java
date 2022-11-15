@@ -13,6 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.common;
 
+import java.util.AbstractMap;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -34,6 +35,16 @@ import org.eclipse.jdt.core.dom.*;
  * @since 1.15
  */
 public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
+
+	/**
+	 * 
+	 */
+	public static final String TYPEOF = "typeof"; //$NON-NLS-1$
+
+	/**
+	 * 
+	 */
+	public static final String METHODNAME = "methodname"; //$NON-NLS-1$
 
 	ASTVisitor astvisitor;
 
@@ -669,10 +680,27 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	 */
 	public BiPredicate<? extends ASTNode, E> addMethodInvocation(String methodname,
 			BiPredicate<MethodInvocation, E> bs) {
-		this.predicatedata.put(VisitorEnum.MethodInvocation, methodname);
+		predicatedata.put(VisitorEnum.MethodInvocation, Map.ofEntries(
+				  new AbstractMap.SimpleEntry<String, Object>(METHODNAME, methodname)
+				 ));
 		return predicatemap.put(VisitorEnum.MethodInvocation, bs);
 	}
 
+	/**
+	 * @param typeof
+	 * @param methodname
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate<? extends ASTNode, E> addMethodInvocation(Class typeof, String methodname,
+			BiPredicate<MethodInvocation, E> bs) {
+		Map<String, Object> map = Map.ofEntries(
+				  new AbstractMap.SimpleEntry<String, Object>(METHODNAME, methodname),
+				  new AbstractMap.SimpleEntry<String, Object>(TYPEOF, typeof)
+				);
+		predicatedata.put(VisitorEnum.MethodInvocation, map);
+		return predicatemap.put(VisitorEnum.MethodInvocation, bs);
+	}
 	/**
 	 *
 	 * @param bs
@@ -1130,13 +1158,17 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 
 	/**
 	 *
+	 * @param typeof 
 	 * @param class1
 	 * @param bs
 	 * @return old BiPredicate assigned for nodetype
 	 */
-	public BiPredicate<? extends ASTNode, E> addVariableDeclarationStatement(Class<?> class1,
+	public BiPredicate<? extends ASTNode, E> addVariableDeclarationStatement(Class<?> typeof,
 			BiPredicate<VariableDeclarationStatement, E> bs) {
-		this.predicatedata.put(VisitorEnum.VariableDeclarationStatement, class1);
+		Map<String, Object> map = Map.ofEntries(
+				  new AbstractMap.SimpleEntry<String, Object>(TYPEOF, typeof)
+				);
+		predicatedata.put(VisitorEnum.VariableDeclarationStatement, map);
 		return predicatemap.put(VisitorEnum.VariableDeclarationStatement, bs);
 	}
 
@@ -1644,7 +1676,9 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer<? extends ASTNode, E> addMethodInvocation(String methodname, BiConsumer<MethodInvocation, E> bc) {
-		this.consumerdata.put(VisitorEnum.MethodInvocation, methodname);
+		this.consumerdata.put(VisitorEnum.MethodInvocation, Map.ofEntries(
+				  new AbstractMap.SimpleEntry<String, Object>(METHODNAME, methodname)
+				 ));
 		return consumermap.put(VisitorEnum.MethodInvocation, bc);
 	}
 
@@ -2104,13 +2138,17 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 
 	/**
 	 *
+	 * @param typeof 
 	 * @param class1
 	 * @param bc
 	 * @return old BiConsumer assigned for nodetype
 	 */
-	public BiConsumer<? extends ASTNode, E> addVariableDeclarationStatement(Class<?> class1,
+	public BiConsumer<? extends ASTNode, E> addVariableDeclarationStatement(Class<?> typeof,
 			BiConsumer<VariableDeclarationStatement, E> bc) {
-		this.consumerdata.put(VisitorEnum.VariableDeclarationStatement, class1);
+		Map<String, Object> map = Map.ofEntries(
+				  new AbstractMap.SimpleEntry<String, Object>(TYPEOF, typeof)
+				);
+		consumerdata.put(VisitorEnum.VariableDeclarationStatement, map);
 		return consumermap.put(VisitorEnum.VariableDeclarationStatement, bc);
 	}
 
@@ -2671,8 +2709,32 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	 */
 	public void addMethodInvocation(String methodname, BiPredicate<MethodInvocation, E> bs,
 			BiConsumer<MethodInvocation, E> bc) {
-		this.predicatedata.put(VisitorEnum.MethodInvocation, methodname);
+		predicatedata.put(VisitorEnum.MethodInvocation, Map.ofEntries(
+				  new AbstractMap.SimpleEntry<String, Object>(METHODNAME, methodname)
+				 ));
 		predicatemap.put(VisitorEnum.MethodInvocation, bs);
+		consumerdata.put(VisitorEnum.MethodInvocation, Map.ofEntries(
+				  new AbstractMap.SimpleEntry<String, Object>(METHODNAME, methodname)
+				 ));
+		consumermap.put(VisitorEnum.MethodInvocation, bc);
+	}
+	
+	/**
+	 * @param typeof 
+	 * @param methodof
+	 * @param methodname
+	 * @param bs
+	 * @param bc
+	 */
+	public void addMethodInvocation(Class typeof, String methodname, BiPredicate<MethodInvocation, E> bs,
+			BiConsumer<MethodInvocation, E> bc) {
+		Map<String, Object> map = Map.ofEntries(
+				  new AbstractMap.SimpleEntry<String, Object>(METHODNAME, methodname),
+				  new AbstractMap.SimpleEntry<String, Object>(TYPEOF, typeof)
+				);
+		predicatedata.put(VisitorEnum.MethodInvocation, map);
+		predicatemap.put(VisitorEnum.MethodInvocation, bs);
+		consumerdata.put(VisitorEnum.MethodInvocation, map);
 		consumermap.put(VisitorEnum.MethodInvocation, bc);
 	}
 
@@ -3200,14 +3262,18 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 
 	/**
 	 *
+	 * @param typeof 
 	 * @param class1
 	 * @param bs
 	 * @param bc
 	 */
-	public void addVariableDeclarationStatement(Class<?> class1, BiPredicate<VariableDeclarationStatement, E> bs,
+	public void addVariableDeclarationStatement(Class<?> typeof, BiPredicate<VariableDeclarationStatement, E> bs,
 			BiConsumer<VariableDeclarationStatement, E> bc) {
-		predicatedata.put(VisitorEnum.VariableDeclarationStatement, class1);
-		consumerdata.put(VisitorEnum.VariableDeclarationStatement, class1);
+		Map<String, Object> map = Map.ofEntries(
+				  new AbstractMap.SimpleEntry<String, Object>(TYPEOF, typeof)
+				);
+		predicatedata.put(VisitorEnum.VariableDeclarationStatement, map);
+		consumerdata.put(VisitorEnum.VariableDeclarationStatement, map);
 		predicatemap.put(VisitorEnum.VariableDeclarationStatement, bs);
 		consumermap.put(VisitorEnum.VariableDeclarationStatement, bc);
 	}
@@ -4198,6 +4264,24 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 
 		HelperVisitor<ReferenceHolder<V, T>,V,T> hv= new HelperVisitor<>(nodesprocessed, dataholder);
 		hv.addMethodInvocation(methodname, bs);
+		hv.build(node);
+	}
+	
+	/**
+	 * @param <V>
+	 * @param <T>
+	 * @param methodof
+	 * @param methodname
+	 * @param node
+	 * @param dataholder
+	 * @param nodesprocessed
+	 * @param bs
+	 */
+	public static <V, T> void callMethodInvocationVisitor(Class methodof, String methodname, ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+			BiPredicate<MethodInvocation, ReferenceHolder<V, T>> bs) {
+
+		HelperVisitor<ReferenceHolder<V, T>,V,T> hv= new HelperVisitor<>(nodesprocessed, dataholder);
+		hv.addMethodInvocation(methodof, methodname, bs);
 		hv.build(node);
 	}
 

@@ -13,52 +13,132 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodeFactory;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.refactoring.structure.ImportRemover;
 import org.eclipse.text.edits.TextEditGroup;
-import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.ASTProcessor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JfaceCleanUpFixCore;
 
 /**
  *
  */
-public class JFacePlugin extends AbstractTool<JfaceCandidateHit> {
+public class JFacePlugin extends AbstractTool<ReferenceHolder<String, Object>> {
+
+	public static final String CLASS_INSTANCE_CREATION = "ClassInstanceCreation";
+	public static final String METHODINVOCATION = "MethodInvocation";
+
 
 	@Override
 	public void find(JfaceCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed,
 			boolean createForOnlyIfVarUsed) {
-		
-		ReferenceHolder<ASTNode, JfaceCandidateHit> dataholder= new ReferenceHolder<>();
-		Map<ASTNode, JfaceCandidateHit> operationsMap= new LinkedHashMap<>();
-		JfaceCandidateHit invalidHit= new JfaceCandidateHit();
-		HelperVisitor.callMethodInvocationVisitor("beginTask",compilationUnit, dataholder,
-				nodesprocessed, (init_monitor, holder_a) -> {
-					return true;
-				});
-		System.out.println("asdf"+compilationUnit);	
+		ReferenceHolder<String, Object> dataholder = new ReferenceHolder<>();
+		ASTProcessor<ReferenceHolder<String, Object>,String,Object> astp=new ASTProcessor<>(dataholder, nodesprocessed);
+		astp
+		.callMethodInvocationVisitor(IProgressMonitor.class,"beginTask",(node,holder) -> { //$NON-NLS-1$
+			if(node.arguments().size()!=2) {
+				return true;
+			}
+			System.out.println("begintask "+node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$
+			SimpleName sn= ASTNodes.as(node.getExpression(), SimpleName.class);
+			if (sn != null) {
+				IBinding ibinding= sn.resolveBinding();
+				String name = ibinding.getName();
+				holder.put(METHODINVOCATION+"_varname",name);
+				holder.put(METHODINVOCATION,node);
+//				nodesprocessed.add(node);
+			}
+			return true;
+		},s -> ASTNodes.getTypedAncestor(s, Block.class))
+		.callClassInstanceCreationVisitor(SubProgressMonitor.class,(node,holder) -> {
+			String name = (String) holder.get(METHODINVOCATION+"_varname");
+			List<?> arguments = node.arguments();
+			SimpleName simplename = (SimpleName) arguments.get(0);
+			if(!name.equals(simplename.getIdentifier())){
+				return true;
+			}
+			System.out.println("init "+node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$
+			Set<ClassInstanceCreation> nodeset=(Set<ClassInstanceCreation>) holder.computeIfAbsent(CLASS_INSTANCE_CREATION, k->new HashSet<ClassInstanceCreation>());
+			nodeset.add(node);
+			operations.add(fixcore.rewrite(dataholder));
+			nodesprocessed.add((ASTNode) dataholder.get(METHODINVOCATION));
+			return true;
+		})
+		.build(compilationUnit);
 	}
 
 	@Override
-	public void rewrite(JfaceCleanUpFixCore upp, final JfaceCandidateHit hit,
+	public void rewrite(JfaceCleanUpFixCore upp, final ReferenceHolder<String, Object> hit,
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
-//		ASTRewrite rewrite= cuRewrite.getASTRewrite();
-//		AST ast= cuRewrite.getRoot().getAST();
+		ASTRewrite rewrite= cuRewrite.getASTRewrite();
+		AST ast= cuRewrite.getRoot().getAST();
 
 		ImportRewrite importRewrite= cuRewrite.getImportRewrite();
 		ImportRemover remover= cuRewrite.getImportRemover();
+		System.out.println("rewrite"+hit);	
+//		String name = (String) hit.get(METHODINVOCATION+"_varname");
+		MethodInvocation minv= (MethodInvocation) hit.get(METHODINVOCATION);
+		List<ASTNode> arguments= minv.arguments();
+		
+		// monitor.beginTask(NewWizardMessages.NewSourceFolderWizardPage_operation, 3);
+		// SubMonitor subMonitor = SubMonitor.convert(monitor,NewWizardMessages.NewSourceFolderWizardPage_operation, 3);
+		
+		SingleVariableDeclaration newVariableDeclarationStatement = ast.newSingleVariableDeclaration();
+		String identifier = "subMonitor";
+		newVariableDeclarationStatement.setName(ast.newSimpleName(identifier));
+		newVariableDeclarationStatement.setType(ast.newSimpleType(addImport(SubMonitor.class.getCanonicalName(),cuRewrite,ast)));
+		
+		MethodInvocation staticCall = ast.newMethodInvocation();
+		staticCall.setExpression(ASTNodeFactory.newName(ast, SubMonitor.class.getSimpleName()));
+		staticCall.setName(ast.newSimpleName("convert"));
+		List<ASTNode> staticCallArguments= staticCall.arguments();
+		staticCallArguments.add(ASTNodes.createMoveTarget(rewrite,
+				ASTNodes.getUnparenthesedExpression(minv.getExpression())));
+		staticCallArguments.add(ASTNodes.createMoveTarget(rewrite,
+				ASTNodes.getUnparenthesedExpression(arguments.get(0))));
+		staticCallArguments.add(ASTNodes.createMoveTarget(rewrite,
+				ASTNodes.getUnparenthesedExpression(arguments.get(1))));
+		newVariableDeclarationStatement.setInitializer(staticCall);
+		
+		ASTNodes.replaceButKeepComment(rewrite, minv, newVariableDeclarationStatement, group);
+		System.out.println("result"+staticCall);
+		
+		Set<ClassInstanceCreation> nodeset=(Set<ClassInstanceCreation>) hit.get(CLASS_INSTANCE_CREATION);
+		for(ClassInstanceCreation submon:nodeset) {
+			ASTNode origarg = (ASTNode) submon.arguments().get(1);
+			// IProgressMonitor subProgressMonitor= new SubProgressMonitor(monitor, 1);
+			// IProgressMonitor subProgressMonitor= subMonitor.split(1);
+			MethodInvocation newMethodInvocation2 = ast.newMethodInvocation();
+			newMethodInvocation2.setName(ast.newSimpleName("split"));
+			newMethodInvocation2.setExpression(ASTNodeFactory.newName(ast, identifier));
+			List<ASTNode> splitCallArguments= newMethodInvocation2.arguments();
 
-
+			splitCallArguments.add(ASTNodes.createMoveTarget(rewrite,
+					ASTNodes.getUnparenthesedExpression(origarg)));
+			ASTNodes.replaceButKeepComment(rewrite,submon, newMethodInvocation2, group);
+		}
 		remover.applyRemoves(importRewrite);
 	}
 

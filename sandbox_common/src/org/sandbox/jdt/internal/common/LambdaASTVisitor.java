@@ -13,10 +13,12 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.common;
 
+import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 
 import org.eclipse.jdt.core.dom.*;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 
 /**
  *
@@ -193,7 +195,17 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 
 	@Override
 	public boolean visit(ClassInstanceCreation node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ClassInstanceCreation)) {
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ClassInstanceCreation)) {	
+			Map<String, Object> map=(Map<String, Object>) this.helperVisitor.getSupplierData().get(VisitorEnum.ClassInstanceCreation);
+			if(map != null) {
+				Class<?> typeof=(Class<?>) map.get(HelperVisitor.TYPEOF);
+				if(typeof!=null) {
+					ITypeBinding binding= node.resolveTypeBinding();
+					if (!typeof.getSimpleName().equals(binding.getName())) {
+						return true;
+					}
+				}
+			}
 			return ((BiPredicate<ClassInstanceCreation, E>) (this.helperVisitor.predicatemap
 					.get(VisitorEnum.ClassInstanceCreation))).test(node, this.helperVisitor.dataholder);
 		}
@@ -500,9 +512,30 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	@Override
 	public boolean visit(MethodInvocation node) {
 		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.MethodInvocation)) {
-			String data=(String) this.helperVisitor.getSupplierData().get(VisitorEnum.MethodInvocation);
-			if (data!= null && !node.getName().getIdentifier().equals(data)) {
-				return true;
+			Map<String, Object> map=(Map<String, Object>) this.helperVisitor.getSupplierData().get(VisitorEnum.MethodInvocation);
+			if(map != null) {
+				String data=(String) map.get(HelperVisitor.METHODNAME);
+				if (data!= null) {
+					if (!node.getName().getIdentifier().equals(data)) {
+						return true;
+					}
+				}
+				Class<?> typeof=(Class<?>) map.get(HelperVisitor.TYPEOF);
+				if(typeof!=null) {
+					Name sn= ASTNodes.as(node.getExpression(), Name.class);
+					if (sn != null) {
+						IBinding ibinding= sn.resolveBinding();
+						IVariableBinding vb=(IVariableBinding) ibinding;
+						ITypeBinding binding= vb.getType();
+						if (binding != null) {
+							if (!typeof.getSimpleName().equals(binding.getName())) {
+								return true;
+							}
+						}
+					} else {
+						return true;
+					}
+				}
 			}
 			return ((BiPredicate<MethodInvocation, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.MethodInvocation))).test(node, this.helperVisitor.dataholder);
 		}
@@ -953,14 +986,17 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	@Override
 	public boolean visit(VariableDeclarationStatement node) {
 		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.VariableDeclarationStatement)) {
-			Class<?> data=(Class<?>) this.helperVisitor.getSupplierData().get(VisitorEnum.VariableDeclarationStatement);
-			if (data!= null) {
-				VariableDeclarationFragment bli = (VariableDeclarationFragment) node.fragments().get(0);
-				IVariableBinding resolveBinding = bli.resolveBinding();
-				if(resolveBinding!=null) {
-					String qualifiedName = resolveBinding.getType().getErasure().getQualifiedName();
-					if (!data.getCanonicalName().equals(qualifiedName)) {
-						return true;
+			Map<String, Object> map=(Map<String, Object>)this.helperVisitor.getConsumerData().get(VisitorEnum.VariableDeclarationStatement);
+			if(map != null) {
+				Class<?> data=(Class<?>) map.get(HelperVisitor.TYPEOF);
+				if (data!= null) {
+					VariableDeclarationFragment bli = (VariableDeclarationFragment) node.fragments().get(0);
+					IVariableBinding resolveBinding = bli.resolveBinding();
+					if(resolveBinding!=null) {
+						String qualifiedName = resolveBinding.getType().getErasure().getQualifiedName();
+						if (!data.getCanonicalName().equals(qualifiedName)) {
+							return true;
+						}
 					}
 				}
 			}
@@ -1392,9 +1428,30 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	@Override
 	public void endVisit(MethodInvocation node) {
 		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.MethodInvocation)) {
-			String data=(String) this.helperVisitor.getConsumerData().get(VisitorEnum.MethodInvocation);
-			if (data!= null && !node.getName().getIdentifier().equals(data)) {
-				return;
+			Map<String, Object> map=(Map<String, Object>) this.helperVisitor.getConsumerData().get(VisitorEnum.MethodInvocation);
+			if(map != null) {
+				String data=(String) map.get(HelperVisitor.METHODNAME);
+				if (data!= null) {
+					if (!node.getName().getIdentifier().equals(data)) {
+						return;
+					}
+				}
+				Class<?> typeof=(Class<?>) map.get(HelperVisitor.TYPEOF);
+				if(typeof!=null) {
+					Name sn= ASTNodes.as(node.getExpression(), Name.class);
+					if (sn != null) {
+						IBinding ibinding= sn.resolveBinding();
+						IVariableBinding vb=(IVariableBinding) ibinding;
+						ITypeBinding binding= vb.getType();
+						if (binding != null) {
+							if (!typeof.getSimpleName().equals(binding.getName())) {
+								return;
+							}
+						}
+					} else {
+						return;
+					}
+				}
 			}
 			((BiConsumer<MethodInvocation, E>) (this.helperVisitor.consumermap.get(VisitorEnum.MethodInvocation))).accept(node,
 					this.helperVisitor.dataholder);
@@ -1778,14 +1835,17 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	@Override
 	public void endVisit(VariableDeclarationStatement node) {
 		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.VariableDeclarationStatement)) {
-			Class<?> data=(Class<?>) this.helperVisitor.getConsumerData().get(VisitorEnum.VariableDeclarationStatement);
-			if (data!= null) {
-				VariableDeclarationFragment bli = (VariableDeclarationFragment) node.fragments().get(0);
-				IVariableBinding resolveBinding = bli.resolveBinding();
-				if(resolveBinding!=null) {
-					String qualifiedName = resolveBinding.getType().getErasure().getQualifiedName();
-					if (!data.getCanonicalName().equals(qualifiedName)) {
-						return;
+			Map<String, Object> map=(Map<String, Object>)this.helperVisitor.getConsumerData().get(VisitorEnum.VariableDeclarationStatement);
+			if(map != null) {
+				Class<?> data=(Class<?>) map.get(HelperVisitor.TYPEOF);
+				if (data!= null) {
+					VariableDeclarationFragment bli = (VariableDeclarationFragment) node.fragments().get(0);
+					IVariableBinding resolveBinding = bli.resolveBinding();
+					if(resolveBinding!=null) {
+						String qualifiedName = resolveBinding.getType().getErasure().getQualifiedName();
+						if (!data.getCanonicalName().equals(qualifiedName)) {
+							return;
+						}
 					}
 				}
 			}
