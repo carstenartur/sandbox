@@ -2,7 +2,7 @@
 <feature
       id="sandbox_tools_feature"
       label="Sandbox tools feature"
-      version="1.0.0.qualifier">
+      version="1.1.0.qualifier">
 
    <description>
       %description

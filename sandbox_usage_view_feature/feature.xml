@@ -2,7 +2,7 @@
 <feature
       id="sandbox_usage_view_feature"
       label="JavaHelper View"
-      version="1.0.0.qualifier">
+      version="1.1.0.qualifier">
 
    <description>
       JavaHelper View for Eclipse
