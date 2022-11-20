@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: sandbox_common
 Bundle-SymbolicName: sandbox_common;singleton:=true
-Bundle-Version: 1.0.0.qualifier
+Bundle-Version: 1.1.0.qualifier
 Bundle-RequiredExecutionEnvironment: JavaSE-17
 Bundle-ActivationPolicy: lazy
 Eclipse-BuddyPolicy: global
@@ -21,5 +21,5 @@ Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.search,
  org.eclipse.e4.core.services
 Automatic-Module-Name: sandbox.common
-Export-Package: org.sandbox.jdt.internal.common,
+Export-Package: org.sandbox.jdt.internal.common;uses:="org.eclipse.jdt.core.dom",
  org.sandbox.jdt.internal.corext.fix2

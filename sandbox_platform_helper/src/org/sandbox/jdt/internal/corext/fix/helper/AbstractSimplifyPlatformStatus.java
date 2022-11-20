@@ -71,8 +71,11 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 			compilationUnit.accept(new ASTVisitor() {
 				@Override
 				public boolean visit(final ClassInstanceCreation visited) {
-					if (nodesprocessed.contains(visited) || ((visited.arguments().size() != 3)
-							&& (visited.arguments().size() != 4) && (visited.arguments().size() != 5))) {
+					if (nodesprocessed.contains(visited) || (
+							   (visited.arguments().size() != 3)
+							&& (visited.arguments().size() != 4) 
+							&& (visited.arguments().size() != 5)
+							)) {
 						return false;
 					}
 

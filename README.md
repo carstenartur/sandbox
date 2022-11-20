@@ -19,7 +19,7 @@ The product can be found in "sandbox_product/target" and the war file in "sandbo
 
 # What is included
 
-Code based on Java 11
+Code based on Java 17
 
 - how to create a cleanup
 - how to setup spotbugs maven plugin to fail build in case of spotbugs error
