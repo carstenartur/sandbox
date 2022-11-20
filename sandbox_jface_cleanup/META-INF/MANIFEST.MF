@@ -17,7 +17,7 @@ Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.jface,
  org.eclipse.ui.workbench,
  org.eclipse.jdt.core.manipulation,
- sandbox_common
+ sandbox_common;bundle-version="1.1.0";visibility:=reexport
 Bundle-ActivationPolicy: lazy
 Eclipse-RegisterBuddy: org.eclipse.jdt.core.manipulation
 Import-Package: org.sandbox.jdt.internal.common,
