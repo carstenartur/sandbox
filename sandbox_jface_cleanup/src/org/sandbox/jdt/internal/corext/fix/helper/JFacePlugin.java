@@ -43,6 +43,42 @@ import org.sandbox.jdt.internal.corext.fix.JfaceCleanUpFixCore;
 
 /**
  *
+ *SubProgressMonitor has been deprecated
+What is affected: Clients that refer to org.eclipse.core.runtime.SubProgressMonitor.
+
+Description: org.eclipse.core.runtime.SubProgressMonitor has been deprecated and replaced by org.eclipse.core.runtime.SubMonitor.
+
+Action required:
+
+Calls to IProgressMonitor.beginTask on the root monitor should be replaced by a call to SubMonitor.convert.
+Keep the returned SubMonitor around as a local variable and refer to it instead of the root monitor for the remainder of the method.
+All calls to SubProgressMonitor(IProgressMonitor, int) should be replaced by calls to SubMonitor.split(int).
+If a SubProgressMonitor is constructed using the SUPPRESS_SUBTASK_LABEL flag, replace it with the two-argument version of SubMonitor.split(int, int) using SubMonitor.SUPPRESS_SUBTASK as the second argument.
+It is not necessary to call done on an instance of SubMonitor.
+Example:
+
+Consider the following example:
+     void someMethod(IProgressMonitor pm) {
+        pm.beginTask("Main Task", 100);
+        SubProgressMonitor subMonitor1= new SubProgressMonitor(pm, 60);
+        try {
+           doSomeWork(subMonitor1);
+        } finally {
+           subMonitor1.done();
+        }
+        SubProgressMonitor subMonitor2= new SubProgressMonitor(pm, 40);
+        try {
+           doSomeMoreWork(subMonitor2);
+        } finally {
+           subMonitor2.done();
+        }
+     }
+The above code should be refactored to this:
+     void someMethod(IProgressMonitor pm) {
+        SubMonitor subMonitor = SubMonitor.convert(pm, "Main Task", 100);
+        doSomeWork(subMonitor.split(60));
+        doSomeMoreWork(subMonitor.split(40));
+     }
  */
 public class JFacePlugin extends AbstractTool<ReferenceHolder<String, Object>> {
 

@@ -15,7 +15,7 @@
 		<dependency>
 			<groupId>org.sandbox</groupId>
 			<artifactId>sandbox_jface_cleanup</artifactId>
-			</dependency>
+		</dependency>
 	</dependencies>
 	<build>
 		<testSourceDirectory>src</testSourceDirectory>
@@ -27,14 +27,14 @@
 				<configuration>
 					<skip>false</skip>
 					<useUIHarness>true</useUIHarness>
-					<dependencies>
+					<dependencies><!--
 						<dependency>
 							<type>eclipse-plugin</type>
 							<groupId>org.sandbox</groupId>
 							<artifactId>sandbox_jface_cleanup</artifactId>
-							<!-- This is the minimum required version -->
+							 This is the minimum required version 
 							<version>0.0.0</version>
-						</dependency>
+						</dependency>-->
 					</dependencies>
 				</configuration>
 			</plugin>
