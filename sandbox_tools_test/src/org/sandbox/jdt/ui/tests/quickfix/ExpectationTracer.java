@@ -37,12 +37,12 @@ public class ExpectationTracer extends ConcurrentHashMap<ASTNode,SimpleName> imp
 		this.hv=hv;
 	}
 
-	private void writeObject(ObjectOutputStream stream)
+	private static void writeObject(ObjectOutputStream stream)
 			throws IOException {
 		stream.defaultWriteObject();
 	}
 
-	private void readObject(ObjectInputStream stream)
+	private static void readObject(ObjectInputStream stream)
 			throws IOException, ClassNotFoundException {
 		stream.defaultReadObject();
 	}

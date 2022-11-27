@@ -202,6 +202,7 @@
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
+			    <type>eclipse-plugin</type>
 				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_encoding_quickfix</artifactId>
 				<version>${project.version}</version>
@@ -212,11 +213,13 @@
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
+				<type>eclipse-plugin</type>
 				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_encoding_quickfix_test</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
+			    <type>eclipse-plugin</type>
 				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_extra_search</artifactId>
 				<version>${project.version}</version>
@@ -227,16 +230,19 @@
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
+				<type>eclipse-plugin</type>
 				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_functional_converter</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
+				<type>eclipse-plugin</type>
 				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_functional_converter_test</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
+				<type>eclipse-plugin</type>
 				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_platform_helper</artifactId>
 				<version>${project.version}</version>
@@ -248,10 +254,12 @@
 			</dependency>
 			<dependency>
 				<groupId>org.sandbox</groupId>
+				<type>eclipse-plugin</type>
 				<artifactId>sandbox_platform_helper_test</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
+				<type>eclipse-plugin</type>
 				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_tools</artifactId>
 				<version>${project.version}</version>
@@ -262,11 +270,13 @@
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
+				<type>eclipse-plugin</type>
 				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_tools_test</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
+				<type>eclipse-plugin</type>
 				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_xml_cleanup</artifactId>
 				<version>${project.version}</version>
@@ -277,11 +287,13 @@
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
+				<type>eclipse-plugin</type>
 				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_xml_cleanup_test</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
+				<type>eclipse-plugin</type>
 				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_jface_cleanup</artifactId>
 				<version>${project.version}</version>
@@ -292,11 +304,13 @@
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
+				<type>eclipse-plugin</type>
 				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_jface_cleanup_test</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
+				<type>eclipse-plugin</type>
 				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_usage_view</artifactId>
 				<version>${project.version}</version>

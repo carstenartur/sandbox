@@ -13,6 +13,7 @@
 	<packaging>eclipse-feature</packaging>
 	<dependencies>
 		<dependency>
+			<type>eclipse-plugin</type>
 			<groupId>org.sandbox</groupId>
 			<artifactId>sandbox_platform_helper</artifactId>
 		</dependency>
