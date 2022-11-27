@@ -138,8 +138,13 @@ public class JFacePlugin extends AbstractTool<ReferenceHolder<String, Object>> {
 		MethodInvocation minv= (MethodInvocation) hit.get(METHODINVOCATION);
 		List<ASTNode> arguments= minv.arguments();
 		
-		// monitor.beginTask(NewWizardMessages.NewSourceFolderWizardPage_operation, 3);
-		// SubMonitor subMonitor = SubMonitor.convert(monitor,NewWizardMessages.NewSourceFolderWizardPage_operation, 3);
+		/**
+		 * Here we process the "beginTask" and change it to "SubMonitor.convert"
+		 * 
+		 * monitor.beginTask(NewWizardMessages.NewSourceFolderWizardPage_operation, 3);
+		 * SubMonitor subMonitor = SubMonitor.convert(monitor,NewWizardMessages.NewSourceFolderWizardPage_operation, 3);
+		 * 
+		 */
 		
 		SingleVariableDeclaration newVariableDeclarationStatement = ast.newSingleVariableDeclaration();
 		String identifier = "subMonitor";
@@ -164,8 +169,12 @@ public class JFacePlugin extends AbstractTool<ReferenceHolder<String, Object>> {
 		Set<ClassInstanceCreation> nodeset=(Set<ClassInstanceCreation>) hit.get(CLASS_INSTANCE_CREATION);
 		for(ClassInstanceCreation submon:nodeset) {
 			ASTNode origarg = (ASTNode) submon.arguments().get(1);
-			// IProgressMonitor subProgressMonitor= new SubProgressMonitor(monitor, 1);
-			// IProgressMonitor subProgressMonitor= subMonitor.split(1);
+			/**
+			 * 
+			 * IProgressMonitor subProgressMonitor= new SubProgressMonitor(monitor, 1);
+			 * IProgressMonitor subProgressMonitor= subMonitor.split(1);
+			 * 
+			 */
 			MethodInvocation newMethodInvocation2 = ast.newMethodInvocation();
 			newMethodInvocation2.setName(ast.newSimpleName("split"));
 			newMethodInvocation2.setExpression(ASTNodeFactory.newName(ast, identifier));
@@ -182,8 +191,12 @@ public class JFacePlugin extends AbstractTool<ReferenceHolder<String, Object>> {
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {
-			return "\nbla\n\n"; //$NON-NLS-1$
+			return "	monitor.beginTask(NewWizardMessages.NewSourceFolderWizardPage_operation, 3);\n"
+					+ "		IProgressMonitor subProgressMonitor= new SubProgressMonitor(monitor, 1);\n"
+					+ "		IProgressMonitor subProgressMonitor2= new SubProgressMonitor(monitor, 2);\n"; //$NON-NLS-1$
 		}
-		return "\nblubb\n\n"; //$NON-NLS-1$
+		return "\n		SubMonitor subMonitor=SubMonitor.convert(monitor,NewWizardMessages.NewSourceFolderWizardPage_operation,3);\n"
+				+ "		IProgressMonitor subProgressMonitor= subMonitor.split(1);\n"
+				+ "		IProgressMonitor subProgressMonitor2= subMonitor.split(2);\n"; //$NON-NLS-1$
 	}
 }
