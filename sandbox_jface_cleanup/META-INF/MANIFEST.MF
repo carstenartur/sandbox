@@ -20,7 +20,5 @@ Require-Bundle: org.eclipse.core.runtime,
  sandbox_common;bundle-version="1.1.0";visibility:=reexport
 Bundle-ActivationPolicy: lazy
 Eclipse-RegisterBuddy: org.eclipse.jdt.core.manipulation
-Import-Package: org.sandbox.jdt.internal.common,
- org.sandbox.jdt.internal.corext.fix2
 Eclipse-BuddyPolicy: global
 Automatic-Module-Name: sandbox.jface.cleanup

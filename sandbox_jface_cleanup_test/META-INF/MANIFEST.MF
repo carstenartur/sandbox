@@ -7,10 +7,10 @@ Fragment-Host: sandbox_jface_cleanup;bundle-version="1.1.0.qualifier"
 Bundle-RequiredExecutionEnvironment: JavaSE-17
 Require-Bundle: org.junit,
  org.junit.jupiter.api,
- sandbox_test_commons,
- org.junit.jupiter.engine,
- org.junit.jupiter.migrationsupport,
- org.junit.vintage.engine
+ sandbox_test_commons;bundle-version="1.1.0",
+ org.junit.jupiter.engine;bundle-version="5.8.1",
+ org.junit.jupiter.migrationsupport;bundle-version="5.8.1",
+ org.junit.vintage.engine;bundle-version="5.8.1"
 Bundle-ActivationPolicy: lazy
 Eclipse-BundleShape: dir
 Eclipse-BuddyPolicy: global
