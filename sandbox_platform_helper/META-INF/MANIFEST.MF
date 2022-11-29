@@ -8,5 +8,5 @@ Require-Bundle: sandbox_common
 Bundle-ActivationPolicy: lazy
 Eclipse-RegisterBuddy: org.eclipse.jdt.core.manipulation
 Eclipse-BuddyPolicy: global
-Automatic-Module-Name: sandbox.platform.helper
 Import-Package: org.sandbox.jdt.internal.common
+Automatic-Module-Name: sandbox.platform.helper

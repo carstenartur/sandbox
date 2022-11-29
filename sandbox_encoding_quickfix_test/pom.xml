@@ -12,11 +12,16 @@
 	<name>Sandbox encoding quickfix test</name>
 	<packaging>eclipse-test-plugin</packaging>
 	<dependencies>
-	<!--	<dependency>
+		<dependency>
 	        <type>eclipse-plugin</type>
 			<groupId>org.sandbox</groupId>
 			<artifactId>sandbox_encoding_quickfix</artifactId>
-		</dependency>-->
+		</dependency><!-- -->
+		<dependency>
+	        <type>eclipse-feature</type>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_encoding_quickfix_feature</artifactId>
+		</dependency>
 	</dependencies>
 	<build>
 		<testSourceDirectory>src</testSourceDirectory>
@@ -27,15 +32,72 @@
 				<version>${tycho-version}</version>
 				<configuration>
 					<useUIHarness>true</useUIHarness>
+					<testRuntime>default</testRuntime>
 					<dependencies>
-					<!--	<dependency>
+						<dependency>
 							<type>eclipse-plugin</type>
 							<groupId>org.sandbox</groupId>
 							<artifactId>sandbox_encoding_quickfix</artifactId>
-							 This is the minimum required version 
-							<version>1.1.0-SNAPSHOT</version>
-						</dependency>-->
+							<version>1.0.0</version>
+						</dependency>
 					</dependencies>
+				</configuration>
+			</plugin>
+						<plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>target-platform-configuration</artifactId>
+				<version>${tycho-version}</version>
+				<configuration>
+					<executionEnvironment>JavaSE-17</executionEnvironment>
+					<target>
+						<artifact>
+							<groupId>org.sandbox</groupId>
+							<artifactId>sandbox_target</artifactId>
+							<version>1.1.0-SNAPSHOT</version>
+						</artifact>
+					</target>
+					<dependency-resolution>
+						<extraRequirements>
+						 <!-- product IU under test -->
+            <requirement>
+               <type>p2-installable-unit</type>
+               <id>sandbox.bundle.producteclipse</id>
+               <versionRange>0.0.0</versionRange>
+            </requirement>
+            <!--
+							<requirement>
+								<type>p2-installable-unit</type>
+								<id>org.eclipse.equinox.simpleconfigurator</id>
+								<versionRange>0.0.0</versionRange>
+							</requirement>
+							<requirement>
+								<type>p2-installable-unit</type>
+								<id>org.eclipse.equinox.p2.user.ui.feature.group</id>
+								<versionRange>0.0.0</versionRange>
+							</requirement>
+							<requirement>
+								<type>p2-installable-unit</type>
+								<id>org.eclipse.platform</id>
+								<versionRange>0.0.0</versionRange>
+							</requirement>
+							<requirement>
+								<type>p2-installable-unit</type>
+								<id>org.eclipse.rcp</id>
+								<versionRange>0.0.0</versionRange>
+							</requirement>
+							-->
+						</extraRequirements>
+					</dependency-resolution>
+					<environments>
+						<environment>
+							<os>win32</os>
+							<ws>win32</ws>
+							<arch>x86_64</arch>
+						</environment>
+						<!-- <environment> <os>linux</os> <ws>gtk</ws> <arch>x86_64</arch> 
+							</environment> <environment> <os>macosx</os> <ws>cocoa</ws> <arch>x86_64</arch> 
+							</environment> -->
+					</environments>
 				</configuration>
 			</plugin>
 		</plugins>

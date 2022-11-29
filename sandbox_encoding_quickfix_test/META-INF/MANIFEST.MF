@@ -1,5 +1,6 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
+Automatic-Module-Name: sandbox.encoding.quickfix.test
 Bundle-Name: Sandbox encoding tests
 Bundle-SymbolicName: sandbox_encoding_quickfix_test;singleton:=true
 Bundle-Version: 1.1.0.qualifier
@@ -14,10 +15,16 @@ Import-Package: org.junit.jupiter.api;version="5.8.1",
  org.junit.jupiter.params;version="5.8.1",
  org.junit.jupiter.params.aggregator;version="5.8.1",
  org.junit.jupiter.params.converter;version="5.8.1",
- org.junit.jupiter.params.provider;version="5.8.1"
+ org.junit.jupiter.params.provider;version="5.8.1",
+ org.junit.jupiter.params.support;version="5.8.1",
+ org.junit.platform.commons.annotation;version="1.8.1",
+ org.junit.platform.engine;version="1.8.1",
+ org.opentest4j;version="1.2.0",
+ org.sandbox.jdt.internal.common,
+ org.sandbox.jdt.internal.corext.fix2,
+ org.sandbox.jdt.ui.tests.quickfix.rules
 Bundle-RequiredExecutionEnvironment: JavaSE-17
 Require-Bundle: sandbox_test_commons;bundle-version="1.1.0"
 Bundle-ActivationPolicy: lazy
 Eclipse-BundleShape: dir
 Eclipse-BuddyPolicy: global
-Automatic-Module-Name: sandbox.encoding.quickfix.test

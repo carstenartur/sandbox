@@ -100,6 +100,13 @@
 					</target>
 					<dependency-resolution>
 						<extraRequirements>
+						 <!-- product IU under test -->
+        <!--     <requirement>
+               <type>p2-installable-unit</type>
+               <id>sandbox.bundle.producteclipse</id>
+               <versionRange>0.0.0</versionRange>
+            </requirement>-->
+           
 							<requirement>
 								<type>p2-installable-unit</type>
 								<id>org.eclipse.equinox.simpleconfigurator</id>
@@ -120,6 +127,7 @@
 								<id>org.eclipse.rcp</id>
 								<versionRange>0.0.0</versionRange>
 							</requirement>
+							
 						</extraRequirements>
 					</dependency-resolution>
 					<environments>
@@ -208,6 +216,7 @@
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
+				<type>eclipse-feature</type>
 				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_encoding_quickfix_feature</artifactId>
 				<version>${project.version}</version>

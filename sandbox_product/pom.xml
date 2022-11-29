@@ -13,6 +13,7 @@
 	<packaging>eclipse-repository</packaging>
 	<dependencies>
 		<dependency>
+			<type>eclipse-feature</type>
 			<groupId>org.sandbox</groupId>
 			<artifactId>sandbox_encoding_quickfix_feature</artifactId>
 		</dependency>
