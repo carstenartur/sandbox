@@ -27,17 +27,18 @@ import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.helper.AbstractTool;
 import org.sandbox.jdt.internal.corext.fix.helper.JFacePlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.JFacePlugin.MonitorHolder;
 import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
 public enum JfaceCleanUpFixCore {
 
 	MONITOR(new JFacePlugin());
 
-	AbstractTool<ReferenceHolder<String, Object>> jfacefound;
+	AbstractTool<ReferenceHolder<Integer, MonitorHolder>> jfacefound;
 
 	@SuppressWarnings("unchecked")
-	JfaceCleanUpFixCore(AbstractTool<? extends ReferenceHolder<String, Object>> xmlsimplify) {
-		this.jfacefound= (AbstractTool<ReferenceHolder<String, Object>>) xmlsimplify;
+	JfaceCleanUpFixCore(AbstractTool<? extends ReferenceHolder<Integer, MonitorHolder>> xmlsimplify) {
+		this.jfacefound= (AbstractTool<ReferenceHolder<Integer, MonitorHolder>>) xmlsimplify;
 	}
 
 	public String getPreview(boolean i) {
@@ -61,7 +62,7 @@ public enum JfaceCleanUpFixCore {
 		jfacefound.find(this, compilationUnit, operations, nodesprocessed, createForOnlyIfVarUsed);
 	}
 
-	public CompilationUnitRewriteOperation rewrite(final ReferenceHolder<String, Object> hit) {
+	public CompilationUnitRewriteOperation rewrite(final ReferenceHolder<Integer, MonitorHolder> hit) {
 		return new CompilationUnitRewriteOperation() {
 			@Override
 			public void rewriteAST(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel)
@@ -74,7 +75,7 @@ public enum JfaceCleanUpFixCore {
 				} else {
 					rangeComputer= new TightSourceRangeComputer();
 				}
-				rangeComputer.addTightSourceNode((ASTNode) hit.get(JFacePlugin.METHODINVOCATION));
+				rangeComputer.addTightSourceNode( hit.get(0).minv);
 				rewrite.setTargetSourceRangeComputer(rangeComputer);
 				jfacefound.rewrite(JfaceCleanUpFixCore.this, hit, cuRewrite, group);
 			}
