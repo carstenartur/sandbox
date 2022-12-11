@@ -78,7 +78,7 @@ public class JFacePlugin extends
 	public static final String CLASS_INSTANCE_CREATION = "ClassInstanceCreation";
 	public static final String METHODINVOCATION = "MethodInvocation";
 
-	public class MonitorHolder {
+	public static class MonitorHolder {
 		public MethodInvocation minv;
 		public String minvname;
 		public Set<ClassInstanceCreation> setofcic = new HashSet<>();
