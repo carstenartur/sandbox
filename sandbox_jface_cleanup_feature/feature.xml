@@ -23,21 +23,26 @@
       <import plugin="org.eclipse.core.resources"/>
       <import plugin="org.eclipse.core.expressions"/>
       <import plugin="org.eclipse.jdt.core"/>
-      <import plugin="org.eclipse.jdt.ui" version="3.22.100" match="greaterOrEqual"/>
+      <import plugin="org.eclipse.jdt.ui"/>
       <import plugin="org.eclipse.ltk.core.refactoring"/>
       <import plugin="org.eclipse.text"/>
       <import plugin="org.eclipse.swt"/>
       <import plugin="org.eclipse.jface"/>
       <import plugin="org.eclipse.ui.workbench"/>
-      <import plugin="org.eclipse.search"/>
-      <import plugin="org.eclipse.jdt.core.manipulation" version="1.14.300" match="greaterOrEqual"/>
+      <import plugin="org.eclipse.jdt.core.manipulation"/>
+      <import plugin="org.junit.jupiter.api"/>
+      <import plugin="org.junit.jupiter.params"/>
+      <import plugin="org.junit.platform.commons"/>
+      <import plugin="org.junit.platform.engine"/>
+      <import plugin="org.opentest4j"/>
+      <import plugin="sandbox_common" version="1.1.0" match="greaterOrEqual"/>
    </requires>
 
    <plugin
          id="sandbox_jface_cleanup"
          download-size="0"
          install-size="0"
-         version="0.0.0"
+         version="1.1.0.qualifier"
          unpack="false"/>
 
 </feature>

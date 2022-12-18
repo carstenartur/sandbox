@@ -201,6 +201,7 @@ United States, other countries, or both.
       <feature id="sandbox_platform_helper_feature" installMode="root"/>
       <feature id="sandbox_tools_feature" installMode="root"/>
       <feature id="sandbox_xml_cleanup_feature" installMode="root"/>
+      <feature id="sandbox_jface_cleanup_feature" installMode="root"/>
    </features>
 
    <configurations>
@@ -217,7 +218,9 @@ United States, other countries, or both.
 
    <repositories>
       <repository location="https://download.eclipse.org/technology/babel/update-site/latest/" enabled="true" />
-      <repository location="https://download.eclipse.org/releases/latest/" enabled="true" />
+      <repository location="https://download.eclipse.org/releases/2022-06" enabled="true" />
+      <repository location="https://download.eclipse.org/justj/jres/17/updates/release/latest/" enabled="true" />
+      <repository location="https://download.eclipse.org/tools/orbit/downloads/drops/R20220531185310/repository/" enabled="true" />
    </repositories>
 
    <preferencesInfo>
