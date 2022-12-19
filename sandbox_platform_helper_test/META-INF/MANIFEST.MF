@@ -5,8 +5,7 @@ Bundle-SymbolicName: sandbox_platform_helper_test;singleton:=true
 Bundle-Version: 1.1.0.qualifier
 Fragment-Host: sandbox_platform_helper
 Bundle-RequiredExecutionEnvironment: JavaSE-17
-Require-Bundle: org.junit,
- sandbox_test_commons
+Require-Bundle: sandbox_test_commons
 Bundle-ActivationPolicy: lazy
 Eclipse-BundleShape: dir
 Eclipse-BuddyPolicy: global
@@ -22,6 +21,5 @@ Import-Package: org.junit.jupiter.api;version="5.9.1",
  org.junit.jupiter.params.converter;version="5.9.1",
  org.junit.jupiter.params.provider;version="5.9.1",
  org.junit.jupiter.params.support;version="5.9.1",
- org.opentest4j;version="1.2.0",
- org.sandbox.jdt.internal.common
+ org.opentest4j;version="1.2.0"
 Automatic-Module-Name: sandbox.platform.helper.test
