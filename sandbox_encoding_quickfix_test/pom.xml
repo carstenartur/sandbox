@@ -16,6 +16,14 @@
 			<groupId>org.sandbox</groupId>
 			<artifactId>sandbox_encoding_quickfix</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_test_commons</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_common</artifactId>
+		</dependency>
 	</dependencies>
 	<build>
 		<testSourceDirectory>src</testSourceDirectory>
@@ -27,6 +35,20 @@
 				<configuration>
 					<useUIHarness>true</useUIHarness>
 					<dependencies>
+						<dependency>
+							<type>eclipse-plugin</type>
+							<groupId>org.sandbox</groupId>
+							<artifactId>sandbox_common</artifactId>
+							<!-- This is the minimum required version -->
+							<version>0.0.0</version>
+						</dependency>
+						<dependency>
+							<type>eclipse-plugin</type>
+							<groupId>org.sandbox</groupId>
+							<artifactId>sandbox_test_commons</artifactId>
+							<!-- This is the minimum required version -->
+							<version>0.0.0</version>
+						</dependency>
 						<dependency>
 							<type>eclipse-plugin</type>
 							<groupId>org.sandbox</groupId>
