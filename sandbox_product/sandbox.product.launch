@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <launchConfiguration type="org.eclipse.pde.ui.RuntimeWorkbench">
     <setAttribute key="additional_plugins">
-        <setEntry value="org.apache.felix.scr:2.1.24.v20200924-1939:default:true:2:true"/>
-        <setEntry value="org.eclipse.core.runtime:3.25.0.v20220506-1157:default:true:4:true"/>
-        <setEntry value="org.eclipse.equinox.common:3.16.100.v20220315-2327:default:true:2:true"/>
+        <setEntry value="org.apache.felix.scr:2.2.4:default:true:2:true"/>
+        <setEntry value="org.eclipse.core.runtime:3.26.100.v20221021-0005:default:true:4:true"/>
+        <setEntry value="org.eclipse.equinox.common:3.17.0.v20221108-1156:default:true:2:true"/>
         <setEntry value="org.eclipse.equinox.event:1.6.100.v20211021-1418:default:true:2:true"/>
-        <setEntry value="org.eclipse.equinox.p2.reconciler.dropins:1.4.100.v20211217-1131:default:true:4:true"/>
-        <setEntry value="org.eclipse.equinox.simpleconfigurator:1.4.0.v20210315-2228:default:true:1:true"/>
-        <setEntry value="org.eclipse.update.configurator:3.4.800.v20210415-1314:default:true:4:true"/>
+        <setEntry value="org.eclipse.equinox.p2.reconciler.dropins:1.4.200.v20220911-2007:default:true:4:true"/>
+        <setEntry value="org.eclipse.equinox.simpleconfigurator:1.4.200.v20221111-1340:default:true:1:true"/>
+        <setEntry value="org.eclipse.update.configurator:3.4.1000.v20221114-1512:default:true:4:true"/>
     </setAttribute>
     <booleanAttribute key="append.args" value="true"/>
     <booleanAttribute key="askclear" value="true"/>
@@ -40,7 +40,6 @@
         <setEntry value="org.eclipse.emf.common:default"/>
         <setEntry value="org.eclipse.emf.ecore:default"/>
         <setEntry value="org.eclipse.equinox.p2.core.feature:default"/>
-        <setEntry value="org.eclipse.equinox.p2.discovery.feature:default"/>
         <setEntry value="org.eclipse.equinox.p2.extras.feature:default"/>
         <setEntry value="org.eclipse.equinox.p2.rcp.feature:default"/>
         <setEntry value="org.eclipse.equinox.p2.user.ui:default"/>

@@ -4,9 +4,8 @@ Bundle-Name: sandbox plaform helper
 Bundle-SymbolicName: sandbox_platform_helper;singleton:=true
 Bundle-Version: 1.1.0.qualifier
 Bundle-RequiredExecutionEnvironment: JavaSE-17
-Require-Bundle: sandbox_common
+Require-Bundle: sandbox_common;bundle-version="1.1.0";visibility:=reexport
 Bundle-ActivationPolicy: lazy
 Eclipse-RegisterBuddy: org.eclipse.jdt.core.manipulation
 Eclipse-BuddyPolicy: global
-Import-Package: org.sandbox.jdt.internal.common
 Automatic-Module-Name: sandbox.platform.helper

@@ -3,69 +3,69 @@
 <target includeMode="Feature" name="target platform for sandbox">
 	<locations>
 		<location includeAllPlatforms="false" includeConfigurePhase="false" includeMode="slicer" includeSource="true" type="InstallableUnit">
-			<repository location="https://download.eclipse.org/releases/2022-06/" />
-			<unit id="org.eclipse.draw2d.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.egit.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.emf.compare.egit.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.emf.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.emf.sdk.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.equinox.p2.user.ui.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.gef.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.jdt.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.jgit.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.pde.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.pde.source.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.platform.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.wst.common.fproj.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.wst.common_core.feature.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.wst.common_ui.feature.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.wst.xml_core.feature.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.wst.xml_ui.feature.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.wst.xml_userdoc.feature.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.zest.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.jdt.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.sdk.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.rcp.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.rcp.sdk.id" version="0.0.0" />
-			<unit id="org.eclipse.ecf.core.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.ecf.remoteservice.sdk.feature.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.platform.ide" version="0.0.0" />
-			<unit id="org.eclipse.platform.sdk" version="0.0.0" />
-			<unit id="org.eclipse.platform.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.equinox.sdk.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.equinox.executable.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.equinox.p2.user.ui.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.equinox.p2.sdk.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.equinox.concurrent" version="0.0.0" />
-			<unit id="org.eclipse.emf.compare.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.emf.compare.diagram.gmf.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.epp.package.modeling.feature.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.gmf.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.egit.gitflow.feature.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.jgit.gpg.bc.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.jgit.http.apache.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.ecf.core.feature.source.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.ecf.core.feature.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.ecf.core.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.ecf.core.source.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.ecf.core.ssl.feature.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.ecf.core.ssl.feature.source.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.ecf.discovery.feature.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.ecf.eventadmin.feature.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.ecf.filetransfer.feature.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.ecf.filetransfer.httpclient5.feature.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.ecf.filetransfer.httpclient5.feature.source.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.ecf.filetransfer.ssl.feature.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.ecf.remoteservice.feature.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.ecf.remoteservice.feature.source.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.ecf.remoteservice.rest.feature.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.ecf.remoteservice.rest.feature.source.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.ecf.remoteservice.sdk.feature.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.ecf.remoteservice.sdk.feature.source.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.ecf.remoteservice.servlet.feature.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.ecf.sharedobject.feature.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.ecf.sharedobject.feature.source.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.equinox.p2.discovery.feature.feature.group" version="0.0.0" />
+			<repository location="https://download.eclipse.org/releases/2022-12/"/>
+			<unit id="org.eclipse.draw2d.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.egit.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.emf.compare.egit.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.emf.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.emf.sdk.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.equinox.p2.user.ui.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.gef.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.jdt.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.jgit.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.pde.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.pde.source.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.platform.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.wst.common.fproj.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.wst.common_core.feature.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.wst.common_ui.feature.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.wst.xml_core.feature.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.wst.xml_ui.feature.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.wst.xml_userdoc.feature.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.zest.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.jdt.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.sdk.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.rcp.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.rcp.sdk.id" version="0.0.0"/>
+			<unit id="org.eclipse.ecf.core.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.ecf.remoteservice.sdk.feature.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.platform.ide" version="0.0.0"/>
+			<unit id="org.eclipse.platform.sdk" version="0.0.0"/>
+			<unit id="org.eclipse.platform.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.equinox.sdk.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.equinox.executable.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.equinox.p2.user.ui.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.equinox.p2.sdk.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.equinox.concurrent" version="0.0.0"/>
+			<unit id="org.eclipse.emf.compare.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.emf.compare.diagram.gmf.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.epp.package.modeling.feature.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.gmf.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.egit.gitflow.feature.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.jgit.gpg.bc.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.jgit.http.apache.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.ecf.core.feature.source.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.ecf.core.feature.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.ecf.core.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.ecf.core.source.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.ecf.core.ssl.feature.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.ecf.core.ssl.feature.source.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.ecf.discovery.feature.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.ecf.eventadmin.feature.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.ecf.filetransfer.feature.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.ecf.filetransfer.httpclient5.feature.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.ecf.filetransfer.httpclient5.feature.source.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.ecf.filetransfer.ssl.feature.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.ecf.remoteservice.feature.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.ecf.remoteservice.feature.source.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.ecf.remoteservice.rest.feature.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.ecf.remoteservice.rest.feature.source.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.ecf.remoteservice.sdk.feature.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.ecf.remoteservice.sdk.feature.source.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.ecf.remoteservice.servlet.feature.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.ecf.sharedobject.feature.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.ecf.sharedobject.feature.source.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.equinox.p2.discovery.feature.feature.group" version="0.0.0"/>
 		</location>
 		<!-- does not work
 Failed to resolve target definition C:\Users\chammer\git\sandbox\sandbox_target\eclipse.target: Failed to load p2 metadata repository from location https://www.eclipse.org/jdt/ui/update-site/content: The p2 repository at https://www.eclipse.org/jdt/ui/update-site/content contains partial IUs (see above) from an old style update site which cannot be used for dependency resolution
@@ -76,69 +76,98 @@ Failed to resolve target definition C:\Users\chammer\git\sandbox\sandbox_target\
 </location>
 -->
 		<location includeAllPlatforms="false" includeConfigurePhase="false" includeMode="slicer" includeSource="true" type="InstallableUnit">
-			<repository location="https://download.eclipse.org/technology/babel/update-site/latest/" />
-			<unit id="org.eclipse.babel.nls_datatools_de.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.babel.nls_datatools_fr.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.babel.nls_eclipse_de.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.babel.nls_eclipse_fr.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.babel.nls_modeling.emf_de.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.babel.nls_modeling.emf_fr.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.babel.nls_technology.egit_de.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.babel.nls_technology.egit_fr.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.babel.nls_technology.jgit_de.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.babel.nls_technology.jgit_fr.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.babel.nls_tools.gef_de.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.babel.nls_tools.gef_fr.feature.group" version="0.0.0" />
+			<repository location="https://download.eclipse.org/technology/babel/update-site/latest/"/>
+			<unit id="org.eclipse.babel.nls_datatools_de.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.babel.nls_datatools_fr.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.babel.nls_eclipse_de.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.babel.nls_eclipse_fr.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.babel.nls_modeling.emf_de.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.babel.nls_modeling.emf_fr.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.babel.nls_technology.egit_de.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.babel.nls_technology.egit_fr.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.babel.nls_technology.jgit_de.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.babel.nls_technology.jgit_fr.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.babel.nls_tools.gef_de.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.babel.nls_tools.gef_fr.feature.group" version="0.0.0"/>
 		</location>
 		<location includeAllPlatforms="false" includeConfigurePhase="false" includeMode="slicer" includeSource="true" type="InstallableUnit">
-			<unit id="net.bytebuddy.byte-buddy" version="0.0.0" />
-			<unit id="net.bytebuddy.byte-buddy-agent" version="0.0.0" />
-			<unit id="org.apache.xerces" version="0.0.0" />
-			<unit id="org.hamcrest.core" version="0.0.0" />
-			<unit id="org.hamcrest.core.source" version="0.0.0" />
-			<unit id="org.hamcrest.library" version="0.0.0" />
-			<unit id="org.hamcrest.library.source" version="0.0.0" />
-			<unit id="org.junit" version="0.0.0" />
-			<unit id="org.junit.source" version="0.0.0" />
-			<unit id="org.mockito" version="0.0.0" />
-			<unit id="org.mockito.source" version="0.0.0" />
-			<unit id="org.objenesis" version="0.0.0" />
-			<unit id="com.google.gson" version="0.0.0" />
-			<unit id="com.jcraft.jsch" version="0.0.0" />
-			<unit id="com.jcraft.jzlib" version="0.0.0" />
-			<unit id="javaewah" version="0.0.0" />
-			<unit id="javax.activation" version="0.0.0" />
-			<unit id="net.i2p.crypto.eddsa" version="0.0.0" />
-			<unit id="org.apache.ant" version="0.0.0" />
-			<unit id="org.apache.commons.codec" version="0.0.0" />
-			<unit id="org.apache.commons.compress" version="0.0.0" />
-			<unit id="org.apache.commons.logging" version="0.0.0" />
-			<unit id="org.apache.httpcomponents.httpclient" version="0.0.0" />
-			<unit id="org.apache.httpcomponents.httpcore" version="0.0.0" />
-			<unit id="org.apache.log4j" version="0.0.0" />
-			<unit id="org.apache.sshd.osgi" version="0.0.0" />
-			<unit id="org.apache.sshd.sftp" version="0.0.0" />
-			<unit id="org.assertj" version="0.0.0" />
-			<unit id="org.bouncycastle.bcpg" version="0.0.0" />
-			<unit id="org.bouncycastle.bcpkix" version="0.0.0" />
-			<unit id="org.bouncycastle.bcprov" version="0.0.0" />
-			<unit id="org.kohsuke.args4j" version="0.0.0" />
-			<unit id="org.slf4j.api" version="0.0.0" />
-			<unit id="org.slf4j.binding.log4j12" version="0.0.0" />
-			<unit id="org.tukaani.xz" version="0.0.0" />
-			<repository location="https://download.eclipse.org/tools/orbit/downloads/drops/R20220531185310/repository/" />
+			<unit id="net.bytebuddy.byte-buddy" version="0.0.0"/>
+			<unit id="net.bytebuddy.byte-buddy-agent" version="0.0.0"/>
+			<unit id="org.apache.xerces" version="0.0.0"/>
+			<unit id="org.hamcrest.core" version="0.0.0"/>
+			<unit id="org.hamcrest.core.source" version="0.0.0"/>
+			<unit id="org.hamcrest.library" version="0.0.0"/>
+			<unit id="org.hamcrest.library.source" version="0.0.0"/>
+			<unit id="org.junit" version="0.0.0"/>
+			<unit id="org.junit.source" version="0.0.0"/>
+			<unit id="org.objenesis" version="0.0.0"/>
+			<unit id="com.google.gson" version="0.0.0"/>
+			<unit id="com.jcraft.jsch" version="0.0.0"/>
+			<unit id="com.jcraft.jzlib" version="0.0.0"/>
+			<unit id="javaewah" version="0.0.0"/>
+			<unit id="javax.activation" version="0.0.0"/>
+			<unit id="net.i2p.crypto.eddsa" version="0.0.0"/>
+			<unit id="org.apache.ant" version="0.0.0"/>
+			<unit id="org.apache.commons.codec" version="0.0.0"/>
+			<unit id="org.apache.commons.compress" version="0.0.0"/>
+			<unit id="org.apache.commons.logging" version="0.0.0"/>
+			<unit id="org.apache.httpcomponents.httpclient" version="0.0.0"/>
+			<unit id="org.apache.httpcomponents.httpcore" version="0.0.0"/>
+			<unit id="org.apache.log4j" version="0.0.0"/>
+			<unit id="org.apache.sshd.osgi" version="0.0.0"/>
+			<unit id="org.apache.sshd.sftp" version="0.0.0"/>
+			<unit id="org.assertj" version="0.0.0"/>
+			<unit id="org.bouncycastle.bcpg" version="0.0.0"/>
+			<unit id="org.bouncycastle.bcpkix" version="0.0.0"/>
+			<unit id="org.bouncycastle.bcprov" version="0.0.0"/>
+			<unit id="org.kohsuke.args4j" version="0.0.0"/>
+			<unit id="org.slf4j.api" version="0.0.0"/>
+			<unit id="org.slf4j.binding.log4j12" version="0.0.0"/>
+			<unit id="org.tukaani.xz" version="0.0.0"/>
+			<unit id="org.hamcrest" version="0.0.0"/>
+			<unit id="org.junit.jupiter.api" version="0.0.0"/>
+			<unit id="org.junit.jupiter.engine" version="0.0.0"/>
+			<unit id="org.junit.jupiter.migrationsupport" version="0.0.0"/>
+			<unit id="org.junit.jupiter.params" version="0.0.0"/>
+			<unit id="org.junit.platform.commons" version="0.0.0"/>
+			<unit id="org.junit.platform.engine" version="0.0.0"/>
+			<unit id="org.junit.platform.launcher" version="0.0.0"/>
+			<unit id="org.junit.platform.runner" version="0.0.0"/>
+			<unit id="org.junit.platform.suite.api" version="0.0.0"/>
+			<unit id="org.junit.platform.suite.commons" version="0.0.0"/>
+			<unit id="org.junit.platform.suite.engine" version="0.0.0"/>
+			<unit id="org.junit.vintage.engine" version="0.0.0"/>
+			<unit id="org.mockito.junit-jupiter" version="0.0.0"/>
+			<unit id="org.mockito.mockito-core" version="0.0.0"/>
+			<unit id="org.apache.commons.io" version="0.0.0"/>
+			<unit id="org.objectweb.asm" version="0.0.0"/>
+			<unit id="org.objectweb.asm.analysis" version="0.0.0"/>
+			<unit id="org.objectweb.asm.commons" version="0.0.0"/>
+			<unit id="org.objectweb.asm.tree" version="0.0.0"/>
+			<unit id="org.objectweb.asm.util" version="0.0.0"/>
+			<unit id="org.aopalliance" version="0.0.0"/>
+			<unit id="org.apache.commons.cli" version="0.0.0"/>
+			<unit id="org.apache.felix.scr" version="0.0.0"/>
+			<unit id="org.apache.httpcomponents.client5.httpclient5" version="0.0.0"/>
+			<unit id="org.apache.httpcomponents.client5.httpclient5-win" version="0.0.0"/>
+			<unit id="org.apache.httpcomponents.client5.httpclient5-win.source" version="0.0.0"/>
+			<unit id="org.apache.httpcomponents.client5.httpclient5.source" version="0.0.0"/>
+			<unit id="org.apache.httpcomponents.core5.httpcore5" version="0.0.0"/>
+			<unit id="org.apache.httpcomponents.core5.httpcore5-h2" version="0.0.0"/>
+			<unit id="org.opentest4j" version="0.0.0"/>
+			<repository location="https://download.eclipse.org/tools/orbit/downloads/drops/R20221123021534/repository/"/>
 		</location>
 		<location includeAllPlatforms="false" includeConfigurePhase="false" includeMode="slicer" includeSource="true" type="InstallableUnit">
-			<unit id="org.eclipse.swtbot.eclipse.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.swtbot.eclipse.gef.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.swtbot.eclipse.test.junit.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.swtbot.feature.group" version="0.0.0" />
-			<unit id="org.eclipse.swtbot.forms.feature.group" version="0.0.0" />
-			<repository location="https://download.eclipse.org/technology/swtbot/releases/latest/" />
+			<unit id="org.eclipse.swtbot.eclipse.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.swtbot.eclipse.gef.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.swtbot.eclipse.test.junit.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.swtbot.feature.group" version="0.0.0"/>
+			<unit id="org.eclipse.swtbot.forms.feature.group" version="0.0.0"/>
+			<repository location="https://download.eclipse.org/technology/swtbot/releases/latest/"/>
 		</location>
 		<location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="slicer" includeSource="true" type="InstallableUnit">
-			<repository location="https://download.eclipse.org/justj/jres/17/updates/release/latest/" />
-			<unit id="org.eclipse.justj.openjdk.hotspot.jre.base.feature.group" version="0.0.0" />
+			<repository location="https://download.eclipse.org/justj/jres/17/updates/release/latest/"/>
+			<unit id="org.eclipse.justj.openjdk.hotspot.jre.base.feature.group" version="0.0.0"/>
 		</location>
 	</locations>
 </target>
