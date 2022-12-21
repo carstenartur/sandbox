@@ -256,7 +256,7 @@ public class Refactorer {
 
 		ProspectiveOperation lastOperation = prospectives.get(prospectives.size() - 1);
 		Statement returnValue = propagateSideEffects(lastOperation, forEach, null);
-
+		System.out.println(returnValue);
 		return forEach;
 	}
 

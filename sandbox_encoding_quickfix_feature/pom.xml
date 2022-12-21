@@ -11,10 +11,4 @@
 	<artifactId>sandbox_encoding_quickfix_feature</artifactId>
 	<name>Sandbox encoding quickfix Feature</name>
 	<packaging>eclipse-feature</packaging>
-	<dependencies>
-		<dependency>
-			<groupId>org.sandbox</groupId>
-			<artifactId>sandbox_encoding_quickfix</artifactId>
-		</dependency>
-	</dependencies>
 </project>

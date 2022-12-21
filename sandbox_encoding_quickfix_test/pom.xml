@@ -11,12 +11,6 @@
 	<artifactId>sandbox_encoding_quickfix_test</artifactId>
 	<name>Sandbox encoding quickfix test</name>
 	<packaging>eclipse-test-plugin</packaging>
-	<dependencies>
-		<dependency>
-			<groupId>org.sandbox</groupId>
-			<artifactId>sandbox_encoding_quickfix</artifactId>
-		</dependency>
-	</dependencies>
 	<build>
 		<testSourceDirectory>src</testSourceDirectory>
 		<plugins>
@@ -27,6 +21,20 @@
 				<configuration>
 					<useUIHarness>true</useUIHarness>
 					<dependencies>
+						<dependency>
+							<type>eclipse-plugin</type>
+							<groupId>org.sandbox</groupId>
+							<artifactId>sandbox_common</artifactId>
+							<!-- This is the minimum required version -->
+							<version>0.0.0</version>
+						</dependency>
+						<dependency>
+							<type>eclipse-plugin</type>
+							<groupId>org.sandbox</groupId>
+							<artifactId>sandbox_test_commons</artifactId>
+							<!-- This is the minimum required version -->
+							<version>0.0.0</version>
+						</dependency>
 						<dependency>
 							<type>eclipse-plugin</type>
 							<groupId>org.sandbox</groupId>

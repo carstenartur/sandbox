@@ -11,12 +11,6 @@
 	<artifactId>sandbox_xml_cleanup_test</artifactId>
 	<name>Sandbox xml cleanup test</name>
 	<packaging>eclipse-test-plugin</packaging>
-	<dependencies>
-		<dependency>
-			<groupId>org.sandbox</groupId>
-			<artifactId>sandbox_xml_cleanup</artifactId>
-		</dependency>
-	</dependencies>
 	<build>
 		<testSourceDirectory>src</testSourceDirectory>
 		<plugins>
