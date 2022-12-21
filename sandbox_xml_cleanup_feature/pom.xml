@@ -11,10 +11,4 @@
 	<artifactId>sandbox_xml_cleanup_feature</artifactId>
 	<name>Sandbox xml cleanup Feature</name>
 	<packaging>eclipse-feature</packaging>
-	<dependencies>
-		<dependency>
-			<groupId>org.sandbox</groupId>
-			<artifactId>sandbox_xml_cleanup</artifactId>
-		</dependency>
-	</dependencies>
 </project>

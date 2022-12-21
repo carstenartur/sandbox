@@ -11,10 +11,4 @@
 	<artifactId>sandbox_tools_feature</artifactId>
 	<name>Sandbox tools Feature</name>
 	<packaging>eclipse-feature</packaging>
-	<dependencies>
-		<dependency>
-			<groupId>org.sandbox</groupId>
-			<artifactId>sandbox_tools</artifactId>
-		</dependency>
-	</dependencies>
 </project>

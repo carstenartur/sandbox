@@ -11,12 +11,6 @@
 	<artifactId>sandbox_tools_test</artifactId>
 	<name>Sandbox tools test</name>
 	<packaging>eclipse-test-plugin</packaging>
-	<dependencies>
-		<dependency>
-			<groupId>org.sandbox</groupId>
-			<artifactId>sandbox_tools</artifactId>
-		</dependency>
-	</dependencies>
 	<build>
 		<testSourceDirectory>src</testSourceDirectory>
 		<plugins>

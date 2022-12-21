@@ -11,12 +11,6 @@
 	<artifactId>sandbox_encoding_quickfix</artifactId>
 	<name>Sandbox encoding quickfix</name>
 	<packaging>eclipse-plugin</packaging>
-	<dependencies>
-		<dependency>
-			<groupId>org.sandbox</groupId>
-			<artifactId>sandbox_common</artifactId>
-		</dependency>
-	</dependencies>
 	<build>
 		<sourceDirectory>${project.basedir}/src</sourceDirectory>
 	</build>

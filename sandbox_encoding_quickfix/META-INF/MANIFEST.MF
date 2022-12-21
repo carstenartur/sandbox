@@ -1,11 +1,11 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
+Automatic-Module-Name: sandbox.encoding.quickfix
 Bundle-Name: Tool
 Bundle-SymbolicName: sandbox_encoding_quickfix;singleton:=true
 Bundle-Version: 1.1.0.qualifier
 Bundle-RequiredExecutionEnvironment: JavaSE-17
 Require-Bundle: sandbox_common;bundle-version="1.1.0"
-Automatic-Module-Name: sandbox_plugin
 Bundle-ActivationPolicy: lazy
 Eclipse-RegisterBuddy: org.eclipse.jdt.core.manipulation
 Eclipse-BuddyPolicy: global

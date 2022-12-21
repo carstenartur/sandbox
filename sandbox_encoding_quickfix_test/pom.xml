@@ -11,20 +11,6 @@
 	<artifactId>sandbox_encoding_quickfix_test</artifactId>
 	<name>Sandbox encoding quickfix test</name>
 	<packaging>eclipse-test-plugin</packaging>
-	<dependencies>
-		<dependency>
-			<groupId>org.sandbox</groupId>
-			<artifactId>sandbox_encoding_quickfix</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.sandbox</groupId>
-			<artifactId>sandbox_test_commons</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.sandbox</groupId>
-			<artifactId>sandbox_common</artifactId>
-		</dependency>
-	</dependencies>
 	<build>
 		<testSourceDirectory>src</testSourceDirectory>
 		<plugins>

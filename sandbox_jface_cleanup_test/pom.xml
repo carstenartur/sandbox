@@ -11,12 +11,6 @@
 	<artifactId>sandbox_jface_cleanup_test</artifactId>
 	<name>Sandbox jface cleanup test</name>
 	<packaging>eclipse-test-plugin</packaging>
-	<dependencies>
-		<dependency>
-			<groupId>org.sandbox</groupId>
-			<artifactId>sandbox_jface_cleanup</artifactId>
-		</dependency>
-	</dependencies>
 	<build>
 		<testSourceDirectory>src</testSourceDirectory>
 		<plugins>

@@ -1,11 +1,13 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: jface_cleanup
+Bundle-Name: sandbox_jface_cleanup
 Bundle-SymbolicName: sandbox_jface_cleanup;singleton:=true
 Bundle-Version: 1.1.0.qualifier
 Bundle-RequiredExecutionEnvironment: JavaSE-17
-Require-Bundle: sandbox_common;visibility:=reexport
+Require-Bundle: sandbox_common;bundle-version="1.1.0";visibility:=reexport
 Bundle-ActivationPolicy: lazy
 Eclipse-RegisterBuddy: org.eclipse.jdt.core.manipulation
 Eclipse-BuddyPolicy: global
 Automatic-Module-Name: sandbox.jface.cleanup
+Import-Package: org.sandbox.jdt.internal.common,
+ org.sandbox.jdt.internal.corext.fix2

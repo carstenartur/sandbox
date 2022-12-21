@@ -11,10 +11,4 @@
 	<artifactId>sandbox_platform_helper_feature</artifactId>
 	<name>Sandbox platform helper Feature</name>
 	<packaging>eclipse-feature</packaging>
-	<dependencies>
-		<dependency>
-			<groupId>org.sandbox</groupId>
-			<artifactId>sandbox_platform_helper</artifactId>
-		</dependency>
-	</dependencies>
 </project>
