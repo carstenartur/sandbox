@@ -40,7 +40,7 @@ jobs:
     - name: Cleanup xvfb pidx build
       uses: bcomnes/cleanup-xvfb@v1
     - name: Test with Maven
-      run: xvfb-run --auto-servernum mvn -e -V --batch-mode -Dmaven.test.failure.ignore=true -Pweb,jacoco tycho-surefire-plugin:test
+      run: xvfb-run --auto-servernum mvn -e -V --batch-mode -Dmaven.test.failure.ignore=true -Pweb,jacoco org.eclipse.tycho:tycho-surefire-plugin:test
     - name: Cleanup xvfb pidx test
       uses: bcomnes/cleanup-xvfb@v1
     - name: Publish Test Report
