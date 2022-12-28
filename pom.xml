@@ -166,10 +166,10 @@
 				</executions>
 			</plugin>
 			<plugin>
-   <groupId>org.eclipse.tycho</groupId>
-   <artifactId>tycho-packaging-plugin</artifactId>
-   <version>${tycho-version}</version>
-</plugin>
+                           <groupId>org.eclipse.tycho</groupId>
+                           <artifactId>tycho-packaging-plugin</artifactId>
+                           <version>${tycho-version}</version>
+                        </plugin>
 		</plugins>
 	</build>
 	<reporting>
@@ -328,13 +328,14 @@
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
-<!--	<distributionManagement>
+<!--	-->
+	<distributionManagement>
 		<repository>
 			<id>github</id>
 			<name>GitHub carstenartur Apache Maven Packages</name>
-			<url>https://maven.pkg.github.com/carstenartur/repository</url>
+			<url>https://maven.pkg.github.com/carstenartur/sandbox</url>
 		</repository>
-	</distributionManagement> -->
+	</distributionManagement> 
 	<profiles>
 		<profile>
 			<id>web</id>
