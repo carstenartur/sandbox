@@ -22,10 +22,6 @@ jobs:
       with:
         java-version: '17'
         distribution: 'temurin'
-    - run: |
-        sudo apt-get install xvfb
-        # start xvfb in the background
-        sudo /usr/bin/Xvfb $DISPLAY -screen 0 1280x1024x24 &
     - name: Cache Maven packages
       uses: actions/cache@v2
       with:
@@ -34,8 +30,8 @@ jobs:
         restore-keys: ${{ runner.os }}-m2
 #    - name: Build with Maven
 #      run: xvfb-run --auto-servernum mvn -e -V --batch-mode -Pweb,jacoco clean verify
-    - name: Build with Maven
-      uses: GabrielBB/xvfb-action@v1
+    - name: gabrielbb/xvfb-action
+      uses: GabrielBB/xvfb-action@v1.6
       with:
        run: >- 
         mvn
