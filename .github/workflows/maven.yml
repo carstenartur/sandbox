@@ -37,14 +37,14 @@ jobs:
         mvn
         --batch-mode
         --global-toolchains ${{ github.workspace }}/.github/workflows/toolchains.xml
-        -Pjacoco
-        -Pweb
         -Dmaven.test.failure.ignore=true
         -Dproject.build.sourceEncoding=UTF-8
         -Dorg.slf4j.simpleLogger.showDateTime=true 
         -Dorg.slf4j.simpleLogger.dateTimeFormat=HH:mm:ss.SSS
         -DtrimStackTrace=false
         clean verify
+#        -Pjacoco
+#        -Pweb
 #    - name: Cleanup xvfb pidx build
 #      uses: bcomnes/cleanup-xvfb@v1
 #    - name: Test with Maven
