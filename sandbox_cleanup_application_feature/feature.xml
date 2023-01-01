@@ -2,7 +2,8 @@
 <feature
       id="sandbox_cleanup_application_feature"
       label="Sandbox Cleanup application feature"
-      version="1.1.0.qualifier">
+      version="1.1.0.qualifier"
+      provider-name="sandbox">
 
    <description>
       %description

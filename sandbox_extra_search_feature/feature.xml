@@ -30,9 +30,7 @@
       <import plugin="org.eclipse.jface"/>
       <import plugin="org.eclipse.ui.workbench"/>
       <import plugin="org.eclipse.search"/>
-      <import plugin="org.eclipse.jdt.core.manipulation" version="1.14.300" match="greaterOrEqual"/>
-      <import plugin="org.junit.jupiter.api"/>
-      <import plugin="org.opentest4j"/>
+      <import plugin="org.eclipse.e4.core.services"/>
    </requires>
 
    <plugin
