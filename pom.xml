@@ -13,7 +13,7 @@
 		<rcp-version>eclipse</rcp-version>
 		<jacoco-version>0.8.8</jacoco-version>
 		<!-- <rcp-version>2021-03</rcp-version> -->
-		<java-version>17</java-version>
+		<java-version>11</java-version>
 		<spotbugs-version>4.7.3.0</spotbugs-version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
@@ -49,7 +49,7 @@
 	<repositories>
 		<repository>
 			<id>justj</id>
-			<url>https://download.eclipse.org/justj/jres/17/updates/release/latest/</url>
+			<url>https://download.eclipse.org/justj/jres/11/updates/release/latest/</url>
 			<layout>p2</layout>
 		</repository>
 		<repository>
@@ -90,7 +90,7 @@
 				<artifactId>target-platform-configuration</artifactId>
 				<version>${tycho-version}</version>
 				<configuration>
-					<executionEnvironment>JavaSE-17</executionEnvironment>
+					<executionEnvironment>JavaSE-11</executionEnvironment>
 					<target>
 						<artifact>
 							<groupId>org.sandbox</groupId>

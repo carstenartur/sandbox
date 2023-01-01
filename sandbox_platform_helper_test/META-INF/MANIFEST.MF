@@ -4,7 +4,7 @@ Bundle-Name: platform helper tests
 Bundle-SymbolicName: sandbox_platform_helper_test;singleton:=true
 Bundle-Version: 1.1.0.qualifier
 Fragment-Host: sandbox_platform_helper
-Bundle-RequiredExecutionEnvironment: JavaSE-17
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Require-Bundle: sandbox_test_commons
 Bundle-ActivationPolicy: lazy
 Eclipse-BundleShape: dir

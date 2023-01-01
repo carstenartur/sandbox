@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: sandbox_jface_cleanup
 Bundle-SymbolicName: sandbox_jface_cleanup;singleton:=true
 Bundle-Version: 1.1.0.qualifier
-Bundle-RequiredExecutionEnvironment: JavaSE-17
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Require-Bundle: sandbox_common;bundle-version="1.1.0";visibility:=reexport
 Bundle-ActivationPolicy: lazy
 Eclipse-RegisterBuddy: org.eclipse.jdt.core.manipulation
