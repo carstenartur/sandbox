@@ -3,7 +3,7 @@
       id="sandbox_cleanup_application_feature"
       label="Sandbox Cleanup application feature"
       version="1.1.0.qualifier"
-      plugin="sandbox_cleanup_application">
+      provider-name="sandbox">
 
    <description>
       %description

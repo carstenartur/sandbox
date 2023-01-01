@@ -2,6 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: sandbox_extra_search
 Bundle-SymbolicName: sandbox_extra_search;singleton:=true
+Bundle-Vendor: sandbox
 Bundle-Version: 1.1.0.qualifier
 Automatic-Module-Name: ui.sandbox.fragment
 Bundle-RequiredExecutionEnvironment: JavaSE-11
