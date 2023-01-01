@@ -190,10 +190,15 @@ United States, other countries, or both.
    </plugins>
 
    <features>
+   	  <feature id="org.eclipse.rcp"/>
+   	  <feature id="org.eclipse.platform"/>
+      <feature id="org.eclipse.platform.source"/>
+      <feature id="org.eclipse.equinox.p2.user.ui"/>
+      <feature id="org.eclipse.equinox.p2.user.ui.source"/>
+   <!--
       <feature id="org.eclipse.rcp"/>
       <feature id="org.eclipse.platform"/>
       <feature id="org.eclipse.pde"/>
-      <feature id="org.eclipse.e4.rcp"/>
       <feature id="org.eclipse.equinox.p2.user.ui"/>
       <feature id="org.eclipse.equinox.p2.core.feature"/>
       <feature id="org.eclipse.equinox.p2.discovery.feature"/>
@@ -204,6 +209,7 @@ United States, other countries, or both.
       <feature id="org.eclipse.emf.common"/>
       <feature id="org.eclipse.help"/>
       <feature id="org.eclipse.jdt"/>
+      -->
       <feature id="sandbox_encoding_quickfix_feature"/>
       <feature id="sandbox_extra_search_feature"/>
       <feature id="sandbox_usage_view_feature"/>
