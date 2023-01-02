@@ -10,13 +10,13 @@ Bundle-ActivationPolicy: lazy
 Eclipse-BundleShape: dir
 Eclipse-BuddyPolicy: global
 Import-Package: org.junit;version="4.13.2",
- org.junit.jupiter.api;version="5.9.1",
- org.junit.jupiter.api.condition;version="5.9.1",
- org.junit.jupiter.api.extension;version="5.9.1",
- org.junit.jupiter.api.extension.support;version="5.9.1",
- org.junit.jupiter.api.function;version="5.9.1",
- org.junit.jupiter.api.io;version="5.9.1",
- org.junit.jupiter.api.parallel;version="5.9.1",
+ org.junit.jupiter.api,
+ org.junit.jupiter.api.condition,
+ org.junit.jupiter.api.extension,
+ org.junit.jupiter.api.extension.support,
+ org.junit.jupiter.api.function,
+ org.junit.jupiter.api.io,
+ org.junit.jupiter.api.parallel,
  org.opentest4j;version="1.2.0",
  org.sandbox.jdt.internal.common,
  org.sandbox.jdt.internal.corext.fix2

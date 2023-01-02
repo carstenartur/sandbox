@@ -8,8 +8,8 @@ Automatic-Module-Name: sandbox.test.commons.singleton.true
 Eclipse-BuddyPolicy: global
 Eclipse-BundleShape: dir
 Bundle-ActivationPolicy: lazy
-Require-Bundle: junit-jupiter-api;bundle-version="5.9.1";visibility:=reexport,
- junit-jupiter-engine;bundle-version="5.9.1";visibility:=reexport,
- junit-jupiter-params;bundle-version="5.9.1";visibility:=reexport,
+Require-Bundle: junit-jupiter-api;visibility:=reexport,
+ junit-jupiter-engine;visibility:=reexport,
+ junit-jupiter-params;visibility:=reexport,
  sandbox_common;bundle-version="1.1.0";visibility:=reexport
 Export-Package: org.sandbox.jdt.ui.tests.quickfix.rules
