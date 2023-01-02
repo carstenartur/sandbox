@@ -29,7 +29,7 @@ jobs:
         key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
         restore-keys: ${{ runner.os }}-m2
     - name: Build with Maven
-      run: xvfb-run --auto-servernum --server-num=1 --server-args="-screen 1 1024x768x24" mvn -e -V --batch-mode --global-toolchains ${{ github.workspace }}/.github/workflows/toolchains.xml clean verify
+      run: xvfb-run --auto-servernum --server-num=1 --server-args="-screen 1 1024x768x24" mvn -e -V --batch-mode --global-toolchains ${{ github.workspace }}/.github/workflows/toolchains.xml -Pweb,jacoco clean verify
 #      run: xvfb-run --auto-servernum mvn -e -V --batch-mode -Pweb,jacoco clean verify
 #    - name: gabrielbb/xvfb-action
 #      uses: GabrielBB/xvfb-action@v1.6
