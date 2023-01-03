@@ -78,5 +78,15 @@
 			<artifactId>sandbox_tools_test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_jface_cleanup</artifactId>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_jface_cleanup_test</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 </project>
