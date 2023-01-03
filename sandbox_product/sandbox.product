@@ -1,34 +1,43 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?pde version="3.5"?>
 
-<product name="Sandbox Product" uid="sandbox.bundle.producteclipse" id="org.eclipse.sdk.ide" application="org.eclipse.ui.ide.workbench" type="mixed" version="1.1.0.qualifier" useFeatures="true" includeLaunchers="true" autoIncludeRequirements="true">
+<product name="Sandbox Product" uid="sandbox.bundle.producteclipse" id="sandbox.bundle.producteclipse" application="org.eclipse.ui.ide.workbench" version="1.1.0.qualifier" useFeatures="true" includeLaunchers="true" autoIncludeRequirements="true">
 
    <configIni use="default">
    </configIni>
 
    <launcherArgs>
-      <programArgs>-clearPersistedState
+      <programArgs>-clearPersistedState --launcher.defaultAction openFile --launcher.appendVmargs
       </programArgs>
       <vmArgs>-Xms512m
 -Xmx1024m
 -XX:+UseG1GC
 -XX:+UseStringDeduplication
+-Dosgi.requiredJavaVersion=11
+-Dosgi.dataAreaRequiresExplicitInit=true
+-Dorg.eclipse.swt.graphics.Resource.reportNonDisposed=true
 --add-modules=ALL-SYSTEM
       </vmArgs>
+      <vmArgsMac>-Xdock:icon=../Resources/Eclipse.icns -XstartOnFirstThread -Dorg.eclipse.swt.internal.carbon.smallFonts
+      </vmArgsMac>
    </launcherArgs>
 
    <windowImages/>
 
-   <launcher>
+   <splash
+      location="org.eclipse.platform" />
+   <launcher name="eclipse">
+      <linux icon="icons/icon.xpm"/>
+      <macosx icon="icons/Eclipse.icns"/>
       <win useIco="false">
          <bmp/>
       </win>
    </launcher>
 
    <vm>
-      <linux include="false">org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-17</linux>
-      <macos include="false">org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-17</macos>
-      <windows include="true">org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-17</windows>
+      <linux include="false">org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-11</linux>
+      <macos include="false">org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-11</macos>
+      <windows include="true">org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-11</windows>
    </vm>
 
    <license>
@@ -181,52 +190,38 @@ United States, other countries, or both.
    </plugins>
 
    <features>
-      <feature id="org.eclipse.rcp" installMode="root"/>
-      <feature id="org.eclipse.platform" installMode="root"/>
-      <feature id="org.eclipse.pde" installMode="root"/>
-      <feature id="org.eclipse.e4.rcp" installMode="root"/>
-      <feature id="org.eclipse.equinox.p2.user.ui" installMode="root"/>
-      <feature id="org.eclipse.equinox.p2.core.feature" installMode="root"/>
-      <feature id="org.eclipse.equinox.p2.discovery.feature" installMode="root"/>
-      <feature id="org.eclipse.equinox.p2.extras.feature" installMode="root"/>
-      <feature id="org.eclipse.equinox.p2.rcp.feature" installMode="root"/>
-      <feature id="org.eclipse.sdk" installMode="root"/>
-      <feature id="org.eclipse.emf.ecore" installMode="root"/>
-      <feature id="org.eclipse.emf.common" installMode="root"/>
-      <feature id="org.eclipse.help" installMode="root"/>
-      <feature id="org.eclipse.jdt" installMode="root"/>
-      <feature id="sandbox_encoding_quickfix_feature" installMode="root"/>
-      <feature id="sandbox_extra_search_feature" installMode="root"/>
-      <feature id="sandbox_usage_view_feature" installMode="root"/>
-      <feature id="sandbox_platform_helper_feature" installMode="root"/>
-      <feature id="sandbox_tools_feature" installMode="root"/>
-      <feature id="sandbox_xml_cleanup_feature" installMode="root"/>
-      <feature id="sandbox_jface_cleanup_feature" installMode="root"/>
-      <feature id="org.eclipse.emf.databinding.edit.source" installMode="root"/>
-      <feature id="org.eclipse.emf.databinding.source" installMode="root"/>
-      <feature id="org.eclipse.help.source" installMode="root"/>
-      <feature id="org.eclipse.rcp.source" installMode="root"/>
-      <feature id="org.eclipse.ecf.core.ssl.feature" installMode="root"/>
-      <feature id="org.eclipse.ecf.filetransfer.ssl.feature" installMode="root"/>
-      <feature id="org.eclipse.emf.edit" installMode="root"/>
-      <feature id="org.eclipse.equinox.p2.user.ui.source" installMode="root"/>
-      <feature id="org.eclipse.emf.common.source" installMode="root"/>
-      <feature id="org.eclipse.emf.databinding.edit" installMode="root"/>
-      <feature id="org.eclipse.emf.edit.source" installMode="root"/>
-      <feature id="org.eclipse.jdt.source" installMode="root"/>
-      <feature id="org.eclipse.ecf.filetransfer.feature" installMode="root"/>
-      <feature id="org.eclipse.equinox.p2.rcp.feature.source" installMode="root"/>
-      <feature id="org.eclipse.emf.ecore.source" installMode="root"/>
-      <feature id="org.eclipse.equinox.p2.core.feature.source" installMode="root"/>
-      <feature id="org.eclipse.ecf.filetransfer.httpclient5.feature" installMode="root"/>
-      <feature id="org.eclipse.platform.source" installMode="root"/>
-      <feature id="org.eclipse.pde.source" installMode="root"/>
-      <feature id="org.eclipse.ecf.core.feature.source" installMode="root"/>
-      <feature id="org.eclipse.equinox.p2.extras.feature.source" installMode="root"/>
-      <feature id="org.eclipse.ecf.core.feature" installMode="root"/>
-      <feature id="org.eclipse.emf.databinding" installMode="root"/>
-      <feature id="org.eclipse.e4.rcp.source" installMode="root"/>
-      <feature id="org.eclipse.ecf.eventadmin.feature" installMode="root"/>
+      <feature id="org.eclipse.rcp"/>
+      <feature id="org.eclipse.platform"/>
+      <feature id="org.eclipse.platform.source"/>
+      <feature id="org.eclipse.equinox.p2.user.ui"/>
+      <feature id="org.eclipse.equinox.p2.user.ui.source"/>
+      <feature id="org.eclipse.help"/>
+      <feature id="org.eclipse.pde"/>
+      <feature id="org.eclipse.equinox.p2.core.feature.source"/>
+      <feature id="org.eclipse.ecf.filetransfer.httpclient5.feature"/>
+      <feature id="org.eclipse.help.source"/>
+      <feature id="org.eclipse.jdt"/>
+      <feature id="org.eclipse.emf.common"/>
+      <feature id="org.eclipse.equinox.p2.core.feature"/>
+      <feature id="org.eclipse.rcp.source"/>
+      <feature id="org.eclipse.ecf.core.ssl.feature"/>
+      <feature id="org.eclipse.ecf.filetransfer.ssl.feature"/>
+      <feature id="org.eclipse.emf.ecore"/>
+      <feature id="org.eclipse.equinox.p2.extras.feature"/>
+      <feature id="org.eclipse.equinox.p2.extras.feature.source"/>
+      <feature id="org.eclipse.ecf.core.feature"/>
+      <feature id="org.eclipse.equinox.p2.rcp.feature"/>
+      <feature id="org.eclipse.ecf.filetransfer.feature"/>
+      <feature id="org.eclipse.e4.rcp.source"/>
+      <feature id="org.eclipse.equinox.p2.rcp.feature.source"/>
+      <feature id="org.eclipse.e4.rcp"/>
+      <feature id="sandbox_encoding_quickfix_feature"/>
+      <feature id="sandbox_extra_search_feature"/>
+      <feature id="sandbox_usage_view_feature"/>
+      <feature id="sandbox_platform_helper_feature"/>
+      <feature id="sandbox_tools_feature"/>
+      <feature id="sandbox_xml_cleanup_feature"/>
+      <feature id="sandbox_jface_cleanup_feature"/>
    </features>
 
    <configurations>
@@ -238,14 +233,13 @@ United States, other countries, or both.
       <plugin id="org.eclipse.equinox.simpleconfigurator" autoStart="true" startLevel="1" />
       <plugin id="org.eclipse.update.configurator" autoStart="true" startLevel="4" />
       <property name="org.eclipse.update.reconcile" value="false" />
+      <property name="eclipse.buildId" value="${unqualifiedVersion}.${buildQualifier}" />
       <property name="osgi.bundles.defaultStartLevel" value="4" />
    </configurations>
 
    <repositories>
       <repository location="https://download.eclipse.org/technology/babel/update-site/latest/" enabled="true" />
-      <repository location="https://download.eclipse.org/releases/2022-06" enabled="true" />
-      <repository location="https://download.eclipse.org/justj/jres/17/updates/release/latest/" enabled="true" />
-      <repository location="https://download.eclipse.org/tools/orbit/downloads/drops/R20220531185310/repository/" enabled="true" />
+      <repository location="https://download.eclipse.org/releases/latest/" enabled="true" />
    </repositories>
 
    <preferencesInfo>
