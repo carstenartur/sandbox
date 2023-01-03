@@ -39,10 +39,6 @@ jobs:
       run: xvfb-run --auto-servernum mvn -e -V --batch-mode --global-toolchains ${{ github.workspace }}/.github/workflows/toolchains.xml -Pweb,jacoco clean verify
     - name: Cleanup xvfb pidx build
       uses: bcomnes/cleanup-xvfb@v1
-#    - name: Test with Maven
-#      run: xvfb-run --auto-servernum mvn -e -V --batch-mode -Dmaven.test.failure.ignore=true -Pweb,jacoco org.eclipse.tycho:tycho-surefire-plugin:test
-#    - name: Cleanup xvfb pidx test
-#      uses: bcomnes/cleanup-xvfb@v1
     - name: Publish Test Report
       uses: mikepenz/action-junit-report@v3
       if: always() # always run even if the previous step fails
