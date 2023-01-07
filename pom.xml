@@ -11,9 +11,10 @@
 	<properties>
 		<tycho-version>2.7.5</tycho-version>
 		<rcp-version>eclipse</rcp-version>
-		<jacoco-version>0.8.8</jacoco-version>
 		<!-- <rcp-version>2021-03</rcp-version> -->
+		<jacoco-version>0.8.8</jacoco-version>
 		<java-version>11</java-version>
+		<java-execenv>JavaSE-11</java-execenv>
 		<spotbugs-version>4.7.3.0</spotbugs-version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
@@ -90,12 +91,12 @@
 				<artifactId>target-platform-configuration</artifactId>
 				<version>${tycho-version}</version>
 				<configuration>
-					<executionEnvironment>JavaSE-11</executionEnvironment>
+					<executionEnvironment>${java-execenv}</executionEnvironment>
 					<target>
 						<artifact>
 							<groupId>org.sandbox</groupId>
 							<artifactId>sandbox_target</artifactId>
-							<version>1.1.0-SNAPSHOT</version>
+							<version>${project.version}</version>
 						</artifact>
 					</target>
 					<dependency-resolution>
@@ -173,10 +174,10 @@
 				</executions>
 			</plugin>
 			<plugin>
-                           <groupId>org.eclipse.tycho</groupId>
-                           <artifactId>tycho-packaging-plugin</artifactId>
-                           <version>${tycho-version}</version>
-                        </plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>tycho-packaging-plugin</artifactId>
+				<version>${tycho-version}</version>
+			</plugin>
 		</plugins>
 	</build>
 	<reporting>
@@ -335,14 +336,14 @@
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
-<!--	-->
+	<!--	-->
 	<distributionManagement>
 		<repository>
 			<id>github</id>
 			<name>GitHub carstenartur Apache Maven Packages</name>
 			<url>https://maven.pkg.github.com/carstenartur/sandbox</url>
 		</repository>
-	</distributionManagement> 
+	</distributionManagement>
 	<profiles>
 		<profile>
 			<id>web</id>
