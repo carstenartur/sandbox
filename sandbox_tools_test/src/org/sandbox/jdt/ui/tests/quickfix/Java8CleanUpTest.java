@@ -29,7 +29,7 @@ public class Java8CleanUpTest {
 	AbstractEclipseJava context= new EclipseJava8();
 
 	enum While2EnhancedForLoop {
-		whileWarningSelf("package test;\n" 
+		whileWarningSelf("package test;\n"
 				+ "import java.util.*;\n"
 				+ "public class Test extends ArrayList<String> {\n"
 				+ "    void m() {\n"

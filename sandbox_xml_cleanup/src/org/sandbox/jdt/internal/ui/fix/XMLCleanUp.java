@@ -34,7 +34,7 @@ public class XMLCleanUp extends AbstractCleanUp {
 	}
 
 	/**
-	 * 
+	 *
 	 */
 	public XMLCleanUp() {
 	}

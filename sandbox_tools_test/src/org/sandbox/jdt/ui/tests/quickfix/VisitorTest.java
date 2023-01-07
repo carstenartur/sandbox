@@ -56,7 +56,7 @@ import org.sandbox.jdt.internal.common.VisitorEnum;
 
 /**
  * Testing different aspects of the new api
- * 
+ *
  * @author Carsten Hammer
  *
  */
@@ -71,7 +71,7 @@ public class VisitorTest {
 		Map<String, String> options = JavaCore.getOptions();
 		JavaCore.setComplianceOptions(JavaCore.VERSION_17, options);
 		parser.setCompilerOptions(options);
-		
+
 		cunit1 = createunit(parser,"package test;\n"  //$NON-NLS-1$
 				+"import java.util.Collection;\n" //$NON-NLS-1$
 				+ "\n" //$NON-NLS-1$
@@ -109,7 +109,7 @@ public class VisitorTest {
 				+ "        System.out.println();\n" //$NON-NLS-1$
 				+ "    }\n" //$NON-NLS-1$
 				+ "}\n", "Test"); //$NON-NLS-1$ //$NON-NLS-2$
-		
+
 		cunit3 =createunit(parser,"package test;\n" //$NON-NLS-1$
 				+ "import java.util.*;\n" //$NON-NLS-1$
 				+ "import org.eclipse.core.runtime.CoreException;\n" //$NON-NLS-1$
@@ -613,12 +613,12 @@ public class VisitorTest {
 		if (exp instanceof MethodInvocation) {
 			MethodInvocation mi = (MethodInvocation) exp;
 			Expression element = mi.getExpression();
-				if (element instanceof SimpleName) {
-					SimpleName sn = (SimpleName) element;
-					if (mi.getName().toString().equals("iterator")) { //$NON-NLS-1$
-						name.add(sn.getIdentifier());
-					}
+			if (element instanceof SimpleName) {
+				SimpleName sn = (SimpleName) element;
+				if (mi.getName().toString().equals("iterator")) { //$NON-NLS-1$
+					name.add(sn.getIdentifier());
 				}
+			}
 		}
 		return name;
 	}
@@ -756,7 +756,7 @@ public class VisitorTest {
 		CompilationUnit root= (CompilationUnit) node.getRoot();
 		return new ScopeAnalyzer(root).getUsedVariableNames(node.getStartPosition(), node.getLength());
 	}
-	
+
 	@Test
 	public void methodinvocationTest() {
 		Set<ASTNode> nodesprocessed = null;

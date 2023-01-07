@@ -44,7 +44,7 @@ public class XMLCleanUpCore extends AbstractCleanUpCore {
 		super(options);
 	}
 	/**
-	 * 
+	 *
 	 */
 	public XMLCleanUpCore() {
 	}
@@ -97,7 +97,7 @@ public class XMLCleanUpCore extends AbstractCleanUpCore {
 		EnumSet<XMLCleanUpFixCore> computeFixSet= computeFixSet();
 		EnumSet.allOf(XMLCleanUpFixCore.class)
 		.forEach(e -> sb.append(e.getPreview(computeFixSet.contains(e))));
-		return 
+		return
 				sb.toString();
 	}
 

@@ -20,7 +20,7 @@ public class XMLCandidateHit {
 	public ASTNode whileStatement;
 
 	/**
-	 * 
+	 *
 	 */
 	public XMLCandidateHit() {
 	}

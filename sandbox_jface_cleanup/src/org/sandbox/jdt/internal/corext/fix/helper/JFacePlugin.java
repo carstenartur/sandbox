@@ -46,12 +46,12 @@ import org.sandbox.jdt.internal.corext.fix.JfaceCleanUpFixCore;
  *
  * SubProgressMonitor has been deprecated What is affected: Clients that refer
  * to org.eclipse.core.runtime.SubProgressMonitor.
- * 
+ *
  * Description: org.eclipse.core.runtime.SubProgressMonitor has been deprecated
  * and replaced by org.eclipse.core.runtime.SubMonitor.
- * 
+ *
  * Action required:
- * 
+ *
  * Calls to IProgressMonitor.beginTask on the root monitor should be replaced by
  * a call to SubMonitor.convert. Keep the returned SubMonitor around as a local
  * variable and refer to it instead of the root monitor for the remainder of the
@@ -61,7 +61,7 @@ import org.sandbox.jdt.internal.corext.fix.JfaceCleanUpFixCore;
  * two-argument version of SubMonitor.split(int, int) using
  * SubMonitor.SUPPRESS_SUBTASK as the second argument. It is not necessary to
  * call done on an instance of SubMonitor. Example:
- * 
+ *
  * Consider the following example: void someMethod(IProgressMonitor pm) {
  * pm.beginTask("Main Task", 100); SubProgressMonitor subMonitor1= new
  * SubProgressMonitor(pm, 60); try { doSomeWork(subMonitor1); } finally {
@@ -73,7 +73,7 @@ import org.sandbox.jdt.internal.corext.fix.JfaceCleanUpFixCore;
  * doSomeMoreWork(subMonitor.split(40)); }
  */
 public class JFacePlugin extends
-		AbstractTool<ReferenceHolder<Integer, org.sandbox.jdt.internal.corext.fix.helper.JFacePlugin.MonitorHolder>> {
+AbstractTool<ReferenceHolder<Integer, org.sandbox.jdt.internal.corext.fix.helper.JFacePlugin.MonitorHolder>> {
 
 	public static final String CLASS_INSTANCE_CREATION = "ClassInstanceCreation";
 	public static final String METHODINVOCATION = "MethodInvocation";
@@ -89,7 +89,7 @@ public class JFacePlugin extends
 	public void find(JfaceCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed,
 			boolean createForOnlyIfVarUsed) {
-		Integer i = 0;
+		int i = 0;
 		ReferenceHolder<Integer, MonitorHolder> dataholder = new ReferenceHolder<>();
 
 		ASTProcessor<ReferenceHolder<Integer, MonitorHolder>, Integer, MonitorHolder> astp = new ASTProcessor<>(
@@ -111,18 +111,18 @@ public class JFacePlugin extends
 			}
 			return true;
 		}, s -> ASTNodes.getTypedAncestor(s, Block.class))
-				.callClassInstanceCreationVisitor(SubProgressMonitor.class, (node, holder) -> {
-					MonitorHolder mh = holder.get(holder.size() - 1);
-					List<?> arguments = node.arguments();
-					SimpleName simplename = (SimpleName) arguments.get(0);
-					if (!mh.minvname.equals(simplename.getIdentifier())) {
-						return true;
-					}
-					System.out.println("init[" + node.getStartPosition() + "] " + node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$
-					mh.setofcic.add(node);
-					operations.add(fixcore.rewrite(holder));
-					return true;
-				}).build(compilationUnit);
+		.callClassInstanceCreationVisitor(SubProgressMonitor.class, (node, holder) -> {
+			MonitorHolder mh = holder.get(holder.size() - 1);
+			List<?> arguments = node.arguments();
+			SimpleName simplename = (SimpleName) arguments.get(0);
+			if (!mh.minvname.equals(simplename.getIdentifier())) {
+				return true;
+			}
+			System.out.println("init[" + node.getStartPosition() + "] " + node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$
+			mh.setofcic.add(node);
+			operations.add(fixcore.rewrite(holder));
+			return true;
+		}).build(compilationUnit);
 	}
 
 	@Override
@@ -146,19 +146,19 @@ public class JFacePlugin extends
 
 				/**
 				 * Here we process the "beginTask" and change it to "SubMonitor.convert"
-				 * 
+				 *
 				 * monitor.beginTask(NewWizardMessages.NewSourceFolderWizardPage_operation, 3);
 				 * SubMonitor subMonitor =
 				 * SubMonitor.convert(monitor,NewWizardMessages.NewSourceFolderWizardPage_operation,
 				 * 3);
-				 * 
+				 *
 				 */
 
 				SingleVariableDeclaration newVariableDeclarationStatement = ast.newSingleVariableDeclaration();
 
 				newVariableDeclarationStatement.setName(ast.newSimpleName(identifier));
 				newVariableDeclarationStatement
-						.setType(ast.newSimpleType(addImport(SubMonitor.class.getCanonicalName(), cuRewrite, ast)));
+				.setType(ast.newSimpleType(addImport(SubMonitor.class.getCanonicalName(), cuRewrite, ast)));
 
 				MethodInvocation staticCall = ast.newMethodInvocation();
 				staticCall.setExpression(ASTNodeFactory.newName(ast, SubMonitor.class.getSimpleName()));
@@ -167,9 +167,9 @@ public class JFacePlugin extends
 				staticCallArguments.add(
 						ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(minv.getExpression())));
 				staticCallArguments
-						.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(arguments.get(0))));
+				.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(arguments.get(0))));
 				staticCallArguments
-						.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(arguments.get(1))));
+				.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(arguments.get(1))));
 				newVariableDeclarationStatement.setInitializer(staticCall);
 
 				ASTNodes.replaceButKeepComment(rewrite, minv, newVariableDeclarationStatement, group);
@@ -179,10 +179,10 @@ public class JFacePlugin extends
 				ASTNode origarg = (ASTNode) submon.arguments().get(1);
 				System.out.println("rewrite spminstance [" + submon.getStartPosition() + "] " + submon);
 				/**
-				 * 
+				 *
 				 * IProgressMonitor subProgressMonitor= new SubProgressMonitor(monitor, 1);
 				 * IProgressMonitor subProgressMonitor= subMonitor.split(1);
-				 * 
+				 *
 				 */
 				MethodInvocation newMethodInvocation2 = ast.newMethodInvocation();
 				newMethodInvocation2.setName(ast.newSimpleName("split"));
@@ -190,7 +190,7 @@ public class JFacePlugin extends
 				List<ASTNode> splitCallArguments = newMethodInvocation2.arguments();
 
 				splitCallArguments
-						.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(origarg)));
+				.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(origarg)));
 				ASTNodes.replaceButKeepComment(rewrite, submon, newMethodInvocation2, group);
 			}
 			remover.applyRemoves(importRewrite);
@@ -205,7 +205,7 @@ public class JFacePlugin extends
 					+ "		IProgressMonitor subProgressMonitor2= new SubProgressMonitor(monitor, 2);\n"; //$NON-NLS-1$
 		}
 		return "\n		SubMonitor subMonitor=SubMonitor.convert(monitor,NewWizardMessages.NewSourceFolderWizardPage_operation,3);\n"
-				+ "		IProgressMonitor subProgressMonitor= subMonitor.split(1);\n"
-				+ "		IProgressMonitor subProgressMonitor2= subMonitor.split(2);\n"; //$NON-NLS-1$
+		+ "		IProgressMonitor subProgressMonitor= subMonitor.split(1);\n"
+		+ "		IProgressMonitor subProgressMonitor2= subMonitor.split(2);\n"; //$NON-NLS-1$
 	}
 }
