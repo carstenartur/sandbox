@@ -56,7 +56,7 @@
 		<repository>
 			<id>eclipse</id>
 			<layout>p2</layout>
-			<url>https://download.eclipse.org/releases/2022-06</url>
+			<url>https://download.eclipse.org/releases/2022-09</url>
 		</repository>
 		<repository>
 			<id>babel</id>
@@ -66,7 +66,7 @@
 		<repository>
 			<id>orbit</id>
 			<layout>p2</layout>
-			<url>https://download.eclipse.org/tools/orbit/downloads/drops/R20220531185310/repository/</url>
+			<url>https://download.eclipse.org/tools/orbit/downloads/drops/R20220830213456/repository/</url>
 		</repository>
 		<repository>
 			<id>swtbot</id>
