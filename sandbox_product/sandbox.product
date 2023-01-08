@@ -215,6 +215,8 @@ United States, other countries, or both.
       <feature id="org.eclipse.e4.rcp.source"/>
       <feature id="org.eclipse.equinox.p2.rcp.feature.source"/>
       <feature id="org.eclipse.e4.rcp"/>
+      <feature id="org.eclipse.egit"/>
+      <feature id="org.eclipse.jgit"/>
       <feature id="sandbox_encoding_quickfix_feature"/>
       <feature id="sandbox_extra_search_feature"/>
       <feature id="sandbox_usage_view_feature"/>
