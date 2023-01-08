@@ -4,7 +4,7 @@ Bundle-Name: jface cleanup tests
 Bundle-SymbolicName: sandbox_jface_cleanup_test;singleton:=true
 Bundle-Version: 1.1.0.qualifier
 Fragment-Host: sandbox_jface_cleanup
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Require-Bundle: org.junit,
  org.junit.jupiter.api,
  sandbox_test_commons

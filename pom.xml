@@ -13,8 +13,8 @@
 		<rcp-version>eclipse</rcp-version>
 		<!-- <rcp-version>2021-03</rcp-version> -->
 		<jacoco-version>0.8.8</jacoco-version>
-		<java-version>11</java-version>
-		<java-execenv>JavaSE-11</java-execenv>
+		<java-version>17</java-version>
+		<java-execenv>JavaSE-17</java-execenv>
 		<spotbugs-version>4.7.3.0</spotbugs-version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
@@ -51,7 +51,7 @@
 		<repository>
 			<id>justj</id>
 			<layout>p2</layout>
-			<url>https://download.eclipse.org/justj/jres/11/updates/release/latest/</url>
+			<url>https://download.eclipse.org/justj/jres/17/updates/release/latest/</url>
 		</repository>
 		<repository>
 			<id>eclipse</id>

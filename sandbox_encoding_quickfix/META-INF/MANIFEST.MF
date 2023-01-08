@@ -4,7 +4,7 @@ Bundle-Name: Tool
 Bundle-SymbolicName: sandbox_encoding_quickfix;singleton:=true
 Bundle-Vendor: sandbox
 Bundle-Version: 1.1.0.qualifier
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.core.filebuffers,
  org.eclipse.core.filesystem,
