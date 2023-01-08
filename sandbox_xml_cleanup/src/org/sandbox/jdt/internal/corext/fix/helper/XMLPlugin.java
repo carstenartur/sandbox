@@ -33,15 +33,15 @@ public class XMLPlugin extends AbstractTool<XMLCandidateHit> {
 	public void find(XMLCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed,
 			boolean createForOnlyIfVarUsed) {
-		
-		System.out.println("asdf"+compilationUnit);	
+
+		System.out.println("asdf"+compilationUnit);
 	}
 
 	@Override
 	public void rewrite(XMLCleanUpFixCore upp, final XMLCandidateHit hit,
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
-//		ASTRewrite rewrite= cuRewrite.getASTRewrite();
-//		AST ast= cuRewrite.getRoot().getAST();
+		//		ASTRewrite rewrite= cuRewrite.getASTRewrite();
+		//		AST ast= cuRewrite.getRoot().getAST();
 
 		ImportRewrite importRewrite= cuRewrite.getImportRewrite();
 		ImportRemover remover= cuRewrite.getImportRemover();

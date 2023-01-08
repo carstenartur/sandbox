@@ -22,13 +22,22 @@ jobs:
       with:
         java-version: '11'
         distribution: 'temurin'
+        cache: maven
         server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
         settings-path: ${{ github.workspace }} # location for the settings.xml file
-
-    - name: Build with Maven
-      run: mvn -B --batch-mode --global-toolchains ${{ github.workspace }}/.github/workflows/toolchains.xml -Pweb,jacoco package --file pom.xml
-
+    - name: Cache Maven packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+#    - name: Build with Maven
+#      run: xvfb-run --auto-servernum --server-num=1 --server-args="-screen 1 1024x768x24" mvn -B --batch-mode --global-toolchains ${{ github.workspace }}/.github/workflows/toolchains.xml -Pweb,jacoco package --file pom.xml
+#    - name: Cleanup xvfb pidx build
+#      uses: bcomnes/cleanup-xvfb@v1
     - name: Publish to GitHub Packages Apache Maven
-      run: mvn --batch-mode --global-toolchains ${{ github.workspace }}/.github/workflows/toolchains.xml -Pweb,jacoco deploy -s $GITHUB_WORKSPACE/settings.xml
+      run: xvfb-run --auto-servernum --server-num=1 --server-args="-screen 1 1024x768x24" mvn --batch-mode --global-toolchains ${{ github.workspace }}/.github/workflows/toolchains.xml -Pweb deploy -s $GITHUB_WORKSPACE/settings.xml
       env:
         GITHUB_TOKEN: ${{ github.token }}
+    - name: Cleanup xvfb pidx build
+      uses: bcomnes/cleanup-xvfb@v1

@@ -44,7 +44,7 @@ public class JFaceCleanUpCore extends AbstractCleanUpCore {
 		super(options);
 	}
 	/**
-	 * 
+	 *
 	 */
 	public JFaceCleanUpCore() {
 	}

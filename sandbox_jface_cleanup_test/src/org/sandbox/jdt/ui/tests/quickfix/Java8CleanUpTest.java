@@ -28,7 +28,7 @@ public class Java8CleanUpTest {
 
 	@RegisterExtension
 	AbstractEclipseJava context= new EclipseJava8();
-	
+
 	enum JFaceCleanupCases{
 		PositiveCase("package test;\n"
 				+ "import java.util.*;\n"
@@ -105,7 +105,7 @@ public class Java8CleanUpTest {
 		String given, expected;
 	}
 
-//	@Disabled
+	//	@Disabled
 	@ParameterizedTest
 	@EnumSource(JFaceCleanupCases.class)
 	public void testJFaceCleanupParametrized(JFaceCleanupCases test) throws CoreException {
@@ -142,7 +142,7 @@ public class Java8CleanUpTest {
 		String given;
 	}
 
-//	@Disabled
+	//	@Disabled
 	@ParameterizedTest
 	@EnumSource(NO_JFaceCleanupCases.class)
 	public void testJFaceCleanup_donttouch(NO_JFaceCleanupCases test) throws CoreException {

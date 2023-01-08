@@ -34,7 +34,7 @@ public class JFaceCleanUp extends AbstractCleanUp {
 	}
 
 	/**
-	 * 
+	 *
 	 */
 	public JFaceCleanUp() {
 	}

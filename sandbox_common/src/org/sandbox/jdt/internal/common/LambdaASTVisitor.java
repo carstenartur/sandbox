@@ -195,7 +195,7 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 
 	@Override
 	public boolean visit(ClassInstanceCreation node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ClassInstanceCreation)) {	
+		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ClassInstanceCreation)) {
 			Map<String, Object> map=(Map<String, Object>) this.helperVisitor.getSupplierData().get(VisitorEnum.ClassInstanceCreation);
 			if(map != null) {
 				Class<?> typeof=(Class<?>) map.get(HelperVisitor.TYPEOF);
@@ -515,24 +515,19 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 			Map<String, Object> map=(Map<String, Object>) this.helperVisitor.getSupplierData().get(VisitorEnum.MethodInvocation);
 			if(map != null) {
 				String data=(String) map.get(HelperVisitor.METHODNAME);
-				if (data!= null) {
-					if (!node.getName().getIdentifier().equals(data)) {
-						return true;
-					}
+				if ((data!= null) && !node.getName().getIdentifier().equals(data)) {
+					return true;
 				}
 				Class<?> typeof=(Class<?>) map.get(HelperVisitor.TYPEOF);
 				if(typeof!=null) {
 					Name sn= ASTNodes.as(node.getExpression(), Name.class);
-					if (sn != null) {
-						IBinding ibinding= sn.resolveBinding();
-						IVariableBinding vb=(IVariableBinding) ibinding;
-						ITypeBinding binding= vb.getType();
-						if (binding != null) {
-							if (!typeof.getSimpleName().equals(binding.getName())) {
-								return true;
-							}
-						}
-					} else {
+					if (sn == null) {
+						return true;
+					}
+					IBinding ibinding= sn.resolveBinding();
+					IVariableBinding vb=(IVariableBinding) ibinding;
+					ITypeBinding binding= vb.getType();
+					if ((binding != null) && !typeof.getSimpleName().equals(binding.getName())) {
 						return true;
 					}
 				}
@@ -1431,24 +1426,19 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 			Map<String, Object> map=(Map<String, Object>) this.helperVisitor.getConsumerData().get(VisitorEnum.MethodInvocation);
 			if(map != null) {
 				String data=(String) map.get(HelperVisitor.METHODNAME);
-				if (data!= null) {
-					if (!node.getName().getIdentifier().equals(data)) {
-						return;
-					}
+				if ((data!= null) && !node.getName().getIdentifier().equals(data)) {
+					return;
 				}
 				Class<?> typeof=(Class<?>) map.get(HelperVisitor.TYPEOF);
 				if(typeof!=null) {
 					Name sn= ASTNodes.as(node.getExpression(), Name.class);
-					if (sn != null) {
-						IBinding ibinding= sn.resolveBinding();
-						IVariableBinding vb=(IVariableBinding) ibinding;
-						ITypeBinding binding= vb.getType();
-						if (binding != null) {
-							if (!typeof.getSimpleName().equals(binding.getName())) {
-								return;
-							}
-						}
-					} else {
+					if (sn == null) {
+						return;
+					}
+					IBinding ibinding= sn.resolveBinding();
+					IVariableBinding vb=(IVariableBinding) ibinding;
+					ITypeBinding binding= vb.getType();
+					if ((binding != null) && !typeof.getSimpleName().equals(binding.getName())) {
 						return;
 					}
 				}
