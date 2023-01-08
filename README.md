@@ -55,9 +55,10 @@ main:
 
 # What is included
 
-Code based on Java 17
+Code based on Java 17 starting with 2022-12, Java 11 up to 2022-06
 
-- how to create a cleanup
+- how to create github based build for different eclipse versions
+- how to create a jdt cleanup
 - how to setup spotbugs maven plugin to fail build in case of spotbugs error
 - how to create a junit 5 based test for cleanup
 - how to create a jacoco code coverage configuration for the test
