@@ -12,10 +12,10 @@
 	<name>Sandbox encoding quickfix test</name>
 	<packaging>eclipse-test-plugin</packaging>
 	<dependencies>
-		<dependency>
+	<!--	<dependency>
 			<groupId>org.sandbox</groupId>
 			<artifactId>sandbox_encoding_quickfix</artifactId>
-		</dependency>
+		</dependency>-->
 	</dependencies>
 	<build>
 		<testSourceDirectory>src</testSourceDirectory>
@@ -29,13 +29,12 @@
 					<useJDK>BREE</useJDK>
 					<useUIHarness>false</useUIHarness>
 					<dependencies>
-						<dependency>
+						<!--<dependency>
 							<type>eclipse-plugin</type>
 							<groupId>org.sandbox</groupId>
 							<artifactId>sandbox_encoding_quickfix</artifactId>
-							<!-- This is the minimum required version -->
 							<version>0.0.0</version>
-						</dependency>
+						</dependency>-->
 					</dependencies>
 				</configuration>
 			</plugin>

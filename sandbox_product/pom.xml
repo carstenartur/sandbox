@@ -67,6 +67,7 @@
 					<xzCompress>false</xzCompress>
 					<createArtifactRepository>true</createArtifactRepository>
 					<includeAllDependencies>true</includeAllDependencies>
+					<includeAllSources>true</includeAllSources>
 				</configuration>
 			</plugin>
 			<plugin>

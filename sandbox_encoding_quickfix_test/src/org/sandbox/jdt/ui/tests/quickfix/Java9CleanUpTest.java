@@ -4,7 +4,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
+//import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
@@ -13,7 +13,7 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava9;
 
 public class Java9CleanUpTest {
 
-	@RegisterExtension
+//	@RegisterExtension
 	AbstractEclipseJava context= new EclipseJava9();
 
 	enum ExplicitEncodingPatterns {
