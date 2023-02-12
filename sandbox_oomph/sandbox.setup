@@ -78,7 +78,7 @@
       value="${installation.location/}${installation.relativeProductFolder}"/>
   <version name="latest"
       label="Latest"
-      requiredJavaVersion="1.8">
+      requiredJavaVersion="17">
     <setupTask
         xsi:type="setup:CompoundTask"
         name="User Preferences">
@@ -219,7 +219,7 @@
       <requirement
           name="org.eclipse.emf.edapt.runtime.feature.feature.group"/>
       <repository
-          url="http://download.eclipse.org/releases/2021-03"/>
+          url="http://download.eclipse.org/releases/2022-09"/>
     </setupTask>
     <description></description>
   </version>
