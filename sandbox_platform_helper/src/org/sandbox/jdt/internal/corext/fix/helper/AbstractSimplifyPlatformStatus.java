@@ -28,7 +28,9 @@ import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodeFactory;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
@@ -101,6 +103,7 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
+		ImportRewrite importRemover = cuRewrite.getImportRewrite();
 		/**
 		 * Add call to Status.warning(),Status.error() and Status.info()
 		 */
@@ -130,5 +133,7 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 			break;
 		}
 		ASTNodes.replaceButKeepComment(rewrite, visited, staticCall, group);
+		QualifiedName stat= (QualifiedName) arguments.get(0);
+		importRemover.removeImport(IStatus.class.getCanonicalName());
 	}
 }

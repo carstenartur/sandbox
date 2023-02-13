@@ -28,7 +28,6 @@ public class Java9CleanUpTest {
 
 				"package test1;\n"
 						+ "\n"
-						+ "import org.eclipse.core.runtime.IStatus;\n"
 						+ "import org.eclipse.core.runtime.Status;\n"
 						+ "\n"
 						+ "public class E1 {\n"
@@ -48,7 +47,6 @@ public class Java9CleanUpTest {
 
 				"package test1;\n"
 						+ "\n"
-						+ "import org.eclipse.core.runtime.IStatus;\n"
 						+ "import org.eclipse.core.runtime.Status;\n"
 						+ "\n"
 						+ "public class E1 {\n"
@@ -70,7 +68,6 @@ public class Java9CleanUpTest {
 
 				"package test1;\n"
 						+ "\n"
-						+ "import org.eclipse.core.runtime.IStatus;\n"
 						+ "import org.eclipse.core.runtime.Status;\n"
 						+ "\n"
 						+ "public class E1 {\n"
@@ -89,7 +86,6 @@ public class Java9CleanUpTest {
 
 				"package test1;\n"
 						+ "\n"
-						+ "import org.eclipse.core.runtime.IStatus;\n"
 						+ "import org.eclipse.core.runtime.Status;\n"
 						+ "\n"
 						+ "public class E1 {\n"
@@ -106,7 +102,6 @@ public class Java9CleanUpTest {
 
 				"package test1;\n"
 						+ "\n"
-						+ "import org.eclipse.core.runtime.IStatus;\n"
 						+ "import org.eclipse.core.runtime.Status;\n"
 						+ "\n"
 						+ "public class E1 {\n"
