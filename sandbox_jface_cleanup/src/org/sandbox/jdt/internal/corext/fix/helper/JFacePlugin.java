@@ -19,6 +19,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.jdt.core.dom.AST;
@@ -28,6 +29,7 @@ import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -130,9 +132,7 @@ AbstractTool<ReferenceHolder<Integer, org.sandbox.jdt.internal.corext.fix.helper
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
 		ASTRewrite rewrite = cuRewrite.getASTRewrite();
 		AST ast = cuRewrite.getRoot().getAST();
-
-		ImportRewrite importRewrite = cuRewrite.getImportRewrite();
-		ImportRemover remover = cuRewrite.getImportRemover();
+		ImportRewrite importRemover = cuRewrite.getImportRewrite();
 		Set<ASTNode> nodesprocessed = hit.get(hit.size() - 1).nodesprocessed;
 		for (Entry<Integer, MonitorHolder> entry : hit.entrySet()) {
 
@@ -192,19 +192,19 @@ AbstractTool<ReferenceHolder<Integer, org.sandbox.jdt.internal.corext.fix.helper
 				splitCallArguments
 				.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(origarg)));
 				ASTNodes.replaceButKeepComment(rewrite, submon, newMethodInvocation2, group);
+				importRemover.removeImport(SubProgressMonitor.class.getCanonicalName());
 			}
-			remover.applyRemoves(importRewrite);
 		}
 	}
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-		if (afterRefactoring) {
+		if (!afterRefactoring) {
 			return "	monitor.beginTask(NewWizardMessages.NewSourceFolderWizardPage_operation, 3);\n"
 					+ "		IProgressMonitor subProgressMonitor= new SubProgressMonitor(monitor, 1);\n"
 					+ "		IProgressMonitor subProgressMonitor2= new SubProgressMonitor(monitor, 2);\n"; //$NON-NLS-1$
 		}
-		return "\n		SubMonitor subMonitor=SubMonitor.convert(monitor,NewWizardMessages.NewSourceFolderWizardPage_operation,3);\n"
+		return "	SubMonitor subMonitor=SubMonitor.convert(monitor,NewWizardMessages.NewSourceFolderWizardPage_operation,3);\n"
 		+ "		IProgressMonitor subProgressMonitor= subMonitor.split(1);\n"
 		+ "		IProgressMonitor subProgressMonitor2= subMonitor.split(2);\n"; //$NON-NLS-1$
 	}
