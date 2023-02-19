@@ -35,6 +35,7 @@ import org.eclipse.jdt.internal.corext.dom.ASTNodeFactory;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.jdt.internal.corext.refactoring.structure.ImportRemover;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.fix.SimplifyPlatformStatusFixCore;
 
@@ -103,7 +104,9 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
-		ImportRewrite importRemover = cuRewrite.getImportRewrite();
+		ImportRewrite importRewrite= cuRewrite.getImportRewrite();
+		ImportRemover remover= cuRewrite.getImportRemover();
+
 		/**
 		 * Add call to Status.warning(),Status.error() and Status.info()
 		 */
@@ -115,17 +118,21 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 		int positionmessage= arguments.size() == 5 ? 3 : 2;
 		staticCallArguments.add(ASTNodes.createMoveTarget(rewrite,
 				ASTNodes.getUnparenthesedExpression(arguments.get(positionmessage))));
+		ASTNode node2= arguments.get(2);
 		switch (arguments.size()) {
+		/**
+		 * new Status(IStatus.WARNING, JavaManipulation.ID_PLUGIN, IJavaStatusConstants.INTERNAL_ERROR, message, error)
+		 */
+		case 5:
+			ASTNode node4= arguments.get(4);
+			if (!node4.toString().equals("null") && node2.toString().equals("IStatus.OK")) {
+				staticCallArguments.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(node4)));
+			}
+			break;
 		case 4:
 			ASTNode node= arguments.get(3);
 			if (!node.toString().equals("null")) {
 				staticCallArguments.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(node)));
-			}
-			break;
-		case 5:
-			ASTNode node2= arguments.get(4);
-			if (!node2.toString().equals("null")) {
-				staticCallArguments.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(node2)));
 			}
 			break;
 		case 3:
@@ -134,6 +141,8 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 		}
 		ASTNodes.replaceButKeepComment(rewrite, visited, staticCall, group);
 		QualifiedName stat= (QualifiedName) arguments.get(0);
-		importRemover.removeImport(IStatus.class.getCanonicalName());
+//		importRemover.removeImport(IStatus.class.getCanonicalName());
+		remover.registerRemovedNode(visited);
+		remover.applyRemoves(importRewrite);
 	}
 }
