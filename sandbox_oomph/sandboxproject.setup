@@ -144,7 +144,7 @@
         label="Master"/>
     <logicalProjectContainer
         xsi:type="setup:Project"
-        href="file://sandbox/sandbox_oomph/sandboxproject.setup#/"/>
+        href="file://sandbox_oomph/sandboxproject.setup#/"/>
     <description>Client tools</description>
   </project>
   <description>Sandbox provides wips.</description>

@@ -3,6 +3,7 @@
 	<name>sandbox_platform_helper_test</name>
 	<comment></comment>
 	<projects>
+		<project>sandbox_platform_helper</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

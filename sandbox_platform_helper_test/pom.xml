@@ -11,12 +11,6 @@
 	<artifactId>sandbox_platform_helper_test</artifactId>
 	<name>Sandbox platform helper test</name>
 	<packaging>eclipse-test-plugin</packaging>
-	<dependencies>
-		<dependency>
-			<groupId>org.sandbox</groupId>
-			<artifactId>sandbox_platform_helper</artifactId>
-		</dependency>
-	</dependencies>
 	<build>
 		<testSourceDirectory>src</testSourceDirectory>
 		<plugins>
@@ -26,16 +20,7 @@
 				<version>${tycho-version}</version>
 				<configuration>
 					<useJDK>BREE</useJDK>
-					<useUIHarness>true</useUIHarness>
-					<dependencies>
-						<dependency>
-							<type>eclipse-plugin</type>
-							<groupId>org.sandbox</groupId>
-							<artifactId>sandbox_platform_helper</artifactId>
-							<!-- This is the minimum required version -->
-							<version>0.0.0</version>
-						</dependency>
-					</dependencies>
+					<useUIHarness>false</useUIHarness>
 				</configuration>
 			</plugin>
 		</plugins>
