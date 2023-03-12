@@ -98,8 +98,9 @@ These changes are able to confuse a developer
 Poc for quickfix to change code according to new possibilities in 
 https://www.eclipse.org/eclipse/news/4.20/platform_isv.php#simpler-status-creation.
 
-6) While to ForLoop Converter
+6) sandbox_tools
 
+While to ForLoop Converter
 Already merged into Eclipse jdt
 
 7) Iterator to functional loop converter
