@@ -20,7 +20,16 @@
 				<version>${tycho-version}</version>
 				<configuration>
 					<useJDK>BREE</useJDK>
-					<useUIHarness>false</useUIHarness>
+					<useUIHarness>true</useUIHarness>
+					<dependencies>
+						<dependency>
+							<type>eclipse-plugin</type>
+							<groupId>org.sandbox</groupId>
+							<artifactId>sandbox_platform_helper</artifactId>
+							<!-- This is the minimum required version -->
+							<version>0.0.0</version>
+						</dependency>
+					</dependencies>
 				</configuration>
 			</plugin>
 		</plugins>
