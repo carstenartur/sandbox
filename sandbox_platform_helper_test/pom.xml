@@ -11,6 +11,12 @@
 	<artifactId>sandbox_platform_helper_test</artifactId>
 	<name>Sandbox platform helper test</name>
 	<packaging>eclipse-test-plugin</packaging>
+	<dependencies>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_platform_helper</artifactId>
+		</dependency>
+	</dependencies>
 	<build>
 		<testSourceDirectory>src</testSourceDirectory>
 		<plugins>
