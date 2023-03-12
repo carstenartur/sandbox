@@ -34,7 +34,7 @@ public class XMLPlugin extends AbstractTool<XMLCandidateHit> {
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed,
 			boolean createForOnlyIfVarUsed) {
 
-		System.out.println("asdf"+compilationUnit);
+		System.out.println("asdf"+compilationUnit); //$NON-NLS-1$
 	}
 
 	@Override

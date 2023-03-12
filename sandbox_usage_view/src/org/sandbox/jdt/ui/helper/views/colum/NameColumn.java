@@ -19,7 +19,7 @@ import org.eclipse.jface.viewers.TableViewer;
 public class NameColumn extends AbstractColumn {
 
 	private static final int bounds= 100;
-	private static final String title= "Variable name";
+	private static final String title= "Variable name"; //$NON-NLS-1$
 
 	public NameColumn() {
 	}

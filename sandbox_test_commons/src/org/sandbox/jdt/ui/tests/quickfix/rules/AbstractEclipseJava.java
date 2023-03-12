@@ -77,7 +77,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 
 	private final String testresources_stubs;
 	private final String compliance;
-	private static final String TEST_SETUP_PROJECT= "TestSetupProject";
+	private static final String TEST_SETUP_PROJECT= "TestSetupProject"; //$NON-NLS-1$
 	public IPackageFragmentRoot fSourceFolder;
 	private CustomProfile fProfile;
 
@@ -88,15 +88,15 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 
 	@Override
 	public void beforeEach(ExtensionContext context) throws CoreException {
-		IJavaProject javaProject= createJavaProject(TEST_SETUP_PROJECT, "bin");
+		IJavaProject javaProject= createJavaProject(TEST_SETUP_PROJECT, "bin"); //$NON-NLS-1$
 		javaProject.setRawClasspath(getDefaultClasspath(), null);
 		Map<String, String> options= javaProject.getOptions(false);
 		JavaCore.setComplianceOptions(compliance, options);
 		javaProject.setOptions(options);
-		fSourceFolder= AbstractEclipseJava.addSourceContainer(getProject(TEST_SETUP_PROJECT), "src", new Path[0],
+		fSourceFolder= AbstractEclipseJava.addSourceContainer(getProject(TEST_SETUP_PROJECT), "src", new Path[0], //$NON-NLS-1$
 				new Path[0], null, new IClasspathAttribute[0]);
 		Map<String, String> settings= new HashMap<>();
-		fProfile= new ProfileManager.CustomProfile("testProfile", settings, CleanUpProfileVersioner.CURRENT_VERSION,
+		fProfile= new ProfileManager.CustomProfile("testProfile", settings, CleanUpProfileVersioner.CURRENT_VERSION, //$NON-NLS-1$
 				CleanUpProfileVersioner.PROFILE_KIND);
 		InstanceScope.INSTANCE.getNode(JavaUI.ID_PLUGIN).put(CleanUpConstants.CLEANUP_PROFILE, fProfile.getID());
 		InstanceScope.INSTANCE.getNode(JavaUI.ID_PLUGIN).put(CleanUpConstants.SAVE_PARTICIPANT_PROFILE,
@@ -348,7 +348,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		}
 		if (hasProblems) {
 			StringBuilder builder= new StringBuilder();
-			builder.append(cu.getElementName()).append(" has compilation problems: \n");
+			builder.append(cu.getElementName()).append(" has compilation problems: \n"); //$NON-NLS-1$
 			for (IProblem prob : problems) {
 				builder.append(prob.getMessage()).append('\n');
 			}
@@ -376,7 +376,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 				String s1= list1.get(i);
 				if (s1 != null) {
 					buf.append(s1);
-					buf.append("\n");
+					buf.append("\n"); //$NON-NLS-1$
 				}
 			}
 			String actual= buf.toString();
@@ -385,7 +385,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 				String s2= list2.get(i);
 				if (s2 != null) {
 					buf.append(s2);
-					buf.append("\n");
+					buf.append("\n"); //$NON-NLS-1$
 				}
 			}
 			String expected= buf.toString();
@@ -422,18 +422,18 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 			throw new CoreException(
 					new StatusInfo(status.getSeverity(), status.getMessageMatchingSeverity(status.getSeverity())));
 		}
-		assertTrue(perform.changeExecuted(), "Change wasn't executed");
+		assertTrue(perform.changeExecuted(), "Change wasn't executed"); //$NON-NLS-1$
 		Change undo= perform.getUndoChange();
-		assertNotNull(undo, "Undo doesn't exist");
-		assertTrue(undoManager.anythingToUndo(), "Undo manager is empty");
+		assertNotNull(undo, "Undo doesn't exist"); //$NON-NLS-1$
+		assertTrue(undoManager.anythingToUndo(), "Undo manager is empty"); //$NON-NLS-1$
 		if (setOfExpectedGroupCategories != null) {
 			Change change= create.getChange();
 			Set<GroupCategory> actualCategories= new HashSet<>();
 			collectGroupCategories(actualCategories, change);
 			actualCategories.forEach(actualCategory -> {
 				assertTrue(setOfExpectedGroupCategories.contains(actualCategory.getName()),
-						() -> "Unexpected group category: " + actualCategory.getName() + ", should find: "
-								+ String.join(", ", setOfExpectedGroupCategories));
+						() -> "Unexpected group category: " + actualCategory.getName() + ", should find: " //$NON-NLS-1$ //$NON-NLS-2$
+								+ String.join(", ", setOfExpectedGroupCategories)); //$NON-NLS-1$
 			});
 		}
 		return status;

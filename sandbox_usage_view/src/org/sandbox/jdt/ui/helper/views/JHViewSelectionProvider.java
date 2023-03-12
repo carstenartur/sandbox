@@ -82,7 +82,7 @@ class JHViewSelectionProvider implements ISelectionProvider {
 	@Override
 	public IStructuredSelection getSelection() {
 		IStructuredSelection selection= (IStructuredSelection) fViewer.getSelection();
-		System.out.println("out:" + selection);
+		System.out.println("out:" + selection); //$NON-NLS-1$
 		ArrayList<Object> externalSelection= new ArrayList<>();
 		for (Object element : selection) {
 			//			if (element instanceof JavaElement) {

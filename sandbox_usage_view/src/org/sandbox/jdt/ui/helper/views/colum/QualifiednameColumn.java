@@ -19,7 +19,7 @@ import org.eclipse.jface.viewers.TableViewer;
 public class QualifiednameColumn extends AbstractColumn {
 
 	private static final int bounds= 100;
-	private static final String title= "Type";
+	private static final String title= "Type"; //$NON-NLS-1$
 
 	public QualifiednameColumn() {
 	}

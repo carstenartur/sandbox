@@ -47,7 +47,7 @@ import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 
 class ProspectiveOperation {
 
-	private static final String UNKNOWN_NAME = "_item";
+	private static final String UNKNOWN_NAME = "_item"; //$NON-NLS-1$
 
 	public enum OperationType {
 		MAP, FOREACH, FILTER, REDUCE, ANYMATCH, NONEMATCH
@@ -157,7 +157,7 @@ class ProspectiveOperation {
 			ASTNode type = null;//treeMaker.Type("Integer");
 			//	            var = this.treeMaker.Variable(treeMaker.Modifiers(new HashSet<>()), "accumulator", null, null);
 			var= this.workingCopy.newVariableDeclarationFragment();
-			var.setName(this.workingCopy.newSimpleName("accumulator"));
+			var.setName(this.workingCopy.newSimpleName("accumulator")); //$NON-NLS-1$
 			VariableDeclaration var1 = makeUnknownVariable();
 			if ((ASTNodes.hasOperator((PostfixExpression) this.correspondingTree, PostfixExpression.Operator.INCREMENT) || ASTNodes.hasOperator((PrefixExpression) this.correspondingTree, PrefixExpression.Operator.INCREMENT)) && isInteger(this.reducingVariable, workingCopy)) {
 				lambda = makeIntegerSumReducer();
@@ -167,8 +167,8 @@ class ProspectiveOperation {
 
 
 				MethodInvocation accumulator = this.workingCopy.newMethodInvocation();
-				accumulator.setName(this.workingCopy.newSimpleName("accumulator"));
-				NumberLiteral newStringLiteral = this.workingCopy.newNumberLiteral("1");
+				accumulator.setName(this.workingCopy.newSimpleName("accumulator")); //$NON-NLS-1$
+				NumberLiteral newStringLiteral = this.workingCopy.newNumberLiteral("1"); //$NON-NLS-1$
 
 				lambdaBody= this.workingCopy.newInfixExpression();
 				lambdaBody.setLeftOperand(accumulator);
@@ -191,7 +191,7 @@ class ProspectiveOperation {
 			//	            var = this.treeMaker.Variable(treeMaker.Modifiers(new HashSet<>()), "accumulator", null, null);
 			var= this.workingCopy.newVariableDeclarationFragment();
 
-			var.setName(this.workingCopy.newSimpleName("accumulator"));
+			var.setName(this.workingCopy.newSimpleName("accumulator")); //$NON-NLS-1$
 			VariableDeclaration var1 = makeUnknownVariable();
 			if (ASTNodes.hasOperator((Assignment) correspondingTree, Assignment.Operator.PLUS_ASSIGN)) {
 				if (isString(this.reducingVariable)) {
@@ -220,7 +220,7 @@ class ProspectiveOperation {
 
 		MethodInvocation accumulator = this.workingCopy.newMethodInvocation();
 		//        newMethodInvocation.setExpression(ASTNodeFactory.newName(this.workingCopy, expr.toString()));
-		accumulator.setName(this.workingCopy.newSimpleName("accumulator"));
+		accumulator.setName(this.workingCopy.newSimpleName("accumulator")); //$NON-NLS-1$
 		MethodInvocation unknown = this.workingCopy.newMethodInvocation();
 		unknown.setName(this.workingCopy.newSimpleName(UNKNOWN_NAME));
 		InfixExpression lambdaBody= this.workingCopy.newInfixExpression();
@@ -276,7 +276,7 @@ class ProspectiveOperation {
 	}
 
 	private static boolean isInteger(Expression reducingVariable, AST workingCopy) {
-		return isType(reducingVariable, workingCopy, "java.lang.Integer");
+		return isType(reducingVariable, workingCopy, "java.lang.Integer"); //$NON-NLS-1$
 	}
 
 	private static boolean isType(Expression reducingVariable, AST workingCopy, String fqn) {
@@ -296,7 +296,7 @@ class ProspectiveOperation {
 	private Expression makeIntegerSumReducer() {
 		MethodInvocation sum= this.workingCopy.newMethodInvocation();
 		sum.setExpression(ASTNodeFactory.newName(this.workingCopy, Integer.class.getSimpleName()));
-		sum.setName(this.workingCopy.newSimpleName("sum"));
+		sum.setName(this.workingCopy.newSimpleName("sum")); //$NON-NLS-1$
 		return sum;
 		//		return this.treeMaker.MemberReference(MemberReferenceTree.ReferenceMode.INVOKE, this.treeMaker.Identifier("Integer"), "sum", new ArrayList<>());
 	}
@@ -304,7 +304,7 @@ class ProspectiveOperation {
 	private Expression makeStringConcatReducer() {
 		MethodInvocation sum= this.workingCopy.newMethodInvocation();
 		sum.setExpression(ASTNodeFactory.newName(this.workingCopy, String.class.getSimpleName()));
-		sum.setName(this.workingCopy.newSimpleName("concat"));
+		sum.setName(this.workingCopy.newSimpleName("concat")); //$NON-NLS-1$
 		return sum;
 		//		return this.treeMaker.MemberReference(MemberReferenceTree.ReferenceMode.INVOKE, this.treeMaker.Identifier("String"), "concat", new ArrayList<>());
 	}
@@ -669,11 +669,11 @@ class ProspectiveOperation {
 
 
 	private static boolean isChar(Expression reducing, AST workingCopy) {
-		return isType(reducing, workingCopy, "java.lang.Character");
+		return isType(reducing, workingCopy, "java.lang.Character"); //$NON-NLS-1$
 	}
 
 	private static boolean isLong(Expression reducing, AST workingCopy) {
-		return isType(reducing, workingCopy, "java.lang.Long");
+		return isType(reducing, workingCopy, "java.lang.Long"); //$NON-NLS-1$
 	}
 
 	private static ProspectiveOperation handleCompoundAssignementReducer(AST tm, Expression expr, OperationType operationType, PreconditionsChecker precond, AST workingCopy, List<ProspectiveOperation> ls, ProspectiveOperation redOp,ASTRewrite rewrite) {

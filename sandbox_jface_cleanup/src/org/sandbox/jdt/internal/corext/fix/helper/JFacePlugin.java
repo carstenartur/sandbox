@@ -19,7 +19,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.jdt.core.dom.AST;
@@ -29,7 +28,6 @@ import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
-import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -38,7 +36,6 @@ import org.eclipse.jdt.internal.corext.dom.ASTNodeFactory;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
-import org.eclipse.jdt.internal.corext.refactoring.structure.ImportRemover;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.ASTProcessor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
@@ -77,8 +74,8 @@ import org.sandbox.jdt.internal.corext.fix.JfaceCleanUpFixCore;
 public class JFacePlugin extends
 AbstractTool<ReferenceHolder<Integer, org.sandbox.jdt.internal.corext.fix.helper.JFacePlugin.MonitorHolder>> {
 
-	public static final String CLASS_INSTANCE_CREATION = "ClassInstanceCreation";
-	public static final String METHODINVOCATION = "MethodInvocation";
+	public static final String CLASS_INSTANCE_CREATION = "ClassInstanceCreation"; //$NON-NLS-1$
+	public static final String METHODINVOCATION = "MethodInvocation"; //$NON-NLS-1$
 
 	public static class MonitorHolder {
 		public MethodInvocation minv;
@@ -100,7 +97,7 @@ AbstractTool<ReferenceHolder<Integer, org.sandbox.jdt.internal.corext.fix.helper
 			if (node.arguments().size() != 2) {
 				return true;
 			}
-			System.out.println("begintask[" + node.getStartPosition() + "] " + node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$
+			System.out.println("begintask[" + node.getStartPosition() + "] " + node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			SimpleName sn = ASTNodes.as(node.getExpression(), SimpleName.class);
 			if (sn != null) {
 				IBinding ibinding = sn.resolveBinding();
@@ -120,7 +117,7 @@ AbstractTool<ReferenceHolder<Integer, org.sandbox.jdt.internal.corext.fix.helper
 			if (!mh.minvname.equals(simplename.getIdentifier())) {
 				return true;
 			}
-			System.out.println("init[" + node.getStartPosition() + "] " + node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$
+			System.out.println("init[" + node.getStartPosition() + "] " + node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			mh.setofcic.add(node);
 			operations.add(fixcore.rewrite(holder));
 			return true;
@@ -138,10 +135,10 @@ AbstractTool<ReferenceHolder<Integer, org.sandbox.jdt.internal.corext.fix.helper
 
 			MonitorHolder mh = entry.getValue();
 			MethodInvocation minv = mh.minv;
-			String identifier = "subMonitor";
+			String identifier = "subMonitor"; //$NON-NLS-1$
 			if (!nodesprocessed.contains(minv)) {
 				nodesprocessed.add(minv);
-				System.out.println("rewrite methodinvocation [" + minv.getStartPosition() + "] " + minv);
+				System.out.println("rewrite methodinvocation [" + minv.getStartPosition() + "] " + minv); //$NON-NLS-1$ //$NON-NLS-2$
 				List<ASTNode> arguments = minv.arguments();
 
 				/**
@@ -162,7 +159,7 @@ AbstractTool<ReferenceHolder<Integer, org.sandbox.jdt.internal.corext.fix.helper
 
 				MethodInvocation staticCall = ast.newMethodInvocation();
 				staticCall.setExpression(ASTNodeFactory.newName(ast, SubMonitor.class.getSimpleName()));
-				staticCall.setName(ast.newSimpleName("convert"));
+				staticCall.setName(ast.newSimpleName("convert")); //$NON-NLS-1$
 				List<ASTNode> staticCallArguments = staticCall.arguments();
 				staticCallArguments.add(
 						ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(minv.getExpression())));
@@ -173,11 +170,11 @@ AbstractTool<ReferenceHolder<Integer, org.sandbox.jdt.internal.corext.fix.helper
 				newVariableDeclarationStatement.setInitializer(staticCall);
 
 				ASTNodes.replaceButKeepComment(rewrite, minv, newVariableDeclarationStatement, group);
-				System.out.println("result " + staticCall);
+				System.out.println("result " + staticCall); //$NON-NLS-1$
 			}
 			for (ClassInstanceCreation submon : mh.setofcic) {
 				ASTNode origarg = (ASTNode) submon.arguments().get(1);
-				System.out.println("rewrite spminstance [" + submon.getStartPosition() + "] " + submon);
+				System.out.println("rewrite spminstance [" + submon.getStartPosition() + "] " + submon); //$NON-NLS-1$ //$NON-NLS-2$
 				/**
 				 *
 				 * IProgressMonitor subProgressMonitor= new SubProgressMonitor(monitor, 1);
@@ -185,7 +182,7 @@ AbstractTool<ReferenceHolder<Integer, org.sandbox.jdt.internal.corext.fix.helper
 				 *
 				 */
 				MethodInvocation newMethodInvocation2 = ast.newMethodInvocation();
-				newMethodInvocation2.setName(ast.newSimpleName("split"));
+				newMethodInvocation2.setName(ast.newSimpleName("split")); //$NON-NLS-1$
 				newMethodInvocation2.setExpression(ASTNodeFactory.newName(ast, identifier));
 				List<ASTNode> splitCallArguments = newMethodInvocation2.arguments();
 
@@ -200,12 +197,12 @@ AbstractTool<ReferenceHolder<Integer, org.sandbox.jdt.internal.corext.fix.helper
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (!afterRefactoring) {
-			return "	monitor.beginTask(NewWizardMessages.NewSourceFolderWizardPage_operation, 3);\n"
-					+ "		IProgressMonitor subProgressMonitor= new SubProgressMonitor(monitor, 1);\n"
+			return "	monitor.beginTask(NewWizardMessages.NewSourceFolderWizardPage_operation, 3);\n" //$NON-NLS-1$
+					+ "		IProgressMonitor subProgressMonitor= new SubProgressMonitor(monitor, 1);\n" //$NON-NLS-1$
 					+ "		IProgressMonitor subProgressMonitor2= new SubProgressMonitor(monitor, 2);\n"; //$NON-NLS-1$
 		}
-		return "	SubMonitor subMonitor=SubMonitor.convert(monitor,NewWizardMessages.NewSourceFolderWizardPage_operation,3);\n"
-		+ "		IProgressMonitor subProgressMonitor= subMonitor.split(1);\n"
+		return "	SubMonitor subMonitor=SubMonitor.convert(monitor,NewWizardMessages.NewSourceFolderWizardPage_operation,3);\n" //$NON-NLS-1$
+		+ "		IProgressMonitor subProgressMonitor= subMonitor.split(1);\n" //$NON-NLS-1$
 		+ "		IProgressMonitor subProgressMonitor2= subMonitor.split(2);\n"; //$NON-NLS-1$
 	}
 }

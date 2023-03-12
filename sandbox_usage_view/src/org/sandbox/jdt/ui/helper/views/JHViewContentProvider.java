@@ -90,7 +90,7 @@ public class JHViewContentProvider implements IStructuredContentProvider {
 			}
 		}
 		for (IVariableBinding binding : visitor.getVars()) {
-			System.out.println("Var name: " + binding.getName() + " Return type: " + binding.toString());
+			System.out.println("Var name: " + binding.getName() + " Return type: " + binding.toString()); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		return visitor.getVars().toArray();
 	}

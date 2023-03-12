@@ -24,12 +24,12 @@ public class JHPluginImages {
 
 	private static final URL fgIconBaseURL= FrameworkUtil.getBundle(JHPluginImages.class).getEntry("/icons/"); //$NON-NLS-1$
 
-	public static final String CHILDREN= "children.png";
-	public static final String INFO= "info.png";
-	public static final String PROPERTIES= "properties.png";
-	public static final String REFRESH= "refresh.png";
-	public static final String SET_FOCUS= "setfocus.png";
-	public static final String CODE_SELECT= "codeSelect.png";
+	public static final String CHILDREN= "children.png"; //$NON-NLS-1$
+	public static final String INFO= "info.png"; //$NON-NLS-1$
+	public static final String PROPERTIES= "properties.png"; //$NON-NLS-1$
+	public static final String REFRESH= "refresh.png"; //$NON-NLS-1$
+	public static final String SET_FOCUS= "setfocus.png"; //$NON-NLS-1$
+	public static final String CODE_SELECT= "codeSelect.png"; //$NON-NLS-1$
 
 	public static final ImageDescriptor IMG_CHILDREN= create(CHILDREN);
 	public static final ImageDescriptor IMG_INFO= create(INFO);

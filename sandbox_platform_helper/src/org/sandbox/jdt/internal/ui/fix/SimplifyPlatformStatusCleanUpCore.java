@@ -83,7 +83,7 @@ public class SimplifyPlatformStatusCleanUpCore extends AbstractCleanUpCore {
 	public String[] getStepDescriptions() {
 		List<String> result= new ArrayList<>();
 		if (isEnabled(SIMPLIFY_STATUS_CLEANUP)) {
-			String with= "";
+			String with= ""; //$NON-NLS-1$
 			result.add(
 					Messages.format(PlatformStatusCleanUp_description,
 							new Object[] { String.join(",", computeFixSet().stream() //$NON-NLS-1$

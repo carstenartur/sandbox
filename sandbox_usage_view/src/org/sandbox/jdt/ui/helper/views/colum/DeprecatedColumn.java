@@ -20,7 +20,7 @@ import org.eclipse.jface.viewers.TableViewer;
 public class DeprecatedColumn extends AbstractColumn {
 
 	private static final int bounds= 100;
-	private static final String title= "Deprecated";
+	private static final String title= "Deprecated"; //$NON-NLS-1$
 
 	public DeprecatedColumn() {
 	}

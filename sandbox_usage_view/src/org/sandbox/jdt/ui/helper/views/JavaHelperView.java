@@ -162,7 +162,7 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 	}
 
 	private void makeActions() {
-		fCodeSelectAction= new Action("Set Input from Editor (&codeSelect)", JHPluginImages.IMG_SET_FOCUS_CODE_SELECT) {
+		fCodeSelectAction= new Action("Set Input from Editor (&codeSelect)", JHPluginImages.IMG_SET_FOCUS_CODE_SELECT) { //$NON-NLS-1$
 			@Override
 			public void run() {
 				IEditorPart editor= getSite().getPage().getActiveEditor();
@@ -204,7 +204,7 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 				setInput(asList);
 			}
 		};
-		fCodeSelectAction.setToolTipText("Set input from current editor's selection (codeSelect)");
+		fCodeSelectAction.setToolTipText("Set input from current editor's selection (codeSelect)"); //$NON-NLS-1$
 		//		fFocusAction = new Action() {
 		//			@Override
 		//			public void run() {
@@ -217,7 +217,7 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 		//			}
 		//		};
 		//		fFocusAction.setToolTipText("Focus on Selection");
-		fPropertiesAction= new Action("&Properties", JHPluginImages.IMG_PROPERTIES) {
+		fPropertiesAction= new Action("&Properties", JHPluginImages.IMG_PROPERTIES) { //$NON-NLS-1$
 			@Override
 			public void run() {
 				String viewId= IPageLayout.ID_PROP_SHEET;
@@ -228,27 +228,27 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 					page.activate(JavaHelperView.this);
 					page.bringToTop(view);
 				} catch (PartInitException e) {
-					logger.error(e, "could not find Properties view");
+					logger.error(e, "could not find Properties view"); //$NON-NLS-1$
 				}
 			}
 		};
 		fPropertiesAction.setActionDefinitionId(IWorkbenchCommandConstants.FILE_PROPERTIES);
-		fResetAction= new Action("&Reset View", getJavaModelImageDescriptor()) {
+		fResetAction= new Action("&Reset View", getJavaModelImageDescriptor()) { //$NON-NLS-1$
 			@Override
 			public void run() {
 				reset();
 			}
 		};
-		fResetAction.setToolTipText("Reset View to JavaModel");
-		fRefreshAction= new Action("Re&fresh", JHPluginImages.IMG_REFRESH) {
+		fResetAction.setToolTipText("Reset View to JavaModel"); //$NON-NLS-1$
+		fRefreshAction= new Action("Re&fresh", JHPluginImages.IMG_REFRESH) { //$NON-NLS-1$
 			@Override
 			public void run() {
 				BusyIndicator.showWhile(getSite().getShell().getDisplay(), () -> tableViewer.refresh());
 			}
 		};
-		fRefreshAction.setToolTipText("Refresh");
-		fRefreshAction.setActionDefinitionId("org.eclipse.ui.file.refresh");
-		fElementAtAction= new Action("Set Input from Editor location (&getElementAt)", JHPluginImages.IMG_SET_FOCUS) {
+		fRefreshAction.setToolTipText("Refresh"); //$NON-NLS-1$
+		fRefreshAction.setActionDefinitionId("org.eclipse.ui.file.refresh"); //$NON-NLS-1$
+		fElementAtAction= new Action("Set Input from Editor location (&getElementAt)", JHPluginImages.IMG_SET_FOCUS) { //$NON-NLS-1$
 			@Override
 			public void run() {
 				IEditorPart editor= getSite().getPage().getActiveEditor();
@@ -291,7 +291,7 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 			}
 
 		};
-		fElementAtAction.setToolTipText("Set input from current editor's selection location (getElementAt)");
+		fElementAtAction.setToolTipText("Set input from current editor's selection location (getElementAt)"); //$NON-NLS-1$
 	}
 
 	void setEmptyInput() {
@@ -381,7 +381,7 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 	}
 
 	private void hookContextMenu() {
-		MenuManager menuMgr= new MenuManager("#PopupMenu");
+		MenuManager menuMgr= new MenuManager("#PopupMenu"); //$NON-NLS-1$
 		menuMgr.setRemoveAllWhenShown(true);
 		menuMgr.addMenuListener(this::fillContextMenu);
 		Menu menu= menuMgr.createContextMenu(tableViewer.getControl());
@@ -429,7 +429,7 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 			keyBinding= ""; //$NON-NLS-1$
 		}
 
-		return "Sho&w In" + '\t' + keyBinding;
+		return "Sho&w In" + '\t' + keyBinding; //$NON-NLS-1$
 	}
 
 	/**

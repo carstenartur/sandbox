@@ -96,7 +96,7 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 				}
 			});
 		} catch (Exception e) {
-			throw new CoreException(new Status(IStatus.ERROR, "sandbox_platform_helper", "Problem in find", e));
+			throw new CoreException(new Status(IStatus.ERROR, "sandbox_platform_helper", "Problem in find", e)); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 	}
 
@@ -125,13 +125,13 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 		 */
 		case 5:
 			ASTNode node4= arguments.get(4);
-			if (!node4.toString().equals("null") && node2.toString().equals("IStatus.OK")) {
+			if (!node4.toString().equals("null") && node2.toString().equals("IStatus.OK")) { //$NON-NLS-1$ //$NON-NLS-2$
 				staticCallArguments.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(node4)));
 			}
 			break;
 		case 4:
 			ASTNode node= arguments.get(3);
-			if (!node.toString().equals("null")) {
+			if (!node.toString().equals("null")) { //$NON-NLS-1$
 				staticCallArguments.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(node)));
 			}
 			break;

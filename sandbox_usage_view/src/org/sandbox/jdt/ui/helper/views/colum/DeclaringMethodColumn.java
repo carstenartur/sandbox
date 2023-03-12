@@ -20,7 +20,7 @@ import org.eclipse.jface.viewers.TableViewer;
 public class DeclaringMethodColumn extends AbstractColumn {
 
 	private static final int bounds= 100;
-	private static final String title= "DeclaringMethod";
+	private static final String title= "DeclaringMethod"; //$NON-NLS-1$
 
 	public DeclaringMethodColumn() {
 	}
@@ -36,7 +36,7 @@ public class DeclaringMethodColumn extends AbstractColumn {
 				if (declaringMethod != null) {
 					return declaringMethod.getName();
 				}
-				return "";
+				return ""; //$NON-NLS-1$
 			}
 		});
 	}

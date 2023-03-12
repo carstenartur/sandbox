@@ -81,8 +81,8 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {
-			return "ls.forEach(l -> {\n	System.out.println(l);\n});\n";
+			return "ls.forEach(l -> {\n	System.out.println(l);\n});\n"; //$NON-NLS-1$
 		}
-		return "for (Integer l : ls)\n	System.out.println(l);\n\n";
+		return "for (Integer l : ls)\n	System.out.println(l);\n\n"; //$NON-NLS-1$
 	}
 }

@@ -33,7 +33,7 @@ import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 public class StatusInfoSimplifyPlatformStatus extends AbstractSimplifyPlatformStatus<ClassInstanceCreation> {
 
 	public StatusInfoSimplifyPlatformStatus() {
-		super(METHOD_INFO, "IStatus.INFO");
+		super(METHOD_INFO, "IStatus.INFO"); //$NON-NLS-1$
 	}
 
 	@Override
