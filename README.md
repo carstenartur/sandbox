@@ -104,7 +104,8 @@ Already merged into Eclipse jdt
 
 7) Iterator to functional loop converter
 
-See netbeans to learn how it works
+https://github.com/carstenartur/sandbox/wiki/Functional-Converter
+Or see netbeans to learn how it works
 
 # Installation
 
