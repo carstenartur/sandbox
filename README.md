@@ -103,8 +103,9 @@ https://www.eclipse.org/eclipse/news/4.20/platform_isv.php#simpler-status-creati
 While to ForLoop Converter
 Already merged into Eclipse jdt
 
-7) Iterator to functional loop converter
+7) sandbox_functional_converter
 
+Iterator to functional loop converter
 https://github.com/carstenartur/sandbox/wiki/Functional-Converter
 Or see netbeans to learn how it works
 
