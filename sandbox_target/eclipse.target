@@ -126,12 +126,15 @@ Failed to resolve target definition C:\Users\chammer\git\sandbox\sandbox_target\
 			<unit id="org.slf4j.api" version="0.0.0"/>
 			<unit id="org.slf4j.binding.log4j12" version="0.0.0"/>
 			<unit id="org.tukaani.xz" version="0.0.0"/>
-			<repository location="https://download.eclipse.org/tools/orbit/downloads/drops/R20220830213456/repository/"/>
 			<unit id="org.objectweb.asm" version="0.0.0"/>
 			<unit id="org.objectweb.asm.analysis" version="0.0.0"/>
 			<unit id="org.objectweb.asm.commons" version="0.0.0"/>
 			<unit id="org.objectweb.asm.tree" version="0.0.0"/>
 			<unit id="org.objectweb.asm.util" version="0.0.0"/>
+			<unit id="org.apache.commons.io" version="0.0.0"/>
+			<unit id="org.apache.xmlgraphics" version="0.0.0"/>
+			<unit id="org.objectweb.asm" version="0.0.0"/>
+			<repository location="https://download.eclipse.org/tools/orbit/downloads/drops/R20220830213456/repository/"/>
 		</location>
 		<location includeAllPlatforms="false" includeConfigurePhase="false" includeMode="slicer" includeSource="true" type="InstallableUnit">
 			<unit id="org.eclipse.swtbot.eclipse.feature.group" version="0.0.0"/>

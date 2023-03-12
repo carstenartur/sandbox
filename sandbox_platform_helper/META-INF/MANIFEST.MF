@@ -1,7 +1,9 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
+Automatic-Module-Name: sandbox.platform.helper
 Bundle-Name: sandbox plaform helper
 Bundle-SymbolicName: sandbox_platform_helper;singleton:=true
+Bundle-Vendor: sandbox
 Bundle-Version: 1.1.0.qualifier
 Bundle-RequiredExecutionEnvironment: JavaSE-17
 Require-Bundle: org.eclipse.core.runtime,
@@ -16,10 +18,9 @@ Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.swt,
  org.eclipse.jface,
  org.eclipse.ui.workbench,
- org.eclipse.jdt.core.manipulation,
- sandbox_common
+ org.eclipse.jdt.core.manipulation
 Bundle-ActivationPolicy: lazy
 Eclipse-RegisterBuddy: org.eclipse.jdt.core.manipulation
 Eclipse-BuddyPolicy: global
-Automatic-Module-Name: sandbox.platform.helper
-Import-Package: org.sandbox.jdt.internal.common
+Import-Package: org.sandbox.jdt.internal.common,
+ org.sandbox.jdt.internal.corext.fix2
