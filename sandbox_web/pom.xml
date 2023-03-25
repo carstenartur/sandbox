@@ -22,6 +22,14 @@
 		</dependency>
 		<dependency>
 			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_jface_cleanup_feature</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_platform_helper_feature</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
 			<artifactId>sandbox_usage_view_feature</artifactId>
 		</dependency>
 		<dependency>
