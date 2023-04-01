@@ -30,6 +30,7 @@
 		<module>sandbox_extra_search</module>
 		<module>sandbox_extra_search_feature</module>
 		<module>sandbox_functional_converter</module>
+		<module>sandbox_functional_converter_feature</module>
 		<module>sandbox_functional_converter_test</module>
 		<module>sandbox_platform_helper</module>
 		<module>sandbox_platform_helper_feature</module>
@@ -247,6 +248,11 @@
 			<dependency>
 				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_functional_converter</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_functional_converter_feature</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
