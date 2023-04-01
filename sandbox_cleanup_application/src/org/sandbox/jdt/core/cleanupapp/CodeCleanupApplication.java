@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
 import java.util.Map;
 import java.util.Properties;
@@ -174,7 +175,7 @@ public class CodeCleanupApplication implements IApplication {
 			}
 
 			// write the file
-			try (BufferedWriter out = new BufferedWriter(new FileWriter(file));){
+			try (BufferedWriter out = new BufferedWriter(new FileWriter(file,StandardCharsets.UTF_8));){
 				out.write(doc.get());
 				out.flush();
 			} 
