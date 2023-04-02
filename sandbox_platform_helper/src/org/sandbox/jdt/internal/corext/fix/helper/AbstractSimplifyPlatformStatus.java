@@ -75,9 +75,9 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 				@Override
 				public boolean visit(final ClassInstanceCreation visited) {
 					if (nodesprocessed.contains(visited) || (
-							(visited.arguments().size() != 3)
-							&& (visited.arguments().size() != 4)
-							&& (visited.arguments().size() != 5)
+//							(visited.arguments().size() != 3)&& 
+//							(visited.arguments().size() != 4)&&
+							(visited.arguments().size() != 5)
 							)) {
 						return false;
 					}
@@ -115,7 +115,8 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 		staticCall.setName(ast.newSimpleName(methodname));
 		List<ASTNode> arguments= visited.arguments();
 		List<ASTNode> staticCallArguments= staticCall.arguments();
-		int positionmessage= arguments.size() == 5 ? 3 : 2;
+//		int positionmessage= arguments.size() == 5 ? 3 : 2;
+		int positionmessage= 3;
 		staticCallArguments.add(ASTNodes.createMoveTarget(rewrite,
 				ASTNodes.getUnparenthesedExpression(arguments.get(positionmessage))));
 		ASTNode node2= arguments.get(2);
@@ -130,12 +131,14 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 			}
 			break;
 		case 4:
-			ASTNode node= arguments.get(3);
-			if (!node.toString().equals("null")) { //$NON-NLS-1$
-				staticCallArguments.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(node)));
-			}
+//			return;
+//			ASTNode node= arguments.get(3);
+//			if (!node.toString().equals("null")) { //$NON-NLS-1$
+//				staticCallArguments.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(node)));
+//			}
 			break;
 		case 3:
+//			return;
 		default:
 			break;
 		}

@@ -8,11 +8,12 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import java.util.HashMap;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExtension;
 import org.eclipse.core.runtime.IExtensionPoint;
 import org.eclipse.core.runtime.IStatus;
@@ -30,7 +31,6 @@ import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.text.edits.TextEdit;
-import org.eclipse.core.runtime.IConfigurationElement;
 
 public class CodeCleanupApplication implements IApplication {
 	private static final String ARG_CONFIG = "-config"; //$NON-NLS-1$
@@ -178,7 +178,7 @@ public class CodeCleanupApplication implements IApplication {
 			try (BufferedWriter out = new BufferedWriter(new FileWriter(file,StandardCharsets.UTF_8));){
 				out.write(doc.get());
 				out.flush();
-			} 
+			}
 		} catch (IOException e) {
 			String errorMessage = Messages.bind(Messages.CaughtException, "IOException", e.getLocalizedMessage()); //$NON-NLS-1$
 			Util.log(e, errorMessage);
@@ -388,7 +388,7 @@ public class CodeCleanupApplication implements IApplication {
 		}
 	}
 
-	public static CodeFormatter createCodeFormatter(Map options, int mode) {
+	private static CodeFormatter createCodeFormatter(Map options, int mode) {
 		if (options == null) options = JavaCore.getOptions();
 		Map currentOptions = new HashMap(options);
 		if (mode == M_FORMAT_NEW) {
@@ -403,14 +403,12 @@ public class CodeCleanupApplication implements IApplication {
 			IExtensionPoint extension = Platform.getExtensionRegistry().getExtensionPoint(JavaCore.PLUGIN_ID,
 					JavaCore.JAVA_FORMATTER_EXTENSION_POINT_ID);
 			if (extension != null) {
-				IExtension[] extensions = extension.getExtensions();
-				for (int i = 0; i < extensions.length; i++) {
-					IConfigurationElement[] configElements = extensions[i].getConfigurationElements();
-					for (int j = 0; j < configElements.length; j++) {
-						String initializerID = configElements[j].getAttribute("id"); //$NON-NLS-1$
+				for (IExtension extension2 : extension.getExtensions()) {
+					for (IConfigurationElement configElement : extension2.getConfigurationElements()) {
+						String initializerID = configElement.getAttribute("id"); //$NON-NLS-1$
 						if (initializerID != null && initializerID.equals(formatterId)) {
 							try {
-								Object execExt = configElements[j].createExecutableExtension("class"); //$NON-NLS-1$
+								Object execExt = configElement.createExecutableExtension("class"); //$NON-NLS-1$
 								if (execExt instanceof CodeFormatter) {
 									CodeFormatter formatter = (CodeFormatter) execExt;
 									formatter.setOptions(currentOptions);
