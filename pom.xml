@@ -12,7 +12,7 @@
 		<tycho-version>3.0.4</tycho-version>
 		<rcp-version>eclipse</rcp-version>
 		<!-- <rcp-version>2021-03</rcp-version> -->
-		<jacoco-version>0.8.8</jacoco-version>
+		<jacoco-version>0.8.9</jacoco-version>
 		<java-version>17</java-version>
 		<java-execenv>JavaSE-17</java-execenv>
 		<spotbugs-version>4.7.3.4</spotbugs-version>
