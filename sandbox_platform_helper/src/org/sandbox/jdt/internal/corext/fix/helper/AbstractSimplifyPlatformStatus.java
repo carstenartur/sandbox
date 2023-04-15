@@ -15,17 +15,15 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.List;
 import java.util.Set;
+//import java.util.function.BiPredicate;
 
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
-import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.QualifiedName;
@@ -37,6 +35,8 @@ import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCo
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.refactoring.structure.ImportRemover;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.SimplifyPlatformStatusFixCore;
 
 /**
@@ -61,7 +61,7 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 	 * @return simple name of a class if the import was added and fully qualified
 	 *         name if there was a conflict
 	 */
-	protected Name addImport(String typeName, final CompilationUnitRewrite cuRewrite, AST ast) {
+	protected static Name addImport(String typeName, final CompilationUnitRewrite cuRewrite, AST ast) {
 		String importedName= cuRewrite.getImportRewrite().addImport(typeName);
 		return ast.newName(importedName);
 	}
@@ -71,37 +71,49 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 	public void find(SimplifyPlatformStatusFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed) throws CoreException {
 		try {
-			compilationUnit.accept(new ASTVisitor() {
-				@Override
-				public boolean visit(final ClassInstanceCreation visited) {
-					if (nodesprocessed.contains(visited) || (
-//							(visited.arguments().size() != 3)&& 
-//							(visited.arguments().size() != 4)&&
-							(visited.arguments().size() != 5)
-							)) {
-						return false;
-					}
-
-					ITypeBinding binding= visited.resolveTypeBinding();
-					if ((binding != null) && (Status.class.getSimpleName().equals(binding.getName()))) {
-						List<Expression> arguments= visited.arguments();
-						if (istatus.equals(arguments.get(0).toString())) {
-							operations.add(fixcore.rewrite(visited));
-							nodesprocessed.add(visited);
-							return false;
-						}
-					}
-
-					return true;
+			ReferenceHolder<ASTNode, Object> dataholder= new ReferenceHolder<>();
+			HelperVisitor.callClassInstanceCreationVisitor(Status.class, compilationUnit, dataholder, nodesprocessed, (visited, holder) -> {
+				if (nodesprocessed.contains(visited) || (
+//						(visited.arguments().size() != 3)&& 
+//						(visited.arguments().size() != 4)&&
+						(visited.arguments().size() != 5)
+						)) {
+					return false;
 				}
+				/**
+				 * new Status(INFO, callerClass, OK, message, null);
+				 * new Status(WARNING, callerClass, OK, message, null);
+				 * new Status(WARNING, callerClass, OK, message, exception);
+				 * new Status(ERROR, callerClass, OK, message, null);
+				 * new Status(ERROR, callerClass, OK, message, exception);
+				 * 
+				 * 
+				 * IStatus status = new Status(IStatus.WARNING, "plugin id", IStatus.OK, "important message", e);
+				 * IStatus status = new Status(IStatus.WARNING, "plugin id", "important message", null);
+				 * IStatus status = new Status(IStatus.WARNING, "plugin id", "important message");
+				 */
+				List<Expression> arguments= visited.arguments();
+				QualifiedName argstring3 = (QualifiedName) arguments.get(2);
+				if (!"IStatus.OK".equals(argstring3.toString())) { //$NON-NLS-1$
+					return false;
+				}
+//				QualifiedName argstring5 = (QualifiedName) arguments.get(4);
+				QualifiedName argstring1 = (QualifiedName) arguments.get(0);
+				String mybinding= argstring1.getFullyQualifiedName();
+				if (istatus.equals(argstring1.toString())) {
+					operations.add(fixcore.rewrite(visited,holder));
+					nodesprocessed.add(visited);
+					return false;
+				}
+				return true;
 			});
 		} catch (Exception e) {
-			throw new CoreException(new Status(IStatus.ERROR, "sandbox_platform_helper", "Problem in find", e)); //$NON-NLS-1$ //$NON-NLS-2$
+			throw new CoreException(Status.error("Problem in find", e)); //$NON-NLS-1$
 		}
 	}
 
 	public void rewrite(SimplifyPlatformStatusFixCore upp, final ClassInstanceCreation visited,
-			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
+			final CompilationUnitRewrite cuRewrite, TextEditGroup group, ReferenceHolder<ASTNode, Object> holder) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
 		ImportRewrite importRewrite= cuRewrite.getImportRewrite();

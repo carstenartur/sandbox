@@ -367,6 +367,20 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 
 	/**
 	 *
+	 * @param typeof
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate<? extends ASTNode, E> addClassInstanceCreation(Class<?> typeof, BiPredicate<ClassInstanceCreation, E> bs) {
+		Map<String, Object> map = Map.ofEntries(
+				new AbstractMap.SimpleEntry<String, Object>(TYPEOF, typeof)
+				);
+		predicatedata.put(VisitorEnum.ClassInstanceCreation, map);
+		return predicatemap.put(VisitorEnum.ClassInstanceCreation, bs);
+	}
+	
+	/**
+	 *
 	 * @param bs
 	 * @return old BiPredicate assigned for nodetype
 	 */
@@ -3668,6 +3682,24 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 
 		HelperVisitor<ReferenceHolder<V, T>,V,T> hv= new HelperVisitor<>(nodesprocessed, dataholder);
 		hv.addClassInstanceCreation(bs);
+		hv.build(node);
+	}
+	
+	/**
+	 *
+	 * @param <V>
+	 * @param <T>
+	 * @param class1
+	 * @param node
+	 * @param dataholder
+	 * @param nodesprocessed
+	 * @param bs
+	 */
+	public static <V, T> void callClassInstanceCreationVisitor(Class<?> class1, ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+			BiPredicate<ClassInstanceCreation, ReferenceHolder<V, T>> bs) {
+
+		HelperVisitor<ReferenceHolder<V, T>,V,T> hv= new HelperVisitor<>(nodesprocessed, dataholder);
+		hv.addClassInstanceCreation(class1, bs);
 		hv.build(node);
 	}
 

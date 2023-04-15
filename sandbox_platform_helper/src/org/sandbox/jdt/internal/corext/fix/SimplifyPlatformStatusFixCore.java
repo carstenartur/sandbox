@@ -26,6 +26,7 @@ import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.helper.AbstractSimplifyPlatformStatus;
 import org.sandbox.jdt.internal.corext.fix.helper.StatusErrorSimplifyPlatformStatus;
 import org.sandbox.jdt.internal.corext.fix.helper.StatusInfoSimplifyPlatformStatus;
@@ -38,15 +39,15 @@ public enum SimplifyPlatformStatusFixCore {
 	STATUSERROR(new StatusErrorSimplifyPlatformStatus()),
 	STATUSINFO(new StatusInfoSimplifyPlatformStatus());
 
-	AbstractSimplifyPlatformStatus<ASTNode> explicitencoding;
+	AbstractSimplifyPlatformStatus<ASTNode> platformstatus;
 
 	@SuppressWarnings("unchecked")
 	SimplifyPlatformStatusFixCore(AbstractSimplifyPlatformStatus<? extends ASTNode> explicitencoding) {
-		this.explicitencoding= (AbstractSimplifyPlatformStatus<ASTNode>) explicitencoding;
+		this.platformstatus= (AbstractSimplifyPlatformStatus<ASTNode>) explicitencoding;
 	}
 
 	public String getPreview(boolean i) {
-		return explicitencoding.getPreview(i);
+		return platformstatus.getPreview(i);
 	}
 
 	/**
@@ -62,10 +63,10 @@ public enum SimplifyPlatformStatusFixCore {
 	public void findOperations(final CompilationUnit compilationUnit,
 			final Set<CompilationUnitRewriteOperation> operations, final Set<ASTNode> nodesprocessed)
 					throws CoreException {
-		explicitencoding.find(this, compilationUnit, operations, nodesprocessed);
+		platformstatus.find(this, compilationUnit, operations, nodesprocessed);
 	}
 
-	public CompilationUnitRewriteOperation rewrite(final ClassInstanceCreation visited) {
+	public CompilationUnitRewriteOperation rewrite(final ClassInstanceCreation visited, ReferenceHolder<ASTNode, Object> holder) {
 		return new CompilationUnitRewriteOperation() {
 			@Override
 			public void rewriteAST(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel)
@@ -75,7 +76,7 @@ public enum SimplifyPlatformStatusFixCore {
 								new Object[] { SimplifyPlatformStatusFixCore.this.toString() }),
 						cuRewrite);
 				cuRewrite.getASTRewrite().setTargetSourceRangeComputer(computer);
-				explicitencoding.rewrite(SimplifyPlatformStatusFixCore.this, visited, cuRewrite, group);
+				platformstatus.rewrite(SimplifyPlatformStatusFixCore.this, visited, cuRewrite, group, holder);
 			}
 		};
 	}
