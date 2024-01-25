@@ -20,7 +20,7 @@ jobs:
       with:
         fetch-depth: 0 # required for jgit timestamp provider to work
     - name: Set up JDK 17
-      uses: actions/setup-java@v3
+      uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
@@ -30,7 +30,7 @@ jobs:
         # start xvfb in the background
         sudo /usr/bin/Xvfb $DISPLAY -screen 0 1280x1024x24 &
     - name: Cache Maven packages
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/.m2
         key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
