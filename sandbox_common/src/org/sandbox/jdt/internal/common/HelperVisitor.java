@@ -373,7 +373,7 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	 */
 	public BiPredicate<? extends ASTNode, E> addClassInstanceCreation(Class<?> typeof, BiPredicate<ClassInstanceCreation, E> bs) {
 		Map<String, Object> map = Map.ofEntries(
-				new AbstractMap.SimpleEntry<String, Object>(TYPEOF, typeof)
+				new AbstractMap.SimpleEntry<>(TYPEOF, typeof)
 				);
 		predicatedata.put(VisitorEnum.ClassInstanceCreation, map);
 		return predicatemap.put(VisitorEnum.ClassInstanceCreation, bs);
