@@ -1150,7 +1150,7 @@ public class Java8CleanUpTest {
 	@ParameterizedTest
 	@EnumSource(UseFunctionalLoop.class)
 	public void testExplicitEncodingParametrized(UseFunctionalLoop test) throws CoreException {
-		IPackageFragment pack= context.fSourceFolder.createPackageFragment("test1", false, null);
+		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("TestDemo.java", test.given, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
@@ -1610,7 +1610,7 @@ public class Java8CleanUpTest {
 
 	})
 	public void testExplicitEncoding_donttouch(String dontchange) throws CoreException  {
-		IPackageFragment pack= context.fSourceFolder.createPackageFragment("testdemo", false, null);
+		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("testdemo", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("TestDemo.java",
 				dontchange,
 				false, null);
