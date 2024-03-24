@@ -356,7 +356,7 @@ public class VisitorTest {
 	@Test
 	public void simpleTest3d() {
 		Set<ASTNode> nodesprocessed = null;
-		HelperVisitor<ReferenceHolder<String,NodeFound>,String,NodeFound> hv = new HelperVisitor<>(nodesprocessed, new ReferenceHolder<String, NodeFound>());
+		HelperVisitor<ReferenceHolder<String,NodeFound>,String,NodeFound> hv = new HelperVisitor<>(nodesprocessed, new ReferenceHolder<>());
 		VisitorEnum.stream().forEach(ve -> {
 			hv.add(ve, (node, holder) -> {
 				String x = "Start "+node.getNodeType() + " :" + node; //$NON-NLS-1$ //$NON-NLS-2$
