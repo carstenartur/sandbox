@@ -66,7 +66,7 @@ public class Java8CleanUpTest {
 	@ParameterizedTest
 	@EnumSource(XMLCleanupCases.class)
 	public void testXMLCleanupParametrized(XMLCleanupCases test) throws CoreException {
-		IPackageFragment pack= context.fSourceFolder.createPackageFragment("test", false, null);
+		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("Test.java", test.given, false, null);
 		context.enable(CleanUpConstants.CONTROL_STATEMENTS_CONVERT_FOR_LOOP_TO_ENHANCED);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
@@ -103,7 +103,7 @@ public class Java8CleanUpTest {
 	@ParameterizedTest
 	@EnumSource(NO_XMLCleanupCases.class)
 	public void testXMLCleanup_donttouch(NO_XMLCleanupCases test) throws CoreException {
-		IPackageFragment pack= context.fSourceFolder.createPackageFragment("test", false, null);
+		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("Test.java",test.given,false, null);
 		context.enable(CleanUpConstants.CONTROL_STATEMENTS_CONVERT_FOR_LOOP_TO_ENHANCED);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });

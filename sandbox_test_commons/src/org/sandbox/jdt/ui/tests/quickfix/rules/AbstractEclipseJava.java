@@ -78,7 +78,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	private final String testresources_stubs;
 	private final String compliance;
 	private static final String TEST_SETUP_PROJECT= "TestSetupProject"; //$NON-NLS-1$
-	public IPackageFragmentRoot fSourceFolder;
+	 private IPackageFragmentRoot fSourceFolder;
 	private CustomProfile fProfile;
 
 	public AbstractEclipseJava(String stubs, String compilerversion) {
@@ -93,8 +93,8 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		Map<String, String> options= javaProject.getOptions(false);
 		JavaCore.setComplianceOptions(compliance, options);
 		javaProject.setOptions(options);
-		fSourceFolder= AbstractEclipseJava.addSourceContainer(getProject(TEST_SETUP_PROJECT), "src", new Path[0], //$NON-NLS-1$
-				new Path[0], null, new IClasspathAttribute[0]);
+		setfSourceFolder(AbstractEclipseJava.addSourceContainer(getProject(TEST_SETUP_PROJECT), "src", new Path[0], //$NON-NLS-1$
+				new Path[0], null, new IClasspathAttribute[0]));
 		Map<String, String> settings= new HashMap<>();
 		fProfile= new ProfileManager.CustomProfile("testProfile", settings, CleanUpProfileVersioner.CURRENT_VERSION, //$NON-NLS-1$
 				CleanUpProfileVersioner.PROFILE_KIND);
@@ -106,7 +106,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 
 	@Override
 	public void afterEach(ExtensionContext context) throws CoreException {
-		delete(fSourceFolder);
+		delete(getfSourceFolder());
 	}
 
 	public IJavaProject getProject(String projectname) {
@@ -463,5 +463,13 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		ProfileStore profileStore= new ProfileStore(CleanUpConstants.CLEANUP_PROFILES, versioner);
 		profileStore.writeProfiles(profiles, InstanceScope.INSTANCE);
 		CleanUpPreferenceUtil.saveSaveParticipantOptions(InstanceScope.INSTANCE, fProfile.getSettings());
+	}
+
+	public IPackageFragmentRoot getfSourceFolder() {
+		return fSourceFolder;
+	}
+
+	public void setfSourceFolder(IPackageFragmentRoot fSourceFolder) {
+		this.fSourceFolder = fSourceFolder;
 	}
 }
