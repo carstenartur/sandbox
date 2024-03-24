@@ -375,7 +375,7 @@ public class Java9CleanUpTest {
 	@ParameterizedTest
 	@EnumSource(ExplicitEncodingPatterns.class)
 	public void testExplicitEncodingParametrized(ExplicitEncodingPatterns test) throws CoreException {
-		IPackageFragment pack= context.fSourceFolder.createPackageFragment("test1", false, null);
+		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("E1.java", test.given, false, null);
 		context.enable(MYCleanUpConstants.EXPLICITENCODING_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
@@ -383,7 +383,7 @@ public class Java9CleanUpTest {
 
 	@Test
 	public void testExplicitEncoding_donttouch() throws CoreException{
-		IPackageFragment pack= context.fSourceFolder.createPackageFragment("test1", false, null);
+		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("E2.java",
 				"" //
 				+ "package test1;\n" //
