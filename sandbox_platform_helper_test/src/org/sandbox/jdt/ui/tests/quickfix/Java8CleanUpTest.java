@@ -125,7 +125,7 @@ public class Java8CleanUpTest {
 	@ParameterizedTest
 	@EnumSource(PlatformStatusPatterns.class)
 	public void testPlatformStatusParametrized(PlatformStatusPatterns test) throws CoreException {
-		IPackageFragment pack= context.fSourceFolder.createPackageFragment("test1", false, null);
+		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("E1.java", test.given, false, null);
 		context.enable(MYCleanUpConstants.SIMPLIFY_STATUS_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
@@ -133,7 +133,7 @@ public class Java8CleanUpTest {
 
 	@Test
 	public void testPlatformStatus_donttouch() throws CoreException {
-		IPackageFragment pack= context.fSourceFolder.createPackageFragment("test1", false, null);
+		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("E2.java",
 				"" //
 				+ "package test1;\n" //
