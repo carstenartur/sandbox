@@ -107,7 +107,7 @@ public class Java8CleanUpTest {
 	@ParameterizedTest
 	@EnumSource(JFaceCleanupCases.class)
 	public void testJFaceCleanupParametrized(JFaceCleanupCases test) throws CoreException {
-		IPackageFragment pack= context.fSourceFolder.createPackageFragment("test", false, null);
+		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("Test.java", test.given, false, null);
 		context.enable(MYCleanUpConstants.JFACE_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
@@ -144,7 +144,7 @@ public class Java8CleanUpTest {
 	@ParameterizedTest
 	@EnumSource(NO_JFaceCleanupCases.class)
 	public void testJFaceCleanup_donttouch(NO_JFaceCleanupCases test) throws CoreException {
-		IPackageFragment pack= context.fSourceFolder.createPackageFragment("test", false, null);
+		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("Test.java",test.given,false, null);
 		context.enable(MYCleanUpConstants.JFACE_CLEANUP);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
