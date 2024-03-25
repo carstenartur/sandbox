@@ -15,7 +15,7 @@
 		<jacoco-version>0.8.11</jacoco-version>
 		<java-version>17</java-version>
 		<java-execenv>JavaSE-17</java-execenv>
-		<spotbugs-version>4.8.2.0</spotbugs-version>
+		<spotbugs-version>4.8.3.1</spotbugs-version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
 	<modules>
