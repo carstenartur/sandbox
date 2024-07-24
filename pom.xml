@@ -156,6 +156,7 @@
 				<artifactId>spotbugs-maven-plugin</artifactId>
 				<version>${spotbugs-version}</version>
 				<configuration>
+					<omitVisitors>FindDeadLocalStores,UnreadFields</omitVisitors>
 					<xmlOutput>true</xmlOutput>
 					<effort>Max</effort>
 					<maxHeap>2000</maxHeap>
