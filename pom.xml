@@ -194,6 +194,7 @@
 					<threshold>medium</threshold>
 					<failOnError>false</failOnError>
 					<excludeFilterFile>../spotbugs-exclude-exclude.xml</excludeFilterFile>
+					<onlyAnalyze>org.sandbox.jdt.*</onlyAnalyze>
 				</configuration>
 			</plugin>
 		</plugins>
