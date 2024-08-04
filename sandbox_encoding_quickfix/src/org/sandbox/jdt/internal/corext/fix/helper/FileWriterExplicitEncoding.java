@@ -16,6 +16,7 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.OutputStreamWriter;
+import java.nio.charset.Charset;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
@@ -30,7 +31,9 @@ import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCo
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
+import org.sandbox.jdt.internal.corext.fix.helper.AbstractExplicitEncoding.ChangeBehavior;
 /**
  * Change
  *
@@ -52,7 +55,7 @@ public class FileWriterExplicitEncoding extends AbstractExplicitEncoding<ClassIn
 				}
 				ITypeBinding binding= visited.resolveTypeBinding();
 				if (FileWriter.class.getSimpleName().equals(binding.getName())) {
-					operations.add(fixcore.rewrite(visited, cb));
+					operations.add(fixcore.rewrite(visited, cb, datah));
 					nodesprocessed.add(visited);
 					return false;
 				}
@@ -63,7 +66,7 @@ public class FileWriterExplicitEncoding extends AbstractExplicitEncoding<ClassIn
 
 	@Override
 	public void rewrite(UseExplicitEncodingFixCore upp,final ClassInstanceCreation visited, final CompilationUnitRewrite cuRewrite,
-			TextEditGroup group,ChangeBehavior cb) {
+			TextEditGroup group,ChangeBehavior cb, ReferenceHolder<String, Object> data) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
 		if (!JavaModelUtil.is50OrHigher(cuRewrite.getCu().getJavaProject())) {
@@ -72,7 +75,7 @@ public class FileWriterExplicitEncoding extends AbstractExplicitEncoding<ClassIn
 			 */
 			return;
 		}
-		ASTNode callToCharsetDefaultCharset= computeCharsetASTNode(cuRewrite, cb, ast);
+		ASTNode callToCharsetDefaultCharset= computeCharsetASTNode(cuRewrite, cb, ast, (Charset) data.get(ENCODING));
 		/**
 		 * new FileInputStream(<filename>)
 		 */

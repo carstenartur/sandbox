@@ -33,6 +33,7 @@ import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCo
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.LibStandardNames;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 
 /**
@@ -40,19 +41,27 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
  */
 public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	public enum ChangeBehavior {KEEP, USE_UTF8, USE_UTF8_AGGREGATE}
+	ReferenceHolder<String, Object> datah= new ReferenceHolder<>();
+
+	protected static final String ENCODING = "encoding"; //$NON-NLS-1$
+	protected static final String REPLACE = "replace"; //$NON-NLS-1$
 
 	public abstract void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ChangeBehavior cb);
 
 
 	public abstract void rewrite(UseExplicitEncodingFixCore useExplicitEncodingFixCore, T visited, CompilationUnitRewrite cuRewrite,
-			TextEditGroup group, ChangeBehavior cb);
+			TextEditGroup group, ChangeBehavior cb, ReferenceHolder<String, Object> data);
 
-	protected Expression computeCharsetASTNode(final CompilationUnitRewrite cuRewrite, ChangeBehavior cb, AST ast) {
+	protected Expression computeCharsetASTNode(final CompilationUnitRewrite cuRewrite, ChangeBehavior cb, AST ast, Charset charset) {
 		Expression callToCharsetDefaultCharset=null;
 		switch(cb) {
 		case KEEP:
+			if(charset!=null) {
+				callToCharsetDefaultCharset= addCharsetUTF8(cuRewrite, ast);
+			} else {
 			// needs Java 1.5
-			callToCharsetDefaultCharset= addCharsetComputation(cuRewrite, ast);
+				callToCharsetDefaultCharset= addCharsetComputation(cuRewrite, ast);
+			}
 			break;
 		case USE_UTF8_AGGREGATE:
 			/**
@@ -131,10 +140,11 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	 * @param cuRewrite CompilationUnitRewrite
 	 * @param ast AST
 	 * @param cb ChangeBehavior
+	 * @param charset 
 	 * @return MethodInvocation that returns String
 	 */
-	protected MethodInvocation addCharsetStringComputation(final CompilationUnitRewrite cuRewrite, AST ast, ChangeBehavior cb) {
-		Expression callToCharsetDefaultCharset= computeCharsetASTNode(cuRewrite, cb, ast);
+	protected MethodInvocation addCharsetStringComputation(final CompilationUnitRewrite cuRewrite, AST ast, ChangeBehavior cb, Charset charset) {
+		Expression callToCharsetDefaultCharset= computeCharsetASTNode(cuRewrite, cb, ast, charset);
 		/**
 		 * Add second call to Charset.defaultCharset().displayName()
 		 */

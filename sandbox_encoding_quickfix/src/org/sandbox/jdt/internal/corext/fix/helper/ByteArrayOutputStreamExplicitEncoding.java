@@ -16,6 +16,7 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 import static org.sandbox.jdt.internal.common.LibStandardNames.METHOD_TOSTRING;
 
 import java.io.ByteArrayOutputStream;
+import java.nio.charset.Charset;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
@@ -30,7 +31,9 @@ import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCo
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
+import org.sandbox.jdt.internal.corext.fix.helper.AbstractExplicitEncoding.ChangeBehavior;
 
 /**
  * Change from
@@ -58,7 +61,7 @@ public class ByteArrayOutputStreamExplicitEncoding extends AbstractExplicitEncod
 					return false;
 				}
 				if (ASTNodes.usesGivenSignature(visited, ByteArrayOutputStream.class.getCanonicalName(), METHOD_TOSTRING)) {
-					operations.add(fixcore.rewrite(visited, cb));
+					operations.add(fixcore.rewrite(visited, cb, datah));
 					nodesprocessed.add(visited);
 					return false;
 				}
@@ -69,7 +72,7 @@ public class ByteArrayOutputStreamExplicitEncoding extends AbstractExplicitEncod
 
 	@Override
 	public void rewrite(UseExplicitEncodingFixCore upp,final MethodInvocation visited, final CompilationUnitRewrite cuRewrite,
-			TextEditGroup group,ChangeBehavior cb) {
+			TextEditGroup group,ChangeBehavior cb, ReferenceHolder<String, Object> data) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
 		if (!JavaModelUtil.is50OrHigher(cuRewrite.getCu().getJavaProject())) {
@@ -78,7 +81,7 @@ public class ByteArrayOutputStreamExplicitEncoding extends AbstractExplicitEncod
 			 */
 			return;
 		}
-		MethodInvocation callToCharsetDefaultCharsetDisplayname= addCharsetStringComputation(cuRewrite, ast, cb);
+		MethodInvocation callToCharsetDefaultCharsetDisplayname= addCharsetStringComputation(cuRewrite, ast, cb, (Charset) data.get(ENCODING));
 		/**
 		 * Add Charset.defaultCharset().displayName() as second (last) parameter of "toString()" call
 		 */

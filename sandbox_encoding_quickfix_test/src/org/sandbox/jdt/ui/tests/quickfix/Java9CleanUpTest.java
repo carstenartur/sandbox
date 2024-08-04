@@ -378,7 +378,82 @@ public class Java9CleanUpTest {
 					       }
 					    }
 					}
-					""");
+					"""),
+					ENCODINGASSTRINGPARAMETER("""
+							package test1;
+
+							import java.io.ByteArrayOutputStream;
+							import java.io.InputStreamReader;
+							import java.io.FileInputStream;
+							import java.io.FileReader;
+							import java.io.Reader;
+							import java.io.FileNotFoundException;
+
+							public class E1 {
+							    void method(String filename) {
+							        String s="asdf"; //$NON-NLS-1$
+							        byte[] bytes= s.getBytes();
+							        System.out.println(bytes.length);
+							        ByteArrayOutputStream ba=new ByteArrayOutputStream();
+							        String result=ba.toString();
+							        try {
+							            InputStreamReader is=new InputStreamReader(new FileInputStream(""), "UTF-8"); //$NON-NLS-1$
+							            } catch (FileNotFoundException e) {
+							            e.printStackTrace();
+							            }
+							        try {
+							            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream(""), "UTF-8"); //$NON-NLS-1$
+							            } catch (FileNotFoundException e) {
+							            e.printStackTrace();
+							            }
+							        try {
+							            Reader is=new FileReader(filename, "UTF-8");
+							            } catch (FileNotFoundException e) {
+							            e.printStackTrace();
+							            }
+							       }
+							    }
+							}
+							""",
+
+								"""
+									package test1;
+
+									import java.io.ByteArrayOutputStream;
+									import java.io.InputStreamReader;
+									import java.io.FileInputStream;
+									import java.io.FileReader;
+									import java.io.Reader;
+									import java.nio.charset.Charset;
+									import java.nio.charset.StandardCharsets;
+									import java.io.FileNotFoundException;
+
+									public class E1 {
+									    void method(String filename) {
+									        String s="asdf"; //$NON-NLS-1$
+									        byte[] bytes= s.getBytes(Charset.defaultCharset());
+									        System.out.println(bytes.length);
+									        ByteArrayOutputStream ba=new ByteArrayOutputStream();
+									        String result=ba.toString(Charset.defaultCharset().displayName());
+									        try {
+									            InputStreamReader is=new InputStreamReader(new FileInputStream(""), StandardCharsets.UTF_8); //$NON-NLS-1$
+									            } catch (FileNotFoundException e) {
+									            e.printStackTrace();
+									            }
+									        try {
+									            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream(""), StandardCharsets.UTF_8); //$NON-NLS-1$
+									            } catch (FileNotFoundException e) {
+									            e.printStackTrace();
+									            }
+									        try {
+									            Reader is=new InputStreamReader(new FileInputStream(filename), StandardCharsets.UTF_8);
+									            } catch (FileNotFoundException e) {
+									            e.printStackTrace();
+									            }
+									       }
+									    }
+									}
+									""");
 
 		ExplicitEncodingPatterns(String given, String expected) {
 			this.given=given;

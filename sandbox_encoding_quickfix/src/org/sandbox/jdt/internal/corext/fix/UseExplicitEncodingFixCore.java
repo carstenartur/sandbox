@@ -25,6 +25,7 @@ import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.helper.AbstractExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.AbstractExplicitEncoding.ChangeBehavior;
 import org.sandbox.jdt.internal.corext.fix.helper.ByteArrayOutputStreamExplicitEncoding;
@@ -68,13 +69,13 @@ public enum UseExplicitEncodingFixCore {
 		explicitencoding.find(this, compilationUnit, operations, nodesprocessed, cb);
 	}
 
-	public CompilationUnitRewriteOperation rewrite(final ASTNode visited, ChangeBehavior cb) {
+	public CompilationUnitRewriteOperation rewrite(final ASTNode visited, ChangeBehavior cb, ReferenceHolder data) {
 		return new CompilationUnitRewriteOperation() {
 			@Override
 			public void rewriteAST(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel) throws CoreException {
 				TextEditGroup group= createTextEditGroup(Messages.format(MultiFixMessages.ExplicitEncodingCleanUp_description,new Object[] {UseExplicitEncodingFixCore.this.toString(), cb.toString()}), cuRewrite);
 				cuRewrite.getASTRewrite().setTargetSourceRangeComputer(computer);
-				explicitencoding.rewrite(UseExplicitEncodingFixCore.this, visited, cuRewrite, group, cb);
+				explicitencoding.rewrite(UseExplicitEncodingFixCore.this, visited, cuRewrite, group, cb, data);
 			}
 		};
 	}
