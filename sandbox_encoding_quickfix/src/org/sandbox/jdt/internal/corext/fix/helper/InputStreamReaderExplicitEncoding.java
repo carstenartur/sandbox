@@ -18,16 +18,16 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 /**
  * InputStreamReader(InputStream in, Charset cs) is available since Java 1.4
@@ -38,20 +38,14 @@ public class InputStreamReaderExplicitEncoding extends AbstractExplicitEncoding<
 
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed,ChangeBehavior cb) {
-		compilationUnit.accept(new ASTVisitor() {
-			@Override
-			public boolean visit(final ClassInstanceCreation visited) {
-				if(nodesprocessed.contains(visited) || (visited.arguments().size()>1)) {
-					return false;
-				}
-				ITypeBinding binding= visited.resolveTypeBinding();
-				if (InputStreamReader.class.getSimpleName().equals(binding.getName())) {
-					operations.add(fixcore.rewrite(visited, cb));
-					nodesprocessed.add(visited);
-					return false;
-				}
-				return true;
+		ReferenceHolder<ASTNode, ClassInstanceCreation> dataholder= new ReferenceHolder<>();
+		HelperVisitor.callClassInstanceCreationVisitor(InputStreamReader.class, compilationUnit, dataholder, nodesprocessed, (visited, holder_a) -> {
+			if(nodesprocessed.contains(visited) || (visited.arguments().size()>1)) {
+				return false;
 			}
+			operations.add(fixcore.rewrite(visited, cb));
+			nodesprocessed.add(visited);
+			return false;
 		});
 	}
 
