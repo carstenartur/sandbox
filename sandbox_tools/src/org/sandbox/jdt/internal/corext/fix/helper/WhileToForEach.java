@@ -248,8 +248,7 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 	private static String computeNextVarname(WhileStatement whilestatement) {
 		String name= null;
 		Expression exp= whilestatement.getExpression();
-		if (exp instanceof MethodInvocation) {
-			MethodInvocation mi= (MethodInvocation) exp;
+		if (exp instanceof MethodInvocation mi) {
 			if (mi.getName().getIdentifier().equals("hasNext")) { //$NON-NLS-1$
 				SimpleName variable= ASTNodes.as(mi.getExpression(), SimpleName.class);
 				if (variable != null) {

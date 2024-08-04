@@ -107,8 +107,7 @@ class CheckNodeForValidReferences {
 					Expression exp= castExpression.getExpression();
 					if (exp instanceof Name) {
 						IBinding binding= ((Name) exp).resolveBinding();
-						if (binding instanceof IVariableBinding) {
-							IVariableBinding simpleNameVarBinding= (IVariableBinding) binding;
+						if (binding instanceof IVariableBinding simpleNameVarBinding) {
 							if (!fLocalVarsOnly) {
 								if (!simpleNameVarBinding.isField() && !simpleNameVarBinding.isParameter()
 										&& !simpleNameVarBinding.isRecordComponent()) {
@@ -133,8 +132,7 @@ class CheckNodeForValidReferences {
 				if (simpleNameBinding == null) {
 					throw new AbortSearchException();
 				}
-				if (simpleNameBinding instanceof IVariableBinding) {
-					IVariableBinding simpleNameVarBinding= (IVariableBinding) simpleNameBinding;
+				if (simpleNameBinding instanceof IVariableBinding simpleNameVarBinding) {
 					ITypeBinding simpleNameTypeBinding= simpleNameVarBinding.getType();
 					if (AbstractTool.isOfType(simpleNameTypeBinding, ITERATOR_NAME)) {
 						if (simpleName.getLocationInParent() == MethodInvocation.EXPRESSION_PROPERTY) {

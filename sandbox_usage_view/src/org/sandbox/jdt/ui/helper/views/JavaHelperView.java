@@ -312,8 +312,7 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 	}
 
 	static IJavaElement getElementAtOffset(IJavaElement input, ITextSelection selection) throws JavaModelException {
-		if (input instanceof ICompilationUnit) {
-			ICompilationUnit cunit= (ICompilationUnit) input;
+		if (input instanceof ICompilationUnit cunit) {
 			reconcile(cunit);
 			IJavaElement ref= cunit.getElementAt(selection.getOffset());
 			if (ref == null) {
@@ -443,8 +442,7 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 	@Override
 	public boolean show(ShowInContext context) {
 		ISelection selection= context.getSelection();
-		if (selection instanceof IStructuredSelection) {
-			IStructuredSelection structuredSelection= (IStructuredSelection) selection;
+		if (selection instanceof IStructuredSelection structuredSelection) {
 			if (structuredSelection.size() >= 1) {
 				List<Object> input= new ArrayList<>();
 				for (Object item : structuredSelection) {

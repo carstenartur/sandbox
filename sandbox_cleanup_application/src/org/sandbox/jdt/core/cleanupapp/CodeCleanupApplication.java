@@ -412,8 +412,7 @@ public class CodeCleanupApplication implements IApplication {
 						if (initializerID != null && initializerID.equals(formatterId)) {
 							try {
 								Object execExt = configElement.createExecutableExtension("class"); //$NON-NLS-1$
-								if (execExt instanceof CodeFormatter) {
-									CodeFormatter formatter = (CodeFormatter) execExt;
+								if (execExt instanceof CodeFormatter formatter) {
 									formatter.setOptions(currentOptions);
 									return formatter;
 								}

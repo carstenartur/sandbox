@@ -48,20 +48,17 @@ public class JHViewContentProvider implements IStructuredContentProvider {
 		//				JERoot wrappedObject = (JERoot) jeAttribute;
 		//				JEAttribute ja = wrappedObject.getChildren()[0];
 		//				JavaElement label = (JavaElement) ja;
-		if (inputElement instanceof List) {
-			List list= (List) inputElement;
+		if (inputElement instanceof List list) {
 			if (list.size() == 1) {
 
 				Object object= list.get(0);
 				if (object == null) {
 					return new Object[0];
 				}
-				if (object instanceof WorkspaceRoot) {
-					WorkspaceRoot root= (WorkspaceRoot) object;
+				if (object instanceof WorkspaceRoot root) {
 					System.err.println(root.getName());
 
-				} else if (object instanceof File) {
-					File file= (File) object;
+				} else if (object instanceof File file) {
 					System.err.println(file.getName());
 				} else if (object instanceof JavaElement) {
 					IJavaElement javaElement= (IJavaElement) object;
@@ -69,9 +66,8 @@ public class JHViewContentProvider implements IStructuredContentProvider {
 						// now create the AST for the ICompilationUnits
 						CompilationUnit parse= parse((ICompilationUnit) javaElement);
 						parse.accept(visitor);
-					} else if (javaElement instanceof IJavaProject) {
+					} else if (javaElement instanceof IJavaProject jproject) {
 						// now create the AST for the ICompilationUnits
-						IJavaProject jproject= (IJavaProject) javaElement;
 						try {
 							Arrays.asList(jproject.getAllPackageFragmentRoots()).parallelStream().forEach(pfr -> {
 								extracted(visitor, pfr);
@@ -79,11 +75,9 @@ public class JHViewContentProvider implements IStructuredContentProvider {
 						} catch (JavaModelException e) {
 							e.printStackTrace();
 						}
-					} else if (javaElement instanceof IPackageFragment) {
-						IPackageFragment pf= (IPackageFragment) javaElement;
+					} else if (javaElement instanceof IPackageFragment pf) {
 						extracted(visitor, pf);
-					} else if (javaElement instanceof IPackageFragmentRoot) {
-						IPackageFragmentRoot pf= (IPackageFragmentRoot) javaElement;
+					} else if (javaElement instanceof IPackageFragmentRoot pf) {
 						extracted(visitor, pf);
 					}
 				}

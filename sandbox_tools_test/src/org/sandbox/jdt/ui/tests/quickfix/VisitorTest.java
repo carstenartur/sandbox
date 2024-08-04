@@ -595,8 +595,7 @@ public class VisitorTest {
 		String name = null;
 		Expression exp = whilestatement.getExpression();
 		//		Collection<String> usedVarNames= getUsedVariableNames(whilestatement.getBody());
-		if (exp instanceof MethodInvocation) {
-			MethodInvocation mi = (MethodInvocation) exp;
+		if (exp instanceof MethodInvocation mi) {
 			Expression expression = mi.getExpression();
 			if (mi.getName().getIdentifier().equals("hasNext")) { //$NON-NLS-1$
 				//				ITypeBinding resolveTypeBinding = expression.resolveTypeBinding();
@@ -615,11 +614,9 @@ public class VisitorTest {
 		VariableDeclarationFragment bli = (VariableDeclarationFragment) node_a.fragments().get(0);
 		name.add(bli.getName().getIdentifier());
 		Expression exp = bli.getInitializer();
-		if (exp instanceof MethodInvocation) {
-			MethodInvocation mi = (MethodInvocation) exp;
+		if (exp instanceof MethodInvocation mi) {
 			Expression element = mi.getExpression();
-			if (element instanceof SimpleName) {
-				SimpleName sn = (SimpleName) element;
+			if (element instanceof SimpleName sn) {
 				if (mi.getName().toString().equals("iterator")) { //$NON-NLS-1$
 					name.add(sn.getIdentifier());
 				}

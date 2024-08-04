@@ -135,8 +135,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 */
 	public void delete(final IJavaElement elem) throws CoreException {
 		IWorkspaceRunnable runnable= monitor -> {
-			if (elem instanceof IJavaProject) {
-				IJavaProject jproject= (IJavaProject) elem;
+			if (elem instanceof IJavaProject jproject) {
 				jproject.setRawClasspath(new IClasspathEntry[0], jproject.getProject().getFullPath(), null);
 			}
 			delete(elem.getResource());

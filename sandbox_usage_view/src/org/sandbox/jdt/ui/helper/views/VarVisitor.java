@@ -39,8 +39,7 @@ final class VarVisitor extends ASTVisitor {
 	@Override
 	public boolean visit(SimpleName node) {
 		IBinding binding= node.resolveBinding();
-		if (binding instanceof IVariableBinding) {
-			IVariableBinding varBinding= (IVariableBinding) binding;
+		if (binding instanceof IVariableBinding varBinding) {
 			methods.add(varBinding);
 		}
 		return true;

@@ -74,7 +74,7 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 			ReferenceHolder<ASTNode, Object> dataholder= new ReferenceHolder<>();
 			HelperVisitor.callClassInstanceCreationVisitor(Status.class, compilationUnit, dataholder, nodesprocessed, (visited, holder) -> {
 				if (nodesprocessed.contains(visited) || (
-//						(visited.arguments().size() != 3)&& 
+//						(visited.arguments().size() != 3)&&
 //						(visited.arguments().size() != 4)&&
 						(visited.arguments().size() != 5)
 						)) {
@@ -86,8 +86,8 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 				 * new Status(WARNING, callerClass, OK, message, exception);
 				 * new Status(ERROR, callerClass, OK, message, null);
 				 * new Status(ERROR, callerClass, OK, message, exception);
-				 * 
-				 * 
+				 *
+				 *
 				 * IStatus status = new Status(IStatus.WARNING, "plugin id", IStatus.OK, "important message", e);
 				 * IStatus status = new Status(IStatus.WARNING, "plugin id", "important message", null);
 				 * IStatus status = new Status(IStatus.WARNING, "plugin id", "important message");
