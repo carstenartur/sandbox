@@ -13,16 +13,17 @@ public class MatcherTest {
 	@Test
 	public void matcherTest() {
 		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
-		String code = "import java.util.Collection;\n"
-				+ "\n"
-				+ "public class E {\n"
-				+ "	public void hui(Collection<String> arr) {\n"
-				+ "		Collection coll = null;\n"
-				+ "		for (String var : arr) {\n"
-				+ "			 coll.add(var);\n"
-				+ "		}\n"
-				+ "	}\n"
-				+ "}";
+		String code = """
+			import java.util.Collection;
+
+			public class E {
+				public void hui(Collection<String> arr) {
+					Collection coll = null;
+					for (String var : arr) {
+						 coll.add(var);
+					}
+				}
+			}""";
 		char[] source = code.toCharArray();
 		parser.setSource(source);
 		Map<String, String> options = JavaCore.getOptions();

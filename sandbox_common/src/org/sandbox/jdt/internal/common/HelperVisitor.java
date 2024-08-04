@@ -378,7 +378,7 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 		predicatedata.put(VisitorEnum.ClassInstanceCreation, map);
 		return predicatemap.put(VisitorEnum.ClassInstanceCreation, bs);
 	}
-	
+
 	/**
 	 *
 	 * @param bs
@@ -3684,7 +3684,7 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 		hv.addClassInstanceCreation(bs);
 		hv.build(node);
 	}
-	
+
 	/**
 	 *
 	 * @param <V>

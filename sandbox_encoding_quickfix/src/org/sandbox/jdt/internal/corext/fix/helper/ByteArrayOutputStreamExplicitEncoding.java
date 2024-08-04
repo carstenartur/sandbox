@@ -108,11 +108,13 @@ public class ByteArrayOutputStreamExplicitEncoding extends AbstractExplicitEncod
 					+ "	e1.printStackTrace();\n" //$NON-NLS-1$
 					+ "}\n"; //$NON-NLS-1$
 		}
-		return "ByteArrayOutputStream ba=new ByteArrayOutputStream();\n" //$NON-NLS-1$
-				+ "try {\n" //$NON-NLS-1$
-				+ "	String result=ba.toString();\n" //$NON-NLS-1$
-				+ "} catch (UnsupportedEncodingException e1) {\n" //$NON-NLS-1$
-				+ "	e1.printStackTrace();\n" //$NON-NLS-1$
-				+ "}\n"; //$NON-NLS-1$
+		return """
+			ByteArrayOutputStream ba=new ByteArrayOutputStream();
+			try {
+				String result=ba.toString();
+			} catch (UnsupportedEncodingException e1) {
+				e1.printStackTrace();
+			}
+			"""; //$NON-NLS-1$
 	}
 }

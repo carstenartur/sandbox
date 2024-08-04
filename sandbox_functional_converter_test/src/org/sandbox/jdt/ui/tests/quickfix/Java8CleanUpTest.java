@@ -32,715 +32,743 @@ public class Java8CleanUpTest {
 	AbstractEclipseJava context= new EclipseJava8();
 
 	enum UseFunctionalLoop {
-		SIMPLECONVERT("package test1;\n"
-				+ "import java.util.Arrays;\n"
-				+ "import java.util.List;\n"
-				+ "class TestDemo {\n"
-				+ "    public static void main(String[] args) {\n"
-				+ "        new TestDemo().test(Arrays.asList(1, 2, 3));\n"
-				+ "    }\n"
-				+ "    public void test(List<Integer> ls) {\n"
-				+ "        for (Integer l : ls)\n"
-				+ "            System.out.println(l);\n"
-				+ "    }\n"
-				+ "}",
+		SIMPLECONVERT("""
+			package test1;
+			import java.util.Arrays;
+			import java.util.List;
+			class TestDemo {
+			    public static void main(String[] args) {
+			        new TestDemo().test(Arrays.asList(1, 2, 3));
+			    }
+			    public void test(List<Integer> ls) {
+			        for (Integer l : ls)
+			            System.out.println(l);
+			    }
+			}""",
 
-				"package test1;\n"
-						+ "import java.util.Arrays;\n"
-						+ "import java.util.List;\n"
-						+ "class TestDemo {\n"
-						+ "    public static void main(String[] args) {\n"
-						+ "        new TestDemo().test(Arrays.asList(1, 2, 3));\n"
-						+ "    }\n"
-						+ "    public void test(List<Integer> ls) {\n"
-						+ "        ls.forEach(l -> System.out.println(l));\n"
-						+ "    }\n"
-						+ "}"),
+				"""
+					package test1;
+					import java.util.Arrays;
+					import java.util.List;
+					class TestDemo {
+					    public static void main(String[] args) {
+					        new TestDemo().test(Arrays.asList(1, 2, 3));
+					    }
+					    public void test(List<Integer> ls) {
+					        ls.forEach(l -> System.out.println(l));
+					    }
+					}"""),
 
-		CHAININGMAP("package test1;\n"
-				+ "import java.util.Arrays;\n"
-				+ "import java.util.List;\n"
-				+ "class TestDemo {\n"
-				+ "    public static void main(String[] args) {\n"
-				+ "        new TestDemo().test(Arrays.asList(1, 2, 3));\n"
-				+ "    }\n"
-				+ "    public void test(List<Integer> ls) {\n"
-				+ "        for (Integer l : ls) {\n"
-				+ "            String s = l.toString();\n"
-				+ "            System.out.println(s);\n"
-				+ "        }\n"
-				+ "    }\n"
-				+ "}",
+		CHAININGMAP("""
+			package test1;
+			import java.util.Arrays;
+			import java.util.List;
+			class TestDemo {
+			    public static void main(String[] args) {
+			        new TestDemo().test(Arrays.asList(1, 2, 3));
+			    }
+			    public void test(List<Integer> ls) {
+			        for (Integer l : ls) {
+			            String s = l.toString();
+			            System.out.println(s);
+			        }
+			    }
+			}""",
 
-				"package test1;\n"
-						+ "import java.util.Arrays;\n"
-						+ "import java.util.List;\n"
-						+ "class TestDemo {\n"
-						+ "    public static void main(String[] args) {\n"
-						+ "        new TestDemo().test(Arrays.asList(1, 2, 3));\n"
-						+ "    }\n"
-						+ "    public void test(List<Integer> ls) {\n"
-						+ "        ls.stream().map(l -> l.toString()).forEachOrdered(s -> {\n"
-						+ "            System.out.println(s);\n"
-						+ "        });\n"
-						+ "    }\n"
-						+ "}"),
+				"""
+					package test1;
+					import java.util.Arrays;
+					import java.util.List;
+					class TestDemo {
+					    public static void main(String[] args) {
+					        new TestDemo().test(Arrays.asList(1, 2, 3));
+					    }
+					    public void test(List<Integer> ls) {
+					        ls.stream().map(l -> l.toString()).forEachOrdered(s -> {
+					            System.out.println(s);
+					        });
+					    }
+					}"""),
 
-		DOUBLEINCREMENTREDUCER("package test1;\n"
-				+ "\n"
-				+ "import java.util.ArrayList;\n"
-				+ "import java.util.List;\n"
-				+ "\n"
-				+ "/**\n"
-				+ " *\n"
-				+ " * @author alexandrugyori\n"
-				+ " */\n"
-				+ "class TestDemo {\n"
-				+ "\n"
-				+ "    /**\n"
-				+ "     * @param args the command line arguments\n"
-				+ "     */\n"
-				+ "    public static void main( String[] args) {\n"
-				+ "        // TODO code application logic here\n"
-				+ "        List<Integer> ints=new ArrayList<>();\n"
-				+ "        double len=0.;        \n"
-				+ "        for(int i : ints)\n"
-				+ "            len++;\n"
-				+ "            \n"
-				+ "    }    \n"
-				+ "}",
+		DOUBLEINCREMENTREDUCER("""
+			package test1;
 
-				"package test1;\n"
-						+ "\n"
-						+ "import java.util.ArrayList;\n"
-						+ "import java.util.List;\n"
-						+ "\n"
-						+ "/**\n"
-						+ " *\n"
-						+ " * @author alexandrugyori\n"
-						+ " */\n"
-						+ "class TestDemo {\n"
-						+ "\n"
-						+ "    /**\n"
-						+ "     * @param args the command line arguments\n"
-						+ "     */\n"
-						+ "    public static void main( String[] args) {\n"
-						+ "        // TODO code application logic here\n"
-						+ "        List<Integer> ints=new ArrayList<>();\n"
-						+ "        double len=0.;        \n"
-						+ "        len = ints.stream().map(_item -> 1.0).reduce(len, (accumulator, _item) -> accumulator + 1);\n"
-						+ "            \n"
-						+ "    }    \n"
-						+ "}"),
-		ChainingFilterMapForEachConvert("package test1;\n"
-				+ "\n"
-				+ "import java.util.Arrays;\n"
-				+ "import java.util.List;\n"
-				+ "\n"
-				+ "class TestDemo {\n"
-				+ "\n"
-				+ "    public static void main(String[] args) {\n"
-				+ "        new TestDemo().test(Arrays.asList(1, 2, 3));\n"
-				+ "    }\n"
-				+ "\n"
-				+ "    public void test(List<Integer> ls) {        \n"
-				+ "        for (Integer l : ls) {\n"
-				+ "            if(l!=null)\n"
-				+ "            {\n"
-				+ "                String s = l.toString();\n"
-				+ "                System.out.println(s);\n"
-				+ "            }\n"
-				+ "        }\n"
-				+ "            \n"
-				+ "        \n"
-				+ "    }\n"
-				+ "}",
+			import java.util.ArrayList;
+			import java.util.List;
 
-				"package test1;\n"
-						+ "\n"
-						+ "import java.util.Arrays;\n"
-						+ "import java.util.List;\n"
-						+ "\n"
-						+ "class TestDemo {\n"
-						+ "\n"
-						+ "    public static void main(String[] args) {\n"
-						+ "        new TestDemo().test(Arrays.asList(1, 2, 3));\n"
-						+ "    }\n"
-						+ "\n"
-						+ "    public void test(List<Integer> ls) {        \n"
-						+ "        ls.stream().filter(l -> (l!=null)).map(l -> l.toString()).forEachOrdered(s -> {\n"
-						+ "            System.out.println(s);\n"
-						+ "        });\n"
-						+ "            \n"
-						+ "        \n"
-						+ "    }\n"
-						+ "}"),
-		SmoothLongerChaining("package test1;\n"
-				+ "\n"
-				+ "import java.util.Arrays;\n"
-				+ "import java.util.List;\n"
-				+ "\n"
-				+ "class TestDemo {\n"
-				+ "\n"
-				+ "    public static void main(String[] args) {\n"
-				+ "        new TestDemo().test(Arrays.asList(1,2,3));\n"
-				+ "    }\n"
-				+ "\n"
-				+ "    public void test(List<Integer> ls) {        \n"
-				+ "        for (Integer a : ls) {\n"
-				+ "            Integer l = new Integer(a.intValue());\n"
-				+ "            if(l!=null)\n"
-				+ "            {\n"
-				+ "                String s = l.toString();\n"
-				+ "                System.out.println(s);\n"
-				+ "            }\n"
-				+ "        }\n"
-				+ "            \n"
-				+ "        \n"
-				+ "    }\n"
-				+ "}",
+			/**
+			 *
+			 * @author alexandrugyori
+			 */
+			class TestDemo {
 
-				"package test1;;\n"
-						+ "\n"
-						+ "import java.util.Arrays;\n"
-						+ "import java.util.List;\n"
-						+ "\n"
-						+ "class TestDemo {\n"
-						+ "\n"
-						+ "    public static void main(String[] args) {\n"
-						+ "        new TestDemo().test(Arrays.asList(1,2,3));\n"
-						+ "    }\n"
-						+ "\n"
-						+ "    public void test(List<Integer> ls) {        \n"
-						+ "        ls.stream().map(a -> new Integer(a.intValue())).filter(l -> (l!=null)).map(l -> l.toString()).forEachOrdered(s -> {\n"
-						+ "            System.out.println(s);\n"
-						+ "        });\n"
-						+ "            \n"
-						+ "        \n"
-						+ "    }\n"
-						+ "}"),
-		NonFilteringIfChaining("package test1;\n"
-				+ "\n"
-				+ "import java.util.Arrays;\n"
-				+ "import java.util.List;\n"
-				+ "\n"
-				+ "class TestDemo {\n"
-				+ "\n"
-				+ "    public static void main(String[] args) {\n"
-				+ "        new TestDemo().test(Arrays.asList(1,2,3));\n"
-				+ "    }\n"
-				+ "\n"
-				+ "    public void test(List<Integer> ls) {        \n"
-				+ "        for (Integer a : ls) {\n"
-				+ "            Integer l = new Integer(a.intValue());\n"
-				+ "            if(l!=null)\n"
-				+ "            {                \n"
-				+ "                String s = l.toString();\n"
-				+ "                if(s!=null)\n"
-				+ "                    System.out.println(s);\n"
-				+ "                System.out.println(\"cucu\");\n"
-				+ "            }\n"
-				+ "        }\n"
-				+ "            \n"
-				+ "        \n"
-				+ "    }\n"
-				+ "}",
+			    /**
+			     * @param args the command line arguments
+			     */
+			    public static void main( String[] args) {
+			        // TODO code application logic here
+			        List<Integer> ints=new ArrayList<>();
+			        double len=0.;\s\s\s\s\s\s\s\s
+			        for(int i : ints)
+			            len++;
+			 \s\s\s\s\s\s\s\s\s\s\s
+			    }\s\s\s\s
+			}""",
 
-				"package test1;\n"
-						+ "\n"
-						+ "import java.util.Arrays;\n"
-						+ "import java.util.List;\n"
-						+ "\n"
-						+ "class TestDemo {\n"
-						+ "\n"
-						+ "    public static void main(String[] args) {\n"
-						+ "        new TestDemo().test(Arrays.asList(1,2,3));\n"
-						+ "    }\n"
-						+ "\n"
-						+ "    public void test(List<Integer> ls) {        \n"
-						+ "        ls.stream().map(a -> new Integer(a.intValue())).filter(l -> (l!=null)).map(l -> l.toString()).map(s -> {\n"
-						+ "            if(s!=null)\n"
-						+ "                System.out.println(s);\n"
-						+ "            return s;\n"
-						+ "        }).forEachOrdered(_item -> {\n"
-						+ "            System.out.println(\"cucu\");\n"
-						+ "        });\n"
-						+ "            \n"
-						+ "        \n"
-						+ "    }\n"
-						+ "}"),
-		ContinuingIfFilterSingleStatement("package test1;\n"
-				+ "\n"
-				+ "import java.util.Arrays;\n"
-				+ "import java.util.List;\n"
-				+ "\n"
-				+ "class TestDemo {\n"
-				+ "\n"
-				+ "    public static void main(String[] args) {\n"
-				+ "        new TestDemo().test(Arrays.asList(1, 2, 3));\n"
-				+ "    }\n"
-				+ "\n"
-				+ "    public void test(List<Integer> ls) {\n"
-				+ "        for (Integer l : ls) {            \n"
-				+ "            if (l == null) {\n"
-				+ "                continue;\n"
-				+ "            }\n"
-				+ "            String s = l.toString();\n"
-				+ "            if (s != null) {\n"
-				+ "                System.out.println(s);\n"
-				+ "            }     \n"
-				+ "\n"
-				+ "        }\n"
-				+ "\n"
-				+ "\n"
-				+ "    }\n"
-				+ "}",
+				"""
+					package test1;
 
-				"package test1;\n"
-						+ "\n"
-						+ "import java.util.Arrays;\n"
-						+ "import java.util.List;\n"
-						+ "\n"
-						+ "class TestDemo {\n"
-						+ "\n"
-						+ "    public static void main(String[] args) {\n"
-						+ "        new TestDemo().test(Arrays.asList(1, 2, 3));\n"
-						+ "    }\n"
-						+ "\n"
-						+ "    public void test(List<Integer> ls) {\n"
-						+ "        ls.stream().filter(l -> !(l == null)).map(l -> l.toString()).filter(s -> (s != null)).forEachOrdered(s -> {\n"
-						+ "            System.out.println(s);\n"
-						+ "        });\n"
-						+ "\n"
-						+ "\n"
-						+ "    }\n"
-						+ "}"),
-		ChainedAnyMatch("package test1;\n"
-				+ "\n"
-				+ "import java.util.Arrays;\n"
-				+ "import java.util.List;\n"
-				+ "\n"
-				+ "class TestDemo {\n"
-				+ "\n"
-				+ "    public static void main(String[] args) {\n"
-				+ "        new TestDemo().test(Arrays.asList(1, 2, 3));\n"
-				+ "    }\n"
-				+ "\n"
-				+ "    public Boolean test(List<Integer> ls) {\n"
-				+ "        for(Integer l:ls)\n"
-				+ "        {\n"
-				+ "            String s = l.toString();\n"
-				+ "            Object o = foo(s);\n"
-				+ "            if(o==null)\n"
-				+ "                return true;\n"
-				+ "        }\n"
-				+ "        \n"
-				+ "        return false;\n"
-				+ "\n"
-				+ "\n"
-				+ "    }\n"
-				+ "    \n"
-				+ "    Object foo(Object o)\n"
-				+ "    {\n"
-				+ "        return o;\n"
-				+ "    }\n"
-				+ "}",
+					import java.util.ArrayList;
+					import java.util.List;
 
-				"package test1;\n"
-						+ "\n"
-						+ "import java.util.Arrays;\n"
-						+ "import java.util.List;\n"
-						+ "\n"
-						+ "class TestDemo {\n"
-						+ "\n"
-						+ "    public static void main(String[] args) {\n"
-						+ "        new TestDemo().test(Arrays.asList(1, 2, 3));\n"
-						+ "    }\n"
-						+ "\n"
-						+ "    public Boolean test(List<Integer> ls) {\n"
-						+ "        if (ls.stream().map(l -> l.toString()).map(s -> foo(s)).anyMatch(o -> (o==null))) {\n"
-						+ "            return true;\n"
-						+ "        }\n"
-						+ "        \n"
-						+ "        return false;\n"
-						+ "\n"
-						+ "\n"
-						+ "    }\n"
-						+ "    \n"
-						+ "    Object foo(Object o)\n"
-						+ "    {\n"
-						+ "        return o;\n"
-						+ "    }\n"
-						+ "}"),
-		ChainedNoneMatch("package test1;\n"
-				+ "\n"
-				+ "import java.util.Arrays;\n"
-				+ "import java.util.List;\n"
-				+ "\n"
-				+ "class TestDemo {\n"
-				+ "\n"
-				+ "    public static void main(String[] args) {\n"
-				+ "        new TestDemo().test(Arrays.asList(1, 2, 3));\n"
-				+ "    }\n"
-				+ "\n"
-				+ "    public Boolean test(List<Integer> ls) {\n"
-				+ "        for(Integer l:ls)\n"
-				+ "        {\n"
-				+ "            String s = l.toString();\n"
-				+ "            Object o = foo(s);\n"
-				+ "            if(o==null)\n"
-				+ "                return false;\n"
-				+ "        }\n"
-				+ "        \n"
-				+ "        return true;\n"
-				+ "\n"
-				+ "\n"
-				+ "    }\n"
-				+ "    \n"
-				+ "    Object foo(Object o)\n"
-				+ "    {\n"
-				+ "        return o;\n"
-				+ "    }\n"
-				+ "}",
+					/**
+					 *
+					 * @author alexandrugyori
+					 */
+					class TestDemo {
 
-				"package test1;\n"
-						+ "\n"
-						+ "import java.util.Arrays;\n"
-						+ "import java.util.List;\n"
-						+ "\n"
-						+ "class TestDemo {\n"
-						+ "\n"
-						+ "    public static void main(String[] args) {\n"
-						+ "        new TestDemo().test(Arrays.asList(1, 2, 3));\n"
-						+ "    }\n"
-						+ "\n"
-						+ "    public Boolean test(List<Integer> ls) {\n"
-						+ "        if (!ls.stream().map(l -> l.toString()).map(s -> foo(s)).noneMatch(o -> (o==null))) {\n"
-						+ "            return false;\n"
-						+ "        }\n"
-						+ "        \n"
-						+ "        return true;\n"
-						+ "\n"
-						+ "\n"
-						+ "    }\n"
-						+ "    \n"
-						+ "    Object foo(Object o)\n"
-						+ "    {\n"
-						+ "        return o;\n"
-						+ "    }\n"
-						+ "}"),
-		NoNeededVariablesMerging("package test1;\n"
-				+ "\n"
-				+ "import java.util.Arrays;\n"
-				+ "import java.util.List;\n"
-				+ "\n"
-				+ "class TestDemo {\n"
-				+ "\n"
-				+ "    public static void main(String[] args) throws Exception {\n"
-				+ "        new TestDemo().test(Arrays.asList(1, 2, 3,7));\n"
-				+ "    }\n"
-				+ "\n"
-				+ "   \n"
-				+ "    public Boolean test(List<Integer> ls) throws Exception {\n"
-				+ "        Integer i=0;        \n"
-				+ "        for(Integer l : ls)\n"
-				+ "        {         \n"
-				+ "            System.out.println();\n"
-				+ "            System.out.println(\"\");\n"
-				+ "            \n"
-				+ "        }\n"
-				+ "        System.out.println(i);\n"
-				+ "        return false;\n"
-				+ "\n"
-				+ "\n"
-				+ "    }    \n"
-				+ "    private void foo(Object o, int i) throws Exception\n"
-				+ "    {\n"
-				+ "        \n"
-				+ "    }\n"
-				+ "}",
+					    /**
+					     * @param args the command line arguments
+					     */
+					    public static void main( String[] args) {
+					        // TODO code application logic here
+					        List<Integer> ints=new ArrayList<>();
+					        double len=0.;\s\s\s\s\s\s\s\s
+					        len = ints.stream().map(_item -> 1.0).reduce(len, (accumulator, _item) -> accumulator + 1);
+					 \s\s\s\s\s\s\s\s\s\s\s
+					    }\s\s\s\s
+					}"""),
+		ChainingFilterMapForEachConvert("""
+			package test1;
 
-				"package test1;\n"
-						+ "\n"
-						+ "import java.util.Arrays;\n"
-						+ "import java.util.List;\n"
-						+ "\n"
-						+ "class TestDemo {\n"
-						+ "\n"
-						+ "    public static void main(String[] args) throws Exception {\n"
-						+ "        new TestDemo().test(Arrays.asList(1, 2, 3,7));\n"
-						+ "    }\n"
-						+ "\n"
-						+ "   \n"
-						+ "    public Boolean test(List<Integer> ls) throws Exception {\n"
-						+ "        Integer i=0;        \n"
-						+ "        ls.stream().map(_item -> {         \n"
-						+ "            System.out.println();\n"
-						+ "            return _item;\n"
-						+ "        }).forEachOrdered(_item -> {\n"
-						+ "            System.out.println(\"\");\n"
-						+ "        });\n"
-						+ "        System.out.println(i);\n"
-						+ "        return false;\n"
-						+ "\n"
-						+ "\n"
-						+ "    }    \n"
-						+ "    private void foo(Object o, int i) throws Exception\n"
-						+ "    {\n"
-						+ "        \n"
-						+ "    }\n"
-						+ "}"),
-		SomeChainingWithNoNeededVar("package test1;\n"
-				+ "\n"
-				+ "import java.util.Arrays;\n"
-				+ "import java.util.List;\n"
-				+ "\n"
-				+ "class TestDemo {\n"
-				+ "\n"
-				+ "    public static void main(String[] args) {\n"
-				+ "        new TestDemo().test(Arrays.asList(1, 2, 3));\n"
-				+ "    }\n"
-				+ "\n"
-				+ "    public Boolean test(List<Integer> ls) {\n"
-				+ "        for(Integer a:ls)\n"
-				+ "        {\n"
-				+ "            Integer l = new Integer(a.intValue());\n"
-				+ "            if(l==null)\n"
-				+ "            {\n"
-				+ "                String s=l.toString();\n"
-				+ "                if(s!=null)\n"
-				+ "                {\n"
-				+ "                    System.out.println(s);\n"
-				+ "                }\n"
-				+ "                System.out.println(\"cucu\");\n"
-				+ "            }   \n"
-				+ "            System.out.println();\n"
-				+ "        }\n"
-				+ "        \n"
-				+ "        return true;\n"
-				+ "\n"
-				+ "\n"
-				+ "    }\n"
-				+ "        \n"
-				+ "    Object foo(Object o)\n"
-				+ "    {\n"
-				+ "        return o;\n"
-				+ "    }\n"
-				+ "}",
+			import java.util.Arrays;
+			import java.util.List;
 
-				"package test1;\n"
-						+ "\n"
-						+ "import java.util.Arrays;\n"
-						+ "import java.util.List;\n"
-						+ "\n"
-						+ "class TestDemo {\n"
-						+ "\n"
-						+ "    public static void main(String[] args) {\n"
-						+ "        new TestDemo().test(Arrays.asList(1, 2, 3));\n"
-						+ "    }\n"
-						+ "\n"
-						+ "    public Boolean test(List<Integer> ls) {\n"
-						+ "        ls.stream().map(a -> new Integer(a.intValue())).map(l -> {\n"
-						+ "            if(l==null)\n"
-						+ "            {\n"
-						+ "                String s=l.toString();\n"
-						+ "                if(s!=null)\n"
-						+ "                {\n"
-						+ "                    System.out.println(s);\n"
-						+ "                }\n"
-						+ "                System.out.println(\"cucu\");\n"
-						+ "            }   \n"
-						+ "            return l;\n"
-						+ "        }).forEachOrdered(_item -> {\n"
-						+ "            System.out.println();\n"
-						+ "        });\n"
-						+ "        \n"
-						+ "        return true;\n"
-						+ "\n"
-						+ "\n"
-						+ "    }\n"
-						+ "        \n"
-						+ "    Object foo(Object o)\n"
-						+ "    {\n"
-						+ "        return o;\n"
-						+ "    }\n"
-						+ "}"),
-		SimpleReducer("package test1;\n"
-				+ "\n"
-				+ "import java.util.Arrays;\n"
-				+ "import java.util.List;\n"
-				+ "\n"
-				+ "class TestDemo {\n"
-				+ "\n"
-				+ "    public static void main(String[] args) {\n"
-				+ "        new TestDemo().test(Arrays.asList(1, 2, 3,7));\n"
-				+ "    }\n"
-				+ "\n"
-				+ "   \n"
-				+ "    public Boolean test(List<Integer> ls) {\n"
-				+ "        Integer i=0;\n"
-				+ "        for(Integer l : ls)\n"
-				+ "            i++;\n"
-				+ "        System.out.println(i);\n"
-				+ "        return true;\n"
-				+ "\n"
-				+ "\n"
-				+ "    }    \n"
-				+ "}",
+			class TestDemo {
 
-				"package test1;\n"
-						+ "\n"
-						+ "import java.util.Arrays;\n"
-						+ "import java.util.List;\n"
-						+ "\n"
-						+ "class TestDemo {\n"
-						+ "\n"
-						+ "    public static void main(String[] args) {\n"
-						+ "        new TestDemo().test(Arrays.asList(1, 2, 3,7));\n"
-						+ "    }\n"
-						+ "\n"
-						+ "   \n"
-						+ "    public Boolean test(List<Integer> ls) {\n"
-						+ "        Integer i=0;\n"
-						+ "        i = ls.stream().map(_item -> 1).reduce(i, Integer::sum);\n"
-						+ "        System.out.println(i);\n"
-						+ "        return true;\n"
-						+ "\n"
-						+ "\n"
-						+ "    }    \n"
-						+ "}"),
-		ChainedReducer("package test1;\n"
-				+ "\n"
-				+ "import java.util.Arrays;\n"
-				+ "import java.util.List;\n"
-				+ "\n"
-				+ "class TestDemo {\n"
-				+ "\n"
-				+ "    public static void main(String[] args) {\n"
-				+ "        new TestDemo().test(Arrays.asList(1, 2, 3,7));\n"
-				+ "    }\n"
-				+ "\n"
-				+ "   \n"
-				+ "    public Boolean test(List<Integer> ls) {\n"
-				+ "        Integer i=0;\n"
-				+ "        for(Integer l : ls)\n"
-				+ "        {             \n"
-				+ "            if(l!=null)\n"
-				+ "            {\n"
-				+ "                foo(l);\n"
-				+ "                i++;\n"
-				+ "            }\n"
-				+ "            \n"
-				+ "        }\n"
-				+ "        System.out.println(i);\n"
-				+ "        return true;\n"
-				+ "\n"
-				+ "\n"
-				+ "    }    \n"
-				+ "    private void foo(Object o)\n"
-				+ "    {\n"
-				+ "        \n"
-				+ "    }\n"
-				+ "}",
+			    public static void main(String[] args) {
+			        new TestDemo().test(Arrays.asList(1, 2, 3));
+			    }
 
-				"package test1;\n"
-						+ "\n"
-						+ "import java.util.Arrays;\n"
-						+ "import java.util.List;\n"
-						+ "\n"
-						+ "class TestDemo {\n"
-						+ "\n"
-						+ "    public static void main(String[] args) {\n"
-						+ "        new TestDemo().test(Arrays.asList(1, 2, 3,7));\n"
-						+ "    }\n"
-						+ "\n"
-						+ "   \n"
-						+ "    public Boolean test(List<Integer> ls) {\n"
-						+ "        Integer i=0;\n"
-						+ "        i = ls.stream().filter(l -> (l!=null)).map(l -> {\n"
-						+ "            foo(l);\n"
-						+ "            return l;\n"
-						+ "        }).map(_item -> 1).reduce(i, Integer::sum);\n"
-						+ "        System.out.println(i);\n"
-						+ "        return true;\n"
-						+ "\n"
-						+ "\n"
-						+ "    }    \n"
-						+ "    private void foo(Object o)\n"
-						+ "    {\n"
-						+ "        \n"
-						+ "    }\n"
-						+ "}"),
-		ChainedReducerWithMerging("package test1;\n"
-				+ "\n"
-				+ "import java.util.Arrays;\n"
-				+ "import java.util.List;\n"
-				+ "\n"
-				+ "class TestDemo {\n"
-				+ "\n"
-				+ "    public static void main(String[] args) {\n"
-				+ "        new TestDemo().test(Arrays.asList(1, 2, 3,7));\n"
-				+ "    }\n"
-				+ "\n"
-				+ "   \n"
-				+ "    public Boolean test(List<Integer> ls) {\n"
-				+ "        Integer i=0;\n"
-				+ "        for(Integer l : ls)\n"
-				+ "        {        \n"
-				+ "            String s =l.toString();\n"
-				+ "            System.out.println(s);\n"
-				+ "            foo(l);\n"
-				+ "            if(l!=null)\n"
-				+ "            {\n"
-				+ "                foo(l);                \n"
-				+ "                i--;\n"
-				+ "            }\n"
-				+ "            \n"
-				+ "        }\n"
-				+ "        System.out.println(i);\n"
-				+ "        return true;\n"
-				+ "\n"
-				+ "\n"
-				+ "    }    \n"
-				+ "    private void foo(Object o)\n"
-				+ "    {\n"
-				+ "        \n"
-				+ "    }\n"
-				+ "}",
+			    public void test(List<Integer> ls) {\s\s\s\s\s\s\s\s
+			        for (Integer l : ls) {
+			            if(l!=null)
+			            {
+			                String s = l.toString();
+			                System.out.println(s);
+			            }
+			        }
+			 \s\s\s\s\s\s\s\s\s\s\s
+			 \s\s\s\s\s\s\s
+			    }
+			}""",
 
-				"package test1;\n"
-						+ "\n"
-						+ "import java.util.Arrays;\n"
-						+ "import java.util.List;\n"
-						+ "\n"
-						+ "class TestDemo {\n"
-						+ "\n"
-						+ "    public static void main(String[] args) {\n"
-						+ "        new TestDemo().test(Arrays.asList(1, 2, 3,7));\n"
-						+ "    }\n"
-						+ "\n"
-						+ "   \n"
-						+ "    public Boolean test(List<Integer> ls) {\n"
-						+ "        Integer i=0;\n"
-						+ "        i = ls.stream().map(l -> {        \n"
-						+ "            String s =l.toString();\n"
-						+ "            System.out.println(s);\n"
-						+ "            foo(l);\n"
-						+ "            return l;\n"
-						+ "        }).filter(l -> (l!=null)).map(l -> {\n"
-						+ "            foo(l);\n"
-						+ "            return l;\n"
-						+ "        }).map(_item -> 1).reduce(i, (accumulator, _item) -> accumulator - 1);\n"
-						+ "        System.out.println(i);\n"
-						+ "        return true;\n"
-						+ "\n"
-						+ "\n"
-						+ "    }    \n"
-						+ "    private void foo(Object o)\n"
-						+ "    {\n"
-						+ "        \n"
-						+ "    }\n"
-						+ "}"),
+				"""
+					package test1;
+
+					import java.util.Arrays;
+					import java.util.List;
+
+					class TestDemo {
+
+					    public static void main(String[] args) {
+					        new TestDemo().test(Arrays.asList(1, 2, 3));
+					    }
+
+					    public void test(List<Integer> ls) {\s\s\s\s\s\s\s\s
+					        ls.stream().filter(l -> (l!=null)).map(l -> l.toString()).forEachOrdered(s -> {
+					            System.out.println(s);
+					        });
+					 \s\s\s\s\s\s\s\s\s\s\s
+					 \s\s\s\s\s\s\s
+					    }
+					}"""),
+		SmoothLongerChaining("""
+			package test1;
+
+			import java.util.Arrays;
+			import java.util.List;
+
+			class TestDemo {
+
+			    public static void main(String[] args) {
+			        new TestDemo().test(Arrays.asList(1,2,3));
+			    }
+
+			    public void test(List<Integer> ls) {\s\s\s\s\s\s\s\s
+			        for (Integer a : ls) {
+			            Integer l = new Integer(a.intValue());
+			            if(l!=null)
+			            {
+			                String s = l.toString();
+			                System.out.println(s);
+			            }
+			        }
+			 \s\s\s\s\s\s\s\s\s\s\s
+			 \s\s\s\s\s\s\s
+			    }
+			}""",
+
+				"""
+					package test1;;
+
+					import java.util.Arrays;
+					import java.util.List;
+
+					class TestDemo {
+
+					    public static void main(String[] args) {
+					        new TestDemo().test(Arrays.asList(1,2,3));
+					    }
+
+					    public void test(List<Integer> ls) {\s\s\s\s\s\s\s\s
+					        ls.stream().map(a -> new Integer(a.intValue())).filter(l -> (l!=null)).map(l -> l.toString()).forEachOrdered(s -> {
+					            System.out.println(s);
+					        });
+					 \s\s\s\s\s\s\s\s\s\s\s
+					 \s\s\s\s\s\s\s
+					    }
+					}"""),
+		NonFilteringIfChaining("""
+			package test1;
+
+			import java.util.Arrays;
+			import java.util.List;
+
+			class TestDemo {
+
+			    public static void main(String[] args) {
+			        new TestDemo().test(Arrays.asList(1,2,3));
+			    }
+
+			    public void test(List<Integer> ls) {\s\s\s\s\s\s\s\s
+			        for (Integer a : ls) {
+			            Integer l = new Integer(a.intValue());
+			            if(l!=null)
+			            {\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s
+			                String s = l.toString();
+			                if(s!=null)
+			                    System.out.println(s);
+			                System.out.println("cucu");
+			            }
+			        }
+			 \s\s\s\s\s\s\s\s\s\s\s
+			 \s\s\s\s\s\s\s
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.Arrays;
+					import java.util.List;
+
+					class TestDemo {
+
+					    public static void main(String[] args) {
+					        new TestDemo().test(Arrays.asList(1,2,3));
+					    }
+
+					    public void test(List<Integer> ls) {\s\s\s\s\s\s\s\s
+					        ls.stream().map(a -> new Integer(a.intValue())).filter(l -> (l!=null)).map(l -> l.toString()).map(s -> {
+					            if(s!=null)
+					                System.out.println(s);
+					            return s;
+					        }).forEachOrdered(_item -> {
+					            System.out.println("cucu");
+					        });
+					 \s\s\s\s\s\s\s\s\s\s\s
+					 \s\s\s\s\s\s\s
+					    }
+					}"""),
+		ContinuingIfFilterSingleStatement("""
+			package test1;
+
+			import java.util.Arrays;
+			import java.util.List;
+
+			class TestDemo {
+
+			    public static void main(String[] args) {
+			        new TestDemo().test(Arrays.asList(1, 2, 3));
+			    }
+
+			    public void test(List<Integer> ls) {
+			        for (Integer l : ls) {\s\s\s\s\s\s\s\s\s\s\s\s
+			            if (l == null) {
+			                continue;
+			            }
+			            String s = l.toString();
+			            if (s != null) {
+			                System.out.println(s);
+			            }\s\s\s\s\s
+
+			        }
+
+
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.Arrays;
+					import java.util.List;
+
+					class TestDemo {
+
+					    public static void main(String[] args) {
+					        new TestDemo().test(Arrays.asList(1, 2, 3));
+					    }
+
+					    public void test(List<Integer> ls) {
+					        ls.stream().filter(l -> !(l == null)).map(l -> l.toString()).filter(s -> (s != null)).forEachOrdered(s -> {
+					            System.out.println(s);
+					        });
+
+
+					    }
+					}"""),
+		ChainedAnyMatch("""
+			package test1;
+
+			import java.util.Arrays;
+			import java.util.List;
+
+			class TestDemo {
+
+			    public static void main(String[] args) {
+			        new TestDemo().test(Arrays.asList(1, 2, 3));
+			    }
+
+			    public Boolean test(List<Integer> ls) {
+			        for(Integer l:ls)
+			        {
+			            String s = l.toString();
+			            Object o = foo(s);
+			            if(o==null)
+			                return true;
+			        }
+			 \s\s\s\s\s\s\s
+			        return false;
+
+
+			    }
+			 \s\s\s
+			    Object foo(Object o)
+			    {
+			        return o;
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.Arrays;
+					import java.util.List;
+
+					class TestDemo {
+
+					    public static void main(String[] args) {
+					        new TestDemo().test(Arrays.asList(1, 2, 3));
+					    }
+
+					    public Boolean test(List<Integer> ls) {
+					        if (ls.stream().map(l -> l.toString()).map(s -> foo(s)).anyMatch(o -> (o==null))) {
+					            return true;
+					        }
+					 \s\s\s\s\s\s\s
+					        return false;
+
+
+					    }
+					 \s\s\s
+					    Object foo(Object o)
+					    {
+					        return o;
+					    }
+					}"""),
+		ChainedNoneMatch("""
+			package test1;
+
+			import java.util.Arrays;
+			import java.util.List;
+
+			class TestDemo {
+
+			    public static void main(String[] args) {
+			        new TestDemo().test(Arrays.asList(1, 2, 3));
+			    }
+
+			    public Boolean test(List<Integer> ls) {
+			        for(Integer l:ls)
+			        {
+			            String s = l.toString();
+			            Object o = foo(s);
+			            if(o==null)
+			                return false;
+			        }
+			 \s\s\s\s\s\s\s
+			        return true;
+
+
+			    }
+			 \s\s\s
+			    Object foo(Object o)
+			    {
+			        return o;
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.Arrays;
+					import java.util.List;
+
+					class TestDemo {
+
+					    public static void main(String[] args) {
+					        new TestDemo().test(Arrays.asList(1, 2, 3));
+					    }
+
+					    public Boolean test(List<Integer> ls) {
+					        if (!ls.stream().map(l -> l.toString()).map(s -> foo(s)).noneMatch(o -> (o==null))) {
+					            return false;
+					        }
+					 \s\s\s\s\s\s\s
+					        return true;
+
+
+					    }
+					 \s\s\s
+					    Object foo(Object o)
+					    {
+					        return o;
+					    }
+					}"""),
+		NoNeededVariablesMerging("""
+			package test1;
+
+			import java.util.Arrays;
+			import java.util.List;
+
+			class TestDemo {
+
+			    public static void main(String[] args) throws Exception {
+			        new TestDemo().test(Arrays.asList(1, 2, 3,7));
+			    }
+
+			 \s\s
+			    public Boolean test(List<Integer> ls) throws Exception {
+			        Integer i=0;\s\s\s\s\s\s\s\s
+			        for(Integer l : ls)
+			        {\s\s\s\s\s\s\s\s\s
+			            System.out.println();
+			            System.out.println("");
+			 \s\s\s\s\s\s\s\s\s\s\s
+			        }
+			        System.out.println(i);
+			        return false;
+
+
+			    }\s\s\s\s
+			    private void foo(Object o, int i) throws Exception
+			    {
+			 \s\s\s\s\s\s\s
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.Arrays;
+					import java.util.List;
+
+					class TestDemo {
+
+					    public static void main(String[] args) throws Exception {
+					        new TestDemo().test(Arrays.asList(1, 2, 3,7));
+					    }
+
+					 \s\s
+					    public Boolean test(List<Integer> ls) throws Exception {
+					        Integer i=0;\s\s\s\s\s\s\s\s
+					        ls.stream().map(_item -> {\s\s\s\s\s\s\s\s\s
+					            System.out.println();
+					            return _item;
+					        }).forEachOrdered(_item -> {
+					            System.out.println("");
+					        });
+					        System.out.println(i);
+					        return false;
+
+
+					    }\s\s\s\s
+					    private void foo(Object o, int i) throws Exception
+					    {
+					 \s\s\s\s\s\s\s
+					    }
+					}"""),
+		SomeChainingWithNoNeededVar("""
+			package test1;
+
+			import java.util.Arrays;
+			import java.util.List;
+
+			class TestDemo {
+
+			    public static void main(String[] args) {
+			        new TestDemo().test(Arrays.asList(1, 2, 3));
+			    }
+
+			    public Boolean test(List<Integer> ls) {
+			        for(Integer a:ls)
+			        {
+			            Integer l = new Integer(a.intValue());
+			            if(l==null)
+			            {
+			                String s=l.toString();
+			                if(s!=null)
+			                {
+			                    System.out.println(s);
+			                }
+			                System.out.println("cucu");
+			            }\s\s\s
+			            System.out.println();
+			        }
+			 \s\s\s\s\s\s\s
+			        return true;
+
+
+			    }
+			 \s\s\s\s\s\s\s
+			    Object foo(Object o)
+			    {
+			        return o;
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.Arrays;
+					import java.util.List;
+
+					class TestDemo {
+
+					    public static void main(String[] args) {
+					        new TestDemo().test(Arrays.asList(1, 2, 3));
+					    }
+
+					    public Boolean test(List<Integer> ls) {
+					        ls.stream().map(a -> new Integer(a.intValue())).map(l -> {
+					            if(l==null)
+					            {
+					                String s=l.toString();
+					                if(s!=null)
+					                {
+					                    System.out.println(s);
+					                }
+					                System.out.println("cucu");
+					            }\s\s\s
+					            return l;
+					        }).forEachOrdered(_item -> {
+					            System.out.println();
+					        });
+					 \s\s\s\s\s\s\s
+					        return true;
+
+
+					    }
+					 \s\s\s\s\s\s\s
+					    Object foo(Object o)
+					    {
+					        return o;
+					    }
+					}"""),
+		SimpleReducer("""
+			package test1;
+
+			import java.util.Arrays;
+			import java.util.List;
+
+			class TestDemo {
+
+			    public static void main(String[] args) {
+			        new TestDemo().test(Arrays.asList(1, 2, 3,7));
+			    }
+
+			 \s\s
+			    public Boolean test(List<Integer> ls) {
+			        Integer i=0;
+			        for(Integer l : ls)
+			            i++;
+			        System.out.println(i);
+			        return true;
+
+
+			    }\s\s\s\s
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.Arrays;
+					import java.util.List;
+
+					class TestDemo {
+
+					    public static void main(String[] args) {
+					        new TestDemo().test(Arrays.asList(1, 2, 3,7));
+					    }
+
+					 \s\s
+					    public Boolean test(List<Integer> ls) {
+					        Integer i=0;
+					        i = ls.stream().map(_item -> 1).reduce(i, Integer::sum);
+					        System.out.println(i);
+					        return true;
+
+
+					    }\s\s\s\s
+					}"""),
+		ChainedReducer("""
+			package test1;
+
+			import java.util.Arrays;
+			import java.util.List;
+
+			class TestDemo {
+
+			    public static void main(String[] args) {
+			        new TestDemo().test(Arrays.asList(1, 2, 3,7));
+			    }
+
+			 \s\s
+			    public Boolean test(List<Integer> ls) {
+			        Integer i=0;
+			        for(Integer l : ls)
+			        {\s\s\s\s\s\s\s\s\s\s\s\s\s
+			            if(l!=null)
+			            {
+			                foo(l);
+			                i++;
+			            }
+			 \s\s\s\s\s\s\s\s\s\s\s
+			        }
+			        System.out.println(i);
+			        return true;
+
+
+			    }\s\s\s\s
+			    private void foo(Object o)
+			    {
+			 \s\s\s\s\s\s\s
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.Arrays;
+					import java.util.List;
+
+					class TestDemo {
+
+					    public static void main(String[] args) {
+					        new TestDemo().test(Arrays.asList(1, 2, 3,7));
+					    }
+
+					 \s\s
+					    public Boolean test(List<Integer> ls) {
+					        Integer i=0;
+					        i = ls.stream().filter(l -> (l!=null)).map(l -> {
+					            foo(l);
+					            return l;
+					        }).map(_item -> 1).reduce(i, Integer::sum);
+					        System.out.println(i);
+					        return true;
+
+
+					    }\s\s\s\s
+					    private void foo(Object o)
+					    {
+					 \s\s\s\s\s\s\s
+					    }
+					}"""),
+		ChainedReducerWithMerging("""
+			package test1;
+
+			import java.util.Arrays;
+			import java.util.List;
+
+			class TestDemo {
+
+			    public static void main(String[] args) {
+			        new TestDemo().test(Arrays.asList(1, 2, 3,7));
+			    }
+
+			 \s\s
+			    public Boolean test(List<Integer> ls) {
+			        Integer i=0;
+			        for(Integer l : ls)
+			        {\s\s\s\s\s\s\s\s
+			            String s =l.toString();
+			            System.out.println(s);
+			            foo(l);
+			            if(l!=null)
+			            {
+			                foo(l);\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s
+			                i--;
+			            }
+			 \s\s\s\s\s\s\s\s\s\s\s
+			        }
+			        System.out.println(i);
+			        return true;
+
+
+			    }\s\s\s\s
+			    private void foo(Object o)
+			    {
+			 \s\s\s\s\s\s\s
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.Arrays;
+					import java.util.List;
+
+					class TestDemo {
+
+					    public static void main(String[] args) {
+					        new TestDemo().test(Arrays.asList(1, 2, 3,7));
+					    }
+
+					 \s\s
+					    public Boolean test(List<Integer> ls) {
+					        Integer i=0;
+					        i = ls.stream().map(l -> {\s\s\s\s\s\s\s\s
+					            String s =l.toString();
+					            System.out.println(s);
+					            foo(l);
+					            return l;
+					        }).filter(l -> (l!=null)).map(l -> {
+					            foo(l);
+					            return l;
+					        }).map(_item -> 1).reduce(i, (accumulator, _item) -> accumulator - 1);
+					        System.out.println(i);
+					        return true;
+
+
+					    }\s\s\s\s
+					    private void foo(Object o)
+					    {
+					 \s\s\s\s\s\s\s
+					    }
+					}"""),
 		IncrementReducer("package test1;\n"
 				+ "\n"
 				+ "import java.util.ArrayList;\n"
@@ -906,237 +934,245 @@ public class Java8CleanUpTest {
 						+ "    }\n"
 						+ "}\n"
 						+ ""),
-		MergingOperations("package test1;\n"
-				+ "\n"
-				+ "import java.util.ArrayList;\n"
-				+ "import java.util.List;\n"
-				+ "\n"
-				+ "/**\n"
-				+ " *\n"
-				+ " * @author alexandrugyori\n"
-				+ " */\n"
-				+ "class JavaApplication1 {\n"
-				+ "\n"
-				+ "    /**\n"
-				+ "     * @param args the command line arguments\n"
-				+ "     */\n"
-				+ "    public boolean b() {\n"
-				+ "        // TODO code application logic here\n"
-				+ "        List<String> strs = new ArrayList<String>();\n"
-				+ "        int i = 0;\n"
-				+ "        int j = 0;\n"
-				+ "        for(String str: strs)\n"
-				+ "        {            \n"
-				+ "            int len1=str.length();\n"
-				+ "            int len2 = str.length();\n"
-				+ "            if(len1%2==0){\n"
-				+ "                len2++;\n"
-				+ "                System.out.println(len2);\n"
-				+ "                System.out.println();\n"
-				+ "            }\n"
-				+ "            \n"
-				+ "        }\n"
-				+ "        return false;\n"
-				+ "        \n"
-				+ "    }\n"
-				+ "}",
+		MergingOperations("""
+			package test1;
 
-				"package test1;\n"
-						+ "\n"
-						+ "import java.util.ArrayList;\n"
-						+ "import java.util.List;\n"
-						+ "\n"
-						+ "/**\n"
-						+ " *\n"
-						+ " * @author alexandrugyori\n"
-						+ " */\n"
-						+ "class JavaApplication1 {\n"
-						+ "\n"
-						+ "    /**\n"
-						+ "     * @param args the command line arguments\n"
-						+ "     */\n"
-						+ "    public boolean b() {\n"
-						+ "        // TODO code application logic here\n"
-						+ "        List<String> strs = new ArrayList<String>();\n"
-						+ "        int i = 0;\n"
-						+ "        int j = 0;\n"
-						+ "        strs.forEach(str -> {            \n"
-						+ "            int len1=str.length();\n"
-						+ "            int len2 = str.length();\n"
-						+ "            if (len1%2==0) {\n"
-						+ "                len2++;\n"
-						+ "                System.out.println(len2);\n"
-						+ "                System.out.println();\n"
-						+ "            }\n"
-						+ "        });\n"
-						+ "        return false;\n"
-						+ "        \n"
-						+ "    }\n"
-						+ "}"),
-		BeautificationWorks("package test1;\n"
-				+ "\n"
-				+ "import java.util.ArrayList;\n"
-				+ "import java.util.List;\n"
-				+ "\n"
-				+ "/**\n"
-				+ " *\n"
-				+ " * @author alexandrugyori\n"
-				+ " */\n"
-				+ "class JavaApplication1 {\n"
-				+ "\n"
-				+ "    /**\n"
-				+ "     * @param args the command line arguments\n"
-				+ "     */\n"
-				+ "    public boolean b() {\n"
-				+ "        // TODO code application logic here\n"
-				+ "        List<String> strs = new ArrayList<String>();\n"
-				+ "        int i = 0;\n"
-				+ "        int j = 0;\n"
-				+ "        for(String str: strs)\n"
-				+ "        {            \n"
-				+ "            String s = \"foo\";\n"
-				+ "            s=s.toString();\n"
-				+ "            System.out.println(s);\n"
-				+ "            \n"
-				+ "        }\n"
-				+ "        return false;\n"
-				+ "        \n"
-				+ "    }\n"
-				+ "}",
+			import java.util.ArrayList;
+			import java.util.List;
 
-				"package test1;\n"
-						+ "\n"
-						+ "import java.util.ArrayList;\n"
-						+ "import java.util.List;\n"
-						+ "\n"
-						+ "/**\n"
-						+ " *\n"
-						+ " * @author alexandrugyori\n"
-						+ " */\n"
-						+ "class JavaApplication1 {\n"
-						+ "\n"
-						+ "    /**\n"
-						+ "     * @param args the command line arguments\n"
-						+ "     */\n"
-						+ "    public boolean b() {\n"
-						+ "        // TODO code application logic here\n"
-						+ "        List<String> strs = new ArrayList<String>();\n"
-						+ "        int i = 0;\n"
-						+ "        int j = 0;\n"
-						+ "        strs.stream().map(_item -> \"foo\").map(s -> s.toString()).forEachOrdered(s -> {\n"
-						+ "            System.out.println(s);\n"
-						+ "        });\n"
-						+ "        return false;\n"
-						+ "        \n"
-						+ "    }\n"
-						+ "}"),
-		BeautificationWorks2("package test1;\n"
-				+ "\n"
-				+ "import java.util.ArrayList;\n"
-				+ "import java.util.List;\n"
-				+ "\n"
-				+ "/**\n"
-				+ " *\n"
-				+ " * @author alexandrugyori\n"
-				+ " */\n"
-				+ "class JavaApplication1 {\n"
-				+ "\n"
-				+ "    /**\n"
-				+ "     * @param args the command line arguments\n"
-				+ "     */\n"
-				+ "    public boolean b() {\n"
-				+ "        // TODO code application logic here\n"
-				+ "        List<String> strs = new ArrayList<String>();\n"
-				+ "        int i = 0;\n"
-				+ "        int j = 0;\n"
-				+ "        for(String str: strs)\n"
-				+ "        {            \n"
-				+ "            String s = \"foo\";\n"
-				+ "            s=s.toString();\n"
-				+ "            System.out.println();\n"
-				+ "            \n"
-				+ "        }\n"
-				+ "        return false;\n"
-				+ "        \n"
-				+ "    }\n"
-				+ "}",
+			/**
+			 *
+			 * @author alexandrugyori
+			 */
+			class JavaApplication1 {
 
-				"package test1;\n"
-						+ "\n"
-						+ "import java.util.ArrayList;\n"
-						+ "import java.util.List;\n"
-						+ "\n"
-						+ "/**\n"
-						+ " *\n"
-						+ " * @author alexandrugyori\n"
-						+ " */\n"
-						+ "class JavaApplication1 {\n"
-						+ "\n"
-						+ "    /**\n"
-						+ "     * @param args the command line arguments\n"
-						+ "     */\n"
-						+ "    public boolean b() {\n"
-						+ "        // TODO code application logic here\n"
-						+ "        List<String> strs = new ArrayList<String>();\n"
-						+ "        int i = 0;\n"
-						+ "        int j = 0;\n"
-						+ "        strs.stream().map(_item -> \"foo\").map(s -> s.toString()).forEachOrdered(_item -> {\n"
-						+ "            System.out.println();\n"
-						+ "        });\n"
-						+ "        return false;\n"
-						+ "        \n"
-						+ "    }\n"
-						+ "}"),
-		DecrementingReducer("package test1;\n"
-				+ "\n"
-				+ "import java.util.ArrayList;\n"
-				+ "import java.util.List;\n"
-				+ "\n"
-				+ "/**\n"
-				+ " *\n"
-				+ " * @author alexandrugyori\n"
-				+ " */\n"
-				+ "class JavaApplication1 {\n"
-				+ "\n"
-				+ "    /**\n"
-				+ "     * @param args the command line arguments\n"
-				+ "     */\n"
-				+ "    public boolean b() {\n"
-				+ "        // TODO code application logic here\n"
-				+ "        List<String> strs = new ArrayList<String>();\n"
-				+ "        int i = 0;\n"
-				+ "        int j = 0;\n"
-				+ "        for(String str : strs)\n"
-				+ "            i-=1;\n"
-				+ "        return false;\n"
-				+ "        \n"
-				+ "    }\n"
-				+ "}",
+			    /**
+			     * @param args the command line arguments
+			     */
+			    public boolean b() {
+			        // TODO code application logic here
+			        List<String> strs = new ArrayList<String>();
+			        int i = 0;
+			        int j = 0;
+			        for(String str: strs)
+			        {\s\s\s\s\s\s\s\s\s\s\s\s
+			            int len1=str.length();
+			            int len2 = str.length();
+			            if(len1%2==0){
+			                len2++;
+			                System.out.println(len2);
+			                System.out.println();
+			            }
+			 \s\s\s\s\s\s\s\s\s\s\s
+			        }
+			        return false;
+			 \s\s\s\s\s\s\s
+			    }
+			}""",
 
-				"package test1;\n"
-						+ "\n"
-						+ "import java.util.ArrayList;\n"
-						+ "import java.util.List;\n"
-						+ "\n"
-						+ "/**\n"
-						+ " *\n"
-						+ " * @author alexandrugyori\n"
-						+ " */\n"
-						+ "class JavaApplication1 {\n"
-						+ "\n"
-						+ "    /**\n"
-						+ "     * @param args the command line arguments\n"
-						+ "     */\n"
-						+ "    public boolean b() {\n"
-						+ "        // TODO code application logic here\n"
-						+ "        List<String> strs = new ArrayList<String>();\n"
-						+ "        int i = 0;\n"
-						+ "        int j = 0;\n"
-						+ "        i = strs.stream().map(_item -> 1).reduce(i, (accumulator, _item) -> accumulator - _item);\n"
-						+ "        return false;\n"
-						+ "        \n"
-						+ "    }\n"
-						+ "}");
+				"""
+					package test1;
+
+					import java.util.ArrayList;
+					import java.util.List;
+
+					/**
+					 *
+					 * @author alexandrugyori
+					 */
+					class JavaApplication1 {
+
+					    /**
+					     * @param args the command line arguments
+					     */
+					    public boolean b() {
+					        // TODO code application logic here
+					        List<String> strs = new ArrayList<String>();
+					        int i = 0;
+					        int j = 0;
+					        strs.forEach(str -> {\s\s\s\s\s\s\s\s\s\s\s\s
+					            int len1=str.length();
+					            int len2 = str.length();
+					            if (len1%2==0) {
+					                len2++;
+					                System.out.println(len2);
+					                System.out.println();
+					            }
+					        });
+					        return false;
+					 \s\s\s\s\s\s\s
+					    }
+					}"""),
+		BeautificationWorks("""
+			package test1;
+
+			import java.util.ArrayList;
+			import java.util.List;
+
+			/**
+			 *
+			 * @author alexandrugyori
+			 */
+			class JavaApplication1 {
+
+			    /**
+			     * @param args the command line arguments
+			     */
+			    public boolean b() {
+			        // TODO code application logic here
+			        List<String> strs = new ArrayList<String>();
+			        int i = 0;
+			        int j = 0;
+			        for(String str: strs)
+			        {\s\s\s\s\s\s\s\s\s\s\s\s
+			            String s = "foo";
+			            s=s.toString();
+			            System.out.println(s);
+			 \s\s\s\s\s\s\s\s\s\s\s
+			        }
+			        return false;
+			 \s\s\s\s\s\s\s
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.ArrayList;
+					import java.util.List;
+
+					/**
+					 *
+					 * @author alexandrugyori
+					 */
+					class JavaApplication1 {
+
+					    /**
+					     * @param args the command line arguments
+					     */
+					    public boolean b() {
+					        // TODO code application logic here
+					        List<String> strs = new ArrayList<String>();
+					        int i = 0;
+					        int j = 0;
+					        strs.stream().map(_item -> "foo").map(s -> s.toString()).forEachOrdered(s -> {
+					            System.out.println(s);
+					        });
+					        return false;
+					 \s\s\s\s\s\s\s
+					    }
+					}"""),
+		BeautificationWorks2("""
+			package test1;
+
+			import java.util.ArrayList;
+			import java.util.List;
+
+			/**
+			 *
+			 * @author alexandrugyori
+			 */
+			class JavaApplication1 {
+
+			    /**
+			     * @param args the command line arguments
+			     */
+			    public boolean b() {
+			        // TODO code application logic here
+			        List<String> strs = new ArrayList<String>();
+			        int i = 0;
+			        int j = 0;
+			        for(String str: strs)
+			        {\s\s\s\s\s\s\s\s\s\s\s\s
+			            String s = "foo";
+			            s=s.toString();
+			            System.out.println();
+			 \s\s\s\s\s\s\s\s\s\s\s
+			        }
+			        return false;
+			 \s\s\s\s\s\s\s
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.ArrayList;
+					import java.util.List;
+
+					/**
+					 *
+					 * @author alexandrugyori
+					 */
+					class JavaApplication1 {
+
+					    /**
+					     * @param args the command line arguments
+					     */
+					    public boolean b() {
+					        // TODO code application logic here
+					        List<String> strs = new ArrayList<String>();
+					        int i = 0;
+					        int j = 0;
+					        strs.stream().map(_item -> "foo").map(s -> s.toString()).forEachOrdered(_item -> {
+					            System.out.println();
+					        });
+					        return false;
+					 \s\s\s\s\s\s\s
+					    }
+					}"""),
+		DecrementingReducer("""
+			package test1;
+
+			import java.util.ArrayList;
+			import java.util.List;
+
+			/**
+			 *
+			 * @author alexandrugyori
+			 */
+			class JavaApplication1 {
+
+			    /**
+			     * @param args the command line arguments
+			     */
+			    public boolean b() {
+			        // TODO code application logic here
+			        List<String> strs = new ArrayList<String>();
+			        int i = 0;
+			        int j = 0;
+			        for(String str : strs)
+			            i-=1;
+			        return false;
+			 \s\s\s\s\s\s\s
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.ArrayList;
+					import java.util.List;
+
+					/**
+					 *
+					 * @author alexandrugyori
+					 */
+					class JavaApplication1 {
+
+					    /**
+					     * @param args the command line arguments
+					     */
+					    public boolean b() {
+					        // TODO code application logic here
+					        List<String> strs = new ArrayList<String>();
+					        int i = 0;
+					        int j = 0;
+					        i = strs.stream().map(_item -> 1).reduce(i, (accumulator, _item) -> accumulator - _item);
+					        return false;
+					 \s\s\s\s\s\s\s
+					    }
+					}""");
 
 		UseFunctionalLoop(String given, String expected) {
 			this.given=given;
@@ -1159,454 +1195,428 @@ public class Java8CleanUpTest {
 	@Disabled
 	@ParameterizedTest
 	@ValueSource(strings = {
-			/**
-			 * WithArrays
-			 */
-			"package testdemo;\n"
-			+ "\n"
-			+ "import java.util.ArrayList;\n"
-			+ "import java.util.List;\n"
-			+ "\n"
-			+ "/**\n"
-			+ " *\n"
-			+ " * @author alexandrugyori\n"
-			+ " */\n"
-			+ "class TestDemo {\n"
-			+ "\n"
-			+ "    /**\n"
-			+ "     * @param args the command line arguments\n"
-			+ "     */\n"
-			+ "    public boolean b() {\n"
-			+ "        // TODO code application logic here\n"
-			+ "        String[] strs = new String[10];\n"
-			+ "        int i = 0;\n"
-			+ "        int j = 0;\n"
-			+ "        for(String str:strs)\n"
-			+ "            i++;\n"
-			+ "        return false;\n"
-			+ "        \n"
-			+ "    }\n"
-			+ "}",
+			"""
+				package testdemo;
 
-			/**
-			 * NoHintDueToNEF
-			 */
-			"package testdemo;\n"
-			+ "\n"
-			+ "import java.util.Arrays;\n"
-			+ "import java.util.List;\n"
-			+ "\n"
-			+ "class TestDemo {\n"
-			+ "\n"
-			+ "    public static void main(String[] args) {\n"
-			+ "        new TestDemo().test(Arrays.asList(1, 2, 3,7));\n"
-			+ "    }\n"
-			+ "\n"
-			+ "   \n"
-			+ "    public Boolean test(List<Integer> ls) {\n"
-			+ "        Integer i=0;\n"
-			+ "        for(Integer l : ls)\n"
-			+ "        {        \n"
-			+ "            String s =l.toString();\n"
-			+ "            System.out.println(s);\n"
-			+ "            foo(l,i);            \n"
-			+ "            if(l!=null)\n"
-			+ "            {                           \n"
-			+ "                i++;\n"
-			+ "            }\n"
-			+ "            \n"
-			+ "        }\n"
-			+ "        System.out.println(i);\n"
-			+ "        return true;\n"
-			+ "\n"
-			+ "\n"
-			+ "    }    \n"
-			+ "    private void foo(Object o, int i)\n"
-			+ "    {\n"
-			+ "        \n"
-			+ "    }\n"
-			+ "}",
+				import java.util.ArrayList;
+				import java.util.List;
 
-			/**
-			 * NoHintDueToBreak
-			 */
-			"package testdemo;\n"
-			+ "\n"
-			+ "import java.util.Arrays;\n"
-			+ "import java.util.List;\n"
-			+ "\n"
-			+ "class TestDemo {\n"
-			+ "\n"
-			+ "    public static void main(String[] args) {\n"
-			+ "        new TestDemo().test(Arrays.asList(1, 2, 3,7));\n"
-			+ "    }\n"
-			+ "\n"
-			+ "   \n"
-			+ "    public Boolean test(List<Integer> ls) {\n"
-			+ "        Integer i=0;\n"
-			+ "        for(Integer l : ls)\n"
-			+ "        {                      \n"
-			+ "            if(l!=null)\n"
-			+ "            {                           \n"
-			+ "                break;\n"
-			+ "            }\n"
-			+ "            \n"
-			+ "        }\n"
-			+ "        System.out.println(i);\n"
-			+ "        return true;\n"
-			+ "\n"
-			+ "\n"
-			+ "    }    \n"
-			+ "    private void foo(Object o, int i)\n"
-			+ "    {\n"
-			+ "        \n"
-			+ "    }\n"
-			+ "}",
+				/**
+				 *
+				 * @author alexandrugyori
+				 */
+				class TestDemo {
 
-			/**
-			 * NoHintDueToReturnInt
-			 */
-			"package testdemo;\n"
-			+ "\n"
-			+ "import java.util.Arrays;\n"
-			+ "import java.util.List;\n"
-			+ "\n"
-			+ "class TestDemo {\n"
-			+ "\n"
-			+ "    public static void main(String[] args) {\n"
-			+ "        new TestDemo().test(Arrays.asList(1, 2, 3,7));\n"
-			+ "    }\n"
-			+ "\n"
-			+ "   \n"
-			+ "    public int test(List<Integer> ls) {\n"
-			+ "        Integer i=0;\n"
-			+ "        for(Integer l : ls)\n"
-			+ "        {                      \n"
-			+ "            if(l!=null)\n"
-			+ "            {                           \n"
-			+ "                return 0;\n"
-			+ "            }\n"
-			+ "            \n"
-			+ "        }\n"
-			+ "        System.out.println(i);\n"
-			+ "        return 1;\n"
-			+ "\n"
-			+ "\n"
-			+ "    }    \n"
-			+ "    private void foo(Object o, int i)\n"
-			+ "    {\n"
-			+ "        \n"
-			+ "    }\n"
-			+ "}",
+				    /**
+				     * @param args the command line arguments
+				     */
+				    public boolean b() {
+				        // TODO code application logic here
+				        String[] strs = new String[10];
+				        int i = 0;
+				        int j = 0;
+				        for(String str:strs)
+				            i++;
+				        return false;
+				 \s\s\s\s\s\s\s
+				    }
+				}""",
 
-			/**
-			 * NoHintDueToMultipleReturnBoolean
-			 */
-			"package testdemo;\n"
-			+ "\n"
-			+ "import java.util.Arrays;\n"
-			+ "import java.util.List;\n"
-			+ "\n"
-			+ "class TestDemo {\n"
-			+ "\n"
-			+ "    public static void main(String[] args) {\n"
-			+ "        new TestDemo().test(Arrays.asList(1, 2, 3,7));\n"
-			+ "    }\n"
-			+ "\n"
-			+ "   \n"
-			+ "    public Boolean test(List<Integer> ls) {\n"
-			+ "        Integer i=0;\n"
-			+ "        for(Integer l : ls)\n"
-			+ "        {                      \n"
-			+ "            if(l==null)\n"
-			+ "            {                           \n"
-			+ "                return true;\n"
-			+ "            }\n"
-			+ "            if(l.toString()==null)\n"
-			+ "                return true;\n"
-			+ "            \n"
-			+ "        }\n"
-			+ "        System.out.println(i);\n"
-			+ "        return false;\n"
-			+ "\n"
-			+ "\n"
-			+ "    }    \n"
-			+ "    private void foo(Object o, int i)\n"
-			+ "    {\n"
-			+ "        \n"
-			+ "    }\n"
-			+ "}",
+			"""
+				package testdemo;
 
-			/**
-			 * NoHintDueToLabeledContinue
-			 */
-			"package testdemo;\n"
-			+ "\n"
-			+ "import java.util.Arrays;\n"
-			+ "import java.util.List;\n"
-			+ "\n"
-			+ "class TestDemo {\n"
-			+ "\n"
-			+ "    public static void main(String[] args) {\n"
-			+ "        new TestDemo().test(Arrays.asList(1, 2, 3,7));\n"
-			+ "    }\n"
-			+ "\n"
-			+ "   \n"
-			+ "    public Boolean test(List<Integer> ls) {\n"
-			+ "        Integer i=0;\n"
-			+ "        label:\n"
-			+ "        for(Integer l : ls)\n"
-			+ "        {                      \n"
-			+ "            if(l==null)\n"
-			+ "            {                           \n"
-			+ "                continue label;\n"
-			+ "            }\n"
-			+ "            if(l.toString()==null)\n"
-			+ "                return true;\n"
-			+ "            \n"
-			+ "        }\n"
-			+ "        System.out.println(i);\n"
-			+ "        return false;\n"
-			+ "\n"
-			+ "\n"
-			+ "    }    \n"
-			+ "    private void foo(Object o, int i)\n"
-			+ "    {\n"
-			+ "        \n"
-			+ "    }\n"
-			+ "}",
+				import java.util.Arrays;
+				import java.util.List;
 
-			/**
-			 * NoHintDueToNonEliminableContinue
-			 */
-			"package testdemo;\n"
-			+ "\n"
-			+ "import java.util.Arrays;\n"
-			+ "import java.util.List;\n"
-			+ "\n"
-			+ "class TestDemo {\n"
-			+ "\n"
-			+ "    public static void main(String[] args) {\n"
-			+ "        new TestDemo().test(Arrays.asList(1, 2, 3,7));\n"
-			+ "    }\n"
-			+ "\n"
-			+ "   \n"
-			+ "    public Boolean test(List<Integer> ls) {\n"
-			+ "        Integer i=0;\n"
-			+ "        \n"
-			+ "        for(Integer l : ls)\n"
-			+ "        {                      \n"
-			+ "            if(l==null)\n"
-			+ "            {                           \n"
-			+ "                continue;\n"
-			+ "            }\n"
-			+ "            else if(l.toString()==null)\n"
-			+ "                return true;\n"
-			+ "            \n"
-			+ "        }\n"
-			+ "        System.out.println(i);\n"
-			+ "        return false;\n"
-			+ "\n"
-			+ "\n"
-			+ "    }    \n"
-			+ "    private void foo(Object o, int i)\n"
-			+ "    {\n"
-			+ "        \n"
-			+ "    }\n"
-			+ "}",
+				class TestDemo {
 
-			/**
-			 * NoHintDueToMethodThrowingException
-			 */
-			"package testdemo;\n"
-			+ "\n"
-			+ "import java.util.Arrays;\n"
-			+ "import java.util.List;\n"
-			+ "\n"
-			+ "class TestDemo {\n"
-			+ "\n"
-			+ "    public static void main(String[] args) throws Exception {\n"
-			+ "        new TestDemo().test(Arrays.asList(1, 2, 3,7));\n"
-			+ "    }\n"
-			+ "\n"
-			+ "   \n"
-			+ "    public Boolean test(List<Integer> ls) throws Exception {\n"
-			+ "        Integer i=0;\n"
-			+ "        \n"
-			+ "        for(Integer l : ls)\n"
-			+ "        {         \n"
-			+ "            foo(l,1);\n"
-			+ "            if(l==null)\n"
-			+ "            {                           \n"
-			+ "                continue;\n"
-			+ "            }\n"
-			+ "            else if(l.toString()==null)\n"
-			+ "                return true;\n"
-			+ "            \n"
-			+ "        }\n"
-			+ "        System.out.println(i);\n"
-			+ "        return false;\n"
-			+ "\n"
-			+ "\n"
-			+ "    }    \n"
-			+ "    private void foo(Object o, int i) throws Exception\n"
-			+ "    {\n"
-			+ "        \n"
-			+ "    }\n"
-			+ "}"
+				    public static void main(String[] args) {
+				        new TestDemo().test(Arrays.asList(1, 2, 3,7));
+				    }
+
+				 \s\s
+				    public Boolean test(List<Integer> ls) {
+				        Integer i=0;
+				        for(Integer l : ls)
+				        {\s\s\s\s\s\s\s\s
+				            String s =l.toString();
+				            System.out.println(s);
+				            foo(l,i);\s\s\s\s\s\s\s\s\s\s\s\s
+				            if(l!=null)
+				            {\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s
+				                i++;
+				            }
+				 \s\s\s\s\s\s\s\s\s\s\s
+				        }
+				        System.out.println(i);
+				        return true;
+
+
+				    }\s\s\s\s
+				    private void foo(Object o, int i)
+				    {
+				 \s\s\s\s\s\s\s
+				    }
+				}""",
+
+			"""
+				package testdemo;
+
+				import java.util.Arrays;
+				import java.util.List;
+
+				class TestDemo {
+
+				    public static void main(String[] args) {
+				        new TestDemo().test(Arrays.asList(1, 2, 3,7));
+				    }
+
+				 \s\s
+				    public Boolean test(List<Integer> ls) {
+				        Integer i=0;
+				        for(Integer l : ls)
+				        {\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s
+				            if(l!=null)
+				            {\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s
+				                break;
+				            }
+				 \s\s\s\s\s\s\s\s\s\s\s
+				        }
+				        System.out.println(i);
+				        return true;
+
+
+				    }\s\s\s\s
+				    private void foo(Object o, int i)
+				    {
+				 \s\s\s\s\s\s\s
+				    }
+				}""",
+
+			"""
+				package testdemo;
+
+				import java.util.Arrays;
+				import java.util.List;
+
+				class TestDemo {
+
+				    public static void main(String[] args) {
+				        new TestDemo().test(Arrays.asList(1, 2, 3,7));
+				    }
+
+				 \s\s
+				    public int test(List<Integer> ls) {
+				        Integer i=0;
+				        for(Integer l : ls)
+				        {\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s
+				            if(l!=null)
+				            {\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s
+				                return 0;
+				            }
+				 \s\s\s\s\s\s\s\s\s\s\s
+				        }
+				        System.out.println(i);
+				        return 1;
+
+
+				    }\s\s\s\s
+				    private void foo(Object o, int i)
+				    {
+				 \s\s\s\s\s\s\s
+				    }
+				}""",
+
+			"""
+				package testdemo;
+
+				import java.util.Arrays;
+				import java.util.List;
+
+				class TestDemo {
+
+				    public static void main(String[] args) {
+				        new TestDemo().test(Arrays.asList(1, 2, 3,7));
+				    }
+
+				 \s\s
+				    public Boolean test(List<Integer> ls) {
+				        Integer i=0;
+				        for(Integer l : ls)
+				        {\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s
+				            if(l==null)
+				            {\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s
+				                return true;
+				            }
+				            if(l.toString()==null)
+				                return true;
+				 \s\s\s\s\s\s\s\s\s\s\s
+				        }
+				        System.out.println(i);
+				        return false;
+
+
+				    }\s\s\s\s
+				    private void foo(Object o, int i)
+				    {
+				 \s\s\s\s\s\s\s
+				    }
+				}""",
+
+			"""
+				package testdemo;
+
+				import java.util.Arrays;
+				import java.util.List;
+
+				class TestDemo {
+
+				    public static void main(String[] args) {
+				        new TestDemo().test(Arrays.asList(1, 2, 3,7));
+				    }
+
+				 \s\s
+				    public Boolean test(List<Integer> ls) {
+				        Integer i=0;
+				        label:
+				        for(Integer l : ls)
+				        {\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s
+				            if(l==null)
+				            {\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s
+				                continue label;
+				            }
+				            if(l.toString()==null)
+				                return true;
+				 \s\s\s\s\s\s\s\s\s\s\s
+				        }
+				        System.out.println(i);
+				        return false;
+
+
+				    }\s\s\s\s
+				    private void foo(Object o, int i)
+				    {
+				 \s\s\s\s\s\s\s
+				    }
+				}""",
+
+			"""
+				package testdemo;
+
+				import java.util.Arrays;
+				import java.util.List;
+
+				class TestDemo {
+
+				    public static void main(String[] args) {
+				        new TestDemo().test(Arrays.asList(1, 2, 3,7));
+				    }
+
+				 \s\s
+				    public Boolean test(List<Integer> ls) {
+				        Integer i=0;
+				 \s\s\s\s\s\s\s
+				        for(Integer l : ls)
+				        {\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s
+				            if(l==null)
+				            {\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s
+				                continue;
+				            }
+				            else if(l.toString()==null)
+				                return true;
+				 \s\s\s\s\s\s\s\s\s\s\s
+				        }
+				        System.out.println(i);
+				        return false;
+
+
+				    }\s\s\s\s
+				    private void foo(Object o, int i)
+				    {
+				 \s\s\s\s\s\s\s
+				    }
+				}""",
+
+			"""
+				package testdemo;
+
+				import java.util.Arrays;
+				import java.util.List;
+
+				class TestDemo {
+
+				    public static void main(String[] args) throws Exception {
+				        new TestDemo().test(Arrays.asList(1, 2, 3,7));
+				    }
+
+				 \s\s
+				    public Boolean test(List<Integer> ls) throws Exception {
+				        Integer i=0;
+				 \s\s\s\s\s\s\s
+				        for(Integer l : ls)
+				        {\s\s\s\s\s\s\s\s\s
+				            foo(l,1);
+				            if(l==null)
+				            {\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s
+				                continue;
+				            }
+				            else if(l.toString()==null)
+				                return true;
+				 \s\s\s\s\s\s\s\s\s\s\s
+				        }
+				        System.out.println(i);
+				        return false;
+
+
+				    }\s\s\s\s
+				    private void foo(Object o, int i) throws Exception
+				    {
+				 \s\s\s\s\s\s\s
+				    }
+				}"""
 			,
 
-			/**
-			 * NoHintDueToExplicitThrow
-			 */
-			"package testdemo;\n"
-			+ "\n"
-			+ "import java.util.Arrays;\n"
-			+ "import java.util.List;\n"
-			+ "\n"
-			+ "class TestDemo {\n"
-			+ "\n"
-			+ "    public static void main(String[] args) throws Exception {\n"
-			+ "        new TestDemo().test(Arrays.asList(1, 2, 3,7));\n"
-			+ "    }\n"
-			+ "\n"
-			+ "   \n"
-			+ "    public Boolean test(List<Integer> ls) throws Exception {\n"
-			+ "        Integer i=0;\n"
-			+ "        \n"
-			+ "        for(Integer l : ls)\n"
-			+ "        {         \n"
-			+ "            throw new Exception();            \n"
-			+ "            \n"
-			+ "        }\n"
-			+ "        System.out.println(i);\n"
-			+ "        return false;\n"
-			+ "\n"
-			+ "\n"
-			+ "    }    \n"
-			+ "    private void foo(Object o, int i) throws Exception\n"
-			+ "    {\n"
-			+ "        \n"
-			+ "    }\n"
-			+ "}"
+			"""
+				package testdemo;
+
+				import java.util.Arrays;
+				import java.util.List;
+
+				class TestDemo {
+
+				    public static void main(String[] args) throws Exception {
+				        new TestDemo().test(Arrays.asList(1, 2, 3,7));
+				    }
+
+				 \s\s
+				    public Boolean test(List<Integer> ls) throws Exception {
+				        Integer i=0;
+				 \s\s\s\s\s\s\s
+				        for(Integer l : ls)
+				        {\s\s\s\s\s\s\s\s\s
+				            throw new Exception();\s\s\s\s\s\s\s\s\s\s\s\s
+				 \s\s\s\s\s\s\s\s\s\s\s
+				        }
+				        System.out.println(i);
+				        return false;
+
+
+				    }\s\s\s\s
+				    private void foo(Object o, int i) throws Exception
+				    {
+				 \s\s\s\s\s\s\s
+				    }
+				}"""
 			,
 
-			/**
-			 * NPEForReturnWithExpressions
-			 */
-			"package testdemo;\n" +
-			"import java.util.List;" +
-			"class TestDemo {\n" +
-			"    public void test(List<Integer> ls) throws Exception {\n" +
-			"        for(Integer l : ls) {\n" +
-			"            return ;\n" +
-			"        }\n" +
-			"    }\n" +
-			"}",
+			"""
+				package testdemo;
+				import java.util.List;\
+				class TestDemo {
+				    public void test(List<Integer> ls) throws Exception {
+				        for(Integer l : ls) {
+				            return ;
+				        }
+				    }
+				}""",
 
-			/**
-			 * NoHintDueToReducers
-			 */
-			"package testdemo;\n"
-			+ "\n"
-			+ "import java.util.ArrayList;\n"
-			+ "import java.util.List;\n"
-			+ "\n"
-			+ "/**\n"
-			+ " *\n"
-			+ " * @author alexandrugyori\n"
-			+ " */\n"
-			+ "class TestDemo {\n"
-			+ "\n"
-			+ "    /**\n"
-			+ "     * @param args the command line arguments\n"
-			+ "     */\n"
-			+ "    public static void main(String[] args) {\n"
-			+ "        // TODO code application logic here\n"
-			+ "        List<String> strs = new ArrayList<String>();\n"
-			+ "        int i = 0;\n"
-			+ "        int j = 0;\n"
-			+ "        for(String str: strs)\n"
-			+ "        {\n"
-			+ "            if(str!=null){\n"
-			+ "                str.toString();\n"
-			+ "            i++;\n"
-			+ "            j++;\n"
-			+ "            }\n"
-			+ "            //j++;\n"
-			+ "        }\n"
-			+ "        \n"
-			+ "    }\n"
-			+ "}"
+			"""
+				package testdemo;
+
+				import java.util.ArrayList;
+				import java.util.List;
+
+				/**
+				 *
+				 * @author alexandrugyori
+				 */
+				class TestDemo {
+
+				    /**
+				     * @param args the command line arguments
+				     */
+				    public static void main(String[] args) {
+				        // TODO code application logic here
+				        List<String> strs = new ArrayList<String>();
+				        int i = 0;
+				        int j = 0;
+				        for(String str: strs)
+				        {
+				            if(str!=null){
+				                str.toString();
+				            i++;
+				            j++;
+				            }
+				            //j++;
+				        }
+				 \s\s\s\s\s\s\s
+				    }
+				}"""
 			,
 
-			/**
-			 * NoHintDueToReturningIf
-			 */
-			"package testdemo;\n"
-			+ "\n"
-			+ "import java.util.ArrayList;\n"
-			+ "import java.util.List;\n"
-			+ "\n"
-			+ "/**\n"
-			+ " *\n"
-			+ " * @author alexandrugyori\n"
-			+ " */\n"
-			+ "class TestDemo {\n"
-			+ "\n"
-			+ "    /**\n"
-			+ "     * @param args the command line arguments\n"
-			+ "     */\n"
-			+ "    public boolean b() {\n"
-			+ "        // TODO code application logic here\n"
-			+ "        List<String> strs = new ArrayList<String>();\n"
-			+ "        int i = 0;\n"
-			+ "        int j = 0;\n"
-			+ "        for(String str: strs)\n"
-			+ "        {            \n"
-			+ "            if(str!=null){\n"
-			+ "                return true;\n"
-			+ "            }\n"
-			+ "            System.out.println(\"gugu\");\n"
-			+ "        }\n"
-			+ "        return false;\n"
-			+ "        \n"
-			+ "    }\n"
-			+ "}"
+			"""
+				package testdemo;
+
+				import java.util.ArrayList;
+				import java.util.List;
+
+				/**
+				 *
+				 * @author alexandrugyori
+				 */
+				class TestDemo {
+
+				    /**
+				     * @param args the command line arguments
+				     */
+				    public boolean b() {
+				        // TODO code application logic here
+				        List<String> strs = new ArrayList<String>();
+				        int i = 0;
+				        int j = 0;
+				        for(String str: strs)
+				        {\s\s\s\s\s\s\s\s\s\s\s\s
+				            if(str!=null){
+				                return true;
+				            }
+				            System.out.println("gugu");
+				        }
+				        return false;
+				 \s\s\s\s\s\s\s
+				    }
+				}"""
 			,
 
-			/**
-			 * NoHintDueToReturnNothing
-			 */
-			"package testdemo;\n"
-			+ "\n"
-			+ "import java.util.ArrayList;\n"
-			+ "import java.util.List;\n"
-			+ "\n"
-			+ "/**\n"
-			+ " *\n"
-			+ " * @author alexandrugyori\n"
-			+ " */\n"
-			+ "class TestDemo {\n"
-			+ "\n"
-			+ "    /**\n"
-			+ "     * @param args the command line arguments\n"
-			+ "     */\n"
-			+ "    public void b() {\n"
-			+ "        // TODO code application logic here\n"
-			+ "        List<String> strs = new ArrayList<String>();\n"
-			+ "        int i = 0;\n"
-			+ "        int j = 0;\n"
-			+ "        for(String str: strs)\n"
-			+ "        {            \n"
-			+ "            if(str!=null){\n"
-			+ "                return;\n"
-			+ "            }\n"
-			+ "        }\n"
-			+ "        return;\n"
-			+ "        \n"
-			+ "    }\n"
-			+ "}"
+			"""
+				package testdemo;
+
+				import java.util.ArrayList;
+				import java.util.List;
+
+				/**
+				 *
+				 * @author alexandrugyori
+				 */
+				class TestDemo {
+
+				    /**
+				     * @param args the command line arguments
+				     */
+				    public void b() {
+				        // TODO code application logic here
+				        List<String> strs = new ArrayList<String>();
+				        int i = 0;
+				        int j = 0;
+				        for(String str: strs)
+				        {\s\s\s\s\s\s\s\s\s\s\s\s
+				            if(str!=null){
+				                return;
+				            }
+				        }
+				        return;
+				 \s\s\s\s\s\s\s
+				    }
+				}"""
 
 	})
 	public void testExplicitEncoding_donttouch(String dontchange) throws CoreException  {

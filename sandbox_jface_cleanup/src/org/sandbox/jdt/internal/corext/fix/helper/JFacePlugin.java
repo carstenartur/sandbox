@@ -197,12 +197,16 @@ AbstractTool<ReferenceHolder<Integer, org.sandbox.jdt.internal.corext.fix.helper
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (!afterRefactoring) {
-			return "	monitor.beginTask(NewWizardMessages.NewSourceFolderWizardPage_operation, 3);\n" //$NON-NLS-1$
-					+ "		IProgressMonitor subProgressMonitor= new SubProgressMonitor(monitor, 1);\n" //$NON-NLS-1$
-					+ "		IProgressMonitor subProgressMonitor2= new SubProgressMonitor(monitor, 2);\n"; //$NON-NLS-1$
+			return """
+					monitor.beginTask(NewWizardMessages.NewSourceFolderWizardPage_operation, 3);
+						IProgressMonitor subProgressMonitor= new SubProgressMonitor(monitor, 1);
+						IProgressMonitor subProgressMonitor2= new SubProgressMonitor(monitor, 2);
+				"""; //$NON-NLS-1$
 		}
-		return "	SubMonitor subMonitor=SubMonitor.convert(monitor,NewWizardMessages.NewSourceFolderWizardPage_operation,3);\n" //$NON-NLS-1$
-		+ "		IProgressMonitor subProgressMonitor= subMonitor.split(1);\n" //$NON-NLS-1$
-		+ "		IProgressMonitor subProgressMonitor2= subMonitor.split(2);\n"; //$NON-NLS-1$
+		return """
+				SubMonitor subMonitor=SubMonitor.convert(monitor,NewWizardMessages.NewSourceFolderWizardPage_operation,3);
+					IProgressMonitor subProgressMonitor= subMonitor.split(1);
+					IProgressMonitor subProgressMonitor2= subMonitor.split(2);
+			"""; //$NON-NLS-1$
 	}
 }

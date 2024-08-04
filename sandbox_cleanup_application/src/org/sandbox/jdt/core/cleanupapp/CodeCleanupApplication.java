@@ -376,8 +376,9 @@ public class CodeCleanupApplication implements IApplication {
 	private void formatDirTree(File dir, CodeFormatter codeFormatter) {
 
 		File[] files = dir.listFiles();
-		if (files == null)
+		if (files == null) {
 			return;
+		}
 
 		for (File file : files) {
 			if (file.isDirectory()) {
@@ -389,7 +390,9 @@ public class CodeCleanupApplication implements IApplication {
 	}
 
 	private static CodeFormatter createCodeFormatter(Map options, int mode) {
-		if (options == null) options = JavaCore.getOptions();
+		if (options == null) {
+			options = JavaCore.getOptions();
+		}
 		Map currentOptions = new HashMap(options);
 		if (mode == M_FORMAT_NEW) {
 			// disable the option for not formatting comments starting on first column

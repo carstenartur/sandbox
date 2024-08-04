@@ -72,57 +72,62 @@ public class VisitorTest {
 		JavaCore.setComplianceOptions(JavaCore.VERSION_17, options);
 		parser.setCompilerOptions(options);
 
-		cunit1 = createunit(parser,"package test;\n"  //$NON-NLS-1$
-				+"import java.util.Collection;\n" //$NON-NLS-1$
-				+ "\n" //$NON-NLS-1$
-				+ "public class E {\n" //$NON-NLS-1$
-				+ "	public void hui(Collection<String> arr) {\n" //$NON-NLS-1$
-				+ "		Collection coll = null;\n" //$NON-NLS-1$
-				+ "		for (String var : arr) {\n" //$NON-NLS-1$
-				+ "			 coll.add(var);\n" //$NON-NLS-1$
-				+ "			 System.out.println(var);\n" //$NON-NLS-1$
-				+ "			 System.err.println(var);\n" //$NON-NLS-1$
-				+ "		}\n" //$NON-NLS-1$
-				+ "		System.out.println(arr);\n" //$NON-NLS-1$
-				+ "	}\n" //$NON-NLS-1$
-				+ "}", "E"); //$NON-NLS-1$ //$NON-NLS-2$
+		cunit1 = createunit(parser,"""
+			package test;
+			import java.util.Collection;
+
+			public class E {
+				public void hui(Collection<String> arr) {
+					Collection coll = null;
+					for (String var : arr) {
+						 coll.add(var);
+						 System.out.println(var);
+						 System.err.println(var);
+					}
+					System.out.println(arr);
+				}
+			}""", "E"); //$NON-NLS-1$ //$NON-NLS-2$
 
 
-		cunit2 =createunit(parser,"package test;\n" //$NON-NLS-1$
-				+ "import java.util.*;\n" //$NON-NLS-1$
-				+ "public class Test {\n" //$NON-NLS-1$
-				+ "    void println(String strings) {\n" //$NON-NLS-1$
-				+ "    }\n" //$NON-NLS-1$
-				+ "    void m(List<String> strings,List<String> strings2) {\n" //$NON-NLS-1$
-				+ "        Collections.reverse(strings);\n" //$NON-NLS-1$
-				+ "        Iterator it = strings.iterator();\n" //$NON-NLS-1$
-				+ "        while (it.hasNext()) {\n" //$NON-NLS-1$
-				+ "            Iterator it2 = strings2.iterator();\n" //$NON-NLS-1$
-				+ "            while (it2.hasNext()) {\n" //$NON-NLS-1$
-				+ "                String s2 = (String) it2.next();\n" //$NON-NLS-1$
-				+ "                System.out.println(s2);\n" //$NON-NLS-1$
-				+ "            }\n" //$NON-NLS-1$
-				+ "            // OK\n" //$NON-NLS-1$
-				+ "            System.out.println(it.next());\n" //$NON-NLS-1$
-				+ "            println(it.next());\n" //$NON-NLS-1$
-				+ "        }\n" //$NON-NLS-1$
-				+ "        System.out.println();\n" //$NON-NLS-1$
-				+ "    }\n" //$NON-NLS-1$
-				+ "}\n", "Test"); //$NON-NLS-1$ //$NON-NLS-2$
+		cunit2 =createunit(parser,"""
+			package test;
+			import java.util.*;
+			public class Test {
+			    void println(String strings) {
+			    }
+			    void m(List<String> strings,List<String> strings2) {
+			        Collections.reverse(strings);
+			        Iterator it = strings.iterator();
+			        while (it.hasNext()) {
+			            Iterator it2 = strings2.iterator();
+			            while (it2.hasNext()) {
+			                String s2 = (String) it2.next();
+			                System.out.println(s2);
+			            }
+			            // OK
+			            System.out.println(it.next());
+			            println(it.next());
+			        }
+			        System.out.println();
+			    }
+			}
+			""", "Test"); //$NON-NLS-1$ //$NON-NLS-2$
 
-		cunit3 =createunit(parser,"package test;\n" //$NON-NLS-1$
-				+ "import java.util.*;\n" //$NON-NLS-1$
-				+ "import org.eclipse.core.runtime.CoreException;\n" //$NON-NLS-1$
-				+ "import org.eclipse.core.runtime.IProgressMonitor;\n" //$NON-NLS-1$
-				+ "import org.eclipse.core.runtime.SubProgressMonitor;\n" //$NON-NLS-1$
-				+ "import org.eclipse.jdt.internal.ui.wizards.NewWizardMessages;\n" //$NON-NLS-1$
-				+ "public class Test extends ArrayList<String> {\n" //$NON-NLS-1$
-				+ "    public void createPackageFragmentRoot(IProgressMonitor monitor) throws CoreException, InterruptedException {\n" //$NON-NLS-1$
-				+ "		monitor.beginTask(NewWizardMessages.NewSourceFolderWizardPage_operation, 3);\n" //$NON-NLS-1$
-				+ "		IProgressMonitor subProgressMonitor= new SubProgressMonitor(monitor, 1);\n" //$NON-NLS-1$
-				+ "		IProgressMonitor subProgressMonitor2= new SubProgressMonitor(monitor, 2);\n" //$NON-NLS-1$
-				+ "	}\n" //$NON-NLS-1$
-				+ "}\n", "Test"); //$NON-NLS-1$ //$NON-NLS-2$
+		cunit3 =createunit(parser,"""
+			package test;
+			import java.util.*;
+			import org.eclipse.core.runtime.CoreException;
+			import org.eclipse.core.runtime.IProgressMonitor;
+			import org.eclipse.core.runtime.SubProgressMonitor;
+			import org.eclipse.jdt.internal.ui.wizards.NewWizardMessages;
+			public class Test extends ArrayList<String> {
+			    public void createPackageFragmentRoot(IProgressMonitor monitor) throws CoreException, InterruptedException {
+					monitor.beginTask(NewWizardMessages.NewSourceFolderWizardPage_operation, 3);
+					IProgressMonitor subProgressMonitor= new SubProgressMonitor(monitor, 1);
+					IProgressMonitor subProgressMonitor2= new SubProgressMonitor(monitor, 2);
+				}
+			}
+			""", "Test"); //$NON-NLS-1$ //$NON-NLS-2$
 
 	}
 

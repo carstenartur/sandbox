@@ -18,351 +18,367 @@ public class Java9CleanUpTest {
 
 	enum ExplicitEncodingPatterns {
 
-		BYTEARRAYOUTSTREAM("" //
-				+ "package test1;\n"
-				+ "\n" //
-				+ "import java.io.ByteArrayOutputStream;\n"
-				+ "import java.io.InputStreamReader;\n"
-				+ "import java.io.FileInputStream;\n"
-				+ "import java.io.FileReader;\n"
-				+ "import java.io.Reader;\n"
-				+ "import java.io.FileNotFoundException;\n" //
-				+ "\n" //
-				+ "public class E1 {\n" //
-				+ "    void method(String filename) {\n" //
-				+ "        ByteArrayOutputStream ba=new ByteArrayOutputStream();\n"
-				+ "        String result=ba.toString();\n"
-				+ "       }\n" //
-				+ "    }\n" //
-				+ "}\n",
+		BYTEARRAYOUTSTREAM("""
+			package test1;
 
-				"" //
-				+ "package test1;\n" //
-				+ "\n" //
-				+ "import java.io.ByteArrayOutputStream;\n"
-				+ "import java.io.InputStreamReader;\n"
-				+ "import java.io.FileInputStream;\n"
-				+ "import java.io.FileReader;\n"
-				+ "import java.io.Reader;\n"
-				+ "import java.nio.charset.Charset;\n"
-				+ "import java.io.FileNotFoundException;\n" //
-				+ "\n" //
-				+ "public class E1 {\n" //
-				+ "    void method(String filename) {\n" //
-				+ "        ByteArrayOutputStream ba=new ByteArrayOutputStream();\n"
-				+ "        String result=ba.toString(Charset.defaultCharset().displayName());\n"
-				+ "       }\n" //
-				+ "    }\n" //
-				+ "}\n"),
-		FILEREADER("" //
-				+ "package test1;\n"
-				+ "\n" //
-				+ "import java.io.InputStreamReader;\n"
-				+ "import java.io.FileInputStream;\n"
-				+ "import java.io.FileReader;\n"
-				+ "import java.io.Reader;\n"
-				+ "import java.io.FileNotFoundException;\n" //
-				+ "\n" //
-				+ "public class E1 {\n" //
-				+ "    void method(String filename) {\n" //
-				+ "        try {\n"
-				+ "            Reader is=new FileReader(filename);\n"
-				+ "            } catch (FileNotFoundException e) {\n"
-				+ "            e.printStackTrace();\n"
-				+ "            }\n" //
-				+ "       }\n" //
-				+ "    }\n" //
-				+ "}\n",
+			import java.io.ByteArrayOutputStream;
+			import java.io.InputStreamReader;
+			import java.io.FileInputStream;
+			import java.io.FileReader;
+			import java.io.Reader;
+			import java.io.FileNotFoundException;
 
-				"" //
-				+ "package test1;\n" //
-				+ "\n" //
-				+ "import java.io.InputStreamReader;\n"
-				+ "import java.io.FileInputStream;\n"
-				+ "import java.io.FileReader;\n"
-				+ "import java.io.Reader;\n"
-				+ "import java.nio.charset.Charset;\n"
-				+ "import java.io.FileNotFoundException;\n" //
-				+ "\n" //
-				+ "public class E1 {\n" //
-				+ "    void method(String filename) {\n" //
-				+ "        try {\n"
-				+ "            Reader is=new InputStreamReader(new FileInputStream(filename), Charset.defaultCharset());\n"
-				+ "            } catch (FileNotFoundException e) {\n"
-				+ "            e.printStackTrace();\n"
-				+ "            }\n" //
-				+ "       }\n" //
-				+ "    }\n" //
-				+ "}\n"),
-		FILEWRITER("" //
-				+ "package test1;\n"
-				+ "\n" //
-				+ "import java.io.FileWriter;\n"
-				+ "import java.io.Writer;\n"
-				+ "import java.io.FileNotFoundException;\n" //
-				+ "\n" //
-				+ "public class E1 {\n" //
-				+ "    void method(String filename) {\n" //
-				+ "        try {\n"
-				+ "            Writer fw=new FileWriter(filename);\n"
-				+ "            } catch (FileNotFoundException e) {\n"
-				+ "            e.printStackTrace();\n"
-				+ "            }\n" //
-				+ "       }\n" //
-				+ "    }\n" //
-				+ "}\n",
+			public class E1 {
+			    void method(String filename) {
+			        ByteArrayOutputStream ba=new ByteArrayOutputStream();
+			        String result=ba.toString();
+			       }
+			    }
+			}
+			""",
 
-				"" //
-				+ "package test1;\n" //
-				+ "\n" //
-				+ "import java.io.FileWriter;\n"
-				+ "import java.io.OutputStreamWriter;\n"
-				+ "import java.io.Writer;\n"
-				+ "import java.nio.charset.Charset;\n"
-				+ "import java.io.FileNotFoundException;\n" //
-				+ "import java.io.FileOutputStream;\n"
-				+ "\n" //
-				+ "public class E1 {\n" //
-				+ "    void method(String filename) {\n" //
-				+ "        try {\n"
-				+ "            Writer fw=new OutputStreamWriter(new FileOutputStream(filename), Charset.defaultCharset());\n"
-				+ "            } catch (FileNotFoundException e) {\n"
-				+ "            e.printStackTrace();\n"
-				+ "            }\n" //
-				+ "       }\n" //
-				+ "    }\n" //
-				+ "}\n"),
-		INPUTSTREAMREADER("" //
-				+ "package test1;\n"
-				+ "\n" //
-				+ "import java.io.InputStreamReader;\n"
-				+ "import java.io.FileInputStream;\n"
-				+ "import java.io.FileReader;\n"
-				+ "import java.io.Reader;\n"
-				+ "import java.io.FileNotFoundException;\n" //
-				+ "\n" //
-				+ "public class E1 {\n" //
-				+ "    void method(String filename) {\n" //
-				+ "        try {\n"
-				+ "            InputStreamReader is=new InputStreamReader(new FileInputStream(\"\")); //$NON-NLS-1$\n"
-				+ "            } catch (FileNotFoundException e) {\n"
-				+ "            e.printStackTrace();\n"
-				+ "            }\n" //
-				+ "       }\n" //
-				+ "    }\n" //
-				+ "}\n",
+				"""
+					package test1;
 
-				"" //
-				+ "package test1;\n" //
-				+ "\n" //
-				+ "import java.io.InputStreamReader;\n"
-				+ "import java.io.FileInputStream;\n"
-				+ "import java.io.FileReader;\n"
-				+ "import java.io.Reader;\n"
-				+ "import java.nio.charset.Charset;\n"
-				+ "import java.io.FileNotFoundException;\n" //
-				+ "\n" //
-				+ "public class E1 {\n" //
-				+ "    void method(String filename) {\n" //
-				+ "        try {\n"
-				+ "            InputStreamReader is=new InputStreamReader(new FileInputStream(\"\"), Charset.defaultCharset()); //$NON-NLS-1$\n"
-				+ "            } catch (FileNotFoundException e) {\n"
-				+ "            e.printStackTrace();\n"
-				+ "            }\n" //
-				+ "       }\n" //
-				+ "    }\n" //
-				+ "}\n"),
-		OUTPUTSTREAMWRITER("" //
-				+ "package test1;\n"
-				+ "\n" //
-				+ "import java.io.ByteArrayOutputStream;\n"
-				+ "import java.io.InputStreamReader;\n"
-				+ "import java.io.FileInputStream;\n"
-				+ "import java.io.FileReader;\n"
-				+ "import java.io.Reader;\n"
-				+ "import java.io.FileNotFoundException;\n" //
-				+ "\n" //
-				+ "public class E1 {\n" //
-				+ "    void method(String filename) {\n" //
-				+ "        try {\n"
-				+ "            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream(\"\")); //$NON-NLS-1$\n"
-				+ "            } catch (FileNotFoundException e) {\n"
-				+ "            e.printStackTrace();\n"
-				+ "            }\n" //
-				+ "       }\n" //
-				+ "    }\n" //
-				+ "}\n",
+					import java.io.ByteArrayOutputStream;
+					import java.io.InputStreamReader;
+					import java.io.FileInputStream;
+					import java.io.FileReader;
+					import java.io.Reader;
+					import java.nio.charset.Charset;
+					import java.io.FileNotFoundException;
 
-				"" //
-				+ "package test1;\n" //
-				+ "\n" //
-				+ "import java.io.ByteArrayOutputStream;\n"
-				+ "import java.io.InputStreamReader;\n"
-				+ "import java.io.FileInputStream;\n"
-				+ "import java.io.FileReader;\n"
-				+ "import java.io.Reader;\n"
-				+ "import java.nio.charset.Charset;\n"
-				+ "import java.io.FileNotFoundException;\n" //
-				+ "\n" //
-				+ "public class E1 {\n" //
-				+ "    void method(String filename) {\n" //
-				+ "        try {\n"
-				+ "            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream(\"\"), Charset.defaultCharset()); //$NON-NLS-1$\n"
-				+ "            } catch (FileNotFoundException e) {\n"
-				+ "            e.printStackTrace();\n"
-				+ "            }\n" //
-				+ "       }\n" //
-				+ "    }\n" //
-				+ "}\n"),
-		PRINTWRITER("" //
-				+ "package test1;\n"
-				+ "\n" //
-				+ "import java.io.PrintWriter;\n"
-				+ "import java.io.Writer;\n"
-				+ "import java.io.FileNotFoundException;\n" //
-				+ "\n" //
-				+ "public class E1 {\n" //
-				+ "    void method(String filename) {\n" //
-				+ "        try {\n"
-				+ "            Writer w=new PrintWriter(filename);\n"
-				+ "            } catch (FileNotFoundException e) {\n"
-				+ "            e.printStackTrace();\n"
-				+ "            }\n" //
-				+ "       }\n" //
-				+ "    }\n" //
-				+ "}\n",
+					public class E1 {
+					    void method(String filename) {
+					        ByteArrayOutputStream ba=new ByteArrayOutputStream();
+					        String result=ba.toString(Charset.defaultCharset().displayName());
+					       }
+					    }
+					}
+					"""),
+		FILEREADER("""
+			package test1;
 
-				"" //
-				+ "package test1;\n" //
-				+ "\n" //
-				+ "import java.io.PrintWriter;\n"
-				+ "import java.io.Writer;\n"
-				+ "import java.nio.charset.Charset;\n"
-				+ "import java.io.BufferedWriter;\n" //
-				+ "import java.io.FileNotFoundException;\n" //
-				+ "import java.io.FileOutputStream;\n"
-				+ "import java.io.OutputStreamWriter;\n"
-				+ "\n" //
-				+ "public class E1 {\n" //
-				+ "    void method(String filename) {\n" //
-				+ "        try {\n"
-				+ "            Writer w=new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filename), Charset.defaultCharset()));\n"
-				+ "            } catch (FileNotFoundException e) {\n"
-				+ "            e.printStackTrace();\n"
-				+ "            }\n" //
-				+ "       }\n" //
-				+ "    }\n" //
-				+ "}\n"),
-		STRINGGETBYTES("" //
-				+ "package test1;\n"
-				+ "\n" //
-				+ "import java.io.ByteArrayOutputStream;\n"
-				+ "import java.io.InputStreamReader;\n"
-				+ "import java.io.FileInputStream;\n"
-				+ "import java.io.FileReader;\n"
-				+ "import java.io.Reader;\n"
-				+ "import java.io.FileNotFoundException;\n" //
-				+ "\n" //
-				+ "public class E1 {\n" //
-				+ "    void method(String filename) {\n" //
-				+ "        String s=\"asdf\"; //$NON-NLS-1$\n"
-				+ "        byte[] bytes= s.getBytes();\n"
-				+ "        System.out.println(bytes.length);\n"
-				+ "       }\n" //
-				+ "    }\n" //
-				+ "}\n",
+			import java.io.InputStreamReader;
+			import java.io.FileInputStream;
+			import java.io.FileReader;
+			import java.io.Reader;
+			import java.io.FileNotFoundException;
 
-				"" //
-				+ "package test1;\n" //
-				+ "\n" //
-				+ "import java.io.ByteArrayOutputStream;\n"
-				+ "import java.io.InputStreamReader;\n"
-				+ "import java.io.FileInputStream;\n"
-				+ "import java.io.FileReader;\n"
-				+ "import java.io.Reader;\n"
-				+ "import java.nio.charset.Charset;\n"
-				+ "import java.io.FileNotFoundException;\n" //
-				+ "\n" //
-				+ "public class E1 {\n" //
-				+ "    void method(String filename) {\n" //
-				+ "        String s=\"asdf\"; //$NON-NLS-1$\n" //
-				+ "        byte[] bytes= s.getBytes(Charset.defaultCharset());\n" //
-				+ "        System.out.println(bytes.length);\n" //
-				+ "       }\n" //
-				+ "    }\n" //
-				+ "}\n"),
-		THREE("" //
-				+ "package test1;\n"
-				+ "\n" //
-				+ "import java.io.ByteArrayOutputStream;\n"
-				+ "import java.io.InputStreamReader;\n"
-				+ "import java.io.FileInputStream;\n"
-				+ "import java.io.FileReader;\n"
-				+ "import java.io.Reader;\n"
-				+ "import java.io.FileNotFoundException;\n" //
-				+ "\n" //
-				+ "public class E1 {\n" //
-				+ "    void method(String filename) {\n" //
-				+ "        String s=\"asdf\"; //$NON-NLS-1$\n"
-				+ "        byte[] bytes= s.getBytes();\n"
-				+ "        System.out.println(bytes.length);\n"
-				+ "        ByteArrayOutputStream ba=new ByteArrayOutputStream();\n"
-				+ "        String result=ba.toString();\n"
-				+ "        try {\n"
-				+ "            InputStreamReader is=new InputStreamReader(new FileInputStream(\"\")); //$NON-NLS-1$\n"
-				+ "            } catch (FileNotFoundException e) {\n"
-				+ "            e.printStackTrace();\n"
-				+ "            }\n" //
-				+ "        try {\n"
-				+ "            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream(\"\")); //$NON-NLS-1$\n"
-				+ "            } catch (FileNotFoundException e) {\n"
-				+ "            e.printStackTrace();\n"
-				+ "            }\n" //
-				+ "        try {\n"
-				+ "            Reader is=new FileReader(filename);\n"
-				+ "            } catch (FileNotFoundException e) {\n"
-				+ "            e.printStackTrace();\n"
-				+ "            }\n" //
-				+ "       }\n" //
-				+ "    }\n" //
-				+ "}\n",
+			public class E1 {
+			    void method(String filename) {
+			        try {
+			            Reader is=new FileReader(filename);
+			            } catch (FileNotFoundException e) {
+			            e.printStackTrace();
+			            }
+			       }
+			    }
+			}
+			""",
 
-				"" //
-				+ "package test1;\n" //
-				+ "\n" //
-				+ "import java.io.ByteArrayOutputStream;\n"
-				+ "import java.io.InputStreamReader;\n"
-				+ "import java.io.FileInputStream;\n"
-				+ "import java.io.FileReader;\n"
-				+ "import java.io.Reader;\n"
-				+ "import java.nio.charset.Charset;\n"
-				+ "import java.io.FileNotFoundException;\n" //
-				+ "\n" //
-				+ "public class E1 {\n" //
-				+ "    void method(String filename) {\n" //
-				+ "        String s=\"asdf\"; //$NON-NLS-1$\n" //
-				+ "        byte[] bytes= s.getBytes(Charset.defaultCharset());\n" //
-				+ "        System.out.println(bytes.length);\n" //
-				+ "        ByteArrayOutputStream ba=new ByteArrayOutputStream();\n"
-				+ "        String result=ba.toString(Charset.defaultCharset().displayName());\n"
-				+ "        try {\n"
-				+ "            InputStreamReader is=new InputStreamReader(new FileInputStream(\"\"), Charset.defaultCharset()); //$NON-NLS-1$\n"
-				+ "            } catch (FileNotFoundException e) {\n"
-				+ "            e.printStackTrace();\n"
-				+ "            }\n" //
-				+ "        try {\n"
-				+ "            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream(\"\"), Charset.defaultCharset()); //$NON-NLS-1$\n"
-				+ "            } catch (FileNotFoundException e) {\n"
-				+ "            e.printStackTrace();\n"
-				+ "            }\n" //
-				+ "        try {\n"
-				+ "            Reader is=new InputStreamReader(new FileInputStream(filename), Charset.defaultCharset());\n"
-				+ "            } catch (FileNotFoundException e) {\n"
-				+ "            e.printStackTrace();\n"
-				+ "            }\n" //
-				+ "       }\n" //
-				+ "    }\n" //
-				+ "}\n");
+				"""
+					package test1;
+
+					import java.io.InputStreamReader;
+					import java.io.FileInputStream;
+					import java.io.FileReader;
+					import java.io.Reader;
+					import java.nio.charset.Charset;
+					import java.io.FileNotFoundException;
+
+					public class E1 {
+					    void method(String filename) {
+					        try {
+					            Reader is=new InputStreamReader(new FileInputStream(filename), Charset.defaultCharset());
+					            } catch (FileNotFoundException e) {
+					            e.printStackTrace();
+					            }
+					       }
+					    }
+					}
+					"""),
+		FILEWRITER("""
+			package test1;
+
+			import java.io.FileWriter;
+			import java.io.Writer;
+			import java.io.FileNotFoundException;
+
+			public class E1 {
+			    void method(String filename) {
+			        try {
+			            Writer fw=new FileWriter(filename);
+			            } catch (FileNotFoundException e) {
+			            e.printStackTrace();
+			            }
+			       }
+			    }
+			}
+			""",
+
+				"""
+					package test1;
+
+					import java.io.FileWriter;
+					import java.io.OutputStreamWriter;
+					import java.io.Writer;
+					import java.nio.charset.Charset;
+					import java.io.FileNotFoundException;
+					import java.io.FileOutputStream;
+
+					public class E1 {
+					    void method(String filename) {
+					        try {
+					            Writer fw=new OutputStreamWriter(new FileOutputStream(filename), Charset.defaultCharset());
+					            } catch (FileNotFoundException e) {
+					            e.printStackTrace();
+					            }
+					       }
+					    }
+					}
+					"""),
+		INPUTSTREAMREADER("""
+			package test1;
+
+			import java.io.InputStreamReader;
+			import java.io.FileInputStream;
+			import java.io.FileReader;
+			import java.io.Reader;
+			import java.io.FileNotFoundException;
+
+			public class E1 {
+			    void method(String filename) {
+			        try {
+			            InputStreamReader is=new InputStreamReader(new FileInputStream("")); //$NON-NLS-1$
+			            } catch (FileNotFoundException e) {
+			            e.printStackTrace();
+			            }
+			       }
+			    }
+			}
+			""",
+
+				"""
+					package test1;
+
+					import java.io.InputStreamReader;
+					import java.io.FileInputStream;
+					import java.io.FileReader;
+					import java.io.Reader;
+					import java.nio.charset.Charset;
+					import java.io.FileNotFoundException;
+
+					public class E1 {
+					    void method(String filename) {
+					        try {
+					            InputStreamReader is=new InputStreamReader(new FileInputStream(""), Charset.defaultCharset()); //$NON-NLS-1$
+					            } catch (FileNotFoundException e) {
+					            e.printStackTrace();
+					            }
+					       }
+					    }
+					}
+					"""),
+		OUTPUTSTREAMWRITER("""
+			package test1;
+
+			import java.io.ByteArrayOutputStream;
+			import java.io.InputStreamReader;
+			import java.io.FileInputStream;
+			import java.io.FileReader;
+			import java.io.Reader;
+			import java.io.FileNotFoundException;
+
+			public class E1 {
+			    void method(String filename) {
+			        try {
+			            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream("")); //$NON-NLS-1$
+			            } catch (FileNotFoundException e) {
+			            e.printStackTrace();
+			            }
+			       }
+			    }
+			}
+			""",
+
+				"""
+					package test1;
+
+					import java.io.ByteArrayOutputStream;
+					import java.io.InputStreamReader;
+					import java.io.FileInputStream;
+					import java.io.FileReader;
+					import java.io.Reader;
+					import java.nio.charset.Charset;
+					import java.io.FileNotFoundException;
+
+					public class E1 {
+					    void method(String filename) {
+					        try {
+					            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream(""), Charset.defaultCharset()); //$NON-NLS-1$
+					            } catch (FileNotFoundException e) {
+					            e.printStackTrace();
+					            }
+					       }
+					    }
+					}
+					"""),
+		PRINTWRITER("""
+			package test1;
+
+			import java.io.PrintWriter;
+			import java.io.Writer;
+			import java.io.FileNotFoundException;
+
+			public class E1 {
+			    void method(String filename) {
+			        try {
+			            Writer w=new PrintWriter(filename);
+			            } catch (FileNotFoundException e) {
+			            e.printStackTrace();
+			            }
+			       }
+			    }
+			}
+			""",
+
+				"""
+					package test1;
+
+					import java.io.PrintWriter;
+					import java.io.Writer;
+					import java.nio.charset.Charset;
+					import java.io.BufferedWriter;
+					import java.io.FileNotFoundException;
+					import java.io.FileOutputStream;
+					import java.io.OutputStreamWriter;
+
+					public class E1 {
+					    void method(String filename) {
+					        try {
+					            Writer w=new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filename), Charset.defaultCharset()));
+					            } catch (FileNotFoundException e) {
+					            e.printStackTrace();
+					            }
+					       }
+					    }
+					}
+					"""),
+		STRINGGETBYTES("""
+			package test1;
+
+			import java.io.ByteArrayOutputStream;
+			import java.io.InputStreamReader;
+			import java.io.FileInputStream;
+			import java.io.FileReader;
+			import java.io.Reader;
+			import java.io.FileNotFoundException;
+
+			public class E1 {
+			    void method(String filename) {
+			        String s="asdf"; //$NON-NLS-1$
+			        byte[] bytes= s.getBytes();
+			        System.out.println(bytes.length);
+			       }
+			    }
+			}
+			""",
+
+				"""
+					package test1;
+
+					import java.io.ByteArrayOutputStream;
+					import java.io.InputStreamReader;
+					import java.io.FileInputStream;
+					import java.io.FileReader;
+					import java.io.Reader;
+					import java.nio.charset.Charset;
+					import java.io.FileNotFoundException;
+
+					public class E1 {
+					    void method(String filename) {
+					        String s="asdf"; //$NON-NLS-1$
+					        byte[] bytes= s.getBytes(Charset.defaultCharset());
+					        System.out.println(bytes.length);
+					       }
+					    }
+					}
+					"""),
+		THREE("""
+			package test1;
+
+			import java.io.ByteArrayOutputStream;
+			import java.io.InputStreamReader;
+			import java.io.FileInputStream;
+			import java.io.FileReader;
+			import java.io.Reader;
+			import java.io.FileNotFoundException;
+
+			public class E1 {
+			    void method(String filename) {
+			        String s="asdf"; //$NON-NLS-1$
+			        byte[] bytes= s.getBytes();
+			        System.out.println(bytes.length);
+			        ByteArrayOutputStream ba=new ByteArrayOutputStream();
+			        String result=ba.toString();
+			        try {
+			            InputStreamReader is=new InputStreamReader(new FileInputStream("")); //$NON-NLS-1$
+			            } catch (FileNotFoundException e) {
+			            e.printStackTrace();
+			            }
+			        try {
+			            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream("")); //$NON-NLS-1$
+			            } catch (FileNotFoundException e) {
+			            e.printStackTrace();
+			            }
+			        try {
+			            Reader is=new FileReader(filename);
+			            } catch (FileNotFoundException e) {
+			            e.printStackTrace();
+			            }
+			       }
+			    }
+			}
+			""",
+
+				"""
+					package test1;
+
+					import java.io.ByteArrayOutputStream;
+					import java.io.InputStreamReader;
+					import java.io.FileInputStream;
+					import java.io.FileReader;
+					import java.io.Reader;
+					import java.nio.charset.Charset;
+					import java.io.FileNotFoundException;
+
+					public class E1 {
+					    void method(String filename) {
+					        String s="asdf"; //$NON-NLS-1$
+					        byte[] bytes= s.getBytes(Charset.defaultCharset());
+					        System.out.println(bytes.length);
+					        ByteArrayOutputStream ba=new ByteArrayOutputStream();
+					        String result=ba.toString(Charset.defaultCharset().displayName());
+					        try {
+					            InputStreamReader is=new InputStreamReader(new FileInputStream(""), Charset.defaultCharset()); //$NON-NLS-1$
+					            } catch (FileNotFoundException e) {
+					            e.printStackTrace();
+					            }
+					        try {
+					            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream(""), Charset.defaultCharset()); //$NON-NLS-1$
+					            } catch (FileNotFoundException e) {
+					            e.printStackTrace();
+					            }
+					        try {
+					            Reader is=new InputStreamReader(new FileInputStream(filename), Charset.defaultCharset());
+					            } catch (FileNotFoundException e) {
+					            e.printStackTrace();
+					            }
+					       }
+					    }
+					}
+					""");
 
 		ExplicitEncodingPatterns(String given, String expected) {
 			this.given=given;
@@ -385,31 +401,32 @@ public class Java9CleanUpTest {
 	public void testExplicitEncoding_donttouch() throws CoreException{
 		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("E2.java",
-				"" //
-				+ "package test1;\n" //
-				+ "\n" //
-				+ "import java.io.ByteArrayOutputStream;\n"
-				+ "import java.io.InputStreamReader;\n"
-				+ "import java.io.IOException;\n"
-				+ "import java.nio.charset.Charset;\n"
-				+ "import java.io.FileInputStream;\n"
-				+ "import java.io.FileNotFoundException;\n" //
-				+ "import java.io.UnsupportedEncodingException;\n" //
-				+ "\n" //
-				+ "public class E2 {\n" //
-				+ "    void method() throws UnsupportedEncodingException, IOException {\n" //
-				+ "        String s=\"asdf\"; //$NON-NLS-1$\n" //
-				+ "        byte[] bytes= s.getBytes(Charset.defaultCharset());\n" //
-				+ "        System.out.println(bytes.length);\n" //
-				+ "        ByteArrayOutputStream ba=new ByteArrayOutputStream();\n"
-				+ "        String result=ba.toString(Charset.defaultCharset().displayName());\n"
-				+ "        try (\n"
-				+ "            InputStreamReader is=new InputStreamReader(new FileInputStream(\"\"), Charset.defaultCharset()); //$NON-NLS-1$\n"
-				+ "           ){ } catch (FileNotFoundException e) {\n"
-				+ "            e.printStackTrace();\n"
-				+ "            }\n" //
-				+ "    }\n" //
-				+ "}\n",
+				"""
+					package test1;
+
+					import java.io.ByteArrayOutputStream;
+					import java.io.InputStreamReader;
+					import java.io.IOException;
+					import java.nio.charset.Charset;
+					import java.io.FileInputStream;
+					import java.io.FileNotFoundException;
+					import java.io.UnsupportedEncodingException;
+
+					public class E2 {
+					    void method() throws UnsupportedEncodingException, IOException {
+					        String s="asdf"; //$NON-NLS-1$
+					        byte[] bytes= s.getBytes(Charset.defaultCharset());
+					        System.out.println(bytes.length);
+					        ByteArrayOutputStream ba=new ByteArrayOutputStream();
+					        String result=ba.toString(Charset.defaultCharset().displayName());
+					        try (
+					            InputStreamReader is=new InputStreamReader(new FileInputStream(""), Charset.defaultCharset()); //$NON-NLS-1$
+					           ){ } catch (FileNotFoundException e) {
+					            e.printStackTrace();
+					            }
+					    }
+					}
+					""",
 				false, null);
 
 		context.enable(MYCleanUpConstants.EXPLICITENCODING_CLEANUP);

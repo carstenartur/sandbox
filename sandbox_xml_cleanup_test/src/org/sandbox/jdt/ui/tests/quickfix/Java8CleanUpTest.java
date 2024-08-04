@@ -30,29 +30,33 @@ public class Java8CleanUpTest {
 	AbstractEclipseJava context= new EclipseJava8();
 
 	enum XMLCleanupCases{
-		whileWarningSelf("package test;\n"
-				+ "import java.util.*;\n"
-				+ "public class Test extends ArrayList<String> {\n"
-				+ "    void m() {\n"
-				+ "        Iterator it = iterator();\n"
-				+ "        while (it.hasNext()) {\n"
-				+ "            String s = (String) it.next();\n"
-				+ "            System.out.println(s);\n"
-				+ "            System.err.println(s);\n"
-				+ "        }\n"
-				+ "    }\n"
-				+ "}\n",
+		whileWarningSelf("""
+			package test;
+			import java.util.*;
+			public class Test extends ArrayList<String> {
+			    void m() {
+			        Iterator it = iterator();
+			        while (it.hasNext()) {
+			            String s = (String) it.next();
+			            System.out.println(s);
+			            System.err.println(s);
+			        }
+			    }
+			}
+			""",
 
-				"package test;\n"
-						+ "import java.util.*;\n"
-						+ "public class Test extends ArrayList<String> {\n"
-						+ "    void m() {\n"
-						+ "        for (String s : this) {\n"
-						+ "            System.out.println(s);\n"
-						+ "            System.err.println(s);\n"
-						+ "        }\n"
-						+ "    }\n"
-						+ "}\n");
+				"""
+					package test;
+					import java.util.*;
+					public class Test extends ArrayList<String> {
+					    void m() {
+					        for (String s : this) {
+					            System.out.println(s);
+					            System.err.println(s);
+					        }
+					    }
+					}
+					""");
 
 		XMLCleanupCases(String given, String expected) {
 			this.given=given;
@@ -75,21 +79,23 @@ public class Java8CleanUpTest {
 	enum NO_XMLCleanupCases {
 
 		whileUsedSpecially(
-				"package test;\n"
-						+ "import java.util.*;\n"
-						+ "public class Test {\n"
-						+ "    void m(List<String> strings) {\n"
-						+ "        Iterator it = strings.iterator();\n"
-						+ "        while (it.hasNext()) {\n"
-						+ "            String s = (String) it.next();\n"
-						+ "            if (s.isEmpty()) {\n"
-						+ "                it.remove();\n"
-						+ "            } else {\n"
-						+ "                System.out.println(s);\n"
-						+ "            }\n"
-						+ "        }\n"
-						+ "    }\n"
-						+ "}\n")
+				"""
+					package test;
+					import java.util.*;
+					public class Test {
+					    void m(List<String> strings) {
+					        Iterator it = strings.iterator();
+					        while (it.hasNext()) {
+					            String s = (String) it.next();
+					            if (s.isEmpty()) {
+					                it.remove();
+					            } else {
+					                System.out.println(s);
+					            }
+					        }
+					    }
+					}
+					""")
 		;
 
 		NO_XMLCleanupCases(String given) {
