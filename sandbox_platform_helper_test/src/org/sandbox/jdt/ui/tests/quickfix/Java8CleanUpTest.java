@@ -142,7 +142,7 @@ public class Java8CleanUpTest {
 	}
 
 	@Test
-	public void testPlatformStatus_donttouch() throws CoreException {
+	public void testPlatformStatusdonttouch() throws CoreException {
 		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
 		ICompilationUnit cu= pack.createCompilationUnit("E2.java", //$NON-NLS-1$
 				"""

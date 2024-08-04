@@ -153,7 +153,7 @@ public class Java8CleanUpTest {
 	//	@Disabled
 	@ParameterizedTest
 	@EnumSource(NO_JFaceCleanupCases.class)
-	public void testJFaceCleanup_donttouch(NO_JFaceCleanupCases test) throws CoreException {
+	public void testJFaceCleanupdonttouch(NO_JFaceCleanupCases test) throws CoreException {
 		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("Test.java",test.given,false, null);
 		context.enable(MYCleanUpConstants.JFACE_CLEANUP);

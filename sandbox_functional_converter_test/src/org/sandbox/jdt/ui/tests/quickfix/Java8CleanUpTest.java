@@ -1619,7 +1619,7 @@ public class Java8CleanUpTest {
 				}"""
 
 	})
-	public void testExplicitEncoding_donttouch(String dontchange) throws CoreException  {
+	public void testExplicitEncodingdonttouch(String dontchange) throws CoreException  {
 		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("testdemo", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("TestDemo.java",
 				dontchange,

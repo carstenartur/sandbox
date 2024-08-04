@@ -201,7 +201,7 @@ public class VisitorTest {
 	}
 
 	@Test
-	public void simpleTest2_oldway() {
+	public void simpleTest2oldway() {
 		String name ="add"; //$NON-NLS-1$
 		ASTVisitor astvisitor=new ASTVisitor() {
 			@Override
@@ -272,7 +272,7 @@ public class VisitorTest {
 	}
 
 	@Test
-	public void simpleTest3_oldway() {
+	public void simpleTest3oldway() {
 		ASTVisitor astvisitor=new ASTVisitor() {
 
 			@Override
@@ -314,7 +314,7 @@ public class VisitorTest {
 	}
 
 	@Test
-	public void simpleTest3b_oldway() {
+	public void simpleTest3boldway() {
 		ASTVisitor astvisitor=new ASTVisitor() {
 
 			@Override
@@ -772,7 +772,7 @@ public class VisitorTest {
 	}
 
 	@Test
-	public void methodinvocationTest_b() {
+	public void methodinvocationTestb() {
 		ReferenceHolder<String, Object> dataholder = new ReferenceHolder<>();
 		ASTProcessor<ReferenceHolder<String, Object>,String,Object> astp=new ASTProcessor<>(dataholder, null);
 		astp

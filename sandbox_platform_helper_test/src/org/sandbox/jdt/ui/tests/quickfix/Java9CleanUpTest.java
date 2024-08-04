@@ -93,7 +93,7 @@ public class Java9CleanUpTest {
 
 	@ParameterizedTest
 	@EnumSource(PlatformStatusPatternsDontTouch.class)
-	public void testPlatformStatus_donttouch(PlatformStatusPatternsDontTouch test) throws CoreException {
+	public void testPlatformStatusdonttouch(PlatformStatusPatternsDontTouch test) throws CoreException {
 		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
 		ICompilationUnit cu= pack.createCompilationUnit("E1.java", test.given, false, null); //$NON-NLS-1$
 		context.enable(MYCleanUpConstants.SIMPLIFY_STATUS_CLEANUP);

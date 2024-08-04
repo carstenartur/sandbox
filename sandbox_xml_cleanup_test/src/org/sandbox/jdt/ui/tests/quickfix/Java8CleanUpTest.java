@@ -108,7 +108,7 @@ public class Java8CleanUpTest {
 	@Disabled
 	@ParameterizedTest
 	@EnumSource(NO_XMLCleanupCases.class)
-	public void testXMLCleanup_donttouch(NO_XMLCleanupCases test) throws CoreException {
+	public void testXMLCleanupdonttouch(NO_XMLCleanupCases test) throws CoreException {
 		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("Test.java",test.given,false, null);
 		context.enable(CleanUpConstants.CONTROL_STATEMENTS_CONVERT_FOR_LOOP_TO_ENHANCED);

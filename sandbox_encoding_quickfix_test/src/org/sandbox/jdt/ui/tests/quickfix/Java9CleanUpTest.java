@@ -398,7 +398,7 @@ public class Java9CleanUpTest {
 	}
 
 	@Test
-	public void testExplicitEncoding_donttouch() throws CoreException{
+	public void testExplicitEncodingdonttouch() throws CoreException{
 		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("E2.java",
 				"""
