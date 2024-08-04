@@ -30,70 +30,78 @@ public class Java8CleanUpTest {
 	AbstractEclipseJava context= new EclipseJava8();
 
 	enum JFaceCleanupCases{
-		PositiveCase("package test;\n"
-				+ "import java.util.*;\n"
-				+ "import org.eclipse.core.runtime.CoreException;\n"
-				+ "import org.eclipse.core.runtime.IProgressMonitor;\n"
-				+ "import org.eclipse.core.runtime.SubProgressMonitor;\n"
-				+ "import org.eclipse.jdt.internal.ui.wizards.NewWizardMessages;\n"
-				+ "public class Test extends ArrayList<String> {\n"
-				+ "    public void createPackageFragmentRoot(IProgressMonitor monitor) throws CoreException, InterruptedException {\n"
-				+ "		monitor.beginTask(NewWizardMessages.NewSourceFolderWizardPage_operation, 3);\n"
-				+ "		IProgressMonitor subProgressMonitor= new SubProgressMonitor(monitor, 1);\n"
-				+ "		IProgressMonitor subProgressMonitor2= new SubProgressMonitor(monitor, 2);\n"
-				+ "	}\n"
-				+ "}\n",
+		PositiveCase("""
+			package test;
+			import java.util.*;
+			import org.eclipse.core.runtime.CoreException;
+			import org.eclipse.core.runtime.IProgressMonitor;
+			import org.eclipse.core.runtime.SubProgressMonitor;
+			import org.eclipse.jdt.internal.ui.wizards.NewWizardMessages;
+			public class Test extends ArrayList<String> {
+			    public void createPackageFragmentRoot(IProgressMonitor monitor) throws CoreException, InterruptedException {
+					monitor.beginTask(NewWizardMessages.NewSourceFolderWizardPage_operation, 3);
+					IProgressMonitor subProgressMonitor= new SubProgressMonitor(monitor, 1);
+					IProgressMonitor subProgressMonitor2= new SubProgressMonitor(monitor, 2);
+				}
+			}
+			""",
 
-				"package test;\n"
-						+ "import java.util.*;\n"
-						+ "import org.eclipse.core.runtime.CoreException;\n"
-						+ "import org.eclipse.core.runtime.IProgressMonitor;\n"
-						+ "import org.eclipse.core.runtime.SubMonitor;\n"
-						+ "import org.eclipse.jdt.internal.ui.wizards.NewWizardMessages;\n"
-						+ "public class Test extends ArrayList<String> {\n"
-						+ "    public void createPackageFragmentRoot(IProgressMonitor monitor) throws CoreException, InterruptedException {\n"
-						+ "		SubMonitor subMonitor=SubMonitor.convert(monitor,NewWizardMessages.NewSourceFolderWizardPage_operation,3);\n"
-						+ "		IProgressMonitor subProgressMonitor= subMonitor.split(1);\n"
-						+ "		IProgressMonitor subProgressMonitor2= subMonitor.split(2);\n"
-						+ "	}\n"
-						+ "}\n"),
-		Twice("package test;\n"
-				+ "import java.util.*;\n"
-				+ "import org.eclipse.core.runtime.CoreException;\n"
-				+ "import org.eclipse.core.runtime.IProgressMonitor;\n"
-				+ "import org.eclipse.core.runtime.SubProgressMonitor;\n"
-				+ "import org.eclipse.jdt.internal.ui.wizards.NewWizardMessages;\n"
-				+ "public class Test extends ArrayList<String> {\n"
-				+ "    public void createPackageFragmentRoot(IProgressMonitor monitor) throws CoreException, InterruptedException {\n"
-				+ "		monitor.beginTask(NewWizardMessages.NewSourceFolderWizardPage_operation, 3);\n"
-				+ "		IProgressMonitor subProgressMonitor= new SubProgressMonitor(monitor, 1);\n"
-				+ "		IProgressMonitor subProgressMonitor2= new SubProgressMonitor(monitor, 2);\n"
-				+ "	}\n"
-				+ "    public void createPackageFragmentRoot2(IProgressMonitor monitor) throws CoreException, InterruptedException {\n"
-				+ "		monitor.beginTask(NewWizardMessages.NewSourceFolderWizardPage_operation, 3);\n"
-				+ "		IProgressMonitor subProgressMonitor3= new SubProgressMonitor(monitor, 1);\n"
-				+ "		IProgressMonitor subProgressMonitor4= new SubProgressMonitor(monitor, 2);\n"
-				+ "	}\n"
-				+ "}\n",
+				"""
+					package test;
+					import java.util.*;
+					import org.eclipse.core.runtime.CoreException;
+					import org.eclipse.core.runtime.IProgressMonitor;
+					import org.eclipse.core.runtime.SubMonitor;
+					import org.eclipse.jdt.internal.ui.wizards.NewWizardMessages;
+					public class Test extends ArrayList<String> {
+					    public void createPackageFragmentRoot(IProgressMonitor monitor) throws CoreException, InterruptedException {
+							SubMonitor subMonitor=SubMonitor.convert(monitor,NewWizardMessages.NewSourceFolderWizardPage_operation,3);
+							IProgressMonitor subProgressMonitor= subMonitor.split(1);
+							IProgressMonitor subProgressMonitor2= subMonitor.split(2);
+						}
+					}
+					"""),
+		Twice("""
+			package test;
+			import java.util.*;
+			import org.eclipse.core.runtime.CoreException;
+			import org.eclipse.core.runtime.IProgressMonitor;
+			import org.eclipse.core.runtime.SubProgressMonitor;
+			import org.eclipse.jdt.internal.ui.wizards.NewWizardMessages;
+			public class Test extends ArrayList<String> {
+			    public void createPackageFragmentRoot(IProgressMonitor monitor) throws CoreException, InterruptedException {
+					monitor.beginTask(NewWizardMessages.NewSourceFolderWizardPage_operation, 3);
+					IProgressMonitor subProgressMonitor= new SubProgressMonitor(monitor, 1);
+					IProgressMonitor subProgressMonitor2= new SubProgressMonitor(monitor, 2);
+				}
+			    public void createPackageFragmentRoot2(IProgressMonitor monitor) throws CoreException, InterruptedException {
+					monitor.beginTask(NewWizardMessages.NewSourceFolderWizardPage_operation, 3);
+					IProgressMonitor subProgressMonitor3= new SubProgressMonitor(monitor, 1);
+					IProgressMonitor subProgressMonitor4= new SubProgressMonitor(monitor, 2);
+				}
+			}
+			""",
 
-				"package test;\n"
-						+ "import java.util.*;\n"
-						+ "import org.eclipse.core.runtime.CoreException;\n"
-						+ "import org.eclipse.core.runtime.IProgressMonitor;\n"
-						+ "import org.eclipse.core.runtime.SubMonitor;\n"
-						+ "import org.eclipse.jdt.internal.ui.wizards.NewWizardMessages;\n"
-						+ "public class Test extends ArrayList<String> {\n"
-						+ "    public void createPackageFragmentRoot(IProgressMonitor monitor) throws CoreException, InterruptedException {\n"
-						+ "		SubMonitor subMonitor=SubMonitor.convert(monitor,NewWizardMessages.NewSourceFolderWizardPage_operation,3);\n"
-						+ "		IProgressMonitor subProgressMonitor= subMonitor.split(1);\n"
-						+ "		IProgressMonitor subProgressMonitor2= subMonitor.split(2);\n"
-						+ "	}\n"
-						+ "    public void createPackageFragmentRoot2(IProgressMonitor monitor) throws CoreException, InterruptedException {\n"
-						+ "		SubMonitor subMonitor=SubMonitor.convert(monitor,NewWizardMessages.NewSourceFolderWizardPage_operation,3);\n"
-						+ "		IProgressMonitor subProgressMonitor3= subMonitor.split(1);\n"
-						+ "		IProgressMonitor subProgressMonitor4= subMonitor.split(2);\n"
-						+ "	}\n"
-						+ "}\n");
+				"""
+					package test;
+					import java.util.*;
+					import org.eclipse.core.runtime.CoreException;
+					import org.eclipse.core.runtime.IProgressMonitor;
+					import org.eclipse.core.runtime.SubMonitor;
+					import org.eclipse.jdt.internal.ui.wizards.NewWizardMessages;
+					public class Test extends ArrayList<String> {
+					    public void createPackageFragmentRoot(IProgressMonitor monitor) throws CoreException, InterruptedException {
+							SubMonitor subMonitor=SubMonitor.convert(monitor,NewWizardMessages.NewSourceFolderWizardPage_operation,3);
+							IProgressMonitor subProgressMonitor= subMonitor.split(1);
+							IProgressMonitor subProgressMonitor2= subMonitor.split(2);
+						}
+					    public void createPackageFragmentRoot2(IProgressMonitor monitor) throws CoreException, InterruptedException {
+							SubMonitor subMonitor=SubMonitor.convert(monitor,NewWizardMessages.NewSourceFolderWizardPage_operation,3);
+							IProgressMonitor subProgressMonitor3= subMonitor.split(1);
+							IProgressMonitor subProgressMonitor4= subMonitor.split(2);
+						}
+					}
+					""");
 
 		JFaceCleanupCases(String given, String expected) {
 			this.given=given;
@@ -116,21 +124,23 @@ public class Java8CleanUpTest {
 	enum NO_JFaceCleanupCases {
 
 		NOCase(
-				"package test;\n"
-						+ "import java.util.*;\n"
-						+ "public class Test {\n"
-						+ "    void m(List<String> strings) {\n"
-						+ "        Iterator it = strings.iterator();\n"
-						+ "        while (it.hasNext()) {\n"
-						+ "            String s = (String) it.next();\n"
-						+ "            if (s.isEmpty()) {\n"
-						+ "                it.remove();\n"
-						+ "            } else {\n"
-						+ "                System.out.println(s);\n"
-						+ "            }\n"
-						+ "        }\n"
-						+ "    }\n"
-						+ "}\n")
+				"""
+					package test;
+					import java.util.*;
+					public class Test {
+					    void m(List<String> strings) {
+					        Iterator it = strings.iterator();
+					        while (it.hasNext()) {
+					            String s = (String) it.next();
+					            if (s.isEmpty()) {
+					                it.remove();
+					            } else {
+					                System.out.println(s);
+					            }
+					        }
+					    }
+					}
+					""")
 		;
 
 		NO_JFaceCleanupCases(String given) {
