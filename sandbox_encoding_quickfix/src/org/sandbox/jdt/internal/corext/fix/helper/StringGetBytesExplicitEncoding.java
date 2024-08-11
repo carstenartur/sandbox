@@ -32,7 +32,6 @@ import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
-import org.sandbox.jdt.internal.corext.fix.helper.AbstractExplicitEncoding.ChangeBehavior;
 /**
  * Find:  String.getBytes()
  *
