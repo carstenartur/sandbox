@@ -45,7 +45,7 @@ public class InputStreamReaderExplicitEncoding extends AbstractExplicitEncoding<
 		HelperVisitor.callClassInstanceCreationVisitor(InputStreamReader.class, compilationUnit, datah, nodesprocessed, (visited, holder) -> processFoundNode(fixcore, operations, nodesprocessed, cb, visited, holder));
 	}
 
-	private boolean processFoundNode(UseExplicitEncodingFixCore fixcore,
+	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ChangeBehavior cb,
 			ClassInstanceCreation visited, ReferenceHolder<String, Object> holder) {
 		List<ASTNode> arguments= visited.arguments();

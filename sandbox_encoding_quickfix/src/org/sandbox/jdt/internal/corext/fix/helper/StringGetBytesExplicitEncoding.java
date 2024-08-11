@@ -69,8 +69,10 @@ public class StringGetBytesExplicitEncoding extends AbstractExplicitEncoding<Met
 			holder.put(ENCODING,StandardCharsets.UTF_8);
 			holder.put(REPLACE,argstring3);
 			break;
-		default:
+		case 0:
 			break;
+		default:
+			return false;
 		}
 		operations.add(fixcore.rewrite(visited, cb, datah));
 		nodesprocessed.add(visited);
@@ -91,7 +93,7 @@ public class StringGetBytesExplicitEncoding extends AbstractExplicitEncoding<Met
 		ASTNode callToCharsetDefaultCharset= computeCharsetASTNode(cuRewrite, cb, ast, (Charset) data.get(ENCODING));
 //		ListRewrite listRewrite= rewrite.getListRewrite(visited, MethodInvocation.ARGUMENTS_PROPERTY);
 //		listRewrite.insertLast(callToCharsetDefaultCharset, group);
-		
+
 		ListRewrite listRewrite= rewrite.getListRewrite(visited, MethodInvocation.ARGUMENTS_PROPERTY);
 		if(data.get(ENCODING)!= null) {
 			listRewrite.replace((ASTNode) data.get(REPLACE), callToCharsetDefaultCharset, group);
