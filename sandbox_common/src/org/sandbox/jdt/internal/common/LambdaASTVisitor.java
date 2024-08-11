@@ -531,6 +531,12 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 						return true;
 					}
 				}
+				String[] parameterTypesQualifiedNames=(String[]) map.get(HelperVisitor.PARAMTYPENAMES);
+				if(parameterTypesQualifiedNames!=null) {
+					if (!ASTNodes.usesGivenSignature(node, typeof.getCanonicalName(), data, parameterTypesQualifiedNames)) {
+						return true;
+					}
+				}
 			}
 			return ((BiPredicate<MethodInvocation, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.MethodInvocation))).test(node, this.helperVisitor.dataholder);
 		}
@@ -1431,16 +1437,19 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 				}
 				Class<?> typeof=(Class<?>) map.get(HelperVisitor.TYPEOF);
 				if(typeof!=null) {
-					Name sn= ASTNodes.as(node.getExpression(), Name.class);
-					if (sn == null) {
+					if (!ASTNodes.usesGivenSignature(node, typeof.getCanonicalName(), data)) {
 						return;
 					}
-					IBinding ibinding= sn.resolveBinding();
-					IVariableBinding vb=(IVariableBinding) ibinding;
-					ITypeBinding binding= vb.getType();
-					if ((binding != null) && !typeof.getSimpleName().equals(binding.getName())) {
-						return;
-					}
+//					Name sn= ASTNodes.as(node.getExpression(), Name.class);
+//					if (sn == null) {
+//						return;
+//					}
+//					IBinding ibinding= sn.resolveBinding();
+//					IVariableBinding vb=(IVariableBinding) ibinding;
+//					ITypeBinding binding= vb.getType();
+//					if ((binding != null) && !typeof.getSimpleName().equals(binding.getName())) {
+//						return;
+//					}
 				}
 			}
 			((BiConsumer<MethodInvocation, E>) (this.helperVisitor.consumermap.get(VisitorEnum.MethodInvocation))).accept(node,

@@ -42,30 +42,36 @@ public class InputStreamReaderExplicitEncoding extends AbstractExplicitEncoding<
 
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed,ChangeBehavior cb) {
-		HelperVisitor.callClassInstanceCreationVisitor(InputStreamReader.class, compilationUnit, datah, nodesprocessed, (visited, holder_a) -> {
-			List<ASTNode> arguments= visited.arguments();
-			if(nodesprocessed.contains(visited) || (arguments.size()>2)) {
+		HelperVisitor.callClassInstanceCreationVisitor(InputStreamReader.class, compilationUnit, datah, nodesprocessed, (visited, holder) -> processFoundNode(fixcore, operations, nodesprocessed, cb, visited, holder));
+	}
+
+	private boolean processFoundNode(UseExplicitEncodingFixCore fixcore,
+			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ChangeBehavior cb,
+			ClassInstanceCreation visited, ReferenceHolder<String, Object> holder) {
+		List<ASTNode> arguments= visited.arguments();
+		if(nodesprocessed.contains(visited) || (arguments.size()>2)) {
+			return false;
+		}
+		switch (arguments.size()) {
+		case 2:
+			if(!(arguments.get(1) instanceof StringLiteral)) {
 				return false;
 			}
-			switch (arguments.size()) {
-			case 2:
-				if(!(arguments.get(1) instanceof StringLiteral)) return false;
-				StringLiteral argstring3= (StringLiteral) arguments.get(1);
-				if (!("UTF-8".equals(argstring3.getLiteralValue()))) { //$NON-NLS-1$
-					return false;
-				}
-				holder_a.put(ENCODING,StandardCharsets.UTF_8);
-				holder_a.put(REPLACE,argstring3);
-				break;
-			case 1:
-				break;
-			default:
-				break;
+			StringLiteral argstring3= (StringLiteral) arguments.get(1);
+			if (!("UTF-8".equals(argstring3.getLiteralValue()))) { //$NON-NLS-1$
+				return false;
 			}
-			operations.add(fixcore.rewrite(visited, cb, holder_a));
-			nodesprocessed.add(visited);
-			return false;
-		});
+			holder.put(ENCODING,StandardCharsets.UTF_8);
+			holder.put(REPLACE,argstring3);
+			break;
+		case 1:
+			break;
+		default:
+			break;
+		}
+		operations.add(fixcore.rewrite(visited, cb, holder));
+		nodesprocessed.add(visited);
+		return false;
 	}
 
 	@Override
@@ -94,8 +100,8 @@ public class InputStreamReaderExplicitEncoding extends AbstractExplicitEncoding<
 	@Override
 	public String getPreview(boolean afterRefactoring,ChangeBehavior cb) {
 		if(afterRefactoring) {
-			return "Reader r=new InputStreamReader(in, "+computeCharsetforPreview(cb)+");\n"; //$NON-NLS-1$ //$NON-NLS-2$
+			return "Reader r=new InputStreamReader(in, "+computeCharsetforPreview(cb)+");\nInputStreamReader is=new InputStreamReader(new FileInputStream(\"\"), \"UTF-8\");\n"; //$NON-NLS-1$ //$NON-NLS-2$
 		}
-		return "Reader r=new InputStreamReader(in);\n"; //$NON-NLS-1$
+		return "Reader r=new InputStreamReader(in);\nInputStreamReader is=new InputStreamReader(new FileInputStream(\"\"), StandardCharsets.UTF_8);\n"; //$NON-NLS-1$
 	}
 }

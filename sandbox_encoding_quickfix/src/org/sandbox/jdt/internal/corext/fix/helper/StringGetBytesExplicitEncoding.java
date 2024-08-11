@@ -16,20 +16,22 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 import static org.sandbox.jdt.internal.common.LibStandardNames.METHOD_GET_BYTES;
 
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
-import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 /**
@@ -37,26 +39,42 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
  *
  * Rewrite: String.getBytes(Charset.defaultCharset())
  *
+ * Find:  String.getBytes("Utf-8")
+ *
+ * Rewrite: String.getBytes(StandardCharsets.UTF_8)
  */
 public class StringGetBytesExplicitEncoding extends AbstractExplicitEncoding<MethodInvocation> {
 
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed,ChangeBehavior cb) {
-		compilationUnit.accept(new ASTVisitor() {
-			@Override
-			public boolean visit(final MethodInvocation visited) {
-				if(nodesprocessed.contains(visited)) {
-					return false;
-				}
+		HelperVisitor.callMethodInvocationVisitor(String.class, METHOD_GET_BYTES, compilationUnit, datah, nodesprocessed, (visited, holder) -> processFoundNode(fixcore, operations, nodesprocessed, cb, visited, holder));
+	}
 
-				if (ASTNodes.usesGivenSignature(visited, String.class.getCanonicalName(), METHOD_GET_BYTES)) {
-					operations.add(fixcore.rewrite(visited, cb, datah));
-					nodesprocessed.add(visited);
-					return false;
-				}
-				return true;
+	private boolean processFoundNode(UseExplicitEncodingFixCore fixcore,
+			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ChangeBehavior cb,
+			MethodInvocation visited, ReferenceHolder<String, Object> holder) {
+		List<ASTNode> arguments= visited.arguments();
+		if(nodesprocessed.contains(visited) || (arguments.size()>1)) {
+			return false;
+		}
+		switch (arguments.size()) {
+		case 1:
+			if(!(arguments.get(0) instanceof StringLiteral)) {
+				return false;
 			}
-		});
+			StringLiteral argstring3= (StringLiteral) arguments.get(0);
+			if (!("UTF-8".equals(argstring3.getLiteralValue()))) { //$NON-NLS-1$
+				return false;
+			}
+			holder.put(ENCODING,StandardCharsets.UTF_8);
+			holder.put(REPLACE,argstring3);
+			break;
+		default:
+			break;
+		}
+		operations.add(fixcore.rewrite(visited, cb, datah));
+		nodesprocessed.add(visited);
+		return false;
 	}
 
 	@Override
@@ -71,8 +89,15 @@ public class StringGetBytesExplicitEncoding extends AbstractExplicitEncoding<Met
 			return;
 		}
 		ASTNode callToCharsetDefaultCharset= computeCharsetASTNode(cuRewrite, cb, ast, (Charset) data.get(ENCODING));
+//		ListRewrite listRewrite= rewrite.getListRewrite(visited, MethodInvocation.ARGUMENTS_PROPERTY);
+//		listRewrite.insertLast(callToCharsetDefaultCharset, group);
+		
 		ListRewrite listRewrite= rewrite.getListRewrite(visited, MethodInvocation.ARGUMENTS_PROPERTY);
-		listRewrite.insertLast(callToCharsetDefaultCharset, group);
+		if(data.get(ENCODING)!= null) {
+			listRewrite.replace((ASTNode) data.get(REPLACE), callToCharsetDefaultCharset, group);
+		} else {
+			listRewrite.insertLast(callToCharsetDefaultCharset, group);
+		}
 	}
 
 	@Override

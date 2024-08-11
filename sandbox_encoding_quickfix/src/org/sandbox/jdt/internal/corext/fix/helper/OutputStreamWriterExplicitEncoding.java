@@ -45,46 +45,36 @@ public class OutputStreamWriterExplicitEncoding extends AbstractExplicitEncoding
 
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed,ChangeBehavior cb) {
-		HelperVisitor.callClassInstanceCreationVisitor(OutputStreamWriter.class, compilationUnit, datah, nodesprocessed, (visited, holder_a) -> {
-			List<ASTNode> arguments= visited.arguments();
-			if(nodesprocessed.contains(visited) || (arguments.size()>2)) {
+		HelperVisitor.callClassInstanceCreationVisitor(OutputStreamWriter.class, compilationUnit, datah, nodesprocessed, (visited, holder) -> processFoundNode(fixcore, operations, nodesprocessed, cb, visited, holder));
+	}
+
+	private boolean processFoundNode(UseExplicitEncodingFixCore fixcore,
+			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ChangeBehavior cb,
+			ClassInstanceCreation visited, ReferenceHolder<String, Object> holder) {
+		List<ASTNode> arguments= visited.arguments();
+		if(nodesprocessed.contains(visited) || (arguments.size()>2)) {
+			return false;
+		}
+		switch (arguments.size()) {
+		case 2:
+			if(!(arguments.get(1) instanceof StringLiteral)) {
 				return false;
 			}
-			switch (arguments.size()) {
-			case 2:
-				if(!(arguments.get(1) instanceof StringLiteral)) return false;
-				StringLiteral argstring3= (StringLiteral) arguments.get(1);
-				if (!("UTF-8".equals(argstring3.getLiteralValue()))) { //$NON-NLS-1$
-					return false;
-				}
-				holder_a.put(ENCODING,StandardCharsets.UTF_8);
-				holder_a.put(REPLACE,argstring3);
-				break;
-			case 1:
-				break;
-			default:
-				break;
+			StringLiteral argstring3= (StringLiteral) arguments.get(1);
+			if (!("UTF-8".equals(argstring3.getLiteralValue()))) { //$NON-NLS-1$
+				return false;
 			}
-			operations.add(fixcore.rewrite(visited, cb, holder_a));
-			nodesprocessed.add(visited);
-			return false;
-		});
-//		
-//		compilationUnit.accept(new ASTVisitor() {
-//			@Override
-//			public boolean visit(final ClassInstanceCreation visited) {
-//				if(nodesprocessed.contains(visited) || (visited.arguments().size()>1)) {
-//					return false;
-//				}
-//				ITypeBinding binding= visited.resolveTypeBinding();
-//				if (OutputStreamWriter.class.getSimpleName().equals(binding.getName())) {
-//					operations.add(fixcore.rewrite(visited, cb, datah));
-//					nodesprocessed.add(visited);
-//					return false;
-//				}
-//				return true;
-//			}
-//		});
+			holder.put(ENCODING,StandardCharsets.UTF_8);
+			holder.put(REPLACE,argstring3);
+			break;
+		case 1:
+			break;
+		default:
+			break;
+		}
+		operations.add(fixcore.rewrite(visited, cb, holder));
+		nodesprocessed.add(visited);
+		return false;
 	}
 
 	@Override
@@ -114,8 +104,8 @@ public class OutputStreamWriterExplicitEncoding extends AbstractExplicitEncoding
 	@Override
 	public String getPreview(boolean afterRefactoring,ChangeBehavior cb) {
 		if(afterRefactoring) {
-			return "Writer w = new OutputStreamWriter(out, "+computeCharsetforPreview(cb)+");\n"; //$NON-NLS-1$ //$NON-NLS-2$
+			return "Writer w = new OutputStreamWriter(out, "+computeCharsetforPreview(cb)+");\nOutputStreamWriter os=new OutputStreamWriter(new FileOutputStream(\"\"), StandardCharsets.UTF_8);\n"; //$NON-NLS-1$ //$NON-NLS-2$
 		}
-		return "Writer w = new OutputStreamWriter(out);\n"; //$NON-NLS-1$
+		return "Writer w = new OutputStreamWriter(out);\nOutputStreamWriter os=new OutputStreamWriter(new FileOutputStream(\"\"), \"UTF-8\");\n"; //$NON-NLS-1$
 	}
 }

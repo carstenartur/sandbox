@@ -45,6 +45,11 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	 *
 	 */
 	public static final String METHODNAME = "methodname"; //$NON-NLS-1$
+	
+	/**
+	 *
+	 */
+	public static final String PARAMTYPENAMES = "paramtypenames"; //$NON-NLS-1$
 
 	ASTVisitor astvisitor;
 

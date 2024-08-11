@@ -392,7 +392,8 @@ public class Java9CleanUpTest {
 							public class E1 {
 							    void method(String filename) {
 							        String s="asdf"; //$NON-NLS-1$
-							        byte[] bytes= s.getBytes();
+							        //byte[] bytes= s.getBytes(StandardCharsets.UTF_8);
+							        byte[] bytes= s.getBytes("Utf-8");
 							        System.out.println(bytes.length);
 							        ByteArrayOutputStream ba=new ByteArrayOutputStream();
 							        String result=ba.toString();
@@ -431,7 +432,8 @@ public class Java9CleanUpTest {
 									public class E1 {
 									    void method(String filename) {
 									        String s="asdf"; //$NON-NLS-1$
-									        byte[] bytes= s.getBytes(Charset.defaultCharset());
+									        //byte[] bytes= s.getBytes(StandardCharsets.UTF_8);
+									        byte[] bytes= s.getBytes("Utf-8");
 									        System.out.println(bytes.length);
 									        ByteArrayOutputStream ba=new ByteArrayOutputStream();
 									        String result=ba.toString(Charset.defaultCharset().displayName());

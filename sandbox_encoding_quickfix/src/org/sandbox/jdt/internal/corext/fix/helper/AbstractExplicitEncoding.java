@@ -140,7 +140,7 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	 * @param cuRewrite CompilationUnitRewrite
 	 * @param ast AST
 	 * @param cb ChangeBehavior
-	 * @param charset 
+	 * @param charset
 	 * @return MethodInvocation that returns String
 	 */
 	protected MethodInvocation addCharsetStringComputation(final CompilationUnitRewrite cuRewrite, AST ast, ChangeBehavior cb, Charset charset) {

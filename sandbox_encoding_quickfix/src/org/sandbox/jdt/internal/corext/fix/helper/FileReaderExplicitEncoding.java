@@ -57,7 +57,9 @@ public class FileReaderExplicitEncoding extends AbstractExplicitEncoding<ClassIn
 			case 1:
 				break;
 			case 2:
-				if(!(arguments.get(1) instanceof StringLiteral)) return false;
+				if(!(arguments.get(1) instanceof StringLiteral)) {
+					return false;
+				}
 				StringLiteral argstring3= (StringLiteral) arguments.get(1);
 				if (!("UTF-8".equals(argstring3.getLiteralValue()))) { //$NON-NLS-1$
 					return false;
@@ -72,7 +74,7 @@ public class FileReaderExplicitEncoding extends AbstractExplicitEncoding<ClassIn
 			nodesprocessed.add(visited);
 			return false;
 		});
-		
+
 //		compilationUnit.accept(new ASTVisitor() {
 //			@Override
 //			public boolean visit(final ClassInstanceCreation visited) {
