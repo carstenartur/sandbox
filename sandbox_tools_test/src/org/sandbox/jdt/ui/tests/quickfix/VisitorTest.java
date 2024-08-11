@@ -169,7 +169,7 @@ public class VisitorTest {
 	}
 
 	@Test
-	public void simpleTest_oldway() {
+	public void simpleTestOldway() {
 		ASTVisitor astvisitor=new ASTVisitor() {
 			@Override
 			public boolean visit(MethodInvocation node) {
@@ -235,7 +235,7 @@ public class VisitorTest {
 	}
 
 	@Test
-	public void simpleTest2b_oldway() {
+	public void simpleTest2bOldway() {
 		String name ="add"; //$NON-NLS-1$
 		ASTVisitor astvisitor=new ASTVisitor() {
 			@Override
