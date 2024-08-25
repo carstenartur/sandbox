@@ -76,7 +76,7 @@ public class Java8CleanUpTest {
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
 	}
 
-	enum NO_XMLCleanupCases {
+	enum NOXMLCleanupCases {
 
 		whileUsedSpecially(
 				"""
@@ -98,7 +98,7 @@ public class Java8CleanUpTest {
 					""")
 		;
 
-		NO_XMLCleanupCases(String given) {
+		NOXMLCleanupCases(String given) {
 			this.given=given;
 		}
 
@@ -107,8 +107,8 @@ public class Java8CleanUpTest {
 
 	@Disabled
 	@ParameterizedTest
-	@EnumSource(NO_XMLCleanupCases.class)
-	public void testXMLCleanupdonttouch(NO_XMLCleanupCases test) throws CoreException {
+	@EnumSource(NOXMLCleanupCases.class)
+	public void testXMLCleanupdonttouch(NOXMLCleanupCases test) throws CoreException {
 		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("Test.java",test.given,false, null);
 		context.enable(CleanUpConstants.CONTROL_STATEMENTS_CONVERT_FOR_LOOP_TO_ENHANCED);

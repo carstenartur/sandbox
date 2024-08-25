@@ -93,7 +93,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		Map<String, String> options= javaProject.getOptions(false);
 		JavaCore.setComplianceOptions(compliance, options);
 		javaProject.setOptions(options);
-		setfSourceFolder(AbstractEclipseJava.addSourceContainer(getProject(TEST_SETUP_PROJECT), "src", new Path[0], //$NON-NLS-1$
+		setfSourceFolder(addSourceContainer(getProject(TEST_SETUP_PROJECT), "src", new Path[0], //$NON-NLS-1$
 				new Path[0], null, new IClasspathAttribute[0]));
 		Map<String, String> settings= new HashMap<>();
 		fProfile= new ProfileManager.CustomProfile("testProfile", settings, CleanUpProfileVersioner.CURRENT_VERSION, //$NON-NLS-1$

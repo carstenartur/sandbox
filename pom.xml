@@ -13,8 +13,8 @@
 		<rcp-version>eclipse</rcp-version>
 		<!-- <rcp-version>2021-03</rcp-version> -->
 		<jacoco-version>0.8.12</jacoco-version>
-		<java-version>17</java-version>
-		<java-execenv>JavaSE-17</java-execenv>
+		<java-version>21</java-version>
+		<java-execenv>JavaSE-21</java-execenv>
 		<spotbugs-version>4.8.6.2</spotbugs-version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>

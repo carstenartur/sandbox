@@ -73,11 +73,11 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 		try {
 			ReferenceHolder<ASTNode, Object> dataholder= new ReferenceHolder<>();
 			HelperVisitor.callClassInstanceCreationVisitor(Status.class, compilationUnit, dataholder, nodesprocessed, (visited, holder) -> {
-				if (nodesprocessed.contains(visited) || (
+				if (nodesprocessed.contains(visited) || 
 //						(visited.arguments().size() != 3)&&
 //						(visited.arguments().size() != 4)&&
 						(visited.arguments().size() != 5)
-						)) {
+						) {
 					return false;
 				}
 				/**
@@ -99,7 +99,7 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 				}
 //				QualifiedName argstring5 = (QualifiedName) arguments.get(4);
 				QualifiedName argstring1 = (QualifiedName) arguments.get(0);
-				String mybinding= argstring1.getFullyQualifiedName();
+//				String mybinding= argstring1.getFullyQualifiedName();
 				if (istatus.equals(argstring1.toString())) {
 					operations.add(fixcore.rewrite(visited,holder));
 					nodesprocessed.add(visited);
@@ -155,7 +155,7 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 			break;
 		}
 		ASTNodes.replaceButKeepComment(rewrite, visited, staticCall, group);
-		QualifiedName stat= (QualifiedName) arguments.get(0);
+//		QualifiedName stat= (QualifiedName) arguments.get(0);
 //		importRemover.removeImport(IStatus.class.getCanonicalName());
 		remover.registerRemovedNode(visited);
 		remover.applyRemoves(importRewrite);
