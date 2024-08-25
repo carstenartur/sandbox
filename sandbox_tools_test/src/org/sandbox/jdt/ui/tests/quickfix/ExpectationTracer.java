@@ -21,12 +21,6 @@ public class ExpectationTracer extends ConcurrentHashMap<ASTNode,SimpleName> imp
 	private static final long serialVersionUID = 1L;
 	HelperVisitor<ExpectationTracer,ASTNode,SimpleName> hv;
 
-	/**
-	 *
-	 */
-	public ExpectationTracer() {
-	}
-
 	@Override
 	public HelperVisitor<ExpectationTracer,ASTNode,SimpleName> getHelperVisitor() {
 		return hv;

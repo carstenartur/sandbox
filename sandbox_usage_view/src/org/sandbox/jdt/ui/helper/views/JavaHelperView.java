@@ -86,7 +86,7 @@ import org.sandbox.jdt.ui.helper.views.colum.QualifiednameColumn;
 
 public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTarget {
 
-	Logger logger= PlatformUI.getWorkbench().getService(org.eclipse.e4.core.services.log.Logger.class);
+	Logger logger= PlatformUI.getWorkbench().getService(Logger.class);
 	TableViewer tableViewer;
 	private Table table;
 	//	private JERoot fInput;
@@ -97,9 +97,6 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 	//	private Action fFocusAction;
 
 	private Action fCodeSelectAction;
-
-	public JavaHelperView() {
-	}
 
 	@Override
 	public void createPartControl(Composite parent) {

@@ -58,19 +58,18 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.ui.IWorkingSet;
 
-
 public class UpdateNeededSearchPage extends DialogPage implements ISearchPage {
 
 	public static class SearchSettingsData extends HashMap<String, Boolean> {
 		/**
 		 *
 		 */
-		private static final long serialVersionUID= 1L;
+		private static final long serialVersionUID = 1L;
 
 		public SearchSettingsData(int limitTo, int includeMask, int scope) {
-			this.limitTo= limitTo;
-			this.includeMask= includeMask;
-			this.scope= scope;
+			this.limitTo = limitTo;
+			this.includeMask = includeMask;
+			this.scope = scope;
 		}
 
 		public int getLimitTo() {
@@ -78,7 +77,7 @@ public class UpdateNeededSearchPage extends DialogPage implements ISearchPage {
 		}
 
 		public void setLimitTo(int limitTo) {
-			this.limitTo= limitTo;
+			this.limitTo = limitTo;
 		}
 
 		public int getIncludeMask() {
@@ -86,7 +85,7 @@ public class UpdateNeededSearchPage extends DialogPage implements ISearchPage {
 		}
 
 		public void setIncludeMask(int includeMask) {
-			this.includeMask= includeMask;
+			this.includeMask = includeMask;
 		}
 
 		public int getScope() {
@@ -94,7 +93,7 @@ public class UpdateNeededSearchPage extends DialogPage implements ISearchPage {
 		}
 
 		public void setScope(int scope) {
-			this.scope= scope;
+			this.scope = scope;
 		}
 
 		int limitTo;
@@ -106,23 +105,23 @@ public class UpdateNeededSearchPage extends DialogPage implements ISearchPage {
 		public static SearchSettingsData create(IDialogSettings settings, Map<String, Set<String>> listofClassLists) {
 			int limitto;
 			try {
-				limitto= settings.getInt("limitTo"); //$NON-NLS-1$
+				limitto = settings.getInt("limitTo"); //$NON-NLS-1$
 			} catch (NumberFormatException e) {
-				limitto= IJavaSearchConstants.REFERENCES;
+				limitto = IJavaSearchConstants.REFERENCES;
 			}
 			int includemask;
 			try {
-				includemask= settings.getInt("includeMask"); //$NON-NLS-1$
+				includemask = settings.getInt("includeMask"); //$NON-NLS-1$
 			} catch (NumberFormatException e) {
-				includemask= JavaSearchScopeFactory.NO_JRE;
+				includemask = JavaSearchScopeFactory.NO_JRE;
 			}
 			int myscope;
 			try {
-				myscope= settings.getInt("scope"); //$NON-NLS-1$
+				myscope = settings.getInt("scope"); //$NON-NLS-1$
 			} catch (NumberFormatException e) {
-				myscope= ISearchPageContainer.WORKSPACE_SCOPE;
+				myscope = ISearchPageContainer.WORKSPACE_SCOPE;
 			}
-			SearchSettingsData ssd= new SearchSettingsData(limitto, includemask, myscope);
+			SearchSettingsData ssd = new SearchSettingsData(limitto, includemask, myscope);
 			listofClassLists.keySet().forEach(lc -> {
 				ssd.put(lc, settings.getBoolean(lc));
 			});
@@ -140,7 +139,7 @@ public class UpdateNeededSearchPage extends DialogPage implements ISearchPage {
 
 	}
 
-	private final static String PAGE_NAME= "UpdateNeededSearchPage"; //$NON-NLS-1$
+	private final static String PAGE_NAME = "UpdateNeededSearchPage"; //$NON-NLS-1$
 
 	private ISearchPageContainer fContainer;
 
@@ -153,26 +152,26 @@ public class UpdateNeededSearchPage extends DialogPage implements ISearchPage {
 	@Override
 	public void createControl(Composite parent) {
 		initializeDialogUnits(parent);
-		listofClassLists= readClassList();
+		listofClassLists = readClassList();
 		readConfiguration();
 
-		ScrolledComposite scrolledComposite= new ScrolledComposite(parent, SWT.V_SCROLL | SWT.BORDER);
+		ScrolledComposite scrolledComposite = new ScrolledComposite(parent, SWT.V_SCROLL | SWT.BORDER);
 		scrolledComposite.setExpandHorizontal(true);
 		scrolledComposite.setExpandVertical(true);
 
-		Composite composite= new Composite(scrolledComposite, SWT.NONE);
+		Composite composite = new Composite(scrolledComposite, SWT.NONE);
 		composite.setLayout(new RowLayout(SWT.VERTICAL));
 
-		Label lblNewLabel= new Label(composite, SWT.NONE);
+		Label lblNewLabel = new Label(composite, SWT.NONE);
 		lblNewLabel.setText("Select legacy classes to search for"); //$NON-NLS-1$
 		listofClassLists.keySet().forEach(lc -> {
-			Button btnCheckButton= new Button(composite, SWT.CHECK);
+			Button btnCheckButton = new Button(composite, SWT.CHECK);
 			btnCheckButton.setSelection(!leaveoutsearch.get(lc));
 			btnCheckButton.setText(lc);
 			btnCheckButton.addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(SelectionEvent e) {
-					Button button= (Button) e.widget;
+					Button button = (Button) e.widget;
 					if (button.getSelection()) {
 						leaveoutsearch.put(lc, Boolean.FALSE);
 					} else {
@@ -192,10 +191,9 @@ public class UpdateNeededSearchPage extends DialogPage implements ISearchPage {
 		super.dispose();
 	}
 
-
 	private IDialogSettings getDialogSettings() {
 		if (fDialogSettings == null) {
-			fDialogSettings= JavaPlugin.getDefault().getDialogSettingsSection(PAGE_NAME);
+			fDialogSettings = JavaPlugin.getDefault().getDialogSettingsSection(PAGE_NAME);
 		}
 		return fDialogSettings;
 	}
@@ -204,7 +202,7 @@ public class UpdateNeededSearchPage extends DialogPage implements ISearchPage {
 	 * Initializes itself from the stored page settings.
 	 */
 	private void readConfiguration() {
-		leaveoutsearch= SearchSettingsData.create(getDialogSettings(), listofClassLists);
+		leaveoutsearch = SearchSettingsData.create(getDialogSettings(), listofClassLists);
 	}
 
 	/**
@@ -230,55 +228,55 @@ public class UpdateNeededSearchPage extends DialogPage implements ISearchPage {
 
 	private boolean performNewSearch() {
 		// Setup search scope
-		IJavaSearchScope scope= null;
-		String scopeDescription= ""; //$NON-NLS-1$
-		int limitTo= IJavaSearchConstants.ALL_OCCURRENCES;
-		int includeMask= IJavaSearchScope.SOURCES;
-		JavaSearchScopeFactory factory= JavaSearchScopeFactory.getInstance();
+		IJavaSearchScope scope = null;
+		String scopeDescription = ""; //$NON-NLS-1$
+		int limitTo = IJavaSearchConstants.ALL_OCCURRENCES;
+		int includeMask = IJavaSearchScope.SOURCES;
+		JavaSearchScopeFactory factory = JavaSearchScopeFactory.getInstance();
 
 		switch (getContainer().getSelectedScope()) {
 		case ISearchPageContainer.WORKSPACE_SCOPE:
-			scopeDescription= factory.getWorkspaceScopeDescription(includeMask);
-			scope= factory.createWorkspaceScope(includeMask);
+			scopeDescription = factory.getWorkspaceScopeDescription(includeMask);
+			scope = factory.createWorkspaceScope(includeMask);
 			break;
 
 		case ISearchPageContainer.SELECTION_SCOPE:
-			IJavaElement[] javaElements= {};
+			IJavaElement[] javaElements = {};
 
 			if (getContainer().getActiveEditorInput() != null) {
-				IFile file= getContainer().getActiveEditorInput().getAdapter(IFile.class);
+				IFile file = getContainer().getActiveEditorInput().getAdapter(IFile.class);
 
 				if (file != null && file.exists()) {
-					IJavaElement javaElement= JavaCore.create(file);
+					IJavaElement javaElement = JavaCore.create(file);
 
 					if (javaElement != null) {
-						javaElements= new IJavaElement[] { javaElement };
+						javaElements = new IJavaElement[] { javaElement };
 					}
 				}
 			} else {
-				javaElements= factory.getJavaElements(getContainer().getSelection());
+				javaElements = factory.getJavaElements(getContainer().getSelection());
 			}
 
-			scope= factory.createJavaSearchScope(javaElements, includeMask);
-			scopeDescription= factory.getSelectionScopeDescription(javaElements, includeMask);
+			scope = factory.createJavaSearchScope(javaElements, includeMask);
+			scopeDescription = factory.getSelectionScopeDescription(javaElements, includeMask);
 			break;
 
 		case ISearchPageContainer.SELECTED_PROJECTS_SCOPE:
-			String[] projectNames= getContainer().getSelectedProjectNames();
-			scope= factory.createJavaProjectSearchScope(projectNames, includeMask);
-			scopeDescription= factory.getProjectScopeDescription(projectNames, includeMask);
+			String[] projectNames = getContainer().getSelectedProjectNames();
+			scope = factory.createJavaProjectSearchScope(projectNames, includeMask);
+			scopeDescription = factory.getProjectScopeDescription(projectNames, includeMask);
 			break;
 
 		case ISearchPageContainer.WORKING_SET_SCOPE:
-			IWorkingSet[] workingSets= getContainer().getSelectedWorkingSets();
+			IWorkingSet[] workingSets = getContainer().getSelectedWorkingSets();
 
 			// Should not happen - just to be sure
 			if (workingSets == null || workingSets.length < 1) {
 				return false;
 			}
 
-			scopeDescription= factory.getWorkingSetScopeDescription(workingSets, includeMask);
-			scope= factory.createJavaSearchScope(workingSets, includeMask);
+			scopeDescription = factory.getWorkingSetScopeDescription(workingSets, includeMask);
+			scope = factory.createJavaSearchScope(workingSets, includeMask);
 			SearchUtil.updateLRUWorkingSets(workingSets);
 			break;
 
@@ -286,10 +284,10 @@ public class UpdateNeededSearchPage extends DialogPage implements ISearchPage {
 			break;
 		}
 
-		IJavaElement element= null;
-		IWorkspaceRoot wspace= ResourcesPlugin.getWorkspace().getRoot();
+		IJavaElement element = null;
+		IWorkspaceRoot wspace = ResourcesPlugin.getWorkspace().getRoot();
 
-		List<QuerySpecification> arl= new ArrayList<>();
+		List<QuerySpecification> arl = new ArrayList<>();
 
 		for (Entry<String, Set<String>> lc : listofClassLists.entrySet()) {
 			if (leaveoutsearch.get(lc.getKey())) {
@@ -300,8 +298,8 @@ public class UpdateNeededSearchPage extends DialogPage implements ISearchPage {
 				for (IProject pr : wspace.getProjects()) {
 					try {
 						if (pr.isNatureEnabled("org.eclipse.jdt.core.javanature")) { //$NON-NLS-1$
-							IJavaProject project= JavaCore.create(pr);
-							element= JavaModelUtil.findTypeContainer(project, checkclass);
+							IJavaProject project = JavaCore.create(pr);
+							element = JavaModelUtil.findTypeContainer(project, checkclass);
 
 							if (element instanceof IType) {
 								break;
@@ -313,7 +311,8 @@ public class UpdateNeededSearchPage extends DialogPage implements ISearchPage {
 				}
 
 				if (element != null) {
-					QuerySpecification querySpec= new ElementQuerySpecification(element, limitTo, scope, scopeDescription);
+					QuerySpecification querySpec = new ElementQuerySpecification(element, limitTo, scope,
+							scopeDescription);
 					arl.add(querySpec);
 				}
 			}
@@ -323,26 +322,25 @@ public class UpdateNeededSearchPage extends DialogPage implements ISearchPage {
 			return false;
 		}
 
-		JavaSearchQuery textSearchJob= new JavaSearchQuery(arl);
+		JavaSearchQuery textSearchJob = new JavaSearchQuery(arl);
 		NewSearchUI.runQueryInBackground(textSearchJob);
 		return true;
 	}
-
 
 	/*
 	 * Implements method from ISearchPage
 	 */
 	@Override
 	public void setContainer(ISearchPageContainer container) {
-		fContainer= container;
+		fContainer = container;
 	}
 
 	private Map<String, Set<String>> readClassList() {
-		listofClassLists= new HashMap<>();
-		String filename= "/org/sandbox/jdt/internal/ui/search/classlist.properties"; //$NON-NLS-1$
-		try (InputStream input= getClass().getClassLoader().getResourceAsStream(filename)) {
+		listofClassLists = new HashMap<>();
+		String filename = "/org/sandbox/jdt/internal/ui/search/classlist.properties"; //$NON-NLS-1$
+		try (InputStream input = getClass().getClassLoader().getResourceAsStream(filename)) {
 
-			Properties prop= new Properties();
+			Properties prop = new Properties();
 
 			if (input == null) {
 				return Collections.emptyMap();
@@ -350,7 +348,7 @@ public class UpdateNeededSearchPage extends DialogPage implements ISearchPage {
 
 			prop.load(input);
 			@SuppressWarnings({ "rawtypes", "unchecked" })
-			Map<String, String> sprop= new HashMap(prop);
+			Map<String, String> sprop = new HashMap(prop);
 			sprop.forEach((key, value) -> listofClassLists.put(value, new HashSet<>()));
 			sprop.forEach((key, value) -> listofClassLists.get(value).add(key));
 

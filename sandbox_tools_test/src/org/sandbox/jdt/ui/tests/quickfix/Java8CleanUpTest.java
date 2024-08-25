@@ -42,7 +42,7 @@ public class Java8CleanUpTest {
 			        }
 			    }
 			}
-			""",
+			""", //$NON-NLS-1$
 
 				"""
 					package test;
@@ -55,7 +55,7 @@ public class Java8CleanUpTest {
 					        }
 					    }
 					}
-					"""),
+					"""), //$NON-NLS-1$
 		whileGenericSubtype("""
 			package test;
 			import java.util.*;
@@ -68,7 +68,7 @@ public class Java8CleanUpTest {
 			        }
 			    }
 			}
-			""",
+			""", //$NON-NLS-1$
 
 				"""
 					package test;
@@ -80,7 +80,7 @@ public class Java8CleanUpTest {
 					        }
 					    }
 					}
-					"""),
+					"""), //$NON-NLS-1$
 		whileFix("""
 			package test;
 			import java.util.*;
@@ -97,7 +97,7 @@ public class Java8CleanUpTest {
 			        System.out.println();
 			    }
 			}
-			""",
+			""", //$NON-NLS-1$
 
 				"""
 					package test;
@@ -113,7 +113,7 @@ public class Java8CleanUpTest {
 					        System.out.println();
 					    }
 					}
-					"""),
+					"""), //$NON-NLS-1$
 		whileFixTwice("""
 			package test;
 			import java.util.*;
@@ -141,7 +141,7 @@ public class Java8CleanUpTest {
 			        System.out.println();
 			    }
 			}
-			""",
+			""", //$NON-NLS-1$
 
 				"""
 					package test;
@@ -166,7 +166,7 @@ public class Java8CleanUpTest {
 					        System.out.println();
 					    }
 					}
-					"""),
+					"""), //$NON-NLS-1$
 		whileFixNested("""
 			package test;
 			import java.util.*;
@@ -187,7 +187,7 @@ public class Java8CleanUpTest {
 			        System.out.println();
 			    }
 			}
-			""",
+			""", //$NON-NLS-1$
 
 				"""
 					package test;
@@ -205,7 +205,7 @@ public class Java8CleanUpTest {
 					        System.out.println();
 					    }
 					}
-					"""),
+					"""), //$NON-NLS-1$
 		whileFixNested2("""
 			package test;
 			import java.util.*;
@@ -225,7 +225,7 @@ public class Java8CleanUpTest {
 			        System.out.println();
 			    }
 			}
-			""",
+			""", //$NON-NLS-1$
 
 				"""
 					package test;
@@ -243,7 +243,7 @@ public class Java8CleanUpTest {
 					        System.out.println();
 					    }
 					}
-					"""),
+					"""), //$NON-NLS-1$
 		whileWarning(
 				"""
 					package test;
@@ -258,18 +258,18 @@ public class Java8CleanUpTest {
 					        }
 					    }
 					}
-					"""
-						,"package test;\n"
-								+ "import java.util.*;\n"
-								+ "public class Test {\n"
-								+ "    void m(List<String> strings) {\n"
-								+ "        for (String s : strings) {\n"
-								+ "            System.out.println(s);\n"
-								+ "            System.err.println(s);\n"
-								+ "        }\n"
-								+ "    }\n"
-								+ "}\n"
-								+ ""),
+					""" //$NON-NLS-1$
+						,"package test;\n" //$NON-NLS-1$
+								+ "import java.util.*;\n" //$NON-NLS-1$
+								+ "public class Test {\n" //$NON-NLS-1$
+								+ "    void m(List<String> strings) {\n" //$NON-NLS-1$
+								+ "        for (String s : strings) {\n" //$NON-NLS-1$
+								+ "            System.out.println(s);\n" //$NON-NLS-1$
+								+ "            System.err.println(s);\n" //$NON-NLS-1$
+								+ "        }\n" //$NON-NLS-1$
+								+ "    }\n" //$NON-NLS-1$
+								+ "}\n" //$NON-NLS-1$
+								+ ""), //$NON-NLS-1$
 		whileNotRaw(
 				"""
 					package test;
@@ -285,19 +285,19 @@ public class Java8CleanUpTest {
 					    }
 					    static class MyList extends ArrayList<String> {}
 					}
-					"""
-						,"package test;\n"
-								+ "import java.util.*;\n"
-								+ "public class Test {\n"
-								+ "    void m(MyList strings) {\n"
-								+ "        for (String s : strings) {\n"
-								+ "            System.out.println(s);\n"
-								+ "            System.err.println(s);\n"
-								+ "        }\n"
-								+ "    }\n"
-								+ "    static class MyList extends ArrayList<String> {}\n"
-								+ "}\n"
-								+ ""),
+					""" //$NON-NLS-1$
+						,"package test;\n" //$NON-NLS-1$
+								+ "import java.util.*;\n" //$NON-NLS-1$
+								+ "public class Test {\n" //$NON-NLS-1$
+								+ "    void m(MyList strings) {\n" //$NON-NLS-1$
+								+ "        for (String s : strings) {\n" //$NON-NLS-1$
+								+ "            System.out.println(s);\n" //$NON-NLS-1$
+								+ "            System.err.println(s);\n" //$NON-NLS-1$
+								+ "        }\n" //$NON-NLS-1$
+								+ "    }\n" //$NON-NLS-1$
+								+ "    static class MyList extends ArrayList<String> {}\n" //$NON-NLS-1$
+								+ "}\n" //$NON-NLS-1$
+								+ ""), //$NON-NLS-1$
 		whileSubtype(
 				"""
 					package test;
@@ -312,37 +312,37 @@ public class Java8CleanUpTest {
 					        }
 					    }
 					}
-					"""
-						,"package test;\n"
-								+ "import java.util.*;\n"
-								+ "public class Test {\n"
-								+ "    void m(List<PropertyResourceBundle> bundles) {\n"
-								+ "        for (ResourceBundle bundle : bundles) {\n"
-								+ "            System.out.println(bundle);\n"
-								+ "            System.err.println(bundle);\n"
-								+ "        }\n"
-								+ "    }\n"
-								+ "}\n"
-								+ "");
+					""" //$NON-NLS-1$
+						,"package test;\n" //$NON-NLS-1$
+								+ "import java.util.*;\n" //$NON-NLS-1$
+								+ "public class Test {\n" //$NON-NLS-1$
+								+ "    void m(List<PropertyResourceBundle> bundles) {\n" //$NON-NLS-1$
+								+ "        for (ResourceBundle bundle : bundles) {\n" //$NON-NLS-1$
+								+ "            System.out.println(bundle);\n" //$NON-NLS-1$
+								+ "            System.err.println(bundle);\n" //$NON-NLS-1$
+								+ "        }\n" //$NON-NLS-1$
+								+ "    }\n" //$NON-NLS-1$
+								+ "}\n" //$NON-NLS-1$
+								+ ""); //$NON-NLS-1$
+
+		String given, expected;
 
 		While2EnhancedForLoop(String given, String expected) {
 			this.given=given;
 			this.expected=expected;
 		}
-
-		String given, expected;
 	}
 
 	@ParameterizedTest
 	@EnumSource(While2EnhancedForLoop.class)
 	public void testWhile2enhancedForLoopParametrized(While2EnhancedForLoop test) throws CoreException {
-		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null);
-		ICompilationUnit cu= pack.createCompilationUnit("TestDemo.java", test.given, false, null);
+		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
+		ICompilationUnit cu= pack.createCompilationUnit("TestDemo.java", test.given, false, null); //$NON-NLS-1$
 		context.enable(CleanUpConstants.CONTROL_STATEMENTS_CONVERT_FOR_LOOP_TO_ENHANCED);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
 	}
 
-	enum NO_While2EnhancedForLoop {
+	enum NOWhile2EnhancedForLoop {
 
 		whileUsedSpecially(
 				"""
@@ -361,7 +361,7 @@ public class Java8CleanUpTest {
 					        }
 					    }
 					}
-					""")
+					""") //$NON-NLS-1$
 		,
 		whileRaw(
 				"""
@@ -377,7 +377,7 @@ public class Java8CleanUpTest {
 					        }
 					    }
 					}
-					""")
+					""") //$NON-NLS-1$
 		,
 		whileWrongType(
 				"""
@@ -393,7 +393,7 @@ public class Java8CleanUpTest {
 					        }
 					    }
 					}
-					""")
+					""") //$NON-NLS-1$
 		,
 
 		whileNotIterable(
@@ -413,7 +413,7 @@ public class Java8CleanUpTest {
 					        Iterator<String> iterator();
 					    }
 					}
-					""")
+					""") //$NON-NLS-1$
 		,
 
 		whileNotSubtype(
@@ -430,9 +430,9 @@ public class Java8CleanUpTest {
 					        }
 					    }
 					}
-					""");
+					"""); //$NON-NLS-1$
 
-		NO_While2EnhancedForLoop(String given) {
+		NOWhile2EnhancedForLoop(String given) {
 			this.given=given;
 		}
 
@@ -440,10 +440,10 @@ public class Java8CleanUpTest {
 	}
 
 	@ParameterizedTest
-	@EnumSource(NO_While2EnhancedForLoop.class)
-	public void testWhile2enhancedForLoopdonttouch(NO_While2EnhancedForLoop test) throws CoreException {
-		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test", false, null);
-		ICompilationUnit cu= pack.createCompilationUnit("Test.java",test.given,false, null);
+	@EnumSource(NOWhile2EnhancedForLoop.class)
+	public void testWhile2enhancedForLoopdonttouch(NOWhile2EnhancedForLoop test) throws CoreException {
+		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
+		ICompilationUnit cu= pack.createCompilationUnit("Test.java",test.given,false, null); //$NON-NLS-1$
 		context.enable(CleanUpConstants.CONTROL_STATEMENTS_CONVERT_FOR_LOOP_TO_ENHANCED);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}

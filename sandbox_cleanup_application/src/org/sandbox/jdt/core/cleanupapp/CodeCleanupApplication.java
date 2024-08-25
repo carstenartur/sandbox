@@ -33,6 +33,8 @@ import org.eclipse.osgi.util.NLS;
 import org.eclipse.text.edits.TextEdit;
 
 public class CodeCleanupApplication implements IApplication {
+	private static final File[] FILES = new File[0];
+
 	private static final String ARG_CONFIG = "-config"; //$NON-NLS-1$
 
 	private static final String ARG_HELP = "-help"; //$NON-NLS-1$
@@ -54,6 +56,12 @@ public class CodeCleanupApplication implements IApplication {
 	private boolean quiet = false;
 
 	private boolean verbose = false;
+
+	private static final  int INITIALSIZE = 1;
+
+	private static final int DEFAULT_MODE = 0;
+
+	private static final int CONFIG_MODE = 1;
 
 
 	/**
@@ -195,14 +203,11 @@ public class CodeCleanupApplication implements IApplication {
 		int index = 0;
 		final int argCount = argsArray.length;
 
-		final int DEFAULT_MODE = 0;
-		final int CONFIG_MODE = 1;
-
 		int mode = DEFAULT_MODE;
-		final int INITIAL_SIZE = 1;
+		
 		int fileCounter = 0;
 
-		File[] filesToFormat = new File[INITIAL_SIZE];
+		File[] filesToFormat = new File[INITIALSIZE];
 
 		loop: while (index < argCount) {
 			String currentArg = argsArray[index++];
@@ -216,7 +221,7 @@ public class CodeCleanupApplication implements IApplication {
 					}
 					if (ARG_HELP.equals(currentArg)) {
 						displayHelp();
-						return null;
+						return FILES;
 					}
 					if (ARG_VERBOSE.equals(currentArg)) {
 						this.verbose = true;
@@ -234,7 +239,7 @@ public class CodeCleanupApplication implements IApplication {
 					File file = new File(currentArg);
 					if (file.exists()) {
 						if (filesToFormat.length == fileCounter) {
-							System.arraycopy(filesToFormat, 0, (filesToFormat = new File[fileCounter * 2]), 0, fileCounter);
+							System.arraycopy(filesToFormat, 0, filesToFormat = new File[fileCounter * 2], 0, fileCounter);
 						}
 						filesToFormat[fileCounter++] = file;
 					} else {
@@ -248,7 +253,7 @@ public class CodeCleanupApplication implements IApplication {
 										  Messages.bind(Messages.CommandLineErrorFile, canonicalPath):
 										  Messages.bind(Messages.CommandLineErrorFileTryFullPath, canonicalPath);
 						displayHelp(errorMsg);
-						return null;
+						return FILES;
 					}
 					break;
 				case CONFIG_MODE :
@@ -256,7 +261,7 @@ public class CodeCleanupApplication implements IApplication {
 					this.options = readConfig(currentArg);
 					if (this.options == null) {
 						displayHelp(Messages.bind(Messages.CommandLineErrorConfig, currentArg));
-						return null;
+						return FILES;
 					}
 					mode = DEFAULT_MODE;
 					continue loop;
@@ -280,7 +285,7 @@ public class CodeCleanupApplication implements IApplication {
 			return null;
 		}
 		if (filesToFormat.length != fileCounter) {
-			System.arraycopy(filesToFormat, 0, (filesToFormat = new File[fileCounter]), 0, fileCounter);
+			System.arraycopy(filesToFormat, 0, filesToFormat = new File[fileCounter], 0, fileCounter);
 		}
 		return filesToFormat;
 	}

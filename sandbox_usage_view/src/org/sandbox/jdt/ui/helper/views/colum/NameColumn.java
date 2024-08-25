@@ -21,9 +21,6 @@ public class NameColumn extends AbstractColumn {
 	private static final int bounds= 100;
 	private static final String title= "Variable name"; //$NON-NLS-1$
 
-	public NameColumn() {
-	}
-
 	@Override
 	public void createColumn(TableViewer viewer, int pos) {
 		// First column is for the variable name

@@ -44,7 +44,7 @@ public class Java8CleanUpTest {
 					IProgressMonitor subProgressMonitor2= new SubProgressMonitor(monitor, 2);
 				}
 			}
-			""",
+			""", //$NON-NLS-1$
 
 				"""
 					package test;
@@ -60,7 +60,7 @@ public class Java8CleanUpTest {
 							IProgressMonitor subProgressMonitor2= subMonitor.split(2);
 						}
 					}
-					"""),
+					"""), //$NON-NLS-1$
 		Twice("""
 			package test;
 			import java.util.*;
@@ -80,7 +80,7 @@ public class Java8CleanUpTest {
 					IProgressMonitor subProgressMonitor4= new SubProgressMonitor(monitor, 2);
 				}
 			}
-			""",
+			""", //$NON-NLS-1$
 
 				"""
 					package test;
@@ -101,27 +101,27 @@ public class Java8CleanUpTest {
 							IProgressMonitor subProgressMonitor4= subMonitor.split(2);
 						}
 					}
-					""");
+					"""); //$NON-NLS-1$
+
+		String given, expected;
 
 		JFaceCleanupCases(String given, String expected) {
 			this.given=given;
 			this.expected=expected;
 		}
-
-		String given, expected;
 	}
 
 	//	@Disabled
 	@ParameterizedTest
 	@EnumSource(JFaceCleanupCases.class)
 	public void testJFaceCleanupParametrized(JFaceCleanupCases test) throws CoreException {
-		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test", false, null);
-		ICompilationUnit cu= pack.createCompilationUnit("Test.java", test.given, false, null);
+		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
+		ICompilationUnit cu= pack.createCompilationUnit("Test.java", test.given, false, null); //$NON-NLS-1$
 		context.enable(MYCleanUpConstants.JFACE_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
 	}
 
-	enum NO_JFaceCleanupCases {
+	enum NOJFaceCleanupCases {
 
 		NOCase(
 				"""
@@ -140,10 +140,10 @@ public class Java8CleanUpTest {
 					        }
 					    }
 					}
-					""")
+					""") //$NON-NLS-1$
 		;
 
-		NO_JFaceCleanupCases(String given) {
+		NOJFaceCleanupCases(String given) {
 			this.given=given;
 		}
 
@@ -152,10 +152,10 @@ public class Java8CleanUpTest {
 
 	//	@Disabled
 	@ParameterizedTest
-	@EnumSource(NO_JFaceCleanupCases.class)
-	public void testJFaceCleanupdonttouch(NO_JFaceCleanupCases test) throws CoreException {
-		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test", false, null);
-		ICompilationUnit cu= pack.createCompilationUnit("Test.java",test.given,false, null);
+	@EnumSource(NOJFaceCleanupCases.class)
+	public void testJFaceCleanupdonttouch(NOJFaceCleanupCases test) throws CoreException {
+		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
+		ICompilationUnit cu= pack.createCompilationUnit("Test.java",test.given,false, null); //$NON-NLS-1$
 		context.enable(MYCleanUpConstants.JFACE_CLEANUP);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
