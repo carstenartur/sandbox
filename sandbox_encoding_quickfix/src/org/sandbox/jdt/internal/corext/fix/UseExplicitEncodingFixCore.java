@@ -39,6 +39,7 @@ import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
 public enum UseExplicitEncodingFixCore {
 
+	CHARSET(new StringGetBytesExplicitEncoding()),
 	STRING_GETBYTES(new StringGetBytesExplicitEncoding()),
 	INPUTSTREAMREADER(new InputStreamReaderExplicitEncoding()),
 	OUTPUTSTREAMWRITER(new OutputStreamWriterExplicitEncoding()),

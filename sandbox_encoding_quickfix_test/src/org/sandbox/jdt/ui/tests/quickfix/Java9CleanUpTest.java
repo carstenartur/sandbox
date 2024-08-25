@@ -18,6 +18,54 @@ public class Java9CleanUpTest {
 
 	enum ExplicitEncodingPatterns {
 
+//		CHARSET("""
+//				package test1;
+//
+//				import java.io.ByteArrayOutputStream;
+//				import java.io.InputStreamReader;
+//				import java.io.FileInputStream;
+//				import java.io.FileReader;
+//				import java.io.Reader;
+//				import java.io.FileNotFoundException;
+//
+//				public class E1 {
+//				    void method(String filename) {
+//				        Charset cs1= Charset.forName("UTF-8");
+//				        Charset cs2= Charset.forName("UTF-16");
+//				        Charset cs3= Charset.forName("UTF-16BE");
+//				        Charset cs4= Charset.forName("UTF-16LE");
+//				        Charset cs5= Charset.forName("ISO-8859-1");
+//				        Charset cs6= Charset.forName("US-ASCII");
+//				        String result= cs1.toString();
+//				       }
+//				    }
+//				}
+//				""",
+//
+//					"""
+//						package test1;
+//
+//						import java.io.ByteArrayOutputStream;
+//						import java.io.InputStreamReader;
+//						import java.io.FileInputStream;
+//						import java.io.FileReader;
+//						import java.io.Reader;
+//						import java.nio.charset.Charset;
+//						import java.io.FileNotFoundException;
+//
+//						public class E1 {
+//						    void method(String filename) {
+//						        Charset cs1= StandardCharsets.UTF_8;
+//						        Charset cs2= StandardCharsets.UTF_16;
+//						        Charset cs3= StandardCharsets.UTF_16BE;
+//						        Charset cs4= StandardCharsets.UTF_16LE;
+//						        Charset cs5= StandardCharsets.ISO_8859_1;
+//						        Charset cs6= StandardCharsets.US_ASCII;
+//						        String result= cs.toString();
+//						       }
+//						    }
+//						}
+//						"""),
 		BYTEARRAYOUTSTREAM("""
 			package test1;
 
