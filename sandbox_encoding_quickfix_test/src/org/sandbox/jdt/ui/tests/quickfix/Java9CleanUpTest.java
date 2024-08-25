@@ -457,12 +457,13 @@ public class Java9CleanUpTest {
 									}
 									""");
 
+		String given;
+		String expected;
+
 		ExplicitEncodingPatterns(String given, String expected) {
 			this.given=given;
 			this.expected=expected;
 		}
-
-		String given, expected;
 	}
 
 	@ParameterizedTest

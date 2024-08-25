@@ -1174,12 +1174,13 @@ public class Java8CleanUpTest {
 					    }
 					}""");
 
+		String given;
+		String expected;
+
 		UseFunctionalLoop(String given, String expected) {
 			this.given=given;
 			this.expected=expected;
 		}
-
-		String given, expected;
 	}
 
 	@Disabled

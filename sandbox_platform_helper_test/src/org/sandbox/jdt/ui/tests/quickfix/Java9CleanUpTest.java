@@ -74,12 +74,13 @@ public class Java9CleanUpTest {
 						}
 					}"""); //$NON-NLS-1$
 
+		String given;
+		String expected;
+
 		PlatformStatusPatterns(String given, String expected) {
 			this.given=given;
 			this.expected=expected;
 		}
-
-		String given, expected;
 	}
 
 	@ParameterizedTest

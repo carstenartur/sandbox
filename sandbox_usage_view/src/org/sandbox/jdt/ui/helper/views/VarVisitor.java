@@ -26,6 +26,7 @@ final class VarVisitor extends ASTVisitor {
 	 *
 	 */
 	private final JHViewContentProvider varvisitor;
+	Set<IVariableBinding> methods= new HashSet<>();
 
 	/**
 	 * @param jhViewContentProvider
@@ -33,8 +34,6 @@ final class VarVisitor extends ASTVisitor {
 	VarVisitor(JHViewContentProvider jhViewContentProvider) {
 		varvisitor= jhViewContentProvider;
 	}
-
-	Set<IVariableBinding> methods= new HashSet<>();
 
 	@Override
 	public boolean visit(SimpleName node) {
