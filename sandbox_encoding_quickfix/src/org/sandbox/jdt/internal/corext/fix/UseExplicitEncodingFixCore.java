@@ -29,6 +29,8 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.helper.AbstractExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.AbstractExplicitEncoding.ChangeBehavior;
 import org.sandbox.jdt.internal.corext.fix.helper.ByteArrayOutputStreamExplicitEncoding;
+import org.sandbox.jdt.internal.corext.fix.helper.ChannelsNewReaderExplicitEncoding;
+import org.sandbox.jdt.internal.corext.fix.helper.CharsetForNameExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.FileReaderExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.FileWriterExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.InputStreamReaderExplicitEncoding;
@@ -39,7 +41,8 @@ import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
 public enum UseExplicitEncodingFixCore {
 
-	CHARSET(new StringGetBytesExplicitEncoding()),
+	CHARSET(new CharsetForNameExplicitEncoding()),
+	CHANNELS(new ChannelsNewReaderExplicitEncoding()),
 	STRING_GETBYTES(new StringGetBytesExplicitEncoding()),
 	INPUTSTREAMREADER(new InputStreamReaderExplicitEncoding()),
 	OUTPUTSTREAMWRITER(new OutputStreamWriterExplicitEncoding()),

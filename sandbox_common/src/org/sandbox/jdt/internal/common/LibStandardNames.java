@@ -81,6 +81,10 @@ public class LibStandardNames {
 	/**
 	 *
 	 */
+	public static final String METHOD_NEW_READER= "newReader"; //$NON-NLS-1$
+	/**
+	 *
+	 */
 	public static final String METHOD_TOSTRING= "toString"; //$NON-NLS-1$
 	/**
 	 *
