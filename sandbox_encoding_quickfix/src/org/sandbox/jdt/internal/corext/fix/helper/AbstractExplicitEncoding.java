@@ -40,6 +40,7 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
  * @param <T> Type found in Visitor
  */
 public abstract class AbstractExplicitEncoding<T extends ASTNode> {
+	static Set<String> encodings= Set.of("UTF-8","UTF-16","UTF-16BE","UTF-16LE","ISO-8859-1","US-ASCII"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$
 	public enum ChangeBehavior {KEEP, USE_UTF8, USE_UTF8_AGGREGATE}
 	ReferenceHolder<String, Object> datah= new ReferenceHolder<>();
 

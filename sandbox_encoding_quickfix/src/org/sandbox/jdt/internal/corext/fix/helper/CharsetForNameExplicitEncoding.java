@@ -63,7 +63,7 @@ public class CharsetForNameExplicitEncoding extends AbstractExplicitEncoding<Met
 				return false;
 			}
 			StringLiteral argstring3= (StringLiteral) arguments.get(0);
-			if (!"UTF-8".equals(argstring3.getLiteralValue())) { //$NON-NLS-1$
+			if (!encodings.contains(argstring3.getLiteralValue())) {
 				return false;
 			}
 			holder.put(ENCODING,StandardCharsets.UTF_8);

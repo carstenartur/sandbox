@@ -13,7 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import static org.sandbox.jdt.internal.common.LibStandardNames.METHOD_NEW_READER;
+import static org.sandbox.jdt.internal.common.LibStandardNames.METHOD_NEW_WRITER;
 
 import java.nio.channels.Channels;
 import java.nio.charset.Charset;
@@ -36,16 +36,16 @@ import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 /**
- * Find:  Channels.newReader(ch,"UTF-8")
+ * Find:  Channels.newWriter(ch,"UTF-8")
  *
- * Rewrite: Channels.newReader(ch,StandardCharsets.UTF_8)
+ * Rewrite: Channels.newWriter(ch,StandardCharsets.UTF_8)
  *
  */
-public class ChannelsNewReaderExplicitEncoding extends AbstractExplicitEncoding<MethodInvocation> {
+public class ChannelsNewWriterExplicitEncoding extends AbstractExplicitEncoding<MethodInvocation> {
 
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed,ChangeBehavior cb) {
-		HelperVisitor.callMethodInvocationVisitor(Channels.class, METHOD_NEW_READER, compilationUnit, datah, nodesprocessed, (visited, holder) -> processFoundNode(fixcore, operations, nodesprocessed, cb, visited, holder));
+		HelperVisitor.callMethodInvocationVisitor(Channels.class, METHOD_NEW_WRITER, compilationUnit, datah, nodesprocessed, (visited, holder) -> processFoundNode(fixcore, operations, nodesprocessed, cb, visited, holder));
 	}
 
 	private boolean processFoundNode(UseExplicitEncodingFixCore fixcore,
@@ -103,10 +103,10 @@ public class ChannelsNewReaderExplicitEncoding extends AbstractExplicitEncoding<
 	@Override
 	public String getPreview(boolean afterRefactoring,ChangeBehavior cb) {
 		if(afterRefactoring) {
-			return "Reader r=\"Channels.newReader(ch,StandardCharsets.UTF_8)\";\n"+ //$NON-NLS-1$
+			return "Writer w=\"Channels.newWriter(StandardCharsets.UTF_8)\";\n"+ //$NON-NLS-1$
 					"byte[] bytes= s.getBytes("+computeCharsetforPreview(cb)+");\n"; //$NON-NLS-1$ //$NON-NLS-2$
 		}
-		return "Reader r=\"Channels.newReader(ch,\"UTF-8\")\";\n"+ //$NON-NLS-1$
+		return "Writer w=\"Channels.newWriter(\"UTF-8\")\";\n"+ //$NON-NLS-1$
 		"byte[] bytes= s.getBytes();\n"; //$NON-NLS-1$
 	}
 }

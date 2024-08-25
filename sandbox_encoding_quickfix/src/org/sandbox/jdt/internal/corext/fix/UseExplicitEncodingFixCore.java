@@ -30,11 +30,13 @@ import org.sandbox.jdt.internal.corext.fix.helper.AbstractExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.AbstractExplicitEncoding.ChangeBehavior;
 import org.sandbox.jdt.internal.corext.fix.helper.ByteArrayOutputStreamExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.ChannelsNewReaderExplicitEncoding;
+import org.sandbox.jdt.internal.corext.fix.helper.ChannelsNewWriterExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.CharsetForNameExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.FileReaderExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.FileWriterExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.InputStreamReaderExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.OutputStreamWriterExplicitEncoding;
+import org.sandbox.jdt.internal.corext.fix.helper.PrintStreamExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.PrintWriterExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.StringGetBytesExplicitEncoding;
 import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
@@ -42,13 +44,15 @@ import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 public enum UseExplicitEncodingFixCore {
 
 	CHARSET(new CharsetForNameExplicitEncoding()),
-	CHANNELS(new ChannelsNewReaderExplicitEncoding()),
+	CHANNELSNEWREADER(new ChannelsNewReaderExplicitEncoding()),
+	CHANNELSNEWWRITER(new ChannelsNewWriterExplicitEncoding()),
 	STRING_GETBYTES(new StringGetBytesExplicitEncoding()),
 	INPUTSTREAMREADER(new InputStreamReaderExplicitEncoding()),
 	OUTPUTSTREAMWRITER(new OutputStreamWriterExplicitEncoding()),
 	FILEREADER(new FileReaderExplicitEncoding()),
 	FILEWRITER(new FileWriterExplicitEncoding()),
 	PRINTWRITER(new PrintWriterExplicitEncoding()),
+	PRINTSTREAM(new PrintStreamExplicitEncoding()),
 	BYTEARRAYOUTPUTSTREAM(new ByteArrayOutputStreamExplicitEncoding());
 
 	AbstractExplicitEncoding<ASTNode> explicitencoding;
