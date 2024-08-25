@@ -574,7 +574,7 @@ public enum VisitorEnum {
 		return Stream.of(VisitorEnum.values());
 	}
 
-	static final Map<Integer, VisitorEnum> values = Arrays.stream(VisitorEnum.values())
+	static final Map<Integer, VisitorEnum> values = Arrays.stream(values())
 			.collect(Collectors.toMap(VisitorEnum::getValue, Function.identity()));
 
 	/**

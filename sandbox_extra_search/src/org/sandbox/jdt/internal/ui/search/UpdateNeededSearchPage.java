@@ -60,6 +60,16 @@ import org.eclipse.ui.IWorkingSet;
 
 public class UpdateNeededSearchPage extends DialogPage implements ISearchPage {
 
+	private final static String PAGE_NAME = "UpdateNeededSearchPage"; //$NON-NLS-1$
+
+	private ISearchPageContainer fContainer;
+
+	Map<String, Set<String>> listofClassLists;
+
+	private IDialogSettings fDialogSettings;
+
+	private SearchSettingsData leaveoutsearch;
+
 	public static class SearchSettingsData extends HashMap<String, Boolean> {
 		/**
 		 *
@@ -138,16 +148,6 @@ public class UpdateNeededSearchPage extends DialogPage implements ISearchPage {
 		}
 
 	}
-
-	private final static String PAGE_NAME = "UpdateNeededSearchPage"; //$NON-NLS-1$
-
-	private ISearchPageContainer fContainer;
-
-	Map<String, Set<String>> listofClassLists;
-
-	private IDialogSettings fDialogSettings;
-
-	private SearchSettingsData leaveoutsearch;
 
 	@Override
 	public void createControl(Composite parent) {
