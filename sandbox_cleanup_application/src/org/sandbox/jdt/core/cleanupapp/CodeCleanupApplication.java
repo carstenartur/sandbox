@@ -422,14 +422,14 @@ public class CodeCleanupApplication implements IApplication {
 									return formatter;
 								}
 							} catch (CoreException e) {
-								org.eclipse.jdt.internal.core.util.Util.log(e.getStatus());
+								Util.log(e.getStatus());
 								break;
 							}
 						}
 					}
 				}
 			}
-			org.eclipse.jdt.internal.core.util.Util.log(IStatus.WARNING,
+			Util.log(IStatus.WARNING,
 					"Unable to instantiate formatter extension '" + formatterId + "', returning built-in formatter."); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		return new DefaultCodeFormatter(currentOptions);

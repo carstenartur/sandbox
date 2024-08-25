@@ -99,10 +99,6 @@ public class PreconditionsChecker {
 	}
 	public static class VariablesVisitor extends GenericVisitor {
 
-		public VariablesVisitor() {
-			// TODO Auto-generated constructor stub
-		}
-
 		public Set getInnervariables() {
 			// TODO Auto-generated method stub
 			return null;
