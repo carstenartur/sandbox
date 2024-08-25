@@ -265,7 +265,6 @@ public class CodeCleanupApplication implements IApplication {
 					}
 					mode = DEFAULT_MODE;
 					continue loop;
-				
 			}
 		}
 
