@@ -124,12 +124,13 @@ public class Java8CleanUpTest {
 						IStatus status = new Status(IStatus.INFO, "plugin id", "important message", null);
 					}"""); //$NON-NLS-1$
 
+		String given;
+		String expected;
+
 		PlatformStatusPatterns(String given, String expected) {
 			this.given=given;
 			this.expected=expected;
 		}
-
-		String given, expected;
 	}
 
 	@ParameterizedTest

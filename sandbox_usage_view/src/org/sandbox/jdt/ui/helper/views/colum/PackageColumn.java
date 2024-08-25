@@ -23,9 +23,6 @@ public class PackageColumn extends AbstractColumn {
 	private static final int bounds= 100;
 	private static final String title= "Class and Package"; //$NON-NLS-1$
 
-	public PackageColumn() {
-	}
-
 	@Override
 	public void createColumn(TableViewer viewer, int pos) {
 		// now the class you find the variable

@@ -72,7 +72,7 @@ import org.sandbox.jdt.internal.corext.fix.JfaceCleanUpFixCore;
  * doSomeMoreWork(subMonitor.split(40)); }
  */
 public class JFacePlugin extends
-AbstractTool<ReferenceHolder<Integer, org.sandbox.jdt.internal.corext.fix.helper.JFacePlugin.MonitorHolder>> {
+AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 
 	public static final String CLASS_INSTANCE_CREATION = "ClassInstanceCreation"; //$NON-NLS-1$
 	public static final String METHODINVOCATION = "MethodInvocation"; //$NON-NLS-1$

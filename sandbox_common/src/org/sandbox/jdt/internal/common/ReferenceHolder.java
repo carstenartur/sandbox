@@ -36,12 +36,6 @@ public class ReferenceHolder<V,T> extends ConcurrentHashMap<V,T> implements Help
 	private static final long serialVersionUID = 1L;
 	HelperVisitor<ReferenceHolder<V,T>,V,T> hv;
 
-	/**
-	 *
-	 */
-	public ReferenceHolder() {
-	}
-
 	@Override
 	public HelperVisitor<ReferenceHolder<V,T>,V,T> getHelperVisitor() {
 		return hv;

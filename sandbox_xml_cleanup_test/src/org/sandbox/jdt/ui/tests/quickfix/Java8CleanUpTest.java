@@ -58,12 +58,13 @@ public class Java8CleanUpTest {
 					}
 					""");
 
+		String given;
+		String expected;
+
 		XMLCleanupCases(String given, String expected) {
 			this.given=given;
 			this.expected=expected;
 		}
-
-		String given, expected;
 	}
 
 	@Disabled

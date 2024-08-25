@@ -21,9 +21,6 @@ public class QualifiednameColumn extends AbstractColumn {
 	private static final int bounds= 100;
 	private static final String title= "Type"; //$NON-NLS-1$
 
-	public QualifiednameColumn() {
-	}
-
 	@Override
 	public void createColumn(TableViewer viewer, int pos) {
 		// Second column is for the type

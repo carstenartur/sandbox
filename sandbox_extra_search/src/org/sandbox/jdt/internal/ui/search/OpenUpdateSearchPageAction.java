@@ -32,9 +32,6 @@ public class OpenUpdateSearchPageAction implements IWorkbenchWindowActionDelegat
 
 	private IWorkbenchWindow fWindow;
 
-	public OpenUpdateSearchPageAction() {
-	}
-
 	@Override
 	public void init(IWorkbenchWindow window) {
 		fWindow= window;

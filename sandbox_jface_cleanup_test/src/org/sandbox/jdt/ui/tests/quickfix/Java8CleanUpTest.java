@@ -103,7 +103,8 @@ public class Java8CleanUpTest {
 					}
 					"""); //$NON-NLS-1$
 
-		String given, expected;
+		String given;
+		String expected;
 
 		JFaceCleanupCases(String given, String expected) {
 			this.given=given;

@@ -22,9 +22,6 @@ public class DeprecatedColumn extends AbstractColumn {
 	private static final int bounds= 100;
 	private static final String title= "Deprecated"; //$NON-NLS-1$
 
-	public DeprecatedColumn() {
-	}
-
 	@Override
 	public void createColumn(TableViewer viewer, int pos) {
 		// now the deprecated or not checkbox

@@ -325,7 +325,8 @@ public class Java8CleanUpTest {
 								+ "}\n" //$NON-NLS-1$
 								+ ""); //$NON-NLS-1$
 
-		String given, expected;
+		String given;
+		String expected;
 
 		While2EnhancedForLoop(String given, String expected) {
 			this.given=given;

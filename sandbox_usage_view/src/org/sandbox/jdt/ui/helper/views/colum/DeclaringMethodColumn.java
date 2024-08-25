@@ -22,9 +22,6 @@ public class DeclaringMethodColumn extends AbstractColumn {
 	private static final int bounds= 100;
 	private static final String title= "DeclaringMethod"; //$NON-NLS-1$
 
-	public DeclaringMethodColumn() {
-	}
-
 	@Override
 	public void createColumn(TableViewer viewer, int pos) {
 		// now the DeclaringMethod
