@@ -213,6 +213,8 @@ public class CodeCleanupApplication implements IApplication {
 			String currentArg = argsArray[index++];
 
 			switch(mode) {
+				default:
+					break;
 				case DEFAULT_MODE :
 					if (PDE_LAUNCH.equals(currentArg)) {
 						continue loop;
@@ -263,8 +265,7 @@ public class CodeCleanupApplication implements IApplication {
 					}
 					mode = DEFAULT_MODE;
 					continue loop;
-				default:
-					break;
+				
 			}
 		}
 
