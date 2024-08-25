@@ -448,7 +448,7 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 						input.add(item);
 					}
 				}
-				if (input.size() > 0) {
+				if (!input.isEmpty()) {
 					setInput(input);
 					return true;
 				}

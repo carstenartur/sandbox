@@ -550,7 +550,7 @@ public class VisitorTest {
 	@Test
 	public void simpleTest5e() {
 		ReferenceHolder<ASTNode, Map<String,Object>> dataholder = new ReferenceHolder<>();
-		HelperVisitor.callVariableDeclarationStatementVisitor(Iterator.class, cunit2, dataholder,null, (init_iterator,holder_a)->{
+		HelperVisitor.callVariableDeclarationStatementVisitor(Iterator.class, cunit2, dataholder,null, (init_iterator,holdera)->{
 			List<String> computeVarName = computeVarName(init_iterator);
 			HelperVisitor.callWhileStatementVisitor(init_iterator.getParent(), dataholder,null, (whilestatement,holder)->{
 				String name = computeNextVarname(whilestatement);
@@ -617,7 +617,7 @@ public class VisitorTest {
 		if (exp instanceof MethodInvocation mi) {
 			Expression element = mi.getExpression();
 			if (element instanceof SimpleName sn) {
-				if (mi.getName().toString().equals("iterator")) { //$NON-NLS-1$
+				if ("iterator".equals(mi.getName().toString())) { //$NON-NLS-1$
 					name.add(sn.getIdentifier());
 				}
 			}
