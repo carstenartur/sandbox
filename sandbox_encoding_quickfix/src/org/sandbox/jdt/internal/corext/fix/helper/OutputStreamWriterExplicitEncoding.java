@@ -70,8 +70,6 @@ public class OutputStreamWriterExplicitEncoding extends AbstractExplicitEncoding
 			nd.replace=true;
 			nd.visited=argstring3;
 			holder.put(visited,nd);
-//			holder.put(ENCODING,StandardCharsets.UTF_8);
-//			holder.put(REPLACE,argstring3);
 			break;
 		case 1:
 			Nodedata nd2=new Nodedata();
@@ -79,7 +77,6 @@ public class OutputStreamWriterExplicitEncoding extends AbstractExplicitEncoding
 			nd2.replace=false;
 			nd2.visited=visited;
 			holder.put(visited,nd2);
-//			holder.put(visited,encodingmap.get("UTF-8")); //$NON-NLS-1$
 			break;
 		default:
 			break;

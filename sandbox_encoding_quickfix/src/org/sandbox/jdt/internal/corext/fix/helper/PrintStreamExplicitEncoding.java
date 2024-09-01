@@ -73,8 +73,6 @@ public class PrintStreamExplicitEncoding extends AbstractExplicitEncoding<ClassI
 				return false;
 			}
 			holder.put(argstring3,encodingmap.get(argstring3.getLiteralValue()));
-//			holder.put(ENCODING,StandardCharsets.UTF_8);
-//			holder.put(REPLACE,argstring3);
 			break;
 		default:
 			return false;

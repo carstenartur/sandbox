@@ -64,8 +64,6 @@ public class ChannelsNewWriterExplicitEncoding extends AbstractExplicitEncoding<
 				return false;
 			}
 			holder.put(argstring3,encodingmap.get(argstring3.getLiteralValue()));
-//			holder.put(ENCODING,StandardCharsets.UTF_8);
-//			holder.put(REPLACE,argstring3);
 			break;
 		case 0:
 			break;
@@ -103,10 +101,10 @@ public class ChannelsNewWriterExplicitEncoding extends AbstractExplicitEncoding<
 	@Override
 	public String getPreview(boolean afterRefactoring,ChangeBehavior cb) {
 		if(afterRefactoring) {
-			return "Writer w=\"Channels.newWriter(StandardCharsets.UTF_8)\";\n"+ //$NON-NLS-1$
-					"byte[] bytes= s.getBytes("+computeCharsetforPreview(cb)+");\n"; //$NON-NLS-1$ //$NON-NLS-2$
+			return "Writer w=\"Channels.newWriter(ch, StandardCharsets.UTF_8)\";\n"+ //$NON-NLS-1$
+					""; //$NON-NLS-1$
 		}
-		return "Writer w=\"Channels.newWriter(\"UTF-8\")\";\n"+ //$NON-NLS-1$
-		"byte[] bytes= s.getBytes();\n"; //$NON-NLS-1$
+		return "Writer w=\"Channels.newWriter(ch, \"UTF-8\")\";\n"+ //$NON-NLS-1$
+		""; //$NON-NLS-1$
 	}
 }

@@ -287,6 +287,49 @@ public class Java10CleanUpTest {
 					    }
 					}
 					"""),
+		CHANNELSNEWREADER("""
+				package test1;
+
+				import java.io.ByteArrayOutputStream;
+				import java.io.InputStreamReader;
+				import java.io.FileInputStream;
+				import java.io.FileReader;
+				import java.io.Reader;
+				import java.nio.channels.ReadableByteChannel;
+				import java.nio.charset.StandardCharsets;
+				import java.nio.channels.Channels;
+				import java.io.FileNotFoundException;
+
+				public class E1 {
+				    void method(String filename) {
+				            ReadableByteChannel ch;
+				            Reader r=Channels.newReader(ch,"UTF-8"); //$NON-NLS-1$
+				       }
+				    }
+				}
+				""",
+
+					"""
+						package test1;
+
+						import java.io.ByteArrayOutputStream;
+						import java.io.InputStreamReader;
+						import java.io.FileInputStream;
+						import java.io.FileReader;
+						import java.io.Reader;
+						import java.nio.channels.ReadableByteChannel;
+						import java.nio.charset.StandardCharsets;
+						import java.nio.channels.Channels;
+						import java.io.FileNotFoundException;
+
+						public class E1 {
+						    void method(String filename) {
+						            ReadableByteChannel ch;
+						            Reader r=Channels.newReader(ch,StandardCharsets.UTF_8); //$NON-NLS-1$
+						       }
+						    }
+						}
+						"""),
 		PRINTWRITER("""
 			package test1;
 
