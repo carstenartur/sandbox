@@ -16,8 +16,6 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.InputStreamReader;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
 
@@ -48,12 +46,13 @@ public class FileReaderExplicitEncoding extends AbstractExplicitEncoding<ClassIn
 
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed,ChangeBehavior cb) {
+		ReferenceHolder<ASTNode, Object> datah= new ReferenceHolder<>();
 		HelperVisitor.callClassInstanceCreationVisitor(FileReader.class, compilationUnit, datah, nodesprocessed, (visited, holder) -> processFoundNode(fixcore, operations, nodesprocessed, cb, visited, holder));
 	}
 
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ChangeBehavior cb,
-			ClassInstanceCreation visited, ReferenceHolder<String, Object> holder) {
+			ClassInstanceCreation visited, ReferenceHolder<ASTNode, Object> holder) {
 		List<ASTNode> arguments= visited.arguments();
 		if(nodesprocessed.contains(visited) || (arguments.size()>2)) {
 			return false;
@@ -69,8 +68,7 @@ public class FileReaderExplicitEncoding extends AbstractExplicitEncoding<ClassIn
 			if (!encodings.contains(argstring3.getLiteralValue())) {
 				return false;
 			}
-			holder.put(ENCODING,StandardCharsets.UTF_8);
-			holder.put(REPLACE,argstring3);
+			holder.put(argstring3,encodingmap.get(argstring3.getLiteralValue()));
 			break;
 		default:
 			return false;
@@ -82,7 +80,7 @@ public class FileReaderExplicitEncoding extends AbstractExplicitEncoding<ClassIn
 
 	@Override
 	public void rewrite(UseExplicitEncodingFixCore upp,final ClassInstanceCreation visited, final CompilationUnitRewrite cuRewrite,
-			TextEditGroup group,ChangeBehavior cb, ReferenceHolder<String, Object> data) {
+			TextEditGroup group,ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
 		if (!JavaModelUtil.is50OrHigher(cuRewrite.getCu().getJavaProject())) {
@@ -91,7 +89,7 @@ public class FileReaderExplicitEncoding extends AbstractExplicitEncoding<ClassIn
 			 */
 			return;
 		}
-		ASTNode callToCharsetDefaultCharset= computeCharsetASTNode(cuRewrite, cb, ast, (Charset) data.get(ENCODING));
+		ASTNode callToCharsetDefaultCharset= computeCharsetASTNode(cuRewrite, ast, cb, (String) data.get(visited));
 		/**
 		 * new FileInputStream(<filename>)
 		 */

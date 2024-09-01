@@ -9,63 +9,67 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
-import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava9;
+import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava10;
 
-public class Java9CleanUpTest {
+public class Java10CleanUpTest {
 
 	@RegisterExtension
-	AbstractEclipseJava context= new EclipseJava9();
+	AbstractEclipseJava context= new EclipseJava10();
 
 	enum ExplicitEncodingPatterns {
 
-//		CHARSET("""
-//				package test1;
-//
-//				import java.io.ByteArrayOutputStream;
-//				import java.io.InputStreamReader;
-//				import java.io.FileInputStream;
-//				import java.io.FileReader;
-//				import java.io.Reader;
-//				import java.io.FileNotFoundException;
-//
-//				public class E1 {
-//				    void method(String filename) {
-//				        Charset cs1= Charset.forName("UTF-8");
-//				        Charset cs2= Charset.forName("UTF-16");
-//				        Charset cs3= Charset.forName("UTF-16BE");
-//				        Charset cs4= Charset.forName("UTF-16LE");
-//				        Charset cs5= Charset.forName("ISO-8859-1");
-//				        Charset cs6= Charset.forName("US-ASCII");
-//				        String result= cs1.toString();
-//				       }
-//				    }
-//				}
-//				""",
-//
-//					"""
-//						package test1;
-//
-//						import java.io.ByteArrayOutputStream;
-//						import java.io.InputStreamReader;
-//						import java.io.FileInputStream;
-//						import java.io.FileReader;
-//						import java.io.Reader;
-//						import java.nio.charset.Charset;
-//						import java.io.FileNotFoundException;
-//
-//						public class E1 {
-//						    void method(String filename) {
-//						        Charset cs1= StandardCharsets.UTF_8;
-//						        Charset cs2= StandardCharsets.UTF_16;
-//						        Charset cs3= StandardCharsets.UTF_16BE;
-//						        Charset cs4= StandardCharsets.UTF_16LE;
-//						        Charset cs5= StandardCharsets.ISO_8859_1;
-//						        Charset cs6= StandardCharsets.US_ASCII;
-//						        String result= cs.toString();
-//						       }
-//						    }
-//						}
-//						"""),
+		CHARSET("""
+				package test1;
+
+				import java.io.ByteArrayOutputStream;
+				import java.io.InputStreamReader;
+				import java.io.FileInputStream;
+				import java.io.FileReader;
+				import java.io.Reader;
+				import java.nio.charset.Charset;
+				import java.io.FileNotFoundException;
+
+				public class E1 {
+				    void method(String filename) {
+				        Charset cs1= Charset.forName("UTF-8");
+				        Charset cs1b= Charset.forName("Utf-8");
+				        Charset cs2= Charset.forName("UTF-16");
+				        Charset cs3= Charset.forName("UTF-16BE");
+				        Charset cs4= Charset.forName("UTF-16LE");
+				        Charset cs5= Charset.forName("ISO-8859-1");
+				        Charset cs6= Charset.forName("US-ASCII");
+				        String result= cs1.toString();
+				       }
+				    }
+				}
+				""",
+
+					"""
+						package test1;
+
+						import java.io.ByteArrayOutputStream;
+						import java.io.InputStreamReader;
+						import java.io.FileInputStream;
+						import java.io.FileReader;
+						import java.io.Reader;
+						import java.nio.charset.Charset;
+						import java.nio.charset.StandardCharsets;
+						import java.io.FileNotFoundException;
+
+						public class E1 {
+						    void method(String filename) {
+						        Charset cs1= StandardCharsets.UTF_8;
+						        Charset cs1b= StandardCharsets.UTF_8;
+						        Charset cs2= StandardCharsets.UTF_16;
+						        Charset cs3= StandardCharsets.UTF_16BE;
+						        Charset cs4= StandardCharsets.UTF_16LE;
+						        Charset cs5= StandardCharsets.ISO_8859_1;
+						        Charset cs6= StandardCharsets.US_ASCII;
+						        String result= cs1.toString();
+						       }
+						    }
+						}
+						"""),
 		BYTEARRAYOUTSTREAM("""
 			package test1;
 
@@ -80,6 +84,8 @@ public class Java9CleanUpTest {
 			    void method(String filename) {
 			        ByteArrayOutputStream ba=new ByteArrayOutputStream();
 			        String result=ba.toString();
+			        ByteArrayOutputStream ba2=new ByteArrayOutputStream();
+			        String result2=ba2.toString("UTF-8");
 			       }
 			    }
 			}
@@ -94,12 +100,15 @@ public class Java9CleanUpTest {
 					import java.io.FileReader;
 					import java.io.Reader;
 					import java.nio.charset.Charset;
+					import java.nio.charset.StandardCharsets;
 					import java.io.FileNotFoundException;
 
 					public class E1 {
 					    void method(String filename) {
 					        ByteArrayOutputStream ba=new ByteArrayOutputStream();
-					        String result=ba.toString(Charset.defaultCharset().displayName());
+					        String result=ba.toString(Charset.defaultCharset());
+					        ByteArrayOutputStream ba2=new ByteArrayOutputStream();
+					        String result2=ba2.toString(StandardCharsets.UTF_8);
 					       }
 					    }
 					}
@@ -198,7 +207,8 @@ public class Java9CleanUpTest {
 			public class E1 {
 			    void method(String filename) {
 			        try {
-			            InputStreamReader is=new InputStreamReader(new FileInputStream("")); //$NON-NLS-1$
+			            InputStreamReader is1=new InputStreamReader(new FileInputStream("file1.txt")); //$NON-NLS-1$
+			            InputStreamReader is2=new InputStreamReader(new FileInputStream("file2.txt"), "UTF-8"); //$NON-NLS-1$
 			            } catch (FileNotFoundException e) {
 			            e.printStackTrace();
 			            }
@@ -215,12 +225,14 @@ public class Java9CleanUpTest {
 					import java.io.FileReader;
 					import java.io.Reader;
 					import java.nio.charset.Charset;
+					import java.nio.charset.StandardCharsets;
 					import java.io.FileNotFoundException;
 
 					public class E1 {
 					    void method(String filename) {
 					        try {
-					            InputStreamReader is=new InputStreamReader(new FileInputStream(""), Charset.defaultCharset()); //$NON-NLS-1$
+					            InputStreamReader is1=new InputStreamReader(new FileInputStream("file1.txt"), Charset.defaultCharset()); //$NON-NLS-1$
+					            InputStreamReader is2=new InputStreamReader(new FileInputStream("file2.txt"), StandardCharsets.UTF_8); //$NON-NLS-1$
 					            } catch (FileNotFoundException e) {
 					            e.printStackTrace();
 					            }
@@ -242,6 +254,7 @@ public class Java9CleanUpTest {
 			    void method(String filename) {
 			        try {
 			            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream("")); //$NON-NLS-1$
+			            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream(""), "UTF-8"); //$NON-NLS-1$
 			            } catch (FileNotFoundException e) {
 			            e.printStackTrace();
 			            }
@@ -259,12 +272,14 @@ public class Java9CleanUpTest {
 					import java.io.FileReader;
 					import java.io.Reader;
 					import java.nio.charset.Charset;
+					import java.nio.charset.StandardCharsets;
 					import java.io.FileNotFoundException;
 
 					public class E1 {
 					    void method(String filename) {
 					        try {
 					            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream(""), Charset.defaultCharset()); //$NON-NLS-1$
+					            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream(""), StandardCharsets.UTF_8); //$NON-NLS-1$
 					            } catch (FileNotFoundException e) {
 					            e.printStackTrace();
 					            }
@@ -327,6 +342,7 @@ public class Java9CleanUpTest {
 			    void method(String filename) {
 			        String s="asdf"; //$NON-NLS-1$
 			        byte[] bytes= s.getBytes();
+			        byte[] bytes2= s.getBytes("UTF-8");
 			        System.out.println(bytes.length);
 			       }
 			    }
@@ -342,12 +358,14 @@ public class Java9CleanUpTest {
 					import java.io.FileReader;
 					import java.io.Reader;
 					import java.nio.charset.Charset;
+					import java.nio.charset.StandardCharsets;
 					import java.io.FileNotFoundException;
 
 					public class E1 {
 					    void method(String filename) {
 					        String s="asdf"; //$NON-NLS-1$
 					        byte[] bytes= s.getBytes(Charset.defaultCharset());
+					        byte[] bytes2= s.getBytes(StandardCharsets.UTF_8);
 					        System.out.println(bytes.length);
 					       }
 					    }
@@ -407,7 +425,7 @@ public class Java9CleanUpTest {
 					        byte[] bytes= s.getBytes(Charset.defaultCharset());
 					        System.out.println(bytes.length);
 					        ByteArrayOutputStream ba=new ByteArrayOutputStream();
-					        String result=ba.toString(Charset.defaultCharset().displayName());
+					        String result=ba.toString(Charset.defaultCharset());
 					        try {
 					            InputStreamReader is=new InputStreamReader(new FileInputStream(""), Charset.defaultCharset()); //$NON-NLS-1$
 					            } catch (FileNotFoundException e) {
@@ -456,7 +474,7 @@ public class Java9CleanUpTest {
 							            e.printStackTrace();
 							            }
 							        try {
-							            Reader is=new FileReader(filename, "UTF-8");
+							            Reader is=new FileReader(filename);
 							            } catch (FileNotFoundException e) {
 							            e.printStackTrace();
 							            }
@@ -481,10 +499,10 @@ public class Java9CleanUpTest {
 									    void method(String filename) {
 									        String s="asdf"; //$NON-NLS-1$
 									        //byte[] bytes= s.getBytes(StandardCharsets.UTF_8);
-									        byte[] bytes= s.getBytes("Utf-8");
+									        byte[] bytes= s.getBytes(StandardCharsets.UTF_8);
 									        System.out.println(bytes.length);
 									        ByteArrayOutputStream ba=new ByteArrayOutputStream();
-									        String result=ba.toString(Charset.defaultCharset().displayName());
+									        String result=ba.toString(Charset.defaultCharset());
 									        try {
 									            InputStreamReader is=new InputStreamReader(new FileInputStream(""), StandardCharsets.UTF_8); //$NON-NLS-1$
 									            } catch (FileNotFoundException e) {
@@ -496,7 +514,7 @@ public class Java9CleanUpTest {
 									            e.printStackTrace();
 									            }
 									        try {
-									            Reader is=new InputStreamReader(new FileInputStream(filename), StandardCharsets.UTF_8);
+									            Reader is=new InputStreamReader(new FileInputStream(filename), Charset.defaultCharset());
 									            } catch (FileNotFoundException e) {
 									            e.printStackTrace();
 									            }

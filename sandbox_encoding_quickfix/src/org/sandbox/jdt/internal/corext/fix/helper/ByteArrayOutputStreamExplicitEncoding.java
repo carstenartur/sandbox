@@ -16,7 +16,7 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 import static org.sandbox.jdt.internal.common.LibStandardNames.METHOD_TOSTRING;
 
 import java.io.ByteArrayOutputStream;
-import java.nio.charset.Charset;
+import java.util.List;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
@@ -24,6 +24,7 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
@@ -33,6 +34,7 @@ import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
+
 
 /**
  * Change from
@@ -47,20 +49,49 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
  *      } catch (UnsupportedEncodingException e1) {
  *         e1.printStackTrace();
  *      }</pre>
+ *      
+ *      since Java 10
+ *  <pre>ByteArrayOutputStream ba=new ByteArrayOutputStream();
+ *         String result=ba.toString(Charset.defaultCharset());
+ *      </pre>
  *
  */
 public class ByteArrayOutputStreamExplicitEncoding extends AbstractExplicitEncoding<MethodInvocation> {
 
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed,ChangeBehavior cb) {
+		ReferenceHolder<ASTNode, Object> holder= new ReferenceHolder<>();
 		compilationUnit.accept(new ASTVisitor() {
 			@Override
 			public boolean visit(final MethodInvocation visited) {
 				if(nodesprocessed.contains(visited)) {
 					return false;
 				}
+				List<ASTNode> arguments= visited.arguments();
+				if (ASTNodes.usesGivenSignature(visited, ByteArrayOutputStream.class.getCanonicalName(), METHOD_TOSTRING, String.class.getCanonicalName())) {
+					if(!(arguments.get(0) instanceof StringLiteral)) {
+						return false;
+					}
+					StringLiteral argstring3= (StringLiteral) arguments.get(0);
+					if (!encodings.contains(argstring3.getLiteralValue())) {
+						return false;
+					}
+					Nodedata nd=new Nodedata();
+					nd.encoding=encodingmap.get(argstring3.getLiteralValue());
+					nd.replace=true;
+					nd.visited=argstring3;
+					holder.put(visited,nd);
+					operations.add(fixcore.rewrite(visited, cb, holder));
+					nodesprocessed.add(visited);
+					return false;
+				}
 				if (ASTNodes.usesGivenSignature(visited, ByteArrayOutputStream.class.getCanonicalName(), METHOD_TOSTRING)) {
-					operations.add(fixcore.rewrite(visited, cb, datah));
+					Nodedata nd2=new Nodedata();
+					nd2.encoding=null;
+					nd2.replace=false;
+					nd2.visited=visited;
+					holder.put(visited,nd2);
+					operations.add(fixcore.rewrite(visited, cb, holder));
 					nodesprocessed.add(visited);
 					return false;
 				}
@@ -71,21 +102,26 @@ public class ByteArrayOutputStreamExplicitEncoding extends AbstractExplicitEncod
 
 	@Override
 	public void rewrite(UseExplicitEncodingFixCore upp,final MethodInvocation visited, final CompilationUnitRewrite cuRewrite,
-			TextEditGroup group,ChangeBehavior cb, ReferenceHolder<String, Object> data) {
+			TextEditGroup group,ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
-		if (!JavaModelUtil.is50OrHigher(cuRewrite.getCu().getJavaProject())) {
+		if (!JavaModelUtil.is10OrHigher(cuRewrite.getCu().getJavaProject())) {
 			/**
-			 * For Java 1.4 and older just do nothing
+			 * For Java 9 and older just do nothing
 			 */
 			return;
 		}
-		MethodInvocation callToCharsetDefaultCharsetDisplayname= addCharsetStringComputation(cuRewrite, ast, cb, (Charset) data.get(ENCODING));
+		ASTNode callToCharsetDefaultCharset= computeCharsetASTNode(cuRewrite, ast, cb, ((Nodedata) data.get(visited)).encoding);
 		/**
 		 * Add Charset.defaultCharset().displayName() as second (last) parameter of "toString()" call
+		 * Add Charset.defaultCharset() as second (last) parameter
 		 */
 		ListRewrite listRewrite= rewrite.getListRewrite(visited, MethodInvocation.ARGUMENTS_PROPERTY);
-		listRewrite.insertLast(callToCharsetDefaultCharsetDisplayname, group);
+		if(((Nodedata)(data.get(visited))).encoding!= null) {
+			listRewrite.replace(((Nodedata) data.get(visited)).visited, callToCharsetDefaultCharset, group);
+		} else {
+			listRewrite.insertLast(callToCharsetDefaultCharset, group);
+		}
 	}
 
 	@Override

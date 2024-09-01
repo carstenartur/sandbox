@@ -14,8 +14,6 @@
 package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.io.InputStreamReader;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
 
@@ -42,12 +40,13 @@ public class InputStreamReaderExplicitEncoding extends AbstractExplicitEncoding<
 
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed,ChangeBehavior cb) {
+		ReferenceHolder<ASTNode, Object> datah= new ReferenceHolder<>();
 		HelperVisitor.callClassInstanceCreationVisitor(InputStreamReader.class, compilationUnit, datah, nodesprocessed, (visited, holder) -> processFoundNode(fixcore, operations, nodesprocessed, cb, visited, holder));
 	}
 
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ChangeBehavior cb,
-			ClassInstanceCreation visited, ReferenceHolder<String, Object> holder) {
+			ClassInstanceCreation visited, ReferenceHolder<ASTNode, Object> holder) {
 		List<ASTNode> arguments= visited.arguments();
 		if(nodesprocessed.contains(visited) || (arguments.size()>2)) {
 			return false;
@@ -58,13 +57,21 @@ public class InputStreamReaderExplicitEncoding extends AbstractExplicitEncoding<
 				return false;
 			}
 			StringLiteral argstring3= (StringLiteral) arguments.get(1);
-			if (!encodings.contains(argstring3.getLiteralValue())) {
+			if (!encodings.contains(argstring3.getLiteralValue().toUpperCase())) {
 				return false;
 			}
-			holder.put(ENCODING,StandardCharsets.UTF_8);
-			holder.put(REPLACE,argstring3);
+			Nodedata nd=new Nodedata();
+			nd.encoding=encodingmap.get(argstring3.getLiteralValue().toUpperCase());
+			nd.replace=true;
+			nd.visited=argstring3;
+			holder.put(visited,nd);
 			break;
 		case 1:
+			Nodedata nd2=new Nodedata();
+			nd2.encoding=null;
+			nd2.replace=false;
+			nd2.visited=visited;
+			holder.put(visited,nd2);
 			break;
 		default:
 			break;
@@ -76,7 +83,7 @@ public class InputStreamReaderExplicitEncoding extends AbstractExplicitEncoding<
 
 	@Override
 	public void rewrite(UseExplicitEncodingFixCore upp,final ClassInstanceCreation visited, final CompilationUnitRewrite cuRewrite,
-			TextEditGroup group,ChangeBehavior cb, ReferenceHolder<String, Object> data) {
+			TextEditGroup group,ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
 		if (!JavaModelUtil.is50OrHigher(cuRewrite.getCu().getJavaProject())) {
@@ -85,13 +92,13 @@ public class InputStreamReaderExplicitEncoding extends AbstractExplicitEncoding<
 			 */
 			return;
 		}
-		ASTNode callToCharsetDefaultCharset= computeCharsetASTNode(cuRewrite, cb, ast, (Charset) data.get(ENCODING));
+		ASTNode callToCharsetDefaultCharset= computeCharsetASTNode(cuRewrite, ast, cb, ((Nodedata) data.get(visited)).encoding);
 		/**
 		 * Add Charset.defaultCharset() as second (last) parameter
 		 */
 		ListRewrite listRewrite= rewrite.getListRewrite(visited, ClassInstanceCreation.ARGUMENTS_PROPERTY);
-		if(data.get(ENCODING)!= null) {
-			listRewrite.replace((ASTNode) data.get(REPLACE), callToCharsetDefaultCharset, group);
+		if(((Nodedata)(data.get(visited))).encoding!= null) {
+			listRewrite.replace(((Nodedata) data.get(visited)).visited, callToCharsetDefaultCharset, group);
 		} else {
 			listRewrite.insertLast(callToCharsetDefaultCharset, group);
 		}

@@ -18,6 +18,7 @@ import static org.sandbox.jdt.internal.common.LibStandardNames.METHOD_DISPLAY_NA
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
@@ -32,7 +33,6 @@ import org.eclipse.jdt.internal.corext.dom.ASTNodeFactory;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
-import org.sandbox.jdt.internal.common.LibStandardNames;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 
@@ -40,9 +40,23 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
  * @param <T> Type found in Visitor
  */
 public abstract class AbstractExplicitEncoding<T extends ASTNode> {
-	static Set<String> encodings= Set.of("UTF-8","UTF-16","UTF-16BE","UTF-16LE","ISO-8859-1","US-ASCII"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$
+	static Map<String, String> encodingmap = Map.of(
+		    "UTF-8", "UTF_8", //$NON-NLS-1$ //$NON-NLS-2$
+		    "UTF-16", "UTF_16", //$NON-NLS-1$ //$NON-NLS-2$
+		    "UTF-16BE", "UTF_16BE", //$NON-NLS-1$ //$NON-NLS-2$
+		    "UTF-16LE", "UTF_16LE", //$NON-NLS-1$ //$NON-NLS-2$
+		    "ISO-8859-1", "ISO_8859_1", //$NON-NLS-1$ //$NON-NLS-2$
+		    "US-ASCII", "US_ASCII" //$NON-NLS-1$ //$NON-NLS-2$
+		);
+	static Set<String> encodings=encodingmap.keySet();
 	public enum ChangeBehavior {KEEP, USE_UTF8, USE_UTF8_AGGREGATE}
-	ReferenceHolder<String, Object> datah= new ReferenceHolder<>();
+	
+	static class Nodedata {
+		public boolean replace;
+		public ASTNode visited;
+		public String encoding;
+	}
+	
 
 	protected static final String ENCODING = "encoding"; //$NON-NLS-1$
 	protected static final String REPLACE = "replace"; //$NON-NLS-1$
@@ -51,14 +65,14 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 
 
 	public abstract void rewrite(UseExplicitEncodingFixCore useExplicitEncodingFixCore, T visited, CompilationUnitRewrite cuRewrite,
-			TextEditGroup group, ChangeBehavior cb, ReferenceHolder<String, Object> data);
+			TextEditGroup group, ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data);
 
-	protected Expression computeCharsetASTNode(final CompilationUnitRewrite cuRewrite, ChangeBehavior cb, AST ast, Charset charset) {
+	protected Expression computeCharsetASTNode(final CompilationUnitRewrite cuRewrite, AST ast, ChangeBehavior cb, String charset) {
 		Expression callToCharsetDefaultCharset=null;
 		switch(cb) {
 		case KEEP:
 			if(charset!=null) {
-				callToCharsetDefaultCharset= addCharsetUTF8(cuRewrite, ast);
+				callToCharsetDefaultCharset= addCharsetUTF8(cuRewrite, ast,charset);
 			} else {
 			// needs Java 1.5
 				callToCharsetDefaultCharset= addCharsetComputation(cuRewrite, ast);
@@ -70,7 +84,7 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 			 */
 		case USE_UTF8:
 			// needs Java 1.7
-			callToCharsetDefaultCharset= addCharsetUTF8(cuRewrite, ast);
+			callToCharsetDefaultCharset= addCharsetUTF8(cuRewrite, ast,charset);
 			break;
 		}
 		return callToCharsetDefaultCharset;
@@ -97,9 +111,10 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	 *
 	 * @param cuRewrite CompilationUnitRewrite
 	 * @param ast AST
+	 * @param charset 
 	 * @return FieldAccess that returns Charset for UTF_8
 	 */
-	protected FieldAccess addCharsetUTF8(CompilationUnitRewrite cuRewrite, AST ast) {
+	protected FieldAccess addCharsetUTF8(CompilationUnitRewrite cuRewrite, AST ast, String charset) {
 		/**
 		 * Add import java.nio.charset.StandardCharsets - available since Java 1.7
 		 */
@@ -110,7 +125,8 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 		 */
 		FieldAccess fieldaccess= ast.newFieldAccess();
 		fieldaccess.setExpression(ASTNodeFactory.newName(ast, StandardCharsets.class.getSimpleName()));
-		fieldaccess.setName(ast.newSimpleName(LibStandardNames.FIELD_UTF8));
+		
+		fieldaccess.setName(ast.newSimpleName(charset));
 		return fieldaccess;
 	}
 	/**
@@ -144,8 +160,8 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	 * @param charset
 	 * @return MethodInvocation that returns String
 	 */
-	protected MethodInvocation addCharsetStringComputation(final CompilationUnitRewrite cuRewrite, AST ast, ChangeBehavior cb, Charset charset) {
-		Expression callToCharsetDefaultCharset= computeCharsetASTNode(cuRewrite, cb, ast, charset);
+	protected MethodInvocation addCharsetStringComputation(final CompilationUnitRewrite cuRewrite, AST ast, ChangeBehavior cb, String charset) {
+		Expression callToCharsetDefaultCharset= computeCharsetASTNode(cuRewrite, ast, cb, charset);
 		/**
 		 * Add second call to Charset.defaultCharset().displayName()
 		 */

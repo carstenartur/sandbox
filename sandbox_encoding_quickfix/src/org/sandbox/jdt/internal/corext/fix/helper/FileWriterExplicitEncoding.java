@@ -16,7 +16,6 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.OutputStreamWriter;
-import java.nio.charset.Charset;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
@@ -46,6 +45,7 @@ public class FileWriterExplicitEncoding extends AbstractExplicitEncoding<ClassIn
 
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed,ChangeBehavior cb) {
+		ReferenceHolder<ASTNode, Object> datah= new ReferenceHolder<>();
 		compilationUnit.accept(new ASTVisitor() {
 			@Override
 			public boolean visit(final ClassInstanceCreation visited) {
@@ -65,7 +65,7 @@ public class FileWriterExplicitEncoding extends AbstractExplicitEncoding<ClassIn
 
 	@Override
 	public void rewrite(UseExplicitEncodingFixCore upp,final ClassInstanceCreation visited, final CompilationUnitRewrite cuRewrite,
-			TextEditGroup group,ChangeBehavior cb, ReferenceHolder<String, Object> data) {
+			TextEditGroup group,ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
 		if (!JavaModelUtil.is50OrHigher(cuRewrite.getCu().getJavaProject())) {
@@ -74,7 +74,7 @@ public class FileWriterExplicitEncoding extends AbstractExplicitEncoding<ClassIn
 			 */
 			return;
 		}
-		ASTNode callToCharsetDefaultCharset= computeCharsetASTNode(cuRewrite, cb, ast, (Charset) data.get(ENCODING));
+		ASTNode callToCharsetDefaultCharset= computeCharsetASTNode(cuRewrite, ast, cb, (String) data.get(visited));
 		/**
 		 * new FileInputStream(<filename>)
 		 */

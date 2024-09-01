@@ -519,23 +519,27 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 					return true;
 				}
 				Class<?> typeof=(Class<?>) map.get(HelperVisitor.TYPEOF);
+				String[] parameterTypesQualifiedNames=(String[]) map.get(HelperVisitor.PARAMTYPENAMES);
+				
 				if(typeof!=null) {
-					Name sn= ASTNodes.as(node.getExpression(), Name.class);
-					if (sn == null) {
-						return true;
-					}
-					IBinding ibinding= sn.resolveBinding();
-					IVariableBinding vb=(IVariableBinding) ibinding;
-					ITypeBinding binding= vb.getType();
-					if ((binding != null) && !typeof.getSimpleName().equals(binding.getName())) {
-						return true;
+//					Name sn= ASTNodes.as(node.getExpression(), Name.class);
+//					if (sn == null) {
+//						return true;
+//					}
+//					IBinding ibinding= sn.resolveBinding();
+//					IVariableBinding vb=(IVariableBinding) ibinding;
+//					if(vb!=null) {
+//						ITypeBinding binding= vb.getType();
+//						if ((binding != null) && !typeof.getSimpleName().equals(binding.getName())) {
+//							return true;
+//						}
+//					}
+				
+				if(parameterTypesQualifiedNames!=null) {
+					if (ASTNodes.usesGivenSignature(node, typeof.getCanonicalName(), data, parameterTypesQualifiedNames)) {
+						return ((BiPredicate<MethodInvocation, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.MethodInvocation))).test(node, this.helperVisitor.dataholder);
 					}
 				}
-				String[] parameterTypesQualifiedNames=(String[]) map.get(HelperVisitor.PARAMTYPENAMES);
-				if(parameterTypesQualifiedNames!=null) {
-					if (!ASTNodes.usesGivenSignature(node, typeof.getCanonicalName(), data, parameterTypesQualifiedNames)) {
-						return true;
-					}
 				}
 			}
 			return ((BiPredicate<MethodInvocation, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.MethodInvocation))).test(node, this.helperVisitor.dataholder);

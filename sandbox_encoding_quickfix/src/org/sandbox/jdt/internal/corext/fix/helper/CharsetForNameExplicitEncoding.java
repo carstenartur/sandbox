@@ -16,7 +16,6 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 import static org.sandbox.jdt.internal.common.LibStandardNames.METHOD_FOR_NAME;
 
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
 
@@ -26,7 +25,7 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
-import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
@@ -47,41 +46,30 @@ public class CharsetForNameExplicitEncoding extends AbstractExplicitEncoding<Met
 
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed,ChangeBehavior cb) {
+		ReferenceHolder<ASTNode, Object> datah= new ReferenceHolder<>();
 		HelperVisitor.callMethodInvocationVisitor(Charset.class, METHOD_FOR_NAME, compilationUnit, datah, nodesprocessed, (visited, holder) -> processFoundNode(fixcore, operations, nodesprocessed, cb, visited, holder));
 	}
 
-	private boolean processFoundNode(UseExplicitEncodingFixCore fixcore,
+	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ChangeBehavior cb,
-			MethodInvocation visited, ReferenceHolder<String, Object> holder) {
+			MethodInvocation visited, ReferenceHolder<ASTNode, Object> holder) {
 		List<ASTNode> arguments= visited.arguments();
-		if(nodesprocessed.contains(visited) || (arguments.size()>1)) {
+		if (!ASTNodes.usesGivenSignature(visited, Charset.class.getCanonicalName(), METHOD_FOR_NAME, String.class.getCanonicalName())) {
+			return true;
+		}
+		StringLiteral argstring3= (StringLiteral) arguments.get(0);
+		if (!encodings.contains(argstring3.getLiteralValue().toUpperCase())) {
 			return false;
 		}
-		switch (arguments.size()) {
-		case 1:
-			if(!(arguments.get(0) instanceof StringLiteral)) {
-				return false;
-			}
-			StringLiteral argstring3= (StringLiteral) arguments.get(0);
-			if (!encodings.contains(argstring3.getLiteralValue())) {
-				return false;
-			}
-			holder.put(ENCODING,StandardCharsets.UTF_8);
-			holder.put(REPLACE,argstring3);
-			break;
-		case 0:
-			break;
-		default:
-			return false;
-		}
-		operations.add(fixcore.rewrite(visited, cb, datah));
+		holder.put(visited,encodingmap.get(argstring3.getLiteralValue().toUpperCase()));
+		operations.add(fixcore.rewrite(visited, cb, holder));
 		nodesprocessed.add(visited);
 		return false;
 	}
 
 	@Override
 	public void rewrite(UseExplicitEncodingFixCore upp,final MethodInvocation visited, final CompilationUnitRewrite cuRewrite,
-			TextEditGroup group,ChangeBehavior cb, ReferenceHolder<String, Object> data) {
+			TextEditGroup group,ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
 		if (!JavaModelUtil.is50OrHigher(cuRewrite.getCu().getJavaProject())) {
@@ -90,16 +78,8 @@ public class CharsetForNameExplicitEncoding extends AbstractExplicitEncoding<Met
 			 */
 			return;
 		}
-		ASTNode callToCharsetDefaultCharset= computeCharsetASTNode(cuRewrite, cb, ast, (Charset) data.get(ENCODING));
-//		ListRewrite listRewrite= rewrite.getListRewrite(visited, MethodInvocation.ARGUMENTS_PROPERTY);
-//		listRewrite.insertLast(callToCharsetDefaultCharset, group);
-
-		ListRewrite listRewrite= rewrite.getListRewrite(visited, MethodInvocation.ARGUMENTS_PROPERTY);
-		if(data.get(ENCODING)!= null) {
-			listRewrite.replace((ASTNode) data.get(REPLACE), callToCharsetDefaultCharset, group);
-		} else {
-			listRewrite.insertLast(callToCharsetDefaultCharset, group);
-		}
+		ASTNode callToCharsetDefaultCharset= computeCharsetASTNode(cuRewrite, ast, cb, (String) data.get(visited));
+		ASTNodes.replaceButKeepComment(rewrite, visited, callToCharsetDefaultCharset, group);
 	}
 
 	@Override

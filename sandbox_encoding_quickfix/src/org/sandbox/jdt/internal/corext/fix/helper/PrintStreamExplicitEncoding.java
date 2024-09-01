@@ -15,20 +15,15 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.io.BufferedWriter;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
@@ -55,12 +50,13 @@ public class PrintStreamExplicitEncoding extends AbstractExplicitEncoding<ClassI
 
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed,ChangeBehavior cb) {
+		ReferenceHolder<ASTNode, Object> datah= new ReferenceHolder<>();
 		HelperVisitor.callClassInstanceCreationVisitor(PrintStream.class, compilationUnit, datah, nodesprocessed, (visited, holder) -> processFoundNode(fixcore, operations, nodesprocessed, cb, visited, holder));
 	}
 
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore, Set<CompilationUnitRewriteOperation> operations,
 			Set<ASTNode> nodesprocessed, ChangeBehavior cb, ClassInstanceCreation visited,
-			ReferenceHolder<String, Object> holder) {
+			ReferenceHolder<ASTNode, Object> holder) {
 		List<ASTNode> arguments= visited.arguments();
 		if(nodesprocessed.contains(visited) || (arguments.size()>2)) {
 			return false;
@@ -76,8 +72,9 @@ public class PrintStreamExplicitEncoding extends AbstractExplicitEncoding<ClassI
 			if (!encodings.contains(argstring3.getLiteralValue())) {
 				return false;
 			}
-			holder.put(ENCODING,StandardCharsets.UTF_8);
-			holder.put(REPLACE,argstring3);
+			holder.put(argstring3,encodingmap.get(argstring3.getLiteralValue()));
+//			holder.put(ENCODING,StandardCharsets.UTF_8);
+//			holder.put(REPLACE,argstring3);
 			break;
 		default:
 			return false;
@@ -89,7 +86,7 @@ public class PrintStreamExplicitEncoding extends AbstractExplicitEncoding<ClassI
 
 	@Override
 	public void rewrite(UseExplicitEncodingFixCore upp,final ClassInstanceCreation visited, final CompilationUnitRewrite cuRewrite,
-			TextEditGroup group,ChangeBehavior cb, ReferenceHolder<String, Object> data) {
+			TextEditGroup group,ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
 		if (!JavaModelUtil.is50OrHigher(cuRewrite.getCu().getJavaProject())) {
@@ -98,7 +95,7 @@ public class PrintStreamExplicitEncoding extends AbstractExplicitEncoding<ClassI
 			 */
 			return;
 		}
-		ASTNode callToCharsetDefaultCharset= computeCharsetASTNode(cuRewrite, cb, ast, (Charset) data.get(ENCODING));
+		ASTNode callToCharsetDefaultCharset= computeCharsetASTNode(cuRewrite, ast, cb, (String) data.get(visited));
 		/**
 		 * new FileOutputStream(<filename>)
 		 */
@@ -129,8 +126,10 @@ public class PrintStreamExplicitEncoding extends AbstractExplicitEncoding<ClassI
 			"Stream w=new PrintStream(\"out.txt\",StandardCharsets.UTF_8));\n"+ //$NON-NLS-1$
 			"Stream w=new PrintStream(new File(\"out.txt\"),StandardCharsets.UTF_8));\n"; //$NON-NLS-1$
 		}
-		return "Stream w=new PrintStream(\"out.txt\");\n"+ //$NON-NLS-1$
-		"Stream w=new PrintStream(\"out.txt\",\"UTF-8\");\n"+ //$NON-NLS-1$
-		"Stream w=new PrintStream(new File(\"out.txt\"),\"UTF-8\");\n"; //$NON-NLS-1$
+		return """
+			Stream w=new PrintStream("out.txt");
+			Stream w=new PrintStream("out.txt","UTF-8");
+			Stream w=new PrintStream(new File("out.txt"),"UTF-8");
+			"""; //$NON-NLS-1$
 	}
 }
