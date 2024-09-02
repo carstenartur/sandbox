@@ -16,6 +16,7 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 import static org.sandbox.jdt.internal.common.LibStandardNames.METHOD_NEW_WRITER;
 
 import java.nio.channels.Channels;
+import java.nio.channels.WritableByteChannel;
 import java.util.List;
 import java.util.Set;
 
@@ -26,6 +27,7 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
@@ -51,27 +53,20 @@ public class ChannelsNewWriterExplicitEncoding extends AbstractExplicitEncoding<
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ChangeBehavior cb,
 			MethodInvocation visited, ReferenceHolder<ASTNode, Object> holder) {
 		List<ASTNode> arguments= visited.arguments();
-		if(nodesprocessed.contains(visited) || (arguments.size()>1)) {
-			return false;
-		}
-		switch (arguments.size()) {
-		case 1:
-			if(!(arguments.get(0) instanceof StringLiteral)) {
+		if (ASTNodes.usesGivenSignature(visited, Channels.class.getCanonicalName(), METHOD_NEW_WRITER, WritableByteChannel.class.getCanonicalName(),String.class.getCanonicalName())) {
+			StringLiteral argstring3= (StringLiteral) arguments.get(1);
+			if (!encodings.contains(argstring3.getLiteralValue().toUpperCase())) {
 				return false;
 			}
-			StringLiteral argstring3= (StringLiteral) arguments.get(0);
-			if (!encodings.contains(argstring3.getLiteralValue())) {
-				return false;
-			}
-			holder.put(argstring3,encodingmap.get(argstring3.getLiteralValue()));
-			break;
-		case 0:
-			break;
-		default:
+			Nodedata nd=new Nodedata();
+			nd.encoding=encodingmap.get(argstring3.getLiteralValue().toUpperCase());
+			nd.replace=true;
+			nd.visited=argstring3;
+			holder.put(visited,nd);
+			operations.add(fixcore.rewrite(visited, cb, holder));
+			nodesprocessed.add(visited);
 			return false;
 		}
-		operations.add(fixcore.rewrite(visited, cb, holder));
-		nodesprocessed.add(visited);
 		return false;
 	}
 
@@ -86,13 +81,13 @@ public class ChannelsNewWriterExplicitEncoding extends AbstractExplicitEncoding<
 			 */
 			return;
 		}
-		ASTNode callToCharsetDefaultCharset= computeCharsetASTNode(cuRewrite, ast, cb, (String) data.get(visited));
-//		ListRewrite listRewrite= rewrite.getListRewrite(visited, MethodInvocation.ARGUMENTS_PROPERTY);
-//		listRewrite.insertLast(callToCharsetDefaultCharset, group);
-
+		ASTNode callToCharsetDefaultCharset= computeCharsetASTNode(cuRewrite, ast, cb, ((Nodedata) data.get(visited)).encoding);
+		/**
+		 * Add Charset.defaultCharset() as second (last) parameter
+		 */
 		ListRewrite listRewrite= rewrite.getListRewrite(visited, MethodInvocation.ARGUMENTS_PROPERTY);
-		if(data.get(ENCODING)!= null) {
-			listRewrite.replace((ASTNode) data.get(REPLACE), callToCharsetDefaultCharset, group);
+		if(((Nodedata)(data.get(visited))).encoding!= null) {
+			listRewrite.replace(((Nodedata) data.get(visited)).visited, callToCharsetDefaultCharset, group);
 		} else {
 			listRewrite.insertLast(callToCharsetDefaultCharset, group);
 		}

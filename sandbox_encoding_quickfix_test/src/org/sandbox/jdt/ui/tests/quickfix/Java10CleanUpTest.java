@@ -330,6 +330,49 @@ public class Java10CleanUpTest {
 						    }
 						}
 						"""),
+		CHANNELSNEWWRITER("""
+				package test1;
+
+				import java.io.ByteArrayOutputStream;
+				import java.io.InputStreamReader;
+				import java.io.FileInputStream;
+				import java.io.FileReader;
+				import java.io.Writer;
+				import java.nio.channels.WritableByteChannel;
+				import java.nio.charset.StandardCharsets;
+				import java.nio.channels.Channels;
+				import java.io.FileNotFoundException;
+
+				public class E1 {
+				    void method(String filename) {
+				            WritableByteChannel ch;
+				            Writer w=Channels.newWriter(ch,"UTF-8"); //$NON-NLS-1$
+				       }
+				    }
+				}
+				""",
+
+					"""
+						package test1;
+
+						import java.io.ByteArrayOutputStream;
+						import java.io.InputStreamReader;
+						import java.io.FileInputStream;
+						import java.io.FileReader;
+						import java.io.Writer;
+						import java.nio.channels.WritableByteChannel;
+						import java.nio.charset.StandardCharsets;
+						import java.nio.channels.Channels;
+						import java.io.FileNotFoundException;
+
+						public class E1 {
+						    void method(String filename) {
+						            WritableByteChannel ch;
+						            Writer w=Channels.newWriter(ch,StandardCharsets.UTF_8); //$NON-NLS-1$
+						       }
+						    }
+						}
+						"""),
 		PRINTWRITER("""
 			package test1;
 
