@@ -53,9 +53,6 @@ public class StringGetBytesExplicitEncoding extends AbstractExplicitEncoding<Met
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ChangeBehavior cb,
 			MethodInvocation visited, ReferenceHolder<ASTNode, Object> holder) {
 		List<ASTNode> arguments= visited.arguments();
-		if(nodesprocessed.contains(visited) || (arguments.size()>1)) {
-			return false;
-		}
 		switch (arguments.size()) {
 		case 1:
 			if(!(arguments.get(0) instanceof StringLiteral)) {
@@ -82,7 +79,6 @@ public class StringGetBytesExplicitEncoding extends AbstractExplicitEncoding<Met
 			return false;
 		}
 		operations.add(fixcore.rewrite(visited, cb, holder));
-		nodesprocessed.add(visited);
 		return false;
 	}
 

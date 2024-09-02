@@ -21,7 +21,6 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.StringLiteral;
@@ -32,6 +31,7 @@ import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCo
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 
@@ -61,43 +61,41 @@ public class ByteArrayOutputStreamExplicitEncoding extends AbstractExplicitEncod
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed,ChangeBehavior cb) {
 		ReferenceHolder<ASTNode, Object> holder= new ReferenceHolder<>();
-		compilationUnit.accept(new ASTVisitor() {
-			@Override
-			public boolean visit(final MethodInvocation visited) {
-				if(nodesprocessed.contains(visited)) {
-					return false;
-				}
-				List<ASTNode> arguments= visited.arguments();
-				if (ASTNodes.usesGivenSignature(visited, ByteArrayOutputStream.class.getCanonicalName(), METHOD_TOSTRING, String.class.getCanonicalName())) {
-					if(!(arguments.get(0) instanceof StringLiteral)) {
-						return false;
-					}
-					StringLiteral argstring3= (StringLiteral) arguments.get(0);
-					if (!encodings.contains(argstring3.getLiteralValue())) {
-						return false;
-					}
-					Nodedata nd=new Nodedata();
-					nd.encoding=encodingmap.get(argstring3.getLiteralValue());
-					nd.replace=true;
-					nd.visited=argstring3;
-					holder.put(visited,nd);
-					operations.add(fixcore.rewrite(visited, cb, holder));
-					nodesprocessed.add(visited);
-					return false;
-				}
-				if (ASTNodes.usesGivenSignature(visited, ByteArrayOutputStream.class.getCanonicalName(), METHOD_TOSTRING)) {
-					Nodedata nd2=new Nodedata();
-					nd2.encoding=null;
-					nd2.replace=false;
-					nd2.visited=visited;
-					holder.put(visited,nd2);
-					operations.add(fixcore.rewrite(visited, cb, holder));
-					nodesprocessed.add(visited);
-					return false;
-				}
-				return true;
+		HelperVisitor.callMethodInvocationVisitor(ByteArrayOutputStream.class, METHOD_TOSTRING, compilationUnit, holder, nodesprocessed, (visited, aholder) -> processFoundNode(fixcore, operations, nodesprocessed, cb, visited, aholder));
+	}
+
+	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore, Set<CompilationUnitRewriteOperation> operations,
+			Set<ASTNode> nodesprocessed, ChangeBehavior cb, MethodInvocation visited,
+			ReferenceHolder<ASTNode, Object> holder) {
+		List<ASTNode> arguments= visited.arguments();
+		if (ASTNodes.usesGivenSignature(visited, ByteArrayOutputStream.class.getCanonicalName(), METHOD_TOSTRING, String.class.getCanonicalName())) {
+			if(!(arguments.get(0) instanceof StringLiteral)) {
+				return false;
 			}
-		});
+			StringLiteral argstring3= (StringLiteral) arguments.get(0);
+			if (!encodings.contains(argstring3.getLiteralValue())) {
+				return false;
+			}
+			Nodedata nd=new Nodedata();
+			nd.encoding=encodingmap.get(argstring3.getLiteralValue());
+			nd.replace=true;
+			nd.visited=argstring3;
+			holder.put(visited,nd);
+			operations.add(fixcore.rewrite(visited, cb, holder));
+			nodesprocessed.add(visited);
+			return false;
+		}
+		if (ASTNodes.usesGivenSignature(visited, ByteArrayOutputStream.class.getCanonicalName(), METHOD_TOSTRING)) {
+			Nodedata nd2=new Nodedata();
+			nd2.encoding=null;
+			nd2.replace=false;
+			nd2.visited=visited;
+			holder.put(visited,nd2);
+			operations.add(fixcore.rewrite(visited, cb, holder));
+			nodesprocessed.add(visited);
+			return false;
+		}
+		return false;
 	}
 
 	@Override
