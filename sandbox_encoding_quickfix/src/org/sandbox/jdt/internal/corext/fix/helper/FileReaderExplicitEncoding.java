@@ -36,8 +36,9 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 /**
  * Change
  *
- * Reader is=new FileReader("file.txt")
- * Reader is=new InputStreamReader(new FileInputStream("file.txt"),Charset.defaultCharset());
+ * Find:  	Reader is=new FileReader("file.txt")
+ * 
+ * Rewrite: Reader is=new InputStreamReader(new FileInputStream("file.txt"),Charset.defaultCharset());
  *
  * Charset.defaultCharset() is available since Java 1.5
  *
@@ -54,9 +55,6 @@ public class FileReaderExplicitEncoding extends AbstractExplicitEncoding<ClassIn
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ChangeBehavior cb,
 			ClassInstanceCreation visited, ReferenceHolder<ASTNode, Object> holder) {
 		List<ASTNode> arguments= visited.arguments();
-		if(nodesprocessed.contains(visited) || (arguments.size()>2)) {
-			return false;
-		}
 		switch (arguments.size()) {
 		case 1:
 			break;
@@ -74,7 +72,6 @@ public class FileReaderExplicitEncoding extends AbstractExplicitEncoding<ClassIn
 			return false;
 		}
 		operations.add(fixcore.rewrite(visited, cb, holder));
-		nodesprocessed.add(visited);
 		return false;
 	}
 

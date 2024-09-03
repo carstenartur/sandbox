@@ -58,9 +58,6 @@ public class PrintStreamExplicitEncoding extends AbstractExplicitEncoding<ClassI
 			Set<ASTNode> nodesprocessed, ChangeBehavior cb, ClassInstanceCreation visited,
 			ReferenceHolder<ASTNode, Object> holder) {
 		List<ASTNode> arguments= visited.arguments();
-		if(nodesprocessed.contains(visited) || (arguments.size()>2)) {
-			return false;
-		}
 		switch (arguments.size()) {
 		case 1:
 			break;
@@ -78,7 +75,6 @@ public class PrintStreamExplicitEncoding extends AbstractExplicitEncoding<ClassI
 			return false;
 		}
 		operations.add(fixcore.rewrite(visited, cb, holder));
-		nodesprocessed.add(visited);
 		return false;
 	}
 

@@ -53,9 +53,6 @@ public class OutputStreamWriterExplicitEncoding extends AbstractExplicitEncoding
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ChangeBehavior cb,
 			ClassInstanceCreation visited, ReferenceHolder<ASTNode, Object> holder) {
 		List<ASTNode> arguments= visited.arguments();
-		if(nodesprocessed.contains(visited) || (arguments.size()>2)) {
-			return false;
-		}
 		switch (arguments.size()) {
 		case 2:
 			if(!(arguments.get(1) instanceof StringLiteral)) {
@@ -82,7 +79,6 @@ public class OutputStreamWriterExplicitEncoding extends AbstractExplicitEncoding
 			break;
 		}
 		operations.add(fixcore.rewrite(visited, cb, holder));
-		nodesprocessed.add(visited);
 		return false;
 	}
 
@@ -102,7 +98,6 @@ public class OutputStreamWriterExplicitEncoding extends AbstractExplicitEncoding
 		 * Add Charset.defaultCharset() as second (last) parameter
 		 */
 		ListRewrite listRewrite= rewrite.getListRewrite(visited, ClassInstanceCreation.ARGUMENTS_PROPERTY);
-//		listRewrite.insertLast(callToCharsetDefaultCharset, group);
 		if(((Nodedata)(data.get(visited))).encoding!= null) {
 			listRewrite.replace(((Nodedata) data.get(visited)).visited, callToCharsetDefaultCharset, group);
 		} else {

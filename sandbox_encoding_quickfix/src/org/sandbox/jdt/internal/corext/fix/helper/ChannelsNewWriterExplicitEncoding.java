@@ -36,6 +36,8 @@ import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 /**
+ * Java 10
+ * 
  * Find:  Channels.newWriter(ch,"UTF-8")
  *
  * Rewrite: Channels.newWriter(ch,StandardCharsets.UTF_8)
@@ -64,7 +66,6 @@ public class ChannelsNewWriterExplicitEncoding extends AbstractExplicitEncoding<
 			nd.visited=argstring3;
 			holder.put(visited,nd);
 			operations.add(fixcore.rewrite(visited, cb, holder));
-			nodesprocessed.add(visited);
 			return false;
 		}
 		return false;
@@ -75,9 +76,9 @@ public class ChannelsNewWriterExplicitEncoding extends AbstractExplicitEncoding<
 			TextEditGroup group,ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
-		if (!JavaModelUtil.is50OrHigher(cuRewrite.getCu().getJavaProject())) {
+		if (!JavaModelUtil.is10OrHigher(cuRewrite.getCu().getJavaProject())) {
 			/**
-			 * For Java 1.4 and older just do nothing
+			 * For Java 9 and older just do nothing
 			 */
 			return;
 		}

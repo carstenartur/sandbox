@@ -33,10 +33,18 @@ import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 /**
+ * 
+ * Java 10
+ * 
  * Change
  *
- * Writer fw=new PrintWriter("file.txt")
- * Writer fw=new BufferedWriter(new OutputStreamWriter(new FileOutputStream("file.txt"),defaultCharset)));
+ * Find:     	Writer fw=new PrintWriter("file.txt")
+ * 
+ * Rewrite:    	Writer fw=new BufferedWriter(new OutputStreamWriter(new FileOutputStream("file.txt"),defaultCharset)));
+ * 
+ * Find:     	Writer fw=new PrintWriter(new File("file.txt"))
+ * 
+ * Rewrite:    	Writer fw=new BufferedWriter(new OutputStreamWriter(new FileOutputStream("file.txt"),defaultCharset)));
  *
  * Charset.defaultCharset() is available since Java 1.5
  *
@@ -53,7 +61,6 @@ public class PrintWriterExplicitEncoding extends AbstractExplicitEncoding<ClassI
 			Set<ASTNode> nodesprocessed, ChangeBehavior cb, ClassInstanceCreation visited,
 			ReferenceHolder<ASTNode, Object> holder) {
 		operations.add(fixcore.rewrite(visited, cb, holder));
-		nodesprocessed.add(visited);
 		return false;
 	}
 
@@ -62,9 +69,9 @@ public class PrintWriterExplicitEncoding extends AbstractExplicitEncoding<ClassI
 			TextEditGroup group,ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
-		if (!JavaModelUtil.is50OrHigher(cuRewrite.getCu().getJavaProject())) {
+		if (!JavaModelUtil.is10OrHigher(cuRewrite.getCu().getJavaProject())) {
 			/**
-			 * For Java 1.4 and older just do nothing
+			 * For Java 9 and older just do nothing
 			 */
 			return;
 		}

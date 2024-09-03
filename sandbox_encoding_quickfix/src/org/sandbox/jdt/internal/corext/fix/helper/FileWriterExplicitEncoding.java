@@ -45,31 +45,15 @@ public class FileWriterExplicitEncoding extends AbstractExplicitEncoding<ClassIn
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed,ChangeBehavior cb) {
 		ReferenceHolder<ASTNode, Object> datah= new ReferenceHolder<>();
-//		compilationUnit.accept(new ASTVisitor() {
-//			@Override
-//			public boolean visit(final ClassInstanceCreation visited) {
-//				if(nodesprocessed.contains(visited)) {
-//					return false;
-//				}
-//				ITypeBinding binding= visited.resolveTypeBinding();
-//				if (FileWriter.class.getSimpleName().equals(binding.getName())) {
-//					operations.add(fixcore.rewrite(visited, cb, datah));
-//					nodesprocessed.add(visited);
-//					return false;
-//				}
-//				return true;
-//			}
-//		});
 		HelperVisitor.callClassInstanceCreationVisitor(FileWriter.class, compilationUnit, datah, nodesprocessed, (visited, holder) -> processFoundNode(fixcore, operations, nodesprocessed, cb, visited, holder));
-		}
+	}
 
-		private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore, Set<CompilationUnitRewriteOperation> operations,
-				Set<ASTNode> nodesprocessed, ChangeBehavior cb, ClassInstanceCreation visited,
-				ReferenceHolder<ASTNode, Object> holder) {
-			operations.add(fixcore.rewrite(visited, cb, holder));
-			nodesprocessed.add(visited);
-			return false;
-		}
+	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore, Set<CompilationUnitRewriteOperation> operations,
+			Set<ASTNode> nodesprocessed, ChangeBehavior cb, ClassInstanceCreation visited,
+			ReferenceHolder<ASTNode, Object> holder) {
+		operations.add(fixcore.rewrite(visited, cb, holder));
+		return false;
+	}
 
 	@Override
 	public void rewrite(UseExplicitEncodingFixCore upp,final ClassInstanceCreation visited, final CompilationUnitRewrite cuRewrite,

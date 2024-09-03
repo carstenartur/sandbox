@@ -34,6 +34,8 @@ import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 /**
+ * Java 18
+ * 
  * Find:  Charset.forName("UTF-8")
  *
  * Rewrite: StandardCharsets.UTF_8
@@ -46,6 +48,12 @@ public class CharsetForNameExplicitEncoding extends AbstractExplicitEncoding<Met
 
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed,ChangeBehavior cb) {
+		if (!JavaModelUtil.is18OrHigher(compilationUnit.getJavaElement().getJavaProject())) {
+			/**
+			 * For Java 17 and older just do nothing
+			 */
+			return;
+		}
 		ReferenceHolder<ASTNode, Object> datah= new ReferenceHolder<>();
 		HelperVisitor.callMethodInvocationVisitor(Charset.class, METHOD_FOR_NAME, compilationUnit, datah, nodesprocessed, (visited, holder) -> processFoundNode(fixcore, operations, nodesprocessed, cb, visited, holder));
 	}
@@ -63,7 +71,6 @@ public class CharsetForNameExplicitEncoding extends AbstractExplicitEncoding<Met
 		}
 		holder.put(visited,encodingmap.get(argstring3.getLiteralValue().toUpperCase()));
 		operations.add(fixcore.rewrite(visited, cb, holder));
-		nodesprocessed.add(visited);
 		return false;
 	}
 
@@ -72,9 +79,9 @@ public class CharsetForNameExplicitEncoding extends AbstractExplicitEncoding<Met
 			TextEditGroup group,ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
-		if (!JavaModelUtil.is50OrHigher(cuRewrite.getCu().getJavaProject())) {
+		if (!JavaModelUtil.is18OrHigher(cuRewrite.getCu().getJavaProject())) {
 			/**
-			 * For Java 1.4 and older just do nothing
+			 * For Java 17 and older just do nothing
 			 */
 			return;
 		}
@@ -86,9 +93,9 @@ public class CharsetForNameExplicitEncoding extends AbstractExplicitEncoding<Met
 	public String getPreview(boolean afterRefactoring,ChangeBehavior cb) {
 		if(afterRefactoring) {
 			return "Charset s=\"StandardCharsets.UTF_8\";\n"+ //$NON-NLS-1$
-					"byte[] bytes= s.getBytes("+computeCharsetforPreview(cb)+");\n"; //$NON-NLS-1$ //$NON-NLS-2$
+					""; //$NON-NLS-1$
 		}
 		return "Charset s=\"Charset.forName(\"UTF-8\")\";\n"+ //$NON-NLS-1$
-		"byte[] bytes= s.getBytes();\n"; //$NON-NLS-1$
+		""; //$NON-NLS-1$
 	}
 }

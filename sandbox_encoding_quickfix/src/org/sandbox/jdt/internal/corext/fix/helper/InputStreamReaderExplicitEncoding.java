@@ -48,9 +48,6 @@ public class InputStreamReaderExplicitEncoding extends AbstractExplicitEncoding<
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ChangeBehavior cb,
 			ClassInstanceCreation visited, ReferenceHolder<ASTNode, Object> holder) {
 		List<ASTNode> arguments= visited.arguments();
-		if(nodesprocessed.contains(visited) || (arguments.size()>2)) {
-			return false;
-		}
 		switch (arguments.size()) {
 		case 2:
 			if(!(arguments.get(1) instanceof StringLiteral)) {
@@ -77,7 +74,6 @@ public class InputStreamReaderExplicitEncoding extends AbstractExplicitEncoding<
 			break;
 		}
 		operations.add(fixcore.rewrite(visited, cb, holder));
-		nodesprocessed.add(visited);
 		return false;
 	}
 
