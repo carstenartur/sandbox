@@ -36,8 +36,20 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 /**
  * Change
  *
- * OutputStreamWriter is=new OutputStreamWriter(..)
+ * Find:  	OutputStreamWriter os=new OutputStreamWriter(InputStream in, String cs)
+ * 
+ * Rewrite:	OutputStreamWriter os=new OutputStreamWriter(InputStream in, CharSet cs)
+ * 
+ * 
+ * Find:  	OutputStreamWriter os=new OutputStreamWriter(InputStream in)
+ * 
+ * Rewrite:	OutputStreamWriter os=new OutputStreamWriter(InputStream in, Charset.defaultCharset())
  *
+ *
+ * Find:  	OutputStreamWriter os=new OutputStreamWriter(InputStream in)
+ * 
+ * Rewrite:	OutputStreamWriter os=new OutputStreamWriter(InputStream in, StandardCharsets.UTF_8)
+ * 
  * Charset.defaultCharset() is available since Java 1.5
  *
  */

@@ -32,7 +32,11 @@ import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 /**
- * InputStreamReader(InputStream in, Charset cs) is available since Java 1.4
+ * 
+ * Find: 		InputStreamReader(InputStream in, String cs)
+ * 
+ * Rewrite: 	InputStreamReader(InputStream in, Charset cs) is available since Java 1.4
+ * 
  * Charset.defaultCharset() is available since Java 1.5
  *
  */

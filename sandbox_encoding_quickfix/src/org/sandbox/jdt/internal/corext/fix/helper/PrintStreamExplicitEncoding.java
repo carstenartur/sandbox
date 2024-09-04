@@ -44,6 +44,10 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
  * Find:     Stream fw=new PrintStream(new File("file.txt"), "UTF-8")
  * 
  * Rewrite:  Stream fw=new PrintStream(new File("file.txt"), StandardCharsets.UTF_8)
+ * 
+ * Find:     Stream fw=new PrintStream(new java.io.OutputStream(), boolean, "UTF-8")
+ * 
+ * Rewrite:  Stream fw=new PrintStream(new java.io.OutputStream(), boolean, StandardCharsets.UTF_8)
  *
  */
 public class PrintStreamExplicitEncoding extends AbstractExplicitEncoding<ClassInstanceCreation> {
@@ -70,6 +74,16 @@ public class PrintStreamExplicitEncoding extends AbstractExplicitEncoding<ClassI
 				return false;
 			}
 			holder.put(argstring3,encodingmap.get(argstring3.getLiteralValue()));
+			break;
+		case 3:
+			if(!(arguments.get(2) instanceof StringLiteral)) {
+				return false;
+			}
+			StringLiteral argstring4= (StringLiteral) arguments.get(2);
+			if (!encodings.contains(argstring4.getLiteralValue())) {
+				return false;
+			}
+			holder.put(argstring4,encodingmap.get(argstring4.getLiteralValue()));
 			break;
 		default:
 			return false;

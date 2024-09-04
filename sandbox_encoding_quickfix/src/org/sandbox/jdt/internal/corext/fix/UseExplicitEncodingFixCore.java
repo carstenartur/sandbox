@@ -34,6 +34,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.ChannelsNewWriterExplicitEncod
 import org.sandbox.jdt.internal.corext.fix.helper.CharsetForNameExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.FileReaderExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.FileWriterExplicitEncoding;
+import org.sandbox.jdt.internal.corext.fix.helper.FormatterExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.InputStreamReaderExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.OutputStreamWriterExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.PrintStreamExplicitEncoding;
@@ -53,7 +54,8 @@ public enum UseExplicitEncodingFixCore {
 	FILEWRITER(new FileWriterExplicitEncoding()),
 	PRINTWRITER(new PrintWriterExplicitEncoding()),
 	PRINTSTREAM(new PrintStreamExplicitEncoding()),
-	BYTEARRAYOUTPUTSTREAM(new ByteArrayOutputStreamExplicitEncoding());
+	BYTEARRAYOUTPUTSTREAM(new ByteArrayOutputStreamExplicitEncoding()),
+	FORMATTER(new FormatterExplicitEncoding());
 
 	AbstractExplicitEncoding<ASTNode> explicitencoding;
 
