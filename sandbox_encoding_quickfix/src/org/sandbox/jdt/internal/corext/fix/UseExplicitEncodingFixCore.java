@@ -39,7 +39,10 @@ import org.sandbox.jdt.internal.corext.fix.helper.InputStreamReaderExplicitEncod
 import org.sandbox.jdt.internal.corext.fix.helper.OutputStreamWriterExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.PrintStreamExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.PrintWriterExplicitEncoding;
+import org.sandbox.jdt.internal.corext.fix.helper.ScannerExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.StringGetBytesExplicitEncoding;
+import org.sandbox.jdt.internal.corext.fix.helper.URLDecoderDecodeExplicitEncoding;
+import org.sandbox.jdt.internal.corext.fix.helper.URLEncoderEncodeExplicitEncoding;
 import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
 public enum UseExplicitEncodingFixCore {
@@ -55,7 +58,10 @@ public enum UseExplicitEncodingFixCore {
 	PRINTWRITER(new PrintWriterExplicitEncoding()),
 	PRINTSTREAM(new PrintStreamExplicitEncoding()),
 	BYTEARRAYOUTPUTSTREAM(new ByteArrayOutputStreamExplicitEncoding()),
-	FORMATTER(new FormatterExplicitEncoding());
+	FORMATTER(new FormatterExplicitEncoding()),
+	URLDECODER(new URLDecoderDecodeExplicitEncoding()),
+	URLENCODER(new URLEncoderEncodeExplicitEncoding()),
+	SCANNER(new ScannerExplicitEncoding());
 
 	AbstractExplicitEncoding<ASTNode> explicitencoding;
 

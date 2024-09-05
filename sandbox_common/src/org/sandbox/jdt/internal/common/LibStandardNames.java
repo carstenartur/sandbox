@@ -89,6 +89,14 @@ public class LibStandardNames {
 	/**
 	 *
 	 */
+	public static final String METHOD_DECODE= "decode"; //$NON-NLS-1$
+	/**
+	 *
+	 */
+	public static final String METHOD_ENCODE= "encode"; //$NON-NLS-1$
+	/**
+	 *
+	 */
 	public static final String METHOD_TOSTRING= "toString"; //$NON-NLS-1$
 	/**
 	 *
