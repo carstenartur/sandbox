@@ -77,6 +77,10 @@ public class LibStandardNames {
 	/**
 	 *
 	 */
+	public static final String METHOD_STORE_TO_XML= "storeToXML"; //$NON-NLS-1$
+	/**
+	 *
+	 */
 	public static final String METHOD_FOR_NAME= "forName"; //$NON-NLS-1$
 	/**
 	 *

@@ -16,9 +16,6 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 import static org.sandbox.jdt.internal.common.LibStandardNames.METHOD_DECODE;
 
 import java.net.URLDecoder;
-import java.net.URLEncoder;
-import java.nio.channels.Channels;
-import java.nio.channels.WritableByteChannel;
 import java.util.List;
 import java.util.Set;
 
