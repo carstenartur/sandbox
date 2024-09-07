@@ -83,7 +83,7 @@ public class URLDecoderDecodeExplicitEncoding extends AbstractExplicitEncoding<M
 		}
 		ASTNode callToCharsetDefaultCharset= computeCharsetASTNode(cuRewrite, ast, cb, ((Nodedata) data.get(visited)).encoding);
 		/**
-		 * Add Charset.defaultCharset() as second (last) parameter
+		 * Add Charset.defaultCharset() or StandardCharsets.UTF_8 as second (last) parameter
 		 */
 		ListRewrite listRewrite= rewrite.getListRewrite(visited, MethodInvocation.ARGUMENTS_PROPERTY);
 		if(((Nodedata)(data.get(visited))).encoding!= null) {

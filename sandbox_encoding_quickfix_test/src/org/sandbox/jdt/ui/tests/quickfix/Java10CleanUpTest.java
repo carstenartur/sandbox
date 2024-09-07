@@ -1,5 +1,9 @@
 package org.sandbox.jdt.ui.tests.quickfix;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.Properties;
+
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
@@ -482,6 +486,154 @@ public class Java10CleanUpTest {
 					    }
 					}
 					"""),
+		PROPERTIESSTORETOXML("""
+				package test1;
+
+				import java.io.FileOutputStream;
+				import java.io.IOException;
+				import java.util.Properties;
+
+				public class E1 {
+					static void blu() throws IOException {
+						Properties p=new Properties();
+						try (FileOutputStream os = new FileOutputStream("out.xml")) {
+							p.storeToXML(os, null,  "UTF-8");
+						}
+					}
+				}
+				""",
+
+					"""
+package test1;
+
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Properties;
+
+public class E1 {
+	static void blu() throws IOException {
+		Properties p=new Properties();
+		try (FileOutputStream os = new FileOutputStream("out.xml")) {
+			p.storeToXML(os, null,  StandardCharsets.UTF_8);
+		}
+	}
+}
+						"""),
+		URLDECODER("""
+package test1;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+
+public class E2 {
+
+	static void bla() throws UnsupportedEncodingException {
+		String url=URLDecoder.decode("asdf","UTF-8");
+	}
+}
+				"""
+				,
+				"""
+package test1;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+
+public class E2 {
+
+	static void bla() throws UnsupportedEncodingException {
+		String url=URLDecoder.decode("asdf",StandardCharsets.UTF_8);
+	}
+}
+								"""
+				),
+		URLENCODER("""
+				package test1;
+				import java.io.UnsupportedEncodingException;
+				import java.net.URLEncoder;
+
+				public class E2 {
+
+					static void bla() throws UnsupportedEncodingException {
+						String url=URLEncoder.encode("asdf","UTF-8");
+					}
+				}
+								"""
+								,
+								"""
+				package test1;
+				import java.io.UnsupportedEncodingException;
+				import java.net.URLEncoder;
+				import java.nio.charset.StandardCharsets;
+
+				public class E2 {
+
+					static void bla() throws UnsupportedEncodingException {
+						String url=URLEncoder.encode("asdf",StandardCharsets.UTF_8);
+					}
+				}
+												"""
+								),
+		SCANNER("""
+package test1;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.Scanner;
+
+public class E3 {
+
+	static void bla() throws FileNotFoundException {
+		Scanner s=new Scanner(new File("asdf"),"UTF-8");
+	}
+}
+								"""
+								,
+								"""
+								package test1;
+								import java.io.File;
+								import java.io.FileNotFoundException;
+								import java.nio.charset.StandardCharsets;
+								import java.util.Scanner;
+
+								public class E3 {
+
+									static void bla() throws FileNotFoundException {
+										Scanner s=new Scanner(new File("asdf"),StandardCharsets.UTF_8);
+									}
+								}
+												"""
+								),
+								FORMATTER("""
+								package test1;
+								import java.io.File;
+								import java.io.FileNotFoundException;
+								import java.io.UnsupportedEncodingException;
+								import java.util.Formatter;
+
+								public class E4 {
+
+									static void bla() throws FileNotFoundException, UnsupportedEncodingException {
+										Formatter s=new Formatter(new File("asdf"),"UTF-8");
+									}
+								}
+								"""
+								,
+								"""
+								package test1;
+								import java.io.File;
+								import java.io.FileNotFoundException;
+								import java.io.UnsupportedEncodingException;
+								import java.nio.charset.StandardCharsets;
+								import java.util.Formatter;
+
+								public class E4 {
+
+									static void bla() throws FileNotFoundException, UnsupportedEncodingException {
+										Formatter s=new Formatter(new File("asdf"),StandardCharsets.UTF_8);
+									}
+								}
+												"""
+								),
 		THREE("""
 			package test1;
 

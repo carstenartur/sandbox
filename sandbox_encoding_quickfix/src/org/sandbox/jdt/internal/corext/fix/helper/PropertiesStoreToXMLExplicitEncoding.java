@@ -53,10 +53,10 @@ public class PropertiesStoreToXMLExplicitEncoding extends AbstractExplicitEncodi
 		List<ASTNode> arguments= visited.arguments();
 		switch (arguments.size()) {
 		case 3:
-			if(!(arguments.get(3) instanceof StringLiteral)) {
+			if(!(arguments.get(2) instanceof StringLiteral)) {
 				return false;
 			}
-			StringLiteral argstring3= (StringLiteral) arguments.get(3);
+			StringLiteral argstring3= (StringLiteral) arguments.get(2);
 			if (!encodings.contains(argstring3.getLiteralValue().toUpperCase())) {
 				return false;
 			}

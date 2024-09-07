@@ -39,6 +39,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.InputStreamReaderExplicitEncod
 import org.sandbox.jdt.internal.corext.fix.helper.OutputStreamWriterExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.PrintStreamExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.PrintWriterExplicitEncoding;
+import org.sandbox.jdt.internal.corext.fix.helper.PropertiesStoreToXMLExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.ScannerExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.StringGetBytesExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.URLDecoderDecodeExplicitEncoding;
@@ -61,7 +62,8 @@ public enum UseExplicitEncodingFixCore {
 	FORMATTER(new FormatterExplicitEncoding()),
 	URLDECODER(new URLDecoderDecodeExplicitEncoding()),
 	URLENCODER(new URLEncoderEncodeExplicitEncoding()),
-	SCANNER(new ScannerExplicitEncoding());
+	SCANNER(new ScannerExplicitEncoding()),
+	PROPERTIES_STORETOXML(new PropertiesStoreToXMLExplicitEncoding());
 
 	AbstractExplicitEncoding<ASTNode> explicitencoding;
 
