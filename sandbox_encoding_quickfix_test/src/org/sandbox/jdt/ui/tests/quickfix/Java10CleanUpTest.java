@@ -484,6 +484,38 @@ public class Java10CleanUpTest {
 						    }
 						}
 						"""),
+		STRING("""
+				package test1;
+
+				import java.io.FileNotFoundException;
+				import java.io.UnsupportedEncodingException;
+
+				public class E5 {
+
+					static void bla() throws FileNotFoundException, UnsupportedEncodingException {
+						byte[] b= {(byte)59};
+						String s1=new String(b,"UTF-8");
+						String s2=new String(b,0,1,"UTF-8");
+					}
+				}
+										""",
+
+				"""
+						package test1;
+
+						import java.io.FileNotFoundException;
+						import java.io.UnsupportedEncodingException;
+						import java.nio.charset.StandardCharsets;
+
+						public class E5 {
+
+							static void bla() throws FileNotFoundException, UnsupportedEncodingException {
+								byte[] b= {(byte)59};
+								String s1=new String(b,StandardCharsets.UTF_8);
+								String s2=new String(b,0,1,StandardCharsets.UTF_8);
+							}
+						}
+														"""),
 		PROPERTIESSTORETOXML("""
 				package test1;
 

@@ -41,6 +41,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.PrintStreamExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.PrintWriterExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.PropertiesStoreToXMLExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.ScannerExplicitEncoding;
+import org.sandbox.jdt.internal.corext.fix.helper.StringExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.StringGetBytesExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.URLDecoderDecodeExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.URLEncoderEncodeExplicitEncoding;
@@ -52,6 +53,7 @@ public enum UseExplicitEncodingFixCore {
 	CHANNELSNEWREADER(new ChannelsNewReaderExplicitEncoding()),
 	CHANNELSNEWWRITER(new ChannelsNewWriterExplicitEncoding()),
 	STRING_GETBYTES(new StringGetBytesExplicitEncoding()),
+	STRING(new StringExplicitEncoding()),
 	INPUTSTREAMREADER(new InputStreamReaderExplicitEncoding()),
 	OUTPUTSTREAMWRITER(new OutputStreamWriterExplicitEncoding()),
 	FILEREADER(new FileReaderExplicitEncoding()),
