@@ -55,6 +55,12 @@ public class PrintWriterExplicitEncoding extends AbstractExplicitEncoding<ClassI
 
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed,ChangeBehavior cb) {
+		if (!JavaModelUtil.is10OrHigher(compilationUnit.getJavaElement().getJavaProject())) {
+			/**
+			 * For Java 9 and older just do nothing
+			 */
+			return;
+		}
 		ReferenceHolder<ASTNode, Object> datah= new ReferenceHolder<>();
 		HelperVisitor.callClassInstanceCreationVisitor(PrintWriter.class, compilationUnit, datah, nodesprocessed, (visited, holder) -> processFoundNode(fixcore, operations, nodesprocessed, cb, visited, holder));
 	}
@@ -71,12 +77,6 @@ public class PrintWriterExplicitEncoding extends AbstractExplicitEncoding<ClassI
 			TextEditGroup group,ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
-		if (!JavaModelUtil.is10OrHigher(cuRewrite.getCu().getJavaProject())) {
-			/**
-			 * For Java 9 and older just do nothing
-			 */
-			return;
-		}
 		ASTNode callToCharsetDefaultCharset= computeCharsetASTNode(cuRewrite, ast, cb, (String) data.get(visited));
 		/**
 		 * new FileOutputStream(<filename>)

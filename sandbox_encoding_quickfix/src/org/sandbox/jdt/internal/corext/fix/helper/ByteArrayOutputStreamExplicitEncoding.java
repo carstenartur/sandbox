@@ -61,6 +61,12 @@ public class ByteArrayOutputStreamExplicitEncoding extends AbstractExplicitEncod
 
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed,ChangeBehavior cb) {
+		if (!JavaModelUtil.is10OrHigher(compilationUnit.getJavaElement().getJavaProject())) {
+			/**
+			 * For Java 9 and older just do nothing
+			 */
+			return;
+		}
 		ReferenceHolder<ASTNode, Object> holder= new ReferenceHolder<>();
 		HelperVisitor.callMethodInvocationVisitor(ByteArrayOutputStream.class, METHOD_TOSTRING, compilationUnit, holder, nodesprocessed, (visited, aholder) -> processFoundNode(fixcore, operations, nodesprocessed, cb, visited, aholder));
 	}
@@ -102,12 +108,6 @@ public class ByteArrayOutputStreamExplicitEncoding extends AbstractExplicitEncod
 			TextEditGroup group,ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
-		if (!JavaModelUtil.is10OrHigher(cuRewrite.getCu().getJavaProject())) {
-			/**
-			 * For Java 9 and older just do nothing
-			 */
-			return;
-		}
 		ASTNode callToCharsetDefaultCharset= computeCharsetASTNode(cuRewrite, ast, cb, ((Nodedata) data.get(visited)).encoding);
 		/**
 		 * Add Charset.defaultCharset().displayName() as second (last) parameter of "toString()" call
