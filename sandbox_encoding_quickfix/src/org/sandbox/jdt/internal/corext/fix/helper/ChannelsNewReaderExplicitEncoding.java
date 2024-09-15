@@ -19,6 +19,8 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.text.edits.TextEditGroup;
+
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -26,21 +28,21 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+
+import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
-import org.eclipse.text.edits.TextEditGroup;
-import org.sandbox.jdt.internal.common.HelperVisitor;
-import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 /**
  * Java 10
- * 
+ *
  * Change
  *
  * Find:     Reader r=Channels.newReader(ch,"UTF-8")
- * 
+ *
  * Rewrite:  Reader r=Channels.newReader(ch,StandardCharsets.UTF_8)
  *
  */
@@ -98,10 +100,10 @@ public class ChannelsNewReaderExplicitEncoding extends AbstractExplicitEncoding<
 	@Override
 	public String getPreview(boolean afterRefactoring,ChangeBehavior cb) {
 		if(afterRefactoring) {
-			return "Reader r=\"Channels.newReader(ch,StandardCharsets.UTF_8)\";\n"+ //$NON-NLS-1$
+			return "Reader r=Channels.newReader(ch,StandardCharsets.UTF_8);\n"+ //$NON-NLS-1$
 					""; //$NON-NLS-1$
 		}
-		return "Reader r=\"Channels.newReader(ch,\"UTF-8\")\";\n"+ //$NON-NLS-1$
+		return "Reader r=Channels.newReader(ch,\"UTF-8\");\n"+ //$NON-NLS-1$
 		""; //$NON-NLS-1$
 	}
 }

@@ -19,6 +19,8 @@ import java.net.URLEncoder;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.text.edits.TextEditGroup;
+
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -26,21 +28,36 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
-import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 /**
  * Java 10
- * 
+ *
  * Find:  java.net.URLEncoder.encode("asdf","UTF-8")
  *
  * Rewrite: java.net.URLEncoder.encode("asdf",StandardCharsets.UTF_8)
  *
+ * Find:  java.net.URLEncoder.encode("asdf")
+ * Without the parameter the default is the file.encoding system property so
+ * Charset.defaultCharset()
+ * URLEncoder.encode("asdf") is (nearly) the same as URLEncoder.encode("asdf",Charset.defaultCharset())
+ * But it is not really better (other than that you can see that it is depending on the default charset)
+ *
+ * KEEP
+ *
+ * Rewrite: java.net.URLEncoder.encode("asdf",Charset.defaultCharset())
+ *
+ * USE_UTF8
+ *
+ * Rewrite: java.net.URLEncoder.encode("asdf",StandardCharsets.UTF_8)
+ * This changes how the code works but it might be the better choice if you want to get rid of
+ * depending on environment settings
  */
 public class URLEncoderEncodeExplicitEncoding extends AbstractExplicitEncoding<MethodInvocation> {
 
@@ -67,6 +84,24 @@ public class URLEncoderEncodeExplicitEncoding extends AbstractExplicitEncoding<M
 			operations.add(fixcore.rewrite(visited, cb, holder));
 			return false;
 		}
+		if (ASTNodes.usesGivenSignature(visited, URLEncoder.class.getCanonicalName(), METHOD_ENCODE, String.class.getCanonicalName())) {
+			Nodedata nd=new Nodedata();
+			switch(cb) {
+				case KEEP:
+					nd.encoding=null;
+					break;
+				case USE_UTF8:
+					nd.encoding="UTF_8"; //$NON-NLS-1$
+					break;
+				case USE_UTF8_AGGREGATE:
+					break;
+			}
+			nd.replace=false;
+			nd.visited=visited;
+			holder.put(visited,nd);
+			operations.add(fixcore.rewrite(visited, cb, holder));
+			return false;
+		}
 		return false;
 	}
 
@@ -86,7 +121,7 @@ public class URLEncoderEncodeExplicitEncoding extends AbstractExplicitEncoding<M
 		 * Add Charset.defaultCharset() as second (last) parameter
 		 */
 		ListRewrite listRewrite= rewrite.getListRewrite(visited, MethodInvocation.ARGUMENTS_PROPERTY);
-		if(((Nodedata)(data.get(visited))).encoding!= null) {
+		if(((Nodedata)(data.get(visited))).replace) {
 			listRewrite.replace(((Nodedata) data.get(visited)).visited, callToCharsetDefaultCharset, group);
 		} else {
 			listRewrite.insertLast(callToCharsetDefaultCharset, group);
@@ -96,10 +131,10 @@ public class URLEncoderEncodeExplicitEncoding extends AbstractExplicitEncoding<M
 	@Override
 	public String getPreview(boolean afterRefactoring,ChangeBehavior cb) {
 		if(afterRefactoring) {
-			return "\"java.net.URLEncoder.encode(\"asdf\", StandardCharsets.UTF_8)\";\n"+ //$NON-NLS-1$
+			return "java.net.URLEncoder.encode(\"asdf\", StandardCharsets.UTF_8);\n"+ //$NON-NLS-1$
 					""; //$NON-NLS-1$
 		}
-		return "\"java.net.URLEncoder.encode(\"asdf\", \"UTF-8\")\";\n"+ //$NON-NLS-1$
+		return "java.net.URLEncoder.encode(\"asdf\", \"UTF-8\");\n"+ //$NON-NLS-1$
 		""; //$NON-NLS-1$
 	}
 }

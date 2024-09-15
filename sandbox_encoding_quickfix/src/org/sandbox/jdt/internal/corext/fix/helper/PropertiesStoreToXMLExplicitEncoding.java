@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
+import org.eclipse.text.edits.TextEditGroup;
+
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -26,17 +28,21 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
-import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 /**
- * Find:  Properties.storeToXML(java.io.OutputStream,String,"UTF-8")
+ * Find:  Properties.storeToXML(java.io.OutputStream,"comment","UTF-8")
+ * throws UnsupportedEncodingException
+ * By default the UTF-8 character encoding is used
+ * so Properties.storeToXML(java.io.OutputStream,"comment")
+ * is the same as Properties.storeToXML(java.io.OutputStream,"comment", StandardCharsets.UTF_8)
  *
- * Rewrite: Properties.storeToXML(java.io.OutputStream,StandardCharsets.UTF_8)
+ * Rewrite: Properties.storeToXML(java.io.OutputStream,"comment", StandardCharsets.UTF_8)
  *
  */
 public class PropertiesStoreToXMLExplicitEncoding extends AbstractExplicitEncoding<MethodInvocation> {
@@ -65,18 +71,20 @@ public class PropertiesStoreToXMLExplicitEncoding extends AbstractExplicitEncodi
 			nd.replace=true;
 			nd.visited=argstring3;
 			holder.put(visited,nd);
+			operations.add(fixcore.rewrite(visited, cb, holder));
 			break;
-		case 0:
+		case 2:
 			Nodedata nd2=new Nodedata();
-			nd2.encoding=null;
+			nd2.encoding="UTF_8"; //$NON-NLS-1$
 			nd2.replace=false;
 			nd2.visited=visited;
 			holder.put(visited,nd2);
+			operations.add(fixcore.rewrite(visited, cb, holder));
 			break;
 		default:
 			return false;
 		}
-		operations.add(fixcore.rewrite(visited, cb, holder));
+
 		return false;
 	}
 
@@ -92,10 +100,10 @@ public class PropertiesStoreToXMLExplicitEncoding extends AbstractExplicitEncodi
 		}
 		ASTNode callToCharsetDefaultCharset= computeCharsetASTNode(cuRewrite, ast, cb, ((Nodedata) data.get(visited)).encoding);
 		/**
-		 * Add Charset.defaultCharset() as second (last) parameter
+		 * Add StandardCharsets.UTF_8 as third (last) parameter
 		 */
 		ListRewrite listRewrite= rewrite.getListRewrite(visited, MethodInvocation.ARGUMENTS_PROPERTY);
-		if(((Nodedata)(data.get(visited))).encoding!= null) {
+		if(((Nodedata)(data.get(visited))).replace) {
 			listRewrite.replace(((Nodedata) data.get(visited)).visited, callToCharsetDefaultCharset, group);
 		} else {
 			listRewrite.insertLast(callToCharsetDefaultCharset, group);
@@ -105,10 +113,10 @@ public class PropertiesStoreToXMLExplicitEncoding extends AbstractExplicitEncodi
 	@Override
 	public String getPreview(boolean afterRefactoring,ChangeBehavior cb) {
 		if(afterRefactoring) {
-			return "Properties p=\"new Properties()\";\n"+ //$NON-NLS-1$
+			return "Properties p=new Properties();\n"+ //$NON-NLS-1$
 					"p.storeToXML(java.io.OutputStream,String,"+computeCharsetforPreview(cb)+");\n"; //$NON-NLS-1$ //$NON-NLS-2$
 		}
-		return "Properties p=\"new Properties()\";\n"+ //$NON-NLS-1$
+		return "Properties p=new Properties();\n"+ //$NON-NLS-1$
 		"p.storeToXML(java.io.OutputStream,String,\"UTF-8\");\n"; //$NON-NLS-1$
 	}
 }

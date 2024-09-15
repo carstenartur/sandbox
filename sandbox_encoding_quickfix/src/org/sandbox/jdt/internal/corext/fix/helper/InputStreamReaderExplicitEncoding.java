@@ -17,6 +17,8 @@ import java.io.InputStreamReader;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.text.edits.TextEditGroup;
+
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
@@ -24,19 +26,19 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
-import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 /**
- * 
+ *
  * Find: 		InputStreamReader(InputStream in, String cs)
- * 
+ *
  * Rewrite: 	InputStreamReader(InputStream in, Charset cs) is available since Java 1.4
- * 
+ *
  * Charset.defaultCharset() is available since Java 1.5
  *
  */
@@ -66,6 +68,7 @@ public class InputStreamReaderExplicitEncoding extends AbstractExplicitEncoding<
 			nd.replace=true;
 			nd.visited=argstring3;
 			holder.put(visited,nd);
+			operations.add(fixcore.rewrite(visited, cb, holder));
 			break;
 		case 1:
 			Nodedata nd2=new Nodedata();
@@ -73,11 +76,12 @@ public class InputStreamReaderExplicitEncoding extends AbstractExplicitEncoding<
 			nd2.replace=false;
 			nd2.visited=visited;
 			holder.put(visited,nd2);
+			operations.add(fixcore.rewrite(visited, cb, holder));
 			break;
 		default:
 			break;
 		}
-		operations.add(fixcore.rewrite(visited, cb, holder));
+
 		return false;
 	}
 

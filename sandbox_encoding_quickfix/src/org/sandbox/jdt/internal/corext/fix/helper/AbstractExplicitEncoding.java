@@ -21,6 +21,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.text.edits.TextEditGroup;
+
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -29,10 +31,10 @@ import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+
 import org.eclipse.jdt.internal.corext.dom.ASTNodeFactory;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
-import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 
@@ -50,13 +52,13 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 		);
 	static Set<String> encodings=encodingmap.keySet();
 	public enum ChangeBehavior {KEEP, USE_UTF8, USE_UTF8_AGGREGATE}
-	
+
 	static class Nodedata {
 		public boolean replace;
 		public ASTNode visited;
 		public String encoding;
 	}
-	
+
 
 	protected static final String ENCODING = "encoding"; //$NON-NLS-1$
 	protected static final String REPLACE = "replace"; //$NON-NLS-1$
@@ -111,7 +113,7 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	 *
 	 * @param cuRewrite CompilationUnitRewrite
 	 * @param ast AST
-	 * @param charset 
+	 * @param charset
 	 * @return FieldAccess that returns Charset for UTF_8
 	 */
 	protected FieldAccess addCharsetUTF8(CompilationUnitRewrite cuRewrite, AST ast, String charset) {
@@ -125,7 +127,7 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 		 */
 		FieldAccess fieldaccess= ast.newFieldAccess();
 		fieldaccess.setExpression(ASTNodeFactory.newName(ast, StandardCharsets.class.getSimpleName()));
-		
+
 		fieldaccess.setName(ast.newSimpleName(charset));
 		return fieldaccess;
 	}

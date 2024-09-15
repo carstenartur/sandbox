@@ -16,6 +16,8 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.text.edits.TextEditGroup;
+
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
@@ -23,25 +25,25 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
-import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 /**
- * 
+ *
  * Java 10
- * 
+ *
  * Change
  *
  * Find:     	String s=new String(byte[],"UTF-8")
- * 
+ *
  * Rewrite:    	String s=new String(byte[],StandardCharsets.UTF_8);
- * 
+ *
  * Find:     	String s=new String(byte[],int, int, "UTF-8")
- * 
+ *
  * Rewrite:    	String s=new String(byte[],int, int, StandardCharsets.UTF_8)
  *
  */
@@ -71,6 +73,7 @@ public class StringExplicitEncoding extends AbstractExplicitEncoding<ClassInstan
 			nd.replace=true;
 			nd.visited=argstring4;
 			holder.put(visited,nd);
+			operations.add(fixcore.rewrite(visited, cb, holder));
 			break;
 		case 2:
 			if(!(arguments.get(1) instanceof StringLiteral)) {
@@ -85,12 +88,13 @@ public class StringExplicitEncoding extends AbstractExplicitEncoding<ClassInstan
 			nd2.replace=true;
 			nd2.visited=argstring3;
 			holder.put(visited,nd2);
+			operations.add(fixcore.rewrite(visited, cb, holder));
 			break;
 		case 1:
 		default:
 			break;
 		}
-		operations.add(fixcore.rewrite(visited, cb, holder));
+
 		return false;
 	}
 

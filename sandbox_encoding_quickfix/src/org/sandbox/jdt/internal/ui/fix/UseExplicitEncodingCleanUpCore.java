@@ -35,6 +35,7 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.manipulation.CleanUpContextCore;
 import org.eclipse.jdt.core.manipulation.CleanUpRequirementsCore;
 import org.eclipse.jdt.core.manipulation.ICleanUpFixCore;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFix;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.util.Messages;
@@ -48,12 +49,14 @@ public class UseExplicitEncodingCleanUpCore extends AbstractCleanUpCore {
 	}
 	public UseExplicitEncodingCleanUpCore() {
 	}
+
 	@Override
 	public CleanUpRequirementsCore getRequirementsCore() {
 		return new CleanUpRequirementsCore(requireAST(), false, false, null);
 	}
+
 	public boolean requireAST() {
-		return isEnabled(EXPLICITENCODING_CLEANUP);
+		return isEnabled(EXPLICITENCODING_CLEANUP)&& !computeFixSet().isEmpty();
 	}
 	@Override
 	public ICleanUpFixCore createFixCore(final CleanUpContextCore context) throws CoreException {
@@ -73,7 +76,7 @@ public class UseExplicitEncodingCleanUpCore extends AbstractCleanUpCore {
 		if (operations.isEmpty()) {
 			return null;
 		}
-		return new CompilationUnitRewriteOperationsFixCore(ExplicitEncodingCleanUpFix_refactor,
+		return new CompilationUnitRewriteOperationsFix(ExplicitEncodingCleanUpFix_refactor,
 				compilationUnit, operations.toArray(new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]));
 	}
 

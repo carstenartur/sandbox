@@ -19,6 +19,9 @@ import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -26,14 +29,12 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+
+import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
-import org.eclipse.text.edits.TextEditGroup;
-import org.sandbox.jdt.internal.common.HelperVisitor;
-import org.sandbox.jdt.internal.common.ReferenceHolder;
-import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 
 
 /**
@@ -49,7 +50,7 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
  *      } catch (UnsupportedEncodingException e1) {
  *         e1.printStackTrace();
  *      }</pre>
- *      
+ *
  *      since Java 10
  *  <pre>ByteArrayOutputStream ba=new ByteArrayOutputStream();
  *         String result=ba.toString(Charset.defaultCharset());
@@ -82,7 +83,6 @@ public class ByteArrayOutputStreamExplicitEncoding extends AbstractExplicitEncod
 			nd.visited=argstring3;
 			holder.put(visited,nd);
 			operations.add(fixcore.rewrite(visited, cb, holder));
-			nodesprocessed.add(visited);
 			return false;
 		}
 		if (ASTNodes.usesGivenSignature(visited, ByteArrayOutputStream.class.getCanonicalName(), METHOD_TOSTRING)) {
@@ -92,7 +92,6 @@ public class ByteArrayOutputStreamExplicitEncoding extends AbstractExplicitEncod
 			nd2.visited=visited;
 			holder.put(visited,nd2);
 			operations.add(fixcore.rewrite(visited, cb, holder));
-			nodesprocessed.add(visited);
 			return false;
 		}
 		return false;

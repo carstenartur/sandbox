@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
 
+import org.eclipse.text.edits.TextEditGroup;
+
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
@@ -24,31 +26,34 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
-import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 /**
- * 
+ *
  * Java 10
- * 
+ *
  * Change
  *
- * Find:     	new java.util.Scanner(new File("asdf"),"UTF-8")
- * 
- * Rewrite:    	new java.util.Scanner(new File("asdf"),StandardCharsets.UTF_8);
- * 
- * Find:     	new java.util.Scanner("asdf", "UTF-8")
- * 
- * Rewrite:    	new java.util.Scanner("asdf", StandardCharsets.UTF_8)
- * 
+ * Find:     	new java.util.Scanner(new File("filename.txt"),"UTF-8")
+ *
+ * Rewrite:    	new java.util.Scanner(new File("filename.txt"),StandardCharsets.UTF_8);
+ *
+ * Find:     	new java.util.Scanner("filename.txt", "UTF-8")
+ *
+ * Rewrite:    	new java.util.Scanner("filename.txt", StandardCharsets.UTF_8)
+ *
  * Find:     	new java.util.Scanner(java.io.OutputStream, "UTF-8")
- * 
+ *
  * Rewrite:    	new java.util.Scanner(java.io.OutputStream, StandardCharsets.UTF_8)
  *
+ * Find:     	new java.util.Scanner(java.io.OutputStream)
+ *
+ * Rewrite:    	new java.util.Scanner(java.io.OutputStream, Charset.defaultCharset())
  */
 public class ScannerExplicitEncoding extends AbstractExplicitEncoding<ClassInstanceCreation> {
 
@@ -76,6 +81,7 @@ public class ScannerExplicitEncoding extends AbstractExplicitEncoding<ClassInsta
 			nd.replace=true;
 			nd.visited=argstring4;
 			holder.put(visited,nd);
+			operations.add(fixcore.rewrite(visited, cb, holder));
 			break;
 		case 2:
 			if(!(arguments.get(1) instanceof StringLiteral)) {
@@ -90,12 +96,20 @@ public class ScannerExplicitEncoding extends AbstractExplicitEncoding<ClassInsta
 			nd2.replace=true;
 			nd2.visited=argstring3;
 			holder.put(visited,nd2);
+			operations.add(fixcore.rewrite(visited, cb, holder));
 			break;
 		case 1:
+			Nodedata nd3=new Nodedata();
+			nd3.encoding=null;
+			nd3.replace=false;
+			nd3.visited=visited;
+			holder.put(visited,nd3);
+			operations.add(fixcore.rewrite(visited, cb, holder));
+			break;
 		default:
 			break;
 		}
-		operations.add(fixcore.rewrite(visited, cb, holder));
+
 		return false;
 	}
 
@@ -115,7 +129,7 @@ public class ScannerExplicitEncoding extends AbstractExplicitEncoding<ClassInsta
 		 * Add Charset.defaultCharset() as second (last) parameter
 		 */
 		ListRewrite listRewrite= rewrite.getListRewrite(visited, ClassInstanceCreation.ARGUMENTS_PROPERTY);
-		if(((Nodedata)(data.get(visited))).encoding!= null) {
+		if(((Nodedata)(data.get(visited))).replace) {
 			listRewrite.replace(((Nodedata) data.get(visited)).visited, callToCharsetDefaultCharset, group);
 		} else {
 			listRewrite.insertLast(callToCharsetDefaultCharset, group);

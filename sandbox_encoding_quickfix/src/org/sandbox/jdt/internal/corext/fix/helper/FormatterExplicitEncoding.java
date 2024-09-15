@@ -17,6 +17,8 @@ import java.util.Formatter;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.text.edits.TextEditGroup;
+
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
@@ -24,38 +26,44 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
-import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 /**
- * 
+ *
  * Find: 		new java.util.Formatter(new File(), String cs)
- * 
+ * throws UnsupportedEncodingException
+ *
  * Rewrite: 	new java.util.Formatter(new File(), Charset cs)
- * 
+ *
  * Find: 		new java.util.Formatter(new File(), String cs,new java.util.Locale())
- * 
+ *
  * Rewrite: 	new java.util.Formatter(new File(), Charset cs,new java.util.Locale())
- * 
+ *
  * Find: 		new java.util.Formatter(new java.io.OutputStream(), String cs)
- * 
+ *
  * Rewrite: 	new java.util.Formatter(new java.io.OutputStream(), Charset cs)
- * 
+ *
  * Find: 		new java.util.Formatter(new java.io.OutputStream(), String cs,new java.util.Locale())
- * 
+ *
  * Rewrite: 	new java.util.Formatter(new java.io.OutputStream(), Charset cs,new java.util.Locale())
- * 
+ *
  * Find: 		new java.util.Formatter(new String(), String cs)
- * 
+ *
  * Rewrite: 	new java.util.Formatter(new String(), Charset cs)
- * 
+ *
  * Find: 		new java.util.Formatter(new String(), String cs,new java.util.Locale())
- * 
+ *
  * Rewrite: 	new java.util.Formatter(new String(), Charset cs,new java.util.Locale())
+ *
+ * Find: 		new java.util.Formatter(new File())
+ *
+ * Rewrite: 	new java.util.Formatter(new File(), Charset.defaultCharset())
+ * depends on https://docs.oracle.com/en/java/javase/20/docs/api/java.base/java/lang/System.html#file.encoding
  *
  */
 public class FormatterExplicitEncoding extends AbstractExplicitEncoding<ClassInstanceCreation> {
@@ -85,6 +93,7 @@ public class FormatterExplicitEncoding extends AbstractExplicitEncoding<ClassIns
 			nd.replace=true;
 			nd.visited=argstring3;
 			holder.put(visited,nd);
+			operations.add(fixcore.rewrite(visited, cb, holder));
 			break;
 		case 1:
 			Nodedata nd2=new Nodedata();
@@ -92,11 +101,11 @@ public class FormatterExplicitEncoding extends AbstractExplicitEncoding<ClassIns
 			nd2.replace=false;
 			nd2.visited=visited;
 			holder.put(visited,nd2);
+			operations.add(fixcore.rewrite(visited, cb, holder));
 			break;
 		default:
 			break;
 		}
-		operations.add(fixcore.rewrite(visited, cb, holder));
 		return false;
 	}
 
@@ -116,7 +125,7 @@ public class FormatterExplicitEncoding extends AbstractExplicitEncoding<ClassIns
 		 * Add Charset.defaultCharset() as second (last) parameter
 		 */
 		ListRewrite listRewrite= rewrite.getListRewrite(visited, ClassInstanceCreation.ARGUMENTS_PROPERTY);
-		if(((Nodedata)(data.get(visited))).encoding!= null) {
+		if(((Nodedata)(data.get(visited))).replace) {
 			listRewrite.replace(((Nodedata) data.get(visited)).visited, callToCharsetDefaultCharset, group);
 		} else {
 			listRewrite.insertLast(callToCharsetDefaultCharset, group);
@@ -126,8 +135,8 @@ public class FormatterExplicitEncoding extends AbstractExplicitEncoding<ClassIns
 	@Override
 	public String getPreview(boolean afterRefactoring,ChangeBehavior cb) {
 		if(afterRefactoring) {
-			return "Reader r=new java.util.Formatter(in, "+computeCharsetforPreview(cb)+");\nInputStreamReader is=new InputStreamReader(new FileInputStream(\"\"), \"UTF-8\");\n"; //$NON-NLS-1$ //$NON-NLS-2$
+			return "Formatter r=new java.util.Formatter(out, "+computeCharsetforPreview(cb)+");\n"; //$NON-NLS-1$ //$NON-NLS-2$
 		}
-		return "Reader r=new java.util.Formatter(in);\nInputStreamReader is=new InputStreamReader(new FileInputStream(\"\"), StandardCharsets.UTF_8);\n"; //$NON-NLS-1$
+		return "Formatter r=new java.util.Formatter(out);\n"; //$NON-NLS-1$
 	}
 }
