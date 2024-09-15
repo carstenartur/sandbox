@@ -113,7 +113,7 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	 *
 	 * @param cuRewrite CompilationUnitRewrite
 	 * @param ast AST
-	 * @param charset
+	 * @param charset Charset as String
 	 * @return FieldAccess that returns Charset for UTF_8
 	 */
 	protected FieldAccess addCharsetUTF8(CompilationUnitRewrite cuRewrite, AST ast, String charset) {
@@ -159,7 +159,7 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	 * @param cuRewrite CompilationUnitRewrite
 	 * @param ast AST
 	 * @param cb ChangeBehavior
-	 * @param charset
+	 * @param charset Charset as String
 	 * @return MethodInvocation that returns String
 	 */
 	protected MethodInvocation addCharsetStringComputation(final CompilationUnitRewrite cuRewrite, AST ast, ChangeBehavior cb, String charset) {

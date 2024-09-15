@@ -86,13 +86,13 @@ public enum UseExplicitEncodingFixCore {
 	 * @param compilationUnit unit to search in
 	 * @param operations set of all CompilationUnitRewriteOperations created already
 	 * @param nodesprocessed list to remember nodes already processed
-	 * @param cb
+	 * @param cb distinguish if you want to keep the same behavior or get code independent of environment
 	 */
 	public void findOperations(final CompilationUnit compilationUnit,final Set<CompilationUnitRewriteOperation> operations,final Set<ASTNode> nodesprocessed, ChangeBehavior cb) {
 		explicitencoding.find(this, compilationUnit, operations, nodesprocessed, cb);
 	}
 
-	public CompilationUnitRewriteOperation rewrite(final ASTNode visited, ChangeBehavior cb, ReferenceHolder data) {
+	public CompilationUnitRewriteOperation rewrite(final ASTNode visited, ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data) {
 		return new CompilationUnitRewriteOperation() {
 			@Override
 			public void rewriteAST(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel) throws CoreException {
