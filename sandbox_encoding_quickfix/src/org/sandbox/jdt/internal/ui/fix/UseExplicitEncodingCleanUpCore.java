@@ -39,11 +39,14 @@ import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFix;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.util.Messages;
-import org.eclipse.jdt.internal.ui.fix.AbstractCleanUpCore;
+import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
+import org.eclipse.jdt.ui.cleanup.CleanUpContext;
+import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
+import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.AbstractExplicitEncoding.ChangeBehavior;
 
-public class UseExplicitEncodingCleanUpCore extends AbstractCleanUpCore {
+public class UseExplicitEncodingCleanUpCore extends AbstractCleanUp {
 	public UseExplicitEncodingCleanUpCore(final Map<String, String> options) {
 		super(options);
 	}
@@ -51,15 +54,15 @@ public class UseExplicitEncodingCleanUpCore extends AbstractCleanUpCore {
 	}
 
 	@Override
-	public CleanUpRequirementsCore getRequirementsCore() {
-		return new CleanUpRequirementsCore(requireAST(), false, false, null);
+	public CleanUpRequirements getRequirements() {
+		return new CleanUpRequirements(requireAST(), false, false, null);
 	}
 
 	public boolean requireAST() {
 		return isEnabled(EXPLICITENCODING_CLEANUP)&& !computeFixSet().isEmpty();
 	}
 	@Override
-	public ICleanUpFixCore createFixCore(final CleanUpContextCore context) throws CoreException {
+	public ICleanUpFix createFix(final CleanUpContext context) throws CoreException {
 		CompilationUnit compilationUnit= context.getAST();
 		if (compilationUnit == null) {
 			return null;

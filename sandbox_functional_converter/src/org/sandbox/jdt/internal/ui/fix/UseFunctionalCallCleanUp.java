@@ -13,44 +13,18 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.fix;
 
+import java.util.Collections;
 import java.util.Map;
 
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.jdt.core.manipulation.ICleanUpFixCore;
-import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
-import org.eclipse.jdt.internal.ui.fix.CleanUpFixWrapper;
-import org.eclipse.jdt.ui.cleanup.CleanUpContext;
-import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
-import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
-import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
+import org.eclipse.jdt.internal.ui.fix.AbstractCleanUpCoreWrapper;
 /**
  */
-public class UseFunctionalCallCleanUp extends AbstractCleanUp {
-	private final UseFunctionalCallCleanUpCore coreCleanUp= new UseFunctionalCallCleanUpCore();
+public class UseFunctionalCallCleanUp extends AbstractCleanUpCoreWrapper<UseFunctionalCallCleanUpCore> {
 	public UseFunctionalCallCleanUp(final Map<String, String> options) {
-		setOptions(options);
+		super(options, new UseFunctionalCallCleanUpCore());
 	}
+
 	public UseFunctionalCallCleanUp() {
-	}
-	@Override
-	public void setOptions(final CleanUpOptions options) {
-		coreCleanUp.setOptions(options);
-	}
-	@Override
-	public CleanUpRequirements getRequirements() {
-		return new CleanUpRequirements(coreCleanUp.getRequirementsCore());
-	}
-	@Override
-	public ICleanUpFix createFix(final CleanUpContext context) throws CoreException {
-		ICleanUpFixCore fixCore= coreCleanUp.createFixCore(context);
-		return fixCore == null ? null : new CleanUpFixWrapper(fixCore);
-	}
-	@Override
-	public String[] getStepDescriptions() {
-		return coreCleanUp.getStepDescriptions();
-	}
-	@Override
-	public String getPreview() {
-		return coreCleanUp.getPreview();
+		this(Collections.EMPTY_MAP);
 	}
 }

@@ -29,17 +29,17 @@ import java.util.stream.Collectors;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.manipulation.CleanUpContextCore;
-import org.eclipse.jdt.core.manipulation.CleanUpRequirementsCore;
-import org.eclipse.jdt.core.manipulation.ICleanUpFixCore;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 import org.eclipse.jdt.internal.corext.util.Messages;
-import org.eclipse.jdt.internal.ui.fix.AbstractCleanUpCore;
+import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
+import org.eclipse.jdt.ui.cleanup.CleanUpContext;
+import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
+import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 import org.sandbox.jdt.internal.corext.fix.XMLCleanUpFixCore;
 
-public class XMLCleanUpCore extends AbstractCleanUpCore {
+public class XMLCleanUpCore extends AbstractCleanUp {
 	public XMLCleanUpCore(final Map<String, String> options) {
 		super(options);
 	}
@@ -50,8 +50,8 @@ public class XMLCleanUpCore extends AbstractCleanUpCore {
 	}
 
 	@Override
-	public CleanUpRequirementsCore getRequirementsCore() {
-		return new CleanUpRequirementsCore(requireAST(), false, false, null);
+	public CleanUpRequirements getRequirements() {
+		return new CleanUpRequirements(requireAST(), false, false, null);
 	}
 
 	public boolean requireAST() {
@@ -59,7 +59,7 @@ public class XMLCleanUpCore extends AbstractCleanUpCore {
 	}
 
 	@Override
-	public ICleanUpFixCore createFixCore(final CleanUpContextCore context) throws CoreException {
+	public ICleanUpFix createFix(final CleanUpContext context) throws CoreException {
 		CompilationUnit compilationUnit= context.getAST();
 		if (compilationUnit == null) {
 			return null;
