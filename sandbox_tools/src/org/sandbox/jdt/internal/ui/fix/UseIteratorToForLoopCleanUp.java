@@ -26,6 +26,6 @@ public class UseIteratorToForLoopCleanUp extends AbstractCleanUpCoreWrapper<UseI
 	}
 
 	public UseIteratorToForLoopCleanUp() {
-		this(Collections.EMPTY_MAP);
+		this(Collections.emptyMap());
 	}
 }

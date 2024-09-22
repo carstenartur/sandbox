@@ -26,6 +26,6 @@ public class XMLCleanUp extends AbstractCleanUpCoreWrapper<XMLCleanUpCore> {
 	}
 
 	public XMLCleanUp() {
-		this(Collections.EMPTY_MAP);
+		this(Collections.emptyMap());
 	}
 }

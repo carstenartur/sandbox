@@ -26,6 +26,6 @@ public class JFaceCleanUp extends AbstractCleanUpCoreWrapper<JFaceCleanUpCore> {
 	}
 
 	public JFaceCleanUp() {
-		this(Collections.EMPTY_MAP);
+		this(Collections.emptyMap());
 	}
 }

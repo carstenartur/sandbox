@@ -29,6 +29,6 @@ public class UseExplicitEncodingCleanUp extends AbstractCleanUpCoreWrapper<UseEx
 	}
 
 	public UseExplicitEncodingCleanUp() {
-		this(Collections.EMPTY_MAP);
+		this(Collections.emptyMap());
 	}
 }

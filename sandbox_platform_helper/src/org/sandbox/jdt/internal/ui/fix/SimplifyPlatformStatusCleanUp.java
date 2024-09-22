@@ -59,6 +59,6 @@ public class SimplifyPlatformStatusCleanUp extends AbstractCleanUpCoreWrapper<Si
 	}
 
 	public SimplifyPlatformStatusCleanUp() {
-		this(Collections.EMPTY_MAP);
+		this(Collections.emptyMap());
 	}
 }

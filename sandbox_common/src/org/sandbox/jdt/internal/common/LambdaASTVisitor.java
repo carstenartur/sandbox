@@ -29,7 +29,7 @@ import org.eclipse.jdt.internal.corext.dom.ASTNodes;
  * @param <T>
  * @since 1.15
  */
-@SuppressWarnings("unchecked")
+@SuppressWarnings({ "unchecked", "restriction" })
 public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> extends ASTVisitor {
 	/**
 	 *

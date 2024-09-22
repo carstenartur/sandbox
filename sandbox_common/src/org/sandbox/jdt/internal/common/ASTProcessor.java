@@ -37,17 +37,20 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
 public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 
 	class NodeHolder {
+		@SuppressWarnings("unchecked")
 		public NodeHolder(BiPredicate<? extends ASTNode, E> callee, Function<ASTNode, ASTNode> navigate) {
 			this.callee= (BiPredicate<ASTNode, E>) callee;
 			this.navigate= navigate;
 		}
 
+		@SuppressWarnings("unchecked")
 		public NodeHolder(BiPredicate<? extends ASTNode, E> callee, Function<ASTNode, ASTNode> navigate, Object object) {
 			this.callee= (BiPredicate<ASTNode, E>) callee;
 			this.navigate= navigate;
 			this.object= object;
 		}
 
+		@SuppressWarnings("unchecked")
 		public NodeHolder(BiConsumer<? extends ASTNode, E> callee_end) {
 			this.callee_end= (BiConsumer<ASTNode, E>) callee_end;
 			//			this.object= object;
@@ -440,7 +443,7 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 * @param bs
 	 * @return a reference to this object.
 	 */
-	public ASTProcessor<E, V, T> callClassInstanceCreationVisitor(Class typeof,BiPredicate<ClassInstanceCreation, E> bs) {
+	public ASTProcessor<E, V, T> callClassInstanceCreationVisitor(Class<?> typeof,BiPredicate<ClassInstanceCreation, E> bs) {
 		Map<String, Object> map = Map.ofEntries(
 				new AbstractMap.SimpleEntry<>(HelperVisitor.TYPEOF, typeof)
 				);
@@ -1188,7 +1191,7 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 * @param bs
 	 * @return a reference to this object.
 	 */
-	public ASTProcessor<E, V, T> callMethodInvocationVisitor(Class typeof, BiPredicate<ASTNode, E> bs) {
+	public ASTProcessor<E, V, T> callMethodInvocationVisitor(Class<?> typeof, BiPredicate<ASTNode, E> bs) {
 		Map<String, Object> map = Map.ofEntries(
 				new AbstractMap.SimpleEntry<>(HelperVisitor.TYPEOF, typeof)
 				);
@@ -1202,7 +1205,7 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 * @param bs
 	 * @return a reference to this object.
 	 */
-	public ASTProcessor<E, V, T> callMethodInvocationVisitor(Class typeof,String methodname, BiPredicate<MethodInvocation, E> bs) {
+	public ASTProcessor<E, V, T> callMethodInvocationVisitor(Class<?> typeof,String methodname, BiPredicate<MethodInvocation, E> bs) {
 		return callMethodInvocationVisitor(typeof,methodname,bs,null);
 	}
 
@@ -1213,7 +1216,7 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 * @param navigate
 	 * @return a reference to this object.
 	 */
-	public ASTProcessor<E, V, T> callMethodInvocationVisitor(Class typeof,String methodname, BiPredicate<MethodInvocation, E> bs, Function<ASTNode, ASTNode> navigate) {
+	public ASTProcessor<E, V, T> callMethodInvocationVisitor(Class<?> typeof,String methodname, BiPredicate<MethodInvocation, E> bs, Function<ASTNode, ASTNode> navigate) {
 		Map<String, Object> map = Map.ofEntries(
 				new AbstractMap.SimpleEntry<>(HelperVisitor.METHODNAME, methodname),
 				new AbstractMap.SimpleEntry<>(HelperVisitor.TYPEOF, typeof)

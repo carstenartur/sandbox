@@ -25,6 +25,6 @@ public class UseFunctionalCallCleanUp extends AbstractCleanUpCoreWrapper<UseFunc
 	}
 
 	public UseFunctionalCallCleanUp() {
-		this(Collections.EMPTY_MAP);
+		this(Collections.emptyMap());
 	}
 }

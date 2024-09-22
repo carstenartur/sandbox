@@ -711,7 +711,7 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	 * @param bs
 	 * @return old BiPredicate assigned for nodetype
 	 */
-	public BiPredicate<? extends ASTNode, E> addMethodInvocation(Class typeof, String methodname,
+	public BiPredicate<? extends ASTNode, E> addMethodInvocation(Class<?> typeof, String methodname,
 			BiPredicate<MethodInvocation, E> bs) {
 		Map<String, Object> map = Map.ofEntries(
 				new AbstractMap.SimpleEntry<>(METHODNAME, methodname),
@@ -2745,7 +2745,7 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	 * @param bs
 	 * @param bc
 	 */
-	public void addMethodInvocation(Class typeof, String methodname, BiPredicate<MethodInvocation, E> bs,
+	public void addMethodInvocation(Class<?> typeof, String methodname, BiPredicate<MethodInvocation, E> bs,
 			BiConsumer<MethodInvocation, E> bc) {
 		Map<String, Object> map = Map.ofEntries(
 				new AbstractMap.SimpleEntry<>(METHODNAME, methodname),
@@ -4314,7 +4314,7 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	 * @param nodesprocessed
 	 * @param bs
 	 */
-	public static <V, T> void callMethodInvocationVisitor(Class methodof, String methodname, ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+	public static <V, T> void callMethodInvocationVisitor(Class<?> methodof, String methodname, ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
 			BiPredicate<MethodInvocation, ReferenceHolder<V, T>> bs) {
 
 		HelperVisitor<ReferenceHolder<V, T>,V,T> hv= new HelperVisitor<>(nodesprocessed, dataholder);

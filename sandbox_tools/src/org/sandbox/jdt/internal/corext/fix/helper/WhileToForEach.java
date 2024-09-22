@@ -82,7 +82,7 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 					List<Object> computeVarName= computeVarName(init_iterator);
 					MethodInvocation iteratorCall= computeIteratorCall(init_iterator);
 					if (computeVarName != null && iteratorCall != null) {
-						Statement iteratorAssignment= (Statement) ASTNodes.getFirstAncestorOrNull(iteratorCall,
+						Statement iteratorAssignment= ASTNodes.getFirstAncestorOrNull(iteratorCall,
 								Statement.class);
 						HelperVisitor.callWhileStatementVisitor(init_iterator.getParent(), dataholder, nodesprocessed,
 								(whilestatement, holder) -> {
@@ -232,7 +232,7 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 					Expression leftSide= ((Assignment) assignment).getLeftHandSide();
 					SimpleName assignedVar= ASTNodes.as(leftSide, SimpleName.class);
 					if (assignedVar != null && assignedVar.getIdentifier().equals(hit.iteratorName)) {
-						Statement stmt= (Statement) ASTNodes.getFirstAncestorOrNull(assignment, Statement.class);
+						Statement stmt= ASTNodes.getFirstAncestorOrNull(assignment, Statement.class);
 						if (stmt == null || stmt.getParent() != hit.whileStatement.getParent()) {
 							hit.isInvalid= true;
 							return false;
