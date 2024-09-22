@@ -55,7 +55,7 @@ main:
 
 # What is included
 
-Code based on Java 17 starting with 2022-12, Java 11 up to 2022-06
+Code based on Java 21 starting with 2024-06, based on Java 17 starting with 2022-12, Java 11 up to 2022-06
 
 - how to create github based build for different eclipse versions
 - how to create a jdt cleanup
