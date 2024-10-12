@@ -25,6 +25,7 @@ import org.eclipse.jdt.core.dom.rewrite.TargetSourceRangeComputer;
 
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.util.Messages;
@@ -81,21 +82,21 @@ public enum UseExplicitEncodingFixCore {
 		return explicitencoding.getPreview(i,cb);
 	}
 	/**
-	 * Compute set of CompilationUnitRewriteOperation to refactor supported situations using default encoding to make use of explicit calls
+	 * Compute set of CompilationUnitRewriteOperationWithSourceRange to refactor supported situations using default encoding to make use of explicit calls
 	 *
 	 * @param compilationUnit unit to search in
 	 * @param operations set of all CompilationUnitRewriteOperations created already
 	 * @param nodesprocessed list to remember nodes already processed
 	 * @param cb distinguish if you want to keep the same behavior or get code independent of environment
 	 */
-	public void findOperations(final CompilationUnit compilationUnit,final Set<CompilationUnitRewriteOperation> operations,final Set<ASTNode> nodesprocessed, ChangeBehavior cb) {
+	public void findOperations(final CompilationUnit compilationUnit,final Set<CompilationUnitRewriteOperationWithSourceRange> operations,final Set<ASTNode> nodesprocessed, ChangeBehavior cb) {
 		explicitencoding.find(this, compilationUnit, operations, nodesprocessed, cb);
 	}
 
-	public CompilationUnitRewriteOperation rewrite(final ASTNode visited, ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data) {
-		return new CompilationUnitRewriteOperation() {
+	public CompilationUnitRewriteOperationWithSourceRange rewrite(final ASTNode visited, ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data) {
+		return new CompilationUnitRewriteOperationWithSourceRange() {
 			@Override
-			public void rewriteAST(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel) throws CoreException {
+			public void rewriteASTInternal(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel) throws CoreException {
 				TextEditGroup group= createTextEditGroup(Messages.format(MultiFixMessages.ExplicitEncodingCleanUp_description,new Object[] {UseExplicitEncodingFixCore.this.toString(), cb.toString()}), cuRewrite);
 				cuRewrite.getASTRewrite().setTargetSourceRangeComputer(computer);
 				explicitencoding.rewrite(UseExplicitEncodingFixCore.this, visited, cuRewrite, group, cb, data);

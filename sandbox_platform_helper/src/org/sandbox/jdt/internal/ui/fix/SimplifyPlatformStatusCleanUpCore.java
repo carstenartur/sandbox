@@ -30,7 +30,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
@@ -67,7 +67,7 @@ public class SimplifyPlatformStatusCleanUpCore extends AbstractCleanUp {
 				|| !JavaModelUtil.is9OrHigher(compilationUnit.getJavaElement().getJavaProject())) {
 			return null;
 		}
-		Set<CompilationUnitRewriteOperation> operations= new LinkedHashSet<>();
+		Set<CompilationUnitRewriteOperationWithSourceRange> operations= new LinkedHashSet<>();
 		Set<ASTNode> nodesprocessed= new HashSet<>();
 		for (var i : computeFixSet) {
 			i.findOperations(compilationUnit, operations, nodesprocessed);
@@ -76,7 +76,7 @@ public class SimplifyPlatformStatusCleanUpCore extends AbstractCleanUp {
 			return null;
 		}
 		return new CompilationUnitRewriteOperationsFixCore(PlatformStatusCleanUpFix_refactor, compilationUnit,
-				operations.toArray(new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]));
+				operations.toArray(new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange[0]));
 	}
 
 	@Override

@@ -18,8 +18,6 @@ import static org.sandbox.jdt.internal.common.LibStandardNames.METHOD_GET_BYTES;
 import java.util.List;
 import java.util.Set;
 
-import org.eclipse.text.edits.TextEditGroup;
-
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -27,10 +25,10 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
-
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
+import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
@@ -46,13 +44,13 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 public class StringGetBytesExplicitEncoding extends AbstractExplicitEncoding<MethodInvocation> {
 
 	@Override
-	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed,ChangeBehavior cb) {
+	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed,ChangeBehavior cb) {
 		ReferenceHolder<ASTNode, Object> datah= new ReferenceHolder<>();
 		HelperVisitor.callMethodInvocationVisitor(String.class, METHOD_GET_BYTES, compilationUnit, datah, nodesprocessed, (visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));
 	}
 
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore,
-			Set<CompilationUnitRewriteOperation> operations, ChangeBehavior cb,
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, ChangeBehavior cb,
 			MethodInvocation visited, ReferenceHolder<ASTNode, Object> holder) {
 		List<ASTNode> arguments= visited.arguments();
 		switch (arguments.size()) {
@@ -115,5 +113,10 @@ public class StringGetBytesExplicitEncoding extends AbstractExplicitEncoding<Met
 		}
 		return "String s=\"asdf\";\n"+ //$NON-NLS-1$
 		"byte[] bytes= s.getBytes();\n"; //$NON-NLS-1$
+	}
+
+	@Override
+	public String toString() {
+		return "String.getBytes()"; //$NON-NLS-1$
 	}
 }

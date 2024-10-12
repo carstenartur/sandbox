@@ -32,7 +32,7 @@ import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
@@ -49,7 +49,7 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 public class ChannelsNewReaderExplicitEncoding extends AbstractExplicitEncoding<MethodInvocation> {
 
 	@Override
-	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed,ChangeBehavior cb) {
+	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed,ChangeBehavior cb) {
 		if (!JavaModelUtil.is10OrHigher(compilationUnit.getJavaElement().getJavaProject())) {
 			/**
 			 * For Java 9 and older just do nothing
@@ -61,7 +61,7 @@ public class ChannelsNewReaderExplicitEncoding extends AbstractExplicitEncoding<
 	}
 
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore,
-			Set<CompilationUnitRewriteOperation> operations, ChangeBehavior cb,
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, ChangeBehavior cb,
 			MethodInvocation visited, ReferenceHolder<ASTNode, Object> holder) {
 		List<ASTNode> arguments= visited.arguments();
 		if (ASTNodes.usesGivenSignature(visited, Channels.class.getCanonicalName(), METHOD_NEW_READER, ReadableByteChannel.class.getCanonicalName(),String.class.getCanonicalName())) {
@@ -105,5 +105,10 @@ public class ChannelsNewReaderExplicitEncoding extends AbstractExplicitEncoding<
 		}
 		return "Reader r=Channels.newReader(ch,\"UTF-8\");\n"+ //$NON-NLS-1$
 		""; //$NON-NLS-1$
+	}
+
+	@Override
+	public String toString() {
+		return "Channels.newReader(ch,StandardCharsets.UTF_8)"; //$NON-NLS-1$
 	}
 }

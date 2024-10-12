@@ -31,7 +31,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
@@ -68,7 +68,7 @@ public class UseIteratorToForLoopCleanUpCore extends AbstractCleanUp {
 				|| !JavaModelUtil.is1d8OrHigher(compilationUnit.getJavaElement().getJavaProject())) {
 			return null;
 		}
-		Set<CompilationUnitRewriteOperation> operations= new LinkedHashSet<>();
+		Set<CompilationUnitRewriteOperationWithSourceRange> operations= new LinkedHashSet<>();
 		Set<ASTNode> nodesprocessed= new HashSet<>();
 		computeFixSet.forEach(i -> i.findOperations(compilationUnit, operations, nodesprocessed,
 				isEnabled(CONTROL_STATEMENTS_CONVERT_FOR_LOOP_ONLY_IF_LOOP_VAR_USED)));
@@ -76,7 +76,7 @@ public class UseIteratorToForLoopCleanUpCore extends AbstractCleanUp {
 			return null;
 		}
 		return new CompilationUnitRewriteOperationsFixCore(ToolsCleanUpFix_refactor, compilationUnit,
-				operations.toArray(new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]));
+				operations.toArray(new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange[0]));
 	}
 
 	@Override

@@ -19,8 +19,6 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
-import org.eclipse.text.edits.TextEditGroup;
-
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -28,10 +26,10 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
-
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
+import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
@@ -48,13 +46,13 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 public class PropertiesStoreToXMLExplicitEncoding extends AbstractExplicitEncoding<MethodInvocation> {
 
 	@Override
-	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed,ChangeBehavior cb) {
+	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed,ChangeBehavior cb) {
 		ReferenceHolder<ASTNode, Object> datah= new ReferenceHolder<>();
 		HelperVisitor.callMethodInvocationVisitor(Properties.class, METHOD_STORE_TO_XML, compilationUnit, datah, nodesprocessed, (visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));
 	}
 
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore,
-			Set<CompilationUnitRewriteOperation> operations, ChangeBehavior cb,
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, ChangeBehavior cb,
 			MethodInvocation visited, ReferenceHolder<ASTNode, Object> holder) {
 		List<ASTNode> arguments= visited.arguments();
 		switch (arguments.size()) {
@@ -114,9 +112,14 @@ public class PropertiesStoreToXMLExplicitEncoding extends AbstractExplicitEncodi
 	public String getPreview(boolean afterRefactoring,ChangeBehavior cb) {
 		if(afterRefactoring) {
 			return "Properties p=new Properties();\n"+ //$NON-NLS-1$
-					"p.storeToXML(java.io.OutputStream,String,"+computeCharsetforPreview(cb)+");\n"; //$NON-NLS-1$ //$NON-NLS-2$
+					"p.storeToXML(java.io.OutputStream,String,StandardCharsets.UTF_8);\n"; //$NON-NLS-1$
 		}
 		return "Properties p=new Properties();\n"+ //$NON-NLS-1$
 		"p.storeToXML(java.io.OutputStream,String,\"UTF-8\");\n"; //$NON-NLS-1$
+	}
+
+	@Override
+	public String toString() {
+		return "Properties.storeToXML()"; //$NON-NLS-1$
 	}
 }

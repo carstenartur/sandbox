@@ -17,8 +17,6 @@ import java.io.InputStreamReader;
 import java.util.List;
 import java.util.Set;
 
-import org.eclipse.text.edits.TextEditGroup;
-
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
@@ -26,10 +24,10 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
-
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
+import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
@@ -45,13 +43,13 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 public class InputStreamReaderExplicitEncoding extends AbstractExplicitEncoding<ClassInstanceCreation> {
 
 	@Override
-	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed,ChangeBehavior cb) {
+	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed,ChangeBehavior cb) {
 		ReferenceHolder<ASTNode, Object> datah= new ReferenceHolder<>();
 		HelperVisitor.callClassInstanceCreationVisitor(InputStreamReader.class, compilationUnit, datah, nodesprocessed, (visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));
 	}
 
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore,
-			Set<CompilationUnitRewriteOperation> operations, ChangeBehavior cb,
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, ChangeBehavior cb,
 			ClassInstanceCreation visited, ReferenceHolder<ASTNode, Object> holder) {
 		List<ASTNode> arguments= visited.arguments();
 		switch (arguments.size()) {
@@ -114,5 +112,10 @@ public class InputStreamReaderExplicitEncoding extends AbstractExplicitEncoding<
 			return "Reader r=new InputStreamReader(in, "+computeCharsetforPreview(cb)+");\nInputStreamReader is=new InputStreamReader(new FileInputStream(\"\"), \"UTF-8\");\n"; //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		return "Reader r=new InputStreamReader(in);\nInputStreamReader is=new InputStreamReader(new FileInputStream(\"\"), StandardCharsets.UTF_8);\n"; //$NON-NLS-1$
+	}
+
+	@Override
+	public String toString() {
+		return "new InputStreamReader(in)"; //$NON-NLS-1$
 	}
 }

@@ -19,20 +19,17 @@ import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Set;
 
-import org.eclipse.text.edits.TextEditGroup;
-
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
-
-
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
+import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
@@ -50,7 +47,7 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 public class CharsetForNameExplicitEncoding extends AbstractExplicitEncoding<MethodInvocation> {
 
 	@Override
-	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed,ChangeBehavior cb) {
+	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed,ChangeBehavior cb) {
 		if (!JavaModelUtil.is18OrHigher(compilationUnit.getJavaElement().getJavaProject())) {
 			/**
 			 * For Java 17 and older just do nothing
@@ -62,7 +59,7 @@ public class CharsetForNameExplicitEncoding extends AbstractExplicitEncoding<Met
 	}
 
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore,
-			Set<CompilationUnitRewriteOperation> operations, ChangeBehavior cb,
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, ChangeBehavior cb,
 			MethodInvocation visited, ReferenceHolder<ASTNode, Object> holder) {
 		List<ASTNode> arguments= visited.arguments();
 		if (!ASTNodes.usesGivenSignature(visited, Charset.class.getCanonicalName(), METHOD_FOR_NAME, String.class.getCanonicalName())) {
@@ -95,10 +92,13 @@ public class CharsetForNameExplicitEncoding extends AbstractExplicitEncoding<Met
 	@Override
 	public String getPreview(boolean afterRefactoring,ChangeBehavior cb) {
 		if(afterRefactoring) {
-			return "Charset s=StandardCharsets.UTF_8;\n"+ //$NON-NLS-1$
-					""; //$NON-NLS-1$
+			return "Charset s=StandardCharsets.UTF_8;\n"; //$NON-NLS-1$
 		}
-		return "Charset s=Charset.forName(\"UTF-8\");\n"+ //$NON-NLS-1$
-		""; //$NON-NLS-1$
+		return "Charset s=Charset.forName(\"UTF-8\");\n"; //$NON-NLS-1$
+	}
+
+	@Override
+	public String toString() {
+		return "Charset.forName(\"UTF-8\")"; //$NON-NLS-1$
 	}
 }

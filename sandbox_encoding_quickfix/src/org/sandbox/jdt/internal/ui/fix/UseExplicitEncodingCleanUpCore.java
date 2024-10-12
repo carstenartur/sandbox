@@ -32,9 +32,8 @@ import java.util.stream.Collectors;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFix;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
@@ -70,26 +69,26 @@ public class UseExplicitEncodingCleanUpCore extends AbstractCleanUp {
 		}
 
 		ChangeBehavior cb= computeRefactorDeepth();
-		Set<CompilationUnitRewriteOperation> operations= new LinkedHashSet<>();
+		Set<CompilationUnitRewriteOperationWithSourceRange> operations= new LinkedHashSet<>();
 		Set<ASTNode> nodesprocessed= new HashSet<>();
 		computeFixSet.forEach(i->i.findOperations(compilationUnit,operations,nodesprocessed,cb));
 		if (operations.isEmpty()) {
 			return null;
 		}
-		return new CompilationUnitRewriteOperationsFix(ExplicitEncodingCleanUpFix_refactor,
-				compilationUnit, operations.toArray(new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]));
+		return new CompilationUnitRewriteOperationsFixCore(ExplicitEncodingCleanUpFix_refactor,
+				compilationUnit, operations.toArray(new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange[0]));
 	}
 
 	private ChangeBehavior computeRefactorDeepth() {
-		ChangeBehavior cb=ChangeBehavior.KEEP;
+		ChangeBehavior cb=ChangeBehavior.KEEP_BEHAVIOR;
 		if(isEnabled(EXPLICITENCODING_KEEP_BEHAVIOR)) {
-			cb=ChangeBehavior.KEEP;
+			cb=ChangeBehavior.KEEP_BEHAVIOR;
 		}
 		if(isEnabled(EXPLICITENCODING_INSERT_UTF8)) {
-			cb=ChangeBehavior.USE_UTF8;
+			cb=ChangeBehavior.ENFORCE_UTF8;
 		}
 		if(isEnabled(EXPLICITENCODING_AGGREGATE_TO_UTF8)) {
-			cb=ChangeBehavior.USE_UTF8_AGGREGATE;
+			cb=ChangeBehavior.ENFORCE_UTF8_AGGREGATE;
 		}
 		return cb;
 	}
