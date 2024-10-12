@@ -32,7 +32,7 @@ import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 
@@ -60,7 +60,7 @@ import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 public class ByteArrayOutputStreamExplicitEncoding extends AbstractExplicitEncoding<MethodInvocation> {
 
 	@Override
-	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed,ChangeBehavior cb) {
+	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed,ChangeBehavior cb) {
 		if (!JavaModelUtil.is10OrHigher(compilationUnit.getJavaElement().getJavaProject())) {
 			/**
 			 * For Java 9 and older just do nothing
@@ -71,7 +71,7 @@ public class ByteArrayOutputStreamExplicitEncoding extends AbstractExplicitEncod
 		HelperVisitor.callMethodInvocationVisitor(ByteArrayOutputStream.class, METHOD_TOSTRING, compilationUnit, holder, nodesprocessed, (visited, aholder) -> processFoundNode(fixcore, operations, cb, visited, aholder));
 	}
 
-	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore, Set<CompilationUnitRewriteOperation> operations,
+	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore, Set<CompilationUnitRewriteOperationWithSourceRange> operations,
 			ChangeBehavior cb, MethodInvocation visited,
 			ReferenceHolder<ASTNode, Object> holder) {
 		List<ASTNode> arguments= visited.arguments();
@@ -125,13 +125,13 @@ public class ByteArrayOutputStreamExplicitEncoding extends AbstractExplicitEncod
 	public String getPreview(boolean afterRefactoring,ChangeBehavior cb) {
 		String insert=""; //$NON-NLS-1$
 		switch(cb) {
-		case KEEP:
+		case KEEP_BEHAVIOR:
 			insert="Charset.defaultCharset().displayName()"; //$NON-NLS-1$
 			break;
-		case USE_UTF8_AGGREGATE:
+		case ENFORCE_UTF8_AGGREGATE:
 			//				insert="charset_constant"; //$NON-NLS-1$
 			//$FALL-THROUGH$
-		case USE_UTF8:
+		case ENFORCE_UTF8:
 			insert="StandardCharsets.UTF_8.displayName()"; //$NON-NLS-1$
 			break;
 		}
@@ -151,5 +151,10 @@ public class ByteArrayOutputStreamExplicitEncoding extends AbstractExplicitEncod
 				e1.printStackTrace();
 			}
 			"""; //$NON-NLS-1$
+	}
+
+	@Override
+	public String toString() {
+		return "ba.toString()"; //$NON-NLS-1$
 	}
 }

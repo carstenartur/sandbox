@@ -19,7 +19,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.refactoring.util.TightSourceRangeComputer;
@@ -56,15 +56,15 @@ public enum UseIteratorToForLoopFixCore {
 	 *                               loop var used within
 	 */
 	public void findOperations(final CompilationUnit compilationUnit,
-			final Set<CompilationUnitRewriteOperation> operations, final Set<ASTNode> nodesprocessed,
+			final Set<CompilationUnitRewriteOperationWithSourceRange> operations, final Set<ASTNode> nodesprocessed,
 			boolean createForOnlyIfVarUsed) {
 		iteratortofor.find(this, compilationUnit, operations, nodesprocessed, createForOnlyIfVarUsed);
 	}
 
-	public CompilationUnitRewriteOperation rewrite(final WhileLoopToChangeHit hit) {
-		return new CompilationUnitRewriteOperation() {
+	public CompilationUnitRewriteOperationWithSourceRange rewrite(final WhileLoopToChangeHit hit) {
+		return new CompilationUnitRewriteOperationWithSourceRange() {
 			@Override
-			public void rewriteAST(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel)
+			public void rewriteASTInternal(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel)
 					throws CoreException {
 				TextEditGroup group= createTextEditGroup(MultiFixMessages.ToolsCleanUp_description, cuRewrite);
 				TightSourceRangeComputer rangeComputer;

@@ -31,6 +31,7 @@ import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 import org.sandbox.jdt.internal.common.HelperVisitor;
@@ -62,7 +63,7 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 public class URLDecoderDecodeExplicitEncoding extends AbstractExplicitEncoding<MethodInvocation> {
 
 	@Override
-	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed,ChangeBehavior cb) {
+	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed,ChangeBehavior cb) {
 		if (!JavaModelUtil.is10OrHigher(compilationUnit.getJavaElement().getJavaProject())) {
 			/**
 			 * For Java 9 and older just do nothing
@@ -74,7 +75,7 @@ public class URLDecoderDecodeExplicitEncoding extends AbstractExplicitEncoding<M
 	}
 
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore,
-			Set<CompilationUnitRewriteOperation> operations, ChangeBehavior cb,
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, ChangeBehavior cb,
 			MethodInvocation visited, ReferenceHolder<ASTNode, Object> holder) {
 		List<ASTNode> arguments= visited.arguments();
 		if (ASTNodes.usesGivenSignature(visited, URLDecoder.class.getCanonicalName(), METHOD_DECODE, String.class.getCanonicalName(),String.class.getCanonicalName())) {
@@ -93,13 +94,13 @@ public class URLDecoderDecodeExplicitEncoding extends AbstractExplicitEncoding<M
 		if (ASTNodes.usesGivenSignature(visited, URLDecoder.class.getCanonicalName(), METHOD_DECODE, String.class.getCanonicalName())) {
 			Nodedata nd=new Nodedata();
 			switch(cb) {
-				case KEEP:
+				case KEEP_BEHAVIOR:
 					nd.encoding=null;
 					break;
-				case USE_UTF8:
+				case ENFORCE_UTF8:
 					nd.encoding="UTF_8"; //$NON-NLS-1$
 					break;
-				case USE_UTF8_AGGREGATE:
+				case ENFORCE_UTF8_AGGREGATE:
 					break;
 			}
 			nd.replace=false;
@@ -136,5 +137,10 @@ public class URLDecoderDecodeExplicitEncoding extends AbstractExplicitEncoding<M
 		}
 		return "java.net.URLDecoder.decode(\"asdf\", \"UTF-8\");\n"+ //$NON-NLS-1$
 		""; //$NON-NLS-1$
+	}
+
+	@Override
+	public String toString() {
+		return "URLDecoder.decode()"; //$NON-NLS-1$
 	}
 }
