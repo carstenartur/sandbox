@@ -45,6 +45,10 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	 *
 	 */
 	public static final String METHODNAME = "methodname"; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String ANNOTATIONNAME = "annotationname"; //$NON-NLS-1$
 	
 	/**
 	 *
@@ -638,6 +642,18 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	}
 
 	/**
+	 * @param name
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate<? extends ASTNode, E> addMarkerAnnotation(String name, BiPredicate<MarkerAnnotation, E> bs) {
+		predicatedata.put(VisitorEnum.MarkerAnnotation, Map.ofEntries(
+				new AbstractMap.SimpleEntry<>(ANNOTATIONNAME, name)
+				));
+		return predicatemap.put(VisitorEnum.MarkerAnnotation, bs);
+	}
+
+	/**
 	 *
 	 * @param bs
 	 * @return old BiPredicate assigned for nodetype
@@ -765,6 +781,17 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 		return predicatemap.put(VisitorEnum.NormalAnnotation, bs);
 	}
 
+	/**
+	 * @param name
+	 * @param bs
+	 * @return
+	 */
+	public BiPredicate<? extends ASTNode, E> addNormalAnnotation(String name, BiPredicate<NormalAnnotation, E> bs) {
+		predicatedata.put(VisitorEnum.NormalAnnotation, Map.ofEntries(
+				new AbstractMap.SimpleEntry<>(ANNOTATIONNAME, name)
+				));
+		return predicatemap.put(VisitorEnum.NormalAnnotation, bs);
+	}
 	/**
 	 *
 	 * @param bs
@@ -945,7 +972,19 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	public BiPredicate<? extends ASTNode, E> addSingleMemberAnnotation(BiPredicate<SingleMemberAnnotation, E> bs) {
 		return predicatemap.put(VisitorEnum.SingleMemberAnnotation, bs);
 	}
-
+	
+	/**
+	 * @param name
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate<? extends ASTNode, E> addSingleMemberAnnotation(String name, BiPredicate<SingleMemberAnnotation, E> bs) {
+		predicatedata.put(VisitorEnum.SingleMemberAnnotation, Map.ofEntries(
+				new AbstractMap.SimpleEntry<>(ANNOTATIONNAME, name)
+				));
+		return predicatemap.put(VisitorEnum.SingleMemberAnnotation, bs);
+	}
+	
 	/**
 	 *
 	 * @param bs
@@ -4185,6 +4224,23 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	}
 
 	/**
+	 * @param <V>
+	 * @param <T>
+	 * @param name
+	 * @param node
+	 * @param dataholder
+	 * @param nodesprocessed
+	 * @param bs
+	 */
+	public static <V, T> void callMarkerAnnotationVisitor(String name, ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+			BiPredicate<MarkerAnnotation, ReferenceHolder<V, T>> bs) {
+
+		HelperVisitor<ReferenceHolder<V, T>,V,T> hv= new HelperVisitor<>(nodesprocessed, dataholder);
+		hv.addMarkerAnnotation(name, bs);
+		hv.build(node);
+	}
+
+	/**
 	 *
 	 * @param <V>
 	 * @param <T>
@@ -4404,6 +4460,23 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 
 		HelperVisitor<ReferenceHolder<V, T>,V,T> hv= new HelperVisitor<>(nodesprocessed, dataholder);
 		hv.addNormalAnnotation(bs);
+		hv.build(node);
+	}
+
+	/**
+	 * @param <V>
+	 * @param <T>
+	 * @param name
+	 * @param node
+	 * @param dataholder
+	 * @param nodesprocessed
+	 * @param bs
+	 */
+	public static <V, T> void callNormalAnnotationVisitor(String name, ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+			BiPredicate<NormalAnnotation, ReferenceHolder<V, T>> bs) {
+
+		HelperVisitor<ReferenceHolder<V, T>,V,T> hv= new HelperVisitor<>(nodesprocessed, dataholder);
+		hv.addNormalAnnotation(name, bs);
 		hv.build(node);
 	}
 
@@ -4730,6 +4803,23 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 
 		HelperVisitor<ReferenceHolder<V, T>,V,T> hv= new HelperVisitor<>(nodesprocessed, dataholder);
 		hv.addSingleMemberAnnotation(bs);
+		hv.build(node);
+	}
+
+	/**
+	 * @param <V>
+	 * @param <T>
+	 * @param name
+	 * @param node
+	 * @param dataholder
+	 * @param nodesprocessed
+	 * @param bs
+	 */
+	public static <V, T> void callSingleMemberAnnotationVisitor(String name, ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+			BiPredicate<SingleMemberAnnotation, ReferenceHolder<V, T>> bs) {
+
+		HelperVisitor<ReferenceHolder<V, T>,V,T> hv= new HelperVisitor<>(nodesprocessed, dataholder);
+		hv.addSingleMemberAnnotation(name, bs);
 		hv.build(node);
 	}
 
