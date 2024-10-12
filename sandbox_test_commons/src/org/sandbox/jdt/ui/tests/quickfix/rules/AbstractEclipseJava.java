@@ -78,8 +78,9 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	private final String testresources_stubs;
 	private final String compliance;
 	private static final String TEST_SETUP_PROJECT= "TestSetupProject"; //$NON-NLS-1$
-	 private IPackageFragmentRoot fSourceFolder;
+	private IPackageFragmentRoot fSourceFolder;
 	private CustomProfile fProfile;
+	public IJavaProject javaProject;
 
 	public AbstractEclipseJava(String stubs, String compilerversion) {
 		this.testresources_stubs= stubs;
@@ -88,7 +89,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 
 	@Override
 	public void beforeEach(ExtensionContext context) throws CoreException {
-		IJavaProject javaProject= createJavaProject(TEST_SETUP_PROJECT, "bin"); //$NON-NLS-1$
+		javaProject= createJavaProject(TEST_SETUP_PROJECT, "bin"); //$NON-NLS-1$
 		javaProject.setRawClasspath(getDefaultClasspath(), null);
 		Map<String, String> options= javaProject.getOptions(false);
 		JavaCore.setComplianceOptions(compliance, options);
@@ -290,6 +291,56 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		return root;
 	}
 
+	/**
+	 * Adds a source container to a IJavaProject.
+	 * @param jproject The parent project
+	 * @param containerName The name of the new source container
+	 * @return The handle to the new source container
+	 * @throws CoreException Creation failed
+	 */
+	public static IPackageFragmentRoot addSourceContainer(IJavaProject jproject, String containerName) throws CoreException {
+		return addSourceContainer(jproject, containerName, new Path[0]);
+	}
+	
+	/**
+	 * Adds a source container to a IJavaProject.
+	 * @param jproject The parent project
+	 * @param containerName The name of the new source container
+	 * @param exclusionFilters Exclusion filters to set
+	 * @return The handle to the new source container
+	 * @throws CoreException Creation failed
+	 */
+	public static IPackageFragmentRoot addSourceContainer(IJavaProject jproject, String containerName, IPath[] exclusionFilters) throws CoreException {
+		return addSourceContainer(jproject, containerName, new Path[0], exclusionFilters);
+	}
+	
+	/**
+	 * Adds a source container to a IJavaProject.
+	 * @param jproject The parent project
+	 * @param containerName The name of the new source container
+	 * @param inclusionFilters Inclusion filters to set
+	 * @param exclusionFilters Exclusion filters to set
+	 * @return The handle to the new source container
+	 * @throws CoreException Creation failed
+	 */
+	public static IPackageFragmentRoot addSourceContainer(IJavaProject jproject, String containerName, IPath[] inclusionFilters, IPath[] exclusionFilters) throws CoreException {
+		return addSourceContainer(jproject, containerName, inclusionFilters, exclusionFilters, null);
+	}
+	
+	/**
+	 * Adds a source container to a IJavaProject.
+	 * @param jproject The parent project
+	 * @param containerName The name of the new source container
+	 * @param inclusionFilters Inclusion filters to set
+	 * @param exclusionFilters Exclusion filters to set
+	 * @param outputLocation The location where class files are written to, <b>null</b> for project output folder
+	 * @return The handle to the new source container
+	 * @throws CoreException Creation failed
+	 */
+	public static IPackageFragmentRoot addSourceContainer(IJavaProject jproject, String containerName, IPath[] inclusionFilters, IPath[] exclusionFilters, String outputLocation) throws CoreException {
+		return addSourceContainer(jproject, containerName, inclusionFilters, exclusionFilters, outputLocation,
+				new IClasspathAttribute[0]);
+	}
 	public static void addToClasspath(IJavaProject jproject, IClasspathEntry cpe) throws JavaModelException {
 		IClasspathEntry[] oldEntries= jproject.getRawClasspath();
 		for (IClasspathEntry oldEntry : oldEntries) {
