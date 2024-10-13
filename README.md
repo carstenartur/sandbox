@@ -108,6 +108,13 @@ Everything is work in progress unless explicitly noted
 	Iterator to functional loop converter
 	https://github.com/carstenartur/sandbox/wiki/Functional-Converter
 	Or see netbeans to learn how it works
+ 
+ 8. sandbox_junit
+
+ cleanup to migrate junit 4 based tests to junit 5
+
+
+ 
 
 # Installation
 
