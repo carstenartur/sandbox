@@ -42,7 +42,7 @@ public class Java8CleanUpTest {
 	IPackageFragmentRoot fRoot;
 	@BeforeEach
 	public void setup() throws CoreException {
-		IJavaProject fProject = context.javaProject;
+		IJavaProject fProject = context.getJavaProject();
 		fProject.setRawClasspath(context.getDefaultClasspath(), null);
 		IClasspathEntry cpe= JavaCore.newContainerEntry(JUNIT4_CONTAINER_PATH);
 		AbstractEclipseJava.addToClasspath(fProject, cpe);
@@ -124,14 +124,14 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  *
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
 	MyTest.class
 })
 public class MyTest {

@@ -80,7 +80,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	private static final String TEST_SETUP_PROJECT= "TestSetupProject"; //$NON-NLS-1$
 	private IPackageFragmentRoot fSourceFolder;
 	private CustomProfile fProfile;
-	public IJavaProject javaProject;
+	private IJavaProject javaProject;
 
 	public AbstractEclipseJava(String stubs, String compilerversion) {
 		this.testresources_stubs= stubs;
@@ -89,11 +89,11 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 
 	@Override
 	public void beforeEach(ExtensionContext context) throws CoreException {
-		javaProject= createJavaProject(TEST_SETUP_PROJECT, "bin"); //$NON-NLS-1$
-		javaProject.setRawClasspath(getDefaultClasspath(), null);
-		Map<String, String> options= javaProject.getOptions(false);
+		setJavaProject(createJavaProject(TEST_SETUP_PROJECT, "bin")); //$NON-NLS-1$
+		getJavaProject().setRawClasspath(getDefaultClasspath(), null);
+		Map<String, String> options= getJavaProject().getOptions(false);
 		JavaCore.setComplianceOptions(compliance, options);
-		javaProject.setOptions(options);
+		getJavaProject().setOptions(options);
 		setfSourceFolder(addSourceContainer(getProject(TEST_SETUP_PROJECT), "src", new Path[0], //$NON-NLS-1$
 				new Path[0], null, new IClasspathAttribute[0]));
 		Map<String, String> settings= new HashMap<>();
@@ -521,5 +521,13 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 
 	public void setfSourceFolder(IPackageFragmentRoot fSourceFolder) {
 		this.fSourceFolder = fSourceFolder;
+	}
+
+	public IJavaProject getJavaProject() {
+		return javaProject;
+	}
+
+	public void setJavaProject(IJavaProject javaProject) {
+		this.javaProject = javaProject;
 	}
 }

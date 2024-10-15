@@ -41,23 +41,25 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
  */
 public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
+	private static final String ORG_JUNIT_PLATFORM_SUITE_API_SELECT_CLASSES = "org.junit.platform.suite.api.SelectClasses";
+	private static final String SELECT_CLASSES = "SelectClasses";
 	private static final String ORG_JUNIT_RUNWITH = "org.junit.runner.RunWith";
 	private static final String ORG_JUNIT_JUPITER_SUITE = "org.junit.platform.suite.api.Suite";
 	private static final String SUITE = "Suite";
+	private static final String ORG_JUNIT_SUITE = "org.junit.runners.Suite";
+	private static final String ORG_JUNIT_SUITE_SUITECLASSES = "org.junit.runners.Suite.SuiteClasses";
 
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataholder = new ReferenceHolder<>();
-		HelperVisitor.callMarkerAnnotationVisitor(ORG_JUNIT_RUNWITH, compilationUnit, dataholder, nodesprocessed,
-				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
-		HelperVisitor.callNormalAnnotationVisitor(ORG_JUNIT_RUNWITH, compilationUnit, dataholder, nodesprocessed,
-				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 		HelperVisitor.callSingleMemberAnnotationVisitor(ORG_JUNIT_RUNWITH, compilationUnit, dataholder, nodesprocessed,
-				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+				(visited, aholder) -> processFoundNodeRunWith(fixcore, operations, visited, aholder));
+		HelperVisitor.callSingleMemberAnnotationVisitor(ORG_JUNIT_SUITE_SUITECLASSES, compilationUnit, dataholder, nodesprocessed,
+				(visited, aholder) -> processFoundNodeSuite(fixcore, operations, visited, aholder));
 	}
 
-	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
+	private boolean processFoundNodeRunWith(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Annotation node,
 			ReferenceHolder<Integer, JunitHolder> dataholder) {
 		JunitHolder mh = new JunitHolder();
@@ -66,18 +68,36 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 		if(node instanceof SingleMemberAnnotation mynode) {
 			Expression value = mynode.getValue();
 			if(value instanceof TypeLiteral myvalue) {
-
-			ITypeBinding typeBinding = myvalue.resolveTypeBinding();
-			if (typeBinding != null) {
-				mh.value = typeBinding.getQualifiedName();
-				if (!"org.junit.runners.Suite".equals(mh.value)) {
-					return false;
+				ITypeBinding classBinding = myvalue.resolveTypeBinding();
+				// Überprüfe, ob der Typ ein generischer Typ ist (Class<T>)
+				if (classBinding != null && classBinding.isParameterizedType()) {
+					// Extrahiere den tatsächlichen Typ (T) aus Class<T>
+					ITypeBinding[] typeArguments = classBinding.getTypeArguments();
+					if (typeArguments.length > 0) {
+						ITypeBinding actualTypeBinding = typeArguments[0];
+						// Prüfe, ob es sich um org.junit.runners.Suite handelt
+						if (ORG_JUNIT_SUITE.equals(actualTypeBinding.getQualifiedName())) {
+							mh.value=ORG_JUNIT_RUNWITH;
+							dataholder.put(dataholder.size(), mh);
+							operations.add(fixcore.rewrite(dataholder));
+						}
+						return false;
+					}
 				}
-				dataholder.put(dataholder.size(), mh);
-				operations.add(fixcore.rewrite(dataholder));
-			}
 			}
 		}
+		return false;
+	}
+	
+	private boolean processFoundNodeSuite(JUnitCleanUpFixCore fixcore,
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Annotation node,
+			ReferenceHolder<Integer, JunitHolder> dataholder) {
+		JunitHolder mh = new JunitHolder();
+		mh.minv = node;
+		mh.minvname = node.getTypeName().getFullyQualifiedName();
+		mh.value=ORG_JUNIT_SUITE_SUITECLASSES;
+		dataholder.put(dataholder.size(), mh);
+		operations.add(fixcore.rewrite(dataholder));
 		return false;
 	}
 
@@ -91,16 +111,23 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 			JunitHolder mh = entry.getValue();
 			Annotation minv = mh.minv;
 			Annotation newAnnotation = null;
-			if(minv instanceof SingleMemberAnnotation mynode) {
+			SingleMemberAnnotation mynode=(SingleMemberAnnotation) minv;
+			if(ORG_JUNIT_SUITE_SUITECLASSES.equals(mh.value)) {
 				newAnnotation = ast.newSingleMemberAnnotation();
 				((SingleMemberAnnotation)newAnnotation).setValue(ASTNodes.createMoveTarget(rewrite, mynode.getValue()));
+				newAnnotation.setTypeName(ast.newSimpleName(SELECT_CLASSES));
 			} else {
 				newAnnotation = ast.newMarkerAnnotation();
+				newAnnotation.setTypeName(ast.newSimpleName(SUITE));
 			}
-			newAnnotation.setTypeName(ast.newSimpleName(SUITE));
-			addImport(ORG_JUNIT_JUPITER_SUITE, cuRewrite, ast);
+			
+			
+			
 			ASTNodes.replaceButKeepComment(rewrite, minv, newAnnotation, group);
+			importRemover.removeImport(ORG_JUNIT_SUITE);
 			importRemover.removeImport(ORG_JUNIT_RUNWITH);
+			addImport(ORG_JUNIT_JUPITER_SUITE, cuRewrite, ast);
+			addImport(ORG_JUNIT_PLATFORM_SUITE_API_SELECT_CLASSES, cuRewrite, ast);
 		}
 	}
 

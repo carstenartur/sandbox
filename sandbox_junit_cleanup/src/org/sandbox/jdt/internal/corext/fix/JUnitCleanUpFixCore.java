@@ -43,10 +43,8 @@ public enum JUnitCleanUpFixCore {
 	TEST(new TestJUnitPlugin()),
 	BEFORECLASS(new BeforeClassJUnitPlugin()),
 	AFTERCLASS(new AfterClassJUnitPlugin()),
-	IGNORE(new IgnoreJUnitPlugin())
-//	,
-//	RUNWITH(new RunWithJUnitPlugin())
-	;
+	IGNORE(new IgnoreJUnitPlugin()),
+	RUNWITH(new RunWithJUnitPlugin());
 
 	AbstractTool<ReferenceHolder<Integer, JunitHolder>> junitfound;
 
