@@ -13,14 +13,12 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import java.util.HashSet;
 import java.util.Set;
 import java.util.Map.Entry;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Annotation;
-import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -70,7 +68,7 @@ public class BeforeClassJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 		ImportRewrite importRemover = cuRewrite.getImportRewrite();
 		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
 			JunitHolder mh = entry.getValue();
-			Annotation minv = mh.minv;
+			Annotation minv = mh.getAnnotation();
 			MarkerAnnotation newAnnotation = ast.newMarkerAnnotation();
 			newAnnotation.setTypeName(ast.newSimpleName(BEFORE_ALL));
 			addImport(ORG_JUNIT_JUPITER_API_BEFORE_ALL, cuRewrite, ast);

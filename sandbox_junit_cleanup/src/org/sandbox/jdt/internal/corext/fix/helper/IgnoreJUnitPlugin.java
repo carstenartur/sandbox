@@ -77,7 +77,7 @@ public class IgnoreJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 		ImportRewrite importRemover = cuRewrite.getImportRewrite();
 		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
 			JunitHolder mh = entry.getValue();
-			Annotation minv = mh.minv;
+			Annotation minv = mh.getAnnotation();
 			Annotation newAnnotation = null;
 			if(minv instanceof SingleMemberAnnotation mynode) {
 				newAnnotation = ast.newSingleMemberAnnotation();
