@@ -532,16 +532,21 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 				if ((data!= null) && !node.getName().getIdentifier().equals(data)) {
 					return true;
 				}
-				Class<?> typeof=(Class<?>) map.get(HelperVisitor.TYPEOF);
-				String[] parameterTypesQualifiedNames=(String[]) map.get(HelperVisitor.PARAMTYPENAMES);
-
-				if(typeof!=null) {
+				Object object = map.get(HelperVisitor.TYPEOF);
+				String canonicaltype;
+				if(object!=null) {
+					if(object instanceof Class typeof) {
+						canonicaltype= typeof.getCanonicalName();
+					} else {
+						canonicaltype= (String)object;
+					}
+					String[] parameterTypesQualifiedNames=(String[]) map.get(HelperVisitor.PARAMTYPENAMES);
 					if(parameterTypesQualifiedNames==null) {
-						if (ASTNodes.usesGivenSignature(node, typeof.getCanonicalName(), data)) {
+						if (ASTNodes.usesGivenSignature(node, canonicaltype, data)) {
 							return ((BiPredicate<MethodInvocation, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.MethodInvocation))).test(node, this.helperVisitor.dataholder);
 						}
 					} else
-						if (ASTNodes.usesGivenSignature(node, typeof.getCanonicalName(), data, parameterTypesQualifiedNames)) {
+						if (ASTNodes.usesGivenSignature(node, canonicaltype, data, parameterTypesQualifiedNames)) {
 							return ((BiPredicate<MethodInvocation, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.MethodInvocation))).test(node, this.helperVisitor.dataholder);
 						}
 				}
@@ -1483,9 +1488,15 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 				if ((data!= null) && !node.getName().getIdentifier().equals(data)) {
 					return;
 				}
-				Class<?> typeof=(Class<?>) map.get(HelperVisitor.TYPEOF);
-				if(typeof!=null) {
-					if (!ASTNodes.usesGivenSignature(node, typeof.getCanonicalName(), data)) {
+				Object object = map.get(HelperVisitor.TYPEOF);
+				String canonicaltype;
+				if(object!=null) {
+					if(object instanceof Class typeof) {
+						canonicaltype= typeof.getCanonicalName();
+					} else {
+						canonicaltype= (String)object;
+					}
+					if (!ASTNodes.usesGivenSignature(node, canonicaltype, data)) {
 						return;
 					}
 				}

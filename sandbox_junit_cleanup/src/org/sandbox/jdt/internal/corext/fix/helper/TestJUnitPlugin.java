@@ -68,7 +68,7 @@ public class TestJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Junit
 		ImportRewrite importRemover = cuRewrite.getImportRewrite();
 		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
 			JunitHolder mh = entry.getValue();
-			Annotation minv = mh.minv;
+			Annotation minv = mh.getAnnotation();
 			MarkerAnnotation newAnnotation = ast.newMarkerAnnotation();
 			newAnnotation.setTypeName(ast.newSimpleName(TEST));
 			ASTNodes.replaceButKeepComment(rewrite, minv, newAnnotation, group);
@@ -84,7 +84,7 @@ public class TestJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Junit
 						;
 					"""; //$NON-NLS-1$
 		}
-		return """
+		return	"""
 					;
 				"""; //$NON-NLS-1$
 	}

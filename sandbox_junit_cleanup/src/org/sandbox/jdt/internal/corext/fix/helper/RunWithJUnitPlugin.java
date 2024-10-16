@@ -22,7 +22,6 @@ import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ITypeBinding;
-import org.eclipse.jdt.core.dom.NormalAnnotation;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.TypeLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -109,7 +108,7 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 		ImportRewrite importRemover = cuRewrite.getImportRewrite();
 		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
 			JunitHolder mh = entry.getValue();
-			Annotation minv = mh.minv;
+			Annotation minv = mh.getAnnotation();
 			Annotation newAnnotation = null;
 			SingleMemberAnnotation mynode=(SingleMemberAnnotation) minv;
 			if(ORG_JUNIT_SUITE_SUITECLASSES.equals(mh.value)) {

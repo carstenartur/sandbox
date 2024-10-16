@@ -111,6 +111,18 @@ public class MyTest {
 	public void test2() {
 		fail("Not yet implemented");
 	}
+
+	@Test
+	public void test3() {
+		Assert.assertEquals("expected", "actual");
+	}
+
+	@Test
+	public void test4() {
+		Assert.assertEquals("failuremessage", "expected", "actual");
+		int result=5;
+		Assert.assertEquals(5, result);  // expected = 5, actual = result
+	}
 }
 			""", //$NON-NLS-1$
 
@@ -120,6 +132,7 @@ import static org.junit.Assert.*;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -175,6 +188,18 @@ public class MyTest {
 	public void test2() {
 		fail("Not yet implemented");
 	}
+
+	@Test
+	public void test3() {
+		Assert.assertEquals("expected", "actual");
+	}
+
+	@Test
+	public void test4() {
+		Assert.assertEquals("expected", "actual", "failuremessage");
+		int result=5;
+		Assert.assertEquals(5, result);  // expected = 5, actual = result
+	}
 }
 					"""); //$NON-NLS-1$
 
@@ -187,12 +212,10 @@ public class MyTest {
 		}
 	}
 
-	//	@Disabled
 	@ParameterizedTest
 	@EnumSource(JUnitCleanupCases.class)
 	public void testJUnitCleanupParametrized(JUnitCleanupCases test) throws CoreException {
 		IPackageFragment pack= fRoot.createPackageFragment("test", true, null);
-//		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
 		ICompilationUnit cu= pack.createCompilationUnit("Test.java", test.given, false, null); //$NON-NLS-1$
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
@@ -227,7 +250,6 @@ public class MyTest {
 		String given;
 	}
 
-	//	@Disabled
 	@ParameterizedTest
 	@EnumSource(NOJUnitCleanupCases.class)
 	public void testJUnitCleanupdonttouch(NOJUnitCleanupCases test) throws CoreException {

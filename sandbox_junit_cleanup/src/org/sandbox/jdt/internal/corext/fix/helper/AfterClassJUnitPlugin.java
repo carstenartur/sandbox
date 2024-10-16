@@ -68,7 +68,7 @@ public class AfterClassJUnitPlugin extends AbstractTool<ReferenceHolder<Integer,
 		ImportRewrite importRemover = cuRewrite.getImportRewrite();
 		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
 			JunitHolder mh = entry.getValue();
-			Annotation minv = mh.minv;
+			Annotation minv = mh.getAnnotation();
 			MarkerAnnotation newAnnotation = ast.newMarkerAnnotation();
 			newAnnotation.setTypeName(ast.newSimpleName(AFTER_ALL));
 			addImport(ORG_JUNIT_JUPITER_API_AFTER_ALL, cuRewrite, ast);

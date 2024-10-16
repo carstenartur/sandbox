@@ -28,6 +28,7 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.helper.AbstractTool;
 import org.sandbox.jdt.internal.corext.fix.helper.AfterClassJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.AfterJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.AssertJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.BeforeClassJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.BeforeJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.IgnoreJUnitPlugin;
@@ -44,7 +45,8 @@ public enum JUnitCleanUpFixCore {
 	BEFORECLASS(new BeforeClassJUnitPlugin()),
 	AFTERCLASS(new AfterClassJUnitPlugin()),
 	IGNORE(new IgnoreJUnitPlugin()),
-	RUNWITH(new RunWithJUnitPlugin());
+	RUNWITH(new RunWithJUnitPlugin()),
+	ASSERT(new AssertJUnitPlugin());
 
 	AbstractTool<ReferenceHolder<Integer, JunitHolder>> junitfound;
 
