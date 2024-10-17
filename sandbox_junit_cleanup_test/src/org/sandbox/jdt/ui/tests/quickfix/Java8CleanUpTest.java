@@ -122,6 +122,11 @@ public class MyTest {
 		Assert.assertEquals("failuremessage", "expected", "actual");
 		int result=5;
 		Assert.assertEquals(5, result);  // expected = 5, actual = result
+		Assert.assertNotEquals("failuremessage",5, result);  // expected = 5, actual = result
+		Assert.assertTrue("failuremessage",false);
+		Assert.assertFalse("failuremessage",false);
+		Assert.assertTrue(false);
+		Assert.assertFalse(false);
 	}
 }
 			""", //$NON-NLS-1$
@@ -191,14 +196,19 @@ public class MyTest {
 
 	@Test
 	public void test3() {
-		Assert.assertEquals("expected", "actual");
+		Assertions.assertEquals("expected", "actual");
 	}
 
 	@Test
 	public void test4() {
-		Assert.assertEquals("expected", "actual", "failuremessage");
+		Assertions.assertEquals("expected", "actual", "failuremessage");
 		int result=5;
-		Assert.assertEquals(5, result);  // expected = 5, actual = result
+		Assertions.assertEquals(5, result);  // expected = 5, actual = result
+		Assertions.assertNotEquals(5,result, "failuremessage");  // expected = 5, actual = result
+		Assertions.assertTrue(false,"failuremessage");
+		Assertions.assertFalse(false,"failuremessage");
+		Assertions.assertTrue(false);
+		Assertions.assertFalse(false);
 	}
 }
 					"""); //$NON-NLS-1$

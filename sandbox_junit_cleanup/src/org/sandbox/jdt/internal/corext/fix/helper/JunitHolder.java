@@ -12,6 +12,7 @@ public class JunitHolder {
 	public Set<ASTNode> nodesprocessed;
 	public String value;
 	public MethodInvocation method;
+	public int count;
 
 	public Annotation getAnnotation() {
 		return (Annotation)minv;
