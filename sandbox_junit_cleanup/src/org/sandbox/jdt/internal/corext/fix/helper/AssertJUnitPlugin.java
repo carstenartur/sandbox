@@ -13,15 +13,16 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import java.util.Set;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
@@ -39,16 +40,27 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
  */
 public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
+	private static final String ASSERTIONS = "Assertions";
 	private static final String ORG_JUNIT_JUPITER_API_ASSERTIONS = "org.junit.jupiter.api.Assertions";
 	private static final String ASSERT_EQUALS = "assertEquals";
+	private static final String ASSERT_NOT_EQUALS = "assertNotEquals";
+	private static final String ASSERT_ARRAY_EQUALS = "assertArrayEquals";
 	private static final String ORG_JUNIT_ASSERT = "org.junit.Assert";
+	private static final Set<String> twoparam = Set.of(ASSERT_EQUALS, ASSERT_NOT_EQUALS,ASSERT_ARRAY_EQUALS);
+	private static final Set<String> oneparam = Set.of("assertTrue","assertFalse","assertNull","assertNotNull");
 
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataholder = new ReferenceHolder<>();
-		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSERT, ASSERT_EQUALS, compilationUnit, dataholder, nodesprocessed,
-				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+		twoparam.forEach(assertionmethod->{
+			HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSERT, assertionmethod, compilationUnit, dataholder, nodesprocessed,
+					(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+		});
+		oneparam.forEach(assertionmethod->{
+			HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSERT, assertionmethod, compilationUnit, dataholder, nodesprocessed,
+					(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+		});
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
@@ -56,6 +68,7 @@ public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 			ReferenceHolder<Integer, JunitHolder> dataholder) {
 		JunitHolder mh = new JunitHolder();
 		mh.minv = node;
+		mh.count = node.arguments().size();
 		dataholder.put(dataholder.size(), mh);
 		operations.add(fixcore.rewrite(dataholder));
 		return false;
@@ -71,15 +84,18 @@ public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 			JunitHolder mh = entry.getValue();
 			MethodInvocation minv = mh.getMethodInvocation();
 			reorderParameters(minv, rewrite, group);
+			SimpleName newQualifier = ast.newSimpleName(ASSERTIONS);
 			importRemover.removeImport(ORG_JUNIT_ASSERT);
 			addImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, cuRewrite, ast);
+			ASTNodes.replaceButKeepComment(rewrite, minv.getExpression(), newQualifier, group);
 		}
 	}
 	
 	private void reorderParameters(MethodInvocation node, ASTRewrite rewriter, TextEditGroup group) {
 		List<Expression> arguments = node.arguments();
 
-		if (arguments.size() == 3) {
+		SimpleName name = node.getName();
+		if (arguments.size() == 3 && twoparam.contains(name.toString())) {
 			// In JUnit 4: (String message, Object expected, Object actual)
 			// In JUnit 5: (Object expected, Object actual, String message)
 
@@ -92,20 +108,15 @@ public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 			listRewrite.replace(firstArg, ASTNodes.createMoveTarget(rewriter,secondArg), group);  // Ersetze message durch actual
 			listRewrite.replace(secondArg, ASTNodes.createMoveTarget(rewriter,thirdArg), group); // Ersetze expected durch actual
 			listRewrite.replace(thirdArg, ASTNodes.createMoveTarget(rewriter,firstArg), group); // Ersetze actual durch expected
-			
 		} 
-//		else if (arguments.size() == 2) {
-//			// In JUnit 4: (Object expected, Object actual)
-//			// In JUnit 5 bleibt die Reihenfolge gleich, aber falls sie vertauscht ist, korrigieren wir sie
-//
-//			Expression expectedArg = arguments.get(0); // expected
-//			Expression actualArg = arguments.get(1);   // actual
-//
-//			// Tausche expected und actual nur, wenn es notwendig ist
-//			ListRewrite listRewrite = rewriter.getListRewrite(node, MethodInvocation.ARGUMENTS_PROPERTY);
-//			listRewrite.replace(arguments.get(0), ASTNodes.createMoveTarget(rewriter, actualArg), group); // expected wird durch actual ersetzt
-//			listRewrite.replace(arguments.get(1), ASTNodes.createMoveTarget(rewriter, expectedArg), group); // actual wird durch expected ersetzt
-//		}
+		else if (arguments.size() == 2 && oneparam.contains(name.toString())) {
+			// In JUnit 4: (Object message, Object actual)
+			Expression message = arguments.get(0); // message
+			Expression actualArg = arguments.get(1);   // actual
+			ListRewrite listRewrite = rewriter.getListRewrite(node, MethodInvocation.ARGUMENTS_PROPERTY);
+			listRewrite.replace(arguments.get(0), ASTNodes.createMoveTarget(rewriter, actualArg), group); // message wird durch actual ersetzt
+			listRewrite.replace(arguments.get(1), ASTNodes.createMoveTarget(rewriter, message), group); // actual wird durch message ersetzt
+		}
 	}
 
 	@Override
