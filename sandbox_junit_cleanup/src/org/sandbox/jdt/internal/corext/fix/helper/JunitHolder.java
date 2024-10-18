@@ -4,6 +4,7 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 
 public class JunitHolder {
@@ -20,5 +21,9 @@ public class JunitHolder {
 
 	public MethodInvocation getMethodInvocation() {
 		return (MethodInvocation)minv;
+	}
+
+	public ImportDeclaration getImportDeclaration() {
+		return (ImportDeclaration)minv;
 	}
 }
