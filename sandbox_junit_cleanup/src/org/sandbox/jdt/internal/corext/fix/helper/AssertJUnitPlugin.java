@@ -98,13 +98,12 @@ public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 
 	public void changeImportDeclaration(ImportDeclaration node, ImportRewrite importRewriter, TextEditGroup group) {
 		String importName = node.getName().getFullyQualifiedName();
-		if (importName.equals(ORG_JUNIT_ASSERT)) {
-			importRewriter.removeImport(ORG_JUNIT_ASSERT);
-			importRewriter.addImport(ORG_JUNIT_JUPITER_API_ASSERTIONS);
-		}
 		if (node.isStatic() && importName.equals(ORG_JUNIT_ASSERT)) {
 			importRewriter.removeStaticImport(ORG_JUNIT_ASSERT+".*");
 			importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, "*", false);
+		} else if (importName.equals(ORG_JUNIT_ASSERT)) {
+			importRewriter.removeImport(ORG_JUNIT_ASSERT);
+			importRewriter.addImport(ORG_JUNIT_JUPITER_API_ASSERTIONS);
 		}
 	}
 
