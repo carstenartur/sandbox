@@ -51,6 +51,10 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	public static final String ANNOTATIONNAME = "annotationname"; //$NON-NLS-1$
 	
 	/**
+	 * 
+	 */
+	public static final String IMPORT = "import";  //$NON-NLS-1$
+	/**
 	 *
 	 */
 	public static final String PARAMTYPENAMES = "paramtypenames"; //$NON-NLS-1$
@@ -557,6 +561,18 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	 * @return old BiPredicate assigned for nodetype
 	 */
 	public BiPredicate<? extends ASTNode, E> addImportDeclaration(BiPredicate<ImportDeclaration, E> bs) {
+		return predicatemap.put(VisitorEnum.ImportDeclaration, bs);
+	}
+
+	/**
+	 * @param importname
+	 * @param bs
+	 * @return
+	 */
+	public BiPredicate<? extends ASTNode, E> addImportDeclaration(String importname, BiPredicate<ImportDeclaration, E> bs) {
+		predicatedata.put(VisitorEnum.ImportDeclaration, Map.ofEntries(
+				new AbstractMap.SimpleEntry<>(IMPORT, importname)
+				));
 		return predicatemap.put(VisitorEnum.ImportDeclaration, bs);
 	}
 
@@ -4083,6 +4099,23 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 
 		HelperVisitor<ReferenceHolder<V, T>,V,T> hv= new HelperVisitor<>(nodesprocessed, dataholder);
 		hv.addImportDeclaration(bs);
+		hv.build(node);
+	}
+
+	/**
+	 * @param <V>
+	 * @param <T>
+	 * @param importname
+	 * @param node
+	 * @param dataholder
+	 * @param nodesprocessed
+	 * @param bs
+	 */
+	public static <V, T> void callImportDeclarationVisitor(String importname, ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+			BiPredicate<ImportDeclaration, ReferenceHolder<V, T>> bs) {
+
+		HelperVisitor<ReferenceHolder<V, T>,V,T> hv= new HelperVisitor<>(nodesprocessed, dataholder);
+		hv.addImportDeclaration(importname, bs);
 		hv.build(node);
 	}
 
