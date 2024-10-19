@@ -79,13 +79,19 @@ public class BeforeJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-		if (!afterRefactoring) {
-			return """
-						;
-					"""; //$NON-NLS-1$
+		if (afterRefactoring) {
+			return 
+"""
+@BeforeEach
+public static void setUp() throws Exception {
+}
+"""; //$NON-NLS-1$
 		}
-		return """
-					;
-				"""; //$NON-NLS-1$
+		return 
+"""
+@Before
+public static void setUp() throws Exception {
+}
+"""; //$NON-NLS-1$
 	}
 }

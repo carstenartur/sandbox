@@ -79,13 +79,15 @@ public class TestJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Junit
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-		if (!afterRefactoring) {
-			return """
-						;
-					"""; //$NON-NLS-1$
+		if (afterRefactoring) {
+			return 
+"""
+import org.junit.jupiter.api.Test;
+"""; //$NON-NLS-1$
 		}
-		return	"""
-					;
-				"""; //$NON-NLS-1$
+		return 
+"""
+import org.junit.Test;
+"""; //$NON-NLS-1$
 	}
 }

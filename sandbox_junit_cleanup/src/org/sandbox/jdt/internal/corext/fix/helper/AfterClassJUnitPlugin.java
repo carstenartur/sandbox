@@ -79,13 +79,19 @@ public class AfterClassJUnitPlugin extends AbstractTool<ReferenceHolder<Integer,
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-		if (!afterRefactoring) {
-			return """
-						;
-					"""; //$NON-NLS-1$
+		if (afterRefactoring) {
+			return 
+"""
+@AfterAll
+public static void tearDownAfterClass() throws Exception {
+}
+"""; //$NON-NLS-1$
 		}
-		return """
-					;
-				"""; //$NON-NLS-1$
+		return 
+"""
+@AfterClass
+public static void tearDownAfterClass() throws Exception {
+}					;
+"""; //$NON-NLS-1$
 	}
 }

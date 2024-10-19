@@ -14,6 +14,7 @@
 package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.Map.Entry;
+
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
@@ -94,13 +95,23 @@ public class IgnoreJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-		if (!afterRefactoring) {
-			return """
-						;
-					"""; //$NON-NLS-1$
+		if (afterRefactoring) {
+			return 
+"""
+@Disabled("not implemented")
+@Test
+public void test() {
+	fail("Not yet implemented");
+}
+"""; //$NON-NLS-1$
 		}
-		return """
-					;
-				"""; //$NON-NLS-1$
+		return 
+"""
+@Ignore("not implemented")
+@Test
+public void test() {
+	fail("Not yet implemented");
+}
+"""; //$NON-NLS-1$
 	}
 }

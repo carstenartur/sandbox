@@ -119,9 +119,6 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 				newAnnotation = ast.newMarkerAnnotation();
 				newAnnotation.setTypeName(ast.newSimpleName(SUITE));
 			}
-			
-			
-			
 			ASTNodes.replaceButKeepComment(rewrite, minv, newAnnotation, group);
 			importRemover.removeImport(ORG_JUNIT_SUITE);
 			importRemover.removeImport(ORG_JUNIT_RUNWITH);
@@ -132,13 +129,21 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-		if (!afterRefactoring) {
-			return """
-						;
-					"""; //$NON-NLS-1$
+		if (afterRefactoring) {
+			return 
+"""
+@Suite
+@SelectClasses({
+	MyTest2.class
+})
+"""; //$NON-NLS-1$
 		}
-		return """
-					;
-				"""; //$NON-NLS-1$
+		return 
+"""
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+	MyTest.class
+})
+"""; //$NON-NLS-1$
 	}
 }

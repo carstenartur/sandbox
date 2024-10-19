@@ -161,15 +161,17 @@ public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-		if (!afterRefactoring) {
+		if (afterRefactoring) {
 			return
 """
-						;
+Assertions.assertNotEquals(5,result, "failuremessage");  // expected = 5, actual = result
+Assertions.assertTrue(false,"failuremessage");
 """; //$NON-NLS-1$
 		}
 		return
 """
-					;
+Assert.assertNotEquals("failuremessage",5, result);  // expected = 5, actual = result
+Assert.assertTrue("failuremessage",false);
 """; //$NON-NLS-1$
 	}
 }
