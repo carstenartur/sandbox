@@ -60,6 +60,10 @@ public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 			HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSERT, assertionmethod, compilationUnit, dataholder, nodesprocessed,
 					(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 		});
+		allassertionmethods.forEach(assertionmethod->{
+			HelperVisitor.callImportDeclarationVisitor(ORG_JUNIT_ASSERT+"."+assertionmethod, compilationUnit, dataholder, nodesprocessed,
+					(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+		});
 		HelperVisitor.callImportDeclarationVisitor(ORG_JUNIT_ASSERT, compilationUnit, dataholder, nodesprocessed,
 				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 	}
@@ -101,9 +105,17 @@ public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 		if (node.isStatic() && importName.equals(ORG_JUNIT_ASSERT)) {
 			importRewriter.removeStaticImport(ORG_JUNIT_ASSERT+".*");
 			importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, "*", false);
-		} else if (importName.equals(ORG_JUNIT_ASSERT)) {
+			return;
+		} 
+		if (importName.equals(ORG_JUNIT_ASSERT)) {
 			importRewriter.removeImport(ORG_JUNIT_ASSERT);
 			importRewriter.addImport(ORG_JUNIT_JUPITER_API_ASSERTIONS);
+			return;
+		} 
+		if (node.isStatic() && importName.startsWith(ORG_JUNIT_ASSERT+".")) {
+			String methodName = importName.substring((ORG_JUNIT_ASSERT+".").length());
+			importRewriter.removeStaticImport(ORG_JUNIT_ASSERT+"." + methodName);
+			importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, methodName, false);
 		}
 	}
 

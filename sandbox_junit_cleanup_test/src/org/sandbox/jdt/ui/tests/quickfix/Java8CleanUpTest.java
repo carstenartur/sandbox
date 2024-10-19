@@ -370,6 +370,175 @@ public class MyTest {
 						assertFalse(false);
 					}
 				}
+									"""),
+		StaticExplicitImportCase("""
+				package test;
+				import static org.junit.Assert.fail;
+				import static org.junit.Assert.assertEquals;
+				import static org.junit.Assert.assertNotEquals;
+				import static org.junit.Assert.assertTrue;
+				import static org.junit.Assert.assertFalse;
+
+				import org.junit.After;
+				import org.junit.AfterClass;
+				import org.junit.Before;
+				import org.junit.BeforeClass;
+				import org.junit.Ignore;
+				import org.junit.Test;
+				import org.junit.runner.RunWith;
+				import org.junit.runners.Suite;
+
+				/**
+				 * 
+				 */
+				@RunWith(Suite.class)
+				@Suite.SuiteClasses({
+					MyTest.class
+				})
+				public class MyTest {
+
+					/**
+					 * @throws java.lang.Exception
+					 */
+					@BeforeClass
+					public static void setUpBeforeClass() throws Exception {
+					}
+
+					/**
+					 * @throws java.lang.Exception
+					 */
+					@AfterClass
+					public static void tearDownAfterClass() throws Exception {
+					}
+
+					/**
+					 * @throws java.lang.Exception
+					 */
+					@Before
+					public void setUp() throws Exception {
+					}
+
+					/**
+					 * @throws java.lang.Exception
+					 */
+					@After
+					public void tearDown() throws Exception {
+					}
+
+					@Ignore
+					@Test
+					public void test() {
+						fail("Not yet implemented");
+					}
+
+					@Ignore("not implemented")
+					@Test
+					public void test2() {
+						fail("Not yet implemented");
+					}
+
+					@Test
+					public void test3() {
+						assertEquals("expected", "actual");
+					}
+
+					@Test
+					public void test4() {
+						assertEquals("failuremessage", "expected", "actual");
+						int result=5;
+						assertEquals(5, result);  // expected = 5, actual = result
+						assertNotEquals("failuremessage",5, result);  // expected = 5, actual = result
+						assertTrue("failuremessage",false);
+						assertFalse("failuremessage",false);
+						assertTrue(false);
+						assertFalse(false);
+					}
+				}
+							""", //$NON-NLS-1$
+
+								"""
+				package test;
+				import static org.junit.jupiter.api.Assertions.assertEquals;
+				import static org.junit.jupiter.api.Assertions.assertFalse;
+				import static org.junit.jupiter.api.Assertions.assertNotEquals;
+				import static org.junit.jupiter.api.Assertions.assertTrue;
+				import static org.junit.jupiter.api.Assertions.fail;
+				
+				import org.junit.jupiter.api.AfterAll;
+				import org.junit.jupiter.api.AfterEach;
+				import org.junit.jupiter.api.BeforeAll;
+				import org.junit.jupiter.api.BeforeEach;
+				import org.junit.jupiter.api.Disabled;
+				import org.junit.jupiter.api.Test;
+				import org.junit.platform.suite.api.SelectClasses;
+				import org.junit.platform.suite.api.Suite;
+
+				/**
+				 *
+				 */
+				@Suite
+				@SelectClasses({
+					MyTest.class
+				})
+				public class MyTest {
+
+					/**
+					 * @throws java.lang.Exception
+					 */
+					@BeforeAll
+					public static void setUpBeforeClass() throws Exception {
+					}
+
+					/**
+					 * @throws java.lang.Exception
+					 */
+					@AfterAll
+					public static void tearDownAfterClass() throws Exception {
+					}
+
+					/**
+					 * @throws java.lang.Exception
+					 */
+					@BeforeEach
+					public void setUp() throws Exception {
+					}
+
+					/**
+					 * @throws java.lang.Exception
+					 */
+					@AfterEach
+					public void tearDown() throws Exception {
+					}
+
+					@Disabled
+					@Test
+					public void test() {
+						fail("Not yet implemented");
+					}
+
+					@Disabled("not implemented")
+					@Test
+					public void test2() {
+						fail("Not yet implemented");
+					}
+
+					@Test
+					public void test3() {
+						assertEquals("expected", "actual");
+					}
+
+					@Test
+					public void test4() {
+						assertEquals("expected", "actual", "failuremessage");
+						int result=5;
+						assertEquals(5, result);  // expected = 5, actual = result
+						assertNotEquals(5,result, "failuremessage");  // expected = 5, actual = result
+						assertTrue(false,"failuremessage");
+						assertFalse(false,"failuremessage");
+						assertTrue(false);
+						assertFalse(false);
+					}
+				}
 									"""); //$NON-NLS-1$
 
 		String given;
