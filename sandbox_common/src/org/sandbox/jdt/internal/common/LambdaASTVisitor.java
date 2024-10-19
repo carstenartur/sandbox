@@ -351,12 +351,43 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	@Override
 	public boolean visit(FieldDeclaration node) {
 		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.FieldDeclaration)) {
-			return ((BiPredicate<FieldDeclaration, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.FieldDeclaration)))
-					.test(node, this.helperVisitor.dataholder);
+			Map<String, Object> map=(Map<String, Object>) this.helperVisitor.getSupplierData().get(VisitorEnum.FieldDeclaration);
+			if(map != null) {
+				String superclassname=(String) map.get(HelperVisitor.SUPERCLASSNAME);
+				String annotationclass=(String) map.get(HelperVisitor.ANNOTATIONNAME);
+				if(superclassname != null && annotationclass != null) {
+					for (Object modifier : node.modifiers()) {
+						if (modifier instanceof Annotation annotation) {
+							ITypeBinding anotbinding = annotation.resolveTypeBinding();
+							String annotationName = anotbinding.getQualifiedName();
+							if (annotationName.equals(annotationclass)) {
+								// Feld- oder Klassentyp des @Rule-Felds bestimmen
+								VariableDeclarationFragment fragment = (VariableDeclarationFragment) node.fragments().get(0);
+								ITypeBinding binding = fragment.resolveBinding().getType();
+								// Prüfen, ob die Klasse von ExternalResource erbt
+								if (!isExternalResource(binding,superclassname)) {
+									return true;
+								}
+							}
+						}
+					}
+				}
+			}
+			return ((BiPredicate<FieldDeclaration, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.FieldDeclaration))).test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}
 
+	private boolean isExternalResource(ITypeBinding typeBinding, String qualifiedname) {
+		while (typeBinding != null) {
+			if (typeBinding.getQualifiedName().equals(qualifiedname)) {
+				return true;
+			}
+			typeBinding = typeBinding.getSuperclass();
+		}
+		return false;
+	}
+	
 	@Override
 	public boolean visit(ForStatement node) {
 		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ForStatement)) {
