@@ -539,6 +539,59 @@ public class MyTest {
 						assertFalse(false);
 					}
 				}
+									"""),
+		Rule("""
+				package test;
+				import org.junit.Test;
+				import org.junit.Rule;
+				import org.junit.rules.ExternalResource;
+				/**
+				 * 
+				 */
+				public class MyTest {
+
+					@Rule
+					public ExternalResource er= new ExternalResource() {
+					@Override
+					protected void before() throws Throwable {
+					};
+
+					@Override
+					protected void after() {
+					};
+					};
+
+					@Test
+					public void test3() {
+					}
+				}
+							""", //$NON-NLS-1$
+
+"""
+package test;
+import org.junit.Rule;
+import org.junit.jupiter.api.Test;
+import org.junit.rules.ExternalResource;
+/**
+ *
+ */
+public class MyTest {
+
+	@Rule
+	public ExternalResource er= new ExternalResource() {
+	@Override
+	protected void before() throws Throwable {
+	};
+
+	@Override
+	protected void after() {
+	};
+	};
+
+	@Test
+	public void test3() {
+	}
+}
 									"""); //$NON-NLS-1$
 
 		String given;
@@ -554,7 +607,7 @@ public class MyTest {
 	@EnumSource(JUnitCleanupCases.class)
 	public void testJUnitCleanupParametrized(JUnitCleanupCases test) throws CoreException {
 		IPackageFragment pack= fRoot.createPackageFragment("test", true, null);
-		ICompilationUnit cu= pack.createCompilationUnit("Test.java", test.given, false, null); //$NON-NLS-1$
+		ICompilationUnit cu= pack.createCompilationUnit("MyTest.java", test.given, false, null); //$NON-NLS-1$
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
 	}

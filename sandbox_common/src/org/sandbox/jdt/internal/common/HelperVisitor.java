@@ -55,6 +55,10 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	 */
 	public static final String IMPORT = "import";  //$NON-NLS-1$
 	/**
+	 * 
+	 */
+	public static final String SUPERCLASSNAME = "superclassname";  //$NON-NLS-1$
+	/**
 	 *
 	 */
 	public static final String PARAMTYPENAMES = "paramtypenames"; //$NON-NLS-1$
@@ -534,6 +538,20 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	 * @return old BiPredicate assigned for nodetype
 	 */
 	public BiPredicate<? extends ASTNode, E> addFieldDeclaration(BiPredicate<FieldDeclaration, E> bs) {
+		return predicatemap.put(VisitorEnum.FieldDeclaration, bs);
+	}
+
+	/**
+	 * @param annotationname 
+	 * @param superclassname
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate<? extends ASTNode, E> addFieldDeclaration(String annotationname, String superclassname, BiPredicate<FieldDeclaration, E> bs) {
+		predicatedata.put(VisitorEnum.FieldDeclaration, Map.ofEntries(
+				new AbstractMap.SimpleEntry<>(SUPERCLASSNAME, superclassname),
+				new AbstractMap.SimpleEntry<>(ANNOTATIONNAME, annotationname)
+				));
 		return predicatemap.put(VisitorEnum.FieldDeclaration, bs);
 	}
 
@@ -4048,6 +4066,24 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 
 		HelperVisitor<ReferenceHolder<V, T>,V,T> hv= new HelperVisitor<>(nodesprocessed, dataholder);
 		hv.addFieldDeclaration(bs);
+		hv.build(node);
+	}
+	
+	/**
+	 * @param <V>
+	 * @param <T>
+	 * @param annotationname 
+	 * @param withsuperclass
+	 * @param node
+	 * @param dataholder
+	 * @param nodesprocessed
+	 * @param bs
+	 */
+	public static <V, T> void callFieldDeclarationVisitor(String annotationname, String withsuperclass, ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+			BiPredicate<FieldDeclaration, ReferenceHolder<V, T>> bs) {
+
+		HelperVisitor<ReferenceHolder<V, T>,V,T> hv= new HelperVisitor<>(nodesprocessed, dataholder);
+		hv.addFieldDeclaration(annotationname, withsuperclass, bs);
 		hv.build(node);
 	}
 

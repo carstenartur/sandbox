@@ -4,6 +4,7 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 
@@ -25,5 +26,9 @@ public class JunitHolder {
 
 	public ImportDeclaration getImportDeclaration() {
 		return (ImportDeclaration)minv;
+	}
+
+	public FieldDeclaration getFieldDeclaration() {
+		return (FieldDeclaration)minv;
 	}
 }
