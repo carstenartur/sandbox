@@ -23,7 +23,7 @@ public class MatcherTest {
 						 coll.add(var);
 					}
 				}
-			}""";
+			}"""; //$NON-NLS-1$
 		char[] source = code.toCharArray();
 		parser.setSource(source);
 		Map<String, String> options = JavaCore.getOptions();
