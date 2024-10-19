@@ -107,48 +107,57 @@ public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 		}
 	}
 
-	private void reorderParameters(MethodInvocation node, ASTRewrite rewriter, TextEditGroup group) {
-		List<Expression> arguments = node.arguments();
-		SimpleName name = node.getName();
-		if (arguments.size() == 3 && twoparam.contains(name.toString())) {
-			// In JUnit 4: (String message, Object expected, Object actual)
-			// In JUnit 5: (Object expected, Object actual, String message)
-			Expression messageArg =  arguments.get(0); // message
-			Expression secondArg = arguments.get(1); // expected
-			Expression thirdArg = arguments.get(2); // actual
-			if (isStringType(messageArg)) {
-				// Vertausche die Argumente für die neue Reihenfolge
-				ListRewrite listRewrite = rewriter.getListRewrite(node, MethodInvocation.ARGUMENTS_PROPERTY);
-				listRewrite.replace(messageArg, ASTNodes.createMoveTarget(rewriter,secondArg), group);  // Ersetze message durch actual
-				listRewrite.replace(secondArg, ASTNodes.createMoveTarget(rewriter,thirdArg), group); // Ersetze expected durch actual
-				listRewrite.replace(thirdArg, ASTNodes.createMoveTarget(rewriter,messageArg), group); // Ersetze actual durch expected
-			}
-		} else if (arguments.size() == 2 && oneparam.contains(name.toString())) {
-			// In JUnit 4: (Object message, Object actual)
-			Expression messageArg = arguments.get(0); // message
-			Expression actualArg = arguments.get(1);   // actual
-			if (isStringType(messageArg)) {
-				ListRewrite listRewrite = rewriter.getListRewrite(node, MethodInvocation.ARGUMENTS_PROPERTY);
-				listRewrite.replace(arguments.get(0), ASTNodes.createMoveTarget(rewriter, actualArg), group); // message wird durch actual ersetzt
-				listRewrite.replace(arguments.get(1), ASTNodes.createMoveTarget(rewriter, messageArg), group); // actual wird durch message ersetzt
-			}
-		}
-	}
-
 	private boolean isStringType(Expression expression) {
 		ITypeBinding typeBinding = expression.resolveTypeBinding();
 		return typeBinding != null && String.class.getCanonicalName().equals(typeBinding.getQualifiedName());
 	}
 
+	public void reorderParameters(MethodInvocation node, ASTRewrite rewriter, TextEditGroup group) {
+		String methodName = node.getName().getIdentifier();
+		List<Expression> arguments = node.arguments();
+		switch(arguments.size()) {
+		case 2:
+			if (oneparam.contains(methodName)) {
+				reorderParameters(rewriter,node, 1, 0);
+			}
+			break;
+		case 3:
+			if (twoparam.contains(methodName)) {
+				reorderParameters(rewriter,node, 1, 2, 0); // expected, actual, message
+			}
+			break;
+		case 4:
+			reorderParameters(rewriter,node, 1, 2, 3, 0); // expected, actual, delta, message
+			break;
+		}
+	}
+
+	private void reorderParameters(ASTRewrite rewriter,MethodInvocation node, int... order) {
+		ListRewrite listRewrite = rewriter.getListRewrite(node, MethodInvocation.ARGUMENTS_PROPERTY);
+		List<Expression> arguments = node.arguments();
+		Expression[] newArguments = new Expression[arguments.size()];
+		for (int i = 0; i < order.length; i++) {
+			newArguments[i] = (Expression) ASTNode.copySubtree(node.getAST(), arguments.get(order[i]));
+		}
+		if(!isStringType(arguments.get(0))) {
+			return;
+		}
+		for (int i = 0; i < arguments.size(); i++) {
+			listRewrite.replace((ASTNode) arguments.get(i), newArguments[i], null);
+		}
+	}
+
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (!afterRefactoring) {
-			return	"""
+			return
+"""
 						;
-					"""; //$NON-NLS-1$
+"""; //$NON-NLS-1$
 		}
-		return	"""
+		return
+"""
 					;
-				"""; //$NON-NLS-1$
+"""; //$NON-NLS-1$
 	}
 }
