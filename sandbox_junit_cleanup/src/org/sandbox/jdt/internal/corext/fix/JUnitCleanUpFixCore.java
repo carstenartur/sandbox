@@ -23,6 +23,7 @@ import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCo
 import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.refactoring.util.TightSourceRangeComputer;
+import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.helper.AbstractTool;
@@ -80,7 +81,10 @@ public enum JUnitCleanUpFixCore {
 			@Override
 			public void rewriteASTInternal(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel)
 					throws CoreException {
-				TextEditGroup group= createTextEditGroup(MultiFixMessages.JUnitCleanUp_description, cuRewrite);
+				TextEditGroup group= createTextEditGroup(
+						Messages.format(MultiFixMessages.JUnitCleanUp_description,
+								new Object[] { JUnitCleanUpFixCore.this.toString() }),
+						cuRewrite);
 				TightSourceRangeComputer rangeComputer;
 				ASTRewrite rewrite= cuRewrite.getASTRewrite();
 				if (rewrite.getExtendedSourceRangeComputer() instanceof TightSourceRangeComputer) {
@@ -88,7 +92,7 @@ public enum JUnitCleanUpFixCore {
 				} else {
 					rangeComputer= new TightSourceRangeComputer();
 				}
-				rangeComputer.addTightSourceNode( hit.get(0).minv);
+				rangeComputer.addTightSourceNode(hit.get(0).minv);
 				rewrite.setTargetSourceRangeComputer(rangeComputer);
 				junitfound.rewrite(JUnitCleanUpFixCore.this, hit, cuRewrite, group);
 			}

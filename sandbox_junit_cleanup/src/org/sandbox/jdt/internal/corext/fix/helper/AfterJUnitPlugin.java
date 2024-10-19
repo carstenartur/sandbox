@@ -79,13 +79,19 @@ public class AfterJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Juni
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-		if (!afterRefactoring) {
-			return """
-						;
-					"""; //$NON-NLS-1$
+		if (afterRefactoring) {
+			return 
+"""
+@AfterEach
+public void tearDown() throws Exception {
+}
+"""; //$NON-NLS-1$
 		}
-		return """
-					;
-				"""; //$NON-NLS-1$
+		return 
+"""
+@After
+public void tearDown() throws Exception {
+}					;
+"""; //$NON-NLS-1$
 	}
 }
