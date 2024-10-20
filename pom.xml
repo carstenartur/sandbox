@@ -44,6 +44,9 @@
 		<module>sandbox_jface_cleanup</module>
 		<module>sandbox_jface_cleanup_feature</module>
 		<module>sandbox_jface_cleanup_test</module>
+		<module>sandbox_junit_cleanup</module>
+		<module>sandbox_junit_cleanup_feature</module>
+		<module>sandbox_junit_cleanup_test</module>
 		<module>sandbox_usage_view</module>
 		<module>sandbox_usage_view_feature</module>
 		<module>sandbox_product</module>
@@ -320,6 +323,21 @@
 			<dependency>
 				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_jface_cleanup_test</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_junit_cleanup</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_junit_cleanup_feature</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_junit_cleanup_test</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
