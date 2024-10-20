@@ -122,8 +122,8 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 			ASTNodes.replaceButKeepComment(rewrite, minv, newAnnotation, group);
 			importRemover.removeImport(ORG_JUNIT_SUITE);
 			importRemover.removeImport(ORG_JUNIT_RUNWITH);
-			addImport(ORG_JUNIT_JUPITER_SUITE, cuRewrite, ast);
-			addImport(ORG_JUNIT_PLATFORM_SUITE_API_SELECT_CLASSES, cuRewrite, ast);
+			importRemover.addImport(ORG_JUNIT_JUPITER_SUITE);
+			importRemover.addImport(ORG_JUNIT_PLATFORM_SUITE_API_SELECT_CLASSES);
 		}
 	}
 

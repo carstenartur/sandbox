@@ -540,39 +540,14 @@ public class MyTest {
 					}
 				}
 				"""),
-		Rule("""
-				package test;
-				import org.junit.Test;
-				import org.junit.Rule;
-				import org.junit.rules.ExternalResource;
-				/**
-				 * 
-				 */
-				public class MyTest {
-
-					@Rule
-					public ExternalResource er= new ExternalResource() {
-					@Override
-					protected void before() throws Throwable {
-					};
-
-					@Override
-					protected void after() {
-					};
-					};
-
-					@Test
-					public void test3() {
-					}
-				}
-				""", //$NON-NLS-1$
+		RuleAnonymousExternalResource(
 """
 package test;
+import org.junit.Test;
 import org.junit.Rule;
-import org.junit.jupiter.api.Test;
 import org.junit.rules.ExternalResource;
 /**
- *
+ * 
  */
 public class MyTest {
 
@@ -586,6 +561,79 @@ public class MyTest {
 	protected void after() {
 	};
 	};
+
+	@Test
+	public void test3() {
+	}
+}
+""", //$NON-NLS-1$
+"""
+package test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtendWith;
+/**
+ *
+ */
+@ExtendWith(ExternalResource.class)
+public class MyTest {
+
+	@Test
+	public void test3() {
+	}
+}
+"""),
+RuleNestedExternalResource(
+"""
+package test;
+import org.junit.Test;
+import org.junit.Rule;
+import org.junit.rules.ExternalResource;
+/**
+ * 
+ */
+public class MyTest {
+
+	final class MyExternalResource extends ExternalResource {
+		@Override
+		protected void before() throws Throwable {
+		}
+
+		@Override
+		protected void after() {
+		}
+	}
+	
+	@Rule
+	public ExternalResource er= new MyExternalResource();
+
+	@Test
+	public void test3() {
+	}
+}
+		""", //$NON-NLS-1$
+"""
+package test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtendWith;
+/**
+ *
+ */
+@ExtendWith(ExternalResource.class)
+public class MyTest {
+
+	final class MyExternalResource implements BeforeEachCallback, AfterEachCallback {
+		@Override
+		protected void beforeEach() throws Throwable {
+		}
+
+		@Override
+		protected void afterEach() {
+		}
+	}
 
 	@Test
 	public void test3() {

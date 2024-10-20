@@ -25,6 +25,7 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
@@ -67,9 +68,13 @@ public class RuleTestnameJUnitPlugin extends AbstractTool<ReferenceHolder<Intege
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, FieldDeclaration node,
 			ReferenceHolder<Integer, JunitHolder> dataholder) {
 		JunitHolder mh = new JunitHolder();
-		mh.minv = node;
-		dataholder.put(dataholder.size(), mh);
-		operations.add(fixcore.rewrite(dataholder));
+		VariableDeclarationFragment fragment = (VariableDeclarationFragment) node.fragments().get(0);
+		ITypeBinding binding = fragment.resolveBinding().getType();
+		if(binding != null && ORG_JUNIT_RULES_TEST_NAME.equals(binding.getQualifiedName())) {
+			mh.minv = node;
+			dataholder.put(dataholder.size(), mh);
+			operations.add(fixcore.rewrite(dataholder));
+		}
 		return false;
 	}
 
