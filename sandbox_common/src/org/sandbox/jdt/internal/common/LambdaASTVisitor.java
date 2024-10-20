@@ -356,6 +356,7 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 				String superclassname=(String) map.get(HelperVisitor.SUPERCLASSNAME);
 				String annotationclass=(String) map.get(HelperVisitor.ANNOTATIONNAME);
 				if(superclassname != null && annotationclass != null) {
+					boolean bothmatch=false;
 					for (Object modifier : node.modifiers()) {
 						if (modifier instanceof Annotation annotation) {
 							ITypeBinding anotbinding = annotation.resolveTypeBinding();
@@ -365,11 +366,14 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 								VariableDeclarationFragment fragment = (VariableDeclarationFragment) node.fragments().get(0);
 								ITypeBinding binding = fragment.resolveBinding().getType();
 								// Prüfen, ob die Klasse von ExternalResource erbt
-								if (!isExternalResource(binding,superclassname)) {
-									return true;
+								if (isExternalResource(binding,superclassname)) {
+									bothmatch=true;
 								}
 							}
 						}
+					}
+					if(!bothmatch) {
+						return true;
 					}
 				}
 			}
@@ -378,7 +382,7 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 		return true;
 	}
 
-	private boolean isExternalResource(ITypeBinding typeBinding, String qualifiedname) {
+	private static boolean isExternalResource(ITypeBinding typeBinding, String qualifiedname) {
 		while (typeBinding != null) {
 			if (typeBinding.getQualifiedName().equals(qualifiedname)) {
 				return true;

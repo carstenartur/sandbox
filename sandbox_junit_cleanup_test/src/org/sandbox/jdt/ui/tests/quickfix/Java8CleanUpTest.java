@@ -539,7 +539,7 @@ public class MyTest {
 						assertFalse(false);
 					}
 				}
-									"""),
+				"""),
 		Rule("""
 				package test;
 				import org.junit.Test;
@@ -565,8 +565,7 @@ public class MyTest {
 					public void test3() {
 					}
 				}
-							""", //$NON-NLS-1$
-
+				""", //$NON-NLS-1$
 """
 package test;
 import org.junit.Rule;
@@ -592,7 +591,69 @@ public class MyTest {
 	public void test3() {
 	}
 }
-									"""); //$NON-NLS-1$
+"""),
+		TestnameRule(
+"""
+package test;
+import java.io.File;
+import java.io.IOException;
+import org.junit.Test;
+import org.junit.Rule;
+import org.junit.rules.TestName;
+import org.junit.rules.TemporaryFolder;
+/**
+ * 
+ */
+public class MyTest {
+
+	private static final String SRC= "src";
+
+	@Rule
+	public TemporaryFolder tempFolder = new TemporaryFolder();
+
+	@Rule
+	public TestName tn = new TestName();
+
+	@Test
+	public void test3() throws IOException{
+		System.out.println("Test name: " + tn.getMethodName());
+		File newFile = tempFolder.newFile("myfile.txt");
+	}
+}
+""", //$NON-NLS-1$
+"""
+package test;
+import java.io.File;
+import java.io.IOException;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.io.TempDir;
+/**
+ *
+ */
+public class MyTest {
+
+	@TempDir
+	Path tempFolder;
+
+	private String testName;
+
+	@BeforeEach
+	void init(TestInfo testInfo) {
+		this.testName = testInfo.getDisplayName();
+	}
+
+	private static final String SRC= "src";
+
+	@Test
+	public void test3() throws IOException{
+		System.out.println("Test name: " + testName);
+		File newFile = tempFolder.resolve("myfile.txt").toFile();
+	}
+}
+"""); //$NON-NLS-1$
 
 		String given;
 		String expected;
