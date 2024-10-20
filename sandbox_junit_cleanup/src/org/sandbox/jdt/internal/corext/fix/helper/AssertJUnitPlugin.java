@@ -141,6 +141,8 @@ public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 		case 4:
 			reorderParameters(rewriter,node, 1, 2, 3, 0); // expected, actual, delta, message
 			break;
+		default:
+			break;
 		}
 	}
 
