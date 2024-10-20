@@ -111,8 +111,9 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 						while (parentNode != null && !(parentNode instanceof TypeDeclaration)) {
 							parentNode = parentNode.getParent();
 						}
-						if (parentNode != null && parentNode instanceof TypeDeclaration) {
-							TypeDeclaration parentClass = (TypeDeclaration) parentNode;
+						TypeDeclaration typedecl=(TypeDeclaration) parentNode;
+						if (typedecl != null) {
+							TypeDeclaration parentClass = typedecl;
 							SingleMemberAnnotation newAnnotation = ast.newSingleMemberAnnotation();
 							newAnnotation.setTypeName(ast.newName("ExtendWith")); 
 							final TypeLiteral newTypeLiteral = ast.newTypeLiteral();
