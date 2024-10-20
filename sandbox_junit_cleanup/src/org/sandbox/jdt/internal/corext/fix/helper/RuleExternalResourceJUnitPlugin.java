@@ -47,7 +47,7 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
  *
  * 
  */
-public class RuleJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
+public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
 	private static final String ORG_JUNIT_RULES_EXTERNAL_RESOURCE = "org.junit.rules.ExternalResource";
 	private static final String ORG_JUNIT_RULE = "org.junit.Rule";
