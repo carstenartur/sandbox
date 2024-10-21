@@ -105,33 +105,40 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 				FieldDeclaration field = (FieldDeclaration) parent;
 				ITypeBinding fieldTypeBinding = ((VariableDeclarationFragment) field.fragments().get(0)).resolveBinding().getType();
 				if (isExternalResource(fieldTypeBinding)) {
-					if(!fieldTypeBinding.isAnonymous()) {
+//					if(!fieldTypeBinding.isAnonymous()) {
+					if (isDirect(fieldTypeBinding)) {
 						rewrite.remove(field, group);
-						ASTNode parentNode = field.getParent();
-						while (parentNode != null && !(parentNode instanceof TypeDeclaration)) {
-							parentNode = parentNode.getParent();
-						}
-						TypeDeclaration typedecl=(TypeDeclaration) parentNode;
-						if (typedecl != null) {
-							TypeDeclaration parentClass = typedecl;
-							SingleMemberAnnotation newAnnotation = ast.newSingleMemberAnnotation();
-							newAnnotation.setTypeName(ast.newName("ExtendWith")); 
-							final TypeLiteral newTypeLiteral = ast.newTypeLiteral();
-							newTypeLiteral.setType(ast.newSimpleType(ast.newSimpleName(fieldTypeBinding.getName())));
-							newAnnotation.setValue(newTypeLiteral);
-							ListRewrite modifierListRewrite = rewrite.getListRewrite(parentClass, TypeDeclaration.MODIFIERS2_PROPERTY);
-							modifierListRewrite.insertFirst(newAnnotation, group);
-						}
-						modifyExternalResourceClass(field, rewrite,ast, group);
-						importrewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH);
-						importrewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
-						importrewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
-						importrewriter.removeImport(ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
 						importrewriter.removeImport(ORG_JUNIT_RULE);
 					}
+					ASTNode parentNode = field.getParent();
+					while (parentNode != null && !(parentNode instanceof TypeDeclaration)) {
+						parentNode = parentNode.getParent();
+					}
+					TypeDeclaration typedecl=(TypeDeclaration) parentNode;
+					if (typedecl != null) {
+						TypeDeclaration parentClass = typedecl;
+						SingleMemberAnnotation newAnnotation = ast.newSingleMemberAnnotation();
+						newAnnotation.setTypeName(ast.newName("ExtendWith")); 
+						final TypeLiteral newTypeLiteral = ast.newTypeLiteral();
+						newTypeLiteral.setType(ast.newSimpleType(ast.newSimpleName(fieldTypeBinding.getName())));
+						newAnnotation.setValue(newTypeLiteral);
+						ListRewrite modifierListRewrite = rewrite.getListRewrite(parentClass, TypeDeclaration.MODIFIERS2_PROPERTY);
+						modifierListRewrite.insertFirst(newAnnotation, group);
+					}
+					//						modifyExternalResourceClass(field, rewrite,ast, group);
+					importrewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH);
+					importrewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
+					importrewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
+					importrewriter.removeImport(ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
+//					}
 				}
 			}
 		}
+	}
+
+	private boolean isDirect(ITypeBinding fieldTypeBinding) {
+		
+		return fieldTypeBinding.getQualifiedName().equals("org.junit.rules.ExternalResource");
 	}
 
 	private boolean isExternalResource(ITypeBinding typeBinding) {
@@ -148,27 +155,40 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 		field.getParent().accept(new ASTVisitor() {
 			@Override
 			public boolean visit(TypeDeclaration node) {
-				if (node.getSuperclassType() != null) {
-					ITypeBinding binding = node.getSuperclassType().resolveBinding();
-					if (binding != null && binding.getQualifiedName().equals(ORG_JUNIT_RULES_EXTERNAL_RESOURCE)) {
-						rewriter.remove(node.getSuperclassType(), group);
-						AST ast = node.getAST();
-						ListRewrite listRewrite = rewriter.getListRewrite(node, TypeDeclaration.SUPER_INTERFACE_TYPES_PROPERTY);
-						listRewrite.insertLast(ast.newSimpleType(ast.newName("BeforeEachCallback")), group);
-						listRewrite.insertLast(ast.newSimpleType(ast.newName("AfterEachCallback")), group);
-						for (MethodDeclaration method : node.getMethods()) {
-							if (method.getName().getIdentifier().equals("before")) {
-								rewriter.replace(method.getName(), ast.newSimpleName("beforeEach"), group);
-							}
-							if (method.getName().getIdentifier().equals("after")) {
-								rewriter.replace(method.getName(), ast.newSimpleName("afterEach"), group);
-							}
+				ITypeBinding binding = node.resolveBinding();
+				if (isExternalResource(binding)&& hasDefaultConstructorOrNoConstructor(node)) {
+					rewriter.remove(node.getSuperclassType(), group);
+					ListRewrite listRewrite = rewriter.getListRewrite(node, TypeDeclaration.SUPER_INTERFACE_TYPES_PROPERTY);
+					listRewrite.insertLast(ast.newSimpleType(ast.newName("BeforeEachCallback")), group);
+					listRewrite.insertLast(ast.newSimpleType(ast.newName("AfterEachCallback")), group);
+					for (MethodDeclaration method : node.getMethods()) {
+						if (method.getName().getIdentifier().equals("before")) {
+							rewriter.replace(method.getName(), ast.newSimpleName("beforeEach"), group);
+						}
+						if (method.getName().getIdentifier().equals("after")) {
+							rewriter.replace(method.getName(), ast.newSimpleName("afterEach"), group);
 						}
 					}
 				}
 				return super.visit(node);
 			}
 		});
+	}
+
+	private boolean hasDefaultConstructorOrNoConstructor(TypeDeclaration classNode) {
+		boolean hasConstructor = false;
+		for (Object bodyDecl : classNode.bodyDeclarations()) {
+			if (bodyDecl instanceof MethodDeclaration) {
+				MethodDeclaration method = (MethodDeclaration) bodyDecl;
+				if (method.isConstructor()) {
+					hasConstructor = true;
+					if (method.parameters().isEmpty() && method.getBody() != null && method.getBody().statements().isEmpty()) {
+						return true;
+					}
+				}
+			}
+		}
+		return !hasConstructor;
 	}
 
 	@Override

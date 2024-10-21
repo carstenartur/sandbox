@@ -97,7 +97,6 @@ public class RuleTestnameJUnitPlugin extends AbstractTool<ReferenceHolder<Intege
 						@Override
 						public boolean visit(MethodInvocation node) {
 							if (node.getExpression() != null && node.getExpression().resolveTypeBinding().getQualifiedName().equals("org.junit.rules.TestName")) {
-								AST ast = node.getAST();
 								SimpleName newFieldAccess = ast.newSimpleName("testName");
 								rewriter.replace(node, newFieldAccess, group);
 							}
@@ -106,8 +105,8 @@ public class RuleTestnameJUnitPlugin extends AbstractTool<ReferenceHolder<Intege
 					});
 				}
 			}
-			addImport(ORG_JUNIT_JUPITER_API_TEST_INFO, cuRewrite, ast);
-			addImport(ORG_JUNIT_JUPITER_API_BEFORE_EACH, cuRewrite, ast);
+			importRemover.addImport(ORG_JUNIT_JUPITER_API_TEST_INFO);
+			importRemover.addImport(ORG_JUNIT_JUPITER_API_BEFORE_EACH);
 			importRemover.removeImport(ORG_JUNIT_RULE);
 			importRemover.removeImport(ORG_JUNIT_RULES_TEST_NAME);
 		}

@@ -7,6 +7,7 @@ import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
 
 public class JunitHolder {
 	public ASTNode minv;
@@ -30,5 +31,9 @@ public class JunitHolder {
 
 	public FieldDeclaration getFieldDeclaration() {
 		return (FieldDeclaration)minv;
+	}
+	
+	public TypeDeclaration getTypeDeclaration() {
+		return (TypeDeclaration)minv;
 	}
 }

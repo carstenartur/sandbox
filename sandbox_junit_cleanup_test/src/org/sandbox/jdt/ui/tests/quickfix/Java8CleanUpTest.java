@@ -598,6 +598,7 @@ public class MyTest {
 	final class MyExternalResource extends ExternalResource {
 		@Override
 		protected void before() throws Throwable {
+			int i=4;
 		}
 
 		@Override
@@ -612,13 +613,14 @@ public class MyTest {
 	public void test3() {
 	}
 }
-		""", //$NON-NLS-1$
+""", //$NON-NLS-1$
 """
 package test;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.ExtensionContext;
 /**
  *
  */
@@ -627,11 +629,12 @@ public class MyTest {
 
 	final class MyExternalResource implements BeforeEachCallback, AfterEachCallback {
 		@Override
-		protected void beforeEach() throws Throwable {
+		protected void beforeEach(ExtensionContext context) throws Throwable {
+			int i=4;
 		}
 
 		@Override
-		protected void afterEach() {
+		protected void afterEach(ExtensionContext context) {
 		}
 	}
 
