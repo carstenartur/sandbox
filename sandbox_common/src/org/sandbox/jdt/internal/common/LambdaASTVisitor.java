@@ -996,8 +996,21 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	@Override
 	public boolean visit(TypeDeclaration node) {
 		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.TypeDeclaration)) {
-			return ((BiPredicate<TypeDeclaration, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.TypeDeclaration)))
-					.test(node, this.helperVisitor.dataholder);
+			Map<String, Object> map=(Map<String, Object>) this.helperVisitor.getSupplierData().get(VisitorEnum.TypeDeclaration);
+			if(map != null) {
+				String superclassname=(String) map.get(HelperVisitor.SUPERCLASSNAME);
+				if(superclassname != null) {
+					boolean bothmatch=false;
+					ITypeBinding binding = node.resolveBinding();
+					if (isExternalResource(binding,superclassname)) {
+						bothmatch=true;
+					}
+					if(!bothmatch) {
+						return true;
+					}
+				}
+			}
+			return ((BiPredicate<TypeDeclaration, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.TypeDeclaration))).test(node, this.helperVisitor.dataholder);
 		}
 		return true;
 	}

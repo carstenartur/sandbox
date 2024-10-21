@@ -1191,6 +1191,17 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	}
 
 	/**
+	 * @param derivedfrom
+	 * @param bs
+	 * @return
+	 */
+	public BiPredicate<? extends ASTNode, E> addTypeDeclaration(String derivedfrom, BiPredicate<TypeDeclaration, E> bs) {
+		predicatedata.put(VisitorEnum.TypeDeclaration, Map.ofEntries(
+				new AbstractMap.SimpleEntry<>(SUPERCLASSNAME, derivedfrom)
+				));
+		return predicatemap.put(VisitorEnum.TypeDeclaration, bs);
+	}
+	/**
 	 *
 	 * @param bs
 	 * @return old BiPredicate assigned for nodetype
@@ -5212,6 +5223,23 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 
 		HelperVisitor<ReferenceHolder<V, T>,V,T> hv= new HelperVisitor<>(nodesprocessed, dataholder);
 		hv.addTypeDeclaration(bs);
+		hv.build(node);
+	}
+
+	/**
+	 * @param <V>
+	 * @param <T>
+	 * @param derivedfrom
+	 * @param node
+	 * @param dataholder
+	 * @param nodesprocessed
+	 * @param bs
+	 */
+	public static <V, T> void callTypeDeclarationVisitor(String derivedfrom, ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+			BiPredicate<TypeDeclaration, ReferenceHolder<V, T>> bs) {
+
+		HelperVisitor<ReferenceHolder<V, T>,V,T> hv= new HelperVisitor<>(nodesprocessed, dataholder);
+		hv.addTypeDeclaration(derivedfrom, bs);
 		hv.build(node);
 	}
 
