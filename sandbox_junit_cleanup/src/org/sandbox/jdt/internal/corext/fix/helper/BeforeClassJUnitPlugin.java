@@ -65,15 +65,15 @@ public class BeforeClassJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
 		ASTRewrite rewrite = cuRewrite.getASTRewrite();
 		AST ast = cuRewrite.getRoot().getAST();
-		ImportRewrite importRemover = cuRewrite.getImportRewrite();
+		ImportRewrite importRewriter = cuRewrite.getImportRewrite();
 		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
 			JunitHolder mh = entry.getValue();
 			Annotation minv = mh.getAnnotation();
 			MarkerAnnotation newAnnotation = ast.newMarkerAnnotation();
 			newAnnotation.setTypeName(ast.newSimpleName(BEFORE_ALL));
-			addImport(ORG_JUNIT_JUPITER_API_BEFORE_ALL, cuRewrite, ast);
+			importRewriter.addImport(ORG_JUNIT_JUPITER_API_BEFORE_ALL);
 			ASTNodes.replaceButKeepComment(rewrite, minv, newAnnotation, group);
-			importRemover.removeImport(ORG_JUNIT_BEFORECLASS);
+			importRewriter.removeImport(ORG_JUNIT_BEFORECLASS);
 		}
 	}
 
@@ -93,5 +93,10 @@ public static void setUpBeforeClass() throws Exception {
 public static void setUpBeforeClass() throws Exception {
 }
 """; //$NON-NLS-1$
+	}
+
+	@Override
+	public String toString() {
+		return "BeforeClass"; //$NON-NLS-1$
 	}
 }

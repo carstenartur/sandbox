@@ -83,7 +83,7 @@ public class RuleTestnameJUnitPlugin extends AbstractTool<ReferenceHolder<Intege
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
 		ASTRewrite rewriter = cuRewrite.getASTRewrite();
 		AST ast = cuRewrite.getRoot().getAST();
-		ImportRewrite importRemover = cuRewrite.getImportRewrite();
+		ImportRewrite importrewriter = cuRewrite.getImportRewrite();
 		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
 			JunitHolder mh = entry.getValue();
 			FieldDeclaration node = mh.getFieldDeclaration();
@@ -105,10 +105,10 @@ public class RuleTestnameJUnitPlugin extends AbstractTool<ReferenceHolder<Intege
 					});
 				}
 			}
-			importRemover.addImport(ORG_JUNIT_JUPITER_API_TEST_INFO);
-			importRemover.addImport(ORG_JUNIT_JUPITER_API_BEFORE_EACH);
-			importRemover.removeImport(ORG_JUNIT_RULE);
-			importRemover.removeImport(ORG_JUNIT_RULES_TEST_NAME);
+			importrewriter.addImport(ORG_JUNIT_JUPITER_API_TEST_INFO);
+			importrewriter.addImport(ORG_JUNIT_JUPITER_API_BEFORE_EACH);
+			importrewriter.removeImport(ORG_JUNIT_RULE);
+			importrewriter.removeImport(ORG_JUNIT_RULES_TEST_NAME);
 		}
 	}
 
@@ -191,5 +191,10 @@ public class RuleTestnameJUnitPlugin extends AbstractTool<ReferenceHolder<Intege
 		System.out.println("Test name: " + tn.getMethodName());
 	}
 """; //$NON-NLS-1$
+	}
+
+	@Override
+	public String toString() {
+		return "RuleTestname"; //$NON-NLS-1$
 	}
 }

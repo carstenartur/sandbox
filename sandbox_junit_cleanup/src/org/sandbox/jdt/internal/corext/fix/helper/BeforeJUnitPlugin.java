@@ -65,15 +65,15 @@ public class BeforeJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
 		ASTRewrite rewrite = cuRewrite.getASTRewrite();
 		AST ast = cuRewrite.getRoot().getAST();
-		ImportRewrite importRemover = cuRewrite.getImportRewrite();
+		ImportRewrite importRewriter = cuRewrite.getImportRewrite();
 		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
 			JunitHolder mh = entry.getValue();
 			Annotation minv = mh.getAnnotation();
 			MarkerAnnotation newAnnotation = ast.newMarkerAnnotation();
 			newAnnotation.setTypeName(ast.newSimpleName(BEFORE_EACH));
-			addImport(ORG_JUNIT_JUPITER_API_BEFORE_EACH, cuRewrite, ast);
+			importRewriter.addImport(ORG_JUNIT_JUPITER_API_BEFORE_EACH);
 			ASTNodes.replaceButKeepComment(rewrite, minv, newAnnotation, group);
-			importRemover.removeImport(ORG_JUNIT_BEFORE);
+			importRewriter.removeImport(ORG_JUNIT_BEFORE);
 		}
 	}
 
@@ -93,5 +93,10 @@ public static void setUp() throws Exception {
 public static void setUp() throws Exception {
 }
 """; //$NON-NLS-1$
+	}
+
+	@Override
+	public String toString() {
+		return "Before"; //$NON-NLS-1$
 	}
 }

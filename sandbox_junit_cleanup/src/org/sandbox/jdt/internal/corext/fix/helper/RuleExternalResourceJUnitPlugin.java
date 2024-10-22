@@ -21,11 +21,17 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.QualifiedType;
+import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
+import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.TypeLiteral;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
@@ -65,6 +71,9 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 		JunitHolder mh = new JunitHolder();
 		VariableDeclarationFragment fragment = (VariableDeclarationFragment) node.fragments().get(0);
 		ITypeBinding binding = fragment.resolveBinding().getType();
+		if(isAnonymousClass(fragment)) {
+			return false;
+		}
 		if(binding == null) {
 			return false;
 		}
@@ -80,6 +89,19 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 		return false;
 	}
 
+	public boolean isAnonymousClass(VariableDeclarationFragment fragmentObj) {
+		VariableDeclarationFragment fragment = (VariableDeclarationFragment) fragmentObj;
+		Expression initializer = fragment.getInitializer();
+		if (initializer instanceof ClassInstanceCreation) {
+			ClassInstanceCreation classInstanceCreation = (ClassInstanceCreation) initializer;
+			AnonymousClassDeclaration anonymousClassDeclaration = classInstanceCreation.getAnonymousClassDeclaration();
+			if (anonymousClassDeclaration != null) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	@Override
 	public void rewrite(JUnitCleanUpFixCore upp, final ReferenceHolder<Integer, JunitHolder> hit,
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
@@ -91,13 +113,47 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 			FieldDeclaration minv = mh.getFieldDeclaration();
 			for (Object modifier : minv.modifiers()) {
 				if (modifier instanceof Annotation annotation) {
-					process(annotation,cuRewrite.getRoot().getJavaElement().getJavaProject(),rewrite,ast,group,importrewriter,cuRewrite.getRoot());
+					process(annotation,cuRewrite.getRoot().getJavaElement().getJavaProject(),rewrite,ast,group,importrewriter,cuRewrite.getRoot(),extractClassNameFromField(minv));
 				}
 			}
 		}
 	}
 
-	public void process(Annotation node,IJavaProject jproject,ASTRewrite rewrite,AST ast, TextEditGroup group, ImportRewrite importrewriter, CompilationUnit compilationUnit) {
+	public String extractClassNameFromField(FieldDeclaration field) {
+		for (Object fragmentObj : field.fragments()) {
+			VariableDeclarationFragment fragment = (VariableDeclarationFragment) fragmentObj;
+			Expression initializer = fragment.getInitializer();
+			if (initializer instanceof ClassInstanceCreation) {
+				ClassInstanceCreation creation = (ClassInstanceCreation) initializer;
+				Type createdType = creation.getType();
+				if (createdType instanceof QualifiedType) {
+					QualifiedType qualifiedType = (QualifiedType) createdType;
+					return extractQualifiedTypeName(qualifiedType);
+				} else if (createdType instanceof SimpleType) {
+					return ((SimpleType) createdType).getName().getFullyQualifiedName();
+				}
+			}
+		}
+		return null;
+	}
+
+	private String extractQualifiedTypeName(QualifiedType qualifiedType) {
+		StringBuilder fullClassName = new StringBuilder();
+		appendQualifiedType(fullClassName, qualifiedType);
+		return fullClassName.toString();
+	}
+
+	private void appendQualifiedType(StringBuilder builder, QualifiedType qualifiedType) {
+		builder.insert(0, qualifiedType.getName().getFullyQualifiedName());
+		if (qualifiedType.getQualifier() instanceof QualifiedType) {
+			builder.insert(0, ".");
+			appendQualifiedType(builder, (QualifiedType) qualifiedType.getQualifier());
+		} else if (qualifiedType.getQualifier() instanceof SimpleType) {
+			builder.insert(0, ((SimpleType) qualifiedType.getQualifier()).getName().getFullyQualifiedName() + ".");
+		}
+	}
+
+	public void process(Annotation node,IJavaProject jproject,ASTRewrite rewrite,AST ast, TextEditGroup group, ImportRewrite importrewriter, CompilationUnit compilationUnit, String klassenname) {
 		ITypeBinding annotationBinding = node.resolveTypeBinding();
 		if (annotationBinding != null && annotationBinding.getQualifiedName().equals(ORG_JUNIT_RULE)) {
 			ASTNode parent = node.getParent();
@@ -105,7 +161,7 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 				FieldDeclaration field = (FieldDeclaration) parent;
 				ITypeBinding fieldTypeBinding = ((VariableDeclarationFragment) field.fragments().get(0)).resolveBinding().getType();
 				if (isExternalResource(fieldTypeBinding)) {
-//					if(!fieldTypeBinding.isAnonymous()) {
+					if(!fieldTypeBinding.isAnonymous()) {
 					if (isDirect(fieldTypeBinding)) {
 						rewrite.remove(field, group);
 						importrewriter.removeImport(ORG_JUNIT_RULE);
@@ -120,24 +176,21 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 						SingleMemberAnnotation newAnnotation = ast.newSingleMemberAnnotation();
 						newAnnotation.setTypeName(ast.newName("ExtendWith")); 
 						final TypeLiteral newTypeLiteral = ast.newTypeLiteral();
-						newTypeLiteral.setType(ast.newSimpleType(ast.newSimpleName(fieldTypeBinding.getName())));
-						newAnnotation.setValue(newTypeLiteral);
+						newTypeLiteral.setType(ast.newSimpleType(ast.newSimpleName(klassenname)));
+							newAnnotation.setValue(newTypeLiteral);
 						ListRewrite modifierListRewrite = rewrite.getListRewrite(parentClass, TypeDeclaration.MODIFIERS2_PROPERTY);
 						modifierListRewrite.insertFirst(newAnnotation, group);
+						importrewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH);
 					}
 					//						modifyExternalResourceClass(field, rewrite,ast, group);
-					importrewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH);
-					importrewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
-					importrewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
 					importrewriter.removeImport(ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
-//					}
+					}
 				}
 			}
 		}
 	}
 
 	private boolean isDirect(ITypeBinding fieldTypeBinding) {
-		
 		return fieldTypeBinding.getQualifiedName().equals("org.junit.rules.ExternalResource");
 	}
 
@@ -151,7 +204,7 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 		return false;
 	}
 
-	private void modifyExternalResourceClass(FieldDeclaration field, ASTRewrite rewriter,AST ast, TextEditGroup group) {
+	private void modifyExternalResourceClass(FieldDeclaration field, ASTRewrite rewriter,AST ast, TextEditGroup group,ImportRewrite importrewriter) {
 		field.getParent().accept(new ASTVisitor() {
 			@Override
 			public boolean visit(TypeDeclaration node) {
@@ -161,6 +214,8 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 					ListRewrite listRewrite = rewriter.getListRewrite(node, TypeDeclaration.SUPER_INTERFACE_TYPES_PROPERTY);
 					listRewrite.insertLast(ast.newSimpleType(ast.newName("BeforeEachCallback")), group);
 					listRewrite.insertLast(ast.newSimpleType(ast.newName("AfterEachCallback")), group);
+					importrewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
+					importrewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
 					for (MethodDeclaration method : node.getMethods()) {
 						if (method.getName().getIdentifier().equals("before")) {
 							rewriter.replace(method.getName(), ast.newSimpleName("beforeEach"), group);
@@ -227,5 +282,10 @@ public class MyTest {
 	@Rule
 	public ExternalResource er= new MyExternalResource();
 """; //$NON-NLS-1$
+	}
+
+	@Override
+	public String toString() {
+		return "RuleExternalResource"; //$NON-NLS-1$
 	}
 }

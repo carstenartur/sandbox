@@ -65,15 +65,15 @@ public class TestJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Junit
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
 		ASTRewrite rewrite = cuRewrite.getASTRewrite();
 		AST ast = cuRewrite.getRoot().getAST();
-		ImportRewrite importRemover = cuRewrite.getImportRewrite();
+		ImportRewrite importrewriter = cuRewrite.getImportRewrite();
 		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
 			JunitHolder mh = entry.getValue();
 			Annotation minv = mh.getAnnotation();
 			MarkerAnnotation newAnnotation = ast.newMarkerAnnotation();
 			newAnnotation.setTypeName(ast.newSimpleName(TEST));
 			ASTNodes.replaceButKeepComment(rewrite, minv, newAnnotation, group);
-			importRemover.removeImport(ORG_JUNIT_TEST);
-			addImport(ORG_JUNIT_JUPITER_TEST, cuRewrite, ast);
+			importrewriter.removeImport(ORG_JUNIT_TEST);
+			importrewriter.addImport(ORG_JUNIT_JUPITER_TEST);
 		}
 	}
 
@@ -89,5 +89,10 @@ import org.junit.jupiter.api.Test;
 """
 import org.junit.Test;
 """; //$NON-NLS-1$
+	}
+
+	@Override
+	public String toString() {
+		return "Test"; //$NON-NLS-1$
 	}
 }

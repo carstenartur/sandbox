@@ -44,9 +44,6 @@ public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<In
 	private static final String ORG_JUNIT_RULES_EXTERNAL_RESOURCE = "org.junit.rules.ExternalResource";
 	private static final String ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK = "org.junit.jupiter.api.extension.BeforeEachCallback";
 	private static final String ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK = "org.junit.jupiter.api.extension.AfterEachCallback";
-	private static final String ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH = "org.junit.jupiter.api.extension.ExtendWith";
-	
-
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
@@ -74,36 +71,39 @@ public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<In
 		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
 			JunitHolder mh = entry.getValue();
 			TypeDeclaration node = mh.getTypeDeclaration();
-			modifyExternalResourceClass(node,rewriter,ast,group);
-			importrewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH);
-			importrewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
-			importrewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
-			importrewriter.removeImport(ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
+			if(modifyExternalResourceClass(node,rewriter,ast,group,importrewriter)) {
 			importrewriter.removeImport(ORG_JUNIT_RULE);
-			importrewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT);
+			}
 		}
 	}
 
-	private void modifyExternalResourceClass(TypeDeclaration node, ASTRewrite rewriter,AST ast, TextEditGroup group) {
+	private boolean modifyExternalResourceClass(TypeDeclaration node, ASTRewrite rewriter,AST ast, TextEditGroup group, ImportRewrite importrewriter) {
 		ITypeBinding binding = node.resolveBinding();
+		if(binding.isAnonymous()) {
+			return false;
+		}
 		if (isExternalResource(binding)&& hasDefaultConstructorOrNoConstructor(node)) {
 			if(isDirect(binding)) {
-			rewriter.remove(node.getSuperclassType(), group);
+				rewriter.remove(node.getSuperclassType(), group);
+				importrewriter.removeImport(ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
+				ListRewrite listRewrite = rewriter.getListRewrite(node, TypeDeclaration.SUPER_INTERFACE_TYPES_PROPERTY);
+				listRewrite.insertLast(ast.newSimpleType(ast.newName("BeforeEachCallback")), group);
+				listRewrite.insertLast(ast.newSimpleType(ast.newName("AfterEachCallback")), group);
+				importrewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
+				importrewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
 			}
-			ListRewrite listRewrite = rewriter.getListRewrite(node, TypeDeclaration.SUPER_INTERFACE_TYPES_PROPERTY);
-			listRewrite.insertLast(ast.newSimpleType(ast.newName("BeforeEachCallback")), group);
-			listRewrite.insertLast(ast.newSimpleType(ast.newName("AfterEachCallback")), group);
 			for (MethodDeclaration method : node.getMethods()) {
 				if (method.getName().getIdentifier().equals("before")) {
 					rewriter.replace(method.getName(), ast.newSimpleName("beforeEach"), group);
-					extracted(rewriter, ast, method, group);
+					extracted(rewriter, ast, method, group,importrewriter);
 				}
 				if (method.getName().getIdentifier().equals("after")) {
 					rewriter.replace(method.getName(), ast.newSimpleName("afterEach"), group);
-					extracted(rewriter, ast, method, group);
+					extracted(rewriter, ast, method, group,importrewriter);
 				}
 			}
 		}
+		return true;
 	}
 
 	private boolean isDirect(ITypeBinding fieldTypeBinding) {
@@ -128,7 +128,7 @@ public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<In
 		return isDirectlyExtendingExternalResource;
 	}
 	
-	private void extracted(ASTRewrite rewriter, AST ast, MethodDeclaration method, TextEditGroup group) {
+	private void extracted(ASTRewrite rewriter, AST ast, MethodDeclaration method, TextEditGroup group, ImportRewrite importrewriter) {
 		ListRewrite listRewrite;
 		boolean hasExtensionContext = false;
 		for (Object param : method.parameters()) {
@@ -142,14 +142,13 @@ public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<In
 		}
 
 		if (!hasExtensionContext) {
-			// Adding the ExtensionContext parameter to the method
-
 			SingleVariableDeclaration newParam = ast.newSingleVariableDeclaration();
 			newParam.setType(ast.newSimpleType(ast.newName("ExtensionContext")));
 			newParam.setName(ast.newSimpleName("context"));
 
 			listRewrite = rewriter.getListRewrite(method, MethodDeclaration.PARAMETERS_PROPERTY);
 			listRewrite.insertLast(newParam, group);
+			importrewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT);
 		}
 	}
 
@@ -206,5 +205,10 @@ public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<In
 		System.out.println("Test name: " + tn.getMethodName());
 	}
 """; //$NON-NLS-1$
+	}
+
+	@Override
+	public String toString() {
+		return "ExternalResource"; //$NON-NLS-1$
 	}
 }

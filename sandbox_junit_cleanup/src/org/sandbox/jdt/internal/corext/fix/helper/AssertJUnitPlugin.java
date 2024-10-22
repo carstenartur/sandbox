@@ -83,7 +83,7 @@ public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
 		ASTRewrite rewrite = cuRewrite.getASTRewrite();
 		AST ast = cuRewrite.getRoot().getAST();
-		ImportRewrite importRemover = cuRewrite.getImportRewrite();
+		ImportRewrite importRewriter = cuRewrite.getImportRewrite();
 		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
 			JunitHolder mh = entry.getValue();
 			if(mh.minv instanceof MethodInvocation) {
@@ -95,7 +95,7 @@ public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 					ASTNodes.replaceButKeepComment(rewrite, expression, newQualifier, group);
 				}
 			} else {
-				changeImportDeclaration(mh.getImportDeclaration(), importRemover, group);
+				changeImportDeclaration(mh.getImportDeclaration(), importRewriter, group);
 			}
 		}
 	}
@@ -130,23 +130,23 @@ public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 		switch(arguments.size()) {
 		case 2:
 			if (oneparam.contains(methodName)) {
-				reorderParameters(rewriter,node, 1, 0);
+				reorderParameters(rewriter,node,group, 1, 0);
 			}
 			break;
 		case 3:
 			if (twoparam.contains(methodName)) {
-				reorderParameters(rewriter,node, 1, 2, 0); // expected, actual, message
+				reorderParameters(rewriter,node,group, 1, 2, 0); // expected, actual, message
 			}
 			break;
 		case 4:
-			reorderParameters(rewriter,node, 1, 2, 3, 0); // expected, actual, delta, message
+			reorderParameters(rewriter,node,group, 1, 2, 3, 0); // expected, actual, delta, message
 			break;
 		default:
 			break;
 		}
 	}
 
-	private void reorderParameters(ASTRewrite rewriter,MethodInvocation node, int... order) {
+	private void reorderParameters(ASTRewrite rewriter,MethodInvocation node,TextEditGroup group, int... order) {
 		ListRewrite listRewrite = rewriter.getListRewrite(node, MethodInvocation.ARGUMENTS_PROPERTY);
 		List<Expression> arguments = node.arguments();
 		Expression[] newArguments = new Expression[arguments.size()];
@@ -157,7 +157,7 @@ public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 			return;
 		}
 		for (int i = 0; i < arguments.size(); i++) {
-			listRewrite.replace((ASTNode) arguments.get(i), newArguments[i], null);
+			listRewrite.replace((ASTNode) arguments.get(i), newArguments[i], group);
 		}
 	}
 
@@ -175,5 +175,10 @@ Assertions.assertTrue(false,"failuremessage");
 Assert.assertNotEquals("failuremessage",5, result);  // expected = 5, actual = result
 Assert.assertTrue("failuremessage",false);
 """; //$NON-NLS-1$
+	}
+
+	@Override
+	public String toString() {
+		return "Assert"; //$NON-NLS-1$
 	}
 }
