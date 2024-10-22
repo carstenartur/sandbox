@@ -101,7 +101,6 @@ public class JUnitCleanUpCore extends AbstractCleanUp {
 
 	private EnumSet<JUnitCleanUpFixCore> computeFixSet() {
 		EnumSet<JUnitCleanUpFixCore> fixSet= EnumSet.noneOf(JUnitCleanUpFixCore.class);
-
 		if (isEnabled(JUNIT_CLEANUP)) {
 			fixSet= EnumSet.allOf(JUnitCleanUpFixCore.class);
 		}

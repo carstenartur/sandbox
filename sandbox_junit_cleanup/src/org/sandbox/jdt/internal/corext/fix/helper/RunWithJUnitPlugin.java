@@ -68,13 +68,10 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 			Expression value = mynode.getValue();
 			if(value instanceof TypeLiteral myvalue) {
 				ITypeBinding classBinding = myvalue.resolveTypeBinding();
-				// Überprüfe, ob der Typ ein generischer Typ ist (Class<T>)
 				if (classBinding != null && classBinding.isParameterizedType()) {
-					// Extrahiere den tatsächlichen Typ (T) aus Class<T>
 					ITypeBinding[] typeArguments = classBinding.getTypeArguments();
 					if (typeArguments.length > 0) {
 						ITypeBinding actualTypeBinding = typeArguments[0];
-						// Prüfe, ob es sich um org.junit.runners.Suite handelt
 						if (ORG_JUNIT_SUITE.equals(actualTypeBinding.getQualifiedName())) {
 							mh.value=ORG_JUNIT_RUNWITH;
 							dataholder.put(dataholder.size(), mh);
@@ -87,7 +84,7 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 		}
 		return false;
 	}
-	
+
 	private boolean processFoundNodeSuite(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Annotation node,
 			ReferenceHolder<Integer, JunitHolder> dataholder) {
@@ -105,7 +102,7 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
 		ASTRewrite rewrite = cuRewrite.getASTRewrite();
 		AST ast = cuRewrite.getRoot().getAST();
-		ImportRewrite importRemover = cuRewrite.getImportRewrite();
+		ImportRewrite importrewriter = cuRewrite.getImportRewrite();
 		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
 			JunitHolder mh = entry.getValue();
 			Annotation minv = mh.getAnnotation();
@@ -115,15 +112,15 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 				newAnnotation = ast.newSingleMemberAnnotation();
 				((SingleMemberAnnotation)newAnnotation).setValue(ASTNodes.createMoveTarget(rewrite, mynode.getValue()));
 				newAnnotation.setTypeName(ast.newSimpleName(SELECT_CLASSES));
+				importrewriter.addImport(ORG_JUNIT_PLATFORM_SUITE_API_SELECT_CLASSES);
 			} else {
 				newAnnotation = ast.newMarkerAnnotation();
 				newAnnotation.setTypeName(ast.newSimpleName(SUITE));
+				importrewriter.addImport(ORG_JUNIT_JUPITER_SUITE);
 			}
 			ASTNodes.replaceButKeepComment(rewrite, minv, newAnnotation, group);
-			importRemover.removeImport(ORG_JUNIT_SUITE);
-			importRemover.removeImport(ORG_JUNIT_RUNWITH);
-			importRemover.addImport(ORG_JUNIT_JUPITER_SUITE);
-			importRemover.addImport(ORG_JUNIT_PLATFORM_SUITE_API_SELECT_CLASSES);
+			importrewriter.removeImport(ORG_JUNIT_SUITE);
+			importrewriter.removeImport(ORG_JUNIT_RUNWITH);
 		}
 	}
 
@@ -145,5 +142,10 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 	MyTest.class
 })
 """; //$NON-NLS-1$
+	}
+
+	@Override
+	public String toString() {
+		return "RunWith"; //$NON-NLS-1$
 	}
 }

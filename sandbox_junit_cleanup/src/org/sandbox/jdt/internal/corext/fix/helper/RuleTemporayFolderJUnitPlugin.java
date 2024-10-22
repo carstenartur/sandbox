@@ -143,4 +143,9 @@ public class RuleTemporayFolderJUnitPlugin extends AbstractTool<ReferenceHolder<
 	}			;
 """; //$NON-NLS-1$
 	}
+
+	@Override
+	public String toString() {
+		return "RuleTemporaryFolder"; //$NON-NLS-1$
+	}
 }

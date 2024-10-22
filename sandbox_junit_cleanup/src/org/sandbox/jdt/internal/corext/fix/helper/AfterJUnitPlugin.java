@@ -65,15 +65,15 @@ public class AfterJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Juni
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
 		ASTRewrite rewrite = cuRewrite.getASTRewrite();
 		AST ast = cuRewrite.getRoot().getAST();
-		ImportRewrite importRemover = cuRewrite.getImportRewrite();
+		ImportRewrite importRewriter = cuRewrite.getImportRewrite();
 		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
 			JunitHolder mh = entry.getValue();
 			Annotation minv = mh.getAnnotation();
 			MarkerAnnotation newAnnotation = ast.newMarkerAnnotation();
 			newAnnotation.setTypeName(ast.newSimpleName(AFTER_EACH));
-			addImport(ORG_JUNIT_JUPITER_API_AFTER_EACH, cuRewrite, ast);
+			importRewriter.addImport(ORG_JUNIT_JUPITER_API_AFTER_EACH);
 			ASTNodes.replaceButKeepComment(rewrite, minv, newAnnotation, group);
-			importRemover.removeImport(ORG_JUNIT_AFTER);
+			importRewriter.removeImport(ORG_JUNIT_AFTER);
 		}
 	}
 
@@ -93,5 +93,10 @@ public void tearDown() throws Exception {
 public void tearDown() throws Exception {
 }					;
 """; //$NON-NLS-1$
+	}
+
+	@Override
+	public String toString() {
+		return "After"; //$NON-NLS-1$
 	}
 }

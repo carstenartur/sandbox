@@ -75,7 +75,7 @@ public class IgnoreJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
 		ASTRewrite rewrite = cuRewrite.getASTRewrite();
 		AST ast = cuRewrite.getRoot().getAST();
-		ImportRewrite importRemover = cuRewrite.getImportRewrite();
+		ImportRewrite importRewriter = cuRewrite.getImportRewrite();
 		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
 			JunitHolder mh = entry.getValue();
 			Annotation minv = mh.getAnnotation();
@@ -87,9 +87,9 @@ public class IgnoreJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 				newAnnotation = ast.newMarkerAnnotation();
 			}
 			newAnnotation.setTypeName(ast.newSimpleName(DISABLED));
-			addImport(ORG_JUNIT_JUPITER_DISABLED, cuRewrite, ast);
+			importRewriter.addImport(ORG_JUNIT_JUPITER_DISABLED);
 			ASTNodes.replaceButKeepComment(rewrite, minv, newAnnotation, group);
-			importRemover.removeImport(ORG_JUNIT_IGNORE);
+			importRewriter.removeImport(ORG_JUNIT_IGNORE);
 		}
 	}
 
@@ -113,5 +113,10 @@ public void test() {
 	fail("Not yet implemented");
 }
 """; //$NON-NLS-1$
+	}
+
+	@Override
+	public String toString() {
+		return "Ignore"; //$NON-NLS-1$
 	}
 }

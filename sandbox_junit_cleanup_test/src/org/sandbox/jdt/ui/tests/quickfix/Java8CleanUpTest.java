@@ -23,6 +23,7 @@ import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaCore;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -569,15 +570,24 @@ public class MyTest {
 """, //$NON-NLS-1$
 """
 package test;
+import org.junit.Rule;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.AfterEachCallback;
-import org.junit.jupiter.api.extension.BeforeEachCallback;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.rules.ExternalResource;
 /**
  *
  */
-@ExtendWith(ExternalResource.class)
 public class MyTest {
+
+	@Rule
+	public ExternalResource er= new ExternalResource() {
+	@Override
+	protected void before() throws Throwable {
+	};
+
+	@Override
+	protected void after() {
+	};
+	};
 
 	@Test
 	public void test3() {
@@ -624,7 +634,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 /**
  *
  */
-@ExtendWith(ExternalResource.class)
+@ExtendWith(MyExternalResource.class)
 public class MyTest {
 
 	final class MyExternalResource implements BeforeEachCallback, AfterEachCallback {
@@ -760,5 +770,197 @@ public class MyTest {
 		ICompilationUnit cu= pack.createCompilationUnit("Test.java",test.given,false, null); //$NON-NLS-1$
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+	}
+	
+	@Test
+	public void testJUnitCleanupTwoFiles() throws CoreException {
+		IPackageFragment pack= fRoot.createPackageFragment("test", true, null);
+		ICompilationUnit cu= pack.createCompilationUnit("MyTest.java",
+"""
+package test;
+import org.junit.Test;
+import org.junit.Rule;
+import org.junit.rules.ExternalResource;
+/**
+ * 
+ */
+public class MyTest {
+	
+	@Rule
+	public ExternalResource er= new MyExternalResource();
+
+	@Test
+	public void test3() {
+	}
+}
+""", false, null); //$NON-NLS-1$
+		ICompilationUnit cu2= pack.createCompilationUnit("MyExternalResource.java",
+"""
+package test;
+import org.junit.Test;
+import org.junit.Rule;
+import org.junit.rules.ExternalResource;
+/**
+ * 
+ */
+public class MyExternalResource extends ExternalResource {
+		@Override
+		protected void before() throws Throwable {
+			int i=4;
+		}
+
+		@Override
+		protected void after() {
+		}
+}
+""", false, null); //$NON-NLS-1$
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu,cu2}, new String[] {
+"""
+package test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+/**
+ *
+ */
+@ExtendWith(MyExternalResource.class)
+public class MyTest {
+
+	@Test
+	public void test3() {
+	}
+}
+"""
+,
+"""
+package test;
+import org.junit.Test;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
+/**
+ *
+ */
+public class MyExternalResource implements BeforeEachCallback, AfterEachCallback {
+		@Override
+		protected void beforeEach(ExtensionContext context) throws Throwable {
+			int i=4;
+		}
+
+		@Override
+		protected void afterEach(ExtensionContext context) {
+		}
+}
+"""
+}, null);
+	}
+
+	@Test
+	public void testJUnitCleanupThreeFiles() throws CoreException {
+		IPackageFragment pack= fRoot.createPackageFragment("test", true, null);
+		ICompilationUnit cu= pack.createCompilationUnit("MyTest.java",
+"""
+package test;
+import org.junit.Test;
+import org.junit.Rule;
+import org.junit.rules.ExternalResource;
+import test.MyExternalResource;
+
+public class MyTest {
+	
+	@Rule
+	public ExternalResource er= new MyExternalResource();
+
+	@Test
+	public void test3() {
+	}
+}
+""", false, null); //$NON-NLS-1$
+		ICompilationUnit cu2= pack.createCompilationUnit("MyExternalResource.java",
+"""
+package test;
+import test.MyExternalResource2;
+
+public class MyExternalResource extends MyExternalResource2 {
+		@Override
+		protected void before() throws Throwable {
+			int i=4;
+		}
+
+		@Override
+		protected void after() {
+		}
+}
+""", false, null); //$NON-NLS-1$
+		
+		ICompilationUnit cu3= pack.createCompilationUnit("MyExternalResource2.java",
+"""
+package test;
+import org.junit.rules.ExternalResource;
+
+public class MyExternalResource2 extends ExternalResource {
+		@Override
+		protected void before() throws Throwable {
+			int i=4;
+		}
+
+		@Override
+		protected void after() {
+		}
+}
+""", false, null); //$NON-NLS-1$
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu,cu2,cu3}, new String[] {
+"""
+package test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import test.MyExternalResource;
+
+@ExtendWith(MyExternalResource.class)
+public class MyTest {
+
+	@Test
+	public void test3() {
+	}
+}
+"""
+,
+"""
+package test;
+import org.junit.jupiter.api.extension.ExtensionContext;
+
+import test.MyExternalResource2;
+
+public class MyExternalResource extends MyExternalResource2 {
+		@Override
+		protected void beforeEach(ExtensionContext context) throws Throwable {
+			int i=4;
+		}
+
+		@Override
+		protected void afterEach(ExtensionContext context) {
+		}
+}
+""",
+"""
+package test;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
+
+public class MyExternalResource2 implements BeforeEachCallback, AfterEachCallback {
+		@Override
+		protected void beforeEach(ExtensionContext context) throws Throwable {
+			int i=4;
+		}
+
+		@Override
+		protected void afterEach(ExtensionContext context) {
+		}
+}
+"""
+}, null);
 	}
 }

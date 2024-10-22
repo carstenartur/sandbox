@@ -60,8 +60,8 @@ public enum JUnitCleanUpFixCore {
 	AbstractTool<ReferenceHolder<Integer, JunitHolder>> junitfound;
 
 	@SuppressWarnings("unchecked")
-	JUnitCleanUpFixCore(AbstractTool<? extends ReferenceHolder<Integer, JunitHolder>> xmlsimplify) {
-		this.junitfound= (AbstractTool<ReferenceHolder<Integer, JunitHolder>>) xmlsimplify;
+	JUnitCleanUpFixCore(AbstractTool<? extends ReferenceHolder<Integer, JunitHolder>> junitprocess) {
+		this.junitfound= (AbstractTool<ReferenceHolder<Integer, JunitHolder>>) junitprocess;
 	}
 
 	public String getPreview(boolean i) {

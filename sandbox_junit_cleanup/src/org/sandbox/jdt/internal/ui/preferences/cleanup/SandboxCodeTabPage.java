@@ -40,10 +40,10 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 	@Override
 	protected void doCreatePreferences(Composite composite, int numColumns) {
 		Group java1d8Group= createGroup(numColumns, composite, CleanUpMessages.JavaFeatureTabPage_GroupName_Java1d8);
-		final CheckboxPreference xmlsimplify= createCheckboxPref(java1d8Group, numColumns,
+		final CheckboxPreference junitcb= createCheckboxPref(java1d8Group, numColumns,
 				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP,
 				MYCleanUpConstants.JUNIT_CLEANUP, FALSE_TRUE);
 		intent(java1d8Group);
-		registerPreference(xmlsimplify);
+		registerPreference(junitcb);
 	}
 }
