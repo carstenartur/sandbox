@@ -37,10 +37,6 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
  */
 public class AfterJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
-	private static final String ORG_JUNIT_AFTER = "org.junit.After";
-	private static final String ORG_JUNIT_JUPITER_API_AFTER_EACH = "org.junit.jupiter.api.AfterEach";
-	private static final String AFTER_EACH = "AfterEach";
-
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {

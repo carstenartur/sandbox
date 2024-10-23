@@ -38,11 +38,6 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
  */
 public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
-	private static final String ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT = "org.junit.jupiter.api.extension.ExtensionContext";
-	private static final String ORG_JUNIT_RULE = "org.junit.Rule";
-	private static final String ORG_JUNIT_RULES_EXTERNAL_RESOURCE = "org.junit.rules.ExternalResource";
-	private static final String ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK = "org.junit.jupiter.api.extension.BeforeEachCallback";
-	private static final String ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK = "org.junit.jupiter.api.extension.AfterEachCallback";
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
@@ -143,32 +138,6 @@ public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<In
 
 	private boolean isDirectlyExtendingExternalResource(ITypeBinding binding) {
 		return ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(binding.getSuperclass().getQualifiedName());
-	}
-
-	private boolean hasDefaultConstructorOrNoConstructor(TypeDeclaration classNode) {
-		boolean hasConstructor = false;
-		for (Object bodyDecl : classNode.bodyDeclarations()) {
-			if (bodyDecl instanceof MethodDeclaration) {
-				MethodDeclaration method = (MethodDeclaration) bodyDecl;
-				if (method.isConstructor()) {
-					hasConstructor = true;
-					if (method.parameters().isEmpty() && method.getBody() != null && method.getBody().statements().isEmpty()) {
-						return true;
-					}
-				}
-			}
-		}
-		return !hasConstructor;
-	}
-
-	private boolean isExternalResource(ITypeBinding typeBinding) {
-		while (typeBinding != null) {
-			if (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(typeBinding.getQualifiedName())) {
-				return true;
-			}
-			typeBinding = typeBinding.getSuperclass();
-		}
-		return false;
 	}
 
 	@Override

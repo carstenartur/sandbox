@@ -37,10 +37,6 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
  */
 public class TestJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
-	private static final String ORG_JUNIT_TEST = "org.junit.Test";
-	private static final String ORG_JUNIT_JUPITER_TEST = "org.junit.jupiter.api.Test";
-	private static final String TEST = "Test";
-
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {

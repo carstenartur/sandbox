@@ -40,14 +40,6 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
  */
 public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
-	private static final String ORG_JUNIT_PLATFORM_SUITE_API_SELECT_CLASSES = "org.junit.platform.suite.api.SelectClasses";
-	private static final String SELECT_CLASSES = "SelectClasses";
-	private static final String ORG_JUNIT_RUNWITH = "org.junit.runner.RunWith";
-	private static final String ORG_JUNIT_JUPITER_SUITE = "org.junit.platform.suite.api.Suite";
-	private static final String SUITE = "Suite";
-	private static final String ORG_JUNIT_SUITE = "org.junit.runners.Suite";
-	private static final String ORG_JUNIT_SUITE_SUITECLASSES = "org.junit.runners.Suite.SuiteClasses";
-
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
