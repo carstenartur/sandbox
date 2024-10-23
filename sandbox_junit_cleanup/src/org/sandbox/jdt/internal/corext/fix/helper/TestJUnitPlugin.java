@@ -13,8 +13,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -33,14 +33,14 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 
 /**
  *
- * 
+ *
  */
 public class TestJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataholder = new ReferenceHolder<>();
+		ReferenceHolder<Integer, JunitHolder> dataholder= new ReferenceHolder<>();
 		HelperVisitor.callMarkerAnnotationVisitor(ORG_JUNIT_TEST, compilationUnit, dataholder, nodesprocessed,
 				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 	}
@@ -48,9 +48,9 @@ public class TestJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Junit
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, MarkerAnnotation node,
 			ReferenceHolder<Integer, JunitHolder> dataholder) {
-		JunitHolder mh = new JunitHolder();
-		mh.minv = node;
-		mh.minvname = node.getTypeName().getFullyQualifiedName();
+		JunitHolder mh= new JunitHolder();
+		mh.minv= node;
+		mh.minvname= node.getTypeName().getFullyQualifiedName();
 		dataholder.put(dataholder.size(), mh);
 		operations.add(fixcore.rewrite(dataholder));
 		return false;
@@ -59,13 +59,13 @@ public class TestJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Junit
 	@Override
 	public void rewrite(JUnitCleanUpFixCore upp, final ReferenceHolder<Integer, JunitHolder> hit,
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
-		ASTRewrite rewrite = cuRewrite.getASTRewrite();
-		AST ast = cuRewrite.getRoot().getAST();
-		ImportRewrite importrewriter = cuRewrite.getImportRewrite();
+		ASTRewrite rewrite= cuRewrite.getASTRewrite();
+		AST ast= cuRewrite.getRoot().getAST();
+		ImportRewrite importrewriter= cuRewrite.getImportRewrite();
 		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
-			JunitHolder mh = entry.getValue();
-			Annotation minv = mh.getAnnotation();
-			MarkerAnnotation newAnnotation = ast.newMarkerAnnotation();
+			JunitHolder mh= entry.getValue();
+			Annotation minv= mh.getAnnotation();
+			MarkerAnnotation newAnnotation= ast.newMarkerAnnotation();
 			newAnnotation.setTypeName(ast.newSimpleName(TEST));
 			ASTNodes.replaceButKeepComment(rewrite, minv, newAnnotation, group);
 			importrewriter.removeImport(ORG_JUNIT_TEST);
@@ -76,15 +76,13 @@ public class TestJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Junit
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {
-			return 
-"""
-import org.junit.jupiter.api.Test;
-"""; //$NON-NLS-1$
+			return """
+					import org.junit.jupiter.api.Test;
+					"""; //$NON-NLS-1$
 		}
-		return 
-"""
-import org.junit.Test;
-"""; //$NON-NLS-1$
+		return """
+				import org.junit.Test;
+				"""; //$NON-NLS-1$
 	}
 
 	@Override

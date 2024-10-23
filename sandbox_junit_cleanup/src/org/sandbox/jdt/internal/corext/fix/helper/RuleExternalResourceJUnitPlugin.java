@@ -44,48 +44,42 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 
 /**
  *
- * 
+ *
  */
 public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataholder = new ReferenceHolder<>();
-		HelperVisitor.callFieldDeclarationVisitor(ORG_JUNIT_RULE, ORG_JUNIT_RULES_EXTERNAL_RESOURCE, compilationUnit, dataholder, nodesprocessed,
+		ReferenceHolder<Integer, JunitHolder> dataholder= new ReferenceHolder<>();
+		HelperVisitor.callFieldDeclarationVisitor(ORG_JUNIT_RULE, ORG_JUNIT_RULES_EXTERNAL_RESOURCE, compilationUnit,
+				dataholder, nodesprocessed,
 				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, FieldDeclaration node,
 			ReferenceHolder<Integer, JunitHolder> dataholder) {
-		JunitHolder mh = new JunitHolder();
-		VariableDeclarationFragment fragment = (VariableDeclarationFragment) node.fragments().get(0);
-		ITypeBinding binding = fragment.resolveBinding().getType();
-		if(isAnonymousClass(fragment)) {
+		JunitHolder mh= new JunitHolder();
+		VariableDeclarationFragment fragment= (VariableDeclarationFragment) node.fragments().get(0);
+		ITypeBinding binding= fragment.resolveBinding().getType();
+		if (isAnonymousClass(fragment) || (binding == null)
+				|| "org.junit.rules.TestName".equals(binding.getQualifiedName())
+				|| "org.junit.rules.TemporaryFolder".equals(binding.getQualifiedName())) {
 			return false;
 		}
-		if(binding == null) {
-			return false;
-		}
-		if("org.junit.rules.TestName".equals(binding.getQualifiedName())) {
-			return false;
-		}
-		if("org.junit.rules.TemporaryFolder".equals(binding.getQualifiedName())) {
-			return false;
-		}
-		mh.minv = node;
+		mh.minv= node;
 		dataholder.put(dataholder.size(), mh);
 		operations.add(fixcore.rewrite(dataholder));
 		return false;
 	}
 
 	public boolean isAnonymousClass(VariableDeclarationFragment fragmentObj) {
-		VariableDeclarationFragment fragment = (VariableDeclarationFragment) fragmentObj;
-		Expression initializer = fragment.getInitializer();
+		VariableDeclarationFragment fragment= fragmentObj;
+		Expression initializer= fragment.getInitializer();
 		if (initializer instanceof ClassInstanceCreation) {
-			ClassInstanceCreation classInstanceCreation = (ClassInstanceCreation) initializer;
-			AnonymousClassDeclaration anonymousClassDeclaration = classInstanceCreation.getAnonymousClassDeclaration();
+			ClassInstanceCreation classInstanceCreation= (ClassInstanceCreation) initializer;
+			AnonymousClassDeclaration anonymousClassDeclaration= classInstanceCreation.getAnonymousClassDeclaration();
 			if (anonymousClassDeclaration != null) {
 				return true;
 			}
@@ -96,30 +90,29 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 	@Override
 	public void rewrite(JUnitCleanUpFixCore upp, ReferenceHolder<Integer, JunitHolder> hit,
 			CompilationUnitRewrite cuRewrite, TextEditGroup group) {
-		ASTRewrite rewrite = cuRewrite.getASTRewrite();
-		AST ast = cuRewrite.getRoot().getAST();
-		ImportRewrite importRewriter = cuRewrite.getImportRewrite();
+		ASTRewrite rewrite= cuRewrite.getASTRewrite();
+		AST ast= cuRewrite.getRoot().getAST();
+		ImportRewrite importRewriter= cuRewrite.getImportRewrite();
 
 		hit.values().forEach(mh -> {
-			FieldDeclaration field = mh.getFieldDeclaration();
-			field.modifiers().stream()
-			.filter(modifier -> modifier instanceof Annotation)
-			.map(modifier -> (Annotation) modifier)
-			.forEach(annotation -> process((Annotation) annotation, cuRewrite.getRoot().getJavaElement().getJavaProject(),
-					rewrite, ast, group, importRewriter, cuRewrite.getRoot(),
-					extractClassNameFromField(field)));
+			FieldDeclaration field= mh.getFieldDeclaration();
+			field.modifiers().stream().filter(modifier -> modifier instanceof Annotation)
+					.map(modifier -> (Annotation) modifier)
+					.forEach(annotation -> process((Annotation) annotation,
+							cuRewrite.getRoot().getJavaElement().getJavaProject(), rewrite, ast, group, importRewriter,
+							cuRewrite.getRoot(), extractClassNameFromField(field)));
 		});
 	}
 
 	public String extractClassNameFromField(FieldDeclaration field) {
 		for (Object fragmentObj : field.fragments()) {
-			VariableDeclarationFragment fragment = (VariableDeclarationFragment) fragmentObj;
-			Expression initializer = fragment.getInitializer();
+			VariableDeclarationFragment fragment= (VariableDeclarationFragment) fragmentObj;
+			Expression initializer= fragment.getInitializer();
 			if (initializer instanceof ClassInstanceCreation) {
-				ClassInstanceCreation creation = (ClassInstanceCreation) initializer;
-				Type createdType = creation.getType();
+				ClassInstanceCreation creation= (ClassInstanceCreation) initializer;
+				Type createdType= creation.getType();
 				if (createdType instanceof QualifiedType) {
-					QualifiedType qualifiedType = (QualifiedType) createdType;
+					QualifiedType qualifiedType= (QualifiedType) createdType;
 					return extractQualifiedTypeName(qualifiedType);
 				} else if (createdType instanceof SimpleType) {
 					return ((SimpleType) createdType).getName().getFullyQualifiedName();
@@ -135,9 +128,9 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 			return;
 		}
 
-		FieldDeclaration field = (FieldDeclaration) node.getParent();
-		ITypeBinding fieldTypeBinding = ((VariableDeclarationFragment) field.fragments().get(0))
-				.resolveBinding().getType();
+		FieldDeclaration field= (FieldDeclaration) node.getParent();
+		ITypeBinding fieldTypeBinding= ((VariableDeclarationFragment) field.fragments().get(0)).resolveBinding()
+				.getType();
 		if (!isExternalResource(fieldTypeBinding) || fieldTypeBinding.isAnonymous()) {
 			return;
 		}
@@ -151,17 +144,19 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 		importRewriter.removeImport(ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
 	}
 
-	private void addExtendWithAnnotation(ASTRewrite rewrite, AST ast, TextEditGroup group, 
-			ImportRewrite importRewriter, String className, FieldDeclaration field) {
-		TypeDeclaration parentClass = (TypeDeclaration) getParentTypeDeclaration(field);
-		if (parentClass == null) return;
+	private void addExtendWithAnnotation(ASTRewrite rewrite, AST ast, TextEditGroup group, ImportRewrite importRewriter,
+			String className, FieldDeclaration field) {
+		TypeDeclaration parentClass= getParentTypeDeclaration(field);
+		if (parentClass == null) {
+			return;
+		}
 
-		SingleMemberAnnotation newAnnotation = ast.newSingleMemberAnnotation();
-		newAnnotation.setTypeName(ast.newName("ExtendWith")); 
-		final TypeLiteral newTypeLiteral = ast.newTypeLiteral();
+		SingleMemberAnnotation newAnnotation= ast.newSingleMemberAnnotation();
+		newAnnotation.setTypeName(ast.newName("ExtendWith"));
+		final TypeLiteral newTypeLiteral= ast.newTypeLiteral();
 		newTypeLiteral.setType(ast.newSimpleType(ast.newSimpleName(className)));
 		newAnnotation.setValue(newTypeLiteral);
-		ListRewrite modifierListRewrite = rewrite.getListRewrite(parentClass, TypeDeclaration.MODIFIERS2_PROPERTY);
+		ListRewrite modifierListRewrite= rewrite.getListRewrite(parentClass, TypeDeclaration.MODIFIERS2_PROPERTY);
 		modifierListRewrite.insertFirst(newAnnotation, group);
 
 		importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH);
@@ -169,7 +164,7 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 
 	private TypeDeclaration getParentTypeDeclaration(ASTNode node) {
 		while (node != null && !(node instanceof TypeDeclaration)) {
-			node = node.getParent();
+			node= node.getParent();
 		}
 		return (TypeDeclaration) node;
 	}
@@ -181,39 +176,37 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {
-			return 
-"""
-ExtendWith(MyTest.MyExternalResource.class)
-public class MyTest {
+			return """
+					ExtendWith(MyTest.MyExternalResource.class)
+					public class MyTest {
 
-	final class MyExternalResource implements BeforeEachCallback, AfterEachCallback {
-		@Override
-		protected void beforeEach() throws Throwable {
-		}
+						final class MyExternalResource implements BeforeEachCallback, AfterEachCallback {
+							@Override
+							protected void beforeEach() throws Throwable {
+							}
 
-		@Override
-		protected void afterEach() {
+							@Override
+							protected void afterEach() {
+							}
+						}
+					"""; //$NON-NLS-1$
 		}
-	}
-"""; //$NON-NLS-1$
-		}
-		return 
-"""
-public class MyTest {
+		return """
+				public class MyTest {
 
-	final class MyExternalResource extends ExternalResource {
-		@Override
-		protected void before() throws Throwable {
-		}
+					final class MyExternalResource extends ExternalResource {
+						@Override
+						protected void before() throws Throwable {
+						}
 
-		@Override
-		protected void after() {
-		}
-	}
-	
-	@Rule
-	public ExternalResource er= new MyExternalResource();
-"""; //$NON-NLS-1$
+						@Override
+						protected void after() {
+						}
+					}
+
+					@Rule
+					public ExternalResource er= new MyExternalResource();
+				"""; //$NON-NLS-1$
 	}
 
 	@Override

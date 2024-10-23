@@ -14,7 +14,6 @@
 package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.Map.Entry;
-
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
@@ -35,14 +34,14 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 
 /**
  *
- * 
+ *
  */
 public class IgnoreJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataholder = new ReferenceHolder<>();
+		ReferenceHolder<Integer, JunitHolder> dataholder= new ReferenceHolder<>();
 		HelperVisitor.callMarkerAnnotationVisitor(ORG_JUNIT_IGNORE, compilationUnit, dataholder, nodesprocessed,
 				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 		HelperVisitor.callNormalAnnotationVisitor(ORG_JUNIT_IGNORE, compilationUnit, dataholder, nodesprocessed,
@@ -54,12 +53,12 @@ public class IgnoreJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Annotation node,
 			ReferenceHolder<Integer, JunitHolder> dataholder) {
-		JunitHolder mh = new JunitHolder();
-		mh.minv = node;
-		mh.minvname = node.getTypeName().getFullyQualifiedName();
-		if(node instanceof SingleMemberAnnotation mynode) {
-			Expression value = mynode.getValue();
-			mh.value=value.toString();
+		JunitHolder mh= new JunitHolder();
+		mh.minv= node;
+		mh.minvname= node.getTypeName().getFullyQualifiedName();
+		if (node instanceof SingleMemberAnnotation mynode) {
+			Expression value= mynode.getValue();
+			mh.value= value.toString();
 		}
 		dataholder.put(dataholder.size(), mh);
 		operations.add(fixcore.rewrite(dataholder));
@@ -69,18 +68,19 @@ public class IgnoreJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 	@Override
 	public void rewrite(JUnitCleanUpFixCore upp, final ReferenceHolder<Integer, JunitHolder> hit,
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
-		ASTRewrite rewrite = cuRewrite.getASTRewrite();
-		AST ast = cuRewrite.getRoot().getAST();
-		ImportRewrite importRewriter = cuRewrite.getImportRewrite();
+		ASTRewrite rewrite= cuRewrite.getASTRewrite();
+		AST ast= cuRewrite.getRoot().getAST();
+		ImportRewrite importRewriter= cuRewrite.getImportRewrite();
 		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
-			JunitHolder mh = entry.getValue();
-			Annotation minv = mh.getAnnotation();
-			Annotation newAnnotation = null;
-			if(minv instanceof SingleMemberAnnotation mynode) {
-				newAnnotation = ast.newSingleMemberAnnotation();
-				((SingleMemberAnnotation)newAnnotation).setValue(ASTNodes.createMoveTarget(rewrite, mynode.getValue()));
+			JunitHolder mh= entry.getValue();
+			Annotation minv= mh.getAnnotation();
+			Annotation newAnnotation= null;
+			if (minv instanceof SingleMemberAnnotation mynode) {
+				newAnnotation= ast.newSingleMemberAnnotation();
+				((SingleMemberAnnotation) newAnnotation)
+						.setValue(ASTNodes.createMoveTarget(rewrite, mynode.getValue()));
 			} else {
-				newAnnotation = ast.newMarkerAnnotation();
+				newAnnotation= ast.newMarkerAnnotation();
 			}
 			newAnnotation.setTypeName(ast.newSimpleName(DISABLED));
 			importRewriter.addImport(ORG_JUNIT_JUPITER_DISABLED);
@@ -92,23 +92,21 @@ public class IgnoreJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {
-			return 
-"""
-@Disabled("not implemented")
-@Test
-public void test() {
-	fail("Not yet implemented");
-}
-"""; //$NON-NLS-1$
+			return """
+					@Disabled("not implemented")
+					@Test
+					public void test() {
+						fail("Not yet implemented");
+					}
+					"""; //$NON-NLS-1$
 		}
-		return 
-"""
-@Ignore("not implemented")
-@Test
-public void test() {
-	fail("Not yet implemented");
-}
-"""; //$NON-NLS-1$
+		return """
+				@Ignore("not implemented")
+				@Test
+				public void test() {
+					fail("Not yet implemented");
+				}
+				"""; //$NON-NLS-1$
 	}
 
 	@Override

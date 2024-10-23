@@ -44,18 +44,11 @@ import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
 public enum JUnitCleanUpFixCore {
 
-	BEFORE(new BeforeJUnitPlugin()),
-	AFTER(new AfterJUnitPlugin()),
-	TEST(new TestJUnitPlugin()),
-	BEFORECLASS(new BeforeClassJUnitPlugin()),
-	AFTERCLASS(new AfterClassJUnitPlugin()),
-	IGNORE(new IgnoreJUnitPlugin()),
-	RUNWITH(new RunWithJUnitPlugin()),
-	ASSERT(new AssertJUnitPlugin()),
-	RULEEXTERNALRESOURCE(new RuleExternalResourceJUnitPlugin()),
-	RULETESTNAME(new RuleTestnameJUnitPlugin()),
-	RULETEMPORARYFOLDER(new RuleTemporayFolderJUnitPlugin()),
-	EXTERNALRESOURCE(new ExternalResourceJUnitPlugin());
+	BEFORE(new BeforeJUnitPlugin()), AFTER(new AfterJUnitPlugin()), TEST(new TestJUnitPlugin()),
+	BEFORECLASS(new BeforeClassJUnitPlugin()), AFTERCLASS(new AfterClassJUnitPlugin()), IGNORE(new IgnoreJUnitPlugin()),
+	RUNWITH(new RunWithJUnitPlugin()), ASSERT(new AssertJUnitPlugin()),
+	RULEEXTERNALRESOURCE(new RuleExternalResourceJUnitPlugin()), RULETESTNAME(new RuleTestnameJUnitPlugin()),
+	RULETEMPORARYFOLDER(new RuleTemporayFolderJUnitPlugin()), EXTERNALRESOURCE(new ExternalResourceJUnitPlugin());
 
 	AbstractTool<ReferenceHolder<Integer, JunitHolder>> junitfound;
 
@@ -87,12 +80,10 @@ public enum JUnitCleanUpFixCore {
 	public CompilationUnitRewriteOperationWithSourceRange rewrite(final ReferenceHolder<Integer, JunitHolder> hit) {
 		return new CompilationUnitRewriteOperationWithSourceRange() {
 			@Override
-			public void rewriteASTInternal(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel)
-					throws CoreException {
-				TextEditGroup group= createTextEditGroup(
-						Messages.format(MultiFixMessages.JUnitCleanUp_description,
-								new Object[] { JUnitCleanUpFixCore.this.toString() }),
-						cuRewrite);
+			public void rewriteASTInternal(final CompilationUnitRewrite cuRewrite,
+					final LinkedProposalModelCore linkedModel) throws CoreException {
+				TextEditGroup group= createTextEditGroup(Messages.format(MultiFixMessages.JUnitCleanUp_description,
+						new Object[] { JUnitCleanUpFixCore.this.toString() }), cuRewrite);
 				TightSourceRangeComputer rangeComputer;
 				ASTRewrite rewrite= cuRewrite.getASTRewrite();
 				if (rewrite.getExtendedSourceRangeComputer() instanceof TightSourceRangeComputer) {
