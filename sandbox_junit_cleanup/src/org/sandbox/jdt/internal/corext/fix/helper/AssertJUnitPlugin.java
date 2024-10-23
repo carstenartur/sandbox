@@ -44,9 +44,6 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
  */
 public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
-	private static final String ASSERTIONS = "Assertions";
-	private static final String ORG_JUNIT_JUPITER_API_ASSERTIONS = "org.junit.jupiter.api.Assertions";
-	private static final String ORG_JUNIT_ASSERT = "org.junit.Assert";
 	private static final Set<String> twoparam = Set.of("assertEquals", "assertNotEquals","assertArrayEquals","assertTrue","assertFalse","assertNull","assertNotNull","fail");
 	private static final Set<String> oneparam = Set.of("assertTrue","assertFalse","assertNull","assertNotNull");
 	private static final Set<String> noparam = Set.of("fail");

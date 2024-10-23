@@ -48,10 +48,6 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
  */
 public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
-	private static final String ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH = "org.junit.jupiter.api.extension.ExtendWith";
-	private static final String ORG_JUNIT_RULES_EXTERNAL_RESOURCE = "org.junit.rules.ExternalResource";
-	private static final String ORG_JUNIT_RULE = "org.junit.Rule";
-
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
@@ -133,17 +129,6 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 		return null;
 	}
 
-	private String extractQualifiedTypeName(QualifiedType qualifiedType) {
-		StringBuilder fullClassName = new StringBuilder(qualifiedType.getName().getFullyQualifiedName());
-		for (Type qualifier = qualifiedType.getQualifier();
-				qualifier instanceof QualifiedType;
-				qualifier = ((QualifiedType) qualifier).getQualifier()) {
-			fullClassName.insert(0, ".");
-			fullClassName.insert(0, ((QualifiedType) qualifier).getName().getFullyQualifiedName());
-		}
-		return fullClassName.toString();
-	}
-
 	public void process(Annotation node, IJavaProject jproject, ASTRewrite rewrite, AST ast, TextEditGroup group,
 			ImportRewrite importRewriter, CompilationUnit cu, String className) {
 		if (!ORG_JUNIT_RULE.equals(node.resolveTypeBinding().getQualifiedName())) {
@@ -191,16 +176,6 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 
 	private boolean isDirect(ITypeBinding fieldTypeBinding) {
 		return ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(fieldTypeBinding.getQualifiedName());
-	}
-
-	private boolean isExternalResource(ITypeBinding typeBinding) {
-		while (typeBinding != null) {
-			if (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(typeBinding.getQualifiedName())) {
-				return true;
-			}
-			typeBinding = typeBinding.getSuperclass();
-		}
-		return false;
 	}
 
 	@Override

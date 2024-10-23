@@ -39,10 +39,6 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
  */
 public class IgnoreJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
-	private static final String ORG_JUNIT_IGNORE = "org.junit.Ignore";
-	private static final String ORG_JUNIT_JUPITER_DISABLED = "org.junit.jupiter.api.Disabled";
-	private static final String DISABLED = "Disabled";
-
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
