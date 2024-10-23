@@ -13,7 +13,6 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import java.util.Map.Entry;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
@@ -67,89 +66,83 @@ public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<In
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
 		ASTRewrite rewriter = cuRewrite.getASTRewrite();
 		AST ast = cuRewrite.getRoot().getAST();
-		ImportRewrite importrewriter = cuRewrite.getImportRewrite();
-		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
-			JunitHolder mh = entry.getValue();
-			TypeDeclaration node = mh.getTypeDeclaration();
-			if(modifyExternalResourceClass(node,rewriter,ast,group,importrewriter)) {
-			importrewriter.removeImport(ORG_JUNIT_RULE);
+		ImportRewrite importRewriter = cuRewrite.getImportRewrite();
+
+		hit.values().forEach(holder -> {
+			TypeDeclaration node = holder.getTypeDeclaration();
+			if (modifyExternalResourceClass(node, rewriter, ast, group, importRewriter)) {
+				importRewriter.removeImport(ORG_JUNIT_RULE);
 			}
-		}
+		});
 	}
 
-	private boolean modifyExternalResourceClass(TypeDeclaration node, ASTRewrite rewriter,AST ast, TextEditGroup group, ImportRewrite importrewriter) {
+	private boolean modifyExternalResourceClass(TypeDeclaration node, ASTRewrite rewriter, AST ast,
+			TextEditGroup group, ImportRewrite importRewriter) {
 		ITypeBinding binding = node.resolveBinding();
-		if(binding.isAnonymous()) {
+
+		if (binding.isAnonymous() || !isExternalResource(binding) || !hasDefaultConstructorOrNoConstructor(node)) {
 			return false;
 		}
-		if (isExternalResource(binding)&& hasDefaultConstructorOrNoConstructor(node)) {
-			if(isDirect(binding)) {
-				rewriter.remove(node.getSuperclassType(), group);
-				importrewriter.removeImport(ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
-				ListRewrite listRewrite = rewriter.getListRewrite(node, TypeDeclaration.SUPER_INTERFACE_TYPES_PROPERTY);
-				listRewrite.insertLast(ast.newSimpleType(ast.newName("BeforeEachCallback")), group);
-				listRewrite.insertLast(ast.newSimpleType(ast.newName("AfterEachCallback")), group);
-				importrewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
-				importrewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
-			}
-			for (MethodDeclaration method : node.getMethods()) {
-				if (method.getName().getIdentifier().equals("before")) {
-					rewriter.replace(method.getName(), ast.newSimpleName("beforeEach"), group);
-					extracted(rewriter, ast, method, group,importrewriter);
-				}
-				if (method.getName().getIdentifier().equals("after")) {
-					rewriter.replace(method.getName(), ast.newSimpleName("afterEach"), group);
-					extracted(rewriter, ast, method, group,importrewriter);
-				}
+
+		if (isDirectlyExtendingExternalResource(binding)) {
+			refactorToImplementCallbacks(node, rewriter, ast, group, importRewriter);
+		}
+
+		for (MethodDeclaration method : node.getMethods()) {
+			if (isLifecycleMethod(method, "before")) {
+				refactorMethod(rewriter, ast, method, "beforeEach", group, importRewriter);
+			} else if (isLifecycleMethod(method, "after")) {
+				refactorMethod(rewriter, ast, method, "afterEach", group, importRewriter);
 			}
 		}
 		return true;
 	}
 
-	private boolean isDirect(ITypeBinding fieldTypeBinding) {
-		ITypeBinding binding =fieldTypeBinding;
-		ITypeBinding superClass = binding.getSuperclass();
+	private void refactorToImplementCallbacks(TypeDeclaration node, ASTRewrite rewriter, AST ast,
+			TextEditGroup group, ImportRewrite importRewriter) {
+		rewriter.remove(node.getSuperclassType(), group);
+		importRewriter.removeImport(ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
 
-		boolean isDirectlyExtendingExternalResource = false;
-		boolean isIndirectlyExtendingExternalResource = false;
+		ListRewrite listRewrite = rewriter.getListRewrite(node, TypeDeclaration.SUPER_INTERFACE_TYPES_PROPERTY);
+		addInterfaceCallback(listRewrite, ast, "BeforeEachCallback", group);
+		addInterfaceCallback(listRewrite, ast, "AfterEachCallback", group);
 
-		// Prüfen, ob die Klasse direkt oder indirekt von ExternalResource erbt
-		while (superClass != null) {
-			if (superClass.getQualifiedName().equals("org.junit.rules.ExternalResource")) {
-				if (binding.getSuperclass().getQualifiedName().equals("org.junit.rules.ExternalResource")) {
-					isDirectlyExtendingExternalResource = true;
-				} else {
-					isIndirectlyExtendingExternalResource = true;
-				}
-				break;
-			}
-			superClass = superClass.getSuperclass();
-		}
-		return isDirectlyExtendingExternalResource;
+		importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
+		importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
 	}
-	
-	private void extracted(ASTRewrite rewriter, AST ast, MethodDeclaration method, TextEditGroup group, ImportRewrite importrewriter) {
-		ListRewrite listRewrite;
-		boolean hasExtensionContext = false;
-		for (Object param : method.parameters()) {
-			if (param instanceof SingleVariableDeclaration) {
-				SingleVariableDeclaration variable = (SingleVariableDeclaration) param;
-				if (variable.getType().toString().equals("ExtensionContext")) {
-					hasExtensionContext = true;
-					break;
-				}
-			}
-		}
+
+	private void addInterfaceCallback(ListRewrite listRewrite, AST ast, String callbackName, TextEditGroup group) {
+		listRewrite.insertLast(ast.newSimpleType(ast.newName(callbackName)), group);
+	}
+
+	private boolean isLifecycleMethod(MethodDeclaration method, String methodName) {
+		return method.getName().getIdentifier().equals(methodName);
+	}
+
+	private void refactorMethod(ASTRewrite rewriter, AST ast, MethodDeclaration method, String newMethodName,
+			TextEditGroup group, ImportRewrite importRewriter) {
+		rewriter.replace(method.getName(), ast.newSimpleName(newMethodName), group);
+		ensureExtensionContextParameter(rewriter, ast, method, group, importRewriter);
+	}
+
+	private void ensureExtensionContextParameter(ASTRewrite rewriter, AST ast, MethodDeclaration method,
+			TextEditGroup group, ImportRewrite importRewriter) {
+		boolean hasExtensionContext = method.parameters().stream()
+				.anyMatch(param -> param instanceof SingleVariableDeclaration &&
+						((SingleVariableDeclaration) param).getType().toString().equals("ExtensionContext"));
 
 		if (!hasExtensionContext) {
 			SingleVariableDeclaration newParam = ast.newSingleVariableDeclaration();
 			newParam.setType(ast.newSimpleType(ast.newName("ExtensionContext")));
 			newParam.setName(ast.newSimpleName("context"));
 
-			listRewrite = rewriter.getListRewrite(method, MethodDeclaration.PARAMETERS_PROPERTY);
-			listRewrite.insertLast(newParam, group);
-			importrewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT);
+			rewriter.getListRewrite(method, MethodDeclaration.PARAMETERS_PROPERTY).insertLast(newParam, group);
+			importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT);
 		}
+	}
+
+	private boolean isDirectlyExtendingExternalResource(ITypeBinding binding) {
+		return ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(binding.getSuperclass().getQualifiedName());
 	}
 
 	private boolean hasDefaultConstructorOrNoConstructor(TypeDeclaration classNode) {
@@ -170,7 +163,7 @@ public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<In
 
 	private boolean isExternalResource(ITypeBinding typeBinding) {
 		while (typeBinding != null) {
-			if (typeBinding.getQualifiedName().equals(ORG_JUNIT_RULES_EXTERNAL_RESOURCE)) {
+			if (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(typeBinding.getQualifiedName())) {
 				return true;
 			}
 			typeBinding = typeBinding.getSuperclass();
