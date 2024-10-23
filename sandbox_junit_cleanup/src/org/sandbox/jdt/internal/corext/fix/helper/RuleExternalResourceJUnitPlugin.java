@@ -19,16 +19,10 @@ import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Annotation;
-import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
-import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ITypeBinding;
-import org.eclipse.jdt.core.dom.QualifiedType;
-import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
-import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.TypeLiteral;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
@@ -74,19 +68,6 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 		return false;
 	}
 
-	public boolean isAnonymousClass(VariableDeclarationFragment fragmentObj) {
-		VariableDeclarationFragment fragment= fragmentObj;
-		Expression initializer= fragment.getInitializer();
-		if (initializer instanceof ClassInstanceCreation) {
-			ClassInstanceCreation classInstanceCreation= (ClassInstanceCreation) initializer;
-			AnonymousClassDeclaration anonymousClassDeclaration= classInstanceCreation.getAnonymousClassDeclaration();
-			if (anonymousClassDeclaration != null) {
-				return true;
-			}
-		}
-		return false;
-	}
-
 	@Override
 	public void rewrite(JUnitCleanUpFixCore upp, ReferenceHolder<Integer, JunitHolder> hit,
 			CompilationUnitRewrite cuRewrite, TextEditGroup group) {
@@ -102,24 +83,6 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 							cuRewrite.getRoot().getJavaElement().getJavaProject(), rewrite, ast, group, importRewriter,
 							cuRewrite.getRoot(), extractClassNameFromField(field)));
 		});
-	}
-
-	public String extractClassNameFromField(FieldDeclaration field) {
-		for (Object fragmentObj : field.fragments()) {
-			VariableDeclarationFragment fragment= (VariableDeclarationFragment) fragmentObj;
-			Expression initializer= fragment.getInitializer();
-			if (initializer instanceof ClassInstanceCreation) {
-				ClassInstanceCreation creation= (ClassInstanceCreation) initializer;
-				Type createdType= creation.getType();
-				if (createdType instanceof QualifiedType) {
-					QualifiedType qualifiedType= (QualifiedType) createdType;
-					return extractQualifiedTypeName(qualifiedType);
-				} else if (createdType instanceof SimpleType) {
-					return ((SimpleType) createdType).getName().getFullyQualifiedName();
-				}
-			}
-		}
-		return null;
 	}
 
 	public void process(Annotation node, IJavaProject jproject, ASTRewrite rewrite, AST ast, TextEditGroup group,
@@ -160,13 +123,6 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 		modifierListRewrite.insertFirst(newAnnotation, group);
 
 		importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH);
-	}
-
-	private TypeDeclaration getParentTypeDeclaration(ASTNode node) {
-		while (node != null && !(node instanceof TypeDeclaration)) {
-			node= node.getParent();
-		}
-		return (TypeDeclaration) node;
 	}
 
 	private boolean isDirect(ITypeBinding fieldTypeBinding) {

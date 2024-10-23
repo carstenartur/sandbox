@@ -18,13 +18,19 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.QualifiedType;
+import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.internal.corext.dom.AbortSearchException;
 import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
@@ -145,6 +151,48 @@ public abstract class AbstractTool<T> {
 			fullClassName.insert(0, ((QualifiedType) qualifier).getName().getFullyQualifiedName());
 		}
 		return fullClassName.toString();
+	}
+
+	public boolean isAnonymousClass(VariableDeclarationFragment fragmentObj) {
+		VariableDeclarationFragment fragment= fragmentObj;
+		Expression initializer= fragment.getInitializer();
+		if (initializer instanceof ClassInstanceCreation) {
+			ClassInstanceCreation classInstanceCreation= (ClassInstanceCreation) initializer;
+			AnonymousClassDeclaration anonymousClassDeclaration= classInstanceCreation.getAnonymousClassDeclaration();
+			if (anonymousClassDeclaration != null) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public String extractClassNameFromField(FieldDeclaration field) {
+		for (Object fragmentObj : field.fragments()) {
+			VariableDeclarationFragment fragment= (VariableDeclarationFragment) fragmentObj;
+			Expression initializer= fragment.getInitializer();
+			if (initializer instanceof ClassInstanceCreation) {
+				ClassInstanceCreation creation= (ClassInstanceCreation) initializer;
+				Type createdType= creation.getType();
+				if (createdType instanceof QualifiedType) {
+					QualifiedType qualifiedType= (QualifiedType) createdType;
+					return extractQualifiedTypeName(qualifiedType);
+				} else if (createdType instanceof SimpleType) {
+					return ((SimpleType) createdType).getName().getFullyQualifiedName();
+				}
+			}
+		}
+		return null;
+	}
+
+	protected TypeDeclaration getParentTypeDeclaration(ASTNode node) {
+		while (node != null && !(node instanceof TypeDeclaration)) {
+			node= node.getParent();
+		}
+		return (TypeDeclaration) node;
+	}
+
+	protected boolean isDirectlyExtendingExternalResource(ITypeBinding binding) {
+		return ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(binding.getSuperclass().getQualifiedName());
 	}
 
 	public static Collection<String> getUsedVariableNames(ASTNode node) {
