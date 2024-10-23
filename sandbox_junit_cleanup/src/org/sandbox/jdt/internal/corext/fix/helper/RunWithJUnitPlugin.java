@@ -36,36 +36,36 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 
 /**
  *
- * 
+ *
  */
 public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataholder = new ReferenceHolder<>();
+		ReferenceHolder<Integer, JunitHolder> dataholder= new ReferenceHolder<>();
 		HelperVisitor.callSingleMemberAnnotationVisitor(ORG_JUNIT_RUNWITH, compilationUnit, dataholder, nodesprocessed,
 				(visited, aholder) -> processFoundNodeRunWith(fixcore, operations, visited, aholder));
-		HelperVisitor.callSingleMemberAnnotationVisitor(ORG_JUNIT_SUITE_SUITECLASSES, compilationUnit, dataholder, nodesprocessed,
-				(visited, aholder) -> processFoundNodeSuite(fixcore, operations, visited, aholder));
+		HelperVisitor.callSingleMemberAnnotationVisitor(ORG_JUNIT_SUITE_SUITECLASSES, compilationUnit, dataholder,
+				nodesprocessed, (visited, aholder) -> processFoundNodeSuite(fixcore, operations, visited, aholder));
 	}
 
 	private boolean processFoundNodeRunWith(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Annotation node,
 			ReferenceHolder<Integer, JunitHolder> dataholder) {
-		JunitHolder mh = new JunitHolder();
-		mh.minv = node;
-		mh.minvname = node.getTypeName().getFullyQualifiedName();
-		if(node instanceof SingleMemberAnnotation mynode) {
-			Expression value = mynode.getValue();
-			if(value instanceof TypeLiteral myvalue) {
-				ITypeBinding classBinding = myvalue.resolveTypeBinding();
+		JunitHolder mh= new JunitHolder();
+		mh.minv= node;
+		mh.minvname= node.getTypeName().getFullyQualifiedName();
+		if (node instanceof SingleMemberAnnotation mynode) {
+			Expression value= mynode.getValue();
+			if (value instanceof TypeLiteral myvalue) {
+				ITypeBinding classBinding= myvalue.resolveTypeBinding();
 				if (classBinding != null && classBinding.isParameterizedType()) {
-					ITypeBinding[] typeArguments = classBinding.getTypeArguments();
+					ITypeBinding[] typeArguments= classBinding.getTypeArguments();
 					if (typeArguments.length > 0) {
-						ITypeBinding actualTypeBinding = typeArguments[0];
+						ITypeBinding actualTypeBinding= typeArguments[0];
 						if (ORG_JUNIT_SUITE.equals(actualTypeBinding.getQualifiedName())) {
-							mh.value=ORG_JUNIT_RUNWITH;
+							mh.value= ORG_JUNIT_RUNWITH;
 							dataholder.put(dataholder.size(), mh);
 							operations.add(fixcore.rewrite(dataholder));
 						}
@@ -80,10 +80,10 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 	private boolean processFoundNodeSuite(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Annotation node,
 			ReferenceHolder<Integer, JunitHolder> dataholder) {
-		JunitHolder mh = new JunitHolder();
-		mh.minv = node;
-		mh.minvname = node.getTypeName().getFullyQualifiedName();
-		mh.value=ORG_JUNIT_SUITE_SUITECLASSES;
+		JunitHolder mh= new JunitHolder();
+		mh.minv= node;
+		mh.minvname= node.getTypeName().getFullyQualifiedName();
+		mh.value= ORG_JUNIT_SUITE_SUITECLASSES;
 		dataholder.put(dataholder.size(), mh);
 		operations.add(fixcore.rewrite(dataholder));
 		return false;
@@ -92,21 +92,22 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 	@Override
 	public void rewrite(JUnitCleanUpFixCore upp, final ReferenceHolder<Integer, JunitHolder> hit,
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
-		ASTRewrite rewrite = cuRewrite.getASTRewrite();
-		AST ast = cuRewrite.getRoot().getAST();
-		ImportRewrite importrewriter = cuRewrite.getImportRewrite();
+		ASTRewrite rewrite= cuRewrite.getASTRewrite();
+		AST ast= cuRewrite.getRoot().getAST();
+		ImportRewrite importrewriter= cuRewrite.getImportRewrite();
 		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
-			JunitHolder mh = entry.getValue();
-			Annotation minv = mh.getAnnotation();
-			Annotation newAnnotation = null;
-			SingleMemberAnnotation mynode=(SingleMemberAnnotation) minv;
-			if(ORG_JUNIT_SUITE_SUITECLASSES.equals(mh.value)) {
-				newAnnotation = ast.newSingleMemberAnnotation();
-				((SingleMemberAnnotation)newAnnotation).setValue(ASTNodes.createMoveTarget(rewrite, mynode.getValue()));
+			JunitHolder mh= entry.getValue();
+			Annotation minv= mh.getAnnotation();
+			Annotation newAnnotation= null;
+			SingleMemberAnnotation mynode= (SingleMemberAnnotation) minv;
+			if (ORG_JUNIT_SUITE_SUITECLASSES.equals(mh.value)) {
+				newAnnotation= ast.newSingleMemberAnnotation();
+				((SingleMemberAnnotation) newAnnotation)
+						.setValue(ASTNodes.createMoveTarget(rewrite, mynode.getValue()));
 				newAnnotation.setTypeName(ast.newSimpleName(SELECT_CLASSES));
 				importrewriter.addImport(ORG_JUNIT_PLATFORM_SUITE_API_SELECT_CLASSES);
 			} else {
-				newAnnotation = ast.newMarkerAnnotation();
+				newAnnotation= ast.newMarkerAnnotation();
 				newAnnotation.setTypeName(ast.newSimpleName(SUITE));
 				importrewriter.addImport(ORG_JUNIT_JUPITER_SUITE);
 			}
@@ -119,21 +120,19 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {
-			return 
-"""
-@Suite
-@SelectClasses({
-	MyTest2.class
-})
-"""; //$NON-NLS-1$
+			return """
+					@Suite
+					@SelectClasses({
+						MyTest2.class
+					})
+					"""; //$NON-NLS-1$
 		}
-		return 
-"""
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-	MyTest.class
-})
-"""; //$NON-NLS-1$
+		return """
+				@RunWith(Suite.class)
+				@Suite.SuiteClasses({
+					MyTest.class
+				})
+				"""; //$NON-NLS-1$
 	}
 
 	@Override

@@ -40,25 +40,28 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 
 /**
  *
- * 
+ *
  */
 public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
-	private static final Set<String> twoparam = Set.of("assertEquals", "assertNotEquals","assertArrayEquals","assertTrue","assertFalse","assertNull","assertNotNull","fail");
-	private static final Set<String> oneparam = Set.of("assertTrue","assertFalse","assertNull","assertNotNull");
-	private static final Set<String> noparam = Set.of("fail");
-	private static final Set<String> allassertionmethods= Stream.of(twoparam,oneparam,noparam).flatMap(Set::stream).collect(Collectors.toSet());
+	private static final Set<String> twoparam= Set.of("assertEquals", "assertNotEquals", "assertArrayEquals",
+			"assertTrue", "assertFalse", "assertNull", "assertNotNull", "fail");
+	private static final Set<String> oneparam= Set.of("assertTrue", "assertFalse", "assertNull", "assertNotNull");
+	private static final Set<String> noparam= Set.of("fail");
+	private static final Set<String> allassertionmethods= Stream.of(twoparam, oneparam, noparam).flatMap(Set::stream)
+			.collect(Collectors.toSet());
 
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataholder = new ReferenceHolder<>();
-		allassertionmethods.forEach(assertionmethod->{
-			HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSERT, assertionmethod, compilationUnit, dataholder, nodesprocessed,
-					(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+		ReferenceHolder<Integer, JunitHolder> dataholder= new ReferenceHolder<>();
+		allassertionmethods.forEach(assertionmethod -> {
+			HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSERT, assertionmethod, compilationUnit, dataholder,
+					nodesprocessed, (visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 		});
-		allassertionmethods.forEach(assertionmethod->{
-			HelperVisitor.callImportDeclarationVisitor(ORG_JUNIT_ASSERT+"."+assertionmethod, compilationUnit, dataholder, nodesprocessed,
+		allassertionmethods.forEach(assertionmethod -> {
+			HelperVisitor.callImportDeclarationVisitor(ORG_JUNIT_ASSERT + "." + assertionmethod, compilationUnit,
+					dataholder, nodesprocessed,
 					(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 		});
 		HelperVisitor.callImportDeclarationVisitor(ORG_JUNIT_ASSERT, compilationUnit, dataholder, nodesprocessed,
@@ -68,8 +71,8 @@ public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, ASTNode node,
 			ReferenceHolder<Integer, JunitHolder> dataholder) {
-		JunitHolder mh = new JunitHolder();
-		mh.minv = node;
+		JunitHolder mh= new JunitHolder();
+		mh.minv= node;
 		dataholder.put(dataholder.size(), mh);
 		operations.add(fixcore.rewrite(dataholder));
 		return false;
@@ -78,17 +81,17 @@ public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 	@Override
 	public void rewrite(JUnitCleanUpFixCore upp, final ReferenceHolder<Integer, JunitHolder> hit,
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
-		ASTRewrite rewrite = cuRewrite.getASTRewrite();
-		AST ast = cuRewrite.getRoot().getAST();
-		ImportRewrite importRewriter = cuRewrite.getImportRewrite();
+		ASTRewrite rewrite= cuRewrite.getASTRewrite();
+		AST ast= cuRewrite.getRoot().getAST();
+		ImportRewrite importRewriter= cuRewrite.getImportRewrite();
 		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
-			JunitHolder mh = entry.getValue();
-			if(mh.minv instanceof MethodInvocation) {
-				MethodInvocation minv = mh.getMethodInvocation();
+			JunitHolder mh= entry.getValue();
+			if (mh.minv instanceof MethodInvocation) {
+				MethodInvocation minv= mh.getMethodInvocation();
 				reorderParameters(minv, rewrite, group);
-				SimpleName newQualifier = ast.newSimpleName(ASSERTIONS);
-				Expression expression = minv.getExpression();
-				if(expression!=null) {
+				SimpleName newQualifier= ast.newSimpleName(ASSERTIONS);
+				Expression expression= minv.getExpression();
+				if (expression != null) {
 					ASTNodes.replaceButKeepComment(rewrite, expression, newQualifier, group);
 				}
 			} else {
@@ -98,80 +101,78 @@ public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 	}
 
 	public void changeImportDeclaration(ImportDeclaration node, ImportRewrite importRewriter, TextEditGroup group) {
-		String importName = node.getName().getFullyQualifiedName();
+		String importName= node.getName().getFullyQualifiedName();
 		if (node.isStatic() && importName.equals(ORG_JUNIT_ASSERT)) {
-			importRewriter.removeStaticImport(ORG_JUNIT_ASSERT+".*");
+			importRewriter.removeStaticImport(ORG_JUNIT_ASSERT + ".*");
 			importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, "*", false);
 			return;
-		} 
+		}
 		if (importName.equals(ORG_JUNIT_ASSERT)) {
 			importRewriter.removeImport(ORG_JUNIT_ASSERT);
 			importRewriter.addImport(ORG_JUNIT_JUPITER_API_ASSERTIONS);
 			return;
-		} 
-		if (node.isStatic() && importName.startsWith(ORG_JUNIT_ASSERT+".")) {
-			String methodName = importName.substring((ORG_JUNIT_ASSERT+".").length());
-			importRewriter.removeStaticImport(ORG_JUNIT_ASSERT+"." + methodName);
+		}
+		if (node.isStatic() && importName.startsWith(ORG_JUNIT_ASSERT + ".")) {
+			String methodName= importName.substring((ORG_JUNIT_ASSERT + ".").length());
+			importRewriter.removeStaticImport(ORG_JUNIT_ASSERT + "." + methodName);
 			importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, methodName, false);
 		}
 	}
 
 	private boolean isStringType(Expression expression) {
-		ITypeBinding typeBinding = expression.resolveTypeBinding();
+		ITypeBinding typeBinding= expression.resolveTypeBinding();
 		return typeBinding != null && String.class.getCanonicalName().equals(typeBinding.getQualifiedName());
 	}
 
 	public void reorderParameters(MethodInvocation node, ASTRewrite rewriter, TextEditGroup group) {
-		String methodName = node.getName().getIdentifier();
-		List<Expression> arguments = node.arguments();
-		switch(arguments.size()) {
+		String methodName= node.getName().getIdentifier();
+		List<Expression> arguments= node.arguments();
+		switch (arguments.size()) {
 		case 2:
 			if (oneparam.contains(methodName)) {
-				reorderParameters(rewriter,node,group, 1, 0);
+				reorderParameters(rewriter, node, group, 1, 0);
 			}
 			break;
 		case 3:
 			if (twoparam.contains(methodName)) {
-				reorderParameters(rewriter,node,group, 1, 2, 0); // expected, actual, message
+				reorderParameters(rewriter, node, group, 1, 2, 0); // expected, actual, message
 			}
 			break;
 		case 4:
-			reorderParameters(rewriter,node,group, 1, 2, 3, 0); // expected, actual, delta, message
+			reorderParameters(rewriter, node, group, 1, 2, 3, 0); // expected, actual, delta, message
 			break;
 		default:
 			break;
 		}
 	}
 
-	private void reorderParameters(ASTRewrite rewriter,MethodInvocation node,TextEditGroup group, int... order) {
-		ListRewrite listRewrite = rewriter.getListRewrite(node, MethodInvocation.ARGUMENTS_PROPERTY);
-		List<Expression> arguments = node.arguments();
-		Expression[] newArguments = new Expression[arguments.size()];
-		for (int i = 0; i < order.length; i++) {
-			newArguments[i] = (Expression) ASTNode.copySubtree(node.getAST(), arguments.get(order[i]));
+	private void reorderParameters(ASTRewrite rewriter, MethodInvocation node, TextEditGroup group, int... order) {
+		ListRewrite listRewrite= rewriter.getListRewrite(node, MethodInvocation.ARGUMENTS_PROPERTY);
+		List<Expression> arguments= node.arguments();
+		Expression[] newArguments= new Expression[arguments.size()];
+		for (int i= 0; i < order.length; i++) {
+			newArguments[i]= (Expression) ASTNode.copySubtree(node.getAST(), arguments.get(order[i]));
 		}
-		if(!isStringType(arguments.get(0))) {
+		if (!isStringType(arguments.get(0))) {
 			return;
 		}
-		for (int i = 0; i < arguments.size(); i++) {
-			listRewrite.replace((ASTNode) arguments.get(i), newArguments[i], group);
+		for (int i= 0; i < arguments.size(); i++) {
+			listRewrite.replace(arguments.get(i), newArguments[i], group);
 		}
 	}
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {
-			return
-"""
-Assertions.assertNotEquals(5,result, "failuremessage");  // expected = 5, actual = result
-Assertions.assertTrue(false,"failuremessage");
-"""; //$NON-NLS-1$
+			return """
+					Assertions.assertNotEquals(5,result, "failuremessage");  // expected = 5, actual = result
+					Assertions.assertTrue(false,"failuremessage");
+					"""; //$NON-NLS-1$
 		}
-		return
-"""
-Assert.assertNotEquals("failuremessage",5, result);  // expected = 5, actual = result
-Assert.assertTrue("failuremessage",false);
-"""; //$NON-NLS-1$
+		return """
+				Assert.assertNotEquals("failuremessage",5, result);  // expected = 5, actual = result
+				Assert.assertTrue("failuremessage",false);
+				"""; //$NON-NLS-1$
 	}
 
 	@Override

@@ -18,22 +18,22 @@ public class JunitHolder {
 	public int count;
 
 	public Annotation getAnnotation() {
-		return (Annotation)minv;
+		return (Annotation) minv;
 	}
 
 	public MethodInvocation getMethodInvocation() {
-		return (MethodInvocation)minv;
+		return (MethodInvocation) minv;
 	}
 
 	public ImportDeclaration getImportDeclaration() {
-		return (ImportDeclaration)minv;
+		return (ImportDeclaration) minv;
 	}
 
 	public FieldDeclaration getFieldDeclaration() {
-		return (FieldDeclaration)minv;
+		return (FieldDeclaration) minv;
 	}
-	
+
 	public TypeDeclaration getTypeDeclaration() {
-		return (TypeDeclaration)minv;
+		return (TypeDeclaration) minv;
 	}
 }

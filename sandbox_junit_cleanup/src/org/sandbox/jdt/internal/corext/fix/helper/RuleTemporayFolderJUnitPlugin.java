@@ -37,23 +37,24 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 
 /**
  *
- * 
+ *
  */
 public class RuleTemporayFolderJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataholder = new ReferenceHolder<>();
-		HelperVisitor.callFieldDeclarationVisitor(ORG_JUNIT_RULE, ORG_JUNIT_RULES_TEMPORARY_FOLDER, compilationUnit, dataholder, nodesprocessed,
+		ReferenceHolder<Integer, JunitHolder> dataholder= new ReferenceHolder<>();
+		HelperVisitor.callFieldDeclarationVisitor(ORG_JUNIT_RULE, ORG_JUNIT_RULES_TEMPORARY_FOLDER, compilationUnit,
+				dataholder, nodesprocessed,
 				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, FieldDeclaration node,
 			ReferenceHolder<Integer, JunitHolder> dataholder) {
-		JunitHolder mh = new JunitHolder();
-		mh.minv = node;
+		JunitHolder mh= new JunitHolder();
+		mh.minv= node;
 		dataholder.put(dataholder.size(), mh);
 		operations.add(fixcore.rewrite(dataholder));
 		return false;
@@ -62,47 +63,47 @@ public class RuleTemporayFolderJUnitPlugin extends AbstractTool<ReferenceHolder<
 	@Override
 	public void rewrite(JUnitCleanUpFixCore upp, final ReferenceHolder<Integer, JunitHolder> hit,
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
-		ASTRewrite rewriter = cuRewrite.getASTRewrite();
-		AST ast = cuRewrite.getRoot().getAST();
-		ImportRewrite importRemover = cuRewrite.getImportRewrite();
+		ASTRewrite rewriter= cuRewrite.getASTRewrite();
+		AST ast= cuRewrite.getRoot().getAST();
+		ImportRewrite importRemover= cuRewrite.getImportRewrite();
 		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
-			JunitHolder mh = entry.getValue();
-			FieldDeclaration field = mh.getFieldDeclaration();
+			JunitHolder mh= entry.getValue();
+			FieldDeclaration field= mh.getFieldDeclaration();
 			rewriter.remove(field, group);
-			TypeDeclaration parentClass = (TypeDeclaration) field.getParent();
+			TypeDeclaration parentClass= (TypeDeclaration) field.getParent();
 
 			addImport(ORG_JUNIT_JUPITER_API_IO_TEMP_DIR, cuRewrite, ast);
 			importRemover.removeImport(ORG_JUNIT_RULE);
 			importRemover.removeImport(ORG_JUNIT_RULES_TEMPORARY_FOLDER);
 
-			VariableDeclarationFragment originalFragment = (VariableDeclarationFragment) field.fragments().get(0);
-			String originalName = originalFragment.getName().getIdentifier();
+			VariableDeclarationFragment originalFragment= (VariableDeclarationFragment) field.fragments().get(0);
+			String originalName= originalFragment.getName().getIdentifier();
 
-			VariableDeclarationFragment tempDirFragment = ast.newVariableDeclarationFragment();
-			tempDirFragment.setName(ast.newSimpleName(originalName)); 
+			VariableDeclarationFragment tempDirFragment= ast.newVariableDeclarationFragment();
+			tempDirFragment.setName(ast.newSimpleName(originalName));
 
-			FieldDeclaration tempDirField = ast.newFieldDeclaration(tempDirFragment);
+			FieldDeclaration tempDirField= ast.newFieldDeclaration(tempDirFragment);
 			tempDirField.setType(ast.newSimpleType(ast.newName("Path")));
 
-			MarkerAnnotation tempDirAnnotation = ast.newMarkerAnnotation();
+			MarkerAnnotation tempDirAnnotation= ast.newMarkerAnnotation();
 			tempDirAnnotation.setTypeName(ast.newName("TempDir"));
-			rewriter.getListRewrite(tempDirField, FieldDeclaration.MODIFIERS2_PROPERTY)
-			.insertFirst(tempDirAnnotation, group);
+			rewriter.getListRewrite(tempDirField, FieldDeclaration.MODIFIERS2_PROPERTY).insertFirst(tempDirAnnotation,
+					group);
 
-			rewriter.getListRewrite(parentClass, TypeDeclaration.BODY_DECLARATIONS_PROPERTY)
-			.insertFirst(tempDirField, group);
+			rewriter.getListRewrite(parentClass, TypeDeclaration.BODY_DECLARATIONS_PROPERTY).insertFirst(tempDirField,
+					group);
 
 			for (MethodDeclaration method : parentClass.getMethods()) {
 				method.accept(new ASTVisitor() {
 					@Override
 					public boolean visit(MethodInvocation node) {
 						if (node.getName().getIdentifier().equals("newFile")) {
-							MethodInvocation resolveInvocation = ast.newMethodInvocation();
+							MethodInvocation resolveInvocation= ast.newMethodInvocation();
 							resolveInvocation.setExpression(ast.newSimpleName("tempFolder"));
 							resolveInvocation.setName(ast.newSimpleName("resolve"));
 							resolveInvocation.arguments().addAll(ASTNode.copySubtrees(ast, node.arguments()));
 
-							MethodInvocation toFileInvocation = ast.newMethodInvocation();
+							MethodInvocation toFileInvocation= ast.newMethodInvocation();
 							toFileInvocation.setExpression(resolveInvocation);
 							toFileInvocation.setName(ast.newSimpleName("toFile"));
 
@@ -118,27 +119,25 @@ public class RuleTemporayFolderJUnitPlugin extends AbstractTool<ReferenceHolder<
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {
-			return 
-"""
-	@TempDir
-	Path tempFolder;
+			return """
+						@TempDir
+						Path tempFolder;
 
-	@Test
-	public void test3() throws IOException{
-		File newFile = tempFolder.resolve("myfile.txt").toFile();
-	}
-"""; //$NON-NLS-1$
+						@Test
+						public void test3() throws IOException{
+							File newFile = tempFolder.resolve("myfile.txt").toFile();
+						}
+					"""; //$NON-NLS-1$
 		}
-		return 
-"""
-	@Rule
-	public TemporaryFolder tempFolder = new TemporaryFolder();
+		return """
+					@Rule
+					public TemporaryFolder tempFolder = new TemporaryFolder();
 
-	@Test
-	public void test3() throws IOException{
-		File newFile = tempFolder.newFile("myfile.txt");
-	}			;
-"""; //$NON-NLS-1$
+					@Test
+					public void test3() throws IOException{
+						File newFile = tempFolder.newFile("myfile.txt");
+					}			;
+				"""; //$NON-NLS-1$
 	}
 
 	@Override

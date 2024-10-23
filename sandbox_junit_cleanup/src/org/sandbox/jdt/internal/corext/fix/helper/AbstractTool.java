@@ -37,44 +37,44 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
  */
 public abstract class AbstractTool<T> {
 
-	protected static final String ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT = "org.junit.jupiter.api.extension.ExtensionContext";
-	protected static final String ORG_JUNIT_RULE = "org.junit.Rule";
-	protected static final String ORG_JUNIT_RULES_EXTERNAL_RESOURCE = "org.junit.rules.ExternalResource";
-	protected static final String ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK = "org.junit.jupiter.api.extension.BeforeEachCallback";
-	protected static final String ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK = "org.junit.jupiter.api.extension.AfterEachCallback";
-	protected static final String ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH = "org.junit.jupiter.api.extension.ExtendWith";
-	protected static final String ORG_JUNIT_AFTER = "org.junit.After";
-	protected static final String ORG_JUNIT_JUPITER_API_AFTER_EACH = "org.junit.jupiter.api.AfterEach";
-	protected static final String AFTER_EACH = "AfterEach";
-	protected static final String ORG_JUNIT_BEFORE = "org.junit.Before";
-	protected static final String BEFORE_EACH = "BeforeEach";
-	protected static final String ORG_JUNIT_AFTERCLASS = "org.junit.AfterClass";
-	protected static final String ORG_JUNIT_JUPITER_API_AFTER_ALL = "org.junit.jupiter.api.AfterAll";
-	protected static final String AFTER_ALL = "AfterAll";
-	protected static final String ASSERTIONS = "Assertions";
-	protected static final String ORG_JUNIT_JUPITER_API_ASSERTIONS = "org.junit.jupiter.api.Assertions";
-	protected static final String ORG_JUNIT_ASSERT = "org.junit.Assert";
-	protected static final String ORG_JUNIT_BEFORECLASS = "org.junit.BeforeClass";
-	protected static final String ORG_JUNIT_JUPITER_API_BEFORE_ALL = "org.junit.jupiter.api.BeforeAll";
-	protected static final String BEFORE_ALL = "BeforeAll";
-	protected static final String ORG_JUNIT_IGNORE = "org.junit.Ignore";
-	protected static final String ORG_JUNIT_JUPITER_DISABLED = "org.junit.jupiter.api.Disabled";
-	protected static final String DISABLED = "Disabled";
-	protected static final String ORG_JUNIT_JUPITER_API_IO_TEMP_DIR = "org.junit.jupiter.api.io.TempDir";
-	protected static final String ORG_JUNIT_RULES_TEMPORARY_FOLDER = "org.junit.rules.TemporaryFolder";
-	protected static final String ORG_JUNIT_JUPITER_API_TEST_INFO = "org.junit.jupiter.api.TestInfo";
-	protected static final String ORG_JUNIT_RULES_TEST_NAME = "org.junit.rules.TestName";
-	protected static final String ORG_JUNIT_JUPITER_API_BEFORE_EACH = "org.junit.jupiter.api.BeforeEach";
-	protected static final String ORG_JUNIT_PLATFORM_SUITE_API_SELECT_CLASSES = "org.junit.platform.suite.api.SelectClasses";
-	protected static final String SELECT_CLASSES = "SelectClasses";
-	protected static final String ORG_JUNIT_RUNWITH = "org.junit.runner.RunWith";
-	protected static final String ORG_JUNIT_JUPITER_SUITE = "org.junit.platform.suite.api.Suite";
-	protected static final String SUITE = "Suite";
-	protected static final String ORG_JUNIT_SUITE = "org.junit.runners.Suite";
-	protected static final String ORG_JUNIT_SUITE_SUITECLASSES = "org.junit.runners.Suite.SuiteClasses";
-	protected static final String ORG_JUNIT_TEST = "org.junit.Test";
-	protected static final String ORG_JUNIT_JUPITER_TEST = "org.junit.jupiter.api.Test";
-	protected static final String TEST = "Test";
+	protected static final String ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT= "org.junit.jupiter.api.extension.ExtensionContext";
+	protected static final String ORG_JUNIT_RULE= "org.junit.Rule";
+	protected static final String ORG_JUNIT_RULES_EXTERNAL_RESOURCE= "org.junit.rules.ExternalResource";
+	protected static final String ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK= "org.junit.jupiter.api.extension.BeforeEachCallback";
+	protected static final String ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK= "org.junit.jupiter.api.extension.AfterEachCallback";
+	protected static final String ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH= "org.junit.jupiter.api.extension.ExtendWith";
+	protected static final String ORG_JUNIT_AFTER= "org.junit.After";
+	protected static final String ORG_JUNIT_JUPITER_API_AFTER_EACH= "org.junit.jupiter.api.AfterEach";
+	protected static final String AFTER_EACH= "AfterEach";
+	protected static final String ORG_JUNIT_BEFORE= "org.junit.Before";
+	protected static final String BEFORE_EACH= "BeforeEach";
+	protected static final String ORG_JUNIT_AFTERCLASS= "org.junit.AfterClass";
+	protected static final String ORG_JUNIT_JUPITER_API_AFTER_ALL= "org.junit.jupiter.api.AfterAll";
+	protected static final String AFTER_ALL= "AfterAll";
+	protected static final String ASSERTIONS= "Assertions";
+	protected static final String ORG_JUNIT_JUPITER_API_ASSERTIONS= "org.junit.jupiter.api.Assertions";
+	protected static final String ORG_JUNIT_ASSERT= "org.junit.Assert";
+	protected static final String ORG_JUNIT_BEFORECLASS= "org.junit.BeforeClass";
+	protected static final String ORG_JUNIT_JUPITER_API_BEFORE_ALL= "org.junit.jupiter.api.BeforeAll";
+	protected static final String BEFORE_ALL= "BeforeAll";
+	protected static final String ORG_JUNIT_IGNORE= "org.junit.Ignore";
+	protected static final String ORG_JUNIT_JUPITER_DISABLED= "org.junit.jupiter.api.Disabled";
+	protected static final String DISABLED= "Disabled";
+	protected static final String ORG_JUNIT_JUPITER_API_IO_TEMP_DIR= "org.junit.jupiter.api.io.TempDir";
+	protected static final String ORG_JUNIT_RULES_TEMPORARY_FOLDER= "org.junit.rules.TemporaryFolder";
+	protected static final String ORG_JUNIT_JUPITER_API_TEST_INFO= "org.junit.jupiter.api.TestInfo";
+	protected static final String ORG_JUNIT_RULES_TEST_NAME= "org.junit.rules.TestName";
+	protected static final String ORG_JUNIT_JUPITER_API_BEFORE_EACH= "org.junit.jupiter.api.BeforeEach";
+	protected static final String ORG_JUNIT_PLATFORM_SUITE_API_SELECT_CLASSES= "org.junit.platform.suite.api.SelectClasses";
+	protected static final String SELECT_CLASSES= "SelectClasses";
+	protected static final String ORG_JUNIT_RUNWITH= "org.junit.runner.RunWith";
+	protected static final String ORG_JUNIT_JUPITER_SUITE= "org.junit.platform.suite.api.Suite";
+	protected static final String SUITE= "Suite";
+	protected static final String ORG_JUNIT_SUITE= "org.junit.runners.Suite";
+	protected static final String ORG_JUNIT_SUITE_SUITECLASSES= "org.junit.runners.Suite.SuiteClasses";
+	protected static final String ORG_JUNIT_TEST= "org.junit.Test";
+	protected static final String ORG_JUNIT_JUPITER_TEST= "org.junit.jupiter.api.Test";
+	protected static final String TEST= "Test";
 
 	protected static boolean isOfType(ITypeBinding typeBinding, String typename) {
 		if (typeBinding == null) {
@@ -110,13 +110,14 @@ public abstract class AbstractTool<T> {
 	public abstract String getPreview(boolean afterRefactoring);
 
 	protected boolean hasDefaultConstructorOrNoConstructor(TypeDeclaration classNode) {
-		boolean hasConstructor = false;
+		boolean hasConstructor= false;
 		for (Object bodyDecl : classNode.bodyDeclarations()) {
 			if (bodyDecl instanceof MethodDeclaration) {
-				MethodDeclaration method = (MethodDeclaration) bodyDecl;
+				MethodDeclaration method= (MethodDeclaration) bodyDecl;
 				if (method.isConstructor()) {
-					hasConstructor = true;
-					if (method.parameters().isEmpty() && method.getBody() != null && method.getBody().statements().isEmpty()) {
+					hasConstructor= true;
+					if (method.parameters().isEmpty() && method.getBody() != null
+							&& method.getBody().statements().isEmpty()) {
 						return true;
 					}
 				}
@@ -130,16 +131,16 @@ public abstract class AbstractTool<T> {
 			if (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(typeBinding.getQualifiedName())) {
 				return true;
 			}
-			typeBinding = typeBinding.getSuperclass();
+			typeBinding= typeBinding.getSuperclass();
 		}
 		return false;
 	}
 
 	protected String extractQualifiedTypeName(QualifiedType qualifiedType) {
-		StringBuilder fullClassName = new StringBuilder(qualifiedType.getName().getFullyQualifiedName());
-		for (Type qualifier = qualifiedType.getQualifier();
-				qualifier instanceof QualifiedType;
-				qualifier = ((QualifiedType) qualifier).getQualifier()) {
+		StringBuilder fullClassName= new StringBuilder(qualifiedType.getName().getFullyQualifiedName());
+		for (Type qualifier= qualifiedType
+				.getQualifier(); qualifier instanceof QualifiedType; qualifier= ((QualifiedType) qualifier)
+						.getQualifier()) {
 			fullClassName.insert(0, ".");
 			fullClassName.insert(0, ((QualifiedType) qualifier).getName().getFullyQualifiedName());
 		}

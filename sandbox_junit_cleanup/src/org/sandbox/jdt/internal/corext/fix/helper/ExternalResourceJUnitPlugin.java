@@ -34,23 +34,23 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 
 /**
  *
- * 
+ *
  */
 public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataholder = new ReferenceHolder<>();
-		HelperVisitor.callTypeDeclarationVisitor(ORG_JUNIT_RULES_EXTERNAL_RESOURCE,compilationUnit, dataholder, nodesprocessed,
-				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+		ReferenceHolder<Integer, JunitHolder> dataholder= new ReferenceHolder<>();
+		HelperVisitor.callTypeDeclarationVisitor(ORG_JUNIT_RULES_EXTERNAL_RESOURCE, compilationUnit, dataholder,
+				nodesprocessed, (visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, TypeDeclaration node,
 			ReferenceHolder<Integer, JunitHolder> dataholder) {
-		JunitHolder mh = new JunitHolder();
-		mh.minv = node;
+		JunitHolder mh= new JunitHolder();
+		mh.minv= node;
 		dataholder.put(dataholder.size(), mh);
 		operations.add(fixcore.rewrite(dataholder));
 		return false;
@@ -59,21 +59,21 @@ public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<In
 	@Override
 	public void rewrite(JUnitCleanUpFixCore upp, final ReferenceHolder<Integer, JunitHolder> hit,
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
-		ASTRewrite rewriter = cuRewrite.getASTRewrite();
-		AST ast = cuRewrite.getRoot().getAST();
-		ImportRewrite importRewriter = cuRewrite.getImportRewrite();
+		ASTRewrite rewriter= cuRewrite.getASTRewrite();
+		AST ast= cuRewrite.getRoot().getAST();
+		ImportRewrite importRewriter= cuRewrite.getImportRewrite();
 
 		hit.values().forEach(holder -> {
-			TypeDeclaration node = holder.getTypeDeclaration();
+			TypeDeclaration node= holder.getTypeDeclaration();
 			if (modifyExternalResourceClass(node, rewriter, ast, group, importRewriter)) {
 				importRewriter.removeImport(ORG_JUNIT_RULE);
 			}
 		});
 	}
 
-	private boolean modifyExternalResourceClass(TypeDeclaration node, ASTRewrite rewriter, AST ast,
-			TextEditGroup group, ImportRewrite importRewriter) {
-		ITypeBinding binding = node.resolveBinding();
+	private boolean modifyExternalResourceClass(TypeDeclaration node, ASTRewrite rewriter, AST ast, TextEditGroup group,
+			ImportRewrite importRewriter) {
+		ITypeBinding binding= node.resolveBinding();
 
 		if (binding.isAnonymous() || !isExternalResource(binding) || !hasDefaultConstructorOrNoConstructor(node)) {
 			return false;
@@ -93,12 +93,12 @@ public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<In
 		return true;
 	}
 
-	private void refactorToImplementCallbacks(TypeDeclaration node, ASTRewrite rewriter, AST ast,
-			TextEditGroup group, ImportRewrite importRewriter) {
+	private void refactorToImplementCallbacks(TypeDeclaration node, ASTRewrite rewriter, AST ast, TextEditGroup group,
+			ImportRewrite importRewriter) {
 		rewriter.remove(node.getSuperclassType(), group);
 		importRewriter.removeImport(ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
 
-		ListRewrite listRewrite = rewriter.getListRewrite(node, TypeDeclaration.SUPER_INTERFACE_TYPES_PROPERTY);
+		ListRewrite listRewrite= rewriter.getListRewrite(node, TypeDeclaration.SUPER_INTERFACE_TYPES_PROPERTY);
 		addInterfaceCallback(listRewrite, ast, "BeforeEachCallback", group);
 		addInterfaceCallback(listRewrite, ast, "AfterEachCallback", group);
 
@@ -122,12 +122,12 @@ public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<In
 
 	private void ensureExtensionContextParameter(ASTRewrite rewriter, AST ast, MethodDeclaration method,
 			TextEditGroup group, ImportRewrite importRewriter) {
-		boolean hasExtensionContext = method.parameters().stream()
-				.anyMatch(param -> param instanceof SingleVariableDeclaration &&
-						((SingleVariableDeclaration) param).getType().toString().equals("ExtensionContext"));
+		boolean hasExtensionContext= method.parameters().stream()
+				.anyMatch(param -> param instanceof SingleVariableDeclaration
+						&& ((SingleVariableDeclaration) param).getType().toString().equals("ExtensionContext"));
 
 		if (!hasExtensionContext) {
-			SingleVariableDeclaration newParam = ast.newSingleVariableDeclaration();
+			SingleVariableDeclaration newParam= ast.newSingleVariableDeclaration();
 			newParam.setType(ast.newSimpleType(ast.newName("ExtensionContext")));
 			newParam.setName(ast.newSimpleName("context"));
 
@@ -143,30 +143,28 @@ public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<In
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {
-			return 
-"""
-	private String testName;
+			return """
+						private String testName;
 
-	@BeforeEach
-	void init(TestInfo testInfo) {
-		this.testName = testInfo.getDisplayName();
-	}
-	@Test
-	public void test(){
-		System.out.println("Test name: " + testName);
-	}
-"""; //$NON-NLS-1$
+						@BeforeEach
+						void init(TestInfo testInfo) {
+							this.testName = testInfo.getDisplayName();
+						}
+						@Test
+						public void test(){
+							System.out.println("Test name: " + testName);
+						}
+					"""; //$NON-NLS-1$
 		}
-		return 
-"""
-	@Rule
-	public TestName tn = new TestName();
+		return """
+					@Rule
+					public TestName tn = new TestName();
 
-	@Test
-	public void test(){
-		System.out.println("Test name: " + tn.getMethodName());
-	}
-"""; //$NON-NLS-1$
+					@Test
+					public void test(){
+						System.out.println("Test name: " + tn.getMethodName());
+					}
+				"""; //$NON-NLS-1$
 	}
 
 	@Override

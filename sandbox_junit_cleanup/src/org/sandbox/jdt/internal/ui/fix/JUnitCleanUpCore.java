@@ -43,6 +43,7 @@ public class JUnitCleanUpCore extends AbstractCleanUp {
 	public JUnitCleanUpCore(final Map<String, String> options) {
 		super(options);
 	}
+
 	/**
 	 *
 	 */
@@ -84,8 +85,7 @@ public class JUnitCleanUpCore extends AbstractCleanUp {
 		List<String> result= new ArrayList<>();
 		if (isEnabled(JUNIT_CLEANUP)) {
 			result.add(Messages.format(JUnitCleanUp_description, new Object[] { String.join(",", //$NON-NLS-1$
-					computeFixSet().stream().map(JUnitCleanUpFixCore::toString)
-					.collect(Collectors.toList())) }));
+					computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collectors.toList())) }));
 		}
 		return result.toArray(new String[0]);
 	}
@@ -94,8 +94,7 @@ public class JUnitCleanUpCore extends AbstractCleanUp {
 	public String getPreview() {
 		StringBuilder sb= new StringBuilder();
 		EnumSet<JUnitCleanUpFixCore> computeFixSet= computeFixSet();
-		EnumSet.allOf(JUnitCleanUpFixCore.class)
-		.forEach(e -> sb.append(e.getPreview(computeFixSet.contains(e))));
+		EnumSet.allOf(JUnitCleanUpFixCore.class).forEach(e -> sb.append(e.getPreview(computeFixSet.contains(e))));
 		return sb.toString();
 	}
 
