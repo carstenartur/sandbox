@@ -97,4 +97,9 @@ public enum JUnitCleanUpFixCore {
 			}
 		};
 	}
+
+	@Override
+	public String toString() {
+		return junitfound.toString();
+	}
 }
