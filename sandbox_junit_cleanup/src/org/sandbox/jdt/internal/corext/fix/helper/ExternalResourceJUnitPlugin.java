@@ -136,10 +136,6 @@ public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<In
 		}
 	}
 
-	private boolean isDirectlyExtendingExternalResource(ITypeBinding binding) {
-		return ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(binding.getSuperclass().getQualifiedName());
-	}
-
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {
