@@ -26,6 +26,10 @@
 		</dependency>
 		<dependency>
 			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_junit_cleanup_feature</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
 			<artifactId>sandbox_platform_helper_feature</artifactId>
 		</dependency>
 		<dependency>
