@@ -786,6 +786,24 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 		predicatedata.put(VisitorEnum.MethodInvocation, map);
 		return predicatemap.put(VisitorEnum.MethodInvocation, bs);
 	}
+
+	/**
+	 * @param typeof
+	 * @param methodname
+	 * @param bs
+	 * @param params
+	 * @return
+	 */
+	public BiPredicate<? extends ASTNode, E> addMethodInvocation(String typeof, String methodname,
+			BiPredicate<MethodInvocation, E> bs, String[] params) {
+		Map<String, Object> map = Map.ofEntries(
+				new AbstractMap.SimpleEntry<>(PARAMTYPENAMES, params),
+				new AbstractMap.SimpleEntry<>(METHODNAME, methodname),
+				new AbstractMap.SimpleEntry<>(TYPEOF, typeof)
+				);
+		predicatedata.put(VisitorEnum.MethodInvocation, map);
+		return predicatemap.put(VisitorEnum.MethodInvocation, bs);
+	}
 	/**
 	 *
 	 * @param bs
@@ -4489,6 +4507,25 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 
 		HelperVisitor<ReferenceHolder<V, T>,V,T> hv= new HelperVisitor<>(nodesprocessed, dataholder);
 		hv.addMethodInvocation(methodof, methodname, bs);
+		hv.build(node);
+	}
+
+	/**
+	 * @param <V>
+	 * @param <T>
+	 * @param methodof
+	 * @param methodname
+	 * @param node
+	 * @param dataholder
+	 * @param nodesprocessed
+	 * @param bs
+	 * @param params
+	 */
+	public static <V, T> void callMethodInvocationVisitor(String methodof, String methodname, ASTNode node, ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed,
+			BiPredicate<MethodInvocation, ReferenceHolder<V, T>> bs, String[] params) {
+
+		HelperVisitor<ReferenceHolder<V, T>,V,T> hv= new HelperVisitor<>(nodesprocessed, dataholder);
+		hv.addMethodInvocation(methodof, methodname, bs, params);
 		hv.build(node);
 	}
 

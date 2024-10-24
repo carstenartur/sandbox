@@ -584,18 +584,38 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 					}
 					String[] parameterTypesQualifiedNames=(String[]) map.get(HelperVisitor.PARAMTYPENAMES);
 					if(parameterTypesQualifiedNames==null) {
-						if (ASTNodes.usesGivenSignature(node, canonicaltype, data)) {
-							return ((BiPredicate<MethodInvocation, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.MethodInvocation))).test(node, this.helperVisitor.dataholder);
+						if (!usesGivenSignature(node, canonicaltype, data)) {
+							return true;
 						}
 					} else
-						if (ASTNodes.usesGivenSignature(node, canonicaltype, data, parameterTypesQualifiedNames)) {
-							return ((BiPredicate<MethodInvocation, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.MethodInvocation))).test(node, this.helperVisitor.dataholder);
+						if (!ASTNodes.usesGivenSignature(node, canonicaltype, data, parameterTypesQualifiedNames)) {
+							return true;
 						}
 				}
 			}
 			return ((BiPredicate<MethodInvocation, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.MethodInvocation))).test(node, this.helperVisitor.dataholder);
 		}
 		return true;
+	}
+
+	private boolean usesGivenSignature(MethodInvocation node, String canonicaltype, String methodName) {
+		IMethodBinding methodBinding= node.resolveMethodBinding();
+		if(methodBinding==null) {
+			if(!methodName.equals(node.getName().getIdentifier())){
+				return false;
+			} 
+		} else {
+			if(!methodName.equals(methodBinding.getName())){
+				return false;
+			}
+			ITypeBinding declaringClass= methodBinding.getDeclaringClass();
+			String name= declaringClass.getQualifiedName();
+			if(canonicaltype.equals(name)){
+				return true;
+			}
+		}
+		
+		return false;
 	}
 
 	@Override

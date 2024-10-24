@@ -15,7 +15,7 @@
 		<dependency>
 			<groupId>org.sandbox</groupId>
 			<artifactId>sandbox_junit_cleanup</artifactId>
-			</dependency>
+		</dependency>
 	</dependencies>
 	<build>
 		<testSourceDirectory>src</testSourceDirectory>
