@@ -211,6 +211,38 @@ public class MyTest {
 	}
 }
 					"""),
+		AlreadyJunit5Case("""
+				package test;
+				import static org.junit.jupiter.api.Assertions.assertEquals;
+				
+				import org.junit.jupiter.api.Test;
+				/**
+				 *
+				 */
+				public class MyTest {
+
+					@Test
+					public void test3() {
+						assertEquals("expected", "actual");
+					}
+				}
+							""", //$NON-NLS-1$
+"""
+package test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import org.junit.jupiter.api.Test;
+/**
+ *
+ */
+public class MyTest {
+
+	@Test
+	public void test3() {
+		assertEquals("expected", "actual");
+	}
+}
+"""),
 		StaticImportCase("""
 				package test;
 				import static org.junit.Assert.*;
