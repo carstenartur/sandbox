@@ -30,6 +30,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.AbstractTool;
 import org.sandbox.jdt.internal.corext.fix.helper.AfterClassJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.AfterJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.AssertJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.AssumeJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.BeforeClassJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.BeforeJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.ExternalResourceJUnitPlugin;
@@ -44,11 +45,19 @@ import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
 public enum JUnitCleanUpFixCore {
 
-	BEFORE(new BeforeJUnitPlugin()), AFTER(new AfterJUnitPlugin()), TEST(new TestJUnitPlugin()),
-	BEFORECLASS(new BeforeClassJUnitPlugin()), AFTERCLASS(new AfterClassJUnitPlugin()), IGNORE(new IgnoreJUnitPlugin()),
-	RUNWITH(new RunWithJUnitPlugin()), ASSERT(new AssertJUnitPlugin()),
-	RULEEXTERNALRESOURCE(new RuleExternalResourceJUnitPlugin()), RULETESTNAME(new RuleTestnameJUnitPlugin()),
-	RULETEMPORARYFOLDER(new RuleTemporayFolderJUnitPlugin()), EXTERNALRESOURCE(new ExternalResourceJUnitPlugin());
+	BEFORE(new BeforeJUnitPlugin()),
+	AFTER(new AfterJUnitPlugin()),
+	TEST(new TestJUnitPlugin()),
+	BEFORECLASS(new BeforeClassJUnitPlugin()),
+	AFTERCLASS(new AfterClassJUnitPlugin()),
+	IGNORE(new IgnoreJUnitPlugin()),
+	RUNWITH(new RunWithJUnitPlugin()),
+	ASSERT(new AssertJUnitPlugin()),
+	ASSUME(new AssumeJUnitPlugin()),
+	RULEEXTERNALRESOURCE(new RuleExternalResourceJUnitPlugin()),
+	RULETESTNAME(new RuleTestnameJUnitPlugin()),
+	RULETEMPORARYFOLDER(new RuleTemporayFolderJUnitPlugin()),
+	EXTERNALRESOURCE(new ExternalResourceJUnitPlugin());
 
 	AbstractTool<ReferenceHolder<Integer, JunitHolder>> junitfound;
 

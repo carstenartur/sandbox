@@ -39,29 +39,27 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
  *
  *
  */
-public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
+public class AssumeJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
-	static final Set<String> twoparam= Set.of("assertEquals", "assertNotEquals", "assertArrayEquals",
-			"assertTrue", "assertFalse", "assertNull", "assertNotNull", "fail");
-	static final Set<String> oneparam= Set.of("assertTrue", "assertFalse", "assertNull", "assertNotNull");
-	private static final Set<String> noparam= Set.of("fail");
-	private static final Set<String> allassertionmethods= Stream.of(twoparam, oneparam, noparam).flatMap(Set::stream)
+	private static final Set<String> twoparam= Set.of("assumeTrue", "assumeFalse", "assumeNotNull");
+	private static final Set<String> oneparam= Set.of("assumeTrue", "assumeFalse", "assumeNotNull");
+	private static final Set<String> allassumemethods= Stream.of(twoparam, oneparam).flatMap(Set::stream)
 			.collect(Collectors.toSet());
 
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataholder= new ReferenceHolder<>();
-		allassertionmethods.forEach(assertionmethod -> {
-			HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSERT, assertionmethod, compilationUnit, dataholder,
+		allassumemethods.forEach(assertionmethod -> {
+			HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSUME, assertionmethod, compilationUnit, dataholder,
 					nodesprocessed, (visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 		});
-		allassertionmethods.forEach(assertionmethod -> {
-			HelperVisitor.callImportDeclarationVisitor(ORG_JUNIT_ASSERT + "." + assertionmethod, compilationUnit,
+		allassumemethods.forEach(assertionmethod -> {
+			HelperVisitor.callImportDeclarationVisitor(ORG_JUNIT_ASSUME + "." + assertionmethod, compilationUnit,
 					dataholder, nodesprocessed,
 					(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 		});
-		HelperVisitor.callImportDeclarationVisitor(ORG_JUNIT_ASSERT, compilationUnit, dataholder, nodesprocessed,
+		HelperVisitor.callImportDeclarationVisitor(ORG_JUNIT_ASSUME, compilationUnit, dataholder, nodesprocessed,
 				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 	}
 
@@ -86,7 +84,7 @@ public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 			if (mh.minv instanceof MethodInvocation) {
 				MethodInvocation minv= mh.getMethodInvocation();
 				reorderParameters(minv, rewrite, group, oneparam, twoparam);
-				SimpleName newQualifier= ast.newSimpleName(ASSERTIONS);
+				SimpleName newQualifier= ast.newSimpleName("Assumptions");
 				Expression expression= minv.getExpression();
 				if (expression != null) {
 					ASTNodes.replaceButKeepComment(rewrite, expression, newQualifier, group);
@@ -99,20 +97,20 @@ public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 
 	public void changeImportDeclaration(ImportDeclaration node, ImportRewrite importRewriter, TextEditGroup group) {
 		String importName= node.getName().getFullyQualifiedName();
-		if (node.isStatic() && importName.equals(ORG_JUNIT_ASSERT)) {
-			importRewriter.removeStaticImport(ORG_JUNIT_ASSERT + ".*");
-			importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, "*", false);
+		if (node.isStatic() && importName.equals(ORG_JUNIT_ASSUME)) {
+			importRewriter.removeStaticImport(ORG_JUNIT_ASSUME + ".*");
+			importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSUMPTIONS, "*", false);
 			return;
 		}
-		if (importName.equals(ORG_JUNIT_ASSERT)) {
-			importRewriter.removeImport(ORG_JUNIT_ASSERT);
-			importRewriter.addImport(ORG_JUNIT_JUPITER_API_ASSERTIONS);
+		if (importName.equals(ORG_JUNIT_ASSUME)) {
+			importRewriter.removeImport(ORG_JUNIT_ASSUME);
+			importRewriter.addImport(ORG_JUNIT_JUPITER_API_ASSUMPTIONS);
 			return;
 		}
-		if (node.isStatic() && importName.startsWith(ORG_JUNIT_ASSERT + ".")) {
-			String methodName= importName.substring((ORG_JUNIT_ASSERT + ".").length());
-			importRewriter.removeStaticImport(ORG_JUNIT_ASSERT + "." + methodName);
-			importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, methodName, false);
+		if (node.isStatic() && importName.startsWith(ORG_JUNIT_ASSUME + ".")) {
+			String methodName= importName.substring((ORG_JUNIT_ASSUME + ".").length());
+			importRewriter.removeStaticImport(ORG_JUNIT_ASSUME + "." + methodName);
+			importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSUMPTIONS, methodName, false);
 		}
 	}
 
@@ -120,18 +118,18 @@ public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {
 			return """
-					Assertions.assertNotEquals(5,result, "failuremessage");  // expected = 5, actual = result
-					Assertions.assertTrue(false,"failuremessage");
+					Assumptions.assumeNotNull(object,"failuremessage");
+					Assumptions.assertTrue(condition,"failuremessage");
 					"""; //$NON-NLS-1$
 		}
 		return """
-				Assert.assertNotEquals("failuremessage",5, result);  // expected = 5, actual = result
-				Assert.assertTrue("failuremessage",false);
+				Assume.assumeNotNull("failuremessage", object);
+				Assume.assertTrue("failuremessage",condition);
 				"""; //$NON-NLS-1$
 	}
 
 	@Override
 	public String toString() {
-		return "Assert"; //$NON-NLS-1$
+		return "Assume"; //$NON-NLS-1$
 	}
 }

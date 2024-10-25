@@ -14,6 +14,7 @@
 package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
@@ -25,12 +26,15 @@ import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.QualifiedType;
 import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.dom.AbortSearchException;
 import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
@@ -81,6 +85,8 @@ public abstract class AbstractTool<T> {
 	protected static final String ORG_JUNIT_TEST= "org.junit.Test";
 	protected static final String ORG_JUNIT_JUPITER_TEST= "org.junit.jupiter.api.Test";
 	protected static final String TEST= "Test";
+	protected static final String ORG_JUNIT_JUPITER_API_ASSUMPTIONS= "org.junit.jupiter.api.Assumptions";
+	protected static final String ORG_JUNIT_ASSUME= "org.junit.Assume";
 
 	protected static boolean isOfType(ITypeBinding typeBinding, String typename) {
 		if (typeBinding == null) {
@@ -193,6 +199,48 @@ public abstract class AbstractTool<T> {
 
 	protected boolean isDirectlyExtendingExternalResource(ITypeBinding binding) {
 		return ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(binding.getSuperclass().getQualifiedName());
+	}
+
+	private boolean isStringType(Expression expression) {
+		ITypeBinding typeBinding= expression.resolveTypeBinding();
+		return typeBinding != null && String.class.getCanonicalName().equals(typeBinding.getQualifiedName());
+	}
+
+	public void reorderParameters(MethodInvocation node, ASTRewrite rewriter, TextEditGroup group, Set<String> oneparam, Set<String> twoparam) {
+		String methodName= node.getName().getIdentifier();
+		List<Expression> arguments= node.arguments();
+		switch (arguments.size()) {
+		case 2:
+			if (oneparam.contains(methodName)) {
+				reorderParameters(rewriter, node, group, 1, 0);
+			}
+			break;
+		case 3:
+			if (twoparam.contains(methodName)) {
+				reorderParameters(rewriter, node, group, 1, 2, 0); // expected, actual, message
+			}
+			break;
+		case 4:
+			reorderParameters(rewriter, node, group, 1, 2, 3, 0); // expected, actual, delta, message
+			break;
+		default:
+			break;
+		}
+	}
+
+	private void reorderParameters(ASTRewrite rewriter, MethodInvocation node, TextEditGroup group, int... order) {
+		ListRewrite listRewrite= rewriter.getListRewrite(node, MethodInvocation.ARGUMENTS_PROPERTY);
+		List<Expression> arguments= node.arguments();
+		Expression[] newArguments= new Expression[arguments.size()];
+		for (int i= 0; i < order.length; i++) {
+			newArguments[i]= (Expression) ASTNode.copySubtree(node.getAST(), arguments.get(order[i]));
+		}
+		if (!isStringType(arguments.get(0))) {
+			return;
+		}
+		for (int i= 0; i < arguments.size(); i++) {
+			listRewrite.replace(arguments.get(i), newArguments[i], group);
+		}
 	}
 
 	public static Collection<String> getUsedVariableNames(ASTNode node) {

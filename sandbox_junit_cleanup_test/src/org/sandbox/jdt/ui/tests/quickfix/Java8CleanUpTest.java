@@ -36,11 +36,17 @@ public class Java8CleanUpTest {
 
 	@RegisterExtension
 	AbstractEclipseJava context= new EclipseJava8();
-	
+
+	@RegisterExtension
+	AbstractEclipseJava context2= new EclipseJava8();
+
 	public static final String JUNIT_CONTAINER_ID= "org.eclipse.jdt.junit.JUNIT_CONTAINER"; //$NON-NLS-1$
 	public final static IPath JUNIT4_CONTAINER_PATH= new Path(JUNIT_CONTAINER_ID).append("4"); //$NON-NLS-1$
-	
+	public final static IPath JUNIT5_CONTAINER_PATH= new Path(JUNIT_CONTAINER_ID).append("5"); //$NON-NLS-1$
+
 	IPackageFragmentRoot fRoot;
+	IPackageFragmentRoot fRoot2;
+
 	@BeforeEach
 	public void setup() throws CoreException {
 		IJavaProject fProject = context.getJavaProject();
@@ -48,6 +54,12 @@ public class Java8CleanUpTest {
 		IClasspathEntry cpe= JavaCore.newContainerEntry(JUNIT4_CONTAINER_PATH);
 		AbstractEclipseJava.addToClasspath(fProject, cpe);
 		fRoot = AbstractEclipseJava.addSourceContainer(fProject, "src");
+
+		IJavaProject fProject2 = context.getJavaProject();
+		fProject2.setRawClasspath(context.getDefaultClasspath(), null);
+		IClasspathEntry cpe2= JavaCore.newContainerEntry(JUNIT5_CONTAINER_PATH);
+		AbstractEclipseJava.addToClasspath(fProject2, cpe2);
+		fRoot2 = AbstractEclipseJava.addSourceContainer(fProject2, "src");
 	}
 
 	enum JUnitCleanupCases{
@@ -63,6 +75,8 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
+import org.junit.Assume;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * 
@@ -115,6 +129,9 @@ public class MyTest {
 
 	@Test
 	public void test3() {
+		boolean condition=true;
+		Assume.assumeFalse("Bedingung nicht erfüllt", condition);
+		assumeTrue("Bedingung nicht erfüllt", condition);
 		Assert.assertEquals("expected", "actual");
 	}
 
@@ -134,9 +151,12 @@ public class MyTest {
 
 				"""
 package test;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -195,6 +215,9 @@ public class MyTest {
 
 	@Test
 	public void test3() {
+		boolean condition=true;
+		Assumptions.assumeFalse(condition, "Bedingung nicht erfüllt");
+		assumeTrue(condition, "Bedingung nicht erfüllt");
 		Assertions.assertEquals("expected", "actual");
 	}
 
@@ -770,21 +793,20 @@ public class MyTest {
 
 		NOCase(
 				"""
-					package test;
-					import java.util.*;
-					public class Test {
-					    void m(List<String> strings) {
-					        Iterator it = strings.iterator();
-					        while (it.hasNext()) {
-					            String s = (String) it.next();
-					            if (s.isEmpty()) {
-					                it.remove();
-					            } else {
-					                System.out.println(s);
-					            }
-					        }
-					    }
+				package test;
+				import static org.junit.jupiter.api.Assertions.assertEquals;
+				
+				import org.junit.jupiter.api.Test;
+				/**
+				 *
+				 */
+				public class MyTest {
+
+					@Test
+					public void test3() {
+						assertEquals("expected", "actual");
 					}
+				}
 					""") //$NON-NLS-1$
 		;
 
@@ -798,12 +820,12 @@ public class MyTest {
 	@ParameterizedTest
 	@EnumSource(NOJUnitCleanupCases.class)
 	public void testJUnitCleanupdonttouch(NOJUnitCleanupCases test) throws CoreException {
-		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
-		ICompilationUnit cu= pack.createCompilationUnit("Test.java",test.given,false, null); //$NON-NLS-1$
-		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
-		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+		IPackageFragment pack= fRoot2.createPackageFragment("test", true, null);
+		ICompilationUnit cu= pack.createCompilationUnit("MyTest.java",test.given,false, null); //$NON-NLS-1$
+		context2.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context2.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
-	
+
 	@Test
 	public void testJUnitCleanupTwoFiles() throws CoreException {
 		IPackageFragment pack= fRoot.createPackageFragment("test", true, null);
