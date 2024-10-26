@@ -663,6 +663,7 @@ public class MyTest {
 	final class MyExternalResource extends ExternalResource {
 		@Override
 		protected void before() throws Throwable {
+			super.before();
 			int i=4;
 		}
 
@@ -684,17 +685,17 @@ package test;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.RegisterExtension;
 /**
  *
  */
-@ExtendWith(MyExternalResource.class)
 public class MyTest {
 
 	final class MyExternalResource implements BeforeEachCallback, AfterEachCallback {
 		@Override
-		protected void beforeEach(ExtensionContext context) throws Throwable {
+		protected void beforeEach(ExtensionContext context) {
+			super.beforeEach();
 			int i=4;
 		}
 
@@ -702,6 +703,9 @@ public class MyTest {
 		protected void afterEach(ExtensionContext context) {
 		}
 	}
+
+	@RegisterExtension
+	public ExternalResource er= new MyExternalResource();
 
 	@Test
 	public void test3() {
@@ -834,14 +838,13 @@ public class MyTest {
 package test;
 import org.junit.Test;
 import org.junit.Rule;
-import org.junit.rules.ExternalResource;
 /**
  * 
  */
 public class MyTest {
 	
 	@Rule
-	public ExternalResource er= new MyExternalResource();
+	public MyExternalResource er= new MyExternalResource();
 
 	@Test
 	public void test3() {
@@ -851,8 +854,6 @@ public class MyTest {
 		ICompilationUnit cu2= pack.createCompilationUnit("MyExternalResource.java",
 """
 package test;
-import org.junit.Test;
-import org.junit.Rule;
 import org.junit.rules.ExternalResource;
 /**
  * 
@@ -873,12 +874,14 @@ public class MyExternalResource extends ExternalResource {
 """
 package test;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 /**
  *
  */
-@ExtendWith(MyExternalResource.class)
 public class MyTest {
+
+	@RegisterExtension
+	public MyExternalResource er= new MyExternalResource();
 
 	@Test
 	public void test3() {
@@ -888,7 +891,6 @@ public class MyTest {
 ,
 """
 package test;
-import org.junit.Test;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -897,7 +899,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
  */
 public class MyExternalResource implements BeforeEachCallback, AfterEachCallback {
 		@Override
-		protected void beforeEach(ExtensionContext context) throws Throwable {
+		protected void beforeEach(ExtensionContext context) {
 			int i=4;
 		}
 
@@ -917,13 +919,12 @@ public class MyExternalResource implements BeforeEachCallback, AfterEachCallback
 package test;
 import org.junit.Test;
 import org.junit.Rule;
-import org.junit.rules.ExternalResource;
 import test.MyExternalResource;
 
 public class MyTest {
 	
 	@Rule
-	public ExternalResource er= new MyExternalResource();
+	public MyExternalResource er= new MyExternalResource();
 
 	@Test
 	public void test3() {
@@ -938,6 +939,7 @@ import test.MyExternalResource2;
 public class MyExternalResource extends MyExternalResource2 {
 		@Override
 		protected void before() throws Throwable {
+			super.before();
 			int i=4;
 		}
 
@@ -968,12 +970,14 @@ public class MyExternalResource2 extends ExternalResource {
 """
 package test;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import test.MyExternalResource;
 
-@ExtendWith(MyExternalResource.class)
 public class MyTest {
+
+	@RegisterExtension
+	public MyExternalResource er= new MyExternalResource();
 
 	@Test
 	public void test3() {
@@ -989,7 +993,8 @@ import test.MyExternalResource2;
 
 public class MyExternalResource extends MyExternalResource2 {
 		@Override
-		protected void beforeEach(ExtensionContext context) throws Throwable {
+		protected void beforeEach(ExtensionContext context) {
+			super.beforeEach();
 			int i=4;
 		}
 
@@ -1006,7 +1011,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 
 public class MyExternalResource2 implements BeforeEachCallback, AfterEachCallback {
 		@Override
-		protected void beforeEach(ExtensionContext context) throws Throwable {
+		protected void beforeEach(ExtensionContext context) {
 			int i=4;
 		}
 
