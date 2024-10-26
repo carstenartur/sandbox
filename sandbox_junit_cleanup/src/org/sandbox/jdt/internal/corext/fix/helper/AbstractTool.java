@@ -38,6 +38,7 @@ import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.QualifiedType;
+import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
@@ -166,7 +167,7 @@ public abstract class AbstractTool<T> {
 		StringBuilder fullClassName= new StringBuilder(qualifiedType.getName().getFullyQualifiedName());
 		for (Type qualifier= qualifiedType
 				.getQualifier(); qualifier instanceof QualifiedType; qualifier= ((QualifiedType) qualifier)
-						.getQualifier()) {
+				.getQualifier()) {
 			fullClassName.insert(0, ".");
 			fullClassName.insert(0, ((QualifiedType) qualifier).getName().getFullyQualifiedName());
 		}
@@ -263,49 +264,50 @@ public abstract class AbstractTool<T> {
 
 	protected void addExtendWithAnnotation(ASTRewrite rewrite, AST ast, TextEditGroup group, ImportRewrite importRewriter, String className,
 			FieldDeclaration field) {
-				TypeDeclaration parentClass= getParentTypeDeclaration(field);
-				if (parentClass == null) {
-					return;
-				}
-			
-				SingleMemberAnnotation newAnnotation= ast.newSingleMemberAnnotation();
-				newAnnotation.setTypeName(ast.newName("ExtendWith"));
-				final TypeLiteral newTypeLiteral= ast.newTypeLiteral();
-				newTypeLiteral.setType(ast.newSimpleType(ast.newSimpleName(className)));
-				newAnnotation.setValue(newTypeLiteral);
-				ListRewrite modifierListRewrite= rewrite.getListRewrite(parentClass, TypeDeclaration.MODIFIERS2_PROPERTY);
-				modifierListRewrite.insertFirst(newAnnotation, group);
-			
-				importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH);
-			}
+		TypeDeclaration parentClass= getParentTypeDeclaration(field);
+		if (parentClass == null) {
+			return;
+		}
+
+		SingleMemberAnnotation newAnnotation= ast.newSingleMemberAnnotation();
+		newAnnotation.setTypeName(ast.newName("ExtendWith"));
+		final TypeLiteral newTypeLiteral= ast.newTypeLiteral();
+		newTypeLiteral.setType(ast.newSimpleType(ast.newSimpleName(className)));
+		newAnnotation.setValue(newTypeLiteral);
+		ListRewrite modifierListRewrite= rewrite.getListRewrite(parentClass, TypeDeclaration.MODIFIERS2_PROPERTY);
+		modifierListRewrite.insertFirst(newAnnotation, group);
+
+		importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH);
+	}
 
 	public void migrateRuleToRegisterExtensionAndAdaptHierarchy(TypeDeclaration testClass, ASTRewrite rewrite, AST ast, ImportRewrite importRewrite,
-			TextEditGroup group) {
-				// 1. Migriere das @Rule-Feld zu @RegisterExtension in der Testklasse
-				for (FieldDeclaration field : testClass.getFields()) {
-					if (isAnnotatedWithRule(field) && isExternalResource(field)) {
-						removeRuleAnnotation(field, rewrite, group,importRewrite);
-						addRegisterExtensionAnnotation(field, rewrite, ast, importRewrite, group);
-						importRewrite.addImport("org.junit.jupiter.api.extension.RegisterExtension");
-			
-						// Hole den Typ des Feldes und beginne die Anpassung der Vererbungskette
-						ITypeBinding fieldType = ((VariableDeclarationFragment) field.fragments().get(0)).resolveBinding().getType();
-						adaptExternalResourceHierarchy(fieldType, rewrite, ast, importRewrite, group);
-					}
-				}
+			TextEditGroup group, String varname) {
+		adaptBeforeAfterCallsInTestClass(testClass, varname, rewrite, ast, group);
+		// 1. Migriere das @Rule-Feld zu @RegisterExtension in der Testklasse
+		for (FieldDeclaration field : testClass.getFields()) {
+			if (isAnnotatedWithRule(field) && isExternalResource(field)) {
+				removeRuleAnnotation(field, rewrite, group,importRewrite);
+				addRegisterExtensionAnnotation(field, rewrite, ast, importRewrite, group);
+				importRewrite.addImport("org.junit.jupiter.api.extension.RegisterExtension");
+
+				// Hole den Typ des Feldes und beginne die Anpassung der Vererbungskette
+				ITypeBinding fieldType = ((VariableDeclarationFragment) field.fragments().get(0)).resolveBinding().getType();
+				adaptExternalResourceHierarchy(fieldType, rewrite, ast, importRewrite, group);
 			}
+		}
+	}
 
 	private void adaptExternalResourceHierarchy(ITypeBinding typeBinding, ASTRewrite rewrite, AST ast, ImportRewrite importRewrite, TextEditGroup group) {
 		if (typeBinding == null) return;
-	
+
 		// Iteriere durch die Vererbungshierarchie und passe jede Klasse an
 		while (typeBinding != null && isExternalResource(typeBinding)) {
 			IType type = (IType) typeBinding.getJavaElement();
 			TypeDeclaration typeDecl = findTypeDeclaration(typeBinding.getJavaElement().getJavaProject(), type.getElementName());
-	
+
 			// Entferne `extends ExternalResource` und füge JUnit 5 Extensions hinzu
 			if (typeDecl != null) {
-				
+
 				removeSuperclassType(typeDecl, rewrite, group);
 				addBeforeAndAfterEachCallbacks(typeDecl, rewrite, ast, importRewrite, group);
 				updateLifecycleMethods(typeDecl, rewrite, ast, group, importRewrite);
@@ -362,7 +364,7 @@ public abstract class AbstractTool<T> {
 				ITypeBinding binding = annotation.resolveTypeBinding();
 				if (binding != null && binding.getQualifiedName().equals("org.junit.Rule")) {
 					rewriter.remove(annotation, group);
-					 importRewriter.removeImport("org.junit.Rule");
+					importRewriter.removeImport("org.junit.Rule");
 					break; // Sobald die Annotation entfernt ist, kann die Schleife beendet werden.
 				}
 			}
@@ -377,25 +379,25 @@ public abstract class AbstractTool<T> {
 
 	public void process(Annotation node, IJavaProject jproject, ASTRewrite rewrite, AST ast, TextEditGroup group, ImportRewrite importRewriter, CompilationUnit cu,
 			String className) {
-				if (!ORG_JUNIT_RULE.equals(node.resolveTypeBinding().getQualifiedName())) {
-					return;
-				}
-			
-				FieldDeclaration field= (FieldDeclaration) node.getParent();
-				ITypeBinding fieldTypeBinding= ((VariableDeclarationFragment) field.fragments().get(0)).resolveBinding()
-						.getType();
-				if (!isExternalResource(fieldTypeBinding) || fieldTypeBinding.isAnonymous()) {
-					return;
-				}
-			
-				if (isDirect(fieldTypeBinding)) {
-					rewrite.remove(field, group);
-					importRewriter.removeImport(ORG_JUNIT_RULE);
-				}
-			
-				addExtendWithAnnotation(rewrite, ast, group, importRewriter, className, field);
-				importRewriter.removeImport(ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
-			}
+		if (!ORG_JUNIT_RULE.equals(node.resolveTypeBinding().getQualifiedName())) {
+			return;
+		}
+
+		FieldDeclaration field= (FieldDeclaration) node.getParent();
+		ITypeBinding fieldTypeBinding= ((VariableDeclarationFragment) field.fragments().get(0)).resolveBinding()
+				.getType();
+		if (!isExternalResource(fieldTypeBinding) || fieldTypeBinding.isAnonymous()) {
+			return;
+		}
+
+		if (isDirect(fieldTypeBinding)) {
+			rewrite.remove(field, group);
+			importRewriter.removeImport(ORG_JUNIT_RULE);
+		}
+
+		addExtendWithAnnotation(rewrite, ast, group, importRewriter, className, field);
+		importRewriter.removeImport(ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
+	}
 
 	private boolean isAnnotatedWithRule(BodyDeclaration declaration) {
 		for (Object modifier : declaration.modifiers()) {
@@ -460,12 +462,12 @@ public abstract class AbstractTool<T> {
 		boolean hasExtensionContext = method.parameters().stream()
 				.anyMatch(param -> param instanceof SingleVariableDeclaration 
 						&& ((SingleVariableDeclaration) param).getType().toString().equals("ExtensionContext"));
-	
+
 		if (!hasExtensionContext) {
 			SingleVariableDeclaration newParam = ast.newSingleVariableDeclaration();
 			newParam.setType(ast.newSimpleType(ast.newName("ExtensionContext")));
 			newParam.setName(ast.newSimpleName("context"));
-	
+
 			ListRewrite listRewrite = rewrite.getListRewrite(method, MethodDeclaration.PARAMETERS_PROPERTY);
 			listRewrite.insertLast(newParam, group);
 			importRewrite.addImport("org.junit.jupiter.api.extension.ExtensionContext");
@@ -474,15 +476,15 @@ public abstract class AbstractTool<T> {
 
 	protected boolean modifyExternalResourceClass(TypeDeclaration node, ASTRewrite rewriter, AST ast, TextEditGroup group, ImportRewrite importRewriter) {
 		ITypeBinding binding= node.resolveBinding();
-	
+
 		if (binding.isAnonymous() || !isExternalResource(binding) || !hasDefaultConstructorOrNoConstructor(node)) {
 			return false;
 		}
-	
+
 		if (isDirectlyExtendingExternalResource(binding)) {
 			refactorToImplementCallbacks(node, rewriter, ast, group, importRewriter);
 		}
-	
+
 		for (MethodDeclaration method : node.getMethods()) {
 			if (isLifecycleMethod(method, "before")) {
 				adaptSuperBeforeCalls("before","beforeEach",method, rewriter, ast, group);
@@ -499,11 +501,11 @@ public abstract class AbstractTool<T> {
 	private void refactorToImplementCallbacks(TypeDeclaration node, ASTRewrite rewriter, AST ast, TextEditGroup group, ImportRewrite importRewriter) {
 		rewriter.remove(node.getSuperclassType(), group);
 		importRewriter.removeImport(ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
-	
+
 		ListRewrite listRewrite= rewriter.getListRewrite(node, TypeDeclaration.SUPER_INTERFACE_TYPES_PROPERTY);
 		addInterfaceCallback(listRewrite, ast, "BeforeEachCallback", group);
 		addInterfaceCallback(listRewrite, ast, "AfterEachCallback", group);
-	
+
 		importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
 		importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
 	}
@@ -525,16 +527,43 @@ public abstract class AbstractTool<T> {
 		boolean hasExtensionContext= method.parameters().stream()
 				.anyMatch(param -> param instanceof SingleVariableDeclaration
 						&& ((SingleVariableDeclaration) param).getType().toString().equals("ExtensionContext"));
-	
+
 		if (!hasExtensionContext) {
 			SingleVariableDeclaration newParam= ast.newSingleVariableDeclaration();
 			newParam.setType(ast.newSimpleType(ast.newName("ExtensionContext")));
 			newParam.setName(ast.newSimpleName("context"));
-	
+
 			rewriter.getListRewrite(method, MethodDeclaration.PARAMETERS_PROPERTY).insertLast(newParam, group);
 			importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT);
 		}
 	}
+
+	private void adaptBeforeAfterCallsInTestClass(TypeDeclaration testClass, String fieldName, ASTRewrite rewriter, AST ast, TextEditGroup group) {
+		// Durchläuft alle Methoden in der Testklasse
+		testClass.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(MethodInvocation node) {
+				// Überprüfen, ob der MethodInvocation das richtige Feld referenziert und entweder "before" oder "after" aufruft
+				if (node.getExpression() instanceof SimpleName) {
+					SimpleName expr = (SimpleName) node.getExpression();
+					if (expr.getIdentifier().equals(fieldName)) {
+						String methodName = node.getName().getIdentifier();
+
+						// Wenn die Methode "before" heißt, umbenennen in "beforeEach"
+						if ("before".equals(methodName)) {
+							rewriter.replace(node.getName(), ast.newSimpleName("beforeEach"), group);
+						}
+						// Wenn die Methode "after" heißt, umbenennen in "afterEach"
+						else if ("after".equals(methodName)) {
+							rewriter.replace(node.getName(), ast.newSimpleName("afterEach"), group);
+						}
+					}
+				}
+				return super.visit(node);
+			}
+		});
+	}
+
 
 	public static Collection<String> getUsedVariableNames(ASTNode node) {
 		CompilationUnit root= (CompilationUnit) node.getRoot();

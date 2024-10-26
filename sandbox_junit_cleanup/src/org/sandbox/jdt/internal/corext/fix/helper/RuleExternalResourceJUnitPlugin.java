@@ -70,8 +70,12 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 		ImportRewrite importRewriter= cuRewrite.getImportRewrite();
 
 		hit.values().forEach(mh -> {
-			FieldDeclaration field= mh.getFieldDeclaration();
-			migrateRuleToRegisterExtensionAndAdaptHierarchy(getParentTypeDeclaration(field),rewrite, ast, importRewriter,group );
+			FieldDeclaration fieldDeclaration= mh.getFieldDeclaration();
+			for (Object fragment : fieldDeclaration.fragments()) {
+				VariableDeclarationFragment variable = (VariableDeclarationFragment) fragment;
+				String fieldName = variable.getName().getIdentifier();
+				migrateRuleToRegisterExtensionAndAdaptHierarchy(getParentTypeDeclaration(fieldDeclaration),rewrite, ast, importRewriter,group ,fieldName);
+			}
 		});
 	}
 
