@@ -339,18 +339,20 @@ public abstract class AbstractTool<T> {
 
 	private void adaptSuperBeforeCalls(String vorher, String nachher, MethodDeclaration method, ASTRewrite rewriter, AST ast,
 			TextEditGroup group) {
-				method.accept(new ASTVisitor() {
-					@Override
-					public boolean visit(SuperMethodInvocation node) {
-						// Prüfen, ob es sich um `super.before()` handelt
-						if (vorher.equals(node.getName().getIdentifier())) {
-							// Ersetzen durch `super.beforeEach()`
-							rewriter.replace(node.getName(), ast.newSimpleName(nachher), group);
-						}
-						return super.visit(node);
+		method.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(SuperMethodInvocation node) {
+				if (vorher.equals(node.getName().getIdentifier())) {
+					rewriter.replace(node.getName(), ast.newSimpleName(nachher), group);
+					ListRewrite argumentsRewrite = rewriter.getListRewrite(node, SuperMethodInvocation.ARGUMENTS_PROPERTY);
+					if (node.arguments().isEmpty()) {
+						argumentsRewrite.insertFirst(ast.newSimpleName("context"), group);
 					}
-				});
+				}
+				return super.visit(node);
 			}
+		});
+	}
 
 	private void removeRuleAnnotation(BodyDeclaration declaration, ASTRewrite rewriter, TextEditGroup group, ImportRewrite importRewriter) {
 		List<?> modifiers = declaration.modifiers();

@@ -695,7 +695,7 @@ public class MyTest {
 	final class MyExternalResource implements BeforeEachCallback, AfterEachCallback {
 		@Override
 		protected void beforeEach(ExtensionContext context) {
-			super.beforeEach();
+			super.beforeEach(context);
 			int i=4;
 		}
 
@@ -994,7 +994,7 @@ import test.MyExternalResource2;
 public class MyExternalResource extends MyExternalResource2 {
 		@Override
 		protected void beforeEach(ExtensionContext context) {
-			super.beforeEach();
+			super.beforeEach(context);
 			int i=4;
 		}
 
