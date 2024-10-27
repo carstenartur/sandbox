@@ -69,8 +69,7 @@ public class RuleTestnameJUnitPlugin extends AbstractTool<ReferenceHolder<Intege
 		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
 			JunitHolder mh= entry.getValue();
 			FieldDeclaration node= mh.getFieldDeclaration();
-//			refactorTestname(group, rewriter, ast, importrewriter, node);
-			refactorTestnameInHierarchy(group, rewriter, ast, importrewriter, node);
+			refactorTestnameInClassAndSubclasses(group, rewriter, ast, importrewriter, node);
 		}
 	}
 

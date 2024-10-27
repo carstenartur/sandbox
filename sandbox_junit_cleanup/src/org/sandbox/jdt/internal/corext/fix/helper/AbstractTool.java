@@ -70,6 +70,7 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
  */
 public abstract class AbstractTool<T> {
 
+	private static final String TEST_NAME= "testName";
 	private static final String METHOD_AFTER_EACH= "afterEach";
 	private static final String METHOD_BEFORE_EACH= "beforeEach";
 	private static final String ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT= "org.junit.jupiter.api.extension.ExtensionContext";
@@ -582,7 +583,7 @@ public abstract class AbstractTool<T> {
 					public boolean visit(MethodInvocation node) {
 						if (node.getExpression() != null && node.getExpression().resolveTypeBinding()
 								.getQualifiedName().equals(ORG_JUNIT_RULES_TEST_NAME)) {
-							SimpleName newFieldAccess= ast.newSimpleName("testName");
+							SimpleName newFieldAccess= ast.newSimpleName(TEST_NAME);
 							rewriter.replace(node, newFieldAccess, group);
 						}
 						return super.visit(node);
@@ -599,7 +600,7 @@ public abstract class AbstractTool<T> {
 	private void addTestNameField(TypeDeclaration parentClass, ASTRewrite rewriter, TextEditGroup group) {
 		AST ast= parentClass.getAST();
 		VariableDeclarationFragment fragment= ast.newVariableDeclarationFragment();
-		fragment.setName(ast.newSimpleName("testName"));
+		fragment.setName(ast.newSimpleName(TEST_NAME));
 	
 		FieldDeclaration fieldDeclaration= ast.newFieldDeclaration(fragment);
 		fieldDeclaration.setType(ast.newSimpleType(ast.newName("String")));
@@ -625,7 +626,7 @@ public abstract class AbstractTool<T> {
 		Assignment assignment= ast.newAssignment();
 		FieldAccess fieldAccess= ast.newFieldAccess();
 		fieldAccess.setExpression(ast.newThisExpression());
-		fieldAccess.setName(ast.newSimpleName("testName"));
+		fieldAccess.setName(ast.newSimpleName(TEST_NAME));
 		assignment.setLeftHandSide(fieldAccess);
 	
 		MethodInvocation methodInvocation= ast.newMethodInvocation();
@@ -648,55 +649,6 @@ public abstract class AbstractTool<T> {
 		listRewrite.insertFirst(beforeEachAnnotation, group);
 	}
 
-	
-	protected void refactorTestnameInHierarchy(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter, FieldDeclaration node) {
-		rewriter.remove(node, group);
-		TypeDeclaration parentClass = (TypeDeclaration) node.getParent();
-
-		// Erzeugt das neue TestName-Feld und die BeforeEach-Methode in der übergebenen Klasse
-		addBeforeEachInitMethod(parentClass, rewriter, group);
-		addTestNameField(parentClass, rewriter, group);
-
-		// Refactor Testname in der gesamten Klassenhierarchie
-		refactorTestnameInClassAndSubclasses(parentClass, rewriter, ast, group);
-
-		// Imports verwalten
-		importRewriter.addImport(ORG_JUNIT_JUPITER_API_TEST_INFO);
-		importRewriter.addImport(ORG_JUNIT_JUPITER_API_BEFORE_EACH);
-		importRewriter.removeImport(ORG_JUNIT_RULE);
-		importRewriter.removeImport(ORG_JUNIT_RULES_TEST_NAME);
-	}
-
-	private void refactorTestnameInClassAndSubclasses(TypeDeclaration currentClass, ASTRewrite rewriter, AST ast, TextEditGroup group) {
-		for (MethodDeclaration method : currentClass.getMethods()) {
-			if (method.getBody() != null) {
-				method.getBody().accept(new ASTVisitor() {
-					@Override
-					public boolean visit(MethodInvocation node) {
-						if (node.getExpression() != null && node.getExpression().resolveTypeBinding()
-								.getQualifiedName().equals(ORG_JUNIT_RULES_TEST_NAME)) {
-							SimpleName newFieldAccess = ast.newSimpleName("testName");
-							rewriter.replace(node, newFieldAccess, group);
-						}
-						return super.visit(node);
-					}
-				});
-			}
-		}
-
-		// Durchläuft alle abgeleiteten Klassen
-		ITypeBinding currentTypeBinding = currentClass.resolveBinding();
-		if (currentTypeBinding != null) {
-			for (ITypeBinding subClassBinding : getAllSubclasses(currentTypeBinding)) {
-				ASTNode subclassNode = rewriter.getAST().newTypeDeclaration(); // Beispielweise Erzeugung
-				if (subclassNode instanceof TypeDeclaration) {
-					TypeDeclaration subclassDeclaration = (TypeDeclaration) subclassNode;
-					refactorTestnameInClassAndSubclasses(subclassDeclaration, rewriter, ast, group);
-				}
-			}
-		}
-	}
-
 	private List<ITypeBinding> getAllSubclasses(ITypeBinding typeBinding) {
 		List<ITypeBinding> subclasses = new ArrayList<>();
 
@@ -717,9 +669,70 @@ public abstract class AbstractTool<T> {
 		} catch (JavaModelException e) {
 			e.printStackTrace();
 		}
-
 		return subclasses;
 	}
+	
+	
+	protected void refactorTestnameInClassAndSubclasses(TextEditGroup group, ASTRewrite rewriter, AST ast, 
+			ImportRewrite importRewrite, FieldDeclaration node) {
+		// Refactoring in der aktuellen Klasse
+		refactorTestnameInClass(group, rewriter, ast, importRewrite, node);
 
+		// Ermittlung aller abgeleiteten Klassen
+		ITypeBinding typeBinding = ((TypeDeclaration) node.getParent()).resolveBinding();
+		List<ITypeBinding> subclasses = getAllSubclasses(typeBinding);
+
+		for (ITypeBinding subclassBinding : subclasses) {
+			IType subclassType = (IType) subclassBinding.getJavaElement();
+
+			// Hole die AST-Darstellung der Subklasse (zum Beispiel durch ASTParser)
+			CompilationUnit subclassUnit = parseCompilationUnit(subclassType.getCompilationUnit());
+			subclassUnit.accept(new ASTVisitor() {
+				@Override
+				public boolean visit(TypeDeclaration subclassNode) {
+					if (subclassNode.resolveBinding().equals(subclassBinding)) {
+						refactorTestnameInClass(group, rewriter, subclassNode.getAST(), importRewrite, node);
+					}
+					return false; // Nur das passende Typ-Deklarations-Element verarbeiten
+				}
+			});
+		}
+	}
+
+	protected void refactorTestnameInClass(TextEditGroup group, ASTRewrite rewriter, AST ast, 
+			ImportRewrite importRewrite, FieldDeclaration node) {
+		// Entferne das alte TestName-Feld
+		rewriter.remove(node, group);
+
+		// Füge ein neues TestName-Feld hinzu und erzeuge eine BeforeEach-Init-Methode
+		TypeDeclaration parentClass = (TypeDeclaration) node.getParent();
+		addBeforeEachInitMethod(parentClass, rewriter, group);
+		addTestNameField(parentClass, rewriter, group);
+
+		// Ersetze alle Zugriffe auf das alte TestName-Feld durch das neue Feld "testName"
+		for (MethodDeclaration method : parentClass.getMethods()) {
+			if (method.getBody() != null) {
+				method.getBody().accept(new ASTVisitor() {
+					@Override
+					public boolean visit(MethodInvocation node) {
+						// Prüfen, ob der Aufruf auf das alte TestName-Feld verweist
+						if (node.getExpression() != null 
+								&& ORG_JUNIT_RULES_TEST_NAME.equals(node.getExpression().resolveTypeBinding().getQualifiedName())) {
+							// Ersetze den Zugriff durch "testName"
+							SimpleName newFieldAccess = ast.newSimpleName(TEST_NAME);
+							rewriter.replace(node, newFieldAccess, group);
+						}
+						return super.visit(node);
+					}
+				});
+			}
+		}
+
+		// Importanpassungen für JUnit 5
+		importRewrite.addImport(ORG_JUNIT_JUPITER_API_TEST_INFO);
+		importRewrite.addImport(ORG_JUNIT_JUPITER_API_BEFORE_EACH);
+		importRewrite.removeImport(ORG_JUNIT_RULE);
+		importRewrite.removeImport(ORG_JUNIT_RULES_TEST_NAME);
+	}
 
 }
