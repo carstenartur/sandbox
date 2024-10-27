@@ -13,6 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -20,6 +21,7 @@ import java.util.Set;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.ITypeHierarchy;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -645,4 +647,79 @@ public abstract class AbstractTool<T> {
 		listRewrite= rewriter.getListRewrite(methodDeclaration, MethodDeclaration.MODIFIERS2_PROPERTY);
 		listRewrite.insertFirst(beforeEachAnnotation, group);
 	}
+
+	
+	protected void refactorTestnameInHierarchy(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter, FieldDeclaration node) {
+		rewriter.remove(node, group);
+		TypeDeclaration parentClass = (TypeDeclaration) node.getParent();
+
+		// Erzeugt das neue TestName-Feld und die BeforeEach-Methode in der übergebenen Klasse
+		addBeforeEachInitMethod(parentClass, rewriter, group);
+		addTestNameField(parentClass, rewriter, group);
+
+		// Refactor Testname in der gesamten Klassenhierarchie
+		refactorTestnameInClassAndSubclasses(parentClass, rewriter, ast, group);
+
+		// Imports verwalten
+		importRewriter.addImport(ORG_JUNIT_JUPITER_API_TEST_INFO);
+		importRewriter.addImport(ORG_JUNIT_JUPITER_API_BEFORE_EACH);
+		importRewriter.removeImport(ORG_JUNIT_RULE);
+		importRewriter.removeImport(ORG_JUNIT_RULES_TEST_NAME);
+	}
+
+	private void refactorTestnameInClassAndSubclasses(TypeDeclaration currentClass, ASTRewrite rewriter, AST ast, TextEditGroup group) {
+		for (MethodDeclaration method : currentClass.getMethods()) {
+			if (method.getBody() != null) {
+				method.getBody().accept(new ASTVisitor() {
+					@Override
+					public boolean visit(MethodInvocation node) {
+						if (node.getExpression() != null && node.getExpression().resolveTypeBinding()
+								.getQualifiedName().equals(ORG_JUNIT_RULES_TEST_NAME)) {
+							SimpleName newFieldAccess = ast.newSimpleName("testName");
+							rewriter.replace(node, newFieldAccess, group);
+						}
+						return super.visit(node);
+					}
+				});
+			}
+		}
+
+		// Durchläuft alle abgeleiteten Klassen
+		ITypeBinding currentTypeBinding = currentClass.resolveBinding();
+		if (currentTypeBinding != null) {
+			for (ITypeBinding subClassBinding : getAllSubclasses(currentTypeBinding)) {
+				ASTNode subclassNode = rewriter.getAST().newTypeDeclaration(); // Beispielweise Erzeugung
+				if (subclassNode instanceof TypeDeclaration) {
+					TypeDeclaration subclassDeclaration = (TypeDeclaration) subclassNode;
+					refactorTestnameInClassAndSubclasses(subclassDeclaration, rewriter, ast, group);
+				}
+			}
+		}
+	}
+
+	private List<ITypeBinding> getAllSubclasses(ITypeBinding typeBinding) {
+		List<ITypeBinding> subclasses = new ArrayList<>();
+
+		try {
+			// Erzeuge den entsprechenden IType des gegebenen ITypeBindings
+			IType type = (IType) typeBinding.getJavaElement();
+
+			// Erzeuge die Typ-Hierarchie für den übergebenen Typ innerhalb des Projekts
+			ITypeHierarchy typeHierarchy = type.newTypeHierarchy(null); // null verwendet das gesamte Projekt
+
+			// Durchlaufe alle direkten und indirekten Subtypen und füge sie der Liste hinzu
+			for (IType subtype : typeHierarchy.getAllSubtypes(type)) {
+				ITypeBinding subtypeBinding = (ITypeBinding) subtype.getAdapter(ITypeBinding.class);
+				if (subtypeBinding != null) {
+					subclasses.add(subtypeBinding);
+				}
+			}
+		} catch (JavaModelException e) {
+			e.printStackTrace();
+		}
+
+		return subclasses;
+	}
+
+
 }

@@ -11,17 +11,12 @@
  * Contributors:
  *     Carsten Hammer initial implementation
  *******************************************************************************/
-package org.sandbox.jdt.ui.tests.quickfix;
+package org.eclipse.jdt.ui.tests.quickfix.Java8;
 
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.Path;
-import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.ICompilationUnit;
-import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
-import org.eclipse.jdt.core.JavaCore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -32,34 +27,21 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava8;
 
 
-public class Java8CleanUpTest {
+public class JUnitMigrationCleanUpTest {
 
 	@RegisterExtension
-	AbstractEclipseJava context= new EclipseJava8();
+	AbstractEclipseJava context4junit4= new EclipseJava8();
 
 	@RegisterExtension
-	AbstractEclipseJava context2= new EclipseJava8();
+	AbstractEclipseJava context4junit5= new EclipseJava8();
 
-	public static final String JUNIT_CONTAINER_ID= "org.eclipse.jdt.junit.JUNIT_CONTAINER"; //$NON-NLS-1$
-	public final static IPath JUNIT4_CONTAINER_PATH= new Path(JUNIT_CONTAINER_ID).append("4"); //$NON-NLS-1$
-	public final static IPath JUNIT5_CONTAINER_PATH= new Path(JUNIT_CONTAINER_ID).append("5"); //$NON-NLS-1$
-
-	IPackageFragmentRoot fRoot;
-	IPackageFragmentRoot fRoot2;
+	IPackageFragmentRoot fRootJUnit4;
+	IPackageFragmentRoot fRootJUnit5;
 
 	@BeforeEach
 	public void setup() throws CoreException {
-		IJavaProject fProject = context.getJavaProject();
-		fProject.setRawClasspath(context.getDefaultClasspath(), null);
-		IClasspathEntry cpe= JavaCore.newContainerEntry(JUNIT4_CONTAINER_PATH);
-		AbstractEclipseJava.addToClasspath(fProject, cpe);
-		fRoot = AbstractEclipseJava.addSourceContainer(fProject, "src");
-
-		IJavaProject fProject2 = context.getJavaProject();
-		fProject2.setRawClasspath(context.getDefaultClasspath(), null);
-		IClasspathEntry cpe2= JavaCore.newContainerEntry(JUNIT5_CONTAINER_PATH);
-		AbstractEclipseJava.addToClasspath(fProject2, cpe2);
-		fRoot2 = AbstractEclipseJava.addSourceContainer(fProject2, "src");
+		fRootJUnit4= context4junit4.createClasspathForJUnit("4");
+		fRootJUnit5= context4junit5.createClasspathForJUnit("5");
 	}
 
 	enum JUnitCleanupCases{
@@ -787,10 +769,10 @@ public class MyTest {
 	@ParameterizedTest
 	@EnumSource(JUnitCleanupCases.class)
 	public void testJUnitCleanupParametrized(JUnitCleanupCases test) throws CoreException {
-		IPackageFragment pack= fRoot.createPackageFragment("test", true, null);
+		IPackageFragment pack= fRootJUnit4.createPackageFragment("test", true, null);
 		ICompilationUnit cu= pack.createCompilationUnit("MyTest.java", test.given, false, null); //$NON-NLS-1$
-		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context4junit4.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
 	}
 
 	enum NOJUnitCleanupCases {
@@ -824,15 +806,15 @@ public class MyTest {
 	@ParameterizedTest
 	@EnumSource(NOJUnitCleanupCases.class)
 	public void testJUnitCleanupdonttouch(NOJUnitCleanupCases test) throws CoreException {
-		IPackageFragment pack= fRoot2.createPackageFragment("test", true, null);
+		IPackageFragment pack= fRootJUnit5.createPackageFragment("test", true, null);
 		ICompilationUnit cu= pack.createCompilationUnit("MyTest.java",test.given,false, null); //$NON-NLS-1$
-		context2.enable(MYCleanUpConstants.JUNIT_CLEANUP);
-		context2.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+		context4junit5.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context4junit5.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 
 	@Test
 	public void testJUnitCleanupTwoFiles() throws CoreException {
-		IPackageFragment pack= fRoot.createPackageFragment("test", true, null);
+		IPackageFragment pack= fRootJUnit4.createPackageFragment("test", true, null);
 		ICompilationUnit cu= pack.createCompilationUnit("MyTest.java",
 """
 package test;
@@ -869,8 +851,8 @@ public class MyExternalResource extends ExternalResource {
 		}
 }
 """, false, null); //$NON-NLS-1$
-		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu,cu2}, new String[] {
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context4junit4.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu,cu2}, new String[] {
 """
 package test;
 import org.junit.jupiter.api.Test;
@@ -913,7 +895,7 @@ public class MyExternalResource implements BeforeEachCallback, AfterEachCallback
 
 	@Test
 	public void testJUnitCleanupThreeFiles() throws CoreException {
-		IPackageFragment pack= fRoot.createPackageFragment("test", true, null);
+		IPackageFragment pack= fRootJUnit4.createPackageFragment("test", true, null);
 		ICompilationUnit cu= pack.createCompilationUnit("MyTest.java",
 """
 package test;
@@ -965,8 +947,8 @@ public class MyExternalResource2 extends ExternalResource {
 		}
 }
 """, false, null); //$NON-NLS-1$
-		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu,cu2,cu3}, new String[] {
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context4junit4.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu,cu2,cu3}, new String[] {
 """
 package test;
 import org.junit.jupiter.api.Test;
