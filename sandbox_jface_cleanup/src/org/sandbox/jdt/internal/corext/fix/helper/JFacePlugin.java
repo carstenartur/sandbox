@@ -88,9 +88,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 	public void find(JfaceCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed,
 			boolean createForOnlyIfVarUsed) {
-		int i = 0;
 		ReferenceHolder<Integer, MonitorHolder> dataholder = new ReferenceHolder<>();
-
 		ASTProcessor<ReferenceHolder<Integer, MonitorHolder>, Integer, MonitorHolder> astp = new ASTProcessor<>(
 				dataholder, nodesprocessed);
 		astp.callMethodInvocationVisitor(IProgressMonitor.class, "beginTask", (node, holder) -> { //$NON-NLS-1$

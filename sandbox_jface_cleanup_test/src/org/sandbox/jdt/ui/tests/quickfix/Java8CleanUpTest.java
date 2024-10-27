@@ -30,78 +30,78 @@ public class Java8CleanUpTest {
 	AbstractEclipseJava context= new EclipseJava8();
 
 	enum JFaceCleanupCases{
-		PositiveCase("""
-			package test;
-			import java.util.*;
-			import org.eclipse.core.runtime.CoreException;
-			import org.eclipse.core.runtime.IProgressMonitor;
-			import org.eclipse.core.runtime.SubProgressMonitor;
-			import org.eclipse.jdt.internal.ui.wizards.NewWizardMessages;
-			public class Test extends ArrayList<String> {
-			    public void createPackageFragmentRoot(IProgressMonitor monitor) throws CoreException, InterruptedException {
-					monitor.beginTask(NewWizardMessages.NewSourceFolderWizardPage_operation, 3);
-					IProgressMonitor subProgressMonitor= new SubProgressMonitor(monitor, 1);
-					IProgressMonitor subProgressMonitor2= new SubProgressMonitor(monitor, 2);
-				}
-			}
-			""", //$NON-NLS-1$
-
-				"""
-					package test;
-					import java.util.*;
-					import org.eclipse.core.runtime.CoreException;
-					import org.eclipse.core.runtime.IProgressMonitor;
-					import org.eclipse.core.runtime.SubMonitor;
-					import org.eclipse.jdt.internal.ui.wizards.NewWizardMessages;
-					public class Test extends ArrayList<String> {
-					    public void createPackageFragmentRoot(IProgressMonitor monitor) throws CoreException, InterruptedException {
-							SubMonitor subMonitor=SubMonitor.convert(monitor,NewWizardMessages.NewSourceFolderWizardPage_operation,3);
-							IProgressMonitor subProgressMonitor= subMonitor.split(1);
-							IProgressMonitor subProgressMonitor2= subMonitor.split(2);
-						}
-					}
-					"""), //$NON-NLS-1$
-		Twice("""
-			package test;
-			import java.util.*;
-			import org.eclipse.core.runtime.CoreException;
-			import org.eclipse.core.runtime.IProgressMonitor;
-			import org.eclipse.core.runtime.SubProgressMonitor;
-			import org.eclipse.jdt.internal.ui.wizards.NewWizardMessages;
-			public class Test extends ArrayList<String> {
-			    public void createPackageFragmentRoot(IProgressMonitor monitor) throws CoreException, InterruptedException {
-					monitor.beginTask(NewWizardMessages.NewSourceFolderWizardPage_operation, 3);
-					IProgressMonitor subProgressMonitor= new SubProgressMonitor(monitor, 1);
-					IProgressMonitor subProgressMonitor2= new SubProgressMonitor(monitor, 2);
-				}
-			    public void createPackageFragmentRoot2(IProgressMonitor monitor) throws CoreException, InterruptedException {
-					monitor.beginTask(NewWizardMessages.NewSourceFolderWizardPage_operation, 3);
-					IProgressMonitor subProgressMonitor3= new SubProgressMonitor(monitor, 1);
-					IProgressMonitor subProgressMonitor4= new SubProgressMonitor(monitor, 2);
-				}
-			}
-			""", //$NON-NLS-1$
-
-				"""
-					package test;
-					import java.util.*;
-					import org.eclipse.core.runtime.CoreException;
-					import org.eclipse.core.runtime.IProgressMonitor;
-					import org.eclipse.core.runtime.SubMonitor;
-					import org.eclipse.jdt.internal.ui.wizards.NewWizardMessages;
-					public class Test extends ArrayList<String> {
-					    public void createPackageFragmentRoot(IProgressMonitor monitor) throws CoreException, InterruptedException {
-							SubMonitor subMonitor=SubMonitor.convert(monitor,NewWizardMessages.NewSourceFolderWizardPage_operation,3);
-							IProgressMonitor subProgressMonitor= subMonitor.split(1);
-							IProgressMonitor subProgressMonitor2= subMonitor.split(2);
-						}
-					    public void createPackageFragmentRoot2(IProgressMonitor monitor) throws CoreException, InterruptedException {
-							SubMonitor subMonitor=SubMonitor.convert(monitor,NewWizardMessages.NewSourceFolderWizardPage_operation,3);
-							IProgressMonitor subProgressMonitor3= subMonitor.split(1);
-							IProgressMonitor subProgressMonitor4= subMonitor.split(2);
-						}
-					}
-					"""); //$NON-NLS-1$
+		PositiveCase(
+"""
+package test;
+import java.util.*;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.jdt.internal.ui.wizards.NewWizardMessages;
+public class Test extends ArrayList<String> {
+	public void createPackageFragmentRoot(IProgressMonitor monitor) throws CoreException, InterruptedException {
+		monitor.beginTask(NewWizardMessages.NewSourceFolderWizardPage_operation, 3);
+		IProgressMonitor subProgressMonitor= new SubProgressMonitor(monitor, 1);
+		IProgressMonitor subProgressMonitor2= new SubProgressMonitor(monitor, 2);
+	}
+}
+""", //$NON-NLS-1$
+"""
+package test;
+import java.util.*;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.jdt.internal.ui.wizards.NewWizardMessages;
+public class Test extends ArrayList<String> {
+	public void createPackageFragmentRoot(IProgressMonitor monitor) throws CoreException, InterruptedException {
+		SubMonitor subMonitor=SubMonitor.convert(monitor,NewWizardMessages.NewSourceFolderWizardPage_operation,3);
+		IProgressMonitor subProgressMonitor= subMonitor.split(1);
+		IProgressMonitor subProgressMonitor2= subMonitor.split(2);
+	}
+}
+"""), //$NON-NLS-1$
+		Twice(
+"""
+package test;
+import java.util.*;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.jdt.internal.ui.wizards.NewWizardMessages;
+public class Test extends ArrayList<String> {
+	public void createPackageFragmentRoot(IProgressMonitor monitor) throws CoreException, InterruptedException {
+		monitor.beginTask(NewWizardMessages.NewSourceFolderWizardPage_operation, 3);
+		IProgressMonitor subProgressMonitor= new SubProgressMonitor(monitor, 1);
+		IProgressMonitor subProgressMonitor2= new SubProgressMonitor(monitor, 2);
+	}
+	public void createPackageFragmentRoot2(IProgressMonitor monitor) throws CoreException, InterruptedException {
+		monitor.beginTask(NewWizardMessages.NewSourceFolderWizardPage_operation, 3);
+		IProgressMonitor subProgressMonitor3= new SubProgressMonitor(monitor, 1);
+		IProgressMonitor subProgressMonitor4= new SubProgressMonitor(monitor, 2);
+	}
+}
+""", //$NON-NLS-1$
+"""
+package test;
+import java.util.*;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.jdt.internal.ui.wizards.NewWizardMessages;
+public class Test extends ArrayList<String> {
+	public void createPackageFragmentRoot(IProgressMonitor monitor) throws CoreException, InterruptedException {
+		SubMonitor subMonitor=SubMonitor.convert(monitor,NewWizardMessages.NewSourceFolderWizardPage_operation,3);
+		IProgressMonitor subProgressMonitor= subMonitor.split(1);
+		IProgressMonitor subProgressMonitor2= subMonitor.split(2);
+	}
+	public void createPackageFragmentRoot2(IProgressMonitor monitor) throws CoreException, InterruptedException {
+		SubMonitor subMonitor=SubMonitor.convert(monitor,NewWizardMessages.NewSourceFolderWizardPage_operation,3);
+		IProgressMonitor subProgressMonitor3= subMonitor.split(1);
+		IProgressMonitor subProgressMonitor4= subMonitor.split(2);
+	}
+}
+"""); //$NON-NLS-1$
 
 		String given;
 		String expected;
@@ -123,25 +123,24 @@ public class Java8CleanUpTest {
 	}
 
 	enum NOJFaceCleanupCases {
-
-		NOCase(
-				"""
-					package test;
-					import java.util.*;
-					public class Test {
-					    void m(List<String> strings) {
-					        Iterator it = strings.iterator();
-					        while (it.hasNext()) {
-					            String s = (String) it.next();
-					            if (s.isEmpty()) {
-					                it.remove();
-					            } else {
-					                System.out.println(s);
-					            }
-					        }
-					    }
-					}
-					""") //$NON-NLS-1$
+NOCase(
+"""
+package test;
+import java.util.*;
+public class Test {
+    void m(List<String> strings) {
+        Iterator it = strings.iterator();
+        while (it.hasNext()) {
+            String s = (String) it.next();
+            if (s.isEmpty()) {
+                it.remove();
+            } else {
+                System.out.println(s);
+            }
+        }
+    }
+}
+""") //$NON-NLS-1$
 		;
 
 		NOJFaceCleanupCases(String given) {

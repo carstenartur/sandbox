@@ -598,23 +598,49 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 		return true;
 	}
 
-	private boolean usesGivenSignature(MethodInvocation node, String canonicaltype, String methodName) {
+	private static boolean usesGivenSignature(MethodInvocation node, String canonicaltype, String methodName) {
 		IMethodBinding methodBinding= node.resolveMethodBinding();
 		if(methodBinding==null) {
 			if(!methodName.equals(node.getName().getIdentifier())){
 				return false;
-			} 
+			}
 		} else {
 			if(!methodName.equals(methodBinding.getName())){
 				return false;
 			}
-			ITypeBinding declaringClass= methodBinding.getDeclaringClass();
-			String name= declaringClass.getQualifiedName();
-			if(canonicaltype.equals(name)){
-				return true;
+		}
+		if(isClassQualifiedNameMatching(node,canonicaltype)){
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * @param methodInvocation
+	 * @param qualifiedName
+	 * @return result
+	 */
+	public static boolean isClassQualifiedNameMatching(MethodInvocation methodInvocation, String qualifiedName) {
+		Expression expression = methodInvocation.getExpression();
+		if (expression != null) {
+			ITypeBinding typeBinding = expression.resolveTypeBinding();
+			if (typeBinding != null && !typeBinding.isRecovered()) {
+				return qualifiedName.equals(typeBinding.getQualifiedName());
+			}
+			if (expression instanceof SimpleName) {
+				String startswith=typeBinding.toString().substring(9);
+				startswith=startswith.substring(0, startswith.length()-1);
+				return qualifiedName.endsWith(startswith);
+			}
+		} else {
+			IMethodBinding methodBinding = methodInvocation.resolveMethodBinding();
+			if (methodBinding != null) {
+				ITypeBinding declaringClass = methodBinding.getDeclaringClass();
+				if (declaringClass != null) {
+					return qualifiedName.equals(declaringClass.getQualifiedName());
+				}
 			}
 		}
-		
 		return false;
 	}
 
