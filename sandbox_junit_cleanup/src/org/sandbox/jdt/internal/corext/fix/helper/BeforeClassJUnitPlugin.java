@@ -66,7 +66,7 @@ public class BeforeClassJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 			JunitHolder mh= entry.getValue();
 			Annotation minv= mh.getAnnotation();
 			MarkerAnnotation newAnnotation= ast.newMarkerAnnotation();
-			newAnnotation.setTypeName(ast.newSimpleName(BEFORE_ALL));
+			newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_BEFORE_ALL));
 			importRewriter.addImport(ORG_JUNIT_JUPITER_API_BEFORE_ALL);
 			ASTNodes.replaceButKeepComment(rewrite, minv, newAnnotation, group);
 			importRewriter.removeImport(ORG_JUNIT_BEFORECLASS);

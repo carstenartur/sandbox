@@ -104,11 +104,11 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 				newAnnotation= ast.newSingleMemberAnnotation();
 				((SingleMemberAnnotation) newAnnotation)
 						.setValue(ASTNodes.createMoveTarget(rewrite, mynode.getValue()));
-				newAnnotation.setTypeName(ast.newSimpleName(SELECT_CLASSES));
+				newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_SELECT_CLASSES));
 				importrewriter.addImport(ORG_JUNIT_PLATFORM_SUITE_API_SELECT_CLASSES);
 			} else {
 				newAnnotation= ast.newMarkerAnnotation();
-				newAnnotation.setTypeName(ast.newSimpleName(SUITE));
+				newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_SUITE));
 				importrewriter.addImport(ORG_JUNIT_JUPITER_SUITE);
 			}
 			ASTNodes.replaceButKeepComment(rewrite, minv, newAnnotation, group);

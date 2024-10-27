@@ -66,7 +66,7 @@ public class TestJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Junit
 			JunitHolder mh= entry.getValue();
 			Annotation minv= mh.getAnnotation();
 			MarkerAnnotation newAnnotation= ast.newMarkerAnnotation();
-			newAnnotation.setTypeName(ast.newSimpleName(TEST));
+			newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_TEST));
 			ASTNodes.replaceButKeepComment(rewrite, minv, newAnnotation, group);
 			importrewriter.removeImport(ORG_JUNIT_TEST);
 			importrewriter.addImport(ORG_JUNIT_JUPITER_TEST);

@@ -52,8 +52,8 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 		VariableDeclarationFragment fragment= (VariableDeclarationFragment) node.fragments().get(0);
 		ITypeBinding binding= fragment.resolveBinding().getType();
 		if (isAnonymousClass(fragment) || (binding == null)
-				|| "org.junit.rules.TestName".equals(binding.getQualifiedName())
-				|| "org.junit.rules.TemporaryFolder".equals(binding.getQualifiedName())) {
+				|| ORG_JUNIT_RULES_TEST_NAME.equals(binding.getQualifiedName())
+				|| ORG_JUNIT_RULES_TEMPORARY_FOLDER.equals(binding.getQualifiedName())) {
 			return false;
 		}
 		mh.minv= node;
@@ -68,7 +68,6 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
 		ImportRewrite importRewriter= cuRewrite.getImportRewrite();
-
 		hit.values().forEach(mh -> {
 			FieldDeclaration fieldDeclaration= mh.getFieldDeclaration();
 			for (Object fragment : fieldDeclaration.fragments()) {

@@ -82,7 +82,7 @@ public class IgnoreJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 			} else {
 				newAnnotation= ast.newMarkerAnnotation();
 			}
-			newAnnotation.setTypeName(ast.newSimpleName(DISABLED));
+			newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_DISABLED));
 			importRewriter.addImport(ORG_JUNIT_JUPITER_DISABLED);
 			ASTNodes.replaceButKeepComment(rewrite, minv, newAnnotation, group);
 			importRewriter.removeImport(ORG_JUNIT_IGNORE);

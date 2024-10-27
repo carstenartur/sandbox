@@ -66,7 +66,7 @@ public class AfterJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Juni
 			JunitHolder mh= entry.getValue();
 			Annotation minv= mh.getAnnotation();
 			MarkerAnnotation newAnnotation= ast.newMarkerAnnotation();
-			newAnnotation.setTypeName(ast.newSimpleName(AFTER_EACH));
+			newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_AFTER_EACH));
 			importRewriter.addImport(ORG_JUNIT_JUPITER_API_AFTER_EACH);
 			ASTNodes.replaceButKeepComment(rewrite, minv, newAnnotation, group);
 			importRewriter.removeImport(ORG_JUNIT_AFTER);
