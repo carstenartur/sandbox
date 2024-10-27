@@ -27,16 +27,22 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
+import org.eclipse.jdt.core.dom.Assignment;
+import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.BodyDeclaration;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.PrimitiveType;
 import org.eclipse.jdt.core.dom.QualifiedType;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SimpleType;
@@ -402,7 +408,11 @@ public abstract class AbstractTool<T> {
 	protected void modifyExternalResourceClass(TypeDeclaration node, ASTRewrite rewriter, AST ast,
 			TextEditGroup group, ImportRewrite importRewriter) {
 		ITypeBinding binding= node.resolveBinding();
-		if (binding.isAnonymous() || !isExternalResource(binding) || !hasDefaultConstructorOrNoConstructor(node)) {
+		if (
+//				binding.isAnonymous() || 
+				!isExternalResource(binding)
+//				|| !hasDefaultConstructorOrNoConstructor(node)
+				) {
 			return;
 		}
 		if (isDirectlyExtendingExternalResource(binding)) {
@@ -556,5 +566,83 @@ public abstract class AbstractTool<T> {
 				ensureExtensionContextParameter(method, rewrite, ast, group, importRewrite);
 			}
 		}
+	}
+
+	protected void refactorTestname(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importrewriter, FieldDeclaration node) {
+		rewriter.remove(node, group);
+		TypeDeclaration parentClass= (TypeDeclaration) node.getParent();
+		addBeforeEachInitMethod(parentClass, rewriter, group);
+		addTestNameField(parentClass, rewriter, group);
+		for (MethodDeclaration method : parentClass.getMethods()) {
+			if (method.getBody() != null) {
+				method.getBody().accept(new ASTVisitor() {
+					@Override
+					public boolean visit(MethodInvocation node) {
+						if (node.getExpression() != null && node.getExpression().resolveTypeBinding()
+								.getQualifiedName().equals(ORG_JUNIT_RULES_TEST_NAME)) {
+							SimpleName newFieldAccess= ast.newSimpleName("testName");
+							rewriter.replace(node, newFieldAccess, group);
+						}
+						return super.visit(node);
+					}
+				});
+			}
+		}
+		importrewriter.addImport(ORG_JUNIT_JUPITER_API_TEST_INFO);
+		importrewriter.addImport(ORG_JUNIT_JUPITER_API_BEFORE_EACH);
+		importrewriter.removeImport(ORG_JUNIT_RULE);
+		importrewriter.removeImport(ORG_JUNIT_RULES_TEST_NAME);
+	}
+
+	private void addTestNameField(TypeDeclaration parentClass, ASTRewrite rewriter, TextEditGroup group) {
+		AST ast= parentClass.getAST();
+		VariableDeclarationFragment fragment= ast.newVariableDeclarationFragment();
+		fragment.setName(ast.newSimpleName("testName"));
+	
+		FieldDeclaration fieldDeclaration= ast.newFieldDeclaration(fragment);
+		fieldDeclaration.setType(ast.newSimpleType(ast.newName("String")));
+		fieldDeclaration.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.PRIVATE_KEYWORD));
+	
+		ListRewrite listRewrite= rewriter.getListRewrite(parentClass, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);
+		listRewrite.insertFirst(fieldDeclaration, group);
+	}
+
+	private void addBeforeEachInitMethod(TypeDeclaration parentClass, ASTRewrite rewriter, TextEditGroup group) {
+		AST ast= parentClass.getAST();
+	
+		MethodDeclaration methodDeclaration= ast.newMethodDeclaration();
+		methodDeclaration.setName(ast.newSimpleName("init"));
+		methodDeclaration.setReturnType2(ast.newPrimitiveType(PrimitiveType.VOID));
+	
+		SingleVariableDeclaration param= ast.newSingleVariableDeclaration();
+		param.setType(ast.newSimpleType(ast.newName("TestInfo")));
+		param.setName(ast.newSimpleName("testInfo"));
+		methodDeclaration.parameters().add(param);
+	
+		Block body= ast.newBlock();
+		Assignment assignment= ast.newAssignment();
+		FieldAccess fieldAccess= ast.newFieldAccess();
+		fieldAccess.setExpression(ast.newThisExpression());
+		fieldAccess.setName(ast.newSimpleName("testName"));
+		assignment.setLeftHandSide(fieldAccess);
+	
+		MethodInvocation methodInvocation= ast.newMethodInvocation();
+		methodInvocation.setExpression(ast.newSimpleName("testInfo"));
+		methodInvocation.setName(ast.newSimpleName("getDisplayName"));
+	
+		assignment.setRightHandSide(methodInvocation);
+	
+		ExpressionStatement statement= ast.newExpressionStatement(assignment);
+		body.statements().add(statement);
+		methodDeclaration.setBody(body);
+	
+		MarkerAnnotation beforeEachAnnotation= ast.newMarkerAnnotation();
+		beforeEachAnnotation.setTypeName(ast.newName("BeforeEach"));
+	
+		ListRewrite listRewrite= rewriter.getListRewrite(parentClass, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);
+		listRewrite.insertFirst(methodDeclaration, group);
+	
+		listRewrite= rewriter.getListRewrite(methodDeclaration, MethodDeclaration.MODIFIERS2_PROPERTY);
+		listRewrite.insertFirst(beforeEachAnnotation, group);
 	}
 }

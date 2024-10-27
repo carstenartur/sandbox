@@ -18,26 +18,12 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
-import org.eclipse.jdt.core.dom.Assignment;
-import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.ExpressionStatement;
-import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ITypeBinding;
-import org.eclipse.jdt.core.dom.MarkerAnnotation;
-import org.eclipse.jdt.core.dom.MethodDeclaration;
-import org.eclipse.jdt.core.dom.MethodInvocation;
-import org.eclipse.jdt.core.dom.Modifier;
-import org.eclipse.jdt.core.dom.PrimitiveType;
-import org.eclipse.jdt.core.dom.SimpleName;
-import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
-import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
-import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
@@ -83,82 +69,8 @@ public class RuleTestnameJUnitPlugin extends AbstractTool<ReferenceHolder<Intege
 		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
 			JunitHolder mh= entry.getValue();
 			FieldDeclaration node= mh.getFieldDeclaration();
-			rewriter.remove(node, group);
-			TypeDeclaration parentClass= (TypeDeclaration) node.getParent();
-			addBeforeEachInitMethod(parentClass, rewriter, group);
-			addTestNameField(parentClass, rewriter, group);
-			for (MethodDeclaration method : parentClass.getMethods()) {
-				if (method.getBody() != null) {
-					method.getBody().accept(new ASTVisitor() {
-						@Override
-						public boolean visit(MethodInvocation node) {
-							if (node.getExpression() != null && node.getExpression().resolveTypeBinding()
-									.getQualifiedName().equals("org.junit.rules.TestName")) {
-								SimpleName newFieldAccess= ast.newSimpleName("testName");
-								rewriter.replace(node, newFieldAccess, group);
-							}
-							return super.visit(node);
-						}
-					});
-				}
-			}
-			importrewriter.addImport(ORG_JUNIT_JUPITER_API_TEST_INFO);
-			importrewriter.addImport(ORG_JUNIT_JUPITER_API_BEFORE_EACH);
-			importrewriter.removeImport(ORG_JUNIT_RULE);
-			importrewriter.removeImport(ORG_JUNIT_RULES_TEST_NAME);
+			refactorTestname(group, rewriter, ast, importrewriter, node);
 		}
-	}
-
-	private void addTestNameField(TypeDeclaration parentClass, ASTRewrite rewriter, TextEditGroup group) {
-		AST ast= parentClass.getAST();
-		VariableDeclarationFragment fragment= ast.newVariableDeclarationFragment();
-		fragment.setName(ast.newSimpleName("testName"));
-
-		FieldDeclaration fieldDeclaration= ast.newFieldDeclaration(fragment);
-		fieldDeclaration.setType(ast.newSimpleType(ast.newName("String")));
-		fieldDeclaration.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.PRIVATE_KEYWORD));
-
-		ListRewrite listRewrite= rewriter.getListRewrite(parentClass, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);
-		listRewrite.insertFirst(fieldDeclaration, group);
-	}
-
-	private void addBeforeEachInitMethod(TypeDeclaration parentClass, ASTRewrite rewriter, TextEditGroup group) {
-		AST ast= parentClass.getAST();
-
-		MethodDeclaration methodDeclaration= ast.newMethodDeclaration();
-		methodDeclaration.setName(ast.newSimpleName("init"));
-		methodDeclaration.setReturnType2(ast.newPrimitiveType(PrimitiveType.VOID));
-
-		SingleVariableDeclaration param= ast.newSingleVariableDeclaration();
-		param.setType(ast.newSimpleType(ast.newName("TestInfo")));
-		param.setName(ast.newSimpleName("testInfo"));
-		methodDeclaration.parameters().add(param);
-
-		Block body= ast.newBlock();
-		Assignment assignment= ast.newAssignment();
-		FieldAccess fieldAccess= ast.newFieldAccess();
-		fieldAccess.setExpression(ast.newThisExpression());
-		fieldAccess.setName(ast.newSimpleName("testName"));
-		assignment.setLeftHandSide(fieldAccess);
-
-		MethodInvocation methodInvocation= ast.newMethodInvocation();
-		methodInvocation.setExpression(ast.newSimpleName("testInfo"));
-		methodInvocation.setName(ast.newSimpleName("getDisplayName"));
-
-		assignment.setRightHandSide(methodInvocation);
-
-		ExpressionStatement statement= ast.newExpressionStatement(assignment);
-		body.statements().add(statement);
-		methodDeclaration.setBody(body);
-
-		MarkerAnnotation beforeEachAnnotation= ast.newMarkerAnnotation();
-		beforeEachAnnotation.setTypeName(ast.newName("BeforeEach"));
-
-		ListRewrite listRewrite= rewriter.getListRewrite(parentClass, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);
-		listRewrite.insertFirst(methodDeclaration, group);
-
-		listRewrite= rewriter.getListRewrite(methodDeclaration, MethodDeclaration.MODIFIERS2_PROPERTY);
-		listRewrite.insertFirst(beforeEachAnnotation, group);
 	}
 
 	@Override
