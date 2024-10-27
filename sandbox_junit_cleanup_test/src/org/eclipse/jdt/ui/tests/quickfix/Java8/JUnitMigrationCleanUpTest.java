@@ -676,13 +676,13 @@ public class MyTest {
 
 	final class MyExternalResource implements BeforeEachCallback, AfterEachCallback {
 		@Override
-		protected void beforeEach(ExtensionContext context) {
+		public void beforeEach(ExtensionContext context) {
 			super.beforeEach(context);
 			int i=4;
 		}
 
 		@Override
-		protected void afterEach(ExtensionContext context) {
+		public void afterEach(ExtensionContext context) {
 		}
 	}
 
@@ -828,6 +828,11 @@ public class MyTest {
 	@Rule
 	public MyExternalResource er= new MyExternalResource();
 
+	@Before
+	public void genericbefore(){
+		er.start();
+	}
+
 	@Test
 	public void test3() {
 	}
@@ -849,6 +854,9 @@ public class MyExternalResource extends ExternalResource {
 		@Override
 		protected void after() {
 		}
+		
+		public start(){
+		}
 }
 """, false, null); //$NON-NLS-1$
 		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP);
@@ -864,6 +872,11 @@ public class MyTest {
 
 	@RegisterExtension
 	public MyExternalResource er= new MyExternalResource();
+
+	@Before
+	public void genericbefore(){
+		er.start();
+	}
 
 	@Test
 	public void test3() {
@@ -881,12 +894,15 @@ import org.junit.jupiter.api.extension.ExtensionContext;
  */
 public class MyExternalResource implements BeforeEachCallback, AfterEachCallback {
 		@Override
-		protected void beforeEach(ExtensionContext context) {
+		public void beforeEach(ExtensionContext context) {
 			int i=4;
 		}
 
 		@Override
-		protected void afterEach(ExtensionContext context) {
+		public void afterEach(ExtensionContext context) {
+		}
+
+		public start(){
 		}
 }
 """
@@ -975,13 +991,13 @@ import test.MyExternalResource2;
 
 public class MyExternalResource extends MyExternalResource2 {
 		@Override
-		protected void beforeEach(ExtensionContext context) {
+		public void beforeEach(ExtensionContext context) {
 			super.beforeEach(context);
 			int i=4;
 		}
 
 		@Override
-		protected void afterEach(ExtensionContext context) {
+		public void afterEach(ExtensionContext context) {
 		}
 }
 """,
@@ -993,12 +1009,12 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 
 public class MyExternalResource2 implements BeforeEachCallback, AfterEachCallback {
 		@Override
-		protected void beforeEach(ExtensionContext context) {
+		public void beforeEach(ExtensionContext context) {
 			int i=4;
 		}
 
 		@Override
-		protected void afterEach(ExtensionContext context) {
+		public void afterEach(ExtensionContext context) {
 		}
 }
 """

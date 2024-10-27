@@ -143,16 +143,17 @@ public abstract class AbstractTool<T> {
 		testClass.accept(new ASTVisitor() {
 			@Override
 			public boolean visit(MethodInvocation node) {
-				if (node.getExpression() instanceof SimpleName) {
-					SimpleName expr= (SimpleName) node.getExpression();
-					if (expr.getIdentifier().equals(fieldName)) {
-						String methodName= node.getName().getIdentifier();
-						if (METHOD_BEFORE.equals(methodName)) {
-							rewriter.replace(node.getName(), ast.newSimpleName(METHOD_BEFORE_EACH), group);
-						}
-						else if (METHOD_AFTER.equals(methodName)) {
-							rewriter.replace(node.getName(), ast.newSimpleName(METHOD_AFTER_EACH), group);
-						}
+				if (node.getExpression() instanceof SimpleName
+						&& ((SimpleName) node.getExpression()).getIdentifier().equals(fieldName)) {
+					String methodName= node.getName().getIdentifier();
+
+					if (METHOD_BEFORE.equals(methodName)) {
+						// Ersetze "before()" durch "beforeEach(context)"
+						rewriter.replace(node.getName(), ast.newSimpleName(METHOD_BEFORE_EACH), group);
+						addContextParameterIfMissing(node, rewriter, ast, group);
+					} else if (METHOD_AFTER.equals(methodName)) {
+						// Ersetze "after()" durch "afterEach()"
+						rewriter.replace(node.getName(), ast.newSimpleName(METHOD_AFTER_EACH), group);
 					}
 				}
 				return super.visit(node);
@@ -160,24 +161,95 @@ public abstract class AbstractTool<T> {
 		});
 	}
 
-	private void adaptExternalResourceHierarchy(ITypeBinding typeBinding, ASTRewrite rewrite, AST ast,
-			ImportRewrite importRewrite, TextEditGroup group) {
-		if (typeBinding == null) {
+	private void addContextParameterIfMissing(MethodInvocation node, ASTRewrite rewriter, AST ast,
+			TextEditGroup group) {
+		if (node.arguments().isEmpty()) {
+			ListRewrite argsRewrite= rewriter.getListRewrite(node, MethodInvocation.ARGUMENTS_PROPERTY);
+			argsRewrite.insertFirst(ast.newSimpleName("context"), group);
+		}
+	}
+
+	protected void modifyExternalResourceClass(TypeDeclaration node, ASTRewrite rewriter, AST ast, TextEditGroup group,
+			ImportRewrite importRewriter) {
+		ITypeBinding binding= node.resolveBinding();
+		if (binding == null || !isExternalResource(binding)) {
 			return;
 		}
+		if (isDirectlyExtendingExternalResource(binding)) {
+			refactorToImplementCallbacks(node, rewriter, ast, group, importRewriter);
+		}
+		for (MethodDeclaration method : node.getMethods()) {
+			if (isLifecycleMethod(method, METHOD_BEFORE) || isLifecycleMethod(method, METHOD_AFTER)) {
+				setPublicVisibilityIfProtected(method, rewriter, ast, group);
+				String replacement= METHOD_BEFORE.equals(method.getName().getIdentifier()) ? METHOD_BEFORE_EACH
+						: METHOD_AFTER_EACH;
+				adaptSuperBeforeCalls(method.getName().getIdentifier(), replacement, method, rewriter, ast, group);
+				if (METHOD_BEFORE.equals(method.getName().getIdentifier())) {
+					removeThrowsThrowable(method, rewriter, group);
+				}
+				refactorMethod(rewriter, ast, method, replacement, group, importRewriter);
+			}
+		}
+		importRewriter.removeImport(ORG_JUNIT_RULE);
+	}
+
+	private void updateLifecycleMethods(TypeDeclaration typeDecl, ASTRewrite rewrite, AST ast, TextEditGroup group,
+			ImportRewrite importRewrite) {
+		for (MethodDeclaration method : typeDecl.getMethods()) {
+			String methodName= method.getName().getIdentifier();
+			if (METHOD_BEFORE.equals(methodName) || METHOD_AFTER.equals(methodName)) {
+				setPublicVisibilityIfProtected(method, rewrite, ast, group);
+				String replacement= METHOD_BEFORE.equals(methodName) ? METHOD_BEFORE_EACH : METHOD_AFTER_EACH;
+				adaptSuperBeforeCalls(methodName, replacement, method, rewrite, ast, group);
+				if (METHOD_BEFORE.equals(methodName)) {
+					removeThrowsThrowable(method, rewrite, group);
+				}
+				rewrite.replace(method.getName(), ast.newSimpleName(replacement), group);
+				ensureExtensionContextParameter(method, rewrite, ast, group, importRewrite);
+			}
+		}
+	}
+
+	private void setPublicVisibilityIfProtected(MethodDeclaration method, ASTRewrite rewrite, AST ast,
+			TextEditGroup group) {
+		// Durchlaufe die Modifiers und suche nach einem geschützten (protected)
+		// Modifier
+		for (Object modifier : method.modifiers()) {
+			if (modifier instanceof Modifier) {
+				Modifier mod= (Modifier) modifier;
+				if (mod.isProtected()) {
+					ListRewrite modifierRewrite= rewrite.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);
+					Modifier publicModifier= ast.newModifier(Modifier.ModifierKeyword.PUBLIC_KEYWORD);
+					modifierRewrite.replace(mod, publicModifier, group);
+					break; // Stoppe die Schleife, sobald der Modifier ersetzt wurde
+				}
+			}
+		}
+	}
+
+	private void adaptExternalResourceHierarchy(ITypeBinding typeBinding, ASTRewrite rewrite, AST ast,
+			ImportRewrite importRewrite, TextEditGroup group) {
 		while (typeBinding != null && isExternalResource(typeBinding)) {
-			IType type= (IType) typeBinding.getJavaElement();
-			TypeDeclaration typeDecl= findTypeDeclaration(typeBinding.getJavaElement().getJavaProject(),
-					type.getElementName());
+			TypeDeclaration typeDecl= findTypeDeclarationInProject(typeBinding);
 			if (typeDecl != null) {
-				removeSuperclassType(typeDecl, rewrite, group);
-				addBeforeAndAfterEachCallbacks(typeDecl, rewrite, ast, importRewrite, group);
-				updateLifecycleMethods(typeDecl, rewrite, ast, group, importRewrite);
-				importRewrite.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
-				importRewrite.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
+				adaptTypeDeclaration(typeDecl, rewrite, ast, importRewrite, group);
 			}
 			typeBinding= typeBinding.getSuperclass();
 		}
+	}
+
+	private TypeDeclaration findTypeDeclarationInProject(ITypeBinding typeBinding) {
+		IType type= (IType) typeBinding.getJavaElement();
+		return type != null ? findTypeDeclaration(type.getJavaProject(), type.getElementName()) : null;
+	}
+
+	private void adaptTypeDeclaration(TypeDeclaration typeDecl, ASTRewrite rewrite, AST ast,
+			ImportRewrite importRewrite, TextEditGroup group) {
+		removeSuperclassType(typeDecl, rewrite, group);
+		addBeforeAndAfterEachCallbacks(typeDecl, rewrite, ast, importRewrite, group);
+		updateLifecycleMethods(typeDecl, rewrite, ast, group, importRewrite);
+		importRewrite.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
+		importRewrite.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
 	}
 
 	private void adaptSuperBeforeCalls(String vorher, String nachher, MethodDeclaration method, ASTRewrite rewriter,
@@ -187,15 +259,19 @@ public abstract class AbstractTool<T> {
 			public boolean visit(SuperMethodInvocation node) {
 				if (vorher.equals(node.getName().getIdentifier())) {
 					rewriter.replace(node.getName(), ast.newSimpleName(nachher), group);
-					ListRewrite argumentsRewrite= rewriter.getListRewrite(node,
-							SuperMethodInvocation.ARGUMENTS_PROPERTY);
-					if (node.arguments().isEmpty()) {
-						argumentsRewrite.insertFirst(ast.newSimpleName(VARIABLE_NAME_CONTEXT), group);
-					}
+					addContextArgumentIfAbsent(node, rewriter, ast, group);
 				}
 				return super.visit(node);
 			}
 		});
+	}
+
+	private void addContextArgumentIfAbsent(SuperMethodInvocation node, ASTRewrite rewriter, AST ast,
+			TextEditGroup group) {
+		if (node.arguments().isEmpty()) {
+			rewriter.getListRewrite(node, SuperMethodInvocation.ARGUMENTS_PROPERTY)
+					.insertFirst(ast.newSimpleName(VARIABLE_NAME_CONTEXT), group);
+		}
 	}
 
 	private void addBeforeAndAfterEachCallbacks(TypeDeclaration typeDecl, ASTRewrite rewrite, AST ast,
@@ -408,32 +484,6 @@ public abstract class AbstractTool<T> {
 		}
 	}
 
-	protected void modifyExternalResourceClass(TypeDeclaration node, ASTRewrite rewriter, AST ast,
-			TextEditGroup group, ImportRewrite importRewriter) {
-		ITypeBinding binding= node.resolveBinding();
-		if (
-//				binding.isAnonymous() || 
-				!isExternalResource(binding)
-//				|| !hasDefaultConstructorOrNoConstructor(node)
-				) {
-			return;
-		}
-		if (isDirectlyExtendingExternalResource(binding)) {
-			refactorToImplementCallbacks(node, rewriter, ast, group, importRewriter);
-		}
-		for (MethodDeclaration method : node.getMethods()) {
-			if (isLifecycleMethod(method, METHOD_BEFORE)) {
-				adaptSuperBeforeCalls(METHOD_BEFORE, METHOD_BEFORE_EACH, method, rewriter, ast, group);
-				removeThrowsThrowable(method, rewriter, group);
-				refactorMethod(rewriter, ast, method, METHOD_BEFORE_EACH, group, importRewriter);
-			} else if (isLifecycleMethod(method, METHOD_AFTER)) {
-				adaptSuperBeforeCalls(METHOD_AFTER, METHOD_AFTER_EACH, method, rewriter, ast, group);
-				refactorMethod(rewriter, ast, method, METHOD_AFTER_EACH, group, importRewriter);
-			}
-		}
-		importRewriter.removeImport(ORG_JUNIT_RULE);
-	}
-
 	private CompilationUnit parseCompilationUnit(ICompilationUnit iCompilationUnit) {
 		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
 		parser.setKind(ASTParser.K_COMPILATION_UNIT);
@@ -555,23 +605,8 @@ public abstract class AbstractTool<T> {
 	public abstract void rewrite(JUnitCleanUpFixCore useExplicitEncodingFixCore, T holder,
 			CompilationUnitRewrite cuRewrite, TextEditGroup group);
 
-	private void updateLifecycleMethods(TypeDeclaration typeDecl, ASTRewrite rewrite, AST ast, TextEditGroup group,
-			ImportRewrite importRewrite) {
-		for (MethodDeclaration method : typeDecl.getMethods()) {
-			if (method.getName().getIdentifier().equals(METHOD_BEFORE)) {
-				removeThrowsThrowable(method, rewrite, group);
-				adaptSuperBeforeCalls(METHOD_BEFORE, METHOD_BEFORE_EACH, method, rewrite, ast, group);
-				rewrite.replace(method.getName(), ast.newSimpleName(METHOD_BEFORE_EACH), group);
-				ensureExtensionContextParameter(method, rewrite, ast, group, importRewrite);
-			} else if (method.getName().getIdentifier().equals(METHOD_AFTER)) {
-				adaptSuperBeforeCalls(METHOD_AFTER, METHOD_AFTER_EACH, method, rewrite, ast, group);
-				rewrite.replace(method.getName(), ast.newSimpleName(METHOD_AFTER_EACH), group);
-				ensureExtensionContextParameter(method, rewrite, ast, group, importRewrite);
-			}
-		}
-	}
-
-	protected void refactorTestname(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importrewriter, FieldDeclaration node) {
+	protected void refactorTestname(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importrewriter,
+			FieldDeclaration node) {
 		rewriter.remove(node, group);
 		TypeDeclaration parentClass= (TypeDeclaration) node.getParent();
 		addBeforeEachInitMethod(parentClass, rewriter, group);
@@ -581,8 +616,8 @@ public abstract class AbstractTool<T> {
 				method.getBody().accept(new ASTVisitor() {
 					@Override
 					public boolean visit(MethodInvocation node) {
-						if (node.getExpression() != null && node.getExpression().resolveTypeBinding()
-								.getQualifiedName().equals(ORG_JUNIT_RULES_TEST_NAME)) {
+						if (node.getExpression() != null && node.getExpression().resolveTypeBinding().getQualifiedName()
+								.equals(ORG_JUNIT_RULES_TEST_NAME)) {
 							SimpleName newFieldAccess= ast.newSimpleName(TEST_NAME);
 							rewriter.replace(node, newFieldAccess, group);
 						}
@@ -601,67 +636,67 @@ public abstract class AbstractTool<T> {
 		AST ast= parentClass.getAST();
 		VariableDeclarationFragment fragment= ast.newVariableDeclarationFragment();
 		fragment.setName(ast.newSimpleName(TEST_NAME));
-	
+
 		FieldDeclaration fieldDeclaration= ast.newFieldDeclaration(fragment);
 		fieldDeclaration.setType(ast.newSimpleType(ast.newName("String")));
 		fieldDeclaration.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.PRIVATE_KEYWORD));
-	
+
 		ListRewrite listRewrite= rewriter.getListRewrite(parentClass, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);
 		listRewrite.insertFirst(fieldDeclaration, group);
 	}
 
 	private void addBeforeEachInitMethod(TypeDeclaration parentClass, ASTRewrite rewriter, TextEditGroup group) {
 		AST ast= parentClass.getAST();
-	
+
 		MethodDeclaration methodDeclaration= ast.newMethodDeclaration();
 		methodDeclaration.setName(ast.newSimpleName("init"));
 		methodDeclaration.setReturnType2(ast.newPrimitiveType(PrimitiveType.VOID));
-	
+
 		SingleVariableDeclaration param= ast.newSingleVariableDeclaration();
 		param.setType(ast.newSimpleType(ast.newName("TestInfo")));
 		param.setName(ast.newSimpleName("testInfo"));
 		methodDeclaration.parameters().add(param);
-	
+
 		Block body= ast.newBlock();
 		Assignment assignment= ast.newAssignment();
 		FieldAccess fieldAccess= ast.newFieldAccess();
 		fieldAccess.setExpression(ast.newThisExpression());
 		fieldAccess.setName(ast.newSimpleName(TEST_NAME));
 		assignment.setLeftHandSide(fieldAccess);
-	
+
 		MethodInvocation methodInvocation= ast.newMethodInvocation();
 		methodInvocation.setExpression(ast.newSimpleName("testInfo"));
 		methodInvocation.setName(ast.newSimpleName("getDisplayName"));
-	
+
 		assignment.setRightHandSide(methodInvocation);
-	
+
 		ExpressionStatement statement= ast.newExpressionStatement(assignment);
 		body.statements().add(statement);
 		methodDeclaration.setBody(body);
-	
+
 		MarkerAnnotation beforeEachAnnotation= ast.newMarkerAnnotation();
 		beforeEachAnnotation.setTypeName(ast.newName("BeforeEach"));
-	
+
 		ListRewrite listRewrite= rewriter.getListRewrite(parentClass, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);
 		listRewrite.insertFirst(methodDeclaration, group);
-	
+
 		listRewrite= rewriter.getListRewrite(methodDeclaration, MethodDeclaration.MODIFIERS2_PROPERTY);
 		listRewrite.insertFirst(beforeEachAnnotation, group);
 	}
 
 	private List<ITypeBinding> getAllSubclasses(ITypeBinding typeBinding) {
-		List<ITypeBinding> subclasses = new ArrayList<>();
+		List<ITypeBinding> subclasses= new ArrayList<>();
 
 		try {
 			// Erzeuge den entsprechenden IType des gegebenen ITypeBindings
-			IType type = (IType) typeBinding.getJavaElement();
+			IType type= (IType) typeBinding.getJavaElement();
 
 			// Erzeuge die Typ-Hierarchie für den übergebenen Typ innerhalb des Projekts
-			ITypeHierarchy typeHierarchy = type.newTypeHierarchy(null); // null verwendet das gesamte Projekt
+			ITypeHierarchy typeHierarchy= type.newTypeHierarchy(null); // null verwendet das gesamte Projekt
 
 			// Durchlaufe alle direkten und indirekten Subtypen und füge sie der Liste hinzu
 			for (IType subtype : typeHierarchy.getAllSubtypes(type)) {
-				ITypeBinding subtypeBinding = (ITypeBinding) subtype.getAdapter(ITypeBinding.class);
+				ITypeBinding subtypeBinding= (ITypeBinding) subtype.getAdapter(ITypeBinding.class);
 				if (subtypeBinding != null) {
 					subclasses.add(subtypeBinding);
 				}
@@ -671,22 +706,21 @@ public abstract class AbstractTool<T> {
 		}
 		return subclasses;
 	}
-	
-	
-	protected void refactorTestnameInClassAndSubclasses(TextEditGroup group, ASTRewrite rewriter, AST ast, 
+
+	protected void refactorTestnameInClassAndSubclasses(TextEditGroup group, ASTRewrite rewriter, AST ast,
 			ImportRewrite importRewrite, FieldDeclaration node) {
 		// Refactoring in der aktuellen Klasse
 		refactorTestnameInClass(group, rewriter, ast, importRewrite, node);
 
 		// Ermittlung aller abgeleiteten Klassen
-		ITypeBinding typeBinding = ((TypeDeclaration) node.getParent()).resolveBinding();
-		List<ITypeBinding> subclasses = getAllSubclasses(typeBinding);
+		ITypeBinding typeBinding= ((TypeDeclaration) node.getParent()).resolveBinding();
+		List<ITypeBinding> subclasses= getAllSubclasses(typeBinding);
 
 		for (ITypeBinding subclassBinding : subclasses) {
-			IType subclassType = (IType) subclassBinding.getJavaElement();
+			IType subclassType= (IType) subclassBinding.getJavaElement();
 
 			// Hole die AST-Darstellung der Subklasse (zum Beispiel durch ASTParser)
-			CompilationUnit subclassUnit = parseCompilationUnit(subclassType.getCompilationUnit());
+			CompilationUnit subclassUnit= parseCompilationUnit(subclassType.getCompilationUnit());
 			subclassUnit.accept(new ASTVisitor() {
 				@Override
 				public boolean visit(TypeDeclaration subclassNode) {
@@ -699,27 +733,28 @@ public abstract class AbstractTool<T> {
 		}
 	}
 
-	protected void refactorTestnameInClass(TextEditGroup group, ASTRewrite rewriter, AST ast, 
+	protected void refactorTestnameInClass(TextEditGroup group, ASTRewrite rewriter, AST ast,
 			ImportRewrite importRewrite, FieldDeclaration node) {
 		// Entferne das alte TestName-Feld
 		rewriter.remove(node, group);
 
 		// Füge ein neues TestName-Feld hinzu und erzeuge eine BeforeEach-Init-Methode
-		TypeDeclaration parentClass = (TypeDeclaration) node.getParent();
+		TypeDeclaration parentClass= (TypeDeclaration) node.getParent();
 		addBeforeEachInitMethod(parentClass, rewriter, group);
 		addTestNameField(parentClass, rewriter, group);
 
-		// Ersetze alle Zugriffe auf das alte TestName-Feld durch das neue Feld "testName"
+		// Ersetze alle Zugriffe auf das alte TestName-Feld durch das neue Feld
+		// "testName"
 		for (MethodDeclaration method : parentClass.getMethods()) {
 			if (method.getBody() != null) {
 				method.getBody().accept(new ASTVisitor() {
 					@Override
 					public boolean visit(MethodInvocation node) {
 						// Prüfen, ob der Aufruf auf das alte TestName-Feld verweist
-						if (node.getExpression() != null 
-								&& ORG_JUNIT_RULES_TEST_NAME.equals(node.getExpression().resolveTypeBinding().getQualifiedName())) {
+						if (node.getExpression() != null && ORG_JUNIT_RULES_TEST_NAME
+								.equals(node.getExpression().resolveTypeBinding().getQualifiedName())) {
 							// Ersetze den Zugriff durch "testName"
-							SimpleName newFieldAccess = ast.newSimpleName(TEST_NAME);
+							SimpleName newFieldAccess= ast.newSimpleName(TEST_NAME);
 							rewriter.replace(node, newFieldAccess, group);
 						}
 						return super.visit(node);
@@ -734,5 +769,4 @@ public abstract class AbstractTool<T> {
 		importRewrite.removeImport(ORG_JUNIT_RULE);
 		importRewrite.removeImport(ORG_JUNIT_RULES_TEST_NAME);
 	}
-
 }
