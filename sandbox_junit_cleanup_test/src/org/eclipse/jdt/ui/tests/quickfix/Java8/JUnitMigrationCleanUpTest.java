@@ -101,6 +101,10 @@ public class MyTest {
 	@Test
 	public void test() {
 		Assert.fail("Not yet implemented");
+		Object o1,o2;
+		o1="foo";
+		o2=o1;
+		Assert.assertSame("ohno", o1, o2);
 	}
 
 	@Ignore("not implemented")
@@ -187,6 +191,10 @@ public class MyTest {
 	@Test
 	public void test() {
 		Assertions.fail("Not yet implemented");
+		Object o1,o2;
+		o1="foo";
+		o2=o1;
+		Assertions.assertSame(o1, o2, "ohno");
 	}
 
 	@Disabled("not implemented")
