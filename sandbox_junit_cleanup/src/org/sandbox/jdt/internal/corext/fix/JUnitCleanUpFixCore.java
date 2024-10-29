@@ -67,7 +67,15 @@ public enum JUnitCleanUpFixCore {
 	}
 
 	public String getPreview(boolean i) {
-		return junitfound.getPreview(i);
+		long countother= junitfound.getPreview(!i).lines().count();
+		StringBuilder preview= new StringBuilder(junitfound.getPreview(i));
+		long countnow= preview.toString().lines().count();
+		if(countnow<countother) {
+			for (long ii=0;ii<countother-countnow;ii++) {
+				preview.append(System.lineSeparator());
+			}
+		}
+		return preview.toString();
 	}
 
 	/**
