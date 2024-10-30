@@ -83,8 +83,8 @@ public abstract class AbstractTool<T> {
 	private static final String ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK= "org.junit.jupiter.api.extension.BeforeEachCallback";
 	private static final String ORG_JUNIT_JUPITER_API_EXTENSION_REGISTER_EXTENSION= "org.junit.jupiter.api.extension.RegisterExtension";
 	private static final String ANNOTATION_EXTEND_WITH= "ExtendWith";
-	private static final String METHOD_AFTER= "after";
-	private static final String METHOD_BEFORE= "before";
+	protected static final String METHOD_AFTER= "after";
+	protected static final String METHOD_BEFORE= "before";
 	private static final String VARIABLE_NAME_CONTEXT= "context";
 	private static final String EXTENSION_CONTEXT= "ExtensionContext";
 	protected static final String ORG_JUNIT_RULES_EXTERNAL_RESOURCE= "org.junit.rules.ExternalResource";
@@ -224,7 +224,7 @@ public abstract class AbstractTool<T> {
 				refactorMethod(rewriter, ast, method, replacement, group, importRewriter);
 			}
 		}
-		importRewriter.removeImport(ORG_JUNIT_RULE);
+//		importRewriter.removeImport(ORG_JUNIT_RULE);
 	}
 
 	private void updateLifecycleMethods(TypeDeclaration typeDecl, ASTRewrite rewrite, AST ast, TextEditGroup group,
@@ -494,7 +494,7 @@ public abstract class AbstractTool<T> {
 		return false;
 	}
 
-	private boolean isLifecycleMethod(MethodDeclaration method, String methodName) {
+	protected boolean isLifecycleMethod(MethodDeclaration method, String methodName) {
 		return method.getName().getIdentifier().equals(methodName);
 	}
 

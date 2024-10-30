@@ -795,23 +795,33 @@ public class MyTest {
 
 	enum NOJUnitCleanupCases {
 
-		NOCase(
-				"""
-				package test;
-				import static org.junit.jupiter.api.Assertions.assertEquals;
-				
-				import org.junit.jupiter.api.Test;
-				/**
-				 *
-				 */
-				public class MyTest {
+NOCase(
+"""
+package test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-					@Test
-					public void test3() {
-						assertEquals("expected", "actual");
-					}
-				}
-					""") //$NON-NLS-1$
+import org.junit.jupiter.api.Test;
+/**
+ *
+ */
+public class MyTest {
+
+	@Test
+	public void test3() {
+		assertEquals("expected", "actual");
+	}
+}
+"""), //$NON-NLS-1$
+UnrelatedCodeCase(
+"""
+package test;
+/**
+ *
+ */
+public class MyTest {
+
+}
+""") //$NON-NLS-1$
 		;
 
 		NOJUnitCleanupCases(String given) {
@@ -838,6 +848,7 @@ public class MyTest {
 package test;
 import org.junit.Test;
 import org.junit.Rule;
+import test.MyExternalResource;
 /**
  * 
  */
@@ -883,6 +894,8 @@ public class MyExternalResource extends ExternalResource {
 package test;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import test.MyExternalResource;
 /**
  *
  */
@@ -899,6 +912,79 @@ public class MyTest {
 	@Test
 	public void test3() {
 	}
+}
+"""
+,
+"""
+package test;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
+/**
+ *
+ */
+public class MyExternalResource implements BeforeEachCallback, AfterEachCallback {
+		@Override
+		public void beforeEach(ExtensionContext context) {
+			int i=4;
+		}
+
+		@Override
+		public void afterEach(ExtensionContext context) {
+		}
+
+		public start(){
+		}
+}
+"""
+}, null);
+	}
+	
+	@Test
+	public void testJUnitCleanupTwoFilesb() throws CoreException {
+		IPackageFragment pack= fRootJUnit4.createPackageFragment("test", true, null);
+		ICompilationUnit cu= pack.createCompilationUnit("MyTest.java",
+"""
+package test;
+import test.MyExternalResource;
+/**
+ * 
+ */
+public class MyTest extends MyExternalResource {
+
+}
+""", false, null); //$NON-NLS-1$
+		ICompilationUnit cu2= pack.createCompilationUnit("MyExternalResource.java",
+"""
+package test;
+import org.junit.rules.ExternalResource;
+/**
+ * 
+ */
+public class MyExternalResource extends ExternalResource {
+		@Override
+		protected void before() throws Throwable {
+			int i=4;
+		}
+
+		@Override
+		protected void after() {
+		}
+		
+		public start(){
+		}
+}
+""", false, null); //$NON-NLS-1$
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context4junit4.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu,cu2}, new String[] {
+"""
+package test;
+import test.MyExternalResource;
+/**
+ *
+ */
+public class MyTest extends MyExternalResource {
+
 }
 """
 ,

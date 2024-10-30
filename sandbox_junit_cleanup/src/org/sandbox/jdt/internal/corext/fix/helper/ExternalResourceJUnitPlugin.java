@@ -18,6 +18,7 @@ import java.util.Set;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
@@ -46,6 +47,17 @@ public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<In
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, TypeDeclaration node,
 			ReferenceHolder<Integer, JunitHolder> dataholder, Set<ASTNode> nodesprocessed) {
 		if (!nodesprocessed.contains(node)) {
+			if (!isDirectlyExtendingExternalResource(node.resolveBinding())) {
+				boolean nothingtochange=true;
+				for (MethodDeclaration method : node.getMethods()) {
+					if (isLifecycleMethod(method, METHOD_BEFORE) || isLifecycleMethod(method, METHOD_AFTER)) {
+						nothingtochange=false;
+					}
+				}
+				if(nothingtochange) {
+					return false;
+				}
+			}
 			nodesprocessed.add(node);
 			JunitHolder mh= new JunitHolder();
 			mh.minv= node;
