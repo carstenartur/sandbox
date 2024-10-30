@@ -117,6 +117,7 @@ public class MyTest {
 	public void test3() {
 		boolean condition=true;
 		Assume.assumeFalse("Bedingung nicht erfüllt", condition);
+		Assume.assumeFalse(condition);
 		assumeTrue("Bedingung nicht erfüllt", condition);
 		Assert.assertEquals("expected", "actual");
 	}
@@ -127,10 +128,13 @@ public class MyTest {
 		int result=5;
 		Assert.assertEquals(5, result);  // expected = 5, actual = result
 		Assert.assertNotEquals("failuremessage",5, result);  // expected = 5, actual = result
+		Assert.assertNotEquals(5, result);  // expected = 5, actual = result
 		Assert.assertTrue("failuremessage",false);
-		Assert.assertFalse("failuremessage",false);
 		Assert.assertTrue(false);
+		Assert.assertFalse("failuremessage",false);
 		Assert.assertFalse(false);
+		Assert.assertNull("failuremessage", null);
+		Assert.assertNull(null);
 	}
 }
 			""", //$NON-NLS-1$
@@ -207,6 +211,7 @@ public class MyTest {
 	public void test3() {
 		boolean condition=true;
 		Assumptions.assumeFalse(condition, "Bedingung nicht erfüllt");
+		Assumptions.assumeFalse(condition);
 		assumeTrue(condition, "Bedingung nicht erfüllt");
 		Assertions.assertEquals("expected", "actual");
 	}
@@ -217,10 +222,13 @@ public class MyTest {
 		int result=5;
 		Assertions.assertEquals(5, result);  // expected = 5, actual = result
 		Assertions.assertNotEquals(5,result, "failuremessage");  // expected = 5, actual = result
+		Assertions.assertNotEquals(5, result);  // expected = 5, actual = result
 		Assertions.assertTrue(false,"failuremessage");
-		Assertions.assertFalse(false,"failuremessage");
 		Assertions.assertTrue(false);
+		Assertions.assertFalse(false,"failuremessage");
 		Assertions.assertFalse(false);
+		Assertions.assertNull(null, "failuremessage");
+		Assertions.assertNull(null);
 	}
 }
 					"""),
@@ -659,6 +667,7 @@ public class MyTest {
 
 		@Override
 		protected void after() {
+			super.after();
 		}
 	}
 	
@@ -691,6 +700,7 @@ public class MyTest {
 
 		@Override
 		public void afterEach(ExtensionContext context) {
+			super.afterEach(context);
 		}
 	}
 
@@ -963,6 +973,7 @@ import org.junit.rules.ExternalResource;
 public class MyExternalResource2 extends ExternalResource {
 		@Override
 		protected void before() throws Throwable {
+			super.before();
 			int i=4;
 		}
 
@@ -1018,6 +1029,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 public class MyExternalResource2 implements BeforeEachCallback, AfterEachCallback {
 		@Override
 		public void beforeEach(ExtensionContext context) {
+			super.beforeEach(context);
 			int i=4;
 		}
 

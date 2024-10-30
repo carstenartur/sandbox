@@ -13,6 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.util.Optional;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
@@ -51,7 +52,9 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 		JunitHolder mh= new JunitHolder();
 		VariableDeclarationFragment fragment= (VariableDeclarationFragment) node.fragments().get(0);
 		ITypeBinding binding= fragment.resolveBinding().getType();
-		if (isAnonymousClass(fragment) || (binding == null)
+		if (
+				isAnonymousClass(fragment) || 
+				(binding == null)
 				|| ORG_JUNIT_RULES_TEST_NAME.equals(binding.getQualifiedName())
 				|| ORG_JUNIT_RULES_TEMPORARY_FOLDER.equals(binding.getQualifiedName())) {
 			return false;
@@ -70,10 +73,11 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 		ImportRewrite importRewriter= cuRewrite.getImportRewrite();
 		hit.values().forEach(mh -> {
 			FieldDeclaration fieldDeclaration= mh.getFieldDeclaration();
+			Optional<ASTNode> innerTypeDeclaration= getInnerTypeDeclaration(fieldDeclaration);
 			for (Object fragment : fieldDeclaration.fragments()) {
 				VariableDeclarationFragment variable = (VariableDeclarationFragment) fragment;
 				String fieldName = variable.getName().getIdentifier();
-				migrateRuleToRegisterExtensionAndAdaptHierarchy(getParentTypeDeclaration(fieldDeclaration),rewrite, ast, importRewriter,group ,fieldName);
+				migrateRuleToRegisterExtensionAndAdaptHierarchy(innerTypeDeclaration,getParentTypeDeclaration(fieldDeclaration),rewrite, ast, importRewriter,group ,fieldName);
 			}
 		});
 	}

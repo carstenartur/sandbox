@@ -16,6 +16,7 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import org.eclipse.jdt.core.ICompilationUnit;
@@ -146,7 +147,6 @@ public abstract class AbstractTool<T> {
 				if (node.getExpression() instanceof SimpleName
 						&& ((SimpleName) node.getExpression()).getIdentifier().equals(fieldName)) {
 					String methodName= node.getName().getIdentifier();
-
 					if (METHOD_BEFORE.equals(methodName)) {
 						// Ersetze "before()" durch "beforeEach(context)"
 						rewriter.replace(node.getName(), ast.newSimpleName(METHOD_BEFORE_EACH), group);
@@ -167,6 +167,40 @@ public abstract class AbstractTool<T> {
 			ListRewrite argsRewrite= rewriter.getListRewrite(node, MethodInvocation.ARGUMENTS_PROPERTY);
 			argsRewrite.insertFirst(ast.newSimpleName("context"), group);
 		}
+	}
+
+	protected Optional<ASTNode> getInnerTypeDeclaration(FieldDeclaration fieldDeclaration) {
+		for (Object fragment : fieldDeclaration.fragments()) {
+			if (fragment instanceof VariableDeclarationFragment) {
+				VariableDeclarationFragment variableFragment = (VariableDeclarationFragment) fragment;
+
+				// Prüfen, ob die Initialisierung eine anonyme Klasse ist
+				Expression initializer = variableFragment.getInitializer();
+				if (initializer instanceof ClassInstanceCreation) {
+					ClassInstanceCreation classInstance = (ClassInstanceCreation) initializer;
+
+					// Anonyme Klasse gefunden
+					if (classInstance.getAnonymousClassDeclaration() != null) {
+						return Optional.of(classInstance.getAnonymousClassDeclaration());
+					}
+
+					// Falls keine anonyme Klasse, den Typ der inneren Klasse prüfen
+					ITypeBinding typeBinding = classInstance.getType().resolveBinding();
+					if (typeBinding != null && typeBinding.isClass() && typeBinding.getJavaElement() instanceof IType) {
+						IType type = (IType) typeBinding.getJavaElement();
+						IJavaProject javaProject = type.getJavaProject();
+						String typeName = type.getElementName();
+
+						// Verwende nun den Projektnamen und den Typnamen
+						TypeDeclaration innerTypeDecl = findTypeDeclaration(javaProject, typeName);
+						if (innerTypeDecl != null) {
+							return Optional.of(innerTypeDecl);
+						}
+					}
+				}
+			}
+		}
+		return Optional.empty(); // Keine innere oder anonyme Klasse gefunden
 	}
 
 	protected void modifyExternalResourceClass(TypeDeclaration node, ASTRewrite rewriter, AST ast, TextEditGroup group,
@@ -469,9 +503,12 @@ public abstract class AbstractTool<T> {
 		return typeBinding != null && String.class.getCanonicalName().equals(typeBinding.getQualifiedName());
 	}
 
-	public void migrateRuleToRegisterExtensionAndAdaptHierarchy(TypeDeclaration testClass, ASTRewrite rewrite, AST ast,
+	public void migrateRuleToRegisterExtensionAndAdaptHierarchy(Optional<ASTNode> innerTypeDeclaration, TypeDeclaration testClass, ASTRewrite rewrite, AST ast,
 			ImportRewrite importRewrite, TextEditGroup group, String varname) {
-		adaptBeforeAfterCallsInTestClass(testClass, varname, rewrite, ast, group);
+		if(innerTypeDeclaration.isPresent() && innerTypeDeclaration.get() instanceof TypeDeclaration) {
+			adaptBeforeAfterCallsInTestClass((TypeDeclaration) innerTypeDeclaration.get(), varname, rewrite, ast, group);
+		}
+//		
 		for (FieldDeclaration field : testClass.getFields()) {
 			if (isAnnotatedWithRule(field) && isExternalResource(field)) {
 				removeRuleAnnotation(field, rewrite, group, importRewrite);

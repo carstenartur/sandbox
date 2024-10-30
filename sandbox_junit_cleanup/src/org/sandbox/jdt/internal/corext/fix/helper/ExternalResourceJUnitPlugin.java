@@ -39,16 +39,19 @@ public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<In
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataholder= new ReferenceHolder<>();
 		HelperVisitor.callTypeDeclarationVisitor(ORG_JUNIT_RULES_EXTERNAL_RESOURCE, compilationUnit, dataholder,
-				nodesprocessed, (visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+				nodesprocessed, (visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder,nodesprocessed));
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, TypeDeclaration node,
-			ReferenceHolder<Integer, JunitHolder> dataholder) {
-		JunitHolder mh= new JunitHolder();
-		mh.minv= node;
-		dataholder.put(dataholder.size(), mh);
-		operations.add(fixcore.rewrite(dataholder));
+			ReferenceHolder<Integer, JunitHolder> dataholder, Set<ASTNode> nodesprocessed) {
+		if (!nodesprocessed.contains(node)) {
+			nodesprocessed.add(node);
+			JunitHolder mh= new JunitHolder();
+			mh.minv= node;
+			dataholder.put(dataholder.size(), mh);
+			operations.add(fixcore.rewrite(dataholder));
+		}
 		return false;
 	}
 
