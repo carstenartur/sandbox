@@ -17,8 +17,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
-import org.hamcrest.CoreMatchers;
-import org.junit.Assume;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -126,6 +124,7 @@ public class MyTest {
 		Assert.assertEquals("expected", "actual");
 		Assume.assumeNotNull(" ");
 		Assume.assumeThat(1, CoreMatchers.is(1));
+		Assert.assertThat(1, CoreMatchers.is(1));
 	}
 
 	@Test
@@ -147,6 +146,7 @@ public class MyTest {
 
 """
 package test;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.junit.MatcherAssume.assumeThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -225,6 +225,7 @@ public class MyTest {
 		Assertions.assertEquals("expected", "actual");
 		Assumptions.assumeNotNull(" ");
 		assumeThat(1, CoreMatchers.is(1));
+		assertThat(1, CoreMatchers.is(1));
 	}
 
 	@Test
@@ -954,11 +955,6 @@ public class MyExternalResource implements BeforeEachCallback, AfterEachCallback
 	
 	@Test
 	public void testJUnitCleanupTwoFilesb() throws CoreException {
-//		Assume.assumeNotNull("");
-//		Assert.assertThrows(null, null)
-//		Assertions.assertThrows(null, null)
-		Assume.assumeThat(1, CoreMatchers.is(1));
-//		Assumptions.assumingThat(false, null);
 		IPackageFragment pack= fRootJUnit4.createPackageFragment("test", true, null);
 		ICompilationUnit cu= pack.createCompilationUnit("MyTest.java",
 """
