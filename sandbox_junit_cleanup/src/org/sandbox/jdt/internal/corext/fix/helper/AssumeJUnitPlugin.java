@@ -22,6 +22,7 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.SimpleName;
@@ -41,7 +42,7 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
  */
 public class AssumeJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
-	private static final Set<String> twoparam= Set.of("assumeTrue", "assumeFalse", "assumeNotNull");
+	private static final Set<String> twoparam= Set.of("assumeTrue", "assumeFalse", "assumeNotNull","assumeThat");
 	private static final Set<String> oneparam= Set.of("assumeTrue", "assumeFalse", "assumeNotNull");
 	private static final Set<String> allassumemethods= Stream.of(twoparam, oneparam).flatMap(Set::stream)
 			.collect(Collectors.toSet());
@@ -83,16 +84,33 @@ public class AssumeJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 			JunitHolder mh= entry.getValue();
 			if (mh.minv instanceof MethodInvocation) {
 				MethodInvocation minv= mh.getMethodInvocation();
-				reorderParameters(minv, rewrite, group, oneparam, twoparam);
-				SimpleName newQualifier= ast.newSimpleName("Assumptions");
-				Expression expression= minv.getExpression();
-				if (expression != null) {
-					ASTNodes.replaceButKeepComment(rewrite, expression, newQualifier, group);
+				if ("assumeThat".equals(minv.getName().getIdentifier()) && isJUnitAssume(minv)) {
+					importRewriter.addStaticImport("org.hamcrest.junit.MatcherAssume", "assumeThat", true);
+					importRewriter.removeStaticImport("org.junit.Assume.assumeThat");
+					MethodInvocation newAssumeThatCall = ast.newMethodInvocation();
+					newAssumeThatCall.setName(ast.newSimpleName("assumeThat"));
+					for (Object arg : minv.arguments()) {
+						newAssumeThatCall.arguments().add(rewrite.createCopyTarget((ASTNode) arg));
+					}
+					ASTNodes.replaceButKeepComment(rewrite,minv, newAssumeThatCall, group);
+				} else {
+					reorderParameters(minv, rewrite, group, oneparam, twoparam);
+					SimpleName newQualifier= ast.newSimpleName(ASSUMPTIONS);
+					Expression expression= minv.getExpression();
+					if (expression != null) {
+						ASTNodes.replaceButKeepComment(rewrite, expression, newQualifier, group);
+					}
 				}
 			} else {
 				changeImportDeclaration(mh.getImportDeclaration(), importRewriter, group);
 			}
 		}
+	}
+
+	// Helper-Methode, um zu prüfen, ob `assumeThat` zu `org.junit.Assume` gehört
+	private boolean isJUnitAssume(MethodInvocation node) {
+		IMethodBinding binding = node.resolveMethodBinding();
+		return binding != null && ORG_JUNIT_ASSUME.equals(binding.getDeclaringClass().getQualifiedName());
 	}
 
 	public void changeImportDeclaration(ImportDeclaration node, ImportRewrite importRewriter, TextEditGroup group) {

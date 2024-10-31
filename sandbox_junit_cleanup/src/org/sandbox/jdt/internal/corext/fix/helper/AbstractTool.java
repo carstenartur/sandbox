@@ -123,6 +123,7 @@ public abstract class AbstractTool<T> {
 	protected static final String ANNOTATION_TEST= "Test";
 	protected static final String ORG_JUNIT_JUPITER_API_ASSUMPTIONS= "org.junit.jupiter.api.Assumptions";
 	protected static final String ORG_JUNIT_ASSUME= "org.junit.Assume";
+	protected static final String ASSUMPTIONS= "Assumptions";
 
 	public static Collection<String> getUsedVariableNames(ASTNode node) {
 		CompilationUnit root= (CompilationUnit) node.getRoot();
@@ -508,7 +509,6 @@ public abstract class AbstractTool<T> {
 		if(innerTypeDeclaration.isPresent() && innerTypeDeclaration.get() instanceof TypeDeclaration) {
 			adaptBeforeAfterCallsInTestClass((TypeDeclaration) innerTypeDeclaration.get(), varname, rewrite, ast, group);
 		}
-//		
 		for (FieldDeclaration field : testClass.getFields()) {
 			if (isAnnotatedWithRule(field) && isExternalResource(field)) {
 				removeRuleAnnotation(field, rewrite, group, importRewrite);

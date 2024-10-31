@@ -17,6 +17,8 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
+import org.hamcrest.CoreMatchers;
+import org.junit.Assume;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -59,6 +61,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.Assume;
 import static org.junit.Assume.assumeTrue;
+import org.hamcrest.CoreMatchers;
 
 /**
  * 
@@ -119,7 +122,10 @@ public class MyTest {
 		Assume.assumeFalse("Bedingung nicht erfüllt", condition);
 		Assume.assumeFalse(condition);
 		assumeTrue("Bedingung nicht erfüllt", condition);
+		assumeTrue(condition);
 		Assert.assertEquals("expected", "actual");
+		Assume.assumeNotNull(" ");
+		Assume.assumeThat(1, CoreMatchers.is(1));
 	}
 
 	@Test
@@ -137,12 +143,14 @@ public class MyTest {
 		Assert.assertNull(null);
 	}
 }
-			""", //$NON-NLS-1$
+""", //$NON-NLS-1$
 
-				"""
+"""
 package test;
+import static org.hamcrest.junit.MatcherAssume.assumeThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -213,7 +221,10 @@ public class MyTest {
 		Assumptions.assumeFalse(condition, "Bedingung nicht erfüllt");
 		Assumptions.assumeFalse(condition);
 		assumeTrue(condition, "Bedingung nicht erfüllt");
+		assumeTrue(condition);
 		Assertions.assertEquals("expected", "actual");
+		Assumptions.assumeNotNull(" ");
+		assumeThat(1, CoreMatchers.is(1));
 	}
 
 	@Test
@@ -231,23 +242,24 @@ public class MyTest {
 		Assertions.assertNull(null);
 	}
 }
-					"""),
-		AlreadyJunit5Case("""
-				package test;
-				import static org.junit.jupiter.api.Assertions.assertEquals;
-				
-				import org.junit.jupiter.api.Test;
-				/**
-				 *
-				 */
-				public class MyTest {
+"""),
+		AlreadyJunit5Case(
+"""
+package test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-					@Test
-					public void test3() {
-						assertEquals("expected", "actual");
-					}
-				}
-							""", //$NON-NLS-1$
+import org.junit.jupiter.api.Test;
+/**
+ *
+ */
+public class MyTest {
+
+	@Test
+	public void test3() {
+		assertEquals("expected", "actual");
+	}
+}
+""", //$NON-NLS-1$
 """
 package test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -942,6 +954,11 @@ public class MyExternalResource implements BeforeEachCallback, AfterEachCallback
 	
 	@Test
 	public void testJUnitCleanupTwoFilesb() throws CoreException {
+//		Assume.assumeNotNull("");
+//		Assert.assertThrows(null, null)
+//		Assertions.assertThrows(null, null)
+		Assume.assumeThat(1, CoreMatchers.is(1));
+//		Assumptions.assumingThat(false, null);
 		IPackageFragment pack= fRootJUnit4.createPackageFragment("test", true, null);
 		ICompilationUnit cu= pack.createCompilationUnit("MyTest.java",
 """
