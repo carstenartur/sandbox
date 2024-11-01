@@ -7,23 +7,30 @@ Fragment-Host: sandbox_junit_cleanup
 Bundle-RequiredExecutionEnvironment: JavaSE-17
 Require-Bundle: org.junit,
  sandbox_test_commons,
- org.eclipse.jdt.junit4.runtime;bundle-version="1.3.100",
- org.eclipse.jdt.junit5.runtime;bundle-version="1.1.300"
+ org.eclipse.jdt.junit4.runtime,
+ org.eclipse.jdt.junit5.runtime,
+ org.eclipse.jdt.junit.runtime
 Bundle-ActivationPolicy: lazy
 Eclipse-BundleShape: dir
 Eclipse-BuddyPolicy: global
-Import-Package: org.junit.jupiter.api;version="5.7.1",
- org.junit.jupiter.api.condition;version="5.7.1",
- org.junit.jupiter.api.extension;version="5.7.1",
- org.junit.jupiter.api.extension.support;version="5.7.1",
- org.junit.jupiter.api.function;version="5.7.1",
- org.junit.jupiter.api.io;version="5.7.1",
- org.junit.jupiter.api.parallel;version="5.7.1",
- org.junit.jupiter.params;version="5.7.1",
+Import-Package: org.junit.jupiter.api,
+ org.junit.jupiter.api.condition,
+ org.junit.jupiter.api.extension,
+ org.junit.jupiter.api.extension.support,
+ org.junit.jupiter.api.function,
+ org.junit.jupiter.api.io,
+ org.junit.jupiter.api.parallel,
+ org.junit.jupiter.params,
  org.junit.jupiter.params.aggregator,
  org.junit.jupiter.params.converter,
  org.junit.jupiter.params.provider,
  org.junit.jupiter.params.support,
+ org.junit.jupiter.migrationsupport,
+ org.junit.jupiter.migrationsupport.conditions,
+ org.junit.jupiter.migrationsupport.rules,
+ org.junit.platform.suite.api,
+ org.junit.platform.suite.commons;status=INTERNAL,
+ org.junit.platform.suite.engine;status=INTERNAL,
  org.opentest4j,
  org.sandbox.jdt.internal.common,
  org.sandbox.jdt.internal.corext.fix2
