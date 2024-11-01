@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?pde version="3.5"?>
 
-<product name="Sandbox Product" uid="sandbox.bundle.producteclipse" id="sandbox.bundle.producteclipse" application="org.eclipse.ui.ide.workbench" version="1.1.0.qualifier" type="features" includeLaunchers="true" autoIncludeRequirements="true">
+<product name="Sandbox Product" uid="sandbox.bundle.producteclipse" id="sandbox.bundle.producteclipse" application="org.eclipse.ui.ide.workbench" version="1.2.0.qualifier" type="features" includeLaunchers="true" autoIncludeRequirements="true">
 
    <configIni use="default">
    </configIni>
@@ -224,8 +224,6 @@ United States, other countries, or both.
       <feature id="sandbox_tools_feature"/>
       <feature id="sandbox_xml_cleanup_feature"/>
       <feature id="sandbox_jface_cleanup_feature"/>
-      <feature id="org.eclipse.jgit.http.apache"/>
-      <feature id="org.eclipse.jgit.gpg.bc"/>
       <feature id="sandbox_junit_cleanup_feature"/>
    </features>
 

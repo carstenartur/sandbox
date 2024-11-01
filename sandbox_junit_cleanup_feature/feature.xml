@@ -2,7 +2,7 @@
 <feature
       id="sandbox_junit_cleanup_feature"
       label="Sandbox junit cleanup feature"
-      version="1.1.0.qualifier"
+      version="1.2.0.qualifier"
       provider-name="sandbox"
       plugin="sandbox_junit_cleanup">
 
@@ -34,10 +34,11 @@
       <import plugin="org.eclipse.jdt.core.manipulation"/>
       <import plugin="org.opentest4j"/>
       <import plugin="sandbox_common"/>
+      <import plugin="org.junit"/>
    </requires>
 
    <plugin
          id="sandbox_junit_cleanup"
-         version="1.1.0.qualifier"/>
+         version="1.2.0.qualifier"/>
 
 </feature>

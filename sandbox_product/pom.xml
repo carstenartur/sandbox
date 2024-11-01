@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>org.sandbox</groupId>
 		<artifactId>central</artifactId>
-		<version>1.1.0-SNAPSHOT</version>
+		<version>1.2.0-SNAPSHOT</version>
 	</parent>
 	<artifactId>sandbox_product</artifactId>
 	<name>Sandbox product</name>
@@ -26,6 +26,10 @@
 		</dependency>
 		<dependency>
 			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_junit_cleanup_feature</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
 			<artifactId>sandbox_tools_feature</artifactId>
 		</dependency>
 		<dependency>
@@ -42,7 +46,7 @@
 		</dependency>
 	</dependencies>
 	<build>
-		<finalName>sandbox.repository_${rcp-version}-1.1.0</finalName>
+		<finalName>sandbox.repository_${rcp-version}-1.2.0</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>

@@ -24,6 +24,9 @@
    <feature id="sandbox_junit_cleanup_feature">
       <category name="Sandbox"/>
    </feature>
+   <feature id="sandbox_functional_converter_feature">
+      <category name="Sandbox"/>
+   </feature>
    <category-def name="Sandbox" label="Sandbox">
       <description>
          Description of sandbox category
