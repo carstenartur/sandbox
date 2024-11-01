@@ -33,15 +33,11 @@
       <import plugin="org.eclipse.ui.workbench"/>
       <import plugin="org.eclipse.search"/>
       <import plugin="org.eclipse.jdt.core.manipulation"/>
-      <import plugin="org.junit.jupiter.api"/>
       <import plugin="org.opentest4j"/>
    </requires>
 
    <plugin
          id="sandbox_xml_cleanup"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         unpack="false"/>
+         version="0.0.0"/>
 
 </feature>
