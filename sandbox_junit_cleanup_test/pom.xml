@@ -11,12 +11,12 @@
 	<artifactId>sandbox_junit_cleanup_test</artifactId>
 	<name>Sandbox junit cleanup test</name>
 	<packaging>eclipse-test-plugin</packaging>
-	<dependencies>
+	<!--<dependencies>
 		<dependency>
 			<groupId>org.sandbox</groupId>
 			<artifactId>sandbox_junit_cleanup</artifactId>
 		</dependency>
-	</dependencies>
+	</dependencies>-->
 	<build>
 		<testSourceDirectory>src</testSourceDirectory>
 		<plugins>
