@@ -3,7 +3,6 @@
 
 <product name="Sandbox Product" uid="sandbox.bundle.producteclipse" id="sandbox.bundle.producteclipse" application="org.eclipse.ui.ide.workbench" version="1.2.0.qualifier" type="features" includeLaunchers="false" autoIncludeRequirements="true">
 
-
    <configIni use="default">
    </configIni>
 
@@ -34,7 +33,6 @@
          <bmp/>
       </win>
    </launcher>
-
 
    <vm>
       <linux include="false">org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-21</linux>
@@ -206,6 +204,11 @@ United States, other countries, or both.
       <feature id="org.eclipse.e4.rcp"/>
       <feature id="org.eclipse.egit"/>
       <feature id="org.eclipse.jgit"/>
+      <feature id="org.eclipse.jgit.gpg.bc" installMode="root"/>
+      <feature id="org.eclipse.jgit.http.apache" installMode="root"/>
+      <feature id="org.eclipse.jgit.lfs" installMode="root"/>
+      <feature id="org.eclipse.jgit.ssh.jsch" installMode="root"/>
+      <feature id="org.eclipse.pde.spies" installMode="root"/>
       <feature id="sandbox_encoding_quickfix_feature"/>
       <feature id="sandbox_extra_search_feature"/>
       <feature id="sandbox_usage_view_feature"/>
