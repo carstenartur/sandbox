@@ -38,6 +38,7 @@ import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
+import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 
 public class JUnitCleanUpCore extends AbstractCleanUp {
 	public JUnitCleanUpCore(final Map<String, String> options) {
@@ -98,11 +99,29 @@ public class JUnitCleanUpCore extends AbstractCleanUp {
 		return sb.toString();
 	}
 
+	
+
 	private EnumSet<JUnitCleanUpFixCore> computeFixSet() {
-		EnumSet<JUnitCleanUpFixCore> fixSet= EnumSet.noneOf(JUnitCleanUpFixCore.class);
-		if (isEnabled(JUNIT_CLEANUP)) {
-			fixSet= EnumSet.allOf(JUnitCleanUpFixCore.class);
-		}
+		EnumSet<JUnitCleanUpFixCore> fixSet = isEnabled(JUNIT_CLEANUP)
+				? EnumSet.allOf(JUnitCleanUpFixCore.class)
+						: EnumSet.noneOf(JUnitCleanUpFixCore.class);
+		Map<String, JUnitCleanUpFixCore> cleanupMappings = Map.of(
+				MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT, JUnitCleanUpFixCore.ASSERT,
+				MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME, JUnitCleanUpFixCore.ASSUME,
+				MYCleanUpConstants.JUNIT_CLEANUP_4_AFTER, JUnitCleanUpFixCore.AFTER,
+				MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORE, JUnitCleanUpFixCore.BEFORE,
+				MYCleanUpConstants.JUNIT_CLEANUP_4_AFTERCLASS, JUnitCleanUpFixCore.AFTERCLASS,
+				MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORECLASS, JUnitCleanUpFixCore.BEFORECLASS,
+				MYCleanUpConstants.JUNIT_CLEANUP_4_TEST, JUnitCleanUpFixCore.TEST,
+				MYCleanUpConstants.JUNIT_CLEANUP_4_IGNORE, JUnitCleanUpFixCore.IGNORE,
+				MYCleanUpConstants.JUNIT_CLEANUP_4_RULETEMPORARYFOLDER, JUnitCleanUpFixCore.RULETEMPORARYFOLDER,
+				MYCleanUpConstants.JUNIT_CLEANUP_4_RULETESTNAME, JUnitCleanUpFixCore.RULETESTNAME
+				);
+		cleanupMappings.forEach((config, fix) -> {
+			if (!isEnabled(config)) {
+				fixSet.remove(fix);
+			}
+		});
 		return fixSet;
 	}
 }

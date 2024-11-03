@@ -22,5 +22,17 @@ public class DefaultCleanUpOptionsInitializer implements ICleanUpOptionsInitiali
 	@Override
 	public void setDefaultOptions(CleanUpOptions options) {
 		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP, CleanUpOptions.FALSE);
+		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTER, CleanUpOptions.FALSE);
+		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORE, CleanUpOptions.FALSE);
+		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTERCLASS, CleanUpOptions.FALSE);
+		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORECLASS, CleanUpOptions.FALSE);
+		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME, CleanUpOptions.FALSE);
+		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT, CleanUpOptions.FALSE);
+		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP_4_IGNORE, CleanUpOptions.FALSE);
+		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST, CleanUpOptions.FALSE);
+		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETESTNAME, CleanUpOptions.FALSE);
+		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETEMPORARYFOLDER, CleanUpOptions.FALSE);
+		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP_4_EXTERNALRESOURCE, CleanUpOptions.FALSE);
+		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH, CleanUpOptions.FALSE);
 	}
 }

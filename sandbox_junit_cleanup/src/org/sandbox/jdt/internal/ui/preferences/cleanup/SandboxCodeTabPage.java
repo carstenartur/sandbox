@@ -39,11 +39,26 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 
 	@Override
 	protected void doCreatePreferences(Composite composite, int numColumns) {
-		Group java1d8Group= createGroup(numColumns, composite, CleanUpMessages.JavaFeatureTabPage_GroupName_Java1d8);
-		final CheckboxPreference junitcb= createCheckboxPref(java1d8Group, numColumns,
+		Group junitGroup= createGroup(numColumns, composite, CleanUpMessages.JavaFeatureTabPage_GroupName_JUnit);
+		final CheckboxPreference junitcb= createCheckboxPref(junitGroup, numColumns,
 				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP, MYCleanUpConstants.JUNIT_CLEANUP,
 				FALSE_TRUE);
-		intent(java1d8Group);
+		intent(junitGroup);
+		final CheckboxPreference junit_assert= createCheckboxPref(junitGroup, numColumns,
+				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_ASSERT, MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT,
+				FALSE_TRUE);
+		final CheckboxPreference junit_assume= createCheckboxPref(junitGroup, numColumns,
+				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_ASSUME, MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME,
+				FALSE_TRUE);
+		final CheckboxPreference junit_ignore= createCheckboxPref(junitGroup, numColumns,
+				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_IGNORE, MYCleanUpConstants.JUNIT_CLEANUP_4_IGNORE,
+				FALSE_TRUE);
+		final CheckboxPreference junit_test= createCheckboxPref(junitGroup, numColumns,
+				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_TEST, MYCleanUpConstants.JUNIT_CLEANUP_4_TEST,
+				FALSE_TRUE);
+		registerSlavePreference(junitcb, new CheckboxPreference[] {junit_assert, junit_assume,junit_ignore,junit_test});
+		intent(junitGroup);
+		
 		registerPreference(junitcb);
 	}
 }
