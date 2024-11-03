@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?pde version="3.5"?>
 
-<product name="Sandbox Product" uid="sandbox.bundle.producteclipse" id="sandbox.bundle.producteclipse" application="org.eclipse.ui.ide.workbench" version="1.2.0.qualifier" type="features" includeLaunchers="false" autoIncludeRequirements="true">
+<product name="Sandbox Product" uid="sandbox.bundle.producteclipse" id="org.eclipse.platform.ide" application="org.sandbox.jdt.core.JavaCleanup" version="1.2.0.qualifier" type="features" includeLaunchers="false" autoIncludeRequirements="true">
 
    <configIni use="default">
    </configIni>
@@ -217,6 +217,13 @@ United States, other countries, or both.
       <feature id="sandbox_xml_cleanup_feature"/>
       <feature id="sandbox_jface_cleanup_feature"/>
       <feature id="sandbox_junit_cleanup_feature"/>
+      <feature id="org.eclipse.ecf.filetransfer.httpclient5.feature" installMode="root"/>
+      <feature id="org.eclipse.jgit.ssh.apache" installMode="root"/>
+      <feature id="org.eclipse.ecf.core.ssl.feature" installMode="root"/>
+      <feature id="org.eclipse.ecf.filetransfer.ssl.feature" installMode="root"/>
+      <feature id="org.eclipse.ecf.core.feature" installMode="root"/>
+      <feature id="org.eclipse.ecf.filetransfer.feature" installMode="root"/>
+      <feature id="org.eclipse.ecf.filetransfer.httpclientjava.feature" installMode="root"/>
    </features>
 
    <configurations>
