@@ -4,7 +4,7 @@ Bundle-Name: jface cleanup tests
 Bundle-SymbolicName: sandbox_jface_cleanup_test;singleton:=true
 Bundle-Version: 1.2.0.qualifier
 Fragment-Host: sandbox_jface_cleanup
-Bundle-RequiredExecutionEnvironment: JavaSE-17
+Bundle-RequiredExecutionEnvironment: JavaSE-21
 Require-Bundle: org.junit,
  sandbox_test_commons
 Bundle-ActivationPolicy: lazy

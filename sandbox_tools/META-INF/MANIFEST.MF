@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: tools
 Bundle-SymbolicName: sandbox_tools;singleton:=true
 Bundle-Version: 1.2.0.qualifier
-Bundle-RequiredExecutionEnvironment: JavaSE-17
+Bundle-RequiredExecutionEnvironment: JavaSE-21
 Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.core.filebuffers,
  org.eclipse.core.filesystem,
