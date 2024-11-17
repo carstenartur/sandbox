@@ -107,14 +107,13 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		disableAll();
 	}
 	
-	public IPackageFragmentRoot createClasspathForJUnit(String tail) throws JavaModelException, CoreException {
-		IPath junit4ContainerPath= new Path(JUNIT_CONTAINER_ID).append(tail);
+	public IPackageFragmentRoot createClasspathForJUnit(IPath junitContainerPath) throws JavaModelException, CoreException {
 		IJavaProject fProject = getJavaProject();
 		fProject.setRawClasspath(getDefaultClasspath(), null);
-		IClasspathEntry cpe= JavaCore.newContainerEntry(junit4ContainerPath);
+		IClasspathEntry cpe= JavaCore.newContainerEntry(junitContainerPath);
 		AbstractEclipseJava.addToClasspath(fProject, cpe);
-		IPackageFragmentRoot sourceContainer= AbstractEclipseJava.addSourceContainer(fProject, "src");
-		return sourceContainer;
+		fSourceFolder= AbstractEclipseJava.addSourceContainer(fProject, "src");
+		return fSourceFolder;
 	}
 
 	@Override
