@@ -74,6 +74,62 @@ public class MYCleanUpConstants {
 	/**
 	 *
 	 */
+	public static final String JUNIT_CLEANUP= "cleanup.junitcleanup"; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_ASSERT= "cleanup.junitcleanup_4_assert"; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_ASSUME= "cleanup.junitcleanup_4_assume"; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_SUITE= "cleanup.junitcleanup_4_suite"; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_BEFORE= "cleanup.junitcleanup_4_before"; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_AFTER= "cleanup.junitcleanup_4_after"; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_BEFORECLASS= "cleanup.junitcleanup_4_beforeclass"; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_AFTERCLASS= "cleanup.junitcleanup_4_afterclass"; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_IGNORE= "cleanup.junitcleanup_4_ignore"; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_TEST= "cleanup.junitcleanup_4_test"; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_RULETEMPORARYFOLDER= "cleanup.junitcleanup_4_ruletemporaryfolder"; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_RULETESTNAME= "cleanup.junitcleanup_4_ruletestname"; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_EXTERNALRESOURCE= "cleanup.junitcleanup_4_externalresource"; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_RUNWITH= "cleanup.junitcleanup_4_runwith"; //$NON-NLS-1$
+	/**
+	 *
+	 */
 	public static final String JFACE_CLEANUP= "cleanup.jfacecleanup"; //$NON-NLS-1$
 
 	/**

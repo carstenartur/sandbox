@@ -21,11 +21,17 @@
    <feature id="sandbox_xml_cleanup_feature">
       <category name="Sandbox"/>
    </feature>
+   <feature id="sandbox_junit_cleanup_feature">
+      <category name="Sandbox"/>
+   </feature>
+   <feature id="sandbox_functional_converter_feature">
+      <category name="Sandbox"/>
+   </feature>
    <category-def name="Sandbox" label="Sandbox">
       <description>
          Description of sandbox category
       </description>
    </category-def>
-   <repository-reference location="https://download.eclipse.org/releases/2024-06/" enabled="true" />
-   <repository-reference location="https://download.eclipse.org/technology/babel/update-site/latest/" enabled="true" />
+   <repository-reference location="https://download.eclipse.org/releases/2024-09/" name="eclipse" enabled="true" />
+   <repository-reference location="https://download.eclipse.org/technology/babel/update-site/latest/" name="babel" enabled="true" />
 </site>

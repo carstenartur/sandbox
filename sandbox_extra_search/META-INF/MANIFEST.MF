@@ -3,9 +3,9 @@ Bundle-ManifestVersion: 2
 Bundle-Name: sandbox_extra_search
 Bundle-SymbolicName: sandbox_extra_search;singleton:=true
 Bundle-Vendor: sandbox
-Bundle-Version: 1.1.0.qualifier
+Bundle-Version: 1.2.0.qualifier
 Automatic-Module-Name: ui.sandbox.fragment
-Bundle-RequiredExecutionEnvironment: JavaSE-17
+Bundle-RequiredExecutionEnvironment: JavaSE-21
 Bundle-ActivationPolicy: lazy
 Eclipse-BuddyPolicy: global
 Require-Bundle: org.eclipse.core.runtime,

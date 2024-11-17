@@ -78,8 +78,9 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	private final String testresources_stubs;
 	private final String compliance;
 	private static final String TEST_SETUP_PROJECT= "TestSetupProject"; //$NON-NLS-1$
-	 private IPackageFragmentRoot fSourceFolder;
+	private IPackageFragmentRoot fSourceFolder;
 	private CustomProfile fProfile;
+	private IJavaProject javaProject;
 
 	public AbstractEclipseJava(String stubs, String compilerversion) {
 		this.testresources_stubs= stubs;
@@ -88,11 +89,11 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 
 	@Override
 	public void beforeEach(ExtensionContext context) throws CoreException {
-		IJavaProject javaProject= createJavaProject(TEST_SETUP_PROJECT, "bin"); //$NON-NLS-1$
-		javaProject.setRawClasspath(getDefaultClasspath(), null);
-		Map<String, String> options= javaProject.getOptions(false);
+		setJavaProject(createJavaProject(TEST_SETUP_PROJECT, "bin")); //$NON-NLS-1$
+		getJavaProject().setRawClasspath(getDefaultClasspath(), null);
+		Map<String, String> options= getJavaProject().getOptions(false);
 		JavaCore.setComplianceOptions(compliance, options);
-		javaProject.setOptions(options);
+		getJavaProject().setOptions(options);
 		setfSourceFolder(addSourceContainer(getProject(TEST_SETUP_PROJECT), "src", new Path[0], //$NON-NLS-1$
 				new Path[0], null, new IClasspathAttribute[0]));
 		Map<String, String> settings= new HashMap<>();
@@ -102,6 +103,15 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		InstanceScope.INSTANCE.getNode(JavaUI.ID_PLUGIN).put(CleanUpConstants.SAVE_PARTICIPANT_PROFILE,
 				fProfile.getID());
 		disableAll();
+	}
+	
+	public IPackageFragmentRoot createClasspathForJUnit(IPath junitContainerPath) throws JavaModelException, CoreException {
+		IJavaProject fProject = getJavaProject();
+		fProject.setRawClasspath(getDefaultClasspath(), null);
+		IClasspathEntry cpe= JavaCore.newContainerEntry(junitContainerPath);
+		AbstractEclipseJava.addToClasspath(fProject, cpe);
+		fSourceFolder= AbstractEclipseJava.addSourceContainer(fProject, "src");
+		return fSourceFolder;
 	}
 
 	@Override
@@ -290,6 +300,56 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		return root;
 	}
 
+	/**
+	 * Adds a source container to a IJavaProject.
+	 * @param jproject The parent project
+	 * @param containerName The name of the new source container
+	 * @return The handle to the new source container
+	 * @throws CoreException Creation failed
+	 */
+	public static IPackageFragmentRoot addSourceContainer(IJavaProject jproject, String containerName) throws CoreException {
+		return addSourceContainer(jproject, containerName, new Path[0]);
+	}
+	
+	/**
+	 * Adds a source container to a IJavaProject.
+	 * @param jproject The parent project
+	 * @param containerName The name of the new source container
+	 * @param exclusionFilters Exclusion filters to set
+	 * @return The handle to the new source container
+	 * @throws CoreException Creation failed
+	 */
+	public static IPackageFragmentRoot addSourceContainer(IJavaProject jproject, String containerName, IPath[] exclusionFilters) throws CoreException {
+		return addSourceContainer(jproject, containerName, new Path[0], exclusionFilters);
+	}
+	
+	/**
+	 * Adds a source container to a IJavaProject.
+	 * @param jproject The parent project
+	 * @param containerName The name of the new source container
+	 * @param inclusionFilters Inclusion filters to set
+	 * @param exclusionFilters Exclusion filters to set
+	 * @return The handle to the new source container
+	 * @throws CoreException Creation failed
+	 */
+	public static IPackageFragmentRoot addSourceContainer(IJavaProject jproject, String containerName, IPath[] inclusionFilters, IPath[] exclusionFilters) throws CoreException {
+		return addSourceContainer(jproject, containerName, inclusionFilters, exclusionFilters, null);
+	}
+	
+	/**
+	 * Adds a source container to a IJavaProject.
+	 * @param jproject The parent project
+	 * @param containerName The name of the new source container
+	 * @param inclusionFilters Inclusion filters to set
+	 * @param exclusionFilters Exclusion filters to set
+	 * @param outputLocation The location where class files are written to, <b>null</b> for project output folder
+	 * @return The handle to the new source container
+	 * @throws CoreException Creation failed
+	 */
+	public static IPackageFragmentRoot addSourceContainer(IJavaProject jproject, String containerName, IPath[] inclusionFilters, IPath[] exclusionFilters, String outputLocation) throws CoreException {
+		return addSourceContainer(jproject, containerName, inclusionFilters, exclusionFilters, outputLocation,
+				new IClasspathAttribute[0]);
+	}
 	public static void addToClasspath(IJavaProject jproject, IClasspathEntry cpe) throws JavaModelException {
 		IClasspathEntry[] oldEntries= jproject.getRawClasspath();
 		for (IClasspathEntry oldEntry : oldEntries) {
@@ -470,5 +530,13 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 
 	public void setfSourceFolder(IPackageFragmentRoot fSourceFolder) {
 		this.fSourceFolder = fSourceFolder;
+	}
+
+	public IJavaProject getJavaProject() {
+		return javaProject;
+	}
+
+	public void setJavaProject(IJavaProject javaProject) {
+		this.javaProject = javaProject;
 	}
 }
