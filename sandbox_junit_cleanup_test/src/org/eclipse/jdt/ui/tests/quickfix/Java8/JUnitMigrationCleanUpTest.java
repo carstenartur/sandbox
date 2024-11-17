@@ -17,6 +17,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
+import org.eclipse.jdt.junit.JUnitCore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -24,24 +25,24 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
-import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava8;
+import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava17;
 
 
 public class JUnitMigrationCleanUpTest {
 
 	@RegisterExtension
-	AbstractEclipseJava context4junit4= new EclipseJava8();
+	AbstractEclipseJava context4junit4= new EclipseJava17();
 
 	@RegisterExtension
-	AbstractEclipseJava context4junit5= new EclipseJava8();
+	AbstractEclipseJava context4junit5= new EclipseJava17();
 
 	IPackageFragmentRoot fRootJUnit4;
 	IPackageFragmentRoot fRootJUnit5;
 
 	@BeforeEach
 	public void setup() throws CoreException {
-		fRootJUnit4= context4junit4.createClasspathForJUnit("4");
-		fRootJUnit5= context4junit5.createClasspathForJUnit("5");
+		fRootJUnit4= context4junit4.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+		fRootJUnit5= context4junit5.createClasspathForJUnit(JUnitCore.JUNIT5_CONTAINER_PATH);
 	}
 
 	enum JUnitCleanupCases{
@@ -801,8 +802,21 @@ public class MyTest {
 	@EnumSource(JUnitCleanupCases.class)
 	public void testJUnitCleanupParametrized(JUnitCleanupCases test) throws CoreException {
 		IPackageFragment pack= fRootJUnit4.createPackageFragment("test", true, null);
-		ICompilationUnit cu= pack.createCompilationUnit("MyTest.java", test.given, false, null); //$NON-NLS-1$
+		ICompilationUnit cu= pack.createCompilationUnit("MyTest.java", test.given, true, null); //$NON-NLS-1$
 		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_SUITE);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORE);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTER);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORECLASS);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTERCLASS);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_IGNORE);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETEMPORARYFOLDER);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETESTNAME);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_EXTERNALRESOURCE);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH);
 		context4junit4.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
 	}
 
@@ -902,6 +916,19 @@ public class MyExternalResource extends ExternalResource {
 }
 """, false, null); //$NON-NLS-1$
 		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_SUITE);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORE);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTER);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORECLASS);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTERCLASS);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_IGNORE);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETEMPORARYFOLDER);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETESTNAME);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_EXTERNALRESOURCE);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH);
 		context4junit4.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu,cu2}, new String[] {
 """
 package test;
@@ -989,6 +1016,19 @@ public class MyExternalResource extends ExternalResource {
 }
 """, false, null); //$NON-NLS-1$
 		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_SUITE);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORE);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTER);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORECLASS);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTERCLASS);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_IGNORE);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETEMPORARYFOLDER);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETESTNAME);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_EXTERNALRESOURCE);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH);
 		context4junit4.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu,cu2}, new String[] {
 """
 package test;
@@ -1082,6 +1122,19 @@ public class MyExternalResource2 extends ExternalResource {
 }
 """, false, null); //$NON-NLS-1$
 		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_SUITE);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORE);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTER);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORECLASS);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTERCLASS);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_IGNORE);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETEMPORARYFOLDER);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETESTNAME);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_EXTERNALRESOURCE);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH);
 		context4junit4.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu,cu2,cu3}, new String[] {
 """
 package test;

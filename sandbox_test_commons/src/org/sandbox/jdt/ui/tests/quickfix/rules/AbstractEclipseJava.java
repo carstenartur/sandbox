@@ -75,8 +75,6 @@ import org.osgi.framework.BundleReference;
 
 public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallback {
 
-	public static final String JUNIT_CONTAINER_ID= "org.eclipse.jdt.junit.JUNIT_CONTAINER"; //$NON-NLS-1$
-
 	private final String testresources_stubs;
 	private final String compliance;
 	private static final String TEST_SETUP_PROJECT= "TestSetupProject"; //$NON-NLS-1$
@@ -107,14 +105,13 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		disableAll();
 	}
 	
-	public IPackageFragmentRoot createClasspathForJUnit(String tail) throws JavaModelException, CoreException {
-		IPath junit4ContainerPath= new Path(JUNIT_CONTAINER_ID).append(tail);
+	public IPackageFragmentRoot createClasspathForJUnit(IPath junitContainerPath) throws JavaModelException, CoreException {
 		IJavaProject fProject = getJavaProject();
 		fProject.setRawClasspath(getDefaultClasspath(), null);
-		IClasspathEntry cpe= JavaCore.newContainerEntry(junit4ContainerPath);
+		IClasspathEntry cpe= JavaCore.newContainerEntry(junitContainerPath);
 		AbstractEclipseJava.addToClasspath(fProject, cpe);
-		IPackageFragmentRoot sourceContainer= AbstractEclipseJava.addSourceContainer(fProject, "src");
-		return sourceContainer;
+		fSourceFolder= AbstractEclipseJava.addSourceContainer(fProject, "src");
+		return fSourceFolder;
 	}
 
 	@Override
