@@ -53,14 +53,14 @@ public class FixMethodOrderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 	@Override
 	public void rewrite(JUnitCleanUpFixCore upp, final ReferenceHolder<Integer, JunitHolder> hit,
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
-		ASTRewrite rewrite= cuRewrite.getASTRewrite();
-		AST ast= cuRewrite.getRoot().getAST();
-		ImportRewrite importrewriter= cuRewrite.getImportRewrite();
-		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
-			JunitHolder mh= entry.getValue();
-			@SuppressWarnings("unused")
-			Annotation minv= mh.getAnnotation();
-		}
+//		ASTRewrite rewrite= cuRewrite.getASTRewrite();
+//		AST ast= cuRewrite.getRoot().getAST();
+//		ImportRewrite importrewriter= cuRewrite.getImportRewrite();
+//		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
+			//JunitHolder mh= entry.getValue();
+//			@SuppressWarnings("unused")
+//			Annotation minv= mh.getAnnotation();
+//		}
 	}
 
 	@Override
