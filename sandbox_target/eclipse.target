@@ -209,8 +209,8 @@
       <unit id="org.eclipse.jetty.xml" version="0.0.0"/>
       <unit id="org.eclipse.jst.jsp.ui" version="0.0.0"/>
       <unit id="org.eclipse.jst.servlet.ui" version="0.0.0"/>
-      <unit id="org.eclipse.justj.epp.feature.group" version="0.0.0"/>
-   <!--  <unit id="org.eclipse.justj.openjdk.hotspot.jre.base.feature.group" version="0.0.0"/> -->
+   <!--   <unit id="org.eclipse.justj.epp.feature.group" version="0.0.0"/>
+     <unit id="org.eclipse.justj.openjdk.hotspot.jre.base.feature.group" version="0.0.0"/> -->
       <unit id="org.eclipse.license.feature.group" version="0.0.0"/>
       <unit id="org.eclipse.orbit.xml-apis-ext" version="0.0.0"/>
       <unit id="org.eclipse.jdt.feature.group" version="0.0.0"/>
