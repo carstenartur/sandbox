@@ -123,7 +123,7 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 			return """
 					@Suite
 					@SelectClasses({
-						MyTest2.class
+						MyTest.class
 					})
 					"""; //$NON-NLS-1$
 		}
