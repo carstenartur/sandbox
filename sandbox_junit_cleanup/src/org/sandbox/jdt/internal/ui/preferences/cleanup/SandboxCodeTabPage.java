@@ -89,6 +89,10 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_EXTERNALRESOURCE, MYCleanUpConstants.JUNIT_CLEANUP_4_EXTERNALRESOURCE,
 				FALSE_TRUE);
 		intent(junitGroup);
+		final CheckboxPreference junit_ruleexternalresource= createCheckboxPref(junitGroup, numColumns-1,
+				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_RULEEXTERNALRESOURCE, MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE,
+				FALSE_TRUE);
+		intent(junitGroup);
 		final CheckboxPreference junit_runwith= createCheckboxPref(junitGroup, numColumns-1,
 				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_RUNWITH, MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH,
 				FALSE_TRUE);
@@ -103,6 +107,7 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				junit_afterclass,
 				junit_ruletempfolder,
 				junit_ruletestname,
+				junit_ruleexternalresource,
 				junit_externalresource,
 				junit_runwith});
 		intent(junitGroup);

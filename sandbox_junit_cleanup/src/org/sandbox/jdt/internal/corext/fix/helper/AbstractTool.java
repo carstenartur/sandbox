@@ -212,19 +212,20 @@ public abstract class AbstractTool<T> {
 		}
 		if (isDirectlyExtendingExternalResource(binding)) {
 			refactorToImplementCallbacks(node, rewriter, ast, group, importRewriter);
-		}
-		for (MethodDeclaration method : node.getMethods()) {
-			if (isLifecycleMethod(method, METHOD_BEFORE) || isLifecycleMethod(method, METHOD_AFTER)) {
-				setPublicVisibilityIfProtected(method, rewriter, ast, group);
-				String replacement= METHOD_BEFORE.equals(method.getName().getIdentifier()) ? METHOD_BEFORE_EACH
-						: METHOD_AFTER_EACH;
-				adaptSuperBeforeCalls(method.getName().getIdentifier(), replacement, method, rewriter, ast, group);
-				if (METHOD_BEFORE.equals(method.getName().getIdentifier())) {
-					removeThrowsThrowable(method, rewriter, group);
+		} 
+			for (MethodDeclaration method : node.getMethods()) {
+				if (isLifecycleMethod(method, METHOD_BEFORE) || isLifecycleMethod(method, METHOD_AFTER)) {
+					setPublicVisibilityIfProtected(method, rewriter, ast, group);
+					String replacement= METHOD_BEFORE.equals(method.getName().getIdentifier()) ? METHOD_BEFORE_EACH
+							: METHOD_AFTER_EACH;
+					adaptSuperBeforeCalls(method.getName().getIdentifier(), replacement, method, rewriter, ast, group);
+					if (METHOD_BEFORE.equals(method.getName().getIdentifier())) {
+						removeThrowsThrowable(method, rewriter, group);
+					}
+					refactorMethod(rewriter, ast, method, replacement, group, importRewriter);
 				}
-				refactorMethod(rewriter, ast, method, replacement, group, importRewriter);
 			}
-		}
+		
 //		importRewriter.removeImport(ORG_JUNIT_RULE);
 	}
 
@@ -302,12 +303,21 @@ public abstract class AbstractTool<T> {
 	}
 
 	private void addContextArgumentIfAbsent(SuperMethodInvocation node, ASTRewrite rewriter, AST ast,
-			TextEditGroup group) {
-		if (node.arguments().isEmpty()) {
-			rewriter.getListRewrite(node, SuperMethodInvocation.ARGUMENTS_PROPERTY)
-					.insertFirst(ast.newSimpleName(VARIABLE_NAME_CONTEXT), group);
-		}
+	        TextEditGroup group) {
+
+	    // Prüfen, ob der Context-Parameter bereits existiert (im AST oder im Rewrite)
+	    boolean hasContextArgument = node.arguments().stream()
+	            .anyMatch(arg -> arg instanceof SimpleName && ((SimpleName) arg).getIdentifier().equals(VARIABLE_NAME_CONTEXT))
+	            || rewriter.getListRewrite(node, SuperMethodInvocation.ARGUMENTS_PROPERTY).getRewrittenList().stream()
+	                    .anyMatch(arg -> arg instanceof SimpleName && ((SimpleName) arg).getIdentifier().equals(VARIABLE_NAME_CONTEXT));
+
+	    if (!hasContextArgument) {
+	        // Context-Argument hinzufügen
+	        rewriter.getListRewrite(node, SuperMethodInvocation.ARGUMENTS_PROPERTY)
+	                .insertFirst(ast.newSimpleName(VARIABLE_NAME_CONTEXT), group);
+	    }
 	}
+
 
 	private void addBeforeAndAfterEachCallbacks(TypeDeclaration typeDecl, ASTRewrite rewrite, AST ast,
 			ImportRewrite importRewrite, TextEditGroup group) {
@@ -348,31 +358,73 @@ public abstract class AbstractTool<T> {
 	}
 
 	private void addInterfaceCallback(ListRewrite listRewrite, AST ast, String callbackName, TextEditGroup group) {
-		listRewrite.insertLast(ast.newSimpleType(ast.newName(callbackName)), group);
+	    // Prüfen, ob das Interface bereits in der Liste existiert
+	    boolean hasCallback = listRewrite.getRewrittenList().stream()
+	            .anyMatch(type -> type instanceof SimpleType
+	                    && ((SimpleType) type).getName().getFullyQualifiedName().equals(callbackName));
+
+	    if (!hasCallback) {
+	        // Interface hinzufügen, wenn es noch nicht existiert
+	        listRewrite.insertLast(ast.newSimpleType(ast.newName(callbackName)), group);
+	    }
 	}
+
 
 	private void addRegisterExtensionAnnotation(FieldDeclaration field, ASTRewrite rewrite, AST ast,
-			ImportRewrite importRewrite, TextEditGroup group) {
-		MarkerAnnotation registerExtensionAnnotation= ast.newMarkerAnnotation();
-		registerExtensionAnnotation.setTypeName(ast.newName(ANNOTATION_REGISTER_EXTENSION));
-		rewrite.getListRewrite(field, FieldDeclaration.MODIFIERS2_PROPERTY).insertFirst(registerExtensionAnnotation,
-				group);
+	        ImportRewrite importRewrite, TextEditGroup group) {
+	    // Prüfen, ob die Annotation bereits existiert
+	    boolean hasRegisterExtension = field.modifiers().stream()
+	            .anyMatch(modifier -> modifier instanceof Annotation
+	                    && ((Annotation) modifier).getTypeName().getFullyQualifiedName().equals(ANNOTATION_REGISTER_EXTENSION));
+
+	    // Prüfen, ob die Annotation bereits im Rewrite hinzugefügt wurde
+	    ListRewrite listRewrite = rewrite.getListRewrite(field, FieldDeclaration.MODIFIERS2_PROPERTY);
+	    boolean hasPendingRegisterExtension = listRewrite.getRewrittenList().stream()
+	            .anyMatch(rewritten -> rewritten instanceof MarkerAnnotation
+	                    && ((MarkerAnnotation) rewritten).getTypeName().getFullyQualifiedName().equals(ANNOTATION_REGISTER_EXTENSION));
+
+	    if (!hasRegisterExtension && !hasPendingRegisterExtension) {
+	        // Annotation hinzufügen, wenn sie weder im AST noch im Rewrite existiert
+	        MarkerAnnotation registerExtensionAnnotation = ast.newMarkerAnnotation();
+	        registerExtensionAnnotation.setTypeName(ast.newName(ANNOTATION_REGISTER_EXTENSION));
+	        listRewrite.insertFirst(registerExtensionAnnotation, group);
+
+	        // Import hinzufügen
+	        importRewrite.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_REGISTER_EXTENSION);
+	    }
+	}
+	
+	private void ensureExtensionContextParameter(MethodDeclaration method, ASTRewrite rewrite, AST ast,
+	        TextEditGroup group, ImportRewrite importRewrite) {
+
+	    // Prüfen, ob ExtensionContext bereits existiert (im AST oder im Rewrite)
+	    boolean hasExtensionContext = method.parameters().stream()
+	            .anyMatch(param -> param instanceof SingleVariableDeclaration
+	                    && isExtensionContext((SingleVariableDeclaration) param))
+	            || rewrite.getListRewrite(method, MethodDeclaration.PARAMETERS_PROPERTY).getRewrittenList().stream()
+	                    .anyMatch(param -> param instanceof SingleVariableDeclaration
+	                            && ((SingleVariableDeclaration) param).getType().toString().equals(EXTENSION_CONTEXT));
+
+	    if (!hasExtensionContext) {
+	        // Neuen Parameter hinzufügen
+	        SingleVariableDeclaration newParam = ast.newSingleVariableDeclaration();
+	        newParam.setType(ast.newSimpleType(ast.newName(EXTENSION_CONTEXT)));
+	        newParam.setName(ast.newSimpleName(VARIABLE_NAME_CONTEXT));
+	        ListRewrite listRewrite = rewrite.getListRewrite(method, MethodDeclaration.PARAMETERS_PROPERTY);
+	        listRewrite.insertLast(newParam, group);
+
+	        // Import hinzufügen
+	        importRewrite.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT);
+	    }
 	}
 
-	private void ensureExtensionContextParameter(MethodDeclaration method, ASTRewrite rewrite, AST ast,
-			TextEditGroup group, ImportRewrite importRewrite) {
-		boolean hasExtensionContext= method.parameters().stream()
-				.anyMatch(param -> param instanceof SingleVariableDeclaration
-						&& ((SingleVariableDeclaration) param).getType().toString().equals(EXTENSION_CONTEXT));
-		if (!hasExtensionContext) {
-			SingleVariableDeclaration newParam= ast.newSingleVariableDeclaration();
-			newParam.setType(ast.newSimpleType(ast.newName(EXTENSION_CONTEXT)));
-			newParam.setName(ast.newSimpleName(VARIABLE_NAME_CONTEXT));
-			ListRewrite listRewrite= rewrite.getListRewrite(method, MethodDeclaration.PARAMETERS_PROPERTY);
-			listRewrite.insertLast(newParam, group);
-			importRewrite.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT);
-		}
+
+	// Hilfsmethode zum Vergleich des Typs
+	private boolean isExtensionContext(SingleVariableDeclaration param) {
+	    ITypeBinding binding = param.getType().resolveBinding();
+	    return binding != null && ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT.equals(binding.getQualifiedName());
 	}
+
 
 	public String extractClassNameFromField(FieldDeclaration field) {
 		for (Object fragmentObj : field.fragments()) {
