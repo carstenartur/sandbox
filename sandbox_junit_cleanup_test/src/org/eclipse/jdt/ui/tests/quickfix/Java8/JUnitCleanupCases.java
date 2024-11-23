@@ -739,7 +739,7 @@ public class MyTest {
     }
 
 	@ClassRule
-    public static ExternalResource staticResource = new StaticExternalResource();
+	public static ExternalResource staticResource = new StaticExternalResource();
 
     // Klasse mit Konstruktor
     final class ConstructedExternalResource extends ExternalResource {
@@ -792,7 +792,6 @@ public class MyTest {
 """
 package test;
 
-import org.junit.ClassRule;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -845,8 +844,8 @@ public class MyTest {
         }
     }
 
-	@ClassRule
-    public static ExternalResource staticResource = new StaticExternalResource();
+	@RegisterExtension
+	public static ExternalResource staticResource = new StaticExternalResource();
 
     // Klasse mit Konstruktor
     final class ConstructedExternalResource implements BeforeEachCallback, AfterEachCallback {
