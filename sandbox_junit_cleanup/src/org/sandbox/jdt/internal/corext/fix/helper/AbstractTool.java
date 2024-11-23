@@ -337,7 +337,7 @@ public abstract class AbstractTool<T> {
 		importRewrite.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
 	}
 
-	private boolean isUsedAsClassRule(TypeDeclaration node, String annotationclass) {
+ private boolean isUsedAsClassRule(TypeDeclaration node, String annotationclass) {
 	    ITypeBinding typeBinding = node.resolveBinding();
 	    if (typeBinding == null) {
 	        return false;
