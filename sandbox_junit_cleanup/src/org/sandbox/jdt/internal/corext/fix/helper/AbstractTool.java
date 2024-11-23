@@ -72,6 +72,7 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
  */
 public abstract class AbstractTool<T> {
 
+	protected static final String ORG_JUNIT_CLASS_RULE= "org.junit.ClassRule";
 	private static final String ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_ALL_CALLBACK= "org.junit.jupiter.api.extension.AfterAllCallback";
 	private static final String ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_ALL_CALLBACK= "org.junit.jupiter.api.extension.BeforeAllCallback";
 	private static final String AFTER_ALL_CALLBACK= "AfterAllCallback";
@@ -129,7 +130,6 @@ public abstract class AbstractTool<T> {
 	protected static final String ORG_JUNIT_JUPITER_API_ASSUMPTIONS= "org.junit.jupiter.api.Assumptions";
 	protected static final String ORG_JUNIT_ASSUME= "org.junit.Assume";
 	protected static final String ASSUMPTIONS= "Assumptions";
-	protected static final String ORG_JUNIT_CLASS_RULE= "org.junit.ClassRule";
 
 	public static Collection<String> getUsedVariableNames(ASTNode node) {
 		CompilationUnit root= (CompilationUnit) node.getRoot();
@@ -217,7 +217,7 @@ public abstract class AbstractTool<T> {
 
 	private void adaptExternalResourceHierarchy(ITypeBinding typeBinding, ASTRewrite rewrite, AST ast,
 			ImportRewrite importRewrite, TextEditGroup group) {
-		while (typeBinding != null && isExternalResource(typeBinding)) {
+		while (typeBinding != null && isExternalResource(typeBinding, ORG_JUNIT_RULES_EXTERNAL_RESOURCE)) {
 			TypeDeclaration typeDecl= findTypeDeclarationInProject(typeBinding);
 			if (typeDecl != null) {
 				adaptTypeDeclaration(typeDecl, rewrite, ast, importRewrite, group);
@@ -287,23 +287,15 @@ public abstract class AbstractTool<T> {
 
 	private boolean shouldProcessNode(TypeDeclaration node) {
 		ITypeBinding binding= node.resolveBinding();
-		return binding != null && isExternalResource(binding);
+		return binding != null && isExternalResource(binding, ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
 	}
 
-	private void processBeforeMethod(MethodDeclaration method, ASTRewrite rewriter, AST ast, TextEditGroup group,
-			ImportRewrite importRewriter) {
+	private void processMethod(MethodDeclaration method, ASTRewrite rewriter, AST ast, TextEditGroup group,
+			ImportRewrite importRewriter, String methodname, String methodnamejunit5) {
 		setPublicVisibilityIfProtected(method, rewriter, ast, group);
-		adaptSuperBeforeCalls(METHOD_BEFORE, METHOD_BEFORE_EACH, method, rewriter, ast, group);
+		adaptSuperBeforeCalls(methodname, methodnamejunit5, method, rewriter, ast, group);
 		removeThrowsThrowable(method, rewriter, group);
-		rewriter.replace(method.getName(), ast.newSimpleName(METHOD_BEFORE_EACH), group);
-		ensureExtensionContextParameter(method, rewriter, ast, group, importRewriter);
-	}
-
-	private void processAfterMethod(MethodDeclaration method, ASTRewrite rewriter, AST ast, TextEditGroup group,
-			ImportRewrite importRewriter) {
-		setPublicVisibilityIfProtected(method, rewriter, ast, group);
-		adaptSuperBeforeCalls(METHOD_AFTER, METHOD_AFTER_EACH, method, rewriter, ast, group);
-		rewriter.replace(method.getName(), ast.newSimpleName(METHOD_AFTER_EACH), group);
+		rewriter.replace(method.getName(), ast.newSimpleName(methodnamejunit5), group);
 		ensureExtensionContextParameter(method, rewriter, ast, group, importRewriter);
 	}
 
@@ -311,9 +303,9 @@ public abstract class AbstractTool<T> {
 			ImportRewrite importRewriter) {
 		for (MethodDeclaration method : node.getMethods()) {
 			if (isLifecycleMethod(method, METHOD_BEFORE)) {
-				processBeforeMethod(method, rewriter, ast, group, importRewriter);
+				processMethod(method, rewriter, ast, group, importRewriter, METHOD_BEFORE, METHOD_BEFORE_EACH);
 			} else if (isLifecycleMethod(method, METHOD_AFTER)) {
-				processAfterMethod(method, rewriter, ast, group, importRewriter);
+				processMethod(method, rewriter, ast, group, importRewriter, METHOD_AFTER,METHOD_AFTER_EACH);
 			}
 		}
 	}
@@ -337,77 +329,81 @@ public abstract class AbstractTool<T> {
 		importRewrite.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
 	}
 
- private boolean isUsedAsClassRule(TypeDeclaration node, String annotationclass) {
-	    ITypeBinding typeBinding = node.resolveBinding();
-	    if (typeBinding == null) {
-	        return false;
-	    }
+	private boolean isUsedAsClassRule(TypeDeclaration node, String annotationclass) {
+		ITypeBinding typeBinding= node.resolveBinding();
+		if (typeBinding == null) {
+			return false;
+		}
 
-	    CompilationUnit cu = (CompilationUnit) node.getRoot();
-	    if (cu == null) {
-	        return false;
-	    }
-	    final boolean[] isClassRule = {false};
+		CompilationUnit cu= (CompilationUnit) node.getRoot();
+		if (cu == null) {
+			return false;
+		}
+		final boolean[] isClassRule= { false };
 
-	    cu.accept(new ASTVisitor() {
-	        @Override
-	        public boolean visit(FieldDeclaration fieldDeclaration) {
-	            // Prüfe, ob das Feld mit @ClassRule annotiert ist
-	            boolean hasClassRuleAnnotation = fieldDeclaration.modifiers().stream()
-	                .filter(modifier -> modifier instanceof Annotation) // Sicherstellen, dass es sich um eine Annotation handelt
-	                .map(modifier -> (Annotation) modifier) // Cast zu Annotation
-	                .anyMatch(annotation -> {
-	                    String annotationBinding =  ((Annotation) annotation).getTypeName().getFullyQualifiedName();
-	                    
-						return annotationBinding != null && annotationclass.equals(annotationBinding);
-	                });
+		cu.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(FieldDeclaration fieldDeclaration) {
+				// Prüfe, ob das Feld mit @ClassRule annotiert ist
+				boolean hasClassRuleAnnotation= fieldDeclaration.modifiers().stream()
+						.filter(modifier -> modifier instanceof Annotation) // Sicherstellen, dass es sich um eine
+																			// Annotation handelt
+						.map(modifier -> (Annotation) modifier) // Cast zu Annotation
+						.anyMatch(annotation -> {
+							String annotationBinding= ((Annotation) annotation).getTypeName().getFullyQualifiedName();
 
-	            // Prüfe, ob das Feld vom Typ der aktuellen Klasse ist
-	            if (hasClassRuleAnnotation) {
-	                Type fieldType = fieldDeclaration.getType();
-	                if (fieldType.resolveBinding() != null && fieldType.resolveBinding().isEqualTo(typeBinding)) {
-	                    isClassRule[0] = true;
-	                }
-	            }
-	            return super.visit(fieldDeclaration);
-	        }
-	    });
+							return annotationBinding != null && annotationclass.equals(annotationBinding);
+						});
 
-	    return isClassRule[0];
+				// Prüfe, ob das Feld vom Typ der aktuellen Klasse ist
+				if (hasClassRuleAnnotation) {
+					Type fieldType= fieldDeclaration.getType();
+					if (fieldType.resolveBinding() != null && fieldType.resolveBinding().isEqualTo(typeBinding)) {
+						isClassRule[0]= true;
+					}
+				}
+				return super.visit(fieldDeclaration);
+			}
+		});
+
+		return isClassRule[0];
 	}
 
 	private void refactorToImplementCallbacks(TypeDeclaration node, ASTRewrite rewriter, AST ast, TextEditGroup group,
-	        ImportRewrite importRewriter) {
-	    // Entferne die Superklasse ExternalResource
-	    rewriter.remove(node.getSuperclassType(), group);
-	    importRewriter.removeImport(ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
+			ImportRewrite importRewriter) {
+		// Entferne die Superklasse ExternalResource
+		rewriter.remove(node.getSuperclassType(), group);
+		importRewriter.removeImport(ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
 
-	    // Prüfe, ob die Klasse statisch verwendet wird
-	    boolean isStaticUsage = isUsedAsClassRule(node, "org.junit.ClassRule");
+		// Prüfe, ob die Klasse statisch verwendet wird
+		boolean isStaticUsage= isUsedAsClassRule(node, ORG_JUNIT_CLASS_RULE);
 
-	    ListRewrite listRewrite = rewriter.getListRewrite(node, TypeDeclaration.SUPER_INTERFACE_TYPES_PROPERTY);
+		ListRewrite listRewrite= rewriter.getListRewrite(node, TypeDeclaration.SUPER_INTERFACE_TYPES_PROPERTY);
 
-	    // Füge die entsprechenden Callback-Interfaces hinzu
-	    if (isStaticUsage) {
-	        // Verwende BeforeAllCallback und AfterAllCallback für statische Ressourcen
-	        addInterfaceCallback(listRewrite, ast, BEFORE_ALL_CALLBACK, group);
-	        addInterfaceCallback(listRewrite, ast, AFTER_ALL_CALLBACK, group);
-	        importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_ALL_CALLBACK);
-	        importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_ALL_CALLBACK);
-	    } else {
-	        // Verwende BeforeEachCallback und AfterEachCallback für nicht-statische Ressourcen
-	        addInterfaceCallback(listRewrite, ast, BEFORE_EACH_CALLBACK, group);
-	        addInterfaceCallback(listRewrite, ast, AFTER_EACH_CALLBACK, group);
-	        importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
-	        importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
-	    }
+		// Füge die entsprechenden Callback-Interfaces hinzu
+		if (isStaticUsage) {
+			// Verwende BeforeAllCallback und AfterAllCallback für statische Ressourcen
+			addInterfaceCallback(listRewrite, ast, BEFORE_ALL_CALLBACK, group, importRewriter,
+					ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_ALL_CALLBACK);
+			addInterfaceCallback(listRewrite, ast, AFTER_ALL_CALLBACK, group, importRewriter,
+					ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_ALL_CALLBACK);
+		} else {
+			// Verwende BeforeEachCallback und AfterEachCallback für nicht-statische
+			// Ressourcen
+			addInterfaceCallback(listRewrite, ast, BEFORE_EACH_CALLBACK, group, importRewriter,
+					ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
+			addInterfaceCallback(listRewrite, ast, AFTER_EACH_CALLBACK, group, importRewriter,
+					ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
+		}
 	}
 
 	private void addBeforeAndAfterEachCallbacks(TypeDeclaration typeDecl, ASTRewrite rewrite, AST ast,
 			ImportRewrite importRewrite, TextEditGroup group) {
 		ListRewrite listRewrite= rewrite.getListRewrite(typeDecl, TypeDeclaration.SUPER_INTERFACE_TYPES_PROPERTY);
-		addInterfaceCallback(listRewrite, ast, BEFORE_EACH_CALLBACK, group,importRewrite, ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
-		addInterfaceCallback(listRewrite, ast, AFTER_EACH_CALLBACK, group,importRewrite, ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
+		addInterfaceCallback(listRewrite, ast, BEFORE_EACH_CALLBACK, group, importRewrite,
+				ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
+		addInterfaceCallback(listRewrite, ast, AFTER_EACH_CALLBACK, group, importRewrite,
+				ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
 	}
 
 	private void adaptSuperBeforeCalls(String vorher, String nachher, MethodDeclaration method, ASTRewrite rewriter,
@@ -463,7 +459,8 @@ public abstract class AbstractTool<T> {
 		}
 	}
 
-	private void addInterfaceCallback(ListRewrite listRewrite, AST ast, String callbackName, TextEditGroup group, ImportRewrite importRewriter, String classtoimport) {
+	private void addInterfaceCallback(ListRewrite listRewrite, AST ast, String callbackName, TextEditGroup group,
+			ImportRewrite importRewriter, String classtoimport) {
 		// Prüfen, ob das Interface bereits in der Liste existiert
 		boolean hasCallback= listRewrite.getRewrittenList().stream().anyMatch(type -> type instanceof SimpleType
 				&& ((SimpleType) type).getName().getFullyQualifiedName().equals(callbackName));
@@ -503,8 +500,8 @@ public abstract class AbstractTool<T> {
 
 		// Prüfen, ob ExtensionContext bereits existiert (im AST oder im Rewrite)
 		boolean hasExtensionContext= method.parameters().stream()
-				.anyMatch(param -> param instanceof SingleVariableDeclaration
-						&& isExtensionContext((SingleVariableDeclaration) param, ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT))
+				.anyMatch(param -> param instanceof SingleVariableDeclaration && isExtensionContext(
+						(SingleVariableDeclaration) param, ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT))
 				|| rewrite.getListRewrite(method, MethodDeclaration.PARAMETERS_PROPERTY).getRewrittenList().stream()
 						.anyMatch(param -> param instanceof SingleVariableDeclaration
 								&& ((SingleVariableDeclaration) param).getType().toString().equals(EXTENSION_CONTEXT));
@@ -633,15 +630,15 @@ public abstract class AbstractTool<T> {
 		return ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(binding.getSuperclass().getQualifiedName());
 	}
 
-	private boolean isExternalResource(FieldDeclaration field) {
+	private boolean isExternalResource(FieldDeclaration field, String typetolookup) {
 		VariableDeclarationFragment fragment= (VariableDeclarationFragment) field.fragments().get(0);
 		ITypeBinding binding= fragment.resolveBinding().getType();
-		return isExternalResource(binding);
+		return isExternalResource(binding, typetolookup);
 	}
 
-	protected boolean isExternalResource(ITypeBinding typeBinding) {
+	protected boolean isExternalResource(ITypeBinding typeBinding, String typetolookup) {
 		while (typeBinding != null) {
-			if (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(typeBinding.getQualifiedName())) {
+			if (typetolookup.equals(typeBinding.getQualifiedName())) {
 				return true;
 			}
 			typeBinding= typeBinding.getSuperclass();
@@ -653,9 +650,9 @@ public abstract class AbstractTool<T> {
 		return method.getName().getIdentifier().equals(methodName);
 	}
 
-	private boolean isStringType(Expression expression) {
+	private boolean isStringType(Expression expression, Class<String> class1) {
 		ITypeBinding typeBinding= expression.resolveTypeBinding();
-		return typeBinding != null && String.class.getCanonicalName().equals(typeBinding.getQualifiedName());
+		return typeBinding != null && class1.getCanonicalName().equals(typeBinding.getQualifiedName());
 	}
 
 	public void migrateRuleToRegisterExtensionAndAdaptHierarchy(Optional<ASTNode> innerTypeDeclaration,
@@ -666,14 +663,14 @@ public abstract class AbstractTool<T> {
 					group);
 		}
 		for (FieldDeclaration field : testClass.getFields()) {
-			if (isAnnotatedWithRule(field, ORG_JUNIT_RULE) && isExternalResource(field)) {
+			if (isAnnotatedWithRule(field, ORG_JUNIT_RULE) && isExternalResource(field, ORG_JUNIT_RULES_EXTERNAL_RESOURCE)) {
 				removeRuleAnnotation(field, rewrite, group, importRewrite, ORG_JUNIT_RULE);
 				addRegisterExtensionAnnotation(field, rewrite, ast, importRewrite, group);
 				importRewrite.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_REGISTER_EXTENSION);
 				ITypeBinding fieldType= ((VariableDeclarationFragment) field.fragments().get(0)).resolveBinding()
 						.getType();
 				adaptExternalResourceHierarchy(fieldType, rewrite, ast, importRewrite, group);
-			} else if (isAnnotatedWithRule(field, ORG_JUNIT_CLASS_RULE) && isExternalResource(field)) {
+			} else if (isAnnotatedWithRule(field, ORG_JUNIT_CLASS_RULE) && isExternalResource(field, ORG_JUNIT_RULES_EXTERNAL_RESOURCE)) {
 				removeRuleAnnotation(field, rewrite, group, importRewrite, ORG_JUNIT_CLASS_RULE);
 				addRegisterExtensionAnnotation(field, rewrite, ast, importRewrite, group);
 				ITypeBinding fieldType= ((VariableDeclarationFragment) field.fragments().get(0)).resolveBinding()
@@ -699,7 +696,7 @@ public abstract class AbstractTool<T> {
 		FieldDeclaration field= (FieldDeclaration) node.getParent();
 		ITypeBinding fieldTypeBinding= ((VariableDeclarationFragment) field.fragments().get(0)).resolveBinding()
 				.getType();
-		if (!isExternalResource(fieldTypeBinding) || fieldTypeBinding.isAnonymous()) {
+		if (!isExternalResource(fieldTypeBinding, ORG_JUNIT_RULES_EXTERNAL_RESOURCE) || fieldTypeBinding.isAnonymous()) {
 			return;
 		}
 		if (isDirect(fieldTypeBinding)) {
@@ -753,7 +750,7 @@ public abstract class AbstractTool<T> {
 		for (int i= 0; i < order.length; i++) {
 			newArguments[i]= (Expression) ASTNode.copySubtree(node.getAST(), arguments.get(order[i]));
 		}
-		if (!isStringType(arguments.get(0))) {
+		if (!isStringType(arguments.get(0), String.class)) {
 			return;
 		}
 		for (int i= 0; i < arguments.size(); i++) {
