@@ -44,6 +44,9 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 		HelperVisitor.callFieldDeclarationVisitor(ORG_JUNIT_RULE, ORG_JUNIT_RULES_EXTERNAL_RESOURCE, compilationUnit,
 				dataholder, nodesprocessed,
 				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+		HelperVisitor.callFieldDeclarationVisitor(ORG_JUNIT_CLASS_RULE, ORG_JUNIT_RULES_EXTERNAL_RESOURCE, compilationUnit,
+				dataholder, nodesprocessed,
+				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,

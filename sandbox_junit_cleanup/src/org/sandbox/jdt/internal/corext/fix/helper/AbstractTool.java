@@ -39,6 +39,7 @@ import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.IExtendedModifier;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
@@ -71,6 +72,10 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
  */
 public abstract class AbstractTool<T> {
 
+	private static final String ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_ALL_CALLBACK= "org.junit.jupiter.api.extension.AfterAllCallback";
+	private static final String ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_ALL_CALLBACK= "org.junit.jupiter.api.extension.BeforeAllCallback";
+	private static final String AFTER_ALL_CALLBACK= "AfterAllCallback";
+	private static final String BEFORE_ALL_CALLBACK= "BeforeAllCallback";
 	private static final String TEST_NAME= "testName";
 	private static final String METHOD_AFTER_EACH= "afterEach";
 	private static final String METHOD_BEFORE_EACH= "beforeEach";
@@ -332,13 +337,70 @@ public abstract class AbstractTool<T> {
 		importRewrite.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
 	}
 
+ private boolean isUsedAsClassRule(TypeDeclaration node, String annotationclass) {
+	    ITypeBinding typeBinding = node.resolveBinding();
+	    if (typeBinding == null) {
+	        return false;
+	    }
+
+	    CompilationUnit cu = (CompilationUnit) node.getRoot();
+	    if (cu == null) {
+	        return false;
+	    }
+	    final boolean[] isClassRule = {false};
+
+	    cu.accept(new ASTVisitor() {
+	        @Override
+	        public boolean visit(FieldDeclaration fieldDeclaration) {
+	            // Prüfe, ob das Feld mit @ClassRule annotiert ist
+	            boolean hasClassRuleAnnotation = fieldDeclaration.modifiers().stream()
+	                .filter(modifier -> modifier instanceof Annotation) // Sicherstellen, dass es sich um eine Annotation handelt
+	                .map(modifier -> (Annotation) modifier) // Cast zu Annotation
+	                .anyMatch(annotation -> {
+	                    String annotationBinding =  ((Annotation) annotation).getTypeName().getFullyQualifiedName();
+	                    
+						return annotationBinding != null && annotationclass.equals(annotationBinding);
+	                });
+
+	            // Prüfe, ob das Feld vom Typ der aktuellen Klasse ist
+	            if (hasClassRuleAnnotation) {
+	                Type fieldType = fieldDeclaration.getType();
+	                if (fieldType.resolveBinding() != null && fieldType.resolveBinding().isEqualTo(typeBinding)) {
+	                    isClassRule[0] = true;
+	                }
+	            }
+	            return super.visit(fieldDeclaration);
+	        }
+	    });
+
+	    return isClassRule[0];
+	}
+
 	private void refactorToImplementCallbacks(TypeDeclaration node, ASTRewrite rewriter, AST ast, TextEditGroup group,
-			ImportRewrite importRewriter) {
-		rewriter.remove(node.getSuperclassType(), group);
-		importRewriter.removeImport(ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
-		ListRewrite listRewrite= rewriter.getListRewrite(node, TypeDeclaration.SUPER_INTERFACE_TYPES_PROPERTY);
-		addInterfaceCallback(listRewrite, ast, BEFORE_EACH_CALLBACK, group,importRewriter, ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
-		addInterfaceCallback(listRewrite, ast, AFTER_EACH_CALLBACK, group,importRewriter, ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
+	        ImportRewrite importRewriter) {
+	    // Entferne die Superklasse ExternalResource
+	    rewriter.remove(node.getSuperclassType(), group);
+	    importRewriter.removeImport(ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
+
+	    // Prüfe, ob die Klasse statisch verwendet wird
+	    boolean isStaticUsage = isUsedAsClassRule(node, "org.junit.ClassRule");
+
+	    ListRewrite listRewrite = rewriter.getListRewrite(node, TypeDeclaration.SUPER_INTERFACE_TYPES_PROPERTY);
+
+	    // Füge die entsprechenden Callback-Interfaces hinzu
+	    if (isStaticUsage) {
+	        // Verwende BeforeAllCallback und AfterAllCallback für statische Ressourcen
+	        addInterfaceCallback(listRewrite, ast, BEFORE_ALL_CALLBACK, group);
+	        addInterfaceCallback(listRewrite, ast, AFTER_ALL_CALLBACK, group);
+	        importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_ALL_CALLBACK);
+	        importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_ALL_CALLBACK);
+	    } else {
+	        // Verwende BeforeEachCallback und AfterEachCallback für nicht-statische Ressourcen
+	        addInterfaceCallback(listRewrite, ast, BEFORE_EACH_CALLBACK, group);
+	        addInterfaceCallback(listRewrite, ast, AFTER_EACH_CALLBACK, group);
+	        importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
+	        importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
+	    }
 	}
 
 	private void addBeforeAndAfterEachCallbacks(TypeDeclaration typeDecl, ASTRewrite rewrite, AST ast,
@@ -605,7 +667,14 @@ public abstract class AbstractTool<T> {
 		}
 		for (FieldDeclaration field : testClass.getFields()) {
 			if (isAnnotatedWithRule(field, ORG_JUNIT_RULE) && isExternalResource(field)) {
-				removeRuleAnnotation(field, rewrite, group, importRewrite);
+				removeRuleAnnotation(field, rewrite, group, importRewrite, ORG_JUNIT_RULE);
+				addRegisterExtensionAnnotation(field, rewrite, ast, importRewrite, group);
+				importRewrite.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_REGISTER_EXTENSION);
+				ITypeBinding fieldType= ((VariableDeclarationFragment) field.fragments().get(0)).resolveBinding()
+						.getType();
+				adaptExternalResourceHierarchy(fieldType, rewrite, ast, importRewrite, group);
+			} else if (isAnnotatedWithRule(field, ORG_JUNIT_CLASS_RULE) && isExternalResource(field)) {
+				removeRuleAnnotation(field, rewrite, group, importRewrite, ORG_JUNIT_CLASS_RULE);
 				addRegisterExtensionAnnotation(field, rewrite, ast, importRewrite, group);
 				ITypeBinding fieldType= ((VariableDeclarationFragment) field.fragments().get(0)).resolveBinding()
 						.getType();
@@ -642,15 +711,15 @@ public abstract class AbstractTool<T> {
 	}
 
 	private void removeRuleAnnotation(BodyDeclaration declaration, ASTRewrite rewriter, TextEditGroup group,
-			ImportRewrite importRewriter) {
+			ImportRewrite importRewriter, String annotationclass) {
 		List<?> modifiers= declaration.modifiers();
 		for (Object modifier : modifiers) {
 			if (modifier instanceof Annotation) {
 				Annotation annotation= (Annotation) modifier;
 				ITypeBinding binding= annotation.resolveTypeBinding();
-				if (binding != null && binding.getQualifiedName().equals(ORG_JUNIT_RULE)) {
+				if (binding != null && binding.getQualifiedName().equals(annotationclass)) {
 					rewriter.remove(annotation, group);
-					importRewriter.removeImport(ORG_JUNIT_RULE);
+					importRewriter.removeImport(annotationclass);
 					break;
 				}
 			}
