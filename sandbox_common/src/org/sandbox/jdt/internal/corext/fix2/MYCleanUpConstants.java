@@ -126,6 +126,10 @@ public class MYCleanUpConstants {
 	/**
 	 * 
 	 */
+	public static final String JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE= "cleanup.junitcleanup_4_ruleexternalresource"; //$NON-NLS-1$
+	/**
+	 * 
+	 */
 	public static final String JUNIT_CLEANUP_4_RUNWITH= "cleanup.junitcleanup_4_runwith"; //$NON-NLS-1$
 	/**
 	 *
