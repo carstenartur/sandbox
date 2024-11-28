@@ -659,27 +659,30 @@ public class MyTest {
 """, //$NON-NLS-1$
 """
 package test;
-import org.junit.Rule;
 import org.junit.jupiter.api.Test;
-import org.junit.rules.ExternalResource;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.RegisterExtension;
 /**
  *
  */
 public class MyTest {
 
-	@Rule
-	public ExternalResource er= new ExternalResource() {
-	@Override
-	protected void before() throws Throwable {
-	};
-
-	@Override
-	protected void after() {
-	};
-	};
+	@RegisterExtension
+	public GeneratedExtension1218384162454000 er= new GeneratedExtension1218384162454000();
 
 	@Test
 	public void test3() {
+	}
+
+	class GeneratedExtension1218384162454000 implements org.junit.jupiter.api.extension.BeforeEachCallback,
+			org.junit.jupiter.api.extension.AfterEachCallback {
+		public void beforeEach(ExtensionContext context) {
+		}
+
+		public void afterEach(ExtensionContext context) {
+		}
 	}
 }
 """),
@@ -793,7 +796,9 @@ public class MyTest {
 package test;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -819,20 +824,10 @@ public class MyTest {
 
     // Anonyme Klasse als ExternalResource
 	@RegisterExtension
-	public ExternalResource anonymousRule = new ExternalResource() {
-        @Override
-        protected void before() throws Throwable {
-            System.out.println("Anonymous rule before");
-        }
-
-        @Override
-        protected void after() {
-            System.out.println("Anonymous rule after");
-        }
-    };
+	public GeneratedExtension1218384806024400 anonymousRule = new GeneratedExtension1218384806024400();
 
     // Statische Klasse für ClassRule
-    static class StaticExternalResource implements BeforeEachCallback, AfterEachCallback {
+    static class StaticExternalResource implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback {
         @Override
         public void beforeEach(ExtensionContext context) {
             System.out.println("Static resource before");
@@ -871,17 +866,7 @@ public class MyTest {
 
     // Zweite Regel
 	@RegisterExtension
-	public ExternalResource secondRule = new ExternalResource() {
-        @Override
-        protected void before() throws Throwable {
-            System.out.println("Second rule before");
-        }
-
-        @Override
-        protected void after() {
-            System.out.println("Second rule after");
-        }
-    };
+	public GeneratedExtension1218384804295200 secondRule = new GeneratedExtension1218384804295200();
 
     // Testfälle
     @Test
@@ -893,6 +878,28 @@ public class MyTest {
     public void testWithMultipleResources() {
         System.out.println("Test with multiple resources");
     }
+
+	class GeneratedExtension1218384804295200 implements org.junit.jupiter.api.extension.BeforeEachCallback,
+			org.junit.jupiter.api.extension.AfterEachCallback {
+		public void beforeEach(ExtensionContext context) {
+			System.out.println("Second rule before");
+		}
+
+		public void afterEach(ExtensionContext context) {
+			System.out.println("Second rule after");
+		}
+	}
+
+	class GeneratedExtension1218384806024400 implements org.junit.jupiter.api.extension.BeforeEachCallback,
+			org.junit.jupiter.api.extension.AfterEachCallback {
+		public void beforeEach(ExtensionContext context) {
+			System.out.println("Anonymous rule before");
+		}
+
+		public void afterEach(ExtensionContext context) {
+			System.out.println("Anonymous rule after");
+		}
+	}
 }
 """),
 		TestnameRule(

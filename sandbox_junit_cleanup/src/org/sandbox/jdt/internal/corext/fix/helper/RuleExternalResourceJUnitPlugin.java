@@ -13,14 +13,14 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import java.util.Optional;
 import java.util.Set;
-
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
@@ -56,8 +56,9 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 		VariableDeclarationFragment fragment= (VariableDeclarationFragment) node.fragments().get(0);
 		ITypeBinding binding= fragment.resolveBinding().getType();
 		if (
-				isAnonymousClass(fragment)
-				|| (binding == null)
+//				isAnonymousClass(fragment)
+//				|| 
+				(binding == null)
 				|| ORG_JUNIT_RULES_TEST_NAME.equals(binding.getQualifiedName())
 				|| ORG_JUNIT_RULES_TEMPORARY_FOLDER.equals(binding.getQualifiedName())) {
 			return false;
@@ -71,18 +72,31 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 	@Override
 	public void rewrite(JUnitCleanUpFixCore upp, ReferenceHolder<Integer, JunitHolder> hit,
 			CompilationUnitRewrite cuRewrite, TextEditGroup group) {
-		ASTRewrite rewrite= cuRewrite.getASTRewrite();
+		ASTRewrite rewriter= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
 		ImportRewrite importRewriter= cuRewrite.getImportRewrite();
-		hit.values().forEach(mh -> {
+		JunitHolder mh= hit.get(hit.size()-1);
+		
+		
+		
 			FieldDeclaration fieldDeclaration= mh.getFieldDeclaration();
-			Optional<ASTNode> innerTypeDeclaration= getInnerTypeDeclaration(fieldDeclaration);
-			for (Object fragment : fieldDeclaration.fragments()) {
-				VariableDeclarationFragment variable = (VariableDeclarationFragment) fragment;
-				String fieldName = variable.getName().getIdentifier();
-				migrateRuleToRegisterExtensionAndAdaptHierarchy(innerTypeDeclaration,getParentTypeDeclaration(fieldDeclaration),rewrite, ast, importRewriter,group ,fieldName);
+			boolean fieldStatic= isFieldAnnotatedWith(fieldDeclaration,ORG_JUNIT_CLASS_RULE);
+			CompilationUnit cu = (CompilationUnit) fieldDeclaration.getRoot();
+			String classNameFromField= extractClassNameFromField(fieldDeclaration);
+			TypeDeclaration node = getTypeDeclarationForField(fieldDeclaration, cu);
+			
+			ASTNode node2 = getTypeDefinitionForField(fieldDeclaration, cu);
+
+			if (node2 instanceof TypeDeclaration) {
+			    System.out.println("TypeDeclaration gefunden: " + ((TypeDeclaration) node2).getName());
+			    modifyExternalResourceClass((TypeDeclaration) node2,fieldDeclaration,fieldStatic, rewriter, ast, group, importRewriter);
+			} else if (node2 instanceof AnonymousClassDeclaration typeNode) {
+			    System.out.println("AnonymousClassDeclaration gefunden."+ typeNode);
+			    refactorAnonymousClassToImplementCallbacks(typeNode, fieldStatic, rewriter, ast, group, importRewriter);
+			} else {
+			    System.out.println("Keine passende Typdefinition gefunden.");
 			}
-		});
+			hit.remove(hit.size()-1);
 	}
 
 	@Override
