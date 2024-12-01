@@ -13,6 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -570,8 +571,8 @@ public abstract class AbstractTool<T> {
 
 	private String generateChecksum(String input) {
 		try {
-			MessageDigest md= MessageDigest.getInstance("MD5");
-			byte[] hashBytes= md.digest(input.getBytes());
+			MessageDigest md= MessageDigest.getInstance("SHA-256");
+			byte[] hashBytes= md.digest(input.getBytes(StandardCharsets.UTF_8));
 			StringBuilder hexString= new StringBuilder();
 			for (byte b : hashBytes) {
 				String hex= Integer.toHexString(0xff & b);
@@ -579,9 +580,9 @@ public abstract class AbstractTool<T> {
 					hexString.append('0');
 				hexString.append(hex);
 			}
-			return hexString.toString();
+			return hexString.toString().substring(0, 5);
 		} catch (NoSuchAlgorithmException e) {
-			throw new RuntimeException("MD5 algorithm not found");
+			throw new RuntimeException("SHA-256 algorithm not found");
 		}
 	}
 

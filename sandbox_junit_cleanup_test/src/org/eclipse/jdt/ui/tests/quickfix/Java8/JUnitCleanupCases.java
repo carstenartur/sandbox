@@ -670,13 +670,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 public class MyTest {
 
 	@RegisterExtension
-	public Er_f48592b683fc99335062dd479c12116b er= new Er_f48592b683fc99335062dd479c12116b();
+	public Er_5b8b4 er= new Er_5b8b4();
 
 	@Test
 	public void test3() {
 	}
 
-	class Er_f48592b683fc99335062dd479c12116b implements org.junit.jupiter.api.extension.BeforeEachCallback,
+	class Er_5b8b4 implements org.junit.jupiter.api.extension.BeforeEachCallback,
 			org.junit.jupiter.api.extension.AfterEachCallback {
 		public void beforeEach(ExtensionContext context) {
 		}
@@ -824,7 +824,7 @@ public class MyTest {
 
     // Anonyme Klasse als ExternalResource
 	@RegisterExtension
-	public AnonymousRule_4aec5feb6379fe0b02849ce3e05ad3da anonymousRule = new AnonymousRule_4aec5feb6379fe0b02849ce3e05ad3da();
+	public AnonymousRule_9ea4e anonymousRule = new AnonymousRule_9ea4e();
 
     // Statische Klasse für ClassRule
     static class StaticExternalResource implements BeforeAllCallback, AfterAllCallback {
@@ -866,7 +866,7 @@ public class MyTest {
 
     // Zweite Regel
 	@RegisterExtension
-	public SecondRule_61e802c930b36c5c551d3e517590ddbd secondRule = new SecondRule_61e802c930b36c5c551d3e517590ddbd();
+	public SecondRule_c4213 secondRule = new SecondRule_c4213();
 
     // Testfälle
     @Test
@@ -879,7 +879,7 @@ public class MyTest {
         System.out.println("Test with multiple resources");
     }
 
-	class SecondRule_61e802c930b36c5c551d3e517590ddbd implements org.junit.jupiter.api.extension.BeforeEachCallback,
+	class SecondRule_c4213 implements org.junit.jupiter.api.extension.BeforeEachCallback,
 			org.junit.jupiter.api.extension.AfterEachCallback {
 		public void beforeEach(ExtensionContext context) {
 			System.out.println("Second rule before");
@@ -890,7 +890,7 @@ public class MyTest {
 		}
 	}
 
-	class AnonymousRule_4aec5feb6379fe0b02849ce3e05ad3da implements org.junit.jupiter.api.extension.BeforeEachCallback,
+	class AnonymousRule_9ea4e implements org.junit.jupiter.api.extension.BeforeEachCallback,
 			org.junit.jupiter.api.extension.AfterEachCallback {
 		public void beforeEach(ExtensionContext context) {
 			System.out.println("Anonymous rule before");
