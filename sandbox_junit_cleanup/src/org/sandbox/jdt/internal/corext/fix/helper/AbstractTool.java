@@ -13,11 +13,19 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+
+import org.eclipse.core.filebuffers.FileBuffers;
+import org.eclipse.core.filebuffers.ITextFileBuffer;
+import org.eclipse.core.filebuffers.ITextFileBufferManager;
+import org.eclipse.core.filebuffers.LocationKind;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IType;
@@ -62,11 +70,14 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+import org.eclipse.jdt.core.refactoring.CompilationUnitChange;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.dom.AbortSearchException;
 import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.jface.text.IDocument;
+import org.eclipse.text.edits.TextEdit;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 
@@ -155,50 +166,6 @@ public abstract class AbstractTool<T> {
 		return new ScopeAnalyzer(root).getUsedVariableNames(node.getStartPosition(), node.getLength());
 	}
 
-	protected static boolean isOfType(ITypeBinding typeBinding, String typename) {
-		if (typeBinding == null) {
-			throw new AbortSearchException();
-		}
-		if (typeBinding.isArray()) {
-			typeBinding= typeBinding.getElementType();
-		}
-		return typeBinding.getQualifiedName().equals(typename);
-	}
-
-	protected Optional<ASTNode> getInnerTypeDeclaration(FieldDeclaration fieldDeclaration) {
-		for (Object fragment : fieldDeclaration.fragments()) {
-			if (fragment instanceof VariableDeclarationFragment) {
-				VariableDeclarationFragment variableFragment= (VariableDeclarationFragment) fragment;
-
-				// Prüfen, ob die Initialisierung eine anonyme Klasse ist
-				Expression initializer= variableFragment.getInitializer();
-				if (initializer instanceof ClassInstanceCreation) {
-					ClassInstanceCreation classInstance= (ClassInstanceCreation) initializer;
-
-					// Anonyme Klasse gefunden
-					if (classInstance.getAnonymousClassDeclaration() != null) {
-						return Optional.of(classInstance.getAnonymousClassDeclaration());
-					}
-
-					// Falls keine anonyme Klasse, den Typ der inneren Klasse prüfen
-					ITypeBinding typeBinding= classInstance.getType().resolveBinding();
-					if (typeBinding != null && typeBinding.isClass() && typeBinding.getJavaElement() instanceof IType) {
-						IType type= (IType) typeBinding.getJavaElement();
-						IJavaProject javaProject= type.getJavaProject();
-						String typeName= type.getElementName();
-
-						// Verwende nun den Projektnamen und den Typnamen
-						TypeDeclaration innerTypeDecl= findTypeDeclaration(javaProject, typeName);
-						if (innerTypeDecl != null) {
-							return Optional.of(innerTypeDecl);
-						}
-					}
-				}
-			}
-		}
-		return Optional.empty(); // Keine innere oder anonyme Klasse gefunden
-	}
-
 	private void addContextArgumentIfMissing(ASTNode node, ASTRewrite rewriter, AST ast, TextEditGroup group) {
 		ListRewrite argsRewrite;
 		if (node instanceof MethodInvocation) {
@@ -236,18 +203,27 @@ public abstract class AbstractTool<T> {
 
 	private void adaptExternalResourceHierarchy(ITypeBinding typeBinding, ASTRewrite rewrite, AST ast,
 			ImportRewrite importRewrite, TextEditGroup group) {
-		while (typeBinding != null && isExternalResource(typeBinding, ORG_JUNIT_RULES_EXTERNAL_RESOURCE)) {
-			TypeDeclaration typeDecl= findTypeDeclarationInProject(typeBinding);
-			if (typeDecl != null) {
-				adaptTypeDeclaration(typeDecl, rewrite, ast, importRewrite, group);
+		while (typeBinding != null) {
+			// Abbruchbedingung: Nicht weiter heruntersteigen, wenn der aktuelle Typ
+			// ExternalResource ist
+			if (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(typeBinding.getQualifiedName())) {
+				break;
 			}
+
+			if (isExternalResource(typeBinding, ORG_JUNIT_RULES_EXTERNAL_RESOURCE)) {
+				TypeDeclaration typeDecl= findTypeDeclarationInProject(typeBinding);
+				if (typeDecl != null) {
+					adaptTypeDeclaration(typeDecl, rewrite, ast, importRewrite, group);
+				}
+			}
+
 			typeBinding= typeBinding.getSuperclass();
 		}
 	}
 
 	private TypeDeclaration findTypeDeclarationInProject(ITypeBinding typeBinding) {
 		IType type= (IType) typeBinding.getJavaElement();
-		return type != null ? findTypeDeclaration(type.getJavaProject(), type.getElementName()) : null;
+		return type != null ? findTypeDeclaration(type.getJavaProject(), type.getFullyQualifiedName()) : null;
 	}
 
 	protected void modifyExternalResourceClass(TypeDeclaration node, FieldDeclaration field, boolean fieldStatic,
@@ -276,7 +252,6 @@ public abstract class AbstractTool<T> {
 					&& isExternalResource(field, ORG_JUNIT_RULES_EXTERNAL_RESOURCE)) {
 				removeRuleAnnotation(field, rewriter, group, importRewriter, ORG_JUNIT_RULE);
 				addRegisterExtensionAnnotation(field, rewriter, ast, importRewriter, group);
-				importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_REGISTER_EXTENSION);
 				ITypeBinding fieldType= ((VariableDeclarationFragment) field.fragments().get(0)).resolveBinding()
 						.getType();
 				adaptExternalResourceHierarchy(fieldType, rewriter, ast, importRewriter, group);
@@ -318,7 +293,11 @@ public abstract class AbstractTool<T> {
 					// Typbindung prüfen
 					ITypeBinding typeBinding= classInstanceCreation.resolveTypeBinding();
 					if (typeBinding != null) {
-						return findTypeDeclarationInCompilationUnit(typeBinding, cu); // Typdefinition suchen
+						TypeDeclaration typeDeclarationInCompilationUnit= findTypeDeclarationInCompilationUnit(
+								typeBinding, cu);
+						if (typeDeclarationInCompilationUnit == null)
+							return findTypeDeclarationInProject(typeBinding);
+						return typeDeclarationInCompilationUnit; // Typdefinition suchen
 					}
 				}
 
@@ -327,7 +306,11 @@ public abstract class AbstractTool<T> {
 				if (fieldBinding != null) {
 					ITypeBinding fieldTypeBinding= fieldBinding.getType();
 					if (fieldTypeBinding != null) {
-						return findTypeDeclarationInCompilationUnit(fieldTypeBinding, cu); // Typdefinition suchen
+						TypeDeclaration typeDeclarationInCompilationUnit= findTypeDeclarationInCompilationUnit(
+								fieldTypeBinding, cu);
+						if (typeDeclarationInCompilationUnit == null)
+							findTypeDeclarationInProject(fieldTypeBinding);
+						return typeDeclarationInCompilationUnit; // Typdefinition suchen
 					}
 				}
 			}
@@ -351,31 +334,135 @@ public abstract class AbstractTool<T> {
 		ensureExtensionContextParameter(method, rewriter, ast, group, importRewriter);
 	}
 
-	private void updateLifecycleMethodsInClass(TypeDeclaration node, ASTRewrite rewriter, AST ast, TextEditGroup group,
-			ImportRewrite importRewriter, String methodbefore, String methodafter, String methodbeforeeach,
-			String methodaftereach) {
+	private void updateLifecycleMethodsInClass(TypeDeclaration node, ASTRewrite globalRewrite, AST ast,
+			TextEditGroup group, ImportRewrite importRewrite, String methodbefore, String methodafter,
+			String methodbeforeeach, String methodaftereach) {
+
 		for (MethodDeclaration method : node.getMethods()) {
 			if (isLifecycleMethod(method, methodbefore)) {
-				processMethod(method, rewriter, ast, group, importRewriter, methodbefore, methodbeforeeach);
-			} else if (isLifecycleMethod(method, methodafter)) {
-				processMethod(method, rewriter, ast, group, importRewriter, methodafter, methodaftereach);
-			}
+				AST astOfNode= node.getAST();
 
+				// Ermitteln der CompilationUnit
+				CompilationUnit compilationUnit= findCompilationUnit(node);
+
+				// Wählen Sie den passenden ASTRewrite basierend auf dem AST des Knotens
+				ASTRewrite rewriteToUse= (astOfNode == ast) ? globalRewrite : ASTRewrite.create(astOfNode);
+				ImportRewrite importRewriteToUse= (astOfNode == ast) ? importRewrite
+						: ImportRewrite.create(compilationUnit, true);
+				processMethod(method, rewriteToUse, ast, group, importRewriteToUse, methodbefore, methodbeforeeach);
+				// Wenn ein neuer ASTRewrite erstellt wurde, wenden Sie die Änderungen an
+				if (rewriteToUse != globalRewrite) {
+					createChangeForRewrite(compilationUnit, rewriteToUse);
+				}
+			} else if (isLifecycleMethod(method, methodafter)) {
+				AST astOfNode= node.getAST();
+
+				// Ermitteln der CompilationUnit
+				CompilationUnit compilationUnit= findCompilationUnit(node);
+
+				// Wählen Sie den passenden ASTRewrite basierend auf dem AST des Knotens
+				ASTRewrite rewriteToUse= (astOfNode == ast) ? globalRewrite : ASTRewrite.create(astOfNode);
+				ImportRewrite importRewriteToUse= (astOfNode == ast) ? importRewrite
+						: ImportRewrite.create(compilationUnit, true);
+				processMethod(method, rewriteToUse, ast, group, importRewriteToUse, methodafter, methodaftereach);
+				// Wenn ein neuer ASTRewrite erstellt wurde, wenden Sie die Änderungen an
+				if (rewriteToUse != globalRewrite) {
+					createChangeForRewrite(compilationUnit, rewriteToUse);
+				}
+			}
 		}
 	}
-	
-	private void adaptTypeDeclaration(
-	        TypeDeclaration typeDecl,
-	        ASTRewrite rewrite,
-	        AST ast,
-	        ImportRewrite importRewrite,
-	        TextEditGroup group
-	) {
-	    removeSuperclassType(typeDecl, rewrite, group);
-	    updateLifecycleMethodsInClass(typeDecl, rewrite, ast, group, importRewrite, METHOD_BEFORE, METHOD_AFTER,
-	            METHOD_BEFORE_EACH, METHOD_AFTER_EACH);
-	    importRewrite.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
-	    importRewrite.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
+
+	private CompilationUnit findCompilationUnit(ASTNode node) {
+		while (node != null && !(node instanceof CompilationUnit)) {
+			node= node.getParent();
+		}
+		return (CompilationUnit) node;
+	}
+
+	private IDocument getDocumentForCompilationUnit(CompilationUnit compilationUnit) {
+		if (compilationUnit == null || compilationUnit.getJavaElement() == null) {
+			throw new IllegalArgumentException("Invalid CompilationUnit or missing JavaElement.");
+		}
+
+		ICompilationUnit icu= (ICompilationUnit) compilationUnit.getJavaElement();
+		ITextFileBufferManager bufferManager= FileBuffers.getTextFileBufferManager();
+
+		try {
+			// Verbinden mit der Datei, die der CompilationUnit entspricht
+			bufferManager.connect(icu.getPath(), LocationKind.IFILE, null);
+
+			// Holen des zugehörigen TextFileBuffer
+			ITextFileBuffer textFileBuffer= bufferManager.getTextFileBuffer(icu.getPath(), LocationKind.IFILE);
+
+			if (textFileBuffer == null) {
+				throw new RuntimeException("No text file buffer found for the provided compilation unit.");
+			}
+
+			// Rückgabe des Dokuments
+			return textFileBuffer.getDocument();
+		} catch (CoreException e) {
+			throw new RuntimeException("Failed to connect to text file buffer: " + e.getMessage(), e);
+		} finally {
+			try {
+				// Optional: Verbindung trennen, wenn keine weiteren Änderungen anstehen
+				bufferManager.disconnect(icu.getPath(), LocationKind.IFILE, null);
+			} catch (CoreException e) {
+				// Trennen schlug fehl, aber wir protokollieren nur
+				e.printStackTrace();
+			}
+		}
+	}
+
+	private CompilationUnitChange createChangeForRewrite(CompilationUnit compilationUnit, ASTRewrite rewrite) {
+		try {
+			// Zugriff auf das IDocument der CompilationUnit
+			IDocument document= getDocumentForCompilationUnit(compilationUnit);
+
+			// Änderungen beschreiben (aber nicht anwenden)
+			TextEdit edits= rewrite.rewriteAST(document, null);
+
+			// Ein TextChange-Objekt erstellen
+			CompilationUnitChange change= new CompilationUnitChange("JUnit Migration",
+					(ICompilationUnit) compilationUnit.getJavaElement());
+			change.setEdit(edits);
+
+			// Optional: Kommentare oder Markierungen hinzufügen
+			change.addTextEditGroup(new TextEditGroup("Migrate JUnit", edits));
+
+			return change;
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException("Error creating change for rewrite: " + e.getMessage(), e);
+		}
+	}
+
+	private void adaptTypeDeclaration(TypeDeclaration typeDecl, ASTRewrite globalRewrite, AST ast,
+			ImportRewrite importRewrite, TextEditGroup group) {
+		AST astOfNode= typeDecl.getAST();
+
+		// Ermitteln der CompilationUnit
+		CompilationUnit compilationUnit= findCompilationUnit(typeDecl);
+
+		// Wählen Sie den passenden ASTRewrite basierend auf dem AST des Knotens
+		ASTRewrite rewriteToUse= (astOfNode == ast) ? globalRewrite : ASTRewrite.create(astOfNode);
+		ImportRewrite importRewriteToUse= (astOfNode == ast) ? importRewrite
+				: ImportRewrite.create(compilationUnit, true);
+//		    ASTRewrite rewriteToUse = globalRewrite;
+//		    ImportRewrite importRewriteToUse = importRewrite;
+
+		removeSuperclassType(typeDecl, rewriteToUse, group);
+		updateLifecycleMethodsInClass(typeDecl, rewriteToUse, ast, group, importRewriteToUse, METHOD_BEFORE,
+				METHOD_AFTER, METHOD_BEFORE_EACH, METHOD_AFTER_EACH);
+
+		importRewriteToUse.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
+		importRewriteToUse.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
+
+		// Wenn ein neuer ASTRewrite erstellt wurde, wenden Sie die Änderungen an
+		if (rewriteToUse != globalRewrite) {
+			createChangeForRewrite(compilationUnit, rewriteToUse);
+		}
 	}
 
 	private boolean isFieldStatic(FieldDeclaration field) {
@@ -392,46 +479,6 @@ public abstract class AbstractTool<T> {
 					ITypeBinding annotationBinding= ((Expression) annotation).resolveTypeBinding();
 					return annotationBinding != null && annotationClass.equals(annotationBinding.getQualifiedName());
 				});
-	}
-
-	private boolean isUsedAsClassRule(TypeDeclaration node, String annotationClass) {
-		TypeDeclaration targetClass= isTopLevelType(node) ? getOuterTypeDeclaration(node) : node;
-
-		if (targetClass == null) {
-			return false;
-		}
-
-		ITypeBinding typeBinding= node.resolveBinding(); // Das Binding der aktuellen (inneren) Klasse
-		if (typeBinding == null) {
-			return false;
-		}
-
-		FieldDeclaration[] fields= targetClass.getFields(); // Felder der äußeren Klasse durchsuchen
-		for (FieldDeclaration field : fields) {
-			// Prüfe, ob das Feld mit @ClassRule annotiert ist
-			boolean hasClassRuleAnnotation= field.modifiers().stream()
-					.filter(modifier -> modifier instanceof Annotation) // Sicherstellen, dass es sich um eine
-																		// Annotation handelt
-					.map(modifier -> (Annotation) modifier) // Cast zu Annotation
-					.anyMatch(modifier -> {
-						if (modifier instanceof Annotation) {
-							Annotation annotation= (Annotation) modifier;
-							ITypeBinding binding= annotation.resolveTypeBinding();
-							return binding != null && annotationClass.equals(binding.getQualifiedName());
-						}
-						return false;
-					});
-
-			// Prüfe, ob das Feld vom Typ der aktuellen Klasse oder eines Subtyps davon ist
-			if (hasClassRuleAnnotation) {
-				Type fieldType= field.getType();
-				ITypeBinding fieldBinding= fieldType.resolveBinding();
-				if (fieldBinding != null && isSubtypeOf(typeBinding, fieldBinding)) {
-					return true;
-				}
-			}
-		}
-		return false;
 	}
 
 	private boolean isSubtypeOf(ITypeBinding subtype, ITypeBinding supertype) {
@@ -467,277 +514,239 @@ public abstract class AbstractTool<T> {
 		return false;
 	}
 
-	private boolean isTopLevelType(TypeDeclaration node) {
-		return node.getParent().getParent() instanceof CompilationUnit;
-	}
-
-	// Hilfsmethode: Gehe zur äußeren Klasse
-	private TypeDeclaration getOuterTypeDeclaration(ASTNode node) {
-		while (!(node.getParent() instanceof CompilationUnit)) {
-			node= node.getParent();
-		}
-		return (TypeDeclaration) node;
-	}
-
 	private void refactorToImplementCallbacks(TypeDeclaration node, ASTRewrite rewriter, AST ast, TextEditGroup group,
 			ImportRewrite importRewriter, String beforecallback, String aftercallback, String importbeforecallback,
 			String importaftercallback) {
+
+		AST astOfNode= node.getAST();
+
+		// Ermitteln der CompilationUnit
+		CompilationUnit compilationUnit= findCompilationUnit(node);
+
+		// Wählen Sie den passenden ASTRewrite basierend auf dem AST des Knotens
+		ASTRewrite rewriteToUse= (astOfNode == ast) ? rewriter : ASTRewrite.create(astOfNode);
+		ImportRewrite importRewriteToUse= (astOfNode == ast) ? importRewriter
+				: ImportRewrite.create(compilationUnit, true);
+
 		// Entferne die Superklasse ExternalResource
-		rewriter.remove(node.getSuperclassType(), group);
-		importRewriter.removeImport(ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
+		rewriteToUse.remove(node.getSuperclassType(), group);
+		importRewriteToUse.removeImport(ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
 
 		// Prüfe, ob die Klasse statisch verwendet wird
 //		boolean isStaticUsage= isUsedAsClassRule(node, ORG_JUNIT_CLASS_RULE);
 
-		ListRewrite listRewrite= rewriter.getListRewrite(node, TypeDeclaration.SUPER_INTERFACE_TYPES_PROPERTY);
+		ListRewrite listRewrite= rewriteToUse.getListRewrite(node, TypeDeclaration.SUPER_INTERFACE_TYPES_PROPERTY);
 
 		// Füge die entsprechenden Callback-Interfaces hinzu
 		// Verwende BeforeAllCallback und AfterAllCallback für statische Ressourcen
 		// Verwende BeforeEachCallback und AfterEachCallback für nicht-statische
-		addInterfaceCallback(listRewrite, ast, beforecallback, group, importRewriter, importbeforecallback);
-		addInterfaceCallback(listRewrite, ast, aftercallback, group, importRewriter, importaftercallback);
-	}
-
-	private boolean isAnnotatedWithRule(ClassInstanceCreation creation, String annotationQualifiedName) {
-		ASTNode parent= creation.getParent();
-		if (parent instanceof VariableDeclarationFragment) {
-			VariableDeclarationFragment fragment= (VariableDeclarationFragment) parent;
-			FieldDeclaration field= (FieldDeclaration) fragment.getParent();
-			return isAnnotatedWithRule(field, annotationQualifiedName);
-		}
-		return false;
-	}
-
-	private void removeRuleAnnotation(ClassInstanceCreation creation, ASTRewrite rewriter, TextEditGroup group,
-			ImportRewrite importRewriter, String annotationQualifiedName) {
-		ASTNode parent= creation.getParent();
-		if (parent instanceof VariableDeclarationFragment) {
-			VariableDeclarationFragment fragment= (VariableDeclarationFragment) parent;
-			FieldDeclaration field= (FieldDeclaration) fragment.getParent();
-			removeRuleAnnotation(field, rewriter, group, importRewriter, annotationQualifiedName);
+		addInterfaceCallback(listRewrite, ast, beforecallback, group, importRewriteToUse, importbeforecallback);
+		addInterfaceCallback(listRewrite, ast, aftercallback, group, importRewriteToUse, importaftercallback);
+		// Wenn ein neuer ASTRewrite erstellt wurde, wenden Sie die Änderungen an
+		if (rewriter != rewriteToUse) {
+			createChangeForRewrite(compilationUnit, rewriteToUse);
 		}
 	}
 
 	private void removeExternalResourceSuperclass(ClassInstanceCreation anonymousClass, ASTRewrite rewrite,
-	        ImportRewrite importRewriter, TextEditGroup group) {
-	    // Prüfen, ob die anonyme Klasse von ExternalResource erbt
-	    ITypeBinding typeBinding = anonymousClass.resolveTypeBinding();
-	    if (typeBinding.getSuperclass() != null && 
-	        ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(typeBinding.getSuperclass().getQualifiedName())) {
+			ImportRewrite importRewriter, TextEditGroup group) {
+		// Prüfen, ob die anonyme Klasse von ExternalResource erbt
+		ITypeBinding typeBinding= anonymousClass.resolveTypeBinding();
+		if (typeBinding.getSuperclass() != null
+				&& ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(typeBinding.getSuperclass().getQualifiedName())) {
 
-	        // Entfernen Sie die Superklasse durch Ersetzen des Typs im ClassInstanceCreation
-	        Type type = anonymousClass.getType();
-	        if (type != null) {
-	            rewrite.replace(type, anonymousClass.getAST().newSimpleType(anonymousClass.getAST().newSimpleName("Object")), group);
-	        }
+			// Entfernen Sie die Superklasse durch Ersetzen des Typs im
+			// ClassInstanceCreation
+			Type type= anonymousClass.getType();
+			if (type != null) {
+				rewrite.replace(type,
+						anonymousClass.getAST().newSimpleType(anonymousClass.getAST().newSimpleName("Object")), group);
+			}
 
-	        // Entfernen Sie den Import der Superklasse
-	        importRewriter.removeImport(ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
-	    }
+			// Entfernen Sie den Import der Superklasse
+			importRewriter.removeImport(ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
+		}
 	}
 
-	
-	
+	private String generateChecksum(String input) {
+		try {
+			MessageDigest md= MessageDigest.getInstance("MD5");
+			byte[] hashBytes= md.digest(input.getBytes());
+			StringBuilder hexString= new StringBuilder();
+			for (byte b : hashBytes) {
+				String hex= Integer.toHexString(0xff & b);
+				if (hex.length() == 1)
+					hexString.append('0');
+				hexString.append(hex);
+			}
+			return hexString.toString();
+		} catch (NoSuchAlgorithmException e) {
+			throw new RuntimeException("MD5 algorithm not found");
+		}
+	}
+
+	private String extractFieldName(FieldDeclaration fieldDeclaration) {
+		for (Object fragmentObj : fieldDeclaration.fragments()) {
+			if (fragmentObj instanceof VariableDeclarationFragment) {
+				VariableDeclarationFragment fragment= (VariableDeclarationFragment) fragmentObj;
+				return fragment.getName().getIdentifier(); // Gibt den Variablennamen zurück
+			}
+		}
+		return "UnnamedField";
+	}
+
+	private String capitalizeFirstLetter(String input) {
+		if (input == null || input.isEmpty()) {
+			return input;
+		}
+		return Character.toUpperCase(input.charAt(0)) + input.substring(1);
+	}
+
+	private String generateUniqueNestedClassName(AnonymousClassDeclaration anonymousClass, String baseName) {
+		String anonymousCode= anonymousClass.toString(); // Der gesamte Code der anonymen Klasse
+		String checksum= generateChecksum(anonymousCode);
+
+		// Feldname großschreiben
+		String capitalizedBaseName= capitalizeFirstLetter(baseName);
+
+		return capitalizedBaseName + "_" + checksum;
+	}
+
 	protected void refactorAnonymousClassToImplementCallbacks(AnonymousClassDeclaration anonymousClass,
-	        boolean fieldStatic, ASTRewrite rewriter, AST ast, TextEditGroup group, ImportRewrite importRewriter) {
+			FieldDeclaration fieldDeclaration, boolean fieldStatic, ASTRewrite rewriter, AST ast, TextEditGroup group,
+			ImportRewrite importRewriter) {
 
-	    if (anonymousClass == null) {
-	        return;
-	    }
+		if (anonymousClass == null) {
+			return;
+		}
 
-	    // Zugriff auf die umgebende ClassInstanceCreation
-	    ASTNode parent = anonymousClass.getParent();
-	    if (parent instanceof ClassInstanceCreation) {
-	        ClassInstanceCreation classInstanceCreation = (ClassInstanceCreation) parent;
+		// Zugriff auf die umgebende ClassInstanceCreation
+		ASTNode parent= anonymousClass.getParent();
+		if (parent instanceof ClassInstanceCreation) {
+			ClassInstanceCreation classInstanceCreation= (ClassInstanceCreation) parent;
 
-	        // Entferne die ExternalResource-Superklasse
-	        removeExternalResourceSuperclass(classInstanceCreation, rewriter, importRewriter, group);
-	        importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
-	        importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
-	        importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT);
-	        // Generiere eine neue verschachtelte Klasse
-	        String nestedClassName = generateUniqueNestedClassName(anonymousClass);
-	        TypeDeclaration nestedClass = createNestedClassFromAnonymous(
-	                anonymousClass, nestedClassName, fieldStatic, rewriter, ast, importRewriter, group);
+			// Entferne die ExternalResource-Superklasse
+			removeExternalResourceSuperclass(classInstanceCreation, rewriter, importRewriter, group);
+			importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
+			importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
+			importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT);
+			// Generiere eine neue verschachtelte Klasse
+			String fieldName= extractFieldName(fieldDeclaration);
+			String nestedClassName= generateUniqueNestedClassName(anonymousClass, fieldName);
+			TypeDeclaration nestedClass= createNestedClassFromAnonymous(anonymousClass, nestedClassName, fieldStatic,
+					rewriter, ast, importRewriter, group);
 
-	        // Ersetze die ursprüngliche Felddeklaration
-	        replaceFieldWithExtensionDeclaration(
-	                classInstanceCreation, nestedClassName, fieldStatic, rewriter, ast, group, importRewriter);
-	    }
+			// Ersetze die ursprüngliche Felddeklaration
+			replaceFieldWithExtensionDeclaration(classInstanceCreation, nestedClassName, fieldStatic, rewriter, ast,
+					group, importRewriter);
+		}
 	}
 
-	private void replaceFieldWithExtensionDeclaration(ClassInstanceCreation classInstanceCreation, String nestedClassName,
-	        boolean fieldStatic, ASTRewrite rewriter, AST ast, TextEditGroup group, ImportRewrite importRewriter) {
+	private void replaceFieldWithExtensionDeclaration(ClassInstanceCreation classInstanceCreation,
+			String nestedClassName, boolean fieldStatic, ASTRewrite rewriter, AST ast, TextEditGroup group,
+			ImportRewrite importRewriter) {
 
-	    FieldDeclaration fieldDecl = (FieldDeclaration) ASTNodes.getParent(classInstanceCreation, FieldDeclaration.class);
-	    if (fieldDecl != null) {
-	        // Entferne die @Rule-Annotation
-	        removeRuleAnnotation(fieldDecl, rewriter, group, importRewriter, ORG_JUNIT_RULE);
+		FieldDeclaration fieldDecl= (FieldDeclaration) ASTNodes.getParent(classInstanceCreation,
+				FieldDeclaration.class);
+		if (fieldDecl != null) {
+			// Entferne die @Rule-Annotation
+			removeRuleAnnotation(fieldDecl, rewriter, group, importRewriter, ORG_JUNIT_RULE);
 
-	        // Füge die @RegisterExtension-Annotation hinzu
-	        addRegisterExtensionAnnotation(fieldDecl, rewriter, ast, importRewriter, group);
+			// Füge die @RegisterExtension-Annotation hinzu
+			addRegisterExtensionAnnotation(fieldDecl, rewriter, ast, importRewriter, group);
 
-	        // Ändere den Typ der FieldDeclaration
-	        Type newType = ast.newSimpleType(ast.newName(nestedClassName));
-	        rewriter.set(fieldDecl.getType(), SimpleType.NAME_PROPERTY, newType, group);
+			// Ändere den Typ der FieldDeclaration
+			Type newType= ast.newSimpleType(ast.newName(nestedClassName));
+			rewriter.set(fieldDecl.getType(), SimpleType.NAME_PROPERTY, newType, group);
 
-	        // Füge die Initialisierung hinzu
-	        for (Object fragment : fieldDecl.fragments()) {
-	            if (fragment instanceof VariableDeclarationFragment) {
-	                VariableDeclarationFragment fragmentNode = (VariableDeclarationFragment) fragment;
-	                ClassInstanceCreation newInstance = ast.newClassInstanceCreation();
-	                newInstance.setType(ast.newSimpleType(ast.newName(nestedClassName)));
-	                rewriter.set(fragmentNode, VariableDeclarationFragment.INITIALIZER_PROPERTY, newInstance, group);
-	            }
-	        }
-	    }
+			// Füge die Initialisierung hinzu
+			for (Object fragment : fieldDecl.fragments()) {
+				if (fragment instanceof VariableDeclarationFragment) {
+					VariableDeclarationFragment fragmentNode= (VariableDeclarationFragment) fragment;
+					ClassInstanceCreation newInstance= ast.newClassInstanceCreation();
+					newInstance.setType(ast.newSimpleType(ast.newName(nestedClassName)));
+					rewriter.set(fragmentNode, VariableDeclarationFragment.INITIALIZER_PROPERTY, newInstance, group);
+				}
+			}
+		}
 	}
 
+	private TypeDeclaration createNestedClassFromAnonymous(AnonymousClassDeclaration anonymousClass, String className,
+			boolean fieldStatic, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter, TextEditGroup group) {
 
-	private TypeDeclaration createNestedClassFromAnonymous(AnonymousClassDeclaration anonymousClass,
-	        String className, boolean fieldStatic, ASTRewrite rewriter, AST ast,
-	        ImportRewrite importRewriter, TextEditGroup group) {
+		// Erstelle die neue TypeDeclaration
+		TypeDeclaration nestedClass= ast.newTypeDeclaration();
+		nestedClass.setName(ast.newSimpleName(className));
+		if (fieldStatic) {
+			nestedClass.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.STATIC_KEYWORD));
+		}
 
-	    // Erstelle die neue TypeDeclaration
-	    TypeDeclaration nestedClass = ast.newTypeDeclaration();
-	    nestedClass.setName(ast.newSimpleName(className));
-	    if (fieldStatic) {
-	        nestedClass.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.STATIC_KEYWORD));
-	    }
+		// Füge die Schnittstellen hinzu
+		nestedClass.superInterfaceTypes()
+				.add(ast.newSimpleType(ast.newName(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK)));
+		nestedClass.superInterfaceTypes()
+				.add(ast.newSimpleType(ast.newName(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK)));
+		importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
+		importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
 
-	    // Füge die Schnittstellen hinzu
-	    nestedClass.superInterfaceTypes().add(ast.newSimpleType(
-	            ast.newName(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK)));
-	    nestedClass.superInterfaceTypes().add(ast.newSimpleType(
-	            ast.newName(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK)));
-	    importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
-	    importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
+		// Übertrage den Body der anonymen Klasse in die neue Klasse
+		ListRewrite bodyRewrite= rewriter.getListRewrite(nestedClass, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);
+		for (Object decl : anonymousClass.bodyDeclarations()) {
+			if (decl instanceof MethodDeclaration) {
+				MethodDeclaration method= (MethodDeclaration) decl;
 
-	    // Übertrage den Body der anonymen Klasse in die neue Klasse
-	    ListRewrite bodyRewrite = rewriter.getListRewrite(
-	            nestedClass, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);
-	    for (Object decl : anonymousClass.bodyDeclarations()) {
-	        if (decl instanceof MethodDeclaration) {
-	            MethodDeclaration method = (MethodDeclaration) decl;
+				// Konvertiere before() -> beforeEach() und after() -> afterEach()
+				if (isLifecycleMethod(method, METHOD_BEFORE)) {
+					MethodDeclaration beforeEachMethod= createLifecycleCallbackMethod(ast, "beforeEach",
+							"ExtensionContext", method.getBody(), group);
+					bodyRewrite.insertLast(beforeEachMethod, group);
+				} else if (isLifecycleMethod(method, METHOD_AFTER)) {
+					MethodDeclaration afterEachMethod= createLifecycleCallbackMethod(ast, "afterEach",
+							"ExtensionContext", method.getBody(), group);
+					bodyRewrite.insertLast(afterEachMethod, group);
+				}
+			}
+		}
 
-	            // Konvertiere before() -> beforeEach() und after() -> afterEach()
-	            if (isLifecycleMethod(method, METHOD_BEFORE)) {
-	                MethodDeclaration beforeEachMethod = createLifecycleCallbackMethod(
-	                        ast, "beforeEach", "ExtensionContext", method.getBody(), group);
-	                bodyRewrite.insertLast(beforeEachMethod, group);
-	            } else if (isLifecycleMethod(method, METHOD_AFTER)) {
-	                MethodDeclaration afterEachMethod = createLifecycleCallbackMethod(
-	                        ast, "afterEach", "ExtensionContext", method.getBody(), group);
-	                bodyRewrite.insertLast(afterEachMethod, group);
-	            }
-	        }
-	    }
+		// Füge die neue Klasse zur äußeren Klasse hinzu
+		ASTNode parentType= findEnclosingTypeDeclaration(anonymousClass);
+		if (parentType instanceof TypeDeclaration) {
+			ListRewrite enclosingBodyRewrite= rewriter.getListRewrite(parentType,
+					TypeDeclaration.BODY_DECLARATIONS_PROPERTY);
+			enclosingBodyRewrite.insertLast(nestedClass, group);
+		}
 
-	    // Füge die neue Klasse zur äußeren Klasse hinzu
-	    ASTNode parentType = findEnclosingTypeDeclaration(anonymousClass);
-	    if (parentType instanceof TypeDeclaration) {
-	        ListRewrite enclosingBodyRewrite = rewriter.getListRewrite(
-	                parentType, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);
-	        enclosingBodyRewrite.insertLast(nestedClass, group);
-	    }
-
-	    return nestedClass;
+		return nestedClass;
 	}
 
-	private MethodDeclaration createLifecycleCallbackMethod(AST ast, String methodName,
-	        String paramType, Block oldBody, TextEditGroup group) {
+	private MethodDeclaration createLifecycleCallbackMethod(AST ast, String methodName, String paramType, Block oldBody,
+			TextEditGroup group) {
 
-	    MethodDeclaration method = ast.newMethodDeclaration();
-	    method.setName(ast.newSimpleName(methodName));
-	    method.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.PUBLIC_KEYWORD));
-	    method.setReturnType2(ast.newPrimitiveType(PrimitiveType.VOID));
+		MethodDeclaration method= ast.newMethodDeclaration();
+		method.setName(ast.newSimpleName(methodName));
+		method.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.PUBLIC_KEYWORD));
+		method.setReturnType2(ast.newPrimitiveType(PrimitiveType.VOID));
 
-	    // Füge den ExtensionContext-Parameter hinzu
-	    SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
-	    param.setType(ast.newSimpleType(ast.newName(paramType)));
-	    param.setName(ast.newSimpleName("context"));
-	    method.parameters().add(param);
+		// Füge den ExtensionContext-Parameter hinzu
+		SingleVariableDeclaration param= ast.newSingleVariableDeclaration();
+		param.setType(ast.newSimpleType(ast.newName(paramType)));
+		param.setName(ast.newSimpleName("context"));
+		method.parameters().add(param);
 
-	    // Kopiere den Body der alten Methode
-	    if (oldBody != null) {
-	        Block newBody = (Block) ASTNode.copySubtree(ast, oldBody);
-	        method.setBody(newBody);
-	    }
+		// Kopiere den Body der alten Methode
+		if (oldBody != null) {
+			Block newBody= (Block) ASTNode.copySubtree(ast, oldBody);
+			method.setBody(newBody);
+		}
 
-	    return method;
-	}
-
-	
-	
-	
-	
-	
-	
-	
-	
-	private String generateUniqueNestedClassName(AnonymousClassDeclaration anonymousClass) {
-	    // Generiere einen eindeutigen Namen für die verschachtelte Klasse
-	    return "GeneratedExtension" + System.nanoTime();
-	}
-
-	private void addLifecycleCallbackMethod(TypeDeclaration typeDecl, AST ast, TextEditGroup group,
-	        String methodName, String callbackType) {
-	    MethodDeclaration method = ast.newMethodDeclaration();
-	    method.setName(ast.newSimpleName(methodName));
-	    method.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.PUBLIC_KEYWORD));
-	    method.setReturnType2(ast.newPrimitiveType(PrimitiveType.VOID));
-
-	    // Parameter für den ExtensionContext hinzufügen
-	    SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
-	    param.setType(ast.newSimpleType(ast.newName("ExtensionContext")));
-	    param.setName(ast.newSimpleName("context"));
-	    method.parameters().add(param);
-
-	    // Methode zum TypeDeclaration hinzufügen
-	    Block body = ast.newBlock();
-	    method.setBody(body);
-
-	    typeDecl.bodyDeclarations().add(method);
+		return method;
 	}
 
 	private ASTNode findEnclosingTypeDeclaration(ASTNode node) {
-	    while (node != null && !(node instanceof TypeDeclaration)) {
-	        node = node.getParent();
-	    }
-	    return node;
-	}
-
-	private void addCallbackMethod(ListRewrite bodyRewrite, AST ast, TextEditGroup group, String methodName,
-			String callbackInterface, ImportRewrite importRewriter, String callbackInterfaceImport) {
-		// Import hinzufügen
-		importRewriter.addImport(callbackInterfaceImport);
-
-		MethodDeclaration method= ast.newMethodDeclaration();
-		// Annotation hinzufügen, falls erforderlich (z. B. @Override)
-		MarkerAnnotation overrideAnnotation= ast.newMarkerAnnotation();
-		overrideAnnotation.setTypeName(ast.newSimpleName("Override"));
-		method.modifiers().add(overrideAnnotation);
-		// Neue Methode erstellen
-
-		method.setName(ast.newSimpleName(methodName));
-		method.setReturnType2(ast.newPrimitiveType(PrimitiveType.VOID));
-		method.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.PUBLIC_KEYWORD));
-
-		// Methode ohne Inhalt
-		Block methodBody= ast.newBlock();
-		method.setBody(methodBody);
-
-		// Methode hinzufügen
-		bodyRewrite.insertLast(method, group);
-	}
-
-	private void addBeforeAndAfterEachCallbacks(TypeDeclaration typeDecl, ASTRewrite rewrite, AST ast,
-			ImportRewrite importRewrite, TextEditGroup group) {
-		ListRewrite listRewrite= rewrite.getListRewrite(typeDecl, TypeDeclaration.SUPER_INTERFACE_TYPES_PROPERTY);
-		addInterfaceCallback(listRewrite, ast, BEFORE_EACH_CALLBACK, group, importRewrite,
-				ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
-		addInterfaceCallback(listRewrite, ast, AFTER_EACH_CALLBACK, group, importRewrite,
-				ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
+		while (node != null && !(node instanceof TypeDeclaration)) {
+			node= node.getParent();
+		}
+		return node;
 	}
 
 	private void adaptSuperBeforeCalls(String vorher, String nachher, MethodDeclaration method, ASTRewrite rewriter,
@@ -785,14 +794,6 @@ public abstract class AbstractTool<T> {
 		return ast.newName(importedName);
 	}
 
-	private void manageImport(ImportRewrite importRewriter, String typeName, boolean add) {
-		if (add) {
-			importRewriter.addImport(typeName);
-		} else {
-			importRewriter.removeImport(typeName);
-		}
-	}
-
 	private void addInterfaceCallback(ListRewrite listRewrite, AST ast, String callbackName, TextEditGroup group,
 			ImportRewrite importRewriter, String classtoimport) {
 		// Prüfen, ob das Interface bereits in der Liste existiert
@@ -806,73 +807,61 @@ public abstract class AbstractTool<T> {
 		importRewriter.addImport(classtoimport);
 	}
 
-	private Annotation createRegisterExtensionAnnotation(AST ast, ImportRewrite importRewriter) {
-		MarkerAnnotation annotation= ast.newMarkerAnnotation();
-		annotation.setTypeName(ast.newSimpleName("RegisterExtension"));
-		importRewriter.addImport("org.junit.jupiter.api.extension.RegisterExtension");
-		return annotation;
-	}
+	private void addRegisterExtensionAnnotation(ASTNode node, ASTRewrite rewrite, AST ast, ImportRewrite importRewrite,
+			TextEditGroup group) {
+		if (node instanceof FieldDeclaration) {
+			// Direkt mit FieldDeclaration arbeiten
+			FieldDeclaration field= (FieldDeclaration) node;
 
-	private void addRegisterExtensionAnnotation(
-	        ASTNode node,
-	        ASTRewrite rewrite,
-	        AST ast,
-	        ImportRewrite importRewrite,
-	        TextEditGroup group
-	) {
-	    if (node instanceof FieldDeclaration) {
-	        // Direkt mit FieldDeclaration arbeiten
-	        FieldDeclaration field = (FieldDeclaration) node;
+			// Prüfen, ob die Annotation bereits existiert
+			boolean hasRegisterExtension= field.modifiers().stream()
+					.anyMatch(modifier -> modifier instanceof Annotation && ((Annotation) modifier).getTypeName()
+							.getFullyQualifiedName().equals(ANNOTATION_REGISTER_EXTENSION));
 
-	        // Prüfen, ob die Annotation bereits existiert
-	        boolean hasRegisterExtension = field.modifiers().stream()
-	                .anyMatch(modifier -> modifier instanceof Annotation
-	                        && ((Annotation) modifier).getTypeName().getFullyQualifiedName().equals(ANNOTATION_REGISTER_EXTENSION));
+			// Prüfen, ob die Annotation bereits im Rewrite hinzugefügt wurde
+			ListRewrite listRewrite= rewrite.getListRewrite(field, FieldDeclaration.MODIFIERS2_PROPERTY);
+			boolean hasPendingRegisterExtension= listRewrite.getRewrittenList().stream()
+					.anyMatch(rewritten -> rewritten instanceof MarkerAnnotation && ((MarkerAnnotation) rewritten)
+							.getTypeName().getFullyQualifiedName().equals(ANNOTATION_REGISTER_EXTENSION));
 
-	        // Prüfen, ob die Annotation bereits im Rewrite hinzugefügt wurde
-	        ListRewrite listRewrite = rewrite.getListRewrite(field, FieldDeclaration.MODIFIERS2_PROPERTY);
-	        boolean hasPendingRegisterExtension = listRewrite.getRewrittenList().stream()
-	                .anyMatch(rewritten -> rewritten instanceof MarkerAnnotation
-	                        && ((MarkerAnnotation) rewritten).getTypeName().getFullyQualifiedName().equals(ANNOTATION_REGISTER_EXTENSION));
+			if (!hasRegisterExtension && !hasPendingRegisterExtension) {
+				// Annotation hinzufügen, wenn sie weder im AST noch im Rewrite existiert
+				MarkerAnnotation registerExtensionAnnotation= ast.newMarkerAnnotation();
+				registerExtensionAnnotation.setTypeName(ast.newName(ANNOTATION_REGISTER_EXTENSION));
+				listRewrite.insertFirst(registerExtensionAnnotation, group);
 
-	        if (!hasRegisterExtension && !hasPendingRegisterExtension) {
-	            // Annotation hinzufügen, wenn sie weder im AST noch im Rewrite existiert
-	            MarkerAnnotation registerExtensionAnnotation = ast.newMarkerAnnotation();
-	            registerExtensionAnnotation.setTypeName(ast.newName(ANNOTATION_REGISTER_EXTENSION));
-	            listRewrite.insertFirst(registerExtensionAnnotation, group);
+				// Import hinzufügen
+				importRewrite.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_REGISTER_EXTENSION);
+			}
+		} else if (node instanceof ClassInstanceCreation) {
+			// Übergeordnetes Element der anonymen Klasse finden
+			ASTNode parent= node.getParent();
+			if (parent instanceof VariableDeclarationFragment) {
+				VariableDeclarationFragment fragment= (VariableDeclarationFragment) parent;
+				FieldDeclaration field= (FieldDeclaration) fragment.getParent();
 
-	            // Import hinzufügen
-	            importRewrite.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_REGISTER_EXTENSION);
-	        }
-	    } else if (node instanceof ClassInstanceCreation) {
-	        // Übergeordnetes Element der anonymen Klasse finden
-	        ASTNode parent = node.getParent();
-	        if (parent instanceof VariableDeclarationFragment) {
-	            VariableDeclarationFragment fragment = (VariableDeclarationFragment) parent;
-	            FieldDeclaration field = (FieldDeclaration) fragment.getParent();
+				// Prüfen, ob die Annotation bereits existiert
+				boolean hasRegisterExtension= field.modifiers().stream()
+						.anyMatch(modifier -> modifier instanceof Annotation && ((Annotation) modifier).getTypeName()
+								.getFullyQualifiedName().equals(ANNOTATION_REGISTER_EXTENSION));
 
-	            // Prüfen, ob die Annotation bereits existiert
-	            boolean hasRegisterExtension = field.modifiers().stream()
-	                    .anyMatch(modifier -> modifier instanceof Annotation
-	                            && ((Annotation) modifier).getTypeName().getFullyQualifiedName().equals(ANNOTATION_REGISTER_EXTENSION));
+				// Prüfen, ob die Annotation bereits im Rewrite hinzugefügt wurde
+				ListRewrite listRewrite= rewrite.getListRewrite(field, FieldDeclaration.MODIFIERS2_PROPERTY);
+				boolean hasPendingRegisterExtension= listRewrite.getRewrittenList().stream()
+						.anyMatch(rewritten -> rewritten instanceof MarkerAnnotation && ((MarkerAnnotation) rewritten)
+								.getTypeName().getFullyQualifiedName().equals(ANNOTATION_REGISTER_EXTENSION));
 
-	            // Prüfen, ob die Annotation bereits im Rewrite hinzugefügt wurde
-	            ListRewrite listRewrite = rewrite.getListRewrite(field, FieldDeclaration.MODIFIERS2_PROPERTY);
-	            boolean hasPendingRegisterExtension = listRewrite.getRewrittenList().stream()
-	                    .anyMatch(rewritten -> rewritten instanceof MarkerAnnotation
-	                            && ((MarkerAnnotation) rewritten).getTypeName().getFullyQualifiedName().equals(ANNOTATION_REGISTER_EXTENSION));
+				if (!hasRegisterExtension && !hasPendingRegisterExtension) {
+					// Annotation hinzufügen, wenn sie weder im AST noch im Rewrite existiert
+					MarkerAnnotation registerExtensionAnnotation= ast.newMarkerAnnotation();
+					registerExtensionAnnotation.setTypeName(ast.newName(ANNOTATION_REGISTER_EXTENSION));
+					listRewrite.insertFirst(registerExtensionAnnotation, group);
 
-	            if (!hasRegisterExtension && !hasPendingRegisterExtension) {
-	                // Annotation hinzufügen, wenn sie weder im AST noch im Rewrite existiert
-	                MarkerAnnotation registerExtensionAnnotation = ast.newMarkerAnnotation();
-	                registerExtensionAnnotation.setTypeName(ast.newName(ANNOTATION_REGISTER_EXTENSION));
-	                listRewrite.insertFirst(registerExtensionAnnotation, group);
-
-	                // Import hinzufügen
-	                importRewrite.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_REGISTER_EXTENSION);
-	            }
-	        }
-	    }
+					// Import hinzufügen
+					importRewrite.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_REGISTER_EXTENSION);
+				}
+			}
+		}
 	}
 
 	private void ensureExtensionContextParameter(MethodDeclaration method, ASTRewrite rewrite, AST ast,
@@ -942,12 +931,51 @@ public abstract class AbstractTool<T> {
 			IType type= javaProject.findType(fullyQualifiedTypeName);
 			if (type != null && type.exists()) {
 				CompilationUnit unit= parseCompilationUnit(type.getCompilationUnit());
-				return (TypeDeclaration) unit.types().get(0);
+
+				// Rekursive Suche nach der passenden TypeDeclaration
+				return findTypeDeclarationInCompilationUnit(unit, fullyQualifiedTypeName);
 			}
 		} catch (JavaModelException e) {
 			e.printStackTrace();
 		}
 		return null;
+	}
+
+	// Rekursive Suche nach verschachtelten Klassen
+	private TypeDeclaration findNestedTypeDeclaration(TypeDeclaration typeDecl, String fullyQualifiedTypeName) {
+		for (TypeDeclaration nestedType : typeDecl.getTypes()) {
+			String nestedQualifiedName= getQualifiedName(nestedType);
+			if (fullyQualifiedTypeName.equals(nestedQualifiedName)) {
+				return nestedType;
+			}
+
+			// Tiefer in der Hierarchie suchen
+			TypeDeclaration deeperNestedType= findNestedTypeDeclaration(nestedType, fullyQualifiedTypeName);
+			if (deeperNestedType != null) {
+				return deeperNestedType;
+			}
+		}
+		return null;
+	}
+
+	// Hilfsmethode: Ermittelt den vollqualifizierten Namen einer TypeDeclaration
+	private String getQualifiedName(TypeDeclaration typeDecl) {
+		StringBuilder qualifiedName= new StringBuilder(typeDecl.getName().getIdentifier());
+		ASTNode parent= typeDecl.getParent();
+		while (parent instanceof TypeDeclaration) {
+			TypeDeclaration parentType= (TypeDeclaration) parent;
+			qualifiedName.insert(0, parentType.getName().getIdentifier() + "$"); // $ für verschachtelte Klassen
+			parent= parent.getParent();
+		}
+
+		// Paketnamen hinzufügen
+		CompilationUnit compilationUnit= (CompilationUnit) typeDecl.getRoot();
+		if (compilationUnit.getPackage() != null) {
+			String packageName= compilationUnit.getPackage().getName().getFullyQualifiedName();
+			qualifiedName.insert(0, packageName + ".");
+		}
+
+		return qualifiedName.toString();
 	}
 
 	protected TypeDeclaration getParentTypeDeclaration(ASTNode node) {
@@ -1016,65 +1044,30 @@ public abstract class AbstractTool<T> {
 		return isExternalResource(binding, typetolookup);
 	}
 
-	protected TypeDeclaration getTypeDeclarationForField(FieldDeclaration fieldDeclaration, CompilationUnit cu) {
-		for (Object fragmentObj : fieldDeclaration.fragments()) {
-			if (fragmentObj instanceof VariableDeclarationFragment) {
-				VariableDeclarationFragment fragment= (VariableDeclarationFragment) fragmentObj;
-				Expression initializer= fragment.getInitializer();
-
-				// Prüfen, ob der Initializer eine ClassInstanceCreation ist
-				if (initializer instanceof ClassInstanceCreation) {
-					ClassInstanceCreation classInstanceCreation= (ClassInstanceCreation) initializer;
-					ITypeBinding typeBinding= classInstanceCreation.resolveTypeBinding();
-
-					// Anonyme Klasse: Hier keine TypeDeclaration möglich
-					if (classInstanceCreation.getAnonymousClassDeclaration() != null) {
-						// Hier kannst du entweder null zurückgeben oder die anonyme Klasse speziell
-						// behandeln
-						continue; // Überspringen, da keine TypeDeclaration möglich ist
-					}
-
-					// Typ binden und zugehörige TypeDeclaration in der CompilationUnit suchen
-					if (typeBinding != null) {
-						return findTypeDeclarationInCompilationUnit(typeBinding, cu);
-					}
-				}
-
-				// Typ des Feldes auflösen, wenn keine Initialisierung vorhanden ist
-				if (fragment.resolveBinding() != null) {
-					ITypeBinding variableTypeBinding= fragment.resolveBinding().getType();
-					if (variableTypeBinding != null) {
-						return findTypeDeclarationInCompilationUnit(variableTypeBinding, cu);
-					}
-				}
-			}
-		}
-		return null; // Keine passende TypeDeclaration gefunden
-	}
-
 	private TypeDeclaration findTypeDeclarationInCompilationUnit(ITypeBinding typeBinding, CompilationUnit cu) {
 		final AbstractTypeDeclaration[] result= { null };
 
 		cu.accept(new ASTVisitor() {
 			@Override
 			public boolean visit(TypeDeclaration node) {
-				ITypeBinding binding = node.resolveBinding();
-			    System.out.println("Visiting TypeDeclaration: " + (binding != null ? binding.getQualifiedName() : "null"));
-			    if (binding != null) {
-			        System.out.println("Expected Binding: " + typeBinding.getQualifiedName());
-			        System.out.println("Actual Binding: " + binding.getQualifiedName());
-			        System.out.println("Binding match: " + binding.isEqualTo(typeBinding));
-			    }
-			    if (binding != null && binding.isEqualTo(typeBinding)) {
-			        result[0] = node;
-			        return false; // Abbruch
-			    }
-			    return true;
+				ITypeBinding binding= node.resolveBinding();
+				System.out.println(
+						"Visiting TypeDeclaration: " + (binding != null ? binding.getQualifiedName() : "null"));
+				if (binding != null) {
+					System.out.println("Expected Binding: " + typeBinding.getQualifiedName());
+					System.out.println("Actual Binding: " + binding.getQualifiedName());
+					System.out.println("Binding match: " + ASTNodes.areBindingsEqual(binding, typeBinding));
+				}
+				if (binding != null && ASTNodes.areBindingsEqual(binding, typeBinding)) {
+					result[0]= node;
+					return false; // Abbruch
+				}
+				return true;
 			}
 
 			@Override
 			public boolean visit(EnumDeclaration node) {
-				if (node.resolveBinding() != null && node.resolveBinding().isEqualTo(typeBinding)) {
+				if (node.resolveBinding() != null && ASTNodes.areBindingsEqual(node.resolveBinding(), typeBinding)) {
 					result[0]= node;
 					return false;
 				}
@@ -1089,24 +1082,9 @@ public abstract class AbstractTool<T> {
 				}
 				return true;
 			}
-
-//	        @Override
-//	        public boolean visit(AnonymousClassDeclaration node) {
-//	            // Hinweis: Anonyme Klassen haben oft keine direkten Bindings, daher ist hier eine zusätzliche Prüfung sinnvoll
-//	            ITypeBinding binding = node.resolveBinding();
-//	            if (binding != null && binding.isEqualTo(typeBinding)) {
-//	                result[0] = node;
-//	                return false;
-//	            }
-//	            return true;
-//	        }
 		});
 
 		return (TypeDeclaration) result[0];
-	}
-	
-	private boolean checkTypeBindingMatch(ITypeBinding binding, ITypeBinding targetBinding) {
-	    return binding != null && binding.isEqualTo(targetBinding);
 	}
 
 	protected boolean isExternalResource(ITypeBinding typeBinding, String typetolookup) {
@@ -1128,32 +1106,38 @@ public abstract class AbstractTool<T> {
 		return typeBinding != null && class1.getCanonicalName().equals(typeBinding.getQualifiedName());
 	}
 
-//	public void migrateRuleToRegisterExtensionAndAdaptHierarchy(Optional<ASTNode> innerTypeDeclaration,
-//			TypeDeclaration testClass, ASTRewrite rewrite, AST ast, ImportRewrite importRewrite, TextEditGroup group,
-//			String varname) {
-//		if (innerTypeDeclaration.isPresent() && innerTypeDeclaration.get() instanceof TypeDeclaration) {
-//			adaptBeforeAfterCallsInTestClass((TypeDeclaration) innerTypeDeclaration.get(), varname, rewrite, ast,
-//					group);
-//		}
-//		for (FieldDeclaration field : testClass.getFields()) {
-//			if (isAnnotatedWithRule(field, ORG_JUNIT_RULE)
-//					&& isExternalResource(field, ORG_JUNIT_RULES_EXTERNAL_RESOURCE)) {
-//				removeRuleAnnotation(field, rewrite, group, importRewrite, ORG_JUNIT_RULE);
-//				addRegisterExtensionAnnotation(field, rewrite, ast, importRewrite, group);
-//				importRewrite.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_REGISTER_EXTENSION);
-//				ITypeBinding fieldType= ((VariableDeclarationFragment) field.fragments().get(0)).resolveBinding()
-//						.getType();
-//				adaptExternalResourceHierarchy(fieldType, rewrite, ast, importRewrite, group);
-//			} else if (isAnnotatedWithRule(field, ORG_JUNIT_CLASS_RULE)
-//					&& isExternalResource(field, ORG_JUNIT_RULES_EXTERNAL_RESOURCE)) {
-//				removeRuleAnnotation(field, rewrite, group, importRewrite, ORG_JUNIT_CLASS_RULE);
-//				addRegisterExtensionAnnotation(field, rewrite, ast, importRewrite, group);
-//				ITypeBinding fieldType= ((VariableDeclarationFragment) field.fragments().get(0)).resolveBinding()
-//						.getType();
-//				adaptExternalResourceHierarchy(fieldType, rewrite, ast, importRewrite, group);
-//			}
-//		}
-//	}
+	private TypeDeclaration findTypeDeclarationInCompilationUnit(CompilationUnit unit, String fullyQualifiedTypeName) {
+		// Keine Extraktion des einfachen Namens
+		String typeName= fullyQualifiedTypeName;
+
+		// Durchsuche alle Typen in der CompilationUnit
+		for (Object obj : unit.types()) {
+			if (obj instanceof TypeDeclaration) {
+				TypeDeclaration typeDecl= (TypeDeclaration) obj;
+				TypeDeclaration result= findTypeDeclarationInType(typeDecl, typeName);
+				if (result != null) {
+					return result;
+				}
+			}
+		}
+		return null;
+	}
+
+	private TypeDeclaration findTypeDeclarationInType(TypeDeclaration typeDecl, String qualifiedTypeName) {
+		// Vergleiche den voll qualifizierten Namen
+		if (getQualifiedName(typeDecl).equals(qualifiedTypeName)) {
+			return typeDecl;
+		}
+
+		// Durchsuche verschachtelte Typen
+		for (TypeDeclaration nestedType : typeDecl.getTypes()) {
+			TypeDeclaration result= findTypeDeclarationInType(nestedType, qualifiedTypeName);
+			if (result != null) {
+				return result;
+			}
+		}
+		return null;
+	}
 
 	private CompilationUnit parseCompilationUnit(ICompilationUnit iCompilationUnit) {
 		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
@@ -1259,33 +1243,6 @@ public abstract class AbstractTool<T> {
 
 	public abstract void rewrite(JUnitCleanUpFixCore useExplicitEncodingFixCore, T holder,
 			CompilationUnitRewrite cuRewrite, TextEditGroup group);
-
-	protected void refactorTestname(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importrewriter,
-			FieldDeclaration node) {
-		rewriter.remove(node, group);
-		TypeDeclaration parentClass= (TypeDeclaration) node.getParent();
-		addBeforeEachInitMethod(parentClass, rewriter, group);
-		addTestNameField(parentClass, rewriter, group);
-		for (MethodDeclaration method : parentClass.getMethods()) {
-			if (method.getBody() != null) {
-				method.getBody().accept(new ASTVisitor() {
-					@Override
-					public boolean visit(MethodInvocation node) {
-						if (node.getExpression() != null && node.getExpression().resolveTypeBinding().getQualifiedName()
-								.equals(ORG_JUNIT_RULES_TEST_NAME)) {
-							SimpleName newFieldAccess= ast.newSimpleName(TEST_NAME);
-							rewriter.replace(node, newFieldAccess, group);
-						}
-						return super.visit(node);
-					}
-				});
-			}
-		}
-		importrewriter.addImport(ORG_JUNIT_JUPITER_API_TEST_INFO);
-		importrewriter.addImport(ORG_JUNIT_JUPITER_API_BEFORE_EACH);
-		importrewriter.removeImport(ORG_JUNIT_RULE);
-		importrewriter.removeImport(ORG_JUNIT_RULES_TEST_NAME);
-	}
 
 	private void addTestNameField(TypeDeclaration parentClass, ASTRewrite rewriter, TextEditGroup group) {
 		AST ast= parentClass.getAST();

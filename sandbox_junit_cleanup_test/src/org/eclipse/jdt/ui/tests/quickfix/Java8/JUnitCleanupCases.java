@@ -670,13 +670,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 public class MyTest {
 
 	@RegisterExtension
-	public GeneratedExtension1218384162454000 er= new GeneratedExtension1218384162454000();
+	public Er_f48592b683fc99335062dd479c12116b er= new Er_f48592b683fc99335062dd479c12116b();
 
 	@Test
 	public void test3() {
 	}
 
-	class GeneratedExtension1218384162454000 implements org.junit.jupiter.api.extension.BeforeEachCallback,
+	class Er_f48592b683fc99335062dd479c12116b implements org.junit.jupiter.api.extension.BeforeEachCallback,
 			org.junit.jupiter.api.extension.AfterEachCallback {
 		public void beforeEach(ExtensionContext context) {
 		}
@@ -824,17 +824,17 @@ public class MyTest {
 
     // Anonyme Klasse als ExternalResource
 	@RegisterExtension
-	public GeneratedExtension1218384806024400 anonymousRule = new GeneratedExtension1218384806024400();
+	public AnonymousRule_4aec5feb6379fe0b02849ce3e05ad3da anonymousRule = new AnonymousRule_4aec5feb6379fe0b02849ce3e05ad3da();
 
     // Statische Klasse für ClassRule
-    static class StaticExternalResource implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback {
+    static class StaticExternalResource implements BeforeAllCallback, AfterAllCallback {
         @Override
-        public void beforeEach(ExtensionContext context) {
+        public void beforeAll(ExtensionContext context) {
             System.out.println("Static resource before");
         }
 
         @Override
-        public void afterEach(ExtensionContext context) {
+        public void afterAll(ExtensionContext context) {
             System.out.println("Static resource after");
         }
     }
@@ -866,7 +866,7 @@ public class MyTest {
 
     // Zweite Regel
 	@RegisterExtension
-	public GeneratedExtension1218384804295200 secondRule = new GeneratedExtension1218384804295200();
+	public SecondRule_61e802c930b36c5c551d3e517590ddbd secondRule = new SecondRule_61e802c930b36c5c551d3e517590ddbd();
 
     // Testfälle
     @Test
@@ -879,7 +879,7 @@ public class MyTest {
         System.out.println("Test with multiple resources");
     }
 
-	class GeneratedExtension1218384804295200 implements org.junit.jupiter.api.extension.BeforeEachCallback,
+	class SecondRule_61e802c930b36c5c551d3e517590ddbd implements org.junit.jupiter.api.extension.BeforeEachCallback,
 			org.junit.jupiter.api.extension.AfterEachCallback {
 		public void beforeEach(ExtensionContext context) {
 			System.out.println("Second rule before");
@@ -890,7 +890,7 @@ public class MyTest {
 		}
 	}
 
-	class GeneratedExtension1218384806024400 implements org.junit.jupiter.api.extension.BeforeEachCallback,
+	class AnonymousRule_4aec5feb6379fe0b02849ce3e05ad3da implements org.junit.jupiter.api.extension.BeforeEachCallback,
 			org.junit.jupiter.api.extension.AfterEachCallback {
 		public void beforeEach(ExtensionContext context) {
 			System.out.println("Anonymous rule before");

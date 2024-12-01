@@ -44,8 +44,8 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 		HelperVisitor.callFieldDeclarationVisitor(ORG_JUNIT_RULE, ORG_JUNIT_RULES_EXTERNAL_RESOURCE, compilationUnit,
 				dataholder, nodesprocessed,
 				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
-		HelperVisitor.callFieldDeclarationVisitor(ORG_JUNIT_CLASS_RULE, ORG_JUNIT_RULES_EXTERNAL_RESOURCE, compilationUnit,
-				dataholder, nodesprocessed,
+		HelperVisitor.callFieldDeclarationVisitor(ORG_JUNIT_CLASS_RULE, ORG_JUNIT_RULES_EXTERNAL_RESOURCE,
+				compilationUnit, dataholder, nodesprocessed,
 				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 	}
 
@@ -56,10 +56,7 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 		VariableDeclarationFragment fragment= (VariableDeclarationFragment) node.fragments().get(0);
 		ITypeBinding binding= fragment.resolveBinding().getType();
 		if (
-//				isAnonymousClass(fragment)
-//				|| 
-				(binding == null)
-				|| ORG_JUNIT_RULES_TEST_NAME.equals(binding.getQualifiedName())
+		(binding == null) || ORG_JUNIT_RULES_TEST_NAME.equals(binding.getQualifiedName())
 				|| ORG_JUNIT_RULES_TEMPORARY_FOLDER.equals(binding.getQualifiedName())) {
 			return false;
 		}
@@ -75,28 +72,27 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 		ASTRewrite rewriter= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
 		ImportRewrite importRewriter= cuRewrite.getImportRewrite();
-		JunitHolder mh= hit.get(hit.size()-1);
-		
-		
-		
-			FieldDeclaration fieldDeclaration= mh.getFieldDeclaration();
-			boolean fieldStatic= isFieldAnnotatedWith(fieldDeclaration,ORG_JUNIT_CLASS_RULE);
-			CompilationUnit cu = (CompilationUnit) fieldDeclaration.getRoot();
-			String classNameFromField= extractClassNameFromField(fieldDeclaration);
-			TypeDeclaration node = getTypeDeclarationForField(fieldDeclaration, cu);
-			
-			ASTNode node2 = getTypeDefinitionForField(fieldDeclaration, cu);
+		JunitHolder mh= hit.get(hit.size() - 1);
 
-			if (node2 instanceof TypeDeclaration) {
-			    System.out.println("TypeDeclaration gefunden: " + ((TypeDeclaration) node2).getName());
-			    modifyExternalResourceClass((TypeDeclaration) node2,fieldDeclaration,fieldStatic, rewriter, ast, group, importRewriter);
-			} else if (node2 instanceof AnonymousClassDeclaration typeNode) {
-			    System.out.println("AnonymousClassDeclaration gefunden."+ typeNode);
-			    refactorAnonymousClassToImplementCallbacks(typeNode, fieldStatic, rewriter, ast, group, importRewriter);
-			} else {
-			    System.out.println("Keine passende Typdefinition gefunden.");
-			}
-			hit.remove(hit.size()-1);
+		FieldDeclaration fieldDeclaration= mh.getFieldDeclaration();
+		boolean fieldStatic= isFieldAnnotatedWith(fieldDeclaration, ORG_JUNIT_CLASS_RULE);
+		CompilationUnit cu= (CompilationUnit) fieldDeclaration.getRoot();
+		String classNameFromField= extractClassNameFromField(fieldDeclaration);
+
+		ASTNode node2= getTypeDefinitionForField(fieldDeclaration, cu);
+
+		if (node2 instanceof TypeDeclaration) {
+			System.out.println("TypeDeclaration gefunden: " + ((TypeDeclaration) node2).getName());
+			modifyExternalResourceClass((TypeDeclaration) node2, fieldDeclaration, fieldStatic, rewriter, ast, group,
+					importRewriter);
+		} else if (node2 instanceof AnonymousClassDeclaration typeNode) {
+			System.out.println("AnonymousClassDeclaration gefunden." + typeNode);
+			refactorAnonymousClassToImplementCallbacks(typeNode, fieldDeclaration, fieldStatic, rewriter, ast, group,
+					importRewriter);
+		} else {
+			System.out.println("Keine passende Typdefinition gefunden." + node2);
+		}
+		hit.remove(hit.size() - 1);
 	}
 
 	@Override
