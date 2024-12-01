@@ -582,7 +582,7 @@ public abstract class AbstractTool<T> {
 			}
 			return hexString.toString().substring(0, 5);
 		} catch (NoSuchAlgorithmException e) {
-			throw new RuntimeException("SHA-256 algorithm not found");
+			throw new RuntimeException("SHA-256 algorithm not found",e);
 		}
 	}
 
