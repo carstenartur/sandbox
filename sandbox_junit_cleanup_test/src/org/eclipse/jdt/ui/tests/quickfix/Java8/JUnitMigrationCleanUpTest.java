@@ -63,7 +63,7 @@ public class JUnitMigrationCleanUpTest {
 		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETEMPORARYFOLDER);
 		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETESTNAME);
 		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE);
-		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_EXTERNALRESOURCE);
+//		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_EXTERNALRESOURCE);
 		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH);
 		context4junit4.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
 	}
@@ -134,12 +134,11 @@ public class MyTest {
 		ICompilationUnit cu= pack.createCompilationUnit("MyTest.java",
 """
 package test;
-import org.junit.Test;
+import org.junit.Before;
 import org.junit.Rule;
+import org.junit.Test;
 import test.MyExternalResource;
-/**
- * 
- */
+
 public class MyTest {
 	
 	@Rule
@@ -159,21 +158,20 @@ public class MyTest {
 """
 package test;
 import org.junit.rules.ExternalResource;
-/**
- * 
- */
-public class MyExternalResource extends ExternalResource {
-		@Override
-		protected void before() throws Throwable {
-			int i=4;
-		}
 
-		@Override
-		protected void after() {
-		}
-		
-		public start(){
-		}
+public class MyExternalResource extends ExternalResource {
+	@Override
+	protected void before() throws Throwable {
+		int i=4;
+	}
+
+	@Override
+	protected void after() {
+	}
+
+	public void start() {	
+	}
+	
 }
 """, false, null); //$NON-NLS-1$
 		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP);
@@ -194,19 +192,18 @@ public class MyExternalResource extends ExternalResource {
 		context4junit4.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu,cu2}, new String[] {
 """
 package test;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import test.MyExternalResource;
-/**
- *
- */
+
 public class MyTest {
 
 	@RegisterExtension
 	public MyExternalResource er= new MyExternalResource();
 
-	@Before
+	@BeforeEach
 	public void genericbefore(){
 		er.start();
 	}
@@ -222,21 +219,20 @@ package test;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-/**
- *
- */
+
 public class MyExternalResource implements BeforeEachCallback, AfterEachCallback {
-		@Override
-		public void beforeEach(ExtensionContext context) {
-			int i=4;
-		}
+	@Override
+	public void beforeEach(ExtensionContext context) {
+		int i=4;
+	}
 
-		@Override
-		public void afterEach(ExtensionContext context) {
-		}
+	@Override
+	public void afterEach(ExtensionContext context) {
+	}
 
-		public start(){
-		}
+	public void start() {
+	}
+
 }
 """
 }, null);
@@ -475,8 +471,204 @@ public class MyExternalResource2 implements BeforeEachCallback, AfterEachCallbac
 //		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETEMPORARYFOLDER);
 //		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETESTNAME);
 		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE);
-		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_EXTERNALRESOURCE);
+//		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_EXTERNALRESOURCE);
 //		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH);
 		context4junit4.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
+	}
+	
+	@Test
+	public void testJUnitCleanupSingleFile() throws CoreException {
+		IPackageFragment pack= fRootJUnit4.createPackageFragment("test", true, null);
+		ICompilationUnit cu= pack.createCompilationUnit("MyTest.java",
+"""
+package test;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExternalResource;
+
+public class MyTest {
+	
+	// Final abgeleitete Klasse
+    final class MyExternalResource extends ExternalResource {
+        @Override
+        protected void before() throws Throwable {
+            super.before();
+            int i = 4;
+        }
+
+        @Override
+        protected void after() {
+            super.after();
+        }
+    }
+	
+	@Rule
+	public MyExternalResource er= new MyExternalResource();
+
+	@Before
+	public void genericbefore(){
+		er.start();
+	}
+
+	@Test
+	public void test3() {
+	}
+}
+""", false, null); //$NON-NLS-1$
+
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+//		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT);
+//		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME);
+//		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_SUITE);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORE);
+//		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTER);
+//		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORECLASS);
+//		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTERCLASS);
+//		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_IGNORE);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
+//		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETEMPORARYFOLDER);
+//		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETESTNAME);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE);
+//		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_EXTERNALRESOURCE);
+//		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH);
+		context4junit4.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {
+"""
+package test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+public class MyTest {
+
+	// Final abgeleitete Klasse
+    final class MyExternalResource implements BeforeEachCallback, AfterEachCallback {
+        @Override
+        public void beforeEach(ExtensionContext context) {
+            super.beforeEach(context);
+            int i = 4;
+        }
+
+        @Override
+        public void afterEach(ExtensionContext context) {
+            super.afterEach(context);
+        }
+    }
+
+	@RegisterExtension
+	public MyExternalResource er= new MyExternalResource();
+
+	@BeforeEach
+	public void genericbefore(){
+		er.start();
+	}
+
+	@Test
+	public void test3() {
+	}
+}
+"""
+}, null);
+	}
+	
+	@Test
+	public void testJUnitCleanupSingleFileStatic() throws CoreException {
+		IPackageFragment pack= fRootJUnit4.createPackageFragment("test", true, null);
+		ICompilationUnit cu= pack.createCompilationUnit("MyTest.java",
+"""
+package test;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Test;
+import org.junit.rules.ExternalResource;
+
+public class MyTest {
+	
+	// Final abgeleitete Klasse
+    final class MyExternalResource extends ExternalResource {
+        @Override
+        protected void before() throws Throwable {
+            super.before();
+            int i = 4;
+        }
+
+        @Override
+        protected void after() {
+            super.after();
+        }
+    }
+	
+	@ClassRule
+	public static MyExternalResource er= new MyExternalResource();
+
+	@Before
+	public void genericbefore(){
+		er.start();
+	}
+
+	@Test
+	public void test3() {
+	}
+}
+""", false, null); //$NON-NLS-1$
+
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+//		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT);
+//		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME);
+//		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_SUITE);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORE);
+//		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTER);
+//		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORECLASS);
+//		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTERCLASS);
+//		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_IGNORE);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
+//		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETEMPORARYFOLDER);
+//		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETESTNAME);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE);
+//		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_EXTERNALRESOURCE);
+//		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH);
+		context4junit4.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {
+"""
+package test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.AfterAllCallback;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+public class MyTest {
+
+	// Final abgeleitete Klasse
+    final class MyExternalResource implements BeforeAllCallback, AfterAllCallback {
+        @Override
+        public void beforeAll(ExtensionContext context) {
+            super.beforeAll(context);
+            int i = 4;
+        }
+
+        @Override
+        public void afterAll(ExtensionContext context) {
+            super.afterAll(context);
+        }
+    }
+
+	@RegisterExtension
+	public static MyExternalResource er= new MyExternalResource();
+
+	@BeforeEach
+	public void genericbefore(){
+		er.start();
+	}
+
+	@Test
+	public void test3() {
+	}
+}
+"""
+}, null);
 	}
 }

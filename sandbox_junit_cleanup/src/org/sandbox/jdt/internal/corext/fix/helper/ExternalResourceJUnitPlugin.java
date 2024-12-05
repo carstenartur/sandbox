@@ -75,7 +75,7 @@ public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<In
 		ImportRewrite importRewriter= cuRewrite.getImportRewrite();
 		hit.values().forEach(holder -> {
 			TypeDeclaration node= holder.getTypeDeclaration();
-			modifyExternalResourceClass(node, rewriter, ast, group, importRewriter);
+			modifyExternalResourceClass(node, null, false, rewriter, ast, group, importRewriter);
 		});
 	}
 
