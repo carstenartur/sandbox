@@ -624,13 +624,15 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 		Expression expression = methodInvocation.getExpression();
 		if (expression != null) {
 			ITypeBinding typeBinding = expression.resolveTypeBinding();
-			if (typeBinding != null && !typeBinding.isRecovered()) {
-				return qualifiedName.equals(typeBinding.getQualifiedName());
-			}
-			if (expression instanceof SimpleName) {
-				String startswith=typeBinding.toString().substring(9);
-				startswith=startswith.substring(0, startswith.length()-1);
-				return qualifiedName.endsWith(startswith);
+			if (typeBinding != null) {
+				if (!typeBinding.isRecovered()) {
+					return qualifiedName.equals(typeBinding.getQualifiedName());
+				}
+				if (expression instanceof SimpleName) {
+					String startswith=typeBinding.toString().substring(9);
+					startswith=startswith.substring(0, startswith.length()-1);
+					return qualifiedName.endsWith(startswith);
+				}
 			}
 		} else {
 			IMethodBinding methodBinding = methodInvocation.resolveMethodBinding();
