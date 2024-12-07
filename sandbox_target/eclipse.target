@@ -4,7 +4,7 @@
 	<locations>
 	<!--
 		<location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="slicer" includeSource="true" type="InstallableUnit">
-			<repository location="https://download.eclipse.org/releases/2024-09/"/>
+			<repository location="https://download.eclipse.org/releases/2024-12/"/>
 			<repository location="https://download.eclipse.org/tools/orbit/simrel/maven-jetty/release/latest"/>
 			<repository location="https://download.eclipse.org/cbi/updates/license"/>
 			<unit id="org.eclipse.jdt.feature.group" version="0.0.0"/>
@@ -245,7 +245,7 @@
 			<unit id="org.hamcrest.library.source" version="0.0.0"/>
 			<unit id="org.opentest4j" version="0.0.0"/>
 			<unit id="org.junit" version="0.0.0"/>
-      <repository location="https://download.eclipse.org/eclipse/updates/4.34-I-builds"/>
+      <repository location="https://download.eclipse.org/eclipse/updates/4.35-I-builds"/>
       <repository location="https://download.eclipse.org/cbi/updates/license"/>
       <repository location="https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/nightly/latest"/>
       <repository location="https://download.eclipse.org/tools/orbit/simrel/maven-jetty/release/latest"/>
