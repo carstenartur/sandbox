@@ -17,6 +17,7 @@
 		<java-execenv>JavaSE-21</java-execenv>
 		<spotbugs-version>4.8.6.6</spotbugs-version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<license.licenseName>epl_v1</license.licenseName>
 	</properties>
 	<modules>
 		<module>sandbox_target</module>
@@ -60,7 +61,7 @@
 		<repository>
 			<id>eclipse</id>
 			<layout>p2</layout>
-			<url>https://download.eclipse.org/releases/2024-09</url>
+			<url>https://download.eclipse.org/releases/2024-12</url>
 		</repository>
 		<repository>
 			<id>babel</id>
@@ -70,7 +71,7 @@
 		<repository>
 			<id>orbit</id>
 			<layout>p2</layout>
-			<url>https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2024-09/</url>
+			<url>https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2024-12/</url>
 		</repository>
 		<!--<repository>
 			<id>swtbot</id>
@@ -80,6 +81,31 @@
 	</repositories>
 	<build>
 		<plugins>
+		<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>license-maven-plugin</artifactId>
+				<version>2.4.0</version>
+				<configuration>
+					<licenseName>gpl_v3</licenseName>
+					<organizationName>hammer</organizationName>
+					<verbose>true</verbose>
+					<inceptionYear>2024</inceptionYear>
+					<excludes>
+						<exclude>**/*.gif</exclude>
+						<exclude>**/*.txt</exclude>
+						<exclude>**/*.ftl</exclude>
+					</excludes>
+				</configuration>
+				<executions>
+					<execution>
+						<id>first</id>
+						<goals>
+							<goal>update-file-header</goal>
+						</goals>
+						<phase>process-sources</phase>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
 				<artifactId>tycho-maven-plugin</artifactId>
