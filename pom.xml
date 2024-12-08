@@ -86,7 +86,7 @@
 				<artifactId>license-maven-plugin</artifactId>
 				<version>2.4.0</version>
 				<configuration>
-					<licenseName>gpl_v3</licenseName>
+					<licenseName>epl_v2</licenseName>
 					<organizationName>hammer</organizationName>
 					<verbose>true</verbose>
 					<inceptionYear>2024</inceptionYear>
