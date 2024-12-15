@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Tools tests
 Bundle-SymbolicName: sandbox_tools_test;singleton:=true
-Bundle-Version: 1.2.0
+Bundle-Version: 1.2.1.qualifier
 Fragment-Host: sandbox_tools
 Bundle-RequiredExecutionEnvironment: JavaSE-21
 Require-Bundle: sandbox_test_commons
