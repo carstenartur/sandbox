@@ -117,7 +117,7 @@
 						<goals>
 							<goal>update-file-header</goal>
 						</goals>
-						<phase>process-sources</phase>
+						<phase>process-sources-off</phase>
 					</execution>
 				</executions>
 			</plugin>
