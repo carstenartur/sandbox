@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.sandbox</groupId>
 		<artifactId>central</artifactId>
-		<version>1.2.0-SNAPSHOT</version>
+		<version>1.2.0</version>
 	</parent>
 	<artifactId>sandbox_target</artifactId>
 	<name>Sandbox target</name>
