@@ -226,7 +226,7 @@
       <repository location="https://download.eclipse.org/eclipse/updates/4.35-I-builds"/>
       <repository location="https://download.eclipse.org/cbi/updates/license"/>
       <repository location="https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/nightly/latest"/>
-      <repository location="https://download.eclipse.org/tools/orbit/simrel/maven-jetty/release/latest"/>
+      <repository location="https://download.eclipse.org/tools/orbit/simrel/maven-jetty/release/latest/"/>
       <repository location="https://download.eclipse.org/datatools/updates/milestone/latest"/>
       <repository location="https://download.eclipse.org/modeling/emf/emf/builds/milestone/latest"/>
       <repository location="https://download.eclipse.org/tools/gef/classic/nightly/latest"/>
