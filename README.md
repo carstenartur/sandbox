@@ -112,6 +112,10 @@ Everything is work in progress unless explicitly noted
   	8. sandbox_junit
 
 	cleanup to migrate junit 4 based tests to junit 5
+ <a href="/marketplace-client-intro?mpc_install=6454408" class="drag" title="Drag to your running Eclipse* workspace. *Requires Eclipse Marketplace Client">
+<img style="width:80px;" typeof="foaf:Image" class="img-responsive" src="https://marketplace.eclipse.org/modules/custom/eclipsefdn/eclipsefdn_marketplace/images/btn-install.svg" alt="Drag to your running Eclipse* workspace. *Requires Eclipse Marketplace Client" />
+</a>
+
 
 
  
