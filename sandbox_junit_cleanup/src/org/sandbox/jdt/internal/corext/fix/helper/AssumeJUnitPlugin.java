@@ -93,37 +93,31 @@ public class AssumeJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 		operations.add(fixcore.rewrite(dataholder));
 		return false;
 	}
-
+	
 	@Override
-	public void rewrite(JUnitCleanUpFixCore upp, final ReferenceHolder<Integer, JunitHolder> hit,
-			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
-		ASTRewrite rewrite= cuRewrite.getASTRewrite();
-		AST ast= cuRewrite.getRoot().getAST();
-		ImportRewrite importRewriter= cuRewrite.getImportRewrite();
-		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
-			JunitHolder mh= entry.getValue();
-			if (mh.minv instanceof MethodInvocation) {
-				MethodInvocation minv= mh.getMethodInvocation();
-				if ("assumeThat".equals(minv.getName().getIdentifier()) && isJUnitAssume(minv)) {
-					importRewriter.addStaticImport("org.hamcrest.junit.MatcherAssume", "assumeThat", true);
-					importRewriter.removeStaticImport("org.junit.Assume.assumeThat");
-					MethodInvocation newAssumeThatCall = ast.newMethodInvocation();
-					newAssumeThatCall.setName(ast.newSimpleName("assumeThat"));
-					for (Object arg : minv.arguments()) {
-						newAssumeThatCall.arguments().add(rewrite.createCopyTarget((ASTNode) arg));
-					}
-					ASTNodes.replaceButKeepComment(rewrite,minv, newAssumeThatCall, group);
-				} else {
-					reorderParameters(minv, rewrite, group, oneparam, twoparam);
-					SimpleName newQualifier= ast.newSimpleName(ASSUMPTIONS);
-					Expression expression= minv.getExpression();
-					if (expression != null) {
-						ASTNodes.replaceButKeepComment(rewrite, expression, newQualifier, group);
-					}
+	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+			JunitHolder mh) {
+		if (mh.minv instanceof MethodInvocation) {
+			MethodInvocation minv= mh.getMethodInvocation();
+			if ("assumeThat".equals(minv.getName().getIdentifier()) && isJUnitAssume(minv)) {
+				importRewriter.addStaticImport("org.hamcrest.junit.MatcherAssume", "assumeThat", true);
+				importRewriter.removeStaticImport("org.junit.Assume.assumeThat");
+				MethodInvocation newAssumeThatCall = ast.newMethodInvocation();
+				newAssumeThatCall.setName(ast.newSimpleName("assumeThat"));
+				for (Object arg : minv.arguments()) {
+					newAssumeThatCall.arguments().add(rewriter.createCopyTarget((ASTNode) arg));
 				}
+				ASTNodes.replaceButKeepComment(rewriter,minv, newAssumeThatCall, group);
 			} else {
-				changeImportDeclaration(mh.getImportDeclaration(), importRewriter, group);
+				reorderParameters(minv, rewriter, group, oneparam, twoparam);
+				SimpleName newQualifier= ast.newSimpleName(ASSUMPTIONS);
+				Expression expression= minv.getExpression();
+				if (expression != null) {
+					ASTNodes.replaceButKeepComment(rewriter, expression, newQualifier, group);
+				}
 			}
+		} else {
+			changeImportDeclaration(mh.getImportDeclaration(), importRewriter, group);
 		}
 	}
 

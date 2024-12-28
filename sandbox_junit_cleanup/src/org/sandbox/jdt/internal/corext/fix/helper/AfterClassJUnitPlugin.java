@@ -75,22 +75,16 @@ public class AfterClassJUnitPlugin extends AbstractTool<ReferenceHolder<Integer,
 		operations.add(fixcore.rewrite(dataholder));
 		return false;
 	}
-
+	
 	@Override
-	public void rewrite(JUnitCleanUpFixCore upp, final ReferenceHolder<Integer, JunitHolder> hit,
-			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
-		ASTRewrite rewrite= cuRewrite.getASTRewrite();
-		AST ast= cuRewrite.getRoot().getAST();
-		ImportRewrite importRewriter= cuRewrite.getImportRewrite();
-		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
-			JunitHolder mh= entry.getValue();
-			Annotation minv= mh.getAnnotation();
-			MarkerAnnotation newAnnotation= ast.newMarkerAnnotation();
-			newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_AFTER_ALL));
-			importRewriter.addImport(ORG_JUNIT_JUPITER_API_AFTER_ALL);
-			ASTNodes.replaceButKeepComment(rewrite, minv, newAnnotation, group);
-			importRewriter.removeImport(ORG_JUNIT_AFTERCLASS);
-		}
+	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+			JunitHolder mh) {
+		Annotation minv= mh.getAnnotation();
+		MarkerAnnotation newAnnotation= ast.newMarkerAnnotation();
+		newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_AFTER_ALL));
+		importRewriter.addImport(ORG_JUNIT_JUPITER_API_AFTER_ALL);
+		ASTNodes.replaceButKeepComment(rewriter, minv, newAnnotation, group);
+		importRewriter.removeImport(ORG_JUNIT_AFTERCLASS);
 	}
 
 	@Override

@@ -77,22 +77,16 @@ public class BeforeJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 	}
 
 	@Override
-	public void rewrite(JUnitCleanUpFixCore upp, final ReferenceHolder<Integer, JunitHolder> hit,
-			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
-		ASTRewrite rewrite= cuRewrite.getASTRewrite();
-		AST ast= cuRewrite.getRoot().getAST();
-		ImportRewrite importRewriter= cuRewrite.getImportRewrite();
-		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
-			JunitHolder mh= entry.getValue();
-			Annotation minv= mh.getAnnotation();
-			MarkerAnnotation newAnnotation= ast.newMarkerAnnotation();
-			newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_BEFORE_EACH));
-			importRewriter.addImport(ORG_JUNIT_JUPITER_API_BEFORE_EACH);
-			ASTNodes.replaceButKeepComment(rewrite, minv, newAnnotation, group);
-			importRewriter.removeImport(ORG_JUNIT_BEFORE);
-		}
+	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+			JunitHolder mh) {
+		Annotation minv= mh.getAnnotation();
+		MarkerAnnotation newAnnotation= ast.newMarkerAnnotation();
+		newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_BEFORE_EACH));
+		importRewriter.addImport(ORG_JUNIT_JUPITER_API_BEFORE_EACH);
+		ASTNodes.replaceButKeepComment(rewriter, minv, newAnnotation, group);
+		importRewriter.removeImport(ORG_JUNIT_BEFORE);
 	}
-
+	
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {

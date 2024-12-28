@@ -45,7 +45,6 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
-import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
@@ -86,14 +85,8 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 		return false;
 	}
 
-	@Override
-	public void rewrite(JUnitCleanUpFixCore upp, ReferenceHolder<Integer, JunitHolder> hit,
-			CompilationUnitRewrite cuRewrite, TextEditGroup group) {
-		ASTRewrite rewriter= cuRewrite.getASTRewrite();
-		AST ast= cuRewrite.getRoot().getAST();
-		ImportRewrite importRewriter= cuRewrite.getImportRewrite();
-		JunitHolder mh= hit.get(hit.size() - 1);
-
+	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+			JunitHolder mh) {
 		FieldDeclaration fieldDeclaration= mh.getFieldDeclaration();
 		boolean fieldStatic= isFieldAnnotatedWith(fieldDeclaration, ORG_JUNIT_CLASS_RULE);
 		CompilationUnit cu= (CompilationUnit) fieldDeclaration.getRoot();
@@ -112,7 +105,6 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 		} else {
 			System.out.println("Keine passende Typdefinition gefunden." + node2);
 		}
-		hit.remove(hit.size() - 1);
 	}
 
 	@Override

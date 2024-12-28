@@ -81,18 +81,12 @@ public class RuleTestnameJUnitPlugin extends AbstractTool<ReferenceHolder<Intege
 	}
 
 	@Override
-	public void rewrite(JUnitCleanUpFixCore upp, final ReferenceHolder<Integer, JunitHolder> hit,
-			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
-		ASTRewrite rewriter= cuRewrite.getASTRewrite();
-		AST ast= cuRewrite.getRoot().getAST();
-		ImportRewrite importrewriter= cuRewrite.getImportRewrite();
-		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
-			JunitHolder mh= entry.getValue();
-			FieldDeclaration node= mh.getFieldDeclaration();
-			refactorTestnameInClassAndSubclasses(group, rewriter, ast, importrewriter, node);
-		}
+	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+			JunitHolder mh) {
+		FieldDeclaration node= mh.getFieldDeclaration();
+		refactorTestnameInClassAndSubclasses(group, rewriter, ast, importRewriter, node);
 	}
-
+	
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {

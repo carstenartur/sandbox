@@ -86,29 +86,23 @@ public class IgnoreJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 	}
 
 	@Override
-	public void rewrite(JUnitCleanUpFixCore upp, final ReferenceHolder<Integer, JunitHolder> hit,
-			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
-		ASTRewrite rewrite= cuRewrite.getASTRewrite();
-		AST ast= cuRewrite.getRoot().getAST();
-		ImportRewrite importRewriter= cuRewrite.getImportRewrite();
-		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
-			JunitHolder mh= entry.getValue();
-			Annotation minv= mh.getAnnotation();
-			Annotation newAnnotation= null;
-			if (minv instanceof SingleMemberAnnotation mynode) {
-				newAnnotation= ast.newSingleMemberAnnotation();
-				((SingleMemberAnnotation) newAnnotation)
-						.setValue(ASTNodes.createMoveTarget(rewrite, mynode.getValue()));
-			} else {
-				newAnnotation= ast.newMarkerAnnotation();
-			}
-			newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_DISABLED));
-			importRewriter.addImport(ORG_JUNIT_JUPITER_DISABLED);
-			ASTNodes.replaceButKeepComment(rewrite, minv, newAnnotation, group);
-			importRewriter.removeImport(ORG_JUNIT_IGNORE);
+	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+			JunitHolder mh) {
+		Annotation minv= mh.getAnnotation();
+		Annotation newAnnotation= null;
+		if (minv instanceof SingleMemberAnnotation mynode) {
+			newAnnotation= ast.newSingleMemberAnnotation();
+			((SingleMemberAnnotation) newAnnotation)
+					.setValue(ASTNodes.createMoveTarget(rewriter, mynode.getValue()));
+		} else {
+			newAnnotation= ast.newMarkerAnnotation();
 		}
+		newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_DISABLED));
+		importRewriter.addImport(ORG_JUNIT_JUPITER_DISABLED);
+		ASTNodes.replaceButKeepComment(rewriter, minv, newAnnotation, group);
+		importRewriter.removeImport(ORG_JUNIT_IGNORE);
 	}
-
+	
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {

@@ -77,22 +77,16 @@ public class TestJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Junit
 	}
 
 	@Override
-	public void rewrite(JUnitCleanUpFixCore upp, final ReferenceHolder<Integer, JunitHolder> hit,
-			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
-		ASTRewrite rewrite= cuRewrite.getASTRewrite();
-		AST ast= cuRewrite.getRoot().getAST();
-		ImportRewrite importrewriter= cuRewrite.getImportRewrite();
-		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
-			JunitHolder mh= entry.getValue();
-			Annotation minv= mh.getAnnotation();
-			MarkerAnnotation newAnnotation= ast.newMarkerAnnotation();
-			newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_TEST));
-			ASTNodes.replaceButKeepComment(rewrite, minv, newAnnotation, group);
-			importrewriter.removeImport(ORG_JUNIT_TEST);
-			importrewriter.addImport(ORG_JUNIT_JUPITER_TEST);
-		}
+	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+			JunitHolder mh) {
+		Annotation minv= mh.getAnnotation();
+		MarkerAnnotation newAnnotation= ast.newMarkerAnnotation();
+		newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_TEST));
+		ASTNodes.replaceButKeepComment(rewriter, minv, newAnnotation, group);
+		importRewriter.removeImport(ORG_JUNIT_TEST);
+		importRewriter.addImport(ORG_JUNIT_JUPITER_TEST);
 	}
-
+	
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {

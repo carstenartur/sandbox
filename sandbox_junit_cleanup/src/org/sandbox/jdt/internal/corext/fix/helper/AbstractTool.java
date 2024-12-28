@@ -39,7 +39,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 import org.eclipse.core.filebuffers.FileBuffers;
@@ -93,13 +92,13 @@ import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.core.refactoring.CompilationUnitChange;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
-import org.eclipse.jdt.internal.corext.dom.AbortSearchException;
 import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.text.edits.TextEdit;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 
 /**
@@ -186,6 +185,9 @@ public abstract class AbstractTool<T> {
 		CompilationUnit root= (CompilationUnit) node.getRoot();
 		return new ScopeAnalyzer(root).getUsedVariableNames(node.getStartPosition(), node.getLength());
 	}
+
+	abstract void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+			JunitHolder mh);
 
 	private void addContextArgumentIfMissing(ASTNode node, ASTRewrite rewriter, AST ast, TextEditGroup group) {
 		ListRewrite argsRewrite;
@@ -1262,8 +1264,7 @@ public abstract class AbstractTool<T> {
 		}
 	}
 
-	public abstract void rewrite(JUnitCleanUpFixCore useExplicitEncodingFixCore, T holder,
-			CompilationUnitRewrite cuRewrite, TextEditGroup group);
+	
 
 	private void addTestNameField(TypeDeclaration parentClass, ASTRewrite rewriter, TextEditGroup group) {
 		AST ast= parentClass.getAST();
@@ -1401,5 +1402,14 @@ public abstract class AbstractTool<T> {
 		importRewrite.addImport(ORG_JUNIT_JUPITER_API_BEFORE_EACH);
 		importRewrite.removeImport(ORG_JUNIT_RULE);
 		importRewrite.removeImport(ORG_JUNIT_RULES_TEST_NAME);
+	}
+
+	public void rewrite(JUnitCleanUpFixCore upp, ReferenceHolder<Integer, JunitHolder> hit, CompilationUnitRewrite cuRewrite, TextEditGroup group) {
+		ASTRewrite rewriter= cuRewrite.getASTRewrite();
+		AST ast= cuRewrite.getRoot().getAST();
+		ImportRewrite importRewriter= cuRewrite.getImportRewrite();
+		JunitHolder mh= hit.get(hit.size() - 1);
+		process2Rewrite(group, rewriter, ast, importRewriter, mh);
+		hit.remove(hit.size() - 1);
 	}
 }
