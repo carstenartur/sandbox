@@ -19,6 +19,10 @@ public class SchemaTransformationUtils {
 
             // Initialisiere den Transformer mit der geladenen XSL-Datei
             TransformerFactory factory = TransformerFactory.newInstance();
+            factory.setFeature(javax.xml.XMLConstants.FEATURE_SECURE_PROCESSING, true); // Sichere Verarbeitung
+            factory.setAttribute(javax.xml.XMLConstants.ACCESS_EXTERNAL_DTD, "");      // Externe DTDs deaktivieren
+            factory.setAttribute(javax.xml.XMLConstants.ACCESS_EXTERNAL_STYLESHEET, ""); // Externe Stylesheets deaktivieren
+
             Transformer transformer = factory.newTransformer(new StreamSource(xslStream));
 
             // Transformation ausführen
