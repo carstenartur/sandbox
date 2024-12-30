@@ -4,6 +4,8 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import javax.xml.XMLConstants;
+import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stream.StreamResult;
@@ -19,11 +21,15 @@ public class SchemaTransformationUtils {
 
             // Initialisiere den Transformer mit der geladenen XSL-Datei
             TransformerFactory factory = TransformerFactory.newInstance();
-            factory.setFeature(javax.xml.XMLConstants.FEATURE_SECURE_PROCESSING, true); // Sichere Verarbeitung
-            factory.setAttribute(javax.xml.XMLConstants.ACCESS_EXTERNAL_DTD, "");      // Externe DTDs deaktivieren
-            factory.setAttribute(javax.xml.XMLConstants.ACCESS_EXTERNAL_STYLESHEET, ""); // Externe Stylesheets deaktivieren
+            factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true); // Sichere Verarbeitung
+            factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");      // Externe DTDs deaktivieren
+            factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, ""); // Externe Stylesheets deaktivieren
 
+            factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl",true);
+            factory.setFeature("http://xml.org/sax/features/external-general-entities",false);
+            factory.setFeature("http://xml.org/sax/features/external-parameter-entities",false);
             Transformer transformer = factory.newTransformer(new StreamSource(xslStream));
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
 
             // Transformation ausführen
             StreamSource source = new StreamSource(schemaPath.toFile());
