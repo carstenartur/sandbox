@@ -33,7 +33,6 @@ package org.sandbox.jdt.internal.corext.fix.helper;
  * #L%
  */
 
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -50,7 +49,6 @@ import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
-import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
@@ -97,45 +95,39 @@ public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 	}
 
 	@Override
-	public void rewrite(JUnitCleanUpFixCore upp, final ReferenceHolder<Integer, JunitHolder> hit,
-			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
-		ASTRewrite rewrite= cuRewrite.getASTRewrite();
-		AST ast= cuRewrite.getRoot().getAST();
-		ImportRewrite importRewrite= cuRewrite.getImportRewrite();
-		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
-			JunitHolder mh= entry.getValue();
-			if (mh.minv instanceof MethodInvocation) {
-				MethodInvocation node= mh.getMethodInvocation();
-				Expression assertexpression= node.getExpression();
-				if ("assertThat".equals(node.getName().getIdentifier()) &&
-						assertexpression instanceof SimpleName &&
-						"Assert".equals(((SimpleName) assertexpression).getIdentifier())) {
-					rewrite.set(node, MethodInvocation.EXPRESSION_PROPERTY, null, group);
-					importRewrite.addStaticImport("org.hamcrest.MatcherAssert", "assertThat", false);
-					importRewrite.removeImport("org.junit.Assert");
-					if (node.arguments().size() == 3) {
-						Expression errorMessage = (Expression) node.arguments().get(0);
-						Expression actualValue = (Expression) node.arguments().get(1);
-						Expression matcher = (Expression) node.arguments().get(2);
-						ListRewrite argumentRewrite = rewrite.getListRewrite(node, MethodInvocation.ARGUMENTS_PROPERTY);
-						argumentRewrite.replace((ASTNode) node.arguments().get(0), errorMessage, group);
-						argumentRewrite.replace((ASTNode) node.arguments().get(1), actualValue, group);
-						argumentRewrite.replace((ASTNode) node.arguments().get(2), matcher, group);
-					}
-				} else {
-					reorderParameters(node, rewrite, group, oneparam, twoparam);
-					SimpleName newQualifier= ast.newSimpleName(ASSERTIONS);
-					Expression expression= assertexpression;
-					if (expression != null) {
-						ASTNodes.replaceButKeepComment(rewrite, expression, newQualifier, group);
-					}
+	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+			JunitHolder mh) {
+		if (mh.minv instanceof MethodInvocation) {
+			MethodInvocation node= mh.getMethodInvocation();
+			Expression assertexpression= node.getExpression();
+			if ("assertThat".equals(node.getName().getIdentifier()) &&
+					assertexpression instanceof SimpleName &&
+					"Assert".equals(((SimpleName) assertexpression).getIdentifier())) {
+				rewriter.set(node, MethodInvocation.EXPRESSION_PROPERTY, null, group);
+				importRewriter.addStaticImport("org.hamcrest.MatcherAssert", "assertThat", false);
+				importRewriter.removeImport("org.junit.Assert");
+				if (node.arguments().size() == 3) {
+					Expression errorMessage = (Expression) node.arguments().get(0);
+					Expression actualValue = (Expression) node.arguments().get(1);
+					Expression matcher = (Expression) node.arguments().get(2);
+					ListRewrite argumentRewrite = rewriter.getListRewrite(node, MethodInvocation.ARGUMENTS_PROPERTY);
+					argumentRewrite.replace((ASTNode) node.arguments().get(0), errorMessage, group);
+					argumentRewrite.replace((ASTNode) node.arguments().get(1), actualValue, group);
+					argumentRewrite.replace((ASTNode) node.arguments().get(2), matcher, group);
 				}
 			} else {
-				changeImportDeclaration(mh.getImportDeclaration(), importRewrite, group);
+				reorderParameters(node, rewriter, group, oneparam, twoparam);
+				SimpleName newQualifier= ast.newSimpleName(ASSERTIONS);
+				Expression expression= assertexpression;
+				if (expression != null) {
+					ASTNodes.replaceButKeepComment(rewriter, expression, newQualifier, group);
+				}
 			}
+		} else {
+			changeImportDeclaration(mh.getImportDeclaration(), importRewriter, group);
 		}
 	}
-
+	
 	public void changeImportDeclaration(ImportDeclaration node, ImportRewrite importRewriter, TextEditGroup group) {
 		String importName= node.getName().getFullyQualifiedName();
 		if (node.isStatic() && importName.equals(ORG_JUNIT_ASSERT)) {

@@ -10,11 +10,11 @@
       %description
    </description>
 
-   <copyright>
+   <copyright url="https://github.com/carstenartur/sandbox?tab=readme-ov-file">
       %copyright
    </copyright>
 
-   <license url="%licenseURL">
+   <license url="https://github.com/carstenartur/sandbox?tab=EPL-2.0-1-ov-file#readme">
       %license
    </license>
 

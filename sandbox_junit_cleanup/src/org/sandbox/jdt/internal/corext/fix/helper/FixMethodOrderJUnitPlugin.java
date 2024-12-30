@@ -33,7 +33,6 @@ package org.sandbox.jdt.internal.corext.fix.helper;
  * #L%
  */
 
-import java.util.Map.Entry;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
@@ -43,7 +42,6 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
-import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
@@ -70,17 +68,24 @@ public class FixMethodOrderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 		return false;
 	}
 
+//	@Override
+//	public void rewrite(JUnitCleanUpFixCore upp, final ReferenceHolder<Integer, JunitHolder> hit,
+//			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
+////		ASTRewrite rewrite= cuRewrite.getASTRewrite();
+////		AST ast= cuRewrite.getRoot().getAST();
+////		ImportRewrite importrewriter= cuRewrite.getImportRewrite();
+////		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
+//			//JunitHolder mh= entry.getValue();
+////			@SuppressWarnings("unused")
+////			Annotation minv= mh.getAnnotation();
+////		}
+//	}
+	
 	@Override
-	public void rewrite(JUnitCleanUpFixCore upp, final ReferenceHolder<Integer, JunitHolder> hit,
-			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
-//		ASTRewrite rewrite= cuRewrite.getASTRewrite();
-//		AST ast= cuRewrite.getRoot().getAST();
-//		ImportRewrite importrewriter= cuRewrite.getImportRewrite();
-//		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
-			//JunitHolder mh= entry.getValue();
-//			@SuppressWarnings("unused")
-//			Annotation minv= mh.getAnnotation();
-//		}
+	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+			JunitHolder mh) {
+		// TODO Auto-generated method stub
+		
 	}
 
 	@Override
