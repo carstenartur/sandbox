@@ -71,22 +71,22 @@ class TestFormatterOptions {
 		return options.getMap();
 	}
 
-	public int alignment_for_arguments_in_allocation_expression;
-	public int alignment_for_arguments_in_explicit_constructor_call;
-	public int alignment_for_arguments_in_method_invocation;
-	public int alignment_for_arguments_in_qualified_allocation_expression;
-	public int alignment_for_binary_expression;
-	public int alignment_for_compact_if;
-	public int alignment_for_conditional_expression;
-	public int alignment_for_expressions_in_array_initializer;
-	public int alignment_for_multiple_fields;
-	public int alignment_for_parameters_in_constructor_declaration;
-	public int alignment_for_parameters_in_method_declaration;
-	public int alignment_for_selector_in_method_invocation;
-	public int alignment_for_superclass_in_type_declaration;
-	public int alignment_for_superinterfaces_in_type_declaration;
-	public int alignment_for_throws_clause_in_constructor_declaration;
-	public int alignment_for_throws_clause_in_method_declaration;
+	private int alignment_for_arguments_in_allocation_expression;
+	private int alignment_for_arguments_in_explicit_constructor_call;
+	private int alignment_for_arguments_in_method_invocation;
+	private int alignment_for_arguments_in_qualified_allocation_expression;
+	private int alignment_for_binary_expression;
+	private int alignment_for_compact_if;
+	private int alignment_for_conditional_expression;
+	private int alignment_for_expressions_in_array_initializer;
+	private int alignment_for_multiple_fields;
+	private int alignment_for_parameters_in_constructor_declaration;
+	private int alignment_for_parameters_in_method_declaration;
+	private int alignment_for_selector_in_method_invocation;
+	private int alignment_for_superclass_in_type_declaration;
+	private int alignment_for_superinterfaces_in_type_declaration;
+	private int alignment_for_throws_clause_in_constructor_declaration;
+	private int alignment_for_throws_clause_in_method_declaration;
 
 	private boolean align_type_members_on_columns;
 
