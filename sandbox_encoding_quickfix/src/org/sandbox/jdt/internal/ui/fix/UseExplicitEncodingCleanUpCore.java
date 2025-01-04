@@ -30,17 +30,19 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.CoreException;
+
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
+import org.sandbox.jdt.internal.corext.fix.helper.ChangeBehavior;
 import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
-import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
-import org.sandbox.jdt.internal.corext.fix.helper.AbstractExplicitEncoding.ChangeBehavior;
 
 public class UseExplicitEncodingCleanUpCore extends AbstractCleanUp {
 	public UseExplicitEncodingCleanUpCore(final Map<String, String> options) {
@@ -69,14 +71,16 @@ public class UseExplicitEncodingCleanUpCore extends AbstractCleanUp {
 		}
 
 		ChangeBehavior cb= computeRefactorDeepth();
-		Set<CompilationUnitRewriteOperationWithSourceRange> operations= new LinkedHashSet<>();
+		Set<CompilationUnitRewriteOperation> operations= new LinkedHashSet<>();
 		Set<ASTNode> nodesprocessed= new HashSet<>();
 		computeFixSet.forEach(i->i.findOperations(compilationUnit,operations,nodesprocessed,cb));
 		if (operations.isEmpty()) {
 			return null;
 		}
+
+		CompilationUnitRewriteOperation[] array= operations.toArray(new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]);
 		return new CompilationUnitRewriteOperationsFixCore(ExplicitEncodingCleanUpFix_refactor,
-				compilationUnit, operations.toArray(new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange[0]));
+				compilationUnit, array);
 	}
 
 	private ChangeBehavior computeRefactorDeepth() {

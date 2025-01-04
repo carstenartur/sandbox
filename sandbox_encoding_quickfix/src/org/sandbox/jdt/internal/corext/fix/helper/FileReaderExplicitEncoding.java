@@ -19,26 +19,29 @@ import java.io.InputStreamReader;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.text.edits.TextEditGroup;
+
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
-import org.eclipse.jdt.internal.corext.dom.ASTNodes;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
-import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
-import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
-import org.eclipse.text.edits.TextEditGroup;
+
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+
 /**
  * Change
  *
- * Find:  	Reader is=new FileReader("file.txt")
+ * Find: Reader is=new FileReader("file.txt")
  *
- * Rewrite: Reader is=new InputStreamReader(new FileInputStream("file.txt"),Charset.defaultCharset());
+ * Rewrite: Reader is=new InputStreamReader(new
+ * FileInputStream("file.txt"),Charset.defaultCharset());
  *
  * Charset.defaultCharset() is available since Java 1.5
  *
@@ -46,47 +49,41 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 public class FileReaderExplicitEncoding extends AbstractExplicitEncoding<ClassInstanceCreation> {
 
 	@Override
-	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed,ChangeBehavior cb) {
+	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ChangeBehavior cb) {
 		ReferenceHolder<ASTNode, Object> datah= new ReferenceHolder<>();
 		HelperVisitor.callClassInstanceCreationVisitor(FileReader.class, compilationUnit, datah, nodesprocessed, (visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));
 	}
 
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, ChangeBehavior cb,
+			Set<CompilationUnitRewriteOperation> operations, ChangeBehavior cb,
 			ClassInstanceCreation visited, ReferenceHolder<ASTNode, Object> holder) {
 		List<ASTNode> arguments= visited.arguments();
 		switch (arguments.size()) {
-		case 1:
-			break;
-		case 2:
-			if(!(arguments.get(1) instanceof StringLiteral)) {
+			case 1:
+				break;
+			case 2:
+				if (!(arguments.get(1) instanceof StringLiteral)) {
+					return false;
+				}
+				StringLiteral argstring3= (StringLiteral) arguments.get(1);
+				if (!encodings.contains(argstring3.getLiteralValue())) {
+					return false;
+				}
+				holder.put(argstring3, encodingmap.get(argstring3.getLiteralValue()));
+				break;
+			default:
 				return false;
-			}
-			StringLiteral argstring3= (StringLiteral) arguments.get(1);
-			if (!encodings.contains(argstring3.getLiteralValue())) {
-				return false;
-			}
-			holder.put(argstring3,encodingmap.get(argstring3.getLiteralValue()));
-			break;
-		default:
-			return false;
 		}
 		operations.add(fixcore.rewrite(visited, cb, holder));
 		return false;
 	}
 
 	@Override
-	public void rewrite(UseExplicitEncodingFixCore upp,final ClassInstanceCreation visited, final CompilationUnitRewrite cuRewrite,
-			TextEditGroup group,ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data) {
+	public void rewrite(UseExplicitEncodingFixCore upp, final ClassInstanceCreation visited, final CompilationUnitRewrite cuRewrite,
+			TextEditGroup group, ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
-		if (!JavaModelUtil.is50OrHigher(cuRewrite.getCu().getJavaProject())) {
-			/**
-			 * For Java 1.4 and older just do nothing
-			 */
-			return;
-		}
-		ASTNode callToCharsetDefaultCharset= computeCharsetASTNode(cuRewrite, ast, cb, (String) data.get(visited));
+		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, (String) data.get(visited),Nodedata.charsetConstants);
 		/**
 		 * new FileInputStream(<filename>)
 		 */
@@ -105,9 +102,9 @@ public class FileReaderExplicitEncoding extends AbstractExplicitEncoding<ClassIn
 	}
 
 	@Override
-	public String getPreview(boolean afterRefactoring,ChangeBehavior cb) {
-		if(afterRefactoring) {
-			return "Reader r=new InputStreamReader(new FileInputStream(inputfile),"+computeCharsetforPreview(cb)+");\n"; //$NON-NLS-1$ //$NON-NLS-2$
+	public String getPreview(boolean afterRefactoring, ChangeBehavior cb) {
+		if (afterRefactoring) {
+			return "Reader r=new InputStreamReader(new FileInputStream(inputfile)," + cb.computeCharsetforPreview() + ");\n"; //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		return "Reader r=new FileReader(inputfile);\n"; //$NON-NLS-1$
 	}

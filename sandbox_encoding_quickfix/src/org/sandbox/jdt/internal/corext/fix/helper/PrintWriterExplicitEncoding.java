@@ -19,32 +19,37 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.Set;
 
+import org.eclipse.text.edits.TextEditGroup;
+
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
-import org.eclipse.jdt.internal.corext.dom.ASTNodes;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
-import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
-import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
-import org.eclipse.text.edits.TextEditGroup;
+
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
+
 /**
  *
  * Java 10
  *
  * Change
  *
- * Find:     	Writer fw=new PrintWriter("file.txt")
+ * Find: Writer fw=new PrintWriter("file.txt")
  *
- * Rewrite:    	Writer fw=new BufferedWriter(new OutputStreamWriter(new FileOutputStream("file.txt"),defaultCharset)));
+ * Rewrite: Writer fw=new BufferedWriter(new OutputStreamWriter(new
+ * FileOutputStream("file.txt"),defaultCharset)));
  *
- * Find:     	Writer fw=new PrintWriter(new File("file.txt"))
+ * Find: Writer fw=new PrintWriter(new File("file.txt"))
  *
- * Rewrite:    	Writer fw=new BufferedWriter(new OutputStreamWriter(new FileOutputStream("file.txt"),defaultCharset)));
+ * Rewrite: Writer fw=new BufferedWriter(new OutputStreamWriter(new
+ * FileOutputStream("file.txt"),defaultCharset)));
  *
  * Charset.defaultCharset() is available since Java 1.5
  *
@@ -52,7 +57,7 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 public class PrintWriterExplicitEncoding extends AbstractExplicitEncoding<ClassInstanceCreation> {
 
 	@Override
-	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed,ChangeBehavior cb) {
+	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ChangeBehavior cb) {
 		if (!JavaModelUtil.is10OrHigher(compilationUnit.getJavaElement().getJavaProject())) {
 			/**
 			 * For Java 9 and older just do nothing
@@ -63,7 +68,7 @@ public class PrintWriterExplicitEncoding extends AbstractExplicitEncoding<ClassI
 		HelperVisitor.callClassInstanceCreationVisitor(PrintWriter.class, compilationUnit, datah, nodesprocessed, (visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));
 	}
 
-	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore, Set<CompilationUnitRewriteOperationWithSourceRange> operations,
+	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore, Set<CompilationUnitRewriteOperation> operations,
 			ChangeBehavior cb, ClassInstanceCreation visited,
 			ReferenceHolder<ASTNode, Object> holder) {
 		operations.add(fixcore.rewrite(visited, cb, holder));
@@ -71,11 +76,11 @@ public class PrintWriterExplicitEncoding extends AbstractExplicitEncoding<ClassI
 	}
 
 	@Override
-	public void rewrite(UseExplicitEncodingFixCore upp,final ClassInstanceCreation visited, final CompilationUnitRewrite cuRewrite,
-			TextEditGroup group,ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data) {
+	public void rewrite(UseExplicitEncodingFixCore upp, final ClassInstanceCreation visited, final CompilationUnitRewrite cuRewrite,
+			TextEditGroup group, ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
-		ASTNode callToCharsetDefaultCharset= computeCharsetASTNode(cuRewrite, ast, cb, (String) data.get(visited));
+		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, (String) data.get(visited),Nodedata.charsetConstants);
 		/**
 		 * new FileOutputStream(<filename>)
 		 */
@@ -100,9 +105,9 @@ public class PrintWriterExplicitEncoding extends AbstractExplicitEncoding<ClassI
 	}
 
 	@Override
-	public String getPreview(boolean afterRefactoring,ChangeBehavior cb) {
-		if(afterRefactoring) {
-			return "Writer w=new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputfile),"+computeCharsetforPreview(cb)+"));\n"; //$NON-NLS-1$ //$NON-NLS-2$
+	public String getPreview(boolean afterRefactoring, ChangeBehavior cb) {
+		if (afterRefactoring) {
+			return "Writer w=new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputfile)," + cb.computeCharsetforPreview() + "));\n"; //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		return "Writer w=new PrintWriter(outputfile);\n"; //$NON-NLS-1$
 	}

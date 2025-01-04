@@ -11,8 +11,9 @@
  * Contributors:
  *
  *******************************************************************************/
-package org.eclipse.jdt.ui.tests.quickfix.Java8;
+package org.eclipse.jdt.ui.tests.quickfix.Java22;
 
+import java.nio.charset.UnsupportedCharsetException;
 import java.util.Hashtable;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -33,14 +34,14 @@ import org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants;
 import org.eclipse.jdt.internal.corext.fix.CleanUpConstants;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
-import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava8;
+import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 
 import org.eclipse.jdt.internal.ui.JavaPlugin;
 
 public class ExplicitEncodingCleanUpTest {
 
 	@BeforeEach
-	protected void setUp() throws Exception {
+	protected void setUp() throws Exception,UnsupportedCharsetException {
 		Hashtable<String, String> defaultOptions= TestOptions.getDefaultOptions();
 		defaultOptions.put(DefaultCodeFormatterConstants.FORMATTER_LINE_SPLIT, Integer.toString(120));
 		JavaCore.setOptions(defaultOptions);
@@ -50,7 +51,7 @@ public class ExplicitEncodingCleanUpTest {
 	}
 
 	@RegisterExtension
-	AbstractEclipseJava context= new EclipseJava8();
+	AbstractEclipseJava context= new EclipseJava22();
 
 	@ParameterizedTest
 	@EnumSource(ExplicitEncodingPatterns.class)
@@ -59,6 +60,10 @@ public class ExplicitEncodingCleanUpTest {
 		ICompilationUnit cu= pack.createCompilationUnit("E1.java", test.given, false, null);
 		context.enable(MYCleanUpConstants.EXPLICITENCODING_CLEANUP);
 		context.enable(MYCleanUpConstants.EXPLICITENCODING_KEEP_BEHAVIOR);
+		context.disable(MYCleanUpConstants.EXPLICITENCODING_INSERT_UTF8);
+		context.disable(MYCleanUpConstants.EXPLICITENCODING_AGGREGATE_TO_UTF8);
+//		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
+		context.enable(CleanUpConstants.REMOVE_UNNECESSARY_NLS_TAGS);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
 	}
 

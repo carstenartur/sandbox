@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
 
+import org.eclipse.text.edits.TextEditGroup;
+
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
@@ -24,39 +26,40 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
-import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
-import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
-import org.eclipse.text.edits.TextEditGroup;
+
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
+
 /**
  *
  * Java 10
  *
  * Change
  *
- * Find:     	new java.util.Scanner(new File("filename.txt"),"UTF-8")
+ * Find: new java.util.Scanner(new File("filename.txt"),"UTF-8")
  *
- * Rewrite:    	new java.util.Scanner(new File("filename.txt"),StandardCharsets.UTF_8);
+ * Rewrite: new java.util.Scanner(new File("filename.txt"),StandardCharsets.UTF_8);
  *
- * Find:     	new java.util.Scanner("filename.txt", "UTF-8")
+ * Find: new java.util.Scanner("filename.txt", "UTF-8")
  *
- * Rewrite:    	new java.util.Scanner("filename.txt", StandardCharsets.UTF_8)
+ * Rewrite: new java.util.Scanner("filename.txt", StandardCharsets.UTF_8)
  *
- * Find:     	new java.util.Scanner(java.io.OutputStream, "UTF-8")
+ * Find: new java.util.Scanner(java.io.OutputStream, "UTF-8")
  *
- * Rewrite:    	new java.util.Scanner(java.io.OutputStream, StandardCharsets.UTF_8)
+ * Rewrite: new java.util.Scanner(java.io.OutputStream, StandardCharsets.UTF_8)
  *
- * Find:     	new java.util.Scanner(java.io.OutputStream)
+ * Find: new java.util.Scanner(java.io.OutputStream)
  *
- * Rewrite:    	new java.util.Scanner(java.io.OutputStream, Charset.defaultCharset())
+ * Rewrite: new java.util.Scanner(java.io.OutputStream, Charset.defaultCharset())
  */
 public class ScannerExplicitEncoding extends AbstractExplicitEncoding<ClassInstanceCreation> {
 
 	@Override
-	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed,ChangeBehavior cb) {
+	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ChangeBehavior cb) {
 		if (!JavaModelUtil.is10OrHigher(compilationUnit.getJavaElement().getJavaProject())) {
 			/**
 			 * For Java 9 and older just do nothing
@@ -67,76 +70,68 @@ public class ScannerExplicitEncoding extends AbstractExplicitEncoding<ClassInsta
 		HelperVisitor.callClassInstanceCreationVisitor(Scanner.class, compilationUnit, datah, nodesprocessed, (visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));
 	}
 
-	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore, Set<CompilationUnitRewriteOperationWithSourceRange> operations,
+	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore, Set<CompilationUnitRewriteOperation> operations,
 			ChangeBehavior cb, ClassInstanceCreation visited,
 			ReferenceHolder<ASTNode, Object> holder) {
 		List<ASTNode> arguments= visited.arguments();
+		Nodedata nd= new Nodedata();
+
 		switch (arguments.size()) {
-		case 4:
-			if(!(arguments.get(3) instanceof StringLiteral)) {
-				return false;
-			}
-			StringLiteral argstring4= (StringLiteral) arguments.get(3);
-			if (!encodings.contains(argstring4.getLiteralValue().toUpperCase())) {
-				return false;
-			}
-			Nodedata nd=new Nodedata();
-			nd.encoding=encodingmap.get(argstring4.getLiteralValue().toUpperCase());
-			nd.replace=true;
-			nd.visited=argstring4;
-			holder.put(visited,nd);
-			operations.add(fixcore.rewrite(visited, cb, holder));
-			break;
-		case 2:
-			if(!(arguments.get(1) instanceof StringLiteral)) {
-				return false;
-			}
-			StringLiteral argstring3= (StringLiteral) arguments.get(1);
-			if (!encodings.contains(argstring3.getLiteralValue().toUpperCase())) {
-				return false;
-			}
-			Nodedata nd2=new Nodedata();
-			nd2.encoding=encodingmap.get(argstring3.getLiteralValue().toUpperCase());
-			nd2.replace=true;
-			nd2.visited=argstring3;
-			holder.put(visited,nd2);
-			operations.add(fixcore.rewrite(visited, cb, holder));
-			break;
-		case 1:
-			Nodedata nd3=new Nodedata();
-			nd3.encoding=null;
-			nd3.replace=false;
-			nd3.visited=visited;
-			holder.put(visited,nd3);
-			operations.add(fixcore.rewrite(visited, cb, holder));
-			break;
-		default:
-			break;
+			case 4:
+			case 2:
+				int encodingIndex= (arguments.size() == 4) ? 3 : 1;
+				ASTNode argumentNode= arguments.get(encodingIndex);
+
+				if (argumentNode instanceof StringLiteral) {
+					StringLiteral encodingLiteral= (StringLiteral) argumentNode;
+					String encodingValue= encodingLiteral.getLiteralValue().toUpperCase();
+
+					if (encodings.contains(encodingValue)) {
+						nd.encoding= encodingmap.get(encodingValue);
+						nd.replace= true;
+						nd.visited= encodingLiteral;
+						holder.put(visited, nd);
+						operations.add(fixcore.rewrite(visited, cb, holder));
+					}
+				}
+				break;
+
+			case 1:
+				nd.encoding= null;
+				nd.replace= false;
+				nd.visited= visited;
+				holder.put(visited, nd);
+				operations.add(fixcore.rewrite(visited, cb, holder));
+				break;
+
+			default:
+				break;
 		}
 
 		return false;
 	}
 
 	@Override
-	public void rewrite(UseExplicitEncodingFixCore upp,final ClassInstanceCreation visited, final CompilationUnitRewrite cuRewrite,
-			TextEditGroup group,ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data) {
+	public void rewrite(UseExplicitEncodingFixCore upp, final ClassInstanceCreation visited, final CompilationUnitRewrite cuRewrite,
+			TextEditGroup group, ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
-		ASTNode callToCharsetDefaultCharset= computeCharsetASTNode(cuRewrite, ast, cb, ((Nodedata) data.get(visited)).encoding);
+		Nodedata nodedata= (Nodedata) data.get(visited);
+		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding,Nodedata.charsetConstants);
 		/**
 		 * Add Charset.defaultCharset() as second (last) parameter
 		 */
 		ListRewrite listRewrite= rewrite.getListRewrite(visited, ClassInstanceCreation.ARGUMENTS_PROPERTY);
-		if(((Nodedata)(data.get(visited))).replace) {
-			listRewrite.replace(((Nodedata) data.get(visited)).visited, callToCharsetDefaultCharset, group);
+		if (nodedata.replace) {
+			listRewrite.replace(nodedata.visited, callToCharsetDefaultCharset, group);
 		} else {
 			listRewrite.insertLast(callToCharsetDefaultCharset, group);
 		}
 	}
 
 	@Override
-	public String getPreview(boolean afterRefactoring,ChangeBehavior cb) {
-		if(afterRefactoring) {
+	public String getPreview(boolean afterRefactoring, ChangeBehavior cb) {
+		if (afterRefactoring) {
 			return "new java.util.Scanner(\"asdf\",StandardCharsets.UTF_8);\n"; //$NON-NLS-1$
 		}
 		return "new java.util.Scanner(\"asdf\", \"UTF-8\");\n"; //$NON-NLS-1$
