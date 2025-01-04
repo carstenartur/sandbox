@@ -133,7 +133,7 @@ public enum ChangeBehavior {
 		}
 	};
 
-	abstract protected Expression computeCharsetASTNode(final CompilationUnitRewrite cuRewrite, AST ast, String charset, Map<String, QualifiedName> charsetConstants);
+	abstract protected Expression computeCharsetASTNode(CompilationUnitRewrite cuRewrite, AST ast, String charset, Map<String, QualifiedName> charsetConstants);
 
 	abstract protected String computeCharsetforPreview();
 

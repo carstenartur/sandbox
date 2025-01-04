@@ -669,7 +669,7 @@ public abstract class AbstractTool<T> {
 			String nestedClassName, boolean fieldStatic, ASTRewrite rewriter, AST ast, TextEditGroup group,
 			ImportRewrite importRewriter) {
 
-		FieldDeclaration fieldDecl= (FieldDeclaration) ASTNodes.getParent(classInstanceCreation,
+		FieldDeclaration fieldDecl= ASTNodes.getParent(classInstanceCreation,
 				FieldDeclaration.class);
 		if (fieldDecl != null) {
 			// Entferne die @Rule-Annotation
@@ -1330,7 +1330,7 @@ public abstract class AbstractTool<T> {
 
 			// Durchlaufe alle direkten und indirekten Subtypen und füge sie der Liste hinzu
 			for (IType subtype : typeHierarchy.getAllSubtypes(type)) {
-				ITypeBinding subtypeBinding= (ITypeBinding) subtype.getAdapter(ITypeBinding.class);
+				ITypeBinding subtypeBinding= subtype.getAdapter(ITypeBinding.class);
 				if (subtypeBinding != null) {
 					subclasses.add(subtypeBinding);
 				}
