@@ -24,9 +24,6 @@ import java.nio.charset.StandardCharsets;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.jdt.core.ICompilationUnit;
-import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
@@ -50,7 +47,7 @@ public class XMLPlugin extends AbstractTool<XMLCandidateHit> {
             boolean createForOnlyIfVarUsed) {
         try {
             // Hole die zugehörige Resource (allgemeiner Zugriff, nicht nur auf Java-Elemente beschränkt)
-            IResource resource = (IResource) compilationUnit.getJavaElement().getResource();
+            IResource resource = compilationUnit.getJavaElement().getResource();
 
             if (resource == null || !resource.exists() || !(resource instanceof IFile)) {
                 System.out.println("Skipping non-file resource: " + (resource != null ? resource.getName() : "null"));
