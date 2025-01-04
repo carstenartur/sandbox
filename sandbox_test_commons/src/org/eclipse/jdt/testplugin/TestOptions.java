@@ -14,21 +14,15 @@
  *******************************************************************************/
 package org.eclipse.jdt.testplugin;
 
-import java.util.HashMap;
 import java.util.Hashtable;
-import java.util.Map;
+
 
 //import org.eclipse.jface.preference.IPreferenceStore;
 
-import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants;
 
 import org.eclipse.jdt.internal.formatter.DefaultCodeFormatterOptions.Alignment;
-
-import org.eclipse.jdt.ui.PreferenceConstants;
-
-import org.eclipse.jdt.internal.ui.JavaPlugin;
 
 public class TestOptions {
 
