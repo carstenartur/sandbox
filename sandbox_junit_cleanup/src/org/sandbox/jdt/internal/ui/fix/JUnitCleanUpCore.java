@@ -47,7 +47,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
@@ -92,7 +91,7 @@ public class JUnitCleanUpCore extends AbstractCleanUp {
 			return null;
 		}
 		Set<CompilationUnitRewriteOperationWithSourceRange> operations= new LinkedHashSet<>();
-		computeFixSet.forEach(i -> i.findOperations(compilationUnit, operations, new HashSet<ASTNode>()));
+		computeFixSet.forEach(i -> i.findOperations(compilationUnit, operations, new HashSet<>()));
 		if (operations.isEmpty()) {
 			return null;
 		}
