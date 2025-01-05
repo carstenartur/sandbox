@@ -3,7 +3,6 @@
 
 <product name="Sandbox Product" uid="sandbox.bundle.producteclipse" id="org.eclipse.platform.ide" application="org.eclipse.ui.ide.workbench" version="1.2.0.qualifier" type="features" includeLaunchers="false" autoIncludeRequirements="true">
 
-
    <configIni use="default">
    </configIni>
 

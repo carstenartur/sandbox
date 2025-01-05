@@ -9,4 +9,26 @@
 		<cleanUp class="org.sandbox.jdt.internal.ui.fix.XMLCleanUp" id="org.eclipse.jdt.ui.cleanup.xmlcleanup" />
 		<!--      runAfter="org.eclipse.jdt.ui.cleanup.unboxing" -->
 	</extension>
+ <!-- Definition des Markers -->
+    <extension
+        id="my.exsd.cleanup.marker"
+        point="org.eclipse.core.resources.markers">
+        <super type="org.eclipse.core.resources.problemmarker" />
+        <super type="org.eclipse.core.resources.textmarker" />
+        <persistent value="true" />
+        <attribute name="id" />
+        <attribute name="flags" />
+        <attribute name="arguments" />
+        <attribute name="categoryId" />
+    </extension>
+
+    <!-- Registrierung des MarkerResolutionGenerators -->
+    <extension
+        id="my.exsd.cleanup.quickfix.generator"
+        point="org.eclipse.ui.ide.markerResolution">
+        <markerResolutionGenerator
+            markerType="my.exsd.cleanup.marker"
+            class="org.sandbox.jdt.internal.corext.fix.helper.ExsdMarkerResolutionGenerator">
+        </markerResolutionGenerator>
+    </extension>
 </plugin>

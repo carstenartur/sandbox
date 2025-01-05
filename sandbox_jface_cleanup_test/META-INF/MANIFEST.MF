@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: jface cleanup tests
 Bundle-SymbolicName: sandbox_jface_cleanup_test;singleton:=true
-Bundle-Version: 1.2.0.qualifier
+Bundle-Version: 1.2.1.qualifier
 Fragment-Host: sandbox_jface_cleanup
 Bundle-RequiredExecutionEnvironment: JavaSE-21
 Require-Bundle: org.junit,

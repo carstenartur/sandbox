@@ -28,7 +28,7 @@ import org.eclipse.jdt.internal.corext.dom.GenericVisitor;
 public class PreconditionsChecker {
 
 	private boolean hasUncaughtException = false;
-	private Set innerVariables;
+	private Set<Name> innerVariables;
 	private ForLoopTreeVisitor visitor;
 	private boolean isIterable;
 
@@ -64,7 +64,7 @@ public class PreconditionsChecker {
 		return false;
 	}
 
-	private Set getInnerVariables(EnhancedForStatement forLoop, AST ast) {
+	private Set<Name> getInnerVariables(EnhancedForStatement forLoop, AST ast) {
 		VariablesVisitor vis = new VariablesVisitor();
 		//	        vis.scan(tree, trees);
 		forLoop.accept(vis);
@@ -80,7 +80,7 @@ public class PreconditionsChecker {
 		public ASTNode reducerStatement;
 		public Map<Name, String> varToType;
 
-		public ForLoopTreeVisitor(Set innerVariables, AST ast, EnhancedForStatement forLoop) {
+		public ForLoopTreeVisitor(Set<Name> innerVariables, AST ast, EnhancedForStatement forLoop) {
 			// TODO Auto-generated constructor stub
 		}
 
@@ -99,7 +99,7 @@ public class PreconditionsChecker {
 	}
 	public static class VariablesVisitor extends GenericVisitor {
 
-		public Set getInnervariables() {
+		public Set<Name> getInnervariables() {
 			// TODO Auto-generated method stub
 			return null;
 		}

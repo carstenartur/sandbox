@@ -33,7 +33,6 @@ package org.sandbox.jdt.internal.corext.fix.helper;
  * #L%
  */
 
-import java.util.Map.Entry;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
@@ -48,7 +47,6 @@ import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
-import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
@@ -110,33 +108,27 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 	}
 
 	@Override
-	public void rewrite(JUnitCleanUpFixCore upp, final ReferenceHolder<Integer, JunitHolder> hit,
-			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
-		ASTRewrite rewrite= cuRewrite.getASTRewrite();
-		AST ast= cuRewrite.getRoot().getAST();
-		ImportRewrite importrewriter= cuRewrite.getImportRewrite();
-		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
-			JunitHolder mh= entry.getValue();
-			Annotation minv= mh.getAnnotation();
-			Annotation newAnnotation= null;
-			SingleMemberAnnotation mynode= (SingleMemberAnnotation) minv;
-			if (ORG_JUNIT_SUITE_SUITECLASSES.equals(mh.value)) {
-				newAnnotation= ast.newSingleMemberAnnotation();
-				((SingleMemberAnnotation) newAnnotation)
-						.setValue(ASTNodes.createMoveTarget(rewrite, mynode.getValue()));
-				newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_SELECT_CLASSES));
-				importrewriter.addImport(ORG_JUNIT_PLATFORM_SUITE_API_SELECT_CLASSES);
-			} else {
-				newAnnotation= ast.newMarkerAnnotation();
-				newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_SUITE));
-				importrewriter.addImport(ORG_JUNIT_JUPITER_SUITE);
-			}
-			ASTNodes.replaceButKeepComment(rewrite, minv, newAnnotation, group);
-			importrewriter.removeImport(ORG_JUNIT_SUITE);
-			importrewriter.removeImport(ORG_JUNIT_RUNWITH);
+	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+			JunitHolder mh) {
+		Annotation minv= mh.getAnnotation();
+		Annotation newAnnotation= null;
+		SingleMemberAnnotation mynode= (SingleMemberAnnotation) minv;
+		if (ORG_JUNIT_SUITE_SUITECLASSES.equals(mh.value)) {
+			newAnnotation= ast.newSingleMemberAnnotation();
+			((SingleMemberAnnotation) newAnnotation)
+					.setValue(ASTNodes.createMoveTarget(rewriter, mynode.getValue()));
+			newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_SELECT_CLASSES));
+			importRewriter.addImport(ORG_JUNIT_PLATFORM_SUITE_API_SELECT_CLASSES);
+		} else {
+			newAnnotation= ast.newMarkerAnnotation();
+			newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_SUITE));
+			importRewriter.addImport(ORG_JUNIT_JUPITER_SUITE);
 		}
+		ASTNodes.replaceButKeepComment(rewriter, minv, newAnnotation, group);
+		importRewriter.removeImport(ORG_JUNIT_SUITE);
+		importRewriter.removeImport(ORG_JUNIT_RUNWITH);
 	}
-
+	
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {

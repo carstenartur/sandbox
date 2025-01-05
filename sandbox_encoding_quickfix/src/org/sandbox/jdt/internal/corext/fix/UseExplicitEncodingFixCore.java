@@ -20,14 +20,13 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.rewrite.TargetSourceRangeComputer;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.helper.AbstractExplicitEncoding;
-import org.sandbox.jdt.internal.corext.fix.helper.AbstractExplicitEncoding.ChangeBehavior;
+import org.sandbox.jdt.internal.corext.fix.helper.ChangeBehavior;
 import org.sandbox.jdt.internal.corext.fix.helper.ByteArrayOutputStreamExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.ChannelsNewReaderExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.ChannelsNewWriterExplicitEncoding;
@@ -46,6 +45,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.StringGetBytesExplicitEncoding
 import org.sandbox.jdt.internal.corext.fix.helper.URLDecoderDecodeExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.URLEncoderEncodeExplicitEncoding;
 import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 
 public enum UseExplicitEncodingFixCore {
 
@@ -75,24 +75,32 @@ public enum UseExplicitEncodingFixCore {
 	}
 
 	public String getPreview(boolean i, ChangeBehavior cb) {
-		return explicitencoding.getPreview(i,cb);
+		long countother= explicitencoding.getPreview(!i, cb).lines().count();
+		StringBuilder preview= new StringBuilder(explicitencoding.getPreview(i,cb));
+		long countnow= preview.toString().lines().count();
+		if(countnow<countother) {
+			for (long ii=0;ii<countother-countnow;ii++) {
+				preview.append(System.lineSeparator());
+			}
+		}
+		return preview.toString()+System.lineSeparator();
 	}
 	/**
-	 * Compute set of CompilationUnitRewriteOperationWithSourceRange to refactor supported situations using default encoding to make use of explicit calls
+	 * Compute set of CompilationUnitRewriteOperation to refactor supported situations using default encoding to make use of explicit calls
 	 *
 	 * @param compilationUnit unit to search in
 	 * @param operations set of all CompilationUnitRewriteOperations created already
 	 * @param nodesprocessed list to remember nodes already processed
 	 * @param cb distinguish if you want to keep the same behavior or get code independent of environment
 	 */
-	public void findOperations(final CompilationUnit compilationUnit,final Set<CompilationUnitRewriteOperationWithSourceRange> operations,final Set<ASTNode> nodesprocessed, ChangeBehavior cb) {
+	public void findOperations(final CompilationUnit compilationUnit,final Set<CompilationUnitRewriteOperation> operations,final Set<ASTNode> nodesprocessed, ChangeBehavior cb) {
 		explicitencoding.find(this, compilationUnit, operations, nodesprocessed, cb);
 	}
 
-	public CompilationUnitRewriteOperationWithSourceRange rewrite(final ASTNode visited, ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data) {
-		return new CompilationUnitRewriteOperationWithSourceRange() {
+	public CompilationUnitRewriteOperation rewrite(final ASTNode visited, ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data) {
+		return new CompilationUnitRewriteOperation() {
 			@Override
-			public void rewriteASTInternal(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel) throws CoreException {
+			public void rewriteAST(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel) throws CoreException {
 				TextEditGroup group= createTextEditGroup(Messages.format(MultiFixMessages.ExplicitEncodingCleanUp_description,new Object[] {UseExplicitEncodingFixCore.this.toString(), cb.toString()}), cuRewrite);
 				cuRewrite.getASTRewrite().setTargetSourceRangeComputer(computer);
 				explicitencoding.rewrite(UseExplicitEncodingFixCore.this, visited, cuRewrite, group, cb, data);

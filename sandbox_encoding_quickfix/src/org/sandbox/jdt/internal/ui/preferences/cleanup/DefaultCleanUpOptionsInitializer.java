@@ -27,5 +27,8 @@ public class DefaultCleanUpOptionsInitializer implements ICleanUpOptionsInitiali
 		//			}
 		//		}
 		options.setOption(MYCleanUpConstants.EXPLICITENCODING_CLEANUP, CleanUpOptions.FALSE);
+		options.setOption(MYCleanUpConstants.EXPLICITENCODING_KEEP_BEHAVIOR, CleanUpOptions.TRUE);
+		options.setOption(MYCleanUpConstants.EXPLICITENCODING_INSERT_UTF8, CleanUpOptions.FALSE);
+		options.setOption(MYCleanUpConstants.EXPLICITENCODING_AGGREGATE_TO_UTF8, CleanUpOptions.FALSE);
 	}
 }
