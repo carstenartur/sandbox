@@ -137,7 +137,7 @@ public enum ChangeBehavior {
 
 	abstract protected String computeCharsetforPreview();
 
-	protected FieldDeclaration findStaticCharsetField(TypeDeclaration type, String fieldName) {
+	protected static FieldDeclaration findStaticCharsetField(TypeDeclaration type, String fieldName) {
 	    for (FieldDeclaration field : type.getFields()) {
 	        for (Object fragment : field.fragments()) {
 	            if (fragment instanceof VariableDeclarationFragment) {
@@ -151,7 +151,7 @@ public enum ChangeBehavior {
 	    return null;
 	}
 
-	protected Expression createCharsetAccessExpression(AST ast, String charset) {
+	protected static Expression createCharsetAccessExpression(AST ast, String charset) {
 	    FieldAccess fieldAccess = ast.newFieldAccess();
 	    fieldAccess.setExpression(ast.newName(StandardCharsets.class.getSimpleName()));
 	    fieldAccess.setName(ast.newSimpleName(charset));
