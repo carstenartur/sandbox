@@ -928,16 +928,14 @@ public abstract class AbstractTool<T> {
 
 	public boolean isAnonymousClass(VariableDeclarationFragment fragment) {
 	    Expression initializer = fragment.getInitializer();
-	    if (initializer instanceof ClassInstanceCreation) {
-	        return ((ClassInstanceCreation) initializer).getAnonymousClassDeclaration() != null;
-	    }
-	    return false;
+	    return initializer instanceof ClassInstanceCreation 
+	           && ((ClassInstanceCreation) initializer).getAnonymousClassDeclaration() != null;
 	}
 
 	protected boolean isDirect(ITypeBinding fieldTypeBinding) {
 	    return ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(fieldTypeBinding.getQualifiedName());
 	}
-
+	
 	protected boolean isDirectlyExtendingExternalResource(ITypeBinding binding) {
 	    ITypeBinding superclass = binding.getSuperclass();
 	    return superclass != null && ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(superclass.getQualifiedName());
@@ -947,7 +945,7 @@ public abstract class AbstractTool<T> {
 	    ITypeBinding binding = param.getType().resolveBinding();
 	    return binding != null && className.equals(binding.getQualifiedName());
 	}
-
+	
 	private boolean isExternalResource(FieldDeclaration field, String typeToLookup) {
 	    ITypeBinding binding = ((VariableDeclarationFragment) field.fragments().get(0)).resolveBinding().getType();
 	    return isTypeOrSubtype(binding, typeToLookup);
@@ -961,7 +959,7 @@ public abstract class AbstractTool<T> {
 	    return hasAnnotation(field.modifiers(), annotationClass);
 	}
 
-	private boolean isFieldStatic(FieldDeclaration field) {
+	protected boolean isFieldStatic(FieldDeclaration field) {
 	    return hasModifier(field.modifiers(), Modifier.ModifierKeyword.STATIC_KEYWORD);
 	}
 
@@ -975,22 +973,9 @@ public abstract class AbstractTool<T> {
 	}
 
 	private boolean isSubtypeOf(ITypeBinding subtype, ITypeBinding supertype) {
-	    if (subtype == null || supertype == null) {
-	        return false;
-	    }
-
-	    // Compare qualified names to detect exact matches
-	    if (subtype.getQualifiedName().equals(supertype.getQualifiedName())) {
-	        return true;
-	    }
-
-	    // Check the inheritance hierarchy
-	    if (isTypeOrSubtype(subtype, supertype.getQualifiedName())) {
-	        return true;
-	    }
-
-	    // Check implemented interfaces
-	    return implementsInterface(subtype, supertype);
+	    return subtype != null 
+	           && supertype != null 
+	           && (isTypeOrSubtype(subtype, supertype.getQualifiedName()) || implementsInterface(subtype, supertype));
 	}
 
 	private boolean isTypeOrSubtype(ITypeBinding typeBinding, String qualifiedName) {
