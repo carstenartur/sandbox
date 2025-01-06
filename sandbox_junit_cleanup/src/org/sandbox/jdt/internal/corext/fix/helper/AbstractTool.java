@@ -567,43 +567,53 @@ public abstract class AbstractTool<T> {
 	}
 
 	public String extractClassNameFromField(FieldDeclaration field) {
-		for (Object fragmentObj : field.fragments()) {
-			VariableDeclarationFragment fragment= (VariableDeclarationFragment) fragmentObj;
-			Expression initializer= fragment.getInitializer();
-			if (initializer instanceof ClassInstanceCreation) {
-				ClassInstanceCreation creation= (ClassInstanceCreation) initializer;
-				Type createdType= creation.getType();
-				if (createdType instanceof QualifiedType) {
-					QualifiedType qualifiedType= (QualifiedType) createdType;
-					return extractQualifiedTypeName(qualifiedType);
-				} else if (createdType instanceof SimpleType) {
-					return ((SimpleType) createdType).getName().getFullyQualifiedName();
-				}
-			}
-		}
-		return null;
+	    for (Object fragmentObj : field.fragments()) {
+	        if (fragmentObj instanceof VariableDeclarationFragment) {
+	            VariableDeclarationFragment fragment = (VariableDeclarationFragment) fragmentObj;
+	            Expression initializer = fragment.getInitializer();
+	            if (initializer instanceof ClassInstanceCreation) {
+	                return extractTypeName(((ClassInstanceCreation) initializer).getType());
+	            }
+	        }
+	    }
+	    return null; // Kein passender Typ gefunden
 	}
 
 	private String extractFieldName(FieldDeclaration fieldDeclaration) {
-		for (Object fragmentObj : fieldDeclaration.fragments()) {
-			if (fragmentObj instanceof VariableDeclarationFragment) {
-				VariableDeclarationFragment fragment= (VariableDeclarationFragment) fragmentObj;
-				return fragment.getName().getIdentifier(); // Gibt den Variablennamen zurück
-			}
-		}
-		return "UnnamedField";
+	    return (String) fieldDeclaration.fragments().stream()
+	            .filter(VariableDeclarationFragment.class::isInstance)
+	            .map(fragment -> ((VariableDeclarationFragment) fragment).getName().getIdentifier())
+	            .findFirst()
+	            .orElse("UnnamedField");
 	}
 
 	protected String extractQualifiedTypeName(QualifiedType qualifiedType) {
-		StringBuilder fullClassName= new StringBuilder(qualifiedType.getName().getFullyQualifiedName());
-		for (Type qualifier= qualifiedType
-				.getQualifier(); qualifier instanceof QualifiedType; qualifier= ((QualifiedType) qualifier)
-						.getQualifier()) {
-			fullClassName.insert(0, ".");
-			fullClassName.insert(0, ((QualifiedType) qualifier).getName().getFullyQualifiedName());
-		}
-		return fullClassName.toString();
+	    StringBuilder fullClassName = new StringBuilder();
+	    Type currentType = qualifiedType;
+
+	    while (currentType instanceof QualifiedType) {
+	        QualifiedType currentQualified = (QualifiedType) currentType;
+	        if (fullClassName.length() > 0) {
+	            fullClassName.insert(0, ".");
+	        }
+	        fullClassName.insert(0, currentQualified.getName().getFullyQualifiedName());
+	        currentType = currentQualified.getQualifier();
+	    }
+	    return fullClassName.toString();
 	}
+
+	/**
+	 * General method to extract a type's fully qualified name.
+	 */
+	private String extractTypeName(Type type) {
+	    if (type instanceof QualifiedType) {
+	        return extractQualifiedTypeName((QualifiedType) type);
+	    } else if (type instanceof SimpleType) {
+	        return ((SimpleType) type).getName().getFullyQualifiedName();
+	    }
+	    return null;
+	}
+
 
 	public abstract void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed);
@@ -633,6 +643,13 @@ public abstract class AbstractTool<T> {
 	        e.printStackTrace();
 	    }
 	    return null;
+	}
+
+	private ASTNode findTypeDeclarationForBinding(ITypeBinding typeBinding, CompilationUnit cu) {
+	    if (typeBinding == null) return null;
+
+	    TypeDeclaration typeDecl = findTypeDeclarationInCompilationUnit(typeBinding, cu);
+	    return typeDecl != null ? typeDecl : findTypeDeclarationInProject(typeBinding);
 	}
 
 	private TypeDeclaration findTypeDeclarationInCompilationUnit(CompilationUnit unit, String fullyQualifiedTypeName) {
@@ -699,6 +716,7 @@ public abstract class AbstractTool<T> {
 	    return null;
 	}
 
+
 	private String generateChecksum(String input) {
 		try {
 			MessageDigest md= MessageDigest.getInstance("SHA-256");
@@ -716,7 +734,6 @@ public abstract class AbstractTool<T> {
 			throw new RuntimeException("SHA-256 algorithm not found",e);
 		}
 	}
-
 
 	private String generateUniqueNestedClassName(AnonymousClassDeclaration anonymousClass, String baseName) {
 		String anonymousCode= anonymousClass.toString(); // Der gesamte Code der anonymen Klasse
@@ -805,70 +822,61 @@ public abstract class AbstractTool<T> {
 
 	// Hilfsmethode: Ermittelt den vollqualifizierten Namen einer TypeDeclaration
 	private String getQualifiedName(TypeDeclaration typeDecl) {
-		StringBuilder qualifiedName= new StringBuilder(typeDecl.getName().getIdentifier());
-		ASTNode parent= typeDecl.getParent();
-		while (parent instanceof TypeDeclaration) {
-			TypeDeclaration parentType= (TypeDeclaration) parent;
-			qualifiedName.insert(0, parentType.getName().getIdentifier() + "$"); // $ für verschachtelte Klassen
-			parent= parent.getParent();
-		}
+	    StringBuilder qualifiedName = new StringBuilder(typeDecl.getName().getIdentifier());
+	    ASTNode parent = typeDecl.getParent();
 
-		// Paketnamen hinzufügen
-		CompilationUnit compilationUnit= (CompilationUnit) typeDecl.getRoot();
-		if (compilationUnit.getPackage() != null) {
-			String packageName= compilationUnit.getPackage().getName().getFullyQualifiedName();
-			qualifiedName.insert(0, packageName + ".");
-		}
+	    // Verschachtelte Klassen verarbeiten
+	    while (parent instanceof TypeDeclaration) {
+	        TypeDeclaration parentType = (TypeDeclaration) parent;
+	        qualifiedName.insert(0, parentType.getName().getIdentifier() + "$"); // $ für verschachtelte Klassen
+	        parent = parent.getParent();
+	    }
 
-		return qualifiedName.toString();
+	    // Paketnamen hinzufügen
+	    CompilationUnit compilationUnit = (CompilationUnit) typeDecl.getRoot();
+	    if (compilationUnit.getPackage() != null) {
+	        String packageName = compilationUnit.getPackage().getName().getFullyQualifiedName();
+	        qualifiedName.insert(0, packageName + ".");
+	    }
+
+	    return qualifiedName.toString();
 	}
 
 	protected ASTNode getTypeDefinitionForField(FieldDeclaration fieldDeclaration, CompilationUnit cu) {
-		for (Object fragmentObj : fieldDeclaration.fragments()) {
-			if (fragmentObj instanceof VariableDeclarationFragment) {
-				VariableDeclarationFragment fragment= (VariableDeclarationFragment) fragmentObj;
+	    return (ASTNode) fieldDeclaration.fragments().stream()
+	            .filter(VariableDeclarationFragment.class::isInstance)
+	            .map(VariableDeclarationFragment.class::cast)
+	            .map(fragment -> getTypeDefinitionFromFragment((VariableDeclarationFragment) fragment, cu))
+	            .filter(java.util.Objects::nonNull) // Nur nicht-null Ergebnisse berücksichtigen
+	            .findFirst()
+	            .orElse(null);
+	}
 
-				// Initialisierer prüfen
-				Expression initializer= fragment.getInitializer();
-				if (initializer instanceof ClassInstanceCreation) {
-					ClassInstanceCreation classInstanceCreation= (ClassInstanceCreation) initializer;
+	private ASTNode getTypeDefinitionFromFragment(VariableDeclarationFragment fragment, CompilationUnit cu) {
+	    // Initialisierer prüfen
+	    Expression initializer = fragment.getInitializer();
+	    if (initializer instanceof ClassInstanceCreation) {
+	        ClassInstanceCreation classInstanceCreation = (ClassInstanceCreation) initializer;
 
-					// Anonyme Klasse prüfen
-					AnonymousClassDeclaration anonymousClass= classInstanceCreation.getAnonymousClassDeclaration();
-					if (anonymousClass != null) {
-						return anonymousClass; // Anonyme Klasse gefunden
-					}
+	        // Anonyme Klasse prüfen
+	        AnonymousClassDeclaration anonymousClass = classInstanceCreation.getAnonymousClassDeclaration();
+	        if (anonymousClass != null) {
+	            return anonymousClass; // Anonyme Klasse gefunden
+	        }
 
-					// Typbindung prüfen
-					ITypeBinding typeBinding= classInstanceCreation.resolveTypeBinding();
-					if (typeBinding != null) {
-						TypeDeclaration typeDeclarationInCompilationUnit= findTypeDeclarationInCompilationUnit(
-								typeBinding, cu);
-						if (typeDeclarationInCompilationUnit == null) {
-							return findTypeDeclarationInProject(typeBinding);
-						}
-						return typeDeclarationInCompilationUnit; // Typdefinition suchen
-					}
-				}
+	        // Typbindung prüfen
+	        ITypeBinding typeBinding = classInstanceCreation.resolveTypeBinding();
+	        return findTypeDeclarationForBinding(typeBinding, cu);
+	    }
 
-				// Typ des Feldes prüfen, wenn keine Initialisierung vorhanden ist
-				IVariableBinding fieldBinding= fragment.resolveBinding();
-				if (fieldBinding != null) {
-					ITypeBinding fieldTypeBinding= fieldBinding.getType();
-					if (fieldTypeBinding != null) {
-						TypeDeclaration typeDeclarationInCompilationUnit= findTypeDeclarationInCompilationUnit(
-								fieldTypeBinding, cu);
-						if (typeDeclarationInCompilationUnit == null) {
-							findTypeDeclarationInProject(fieldTypeBinding);
-						}
-						return typeDeclarationInCompilationUnit; // Typdefinition suchen
-					}
-				}
-			}
-		}
+	    // Typ des Feldes prüfen, wenn keine Initialisierung vorhanden ist
+	    IVariableBinding fieldBinding = fragment.resolveBinding();
+	    if (fieldBinding != null) {
+	        ITypeBinding fieldTypeBinding = fieldBinding.getType();
+	        return findTypeDeclarationForBinding(fieldTypeBinding, cu);
+	    }
 
-		// Keine passende Typdefinition gefunden
-		return null;
+	    return null; // Keine passende Typdefinition gefunden
 	}
 
 	private boolean hasAnnotation(List<?> modifiers, String annotationClass) {
@@ -879,23 +887,22 @@ public abstract class AbstractTool<T> {
 	            .anyMatch(binding -> binding != null && annotationClass.equals(binding.getQualifiedName()));
 	}
 
-	// Optimized Methods
-
 	protected boolean hasDefaultConstructorOrNoConstructor(TypeDeclaration classNode) {
-		boolean hasConstructor= false;
-		for (Object bodyDecl : classNode.bodyDeclarations()) {
-			if (bodyDecl instanceof MethodDeclaration) {
-				MethodDeclaration method= (MethodDeclaration) bodyDecl;
-				if (method.isConstructor()) {
-					hasConstructor= true;
-					if (method.parameters().isEmpty() && method.getBody() != null
-							&& method.getBody().statements().isEmpty()) {
-						return true;
-					}
-				}
-			}
-		}
-		return !hasConstructor;
+	    boolean hasConstructor = false;
+
+	    for (Object bodyDecl : classNode.bodyDeclarations()) {
+	        if (bodyDecl instanceof MethodDeclaration) {
+	            MethodDeclaration method = (MethodDeclaration) bodyDecl;
+	            if (method.isConstructor()) {
+	                hasConstructor = true;
+	                if (method.parameters().isEmpty() && method.getBody() != null
+	                        && method.getBody().statements().isEmpty()) {
+	                    return true; // Leerer Standardkonstruktor gefunden
+	                }
+	            }
+	        }
+	    }
+	    return !hasConstructor; // Kein Konstruktor vorhanden
 	}
 
 	private boolean hasModifier(List<?> modifiers, Modifier.ModifierKeyword keyword) {
