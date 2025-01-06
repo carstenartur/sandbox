@@ -39,6 +39,7 @@ import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.junit.JUnitCore;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -68,6 +69,30 @@ public class JUnitMigrationCleanUpTest {
 	@ParameterizedTest
 	@EnumSource(JUnitCleanupCases.class)
 	public void testJUnitCleanupParametrized(JUnitCleanupCases test) throws CoreException {
+		IPackageFragment pack= fRootJUnit4.createPackageFragment("test", true, null);
+		ICompilationUnit cu= pack.createCompilationUnit("MyTest.java", test.given, true, null); //$NON-NLS-1$
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_SUITE);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORE);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTER);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORECLASS);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTERCLASS);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_IGNORE);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETEMPORARYFOLDER);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETESTNAME);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE);
+//		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_EXTERNALRESOURCE);
+		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH);
+		context4junit4.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
+	}
+	
+	@Disabled
+	@ParameterizedTest
+	@EnumSource(JUnit3CleanupCases.class)
+	public void testJUnit3CleanupParametrized(JUnit3CleanupCases test) throws CoreException {
 		IPackageFragment pack= fRootJUnit4.createPackageFragment("test", true, null);
 		ICompilationUnit cu= pack.createCompilationUnit("MyTest.java", test.given, true, null); //$NON-NLS-1$
 		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP);

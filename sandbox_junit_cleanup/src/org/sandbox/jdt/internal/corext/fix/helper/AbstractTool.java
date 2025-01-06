@@ -967,12 +967,12 @@ public abstract class AbstractTool<T> {
 	    return methodName.equals(method.getName().getIdentifier());
 	}
 
-	private boolean isStringType(Expression expression, Class<String> classType) {
+	protected boolean isStringType(Expression expression, Class<String> classType) {
 	    ITypeBinding typeBinding = expression.resolveTypeBinding();
 	    return typeBinding != null && classType.getCanonicalName().equals(typeBinding.getQualifiedName());
 	}
 
-	private boolean isSubtypeOf(ITypeBinding subtype, ITypeBinding supertype) {
+	protected boolean isSubtypeOf(ITypeBinding subtype, ITypeBinding supertype) {
 	    return subtype != null 
 	           && supertype != null 
 	           && (isTypeOrSubtype(subtype, supertype.getQualifiedName()) || implementsInterface(subtype, supertype));
@@ -1261,8 +1261,6 @@ public abstract class AbstractTool<T> {
 			break;
 		}
 	}
-
-
 
 	private void replaceFieldWithExtensionDeclaration(ClassInstanceCreation classInstanceCreation,
 			String nestedClassName, boolean fieldStatic, ASTRewrite rewriter, AST ast, TextEditGroup group,
