@@ -512,8 +512,8 @@ public abstract class AbstractTool<T> {
 		}
 
 		// Füge die neue Klasse zur äußeren Klasse hinzu
-		ASTNode parentType= findEnclosingTypeDeclaration(anonymousClass);
-		if (parentType instanceof TypeDeclaration) {
+		TypeDeclaration parentType= findEnclosingTypeDeclaration(anonymousClass);
+		if (parentType != null) {
 			ListRewrite enclosingBodyRewrite= rewriter.getListRewrite(parentType,
 					TypeDeclaration.BODY_DECLARATIONS_PROPERTY);
 			enclosingBodyRewrite.insertLast(nestedClass, group);
