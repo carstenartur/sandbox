@@ -34,6 +34,7 @@ package org.sandbox.jdt.internal.ui.fix;
  */
 
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.JUNIT_CLEANUP;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.JUNIT3_CLEANUP;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.JUnitCleanUpFix_refactor;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.JUnitCleanUp_description;
 
@@ -76,7 +77,7 @@ public class JUnitCleanUpCore extends AbstractCleanUp {
 	}
 
 	public boolean requireAST() {
-		return isEnabled(JUNIT_CLEANUP);
+		return isEnabled(JUNIT_CLEANUP)||isEnabled(JUNIT3_CLEANUP);
 	}
 
 	@Override
@@ -86,7 +87,7 @@ public class JUnitCleanUpCore extends AbstractCleanUp {
 			return null;
 		}
 		EnumSet<JUnitCleanUpFixCore> computeFixSet= computeFixSet();
-		if (!isEnabled(JUNIT_CLEANUP) || computeFixSet.isEmpty()
+		if (!(isEnabled(JUNIT_CLEANUP)||isEnabled(JUNIT3_CLEANUP)) || computeFixSet.isEmpty()
 				|| !JavaModelUtil.is1d8OrHigher(compilationUnit.getJavaElement().getJavaProject())) {
 			return null;
 		}
@@ -102,7 +103,7 @@ public class JUnitCleanUpCore extends AbstractCleanUp {
 	@Override
 	public String[] getStepDescriptions() {
 		List<String> result= new ArrayList<>();
-		if (isEnabled(JUNIT_CLEANUP)) {
+		if ((isEnabled(JUNIT_CLEANUP)||isEnabled(JUNIT3_CLEANUP))) {
 			result.add(Messages.format(JUnitCleanUp_description, new Object[] { String.join(",", //$NON-NLS-1$
 					computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collectors.toList())) }));
 		}
@@ -113,15 +114,16 @@ public class JUnitCleanUpCore extends AbstractCleanUp {
 	public String getPreview() {
 		StringBuilder sb= new StringBuilder();
 		EnumSet<JUnitCleanUpFixCore> computeFixSet= computeFixSet();
-		EnumSet.allOf(JUnitCleanUpFixCore.class).forEach(e -> sb.append(e.getPreview(computeFixSet.contains(e))));
+		allOfJunit4().forEach(e -> sb.append(e.getPreview(computeFixSet.contains(e))));
 		return sb.toString();
 	}
 
-	
-
 	private EnumSet<JUnitCleanUpFixCore> computeFixSet() {
-		EnumSet<JUnitCleanUpFixCore> fixSet = isEnabled(JUNIT_CLEANUP)
-				? EnumSet.allOf(JUnitCleanUpFixCore.class)
+		EnumSet<JUnitCleanUpFixCore> fixSetJunit4 = isEnabled(JUNIT_CLEANUP)
+				? allOfJunit4()
+						: EnumSet.noneOf(JUnitCleanUpFixCore.class);
+		EnumSet<JUnitCleanUpFixCore> fixSetJunit3 = isEnabled(JUNIT3_CLEANUP)
+				? allOfJunit3()
 						: EnumSet.noneOf(JUnitCleanUpFixCore.class);
 		Map<String, JUnitCleanUpFixCore> cleanupMappings = Map.ofEntries(
 				   Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT, JUnitCleanUpFixCore.ASSERT),
@@ -131,6 +133,7 @@ public class JUnitCleanUpCore extends AbstractCleanUp {
 			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTERCLASS, JUnitCleanUpFixCore.AFTERCLASS),
 			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORECLASS, JUnitCleanUpFixCore.BEFORECLASS),
 			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST, JUnitCleanUpFixCore.TEST),
+			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_3_TEST, JUnitCleanUpFixCore.TEST3),
 			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_IGNORE, JUnitCleanUpFixCore.IGNORE),
 			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH, JUnitCleanUpFixCore.RULETEMPORARYFOLDER),
 			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_EXTERNALRESOURCE, JUnitCleanUpFixCore.EXTERNALRESOURCE),
@@ -138,11 +141,26 @@ public class JUnitCleanUpCore extends AbstractCleanUp {
 			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETESTNAME, JUnitCleanUpFixCore.RULETESTNAME),
 			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE, JUnitCleanUpFixCore.RULEEXTERNALRESOURCE)
 				);
+		EnumSet<JUnitCleanUpFixCore> fixSetcombined=EnumSet.copyOf(fixSetJunit4);
+		fixSetcombined.addAll(fixSetJunit3);
+
 		cleanupMappings.forEach((config, fix) -> {
 			if (!isEnabled(config)) {
-				fixSet.remove(fix);
+				fixSetcombined.remove(fix);
 			}
 		});
-		return fixSet;
+		return fixSetcombined;
+	}
+
+	private EnumSet<JUnitCleanUpFixCore> allOfJunit4() {
+		EnumSet<JUnitCleanUpFixCore> allOf= EnumSet.allOf(JUnitCleanUpFixCore.class);
+		allOf.remove(JUnitCleanUpFixCore.TEST3);
+		return allOf;
+	}
+	
+	private EnumSet<JUnitCleanUpFixCore> allOfJunit3() {
+		EnumSet<JUnitCleanUpFixCore> allOf= EnumSet.noneOf(JUnitCleanUpFixCore.class);
+		allOf.add(JUnitCleanUpFixCore.TEST3);
+		return allOf;
 	}
 }

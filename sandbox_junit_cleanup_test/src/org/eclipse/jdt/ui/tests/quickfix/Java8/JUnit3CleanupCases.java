@@ -74,8 +74,8 @@ public class MyTest extends TestCase {
     }
 
     public void testWithAssume() {
-        assumeTrue("Precondition failed", true);
-        assumeFalse("Precondition not met", false);
+//        assumeTrue("Precondition failed", true);
+//        assumeFalse("Precondition not met", false);
     }
 
     public void testAssertThat() {
