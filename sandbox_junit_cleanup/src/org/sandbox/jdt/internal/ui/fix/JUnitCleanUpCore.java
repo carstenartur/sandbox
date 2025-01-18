@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.fix;
 
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.JUNIT3_CLEANUP;
+
 /*-
  * #%L
  * Sandbox junit cleanup
@@ -34,7 +36,6 @@ package org.sandbox.jdt.internal.ui.fix;
  */
 
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.JUNIT_CLEANUP;
-import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.JUNIT3_CLEANUP;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.JUnitCleanUpFix_refactor;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.JUnitCleanUp_description;
 
@@ -51,7 +52,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
-import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
@@ -88,7 +88,8 @@ public class JUnitCleanUpCore extends AbstractCleanUp {
 		}
 		EnumSet<JUnitCleanUpFixCore> computeFixSet= computeFixSet();
 		if (!(isEnabled(JUNIT_CLEANUP)||isEnabled(JUNIT3_CLEANUP)) || computeFixSet.isEmpty()
-				|| !JavaModelUtil.is1d8OrHigher(compilationUnit.getJavaElement().getJavaProject())) {
+//				|| !JavaModelUtil.is1d8OrHigher(compilationUnit.getJavaElement().getJavaProject())
+				) {
 			return null;
 		}
 		Set<CompilationUnitRewriteOperationWithSourceRange> operations= new LinkedHashSet<>();
