@@ -40,6 +40,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.core.filebuffers.FileBuffers;
 import org.eclipse.core.filebuffers.ITextFileBuffer;
@@ -182,6 +184,12 @@ public abstract class AbstractTool<T> {
 	private static final String BEFORE_EACH_CALLBACK= "BeforeEachCallback";
 
 	protected static final String ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH= "org.junit.jupiter.api.extension.ExtendWith";
+	protected static final Set<String> twoparam= Set.of("assertEquals", "assertNotEquals", "assertArrayEquals",
+				"assertSame","assertNotSame","assertThat");
+	protected static final Set<String> oneparam= Set.of("assertTrue", "assertFalse", "assertNull", "assertNotNull");
+	private static final Set<String> noparam= Set.of("fail");
+	protected static final Set<String> allassertionmethods= Stream.of(twoparam, oneparam, noparam).flatMap(Set::stream)
+				.collect(Collectors.toSet());
 
 	public static Collection<String> getUsedVariableNames(ASTNode node) {
 		CompilationUnit root= (CompilationUnit) node.getRoot();
@@ -967,18 +975,18 @@ public abstract class AbstractTool<T> {
 	    return methodName.equals(method.getName().getIdentifier());
 	}
 
-	private boolean isStringType(Expression expression, Class<String> classType) {
+	protected boolean isStringType(Expression expression, Class<String> classType) {
 	    ITypeBinding typeBinding = expression.resolveTypeBinding();
 	    return typeBinding != null && classType.getCanonicalName().equals(typeBinding.getQualifiedName());
 	}
 
-	private boolean isSubtypeOf(ITypeBinding subtype, ITypeBinding supertype) {
+	protected boolean isSubtypeOf(ITypeBinding subtype, ITypeBinding supertype) {
 	    return subtype != null 
 	           && supertype != null 
 	           && (isTypeOrSubtype(subtype, supertype.getQualifiedName()) || implementsInterface(subtype, supertype));
 	}
 
-	private boolean isTypeOrSubtype(ITypeBinding typeBinding, String qualifiedName) {
+	protected boolean isTypeOrSubtype(ITypeBinding typeBinding, String qualifiedName) {
 	    while (typeBinding != null) {
 	        if (qualifiedName.equals(typeBinding.getQualifiedName())) {
 	            return true;
@@ -1261,8 +1269,6 @@ public abstract class AbstractTool<T> {
 			break;
 		}
 	}
-
-
 
 	private void replaceFieldWithExtensionDeclaration(ClassInstanceCreation classInstanceCreation,
 			String nestedClassName, boolean fieldStatic, ASTRewrite rewriter, AST ast, TextEditGroup group,

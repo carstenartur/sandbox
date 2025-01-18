@@ -47,6 +47,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.RuleExternalResourceJUnitPlugi
 import org.sandbox.jdt.internal.corext.fix.helper.RuleTemporayFolderJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleTestnameJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RunWithJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.TestJUnit3Plugin;
 import org.sandbox.jdt.internal.corext.fix.helper.TestJUnitPlugin;
 import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
@@ -55,6 +56,7 @@ public enum JUnitCleanUpFixCore {
 	BEFORE(new BeforeJUnitPlugin()),
 	AFTER(new AfterJUnitPlugin()),
 	TEST(new TestJUnitPlugin()),
+	TEST3(new TestJUnit3Plugin()),
 	BEFORECLASS(new BeforeClassJUnitPlugin()),
 	AFTERCLASS(new AfterClassJUnitPlugin()),
 	IGNORE(new IgnoreJUnitPlugin()),

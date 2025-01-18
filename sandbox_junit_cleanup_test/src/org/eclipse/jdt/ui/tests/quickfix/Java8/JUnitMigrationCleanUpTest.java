@@ -39,6 +39,7 @@ import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.junit.JUnitCore;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -51,16 +52,21 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava17;
 public class JUnitMigrationCleanUpTest {
 
 	@RegisterExtension
+	AbstractEclipseJava context4junit3= new EclipseJava17();
+	
+	@RegisterExtension
 	AbstractEclipseJava context4junit4= new EclipseJava17();
 
 	@RegisterExtension
 	AbstractEclipseJava context4junit5= new EclipseJava17();
 
+	IPackageFragmentRoot fRootJUnit3;
 	IPackageFragmentRoot fRootJUnit4;
 	IPackageFragmentRoot fRootJUnit5;
 
 	@BeforeEach
 	public void setup() throws CoreException {
+		fRootJUnit3= context4junit3.createClasspathForJUnit(JUnitCore.JUNIT3_CONTAINER_PATH);
 		fRootJUnit4= context4junit4.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
 		fRootJUnit5= context4junit5.createClasspathForJUnit(JUnitCore.JUNIT5_CONTAINER_PATH);
 	}
@@ -86,6 +92,17 @@ public class JUnitMigrationCleanUpTest {
 //		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_EXTERNALRESOURCE);
 		context4junit4.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH);
 		context4junit4.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
+	}
+	
+	@Disabled
+	@ParameterizedTest
+	@EnumSource(JUnit3CleanupCases.class)
+	public void testJUnit3CleanupParametrized(JUnit3CleanupCases test) throws CoreException {
+		IPackageFragment pack= fRootJUnit3.createPackageFragment("test", true, null);
+		ICompilationUnit cu= pack.createCompilationUnit("MyTest.java", test.given, true, null); //$NON-NLS-1$
+		context4junit3.enable(MYCleanUpConstants.JUNIT3_CLEANUP);
+		context4junit3.enable(MYCleanUpConstants.JUNIT_CLEANUP_3_TEST);
+		context4junit3.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
 	}
 
 	enum NOJUnitCleanupCases {
