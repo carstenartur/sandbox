@@ -84,6 +84,10 @@ public class MYCleanUpConstants {
 	 */
 	public static final String JUNIT_CLEANUP= "cleanup.junitcleanup"; //$NON-NLS-1$
 	/**
+	 *
+	 */
+	public static final String JUNIT3_CLEANUP= "cleanup.junit3cleanup"; //$NON-NLS-1$
+	/**
 	 * 
 	 */
 	public static final String JUNIT_CLEANUP_4_ASSERT= "cleanup.junitcleanup_4_assert"; //$NON-NLS-1$
@@ -119,6 +123,10 @@ public class MYCleanUpConstants {
 	 * 
 	 */
 	public static final String JUNIT_CLEANUP_4_TEST= "cleanup.junitcleanup_4_test"; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_3_TEST= "cleanup.junitcleanup_3_test"; //$NON-NLS-1$
 	/**
 	 * 
 	 */

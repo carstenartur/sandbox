@@ -79,7 +79,6 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 		final CheckboxPreference junit_test= createCheckboxPref(junitGroup, numColumns-1,
 				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_TEST, MYCleanUpConstants.JUNIT_CLEANUP_4_TEST,
 				FALSE_TRUE);
-		
 		intent(junitGroup);
 		final CheckboxPreference junit_before= createCheckboxPref(junitGroup, numColumns-1,
 				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_BEFORE, MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORE,
@@ -131,7 +130,25 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				junit_externalresource,
 				junit_runwith});
 		intent(junitGroup);
-		
 		registerPreference(junitcb);
+		
+		Group junit3Group= createGroup(numColumns, composite, CleanUpMessages.JavaFeatureTabPage_GroupName_JUnit3);
+		final CheckboxPreference junit3cb= createCheckboxPref(junit3Group, numColumns,
+				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT3_CLEANUP, MYCleanUpConstants.JUNIT3_CLEANUP,
+				FALSE_TRUE);
+		intent(junit3Group);
+		
+		final CheckboxPreference junit3_test= createCheckboxPref(junit3Group, numColumns-1,
+				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT3_CLEANUP_TEST, MYCleanUpConstants.JUNIT_CLEANUP_3_TEST,
+				FALSE_TRUE);
+		
+		intent(junit3Group);
+		
+		
+		registerSlavePreference(junit3cb, new CheckboxPreference[] {
+				junit3_test
+				});
+		intent(junit3Group);
+		registerPreference(junit3cb);
 	}
 }

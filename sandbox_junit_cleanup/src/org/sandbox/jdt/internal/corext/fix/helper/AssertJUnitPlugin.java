@@ -34,8 +34,6 @@ package org.sandbox.jdt.internal.corext.fix.helper;
  */
 
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -59,13 +57,6 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
  *
  */
 public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
-
-	static final Set<String> twoparam= Set.of("assertEquals", "assertNotEquals", "assertArrayEquals",
-			"assertSame","assertNotSame","assertThat");
-	static final Set<String> oneparam= Set.of("assertTrue", "assertFalse", "assertNull", "assertNotNull");
-	private static final Set<String> noparam= Set.of("fail");
-	private static final Set<String> allassertionmethods= Stream.of(twoparam, oneparam, noparam).flatMap(Set::stream)
-			.collect(Collectors.toSet());
 
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,

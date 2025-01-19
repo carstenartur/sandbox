@@ -31,7 +31,6 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
-import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
@@ -66,7 +65,8 @@ public class XMLCleanUpCore extends AbstractCleanUp {
 		}
 		EnumSet<XMLCleanUpFixCore> computeFixSet= computeFixSet();
 		if (!isEnabled(XML_CLEANUP) || computeFixSet.isEmpty()
-				|| !JavaModelUtil.is1d8OrHigher(compilationUnit.getJavaElement().getJavaProject())) {
+//				|| !JavaModelUtil.is1d8OrHigher(compilationUnit.getJavaElement().getJavaProject())
+				) {
 			return null;
 		}
 		Set<CompilationUnitRewriteOperation> operations= new LinkedHashSet<>();
