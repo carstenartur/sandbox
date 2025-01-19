@@ -95,6 +95,8 @@ import org.eclipse.jdt.internal.ui.util.CoreUtility;
 
 public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallback {
 
+	public static final String JUNIT_CONTAINER_ID= "org.eclipse.jdt.junit.JUNIT_CONTAINER"; //$NON-NLS-1$
+
 	private final String testresources_stubs;
 	private final String compliance;
 	private static final String TEST_SETUP_PROJECT= "TestSetupProject"; //$NON-NLS-1$
