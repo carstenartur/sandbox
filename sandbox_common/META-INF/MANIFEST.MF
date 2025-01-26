@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: sandbox_common
 Bundle-SymbolicName: sandbox_common;singleton:=true
 Bundle-Vendor: sandbox
-Bundle-Version: 1.2.1.qualifier
+Bundle-Version: 1.2.1
 Bundle-RequiredExecutionEnvironment: JavaSE-21
 Bundle-ActivationPolicy: lazy
 Eclipse-BuddyPolicy: global

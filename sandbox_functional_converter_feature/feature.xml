@@ -2,7 +2,7 @@
 <feature
       id="sandbox_functional_converter_feature"
       label="Sandbox functional converter feature"
-      version="1.2.1.qualifier"
+      version="1.2.1"
       provider-name="sandbox"
       plugin="sandbox_functional_converter">
 
@@ -42,6 +42,6 @@
 
    <plugin
          id="sandbox_functional_converter"
-         version="1.2.1.qualifier"/>
+         version="1.2.1"/>
 
 </feature>

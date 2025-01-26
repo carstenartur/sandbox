@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>org.sandbox</groupId>
 		<artifactId>central</artifactId>
-		<version>1.2.1-SNAPSHOT</version>
+		<version>1.2.1</version>
 	</parent>
 	<artifactId>sandbox_product</artifactId>
 	<name>Sandbox product</name>
@@ -46,7 +46,7 @@
 		</dependency>
 	</dependencies>
 	<build>
-		<finalName>sandbox.repository_${rcp-version}-1.2.0</finalName>
+		<finalName>sandbox.repository_${rcp-version}-1.2.1</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
