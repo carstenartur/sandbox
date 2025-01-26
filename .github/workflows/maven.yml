@@ -38,7 +38,7 @@ jobs:
     - name: Set up Maven
       uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1 # v5
       with:
-        maven-version: 3.9.3
+        maven-version: 3.9.9
     - name: Build with Maven
       run: xvfb-run --auto-servernum mvn -e -V --batch-mode --global-toolchains ${{ github.workspace }}/.github/workflows/toolchains.xml -Pweb,jacoco clean verify
     - name: Cleanup xvfb pidx build
