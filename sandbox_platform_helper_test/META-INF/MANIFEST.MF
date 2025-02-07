@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: platform helper tests
 Bundle-SymbolicName: sandbox_platform_helper_test;singleton:=true
 Bundle-Vendor: sandbox
-Bundle-Version: 1.2.1
+Bundle-Version: 1.2.2.qualifier
 Fragment-Host: sandbox_platform_helper
 Bundle-RequiredExecutionEnvironment: JavaSE-21
 Require-Bundle: org.junit,
