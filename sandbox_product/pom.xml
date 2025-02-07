@@ -46,7 +46,7 @@
 		</dependency>
 	</dependencies>
 	<build>
-		<finalName>sandbox.repository_${rcp-version}-1.2.1</finalName>
+		<finalName>sandbox.repository_${rcp-version}-1.2.2</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
