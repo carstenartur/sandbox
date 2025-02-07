@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021 Alexandru Gyori and others.
+c * Copyright (c) 2021 Alexandru Gyori and others.
  *
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
@@ -15,164 +15,147 @@
 package org.sandbox.jdt.internal.corext.fix.helper;
 
 
-import java.util.Map;
 import java.util.Set;
 
-import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
-import org.eclipse.jdt.core.dom.Expression;
-import org.eclipse.jdt.core.dom.Name;
-import org.eclipse.jdt.internal.corext.dom.GenericVisitor;
+import org.eclipse.jdt.core.dom.*;
+import java.util.*;
 
 public class PreconditionsChecker {
+    private final Statement loop;
+//    private final CompilationUnit compilationUnit;
+    private final Set<VariableDeclarationFragment> innerVariables = new HashSet<>();
+    private boolean containsBreak = false;
+    private boolean containsContinue = false;
+    private boolean containsReturn = false;
+    private boolean throwsException = false;
+    private boolean containsNEFs = false;
+    private boolean iteratesOverIterable = false;
 
-	private boolean hasUncaughtException = false;
-	private Set<Name> innerVariables;
-	private ForLoopTreeVisitor visitor;
-	private boolean isIterable;
+    public PreconditionsChecker(Statement loop, CompilationUnit compilationUnit) {
+        this.loop = loop;
+//        this.compilationUnit = compilationUnit;
+        analyzeLoop();
+    }
 
-	public PreconditionsChecker(EnhancedForStatement forLoop, AST ast) {
-		//		this.hasUncaughtException = ast.getTreeUtilities()
-		//                .getUncaughtExceptions(TreePath.getPath(ast.getCompilationUnit(), forLoop)).stream().anyMatch(this::filterCheckedExceptions);
-		this.innerVariables = this.getInnerVariables(forLoop, ast);
-		this.visitor = new ForLoopTreeVisitor(this.innerVariables, ast, forLoop);
-		this.isIterable = this.isIterbale((forLoop).getExpression());
-		forLoop.accept(visitor);
-		//        visitor.scan(TreePath.getPath(workingCopy.getCompilationUnit(), forLoop), workingCopy.getTrees());
-	}
+    /** (1) Prüft, ob die Schleife sicher in eine Stream-Operation umgewandelt werden kann. */
+    public boolean isSafeToRefactor() {
+        return !throwsException && !containsBreak && !containsContinue && !containsReturn && !containsNEFs;
+    }
 
-	private boolean isIterbale(Expression expression) {
-		//	        TypeMirror tm = workingCopy.getTrees().getTypeMirror(TreePath.getPath(workingCopy.getCompilationUnit(), expression));
-		//	        if (!Utilities.isValidType(tm)) {
-		//	            return false;
-		//	        }
-		//	        if (tm.getKind() == TypeKind.ARRAY) {
-		//	            return false;
-		//	        } else {
-		//	            tm = workingCopy.getTypes().erasure(tm);
-		//	            TypeElement typeEl = workingCopy.getElements().getTypeElement("java.util.Collection");
-		//	            if (typeEl != null) {
-		//	                TypeMirror collection = typeEl.asType();
-		//	                collection = workingCopy.getTypes().erasure(collection);
-		//	                if (this.workingCopy.getTypes().isSubtype(tm, collection)) {
-		//	                    return true;
-		//	                }
-		//	            }
-		//	        }
+    /** (2) Überprüft, ob die Schleife eine Exception wirft. */
+    public boolean throwsException() {
+        return throwsException;
+    }
 
-		return false;
-	}
+    /** (3) Prüft, ob die Schleife Variablen enthält, die nicht effektiv final sind. */
+    public boolean containsNEFs() {
+        return containsNEFs;
+    }
 
-	private Set<Name> getInnerVariables(EnhancedForStatement forLoop, AST ast) {
-		VariablesVisitor vis = new VariablesVisitor();
-		//	        vis.scan(tree, trees);
-		forLoop.accept(vis);
-		return vis.getInnervariables();
-	}
+    /** (4) Prüft, ob die Schleife `break` enthält. */
+    public boolean containsBreak() {
+        return containsBreak;
+    }
 
-	public static class ForLoopTreeVisitor extends GenericVisitor {
+    /** (5) Prüft, ob die Schleife `continue` enthält. */
+    public boolean containsContinue() {
+        return containsContinue;
+    }
 
-		public Boolean hasNonEffectivelyFinalVars=false;
-		private Boolean hasReturns=false;
-		private Boolean hasContinue=false;
-		private Boolean hasBreaks=false;
-		public ASTNode reducerStatement;
-		public Map<Name, String> varToType;
+    /** (6) Prüft, ob die Schleife `return` enthält. */
+    public boolean containsReturn() {
+        return containsReturn;
+    }
 
-		public ForLoopTreeVisitor(Set<Name> innerVariables, AST ast, EnhancedForStatement forLoop) {
-			// TODO Auto-generated constructor stub
-		}
+    /** (7) Gibt die innerhalb der Schleife definierten Variablen zurück. */
+    public Set<VariableDeclarationFragment> getInnerVariables() {
+        return innerVariables;
+    }
 
-		public Boolean containsReturn() {
-			return this.hasReturns;
-		}
+    /** (8) Überprüft, ob die Schleife über eine Iterable-Struktur iteriert. */
+    public boolean iteratesOverIterable() {
+        return iteratesOverIterable;
+    }
 
-		public Boolean containsBreak() {
-			return this.hasBreaks;
-		}
+    /** Methode zur Analyse der Schleife und Identifikation relevanter Elemente. */
+    private void analyzeLoop() {
+        loop.accept(new ASTVisitor() {
+            @Override
+            public boolean visit(VariableDeclarationFragment node) {
+                innerVariables.add(node);
+                return super.visit(node);
+            }
 
-		public Boolean containsContinue() {
-			return this.hasContinue;
-		}
+            @Override
+            public boolean visit(BreakStatement node) {
+                containsBreak = true;
+                return super.visit(node);
+            }
 
-	}
-	public static class VariablesVisitor extends GenericVisitor {
+            @Override
+            public boolean visit(ContinueStatement node) {
+                containsContinue = true;
+                return super.visit(node);
+            }
 
-		public Set<Name> getInnervariables() {
-			// TODO Auto-generated method stub
-			return null;
-		}
+            @Override
+            public boolean visit(ReturnStatement node) {
+                containsReturn = true;
+                return super.visit(node);
+            }
 
-		public Set<Name> getAllLocalVariablesUsed() {
-			// TODO Auto-generated method stub
-			return null;
-		}
-
-	}
-	public boolean isSafeToRefactor() {
-		return this.iteratesOverIterable()
-				&& (!this.throwsException() && !this.containsNEFs() && !this.containsReturn() && !this.containsBreak() && !this.containsContinue());
-	}
-
-	/*
-	 * Precondition 2
-	 * The body of the lambda does not refer Non-Effectively-Final(NEF) references
-	 * that are defined outsed the loop.
-	 * This is because from within a lambda you cannot have references to a NEF.
-	 */
-	protected Boolean containsNEFs() {
-		return visitor.hasNonEffectivelyFinalVars;
-	}
-
-	/*
-	 * Precondition 3
-	 * The method is not allowed to have any break statements
-	 */
-	protected Boolean containsBreak() {
-		return visitor.containsBreak();
-	}
-	/*
-	 * Precondition 4: overly conservative - to be weakened when handled properly;
-	 * The method is not allowed to have continues in it.
-	 */
-	protected Boolean containsContinue() {
-		return visitor.containsContinue();
-	}
-	/*
-	 * preocndition 5: overly conservative - to be weakened when handled properly.
-	 * The method is not allowed to have Returns in it.
-	 */
-	protected Boolean containsReturn() {
-		return visitor.containsReturn();
-	}
-
-	/*
-	 * Precondition 1
-	 * The signature of the lambda expressions used in list operations
-	 * does not have a throws clause in its signature.
-	 */
-	protected Boolean throwsException() {
-		return this.hasUncaughtException;
-	}
-
-	private boolean iteratesOverIterable() {
-		return this.isIterable;
-	}
-
-	public Boolean isReducer() {
-		return this.visitor.reducerStatement != null;
-	}
-
-	public ASTNode getReducer() {
-		return this.visitor.reducerStatement;
-	}
-
-	public Set<Name> getInnerVariables() {
-		return this.innerVariables;
-	}
-
-	Map<Name, String> getVarToName() {
-		return this.visitor.varToType;
-	}
+            @Override
+            public boolean visit(ThrowStatement node) {
+                throwsException = true;
+                return super.visit(node);
+            }
+            
+            @Override
+            public boolean visit(EnhancedForStatement node) {
+                iteratesOverIterable = true;
+                return super.visit(node);
+            }
+        });
+        analyzeEffectivelyFinalVariables();
+    }
+    
+    /** Prüft, ob Variablen innerhalb der Schleife effektiv final sind. */
+    private void analyzeEffectivelyFinalVariables() {
+        for (VariableDeclarationFragment var : innerVariables) {
+            if (!isEffectivelyFinal(var)) {
+                containsNEFs = true;
+                break;
+            }
+        }
+    }
+    
+    /** Hilfsmethode zur Prüfung, ob eine Variable effektiv final ist. */
+    private boolean isEffectivelyFinal(VariableDeclarationFragment var) {
+        final boolean[] modified = {false};
+        ASTNode methodBody = getEnclosingMethodBody(var);
+        if (methodBody != null) {
+            methodBody.accept(new ASTVisitor() {
+                @Override
+                public boolean visit(Assignment node) {
+                    if (node.getLeftHandSide() instanceof SimpleName) {
+                        SimpleName name = (SimpleName) node.getLeftHandSide();
+                        if (name.getIdentifier().equals(var.getName().getIdentifier())) {
+                            modified[0] = true;
+                        }
+                    }
+                    return super.visit(node);
+                }
+            });
+        }
+        return !modified[0];
+    }
+    
+    /** Hilfsmethode: Findet den umgebenden Methodenrumpf einer Variablendeklaration. */
+    private ASTNode getEnclosingMethodBody(ASTNode node) {
+        while (node != null && !(node instanceof MethodDeclaration)) {
+            node = node.getParent();
+        }
+        return (node instanceof MethodDeclaration) ? ((MethodDeclaration) node).getBody() : null;
+    }
 }

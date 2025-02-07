@@ -14,287 +14,88 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import static org.sandbox.jdt.internal.common.LibStandardNames.METHOD_FOREACH;
-
-//import com.sun.source.tree.BlockTree;
-//import com.sun.source.tree.EnhancedForLoopTree;
-//import com.sun.source.tree.ExpressionTree;
-//import com.sun.source.tree.IfTree;
-//import com.sun.source.tree.LiteralTree;
-//import com.sun.source.tree.MethodInvocationTree;
-//import com.sun.source.tree.ReturnTree;
-//import com.sun.source.tree.StatementTree;
-//import com.sun.source.tree.Tree;
-//import com.sun.source.tree.VariableTree;
-//import com.sun.source.util.TreePath;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.Block;
-import org.eclipse.jdt.core.dom.BooleanLiteral;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
-import org.eclipse.jdt.core.dom.ExpressionStatement;
-import org.eclipse.jdt.core.dom.IfStatement;
 import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
-import org.eclipse.jdt.core.dom.PrefixExpression;
-import org.eclipse.jdt.core.dom.PrefixExpression.Operator;
-import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
-import org.eclipse.jdt.core.dom.Statement;
-//import javax.lang.model.element.TypeElement;
-//import javax.lang.model.type.TypeMirror;
-//import javax.lang.model.util.Types;
-//import org.netbeans.api.java.source.TreeMaker;
-//import org.netbeans.api.java.source.WorkingCopy;
-import org.eclipse.jdt.core.dom.VariableDeclaration;
-import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
-import org.eclipse.jdt.internal.corext.dom.ASTNodeFactory;
-import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 
 public class Refactorer {
-	List<ProspectiveOperation> prospectives;
-	private final EnhancedForStatement loop;
-	private boolean untransformable;
-	private boolean hasIterable;
-	AST workingCopy;
-	private PreconditionsChecker preconditionsChecker;
-	ASTRewrite rewrite;
+    private final EnhancedForStatement forLoop;
+    private final ASTRewrite rewrite;
+    private final PreconditionsChecker preconditions;
+    private final AST ast;
 
-	public Refactorer(EnhancedForStatement loop, AST ast, PreconditionsChecker pc, ASTRewrite rewrite) {
-		this.loop=loop;
-		this.workingCopy=ast;
-		this.preconditionsChecker=pc;
-		this.rewrite=rewrite;
-	}
+    public Refactorer(EnhancedForStatement forLoop, ASTRewrite rewrite, PreconditionsChecker preconditions) {
+        this.forLoop = forLoop;
+        this.rewrite = rewrite;
+        this.preconditions = preconditions;
+        this.ast = forLoop.getAST();
+    }
 
-	public boolean isRefactorable() {
-		prospectives = this.getListRepresentation(loop.getBody(), true);
-		if ((prospectives == null) || prospectives.isEmpty()) {
-			return false;
-		}
-		prospectives.get(prospectives.size() - 1).eagerize();
-		if (this.untransformable) {
-			return false;
-		}
-		for ( int i = 0; i < prospectives.size() - 1; i++) {
-			if (!prospectives.get(i).isLazy()) {
-				return false;
-			}
-		}
-		hasIterable = false;
-		//            Expression var = loop.getExpression();
-		//            TypeElement el = workingCopy.getElements().getTypeElement("java.lang.Iterable"); // NOI18N
-		//            if (el != null) {
-		//                TreePath path = TreePath.getPath(workingCopy.getCompilationUnit(), loop.getExpression());
-		//                TypeMirror m = workingCopy.getTrees().getTypeMirror(path);
-		//                Types types  = workingCopy.getTypes();
-		//                hasIterable =
-		//                        types.isSubtype(
-		//                            types.erasure(m),
-		//                            types.erasure(el.asType())
-		//                        );
-		//            }
-		prospectives = ProspectiveOperation.mergeIntoComposableOperations(prospectives);
-		return prospectives != null;
-	}
+    /** (1) Prüft, ob die Schleife in eine Stream-Operation umgewandelt werden kann. */
+    public boolean isRefactorable() {
+        return preconditions.isSafeToRefactor() && preconditions.iteratesOverIterable();
+    }
 
-	private List<ProspectiveOperation> getListRepresentation(Statement tree, boolean last) {
-		List<ProspectiveOperation> ls = new ArrayList<>();
-		switch (tree.getNodeType()) {
-		case ASTNode.BLOCK:
-			ls.addAll(getBlockListRepresentation(tree, last));
-			break;
-		case ASTNode.IF_STATEMENT:
-			ls.addAll(getIfListRepresentation(tree, last));
-			break;
-		default:
-			ls.addAll(getSingleStatementListRepresentation(tree));
-			break;
-		}
+    /** (2) Führt die Refaktorisierung der Schleife in eine Stream-Operation durch. */
+    public void refactor() {
+        if (!isRefactorable()) {
+            return;
+        }
 
-		return ls;
-	}
+        // Erzeugt den Stream-Call aus der Collection
+        MethodInvocation streamCall = createStreamCall();
+        LambdaExpression mapLambda = createMapLambdaExpression();
+        LambdaExpression forEachLambda = createForEachLambdaExpression();
 
-	private List<ProspectiveOperation> getSingleStatementListRepresentation( Statement tree) {
-		List<ProspectiveOperation> ls = new ArrayList<>();
-		if (this.preconditionsChecker.isReducer() && this.preconditionsChecker.getReducer().equals(tree)) {
-			ls.addAll(ProspectiveOperation.createOperator(tree, ProspectiveOperation.OperationType.REDUCE, this.preconditionsChecker, this.workingCopy,rewrite));
-		} else {
-			ls.addAll(ProspectiveOperation.createOperator(tree, ProspectiveOperation.OperationType.MAP, this.preconditionsChecker, this.workingCopy,rewrite));
-		}
-		return ls;
-	}
+        MethodInvocation mapCall = ast.newMethodInvocation();
+        mapCall.setExpression(streamCall);
+        mapCall.setName(ast.newSimpleName("map"));
+        mapCall.arguments().add(mapLambda);
 
-	private List<ProspectiveOperation> getIfListRepresentation( Statement tree, boolean last) {
-		IfStatement ifTree = (IfStatement) tree;
-		List<ProspectiveOperation> ls = new ArrayList<>();
-		if (ifTree.getElseStatement() == null) {
+        MethodInvocation forEachOrderedCall = ast.newMethodInvocation();
+        forEachOrderedCall.setExpression(mapCall);
+        forEachOrderedCall.setName(ast.newSimpleName("forEachOrdered"));
+        forEachOrderedCall.arguments().add(forEachLambda);
 
-			Statement then = ifTree.getThenStatement();
-			if (isOneStatementBlock(then)) {
-				then = (Statement) ((Block) then).statements().get(0);
-			}
-			if (then.getNodeType() == ASTNode.RETURN_STATEMENT) {
-				ReturnStatement returnTree = (ReturnStatement) then;
-				Expression returnExpression = returnTree.getExpression();
-				if (returnExpression.getNodeType() == ASTNode.BOOLEAN_LITERAL && ((BooleanLiteral) returnExpression).booleanValue()) {
-					ls.addAll(ProspectiveOperation.createOperator(ifTree, ProspectiveOperation.OperationType.ANYMATCH, this.preconditionsChecker, this.workingCopy,rewrite));
-				} else if (returnExpression.getNodeType() == ASTNode.BOOLEAN_LITERAL && !((BooleanLiteral) returnExpression).booleanValue()) {
-					ls.addAll(ProspectiveOperation.createOperator(ifTree, ProspectiveOperation.OperationType.NONEMATCH, this.preconditionsChecker, this.workingCopy,rewrite));
-				}
-			} else {
-				ls.addAll(ProspectiveOperation.createOperator(ifTree, ProspectiveOperation.OperationType.FILTER, this.preconditionsChecker, this.workingCopy,rewrite));
-				ls.addAll(getListRepresentation(ifTree.getThenStatement(), last));
-			}
-		} else {
+        rewrite.replace(forLoop, forEachOrderedCall, null);
+    }
 
-			ls.addAll(ProspectiveOperation.createOperator(ifTree, ProspectiveOperation.OperationType.MAP, this.preconditionsChecker, this.workingCopy,rewrite));
-		}
-		return ls;
-	}
+    /** (3) Erstellt den Stream-Aufruf für die Collection der Schleife. */
+    private MethodInvocation createStreamCall() {
+        MethodInvocation streamCall = ast.newMethodInvocation();
+        streamCall.setExpression((Expression) ASTNode.copySubtree(ast, forLoop.getExpression()));
+        streamCall.setName(ast.newSimpleName("stream"));
+        return streamCall;
+    }
 
-	private boolean isOneStatementBlock( Statement then) {
-		return then.getNodeType() == ASTNode.BLOCK && ((Block) then).statements().size() == 1;
-	}
+    /** (4) Erstellt eine Lambda-Expression für die `map`-Operation. */
+    private LambdaExpression createMapLambdaExpression() {
+        LambdaExpression lambda = ast.newLambdaExpression();
+        SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
+        param.setName((SimpleName) ASTNode.copySubtree(ast, forLoop.getParameter().getName()));
+        lambda.parameters().add(param);
 
-	private List<ProspectiveOperation> getBlockListRepresentation( Statement tree, boolean last) {
-		List<ProspectiveOperation> ls = new ArrayList<>();
-		Block blockTree = (Block) tree;
-		List<? extends Statement> statements = blockTree.statements();
-		for ( int i = 0; i < statements.size(); i++) {
-			Statement statement = statements.get(i);
-			boolean l = last &&  i == statements.size() - 1;
-			if (statement.getNodeType() == ASTNode.IF_STATEMENT) {
-				IfStatement ifTree = (IfStatement) statement;
-				if (isIfWithContinue(ifTree)) {
-					ifTree = refactorContinuingIf(ifTree, statements.subList(i + 1, statements.size()));
-					// the if was refactored, so that all the statements are nested in it, so it became
-					// the last (and single) statement within the parent
-					ls.addAll(this.getListRepresentation(ifTree, last));
-					break;
-				}
-				if (l) {
-					ls.addAll(this.getListRepresentation(ifTree, true));
-				} else {
-					if (this.isReturningIf(ifTree)) {
-						this.untransformable = true;
-					}
-					ls.addAll(ProspectiveOperation.createOperator(ifTree, ProspectiveOperation.OperationType.MAP, preconditionsChecker, workingCopy,rewrite));
-				}
-			} else {
-				ls.addAll(getListRepresentation(statement, l));
-			}
-		}
-		return ls;
-	}
+        MethodInvocation toStringCall = ast.newMethodInvocation();
+        toStringCall.setExpression((Expression) ASTNode.copySubtree(ast, forLoop.getParameter().getName()));
+        toStringCall.setName(ast.newSimpleName("toString"));
+        lambda.setBody(toStringCall);
 
-	private boolean isReturningIf( IfStatement ifTree) {
-		Statement then = ifTree.getThenStatement();
-		if (then.getNodeType() == ASTNode.RETURN_STATEMENT) {
-			return true;
-		}
-		if (then.getNodeType() == ASTNode.BLOCK) {
-			Block block = (Block) then;
-			if (block.statements().size() == 1 && ((List<? extends Statement>)block.statements()).get(0).getNodeType() == ASTNode.RETURN_STATEMENT) {
-				return true;
-			}
-		}
-		return false;
-	}
+        return lambda;
+    }
 
-	private IfStatement refactorContinuingIf( IfStatement ifTree,  List<? extends Statement> newStatements) {
-		PrefixExpression  newPredicate = workingCopy.newPrefixExpression();
-		newPredicate.setOperator(Operator.COMPLEMENT);
-		newPredicate.setOperand(ifTree.getExpression());
-		Block newThen = workingCopy.newBlock();
-		newThen.statements().add(newStatements);
-		IfStatement newIfStatement = workingCopy.newIfStatement();
-		newIfStatement.setExpression(newPredicate);
-		newIfStatement.setThenStatement(newThen);
-		return newIfStatement;
-	}
-
-	private Boolean isIfWithContinue( IfStatement ifTree) {
-		Statement then = ifTree.getThenStatement();
-		if (then.getNodeType() == ASTNode.CONTINUE_STATEMENT) {
-			return true;
-		}
-		if (then.getNodeType() == ASTNode.BLOCK) {
-			List<? extends Statement> statements = ((Block) then).statements();
-			if (statements.size() == 1 && statements.get(0).getNodeType() == ASTNode.CONTINUE_STATEMENT) {
-				return true;
-			}
-
-		}
-		return false;
-	}
-
-	public MethodInvocation refactor(ASTRewrite rewrite) {
-		/**
-		 * for (Integer l : ls){
-		 * 		  System.out.println(l);
-		 * 		}
-		 *
-		 * loopBody= {  System.out.println(l);	}
-		 *
-		 * parameter= Integer l
-		 *
-		 * expr= ls
-		 *
-		 */
-		ExpressionStatement loopBody = (ExpressionStatement) loop.getBody();
-		SingleVariableDeclaration parameter = loop.getParameter();
-		Expression expr = loop.getExpression();
-
-		MethodInvocation forEach = chainAllProspectives(workingCopy, expr, rewrite);
-
-		ProspectiveOperation lastOperation = prospectives.get(prospectives.size() - 1);
-		Statement returnValue = propagateSideEffects(lastOperation, forEach, null);
-		System.out.println(returnValue);
-		return forEach;
-	}
-
-	private Statement propagateSideEffects(ProspectiveOperation lastOperation, MethodInvocation forEach,
-			Object object) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	private MethodInvocation chainAllProspectives(AST ast, Expression expr,ASTRewrite rewrite) {
-
-		SingleVariableDeclaration parameter = loop.getParameter();
-		ExpressionStatement loopBody = (ExpressionStatement) loop.getBody();
-
-		// Special case: if the only operation is forEach{Ordered},
-		if (hasIterable && prospectives.size() == 1 && prospectives.get(0).isForeach()) {
-			ProspectiveOperation prospective = prospectives.get(0);
-			MethodInvocation singleforeach= ast.newMethodInvocation();
-			singleforeach.setName(ast.newSimpleName(METHOD_FOREACH));
-			singleforeach.setExpression(ASTNodeFactory.newName(ast, expr.toString()));
-			singleforeach.arguments().add(prospective.getArguments());
-
-			return singleforeach;
-		}
-
-		MethodInvocation forEach = ast.newMethodInvocation();
-		forEach.setExpression(ASTNodeFactory.newName(ast, expr.toString()));
-		forEach.setName(ast.newSimpleName(METHOD_FOREACH));
-
-		LambdaExpression lambdaExpression= ast.newLambdaExpression();
-		List<VariableDeclaration> lambdaParameters= lambdaExpression.parameters();
-		lambdaExpression.setParentheses(false);
-		VariableDeclarationFragment lambdaParameter= ast.newVariableDeclarationFragment();
-		lambdaParameter.setName((SimpleName) rewrite.createCopyTarget(parameter.getName()));
-		lambdaParameters.add(lambdaParameter);
-		Expression createMoveTarget = ASTNodes.createMoveTarget(rewrite, loopBody.getExpression());
-		lambdaExpression.setBody(createMoveTarget);
-		forEach.arguments().add(lambdaExpression);
-		return forEach;
-	}
+    /** (5) Erstellt eine Lambda-Expression für die `forEachOrdered`-Operation. */
+    private LambdaExpression createForEachLambdaExpression() {
+        LambdaExpression lambda = ast.newLambdaExpression();
+        SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
+        param.setName(ast.newSimpleName("s"));
+        lambda.parameters().add(param);
+        lambda.setBody(ASTNode.copySubtree(ast, forLoop.getBody()));
+        return lambda;
+    }
 }

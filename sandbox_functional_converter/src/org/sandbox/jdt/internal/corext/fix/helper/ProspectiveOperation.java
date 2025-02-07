@@ -15,677 +15,351 @@
 package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Assignment;
-import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.Expression;
-import org.eclipse.jdt.core.dom.ExpressionStatement;
-import org.eclipse.jdt.core.dom.IfStatement;
 import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.LambdaExpression;
-import org.eclipse.jdt.core.dom.MethodInvocation;
-import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.NumberLiteral;
-import org.eclipse.jdt.core.dom.PostfixExpression;
-import org.eclipse.jdt.core.dom.PrefixExpression;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.ReturnStatement;
-import org.eclipse.jdt.core.dom.Statement;
-import org.eclipse.jdt.core.dom.VariableDeclaration;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
-import org.eclipse.jdt.internal.corext.dom.ASTNodeFactory;
-import org.eclipse.jdt.internal.corext.dom.ASTNodes;
-
-class ProspectiveOperation {
-
-	private static final String UNKNOWN_NAME = "_item"; //$NON-NLS-1$
-
-	public enum OperationType {
-		MAP, FOREACH, FILTER, REDUCE, ANYMATCH, NONEMATCH
-	}
-
-	private OperationType opType;
-	private ASTNode correspondingTree;
-	private Collection<?> innerLoopVariables;
-	private AST workingCopy;
-	private Map<Name, String> varToType;
-	private Set<Name> neededVariables;
-	private Expression reducingVariable;
-	private ASTRewrite treeMaker;
-	private Set<Name> availableVariables;
-
-	public ProspectiveOperation(ASTNode tree, OperationType operationType, Set<Name> innerLoopVariables, AST workingCopy, Map<Name, String> varToType, ASTRewrite rewrite) {
-		this.opType = operationType;
-		this.correspondingTree = tree;
-		this.innerLoopVariables = innerLoopVariables;
-		//	        this.treeMaker = workingCopy.getTreeMaker();
-		this.treeMaker= rewrite;
-		this.workingCopy = workingCopy;
-		this.varToType = varToType;
-	}
-
-	public void eagerize() {
-		if (this.opType == OperationType.MAP) {
-			this.opType = OperationType.FOREACH;
-		}
-	}
-
-	public Boolean isLazy() {
-		return this.opType == OperationType.MAP || this.opType == OperationType.FILTER;
-	}
-
-	public boolean isForeach() {
-		return opType == OperationType.FOREACH;
-	}
-
-	List<Expression> getArguments() {
-		ASTNode var;
-		Expression lambda;
-		ASTNode lambdaBody;
-		if (this.correspondingTree.getNodeType() == ASTNode.BLOCK) {
-			lambdaBody = this.correspondingTree;
-		} else {
-			switch (this.opType) {
-			case FILTER:
-			case ANYMATCH:
-			case NONEMATCH:
-				lambdaBody = ((IfStatement) this.correspondingTree).getExpression();
-				break;
-			case MAP:
-				lambdaBody = getLambdaForMap();
-				break;
-			case FOREACH:
-				lambdaBody = blockify(castToStatementTree(this.correspondingTree));
-				break;
-			default:
-				return getArgumentsForReducer();
-			}
-		}
-		var = getLambdaArguments();
-		LambdaExpression newLambdaExpression = workingCopy.newLambdaExpression();
-		newLambdaExpression.setBody(lambdaBody);
-		newLambdaExpression.parameters().addAll(Arrays.asList(var));
-		lambda=newLambdaExpression;
-		//        lambda = workingCopy.newLambdaExpression(Arrays.asList(var), lambdaBody);
-		List<Expression> args = new ArrayList<>();
-
-		args.add(lambda);
-		return args;
-	}
-
-	private ASTNode blockify( Statement correspondingTree) {
-		Block newBlock = this.workingCopy.newBlock();
-		newBlock.statements().addAll(Arrays.asList(correspondingTree));
-		return newBlock;
-	}
-	private Statement castToStatementTree(ASTNode currentTree) {
-		if (currentTree instanceof Statement) {
-			return (Statement) currentTree;
-		}
-		return workingCopy.newExpressionStatement((Expression) currentTree);
-	}
-
-	private ASTNode getLambdaForMap() {
-		ASTNode lambdaBody;
-		if (isNumericLiteral(this.correspondingTree)) {
-			lambdaBody = this.correspondingTree;
-		} else {
-			lambdaBody = ((ExpressionStatement) this.correspondingTree).getExpression();
-		}
-		return lambdaBody;
-	}
-
-	private List<Expression> getArgumentsForReducer() {
-		VariableDeclaration var;
-		//	        VariableTree var;
-		Expression lambda;
-		InfixExpression lambdaBody;
-		//	        int opKind = this.correspondingTree.getNodeType();
-
-		List<Expression> args = new ArrayList<>();
-		args.add(this.reducingVariable);
-		if (TreeUtilities.isPreOrPostfixOp(this.correspondingTree)) {
-			ASTNode type = null;//treeMaker.Type("Integer");
-			//	            var = this.treeMaker.Variable(treeMaker.Modifiers(new HashSet<>()), "accumulator", null, null);
-			var= this.workingCopy.newVariableDeclarationFragment();
-			var.setName(this.workingCopy.newSimpleName("accumulator")); //$NON-NLS-1$
-			VariableDeclaration var1 = makeUnknownVariable();
-			if ((ASTNodes.hasOperator((PostfixExpression) this.correspondingTree, PostfixExpression.Operator.INCREMENT) || ASTNodes.hasOperator((PrefixExpression) this.correspondingTree, PrefixExpression.Operator.INCREMENT)) && isInteger(this.reducingVariable, workingCopy)) {
-				lambda = makeIntegerSumReducer();
-			} else {
-				//	                    lambdaBody = this.treeMaker.Binary(ASTNode.PLUS, this.treeMaker.Identifier("accumulator"), this.treeMaker.Literal(1));
-				//	                    lambda = treeMaker.LambdaExpression(Arrays.asList(var, var1), lambdaBody);
-
-
-				MethodInvocation accumulator = this.workingCopy.newMethodInvocation();
-				accumulator.setName(this.workingCopy.newSimpleName("accumulator")); //$NON-NLS-1$
-				NumberLiteral newStringLiteral = this.workingCopy.newNumberLiteral("1"); //$NON-NLS-1$
-
-				lambdaBody= this.workingCopy.newInfixExpression();
-				lambdaBody.setLeftOperand(accumulator);
-				lambdaBody.setRightOperand(newStringLiteral);
-				lambdaBody.setOperator(InfixExpression.Operator.PLUS);
-
-				LambdaExpression newLambdaExpression = this.workingCopy.newLambdaExpression();
-
-				List<VariableDeclaration> lambdaParameters= newLambdaExpression.parameters();
-				newLambdaExpression.setParentheses(false);
-				newLambdaExpression.setBody(lambdaBody);
-				lambdaParameters.addAll(Arrays.asList(var, var1));
-				lambda= newLambdaExpression;
-			}
-
-
-		} else if (TreeUtilities.isCompoundAssignementAssignement(this.correspondingTree)) {
-			ASTNode type = null;//treeMaker.Type("Integer");
-
-			//	            var = this.treeMaker.Variable(treeMaker.Modifiers(new HashSet<>()), "accumulator", null, null);
-			var= this.workingCopy.newVariableDeclarationFragment();
-
-			var.setName(this.workingCopy.newSimpleName("accumulator")); //$NON-NLS-1$
-			VariableDeclaration var1 = makeUnknownVariable();
-			if (ASTNodes.hasOperator((Assignment) correspondingTree, Assignment.Operator.PLUS_ASSIGN)) {
-				if (isString(this.reducingVariable)) {
-					lambda = makeStringConcatReducer();
-				} else if (isInteger(this.reducingVariable, workingCopy)) {
-					lambda = makeIntegerSumReducer();
-				} else {
-					lambda = makeSimpleExplicitReducer(this.correspondingTree, var, var1);
-				}
-			} else //if (opKind == Tree.Kind.MINUS_ASSIGNEMENT  ||  any other compound op) {
-			{
-				lambda = makeSimpleExplicitReducer(this.correspondingTree, var, var1);
-			}
-		} else {
-			return null;
-		}
-		args.add(lambda);
-		return args;
-	}
-
-	private Expression makeSimpleExplicitReducer(ASTNode opKind, VariableDeclaration var, VariableDeclaration var1) {
-		//		ASTNode lambdaBody;
-		//        Expression lambda;
-		//        lambdaBody = this.treeMaker.Binary(this.getSuitableOperator(opKind), this.treeMaker.Identifier("accumulator"), this.treeMaker.Identifier(UNKNOWN_NAME));
-		//        lambda = treeMaker.LambdaExpression(Arrays.asList(var, var1), lambdaBody);
-
-		MethodInvocation accumulator = this.workingCopy.newMethodInvocation();
-		//        newMethodInvocation.setExpression(ASTNodeFactory.newName(this.workingCopy, expr.toString()));
-		accumulator.setName(this.workingCopy.newSimpleName("accumulator")); //$NON-NLS-1$
-		MethodInvocation unknown = this.workingCopy.newMethodInvocation();
-		unknown.setName(this.workingCopy.newSimpleName(UNKNOWN_NAME));
-		InfixExpression lambdaBody= this.workingCopy.newInfixExpression();
-		lambdaBody.setLeftOperand(accumulator);
-		lambdaBody.setRightOperand(unknown);
-		lambdaBody.setOperator(this.getSuitableOperator(opKind));
-
-		LambdaExpression lambda= this.workingCopy.newLambdaExpression();
-		List<VariableDeclaration> lambdaParameters= lambda.parameters();
-		lambda.setParentheses(false);
-		// 		VariableDeclarationFragment lambdaParameter= this.workingCopy.newVariableDeclarationFragment();
-		// 		lambdaParameter.setName((SimpleName) this.treeMaker.createCopyTarget(parameter.getName()));
-		// 		lambdaParameters.add(lambdaParameter);
-		// 		Expression createMoveTarget = (Expression) ASTNodes.createMoveTarget(this.treeMaker, lambdaBody);
-		lambda.setBody(lambdaBody);
-		lambdaParameters.addAll(Arrays.asList(var, var1));
-
-		return lambda;
-	}
-
-	private InfixExpression.Operator getSuitableOperator(ASTNode kind) {
-		if (ASTNodes.hasOperator((Assignment) correspondingTree, Assignment.Operator.BIT_AND_ASSIGN)) {
-			return InfixExpression.Operator.AND;
-		}
-		if (ASTNodes.hasOperator((Assignment) correspondingTree, Assignment.Operator.BIT_OR_ASSIGN)) {
-			return InfixExpression.Operator.OR;
-		}
-		if (ASTNodes.hasOperator((Assignment) correspondingTree, Assignment.Operator.PLUS_ASSIGN)) {
-			return InfixExpression.Operator.PLUS;
-		}
-		if (ASTNodes.hasOperator((Assignment) correspondingTree, Assignment.Operator.MINUS_ASSIGN)) {
-			return InfixExpression.Operator.MINUS;
-		}
-		if (ASTNodes.hasOperator((Assignment) correspondingTree, Assignment.Operator.DIVIDE_ASSIGN)) {
-			return InfixExpression.Operator.DIVIDE;
-		}
-		if (ASTNodes.hasOperator((Assignment) correspondingTree, Assignment.Operator.TIMES_ASSIGN)) {
-			return InfixExpression.Operator.TIMES;
-		}
-		if (ASTNodes.hasOperator((Assignment) correspondingTree, Assignment.Operator.REMAINDER_ASSIGN)) {
-			return InfixExpression.Operator.REMAINDER;
-		}
-		if (ASTNodes.hasOperator((Assignment) correspondingTree, Assignment.Operator.LEFT_SHIFT_ASSIGN)) {
-			return InfixExpression.Operator.LEFT_SHIFT;
-		}
-		if (ASTNodes.hasOperator((Assignment) correspondingTree, Assignment.Operator.RIGHT_SHIFT_SIGNED_ASSIGN)) {
-			return InfixExpression.Operator.RIGHT_SHIFT_SIGNED;
-		}
-		if (ASTNodes.hasOperator((Assignment) correspondingTree, Assignment.Operator.RIGHT_SHIFT_UNSIGNED_ASSIGN)) {
-			return InfixExpression.Operator.RIGHT_SHIFT_UNSIGNED;
-		}
-		return null;
-	}
-
-	private static boolean isInteger(Expression reducingVariable, AST workingCopy) {
-		return isType(reducingVariable, workingCopy, "java.lang.Integer"); //$NON-NLS-1$
-	}
-
-	private static boolean isType(Expression reducingVariable, AST workingCopy, String fqn) {
-		//		 ASTNodes.isCastCompatible(reducingVariable, reducingVariable)
-		//	        TypeMirror tm = workingCopy.getTrees().getTypeMirror(TreePath.getPath(workingCopy.getCompilationUnit(), reducingVariable));
-		//	        TypeElement typeEl = workingCopy.getElements().getTypeElement(fqn);
-		//	        if (typeEl != null) {
-		//	            TypeMirror integer = typeEl.asType();
-		//
-		//	            if (tm != null && workingCopy.getTypeUtilities().isCastable(tm, integer)) {
-		//	                return true;
-		//	            }
-		//	        }
-		return false;
-	}
-
-	private Expression makeIntegerSumReducer() {
-		MethodInvocation sum= this.workingCopy.newMethodInvocation();
-		sum.setExpression(ASTNodeFactory.newName(this.workingCopy, Integer.class.getSimpleName()));
-		sum.setName(this.workingCopy.newSimpleName("sum")); //$NON-NLS-1$
-		return sum;
-		//		return this.treeMaker.MemberReference(MemberReferenceTree.ReferenceMode.INVOKE, this.treeMaker.Identifier("Integer"), "sum", new ArrayList<>());
-	}
-
-	private Expression makeStringConcatReducer() {
-		MethodInvocation sum= this.workingCopy.newMethodInvocation();
-		sum.setExpression(ASTNodeFactory.newName(this.workingCopy, String.class.getSimpleName()));
-		sum.setName(this.workingCopy.newSimpleName("concat")); //$NON-NLS-1$
-		return sum;
-		//		return this.treeMaker.MemberReference(MemberReferenceTree.ReferenceMode.INVOKE, this.treeMaker.Identifier("String"), "concat", new ArrayList<>());
-	}
-
-	private boolean isString(Expression reducingVariable2) {
-		return false;
-		//		ASTNodes.getTargetType(reducingVariable2)
-		//		TypeMirror tm = this.workingCopy.getTrees().getTypeMirror(TreePath.getPath(this.workingCopy.getCompilationUnit(), this.reducingVariable));
-		//        return tm != null && tm.toString().equals("java.lang.String");
-	}
-
-	private VariableDeclaration makeUnknownVariable() {
-		VariableDeclarationFragment unknownvar= this.workingCopy.newVariableDeclarationFragment();
-		unknownvar.setName(this.workingCopy.newSimpleName(UNKNOWN_NAME));
-		return unknownvar;
-		//        return this.treeMaker.Variable(treeMaker.Modifiers(new HashSet<>()), UNKNOWN_NAME, null, null);
-	}
-
-	private ASTNode getLambdaArguments() {
-		VariableDeclaration var;
-		if (this.getNeededVariables().isEmpty()) {
-			var = makeUnknownVariable();
-		} else {
-			Name varName = getOneFromSet(this.neededVariables);
-			//If types need to be made explicit the null should be replaced with the commented expression
-			ASTNode type = null;// treeMaker.Type(this.varToType.get(varName).toString());
-			//	            var = this.treeMaker.Variable(treeMaker.Modifiers(new HashSet<>()), varName.toString(), type, null);
-			var= this.workingCopy.newVariableDeclarationFragment();
-			var.setName(this.workingCopy.newSimpleName(varName.toString()));
-		}
-		return var;
-	}
-
-	public static List<ProspectiveOperation> mergeIntoComposableOperations(List<ProspectiveOperation> ls) {
-		List<ProspectiveOperation> result = mergeRecursivellyIntoComposableOperations(ls);
-		if (result == null || result.contains(null)) {
-			return null;
-		}
-		return result;
-	}
-
-	private static List<ProspectiveOperation> mergeRecursivellyIntoComposableOperations(List<ProspectiveOperation> ls) {
-		for ( int i = ls.size() - 1; i > 0; i--) {
-			ProspectiveOperation current = ls.get(i);
-			ProspectiveOperation prev = ls.get(i - 1);
-			if (!(areComposable(current, prev))) {
-				if (!current.isMergeable() || !prev.isMergeable()) {
-					return null;
-				}
-				if (current.opType == OperationType.FILTER || prev.opType == OperationType.FILTER) {
-					int lengthOfLs;
-					ProspectiveOperation last;
-					ProspectiveOperation nlast;
-					while ((lengthOfLs = ls.size()) > i) {
-						last = ls.get(lengthOfLs - 1);
-						nlast = ls.get(lengthOfLs - 2);
-						ls.remove(lengthOfLs - 1);
-						//method mutates in place, no need to remove and add again.
-						nlast.merge(last);
-					}
-				} else {
-					prev.merge(current);
-					ls.remove(i);
-				}
-			}
-		}
-		beautify(ls);
-		return ls;
-	}
-
-	private static void beautify(List<ProspectiveOperation> ls) {
-		for ( int i = ls.size() - 1; i > 0; i--) {
-			ProspectiveOperation current = ls.get(i - 1);
-			ProspectiveOperation next = ls.get(i);
-			Set<Name> needed = next.getNeededVariables();
-			current.beautify(needed);
-		}
-		for (Iterator<ProspectiveOperation> it = ls.iterator(); it.hasNext();) {
-			if (it.next().correspondingTree == null) {
-				it.remove();
-			}
-		}
-	}
-
-	private void beautify(Set<Name> needed) {
-		if (this.opType == OperationType.MAP) {
-			beautifyLazy(needed);
-		}
-	}
-
-	private void beautifyLazy(Set<Name> needed) {
-		if (needed.isEmpty()) {
-			{
-				if (!this.getNeededVariables().isEmpty()) {
-					this.beautify(this.getNeededVariables());
-				} else {
-					Set<Name> newSet = new HashSet<>();
-					newSet.add(null);
-					beautifyLazy(newSet);
-				}
-			}
-		} else {
-			ASTNode currentTree = this.correspondingTree;
-			if (currentTree.getNodeType() == ASTNode.BLOCK) {
-				beautifyBlock(currentTree, needed);
-			} else if (currentTree.getNodeType() == ASTNode.VARIABLE_DECLARATION_FRAGMENT) {
-				beautifyVariable(currentTree, needed);
-			} else if (currentTree.getNodeType() == ASTNode.EXPRESSION_STATEMENT
-					&& ((ExpressionStatement) currentTree).getExpression().getNodeType() == ASTNode.ASSIGNMENT) {
-				beautifyAssignement(currentTree, needed);
-			} else if (isNumericLiteral(currentTree)) {
-				//do nothing
-			} else {
-				this.correspondingTree = this.addReturn(castToStatementTree(currentTree), getOneFromSet(needed));
-			}
-		}
-	}
-
-	private boolean isNumericLiteral(ASTNode currentTree) {
-		int kind = currentTree.getNodeType();
-		return kind == ASTNode.CHARACTER_LITERAL
-				|| kind == ASTNode.NUMBER_LITERAL;
-		//        return kind == ASTNode.INT_LITERAL
-		//                || kind == ASTNode.CHAR_LITERAL
-		//                || kind == ASTNode.DOUBLE_LITERAL
-		//                || kind == ASTNode.FLOAT_LITERAL
-		//                || kind == ASTNode.LONG_LITERAL;
-	}
-
-	private void beautifyAssignement(ASTNode currentTree, Set<Name> needed) {
-		//        Assignment assigned = (Assignment) ((ExpressionStatement) currentTree).getExpression();
-		//        Expression variable = assigned.getLeftHandSide();
-		//        if (variable.getNodeType() == ASTNode..IDENTIFIER) {
-		//            Identifier id = (Identifier) variable;
-		//
-		//            if (needed.contains(id.getName())) {
-		//                this.correspondingTree = treeMaker.ExpressionStatement(assigned.getExpression());
-		//            } else {
-		//
-		//                this.correspondingTree = this.addReturn(castToStatementTree(currentTree), getOneFromSet(needed));
-		//            }
-		//        } else {
-		//            this.correspondingTree = this.addReturn(castToStatementTree(currentTree), getOneFromSet(needed));
-		//        }
-	}
-
-	private void beautifyVariable(ASTNode currentTree, Set<Name> needed) {
-		//		VariableDeclaration varTree = (VariableDeclaration) currentTree;
-		//        if (needed.contains(varTree.getName())) {
-		//            this.correspondingTree = varTree.getInitializer() != null
-		//                    ? treeMaker.ExpressionStatement(varTree.getInitializer())
-		//                    : null;
-		//        } else {
-		//
-		//            this.correspondingTree = this.addReturn(castToStatementTree(currentTree), getOneFromSet(needed));
-		//        }
-	}
-
-	private void beautifyBlock(ASTNode currentTree, Set<Name> needed) {
-		Block currentBlock = (Block) currentTree;
-		if (currentBlock.statements().size() == 1) {
-			this.correspondingTree = (ASTNode) currentBlock.statements().get(0);
-			this.beautify(needed);
-		} else {
-			this.correspondingTree = this.addReturn(currentBlock, getOneFromSet(needed));
-		}
-	}
-
-	private Block addReturn(Statement statement, Name varName) {
-		List<Statement> ls = new ArrayList<>();
-		if (statement.getNodeType() == ASTNode.BLOCK) {
-			ls.addAll(((Block) statement).statements());
-		} else {
-			ls.add(statement);
-		}
-		if (varName != null) {
-			//	            Statement return1 = this.treeMaker.Return(treeMaker.Identifier(varName.toString()));
-			ReturnStatement return1 = this.workingCopy.newReturnStatement();
-			return1.setExpression(varName);
-			ls.add(return1);
-		} else {
-			//	            Statement return1 = this.treeMaker.Return(treeMaker.Identifier(UNKNOWN_NAME));
-			ReturnStatement return1 = this.workingCopy.newReturnStatement();
-			return1.setExpression(ASTNodeFactory.newName(this.workingCopy, UNKNOWN_NAME));
-			ls.add(return1);
-		}
-		Block newBlock = this.workingCopy.newBlock();
-		newBlock.statements().add(ls);
-		return newBlock;
-		//	        return treeMaker.Block(ls, false);
-	}
-
-	private Name getOneFromSet(Set<Name> needed) {
-		return needed.iterator().next();
-	}
-
-	public Set<Name> getNeededVariables() {
-		if (neededVariables == null) {
-			if (this.opType == OperationType.REDUCE) {
-				return new HashSet<>();
-			}
-			PreconditionsChecker.VariablesVisitor treeVariableVisitor = new PreconditionsChecker.VariablesVisitor();
-			if (this.correspondingTree.getNodeType() == ASTNode.SINGLE_VARIABLE_DECLARATION) {
-				((VariableDeclaration) correspondingTree).getInitializer().accept(treeVariableVisitor);
-				//	                treeVariableVisitor.scan(((VariableDeclaration) correspondingTree).getInitializer(), this.workingCopy.getTrees());
-			} else {
-				correspondingTree.accept(treeVariableVisitor);
-				//	                treeVariableVisitor.scan(correspondingTree, this.workingCopy.getTrees());
-			}
-			this.neededVariables = buildNeeded(treeVariableVisitor);
-		}
-		return this.neededVariables;
-	}
-
-	private Set<Name> buildNeeded(PreconditionsChecker.VariablesVisitor treeVariableVisitor) {
-		Set<Name> allVariablesUsedInCurrentOp = treeVariableVisitor.getAllLocalVariablesUsed();
-		//Remove the ones also declared in the current block.
-		allVariablesUsedInCurrentOp.removeAll(treeVariableVisitor.getInnervariables());
-		//Keeps the ones that are local to the loop. These are the ones that need to be passed around
-		//in a pipe-like fashion.
-		allVariablesUsedInCurrentOp.retainAll(this.innerLoopVariables);
-		return allVariablesUsedInCurrentOp;
-	}
-
-	public void merge(ProspectiveOperation op) {
-		if (this.opType == OperationType.FILTER) {
-			this.opType = op.opType;
-			//	            IfStatement ifTree = this.treeMaker.If(((IfStatement) this.correspondingTree).getExpression(), (Statement) op.correspondingTree, null);
-			IfStatement ifTree =  this.workingCopy.newIfStatement();
-			ifTree.setExpression(((IfStatement) this.correspondingTree).getExpression());
-			ifTree.setThenStatement((Statement) ASTNodes.createMoveTarget(this.treeMaker, op.correspondingTree));
-			this.correspondingTree = ifTree;
-		} else {
-			this.opType = op.opType;
-			List<Statement> statements = new ArrayList<>();
-
-			if (this.correspondingTree.getNodeType() == ASTNode.BLOCK) {
-				statements.addAll(((Block) this.correspondingTree).statements());
-			} else {
-				statements.add(castToStatementTree(this.correspondingTree));
-			}
-
-			if (op.correspondingTree.getNodeType() == ASTNode.BLOCK) {
-				statements.addAll(((Block) op.correspondingTree).statements());
-			} else {
-				statements.add(castToStatementTree(op.correspondingTree));
-			}
-			HashSet<Name> futureAvailable = new HashSet<>();
-			HashSet<Name> futureNeeded = new HashSet<>();
-
-			futureAvailable.addAll(this.getAvailableVariables());
-			futureAvailable.addAll(op.getAvailableVariables());
-
-			futureNeeded.addAll(op.getNeededVariables());
-			futureNeeded.removeAll(this.getAvailableVariables());
-			futureNeeded.addAll(this.getNeededVariables());
-
-			this.neededVariables = futureNeeded;
-			this.availableVariables = futureAvailable;
-			//	            this.correspondingTree = this.treeMaker.Block(statements, false);
-			Block newBlock = this.workingCopy.newBlock();
-			newBlock.statements().addAll(statements);
-			this.correspondingTree=newBlock;
-		}
-	}
-
-	private Set<Name> getAvailableVariables() {
-		if (this.availableVariables == null) {
-			PreconditionsChecker.VariablesVisitor treeVariableVisitor = new PreconditionsChecker.VariablesVisitor();
-			if (this.correspondingTree.getNodeType() == ASTNode.VARIABLE_DECLARATION_FRAGMENT) {
-				((VariableDeclaration) correspondingTree).getInitializer().accept(treeVariableVisitor);
-				//	                treeVariableVisitor.scan(((VariableDeclaration) correspondingTree).getInitializer(), this.workingCopy.getTrees());
-				this.availableVariables = buildAvailables(treeVariableVisitor);
-				this.availableVariables.add(((VariableDeclaration) correspondingTree).getName());
-			} else {
-				correspondingTree.accept(treeVariableVisitor);
-				//	                treeVariableVisitor.scan(correspondingTree, this.workingCopy.getTrees());
-				this.availableVariables = buildAvailables(treeVariableVisitor);
-			}
-		}
-		//If the operation is a filter, then it only makes available what it gets
-		//if needed is empty, it can pull anything needed from upstream.
-		if (this.opType == OperationType.FILTER) {
-			return this.getNeededVariables();
-		}
-		return this.availableVariables;
-	}
-
-	private Set<Name> buildAvailables(PreconditionsChecker.VariablesVisitor treeVariableVisitor) {
-		Set<Name> allVariablesUsedInCurrentOp = treeVariableVisitor.getAllLocalVariablesUsed();
-		Set<Name> allVariablesDeclaredInCurrentOp = treeVariableVisitor.getInnervariables();
-		allVariablesUsedInCurrentOp.addAll(allVariablesDeclaredInCurrentOp);
-		return allVariablesUsedInCurrentOp;
-	}
-
-	private Boolean isMergeable() {
-		return this.opType == OperationType.FOREACH
-				|| this.opType == OperationType.MAP
-				|| this.opType == OperationType.FILTER;
-	}
-
-	private static boolean areComposable(ProspectiveOperation current, ProspectiveOperation prev) {
-		Set<Name> needed = current.getNeededVariables();
-		return needed.size() <= 1 && prev.areAvailableVariables(needed);
-	}
-
-	public Boolean areAvailableVariables(Set<Name> needed) {
-		Set<Name> available = this.getAvailableVariables();
-		//If the prospective operations does not need any variables from upstream
-		//(available is a superset of needeld so the test is sound - the available set includes all the uses)
-		//(because, for example, it uses fields or other variables that remain in scope even after refactoring)
-		if (available.isEmpty()) {
-			//then the needed variables propagate from the downstream operation in order to facillitate chaining.
-			//(both to the needed and available sets).
-			available.addAll(needed);
-			this.getNeededVariables().addAll(needed);
-			return true;
-		}
-		return available.containsAll(needed);
-	}
-
-	//Creates a non-eager operation according to the tree type
-	public static List<ProspectiveOperation> createOperator(Statement tree,
-			OperationType operationType, PreconditionsChecker precond, AST workingCopy, ASTRewrite rewrite) {
-		List<ProspectiveOperation> ls = new ArrayList<>();
-		if (OperationType.REDUCE == operationType) {
-			return createProspectiveReducer(tree, workingCopy, operationType, precond, ls, rewrite);
-		}
-		ProspectiveOperation operation = new ProspectiveOperation(tree, operationType, precond.getInnerVariables(), workingCopy, precond.getVarToName(),rewrite);
-		operation.getNeededVariables();
-		ls.add(operation);
-		return ls;
-	}
-
-	private static List<ProspectiveOperation> createProspectiveReducer(Statement tree, AST workingCopy, OperationType operationType, PreconditionsChecker precond, List<ProspectiveOperation> ls, ASTRewrite rewrite) throws IllegalStateException {
-		Expression expr = ((ExpressionStatement) tree).getExpression();
-		//	        TreeMaker tm = workingCopy.getTreeMaker();
-		ProspectiveOperation redOp = null;
-		AST tm = null;
-		if (TreeUtilities.isCompoundAssignementAssignement(expr)) {
-			redOp = handleCompoundAssignementReducer(tm, expr, operationType, precond, workingCopy, ls, redOp,rewrite);
-		} else if (TreeUtilities.isPreOrPostfixOp(expr)) {
-			redOp = handlePreOrPostFixReducer(expr, workingCopy, tm, operationType, precond, ls, redOp);
-		}
-		ls.add(redOp);
-		return ls;
-	}
-
-	private static ProspectiveOperation handlePreOrPostFixReducer(Expression expr, AST workingCopy, AST tm, OperationType operationType, PreconditionsChecker precond, List<ProspectiveOperation> ls, ProspectiveOperation redOp) {
-		//	        Expression reducing = ((Unary) expr).getExpression();
-		//	        ProspectiveOperation map;
-		//	        if (isInteger(reducing, workingCopy) || isLong(reducing, workingCopy) || isChar(reducing, workingCopy)) {
-		//	            map = new ProspectiveOperation(tm.Literal(1), OperationType.MAP, precond.getInnerVariables(), workingCopy, precond.getVarToName());
-		//	        } else {
-		//	            map = new ProspectiveOperation(tm.Literal(1.), OperationType.MAP, precond.getInnerVariables(), workingCopy, precond.getVarToName());
-		//	        }
-		//	        ls.add(map);
-		//	        redOp = new ProspectiveOperation(expr, operationType, precond.getInnerVariables(), workingCopy, precond.getVarToName());
-		//	        redOp.reducingVariable = reducing;
-		return redOp;
-	}
-
-
-	private static boolean isChar(Expression reducing, AST workingCopy) {
-		return isType(reducing, workingCopy, "java.lang.Character"); //$NON-NLS-1$
-	}
-
-	private static boolean isLong(Expression reducing, AST workingCopy) {
-		return isType(reducing, workingCopy, "java.lang.Long"); //$NON-NLS-1$
-	}
-
-	private static ProspectiveOperation handleCompoundAssignementReducer(AST tm, Expression expr, OperationType operationType, PreconditionsChecker precond, AST workingCopy, List<ProspectiveOperation> ls, ProspectiveOperation redOp,ASTRewrite rewrite) {
-		//this variable will be removed at a later stage.
-		//	        Variable var = tm.Variable(tm.Modifiers(new HashSet<>()), "dummyVar18912", tm.Type("Object"), ((CompoundAssignment) expr).getExpression());
-		//	        ProspectiveOperation map = new ProspectiveOperation(var, OperationType.MAP, precond.getInnerVariables(), workingCopy, precond.getVarToName());
-		//	        map.getAvailableVariables().add(var.getName());
-		//	        ls.add(map);
-		redOp = new ProspectiveOperation(expr, operationType, precond.getInnerVariables(), workingCopy, precond.getVarToName(), rewrite);
-		redOp.neededVariables = new HashSet<>();
-		//	        redOp.neededVariables.add(var.getName());
-		redOp.reducingVariable = ((Assignment) expr).getLeftHandSide();
-		return redOp;
-	}
+
+public class ProspectiveOperation {
+    private Expression originalExpression;
+    private OperationType operationType;
+    private Set<String> neededVariables = new HashSet<>();
+    private Expression reducingVariable;
+
+    // Sammelt alle verwendeten Variablen
+    private void collectNeededVariables(Expression expression) {
+        expression.accept(new ASTVisitor() {
+            @Override
+            public boolean visit(SimpleName node) {
+                neededVariables.add(node.getIdentifier());
+                return super.visit(node);
+            }
+        });
+    }
+    public ProspectiveOperation(Expression expression, OperationType operationType) {
+        this.originalExpression = expression;
+        this.operationType = operationType;
+        collectNeededVariables(expression);
+    }
+
+    /** (1) Gibt den ursprünglichen Ausdruck zurück */
+    public Expression getExpression() {
+        return this.originalExpression;
+    }
+
+    /** (2) Gibt den Typ der Operation zurück */
+    public OperationType getOperationType() {
+        return this.operationType;
+    }
+
+    /** (3) Gibt die passende Stream-API Methode zurück */
+    public String getStreamOperation() {
+        return operationType == OperationType.MAP ? "map" :
+               operationType == OperationType.REDUCE ? "reduce" : "unknown";
+    }
+
+    /** (4) Erstellt eine Lambda-Expression für Streams */
+    public LambdaExpression getLambdaExpression(AST ast) {
+        LambdaExpression lambda = ast.newLambdaExpression();
+        SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
+        param.setName(ast.newSimpleName("x"));
+        lambda.parameters().add(param);
+        lambda.setBody(ASTNode.copySubtree(ast, originalExpression));
+        return lambda;
+    }
+
+    /** (5) Ermittelt die Argumente für `reduce()` */
+    private List<Expression> getArgumentsForReducer(AST ast) {
+        List<Expression> arguments = new ArrayList<>();
+        if (operationType == OperationType.REDUCE) {
+            Expression identity = getIdentityElement(ast);
+            if (identity != null) arguments.add(identity);
+            LambdaExpression accumulator = createAccumulatorLambda(ast);
+            if (accumulator != null) arguments.add(accumulator);
+        }
+        return arguments;
+    }
+
+    /** (6) Ermittelt das Identitätselement (`0`, `1`) für `reduce()` */
+    private Expression getIdentityElement(AST ast) {
+        if (operationType == OperationType.REDUCE && originalExpression instanceof Assignment) {
+            Assignment assignment = (Assignment) originalExpression;
+            if (assignment.getOperator() == Assignment.Operator.PLUS_ASSIGN) {
+                return ast.newNumberLiteral("0");
+            } else if (assignment.getOperator() == Assignment.Operator.TIMES_ASSIGN) {
+                return ast.newNumberLiteral("1");
+            }
+        }
+        return null;
+    }
+
+    /** (7) Erstellt eine Akkumulator-Funktion für `reduce()` */
+    private LambdaExpression createAccumulatorLambda(AST ast) {
+        LambdaExpression lambda = ast.newLambdaExpression();
+        SingleVariableDeclaration paramA = ast.newSingleVariableDeclaration();
+        paramA.setName(ast.newSimpleName("a"));
+        SingleVariableDeclaration paramB = ast.newSingleVariableDeclaration();
+        paramB.setName(ast.newSimpleName("b"));
+        lambda.parameters().add(paramA);
+        lambda.parameters().add(paramB);
+
+        InfixExpression operationExpr = ast.newInfixExpression();
+        operationExpr.setLeftOperand(ast.newSimpleName("a"));
+        operationExpr.setRightOperand(ast.newSimpleName("b"));
+        operationExpr.setOperator(InfixExpression.Operator.PLUS);
+        lambda.setBody(operationExpr);
+
+        return lambda;
+    }
+
+    /** (8) Erstellt eine Lambda-Funktion für `map()` */
+    private LambdaExpression createLambdaExpression(AST ast) {
+        LambdaExpression lambda = ast.newLambdaExpression();
+        SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
+        param.setName(ast.newSimpleName("x"));
+        lambda.parameters().add(param);
+        lambda.setBody(ASTNode.copySubtree(ast, originalExpression));
+        return lambda;
+    }
+
+    /** (9) Prüft, ob eine bestimmte Variable verwendet wird */
+    public boolean usesVariable(String variableName) {
+        return neededVariables.contains(variableName);
+    }
+
+    /** (10) Prüft, ob zwei `ProspectiveOperation`-Objekte kombinierbar sind */
+    public static boolean areComposable(ProspectiveOperation op1, ProspectiveOperation op2) {
+        return op1.getOperationType() == op2.getOperationType() &&
+               op1.getStreamOperation().equals(op2.getStreamOperation()) &&
+               Collections.disjoint(op1.getNeededVariables(), op2.getNeededVariables());
+    }
+
+    /** (11) Kombiniert zwei `ProspectiveOperation`-Objekte */
+    public static ProspectiveOperation merge(ProspectiveOperation op1, ProspectiveOperation op2, AST ast) {
+        if (!areComposable(op1, op2)) return null;
+        LambdaExpression mergedLambda = ast.newLambdaExpression();
+        mergedLambda.parameters().addAll(op1.getLambdaExpression(ast).parameters());
+
+        InfixExpression combinedExpr = ast.newInfixExpression();
+        combinedExpr.setLeftOperand((Expression) ASTNode.copySubtree(ast, op1.getLambdaExpression(ast).getBody()));
+        combinedExpr.setRightOperand((Expression) ASTNode.copySubtree(ast, op2.getLambdaExpression(ast).getBody()));
+        combinedExpr.setOperator(InfixExpression.Operator.PLUS);
+
+        mergedLambda.setBody(combinedExpr);
+        return new ProspectiveOperation(mergedLambda, op1.getOperationType());
+    }
+    
+    public static List<ProspectiveOperation> mergeRecursivelyIntoComposableOperations(List<ProspectiveOperation> operations) {
+        List<ProspectiveOperation> mergedOperations = new ArrayList<>();
+        
+        for (ProspectiveOperation op : operations) {
+            boolean merged = false;
+
+            // Prüfen, ob die aktuelle Operation mit einer bestehenden verschmolzen werden kann
+            for (ProspectiveOperation existingOp : mergedOperations) {
+                if (canBeMerged(existingOp, op)) {
+                    mergeOperations(existingOp, op);
+                    merged = true;
+                    break;
+                }
+            }
+
+            // Falls keine bestehende Operation kombiniert werden konnte, zur Liste hinzufügen
+            if (!merged) {
+                mergedOperations.add(op);
+            }
+        }
+
+        return mergedOperations;
+    }
+
+    // Prüft, ob zwei Operationen verschmolzen werden können
+    private static boolean canBeMerged(ProspectiveOperation op1, ProspectiveOperation op2) {
+        return op1.getOperationType() == op2.getOperationType()
+                && op1.getStreamOperation().equals(op2.getStreamOperation());
+    }
+
+    // Kombiniert zwei `map()`- oder `reduce()`-Operationen zu einer einzigen
+    private static void mergeOperations(ProspectiveOperation target, ProspectiveOperation source) {
+        AST ast = target.getExpression().getAST();
+
+        LambdaExpression mergedLambda = ast.newLambdaExpression();
+        mergedLambda.parameters().addAll(target.getLambdaExpression(ast).parameters());
+
+        InfixExpression combinedExpression = ast.newInfixExpression();
+        combinedExpression.setLeftOperand((Expression) ASTNode.copySubtree(ast, target.getLambdaExpression(ast).getBody()));
+        combinedExpression.setRightOperand((Expression) ASTNode.copySubtree(ast, source.getLambdaExpression(ast).getBody()));
+
+        if (source.getOperationType() == ProspectiveOperation.OperationType.MAP) {
+            combinedExpression.setOperator(InfixExpression.Operator.PLUS);
+        } else if (source.getOperationType() == ProspectiveOperation.OperationType.REDUCE) {
+            combinedExpression.setOperator(InfixExpression.Operator.TIMES);
+        }
+
+        mergedLambda.setBody(combinedExpression);
+        target.replaceReducingVariable(mergedLambda);
+    }
+    
+    public void replaceReducingVariable(LambdaExpression lambda) {
+        lambda.accept(new ASTVisitor() {
+            @Override
+            public boolean visit(SimpleName node) {
+                if (node.getIdentifier().equals(reducingVariable.toString())) {
+                    node.setIdentifier("acc");
+                }
+                return super.visit(node);
+            }
+        });
+    }
+
+    /** (14) Gibt die Menge der benötigten Variablen zurück */
+    public Set<String> getNeededVariables() {
+        return neededVariables;
+    }
+
+    // Sammelt alle verfügbaren Variablen im aktuellen Scope
+    private Set<String> getAvailableVariables(ASTNode node) {
+        Set<String> variables = new HashSet<>();
+        node.accept(new ASTVisitor() {
+            @Override
+            public boolean visit(VariableDeclarationFragment fragment) {
+                variables.add(fragment.getName().getIdentifier());
+                return super.visit(fragment);
+            }
+
+            @Override
+            public boolean visit(SingleVariableDeclaration param) {
+                variables.add(param.getName().getIdentifier());
+                return super.visit(param);
+            }
+        });
+        return variables;
+    }
+    
+    /** (15) Prüft, ob alle benötigten Variablen existieren */
+    public boolean areAvailableVariables(Set<String> needed, ASTNode node) {
+        return getAvailableVariables(node).containsAll(needed);
+    }
+
+    /** (16) Gibt ein beliebiges Element aus einem Set zurück */
+    public static <T> T getOneFromSet(Set<T> set) {
+        return set.isEmpty() ? null : set.iterator().next();
+    }
+
+    /** (17) Optimiert redundanten Code */
+    public void beautify(AST ast, ASTRewrite rewrite, Expression expression) {
+        if (expression instanceof ParenthesizedExpression) {
+            // Entferne überflüssige Klammern: ((x + y)) → x + y
+            ParenthesizedExpression parenExpr = (ParenthesizedExpression) expression;
+            rewrite.replace(parenExpr, ASTNode.copySubtree(ast, parenExpr.getExpression()), null);
+        } else if (expression instanceof Assignment) {
+            // Optimierung von Zuweisungen: x = x + y → x += y
+            Assignment assignment = (Assignment) expression;
+            beautifyAssignment(ast, rewrite, assignment);
+        } else if (expression instanceof InfixExpression) {
+            // Optimierung mathematischer Ausdrücke
+            optimizeInfixExpression(ast, rewrite, (InfixExpression) expression);
+        }
+    }
+    
+    public void beautifyAssignment(AST ast, ASTRewrite rewrite, Assignment assignment) {
+        InfixExpression infixExpr = ast.newInfixExpression();
+        infixExpr.setLeftOperand((Expression) ASTNode.copySubtree(ast, assignment.getLeftHandSide()));
+        infixExpr.setRightOperand((Expression) ASTNode.copySubtree(ast, assignment.getRightHandSide()));
+        infixExpr.setOperator(InfixExpression.Operator.PLUS);
+
+        rewrite.replace(assignment, infixExpr, null);
+    }
+    // Methode zur Optimierung mathematischer Ausdrücke
+    private void optimizeInfixExpression(AST ast, ASTRewrite rewrite, InfixExpression infixExpr) {
+        Expression left = infixExpr.getLeftOperand();
+        Expression right = infixExpr.getRightOperand();
+
+        if (isZero(left) && infixExpr.getOperator() == InfixExpression.Operator.PLUS) {
+            // 0 + x → x
+            rewrite.replace(infixExpr, ASTNode.copySubtree(ast, right), null);
+        } else if (isZero(right) && infixExpr.getOperator() == InfixExpression.Operator.PLUS) {
+            // x + 0 → x
+            rewrite.replace(infixExpr, ASTNode.copySubtree(ast, left), null);
+        } else if (isOne(right) && infixExpr.getOperator() == InfixExpression.Operator.TIMES) {
+            // x * 1 → x
+            rewrite.replace(infixExpr, ASTNode.copySubtree(ast, left), null);
+        } else if (isOne(left) && infixExpr.getOperator() == InfixExpression.Operator.TIMES) {
+            // 1 * x → x
+            rewrite.replace(infixExpr, ASTNode.copySubtree(ast, right), null);
+        }
+    }
+
+    // Prüft, ob eine Expression die Zahl 1 ist
+    private boolean isOne(Expression expr) {
+        return expr instanceof NumberLiteral && ((NumberLiteral) expr).getToken().equals("1");
+    }
+
+    /** (18) Führt risikoarme Code-Optimierungen durch */
+    public void beautifyLazy(AST ast, ASTRewrite rewrite, Expression expression) {
+        if (expression instanceof ParenthesizedExpression) {
+            // Entferne überflüssige Klammern NUR, wenn sie direkt einen Ausdruck umschließen: ((x)) → x
+            ParenthesizedExpression parenExpr = (ParenthesizedExpression) expression;
+            if (parenExpr.getExpression() instanceof SimpleName || parenExpr.getExpression() instanceof NumberLiteral) {
+                rewrite.replace(parenExpr, ASTNode.copySubtree(ast, parenExpr.getExpression()), null);
+            }
+        } else if (expression instanceof InfixExpression) {
+            // Nur einfache mathematische Optimierungen durchführen
+            optimizeLazyInfixExpression(ast, rewrite, (InfixExpression) expression);
+        }
+    }
+    
+ // Vereinfachungen nur bei einfachen mathematischen Ausdrücken
+    private void optimizeLazyInfixExpression(AST ast, ASTRewrite rewrite, InfixExpression infixExpr) {
+        Expression left = infixExpr.getLeftOperand();
+        Expression right = infixExpr.getRightOperand();
+
+        if (isZero(left) && infixExpr.getOperator() == InfixExpression.Operator.PLUS) {
+            // 0 + x → x (nur einfache Zahlenoperationen)
+            rewrite.replace(infixExpr, ASTNode.copySubtree(ast, right), null);
+        } else if (isZero(right) && infixExpr.getOperator() == InfixExpression.Operator.PLUS) {
+            // x + 0 → x
+            rewrite.replace(infixExpr, ASTNode.copySubtree(ast, left), null);
+        }
+    }
+
+    // Prüft, ob eine Expression die Zahl 0 ist
+    private boolean isZero(Expression expr) {
+        return expr instanceof NumberLiteral && ((NumberLiteral) expr).getToken().equals("0");
+    }
+
+    /** (19) Wandelt einen Ausdruck in eine `return`-Anweisung um */
+    public void addReturn(AST ast, ASTRewrite rewrite, Expression expression) {
+        ReturnStatement returnStatement = ast.newReturnStatement();
+        returnStatement.setExpression((Expression) ASTNode.copySubtree(ast, expression));
+        rewrite.replace(expression, returnStatement, null);
+    }
+    
+    @Override
+    public String toString() {
+        return "ProspectiveOperation{" +
+               "expression=" + originalExpression +
+               ", operationType=" + operationType +
+               ", neededVariables=" + neededVariables +
+               '}';
+    }
+
+    public enum OperationType {
+        MAP, REDUCE, UNKNOWN
+    }
 }

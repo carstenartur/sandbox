@@ -14,31 +14,29 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Assignment;
-import org.eclipse.jdt.core.dom.PostfixExpression;
 import org.eclipse.jdt.core.dom.PrefixExpression;
-import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 
 public class TreeUtilities {
 
-	public static boolean isPreOrPostfixOp(ASTNode correspondingTree) {
-		if(ASTNodes.hasOperator((PostfixExpression) correspondingTree, PostfixExpression.Operator.INCREMENT,PostfixExpression.Operator.DECREMENT)) {
-			return true;
-		}
-		return ASTNodes.hasOperator((PrefixExpression) correspondingTree, PrefixExpression.Operator.INCREMENT,PrefixExpression.Operator.DECREMENT);
-	}
+    /** (1) Prüft, ob es sich um einen zusammengesetzten Zuweisungsoperator handelt. */
+    public static boolean isCompoundAssignment(Assignment.Operator operator) {
+        return operator == Assignment.Operator.PLUS_ASSIGN
+            || operator == Assignment.Operator.MINUS_ASSIGN
+            || operator == Assignment.Operator.TIMES_ASSIGN
+            || operator == Assignment.Operator.DIVIDE_ASSIGN
+            || operator == Assignment.Operator.BIT_AND_ASSIGN
+            || operator == Assignment.Operator.BIT_OR_ASSIGN
+            || operator == Assignment.Operator.BIT_XOR_ASSIGN
+            || operator == Assignment.Operator.REMAINDER_ASSIGN
+            || operator == Assignment.Operator.LEFT_SHIFT_ASSIGN
+            || operator == Assignment.Operator.RIGHT_SHIFT_SIGNED_ASSIGN
+            || operator == Assignment.Operator.RIGHT_SHIFT_UNSIGNED_ASSIGN;
+    }
 
-	public static boolean isCompoundAssignementAssignement(ASTNode correspondingTree) {
-		return ASTNodes.hasOperator((Assignment) correspondingTree, Assignment.Operator.BIT_AND_ASSIGN,
-				Assignment.Operator.BIT_OR_ASSIGN,
-				Assignment.Operator.PLUS_ASSIGN,
-				Assignment.Operator.MINUS_ASSIGN,
-				Assignment.Operator.TIMES_ASSIGN,
-				Assignment.Operator.DIVIDE_ASSIGN,
-				Assignment.Operator.REMAINDER_ASSIGN,
-				Assignment.Operator.LEFT_SHIFT_ASSIGN,
-				Assignment.Operator.RIGHT_SHIFT_SIGNED_ASSIGN,
-				Assignment.Operator.RIGHT_SHIFT_UNSIGNED_ASSIGN);
-	}
+    /** (2) Prüft, ob es sich um eine Prä- oder Postfix-Inkrement-/Dekrement-Operation handelt. */
+    public static boolean isPreOrPostfixOp(PrefixExpression.Operator operator) {
+        return operator == PrefixExpression.Operator.INCREMENT
+            || operator == PrefixExpression.Operator.DECREMENT;
+    }
 }

@@ -21,7 +21,6 @@ import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
-import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
@@ -54,7 +53,7 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 	}
 
 	@Override
-	public void rewrite(UseFunctionalCallFixCore upp, final EnhancedForStatement loop,
+	public void rewrite(UseFunctionalCallFixCore upp, final EnhancedForStatement forLoop,
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
 		ASTRewrite rewrite = cuRewrite.getASTRewrite();
 		AST ast = cuRewrite.getRoot().getAST();
@@ -71,11 +70,21 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 		 *
 		 */
 
-		PreconditionsChecker pc = new PreconditionsChecker(loop, ast);
-		Refactorer refactorer = new Refactorer(loop, ast, pc,rewrite);
-		if (pc.isSafeToRefactor() && refactorer.isRefactorable()) {
-			ASTNodes.replaceButKeepComment(rewrite, loop, refactorer.refactor(rewrite), group);
-		}
+//		PreconditionsChecker pc = new PreconditionsChecker(loop, ast);
+//		Refactorer refactorer = new Refactorer(loop, ast, pc,rewrite);
+//		if (pc.isSafeToRefactor() && refactorer.isRefactorable()) {
+//			ASTNodes.replaceButKeepComment(rewrite, loop, refactorer.refactor(rewrite), group);
+//		}
+		
+		PreconditionsChecker pc = new PreconditionsChecker(forLoop, (CompilationUnit) forLoop.getRoot());
+        Refactorer refactorer = new Refactorer(forLoop, rewrite, pc);
+        if (pc.isSafeToRefactor() && refactorer.isRefactorable()) {
+            refactorer.refactor();
+            // Anwenden der Änderungen auf das Dokument
+            // Beispiel:
+            // TextEdit edits = rewrite.rewriteAST(document, null);
+            // edits.apply(document);
+        }
 	}
 
 	@Override
