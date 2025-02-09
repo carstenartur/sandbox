@@ -156,6 +156,6 @@ public class PreconditionsChecker {
         while (node != null && !(node instanceof MethodDeclaration)) {
             node = node.getParent();
         }
-        return (node instanceof MethodDeclaration) ? ((MethodDeclaration) node).getBody() : null;
+        return (node != null) ? ((MethodDeclaration) node).getBody() : null;
     }
 }

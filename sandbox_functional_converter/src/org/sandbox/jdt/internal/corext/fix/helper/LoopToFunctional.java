@@ -15,7 +15,6 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.Set;
 
-import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -56,7 +55,7 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 	public void rewrite(UseFunctionalCallFixCore upp, final EnhancedForStatement forLoop,
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
 		ASTRewrite rewrite = cuRewrite.getASTRewrite();
-		AST ast = cuRewrite.getRoot().getAST();
+//		AST ast = cuRewrite.getRoot().getAST();
 		/**
 		 * for (Integer l : ls){
 		 * 		  System.out.println(l);
