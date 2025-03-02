@@ -39,4 +39,7 @@ ION,EI_EXPOSE_REP,EI_EXPOSE_REP2,MS_PKGPROTECT,MS_MUTABLE_ARRAY"/>
    <Match>
     <Bug pattern="URF_UNREAD_FIELD"/>
   </Match>
+  <Match>
+    <Bug pattern="HSM_HIDING_METHOD"/>
+  </Match>
 </FindBugsFilter>
