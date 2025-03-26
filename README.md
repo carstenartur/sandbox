@@ -8,7 +8,7 @@ To build including war file that contains update site use
 
 The product can be found in "sandbox_product/target" and the war file in "sandbox_web/target".
 
-main: 
+main(2025-03): 
 
 [![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)
 
