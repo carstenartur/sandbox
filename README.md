@@ -9,8 +9,11 @@ To build the project, including a WAR file that contains the update site, run:
 `mvn -Dinclude=web -Pjacoco verify`
 
 The product will be located in
-"sandbox_product/target" 
+
+"sandbox_product/target"
+
 The WAR file will be located in
+
 "sandbox_web/target".
 
 main(2025-03): 
