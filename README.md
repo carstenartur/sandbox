@@ -112,122 +112,157 @@ See: https://github.com/carstenartur/sandbox/wiki/Functional-Converter
 
 #### JUnit Cleanup – Feature Overview
 
-The **JUnit Cleanup** tool automatically migrates JUnit 4 tests to JUnit 5.  
-The following transformations are supported based on the test cases found in  
-`sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/JUnitCleanupCases.java`.
+The **JUnit Cleanup** tool automates the migration of legacy tests from **JUnit 3** and **JUnit 4** to **JUnit 5**.  
+It is based on verified transformations from the following test files:
+
+- `JUnit3CleanupCases.java`
+- `JUnitCleanupCases.java`
 
 ---
 
-#### Supported Transformations
+#### Migration Summary
 
-##### 1. Annotations
+The table below summarizes how legacy JUnit constructs are translated to modern JUnit 5 equivalents:
 
-- `@Test`  
-  → Migrated from `org.junit.Test` to `org.junit.jupiter.api.Test`.
-
-- `@Before` / `@After`  
-  → Replaced with `@BeforeEach` / `@AfterEach` from JUnit 5.
-
-- `@BeforeClass` / `@AfterClass`  
-  → Replaced with `@BeforeAll` / `@AfterAll`.
-
-- `@Ignore`  
-  → Replaced with `@Disabled`.
-
----
-
-##### 2. Assertions
-
-- Static imports from `org.junit.Assert`  
-  → Replaced with `org.junit.jupiter.api.Assertions`.
-
-- Methods like `assertEquals`, `assertTrue`, `assertFalse`, etc.  
-  → Updated to their JUnit 5 equivalents.
+| Legacy JUnit Construct                      | Origin     | JUnit 5 Equivalent                         |
+|--------------------------------------------|------------|--------------------------------------------|
+| `extends TestCase`                         | JUnit 3    | (removed) – no base class needed           |
+| `setUp()`                                   | JUnit 3    | `@BeforeEach`                              |
+| `tearDown()`                                | JUnit 3    | `@AfterEach`                               |
+| `test*` method name prefix                  | JUnit 3    | `@Test` + rename to descriptive name       |
+| `@Test`                                     | JUnit 4    | `@Test` (from `org.junit.jupiter.api`)     |
+| `@Before` / `@After`                        | JUnit 4    | `@BeforeEach` / `@AfterEach`               |
+| `@BeforeClass` / `@AfterClass`             | JUnit 4    | `@BeforeAll` / `@AfterAll`                 |
+| `@Ignore`                                   | JUnit 4    | `@Disabled`                                |
+| `@Test(expected = Exception.class)`         | JUnit 4    | `assertThrows(Exception.class, ...)`       |
+| `@Test(timeout = ...)`                      | JUnit 4    | `assertTimeout(Duration.ofMillis(...), ...)` |
+| `@Rule`, `@ClassRule`                       | JUnit 4    | `@RegisterExtension` / `@ExtendWith`       |
+| `junit.framework.Assert` or `org.junit.Assert` methods | JUnit 3/4 | `org.junit.jupiter.api.Assertions` methods |
 
 ---
 
-##### 3. Expected Exceptions
+#### Migration Details
 
-JUnit 4:
+##### JUnit 3 Migration
 
+###### Class Structure
+
+- **Remove `extends TestCase`**
+- **Remove `suite()` and `main()` methods**
+
+###### Test Methods
+
+Before:
 ```java
-@Test(expected = IllegalArgumentException.class)
-public void testSomething() {
-    // code
+public void testExample() {
+    // test logic
 }
 ```
 
-JUnit 5:
-
+After:
 ```java
 @Test
-void testSomething() {
-    assertThrows(IllegalArgumentException.class, () -> {
-        // code
+void example() {
+    // test logic
+}
+```
+
+###### Setup and Teardown
+
+Before:
+```java
+protected void setUp() throws Exception {
+    // setup
+}
+
+protected void tearDown() throws Exception {
+    // teardown
+}
+```
+
+After:
+```java
+@BeforeEach
+void setUp() throws Exception {
+    // setup
+}
+
+@AfterEach
+void tearDown() throws Exception {
+    // teardown
+}
+```
+
+---
+
+##### JUnit 4 Migration
+
+###### Annotations
+
+Before:
+```java
+@Before
+public void init() {}
+
+@After
+public void cleanup() {}
+
+@Test(expected = IOException.class)
+public void testException() {}
+
+@Test(timeout = 1000)
+public void testTimeout() {}
+
+@Ignore
+public void ignoredTest() {}
+```
+
+After:
+```java
+@BeforeEach
+void init() {}
+
+@AfterEach
+void cleanup() {}
+
+@Test
+void testException() {
+    assertThrows(IOException.class, () -> {
+        // code that throws
     });
 }
-```
 
----
-
-##### 4. Timeout
-
-JUnit 4:
-
-```java
-@Test(timeout = 1000)
-public void testWithTimeout() {
-    // code
-}
-```
-
-JUnit 5:
-
-```java
 @Test
-void testWithTimeout() {
+void testTimeout() {
     assertTimeout(Duration.ofMillis(1000), () -> {
         // code
     });
 }
+
+@Disabled
+void ignoredTest() {}
 ```
-
----
-
-##### 5. Rules and ClassRules
-
-- Fields annotated with `@Rule` or `@ClassRule`  
-  → Removed or migrated to extensions (e.g., via `@RegisterExtension` or `@ExtendWith`) if applicable.
-
----
-
-##### 6. Parameterized Tests
-
-- `@RunWith(Parameterized.class)`  
-  → Migrated to JUnit 5's `@ParameterizedTest` using appropriate sources like `@ValueSource`, `@CsvSource`, or `@MethodSource`.
 
 ---
 
 #### Limitations
 
-- **Custom Runners**  
-  Test classes using custom `@RunWith` runners are **not** automatically migrated.
+- **Custom Runners and Complex Rules**  
+  Tests using `@RunWith(...)`, custom runners, or sophisticated `@Rule` implementations may need to be migrated manually.
 
-- **Complex Rules**  
-  Rules with no direct JUnit 5 equivalent must be migrated manually.
-
----
-
-#### How to Use
-
-The cleanup can be triggered via the command line or directly in Eclipse.  
-It scans your test classes and applies the above transformations automatically.
+- **Test Suites**  
+  Legacy `TestSuite` usage is not automatically migrated and should be replaced with JUnit 5 `@Nested` classes or display name tags.
 
 ---
 
-This documentation is based on the migration logic verified by the test cases in  
-`JUnitCleanupCases.java`. For complex or project-specific test structures, manual adjustments may still be necessary.
+#### Usage
 
+The JUnit Cleanup can be executed from within Eclipse.  
+It scans Java test files and applies the transformations described above automatically.
+
+---
+
+This documentation is based on the test coverage provided in the JUnit 3 and 4 cleanup test cases. Manual adjustments may be necessary for advanced use cases or project-specific setups.
 Cleanup to migrate JUnit 4 tests to JUnit 5.
 
 <a href="/marketplace-client-intro?mpc_install=6454408" class="drag" title="Drag to your running Eclipse* workspace. *Requires Eclipse Marketplace Client">
