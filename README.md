@@ -110,6 +110,124 @@ See: https://github.com/carstenartur/sandbox/wiki/Functional-Converter
 
 ### 8. `sandbox_junit`
 
+#### JUnit Cleanup – Feature Overview
+
+The **JUnit Cleanup** tool automatically migrates JUnit 4 tests to JUnit 5.  
+The following transformations are supported based on the test cases found in  
+`sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/JUnitCleanupCases.java`.
+
+---
+
+#### Supported Transformations
+
+##### 1. Annotations
+
+- `@Test`  
+  → Migrated from `org.junit.Test` to `org.junit.jupiter.api.Test`.
+
+- `@Before` / `@After`  
+  → Replaced with `@BeforeEach` / `@AfterEach` from JUnit 5.
+
+- `@BeforeClass` / `@AfterClass`  
+  → Replaced with `@BeforeAll` / `@AfterAll`.
+
+- `@Ignore`  
+  → Replaced with `@Disabled`.
+
+---
+
+##### 2. Assertions
+
+- Static imports from `org.junit.Assert`  
+  → Replaced with `org.junit.jupiter.api.Assertions`.
+
+- Methods like `assertEquals`, `assertTrue`, `assertFalse`, etc.  
+  → Updated to their JUnit 5 equivalents.
+
+---
+
+##### 3. Expected Exceptions
+
+JUnit 4:
+
+```java
+@Test(expected = IllegalArgumentException.class)
+public void testSomething() {
+    // code
+}
+```
+
+JUnit 5:
+
+```java
+@Test
+void testSomething() {
+    assertThrows(IllegalArgumentException.class, () -> {
+        // code
+    });
+}
+```
+
+---
+
+##### 4. Timeout
+
+JUnit 4:
+
+```java
+@Test(timeout = 1000)
+public void testWithTimeout() {
+    // code
+}
+```
+
+JUnit 5:
+
+```java
+@Test
+void testWithTimeout() {
+    assertTimeout(Duration.ofMillis(1000), () -> {
+        // code
+    });
+}
+```
+
+---
+
+##### 5. Rules and ClassRules
+
+- Fields annotated with `@Rule` or `@ClassRule`  
+  → Removed or migrated to extensions (e.g., via `@RegisterExtension` or `@ExtendWith`) if applicable.
+
+---
+
+##### 6. Parameterized Tests
+
+- `@RunWith(Parameterized.class)`  
+  → Migrated to JUnit 5's `@ParameterizedTest` using appropriate sources like `@ValueSource`, `@CsvSource`, or `@MethodSource`.
+
+---
+
+#### Limitations
+
+- **Custom Runners**  
+  Test classes using custom `@RunWith` runners are **not** automatically migrated.
+
+- **Complex Rules**  
+  Rules with no direct JUnit 5 equivalent must be migrated manually.
+
+---
+
+#### How to Use
+
+The cleanup can be triggered via the command line or directly in Eclipse.  
+It scans your test classes and applies the above transformations automatically.
+
+---
+
+This documentation is based on the migration logic verified by the test cases in  
+`JUnitCleanupCases.java`. For complex or project-specific test structures, manual adjustments may still be necessary.
+
 Cleanup to migrate JUnit 4 tests to JUnit 5.
 
 <a href="/marketplace-client-intro?mpc_install=6454408" class="drag" title="Drag to your running Eclipse* workspace. *Requires Eclipse Marketplace Client">
