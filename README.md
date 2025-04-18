@@ -96,6 +96,130 @@ Provides a table view of code objects, sorted by name, to detect inconsistent na
 
 ### 5. `sandbox_platform_helper`
 
+#### Platform Status Cleanup – Simplification of `new Status(...)` Calls
+
+This cleanup modernizes the usage of `org.eclipse.core.runtime.Status` in Eclipse-based projects by replacing verbose constructor calls with cleaner alternatives.  
+It supports two strategies, depending on the Java and Eclipse platform version:
+
+- **Java 8 / Eclipse < 4.20**: Use a project-specific `StatusHelper` class.
+- **Java 11+ / Eclipse ≥ 4.20**: Use the static factory methods `Status.error(...)`, `Status.warning(...)`, `Status.info(...)`, etc.
+
+The cleanup logic is based on:
+
+- [`Java8CleanUpTest.java`](../sandbox_platform_helper_test/src/org/sandbox/jdt/ui/tests/quickfix/Java8CleanUpTest.java)
+- [`Java9CleanUpTest.java`](../sandbox_platform_helper_test/src/org/sandbox/jdt/ui/tests/quickfix/Java9CleanUpTest.java)
+
+---
+
+#### Motivation
+
+Constructing `IStatus` instances via `new Status(...)` is verbose and error-prone. This cleanup provides more readable alternatives by:
+
+- Reducing boilerplate code
+- Unifying the way status objects are created
+- Encouraging use of centralized helpers or platform-provided factories
+
+---
+
+#### Before/After Comparison
+
+| Case Type               | Legacy Code                                             | Cleanup Result (Java 8)                      | Cleanup Result (Java 11 / Eclipse ≥ 4.20)   |
+|-------------------------|---------------------------------------------------------|----------------------------------------------|---------------------------------------------|
+| Basic warning           | `new Status(IStatus.WARNING, id, msg)`                 | *(unchanged – concise)*                      | *(unchanged – concise)*                     |
+| With 4 arguments        | `new Status(IStatus.WARNING, id, msg, null)`           | `StatusHelper.warning(id, msg)`             | `Status.warning(msg)`                       |
+| With exception          | `new Status(IStatus.ERROR, id, msg, e)`                | `StatusHelper.error(id, msg, e)`            | `Status.error(msg, e)`                      |
+| INFO with 4 args        | `new Status(IStatus.INFO, id, code, msg, null)`        | `StatusHelper.info(id, msg)`                | `Status.info(msg)`                          |
+| OK status               | `new Status(IStatus.OK, id, "done")`                   | *(unchanged – already minimal)*             | *(unchanged – already minimal)*             |
+
+---
+
+#### Examples
+
+##### Java 8: With `StatusHelper`
+
+**Before:**
+```java
+IStatus status = new Status(IStatus.WARNING, "plugin.id", "Something happened", null);
+```
+
+**After:**
+```java
+IStatus status = StatusHelper.warning("plugin.id", "Something happened");
+```
+
+---
+
+##### Java 11+: With `Status.warning(...)`
+
+**Before:**
+```java
+IStatus status = new Status(IStatus.WARNING, "plugin.id", IStatus.OK, "Something happened", null);
+```
+
+**After:**
+```java
+IStatus status = Status.warning("Something happened");
+```
+
+---
+
+##### With Exception
+
+**Before:**
+```java
+IStatus status = new Status(IStatus.ERROR, "plugin.id", "Something bad happened", exception);
+```
+
+**After (Java 8):**
+```java
+IStatus status = StatusHelper.error("plugin.id", "Something bad happened", exception);
+```
+
+**After (Java 11+):**
+```java
+IStatus status = Status.error("Something bad happened", exception);
+```
+
+---
+
+#### Cleanup Strategy Selection
+
+| Target Platform        | Strategy Used        |
+|------------------------|----------------------|
+| Eclipse < 4.20         | Insert `StatusHelper` method calls |
+| Eclipse 4.20 or newer  | Replace with `Status.error(...)`, `Status.warning(...)`, etc. |
+
+---
+
+#### Requirements
+
+- For **Status factory methods**: Eclipse Platform 4.20+ and Java 11+
+- For **StatusHelper**: Either implement your own helper, or use a generated version
+- Static import of `org.eclipse.core.runtime.Status` is recommended
+
+---
+
+#### Usage
+
+This cleanup is available as part of the JDT Clean Up framework. It can be run via:
+
+- **Eclipse UI** → Source → Clean Up
+- **Automated build tools** using Eclipse JDT APIs or Maven plugins
+
+---
+
+#### Limitations
+
+- Only applies to direct calls to the `Status` constructor
+- Plugin ID handling is simplified – if it must be retained dynamically, manual changes may be needed
+- Custom `IStatus` subclasses or complex logic are not handled
+
+---
+
+This documentation is based on the cleanup logic and test cases in  
+`Java8CleanUpTest.java` and `Java9CleanUpTest.java`.  
+Manual review is advised for edge cases or plugin-specific conventions.
+
 PoC for a QuickFix to migrate code based on new platform features:  
 https://www.eclipse.org/eclipse/news/4.20/platform_isv.php#simpler-status-creation
 
