@@ -1,12 +1,17 @@
 # Sandbox project
 
-To try out some tools and create build strategy sample.
+This repository serves as a sandbox to experiment with various tools and build strategies.
 
-To build including war file that contains update site use
+# Build Instructions
+
+To build the project, including a WAR file that contains the update site, run:
 
 `mvn -Dinclude=web -Pjacoco verify`
 
-The product can be found in "sandbox_product/target" and the war file in "sandbox_web/target".
+The product will be located in
+"sandbox_product/target" 
+The WAR file will be located in
+"sandbox_web/target".
 
 main(2025-03): 
 
@@ -55,23 +60,29 @@ main(2025-03):
 
 # What is included
 
-Code based on Java 21 starting with 2024-06, based on Java 17 starting with 2022-12, Java 11 up to 2022-06
+What’s Included
 
-- how to create github based build for different eclipse versions
-- how to create a jdt cleanup
-- how to setup spotbugs maven plugin to fail build in case of spotbugs error
-- how to create a junit 5 based test for cleanup
-- how to create a jacoco code coverage configuration for the test
-- how to create a product based on jdt including the new feature
-- how to setup automatic build for a war file including the p2 update site for the products new features
+Java version per branch:
+	•	Since 2024-06: Java 21
+	•	From 2022-12 onwards: Java 17
+	•	Up to 2022-06: Java 11
+
+Topics covered:
+	•	Building for different Eclipse versions via GitHub Actions
+	•	Creating custom JDT cleanups
+	•	Setting up the SpotBugs Maven plugin to fail the build on issues
+	•	Writing JUnit 5-based tests for JDT cleanups
+	•	Configuring JaCoCo for test coverage
+	•	Building an Eclipse product including new features
+	•	Automatically building a WAR file including a P2 update site
 
 # Projects
 
-Everything is work in progress unless explicitly noted
+All projects are considered work in progress unless otherwise noted.
 
 	1. sandbox_cleanup_application
 	
-	Only placeholder for what should start a cleanup as commandline application similar to the codeformatting wrapper
+	Placeholder for a CLI-based cleanup application, similar to the Java code formatting tool:
 	
 	eclipse -nosplash -consolelog -debug -application org.eclipse.jdt.core.JavaCodeFormatter -verbose -config MyCodingStandards.ini MyClassToBeFormatted.java
 	
@@ -126,5 +137,5 @@ You can use the p2 update site
 
 https://github.com/carstenartur/sandbox/raw/main
 
-Only use it on a separate fresh installation that you can throw away after a test as it may destroy your eclipse installation.
-Don't tell me nobody has warned you...
+Warning: Use only with a fresh Eclipse installation that can be discarded after testing.
+It may break your setup. Don’t say you weren’t warned…
