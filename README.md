@@ -176,7 +176,7 @@ Reader r = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF
 
 ---
 
-##### Example: Channels.newReader (Java 11+)
+##### Example: Channels.newReader (Java 10+)
 
 **Before:**
 ```java
@@ -190,7 +190,7 @@ Reader r = Channels.newReader(channel, StandardCharsets.UTF_8);
 
 ---
 
-##### Example: Files.readAllLines (Java 11+)
+##### Example: Files.readAllLines (Java 10+)
 
 **Before:**
 ```java
