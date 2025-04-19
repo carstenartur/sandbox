@@ -419,6 +419,161 @@ https://www.eclipse.org/eclipse/news/4.20/platform_isv.php#simpler-status-creati
 
 ### 7. `sandbox_functional_converter`
 
+#### Functional Converter Cleanup – Transform Imperative Loops into Functional Java 8 Streams
+
+This cleanup modernizes imperative Java loop constructs by transforming them into functional-style equivalents using Java 8 Streams, `map`, `filter`, `reduce`, and `forEach`.
+
+---
+
+#### Source and Test Basis
+
+This cleanup is fully tested in:
+
+- `sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/Java8CleanUpTest.java`
+
+The test class defines:
+
+- A parameterized `EnumSource` with 30+ fully supported loop transformation cases
+- A list of `@Disabled` scenarios (future features)
+- A set of `@ValueSource` cases where no change should be applied
+
+---
+
+#### Supported Transformations
+
+The cleanup currently supports:
+
+| Pattern                                 | Transformed To                                      |
+|----------------------------------------|-----------------------------------------------------|
+| Simple enhanced for-loops              | `list.forEach(...)` or `list.stream().forEach(...)` |
+| Mapping inside loops                   | `.stream().map(...)`                                |
+| Filtering via `if` or `continue`       | `.stream().filter(...)`                             |
+| Reductions (sum/counter)               | `.stream().map(...).reduce(...)`                    |
+| `String` concatenation in loops        | `.reduce(..., String::concat)`                      |
+| Null checks + mapping                  | `.filter(Objects::nonNull).map(...)`                |
+| Conditional early `return true/false`  | `.anyMatch(...)` / `.noneMatch(...)`                |
+| Method calls inside mapping/filtering  | `map(x -> method(x))`, `filter(...)`                |
+| Combined `filter`, `map`, `forEach`    | Chained stream transformations                      |
+
+---
+
+#### Examples
+
+**Imperative loop:**
+```java
+for (Integer l : list) {
+    if (l != null) {
+        String s = l.toString();
+        System.out.println(s);
+    }
+}
+```
+
+**Functional:**
+```java
+list.stream()
+    .filter(l -> l != null)
+    .map(Object::toString)
+    .forEach(System.out::println);
+```
+
+---
+
+#### Reductions (Accumulators)
+
+**Example:**
+```java
+int count = 0;
+for (String s : list) {
+    count += 1;
+}
+```
+
+**Transformed:**
+```java
+int count = list.stream()
+    .map(x -> 1)
+    .reduce(0, Integer::sum);
+```
+
+Also supported:
+
+- Decrementing: `i -= 1` → `.reduce(i, (a, b) -> a - b)`
+- Custom mapped reductions: `.map(this::foo).reduce(...)`
+
+---
+
+#### Not Yet Supported (Disabled Tests)
+
+The following patterns are present but currently **not supported** and are marked `@Disabled`:
+
+| Pattern Description                                 | Reason / Required Feature                          |
+|-----------------------------------------------------|-----------------------------------------------------|
+| `Map.put(...)` inside loop                          | Needs `Collectors.toMap(...)` support               |
+| Early `break`/`return` inside loop body             | Requires stream short-circuit modeling             |
+| Labeled `continue` or `break` (`label:`)            | Not expressible via Stream API                     |
+| Complex `if-else-return` branches                   | Requires flow graph and branching preservation      |
+| `throw` inside loop                                 | Non-convertible – not compatible with Stream flow  |
+| Multiple side effects in loop (e.g., `i++`, `j++`)  | State mutation not easily transferable              |
+
+These are valid test cases but intentionally **excluded from transformation** for semantic safety.
+
+---
+
+#### Ignored Cases – No Cleanup Triggered
+
+Tests in the `@ValueSource` section confirm the cleanup **does not act** in edge cases, e.g.:
+
+- Non-loop constructs
+- Loops over arrays instead of `List`
+- Loops using early `return`, `throw`, or `continue label`
+- Loops mixing multiple mutable accumulators
+
+---
+
+#### Java Version Compatibility
+
+| API Used                      | Requires Java |
+|-------------------------------|---------------|
+| `Stream`, `map`, `filter`     | Java 8        |
+| `Collectors.toList()`         | Java 8        |
+| `Stream.anyMatch/noneMatch`   | Java 8        |
+| `Stream.reduce(...)`          | Java 8        |
+
+This cleanup is designed for Java 8+ projects and avoids APIs introduced in later versions.
+
+---
+
+#### Cleanup Name & Activation
+
+| Eclipse Cleanup ID                          | Value                       |
+|---------------------------------------------|-----------------------------|
+| `MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP` | `true` (enable this feature) |
+
+---
+
+#### Limitations
+
+- Does not preserve external loop-scoped variables (e.g., index tracking, multiple accumulators)
+- Cannot convert control structures with `return`, `break`, `continue label`, or `throw`
+- Currently does not support loops producing `Map<K,V>` outputs or grouping
+
+---
+
+#### Summary
+
+The Functional Converter Cleanup:
+
+- Applies safe and proven transformations
+- Targets common loop structures
+- Helps modernize Java 5/6/7-style loops to Java 8 stream-based idioms
+- Uses an extensive test suite for coverage and correctness
+
+---
+
+For roadmap or contributions, see the test class:
+`Java8CleanUpTest.java` in the `sandbox_functional_converter_test` module.
+
 Converts `Iterator` loops to functional loops.  
 See: https://github.com/carstenartur/sandbox/wiki/Functional-Converter
 
