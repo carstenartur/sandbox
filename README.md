@@ -2,6 +2,22 @@
 
 This repository serves as a sandbox to experiment with various tools and build strategies.
 
+## Table of Contents
+
+- [Build Instructions](#build-instructions)
+- [CI Status](#ci-status)
+- [What's Included](#whats-included)
+- [Projects](#projects)
+  - [sandbox_cleanup_application](#1-sandbox_cleanup_application)
+  - [sandbox_encoding_quickfix](#2-sandbox_encoding_quickfix)
+  - [sandbox_extra_search](#3-sandbox_extra_search)
+  - [sandbox_usage_view](#4-sandbox_usage_view)
+  - [sandbox_platform_helper](#5-sandbox_platform_helper)
+  - [sandbox_tools](#6-sandbox_tools)
+  - [sandbox_functional_converter](#7-sandbox_functional_converter)
+  - [sandbox_junit](#8-sandbox_junit)
+- [Installation](#installation)
+
 ## Build Instructions
 
 To build the project, including a WAR file that contains the update site, run:
