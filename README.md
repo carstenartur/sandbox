@@ -277,6 +277,92 @@ All uses of `StandardCharsets.UTF_8` or `"UTF-8"` will be redirected to `UTF_8`.
   - `aggregate.charset.name = UTF_8`
   - `min.java.version = 7 | 10 | 11 | 21`
 
+##### Encoding Cleanup – Strategy Variants
+
+The **Encoding Cleanup** supports multiple strategies depending on the selected configuration.
+Each strategy affects which code constructs are transformed and how safely defaults are preserved.
+
+---
+
+##### Strategy: Prefer UTF-8
+
+Replaces all literal `"UTF-8"` occurrences and platform-default encodings with `StandardCharsets.UTF_8`.
+
+###### Example Transformations
+
+**Before:**
+```java
+new InputStreamReader(in);
+new FileReader(file);
+Charset.forName("UTF-8");
+```
+
+**After:**
+```java
+new InputStreamReader(in, StandardCharsets.UTF_8);
+new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8);
+StandardCharsets.UTF_8;
+```
+
+---
+
+##### Strategy: Keep Behavior
+
+Only transforms code if `"UTF-8"` is explicitly used – avoids changing platform-default behaviors.
+
+###### Example Transformations
+
+**Before:**
+```java
+Charset charset = Charset.forName("UTF-8");
+new InputStreamReader(in);
+```
+
+**After:**
+```java
+Charset charset = StandardCharsets.UTF_8;
+new InputStreamReader(in); // left unchanged
+```
+
+---
+
+##### Strategy: Aggregate UTF-8
+
+Replaces all `"UTF-8"` usage and `StandardCharsets.UTF_8` with a class-level constant.
+
+###### Example Transformations
+
+**Before:**
+```java
+new InputStreamReader(in, StandardCharsets.UTF_8);
+new FileReader(file);
+```
+
+**After:**
+```java
+private static final Charset UTF_8 = StandardCharsets.UTF_8;
+
+new InputStreamReader(in, UTF_8);
+new InputStreamReader(new FileInputStream(file), UTF_8);
+```
+
+Also supports dynamic replacement of:
+- `Charset.forName("UTF-8")`
+- `"UTF-8"` literals passed to methods like `setEncoding(...)`
+
+---
+
+##### Summary Table
+
+| Strategy        | Platform Default Handling | Replaces `"UTF-8"` | Aggregates Constant |
+|----------------|----------------------------|---------------------|----------------------|
+| Prefer UTF-8   | Yes                        | Yes                 | No                   |
+| Keep Behavior  | No                         | Yes (only explicit) | No                   |
+| Aggregate UTF-8| Yes                        | Yes                 | Yes (`UTF_8`)        |
+
+> These strategies are controlled via cleanup preferences:  
+> `encoding.strategy = PREFER_UTF8 | KEEP | AGGREGATE`
+
 ---
 
 #### Limitations
