@@ -728,6 +728,148 @@ void testTimeout() {
 void ignoredTest() {}
 ```
 
+#### JUnit Assertion Migration – JUnit 3 and 4 to JUnit 5
+
+The **JUnit Cleanup** tool automates the migration of assertions from **JUnit 3** and **JUnit 4** to **JUnit 5**.  
+This includes:
+
+- Updating imports to `org.junit.jupiter.api.Assertions`
+- Reordering parameters: JUnit 5 places the message **last**
+- Safely transforming legacy assertion method calls
+
+---
+
+#### Parameter Order Differences
+
+| Framework | Signature Format                            |
+|-----------|---------------------------------------------|
+| JUnit 3   | `assertEquals("message", expected, actual)` |
+| JUnit 4   | `assertEquals("message", expected, actual)` |
+| JUnit 5   | `assertEquals(expected, actual, "message")` |
+
+> **Note**: In JUnit 5, the message is always the **last** argument.  
+> The cleanup ensures correct reordering **only if it's safe** (i.e., the first argument is a String literal).
+
+---
+
+#### Assertion Mapping Table
+
+| JUnit 3/4 Assertion                        | JUnit 5 Equivalent                         |
+|-------------------------------------------|--------------------------------------------|
+| `assertEquals(expected, actual)`          | `assertEquals(expected, actual)`           |
+| `assertEquals("msg", expected, actual)`   | `assertEquals(expected, actual, "msg")`    |
+| `assertSame(expected, actual)`            | `assertSame(expected, actual)`             |
+| `assertSame("msg", expected, actual)`     | `assertSame(expected, actual, "msg")`      |
+| `assertNotSame(expected, actual)`         | `assertNotSame(expected, actual)`          |
+| `assertNotSame("msg", expected, actual)`  | `assertNotSame(expected, actual, "msg")`   |
+| `assertTrue(condition)`                   | `assertTrue(condition)`                    |
+| `assertTrue("msg", condition)`            | `assertTrue(condition, "msg")`             |
+| `assertFalse(condition)`                  | `assertFalse(condition)`                   |
+| `assertFalse("msg", condition)`           | `assertFalse(condition, "msg")`            |
+| `assertNull(object)`                      | `assertNull(object)`                       |
+| `assertNull("msg", object)`               | `assertNull(object, "msg")`                |
+| `assertNotNull(object)`                   | `assertNotNull(object)`                    |
+| `assertNotNull("msg", object)`            | `assertNotNull(object, "msg")`             |
+| `fail()`                                  | `fail()`                                   |
+| `fail("msg")`                              | `fail("msg")`                               |
+
+---
+
+#### Example Transformations
+
+##### Equality Check
+
+**Before (JUnit 3/4):**
+```java
+assertEquals("Expected and actual differ", expected, actual);
+```
+
+**After (JUnit 5):**
+```java
+assertEquals(expected, actual, "Expected and actual differ");
+```
+
+---
+
+##### Null Check
+
+**Before:**
+```java
+assertNull("Object must be null", obj);
+```
+
+**After:**
+```java
+assertNull(obj, "Object must be null");
+```
+
+---
+
+##### Boolean Assertions
+
+**Before:**
+```java
+assertTrue("Must be true", condition);
+assertFalse("Must be false", condition);
+```
+
+**After:**
+```java
+assertTrue(condition, "Must be true");
+assertFalse(condition, "Must be false");
+```
+
+---
+
+##### Identity Assertions
+
+**Before:**
+```java
+assertSame("Should be the same", expected, actual);
+assertNotSame("Should not be the same", expected, actual);
+```
+
+**After:**
+```java
+assertSame(expected, actual, "Should be the same");
+assertNotSame(expected, actual, "Should not be the same");
+```
+
+---
+
+##### NotNull Assertions
+
+**Before:**
+```java
+assertNotNull("Should not be null", object);
+```
+
+**After:**
+```java
+assertNotNull(object, "Should not be null");
+```
+
+---
+
+##### Fail Statements
+
+**Before:**
+```java
+fail("Unexpected state reached");
+```
+
+**After:**
+```java
+fail("Unexpected state reached");
+```
+
+---
+
+#### Notes
+
+- The cleanup uses `org.junit.jupiter.api.Assertions` for all migrated assertions.
+- Parameter reordering is applied conservatively, only if the first argument is a string literal.
+- Other transformations (e.g. `assertThat`) are handled separately.
 ---
 
 #### Limitations
