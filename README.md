@@ -363,6 +363,20 @@ Also supports dynamic replacement of:
 > These strategies are controlled via cleanup preferences:  
 > `encoding.strategy = PREFER_UTF8 | KEEP | AGGREGATE`
 
+##### Charset Literal Replacement Table
+
+The cleanup recognizes common charset string literals and replaces them with the appropriate constants from `StandardCharsets`:
+
+| String Literal     | Replacement Constant              |
+|--------------------|------------------------------------|
+| `"UTF-8"`          | `StandardCharsets.UTF_8`           |
+| `"US-ASCII"`       | `StandardCharsets.US_ASCII`        |
+| `"ISO-8859-1"`     | `StandardCharsets.ISO_8859_1`      |
+| `"UTF-16"`         | `StandardCharsets.UTF_16`          |
+| `"UTF-16BE"`       | `StandardCharsets.UTF_16BE`        |
+| `"UTF-16LE"`       | `StandardCharsets.UTF_16LE`        |
+
+
 ---
 
 #### Limitations
