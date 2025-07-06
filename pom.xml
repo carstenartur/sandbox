@@ -55,23 +55,23 @@
 	<repositories>
 		<!-- 1. Eclipse SimRel Release Repository -->
     <repository>
-        <id>eclipse-2024-12</id>
+        <id>eclipse-2025-06</id>
         <layout>p2</layout>
-        <url>https://download.eclipse.org/releases/2025-03/</url>
+        <url>https://download.eclipse.org/releases/2025-06/</url>
     </repository>
 
-    <!-- 2. Eclipse 4.35 Integration Builds -->
+    <!-- 2. Eclipse 4.37 Integration Builds -->
     <repository>
-        <id>eclipse-4.35-builds</id>
+        <id>eclipse-4.37-builds</id>
         <layout>p2</layout>
-        <url>https://download.eclipse.org/eclipse/updates/4.36-I-builds/</url>
+        <url>https://download.eclipse.org/eclipse/updates/4.37-I-builds/</url>
     </repository>
 
     <!-- 3. Eclipse Orbit (externe Abhängigkeiten wie Apache Commons) -->
     <repository>
         <id>orbit</id>
         <layout>p2</layout>
-        <url>https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2025-03/</url>
+        <url>https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2025-06/</url>
     </repository>
 
     <!-- 4. Eclipse Lizenzinformationen -->
