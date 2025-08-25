@@ -15,7 +15,7 @@
 		<jacoco-version>0.8.13</jacoco-version>
 		<java-version>21</java-version>
 		<java-execenv>JavaSE-21</java-execenv>
-		<spotbugs-version>4.9.3.0</spotbugs-version>
+		<spotbugs-version>4.9.4.0</spotbugs-version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<license.licenseName>epl_v1</license.licenseName>
 		<bouncycastle.version>1.81</bouncycastle.version>
