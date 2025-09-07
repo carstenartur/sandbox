@@ -1,0 +1,115 @@
+name: CI Diagnose (mvn + Tycho + Codacy)
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [ main ]
+
+jobs:
+  diag:
+    # parallel auf 22.04 und 24.04 (t64) – zeigt sofort, ob OS/Runner die Ursache ist
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+    env:
+      DISPLAY: :0
+      MAVEN_OPTS: -Djava.awt.headless=true
+      # Wenn du ein Codacy-Token hast, trage den Secret-Namen unten im Step ein.
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Print context
+        run: |
+          echo "OS: $(lsb_release -ds || cat /etc/os-release)"
+          echo "Kernel: $(uname -a)"
+          echo "Commit: $GITHUB_SHA"
+          echo "Actor: $GITHUB_ACTOR | Event: $GITHUB_EVENT_NAME"
+          echo "Java requested: 21 Temurin"
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Install system packages (GTK/X11/NSS/Audio) + start Xvfb
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb xauth \
+            libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 libxrandr2 libxfixes3 \
+            libnss3 libgbm1 || true
+          # Asound: 24.04 heißt 'libasound2t64', 22.04 heißt 'libasound2'
+          sudo apt-get install -y libasound2t64 || sudo apt-get install -y libasound2 || true
+          sudo /usr/bin/Xvfb $DISPLAY -screen 0 1280x1024x24 &
+          echo "JAVA_HOME=$JAVA_HOME"
+          java -version
+
+      - name: Set up Maven 3.9.9
+        uses: stCarolas/setup-maven@v5
+        with:
+          maven-version: 3.9.9
+
+      - name: Print Maven env
+        run: |
+          mvn -v
+          echo "::group::Effective settings"
+          MAVEN_SETTINGS="${HOME}/.m2/settings.xml"
+          test -f "$MAVEN_SETTINGS" && cat "$MAVEN_SETTINGS" || echo "(no ~/.m2/settings.xml)"
+          echo "::endgroup::"
+
+      - name: Resolve & build (extra debug, don’t change your POMs)
+        # sammelt *viel* Output und schreibt Logs in target/*.log
+        run: |
+          set -o pipefail
+          XVFB="xvfb-run --auto-servernum"
+          MVN_ARGS="-e -V --batch-mode -Dtycho.localArtifacts=ignore -Dmaven.plugin.validation=VERBOSE -Dorg.slf4j.simpleLogger.showDateTime=true -Dtycho.debug.resolver=true"
+          $XVFB mvn $MVN_ARGS -Pweb,jacoco clean verify | tee build-console.log
+
+      - name: (Optional) Codacy — don’t fail the job while diagnosing
+        continue-on-error: true
+        uses: codacy/codacy-analysis-cli-action@v4
+        with:
+          # falls vorhanden:
+          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+          # api-token: ${{ secrets.CODACY_API_TOKEN }}
+          # api-base-url: https://<deine-codacy-instanz>   # falls self-hosted
+          upload: true
+          verbose: true
+
+      - name: Collect logs & context
+        if: always()
+        run: |
+          mkdir -p diag-artifacts
+          cp -f build-console.log diag-artifacts/ || true
+          # alle Maven/Tycho Logs einsammeln
+          find . -type f -path "*/target/*.log" -print -exec cp -v {} diag-artifacts/ \; || true
+          # Surefire/Failsafe Reports (falls vorhanden)
+          find . -type f -path "*/target/surefire-reports/*" -print -exec cp -v {} diag-artifacts/ \; || true
+          find . -type f -path "*/target/failsafe-reports/*" -print -exec cp -v {} diag-artifacts/ \; || true
+          # p2/Tycho resolver logs (häufig unter target/.metadata/.log)
+          find . -type f -name ".log" -path "*/target/*" -print -exec cp -v {} diag-artifacts/ \; || true
+
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diag-${{ matrix.os }}
+          path: diag-artifacts
+
+      - name: Publish JUnit Report (if any)
+        if: always()
+        uses: mikepenz/action-junit-report@v5
+        with:
+          report_paths: '**/target/surefire-reports/TEST-*.xml'
