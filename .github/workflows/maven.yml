@@ -18,6 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DISPLAY: :0
+      MAVEN_OPTS: -Djava.awt.headless=true
+ 
     steps:
     - uses: actions/checkout@v4
       with:
@@ -43,7 +45,7 @@ jobs:
       with:
         maven-version: 3.9.9
     - name: Build with Maven
-      run: xvfb-run --auto-servernum mvn -e -V --batch-mode -Pweb,jacoco clean verify
+      run: xvfb-run --auto-servernum mvn -e -V --batch-mode -Dtycho.localArtifacts=ignore -Pweb,jacoco clean verify
     - name: Cleanup xvfb pidx build
       uses: bcomnes/cleanup-xvfb@v1
     - name: Publish Test Report
