@@ -40,17 +40,18 @@
             <unit id="org.eclipse.egit.feature.group" version="0.0.0"/>
             <unit id="org.eclipse.jgit.feature.group" version="0.0.0"/>
         </location>
-<!-- Bouncy Castle 1.81 aus Orbit Maven-OSGi -->
+<!-- 6. Bouncy Castle 1.81 aus Orbit Maven-OSGi -->
 <location includeAllPlatforms="false" includeConfigurePhase="false"
           includeMode="planner" includeSource="false"
           type="InstallableUnit">
-  <!-- Für reproduzierbare Builds lieber auf eine feste Release-Zahl pinnen -->
+  <!-- Für reproduzierbare Builds auf eine feste Release-Nummer pinnen -->
   <repository location="https://download.eclipse.org/tools/orbit/simrel/maven-osgi/release/4.37.0"/>
-  <unit id="org.bouncycastle.bcutil" version="1.81.0"/>
-  <unit id="org.bouncycastle.bcprov" version="1.81.0"/>
-  <unit id="org.bouncycastle.bcpkix" version="1.81.0"/>
-  <unit id="org.bouncycastle.bcpg"  version="1.81.0"/>
+  <unit id="bcutil" version="1.81.0"/>
+  <unit id="bcprov" version="1.81.0"/>
+  <unit id="bcpkix" version="1.81.0"/>
+  <unit id="bcpg"  version="1.81.0"/>
 </location>
     </locations>
 
 </target>
+
