@@ -42,7 +42,7 @@
         </location>
 <!-- 6. Bouncy Castle 1.81 aus Orbit Maven-OSGi -->
 <location includeAllPlatforms="false" includeConfigurePhase="false"
-          includeMode="planner" includeSource="false"
+          includeMode="planner" includeSource="true"
           type="InstallableUnit">
   <!-- Für reproduzierbare Builds auf eine feste Release-Nummer pinnen -->
   <repository location="https://download.eclipse.org/tools/orbit/simrel/maven-osgi/release/4.37.0"/>
@@ -54,4 +54,5 @@
     </locations>
 
 </target>
+
 
