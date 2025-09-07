@@ -21,7 +21,7 @@ jobs:
       MAVEN_OPTS: -Djava.awt.headless=true
  
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         fetch-depth: 0 # required for jgit timestamp provider to work
     - name: Set up JDK 21
