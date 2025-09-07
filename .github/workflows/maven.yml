@@ -34,7 +34,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xvfb xauth \
            libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 libxrandr2 libxfixes3 \
-           libasound2 libnss3 libgbm1
+           libasound2t64 libnss3 libgbm1
           sudo /usr/bin/Xvfb $DISPLAY -screen 0 1280x1024x24 &
     - name: Cache Maven packages
       uses: actions/cache@v4
