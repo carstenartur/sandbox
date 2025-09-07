@@ -29,9 +29,9 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - run: |
-        sudo apt-get install xvfb
-        # start xvfb in the background
-        sudo /usr/bin/Xvfb $DISPLAY -screen 0 1280x1024x24 &
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+          sudo /usr/bin/Xvfb $DISPLAY -screen 0 1280x1024x24 &
     - name: Cache Maven packages
       uses: actions/cache@v4
       with:
