@@ -61,11 +61,11 @@
         <url>https://download.eclipse.org/releases/2025-06/</url>
     </repository>
 
-    <!-- 2. Eclipse 4.37 Integration Builds -->
+    <!-- 2. Eclipse 4.38 Integration Builds -->
     <repository>
-        <id>eclipse-4.37-builds</id>
+        <id>eclipse-4.38-builds</id>
         <layout>p2</layout>
-        <url>https://download.eclipse.org/eclipse/updates/4.37-I-builds/</url>
+        <url>https://download.eclipse.org/eclipse/updates/4.38-I-builds/</url>
     </repository>
 
     <!-- 3. Eclipse Orbit (externe Abhängigkeiten wie Apache Commons) -->
