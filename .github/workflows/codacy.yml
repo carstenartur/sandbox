@@ -65,7 +65,7 @@ jobs:
 
       # Upload the SARIF file generated in the previous step
 #     - name: Upload SARIF results file
-#        uses: github/codeql-action/upload-sarif@v3
+#        uses: github/codeql-action/upload-sarif@v4
 #        with:
 #          sarif_file: results.sarif
 # Split SARIF: eine Datei pro 'run' (GitHub erlaubt seit 2025-07 keine mehrfachen Runs je Kategorie)
@@ -81,28 +81,28 @@ jobs:
 
       - name: Upload SARIF run 0
         if: ${{ hashFiles('sarif_split/run-0.sarif') != '' }}
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: sarif_split/run-0.sarif
           category: codacy-run-0
 
       - name: Upload SARIF run 1
         if: ${{ hashFiles('sarif_split/run-1.sarif') != '' }}
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: sarif_split/run-1.sarif
           category: codacy-run-1
 
       - name: Upload SARIF run 2
         if: ${{ hashFiles('sarif_split/run-2.sarif') != '' }}
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: sarif_split/run-2.sarif
           category: codacy-run-2
 
       - name: Upload SARIF run 3
         if: ${{ hashFiles('sarif_split/run-3.sarif') != '' }}
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: sarif_split/run-3.sarif
           category: codacy-run-3
