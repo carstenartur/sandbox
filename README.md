@@ -33,7 +33,7 @@ mvn -Dinclude=web -Pjacoco verify
 
 ## CI Status
 
-### main (2025-03)
+### main (2025-06)
 
 [![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)  
 [![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)  
