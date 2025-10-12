@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.eclipse.text.edits.TextEditGroup;
-
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -28,6 +28,8 @@ import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.eclipse.jdt.internal.core.manipulation.JavaManipulationPlugin;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
@@ -96,8 +98,13 @@ public class InputStreamReaderExplicitEncoding extends AbstractExplicitEncoding<
 
 		ListRewrite listRewrite = rewrite.getListRewrite(visited, ClassInstanceCreation.ARGUMENTS_PROPERTY);
 		if (nodedata.replace) {
-			listRewrite.replace(nodedata.visited, callToCharsetDefaultCharset, group);
-			removeNLSComment(cuRewrite, visited, group);
+			try {
+				ASTNodes.replaceAndRemoveNLS(rewrite, nodedata.visited, callToCharsetDefaultCharset, group, cuRewrite);
+			} catch (CoreException e) {
+				JavaManipulationPlugin.log(e); // should never happen
+			}
+//			listRewrite.replace(nodedata.visited, callToCharsetDefaultCharset, group);
+//			removeNLSComment(cuRewrite, visited, group);
 		} else {
 			listRewrite.insertLast(callToCharsetDefaultCharset, group);
 		}
