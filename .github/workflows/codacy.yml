@@ -47,62 +47,56 @@ jobs:
            java-version: '21'
            distribution: 'temurin'
            cache: maven
-      # Execute Codacy Analysis CLI and generate a SARIF output with the security issues identified during the analysis
+      # Codacy erzeugt SARIF im Runner-Temp und ignoriert uncommitted files
       - name: Run Codacy Analysis CLI
         uses: codacy/codacy-analysis-cli-action@v4
         with:
-          # Check https://github.com/codacy/codacy-analysis-cli#project-token to get your project token from your Codacy repository
-          # You can also omit the token and run the tools that support default configurations
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
           verbose: true
-          output: results.sarif
           format: sarif
-          # Adjust severity of non-security issues
+          output: ${{ runner.temp }}/results.sarif
           gh-code-scanning-compat: true
-          # Force 0 exit code to allow SARIF file generation
-          # This will handover control about PR rejection to the GitHub side
           max-allowed-issues: 2147483647
+          skip-uncommitted-files-check: true
 
-      # Upload the SARIF file generated in the previous step
-#     - name: Upload SARIF results file
-#        uses: github/codeql-action/upload-sarif@v4
-#        with:
-#          sarif_file: results.sarif
-# Split SARIF: eine Datei pro 'run' (GitHub erlaubt seit 2025-07 keine mehrfachen Runs je Kategorie)
+      # Split SARIF: eine Datei pro 'run'
       - name: Split SARIF into single-run files
         shell: bash
+        env:
+          SARIF: ${{ runner.temp }}/results.sarif
+          OUTDIR: ${{ runner.temp }}/sarif_split
         run: |
           set -euo pipefail
-          mkdir -p sarif_split
-          runs=$(jq '.runs | length' results.sarif)
+          mkdir -p "$OUTDIR"
+          runs=$(jq '.runs | length' "$SARIF")
           for ((i=0; i<runs; i++)); do
-            jq --argjson i "$i" '{ "$schema": ."$schema", "version": .version, runs: [ .runs[$i] ] }' results.sarif > "sarif_split/run-$i.sarif"
+            jq --argjson i "$i" '{ "$schema": ."$schema", "version": .version, runs: [ .runs[$i] ] }' "$SARIF" > "$OUTDIR/run-$i.sarif"
           done
 
       - name: Upload SARIF run 0
-        if: ${{ hashFiles('sarif_split/run-0.sarif') != '' }}
+        if: ${{ hashFiles(format('{0}/run-0.sarif', runner.temp)) != '' }}
         uses: github/codeql-action/upload-sarif@v4
         with:
-          sarif_file: sarif_split/run-0.sarif
+          sarif_file: ${{ runner.temp }}/sarif_split/run-0.sarif
           category: codacy-run-0
 
       - name: Upload SARIF run 1
-        if: ${{ hashFiles('sarif_split/run-1.sarif') != '' }}
+        if: ${{ hashFiles(format('{0}/run-1.sarif', runner.temp)) != '' }}
         uses: github/codeql-action/upload-sarif@v4
         with:
-          sarif_file: sarif_split/run-1.sarif
+          sarif_file: ${{ runner.temp }}/sarif_split/run-1.sarif
           category: codacy-run-1
 
       - name: Upload SARIF run 2
-        if: ${{ hashFiles('sarif_split/run-2.sarif') != '' }}
+        if: ${{ hashFiles(format('{0}/run-2.sarif', runner.temp)) != '' }}
         uses: github/codeql-action/upload-sarif@v4
         with:
-          sarif_file: sarif_split/run-2.sarif
+          sarif_file: ${{ runner.temp }}/sarif_split/run-2.sarif
           category: codacy-run-2
 
 #      - name: Upload SARIF run 3
-#        if: ${{ hashFiles('sarif_split/run-3.sarif') != '' }}
+#        if: ${{ hashFiles(format('{0}/run-3.sarif', runner.temp)) != '' }}
 #        uses: github/codeql-action/upload-sarif@v4
 #        with:
-#          sarif_file: sarif_split/run-3.sarif
+#          sarif_file: ${{ runner.temp }}/sarif_split/run-3.sarif
 #          category: codacy-run-3
