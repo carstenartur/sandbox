@@ -100,9 +100,9 @@ jobs:
           sarif_file: sarif_split/run-2.sarif
           category: codacy-run-2
 
-      - name: Upload SARIF run 3
-        if: ${{ hashFiles('sarif_split/run-3.sarif') != '' }}
-        uses: github/codeql-action/upload-sarif@v4
-        with:
-          sarif_file: sarif_split/run-3.sarif
-          category: codacy-run-3
+#      - name: Upload SARIF run 3
+#        if: ${{ hashFiles('sarif_split/run-3.sarif') != '' }}
+#        uses: github/codeql-action/upload-sarif@v4
+#        with:
+#          sarif_file: sarif_split/run-3.sarif
+#          category: codacy-run-3
