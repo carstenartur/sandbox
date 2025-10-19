@@ -32,6 +32,10 @@ jobs:
       security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
     name: Codacy Security Scan
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        tool: [ spotbugs, pmd, checkstyle ]   # <-- nur Java-Tools
     steps:
       - name: Set up Maven
         uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1 # v5
@@ -48,13 +52,14 @@ jobs:
            distribution: 'temurin'
            cache: maven
       # Codacy erzeugt SARIF im Runner-Temp und ignoriert uncommitted files
-      - name: Run Codacy Analysis CLI
+      - name: Codacy CLI (${{ matrix.tool }})
         uses: codacy/codacy-analysis-cli-action@v4
         with:
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+          tool: ${{ matrix.tool }}                          # gezielt: spotbugs | pmd | checkstyle
           verbose: true
           format: sarif
-          output: ${{ runner.temp }}/results.sarif
+          output: ${{ runner.temp }}/results-${{ matrix.tool }}.sarif
           gh-code-scanning-compat: true
           max-allowed-issues: 2147483647
           skip-uncommitted-files-check: true
