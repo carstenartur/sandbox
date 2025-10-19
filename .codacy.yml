@@ -1,0 +1,30 @@
+---
+# Alles ausblenden, was gern Probleme macht oder irrelevant ist
+exclude_paths:
+  - "target/**"
+  - ".git/**"
+  - ".github/**"
+  - "**/*.class"
+  - "**/*.jar"
+  - "**/*.war"
+  - "**/*.ear"
+  - "**/*.png"
+  - "**/*.jpg"
+  - "**/*.gif"
+  - "**/*.svg"
+  - "**/*.ico"
+  - "**/*.pdf"
+  - "**/*.ttf"
+  - "**/*.woff*"
+  - "src/main/resources/**"
+  - "src/test/resources/**"
+
+# Nur Java-Quellen analysieren
+include_paths:
+  - "src/**/*.java"
+
+# (Optional) Tool-spezifisches Tuning – Namen laut Doku
+engines:
+  pmd: {}
+  checkstyle: {}
+  spotbugs: {}
