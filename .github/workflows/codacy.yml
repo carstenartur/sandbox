@@ -1,23 +1,9 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-
-# This workflow checks out code, performs a Codacy security scan
-# and integrates the results with the
-# GitHub Advanced Security code scanning feature.  For more information on
-# the Codacy security scan action usage and parameters, see
-# https://github.com/codacy/codacy-analysis-cli-action.
-# For more information on Codacy Analysis CLI in general, see
-# https://github.com/codacy/codacy-analysis-cli.
-
-name: Codacy Security Scan
+name: Codacy Java Scan
 
 on:
   push:
     branches: [ main, 2022-12, 2022-09, 2022-06 ]
   pull_request:
-    # The branches below must be a subset of the branches above
     branches: [ main, 2022-12, 2022-09, 2022-06 ]
   schedule:
     - cron: '39 1 * * 4'
@@ -26,77 +12,91 @@ permissions:
   contents: read
 
 jobs:
-  codacy-security-scan:
-    permissions:
-      contents: read # for actions/checkout to fetch code
-      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
-    name: Codacy Security Scan
+  codacy-java-tools:
+    name: Codacy Java Tools
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        tool: [ spotbugs, pmd, checkstyle ]   # nur Java-Tools
     steps:
       - name: Set up Maven
-        uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1 # v5
+        uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
         with:
-         maven-version: 3.9.3
-      # Checkout the repository to the GitHub Actions runner
+          maven-version: 3.9.3
+
       - name: Checkout code
         uses: actions/checkout@v5
 
       - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
-           java-version: '21'
-           distribution: 'temurin'
-           cache: maven
-      # Codacy erzeugt SARIF im Runner-Temp und ignoriert uncommitted files
-      - name: Run Codacy Analysis CLI
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      # SpotBugs braucht Bytecode; PMD/Checkstyle profitieren ebenfalls
+      - name: Build (no tests)
+        run: mvn -B -DskipTests package
+
+      - name: Run Codacy Analysis CLI (${{ matrix.tool }})
         uses: codacy/codacy-analysis-cli-action@v4
         with:
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+          tool: ${{ matrix.tool }}                       # exakt steuern
           verbose: true
           format: sarif
-          output: ${{ runner.temp }}/results.sarif
+          output: ${{ runner.temp }}/results-${{ matrix.tool }}.sarif
           gh-code-scanning-compat: true
           max-allowed-issues: 2147483647
           skip-uncommitted-files-check: true
 
-      # Split SARIF: eine Datei pro 'run'
-      - name: Split SARIF into single-run files
+      # --- NEU: pro Tool-SARIF in einzelne runs splitten ---
+      - name: Split SARIF into single-run files (${{ matrix.tool }})
         shell: bash
         env:
-          SARIF: ${{ runner.temp }}/results.sarif
-          OUTDIR: ${{ runner.temp }}/sarif_split
+          SARIF: ${{ runner.temp }}/results-${{ matrix.tool }}.sarif
+          OUTDIR: ${{ runner.temp }}/sarif_split_${{ matrix.tool }}
         run: |
           set -euo pipefail
+          if [ ! -s "$SARIF" ]; then
+            echo "No SARIF produced for ${{ matrix.tool }} -> skip."
+            exit 0
+          fi
           mkdir -p "$OUTDIR"
           runs=$(jq '.runs | length' "$SARIF")
+          echo "Found $runs runs in $SARIF"
           for ((i=0; i<runs; i++)); do
             jq --argjson i "$i" '{ "$schema": ."$schema", "version": .version, runs: [ .runs[$i] ] }' "$SARIF" > "$OUTDIR/run-$i.sarif"
           done
+          ls -l "$OUTDIR"
 
-      - name: Upload SARIF run 0
-        if: ${{ hashFiles(format('{0}/run-0.sarif', runner.temp)) != '' }}
+      # --- pro Run separat zu Code Scanning hochladen (eindeutige Kategorien) ---
+      - name: Upload SARIF run 0 (${{ matrix.tool }})
+        if: ${{ hashFiles(format('{0}/sarif_split_{1}/run-0.sarif', runner.temp, matrix.tool)) != '' }}
         uses: github/codeql-action/upload-sarif@v4
         with:
-          sarif_file: ${{ runner.temp }}/sarif_split/run-0.sarif
-          category: codacy-run-0
+          sarif_file: ${{ runner.temp }}/sarif_split_${{ matrix.tool }}/run-0.sarif
+          category: codacy-${{ matrix.tool }}-run-0
+          wait-for-processing: true
 
-      - name: Upload SARIF run 1
-        if: ${{ hashFiles(format('{0}/run-1.sarif', runner.temp)) != '' }}
+      - name: Upload SARIF run 1 (${{ matrix.tool }})
+        if: ${{ hashFiles(format('{0}/sarif_split_{1}/run-1.sarif', runner.temp, matrix.tool)) != '' }}
         uses: github/codeql-action/upload-sarif@v4
         with:
-          sarif_file: ${{ runner.temp }}/sarif_split/run-1.sarif
-          category: codacy-run-1
+          sarif_file: ${{ runner.temp }}/sarif_split_${{ matrix.tool }}/run-1.sarif
+          category: codacy-${{ matrix.tool }}-run-1
+          wait-for-processing: true
 
-      - name: Upload SARIF run 2
-        if: ${{ hashFiles(format('{0}/run-2.sarif', runner.temp)) != '' }}
+      - name: Upload SARIF run 2 (${{ matrix.tool }})
+        if: ${{ hashFiles(format('{0}/sarif_split_{1}/run-2.sarif', runner.temp, matrix.tool)) != '' }}
         uses: github/codeql-action/upload-sarif@v4
         with:
-          sarif_file: ${{ runner.temp }}/sarif_split/run-2.sarif
-          category: codacy-run-2
+          sarif_file: ${{ runner.temp }}/sarif_split_${{ matrix.tool }}/run-2.sarif
+          category: codacy-${{ matrix.tool }}-run-2
+          wait-for-processing: true
 
-#      - name: Upload SARIF run 3
-#        if: ${{ hashFiles(format('{0}/run-3.sarif', runner.temp)) != '' }}
-#        uses: github/codeql-action/upload-sarif@v4
-#        with:
-#          sarif_file: ${{ runner.temp }}/sarif_split/run-3.sarif
-#          category: codacy-run-3
+      # Optional: mehr Upload-Schritte (run-3, run-4, ...) falls nötig
