@@ -15,6 +15,7 @@ jobs:
   codacy-java-tools:
     name: Codacy Java Tools
     runs-on: ubuntu-latest
+    timeout-minutes: 55   # Safety-Net unterhalb GitHub 6h-Hardlimit
     permissions:
       contents: read
       security-events: write
@@ -38,17 +39,26 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      # SpotBugs braucht Bytecode; PMD/Checkstyle profitieren ebenfalls
       - name: Build (no tests)
         run: mvn -B -DskipTests package
+
+      # Optional: zeigt verdächtige .java-Dateien, die nicht UTF-8 sind (bricht nicht ab)
+      - name: Detect non-UTF8 Java files
+        run: |
+          set -e
+          bad="$(git ls-files '*.java' | xargs -I{} bash -lc 'iconv -f UTF-8 -t UTF-8 "{}" >/dev/null 2>&1 || echo "{}"' || true)"
+          if [ -n "$bad" ]; then
+            echo "::warning title=Non-UTF8 Java files detected::${bad}"
+          fi
 
       - name: Run Codacy Analysis CLI (${{ matrix.tool }})
         uses: codacy/codacy-analysis-cli-action@v4
         env:
-          JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
+          JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8   # Encoding erzwingen
         with:
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
-          tool: ${{ matrix.tool }}                       # exakt steuern
+          tool: ${{ matrix.tool }}                   # gezielt: spotbugs/pmd/checkstyle
+          directory: src                             # <— nur src/ analysieren
           verbose: true
           format: sarif
           output: ${{ runner.temp }}/results-${{ matrix.tool }}.sarif
@@ -57,7 +67,7 @@ jobs:
           skip-uncommitted-files-check: true
           tool-timeout: 1hour
 
-      # --- NEU: pro Tool-SARIF in einzelne runs splitten ---
+      # Split pro Tool-SARIF in einzelne runs (GitHub verlangt 1 Run je Upload/Kategorie)
       - name: Split SARIF into single-run files (${{ matrix.tool }})
         shell: bash
         env:
@@ -75,9 +85,8 @@ jobs:
           for ((i=0; i<runs; i++)); do
             jq --argjson i "$i" '{ "$schema": ."$schema", "version": .version, runs: [ .runs[$i] ] }' "$SARIF" > "$OUTDIR/run-$i.sarif"
           done
-          ls -l "$OUTDIR"
 
-      # --- pro Run separat zu Code Scanning hochladen (eindeutige Kategorien) ---
+      # Upload: pro Run eigene Kategorie (verhindert Ablehnung seit 2025-07)
       - name: Upload SARIF run 0 (${{ matrix.tool }})
         if: ${{ hashFiles(format('{0}/sarif_split_{1}/run-0.sarif', runner.temp, matrix.tool)) != '' }}
         uses: github/codeql-action/upload-sarif@v4
@@ -101,5 +110,3 @@ jobs:
           sarif_file: ${{ runner.temp }}/sarif_split_${{ matrix.tool }}/run-2.sarif
           category: codacy-${{ matrix.tool }}-run-2
           wait-for-processing: true
-
-      # Optional: mehr Upload-Schritte (run-3, run-4, ...) falls nötig
