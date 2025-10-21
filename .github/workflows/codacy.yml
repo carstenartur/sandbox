@@ -1,27 +1,19 @@
-name: Codacy Java Scan
-
-on:
-  push:
-    branches: [ main, 2022-12, 2022-09, 2022-06 ]
-  pull_request:
-    branches: [ main, 2022-12, 2022-09, 2022-06 ]
-  schedule:
-    - cron: '39 1 * * 4'
-
-permissions:
-  contents: read
-
 jobs:
   codacy-java-tools:
     name: Codacy Java Tools
     runs-on: ubuntu-latest
+    timeout-minutes: 55
     permissions:
       contents: read
       security-events: write
     strategy:
       fail-fast: false
       matrix:
-        tool: [ spotbugs, pmd, checkstyle ]   # nur Java-Tools
+        tool: [ spotbugs, pmd, checkstyle ]
+    env:
+      LC_ALL: C.UTF-8        # <<< Locale & Encoding hart auf UTF-8
+      LANG: C.UTF-8
+      JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
     steps:
       - name: Set up Maven
         uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
@@ -38,17 +30,32 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      # SpotBugs braucht Bytecode; PMD/Checkstyle profitieren ebenfalls
       - name: Build (no tests)
         run: mvn -B -DskipTests package
 
+      # (Optional, aber sehr hilfreich) Nicht-UTF8-Java-Dateien erkennen & konvertieren
+      - name: Normalize Java sources to UTF-8 (in-place)
+        run: |
+          set -euo pipefail
+          sudo apt-get update -y
+          sudo apt-get install -y uchardet
+          changes=0
+          while IFS= read -r -d '' f; do
+            charset=$(uchardet "$f" | tr '[:upper:]' '[:lower:]')
+            if [ "$charset" != "utf-8" ] && [ "$charset" != "ascii" ]; then
+              echo "Converting $f ($charset -> utf-8)"
+              iconv -f "$charset" -t utf-8 "$f" -o "$f.tmp" && mv "$f.tmp" "$f"
+              changes=$((changes+1))
+            fi
+          done < <(git ls-files -z '*.java')
+          echo "Converted $changes Java files to UTF-8"
+
       - name: Run Codacy Analysis CLI (${{ matrix.tool }})
         uses: codacy/codacy-analysis-cli-action@v4
-        env:
-          JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
         with:
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
-          tool: ${{ matrix.tool }}                       # exakt steuern
+          tool: ${{ matrix.tool }}                 # gezielt: spotbugs/pmd/checkstyle
+          directory: src                           # nur Quellcode unter src
           verbose: true
           format: sarif
           output: ${{ runner.temp }}/results-${{ matrix.tool }}.sarif
@@ -57,7 +64,7 @@ jobs:
           skip-uncommitted-files-check: true
           tool-timeout: 1hour
 
-      # --- NEU: pro Tool-SARIF in einzelne runs splitten ---
+      # GitHub verlangt seit 2025-07 genau 1 run pro Upload/Kategorie
       - name: Split SARIF into single-run files (${{ matrix.tool }})
         shell: bash
         env:
@@ -75,9 +82,7 @@ jobs:
           for ((i=0; i<runs; i++)); do
             jq --argjson i "$i" '{ "$schema": ."$schema", "version": .version, runs: [ .runs[$i] ] }' "$SARIF" > "$OUTDIR/run-$i.sarif"
           done
-          ls -l "$OUTDIR"
 
-      # --- pro Run separat zu Code Scanning hochladen (eindeutige Kategorien) ---
       - name: Upload SARIF run 0 (${{ matrix.tool }})
         if: ${{ hashFiles(format('{0}/sarif_split_{1}/run-0.sarif', runner.temp, matrix.tool)) != '' }}
         uses: github/codeql-action/upload-sarif@v4
@@ -101,5 +106,3 @@ jobs:
           sarif_file: ${{ runner.temp }}/sarif_split_${{ matrix.tool }}/run-2.sarif
           category: codacy-${{ matrix.tool }}-run-2
           wait-for-processing: true
-
-      # Optional: mehr Upload-Schritte (run-3, run-4, ...) falls nötig
