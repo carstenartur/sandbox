@@ -136,6 +136,9 @@
 				<configuration>
 					<source>${java-version}</source>
 					<target>${java-version}</target>
+          <targetPlatformConfiguration>
+          <pomDependencies>ignore</pomDependencies>
+          </targetPlatformConfiguration>
 				</configuration>
 			</plugin>
 			<plugin>
