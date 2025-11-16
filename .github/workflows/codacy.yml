@@ -11,7 +11,7 @@ jobs:
       matrix:
         tool: [ spotbugs, pmd, checkstyle ]
     env:
-      LC_ALL: C.UTF-8        # <<< Locale & Encoding hart auf UTF-8
+      LC_ALL: C.UTF-8
       LANG: C.UTF-8
       JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
     steps:
@@ -76,11 +76,15 @@ jobs:
             echo "No SARIF produced for ${{ matrix.tool }} -> skip."
             exit 0
           fi
+          sudo apt-get update -y
+          sudo apt-get install -y jq
           mkdir -p "$OUTDIR"
-          runs=$(jq '.runs | length' "$SARIF")
+          # safe default: 0 runs if field missing
+          runs=$(jq '.runs | length // 0' "$SARIF")
           echo "Found $runs runs in $SARIF"
           for ((i=0; i<runs; i++)); do
-            jq --argjson i "$i" '{ "$schema": ."$schema", "version": .version, runs: [ .runs[$i] ] }' "$SARIF" > "$OUTDIR/run-$i.sarif"
+            # korrektes Zugreifen auf das $schema-Feld und Extrahieren eines einzelnen runs
+            jq --argjson i "$i" '{ "$schema": .["$schema"], version: .version, runs: [ .runs[$i] ] }' "$SARIF" > "$OUTDIR/run-$i.sarif"
           done
 
       - name: Upload SARIF run 0 (${{ matrix.tool }})
