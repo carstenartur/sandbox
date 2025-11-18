@@ -72,7 +72,7 @@ public class URLEncoderEncodeExplicitEncoding extends AbstractExplicitEncoding<M
 			return;
 		}
 		ReferenceHolder<ASTNode, Object> datah= new ReferenceHolder<>();
-		Nodedata.charsetConstants.clear();
+		getCharsetConstants().clear();
 		HelperVisitor.callMethodInvocationVisitor(URLEncoder.class, METHOD_ENCODE, compilationUnit, datah, nodesprocessed,
 				(visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));
 	}
@@ -86,35 +86,32 @@ public class URLEncoderEncodeExplicitEncoding extends AbstractExplicitEncoding<M
 
 			String encodingValue= null;
 			if (encodingArg instanceof StringLiteral) {
-				encodingValue= ((StringLiteral) encodingArg).getLiteralValue().toUpperCase();
+				encodingValue= ((StringLiteral) encodingArg).getLiteralValue().toUpperCase(java.util.Locale.ROOT);
 			} else if (encodingArg instanceof SimpleName) {
 				encodingValue= findVariableValue((SimpleName) encodingArg, visited);
 			}
 
-			if (encodingValue != null && encodings.contains(encodingValue)) {
-				Nodedata nd= new Nodedata();
-				nd.encoding= encodingmap.get(encodingValue);
-				nd.replace= true;
-				nd.visited= encodingArg;
+			if (encodingValue != null && ENCODINGS.contains(encodingValue)) {
+				NodeData nd= new NodeData(true, encodingArg, ENCODING_MAP.get(encodingValue));
 				holder.put(visited, nd);
 				operations.add(fixcore.rewrite(visited, cb, holder));
 				return false;
 			}
 		}
 		if (ASTNodes.usesGivenSignature(visited, URLEncoder.class.getCanonicalName(), METHOD_ENCODE, String.class.getCanonicalName())) {
-			Nodedata nd= new Nodedata();
+			NodeData nd= new NodeData();
 			switch (cb) {
 				case KEEP_BEHAVIOR:
-					nd.encoding= null;
+					nd.encoding()= null;
 					break;
 				case ENFORCE_UTF8:
-					nd.encoding= "UTF_8"; //$NON-NLS-1$
+					nd.encoding()= "UTF_8"; //$NON-NLS-1$
 					break;
 				case ENFORCE_UTF8_AGGREGATE:
 					break;
 			}
-			nd.replace= false;
-			nd.visited= visited;
+			nd.replace()= false;
+			nd.visited()= visited;
 			holder.put(visited, nd);
 			operations.add(fixcore.rewrite(visited, cb, holder));
 			return false;
@@ -128,14 +125,14 @@ public class URLEncoderEncodeExplicitEncoding extends AbstractExplicitEncoding<M
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
 		ImportRewrite importRewriter= cuRewrite.getImportRewrite();
-		Nodedata nodedata= (Nodedata) data.get(visited);
-		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding,Nodedata.charsetConstants);
+		NodeData nodedata= (NodeData) data.get(visited);
+		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding(),getCharsetConstants());
 		/**
 		 * Add Charset.defaultCharset() as second (last) parameter
 		 */
 		ListRewrite listRewrite= rewrite.getListRewrite(visited, MethodInvocation.ARGUMENTS_PROPERTY);
-		if (nodedata.replace) {
-			listRewrite.replace(nodedata.visited, callToCharsetDefaultCharset, group);
+		if (nodedata.replace()) {
+			listRewrite.replace(nodedata.visited(), callToCharsetDefaultCharset, group);
 		} else {
 			listRewrite.insertLast(callToCharsetDefaultCharset, group);
 		}

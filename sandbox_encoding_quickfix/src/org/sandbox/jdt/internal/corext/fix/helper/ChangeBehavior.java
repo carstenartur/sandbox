@@ -75,7 +75,7 @@ public enum ChangeBehavior {
 		protected Expression computeCharsetASTNode(final CompilationUnitRewrite cuRewrite, AST ast, String charset2, Map<String, QualifiedName> charsetConstants) {
 			String charset= charset2 == null ? "UTF_8" : charset2; //$NON-NLS-1$
 			// Generate a valid Java identifier for the charset name (e.g., UTF_8)
-		    String fieldName = charset.toUpperCase().replace('-', '_');
+		    String fieldName = charset.toUpperCase(java.util.Locale.ROOT).replace('-', '_');
 
 		    // Check if this charset constant is already stored in the map
 		    if (charsetConstants.containsKey(fieldName)) {

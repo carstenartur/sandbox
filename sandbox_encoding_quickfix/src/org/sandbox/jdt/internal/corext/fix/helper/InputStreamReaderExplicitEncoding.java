@@ -62,21 +62,15 @@ public class InputStreamReaderExplicitEncoding extends AbstractExplicitEncoding<
 					return false;
 				}
 				StringLiteral argstring3= (StringLiteral) arguments.get(1);
-				if (!encodings.contains(argstring3.getLiteralValue().toUpperCase())) {
+				if (!ENCODINGS.contains(argstring3.getLiteralValue().toUpperCase(java.util.Locale.ROOT))) {
 					return false;
 				}
-				Nodedata nd= new Nodedata();
-				nd.encoding= encodingmap.get(argstring3.getLiteralValue().toUpperCase());
-				nd.replace= true;
-				nd.visited= argstring3;
+				NodeData nd= new NodeData(true, argstring3, ENCODING_MAP.get(argstring3.getLiteralValue().toUpperCase(java.util.Locale.ROOT)));
 				holder.put(visited, nd);
 				operations.add(fixcore.rewrite(visited, cb, holder));
 				break;
 			case 1:
-				Nodedata nd2= new Nodedata();
-				nd2.encoding= null;
-				nd2.replace= false;
-				nd2.visited= visited;
+				NodeData nd2= new NodeData(false, visited, null);
 				holder.put(visited, nd2);
 				operations.add(fixcore.rewrite(visited, cb, holder));
 				break;
@@ -91,19 +85,19 @@ public class InputStreamReaderExplicitEncoding extends AbstractExplicitEncoding<
 	public void rewrite(UseExplicitEncodingFixCore upp, ClassInstanceCreation visited, CompilationUnitRewrite cuRewrite,
 			TextEditGroup group, ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data) {
 		ASTRewrite rewrite = cuRewrite.getASTRewrite();
-		Nodedata nodedata = (Nodedata) data.get(visited);
+		NodeData nodedata = (NodeData) data.get(visited);
 
 		ASTNode callToCharsetDefaultCharset = cb.computeCharsetASTNode(cuRewrite, cuRewrite.getRoot().getAST(),
-				nodedata.encoding, Nodedata.charsetConstants);
+				nodedata.encoding(), getCharsetConstants());
 
 		ListRewrite listRewrite = rewrite.getListRewrite(visited, ClassInstanceCreation.ARGUMENTS_PROPERTY);
-		if (nodedata.replace) {
+		if (nodedata.replace()) {
 			try {
-				ASTNodes.replaceAndRemoveNLS(rewrite, nodedata.visited, callToCharsetDefaultCharset, group, cuRewrite);
+				ASTNodes.replaceAndRemoveNLS(rewrite, nodedata.visited(), callToCharsetDefaultCharset, group, cuRewrite);
 			} catch (CoreException e) {
 				JavaManipulationPlugin.log(e); // should never happen
 			}
-//			listRewrite.replace(nodedata.visited, callToCharsetDefaultCharset, group);
+//			listRewrite.replace(nodedata.visited(), callToCharsetDefaultCharset, group);
 //			removeNLSComment(cuRewrite, visited, group);
 		} else {
 			listRewrite.insertLast(callToCharsetDefaultCharset, group);

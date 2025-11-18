@@ -74,7 +74,7 @@ public class ScannerExplicitEncoding extends AbstractExplicitEncoding<ClassInsta
 			ChangeBehavior cb, ClassInstanceCreation visited,
 			ReferenceHolder<ASTNode, Object> holder) {
 		List<ASTNode> arguments= visited.arguments();
-		Nodedata nd= new Nodedata();
+		NodeData nd= new NodeData();
 
 		switch (arguments.size()) {
 			case 4:
@@ -84,12 +84,12 @@ public class ScannerExplicitEncoding extends AbstractExplicitEncoding<ClassInsta
 
 				if (argumentNode instanceof StringLiteral) {
 					StringLiteral encodingLiteral= (StringLiteral) argumentNode;
-					String encodingValue= encodingLiteral.getLiteralValue().toUpperCase();
+					String encodingValue= encodingLiteral.getLiteralValue().toUpperCase(java.util.Locale.ROOT);
 
-					if (encodings.contains(encodingValue)) {
-						nd.encoding= encodingmap.get(encodingValue);
-						nd.replace= true;
-						nd.visited= encodingLiteral;
+					if (ENCODINGS.contains(encodingValue)) {
+						nd.encoding()= ENCODING_MAP.get(encodingValue);
+						nd.replace()= true;
+						nd.visited()= encodingLiteral;
 						holder.put(visited, nd);
 						operations.add(fixcore.rewrite(visited, cb, holder));
 					}
@@ -97,9 +97,9 @@ public class ScannerExplicitEncoding extends AbstractExplicitEncoding<ClassInsta
 				break;
 
 			case 1:
-				nd.encoding= null;
-				nd.replace= false;
-				nd.visited= visited;
+				nd.encoding()= null;
+				nd.replace()= false;
+				nd.visited()= visited;
 				holder.put(visited, nd);
 				operations.add(fixcore.rewrite(visited, cb, holder));
 				break;
@@ -116,14 +116,14 @@ public class ScannerExplicitEncoding extends AbstractExplicitEncoding<ClassInsta
 			TextEditGroup group, ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
-		Nodedata nodedata= (Nodedata) data.get(visited);
-		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding,Nodedata.charsetConstants);
+		NodeData nodedata= (NodeData) data.get(visited);
+		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding(),getCharsetConstants());
 		/**
 		 * Add Charset.defaultCharset() as second (last) parameter
 		 */
 		ListRewrite listRewrite= rewrite.getListRewrite(visited, ClassInstanceCreation.ARGUMENTS_PROPERTY);
-		if (nodedata.replace) {
-			listRewrite.replace(nodedata.visited, callToCharsetDefaultCharset, group);
+		if (nodedata.replace()) {
+			listRewrite.replace(nodedata.visited(), callToCharsetDefaultCharset, group);
 		} else {
 			listRewrite.insertLast(callToCharsetDefaultCharset, group);
 		}

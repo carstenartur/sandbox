@@ -74,16 +74,13 @@ public class CharsetForNameExplicitEncoding extends AbstractExplicitEncoding<Met
 
 		String encodingValue= null;
 		if (encodingArg instanceof StringLiteral) {
-			encodingValue= ((StringLiteral) encodingArg).getLiteralValue().toUpperCase();
+			encodingValue= ((StringLiteral) encodingArg).getLiteralValue().toUpperCase(java.util.Locale.ROOT);
 		} else if (encodingArg instanceof SimpleName) {
 			encodingValue= findVariableValue((SimpleName) encodingArg, visited);
 		}
 
-		if (encodingValue != null && encodings.contains(encodingValue)) {
-			Nodedata nd= new Nodedata();
-			nd.encoding= encodingmap.get(encodingValue);
-			nd.replace= true;
-			nd.visited= encodingArg;
+		if (encodingValue != null && ENCODINGS.contains(encodingValue)) {
+			NodeData nd= new NodeData(true, encodingArg, ENCODING_MAP.get(encodingValue));
 			holder.put(visited, nd);
 			operations.add(fixcore.rewrite(visited, cb, holder));
 			return false;
@@ -96,8 +93,8 @@ public class CharsetForNameExplicitEncoding extends AbstractExplicitEncoding<Met
 			TextEditGroup group, ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
-		Nodedata nodedata= (Nodedata) data.get(visited);
-		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding,Nodedata.charsetConstants);
+		NodeData nodedata= (NodeData) data.get(visited);
+		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding(),getCharsetConstants());
 		ASTNodes.replaceButKeepComment(rewrite, visited, callToCharsetDefaultCharset, group);
 	}
 
