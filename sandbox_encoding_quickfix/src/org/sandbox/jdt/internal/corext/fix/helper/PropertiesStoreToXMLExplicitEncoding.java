@@ -79,10 +79,7 @@ public class PropertiesStoreToXMLExplicitEncoding extends AbstractExplicitEncodi
 				operations.add(fixcore.rewrite(visited, cb, holder));
 				break;
 			case 2:
-				NodeData nd2= new NodeData();
-				nd2.encoding()= "UTF_8"; //$NON-NLS-1$
-				nd2.replace()= false;
-				nd2.visited()= visited;
+				NodeData nd2= new NodeData(false, visited, "UTF_8"); //$NON-NLS-1$
 				holder.put(visited, nd2);
 				operations.add(fixcore.rewrite(visited, cb, holder));
 				break;
