@@ -75,13 +75,10 @@ public class StringExplicitEncoding extends AbstractExplicitEncoding<ClassInstan
 					return false;
 				}
 				StringLiteral argstring4= (StringLiteral) arguments.get(3);
-				if (!encodings.contains(argstring4.getLiteralValue().toUpperCase())) {
+				if (!ENCODINGS.contains(argstring4.getLiteralValue().toUpperCase(java.util.Locale.ROOT))) {
 					return false;
 				}
-				Nodedata nd= new Nodedata();
-				nd.encoding= encodingmap.get(argstring4.getLiteralValue().toUpperCase());
-				nd.replace= true;
-				nd.visited= argstring4;
+				NodeData nd= new NodeData(true, argstring4, ENCODING_MAP.get(argstring4.getLiteralValue().toUpperCase(java.util.Locale.ROOT)));
 				holder.put(visited, nd);
 				operations.add(fixcore.rewrite(visited, cb, holder));
 				break;
@@ -90,13 +87,10 @@ public class StringExplicitEncoding extends AbstractExplicitEncoding<ClassInstan
 					return false;
 				}
 				StringLiteral argstring3= (StringLiteral) arguments.get(1);
-				if (!encodings.contains(argstring3.getLiteralValue().toUpperCase())) {
+				if (!ENCODINGS.contains(argstring3.getLiteralValue().toUpperCase(java.util.Locale.ROOT))) {
 					return false;
 				}
-				Nodedata nd2= new Nodedata();
-				nd2.encoding= encodingmap.get(argstring3.getLiteralValue().toUpperCase());
-				nd2.replace= true;
-				nd2.visited= argstring3;
+				NodeData nd2= new NodeData(true, argstring3, ENCODING_MAP.get(argstring3.getLiteralValue().toUpperCase(java.util.Locale.ROOT)));
 				holder.put(visited, nd2);
 				operations.add(fixcore.rewrite(visited, cb, holder));
 				break;
@@ -114,19 +108,19 @@ public class StringExplicitEncoding extends AbstractExplicitEncoding<ClassInstan
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
 		ImportRewrite importRewriter= cuRewrite.getImportRewrite();
-		Nodedata nodedata= (Nodedata) data.get(visited);
-		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding,Nodedata.charsetConstants);
+		NodeData nodedata= (NodeData) data.get(visited);
+		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding(),getCharsetConstants());
 		/**
 		 * Add Charset.defaultCharset() as second (last) parameter
 		 */
 		ListRewrite listRewrite= rewrite.getListRewrite(visited, ClassInstanceCreation.ARGUMENTS_PROPERTY);
-		if (nodedata.replace) {
+		if (nodedata.replace()) {
 			try {
-				ASTNodes.replaceAndRemoveNLS(rewrite, nodedata.visited, callToCharsetDefaultCharset, group, cuRewrite);
+				ASTNodes.replaceAndRemoveNLS(rewrite, nodedata.visited(), callToCharsetDefaultCharset, group, cuRewrite);
 			} catch (CoreException e) {
 				JavaManipulationPlugin.log(e); // should not occur
 			}
-//			listRewrite.replace(nodedata.visited, callToCharsetDefaultCharset, group);
+//			listRewrite.replace(nodedata.visited(), callToCharsetDefaultCharset, group);
 		} else {
 			listRewrite.insertLast(callToCharsetDefaultCharset, group);
 		}

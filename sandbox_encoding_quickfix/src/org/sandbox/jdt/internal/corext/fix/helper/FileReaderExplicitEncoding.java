@@ -66,10 +66,10 @@ public class FileReaderExplicitEncoding extends AbstractExplicitEncoding<ClassIn
 					return false;
 				}
 				StringLiteral argstring3= (StringLiteral) arguments.get(1);
-				if (!encodings.contains(argstring3.getLiteralValue())) {
+				if (!ENCODINGS.contains(argstring3.getLiteralValue())) {
 					return false;
 				}
-				holder.put(argstring3, encodingmap.get(argstring3.getLiteralValue()));
+				holder.put(argstring3, ENCODING_MAP.get(argstring3.getLiteralValue()));
 				break;
 			default:
 				return false;
@@ -83,7 +83,7 @@ public class FileReaderExplicitEncoding extends AbstractExplicitEncoding<ClassIn
 			TextEditGroup group, ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
-		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, (String) data.get(visited),Nodedata.charsetConstants);
+		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, (String) data.get(visited),getCharsetConstants());
 		/**
 		 * new FileInputStream(<filename>)
 		 */

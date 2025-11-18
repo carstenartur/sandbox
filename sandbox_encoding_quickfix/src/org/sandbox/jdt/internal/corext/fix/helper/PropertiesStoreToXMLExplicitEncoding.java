@@ -71,21 +71,18 @@ public class PropertiesStoreToXMLExplicitEncoding extends AbstractExplicitEncodi
 					return false;
 				}
 				StringLiteral argstring3= (StringLiteral) arguments.get(2);
-				if (!encodings.contains(argstring3.getLiteralValue().toUpperCase())) {
+				if (!ENCODINGS.contains(argstring3.getLiteralValue().toUpperCase(java.util.Locale.ROOT))) {
 					return false;
 				}
-				Nodedata nd= new Nodedata();
-				nd.encoding= encodingmap.get(argstring3.getLiteralValue().toUpperCase());
-				nd.replace= true;
-				nd.visited= argstring3;
+				NodeData nd= new NodeData(true, argstring3, ENCODING_MAP.get(argstring3.getLiteralValue().toUpperCase(java.util.Locale.ROOT)));
 				holder.put(visited, nd);
 				operations.add(fixcore.rewrite(visited, cb, holder));
 				break;
 			case 2:
-				Nodedata nd2= new Nodedata();
-				nd2.encoding= "UTF_8"; //$NON-NLS-1$
-				nd2.replace= false;
-				nd2.visited= visited;
+				NodeData nd2= new NodeData();
+				nd2.encoding()= "UTF_8"; //$NON-NLS-1$
+				nd2.replace()= false;
+				nd2.visited()= visited;
 				holder.put(visited, nd2);
 				operations.add(fixcore.rewrite(visited, cb, holder));
 				break;
@@ -101,14 +98,14 @@ public class PropertiesStoreToXMLExplicitEncoding extends AbstractExplicitEncodi
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
 		ImportRewrite importRewriter= cuRewrite.getImportRewrite();
-		Nodedata nodedata= (Nodedata) data.get(visited);
-		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding,Nodedata.charsetConstants);
+		NodeData nodedata= (NodeData) data.get(visited);
+		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding(),getCharsetConstants());
 		/**
 		 * Add StandardCharsets.UTF_8 as third (last) parameter
 		 */
 		ListRewrite listRewrite= rewrite.getListRewrite(visited, MethodInvocation.ARGUMENTS_PROPERTY);
-		if (nodedata.replace) {
-			listRewrite.replace(nodedata.visited, callToCharsetDefaultCharset, group);
+		if (nodedata.replace()) {
+			listRewrite.replace(nodedata.visited(), callToCharsetDefaultCharset, group);
 		} else {
 			listRewrite.insertLast(callToCharsetDefaultCharset, group);
 		}
