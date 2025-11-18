@@ -74,7 +74,6 @@ public class ScannerExplicitEncoding extends AbstractExplicitEncoding<ClassInsta
 			ChangeBehavior cb, ClassInstanceCreation visited,
 			ReferenceHolder<ASTNode, Object> holder) {
 		List<ASTNode> arguments= visited.arguments();
-		NodeData nd= new NodeData();
 
 		switch (arguments.size()) {
 			case 4:
@@ -87,9 +86,7 @@ public class ScannerExplicitEncoding extends AbstractExplicitEncoding<ClassInsta
 					String encodingValue= encodingLiteral.getLiteralValue().toUpperCase(java.util.Locale.ROOT);
 
 					if (ENCODINGS.contains(encodingValue)) {
-						nd.encoding()= ENCODING_MAP.get(encodingValue);
-						nd.replace()= true;
-						nd.visited()= encodingLiteral;
+						NodeData nd= new NodeData(true, encodingLiteral, ENCODING_MAP.get(encodingValue));
 						holder.put(visited, nd);
 						operations.add(fixcore.rewrite(visited, cb, holder));
 					}
@@ -97,10 +94,8 @@ public class ScannerExplicitEncoding extends AbstractExplicitEncoding<ClassInsta
 				break;
 
 			case 1:
-				nd.encoding()= null;
-				nd.replace()= false;
-				nd.visited()= visited;
-				holder.put(visited, nd);
+				NodeData nd2= new NodeData(false, visited, null);
+				holder.put(visited, nd2);
 				operations.add(fixcore.rewrite(visited, cb, holder));
 				break;
 

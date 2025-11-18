@@ -99,19 +99,19 @@ public class URLEncoderEncodeExplicitEncoding extends AbstractExplicitEncoding<M
 			}
 		}
 		if (ASTNodes.usesGivenSignature(visited, URLEncoder.class.getCanonicalName(), METHOD_ENCODE, String.class.getCanonicalName())) {
-			NodeData nd= new NodeData();
+			String encoding= null;
 			switch (cb) {
 				case KEEP_BEHAVIOR:
-					nd.encoding()= null;
+					encoding= null;
 					break;
 				case ENFORCE_UTF8:
-					nd.encoding()= "UTF_8"; //$NON-NLS-1$
+					encoding= "UTF_8"; //$NON-NLS-1$
 					break;
 				case ENFORCE_UTF8_AGGREGATE:
+					encoding= "UTF_8"; //$NON-NLS-1$
 					break;
 			}
-			nd.replace()= false;
-			nd.visited()= visited;
+			NodeData nd= new NodeData(false, visited, encoding);
 			holder.put(visited, nd);
 			operations.add(fixcore.rewrite(visited, cb, holder));
 			return false;

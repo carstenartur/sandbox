@@ -80,7 +80,6 @@ public class FormatterExplicitEncoding extends AbstractExplicitEncoding<ClassIns
 			ClassInstanceCreation visited,
 			ReferenceHolder<ASTNode, Object> holder) {
 		List<ASTNode> arguments= visited.arguments();
-		NodeData nd= new NodeData();
 
 		switch (arguments.size()) {
 			case 2:
@@ -90,19 +89,15 @@ public class FormatterExplicitEncoding extends AbstractExplicitEncoding<ClassIns
 					String encodingKey= argString.getLiteralValue().toUpperCase(java.util.Locale.ROOT);
 
 					if (ENCODINGS.contains(encodingKey)) {
-						nd.encoding()= ENCODING_MAP.get(encodingKey);
-						nd.replace()= true;
-						nd.visited()= argString;
+						NodeData nd= new NodeData(true, argString, ENCODING_MAP.get(encodingKey));
 						holder.put(visited, nd);
 						operations.add(fixcore.rewrite(visited, cb, holder));
 					}
 				}
 				break;
 			case 1:
-				nd.encoding()= null;
-				nd.replace()= false;
-				nd.visited()= visited;
-				holder.put(visited, nd);
+				NodeData nd2= new NodeData(false, visited, null);
+				holder.put(visited, nd2);
 				operations.add(fixcore.rewrite(visited, cb, holder));
 				break;
 			default:
