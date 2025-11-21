@@ -42,7 +42,7 @@ jobs:
       with:
         maven-version: 3.9.3
     - name: Checkout repository
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
 
     - name: Setup Java JDK
       uses: actions/setup-java@v5
