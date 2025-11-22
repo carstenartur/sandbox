@@ -18,7 +18,7 @@
 		<spotbugs-version>4.9.8.1</spotbugs-version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<license.licenseName>epl_v1</license.licenseName>
-		<bouncycastle.version>1.82</bouncycastle.version>
+		<bouncycastle.version>1.81.0</bouncycastle.version>
 	</properties>
 	<modules>
 		<module>sandbox_target</module>
@@ -178,22 +178,22 @@
 						   <requirement>
       <type>eclipse-plugin</type>
       <id>bcutil</id>
-      <versionRange>[1.81.0,1.82.0)</versionRange>
+      <versionRange>1.81.0</versionRange>
     </requirement>
     <requirement>
       <type>eclipse-plugin</type>
       <id>bcprov</id>
-      <versionRange>[1.81.0,1.82.0)</versionRange>
+      <versionRange>1.81.0</versionRange>
     </requirement>
     <requirement>
       <type>eclipse-plugin</type>
       <id>bcpkix</id>
-      <versionRange>[1.81.0,1.82.0)</versionRange>
+      <versionRange>1.81.0</versionRange>
     </requirement>
     <requirement>
       <type>eclipse-plugin</type>
       <id>bcpg</id>
-      <versionRange>[1.81.0,1.82.0)</versionRange>
+      <versionRange>1.81.0</versionRange>
     </requirement>
 						</extraRequirements>
 					</dependency-resolution>
