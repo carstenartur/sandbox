@@ -3,9 +3,9 @@
 <target includeMode="Feature" name="target platform for sandbox">
 	<locations>
 
-        <!-- 1. Haupt-Update-Site für Eclipse 2024-12 -->
+        <!-- 1. Haupt-Update-Site für Eclipse 2025-09 (upgraded from 2025-06 to resolve Bouncy Castle import conflicts) -->
         <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
-            <repository location="https://download.eclipse.org/releases/2025-06/"/>
+            <repository location="https://download.eclipse.org/releases/2025-09/"/>
             <unit id="org.eclipse.jdt.feature.group" version="0.0.0"/>
             <unit id="org.eclipse.jdt.astview.feature.feature.group" version="0.0.0"/>
             <unit id="org.eclipse.jdt.jeview.feature.feature.group" version="0.0.0"/>
@@ -21,9 +21,9 @@
             <unit id="org.eclipse.equinox.executable.feature.group" version="0.0.0"/>
         </location>-->
 
-        <!-- 3. Orbit Dependencies (Externe Abhängigkeiten) -->
+        <!-- 3. Orbit Dependencies (Externe Abhängigkeiten) - upgraded to 2025-09 -->
         <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
-            <repository location="https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2025-06/"/>
+            <repository location="https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2025-09/"/>
             <unit id="org.apache.commons.commons-io" version="0.0.0"/>
             <unit id="org.apache.commons.lang3" version="0.0.0"/>
         </location>
