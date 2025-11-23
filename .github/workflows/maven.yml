@@ -47,7 +47,8 @@ jobs:
       with:
         maven-version: 3.9.9
     - name: Build with Maven
-      run: xvfb-run --auto-servernum mvn -e -V --batch-mode -Dtycho.localArtifacts=ignore -Pweb,jacoco clean verify
+      run: xvfb-run --auto-servernum mvn -e -V --batch-mode -Dtycho.localArtifacts=ignore -Pjacoco clean verify
+#       run: xvfb-run --auto-servernum mvn -e -V --batch-mode -Dtycho.localArtifacts=ignore -Pweb,jacoco clean verify
     - name: Cleanup xvfb pidx build
       uses: bcomnes/cleanup-xvfb@v1
     - name: Publish Test Report
