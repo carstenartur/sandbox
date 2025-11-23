@@ -11,6 +11,7 @@
 	<properties>
 		<!-- Upgraded to Tycho 5.0.0 – resolves CodeQL autobuild TargetPlatformArtifactResolver injection error (mixed Tycho versions). -->
 		<tycho-version>5.0.0</tycho-version>
+		<tycho.version>5.0.0</tycho.version>
 		<rcp-version>eclipse</rcp-version>
 		<!-- <rcp-version>2021-03</rcp-version> -->
 		<jacoco-version>0.8.14</jacoco-version>
@@ -18,6 +19,7 @@
 		<java-execenv>JavaSE-21</java-execenv>
 		<spotbugs-version>4.9.8.1</spotbugs-version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.compiler.release>21</maven.compiler.release>
 		<license.licenseName>epl_v1</license.licenseName>
 		<bouncycastle.version>1.81.0</bouncycastle.version>
 	</properties>
@@ -98,6 +100,42 @@
 		</repository>
 	</repositories>
 	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.eclipse.tycho</groupId>
+					<artifactId>tycho-maven-plugin</artifactId>
+					<version>${tycho.version}</version>
+					<extensions>true</extensions>
+					<dependencies>
+						<!-- Ensure tycho-targetplatform is available to fix TargetPlatformArtifactResolver binding -->
+						<dependency>
+							<groupId>org.eclipse.tycho</groupId>
+							<artifactId>tycho-targetplatform</artifactId>
+							<version>${tycho.version}</version>
+						</dependency>
+					</dependencies>
+				</plugin>
+				<plugin>
+					<groupId>org.eclipse.tycho</groupId>
+					<artifactId>target-platform-configuration</artifactId>
+					<version>${tycho.version}</version>
+				</plugin>
+				<plugin>
+					<groupId>org.eclipse.tycho</groupId>
+					<artifactId>tycho-packaging-plugin</artifactId>
+					<version>${tycho.version}</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<version>3.14.1</version>
+					<configuration>
+						<release>${maven.compiler.release}</release>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
 		<plugins>
 		<plugin>
 				<groupId>org.codehaus.mojo</groupId>
@@ -127,20 +165,11 @@
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
 				<artifactId>tycho-maven-plugin</artifactId>
-				<version>${tycho-version}</version>
 				<extensions>true</extensions>
-				<configuration>
-					<source>${java-version}</source>
-					<target>${java-version}</target>
-          <targetPlatformConfiguration>
-          <pomDependencies>ignore</pomDependencies>
-          </targetPlatformConfiguration>
-				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
 				<artifactId>target-platform-configuration</artifactId>
-				<version>${tycho-version}</version>
 				<configuration>
 					<executionEnvironment>${java-execenv}</executionEnvironment>
 					<target>
@@ -216,10 +245,6 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.14.1</version>
-				<configuration>
-					<release>${java-version}</release>
-				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>com.github.spotbugs</groupId>
@@ -248,7 +273,6 @@
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
 				<artifactId>tycho-packaging-plugin</artifactId>
-				<version>${tycho-version}</version>
 			</plugin>
 		</plugins>
 	</build>
@@ -272,13 +296,21 @@
 	</reporting>
 	<dependencyManagement>
 		<dependencies>
-<dependency>
-      <groupId>org.junit</groupId>
-      <artifactId>junit-bom</artifactId>
-      <version>5.14.1</version>
-      <type>pom</type>
-      <scope>import</scope>
-    </dependency>
+			<!-- Import Tycho BOM to ensure consistent Tycho versions -->
+			<dependency>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>tycho-bom</artifactId>
+				<version>${tycho.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.junit</groupId>
+				<artifactId>junit-bom</artifactId>
+				<version>5.14.1</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
 			<dependency>
 				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_cleanup_application</artifactId>
