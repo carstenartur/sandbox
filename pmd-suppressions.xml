@@ -1,1 +1,33 @@
 <?xml version="1.0"?>
+<pmd>
+    <!-- Suppress stylistic and naming rules (considered a matter of taste) -->
+    <suppress>
+        <rule>FieldNamingConventions</rule>
+    </suppress>
+    <suppress>
+        <rule>MethodNamingConventions</rule>
+    </suppress>
+    <suppress>
+        <rule>ClassNamingConventions</rule>
+    </suppress>
+    <suppress>
+        <rule>VariableNamingConventions</rule>
+    </suppress>
+    <suppress>
+        <rule>ShortVariable</rule>
+    </suppress>
+    <suppress>
+        <rule>LongVariable</rule>
+    </suppress>
+    <suppress>
+        <rule>ShortMethodName</rule>
+    </suppress>
+    <suppress>
+        <rule>ShortClassName</rule>
+    </suppress>
+    
+    <!-- Disable PMD completely for generated sources -->
+    <suppress>
+        <files>/**/generated/**</files>
+    </suppress>
+</pmd>
