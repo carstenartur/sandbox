@@ -95,6 +95,13 @@
 			<layout>p2</layout>
 			<url>https://download.eclipse.org/technology/babel/update-site/latest/</url>
 		</repository>
+		
+		<!-- 7. Eclipse Platform Integration Builds (for JUnit 5 test platform bundles) -->
+		<repository>
+			<id>eclipse-integration</id>
+			<layout>p2</layout>
+			<url>https://download.eclipse.org/eclipse/updates/4.39-I-builds/</url>
+		</repository>
 	</repositories>
 	<build>
 		<plugins>
@@ -190,47 +197,6 @@
       <type>eclipse-plugin</type>
       <id>bcpg</id>
       <versionRange>1.81.0</versionRange>
-    </requirement>
-    <!-- JUnit 5 and opentest4j OSGi bundles for Tycho test runtime -->
-    <requirement>
-      <type>eclipse-plugin</type>
-      <id>org.junit</id>
-      <versionRange>0.0.0</versionRange>
-    </requirement>
-    <requirement>
-      <type>eclipse-plugin</type>
-      <id>org.junit.jupiter.api</id>
-      <versionRange>0.0.0</versionRange>
-    </requirement>
-    <requirement>
-      <type>eclipse-plugin</type>
-      <id>org.junit.jupiter.params</id>
-      <versionRange>0.0.0</versionRange>
-    </requirement>
-    <requirement>
-      <type>eclipse-plugin</type>
-      <id>org.junit.platform.commons</id>
-      <versionRange>0.0.0</versionRange>
-    </requirement>
-    <requirement>
-      <type>eclipse-plugin</type>
-      <id>org.junit.platform.engine</id>
-      <versionRange>0.0.0</versionRange>
-    </requirement>
-    <requirement>
-      <type>eclipse-plugin</type>
-      <id>org.junit.platform.launcher</id>
-      <versionRange>0.0.0</versionRange>
-    </requirement>
-    <requirement>
-      <type>eclipse-plugin</type>
-      <id>org.junit.platform.suite.api</id>
-      <versionRange>0.0.0</versionRange>
-    </requirement>
-    <requirement>
-      <type>eclipse-plugin</type>
-      <id>org.opentest4j</id>
-      <versionRange>0.0.0</versionRange>
     </requirement>
 						</extraRequirements>
 					</dependency-resolution>
