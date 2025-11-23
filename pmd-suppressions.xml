@@ -38,5 +38,4 @@
     <suppress files=".*[/\\]build[/\\]generated[/\\].*" />
     <suppress files=".*[/\\]src[/\\]generated[/\\].*" />
     <suppress files=".*[/\\]gen[/\\].*\.java$" />
-    
 </suppressions>
