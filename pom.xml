@@ -95,13 +95,6 @@
 			<layout>p2</layout>
 			<url>https://download.eclipse.org/technology/babel/update-site/latest/</url>
 		</repository>
-		
-		<!-- 7. Eclipse Platform Integration Builds (for JUnit 5 test platform bundles) -->
-		<repository>
-			<id>eclipse-integration</id>
-			<layout>p2</layout>
-			<url>https://download.eclipse.org/eclipse/updates/4.39-I-builds/</url>
-		</repository>
 	</repositories>
 	<build>
 		<plugins>
