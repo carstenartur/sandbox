@@ -9,8 +9,7 @@
 	<version>1.2.2-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<properties>
-		<!-- Upgraded to Tycho 5.0.0 – resolves CodeQL autobuild TargetPlatformArtifactResolver injection error (mixed Tycho versions). -->
-		<tycho-version>5.0.0</tycho-version>
+		<!-- Upgraded to Tycho 5.0.0 with proper pluginManagement to fix TargetPlatformArtifactResolver Guice binding -->
 		<tycho.version>5.0.0</tycho.version>
 		<rcp-version>eclipse</rcp-version>
 		<!-- <rcp-version>2021-03</rcp-version> -->
@@ -108,7 +107,7 @@
 					<version>${tycho.version}</version>
 					<extensions>true</extensions>
 					<dependencies>
-						<!-- Ensure tycho-targetplatform is available to fix TargetPlatformArtifactResolver binding -->
+						<!-- Provides TargetPlatformArtifactResolver implementation for Guice dependency injection -->
 						<dependency>
 							<groupId>org.eclipse.tycho</groupId>
 							<artifactId>tycho-targetplatform</artifactId>
@@ -296,13 +295,13 @@
 	</reporting>
 	<dependencyManagement>
 		<dependencies>
-			<dependency>
-				<groupId>org.junit</groupId>
-				<artifactId>junit-bom</artifactId>
-				<version>5.14.1</version>
-				<type>pom</type>
-				<scope>import</scope>
-			</dependency>
+<dependency>
+      <groupId>org.junit</groupId>
+      <artifactId>junit-bom</artifactId>
+      <version>5.14.1</version>
+      <type>pom</type>
+      <scope>import</scope>
+    </dependency>
 			<dependency>
 				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_cleanup_application</artifactId>
