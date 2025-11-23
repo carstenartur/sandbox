@@ -195,6 +195,47 @@
       <id>bcpg</id>
       <versionRange>[1.81.0,2.0.0)</versionRange>
     </requirement>
+    <!-- JUnit 5 and opentest4j OSGi bundles for Tycho test runtime -->
+    <requirement>
+      <type>eclipse-plugin</type>
+      <id>org.junit</id>
+      <versionRange>0.0.0</versionRange>
+    </requirement>
+    <requirement>
+      <type>eclipse-plugin</type>
+      <id>org.junit.jupiter.api</id>
+      <versionRange>0.0.0</versionRange>
+    </requirement>
+    <requirement>
+      <type>eclipse-plugin</type>
+      <id>org.junit.jupiter.params</id>
+      <versionRange>0.0.0</versionRange>
+    </requirement>
+    <requirement>
+      <type>eclipse-plugin</type>
+      <id>org.junit.platform.commons</id>
+      <versionRange>0.0.0</versionRange>
+    </requirement>
+    <requirement>
+      <type>eclipse-plugin</type>
+      <id>org.junit.platform.engine</id>
+      <versionRange>0.0.0</versionRange>
+    </requirement>
+    <requirement>
+      <type>eclipse-plugin</type>
+      <id>org.junit.platform.launcher</id>
+      <versionRange>0.0.0</versionRange>
+    </requirement>
+    <requirement>
+      <type>eclipse-plugin</type>
+      <id>org.junit.platform.suite.api</id>
+      <versionRange>0.0.0</versionRange>
+    </requirement>
+    <requirement>
+      <type>eclipse-plugin</type>
+      <id>org.opentest4j</id>
+      <versionRange>0.0.0</versionRange>
+    </requirement>
 						</extraRequirements>
 					</dependency-resolution>
 					<environments>
