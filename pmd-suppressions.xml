@@ -1,33 +1,41 @@
 <?xml version="1.0"?>
-<pmd>
-    <!-- Suppress stylistic and naming rules (considered a matter of taste) -->
-    <suppress>
-        <rule>FieldNamingConventions</rule>
-    </suppress>
-    <suppress>
-        <rule>MethodNamingConventions</rule>
-    </suppress>
-    <suppress>
-        <rule>ClassNamingConventions</rule>
-    </suppress>
-    <suppress>
-        <rule>VariableNamingConventions</rule>
-    </suppress>
-    <suppress>
-        <rule>ShortVariable</rule>
-    </suppress>
-    <suppress>
-        <rule>LongVariable</rule>
-    </suppress>
-    <suppress>
-        <rule>ShortMethodName</rule>
-    </suppress>
-    <suppress>
-        <rule>ShortClassName</rule>
-    </suppress>
+<suppressions xmlns="https://pmd.github.io/pmd/pmd-suppressions-1.0.0.xsd"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="https://pmd.github.io/pmd/pmd-suppressions-1.0.0.xsd https://pmd.github.io/pmd/pmd-suppressions-1.0.0.xsd">
 
-    <!-- Disable PMD completely for generated sources -->
-    <suppress>
-        <files>/**/generated/**</files>
-    </suppress>
-</pmd>
+    <!-- Suppress stylistic and naming-related rules (Geschmacksache) -->
+    
+    <!-- Naming conventions - matter of personal preference -->
+    <suppress rule="ShortVariable" />
+    <suppress rule="LongVariable" />
+    <suppress rule="ShortMethodName" />
+    <suppress rule="ShortClassName" />
+    <suppress rule="MethodNamingConventions" />
+    <suppress rule="ClassNamingConventions" />
+    <suppress rule="FieldNamingConventions" />
+    <suppress rule="FormalParameterNamingConventions" />
+    <suppress rule="LocalVariableNamingConventions" />
+    
+    <!-- Code style - formatting and structure preferences -->
+    <suppress rule="OnlyOneReturn" />
+    <suppress rule="AtLeastOneConstructor" />
+    <suppress rule="UseUnderscoresInNumericLiterals" />
+    <suppress rule="FieldDeclarationsShouldBeAtStartOfClass" />
+    <suppress rule="CommentDefaultAccessModifier" />
+    <suppress rule="CallSuperInConstructor" />
+    <suppress rule="AbstractClassWithoutAbstractMethod" />
+    <suppress rule="ConfusingTernary" />
+    <suppress rule="LinguisticNaming" />
+    <suppress rule="UseVarargs" />
+    
+    <!-- Comment and documentation style -->
+    <suppress rule="CommentSize" />
+    <suppress rule="CommentRequired" />
+    
+    <!-- Completely suppress PMD for generated sources -->
+    <suppress files=".*[/\\]target[/\\]generated-sources[/\\].*" />
+    <suppress files=".*[/\\]generated[/\\].*" />
+    <suppress files=".*[/\\]build[/\\]generated[/\\].*" />
+    <suppress files=".*[/\\]src[/\\]generated[/\\].*" />
+    <suppress files=".*[/\\]gen[/\\].*\.java$" />
+</suppressions>

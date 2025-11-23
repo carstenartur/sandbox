@@ -18,7 +18,7 @@
 		<spotbugs-version>4.9.8.1</spotbugs-version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<license.licenseName>epl_v1</license.licenseName>
-		<bouncycastle.version>1.81</bouncycastle.version>
+		<bouncycastle.version>1.81.0</bouncycastle.version>
 	</properties>
 	<modules>
 		<module>sandbox_target</module>
@@ -61,39 +61,35 @@
         <url>https://download.eclipse.org/releases/2025-09/</url>
     </repository>
 
-    <!-- 2. Eclipse 4.38 Integration Builds -->
-    <repository>
-        <id>eclipse-4.38-builds</id>
-        <layout>p2</layout>
-        <url>https://download.eclipse.org/eclipse/updates/4.38-I-builds/</url>
-    </repository>
-
-    <!-- 3. Eclipse Orbit (externe Abhängigkeiten wie Apache Commons) - upgraded to 2025-09 -->
+    <!-- 2. Eclipse Orbit (externe Abhängigkeiten wie Apache Commons) -->
     <repository>
         <id>orbit</id>
         <layout>p2</layout>
         <url>https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2025-09/</url>
     </repository>
 
-    <!-- 4. Eclipse Lizenzinformationen -->
+    <!-- 3. Eclipse Lizenzinformationen -->
     <repository>
         <id>cbi-license</id>
         <layout>p2</layout>
         <url>https://download.eclipse.org/cbi/updates/license/</url>
     </repository>
 
-    <!-- 5. EGit Repository -->
+    <!-- 4. EGit Repository -->
     <repository>
         <id>egit</id>
         <layout>p2</layout>
         <url>https://download.eclipse.org/egit/updates/</url>
     </repository>
     
+    <!-- 5. JustJ Java Runtime -->
     <repository>
 			<id>justj</id>
 			<layout>p2</layout>
 			<url>https://download.eclipse.org/justj/jres/21/updates/release/latest/</url>
 		</repository>
+		
+		<!-- 6. Babel Translations -->
 		<repository>
 			<id>babel</id>
 			<layout>p2</layout>
@@ -178,22 +174,63 @@
 						   <requirement>
       <type>eclipse-plugin</type>
       <id>bcutil</id>
-      <versionRange>[1.81.0,2.0.0)</versionRange>
+      <versionRange>1.81.0</versionRange>
     </requirement>
     <requirement>
       <type>eclipse-plugin</type>
       <id>bcprov</id>
-      <versionRange>[1.81.0,2.0.0)</versionRange>
+      <versionRange>1.81.0</versionRange>
     </requirement>
     <requirement>
       <type>eclipse-plugin</type>
       <id>bcpkix</id>
-      <versionRange>[1.81.0,2.0.0)</versionRange>
+      <versionRange>1.81.0</versionRange>
     </requirement>
     <requirement>
       <type>eclipse-plugin</type>
       <id>bcpg</id>
-      <versionRange>[1.81.0,2.0.0)</versionRange>
+      <versionRange>1.81.0</versionRange>
+    </requirement>
+    <!-- JUnit 5 and opentest4j OSGi bundles for Tycho test runtime -->
+    <requirement>
+      <type>eclipse-plugin</type>
+      <id>org.junit</id>
+      <versionRange>0.0.0</versionRange>
+    </requirement>
+    <requirement>
+      <type>eclipse-plugin</type>
+      <id>org.junit.jupiter.api</id>
+      <versionRange>0.0.0</versionRange>
+    </requirement>
+    <requirement>
+      <type>eclipse-plugin</type>
+      <id>org.junit.jupiter.params</id>
+      <versionRange>0.0.0</versionRange>
+    </requirement>
+    <requirement>
+      <type>eclipse-plugin</type>
+      <id>org.junit.platform.commons</id>
+      <versionRange>0.0.0</versionRange>
+    </requirement>
+    <requirement>
+      <type>eclipse-plugin</type>
+      <id>org.junit.platform.engine</id>
+      <versionRange>0.0.0</versionRange>
+    </requirement>
+    <requirement>
+      <type>eclipse-plugin</type>
+      <id>org.junit.platform.launcher</id>
+      <versionRange>0.0.0</versionRange>
+    </requirement>
+    <requirement>
+      <type>eclipse-plugin</type>
+      <id>org.junit.platform.suite.api</id>
+      <versionRange>0.0.0</versionRange>
+    </requirement>
+    <requirement>
+      <type>eclipse-plugin</type>
+      <id>org.opentest4j</id>
+      <versionRange>0.0.0</versionRange>
     </requirement>
 						</extraRequirements>
 					</dependency-resolution>
