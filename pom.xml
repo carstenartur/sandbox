@@ -54,11 +54,11 @@
 		<module>sandbox_product</module>
 	</modules>
 	<repositories>
-		<!-- 1. Eclipse SimRel Release Repository -->
+		<!-- 1. Eclipse SimRel Release Repository - upgraded to 2025-09 to resolve Bouncy Castle import conflicts -->
     <repository>
-        <id>eclipse-2025-06</id>
+        <id>eclipse-2025-09</id>
         <layout>p2</layout>
-        <url>https://download.eclipse.org/releases/2025-06/</url>
+        <url>https://download.eclipse.org/releases/2025-09/</url>
     </repository>
 
     <!-- 2. Eclipse 4.38 Integration Builds -->
@@ -68,11 +68,11 @@
         <url>https://download.eclipse.org/eclipse/updates/4.38-I-builds/</url>
     </repository>
 
-    <!-- 3. Eclipse Orbit (externe Abhängigkeiten wie Apache Commons) -->
+    <!-- 3. Eclipse Orbit (externe Abhängigkeiten wie Apache Commons) - upgraded to 2025-09 -->
     <repository>
         <id>orbit</id>
         <layout>p2</layout>
-        <url>https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2025-06/</url>
+        <url>https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2025-09/</url>
     </repository>
 
     <!-- 4. Eclipse Lizenzinformationen -->
@@ -194,6 +194,47 @@
       <type>eclipse-plugin</type>
       <id>bcpg</id>
       <versionRange>1.81.0</versionRange>
+    </requirement>
+    <!-- JUnit 5 and opentest4j OSGi bundles for Tycho test runtime -->
+    <requirement>
+      <type>eclipse-plugin</type>
+      <id>org.junit</id>
+      <versionRange>0.0.0</versionRange>
+    </requirement>
+    <requirement>
+      <type>eclipse-plugin</type>
+      <id>org.junit.jupiter.api</id>
+      <versionRange>0.0.0</versionRange>
+    </requirement>
+    <requirement>
+      <type>eclipse-plugin</type>
+      <id>org.junit.jupiter.params</id>
+      <versionRange>0.0.0</versionRange>
+    </requirement>
+    <requirement>
+      <type>eclipse-plugin</type>
+      <id>org.junit.platform.commons</id>
+      <versionRange>0.0.0</versionRange>
+    </requirement>
+    <requirement>
+      <type>eclipse-plugin</type>
+      <id>org.junit.platform.engine</id>
+      <versionRange>0.0.0</versionRange>
+    </requirement>
+    <requirement>
+      <type>eclipse-plugin</type>
+      <id>org.junit.platform.launcher</id>
+      <versionRange>0.0.0</versionRange>
+    </requirement>
+    <requirement>
+      <type>eclipse-plugin</type>
+      <id>org.junit.platform.suite.api</id>
+      <versionRange>0.0.0</versionRange>
+    </requirement>
+    <requirement>
+      <type>eclipse-plugin</type>
+      <id>org.opentest4j</id>
+      <versionRange>0.0.0</versionRange>
     </requirement>
 						</extraRequirements>
 					</dependency-resolution>
