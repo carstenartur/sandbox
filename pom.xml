@@ -10,7 +10,7 @@
 	<packaging>pom</packaging>
 	<properties>
 		<!-- Upgraded to Tycho 5.0.0 – resolves CodeQL autobuild TargetPlatformArtifactResolver injection error (mixed Tycho versions). -->
-		<tycho-version>4.0.13</tycho-version>
+		<tycho-version>5.0.1</tycho-version>
 		<rcp-version>eclipse</rcp-version>
 		<!-- <rcp-version>2021-03</rcp-version> -->
 		<jacoco-version>0.8.14</jacoco-version>
