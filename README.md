@@ -1,9 +1,21 @@
 # Sandbox Project
 
-This repository serves as a sandbox to experiment with various tools and build strategies.
+A collection of experimental Eclipse JDT (Java Development Tools) cleanup plugins and tools. This repository demonstrates how to build custom JDT cleanups, quick fixes, and related tooling for Eclipse-based Java development.
+
+## Overview
+
+This project provides:
+
+- **Custom JDT Cleanup Plugins** – Automated code transformations for encoding, JUnit migration, functional programming patterns, and more
+- **Eclipse Product Build** – A complete Eclipse product with bundled features
+- **P2 Update Site** – Installable plugins via Eclipse update mechanism
+- **Test Infrastructure** – JUnit 5-based tests for all cleanup implementations
+
+All plugins are work-in-progress and intended for experimentation and learning.
 
 ## Table of Contents
 
+- [Overview](#overview)
 - [Build Instructions](#build-instructions)
 - [CI Status](#ci-status)
 - [What's Included](#whats-included)
@@ -61,20 +73,22 @@ mvn -Dinclude=web -Pjacoco verify
 
 ## What's Included
 
-Java version per branch:
+### Java Version by Branch
 
-- Since `2024-06`: Java 21  
-- From `2022-12` onwards: Java 17  
-- Up to `2022-06`: Java 11
+| Branch        | Java Version |
+|---------------|--------------|
+| `2024-06`+    | Java 21      |
+| `2022-12`+    | Java 17      |
+| Up to `2022-06` | Java 11    |
 
-Topics covered:
+### Topics Covered
 
-- Building for different Eclipse versions via GitHub Actions  
-- Creating custom JDT cleanups  
-- Setting up the SpotBugs Maven plugin to fail the build on issues  
-- Writing JUnit 5-based tests for JDT cleanups  
-- Configuring JaCoCo for test coverage  
-- Building an Eclipse product including new features  
+- Building for different Eclipse versions via GitHub Actions
+- Creating custom JDT cleanups
+- Setting up the SpotBugs Maven plugin to fail the build on issues
+- Writing JUnit 5-based tests for JDT cleanups
+- Configuring JaCoCo for test coverage
+- Building an Eclipse product including new features
 - Automatically building a WAR file including a P2 update site
 
 ---
@@ -372,7 +386,6 @@ The cleanup recognizes common charset string literals and replaces them with the
 | `"UTF-16BE"`       | `StandardCharsets.UTF_16BE`        |
 | `"UTF-16LE"`       | `StandardCharsets.UTF_16LE`        |
 
-
 ---
 
 #### Limitations
@@ -385,8 +398,7 @@ The cleanup recognizes common charset string literals and replaces them with the
 
 This documentation is based on test-driven implementations in the `sandbox_encoding_quickfix_test` module and reflects support for modern and legacy encoding cleanup across Java 7 to 22.
 
-Partial implementation to highlight platform encoding usage via API changes.  
-Reference: https://openjdk.java.net/jeps/400
+> **Reference**: [JEP 400: UTF-8 by Default](https://openjdk.java.net/jeps/400) – Partial implementation to highlight platform encoding usage via API changes.
 
 ### 3. `sandbox_extra_search`
 
@@ -518,12 +530,9 @@ This cleanup is available as part of the JDT Clean Up framework. It can be run v
 
 ---
 
-This documentation is based on the cleanup logic and test cases in  
-`Java8CleanUpTest.java` and `Java9CleanUpTest.java`.  
-Manual review is advised for edge cases or plugin-specific conventions.
+This documentation is based on the cleanup logic and test cases in `Java8CleanUpTest.java` and `Java9CleanUpTest.java`. Manual review is advised for edge cases or plugin-specific conventions.
 
-PoC for a QuickFix to migrate code based on new platform features:  
-https://www.eclipse.org/eclipse/news/4.20/platform_isv.php#simpler-status-creation
+> **Reference**: [Eclipse 4.20 Platform ISV – Simpler Status Creation](https://www.eclipse.org/eclipse/news/4.20/platform_isv.php#simpler-status-creation) – PoC for a QuickFix to migrate code based on new platform features.
 
 ### 6. `sandbox_tools`
 
@@ -683,11 +692,9 @@ The Functional Converter Cleanup:
 
 ---
 
-For roadmap or contributions, see the test class:
-`Java8CleanUpTest.java` in the `sandbox_functional_converter_test` module.
+For roadmap or contributions, see the test class `Java8CleanUpTest.java` in the `sandbox_functional_converter_test` module.
 
-Converts `Iterator` loops to functional loops.  
-See: https://github.com/carstenartur/sandbox/wiki/Functional-Converter
+> **Wiki**: [Functional Converter](https://github.com/carstenartur/sandbox/wiki/Functional-Converter) – Converts `Iterator` loops to functional loops.
 
 ### 8. `sandbox_junit`
 
@@ -986,7 +993,6 @@ It scans Java test files and applies the transformations described above automat
 ---
 
 This documentation is based on the test coverage provided in the JUnit 3 and 4 cleanup test cases. Manual adjustments may be necessary for advanced use cases or project-specific setups.
-Cleanup to migrate JUnit 4 tests to JUnit 5.
 
 <a href="/marketplace-client-intro?mpc_install=6454408" class="drag" title="Drag to your running Eclipse* workspace. *Requires Eclipse Marketplace Client">
 <img style="width:80px;" typeof="foaf:Image" class="img-responsive" src="https://marketplace.eclipse.org/modules/custom/eclipsefdn/eclipsefdn_marketplace/images/btn-install.svg" alt="Drag to your running Eclipse* workspace. *Requires Eclipse Marketplace Client" />
