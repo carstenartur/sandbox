@@ -6,10 +6,10 @@ A collection of experimental Eclipse JDT (Java Development Tools) cleanup plugin
 
 This project provides:
 
-- **Custom JDT Cleanup Plugins** – Automated code transformations for encoding, JUnit migration, functional programming patterns, and more
-- **Eclipse Product Build** – A complete Eclipse product with bundled features
-- **P2 Update Site** – Installable plugins via Eclipse update mechanism
-- **Test Infrastructure** – JUnit 5-based tests for all cleanup implementations
+- **Custom JDT Cleanup Plugins**: Automated code transformations for encoding, JUnit migration, functional programming patterns, and more
+- **Eclipse Product Build**: A complete Eclipse product with bundled features
+- **P2 Update Site**: Installable plugins via Eclipse update mechanism
+- **Test Infrastructure**: JUnit 5-based tests for all cleanup implementations
 
 All plugins are work-in-progress and intended for experimentation and learning.
 
