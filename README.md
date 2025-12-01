@@ -36,11 +36,11 @@ mvn -Dinclude=web -Pjacoco verify
 
 ## Java Version Requirements
 
-| Branch       | Java Version |
-|--------------|--------------|
-| Since 2024-06 | Java 21     |
-| 2022-12+     | Java 17      |
-| Up to 2022-06| Java 11      |
+| Branch        | Java Version |
+|---------------|--------------|
+| Since 2024-06 | Java 21      |
+| 2022-12+      | Java 17      |
+| Up to 2022-06 | Java 11      |
 
 ## Projects
 
