@@ -72,20 +72,20 @@ public class PrintStreamExplicitEncoding extends AbstractExplicitEncoding<ClassI
 					return false;
 				}
 				StringLiteral argstring3= (StringLiteral) arguments.get(1);
-				if (!encodings.contains(argstring3.getLiteralValue())) {
+				if (!ENCODINGS.contains(argstring3.getLiteralValue())) {
 					return false;
 				}
-				holder.put(argstring3, encodingmap.get(argstring3.getLiteralValue()));
+				holder.put(argstring3, ENCODING_MAP.get(argstring3.getLiteralValue()));
 				break;
 			case 3:
 				if (!(arguments.get(2) instanceof StringLiteral)) {
 					return false;
 				}
 				StringLiteral argstring4= (StringLiteral) arguments.get(2);
-				if (!encodings.contains(argstring4.getLiteralValue())) {
+				if (!ENCODINGS.contains(argstring4.getLiteralValue())) {
 					return false;
 				}
-				holder.put(argstring4, encodingmap.get(argstring4.getLiteralValue()));
+				holder.put(argstring4, ENCODING_MAP.get(argstring4.getLiteralValue()));
 				break;
 			default:
 				return false;
@@ -99,7 +99,7 @@ public class PrintStreamExplicitEncoding extends AbstractExplicitEncoding<ClassI
 			TextEditGroup group, ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
-		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, (String) data.get(visited),Nodedata.charsetConstants);
+		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, (String) data.get(visited),getCharsetConstants());
 		/**
 		 * new FileOutputStream(<filename>)
 		 */
