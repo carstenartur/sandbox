@@ -447,13 +447,25 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 		ListRewrite unionRewrite = rewrite.getListRewrite(unionType, UnionType.TYPES_PROPERTY);
 		List<Type> types = unionType.types();
 
-		types.stream()
+		// Collect types to remove first to avoid modification during iteration
+		List<Type> typesToRemove = types.stream()
 				.filter(this::isUnsupportedEncodingException)
-				.forEach(type -> unionRewrite.remove(type, group));
+				.toList();
 
-		if (types.size() == 1) {
-			rewrite.replace(unionType, types.get(0), group);
-		} else if (types.isEmpty()) {
+		typesToRemove.forEach(type -> unionRewrite.remove(type, group));
+
+		// Calculate remaining count after scheduled removals
+		int remainingCount = types.size() - typesToRemove.size();
+		if (remainingCount == 1) {
+			// Find the remaining type (not in removal list)
+			Type remainingType = types.stream()
+					.filter(type -> !typesToRemove.contains(type))
+					.findFirst()
+					.orElse(null);
+			if (remainingType != null) {
+				rewrite.replace(unionType, remainingType, group);
+			}
+		} else if (remainingCount == 0) {
 			rewrite.remove(catchClause, group);
 		}
 	}
