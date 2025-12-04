@@ -213,6 +213,24 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	}
 
 	/**
+	 * Searches for a variable's string literal value within a list of variable declaration fragments.
+	 *
+	 * @param fragments the list of fragments to search in, must not be null
+	 * @param variableIdentifier the identifier of the variable to find, must not be null
+	 * @return the uppercase string literal value if found, null otherwise
+	 */
+	private static String findValueInFragments(List<?> fragments, String variableIdentifier) {
+		for (Object frag : fragments) {
+			VariableDeclarationFragment fragment = (VariableDeclarationFragment) frag;
+			String value = extractStringLiteralValue(fragment, variableIdentifier);
+			if (value != null) {
+				return value;
+			}
+		}
+		return null;
+	}
+
+	/**
 	 * Searches for a variable's string literal value within method body statements.
 	 *
 	 * @param method the method declaration to search in, must not be null
@@ -228,12 +246,9 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 		for (Object stmt : statements) {
 			if (stmt instanceof VariableDeclarationStatement) {
 				VariableDeclarationStatement varDeclStmt = (VariableDeclarationStatement) stmt;
-				for (Object frag : varDeclStmt.fragments()) {
-					VariableDeclarationFragment fragment = (VariableDeclarationFragment) frag;
-					String value = extractStringLiteralValue(fragment, variableIdentifier);
-					if (value != null) {
-						return value;
-					}
+				String value = findValueInFragments(varDeclStmt.fragments(), variableIdentifier);
+				if (value != null) {
+					return value;
 				}
 			}
 		}
@@ -250,12 +265,9 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	private static String findVariableValueInType(TypeDeclaration type, String variableIdentifier) {
 		FieldDeclaration[] fields = type.getFields();
 		for (FieldDeclaration field : fields) {
-			for (Object frag : field.fragments()) {
-				VariableDeclarationFragment fragment = (VariableDeclarationFragment) frag;
-				String value = extractStringLiteralValue(fragment, variableIdentifier);
-				if (value != null) {
-					return value;
-				}
+			String value = findValueInFragments(field.fragments(), variableIdentifier);
+			if (value != null) {
+				return value;
 			}
 		}
 		return null;
