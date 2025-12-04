@@ -79,7 +79,7 @@ public class RuleTemporayFolderJUnitPlugin extends AbstractTool<ReferenceHolder<
 	}
 	
 	@Override
-	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+	void applyRewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder mh) {
 		FieldDeclaration field= mh.getFieldDeclaration();
 		rewriter.remove(field, group);

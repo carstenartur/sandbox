@@ -79,7 +79,7 @@ public class RuleTestnameJUnitPlugin extends AbstractTool<ReferenceHolder<Intege
 	}
 
 	@Override
-	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+	void applyRewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder mh) {
 		FieldDeclaration node= mh.getFieldDeclaration();
 		refactorTestnameInClassAndSubclasses(group, rewriter, ast, importRewriter, node);

@@ -87,7 +87,7 @@ public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<In
 	}
 
 	@Override
-	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+	void applyRewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder mh) {
 		TypeDeclaration node= mh.getTypeDeclaration();
 		modifyExternalResourceClass(node, null, false, rewriter, ast, group, importRewriter);

@@ -85,7 +85,8 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 		return false;
 	}
 
-	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+	@Override
+	void applyRewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder mh) {
 		FieldDeclaration fieldDeclaration= mh.getFieldDeclaration();
 		boolean fieldStatic= isFieldAnnotatedWith(fieldDeclaration, ORG_JUNIT_CLASS_RULE);

@@ -39,6 +39,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -163,8 +164,8 @@ public abstract class AbstractTool<T> {
     protected static final String ORG_JUNIT_JUPITER_API_ASSERTIONS = "org.junit.jupiter.api.Assertions";
     protected static final String ORG_JUNIT_JUPITER_DISABLED       = "org.junit.jupiter.api.Disabled";
     protected static final String ORG_JUNIT_JUPITER_API_IO_TEMP_DIR= "org.junit.jupiter.api.io.TempDir";
-    protected static final String ORG_JUNIT_JUPITER_API_TEST_INFO  = "org.junit.jupiter.api.TestInfo";
-    protected static final String ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT = "org.junit.jupiter.api.extension.ExtensionContext";
+    private static final String ORG_JUNIT_JUPITER_API_TEST_INFO  = "org.junit.jupiter.api.TestInfo";
+    private static final String ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT = "org.junit.jupiter.api.extension.ExtensionContext";
     private static final String ORG_JUNIT_JUPITER_API_EXTENSION_REGISTER_EXTENSION   = "org.junit.jupiter.api.extension.RegisterExtension";
     private static final String ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK = "org.junit.jupiter.api.extension.BeforeEachCallback";
     private static final String ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK  = "org.junit.jupiter.api.extension.AfterEachCallback";
@@ -183,7 +184,7 @@ public abstract class AbstractTool<T> {
 	private static final String AFTER_EACH_CALLBACK= "AfterEachCallback";
 	private static final String BEFORE_EACH_CALLBACK= "BeforeEachCallback";
 
-	protected static final String ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH= "org.junit.jupiter.api.extension.ExtendWith";
+	private static final String ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH= "org.junit.jupiter.api.extension.ExtendWith";
 	protected static final Set<String> twoparam= Set.of("assertEquals", "assertNotEquals", "assertArrayEquals",
 				"assertSame","assertNotSame","assertThat");
 	protected static final Set<String> oneparam= Set.of("assertTrue", "assertFalse", "assertNull", "assertNotNull");
@@ -420,6 +421,10 @@ public abstract class AbstractTool<T> {
 		listRewrite.insertFirst(fieldDeclaration, group);
 	}
 
+	/**
+	 * Capitalizes the first letter of the given string.
+	 * Returns the input unchanged if it is null or empty.
+	 */
 	private String capitalizeFirstLetter(String input) {
 		if (input == null || input.isEmpty()) {
 			return input;
@@ -718,6 +723,7 @@ public abstract class AbstractTool<T> {
 
 
 	private String generateChecksum(String input) {
+		Objects.requireNonNull(input, "input");
 		try {
 			MessageDigest md= MessageDigest.getInstance("SHA-256");
 			byte[] hashBytes= md.digest(input.getBytes(StandardCharsets.UTF_8));
@@ -1065,7 +1071,7 @@ public abstract class AbstractTool<T> {
 		importRewriter.removeImport(ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
 	}
 
-	abstract void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+	abstract void applyRewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder mh);
 
 	private void processMethod(MethodDeclaration method, ASTRewrite rewriter, AST ast, TextEditGroup group,
@@ -1296,7 +1302,7 @@ public abstract class AbstractTool<T> {
 		AST ast= cuRewrite.getRoot().getAST();
 		ImportRewrite importRewriter= cuRewrite.getImportRewrite();
 		JunitHolder mh= hit.get(hit.size() - 1);
-		process2Rewrite(group, rewriter, ast, importRewriter, mh);
+		applyRewrite(group, rewriter, ast, importRewriter, mh);
 		hit.remove(hit.size() - 1);
 	}
 

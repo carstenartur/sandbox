@@ -75,7 +75,7 @@ public class AfterClassJUnitPlugin extends AbstractTool<ReferenceHolder<Integer,
 	}
 	
 	@Override
-	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+	void applyRewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder mh) {
 		Annotation minv= mh.getAnnotation();
 		MarkerAnnotation newAnnotation= ast.newMarkerAnnotation();
