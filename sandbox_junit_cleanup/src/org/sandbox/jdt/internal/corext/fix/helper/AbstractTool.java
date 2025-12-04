@@ -232,17 +232,8 @@ public abstract class AbstractTool<T> {
 
 	private void adaptTypeDeclaration(TypeDeclaration typeDecl, ASTRewrite globalRewrite, AST ast,
 			ImportRewrite importRewrite, TextEditGroup group) {
-		AST astOfNode= typeDecl.getAST();
-
-		// Ermitteln der CompilationUnit
-		CompilationUnit compilationUnit= findCompilationUnit(typeDecl);
-
-		// Wählen Sie den passenden ASTRewrite basierend auf dem AST des Knotens
-		ASTRewrite rewriteToUse= (astOfNode == ast) ? globalRewrite : ASTRewrite.create(astOfNode);
-		ImportRewrite importRewriteToUse= (astOfNode == ast) ? importRewrite
-				: ImportRewrite.create(compilationUnit, true);
-//		    ASTRewrite rewriteToUse = globalRewrite;
-//		    ImportRewrite importRewriteToUse = importRewrite;
+		ASTRewrite rewriteToUse = getASTRewrite(typeDecl, ast, globalRewrite);
+		ImportRewrite importRewriteToUse = getImportRewrite(typeDecl, ast, importRewrite);
 
 		removeSuperclassType(typeDecl, rewriteToUse, group);
 		updateLifecycleMethodsInClass(typeDecl, rewriteToUse, ast, group, importRewriteToUse, METHOD_BEFORE,
@@ -251,9 +242,8 @@ public abstract class AbstractTool<T> {
 		importRewriteToUse.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
 		importRewriteToUse.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
 
-		// Wenn ein neuer ASTRewrite erstellt wurde, wenden Sie die Änderungen an
 		if (rewriteToUse != globalRewrite) {
-			createChangeForRewrite(compilationUnit, rewriteToUse);
+			createChangeForRewrite(findCompilationUnit(typeDecl), rewriteToUse);
 		}
 	}
 
@@ -360,59 +350,61 @@ public abstract class AbstractTool<T> {
 
 	private void addRegisterExtensionAnnotation(ASTNode node, ASTRewrite rewrite, AST ast, ImportRewrite importRewrite,
 			TextEditGroup group) {
+		FieldDeclaration field = resolveFieldDeclaration(node);
+		if (field != null) {
+			addRegisterExtensionToField(field, rewrite, ast, importRewrite, group);
+		}
+	}
+
+	/**
+	 * Resolves the {@link FieldDeclaration} from the given AST node.
+	 * 
+	 * @param node an AST node that is either a {@link FieldDeclaration} or a
+	 *             {@link ClassInstanceCreation} within a field initializer
+	 * @return the resolved {@link FieldDeclaration}, or {@code null} if not found
+	 */
+	private FieldDeclaration resolveFieldDeclaration(ASTNode node) {
 		if (node instanceof FieldDeclaration) {
-			// Direkt mit FieldDeclaration arbeiten
-			FieldDeclaration field= (FieldDeclaration) node;
-
-			// Prüfen, ob die Annotation bereits existiert
-			boolean hasRegisterExtension= field.modifiers().stream()
-					.anyMatch(modifier -> modifier instanceof Annotation && ((Annotation) modifier).getTypeName()
-							.getFullyQualifiedName().equals(ANNOTATION_REGISTER_EXTENSION));
-
-			// Prüfen, ob die Annotation bereits im Rewrite hinzugefügt wurde
-			ListRewrite listRewrite= rewrite.getListRewrite(field, FieldDeclaration.MODIFIERS2_PROPERTY);
-			boolean hasPendingRegisterExtension= listRewrite.getRewrittenList().stream()
-					.anyMatch(rewritten -> rewritten instanceof MarkerAnnotation && ((MarkerAnnotation) rewritten)
-							.getTypeName().getFullyQualifiedName().equals(ANNOTATION_REGISTER_EXTENSION));
-
-			if (!hasRegisterExtension && !hasPendingRegisterExtension) {
-				// Annotation hinzufügen, wenn sie weder im AST noch im Rewrite existiert
-				MarkerAnnotation registerExtensionAnnotation= ast.newMarkerAnnotation();
-				registerExtensionAnnotation.setTypeName(ast.newName(ANNOTATION_REGISTER_EXTENSION));
-				listRewrite.insertFirst(registerExtensionAnnotation, group);
-
-				// Import hinzufügen
-				importRewrite.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_REGISTER_EXTENSION);
-			}
+			return (FieldDeclaration) node;
 		} else if (node instanceof ClassInstanceCreation) {
-			// Übergeordnetes Element der anonymen Klasse finden
-			ASTNode parent= node.getParent();
+			ASTNode parent = node.getParent();
 			if (parent instanceof VariableDeclarationFragment) {
-				VariableDeclarationFragment fragment= (VariableDeclarationFragment) parent;
-				FieldDeclaration field= (FieldDeclaration) fragment.getParent();
-
-				// Prüfen, ob die Annotation bereits existiert
-				boolean hasRegisterExtension= field.modifiers().stream()
-						.anyMatch(modifier -> modifier instanceof Annotation && ((Annotation) modifier).getTypeName()
-								.getFullyQualifiedName().equals(ANNOTATION_REGISTER_EXTENSION));
-
-				// Prüfen, ob die Annotation bereits im Rewrite hinzugefügt wurde
-				ListRewrite listRewrite= rewrite.getListRewrite(field, FieldDeclaration.MODIFIERS2_PROPERTY);
-				boolean hasPendingRegisterExtension= listRewrite.getRewrittenList().stream()
-						.anyMatch(rewritten -> rewritten instanceof MarkerAnnotation && ((MarkerAnnotation) rewritten)
-								.getTypeName().getFullyQualifiedName().equals(ANNOTATION_REGISTER_EXTENSION));
-
-				if (!hasRegisterExtension && !hasPendingRegisterExtension) {
-					// Annotation hinzufügen, wenn sie weder im AST noch im Rewrite existiert
-					MarkerAnnotation registerExtensionAnnotation= ast.newMarkerAnnotation();
-					registerExtensionAnnotation.setTypeName(ast.newName(ANNOTATION_REGISTER_EXTENSION));
-					listRewrite.insertFirst(registerExtensionAnnotation, group);
-
-					// Import hinzufügen
-					importRewrite.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_REGISTER_EXTENSION);
+				ASTNode grandParent = parent.getParent();
+				if (grandParent instanceof FieldDeclaration) {
+					return (FieldDeclaration) grandParent;
 				}
 			}
 		}
+		return null;
+	}
+
+	/**
+	 * Adds the {@code @RegisterExtension} annotation to the given field if not already present.
+	 */
+	private void addRegisterExtensionToField(FieldDeclaration field, ASTRewrite rewrite, AST ast,
+			ImportRewrite importRewrite, TextEditGroup group) {
+		boolean hasRegisterExtension = hasAnnotationByName(field.modifiers(), ANNOTATION_REGISTER_EXTENSION);
+
+		ListRewrite listRewrite = rewrite.getListRewrite(field, FieldDeclaration.MODIFIERS2_PROPERTY);
+		boolean hasPendingRegisterExtension = listRewrite.getRewrittenList().stream()
+				.anyMatch(rewritten -> rewritten instanceof MarkerAnnotation && ((MarkerAnnotation) rewritten)
+						.getTypeName().getFullyQualifiedName().equals(ANNOTATION_REGISTER_EXTENSION));
+
+		if (!hasRegisterExtension && !hasPendingRegisterExtension) {
+			MarkerAnnotation registerExtensionAnnotation = ast.newMarkerAnnotation();
+			registerExtensionAnnotation.setTypeName(ast.newName(ANNOTATION_REGISTER_EXTENSION));
+			listRewrite.insertFirst(registerExtensionAnnotation, group);
+			importRewrite.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_REGISTER_EXTENSION);
+		}
+	}
+
+	/**
+	 * Checks if the given modifiers list contains an annotation with the specified simple name.
+	 */
+	private boolean hasAnnotationByName(List<?> modifiers, String annotationSimpleName) {
+		return modifiers.stream()
+				.anyMatch(modifier -> modifier instanceof Annotation && ((Annotation) modifier).getTypeName()
+						.getFullyQualifiedName().equals(annotationSimpleName));
 	}
 
 	private void addTestNameField(TypeDeclaration parentClass, ASTRewrite rewriter, TextEditGroup group) {
@@ -1336,36 +1328,25 @@ public abstract class AbstractTool<T> {
 
 		for (MethodDeclaration method : node.getMethods()) {
 			if (isLifecycleMethod(method, methodbefore)) {
-				AST astOfNode= node.getAST();
-
-				// Ermitteln der CompilationUnit
-				CompilationUnit compilationUnit= findCompilationUnit(node);
-
-				// Wählen Sie den passenden ASTRewrite basierend auf dem AST des Knotens
-				ASTRewrite rewriteToUse= (astOfNode == ast) ? globalRewrite : ASTRewrite.create(astOfNode);
-				ImportRewrite importRewriteToUse= (astOfNode == ast) ? importRewrite
-						: ImportRewrite.create(compilationUnit, true);
-				processMethod(method, rewriteToUse, ast, group, importRewriteToUse, methodbefore, methodbeforeeach);
-				// Wenn ein neuer ASTRewrite erstellt wurde, wenden Sie die Änderungen an
-				if (rewriteToUse != globalRewrite) {
-					createChangeForRewrite(compilationUnit, rewriteToUse);
-				}
+				processLifecycleMethod(node, method, globalRewrite, ast, group, importRewrite, methodbefore, methodbeforeeach);
 			} else if (isLifecycleMethod(method, methodafter)) {
-				AST astOfNode= node.getAST();
-
-				// Ermitteln der CompilationUnit
-				CompilationUnit compilationUnit= findCompilationUnit(node);
-
-				// Wählen Sie den passenden ASTRewrite basierend auf dem AST des Knotens
-				ASTRewrite rewriteToUse= (astOfNode == ast) ? globalRewrite : ASTRewrite.create(astOfNode);
-				ImportRewrite importRewriteToUse= (astOfNode == ast) ? importRewrite
-						: ImportRewrite.create(compilationUnit, true);
-				processMethod(method, rewriteToUse, ast, group, importRewriteToUse, methodafter, methodaftereach);
-				// Wenn ein neuer ASTRewrite erstellt wurde, wenden Sie die Änderungen an
-				if (rewriteToUse != globalRewrite) {
-					createChangeForRewrite(compilationUnit, rewriteToUse);
-				}
+				processLifecycleMethod(node, method, globalRewrite, ast, group, importRewrite, methodafter, methodaftereach);
 			}
+		}
+	}
+
+	/**
+	 * Processes a lifecycle method by setting up the appropriate rewriters and applying changes.
+	 */
+	private void processLifecycleMethod(TypeDeclaration node, MethodDeclaration method, ASTRewrite globalRewrite,
+			AST ast, TextEditGroup group, ImportRewrite importRewrite, String oldMethodName, String newMethodName) {
+		ASTRewrite rewriteToUse = getASTRewrite(node, ast, globalRewrite);
+		ImportRewrite importRewriteToUse = getImportRewrite(node, ast, importRewrite);
+
+		processMethod(method, rewriteToUse, ast, group, importRewriteToUse, oldMethodName, newMethodName);
+
+		if (rewriteToUse != globalRewrite) {
+			createChangeForRewrite(findCompilationUnit(node), rewriteToUse);
 		}
 	}
 
