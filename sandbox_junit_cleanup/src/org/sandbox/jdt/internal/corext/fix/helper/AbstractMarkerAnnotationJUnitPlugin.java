@@ -111,7 +111,6 @@ public abstract class AbstractMarkerAnnotationJUnitPlugin extends AbstractTool<R
 		Annotation minv= mh.getAnnotation();
 		MarkerAnnotation newAnnotation= ast.newMarkerAnnotation();
 		newAnnotation.setTypeName(ast.newSimpleName(getTargetAnnotationName()));
-		// Important: Use same order as original implementations - replace, remove, then add
 		ASTNodes.replaceButKeepComment(rewriter, minv, newAnnotation, group);
 		importRewriter.removeImport(getSourceAnnotation());
 		importRewriter.addImport(getTargetAnnotationImport());
