@@ -80,7 +80,7 @@ public abstract class AbstractMarkerAnnotationJUnitPlugin extends AbstractTool<R
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataholder= new ReferenceHolder<>();
+		ReferenceHolder<Integer, JunitHolder> dataholder= createDataHolder();
 		HelperVisitor.callMarkerAnnotationVisitor(getSourceAnnotation(), compilationUnit, dataholder, nodesprocessed,
 				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 	}
