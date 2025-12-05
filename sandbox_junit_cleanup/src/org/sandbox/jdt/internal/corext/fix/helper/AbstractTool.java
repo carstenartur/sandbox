@@ -191,6 +191,16 @@ public abstract class AbstractTool<T> {
 	protected static final Set<String> allassertionmethods= Stream.of(twoparam, oneparam, noparam).flatMap(Set::stream)
 				.collect(Collectors.toSet());
 
+	/**
+	 * Creates a new ReferenceHolder for JunitHolder data.
+	 * This is a convenience method to reduce boilerplate in subclass find() implementations.
+	 * 
+	 * @return a new empty ReferenceHolder instance
+	 */
+	protected ReferenceHolder<Integer, JunitHolder> createDataHolder() {
+		return new ReferenceHolder<>();
+	}
+
 	public static Collection<String> getUsedVariableNames(ASTNode node) {
 		CompilationUnit root= (CompilationUnit) node.getRoot();
 		return new ScopeAnalyzer(root).getUsedVariableNames(node.getStartPosition(), node.getLength());

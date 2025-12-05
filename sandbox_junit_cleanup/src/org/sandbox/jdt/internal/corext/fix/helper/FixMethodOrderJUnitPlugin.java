@@ -48,8 +48,9 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 
 /**
- *
- *
+ * Plugin for handling JUnit 4 @FixMethodOrder annotations.
+ * Note: Currently this plugin only finds but does not transform @FixMethodOrder annotations,
+ * as there is no direct JUnit 5 equivalent.
  */
 public class FixMethodOrderJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
@@ -58,34 +59,20 @@ public class FixMethodOrderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataholder= new ReferenceHolder<>();
 		HelperVisitor.callSingleMemberAnnotationVisitor("org.junit.FixMethodOrder", compilationUnit, dataholder, nodesprocessed,
-				(visited, aholder) -> processFoundNodeRunWith(fixcore, operations, visited, aholder));
+				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 	}
 
-	private boolean processFoundNodeRunWith(JUnitCleanUpFixCore fixcore,
+	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Annotation node,
 			ReferenceHolder<Integer, JunitHolder> dataholder) {
-		
+		// TODO: No direct JUnit 5 equivalent exists; consider @TestMethodOrder in the future
 		return false;
 	}
 
-//	@Override
-//	public void rewrite(JUnitCleanUpFixCore upp, final ReferenceHolder<Integer, JunitHolder> hit,
-//			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
-////		ASTRewrite rewrite= cuRewrite.getASTRewrite();
-////		AST ast= cuRewrite.getRoot().getAST();
-////		ImportRewrite importrewriter= cuRewrite.getImportRewrite();
-////		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
-//			//JunitHolder mh= entry.getValue();
-////			@SuppressWarnings("unused")
-////			Annotation minv= mh.getAnnotation();
-////		}
-//	}
-	
 	@Override
 	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder mh) {
-		// TODO Auto-generated method stub
-		
+		// TODO: No rewrite implemented yet - @FixMethodOrder has no direct JUnit 5 equivalent
 	}
 
 	@Override
