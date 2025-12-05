@@ -97,7 +97,7 @@ public class AfterClassJUnitPlugin extends AbstractTool<ReferenceHolder<Integer,
 		return """
 				@AfterClass
 				public static void tearDownAfterClass() throws Exception {
-				}					;
+				}
 				"""; //$NON-NLS-1$
 	}
 

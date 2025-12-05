@@ -148,7 +148,7 @@ public class RuleTemporayFolderJUnitPlugin extends AbstractTool<ReferenceHolder<
 					@Test
 					public void test3() throws IOException{
 						File newFile = tempFolder.newFile("myfile.txt");
-					}			;
+					}
 				"""; //$NON-NLS-1$
 	}
 
