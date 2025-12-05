@@ -65,7 +65,7 @@ public class AfterClassJUnitPlugin extends AbstractMarkerAnnotationJUnitPlugin {
 		return """
 				@AfterClass
 				public static void tearDownAfterClass() throws Exception {
-				}					;
+				}
 				"""; //$NON-NLS-1$
 	}
 

@@ -57,7 +57,7 @@ public class FixMethodOrderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataholder= new ReferenceHolder<>();
-		HelperVisitor.callSingleMemberAnnotationVisitor("org.junit.FixMethodOrder", compilationUnit, dataholder, nodesprocessed,
+		HelperVisitor.callSingleMemberAnnotationVisitor(ORG_JUNIT_FIX_METHOD_ORDER, compilationUnit, dataholder, nodesprocessed,
 				(visited, aholder) -> processFoundNodeRunWith(fixcore, operations, visited, aholder));
 	}
 
