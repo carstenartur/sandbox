@@ -39,8 +39,10 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
@@ -48,49 +50,69 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 
 /**
- * Plugin for handling JUnit 4 @FixMethodOrder annotations.
- * Note: Currently this plugin only finds but does not transform @FixMethodOrder annotations,
- * as there is no direct JUnit 5 equivalent.
+ * Abstract base class for JUnit plugins that perform simple marker annotation replacement.
+ * This class consolidates the common patterns found in annotation-based cleanup plugins such as
+ * BeforeJUnitPlugin, AfterJUnitPlugin, BeforeClassJUnitPlugin, AfterClassJUnitPlugin, and TestJUnitPlugin.
+ * 
+ * Subclasses only need to provide:
+ * - The source annotation (JUnit 4) fully qualified name
+ * - The target annotation (JUnit 5) simple name  
+ * - The target annotation (JUnit 5) fully qualified name for import
+ * - Preview strings and toString
  */
-public class FixMethodOrderJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
+public abstract class AbstractMarkerAnnotationJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
+
+	/**
+	 * @return The fully qualified name of the JUnit 4 source annotation (e.g., "org.junit.Before")
+	 */
+	protected abstract String getSourceAnnotation();
+	
+	/**
+	 * @return The simple name of the JUnit 5 target annotation (e.g., "BeforeEach")
+	 */
+	protected abstract String getTargetAnnotationName();
+	
+	/**
+	 * @return The fully qualified name of the JUnit 5 target annotation for import (e.g., "org.junit.jupiter.api.BeforeEach")
+	 */
+	protected abstract String getTargetAnnotationImport();
 
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataholder= new ReferenceHolder<>();
-		HelperVisitor.callSingleMemberAnnotationVisitor("org.junit.FixMethodOrder", compilationUnit, dataholder, nodesprocessed,
+		HelperVisitor.callMarkerAnnotationVisitor(getSourceAnnotation(), compilationUnit, dataholder, nodesprocessed,
 				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 	}
 
-	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Annotation node,
+	/**
+	 * Processes a found marker annotation node and adds a rewrite operation.
+	 * 
+	 * @param fixcore the cleanup fix core
+	 * @param operations the set of operations to add to
+	 * @param node the found marker annotation
+	 * @param dataholder the reference holder for data
+	 * @return false to continue visiting
+	 */
+	protected boolean processFoundNode(JUnitCleanUpFixCore fixcore,
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, MarkerAnnotation node,
 			ReferenceHolder<Integer, JunitHolder> dataholder) {
-		// TODO: No direct JUnit 5 equivalent exists; consider @TestMethodOrder in the future
+		JunitHolder mh= new JunitHolder();
+		mh.minv= node;
+		mh.minvname= node.getTypeName().getFullyQualifiedName();
+		dataholder.put(dataholder.size(), mh);
+		operations.add(fixcore.rewrite(dataholder));
 		return false;
 	}
 
 	@Override
 	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder mh) {
-		// TODO: No rewrite implemented yet - @FixMethodOrder has no direct JUnit 5 equivalent
-	}
-
-	@Override
-	public String getPreview(boolean afterRefactoring) {
-		if (afterRefactoring) {
-			return """
-					@FixMethodOrder({
-					})
-					"""; //$NON-NLS-1$
-		}
-		return """
-				@FixMethodOrder({
-				})
-				"""; //$NON-NLS-1$
-	}
-
-	@Override
-	public String toString() {
-		return "FixMethodOrder"; //$NON-NLS-1$
+		Annotation minv= mh.getAnnotation();
+		MarkerAnnotation newAnnotation= ast.newMarkerAnnotation();
+		newAnnotation.setTypeName(ast.newSimpleName(getTargetAnnotationName()));
+		importRewriter.addImport(getTargetAnnotationImport());
+		ASTNodes.replaceButKeepComment(rewriter, minv, newAnnotation, group);
+		importRewriter.removeImport(getSourceAnnotation());
 	}
 }
