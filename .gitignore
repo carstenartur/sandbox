@@ -48,19 +48,26 @@ local.properties
 # Note: .settings/ and .project files are intentionally tracked for Eclipse plugin projects
 # Note: *.launch files are intentionally tracked for Eclipse launch configurations
 
-# Java files
+# Java build artifacts
 *.class
 *.jar
+# Note: Test resource JARs already tracked in git (e.g., **/testresources/*.jar) will remain tracked
+# This pattern prevents new JAR files from being accidentally committed
+hs_err_pid*
+
+# Maven/Tycho build artifacts in target directories
+target/
+
+# Logs
+*.log
+
+# Archives
 *.war
 *.nar
 *.ear
 *.zip
 *.tar.gz
 *.rar
-hs_err_pid*
-
-# Logs
-*.log
 
 # JaCoCo
 *.exec
