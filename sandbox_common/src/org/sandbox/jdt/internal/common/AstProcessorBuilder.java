@@ -55,31 +55,31 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
  * @param <T> the map value type used by the ReferenceHolder
  * @since 1.16
  */
-public class AstProcessorBuilder<V, T> {
+public final class AstProcessorBuilder<V, T> {
 
-	private final ReferenceHolder<V, T> dataholder;
-	private final Set<ASTNode> nodesprocessed;
+	private final ReferenceHolder<V, T> dataHolder;
+	private final Set<ASTNode> nodesProcessed;
 	private final ASTProcessor<ReferenceHolder<V, T>, V, T> processor;
 
 	/**
 	 * Creates a new builder with the specified data holder.
 	 *
-	 * @param dataholder the reference holder to use for storing and retrieving data during processing
+	 * @param dataHolder the reference holder to use for storing and retrieving data during processing
 	 */
-	private AstProcessorBuilder(ReferenceHolder<V, T> dataholder) {
-		this(dataholder, new HashSet<>());
+	private AstProcessorBuilder(ReferenceHolder<V, T> dataHolder) {
+		this(dataHolder, new HashSet<>());
 	}
 
 	/**
 	 * Creates a new builder with the specified data holder and set of processed nodes.
 	 *
-	 * @param dataholder the reference holder to use for storing and retrieving data during processing
-	 * @param nodesprocessed the set to track already processed nodes
+	 * @param dataHolder the reference holder to use for storing and retrieving data during processing
+	 * @param nodesProcessed the set to track already processed nodes
 	 */
-	private AstProcessorBuilder(ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed) {
-		this.dataholder = dataholder;
-		this.nodesprocessed = nodesprocessed;
-		this.processor = new ASTProcessor<>(dataholder, nodesprocessed);
+	private AstProcessorBuilder(ReferenceHolder<V, T> dataHolder, Set<ASTNode> nodesProcessed) {
+		this.dataHolder = dataHolder;
+		this.nodesProcessed = nodesProcessed;
+		this.processor = new ASTProcessor<>(dataHolder, nodesProcessed);
 	}
 
 	/**
@@ -87,11 +87,11 @@ public class AstProcessorBuilder<V, T> {
 	 *
 	 * @param <V> the map key type used by the ReferenceHolder
 	 * @param <T> the map value type used by the ReferenceHolder
-	 * @param dataholder the reference holder to use for storing and retrieving data during processing
+	 * @param dataHolder the reference holder to use for storing and retrieving data during processing
 	 * @return a new AstProcessorBuilder instance
 	 */
-	public static <V, T> AstProcessorBuilder<V, T> with(ReferenceHolder<V, T> dataholder) {
-		return new AstProcessorBuilder<>(dataholder);
+	public static <V, T> AstProcessorBuilder<V, T> with(ReferenceHolder<V, T> dataHolder) {
+		return new AstProcessorBuilder<>(dataHolder);
 	}
 
 	/**
@@ -99,12 +99,12 @@ public class AstProcessorBuilder<V, T> {
 	 *
 	 * @param <V> the map key type used by the ReferenceHolder
 	 * @param <T> the map value type used by the ReferenceHolder
-	 * @param dataholder the reference holder to use for storing and retrieving data during processing
-	 * @param nodesprocessed the set to track already processed nodes
+	 * @param dataHolder the reference holder to use for storing and retrieving data during processing
+	 * @param nodesProcessed the set to track already processed nodes
 	 * @return a new AstProcessorBuilder instance
 	 */
-	public static <V, T> AstProcessorBuilder<V, T> with(ReferenceHolder<V, T> dataholder, Set<ASTNode> nodesprocessed) {
-		return new AstProcessorBuilder<>(dataholder, nodesprocessed);
+	public static <V, T> AstProcessorBuilder<V, T> with(ReferenceHolder<V, T> dataHolder, Set<ASTNode> nodesProcessed) {
+		return new AstProcessorBuilder<>(dataHolder, nodesProcessed);
 	}
 
 	/**
@@ -204,7 +204,7 @@ public class AstProcessorBuilder<V, T> {
 	 * @return the reference holder
 	 */
 	public ReferenceHolder<V, T> getDataHolder() {
-		return dataholder;
+		return dataHolder;
 	}
 
 	/**
@@ -213,7 +213,7 @@ public class AstProcessorBuilder<V, T> {
 	 * @return the set of processed nodes
 	 */
 	public Set<ASTNode> getNodesProcessed() {
-		return nodesprocessed;
+		return nodesProcessed;
 	}
 
 	/**

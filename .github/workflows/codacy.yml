@@ -1,3 +1,11 @@
+name: Codacy Security Scan
+
+on:
+  push:
+    branches: [ main, 2022-12, 2022-09, 2022-06 ]
+  pull_request:
+    branches: [ main, 2022-12, 2022-09, 2022-06 ]
+
 jobs:
   codacy-java-tools:
     name: Codacy Java Tools
@@ -16,9 +24,9 @@ jobs:
       JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
     steps:
       - name: Set up Maven
-        uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
+        uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1 # v5
         with:
-          maven-version: 3.9.3
+          maven-version: 3.9.9
 
       - name: Checkout code
         uses: actions/checkout@v6
@@ -54,8 +62,7 @@ jobs:
         uses: codacy/codacy-analysis-cli-action@v4
         with:
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
-          tool: ${{ matrix.tool }}                 # gezielt: spotbugs/pmd/checkstyle
-          directory: src                           # nur Quellcode unter src
+          tool: ${{ matrix.tool }}
           verbose: true
           format: sarif
           output: ${{ runner.temp }}/results-${{ matrix.tool }}.sarif
