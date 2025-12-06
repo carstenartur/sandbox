@@ -10,15 +10,6 @@ buildNumber.properties
 .mvn/timing.properties
 .mvn/wrapper/maven-wrapper.jar
 
-# Eclipse/Tycho build artifacts - P2 update repository
-# Note: These directories and files are build outputs from sandbox_product
-# and should not be tracked in git
-features/
-plugins/
-sandbox1.2.1/
-artifacts.jar
-content.jar
-
 # Eclipse IDE files
 .metadata
 bin/
@@ -50,9 +41,6 @@ local.properties
 
 # Java build artifacts
 *.class
-*.jar
-# Note: Test resource JARs already tracked in git (e.g., **/testresources/*.jar) will remain tracked
-# This pattern prevents new JAR files from being accidentally committed
 hs_err_pid*
 
 # Maven/Tycho build artifacts in target directories
