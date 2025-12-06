@@ -24,9 +24,9 @@ jobs:
       JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
     steps:
       - name: Set up Maven
-        uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
+        uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1 # v5
         with:
-          maven-version: 3.9.3
+          maven-version: 3.9.9
 
       - name: Checkout code
         uses: actions/checkout@v6
