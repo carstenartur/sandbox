@@ -16,8 +16,8 @@ buildNumber.properties
 features/
 plugins/
 sandbox1.2.1/
-/artifacts.jar
-/content.jar
+artifacts.jar
+content.jar
 
 # Eclipse IDE files
 .metadata
