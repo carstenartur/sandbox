@@ -25,7 +25,6 @@ exclude_paths:
 # Java files are in: sandbox_*/src/org/sandbox/...
 include_paths:
   - "sandbox_*/src/**/*.java"
-  - "sandbox_*/test/**/*.java"
 
 # (Optional) Tool-spezifisches Tuning – Namen laut Doku
 engines:
