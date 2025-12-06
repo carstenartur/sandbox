@@ -1,5 +1,5 @@
 ---
-# Alles ausblenden, was gern Probleme macht oder irrelevant ist
+# Exclude build artifacts, configuration, and binary files
 exclude_paths:
   - "target/**"
   - ".git/**"
@@ -16,8 +16,7 @@ exclude_paths:
   - "**/*.pdf"
   - "**/*.ttf"
   - "**/*.woff*"
-  - "src/main/resources/**"
-  - "src/test/resources/**"
+  - "**/resources/**"
 
 # Nur Java-Quellen analysieren
 include_paths:
