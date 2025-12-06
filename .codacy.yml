@@ -17,9 +17,6 @@ exclude_paths:
   - "**/*.ttf"
   - "**/*.woff*"
   - "**/resources/**"
-  - "features/**"
-  - "plugins/**"
-  - "sandbox1.2.1/**"
 
 # Include Java sources from Eclipse plugin structure
 # Java files are in: sandbox_*/src/org/sandbox/...
