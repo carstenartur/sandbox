@@ -1,5 +1,5 @@
 ---
-# Alles ausblenden, was gern Probleme macht oder irrelevant ist
+# Exclude build artifacts, configuration, and binary files
 exclude_paths:
   - "target/**"
   - ".git/**"
@@ -16,12 +16,16 @@ exclude_paths:
   - "**/*.pdf"
   - "**/*.ttf"
   - "**/*.woff*"
-  - "src/main/resources/**"
-  - "src/test/resources/**"
+  - "**/resources/**"
+  - "features/**"
+  - "plugins/**"
+  - "sandbox1.2.1/**"
 
-# Nur Java-Quellen analysieren
+# Include Java sources from Eclipse plugin structure
+# Java files are in: sandbox_*/src/org/sandbox/...
 include_paths:
-  - "src/**/*.java"
+  - "sandbox_*/src/**/*.java"
+  - "sandbox_*/test/**/*.java"
 
 # (Optional) Tool-spezifisches Tuning – Namen laut Doku
 engines:
