@@ -55,7 +55,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
  * @param <T> the map value type used by the ReferenceHolder
  * @since 1.16
  */
-public class AstProcessorBuilder<V, T> {
+public final class AstProcessorBuilder<V, T> {
 
 	private final ReferenceHolder<V, T> dataholder;
 	private final Set<ASTNode> nodesprocessed;
