@@ -1,0 +1,71 @@
+# Maven build artifacts
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Eclipse/Tycho build artifacts - P2 update repository
+# Note: These directories and files are build outputs from sandbox_product
+# and should not be tracked in git
+features/
+plugins/
+sandbox1.2.1/
+/artifacts.jar
+/content.jar
+
+# Eclipse IDE files
+.metadata
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.settings/
+.loadpath
+.recommenders
+.externalToolBuilders/
+*.launch
+.cproject
+.autotools
+.factorypath
+.buildpath
+.target
+.tern-project
+.texlipse
+.springBeans
+.recommenders/
+.apt_generated/
+.apt_generated_test/
+.cache-main
+.scala_dependencies
+.worksheet
+
+# Java files
+*.class
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+hs_err_pid*
+
+# Logs
+*.log
+
+# JaCoCo
+*.exec
+jacoco*.xml
+
+# OS files
+.DS_Store
+Thumbs.db
