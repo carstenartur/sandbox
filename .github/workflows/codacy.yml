@@ -58,6 +58,23 @@ jobs:
           done < <(git ls-files -z '*.java')
           echo "Converted $changes Java files to UTF-8"
 
+      # Ensure PMD only analyzes Java source files
+      - name: Verify PMD configuration
+        run: |
+          echo "PMD will use ruleset.xml and .codacy.yml for filtering"
+          if [ -f ruleset.xml ]; then
+            echo "✓ ruleset.xml found"
+          else
+            echo "⚠ ruleset.xml not found"
+          fi
+          if [ -f .codacy.yml ]; then
+            echo "✓ .codacy.yml found"
+            echo "Included paths:"
+            grep -A 5 "include_paths:" .codacy.yml || true
+            echo "Excluded paths:"
+            grep -A 20 "exclude_paths:" .codacy.yml || true
+          fi
+
       - name: Run Codacy Analysis CLI (${{ matrix.tool }})
         uses: codacy/codacy-analysis-cli-action@v4
         with:
