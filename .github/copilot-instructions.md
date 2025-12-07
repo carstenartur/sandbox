@@ -59,7 +59,7 @@ mvn compile
 # - Effort: Max
 # - Threshold: medium
 # - Exclusions: ../spotbugs-exclude.xml
-# - Suppression: ../pmd-suppressions.xml
+# - PMD Suppression: ../pmd-suppressions.xml (legacy file name, used for SpotBugs)
 ```
 
 **Note**: SpotBugs is configured to fail the build on issues.
@@ -145,7 +145,7 @@ Migrates JUnit 3/4 tests to JUnit 5:
 - `@Test(expected=...)` → `assertThrows()`
 
 #### sandbox_tools
-While-to-For loop converter (merged into Eclipse JDT).
+While-to-For loop converter. The implementation was successfully contributed to and merged into the Eclipse JDT project. This module remains in the repository for reference and testing purposes.
 
 #### sandbox_usage_view
 Table view for detecting inconsistent naming.
@@ -166,8 +166,8 @@ Search tool for critical classes during Eclipse/Java upgrades.
 
 When creating new cleanups:
 
-1. **Create the cleanup class** in `org.sandbox.jdt.internal.corext.fix2`
-2. **Define constants** in `MYCleanUpConstants`
+1. **Create the cleanup class** in module-specific `org.sandbox.jdt.internal.corext` package
+2. **Define constants** in `MYCleanUpConstants` (located in `sandbox_common/src/org/sandbox/jdt/internal/corext/fix2`)
 3. **Register in `plugin.xml`** under `org.eclipse.jdt.ui.cleanUps` extension point
 4. **Create test cases** in corresponding `*_test` module
 5. **Document in README.md** with examples and Java version compatibility
