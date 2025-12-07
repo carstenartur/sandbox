@@ -65,10 +65,11 @@ mvn compile
 # - Effort: Max
 # - Threshold: medium
 # - Exclusions: ../spotbugs-exclude.xml
-# - PMD Suppression: ../pmd-suppressions.xml (PMD suppressions file; SpotBugs uses spotbugs-exclude.xml)
 ```
 
 **Note**: SpotBugs is configured to fail the build on issues.
+
+**Note**: The repository also contains `pmd-suppressions.xml` which is a separate PMD suppressions file, not used by SpotBugs.
 
 ### Code Coverage
 
@@ -123,6 +124,14 @@ All Java files must include the Eclipse Public License 2.0 header:
 - Example: `org.sandbox.jdt.internal.corext` → `org.eclipse.jdt.internal.corext`
 - Each package has a corresponding OSGi module with the same name (after the replacement)
 - This naming convention ensures seamless integration into Eclipse JDT when features are ready for upstream contribution
+
+**Directory Correspondence Examples**:
+| Sandbox Directory | Eclipse JDT Equivalent |
+|------------------|------------------------|
+| `sandbox_encoding_quickfix/src/org/sandbox/jdt/internal/corext/fix` | [`org.eclipse.jdt.core.manipulation/core extension/org/eclipse/jdt/internal/corext/fix`](https://github.com/eclipse-jdt/eclipse.jdt.ui/tree/master/org.eclipse.jdt.core.manipulation/core%20extension/org/eclipse/jdt/internal/corext/fix) |
+| `sandbox_common/src/org/sandbox/jdt/internal/corext/fix2/MYCleanUpConstants.java` | [`org.eclipse.jdt.core.manipulation/core extension/org/eclipse/jdt/internal/corext/fix/CleanUpConstants.java`](https://github.com/eclipse-jdt/eclipse.jdt.ui/blob/master/org.eclipse.jdt.core.manipulation/core%20extension/org/eclipse/jdt/internal/corext/fix/CleanUpConstants.java) |
+| `sandbox_*/src/org/sandbox/jdt/internal/ui/*` | `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/*` |
+| `sandbox_*_test/src/org/eclipse/jdt/ui/tests/quickfix/*` | `org.eclipse.jdt.ui.tests/ui/org/eclipse/jdt/ui/tests/quickfix/*` |
 
 ### Java Conventions
 
