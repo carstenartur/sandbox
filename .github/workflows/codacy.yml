@@ -109,6 +109,7 @@ jobs:
                 else
                   errors=$((errors+1))
                 fi
+              fi
             fi
           done < <(git ls-files -z '*.java' '*.xml' '*.properties' '*.txt' '*.md')
           echo "Converted/cleaned $changes files, $errors failures"
