@@ -97,7 +97,8 @@ All Java files must include the Eclipse Public License 2.0 header:
 
 ```java
 /*******************************************************************************
- * Copyright (c) 2024 hammer.
+ * Copyright (c) 2021 Carsten Hammer.
+ * // Update the year to the current year when creating new files.
  *
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
