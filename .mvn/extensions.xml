@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<extensions>
-  <!-- Tycho Maven Plugin Extension -->
-  <extension>
-    <groupId>org.eclipse.tycho</groupId>
-    <artifactId>tycho-maven-plugin</artifactId>
-    <version>5.0.1</version>
-  </extension>
-</extensions>
