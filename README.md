@@ -34,7 +34,7 @@ All plugins are work-in-progress and intended for experimentation and learning.
 
 ### Prerequisites
 
-**IMPORTANT**: This project (main branch / 2025-09) requires **Java 21** or later.
+**IMPORTANT**: This project (main branch, targeting Eclipse 2025-09) requires **Java 21** or later.
 
 The project uses Tycho 5.0.1 which requires Java 21. Building with Java 17 or earlier will fail with:
 ```
