@@ -69,8 +69,18 @@ jobs:
             
             charset=$(uchardet "$f" 2>/dev/null | tr '[:upper:]' '[:lower:]')
             if [ -z "$charset" ]; then
-              echo "Warning: uchardet could not detect encoding for $f, treating as binary"
-              charset="binary"
+              echo "Warning: uchardet could not detect encoding for $f, attempting UTF-8 validation"
+              # Try to clean as UTF-8 anyway for files < 1MB
+              filesize=$(stat -f%z "$f" 2>/dev/null || stat -c%s "$f" 2>/dev/null || echo 0)
+              if [ "$filesize" -lt 1048576 ] && ! iconv -f utf-8 -t utf-8 "$f" > /dev/null 2>&1; then
+                echo "Cleaning invalid UTF-8 sequences in $f (unknown encoding)"
+                if clean_utf8 "$f"; then
+                  changes=$((changes+1))
+                else
+                  errors=$((errors+1))
+                fi
+              fi
+              continue
             fi
             
             # Only convert if not already UTF-8/ASCII
