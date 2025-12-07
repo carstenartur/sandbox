@@ -29,8 +29,6 @@ exclude_paths:
   - "**/*.woff*"
   - "**/*.eot"
   - "**/resources/**"
-  - "artifacts.jar"
-  - "content.jar"
 
 # Only analyze Java sources in src directories
 include_paths:
