@@ -65,7 +65,7 @@ mvn compile
 # - Effort: Max
 # - Threshold: medium
 # - Exclusions: ../spotbugs-exclude.xml
-# - PMD Suppression: ../pmd-suppressions.xml (legacy file name, used for SpotBugs)
+# - PMD Suppression: ../pmd-suppressions.xml (PMD suppressions file; SpotBugs uses spotbugs-exclude.xml)
 ```
 
 **Note**: SpotBugs is configured to fail the build on issues.
