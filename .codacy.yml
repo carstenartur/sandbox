@@ -18,7 +18,7 @@ exclude_paths:
   - "**/*.woff*"
   - "**/resources/**"
 
-# Nur Java-Quellen analysieren
+# Only analyze Java sources
 include_paths:
   - "src/**/*.java"
 
