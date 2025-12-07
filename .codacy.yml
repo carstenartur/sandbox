@@ -4,26 +4,47 @@ exclude_paths:
   - "target/**"
   - ".git/**"
   - ".github/**"
+  - "bin/**"
+  - "p2/**"
+  - "build/**"
+  - "generated/**"
+  - "sandbox1.2.1/**"
+  - "plugins/**"
+  - "features/**"
+  - "**/testresources/**"
   - "**/*.class"
   - "**/*.jar"
   - "**/*.war"
   - "**/*.ear"
+  - "**/*.zip"
+  - "**/*.tar.gz"
   - "**/*.png"
   - "**/*.jpg"
+  - "**/*.jpeg"
   - "**/*.gif"
   - "**/*.svg"
   - "**/*.ico"
   - "**/*.pdf"
   - "**/*.ttf"
   - "**/*.woff*"
+  - "**/*.eot"
   - "**/resources/**"
 
-# Only analyze Java sources
+# Only analyze Java sources in src directories
 include_paths:
-  - "src/**/*.java"
+  - "*/src/**/*.java"
 
-# (Optional) Tool-spezifisches Tuning – Namen laut Doku
+# Tool-specific configuration
 engines:
-  pmd: {}
-  checkstyle: {}
-  spotbugs: {}
+  pmd:
+    enabled: true
+    exclude_patterns:
+      - "**/*.class"
+      - "**/*.jar"
+      - "**/target/**"
+      - "**/bin/**"
+      - "**/testresources/**"
+  checkstyle:
+    enabled: true
+  spotbugs:
+    enabled: true

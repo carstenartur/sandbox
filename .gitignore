@@ -57,6 +57,19 @@ target/
 *.tar.gz
 *.rar
 
+# Exclude JAR files except in specific directories for p2 repository
+# (Note: Some JAR files in plugins/, features/, and root are part of p2 update site)
+# Future binary JAR files should not be added unless they are build artifacts
+*.jar
+# Exception: Allow JAR files that are already tracked in p2 directories
+!plugins/*.jar
+!features/*.jar
+!artifacts.jar
+!content.jar
+!sandbox1.2.1/**/*.jar
+# Test resources JAR files (stub libraries)
+!**/testresources/*.jar
+
 # JaCoCo
 *.exec
 jacoco*.xml

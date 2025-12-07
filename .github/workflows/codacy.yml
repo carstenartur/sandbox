@@ -41,22 +41,120 @@ jobs:
       - name: Build (no tests)
         run: mvn -B -DskipTests package
 
-      # (Optional, aber sehr hilfreich) Nicht-UTF8-Java-Dateien erkennen & konvertieren
-      - name: Normalize Java sources to UTF-8 (in-place)
+      # Normalize all source files to UTF-8 to prevent encoding issues in SARIF generation
+      - name: Normalize source files to UTF-8 (in-place)
         run: |
           set -euo pipefail
           sudo apt-get update -y
-          sudo apt-get install -y uchardet
+          sudo apt-get install -y uchardet libxml2-utils
           changes=0
-          while IFS= read -r -d '' f; do
-            charset=$(uchardet "$f" | tr '[:upper:]' '[:lower:]')
-            if [ "$charset" != "utf-8" ] && [ "$charset" != "ascii" ]; then
-              echo "Converting $f ($charset -> utf-8)"
-              iconv -f "$charset" -t utf-8 "$f" -o "$f.tmp" && mv "$f.tmp" "$f"
-              changes=$((changes+1))
+          errors=0
+          
+          # Helper function to clean invalid UTF-8 sequences
+          clean_utf8() {
+            local file=$1
+            if iconv -f utf-8 -t utf-8 -c "$file" -o "$file.tmp" 2>/dev/null; then
+              mv "$file.tmp" "$file"
+              return 0
+            else
+              rm -f "$file.tmp"
+              return 1
             fi
-          done < <(git ls-files -z '*.java')
-          echo "Converted $changes Java files to UTF-8"
+          }
+          
+          # Process Java, XML, properties, and other text files
+          while IFS= read -r -d '' f; do
+            # Skip if file doesn't exist or is not readable
+            [ -r "$f" ] || continue
+            
+            charset=$(uchardet "$f" 2>/dev/null | tr '[:upper:]' '[:lower:]')
+            if [ -z "$charset" ]; then
+              echo "Warning: uchardet could not detect encoding for $f, attempting UTF-8 validation"
+              # Try to clean as UTF-8 anyway for files < 1MB
+              filesize=$(stat -f%z "$f" 2>/dev/null || stat -c%s "$f" 2>/dev/null || echo 0)
+              if [ "$filesize" -lt 1048576 ] && ! iconv -f utf-8 -t utf-8 "$f" > /dev/null 2>&1; then
+                echo "Cleaning invalid UTF-8 sequences in $f (unknown encoding)"
+                if clean_utf8 "$f"; then
+                  changes=$((changes+1))
+                else
+                  errors=$((errors+1))
+                fi
+              fi
+              continue
+            fi
+            
+            # Only convert if not already UTF-8/ASCII
+            if [ "$charset" != "utf-8" ] && [ "$charset" != "ascii" ] && [ "$charset" != "binary" ]; then
+              echo "Converting $f ($charset -> utf-8)"
+              if iconv -f "$charset" -t utf-8 "$f" -o "$f.tmp" 2>/dev/null; then
+                mv "$f.tmp" "$f"
+                changes=$((changes+1))
+              else
+                rm -f "$f.tmp"  # Clean up partially written file on conversion failure
+                echo "Warning: Failed to convert $f, trying to clean invalid UTF-8"
+                if clean_utf8 "$f"; then
+                  changes=$((changes+1))
+                else
+                  errors=$((errors+1))
+                fi
+              fi
+            elif [ "$charset" = "utf-8" ] || [ "$charset" = "ascii" ]; then
+              # Even if detected as UTF-8, validate and clean it (skip very large files > 1MB)
+              filesize=$(stat -c%s "$f" 2>/dev/null || echo 0)
+              # Check if file contains invalid UTF-8 sequences by comparing with cleaned version
+              if [ "$filesize" -lt 1048576 ] && ! diff -q "$f" <(iconv -f utf-8 -t utf-8 -c "$f" 2>/dev/null) > /dev/null 2>&1; then
+                echo "Cleaning invalid UTF-8 sequences in $f"
+                if clean_utf8 "$f"; then
+                  changes=$((changes+1))
+                else
+                  errors=$((errors+1))
+                fi
+              fi
+            fi
+          done < <(git ls-files -z '*.java' '*.xml' '*.properties' '*.txt' '*.md')
+          echo "Converted/cleaned $changes files, $errors failures"
+          if [ "$errors" -gt 0 ]; then
+            echo "Error: Failed to process $errors files"
+            exit 1
+          fi
+
+      # Ensure PMD only analyzes Java source files
+      - name: Verify PMD configuration
+        run: |
+          echo "PMD will use ruleset.xml and .codacy.yml for filtering"
+          echo ""
+          if [ -f ruleset.xml ]; then
+            echo "✓ ruleset.xml found"
+            # Validate XML is well-formed
+            xml_check=$(xmllint --noout ruleset.xml 2>&1)
+            if [ $? -eq 0 ]; then
+              echo "✓ ruleset.xml is well-formed XML"
+            else
+              echo "⚠ ruleset.xml has XML syntax errors"
+              echo "$xml_check"
+            fi
+            echo ""
+            echo "Binary file exclusions from ruleset.xml:"
+            grep "exclude-pattern.*\\.jar" ruleset.xml || true
+            grep "exclude-pattern.*\\.class" ruleset.xml || true
+            echo ""
+            echo "Key directory exclusions from ruleset.xml:"
+            grep "exclude-pattern.*/.*/.*" ruleset.xml | head -8 || true
+          else
+            echo "⚠ ruleset.xml not found"
+          fi
+          echo ""
+          if [ -f .codacy.yml ]; then
+            echo "✓ .codacy.yml found"
+            echo "Included paths:"
+            grep -A 5 "include_paths:" .codacy.yml || true
+            echo "Excluded paths:"
+            grep -A 20 "exclude_paths:" .codacy.yml || true
+          fi
+          echo ""
+          echo "Java source files to be analyzed:"
+          java_count=$(find . -name "*.java" -path "*/src/*" -not -path "*/target/*" -not -path "*/bin/*" | wc -l)
+          echo "Found $java_count Java files in src/ directories (excluding target/ and bin/)"
 
       - name: Run Codacy Analysis CLI (${{ matrix.tool }})
         uses: codacy/codacy-analysis-cli-action@v4
