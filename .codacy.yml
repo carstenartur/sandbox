@@ -33,7 +33,6 @@ exclude_paths:
 # Only analyze Java sources in src directories
 include_paths:
   - "*/src/**/*.java"
-  - "src/**/*.java"
 
 # Tool-specific configuration
 engines:
