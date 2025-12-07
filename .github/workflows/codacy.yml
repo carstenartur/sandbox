@@ -67,7 +67,11 @@ jobs:
             # Skip if file doesn't exist or is not readable
             [ -r "$f" ] || continue
             
-            charset=$(uchardet "$f" 2>/dev/null | tr '[:upper:]' '[:lower:]' || echo "binary")
+            charset=$(uchardet "$f" 2>/dev/null | tr '[:upper:]' '[:lower:]')
+            if [ -z "$charset" ]; then
+              echo "Warning: uchardet failed for $f, assuming binary"
+              charset="binary"
+            fi
             
             # Only convert if not already UTF-8/ASCII
             if [ "$charset" != "utf-8" ] && [ "$charset" != "ascii" ] && [ "$charset" != "binary" ]; then
@@ -76,6 +80,7 @@ jobs:
                 mv "$f.tmp" "$f"
                 changes=$((changes+1))
               else
+                rm -f "$f.tmp"  # Clean up any partial file
                 echo "Warning: Failed to convert $f, trying to clean invalid UTF-8"
                 if clean_utf8 "$f"; then
                   changes=$((changes+1))
