@@ -112,6 +112,10 @@ jobs:
             fi
           done < <(git ls-files -z '*.java' '*.xml' '*.properties' '*.txt' '*.md')
           echo "Converted/cleaned $changes files, $errors failures"
+          if [ "$errors" -gt 0 ]; then
+            echo "Error: Failed to process $errors files"
+            exit 1
+          fi
 
       # Ensure PMD only analyzes Java source files
       - name: Verify PMD configuration
