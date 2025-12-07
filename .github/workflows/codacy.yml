@@ -101,14 +101,14 @@ jobs:
             elif [ "$charset" = "utf-8" ] || [ "$charset" = "ascii" ]; then
               # Even if detected as UTF-8, validate and clean it (skip very large files > 1MB)
               filesize=$(stat -c%s "$f" 2>/dev/null || echo 0)
-              if [ "$filesize" -lt 1048576 ] && ! iconv -f utf-8 -t utf-8 "$f" > /dev/null 2>&1; then
+              # Check if file contains invalid UTF-8 sequences by comparing with cleaned version
+              if [ "$filesize" -lt 1048576 ] && ! diff -q "$f" <(iconv -f utf-8 -t utf-8 -c "$f" 2>/dev/null) > /dev/null 2>&1; then
                 echo "Cleaning invalid UTF-8 sequences in $f"
                 if clean_utf8 "$f"; then
                   changes=$((changes+1))
                 else
                   errors=$((errors+1))
                 fi
-              fi
             fi
           done < <(git ls-files -z '*.java' '*.xml' '*.properties' '*.txt' '*.md')
           echo "Converted/cleaned $changes files, $errors failures"
