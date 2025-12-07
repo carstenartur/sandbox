@@ -208,6 +208,12 @@ When creating new cleanups:
 - Each OSGi module name matches its primary package name
 - This design enables seamless upstream integration when cleanups are mature
 
+**MYCleanUpConstants Reference**: 
+- `MYCleanUpConstants` in this sandbox corresponds to Eclipse JDT's [`CleanUpConstants`](https://github.com/eclipse-jdt/eclipse.jdt.ui/blob/master/org.eclipse.jdt.core.manipulation/core%20extension/org/eclipse/jdt/internal/corext/fix/CleanUpConstants.java)
+- When porting to Eclipse JDT, constants from `MYCleanUpConstants` are copied/merged into `CleanUpConstants`
+- Each plugin's constants in `MYCleanUpConstants` follow the same pattern and naming conventions as Eclipse JDT
+- This ensures consistency and simplifies the integration process when contributing features upstream
+
 ### Test-Driven Development
 
 - Write tests first in the `*_test` module
