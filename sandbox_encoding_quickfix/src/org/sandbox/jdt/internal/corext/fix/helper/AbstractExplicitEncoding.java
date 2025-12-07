@@ -50,14 +50,32 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 
 
 /**
- * @param <T> Type found in Visitor
+ * Abstract base class for encoding-related quick fixes. Provides common functionality
+ * for finding and rewriting code patterns that use implicit or string-based encoding
+ * specifications.
+ *
+ * <p>Subclasses must implement:
+ * <ul>
+ *   <li>{@link #find} - to locate code patterns that need to be fixed</li>
+ *   <li>{@link #rewrite} - to apply the encoding-related transformation</li>
+ *   <li>{@link #getPreview} - to generate preview text for the fix</li>
+ * </ul>
+ *
+ * @param <T> The type of AST node that this encoding handler processes
  */
 public abstract class AbstractExplicitEncoding<T extends ASTNode> {
-	private static final String JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION= "java.io.UnsupportedEncodingException"; //$NON-NLS-1$
 
-	private static final String UNSUPPORTED_ENCODING_EXCEPTION= "UnsupportedEncodingException"; //$NON-NLS-1$
+	/** Fully qualified name of java.io.UnsupportedEncodingException. */
+	private static final String JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION = "java.io.UnsupportedEncodingException"; //$NON-NLS-1$
 
-	private static final Map<String, String> encodingMapInternal= Map.of(
+	/** Simple name of UnsupportedEncodingException for matching in exception types. */
+	private static final String UNSUPPORTED_ENCODING_EXCEPTION = "UnsupportedEncodingException"; //$NON-NLS-1$
+
+	/**
+	 * Internal map of standard charset names (e.g., "UTF-8") to their corresponding
+	 * StandardCharsets constant names (e.g., "UTF_8").
+	 */
+	private static final Map<String, String> encodingMapInternal = Map.of(
 			"UTF-8", "UTF_8", //$NON-NLS-1$ //$NON-NLS-2$
 			"UTF-16", "UTF_16", //$NON-NLS-1$ //$NON-NLS-2$
 			"UTF-16BE", "UTF_16BE", //$NON-NLS-1$ //$NON-NLS-2$
@@ -69,49 +87,79 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	/**
 	 * Immutable map of encoding names to their StandardCharsets constant names.
 	 */
-	protected static final Map<String, String> ENCODING_MAP= Collections.unmodifiableMap(encodingMapInternal);
+	protected static final Map<String, String> ENCODING_MAP = Collections.unmodifiableMap(encodingMapInternal);
 
 	/**
-	 * Immutable set of supported encoding names.
+	 * Immutable set of supported encoding names that can be converted to StandardCharsets constants.
 	 */
-	protected static final Set<String> ENCODINGS= Collections.unmodifiableSet(encodingMapInternal.keySet());
+	protected static final Set<String> ENCODINGS = Collections.unmodifiableSet(encodingMapInternal.keySet());
 
 	/**
 	 * Immutable record to hold node data for encoding transformations.
+	 * Replaces the mutable Nodedata class for better thread safety and immutability.
 	 * 
-	 * @param replace Whether to replace an existing encoding parameter
-	 * @param visited The AST node that was visited
-	 * @param encoding The encoding constant name (e.g., "UTF_8")
+	 * @param replace Whether to replace an existing encoding parameter (true) or appended (false)
+	 * @param visited The AST node that was visited and needs modification
+	 * @param encoding The encoding constant name (e.g., "UTF_8"), or null for default charset
 	 */
 	protected static record NodeData(boolean replace, ASTNode visited, String encoding) {
 	}
 
 	/**
 	 * Thread-safe map to cache charset constant references during aggregation.
+	 * Used to avoid creating duplicate QualifiedName instances.
 	 */
-	private static final Map<String, QualifiedName> CHARSET_CONSTANTS= new ConcurrentHashMap<>();
+	private static final Map<String, QualifiedName> CHARSET_CONSTANTS = new ConcurrentHashMap<>();
 
 	/**
 	 * Returns the charset constants map for use in encoding transformations.
+	 * 
 	 * @return thread-safe map of charset constants
 	 */
 	protected static Map<String, QualifiedName> getCharsetConstants() {
 		return CHARSET_CONSTANTS;
 	}
 
-	protected static final String KEY_ENCODING= "encoding"; //$NON-NLS-1$
+	/** Key used for storing encoding information in data holders. */
+	protected static final String KEY_ENCODING = "encoding"; //$NON-NLS-1$
 
-	protected static final String KEY_REPLACE= "replace"; //$NON-NLS-1$
+	/** Key used for storing replace flag in data holders. */
+	protected static final String KEY_REPLACE = "replace"; //$NON-NLS-1$
 
-	// Deprecated: for backward compatibility
+	/**
+	 * @deprecated Use {@link #ENCODING_MAP} instead. This field will be removed in a future version.
+	 */
 	@Deprecated(forRemoval = true)
-	static Map<String, String> encodingmap= ENCODING_MAP;
+	static Map<String, String> encodingmap = ENCODING_MAP;
 
+	/**
+	 * @deprecated Use {@link #ENCODINGS} instead. This field will be removed in a future version.
+	 */
 	@Deprecated(forRemoval = true)
-	static Set<String> encodings= ENCODINGS;
+	static Set<String> encodings = ENCODINGS;
 
+	/**
+	 * Finds all occurrences of the encoding pattern that this handler processes
+	 * and adds corresponding rewrite operations.
+	 *
+	 * @param fixcore the fix core instance, must not be null
+	 * @param compilationUnit the compilation unit to search in, must not be null
+	 * @param operations the set to add rewrite operations to, must not be null
+	 * @param nodesprocessed the set of already processed nodes (to avoid duplicates), must not be null
+	 * @param cb the change behavior configuration, must not be null
+	 */
 	public abstract void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ChangeBehavior cb);
 
+	/**
+	 * Rewrites the visited AST node to use explicit encoding.
+	 *
+	 * @param useExplicitEncodingFixCore the fix core instance, must not be null
+	 * @param visited the AST node to rewrite, must not be null
+	 * @param cuRewrite the compilation unit rewrite context, must not be null
+	 * @param group the text edit group for grouping changes, must not be null
+	 * @param cb the change behavior configuration, must not be null
+	 * @param data the reference holder containing node-specific data, must not be null
+	 */
 	public abstract void rewrite(UseExplicitEncodingFixCore useExplicitEncodingFixCore, T visited, CompilationUnitRewrite cuRewrite,
 			TextEditGroup group, ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data);
 
@@ -119,17 +167,25 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	 * Adds an import to the class. This method should be used for every class reference added to
 	 * the generated code.
 	 *
-	 * @param typeName a fully qualified name of a type
-	 * @param cuRewrite CompilationUnitRewrite
-	 * @param ast AST
+	 * @param typeName a fully qualified name of a type, must not be null
+	 * @param cuRewrite CompilationUnitRewrite, must not be null
+	 * @param ast AST, must not be null
 	 * @return simple name of a class if the import was added and fully qualified name if there was
-	 *         a conflict
+	 *         a conflict; never null
 	 */
 	protected static Name addImport(String typeName, final CompilationUnitRewrite cuRewrite, AST ast) {
-		String importedName= cuRewrite.getImportRewrite().addImport(typeName);
+		String importedName = cuRewrite.getImportRewrite().addImport(typeName);
 		return ast.newName(importedName);
 	}
 
+	/**
+	 * Finds the value of a variable by searching through the enclosing method or type declaration.
+	 * Searches for variable declarations and returns the string literal value if found.
+	 *
+	 * @param variable the variable name to search for, must not be null
+	 * @param context the AST node context to start the search from, must not be null
+	 * @return the uppercase string literal value of the variable, or null if not found
+	 */
 	protected static String findVariableValue(SimpleName variable, ASTNode context) {
 		ASTNode current= context.getParent();
 		while (current != null && !(current instanceof MethodDeclaration) && !(current instanceof TypeDeclaration)) {
@@ -177,8 +233,24 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 		return null;
 	}
 
+	/**
+	 * Generates preview text showing the code before and after the encoding fix is applied.
+	 *
+	 * @param afterRefactoring true to show the code after applying the fix, false to show before
+	 * @param cb the change behavior configuration, must not be null
+	 * @return preview text showing the encoding pattern, never null
+	 */
 	public abstract String getPreview(boolean afterRefactoring, ChangeBehavior cb);
 
+	/**
+	 * Removes UnsupportedEncodingException from method throws clauses or catch blocks
+	 * when the encoding is changed from a string to a Charset constant.
+	 *
+	 * @param visited the AST node being processed, must not be null
+	 * @param group the text edit group for grouping changes, must not be null
+	 * @param rewrite the AST rewrite instance, must not be null
+	 * @param importRewriter the import rewrite instance, must not be null
+	 */
 	protected void removeUnsupportedEncodingException(final ASTNode visited, TextEditGroup group, ASTRewrite rewrite, ImportRewrite importRewriter) {
 		ASTNode parent= visited.getParent();
 		while (parent != null && !(parent instanceof MethodDeclaration) && !(parent instanceof TryStatement)) {
@@ -244,10 +316,10 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 
 	/**
 	 * Checks if a type represents UnsupportedEncodingException.
-	 * Uses binding when available, falls back to string matching.
+	 * Uses type binding when available for accurate type resolution, falls back to string matching.
 	 * 
-	 * @param type The type to check
-	 * @return true if the type is UnsupportedEncodingException
+	 * @param type The type to check, must not be null
+	 * @return true if the type is UnsupportedEncodingException, false otherwise
 	 */
 	private boolean isUnsupportedEncodingException(Type type) {
 		// Try to use binding for more robust type checking
