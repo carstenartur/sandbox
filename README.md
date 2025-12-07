@@ -32,6 +32,22 @@ All plugins are work-in-progress and intended for experimentation and learning.
 
 ## Build Instructions
 
+### Prerequisites
+
+**IMPORTANT**: This project (main branch, targeting Eclipse 2025-09) requires **Java 21** or later.
+
+The project uses Tycho 5.0.1 which requires Java 21. Building with Java 17 or earlier will fail with:
+```
+UnsupportedClassVersionError: ... has been compiled by a more recent version of the Java Runtime (class file version 65.0)
+```
+
+Verify your Java version:
+```bash
+java -version  # Should show Java 21 or later
+```
+
+### Building
+
 To build the project, including a WAR file that contains the update site, run:
 
 ```bash
@@ -40,6 +56,26 @@ mvn -Dinclude=web -Pjacoco verify
 
 - The product will be located in `sandbox_product/target`
 - The WAR file will be located in `sandbox_web/target`
+
+### Troubleshooting
+
+#### Build fails with `UnsupportedClassVersionError` or `TypeNotPresentException`
+
+This error occurs when building with Java 17 or earlier:
+
+```
+TypeNotPresentException: Type P2ArtifactRepositoryLayout not present
+...class file version 65.0, this version only recognizes class file versions up to 61.0
+```
+
+**Solution**: Upgrade to Java 21 or later. Verify with `java -version`.
+
+#### Build fails with `Unable to provision` errors
+
+This usually indicates a Java version mismatch. Check that:
+1. `JAVA_HOME` is set to Java 21+
+2. `java -version` shows Java 21+
+3. Maven is using the correct Java version: `mvn -version`
 
 ---
 
@@ -79,11 +115,14 @@ mvn -Dinclude=web -Pjacoco verify
 
 ### Java Version by Branch
 
-| Branch        | Java Version |
-|---------------|--------------|
-| `2024-06`+    | Java 21      |
-| `2022-12`+    | Java 17      |
-| Up to `2022-06` | Java 11    |
+| Branch          | Java Version | Tycho Version |
+|-----------------|--------------|---------------|
+| `main` (2025-09)| Java 21      | 5.0.1         |
+| `2024-06`+      | Java 21      | 5.0.x         |
+| `2022-12`+      | Java 17      | 4.x           |
+| Up to `2022-06` | Java 11      | 3.x           |
+
+**Note**: Tycho 5.x requires Java 21+ at build time. Attempting to build with Java 17 will result in `UnsupportedClassVersionError`.
 
 ### Topics Covered
 
