@@ -156,7 +156,7 @@ The project follows an Eclipse plugin structure with paired modules:
 Replaces platform-dependent encoding with explicit `StandardCharsets.UTF_8`:
 - Transforms `FileReader`/`FileWriter` to use explicit charsets
 - Updates `Files.readAllLines()` and similar methods
-- Supports Java 7-22 with version-aware transformations
+- Supports Java 11+ with version-aware transformations (Java 7 no longer supported)
 
 #### sandbox_platform_helper
 Simplifies `new Status(...)` calls:
@@ -211,16 +211,28 @@ When creating new cleanups:
 ### Test-Driven Development
 
 - Write tests first in the `*_test` module
-- Tests should cover multiple Java versions (Java 7, 10, 11, 21, 22)
+- Tests should cover multiple Java versions supported by Eclipse (currently Java 11, 17, 21)
+- **Note**: Java 7 is no longer supported by Eclipse and should not be targeted
 - Use parameterized tests with `@EnumSource` or `@ValueSource`
 - Include disabled tests (`@Disabled`) for future features
 
 ### Version Compatibility
 
 Always consider Eclipse and Java version compatibility:
+- **Only support Java versions currently supported by Eclipse** (Java 11+, no Java 7 support)
 - Check `min.java.version` for features
 - Use Eclipse Platform 4.20+ features conditionally
 - Document version requirements in comments and README
+
+### Multi-Version Support
+
+The project aims to support building against multiple Eclipse versions for backporting:
+
+- **Goal**: Support the latest 3 Eclipse releases (e.g., 2025-09, 2024-12, 2024-09)
+- **Current State**: Main branch targets Eclipse 2025-09; multi-version CI workflows need enhancement
+- **Workflow Strategy**: GitHub Actions workflows in `.github/workflows/` should build against multiple Eclipse versions
+- **Backporting**: When backporting features, PRs should target the appropriate Eclipse version branches
+- **Future Enhancement**: Implement support for targeting multiple branches with a single PR for easier backporting
 
 ### Maven/Tycho Specifics
 
@@ -251,7 +263,13 @@ This project follows **GitHub best practices** for code quality:
 2. **Commits**: Write clear commit messages explaining the change
 3. **Testing**: Always run tests before committing
 4. **CI**: All checks must pass (Maven build, SpotBugs, CodeQL, Codacy)
-5. **Pull Requests**: Include description of changes and test results
+5. **Pull Requests**: 
+   - **Keep PRs small and focused**: Each PR should address a single aspect or concern
+   - **Avoid mixing changes**: Don't combine formatting changes with logic changes, or multiple unrelated features
+   - **Split large changes**: If many changes are needed, split them into multiple PRs that belong to the same issue
+   - **Goal**: Make changes easy to understand and review - large diffs mixing different concerns are difficult to review
+   - Include description of changes and test results
+   - For backporting features, PRs may need to target multiple branches (see Multi-Version Support below)
 
 ## Common Commands
 
