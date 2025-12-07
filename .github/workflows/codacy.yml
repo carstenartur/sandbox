@@ -66,11 +66,12 @@ jobs:
           if [ -f ruleset.xml ]; then
             echo "✓ ruleset.xml found"
             # Validate XML is well-formed
-            if xmllint --noout ruleset.xml 2>/dev/null; then
+            xml_check=$(xmllint --noout ruleset.xml 2>&1)
+            if [ $? -eq 0 ]; then
               echo "✓ ruleset.xml is well-formed XML"
             else
               echo "⚠ ruleset.xml has XML syntax errors"
-              xmllint --noout ruleset.xml 2>&1 || true
+              echo "$xml_check"
             fi
             echo ""
             echo "Binary file exclusions from ruleset.xml:"
