@@ -46,7 +46,7 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update -y
-          sudo apt-get install -y uchardet
+          sudo apt-get install -y uchardet libxml2-utils
           changes=0
           while IFS= read -r -d '' f; do
             charset=$(uchardet "$f" | tr '[:upper:]' '[:lower:]')
@@ -62,11 +62,27 @@ jobs:
       - name: Verify PMD configuration
         run: |
           echo "PMD will use ruleset.xml and .codacy.yml for filtering"
+          echo ""
           if [ -f ruleset.xml ]; then
             echo "✓ ruleset.xml found"
+            # Validate XML is well-formed
+            if xmllint --noout ruleset.xml 2>/dev/null; then
+              echo "✓ ruleset.xml is well-formed XML"
+            else
+              echo "⚠ ruleset.xml has XML syntax errors"
+              xmllint --noout ruleset.xml 2>&1 || true
+            fi
+            echo ""
+            echo "Binary file exclusions from ruleset.xml:"
+            grep "exclude-pattern.*\\.jar" ruleset.xml || true
+            grep "exclude-pattern.*\\.class" ruleset.xml || true
+            echo ""
+            echo "Key directory exclusions from ruleset.xml:"
+            grep "exclude-pattern.*/.*/.*" ruleset.xml | head -8 || true
           else
             echo "⚠ ruleset.xml not found"
           fi
+          echo ""
           if [ -f .codacy.yml ]; then
             echo "✓ .codacy.yml found"
             echo "Included paths:"
@@ -74,6 +90,10 @@ jobs:
             echo "Excluded paths:"
             grep -A 20 "exclude_paths:" .codacy.yml || true
           fi
+          echo ""
+          echo "Java source files to be analyzed:"
+          java_count=$(find . -name "*.java" -path "*/src/*" -not -path "*/target/*" -not -path "*/bin/*" | wc -l)
+          echo "Found $java_count Java files in src/ directories (excluding target/ and bin/)"
 
       - name: Run Codacy Analysis CLI (${{ matrix.tool }})
         uses: codacy/codacy-analysis-cli-action@v4
