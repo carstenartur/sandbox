@@ -18,8 +18,8 @@
     <exclude-pattern>.*/\.settings/.*</exclude-pattern>
     <exclude-pattern>.*/\.mvn/.*</exclude-pattern>
     <exclude-pattern>.*/sandbox1\.2\.1/.*</exclude-pattern>
-    <exclude-pattern>.*/plugins/.*\.jar</exclude-pattern>
-    <exclude-pattern>.*/features/.*\.jar</exclude-pattern>
+    <exclude-pattern>.*/plugins/.*</exclude-pattern>
+    <exclude-pattern>.*/features/.*</exclude-pattern>
     <exclude-pattern>.*/testresources/.*</exclude-pattern>
     
     <!-- Exclude binary and non-source files -->
