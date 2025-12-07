@@ -119,6 +119,10 @@ jobs:
 
       - name: Run Codacy Analysis CLI (${{ matrix.tool }})
         uses: codacy/codacy-analysis-cli-action@v4
+        env:
+          # Ensure UTF-8 encoding for Scala/JVM when reading files for SARIF generation
+          JAVA_OPTS: "-Dfile.encoding=UTF-8"
+          _JAVA_OPTIONS: "-Dfile.encoding=UTF-8"
         with:
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
           tool: ${{ matrix.tool }}
