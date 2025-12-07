@@ -69,7 +69,7 @@ jobs:
             
             charset=$(uchardet "$f" 2>/dev/null | tr '[:upper:]' '[:lower:]')
             if [ -z "$charset" ]; then
-              echo "Warning: uchardet failed for $f, assuming binary"
+              echo "Warning: uchardet could not detect encoding for $f, treating as binary"
               charset="binary"
             fi
             
@@ -80,7 +80,7 @@ jobs:
                 mv "$f.tmp" "$f"
                 changes=$((changes+1))
               else
-                rm -f "$f.tmp"  # Clean up any partial file
+                rm -f "$f.tmp"  # Clean up partially written file on conversion failure
                 echo "Warning: Failed to convert $f, trying to clean invalid UTF-8"
                 if clean_utf8 "$f"; then
                   changes=$((changes+1))
@@ -89,8 +89,9 @@ jobs:
                 fi
               fi
             elif [ "$charset" = "utf-8" ] || [ "$charset" = "ascii" ]; then
-              # Even if detected as UTF-8, validate and clean it
-              if ! iconv -f utf-8 -t utf-8 "$f" > /dev/null 2>&1; then
+              # Even if detected as UTF-8, validate and clean it (skip very large files > 1MB)
+              filesize=$(stat -f%z "$f" 2>/dev/null || stat -c%s "$f" 2>/dev/null || echo 0)
+              if [ "$filesize" -lt 1048576 ] && ! iconv -f utf-8 -t utf-8 "$f" > /dev/null 2>&1; then
                 echo "Cleaning invalid UTF-8 sequences in $f"
                 if clean_utf8 "$f"; then
                   changes=$((changes+1))
