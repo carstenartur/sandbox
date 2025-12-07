@@ -9,6 +9,12 @@ This is a sandbox repository for experimenting with Eclipse JDT cleanups, build 
 - Test different build strategies and tools (Maven/Tycho, SpotBugs, JaCoCo)
 - Develop custom Eclipse plugins for code modernization
 - Support multiple Eclipse versions via GitHub Actions
+- **Maintain a structure that can be easily ported into Eclipse JDT** - The codebase is designed for easy integration into Eclipse JDT core
+
+### Project Goals
+- Follow **GitHub best practices** for code quality, CI/CD, and project structure
+- Maintain high **code coverage** standards using JaCoCo
+- Provide a clean, maintainable codebase that serves as a reference implementation
 
 ## Technology Stack
 
@@ -64,6 +70,25 @@ mvn compile
 
 **Note**: SpotBugs is configured to fail the build on issues.
 
+### Code Coverage
+
+JaCoCo is used for code coverage reporting with the following goals:
+
+```bash
+# Generate coverage report
+mvn -Pjacoco verify
+
+# Coverage reports are generated in:
+# - Individual modules: <module>/target/site/jacoco/
+# - Aggregated report: sandbox_coverage/target/site/jacoco-aggregate/
+```
+
+**Coverage Best Practices**:
+- Aim for high test coverage, especially for cleanup transformations
+- Each cleanup should have comprehensive test cases covering edge cases
+- Use parameterized tests to cover multiple Java versions efficiently
+- Coverage reports help identify untested code paths before merging to Eclipse JDT
+
 ## Code Style and Conventions
 
 ### File Headers
@@ -91,6 +116,12 @@ All Java files must include the Eclipse Public License 2.0 header:
 - `org.sandbox.jdt.internal.corext.*` - Core transformation/fix logic
 - `org.sandbox.jdt.internal.ui.*` - UI components and preferences
 - `org.eclipse.jdt.ui.tests.quickfix.*` - Test cases (test modules)
+
+**Important**: The package structure is designed for easy porting to Eclipse JDT:
+- To port code to Eclipse JDT, simply replace `sandbox` with `eclipse` in package paths
+- Example: `org.sandbox.jdt.internal.corext` → `org.eclipse.jdt.internal.corext`
+- Each package has a corresponding OSGi module with the same name (after the replacement)
+- This naming convention ensures seamless integration into Eclipse JDT when features are ready for upstream contribution
 
 ### Java Conventions
 
@@ -172,6 +203,11 @@ When creating new cleanups:
 4. **Create test cases** in corresponding `*_test` module
 5. **Document in README.md** with examples and Java version compatibility
 
+**Porting to Eclipse JDT**: The package structure allows for easy contribution to Eclipse JDT:
+- Replace `org.sandbox` with `org.eclipse` in all package declarations and imports
+- Each OSGi module name matches its primary package name
+- This design enables seamless upstream integration when cleanups are mature
+
 ### Test-Driven Development
 
 - Write tests first in the `*_test` module
@@ -195,10 +231,19 @@ Always consider Eclipse and Java version compatibility:
 
 ### Code Quality
 
-- SpotBugs must pass (build fails on errors)
-- Exclude specific visitors if needed in config
-- Use suppression files for false positives
-- Run CodeQL in CI for security scanning
+This project follows **GitHub best practices** for code quality:
+
+- **SpotBugs**: Must pass (build fails on errors). Exclude specific visitors if needed in config
+- **CodeQL**: Security scanning runs in CI to catch vulnerabilities
+- **JaCoCo**: Code coverage tracking with aggregated reports in `sandbox_coverage`
+- **Codacy**: Automated code review for style and quality issues
+- **Test Coverage**: Comprehensive test suites for all cleanup implementations
+
+**Best Practice Goals**:
+- Maintain high code quality standards suitable for Eclipse JDT contribution
+- Use suppression files only for validated false positives
+- Ensure all security issues are addressed before merging
+- Keep coverage high to validate cleanup logic correctness
 
 ## Development Workflow
 
