@@ -44,6 +44,7 @@ jobs:
         run: mvn -B -DskipTests package
 
       # Normalize all source files to UTF-8 to prevent encoding issues in SARIF generation
+      # Explicitly exclude binary JAR files and testresources directory to prevent MalformedInputException
       - name: Normalize source files to UTF-8 (in-place)
         run: |
           set -euo pipefail
@@ -65,9 +66,16 @@ jobs:
           }
           
           # Process Java, XML, properties, and other text files
+          # IMPORTANT: Exclude testresources/ directory which contains binary JAR files
           while IFS= read -r -d '' f; do
             # Skip if file doesn't exist or is not readable
             [ -r "$f" ] || continue
+            
+            # Skip files in testresources directory (contains binary JARs)
+            if [[ "$f" == *"/testresources/"* ]]; then
+              echo "Skipping testresources file: $f"
+              continue
+            fi
             
             charset=$(uchardet "$f" 2>/dev/null | tr '[:upper:]' '[:lower:]')
             if [ -z "$charset" ]; then
@@ -113,17 +121,19 @@ jobs:
                 fi
               fi
             fi
-          done < <(git ls-files -z '*.java' '*.xml' '*.properties' '*.txt' '*.md')
+          done < <(git ls-files -z '*.java' '*.xml' '*.properties' '*.txt' '*.md' | grep -zv '/testresources/')
           echo "Converted/cleaned $changes files, $errors failures"
           if [ "$errors" -gt 0 ]; then
             echo "Error: Failed to process $errors files"
             exit 1
           fi
 
-      # Ensure PMD only analyzes Java source files
+      # Ensure PMD only analyzes Java source files and excludes binary JARs
+      # This prevents MalformedInputException during SARIF generation when PMD encounters binary files
       - name: Verify PMD configuration
         run: |
           echo "PMD will use ruleset.xml and .codacy.yml for filtering"
+          echo "IMPORTANT: Binary JARs under sandbox_functional_converter_test/testresources/ must be excluded"
           echo ""
           if [ -f ruleset.xml ]; then
             echo "✓ ruleset.xml found"
@@ -137,10 +147,11 @@ jobs:
             fi
             echo ""
             echo "Binary file exclusions from ruleset.xml:"
-            grep "exclude-pattern.*\\.jar" ruleset.xml || true
+            grep "exclude-pattern.*\\.jar" ruleset.xml || echo "  WARNING: No JAR exclusions found!"
             grep "exclude-pattern.*\\.class" ruleset.xml || true
             echo ""
             echo "Key directory exclusions from ruleset.xml:"
+            grep "exclude-pattern.*testresources" ruleset.xml || echo "  WARNING: No testresources exclusions found!"
             grep "exclude-pattern.*/.*/.*" ruleset.xml | head -8 || true
           else
             echo "⚠ ruleset.xml not found"
@@ -150,13 +161,20 @@ jobs:
             echo "✓ .codacy.yml found"
             echo "Included paths:"
             grep -A 5 "include_paths:" .codacy.yml || true
-            echo "Excluded paths:"
+            echo ""
+            echo "Excluded paths (should include testresources and *.jar):"
             grep -A 20 "exclude_paths:" .codacy.yml || true
+            echo ""
+            echo "PMD-specific exclusions:"
+            grep -A 10 "pmd:" .codacy.yml || true
           fi
           echo ""
           echo "Java source files to be analyzed:"
-          java_count=$(find . -name "*.java" -path "*/src/*" -not -path "*/target/*" -not -path "*/bin/*" | wc -l)
-          echo "Found $java_count Java files in src/ directories (excluding target/ and bin/)"
+          java_count=$(find . -name "*.java" -path "*/src/*" -not -path "*/target/*" -not -path "*/bin/*" -not -path "*/testresources/*" | wc -l)
+          echo "Found $java_count Java files in src/ directories (excluding target/, bin/, and testresources/)"
+          echo ""
+          echo "JAR files that MUST be excluded from analysis:"
+          find . -name "*.jar" -path "*/testresources/*" || echo "  (none found - good!)"
 
       - name: Run Codacy Analysis CLI (${{ matrix.tool }})
         uses: codacy/codacy-analysis-cli-action@v4
