@@ -5,7 +5,10 @@
          xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
 
     <description>
-        PMD ruleset for Eclipse plugin project - analyzes only Java source files
+        PMD ruleset for Eclipse plugin project - analyzes only Java source files.
+        IMPORTANT: Excludes binary JAR files to prevent MalformedInputException during SARIF generation.
+        The sandbox_functional_converter_test/testresources/ directory contains binary JARs that are
+        intentionally checked in as test fixtures and must not be analyzed.
     </description>
 
     <!-- Include only Java source files in src directories -->
@@ -20,9 +23,11 @@
     <exclude-pattern>.*/sandbox1\.2\.1/.*</exclude-pattern>
     <exclude-pattern>.*/plugins/.*</exclude-pattern>
     <exclude-pattern>.*/features/.*</exclude-pattern>
+    
+    <!-- Exclude testresources directory containing binary JAR files (prevents charset errors) -->
     <exclude-pattern>.*/testresources/.*</exclude-pattern>
     
-    <!-- Exclude binary and non-source files -->
+    <!-- Exclude binary and non-source files to prevent MalformedInputException -->
     <exclude-pattern>.*\.class</exclude-pattern>
     <exclude-pattern>.*\.jar</exclude-pattern>
     <exclude-pattern>.*\.war</exclude-pattern>
