@@ -18,7 +18,6 @@ exclude_paths:
   - "features/**"
   # Exclude testresources directory containing binary JAR files (prevents charset errors)
   - "**/testresources/**"
-  - "sandbox_functional_converter_test/testresources/**"
   # Exclude all binary file types
   - "**/*.class"
   - "**/*.jar"
