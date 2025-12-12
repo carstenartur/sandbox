@@ -10,7 +10,7 @@
 	<packaging>pom</packaging>
 	<properties>
 		<!-- Upgraded to Tycho 5.0.0 – resolves CodeQL autobuild TargetPlatformArtifactResolver injection error (mixed Tycho versions). -->
-		<tycho-version>5.0.1</tycho-version>
+		<tycho-version>4.0.13</tycho-version>
 		<rcp-version>eclipse</rcp-version>
 		<!-- <rcp-version>2021-03</rcp-version> -->
 		<jacoco-version>0.8.14</jacoco-version>
@@ -121,43 +121,6 @@
 							<goal>update-file-header</goal>
 						</goals>
 						<phase>process-sources-off</phase>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-enforcer-plugin</artifactId>
-				<version>3.6.2</version>
-				<executions>
-					<execution>
-						<id>enforce-java-version</id>
-						<goals>
-							<goal>enforce</goal>
-						</goals>
-						<configuration>
-							<rules>
-								<requireJavaVersion>
-									<version>[21,)</version>
-									<message>
-========================================
-ERROR: Java 21 or later is required!
-========================================
-
-Current Java version: ${java.version}
-
-This project uses Tycho 5.0.1 which requires Java 21+.
-
-Building with Java 17 or earlier will fail with:
-  UnsupportedClassVersionError: class file version 65.0
-
-Please install Java 21 or later and set JAVA_HOME accordingly.
-
-See README.md for more information.
-========================================
-									</message>
-								</requireJavaVersion>
-							</rules>
-						</configuration>
 					</execution>
 				</executions>
 			</plugin>

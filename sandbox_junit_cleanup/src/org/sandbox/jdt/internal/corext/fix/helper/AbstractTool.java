@@ -154,7 +154,6 @@ public abstract class AbstractTool<T> {
     protected static final String ORG_JUNIT_IGNORE        = "org.junit.Ignore";
     protected static final String ORG_JUNIT_ASSERT        = "org.junit.Assert";
     protected static final String ORG_JUNIT_ASSUME        = "org.junit.Assume";
-    protected static final String ORG_JUNIT_FIX_METHOD_ORDER = "org.junit.FixMethodOrder";
 
     // --- 4b) JUnit 5 / Jupiter Referenzen ---
     protected static final String ORG_JUNIT_JUPITER_API_AFTER_EACH = "org.junit.jupiter.api.AfterEach";

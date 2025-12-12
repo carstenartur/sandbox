@@ -97,27 +97,26 @@ public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<In
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {
 			return """
-					class MyExternalResource implements BeforeEachCallback, AfterEachCallback {
-						@Override
-						public void beforeEach(ExtensionContext context) throws Exception {
-						}
+						private String testName;
 
-						@Override
-						public void afterEach(ExtensionContext context) {
+						@BeforeEach
+						void init(TestInfo testInfo) {
+							this.testName = testInfo.getDisplayName();
 						}
-					}
+						@Test
+						public void test(){
+							System.out.println("Test name: " + testName);
+						}
 					"""; //$NON-NLS-1$
 		}
 		return """
-				class MyExternalResource extends ExternalResource {
-					@Override
-					protected void before() throws Throwable {
-					}
+					@Rule
+					public TestName tn = new TestName();
 
-					@Override
-					protected void after() {
+					@Test
+					public void test(){
+						System.out.println("Test name: " + tn.getMethodName());
 					}
-				}
 				"""; //$NON-NLS-1$
 	}
 

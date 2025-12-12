@@ -1,60 +1,30 @@
 ---
-# Codacy configuration for sandbox Eclipse plugin project
-# IMPORTANT: Exclude binary JAR files from analysis to prevent MalformedInputException
-# during SARIF generation. The JAR files under sandbox_functional_converter_test/testresources/
-# are intentionally checked in as test fixtures and must not be analyzed as source code.
-
-# Exclude build artifacts, configuration, and binary files
+# Alles ausblenden, was gern Probleme macht oder irrelevant ist
 exclude_paths:
   - "target/**"
   - ".git/**"
   - ".github/**"
-  - "bin/**"
-  - "p2/**"
-  - "build/**"
-  - "generated/**"
-  - "sandbox1.2.1/**"
-  - "plugins/**"
-  - "features/**"
-  # Exclude testresources directory containing binary JAR files (prevents charset errors)
-  - "**/testresources/**"
-  # Exclude all binary file types
   - "**/*.class"
   - "**/*.jar"
   - "**/*.war"
   - "**/*.ear"
-  - "**/*.zip"
-  - "**/*.tar.gz"
   - "**/*.png"
   - "**/*.jpg"
-  - "**/*.jpeg"
   - "**/*.gif"
   - "**/*.svg"
   - "**/*.ico"
   - "**/*.pdf"
   - "**/*.ttf"
   - "**/*.woff*"
-  - "**/*.eot"
-  - "**/resources/**"
+  - "src/main/resources/**"
+  - "src/test/resources/**"
 
-# Only analyze Java sources in src directories
+# Nur Java-Quellen analysieren
 include_paths:
-  - "*/src/**/*.java"
+  - "src/**/*.java"
 
-# Tool-specific configuration
+# (Optional) Tool-spezifisches Tuning – Namen laut Doku
 engines:
-  pmd:
-    enabled: true
-    # Explicitly exclude binary files and test resources to prevent MalformedInputException
-    exclude_patterns:
-      - "**/*.class"
-      - "**/*.jar"
-      - "**/*.war"
-      - "**/*.ear"
-      - "**/target/**"
-      - "**/bin/**"
-      - "**/testresources/**"
-  checkstyle:
-    enabled: true
-  spotbugs:
-    enabled: true
+  pmd: {}
+  checkstyle: {}
+  spotbugs: {}

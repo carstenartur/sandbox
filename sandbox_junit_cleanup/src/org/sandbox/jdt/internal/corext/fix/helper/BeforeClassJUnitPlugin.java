@@ -33,24 +33,56 @@ package org.sandbox.jdt.internal.corext.fix.helper;
  * #L%
  */
 
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.MarkerAnnotation;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
+
 /**
- * Plugin to migrate JUnit 4 @BeforeClass annotations to JUnit 5 @BeforeAll.
+ *
+ *
  */
-public class BeforeClassJUnitPlugin extends AbstractMarkerAnnotationJUnitPlugin {
+public class BeforeClassJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
 	@Override
-	protected String getSourceAnnotation() {
-		return ORG_JUNIT_BEFORECLASS;
+	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
+		ReferenceHolder<Integer, JunitHolder> dataholder= new ReferenceHolder<>();
+		HelperVisitor.callMarkerAnnotationVisitor(ORG_JUNIT_BEFORECLASS, compilationUnit, dataholder, nodesprocessed,
+				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+	}
+
+	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, MarkerAnnotation node,
+			ReferenceHolder<Integer, JunitHolder> dataholder) {
+		JunitHolder mh= new JunitHolder();
+		mh.minv= node;
+		mh.minvname= node.getTypeName().getFullyQualifiedName();
+		dataholder.put(dataholder.size(), mh);
+		operations.add(fixcore.rewrite(dataholder));
+		return false;
 	}
 
 	@Override
-	protected String getTargetAnnotationName() {
-		return ANNOTATION_BEFORE_ALL;
-	}
-
-	@Override
-	protected String getTargetAnnotationImport() {
-		return ORG_JUNIT_JUPITER_API_BEFORE_ALL;
+	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+			JunitHolder mh) {
+		Annotation minv= mh.getAnnotation();
+		MarkerAnnotation newAnnotation= ast.newMarkerAnnotation();
+		newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_BEFORE_ALL));
+		importRewriter.addImport(ORG_JUNIT_JUPITER_API_BEFORE_ALL);
+		ASTNodes.replaceButKeepComment(rewriter, minv, newAnnotation, group);
+		importRewriter.removeImport(ORG_JUNIT_BEFORECLASS);
 	}
 	
 	@Override
