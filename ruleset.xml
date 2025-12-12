@@ -26,7 +26,6 @@
     
     <!-- Exclude testresources directory containing binary JAR files (prevents charset errors) -->
     <exclude-pattern>.*/testresources/.*</exclude-pattern>
-    <exclude-pattern>.*sandbox_functional_converter_test/testresources/.*</exclude-pattern>
     
     <!-- Exclude binary and non-source files to prevent MalformedInputException -->
     <exclude-pattern>.*\.class</exclude-pattern>
