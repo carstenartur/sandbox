@@ -71,11 +71,11 @@ jobs:
             # Skip if file doesn't exist or is not readable
             [ -r "$f" ] || continue
             
-            # Skip files in testresources directory (contains binary JARs)
-            if [[ "$f" == *"/testresources/"* ]]; then
-              echo "Skipping testresources file: $f"
-              continue
-            fi
+            
+            
+            
+            
+            
             
             charset=$(uchardet "$f" 2>/dev/null | tr '[:upper:]' '[:lower:]')
             if [ -z "$charset" ]; then
