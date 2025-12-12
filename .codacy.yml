@@ -54,7 +54,6 @@ engines:
       - "**/target/**"
       - "**/bin/**"
       - "**/testresources/**"
-      - "sandbox_functional_converter_test/testresources/**"
   checkstyle:
     enabled: true
   spotbugs:
