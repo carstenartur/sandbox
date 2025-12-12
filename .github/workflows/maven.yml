@@ -5,9 +5,9 @@ name: Java CI with Maven
 
 on:
   push:
-    branches: [ main, 2022-09, 2022-06 ]
+    branches: [ main ] # , 2022-09, 2022-06 ]
   pull_request:
-    branches: [ main, 2022-09, 2022-06 ]
+    branches: [ main ] # , 2022-09, 2022-06 ]
 
 jobs:
   build:
@@ -19,7 +19,7 @@ jobs:
     env:
       DISPLAY: :0
       MAVEN_OPTS: -Djava.awt.headless=true
- 
+
     steps:
     - uses: actions/checkout@v6
       with:
@@ -29,19 +29,18 @@ jobs:
       with:
         java-version: '21'
         distribution: 'temurin'
-        cache: maven
     - run: |
           sudo apt-get update
           sudo apt-get install -y xvfb xauth \
            libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 libxrandr2 libxfixes3 \
            libasound2t64 libnss3 libgbm1
           sudo /usr/bin/Xvfb $DISPLAY -screen 0 1280x1024x24 &
-    - name: Cache Maven packages
-      uses: actions/cache@v4
+    - name: Cache Maven dependencies
+      uses: actions/cache@v5
       with:
-        path: ~/.m2
-        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-        restore-keys: ${{ runner.os }}-m2
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-maven-
     - name: Set up Maven
       uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1 # v5
       with:
@@ -55,4 +54,4 @@ jobs:
       uses: mikepenz/action-junit-report@v6
       if: always() # always run even if the previous step fails
       with:
-          report_paths: '**/target/surefire-reports/TEST-*.xml'
+        report_paths: '**/target/surefire-reports/TEST-*.xml'
