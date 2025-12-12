@@ -17,7 +17,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tool: [ spotbugs, pmd, checkstyle ]
+        # TODO: Re-enable pmd once the MalformedInputException in Codacy PMD/SARIF is fixed
+        # Temporarily disable pmd due to MalformedInputException in Codacy SARIF generation
+        tool: [ spotbugs, checkstyle ]
     env:
       LC_ALL: C.UTF-8
       LANG: C.UTF-8
