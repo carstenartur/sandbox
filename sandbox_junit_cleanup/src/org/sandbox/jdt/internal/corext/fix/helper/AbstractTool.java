@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021 Carsten Hammer.
+ * Copyright (c) 2021, 2025 Carsten Hammer.
  *
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
@@ -12,26 +12,6 @@
  *     Carsten Hammer
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
-
-/*-
- * #%L
- * Sandbox junit cleanup
- * %%
- * Copyright (C) 2024 hammer
- * %%
- * This program and the accompanying materials are made available under the
- * terms of the Eclipse Public License 2.0 which is available at
- * http://www.eclipse.org/legal/epl-2.0.
- *
- * This Source Code may also be made available under the following Secondary
- * Licenses when the conditions for such availability set forth in the Eclipse
- * Public License, v. 2.0 are satisfied: GNU General Public License, version 2
- * with the GNU Classpath Exception which is
- * available at https://www.gnu.org/software/classpath/license.html.
- *
- * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
- * #L%
- */
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -104,94 +84,108 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 
 /**
+ * Abstract base class for JUnit migration tools.
+ * Provides common functionality for transforming JUnit 3/4 tests to JUnit 5.
+ * 
  * @param <T> Type found in Visitor
  */
 public abstract class AbstractTool<T> {
 
-    /* === 1) Annotationen (direkt im Code verwendet) === */
-    private static final String ANNOTATION_REGISTER_EXTENSION = "RegisterExtension";
-    private static final String ANNOTATION_EXTEND_WITH       = "ExtendWith";
-    protected static final String ANNOTATION_AFTER_EACH      = "AfterEach";
-    protected static final String ANNOTATION_BEFORE_EACH     = "BeforeEach";
-    protected static final String ANNOTATION_AFTER_ALL       = "AfterAll";
-    protected static final String ANNOTATION_BEFORE_ALL      = "BeforeAll";
-    protected static final String ANNOTATION_DISABLED        = "Disabled";
-    protected static final String ANNOTATION_TEST            = "Test";
-    protected static final String ANNOTATION_SELECT_CLASSES  = "SelectClasses";
-    protected static final String ANNOTATION_SUITE           = "Suite";
+	// Constants
+	/** Length in hexadecimal characters of the checksum used for generated nested class names to ensure uniqueness */
+	private static final int GENERATED_CLASS_NAME_CHECKSUM_LENGTH = 5;
 
-    /* === 2) Methodennamen === */
-    private static final String METHOD_AFTER_EACH   = "afterEach";
-    private static final String METHOD_BEFORE_EACH  = "beforeEach";
-    private static final String METHOD_AFTER_ALL    = "afterAll";
-    private static final String METHOD_BEFORE_ALL   = "beforeAll";
-    protected static final String METHOD_AFTER      = "after";
-    protected static final String METHOD_BEFORE     = "before";
+	// Annotation Names (used directly in code)
+	private static final String ANNOTATION_REGISTER_EXTENSION = "RegisterExtension";
+	private static final String ANNOTATION_EXTEND_WITH = "ExtendWith";
+	protected static final String ANNOTATION_AFTER_EACH = "AfterEach";
+	protected static final String ANNOTATION_BEFORE_EACH = "BeforeEach";
+	protected static final String ANNOTATION_AFTER_ALL = "AfterAll";
+	protected static final String ANNOTATION_BEFORE_ALL = "BeforeAll";
+	protected static final String ANNOTATION_DISABLED = "Disabled";
+	protected static final String ANNOTATION_TEST = "Test";
+	protected static final String ANNOTATION_SELECT_CLASSES = "SelectClasses";
+	protected static final String ANNOTATION_SUITE = "Suite";
 
-    /* === 3) Interne Klassen-/Interface-Namen (z. B. Assertions, Assumptions, etc.) === */
-    protected static final String ASSERTIONS   = "Assertions";
-    protected static final String ASSUMPTIONS  = "Assumptions";
-    private static final String TEST_NAME      = "testName";
-    private static final String VARIABLE_NAME_CONTEXT = "context";
-    private static final String EXTENSION_CONTEXT     = "ExtensionContext";
+	// Method Names
+	private static final String METHOD_AFTER_EACH = "afterEach";
+	private static final String METHOD_BEFORE_EACH = "beforeEach";
+	private static final String METHOD_AFTER_ALL = "afterAll";
+	private static final String METHOD_BEFORE_ALL = "beforeAll";
+	protected static final String METHOD_AFTER = "after";
+	protected static final String METHOD_BEFORE = "before";
 
-    /* === 4) Vollqualifizierte Referenzen === */
+	// Internal Class/Interface Names (e.g., Assertions, Assumptions)
+	protected static final String ASSERTIONS = "Assertions";
+	protected static final String ASSUMPTIONS = "Assumptions";
+	private static final String TEST_NAME = "testName";
+	private static final String VARIABLE_NAME_CONTEXT = "context";
+	private static final String EXTENSION_CONTEXT = "ExtensionContext";
 
-    // --- 4a) JUnit 4 Referenzen ---
-    protected static final String ORG_JUNIT_AFTER         = "org.junit.After";
-    protected static final String ORG_JUNIT_BEFORE        = "org.junit.Before";
-    protected static final String ORG_JUNIT_AFTERCLASS    = "org.junit.AfterClass";
-    protected static final String ORG_JUNIT_BEFORECLASS   = "org.junit.BeforeClass";
-    protected static final String ORG_JUNIT_RULE          = "org.junit.Rule";
-    protected static final String ORG_JUNIT_CLASS_RULE    = "org.junit.ClassRule";
-    protected static final String ORG_JUNIT_RULES_TEMPORARY_FOLDER = "org.junit.rules.TemporaryFolder";
-    protected static final String ORG_JUNIT_RULES_TEST_NAME        = "org.junit.rules.TestName";
-    protected static final String ORG_JUNIT_RULES_EXTERNAL_RESOURCE = "org.junit.rules.ExternalResource";
-    protected static final String ORG_JUNIT_RUNWITH       = "org.junit.runner.RunWith";
-    protected static final String ORG_JUNIT_SUITE         = "org.junit.runners.Suite";
-    protected static final String ORG_JUNIT_SUITE_SUITECLASSES = "org.junit.runners.Suite.SuiteClasses";
-    protected static final String ORG_JUNIT_TEST          = "org.junit.Test";
-    protected static final String ORG_JUNIT_IGNORE        = "org.junit.Ignore";
-    protected static final String ORG_JUNIT_ASSERT        = "org.junit.Assert";
-    protected static final String ORG_JUNIT_ASSUME        = "org.junit.Assume";
-    protected static final String ORG_JUNIT_FIX_METHOD_ORDER = "org.junit.FixMethodOrder";
+	// Fully Qualified References
 
-    // --- 4b) JUnit 5 / Jupiter Referenzen ---
-    protected static final String ORG_JUNIT_JUPITER_API_AFTER_EACH = "org.junit.jupiter.api.AfterEach";
-    protected static final String ORG_JUNIT_JUPITER_API_AFTER_ALL  = "org.junit.jupiter.api.AfterAll";
-    protected static final String ORG_JUNIT_JUPITER_API_BEFORE_ALL = "org.junit.jupiter.api.BeforeAll";
-    protected static final String ORG_JUNIT_JUPITER_API_BEFORE_EACH= "org.junit.jupiter.api.BeforeEach";
-    protected static final String ORG_JUNIT_JUPITER_API_ASSERTIONS = "org.junit.jupiter.api.Assertions";
-    protected static final String ORG_JUNIT_JUPITER_DISABLED       = "org.junit.jupiter.api.Disabled";
-    protected static final String ORG_JUNIT_JUPITER_API_IO_TEMP_DIR= "org.junit.jupiter.api.io.TempDir";
-    protected static final String ORG_JUNIT_JUPITER_API_TEST_INFO  = "org.junit.jupiter.api.TestInfo";
-    protected static final String ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT = "org.junit.jupiter.api.extension.ExtensionContext";
-    private static final String ORG_JUNIT_JUPITER_API_EXTENSION_REGISTER_EXTENSION   = "org.junit.jupiter.api.extension.RegisterExtension";
-    private static final String ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK = "org.junit.jupiter.api.extension.BeforeEachCallback";
-    private static final String ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK  = "org.junit.jupiter.api.extension.AfterEachCallback";
-    private static final String ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_ALL_CALLBACK  = "org.junit.jupiter.api.extension.BeforeAllCallback";
-    private static final String ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_ALL_CALLBACK   = "org.junit.jupiter.api.extension.AfterAllCallback";
+	// JUnit 4 References
+	protected static final String ORG_JUNIT_AFTER = "org.junit.After";
+	protected static final String ORG_JUNIT_BEFORE = "org.junit.Before";
+	protected static final String ORG_JUNIT_AFTERCLASS = "org.junit.AfterClass";
+	protected static final String ORG_JUNIT_BEFORECLASS = "org.junit.BeforeClass";
+	protected static final String ORG_JUNIT_RULE = "org.junit.Rule";
+	protected static final String ORG_JUNIT_CLASS_RULE = "org.junit.ClassRule";
+	protected static final String ORG_JUNIT_RULES_TEMPORARY_FOLDER = "org.junit.rules.TemporaryFolder";
+	protected static final String ORG_JUNIT_RULES_TEST_NAME = "org.junit.rules.TestName";
+	protected static final String ORG_JUNIT_RULES_EXTERNAL_RESOURCE = "org.junit.rules.ExternalResource";
+	protected static final String ORG_JUNIT_RUNWITH = "org.junit.runner.RunWith";
+	protected static final String ORG_JUNIT_SUITE = "org.junit.runners.Suite";
+	protected static final String ORG_JUNIT_SUITE_SUITECLASSES = "org.junit.runners.Suite.SuiteClasses";
+	protected static final String ORG_JUNIT_TEST = "org.junit.Test";
+	protected static final String ORG_JUNIT_IGNORE = "org.junit.Ignore";
+	protected static final String ORG_JUNIT_ASSERT = "org.junit.Assert";
+	protected static final String ORG_JUNIT_ASSUME = "org.junit.Assume";
+	protected static final String ORG_JUNIT_FIX_METHOD_ORDER = "org.junit.FixMethodOrder";
 
-    protected static final String ORG_JUNIT_JUPITER_TEST  = "org.junit.jupiter.api.Test";
-    protected static final String ORG_JUNIT_JUPITER_API_ASSUMPTIONS = "org.junit.jupiter.api.Assumptions";
+	// JUnit 5 / Jupiter References
+	protected static final String ORG_JUNIT_JUPITER_API_AFTER_EACH = "org.junit.jupiter.api.AfterEach";
+	protected static final String ORG_JUNIT_JUPITER_API_AFTER_ALL = "org.junit.jupiter.api.AfterAll";
+	protected static final String ORG_JUNIT_JUPITER_API_BEFORE_ALL = "org.junit.jupiter.api.BeforeAll";
+	protected static final String ORG_JUNIT_JUPITER_API_BEFORE_EACH = "org.junit.jupiter.api.BeforeEach";
+	protected static final String ORG_JUNIT_JUPITER_API_ASSERTIONS = "org.junit.jupiter.api.Assertions";
+	protected static final String ORG_JUNIT_JUPITER_DISABLED = "org.junit.jupiter.api.Disabled";
+	protected static final String ORG_JUNIT_JUPITER_API_IO_TEMP_DIR = "org.junit.jupiter.api.io.TempDir";
+	protected static final String ORG_JUNIT_JUPITER_API_TEST_INFO = "org.junit.jupiter.api.TestInfo";
+	protected static final String ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT = "org.junit.jupiter.api.extension.ExtensionContext";
+	private static final String ORG_JUNIT_JUPITER_API_EXTENSION_REGISTER_EXTENSION = "org.junit.jupiter.api.extension.RegisterExtension";
+	private static final String ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK = "org.junit.jupiter.api.extension.BeforeEachCallback";
+	private static final String ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK = "org.junit.jupiter.api.extension.AfterEachCallback";
+	private static final String ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_ALL_CALLBACK = "org.junit.jupiter.api.extension.BeforeAllCallback";
+	private static final String ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_ALL_CALLBACK = "org.junit.jupiter.api.extension.AfterAllCallback";
+	protected static final String ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH = "org.junit.jupiter.api.extension.ExtendWith";
+	protected static final String ORG_JUNIT_JUPITER_TEST = "org.junit.jupiter.api.Test";
+	protected static final String ORG_JUNIT_JUPITER_API_ASSUMPTIONS = "org.junit.jupiter.api.Assumptions";
 
-    // --- 4c) JUnit Platform Referenzen ---
-    protected static final String ORG_JUNIT_JUPITER_SUITE = "org.junit.platform.suite.api.Suite";
-    protected static final String ORG_JUNIT_PLATFORM_SUITE_API_SELECT_CLASSES = "org.junit.platform.suite.api.SelectClasses";
+	// JUnit Platform References
+	protected static final String ORG_JUNIT_JUPITER_SUITE = "org.junit.platform.suite.api.Suite";
+	protected static final String ORG_JUNIT_PLATFORM_SUITE_API_SELECT_CLASSES = "org.junit.platform.suite.api.SelectClasses";
 
-    private static final String AFTER_ALL_CALLBACK= "AfterAllCallback";
-	private static final String BEFORE_ALL_CALLBACK= "BeforeAllCallback";
-	private static final String AFTER_EACH_CALLBACK= "AfterEachCallback";
-	private static final String BEFORE_EACH_CALLBACK= "BeforeEachCallback";
+	// Callback Names
+	private static final String AFTER_ALL_CALLBACK = "AfterAllCallback";
+	private static final String BEFORE_ALL_CALLBACK = "BeforeAllCallback";
+	private static final String AFTER_EACH_CALLBACK = "AfterEachCallback";
+	private static final String BEFORE_EACH_CALLBACK = "BeforeEachCallback";
 
-	protected static final String ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH= "org.junit.jupiter.api.extension.ExtendWith";
-	protected static final Set<String> twoparam= Set.of("assertEquals", "assertNotEquals", "assertArrayEquals",
-				"assertSame","assertNotSame","assertThat");
-	protected static final Set<String> oneparam= Set.of("assertTrue", "assertFalse", "assertNull", "assertNotNull");
-	private static final Set<String> noparam= Set.of("fail");
-	protected static final Set<String> allassertionmethods= Stream.of(twoparam, oneparam, noparam).flatMap(Set::stream)
-				.collect(Collectors.toSet());
+	// Assertion Method Names
+	protected static final Set<String> twoparam = Set.of("assertEquals", "assertNotEquals", "assertArrayEquals",
+			"assertSame", "assertNotSame", "assertThat");
+	protected static final Set<String> oneparam = Set.of("assertTrue", "assertFalse", "assertNull", "assertNotNull");
+	private static final Set<String> noparam = Set.of("fail");
+	protected static final Set<String> allassertionmethods = Stream.of(twoparam, oneparam, noparam).flatMap(Set::stream)
+			.collect(Collectors.toSet());
 
+	/**
+	 * Gets all variable names used in the scope of the given AST node.
+	 * 
+	 * @param node the AST node to analyze
+	 * @return collection of variable names used in the node's scope
+	 */
 	public static Collection<String> getUsedVariableNames(ASTNode node) {
 		CompilationUnit root= (CompilationUnit) node.getRoot();
 		return new ScopeAnalyzer(root).getUsedVariableNames(node.getStartPosition(), node.getLength());
@@ -200,8 +194,7 @@ public abstract class AbstractTool<T> {
 	private void adaptExternalResourceHierarchy(ITypeBinding typeBinding, ASTRewrite rewrite, AST ast,
 			ImportRewrite importRewrite, TextEditGroup group) {
 		while (typeBinding != null) {
-			// Abbruchbedingung: Nicht weiter heruntersteigen, wenn der aktuelle Typ
-			// ExternalResource ist
+			// Stop condition: Don't go further down if the current type is ExternalResource
 			if (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(typeBinding.getQualifiedName())) {
 				break;
 			}
@@ -217,13 +210,13 @@ public abstract class AbstractTool<T> {
 		}
 	}
 
-	private void adaptSuperBeforeCalls(String vorher, String nachher, MethodDeclaration method, ASTRewrite rewriter,
+	private void adaptSuperBeforeCalls(String oldMethodName, String newMethodName, MethodDeclaration method, ASTRewrite rewriter,
 			AST ast, TextEditGroup group) {
 		method.accept(new ASTVisitor() {
 			@Override
 			public boolean visit(SuperMethodInvocation node) {
-				if (vorher.equals(node.getName().getIdentifier())) {
-					rewriter.replace(node.getName(), ast.newSimpleName(nachher), group);
+				if (oldMethodName.equals(node.getName().getIdentifier())) {
+					rewriter.replace(node.getName(), ast.newSimpleName(newMethodName), group);
 					addContextArgumentIfMissing(node, rewriter, ast, group);
 				}
 				return super.visit(node);
@@ -338,12 +331,12 @@ public abstract class AbstractTool<T> {
 
 	private void addInterfaceCallback(ListRewrite listRewrite, AST ast, String callbackName, TextEditGroup group,
 			ImportRewrite importRewriter, String classtoimport) {
-		// Prüfen, ob das Interface bereits in der Liste existiert
+		// Check if the interface already exists in the list
 		boolean hasCallback= listRewrite.getRewrittenList().stream().anyMatch(type -> type instanceof SimpleType
 				&& ((SimpleType) type).getName().getFullyQualifiedName().equals(callbackName));
 
 		if (!hasCallback) {
-			// Interface hinzufügen, wenn es noch nicht existiert
+			// Add interface if it doesn't already exist
 			listRewrite.insertLast(ast.newSimpleType(ast.newName(callbackName)), group);
 		}
 		importRewriter.addImport(classtoimport);
@@ -430,18 +423,18 @@ public abstract class AbstractTool<T> {
 
 	private CompilationUnitChange createChangeForRewrite(CompilationUnit compilationUnit, ASTRewrite rewrite) {
 		try {
-			// Zugriff auf das IDocument der CompilationUnit
+			// Access the IDocument of the CompilationUnit
 			IDocument document= getDocumentForCompilationUnit(compilationUnit);
 
-			// Änderungen beschreiben (aber nicht anwenden)
+			// Describe changes (but don't apply them)
 			TextEdit edits= rewrite.rewriteAST(document, null);
 
-			// Ein TextChange-Objekt erstellen
+			// Create a TextChange object
 			CompilationUnitChange change= new CompilationUnitChange("JUnit Migration",
 					(ICompilationUnit) compilationUnit.getJavaElement());
 			change.setEdit(edits);
 
-			// Optional: Kommentare oder Markierungen hinzufügen
+			// Optional: Add comments or markers
 			change.addTextEditGroup(new TextEditGroup("Migrate JUnit", edits));
 
 			return change;
@@ -460,13 +453,13 @@ public abstract class AbstractTool<T> {
 		method.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.PUBLIC_KEYWORD));
 		method.setReturnType2(ast.newPrimitiveType(PrimitiveType.VOID));
 
-		// Füge den ExtensionContext-Parameter hinzu
+		// Add the ExtensionContext parameter
 		SingleVariableDeclaration param= ast.newSingleVariableDeclaration();
 		param.setType(ast.newSimpleType(ast.newName(paramType)));
 		param.setName(ast.newSimpleName("context"));
 		method.parameters().add(param);
 
-		// Kopiere den Body der alten Methode
+		// Copy the body of the old method
 		if (oldBody != null) {
 			Block newBody= (Block) ASTNode.copySubtree(ast, oldBody);
 			method.setBody(newBody);
@@ -478,14 +471,14 @@ public abstract class AbstractTool<T> {
 	private TypeDeclaration createNestedClassFromAnonymous(AnonymousClassDeclaration anonymousClass, String className,
 			boolean fieldStatic, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter, TextEditGroup group) {
 
-		// Erstelle die neue TypeDeclaration
+		// Create the new TypeDeclaration
 		TypeDeclaration nestedClass= ast.newTypeDeclaration();
 		nestedClass.setName(ast.newSimpleName(className));
 		if (fieldStatic) {
 			nestedClass.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.STATIC_KEYWORD));
 		}
 
-		// Füge die Schnittstellen hinzu
+		// Add the interfaces
 		nestedClass.superInterfaceTypes()
 				.add(ast.newSimpleType(ast.newName(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK)));
 		nestedClass.superInterfaceTypes()
@@ -493,13 +486,13 @@ public abstract class AbstractTool<T> {
 		importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
 		importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
 
-		// Übertrage den Body der anonymen Klasse in die neue Klasse
+		// Transfer the body of the anonymous class to the new class
 		ListRewrite bodyRewrite= rewriter.getListRewrite(nestedClass, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);
 		for (Object decl : anonymousClass.bodyDeclarations()) {
 			if (decl instanceof MethodDeclaration) {
 				MethodDeclaration method= (MethodDeclaration) decl;
 
-				// Konvertiere before() -> beforeEach() und after() -> afterEach()
+				// Convert before() -> beforeEach() and after() -> afterEach()
 				if (isLifecycleMethod(method, METHOD_BEFORE)) {
 					MethodDeclaration beforeEachMethod= createLifecycleCallbackMethod(ast, "beforeEach",
 							"ExtensionContext", method.getBody(), group);
@@ -512,7 +505,7 @@ public abstract class AbstractTool<T> {
 			}
 		}
 
-		// Füge die neue Klasse zur äußeren Klasse hinzu
+		// Add the new class to the outer class
 		TypeDeclaration parentType= findEnclosingTypeDeclaration(anonymousClass);
 		if (parentType != null) {
 			ListRewrite enclosingBodyRewrite= rewriter.getListRewrite(parentType,
@@ -534,7 +527,7 @@ public abstract class AbstractTool<T> {
 	private void ensureExtensionContextParameter(MethodDeclaration method, ASTRewrite rewrite, AST ast,
 			TextEditGroup group, ImportRewrite importRewrite) {
 
-		// Prüfen, ob ExtensionContext bereits existiert (im AST oder im Rewrite)
+		// Check if ExtensionContext already exists (in the AST or in the rewrite)
 		boolean hasExtensionContext= method.parameters().stream()
 				.anyMatch(param -> param instanceof SingleVariableDeclaration && isExtensionContext(
 						(SingleVariableDeclaration) param, ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT))
@@ -543,14 +536,14 @@ public abstract class AbstractTool<T> {
 								&& ((SingleVariableDeclaration) param).getType().toString().equals(EXTENSION_CONTEXT));
 
 		if (!hasExtensionContext) {
-			// Neuen Parameter hinzufügen
+			// Add new parameter
 			SingleVariableDeclaration newParam= ast.newSingleVariableDeclaration();
 			newParam.setType(ast.newSimpleType(ast.newName(EXTENSION_CONTEXT)));
 			newParam.setName(ast.newSimpleName(VARIABLE_NAME_CONTEXT));
 			ListRewrite listRewrite= rewrite.getListRewrite(method, MethodDeclaration.PARAMETERS_PROPERTY);
 			listRewrite.insertLast(newParam, group);
 
-			// Import hinzufügen
+			// Add import
 			importRewrite.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT);
 		}
 	}
@@ -567,6 +560,12 @@ public abstract class AbstractTool<T> {
 	    }
 	}
 
+	/**
+	 * Extracts the class name from a field declaration's initializer.
+	 * 
+	 * @param field the field declaration to extract from
+	 * @return the class name, or null if not found
+	 */
 	public String extractClassNameFromField(FieldDeclaration field) {
 	    for (Object fragmentObj : field.fragments()) {
 	        if (fragmentObj instanceof VariableDeclarationFragment) {
@@ -577,7 +576,7 @@ public abstract class AbstractTool<T> {
 	            }
 	        }
 	    }
-	    return null; // Kein passender Typ gefunden
+	    return null; // No matching type found
 	}
 
 	private String extractFieldName(FieldDeclaration fieldDeclaration) {
@@ -588,6 +587,12 @@ public abstract class AbstractTool<T> {
 	            .orElse("UnnamedField");
 	}
 
+	/**
+	 * Extracts the fully qualified type name from a QualifiedType AST node.
+	 * 
+	 * @param qualifiedType the qualified type to extract from
+	 * @return the fully qualified class name
+	 */
 	protected String extractQualifiedTypeName(QualifiedType qualifiedType) {
 	    StringBuilder fullClassName = new StringBuilder();
 	    Type currentType = qualifiedType;
@@ -616,6 +621,15 @@ public abstract class AbstractTool<T> {
 	}
 
 
+	/**
+	 * Finds JUnit migration opportunities in the compilation unit.
+	 * Implementations should scan for patterns that need to be migrated from JUnit 3/4 to JUnit 5.
+	 * 
+	 * @param fixcore the JUnit cleanup fix core
+	 * @param compilationUnit the compilation unit to analyze
+	 * @param operations set to collect rewrite operations
+	 * @param nodesprocessed set of already processed AST nodes to avoid duplicates
+	 */
 	public abstract void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed);
 
@@ -718,6 +732,13 @@ public abstract class AbstractTool<T> {
 	}
 
 
+	/**
+	 * Generates a short SHA-256 checksum for the given input.
+	 * 
+	 * @param input the string to hash
+	 * @return a 5-character hexadecimal checksum
+	 * @throws RuntimeException if SHA-256 algorithm is not available (should never happen in standard JVM environments)
+	 */
 	private String generateChecksum(String input) {
 		try {
 			MessageDigest md= MessageDigest.getInstance("SHA-256");
@@ -730,17 +751,26 @@ public abstract class AbstractTool<T> {
 				}
 				hexString.append(hex);
 			}
-			return hexString.toString().substring(0, 5);
+			return hexString.toString().substring(0, GENERATED_CLASS_NAME_CHECKSUM_LENGTH);
 		} catch (NoSuchAlgorithmException e) {
 			throw new RuntimeException("SHA-256 algorithm not found",e);
 		}
 	}
 
+	/**
+	 * Generates a unique nested class name based on the anonymous class content and field name.
+	 * Uses a checksum of the class code to ensure uniqueness.
+	 * 
+	 * @param anonymousClass the anonymous class declaration
+	 * @param baseName the base name from the field
+	 * @return a unique class name combining capitalized base name and checksum
+	 */
 	private String generateUniqueNestedClassName(AnonymousClassDeclaration anonymousClass, String baseName) {
-		String anonymousCode= anonymousClass.toString(); // Der gesamte Code der anonymen Klasse
+		// Convert anonymous class to string for checksum generation to ensure unique naming
+		String anonymousCode= anonymousClass.toString();
 		String checksum= generateChecksum(anonymousCode);
 
-		// Feldname großschreiben
+		// Capitalize field name for class naming convention
 		String capitalizedBaseName= capitalizeFirstLetter(baseName);
 
 		return capitalizedBaseName + "_" + checksum;
@@ -750,13 +780,13 @@ public abstract class AbstractTool<T> {
 		List<ITypeBinding> subclasses= new ArrayList<>();
 
 		try {
-			// Erzeuge den entsprechenden IType des gegebenen ITypeBindings
+			// Create the corresponding IType of the given ITypeBinding
 			IType type= (IType) typeBinding.getJavaElement();
 
-			// Erzeuge die Typ-Hierarchie für den übergebenen Typ innerhalb des Projekts
-			ITypeHierarchy typeHierarchy= type.newTypeHierarchy(null); // null verwendet das gesamte Projekt
+			// Create the type hierarchy for the given type within the project (null uses entire project)
+			ITypeHierarchy typeHierarchy= type.newTypeHierarchy(null);
 
-			// Durchlaufe alle direkten und indirekten Subtypen und füge sie der Liste hinzu
+			// Iterate through all direct and indirect subtypes and add them to the list
 			for (IType subtype : typeHierarchy.getAllSubtypes(type)) {
 				ITypeBinding subtypeBinding= subtype.getAdapter(ITypeBinding.class);
 				if (subtypeBinding != null) {
@@ -782,26 +812,26 @@ public abstract class AbstractTool<T> {
 		ITextFileBufferManager bufferManager= FileBuffers.getTextFileBufferManager();
 
 		try {
-			// Verbinden mit der Datei, die der CompilationUnit entspricht
+			// Connect to the file corresponding to the CompilationUnit
 			bufferManager.connect(icu.getPath(), LocationKind.IFILE, null);
 
-			// Holen des zugehörigen TextFileBuffer
+			// Get the associated TextFileBuffer
 			ITextFileBuffer textFileBuffer= bufferManager.getTextFileBuffer(icu.getPath(), LocationKind.IFILE);
 
 			if (textFileBuffer == null) {
 				throw new RuntimeException("No text file buffer found for the provided compilation unit.");
 			}
 
-			// Rückgabe des Dokuments
+			// Return the document
 			return textFileBuffer.getDocument();
 		} catch (CoreException e) {
 			throw new RuntimeException("Failed to connect to text file buffer: " + e.getMessage(), e);
 		} finally {
 			try {
-				// Optional: Verbindung trennen, wenn keine weiteren Änderungen anstehen
+				// Optional: Disconnect if no further changes are pending
 				bufferManager.disconnect(icu.getPath(), LocationKind.IFILE, null);
 			} catch (CoreException e) {
-				// Trennen schlug fehl, aber wir protokollieren nur
+				// Disconnection failed, but we only log it
 				e.printStackTrace();
 			}
 		}
@@ -812,6 +842,12 @@ public abstract class AbstractTool<T> {
 	    return (node.getAST() == globalAST) ? globalImportRewrite : ImportRewrite.create(compilationUnit, true);
 	}
 
+	/**
+	 * Gets the parent TypeDeclaration for the given AST node.
+	 * 
+	 * @param node the AST node to start from
+	 * @return the enclosing TypeDeclaration, or null if none found
+	 */
 	protected TypeDeclaration getParentTypeDeclaration(ASTNode node) {
 		while (node != null && !(node instanceof TypeDeclaration)) {
 			node= node.getParent();
@@ -819,21 +855,28 @@ public abstract class AbstractTool<T> {
 		return (TypeDeclaration) node;
 	}
 
+	/**
+	 * Gets a preview of the code before or after refactoring.
+	 * Used to display examples in the Eclipse cleanup preferences UI.
+	 * 
+	 * @param afterRefactoring if true, returns the "after" preview; if false, returns the "before" preview
+	 * @return a code snippet showing the transformation (formatted as Java source code)
+	 */
 	public abstract String getPreview(boolean afterRefactoring);
 
-	// Hilfsmethode: Ermittelt den vollqualifizierten Namen einer TypeDeclaration
+	// Helper method: Determines the fully qualified name of a TypeDeclaration
 	private String getQualifiedName(TypeDeclaration typeDecl) {
 	    StringBuilder qualifiedName = new StringBuilder(typeDecl.getName().getIdentifier());
 	    ASTNode parent = typeDecl.getParent();
 
-	    // Verschachtelte Klassen verarbeiten
+	    // Process nested classes
 	    while (parent instanceof TypeDeclaration) {
 	        TypeDeclaration parentType = (TypeDeclaration) parent;
-	        qualifiedName.insert(0, parentType.getName().getIdentifier() + "$"); // $ für verschachtelte Klassen
+	        qualifiedName.insert(0, parentType.getName().getIdentifier() + "$"); // $ for nested classes
 	        parent = parent.getParent();
 	    }
 
-	    // Paketnamen hinzufügen
+	    // Add package name
 	    CompilationUnit compilationUnit = (CompilationUnit) typeDecl.getRoot();
 	    if (compilationUnit.getPackage() != null) {
 	        String packageName = compilationUnit.getPackage().getName().getFullyQualifiedName();
@@ -854,30 +897,30 @@ public abstract class AbstractTool<T> {
 	}
 
 	private ASTNode getTypeDefinitionFromFragment(VariableDeclarationFragment fragment, CompilationUnit cu) {
-	    // Initialisierer prüfen
+	    // Check initializer
 	    Expression initializer = fragment.getInitializer();
 	    if (initializer instanceof ClassInstanceCreation) {
 	        ClassInstanceCreation classInstanceCreation = (ClassInstanceCreation) initializer;
 
-	        // Anonyme Klasse prüfen
+	        // Check for anonymous class
 	        AnonymousClassDeclaration anonymousClass = classInstanceCreation.getAnonymousClassDeclaration();
 	        if (anonymousClass != null) {
-	            return anonymousClass; // Anonyme Klasse gefunden
+	            return anonymousClass; // Anonymous class found
 	        }
 
-	        // Typbindung prüfen
+	        // Check type binding
 	        ITypeBinding typeBinding = classInstanceCreation.resolveTypeBinding();
 	        return findTypeDeclarationForBinding(typeBinding, cu);
 	    }
 
-	    // Typ des Feldes prüfen, wenn keine Initialisierung vorhanden ist
+	    // Check field type if no initialization is present
 	    IVariableBinding fieldBinding = fragment.resolveBinding();
 	    if (fieldBinding != null) {
 	        ITypeBinding fieldTypeBinding = fieldBinding.getType();
 	        return findTypeDeclarationForBinding(fieldTypeBinding, cu);
 	    }
 
-	    return null; // Keine passende Typdefinition gefunden
+	    return null; // No matching type definition found
 	}
 
 	private boolean hasAnnotation(List<?> modifiers, String annotationClass) {
@@ -898,12 +941,12 @@ public abstract class AbstractTool<T> {
 	                hasConstructor = true;
 	                if (method.parameters().isEmpty() && method.getBody() != null
 	                        && method.getBody().statements().isEmpty()) {
-	                    return true; // Leerer Standardkonstruktor gefunden
+	                    return true; // Empty default constructor found
 	                }
 	            }
 	        }
 	    }
-	    return !hasConstructor; // Kein Konstruktor vorhanden
+	    return !hasConstructor; // No constructor present
 	}
 
 	private boolean hasModifier(List<?> modifiers, Modifier.ModifierKeyword keyword) {
@@ -927,16 +970,34 @@ public abstract class AbstractTool<T> {
 	    return hasAnnotation(declaration.modifiers(), annotationClass);
 	}
 
+	/**
+	 * Checks if a variable declaration fragment represents an anonymous class.
+	 * 
+	 * @param fragment the variable declaration fragment to check
+	 * @return true if the fragment's initializer is an anonymous class
+	 */
 	public boolean isAnonymousClass(VariableDeclarationFragment fragment) {
 	    Expression initializer = fragment.getInitializer();
 	    return initializer instanceof ClassInstanceCreation 
 	           && ((ClassInstanceCreation) initializer).getAnonymousClassDeclaration() != null;
 	}
 
+	/**
+	 * Checks if the given type binding directly matches ExternalResource.
+	 * 
+	 * @param fieldTypeBinding the type binding to check
+	 * @return true if the type is exactly ExternalResource
+	 */
 	protected boolean isDirect(ITypeBinding fieldTypeBinding) {
 	    return ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(fieldTypeBinding.getQualifiedName());
 	}
 	
+	/**
+	 * Checks if the given type binding directly extends ExternalResource.
+	 * 
+	 * @param binding the type binding to check
+	 * @return true if the type's superclass is ExternalResource
+	 */
 	protected boolean isDirectlyExtendingExternalResource(ITypeBinding binding) {
 	    ITypeBinding superclass = binding.getSuperclass();
 	    return superclass != null && ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(superclass.getQualifiedName());
@@ -952,33 +1013,82 @@ public abstract class AbstractTool<T> {
 	    return isTypeOrSubtype(binding, typeToLookup);
 	}
 
+	/**
+	 * Checks if the given type binding is or extends ExternalResource.
+	 * 
+	 * @param typeBinding the type binding to check
+	 * @param typeToLookup the fully qualified type name to look for
+	 * @return true if the type is or extends the specified type
+	 */
 	protected boolean isExternalResource(ITypeBinding typeBinding, String typeToLookup) {
 	    return isTypeOrSubtype(typeBinding, typeToLookup);
 	}
 
+	/**
+	 * Checks if a field is annotated with the specified annotation.
+	 * 
+	 * @param field the field declaration to check
+	 * @param annotationClass the fully qualified annotation class name
+	 * @return true if the field has the annotation
+	 */
 	protected boolean isFieldAnnotatedWith(FieldDeclaration field, String annotationClass) {
 	    return hasAnnotation(field.modifiers(), annotationClass);
 	}
 
+	/**
+	 * Checks if a field has the static modifier.
+	 * 
+	 * @param field the field declaration to check
+	 * @return true if the field is static
+	 */
 	protected boolean isFieldStatic(FieldDeclaration field) {
 	    return hasModifier(field.modifiers(), Modifier.ModifierKeyword.STATIC_KEYWORD);
 	}
 
+	/**
+	 * Checks if a method is a lifecycle method with the given name.
+	 * 
+	 * @param method the method declaration to check
+	 * @param methodName the expected method name
+	 * @return true if the method name matches
+	 */
 	protected boolean isLifecycleMethod(MethodDeclaration method, String methodName) {
 	    return methodName.equals(method.getName().getIdentifier());
 	}
 
+	/**
+	 * Checks if an expression has a String type.
+	 * 
+	 * @param expression the expression to check
+	 * @param classType the class type (String.class)
+	 * @return true if the expression resolves to String type
+	 */
 	protected boolean isStringType(Expression expression, Class<String> classType) {
 	    ITypeBinding typeBinding = expression.resolveTypeBinding();
 	    return typeBinding != null && classType.getCanonicalName().equals(typeBinding.getQualifiedName());
 	}
 
+	/**
+	 * Checks if subtype is a subtype of or implements supertype.
+	 * 
+	 * @param subtype the potential subtype binding
+	 * @param supertype the supertype binding
+	 * @return true if subtype is a subtype of or implements supertype
+	 */
 	protected boolean isSubtypeOf(ITypeBinding subtype, ITypeBinding supertype) {
 	    return subtype != null 
 	           && supertype != null 
 	           && (isTypeOrSubtype(subtype, supertype.getQualifiedName()) || implementsInterface(subtype, supertype));
 	}
 
+	/**
+	 * Checks if the given type binding matches or is a subtype of the specified qualified name.
+	 * Traverses the superclass hierarchy to find a match.
+	 * 
+	 * @param typeBinding the type binding to check
+	 * @param qualifiedName the fully qualified type name to match
+	 * @return true if the type or any of its supertypes matches the qualified name
+	 */
 	protected boolean isTypeOrSubtype(ITypeBinding typeBinding, String qualifiedName) {
 	    while (typeBinding != null) {
 	        if (qualifiedName.equals(typeBinding.getQualifiedName())) {
@@ -989,6 +1099,17 @@ public abstract class AbstractTool<T> {
 	    return false;
 	}
 
+	/**
+	 * Modifies a class that extends ExternalResource to use JUnit 5 extensions instead.
+	 * 
+	 * @param node the type declaration to modify
+	 * @param field the field declaration with ExternalResource
+	 * @param fieldStatic whether the field is static (affects callback type)
+	 * @param rewriter the AST rewriter
+	 * @param ast the AST instance
+	 * @param group the text edit group
+	 * @param importRewriter the import rewriter
+	 */
 	protected void modifyExternalResourceClass(TypeDeclaration node, FieldDeclaration field, boolean fieldStatic,
 			ASTRewrite rewriter, AST ast, TextEditGroup group, ImportRewrite importRewriter) {
 		if (!shouldProcessNode(node)) {
@@ -1037,7 +1158,7 @@ public abstract class AbstractTool<T> {
 				fieldStatic ? METHOD_AFTER_ALL : METHOD_AFTER_EACH);
 	}
 
-	// Nutzen Sie eine Methode, um eine CompilationUnit aus einer ICompilationUnit zu erstellen
+	// Use a method to create a CompilationUnit from an ICompilationUnit
 	private CompilationUnit parseCompilationUnit(ICompilationUnit iCompilationUnit) {
 	    ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
 	    parser.setKind(ASTParser.K_COMPILATION_UNIT);
@@ -1066,6 +1187,16 @@ public abstract class AbstractTool<T> {
 		importRewriter.removeImport(ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
 	}
 
+	/**
+	 * Processes a JUnit migration by applying the necessary AST rewrites.
+	 * Implementations should transform the matched pattern into JUnit 5 compatible code.
+	 * 
+	 * @param group the text edit group for tracking changes
+	 * @param rewriter the AST rewriter
+	 * @param ast the AST instance
+	 * @param importRewriter the import rewriter
+	 * @param junitHolder the holder containing JUnit migration information
+	 */
 	abstract void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder);
 
@@ -1078,7 +1209,18 @@ public abstract class AbstractTool<T> {
 		ensureExtensionContextParameter(method, rewriter, ast, group, importRewriter);
 	}
 
-	// Optimierte Methoden
+	/**
+	 * Refactors an anonymous ExternalResource class to implement JUnit 5 callback interfaces.
+	 * Converts the anonymous class to a named nested class with before/after callback methods.
+	 * 
+	 * @param anonymousClass the anonymous class declaration to refactor
+	 * @param fieldDeclaration the field containing the anonymous class
+	 * @param fieldStatic whether the field is static
+	 * @param rewriter the AST rewriter
+	 * @param ast the AST instance
+	 * @param group the text edit group
+	 * @param importRewriter the import rewriter
+	 */
 	protected void refactorAnonymousClassToImplementCallbacks(
 	        AnonymousClassDeclaration anonymousClass, FieldDeclaration fieldDeclaration, boolean fieldStatic,
 	        ASTRewrite rewriter, AST ast, TextEditGroup group, ImportRewrite importRewriter) {
@@ -1087,7 +1229,7 @@ public abstract class AbstractTool<T> {
 	        return;
 	    }
 
-	    // Zugriff auf die umgebende ClassInstanceCreation
+	    // Access the surrounding ClassInstanceCreation
 	    ASTNode parent = anonymousClass.getParent();
 	    if (parent instanceof ClassInstanceCreation) {
 	        ClassInstanceCreation classInstanceCreation = (ClassInstanceCreation) parent;
@@ -1115,7 +1257,7 @@ public abstract class AbstractTool<T> {
 	    addBeforeEachInitMethod(parentClass, rewriter, group);
 	    addTestNameField(parentClass, rewriter, group);
 
-	    // Aktualisierung der Methoden
+	    // Update methods
 	    updateMethodReferences(parentClass, ast, rewriter, group);
 
 	    ensureImport(importRewrite, ORG_JUNIT_JUPITER_API_TEST_INFO);
@@ -1172,20 +1314,19 @@ public abstract class AbstractTool<T> {
 
 	private void removeExternalResourceSuperclass(ClassInstanceCreation anonymousClass, ASTRewrite rewrite,
 			ImportRewrite importRewriter, TextEditGroup group) {
-		// Prüfen, ob die anonyme Klasse von ExternalResource erbt
+		// Check if the anonymous class inherits from ExternalResource
 		ITypeBinding typeBinding= anonymousClass.resolveTypeBinding();
 		if (typeBinding.getSuperclass() != null
 				&& ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(typeBinding.getSuperclass().getQualifiedName())) {
 
-			// Entfernen Sie die Superklasse durch Ersetzen des Typs im
-			// ClassInstanceCreation
+			// Remove the superclass by replacing the type in the ClassInstanceCreation
 			Type type= anonymousClass.getType();
 			if (type != null) {
 				rewrite.replace(type,
 						anonymousClass.getAST().newSimpleType(anonymousClass.getAST().newSimpleName("Object")), group);
 			}
 
-			// Entfernen Sie den Import der Superklasse
+			// Remove the import of the superclass
 			importRewriter.removeImport(ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
 		}
 	}
@@ -1240,6 +1381,16 @@ public abstract class AbstractTool<T> {
 		}
 	}
 
+	/**
+	 * Reorders parameters in a method invocation to match JUnit 5 assertion parameter order.
+	 * JUnit 5 places the message parameter last, whereas JUnit 4 placed it first.
+	 * 
+	 * @param node the method invocation to reorder
+	 * @param rewriter the AST rewriter
+	 * @param group the text edit group
+	 * @param oneparam assertion methods with one value parameter
+	 * @param twoparam assertion methods with two value parameters
+	 */
 	public void reorderParameters(MethodInvocation node, ASTRewrite rewriter, TextEditGroup group, Set<String> oneparam,
 			Set<String> twoparam) {
 		String methodName= node.getName().getIdentifier();
@@ -1270,17 +1421,17 @@ public abstract class AbstractTool<T> {
 		FieldDeclaration fieldDecl= ASTNodes.getParent(classInstanceCreation,
 				FieldDeclaration.class);
 		if (fieldDecl != null) {
-			// Entferne die @Rule-Annotation
+			// Remove the @Rule annotation
 			removeRuleAnnotation(fieldDecl, rewriter, group, importRewriter, ORG_JUNIT_RULE);
 
-			// Füge die @RegisterExtension-Annotation hinzu
+			// Add the @RegisterExtension annotation
 			addRegisterExtensionAnnotation(fieldDecl, rewriter, ast, importRewriter, group);
 
-			// Ändere den Typ der FieldDeclaration
+			// Change the type of the FieldDeclaration
 			Type newType= ast.newSimpleType(ast.newName(nestedClassName));
 			rewriter.set(fieldDecl.getType(), SimpleType.NAME_PROPERTY, newType, group);
 
-			// Füge die Initialisierung hinzu
+			// Add the initialization
 			for (Object fragment : fieldDecl.fragments()) {
 				if (fragment instanceof VariableDeclarationFragment) {
 					VariableDeclarationFragment fragmentNode= (VariableDeclarationFragment) fragment;
@@ -1292,6 +1443,15 @@ public abstract class AbstractTool<T> {
 		}
 	}
 
+	/**
+	 * Applies the JUnit migration rewrite to the compilation unit.
+	 * Delegates to the abstract process2Rewrite method for actual transformation.
+	 * 
+	 * @param upp the JUnit cleanup fix core
+	 * @param hit the reference holder containing migration information
+	 * @param cuRewrite the compilation unit rewrite
+	 * @param group the text edit group
+	 */
 	public void rewrite(JUnitCleanUpFixCore upp, ReferenceHolder<Integer, JunitHolder> hit, CompilationUnitRewrite cuRewrite, TextEditGroup group) {
 		ASTRewrite rewriter= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
@@ -1303,8 +1463,7 @@ public abstract class AbstractTool<T> {
 
 	private void setPublicVisibilityIfProtected(MethodDeclaration method, ASTRewrite rewrite, AST ast,
 			TextEditGroup group) {
-		// Durchlaufe die Modifiers und suche nach einem geschützten (protected)
-		// Modifier
+		// Iterate through modifiers and search for a protected modifier
 		for (Object modifier : method.modifiers()) {
 			if (modifier instanceof Modifier) {
 				Modifier mod= (Modifier) modifier;
@@ -1312,7 +1471,7 @@ public abstract class AbstractTool<T> {
 					ListRewrite modifierRewrite= rewrite.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);
 					Modifier publicModifier= ast.newModifier(Modifier.ModifierKeyword.PUBLIC_KEYWORD);
 					modifierRewrite.replace(mod, publicModifier, group);
-					break; // Stoppe die Schleife, sobald der Modifier ersetzt wurde
+					break; // Stop the loop as soon as the modifier is replaced
 				}
 			}
 		}
