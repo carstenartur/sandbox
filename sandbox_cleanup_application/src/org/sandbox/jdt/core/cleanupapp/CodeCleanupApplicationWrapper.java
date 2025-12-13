@@ -53,7 +53,7 @@ public class CodeCleanupApplicationWrapper implements IApplication {
 		 *            the message to be manipulated
 		 * @return the manipulated String
 		 */
-		public static String bind(String message) {
+		public static String bind(final String message) {
 			return bind(message, null);
 		}
 
@@ -66,7 +66,7 @@ public class CodeCleanupApplicationWrapper implements IApplication {
 		 *            the object to be inserted into the message
 		 * @return the manipulated String
 		 */
-		public static String bind(String message, Object binding) {
+		public static String bind(final String message, final Object binding) {
 			return bind(message, new Object[] { binding });
 		}
 
@@ -81,7 +81,7 @@ public class CodeCleanupApplicationWrapper implements IApplication {
 		 *            A second object to be inserted into the message
 		 * @return the manipulated String
 		 */
-		public static String bind(String message, Object binding1, Object binding2) {
+		public static String bind(final String message, final Object binding1, final Object binding2) {
 			return bind(message, new Object[] { binding1, binding2 });
 		}
 
@@ -94,14 +94,14 @@ public class CodeCleanupApplicationWrapper implements IApplication {
 		 *            An array of objects to be inserted into the message
 		 * @return the manipulated String
 		 */
-		public static String bind(String message, Object[] bindings) {
+		public static String bind(final String message, final Object[] bindings) {
 			return MessageFormat.format(message, bindings);
 		}
 	}
 	@Override
-	public Object start(IApplicationContext context) throws NoClassDefFoundError, Exception {
-		String[] arguments = (String[]) context.getArguments().get(IApplicationContext.APPLICATION_ARGS);
-		List<String> args = Arrays.asList(arguments);
+	public Object start(final IApplicationContext context) throws NoClassDefFoundError, Exception {
+		final String[] arguments = (String[]) context.getArguments().get(IApplicationContext.APPLICATION_ARGS);
+		final List<String> args = Arrays.asList(arguments);
 		if (args.isEmpty() || args.contains("-help") || args.contains("--help")) { //$NON-NLS-1$ //$NON-NLS-2$
 			System.out.println(Messages.bind(Messages.CommandLineUsage));
 			return IApplication.EXIT_OK;
@@ -115,9 +115,9 @@ public class CodeCleanupApplicationWrapper implements IApplication {
 			ResourcesPlugin.getWorkspace();
 		} catch (NoClassDefFoundError noClassError) {
 			if (noClassError.getCause() instanceof ClassNotFoundException) {
-				ClassNotFoundException classNotFoundException = (ClassNotFoundException) noClassError.getCause();
+				final ClassNotFoundException classNotFoundException = (ClassNotFoundException) noClassError.getCause();
 				if (classNotFoundException.getException() instanceof BundleException) {
-					BundleException bundleException = (BundleException) classNotFoundException.getException();
+					final BundleException bundleException = (BundleException) classNotFoundException.getException();
 					if (bundleException.getCause() instanceof IllegalStateException) {
 						System.err.println(Messages.bind(Messages.WorkspaceRequired));
 						System.out.println(Messages.bind(Messages.CommandLineUsage));

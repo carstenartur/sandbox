@@ -135,7 +135,7 @@ public class CodeCleanupApplication implements IApplication {
 		 *            the message to be manipulated
 		 * @return the manipulated String
 		 */
-		public static String bind(String message) {
+		public static String bind(final String message) {
 			return bind(message, null);
 		}
 
@@ -148,7 +148,7 @@ public class CodeCleanupApplication implements IApplication {
 		 *            the object to be inserted into the message
 		 * @return the manipulated String
 		 */
-		public static String bind(String message, Object binding) {
+		public static String bind(final String message, final Object binding) {
 			return bind(message, new Object[] { binding });
 		}
 
@@ -163,7 +163,7 @@ public class CodeCleanupApplication implements IApplication {
 		 *            A second object to be inserted into the message
 		 * @return the manipulated String
 		 */
-		public static String bind(String message, Object binding1, Object binding2) {
+		public static String bind(final String message, final Object binding1, final Object binding2) {
 			return bind(message, new Object[] { binding1, binding2 });
 		}
 
@@ -176,26 +176,26 @@ public class CodeCleanupApplication implements IApplication {
 		 *            An array of objects to be inserted into the message
 		 * @return the manipulated String
 		 */
-		public static String bind(String message, Object[] bindings) {
+		public static String bind(final String message, final Object[] bindings) {
 			return MessageFormat.format(message, bindings);
 		}
 	}
 	/**
 	 * Format the given Java source file.
 	 */
-	private void formatFile(File file, CodeFormatter codeFormatter) {
-		IDocument doc = new Document();
+	private void formatFile(final File file, final CodeFormatter codeFormatter) {
+		final IDocument doc = new Document();
 		try {
 			// read the file
 			if (this.verbose) {
 				System.out.println(Messages.bind(Messages.CommandLineFormatting, file.getAbsolutePath()));
 			}
-			String contents = new String(org.eclipse.jdt.internal.compiler.util.Util.getFileCharContent(file, null));
+			final String contents = new String(org.eclipse.jdt.internal.compiler.util.Util.getFileCharContent(file, null));
 			// format the file (the meat and potatoes)
 			doc.set(contents);
-			int kind = (file.getName().equals(IModule.MODULE_INFO_JAVA)? CodeFormatter.K_MODULE_INFO
+			final int kind = (file.getName().equals(IModule.MODULE_INFO_JAVA)? CodeFormatter.K_MODULE_INFO
 					: CodeFormatter.K_COMPILATION_UNIT) | CodeFormatter.F_INCLUDE_COMMENTS;
-			TextEdit edit = codeFormatter.format(kind, contents, 0, contents.length(), 0, null);
+			final TextEdit edit = codeFormatter.format(kind, contents, 0, contents.length(), 0, null);
 			if (edit != null) {
 				edit.apply(doc);
 			} else {
@@ -209,17 +209,17 @@ public class CodeCleanupApplication implements IApplication {
 				out.flush();
 			}
 		} catch (IOException e) {
-			String errorMessage = Messages.bind(Messages.CaughtException, "IOException", e.getLocalizedMessage()); //$NON-NLS-1$
+			final String errorMessage = Messages.bind(Messages.CaughtException, "IOException", e.getLocalizedMessage()); //$NON-NLS-1$
 			Util.log(e, errorMessage);
 			System.err.println(Messages.bind(Messages.ExceptionSkip ,errorMessage));
 		} catch (BadLocationException e) {
-			String errorMessage = Messages.bind(Messages.CaughtException, "BadLocationException", e.getLocalizedMessage()); //$NON-NLS-1$
+			final String errorMessage = Messages.bind(Messages.CaughtException, "BadLocationException", e.getLocalizedMessage()); //$NON-NLS-1$
 			Util.log(e, errorMessage);
 			System.err.println(Messages.bind(Messages.ExceptionSkip ,errorMessage));
 		}
 	}
 
-	private File[] processCommandLine(String[] argsArray) {
+	private File[] processCommandLine(final String[] argsArray) {
 
 		int index = 0;
 		final int argCount = argsArray.length;
@@ -231,7 +231,7 @@ public class CodeCleanupApplication implements IApplication {
 		File[] filesToFormat = new File[INITIALSIZE];
 
 		loop: while (index < argCount) {
-			String currentArg = argsArray[index++];
+			final String currentArg = argsArray[index++];
 
 			switch(mode) {
 				default:
@@ -257,7 +257,7 @@ public class CodeCleanupApplication implements IApplication {
 						continue loop;
 					}
 					// the current arg should be a file or a directory name
-					File file = new File(currentArg);
+					final File file = new File(currentArg);
 					if (file.exists()) {
 						if (filesToFormat.length == fileCounter) {
 							System.arraycopy(filesToFormat, 0, filesToFormat = new File[fileCounter * 2], 0, fileCounter);
@@ -270,7 +270,7 @@ public class CodeCleanupApplication implements IApplication {
 						} catch(IOException e2) {
 							canonicalPath = file.getAbsolutePath();
 						}
-						String errorMsg = file.isAbsolute()?
+						final String errorMsg = file.isAbsolute()?
 										  Messages.bind(Messages.CommandLineErrorFile, canonicalPath):
 										  Messages.bind(Messages.CommandLineErrorFileTryFullPath, canonicalPath);
 						displayHelp(errorMsg);
@@ -315,8 +315,8 @@ public class CodeCleanupApplication implements IApplication {
 	 * Return a Java Properties file representing the options that are in the
 	 * specified configuration file.
 	 */
-	private static Properties readConfig(String filename) {
-		File configFile = new File(filename);
+	private static Properties readConfig(final String filename) {
+		final File configFile = new File(filename);
 		try (BufferedInputStream stream = new BufferedInputStream(new FileInputStream(configFile));){
 			final Properties formatterOptions = new Properties();
 			formatterOptions.load(stream);
@@ -328,7 +328,7 @@ public class CodeCleanupApplication implements IApplication {
 			} catch(IOException e2) {
 				canonicalPath = configFile.getAbsolutePath();
 			}
-			String errorMessage;
+			final String errorMessage;
 			if (!configFile.exists() && !configFile.isAbsolute()) {
 				errorMessage = Messages.bind(Messages.ConfigFileNotFoundErrorTryFullPath, new Object[] {
 					canonicalPath,
@@ -348,8 +348,8 @@ public class CodeCleanupApplication implements IApplication {
 	 * Runs the Java code formatter application
 	 */
 	@Override
-	public Object start(IApplicationContext context) throws Exception {
-		File[] filesToFormat = processCommandLine((String[]) context.getArguments().get(IApplicationContext.APPLICATION_ARGS));
+	public Object start(final IApplicationContext context) throws Exception {
+		final File[] filesToFormat = processCommandLine((String[]) context.getArguments().get(IApplicationContext.APPLICATION_ARGS));
 
 		if (filesToFormat == null) {
 			return IApplication.EXIT_OK;
@@ -390,7 +390,7 @@ public class CodeCleanupApplication implements IApplication {
 		System.out.println(Messages.bind(Messages.CommandLineUsage));
 	}
 
-	private static void displayHelp(String message) {
+	private static void displayHelp(final String message) {
 		System.err.println(message);
 		System.out.println();
 		displayHelp();
@@ -399,14 +399,14 @@ public class CodeCleanupApplication implements IApplication {
 	 * Recursively format the Java source code that is contained in the
 	 * directory rooted at dir.
 	 */
-	private void formatDirTree(File dir, CodeFormatter codeFormatter) {
+	private void formatDirTree(final File dir, final CodeFormatter codeFormatter) {
 
-		File[] files = dir.listFiles();
+		final File[] files = dir.listFiles();
 		if (files == null) {
 			return;
 		}
 
-		for (File file : files) {
+		for (final File file : files) {
 			if (file.isDirectory()) {
 				formatDirTree(file, codeFormatter);
 			} else if (Util.isJavaLikeFileName(file.getPath())) {
@@ -415,11 +415,11 @@ public class CodeCleanupApplication implements IApplication {
 		}
 	}
 
-	private static CodeFormatter createCodeFormatter(Map options, int mode) {
+	private static CodeFormatter createCodeFormatter(Map options, final int mode) {
 		if (options == null) {
 			options = JavaCore.getOptions();
 		}
-		Map currentOptions = new HashMap(options);
+		final Map currentOptions = new HashMap(options);
 		if (mode == M_FORMAT_NEW) {
 			// disable the option for not formatting comments starting on first column
 			currentOptions.put(DefaultCodeFormatterConstants.FORMATTER_COMMENT_FORMAT_LINE_COMMENT_STARTING_ON_FIRST_COLUMN, DefaultCodeFormatterConstants.TRUE);
@@ -427,17 +427,17 @@ public class CodeCleanupApplication implements IApplication {
 			currentOptions.put(DefaultCodeFormatterConstants.FORMATTER_NEVER_INDENT_BLOCK_COMMENTS_ON_FIRST_COLUMN, DefaultCodeFormatterConstants.FALSE);
 			currentOptions.put(DefaultCodeFormatterConstants.FORMATTER_NEVER_INDENT_LINE_COMMENTS_ON_FIRST_COLUMN, DefaultCodeFormatterConstants.FALSE);
 		}
-		String formatterId = (String) options.get(JavaCore.JAVA_FORMATTER);
+		final String formatterId = (String) options.get(JavaCore.JAVA_FORMATTER);
 		if (formatterId != null) {
-			IExtensionPoint extension = Platform.getExtensionRegistry().getExtensionPoint(JavaCore.PLUGIN_ID,
+			final IExtensionPoint extension = Platform.getExtensionRegistry().getExtensionPoint(JavaCore.PLUGIN_ID,
 					JavaCore.JAVA_FORMATTER_EXTENSION_POINT_ID);
 			if (extension != null) {
-				for (IExtension extension2 : extension.getExtensions()) {
-					for (IConfigurationElement configElement : extension2.getConfigurationElements()) {
-						String initializerID = configElement.getAttribute("id"); //$NON-NLS-1$
+				for (final IExtension extension2 : extension.getExtensions()) {
+					for (final IConfigurationElement configElement : extension2.getConfigurationElements()) {
+						final String initializerID = configElement.getAttribute("id"); //$NON-NLS-1$
 						if (initializerID != null && initializerID.equals(formatterId)) {
 							try {
-								Object execExt = configElement.createExecutableExtension("class"); //$NON-NLS-1$
+								final Object execExt = configElement.createExecutableExtension("class"); //$NON-NLS-1$
 								if (execExt instanceof CodeFormatter formatter) {
 									formatter.setOptions(currentOptions);
 									return formatter;
