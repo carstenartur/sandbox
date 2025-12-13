@@ -321,7 +321,7 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	 * @param type The type to check, must not be null
 	 * @return true if the type is UnsupportedEncodingException, false otherwise
 	 */
-	private boolean isUnsupportedEncodingException(Type type) {
+	private static boolean isUnsupportedEncodingException(Type type) {
 		// Try to use binding for more robust type checking
 		if (type.resolveBinding() != null) {
 			String qualifiedName= type.resolveBinding().getQualifiedName();

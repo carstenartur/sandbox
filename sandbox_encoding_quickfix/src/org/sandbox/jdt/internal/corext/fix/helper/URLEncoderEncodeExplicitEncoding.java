@@ -99,7 +99,7 @@ public class URLEncoderEncodeExplicitEncoding extends AbstractExplicitEncoding<M
 			}
 		}
 		if (ASTNodes.usesGivenSignature(visited, URLEncoder.class.getCanonicalName(), METHOD_ENCODE, String.class.getCanonicalName())) {
-			String encoding= null;
+			String encoding;
 			switch (cb) {
 				case KEEP_BEHAVIOR:
 					encoding= null;
@@ -109,6 +109,9 @@ public class URLEncoderEncodeExplicitEncoding extends AbstractExplicitEncoding<M
 					break;
 				case ENFORCE_UTF8_AGGREGATE:
 					encoding= "UTF_8"; //$NON-NLS-1$
+					break;
+				default:
+					encoding= null;
 					break;
 			}
 			NodeData nd= new NodeData(false, visited, encoding);
