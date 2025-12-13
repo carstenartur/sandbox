@@ -3,6 +3,8 @@
   Oomph Project Setup for the "sandbox" repository.
   This setup file allows users to set up a working Eclipse development environment
   for the sandbox project using the Eclipse Installer or "Import > Oomph > Projects".
+  
+  Fixed: GitHub URL, schema locations, project import, working sets, and added JRE task.
 -->
 <setup:Project
     xmi:version="2.0"
