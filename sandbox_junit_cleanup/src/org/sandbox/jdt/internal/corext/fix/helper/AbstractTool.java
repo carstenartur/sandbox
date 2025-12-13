@@ -92,7 +92,7 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 public abstract class AbstractTool<T> {
 
 	// Constants
-	/** Length of checksum used for generated nested class names to ensure uniqueness */
+	/** Length in hexadecimal characters of the checksum used for generated nested class names to ensure uniqueness */
 	private static final int GENERATED_CLASS_NAME_CHECKSUM_LENGTH = 5;
 
 	// Annotation Names (used directly in code)
@@ -737,7 +737,7 @@ public abstract class AbstractTool<T> {
 	 * 
 	 * @param input the string to hash
 	 * @return a 5-character hexadecimal checksum
-	 * @throws RuntimeException if SHA-256 algorithm is not available
+	 * @throws RuntimeException if SHA-256 algorithm is not available (should never happen in standard JVM environments)
 	 */
 	private String generateChecksum(String input) {
 		try {
@@ -860,7 +860,7 @@ public abstract class AbstractTool<T> {
 	 * Used to display examples in the Eclipse cleanup preferences UI.
 	 * 
 	 * @param afterRefactoring if true, returns the "after" preview; if false, returns the "before" preview
-	 * @return a code snippet showing the transformation
+	 * @return a code snippet showing the transformation (formatted as Java source code)
 	 */
 	public abstract String getPreview(boolean afterRefactoring);
 
