@@ -66,7 +66,7 @@ public class CodeCleanupApplicationWrapper implements IApplication {
 		 *            the object to be inserted into the message
 		 * @return the manipulated String
 		 */
-		private static String bind(final String message, final Object binding) {
+		public static String bind(final String message, final Object binding) {
 			return bind(message, new Object[] { binding });
 		}
 
