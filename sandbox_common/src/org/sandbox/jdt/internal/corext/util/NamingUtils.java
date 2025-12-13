@@ -67,7 +67,7 @@ public final class NamingUtils {
 		// Capitalize field name for class naming convention
 		String capitalizedBaseName = capitalizeFirstLetter(baseName);
 
-		return capitalizedBaseName + "_" + checksum;
+		return capitalizedBaseName + "_" + checksum; //$NON-NLS-1$
 	}
 
 	/**
@@ -79,7 +79,7 @@ public final class NamingUtils {
 	 */
 	public static String generateChecksum(String input) {
 		try {
-			MessageDigest md = MessageDigest.getInstance("SHA-256");
+			MessageDigest md = MessageDigest.getInstance("SHA-256"); //$NON-NLS-1$
 			byte[] hashBytes = md.digest(input.getBytes(StandardCharsets.UTF_8));
 			StringBuilder hexString = new StringBuilder();
 			for (byte b : hashBytes) {
@@ -91,7 +91,7 @@ public final class NamingUtils {
 			}
 			return hexString.toString().substring(0, GENERATED_CLASS_NAME_CHECKSUM_LENGTH);
 		} catch (NoSuchAlgorithmException e) {
-			throw new RuntimeException("SHA-256 algorithm not found", e);
+			throw new RuntimeException("SHA-256 algorithm not found", e); //$NON-NLS-1$
 		}
 	}
 
@@ -125,7 +125,7 @@ public final class NamingUtils {
 				.filter(VariableDeclarationFragment.class::isInstance)
 				.map(fragment -> ((VariableDeclarationFragment) fragment).getName().getIdentifier())
 				.findFirst()
-				.orElse("UnnamedField");
+				.orElse("UnnamedField"); //$NON-NLS-1$
 	}
 
 	/**
@@ -141,7 +141,7 @@ public final class NamingUtils {
 		while (currentType instanceof QualifiedType) {
 			QualifiedType currentQualified = (QualifiedType) currentType;
 			if (fullClassName.length() > 0) {
-				fullClassName.insert(0, ".");
+				fullClassName.insert(0, "."); //$NON-NLS-1$
 			}
 			fullClassName.insert(0, currentQualified.getName().getFullyQualifiedName());
 			currentType = currentQualified.getQualifier();

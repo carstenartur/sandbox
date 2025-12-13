@@ -92,7 +92,7 @@ public final class ASTNavigationUtils {
 				return findTypeDeclarationInCompilationUnit(unit, fullyQualifiedTypeName);
 			}
 		} catch (JavaModelException e) {
-			throw new RuntimeException("Failed to find type declaration for: " + fullyQualifiedTypeName, e);
+			throw new RuntimeException("Failed to find type declaration for: " + fullyQualifiedTypeName, e); //$NON-NLS-1$
 		}
 		return null;
 	}
@@ -217,7 +217,7 @@ public final class ASTNavigationUtils {
 		// Process nested classes
 		while (parent instanceof TypeDeclaration) {
 			TypeDeclaration parentType = (TypeDeclaration) parent;
-			qualifiedName.insert(0, parentType.getName().getIdentifier() + "$"); // $ for nested classes
+			qualifiedName.insert(0, parentType.getName().getIdentifier() + "$"); // $ for nested classes //$NON-NLS-1$
 			parent = parent.getParent();
 		}
 
@@ -225,7 +225,7 @@ public final class ASTNavigationUtils {
 		CompilationUnit compilationUnit = (CompilationUnit) typeDecl.getRoot();
 		if (compilationUnit.getPackage() != null) {
 			String packageName = compilationUnit.getPackage().getName().getFullyQualifiedName();
-			qualifiedName.insert(0, packageName + ".");
+			qualifiedName.insert(0, packageName + "."); //$NON-NLS-1$
 		}
 
 		return qualifiedName.toString();
