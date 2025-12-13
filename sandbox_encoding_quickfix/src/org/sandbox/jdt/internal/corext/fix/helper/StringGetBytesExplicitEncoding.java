@@ -65,20 +65,14 @@ public class StringGetBytesExplicitEncoding extends AbstractExplicitEncoding<Met
 					return false;
 				}
 				StringLiteral argstring3= (StringLiteral) arguments.get(0);
-				if (!encodings.contains(argstring3.getLiteralValue().toUpperCase())) {
+				if (!ENCODINGS.contains(argstring3.getLiteralValue().toUpperCase(java.util.Locale.ROOT))) {
 					return false;
 				}
-				Nodedata nd= new Nodedata();
-				nd.encoding= encodingmap.get(argstring3.getLiteralValue().toUpperCase());
-				nd.replace= true;
-				nd.visited= argstring3;
+				NodeData nd= new NodeData(true, argstring3, ENCODING_MAP.get(argstring3.getLiteralValue().toUpperCase(java.util.Locale.ROOT)));
 				holder.put(visited, nd);
 				break;
 			case 0:
-				Nodedata nd2= new Nodedata();
-				nd2.encoding= null;
-				nd2.replace= false;
-				nd2.visited= visited;
+				NodeData nd2= new NodeData(false, visited, null);
 				holder.put(visited, nd2);
 				break;
 			default:
@@ -94,15 +88,15 @@ public class StringGetBytesExplicitEncoding extends AbstractExplicitEncoding<Met
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
 		ImportRewrite importRewriter= cuRewrite.getImportRewrite();
-		Nodedata nodedata= (Nodedata) data.get(visited);
-		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding,Nodedata.charsetConstants);
+		NodeData nodedata= (NodeData) data.get(visited);
+		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding(), getCharsetConstants());
 		/**
 		 * Add Charset.defaultCharset() as second (last) parameter
 		 */
 		ListRewrite listRewrite= rewrite.getListRewrite(visited, MethodInvocation.ARGUMENTS_PROPERTY);
-		if (nodedata.replace) {
+		if (nodedata.replace()) {
 			try {
-				ASTNodes.replaceAndRemoveNLS(rewrite, nodedata.visited, callToCharsetDefaultCharset, group, cuRewrite);
+				ASTNodes.replaceAndRemoveNLS(rewrite, nodedata.visited(), callToCharsetDefaultCharset, group, cuRewrite);
 			} catch (CoreException e) {
 				JavaManipulationPlugin.log(e); // should never happen
 			}

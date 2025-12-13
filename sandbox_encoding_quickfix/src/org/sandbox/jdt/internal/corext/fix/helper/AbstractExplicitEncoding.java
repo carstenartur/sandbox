@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -113,27 +114,48 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	static final Set<String> encodings = ENCODINGS;
 
 	/**
-	 * Data holder class for storing information about visited nodes during encoding fix operations.
+	 * Immutable record to hold node data for encoding transformations.
+	 * Replaces the mutable Nodedata class for better thread safety and immutability.
+	 * 
+	 * @param replace Whether to replace an existing encoding parameter (true) or appended (false)
+	 * @param visited The AST node that was visited and needs modification
+	 * @param encoding The encoding constant name (e.g., "UTF_8"), or null for default charset
 	 */
-	static class Nodedata {
-		/** Indicates whether the encoding should be replaced (true) or appended (false). */
-		public boolean replace;
+	protected static record NodeData(boolean replace, ASTNode visited, String encoding) {
+	}
 
-		/** The AST node that was visited and needs modification. */
-		public ASTNode visited;
+	/**
+	 * Thread-safe map to cache charset constant references during aggregation.
+	 * Used to avoid creating duplicate QualifiedName instances.
+	 */
+	private static final Map<String, QualifiedName> CHARSET_CONSTANTS = new ConcurrentHashMap<>();
 
-		/** The encoding string (StandardCharsets constant name, e.g., "UTF_8"), or null for default charset. */
-		public String encoding;
-
-		/** Cache for charset constant QualifiedNames to avoid creating duplicates. */
-		public static Map<String, QualifiedName> charsetConstants = new HashMap<>();
+	/**
+	 * Returns the charset constants map for use in encoding transformations.
+	 * 
+	 * @return thread-safe map of charset constants
+	 */
+	protected static Map<String, QualifiedName> getCharsetConstants() {
+		return CHARSET_CONSTANTS;
 	}
 
 	/** Key used for storing encoding information in data holders. */
-	protected static final String ENCODING = "encoding"; //$NON-NLS-1$
+	protected static final String KEY_ENCODING = "encoding"; //$NON-NLS-1$
 
 	/** Key used for storing replace flag in data holders. */
-	protected static final String REPLACE = "replace"; //$NON-NLS-1$
+	protected static final String KEY_REPLACE = "replace"; //$NON-NLS-1$
+
+	/**
+	 * @deprecated Use {@link #KEY_ENCODING} instead. This field will be removed in a future version.
+	 */
+	@Deprecated(forRemoval = true)
+	protected static final String ENCODING = KEY_ENCODING;
+
+	/**
+	 * @deprecated Use {@link #KEY_REPLACE} instead. This field will be removed in a future version.
+	 */
+	@Deprecated(forRemoval = true)
+	protected static final String REPLACE = KEY_REPLACE;
 
 	/**
 	 * Finds all occurrences of the encoding pattern that this handler processes
