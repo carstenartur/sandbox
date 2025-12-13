@@ -68,35 +68,35 @@ public class AssumeJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataholder= new ReferenceHolder<>();
+		ReferenceHolder<Integer, JunitHolder> dataHolder= new ReferenceHolder<>();
 		allassumemethods.forEach(assertionmethod -> {
-			HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSUME, assertionmethod, compilationUnit, dataholder,
+			HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSUME, assertionmethod, compilationUnit, dataHolder,
 					nodesprocessed, (visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 		});
 		allassumemethods.forEach(assertionmethod -> {
 			HelperVisitor.callImportDeclarationVisitor(ORG_JUNIT_ASSUME + "." + assertionmethod, compilationUnit,
-					dataholder, nodesprocessed,
+					dataHolder, nodesprocessed,
 					(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 		});
-		HelperVisitor.callImportDeclarationVisitor(ORG_JUNIT_ASSUME, compilationUnit, dataholder, nodesprocessed,
+		HelperVisitor.callImportDeclarationVisitor(ORG_JUNIT_ASSUME, compilationUnit, dataHolder, nodesprocessed,
 				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, ASTNode node,
-			ReferenceHolder<Integer, JunitHolder> dataholder) {
+			ReferenceHolder<Integer, JunitHolder> dataHolder) {
 		JunitHolder mh= new JunitHolder();
 		mh.minv= node;
-		dataholder.put(dataholder.size(), mh);
-		operations.add(fixcore.rewrite(dataholder));
+		dataHolder.put(dataHolder.size(), mh);
+		operations.add(fixcore.rewrite(dataHolder));
 		return false;
 	}
 	
 	@Override
 	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
-			JunitHolder mh) {
-		if (mh.minv instanceof MethodInvocation) {
-			MethodInvocation minv= mh.getMethodInvocation();
+			JunitHolder junitHolder) {
+		if (junitHolder.minv instanceof MethodInvocation) {
+			MethodInvocation minv= junitHolder.getMethodInvocation();
 			if ("assumeThat".equals(minv.getName().getIdentifier()) && isJUnitAssume(minv)) {
 				importRewriter.addStaticImport("org.hamcrest.junit.MatcherAssume", "assumeThat", true);
 				importRewriter.removeStaticImport("org.junit.Assume.assumeThat");
@@ -115,7 +115,7 @@ public class AssumeJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 				}
 			}
 		} else {
-			changeImportDeclaration(mh.getImportDeclaration(), importRewriter, group);
+			changeImportDeclaration(junitHolder.getImportDeclaration(), importRewriter, group);
 		}
 	}
 

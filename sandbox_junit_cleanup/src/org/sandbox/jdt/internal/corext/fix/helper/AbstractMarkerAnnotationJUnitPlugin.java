@@ -80,8 +80,8 @@ public abstract class AbstractMarkerAnnotationJUnitPlugin extends AbstractTool<R
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataholder= new ReferenceHolder<>();
-		HelperVisitor.callMarkerAnnotationVisitor(getSourceAnnotation(), compilationUnit, dataholder, nodesprocessed,
+		ReferenceHolder<Integer, JunitHolder> dataHolder= new ReferenceHolder<>();
+		HelperVisitor.callMarkerAnnotationVisitor(getSourceAnnotation(), compilationUnit, dataHolder, nodesprocessed,
 				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 	}
 
@@ -91,24 +91,24 @@ public abstract class AbstractMarkerAnnotationJUnitPlugin extends AbstractTool<R
 	 * @param fixcore the cleanup fix core
 	 * @param operations the set of operations to add to
 	 * @param node the found marker annotation
-	 * @param dataholder the reference holder for data
+	 * @param dataHolder the reference holder for data
 	 * @return false to continue visiting
 	 */
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, MarkerAnnotation node,
-			ReferenceHolder<Integer, JunitHolder> dataholder) {
+			ReferenceHolder<Integer, JunitHolder> dataHolder) {
 		JunitHolder mh= new JunitHolder();
 		mh.minv= node;
 		mh.minvname= node.getTypeName().getFullyQualifiedName();
-		dataholder.put(dataholder.size(), mh);
-		operations.add(fixcore.rewrite(dataholder));
+		dataHolder.put(dataHolder.size(), mh);
+		operations.add(fixcore.rewrite(dataHolder));
 		return false;
 	}
 
 	@Override
 	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
-			JunitHolder mh) {
-		Annotation minv= mh.getAnnotation();
+			JunitHolder junitHolder) {
+		Annotation minv= junitHolder.getAnnotation();
 		MarkerAnnotation newAnnotation= ast.newMarkerAnnotation();
 		newAnnotation.setTypeName(ast.newSimpleName(getTargetAnnotationName()));
 		ASTNodes.replaceButKeepComment(rewriter, minv, newAnnotation, group);

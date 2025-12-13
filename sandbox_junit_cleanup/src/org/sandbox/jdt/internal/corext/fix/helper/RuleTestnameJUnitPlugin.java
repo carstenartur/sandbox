@@ -58,30 +58,30 @@ public class RuleTestnameJUnitPlugin extends AbstractTool<ReferenceHolder<Intege
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataholder= new ReferenceHolder<>();
+		ReferenceHolder<Integer, JunitHolder> dataHolder= new ReferenceHolder<>();
 		HelperVisitor.callFieldDeclarationVisitor(ORG_JUNIT_RULE, ORG_JUNIT_RULES_TEST_NAME, compilationUnit,
-				dataholder, nodesprocessed,
+				dataHolder, nodesprocessed,
 				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, FieldDeclaration node,
-			ReferenceHolder<Integer, JunitHolder> dataholder) {
+			ReferenceHolder<Integer, JunitHolder> dataHolder) {
 		JunitHolder mh= new JunitHolder();
 		VariableDeclarationFragment fragment= (VariableDeclarationFragment) node.fragments().get(0);
 		ITypeBinding binding= fragment.resolveBinding().getType();
 		if (binding != null && ORG_JUNIT_RULES_TEST_NAME.equals(binding.getQualifiedName())) {
 			mh.minv= node;
-			dataholder.put(dataholder.size(), mh);
-			operations.add(fixcore.rewrite(dataholder));
+			dataHolder.put(dataHolder.size(), mh);
+			operations.add(fixcore.rewrite(dataHolder));
 		}
 		return false;
 	}
 
 	@Override
 	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
-			JunitHolder mh) {
-		FieldDeclaration node= mh.getFieldDeclaration();
+			JunitHolder junitHolder) {
+		FieldDeclaration node= junitHolder.getFieldDeclaration();
 		refactorTestnameInClassAndSubclasses(group, rewriter, ast, importRewriter, node);
 	}
 	
