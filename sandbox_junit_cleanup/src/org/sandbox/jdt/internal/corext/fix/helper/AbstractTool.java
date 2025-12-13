@@ -92,7 +92,8 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 public abstract class AbstractTool<T> {
 
 	// Constants
-	private static final int CHECKSUM_LENGTH = 5;
+	/** Length of checksum used for generated nested class names to ensure uniqueness */
+	private static final int GENERATED_CLASS_NAME_CHECKSUM_LENGTH = 5;
 
 	// Annotation Names (used directly in code)
 	private static final String ANNOTATION_REGISTER_EXTENSION = "RegisterExtension";
@@ -750,7 +751,7 @@ public abstract class AbstractTool<T> {
 				}
 				hexString.append(hex);
 			}
-			return hexString.toString().substring(0, CHECKSUM_LENGTH);
+			return hexString.toString().substring(0, GENERATED_CLASS_NAME_CHECKSUM_LENGTH);
 		} catch (NoSuchAlgorithmException e) {
 			throw new RuntimeException("SHA-256 algorithm not found",e);
 		}
