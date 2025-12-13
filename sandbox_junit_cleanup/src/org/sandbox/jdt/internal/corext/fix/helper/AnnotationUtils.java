@@ -39,7 +39,7 @@ public final class AnnotationUtils {
 	 * @param annotationClass the fully qualified annotation class name
 	 * @return true if the field has the annotation
 	 */
-	public static boolean hasAnnotation(FieldDeclaration field, String annotationClass) {
+	public static boolean isFieldAnnotatedWith(FieldDeclaration field, String annotationClass) {
 		return hasAnnotation(field.modifiers(), annotationClass);
 	}
 
@@ -50,7 +50,7 @@ public final class AnnotationUtils {
 	 * @param annotationClass the fully qualified annotation class name
 	 * @return true if the declaration has the annotation
 	 */
-	public static boolean hasAnnotation(BodyDeclaration declaration, String annotationClass) {
+	public static boolean isAnnotatedWith(BodyDeclaration declaration, String annotationClass) {
 		return hasAnnotation(declaration.modifiers(), annotationClass);
 	}
 

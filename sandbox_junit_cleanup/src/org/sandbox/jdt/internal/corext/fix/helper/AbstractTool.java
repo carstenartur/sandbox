@@ -53,6 +53,7 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.PrimitiveType;
+import org.eclipse.jdt.core.dom.QualifiedType;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
@@ -885,7 +886,7 @@ public abstract class AbstractTool<T> {
 	}
 
 	private boolean isAnnotatedWithRule(BodyDeclaration declaration, String annotationClass) {
-	    return AnnotationUtils.hasAnnotation(declaration, annotationClass);
+	    return AnnotationUtils.isAnnotatedWith(declaration, annotationClass);
 	}
 
 	/**
@@ -950,7 +951,7 @@ public abstract class AbstractTool<T> {
 	 * @return true if the field has the annotation
 	 */
 	protected boolean isFieldAnnotatedWith(FieldDeclaration field, String annotationClass) {
-	    return AnnotationUtils.hasAnnotation(field, annotationClass);
+	    return AnnotationUtils.isFieldAnnotatedWith(field, annotationClass);
 	}
 
 	/**
