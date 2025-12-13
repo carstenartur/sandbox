@@ -136,7 +136,7 @@ public class CodeCleanupApplication implements IApplication {
 		 * @return the manipulated String
 		 */
 		public static String bind(final String message) {
-			return bind(message, null);
+			return bind(message, (Object[]) null);
 		}
 
 		/**
