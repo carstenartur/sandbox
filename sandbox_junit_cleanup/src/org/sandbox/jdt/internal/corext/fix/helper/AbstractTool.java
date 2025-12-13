@@ -232,43 +232,104 @@ public abstract class AbstractTool<T> {
 		}
 	}
 
+	/**
+	 * Adds a @BeforeEach init method that captures the test name from TestInfo.
+	 * 
+	 * @param parentClass the class to add the method to
+	 * @param rewriter the AST rewriter
+	 * @param group the text edit group
+	 */
 	private void addBeforeEachInitMethod(TypeDeclaration parentClass, ASTRewrite rewriter, TextEditGroup group) {
-		AST ast= parentClass.getAST();
+		AST ast = parentClass.getAST();
+		
+		MethodDeclaration methodDeclaration = createInitMethod(ast);
+		MarkerAnnotation beforeEachAnnotation = createBeforeEachAnnotation(ast);
+		
+		addMethodToClass(parentClass, methodDeclaration, beforeEachAnnotation, rewriter, group);
+	}
 
-		MethodDeclaration methodDeclaration= ast.newMethodDeclaration();
+	/**
+	 * Creates the init method that assigns testInfo.getDisplayName() to this.testName.
+	 * 
+	 * @param ast the AST instance
+	 * @return the method declaration
+	 */
+	private MethodDeclaration createInitMethod(AST ast) {
+		MethodDeclaration methodDeclaration = ast.newMethodDeclaration();
 		methodDeclaration.setName(ast.newSimpleName("init"));
 		methodDeclaration.setReturnType2(ast.newPrimitiveType(PrimitiveType.VOID));
-
-		SingleVariableDeclaration param= ast.newSingleVariableDeclaration();
+		
+		// Add parameter: TestInfo testInfo
+		SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
 		param.setType(ast.newSimpleType(ast.newName("TestInfo")));
 		param.setName(ast.newSimpleName("testInfo"));
 		methodDeclaration.parameters().add(param);
+		
+		// Create method body
+		Block body = createInitMethodBody(ast);
+		methodDeclaration.setBody(body);
+		
+		return methodDeclaration;
+	}
 
-		Block body= ast.newBlock();
-		Assignment assignment= ast.newAssignment();
-		FieldAccess fieldAccess= ast.newFieldAccess();
+	/**
+	 * Creates the body of the init method: this.testName = testInfo.getDisplayName();
+	 * 
+	 * @param ast the AST instance
+	 * @return the method body block
+	 */
+	private Block createInitMethodBody(AST ast) {
+		Block body = ast.newBlock();
+		
+		// Create assignment: this.testName = testInfo.getDisplayName()
+		Assignment assignment = ast.newAssignment();
+		
+		// Left side: this.testName
+		FieldAccess fieldAccess = ast.newFieldAccess();
 		fieldAccess.setExpression(ast.newThisExpression());
 		fieldAccess.setName(ast.newSimpleName(TEST_NAME));
 		assignment.setLeftHandSide(fieldAccess);
-
-		MethodInvocation methodInvocation= ast.newMethodInvocation();
+		
+		// Right side: testInfo.getDisplayName()
+		MethodInvocation methodInvocation = ast.newMethodInvocation();
 		methodInvocation.setExpression(ast.newSimpleName("testInfo"));
 		methodInvocation.setName(ast.newSimpleName("getDisplayName"));
-
 		assignment.setRightHandSide(methodInvocation);
+		
+		body.statements().add(ast.newExpressionStatement(assignment));
+		return body;
+	}
 
-		ExpressionStatement statement= ast.newExpressionStatement(assignment);
-		body.statements().add(statement);
-		methodDeclaration.setBody(body);
+	/**
+	 * Creates a @BeforeEach annotation.
+	 * 
+	 * @param ast the AST instance
+	 * @return the annotation
+	 */
+	private MarkerAnnotation createBeforeEachAnnotation(AST ast) {
+		MarkerAnnotation annotation = ast.newMarkerAnnotation();
+		annotation.setTypeName(ast.newName("BeforeEach"));
+		return annotation;
+	}
 
-		MarkerAnnotation beforeEachAnnotation= ast.newMarkerAnnotation();
-		beforeEachAnnotation.setTypeName(ast.newName("BeforeEach"));
-
-		ListRewrite listRewrite= rewriter.getListRewrite(parentClass, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);
-		listRewrite.insertFirst(methodDeclaration, group);
-
-		listRewrite= rewriter.getListRewrite(methodDeclaration, MethodDeclaration.MODIFIERS2_PROPERTY);
-		listRewrite.insertFirst(beforeEachAnnotation, group);
+	/**
+	 * Adds a method with its annotation to a class.
+	 * 
+	 * @param parentClass the class to add to
+	 * @param method the method to add
+	 * @param annotation the annotation to add to the method
+	 * @param rewriter the AST rewriter
+	 * @param group the text edit group
+	 */
+	private void addMethodToClass(TypeDeclaration parentClass, MethodDeclaration method, 
+			MarkerAnnotation annotation, ASTRewrite rewriter, TextEditGroup group) {
+		// Add method to class
+		ListRewrite classBodyRewrite = rewriter.getListRewrite(parentClass, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);
+		classBodyRewrite.insertFirst(method, group);
+		
+		// Add annotation to method
+		ListRewrite modifierRewrite = rewriter.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);
+		modifierRewrite.insertFirst(annotation, group);
 	}
 
 	private void addContextArgumentIfMissing(ASTNode node, ASTRewrite rewriter, AST ast, TextEditGroup group) {
@@ -278,7 +339,7 @@ public abstract class AbstractTool<T> {
 		} else if (node instanceof SuperMethodInvocation) {
 			argsRewrite= rewriter.getListRewrite(node, SuperMethodInvocation.ARGUMENTS_PROPERTY);
 		} else {
-			return; // Unterstützt nur MethodInvocation und SuperMethodInvocation
+			return; // Only supports MethodInvocation and SuperMethodInvocation
 		}
 
 		boolean hasContextArgument= argsRewrite.getRewrittenList().stream().anyMatch(
@@ -320,6 +381,16 @@ public abstract class AbstractTool<T> {
 		return ast.newName(importedName);
 	}
 
+	/**
+	 * Adds a JUnit 5 callback interface to a type's super interface list if not already present.
+	 * 
+	 * @param listRewrite the list rewrite for the super interface types
+	 * @param ast the AST instance
+	 * @param callbackName the simple name of the callback interface
+	 * @param group the text edit group
+	 * @param importRewriter the import rewriter
+	 * @param classtoimport the fully qualified name of the callback interface to import
+	 */
 	private void addInterfaceCallback(ListRewrite listRewrite, AST ast, String callbackName, TextEditGroup group,
 			ImportRewrite importRewriter, String classtoimport) {
 		// Check if the interface already exists in the list
@@ -333,6 +404,16 @@ public abstract class AbstractTool<T> {
 		importRewriter.addImport(classtoimport);
 	}
 
+	/**
+	 * Adds the @RegisterExtension annotation to a field.
+	 * Resolves the field declaration from the given node and delegates to addRegisterExtensionToField.
+	 * 
+	 * @param node the AST node (either a FieldDeclaration or a ClassInstanceCreation)
+	 * @param rewrite the AST rewriter
+	 * @param ast the AST instance
+	 * @param importRewrite the import rewriter
+	 * @param group the text edit group
+	 */
 	private void addRegisterExtensionAnnotation(ASTNode node, ASTRewrite rewrite, AST ast, ImportRewrite importRewrite,
 			TextEditGroup group) {
 		FieldDeclaration field = resolveFieldDeclaration(node);
@@ -741,7 +822,7 @@ public abstract class AbstractTool<T> {
 	            .filter(VariableDeclarationFragment.class::isInstance)
 	            .map(VariableDeclarationFragment.class::cast)
 	            .map(fragment -> getTypeDefinitionFromFragment((VariableDeclarationFragment) fragment, cu))
-	            .filter(java.util.Objects::nonNull) // Nur nicht-null Ergebnisse berücksichtigen
+	            .filter(java.util.Objects::nonNull) // Only consider non-null results
 	            .findFirst()
 	            .orElse(null);
 	}
@@ -944,46 +1025,94 @@ public abstract class AbstractTool<T> {
 			return;
 		}
 
-		String beforecallback;
-		String aftercallback;
-		String importbeforecallback;
-		String importaftercallback;
-		if (fieldStatic) {
-			beforecallback= BEFORE_ALL_CALLBACK;
-			aftercallback= AFTER_ALL_CALLBACK;
-			importbeforecallback= ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_ALL_CALLBACK;
-			importaftercallback= ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_ALL_CALLBACK;
-		} else {
-			beforecallback= BEFORE_EACH_CALLBACK;
-			aftercallback= AFTER_EACH_CALLBACK;
-			importbeforecallback= ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK;
-			importaftercallback= ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK;
-		}
+		CallbackConfig callbackConfig = determineCallbackConfig(fieldStatic);
+		
 		if (field != null) {
-			if (isAnnotatedWithRule(field, ORG_JUNIT_RULE)
-					&& isExternalResource(field, ORG_JUNIT_RULES_EXTERNAL_RESOURCE)) {
-				removeRuleAnnotation(field, rewriter, group, importRewriter, ORG_JUNIT_RULE);
-				addRegisterExtensionAnnotation(field, rewriter, ast, importRewriter, group);
-				ITypeBinding fieldType= ((VariableDeclarationFragment) field.fragments().get(0)).resolveBinding()
-						.getType();
-				adaptExternalResourceHierarchy(fieldType, rewriter, ast, importRewriter, group);
-			} else if (isAnnotatedWithRule(field, ORG_JUNIT_CLASS_RULE)
-					&& isExternalResource(field, ORG_JUNIT_RULES_EXTERNAL_RESOURCE)) {
-				removeRuleAnnotation(field, rewriter, group, importRewriter, ORG_JUNIT_CLASS_RULE);
-				addRegisterExtensionAnnotation(field, rewriter, ast, importRewriter, group);
-				ITypeBinding fieldType= ((VariableDeclarationFragment) field.fragments().get(0)).resolveBinding()
-						.getType();
-				adaptExternalResourceHierarchy(fieldType, rewriter, ast, importRewriter, group);
-			}
+			processExternalResourceField(field, rewriter, ast, group, importRewriter);
 		}
+		
 		if (isDirectlyExtendingExternalResource(node.resolveBinding())) {
-			refactorToImplementCallbacks(node, rewriter, ast, group, importRewriter, beforecallback, aftercallback,
-					importbeforecallback, importaftercallback);
+			refactorToImplementCallbacks(node, rewriter, ast, group, importRewriter, 
+					callbackConfig.beforeCallback, callbackConfig.afterCallback,
+					callbackConfig.importBeforeCallback, callbackConfig.importAfterCallback);
 		}
 
-		updateLifecycleMethodsInClass(node, rewriter, ast, group, importRewriter, METHOD_BEFORE, METHOD_AFTER,
+		updateLifecycleMethodsInClass(node, rewriter, ast, group, importRewriter, 
+				METHOD_BEFORE, METHOD_AFTER,
 				fieldStatic ? METHOD_BEFORE_ALL : METHOD_BEFORE_EACH,
 				fieldStatic ? METHOD_AFTER_ALL : METHOD_AFTER_EACH);
+	}
+
+	/**
+	 * Processes an ExternalResource field by removing JUnit 4 annotations and adding JUnit 5 equivalents.
+	 * 
+	 * @param field the field to process
+	 * @param rewriter the AST rewriter
+	 * @param ast the AST instance
+	 * @param group the text edit group
+	 * @param importRewriter the import rewriter
+	 */
+	private void processExternalResourceField(FieldDeclaration field, ASTRewrite rewriter, AST ast, 
+			TextEditGroup group, ImportRewrite importRewriter) {
+		String ruleAnnotation = null;
+		
+		if (isAnnotatedWithRule(field, ORG_JUNIT_RULE) 
+				&& isExternalResource(field, ORG_JUNIT_RULES_EXTERNAL_RESOURCE)) {
+			ruleAnnotation = ORG_JUNIT_RULE;
+		} else if (isAnnotatedWithRule(field, ORG_JUNIT_CLASS_RULE) 
+				&& isExternalResource(field, ORG_JUNIT_RULES_EXTERNAL_RESOURCE)) {
+			ruleAnnotation = ORG_JUNIT_CLASS_RULE;
+		}
+		
+		if (ruleAnnotation != null) {
+			removeRuleAnnotation(field, rewriter, group, importRewriter, ruleAnnotation);
+			addRegisterExtensionAnnotation(field, rewriter, ast, importRewriter, group);
+			ITypeBinding fieldType = ((VariableDeclarationFragment) field.fragments().get(0))
+					.resolveBinding().getType();
+			adaptExternalResourceHierarchy(fieldType, rewriter, ast, importRewriter, group);
+		}
+	}
+
+	/**
+	 * Determines the appropriate callback configuration based on whether the field is static.
+	 * 
+	 * @param fieldStatic whether the field is static
+	 * @return the callback configuration with callback names and import paths
+	 */
+	private CallbackConfig determineCallbackConfig(boolean fieldStatic) {
+		if (fieldStatic) {
+			return new CallbackConfig(
+					BEFORE_ALL_CALLBACK,
+					AFTER_ALL_CALLBACK,
+					ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_ALL_CALLBACK,
+					ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_ALL_CALLBACK
+			);
+		} else {
+			return new CallbackConfig(
+					BEFORE_EACH_CALLBACK,
+					AFTER_EACH_CALLBACK,
+					ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK,
+					ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK
+			);
+		}
+	}
+
+	/**
+	 * Configuration holder for callback names and import paths.
+	 */
+	private static class CallbackConfig {
+		final String beforeCallback;
+		final String afterCallback;
+		final String importBeforeCallback;
+		final String importAfterCallback;
+
+		CallbackConfig(String beforeCallback, String afterCallback, 
+				String importBeforeCallback, String importAfterCallback) {
+			this.beforeCallback = beforeCallback;
+			this.afterCallback = afterCallback;
+			this.importBeforeCallback = importBeforeCallback;
+			this.importAfterCallback = importAfterCallback;
+		}
 	}
 
 	// Use a method to create a CompilationUnit from an ICompilationUnit
