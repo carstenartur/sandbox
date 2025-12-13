@@ -91,10 +91,10 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
  */
 public abstract class AbstractTool<T> {
 
-	// === Constants ===
+	// Constants
 	private static final int CHECKSUM_LENGTH = 5;
 
-	// === Annotation Names (used directly in code) ===
+	// Annotation Names (used directly in code)
 	private static final String ANNOTATION_REGISTER_EXTENSION = "RegisterExtension";
 	private static final String ANNOTATION_EXTEND_WITH = "ExtendWith";
 	protected static final String ANNOTATION_AFTER_EACH = "AfterEach";
@@ -106,7 +106,7 @@ public abstract class AbstractTool<T> {
 	protected static final String ANNOTATION_SELECT_CLASSES = "SelectClasses";
 	protected static final String ANNOTATION_SUITE = "Suite";
 
-	// === Method Names ===
+	// Method Names
 	private static final String METHOD_AFTER_EACH = "afterEach";
 	private static final String METHOD_BEFORE_EACH = "beforeEach";
 	private static final String METHOD_AFTER_ALL = "afterAll";
@@ -114,16 +114,16 @@ public abstract class AbstractTool<T> {
 	protected static final String METHOD_AFTER = "after";
 	protected static final String METHOD_BEFORE = "before";
 
-	// === Internal Class/Interface Names (e.g., Assertions, Assumptions) ===
+	// Internal Class/Interface Names (e.g., Assertions, Assumptions)
 	protected static final String ASSERTIONS = "Assertions";
 	protected static final String ASSUMPTIONS = "Assumptions";
 	private static final String TEST_NAME = "testName";
 	private static final String VARIABLE_NAME_CONTEXT = "context";
 	private static final String EXTENSION_CONTEXT = "ExtensionContext";
 
-	// === Fully Qualified References ===
+	// Fully Qualified References
 
-	// --- JUnit 4 References ---
+	// JUnit 4 References
 	protected static final String ORG_JUNIT_AFTER = "org.junit.After";
 	protected static final String ORG_JUNIT_BEFORE = "org.junit.Before";
 	protected static final String ORG_JUNIT_AFTERCLASS = "org.junit.AfterClass";
@@ -142,7 +142,7 @@ public abstract class AbstractTool<T> {
 	protected static final String ORG_JUNIT_ASSUME = "org.junit.Assume";
 	protected static final String ORG_JUNIT_FIX_METHOD_ORDER = "org.junit.FixMethodOrder";
 
-	// --- JUnit 5 / Jupiter References ---
+	// JUnit 5 / Jupiter References
 	protected static final String ORG_JUNIT_JUPITER_API_AFTER_EACH = "org.junit.jupiter.api.AfterEach";
 	protected static final String ORG_JUNIT_JUPITER_API_AFTER_ALL = "org.junit.jupiter.api.AfterAll";
 	protected static final String ORG_JUNIT_JUPITER_API_BEFORE_ALL = "org.junit.jupiter.api.BeforeAll";
@@ -161,17 +161,17 @@ public abstract class AbstractTool<T> {
 	protected static final String ORG_JUNIT_JUPITER_TEST = "org.junit.jupiter.api.Test";
 	protected static final String ORG_JUNIT_JUPITER_API_ASSUMPTIONS = "org.junit.jupiter.api.Assumptions";
 
-	// --- JUnit Platform References ---
+	// JUnit Platform References
 	protected static final String ORG_JUNIT_JUPITER_SUITE = "org.junit.platform.suite.api.Suite";
 	protected static final String ORG_JUNIT_PLATFORM_SUITE_API_SELECT_CLASSES = "org.junit.platform.suite.api.SelectClasses";
 
-	// === Callback Names ===
+	// Callback Names
 	private static final String AFTER_ALL_CALLBACK = "AfterAllCallback";
 	private static final String BEFORE_ALL_CALLBACK = "BeforeAllCallback";
 	private static final String AFTER_EACH_CALLBACK = "AfterEachCallback";
 	private static final String BEFORE_EACH_CALLBACK = "BeforeEachCallback";
 
-	// === Assertion Method Names ===
+	// Assertion Method Names
 	protected static final Set<String> twoparam = Set.of("assertEquals", "assertNotEquals", "assertArrayEquals",
 			"assertSame", "assertNotSame", "assertThat");
 	protected static final Set<String> oneparam = Set.of("assertTrue", "assertFalse", "assertNull", "assertNotNull");
@@ -756,11 +756,20 @@ public abstract class AbstractTool<T> {
 		}
 	}
 
+	/**
+	 * Generates a unique nested class name based on the anonymous class content and field name.
+	 * Uses a checksum of the class code to ensure uniqueness.
+	 * 
+	 * @param anonymousClass the anonymous class declaration
+	 * @param baseName the base name from the field
+	 * @return a unique class name combining capitalized base name and checksum
+	 */
 	private String generateUniqueNestedClassName(AnonymousClassDeclaration anonymousClass, String baseName) {
-		String anonymousCode= anonymousClass.toString(); // The entire code of the anonymous class
+		// Convert anonymous class to string for checksum generation to ensure unique naming
+		String anonymousCode= anonymousClass.toString();
 		String checksum= generateChecksum(anonymousCode);
 
-		// Capitalize field name
+		// Capitalize field name for class naming convention
 		String capitalizedBaseName= capitalizeFirstLetter(baseName);
 
 		return capitalizedBaseName + "_" + checksum;
@@ -770,11 +779,11 @@ public abstract class AbstractTool<T> {
 		List<ITypeBinding> subclasses= new ArrayList<>();
 
 		try {
-			// Erzeuge den entsprechenden IType des gegebenen ITypeBindings
+			// Create the corresponding IType of the given ITypeBinding
 			IType type= (IType) typeBinding.getJavaElement();
 
-			// Create the type hierarchy for the given type within the project
-			ITypeHierarchy typeHierarchy= type.newTypeHierarchy(null); // null verwendet das gesamte Projekt
+			// Create the type hierarchy for the given type within the project (null uses entire project)
+			ITypeHierarchy typeHierarchy= type.newTypeHierarchy(null);
 
 			// Iterate through all direct and indirect subtypes and add them to the list
 			for (IType subtype : typeHierarchy.getAllSubtypes(type)) {
