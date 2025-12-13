@@ -53,19 +53,6 @@ public final class ASTNavigationUtils {
 	}
 
 	/**
-	 * Finds the enclosing TypeDeclaration for the given AST node.
-	 * 
-	 * @param node the AST node to start from
-	 * @return the enclosing TypeDeclaration, or null if not found
-	 */
-	public static TypeDeclaration findEnclosingTypeDeclaration(ASTNode node) {
-		while (node != null && !(node instanceof TypeDeclaration)) {
-			node = node.getParent();
-		}
-		return (TypeDeclaration) node;
-	}
-
-	/**
 	 * Gets the parent TypeDeclaration for the given AST node.
 	 * 
 	 * @param node the AST node to start from
@@ -79,11 +66,23 @@ public final class ASTNavigationUtils {
 	}
 
 	/**
+	 * Finds the enclosing TypeDeclaration for the given AST node.
+	 * This is an alias for {@link #getParentTypeDeclaration(ASTNode)}.
+	 * 
+	 * @param node the AST node to start from
+	 * @return the enclosing TypeDeclaration, or null if not found
+	 */
+	public static TypeDeclaration findEnclosingTypeDeclaration(ASTNode node) {
+		return getParentTypeDeclaration(node);
+	}
+
+	/**
 	 * Finds a type declaration by its fully qualified name within a Java project.
 	 * 
 	 * @param javaProject the Java project to search in
 	 * @param fullyQualifiedTypeName the fully qualified type name
 	 * @return the TypeDeclaration if found, or null otherwise
+	 * @throws RuntimeException if there is an error accessing the Java model
 	 */
 	public static TypeDeclaration findTypeDeclaration(IJavaProject javaProject, String fullyQualifiedTypeName) {
 		try {
@@ -93,7 +92,7 @@ public final class ASTNavigationUtils {
 				return findTypeDeclarationInCompilationUnit(unit, fullyQualifiedTypeName);
 			}
 		} catch (JavaModelException e) {
-			e.printStackTrace();
+			throw new RuntimeException("Failed to find type declaration for: " + fullyQualifiedTypeName, e);
 		}
 		return null;
 	}
