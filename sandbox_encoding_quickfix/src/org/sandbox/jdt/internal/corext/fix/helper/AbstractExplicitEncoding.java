@@ -15,6 +15,7 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -70,10 +71,14 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	private static final String UNSUPPORTED_ENCODING_EXCEPTION = "UnsupportedEncodingException"; //$NON-NLS-1$
 
 	/**
-	 * Maps standard charset names (e.g., "UTF-8") to their corresponding
+	 * Immutable map of standard charset names (e.g., "UTF-8") to their corresponding
 	 * StandardCharsets constant names (e.g., "UTF_8").
+	 * <p>
+	 * This mapping covers the six charsets guaranteed to be available on every Java platform.
+	 * </p>
+	 * @since 1.3
 	 */
-	static Map<String, String> encodingmap = Map.of(
+	public static final Map<String, String> ENCODING_MAP = Map.of(
 			"UTF-8", "UTF_8", //$NON-NLS-1$ //$NON-NLS-2$
 			"UTF-16", "UTF_16", //$NON-NLS-1$ //$NON-NLS-2$
 			"UTF-16BE", "UTF_16BE", //$NON-NLS-1$ //$NON-NLS-2$
@@ -82,8 +87,30 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 			"US-ASCII", "US_ASCII" //$NON-NLS-1$ //$NON-NLS-2$
 	);
 
-	/** Set of supported encoding names that can be converted to StandardCharsets constants. */
-	static Set<String> encodings = encodingmap.keySet();
+	/**
+	 * Immutable set of supported encoding names that can be converted to StandardCharsets constants.
+	 * @since 1.3
+	 */
+	public static final Set<String> ENCODINGS = ENCODING_MAP.keySet();
+
+	/**
+	 * Maps standard charset names (e.g., "UTF-8") to their corresponding
+	 * StandardCharsets constant names (e.g., "UTF_8").
+	 * @deprecated Use {@link #ENCODING_MAP} instead. This field is maintained for backward
+	 *             compatibility but is immutable and will throw UnsupportedOperationException
+	 *             if modification is attempted.
+	 */
+	@Deprecated
+	static final Map<String, String> encodingmap = ENCODING_MAP;
+
+	/**
+	 * Set of supported encoding names that can be converted to StandardCharsets constants.
+	 * @deprecated Use {@link #ENCODINGS} instead. This field is maintained for backward
+	 *             compatibility but is immutable and will throw UnsupportedOperationException
+	 *             if modification is attempted.
+	 */
+	@Deprecated
+	static final Set<String> encodings = ENCODINGS;
 
 	/**
 	 * Data holder class for storing information about visited nodes during encoding fix operations.
@@ -159,7 +186,7 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 		if (literal == null) {
 			return false;
 		}
-		return encodings.contains(literal.getLiteralValue().toUpperCase());
+		return ENCODINGS.contains(literal.getLiteralValue().toUpperCase(Locale.ROOT));
 	}
 
 	/**
@@ -173,7 +200,7 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 		if (literal == null) {
 			return null;
 		}
-		return encodingmap.get(literal.getLiteralValue().toUpperCase());
+		return ENCODING_MAP.get(literal.getLiteralValue().toUpperCase(Locale.ROOT));
 	}
 
 	/**
@@ -207,7 +234,7 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 		}
 		Expression initializer = fragment.getInitializer();
 		if (initializer instanceof StringLiteral) {
-			return ((StringLiteral) initializer).getLiteralValue().toUpperCase();
+			return ((StringLiteral) initializer).getLiteralValue().toUpperCase(Locale.ROOT);
 		}
 		return null;
 	}
@@ -366,13 +393,25 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 		ListRewrite unionRewrite = rewrite.getListRewrite(unionType, UnionType.TYPES_PROPERTY);
 		List<Type> types = unionType.types();
 
-		types.stream()
-			.filter(AbstractExplicitEncoding::isUnsupportedEncodingException)
-			.forEach(type -> unionRewrite.remove(type, group));
+		// Collect types to remove first to avoid modification during iteration
+		List<Type> typesToRemove = types.stream()
+				.filter(AbstractExplicitEncoding::isUnsupportedEncodingException)
+				.toList();
 
-		if (types.size() == 1) {
-			rewrite.replace(unionType, types.get(0), group);
-		} else if (types.isEmpty()) {
+		typesToRemove.forEach(type -> unionRewrite.remove(type, group));
+
+		// Calculate remaining count after scheduled removals
+		int remainingCount = types.size() - typesToRemove.size();
+		if (remainingCount == 1) {
+			// Find the remaining type (not in removal list)
+			Type remainingType = types.stream()
+					.filter(type -> !typesToRemove.contains(type))
+					.findFirst()
+					.orElse(null);
+			if (remainingType != null) {
+				rewrite.replace(unionType, remainingType, group);
+			}
+		} else if (remainingCount == 0) {
 			rewrite.remove(catchClause, group);
 		}
 	}
