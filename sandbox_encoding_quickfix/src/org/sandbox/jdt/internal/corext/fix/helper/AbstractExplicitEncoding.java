@@ -13,7 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -72,10 +72,14 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	private static final String UNSUPPORTED_ENCODING_EXCEPTION = "UnsupportedEncodingException"; //$NON-NLS-1$
 
 	/**
-	 * Internal map of standard charset names (e.g., "UTF-8") to their corresponding
+	 * Immutable map of standard charset names (e.g., "UTF-8") to their corresponding
 	 * StandardCharsets constant names (e.g., "UTF_8").
+	 * <p>
+	 * This mapping covers the six charsets guaranteed to be available on every Java platform.
+	 * </p>
+	 * @since 1.3
 	 */
-	private static final Map<String, String> encodingMapInternal = Map.of(
+	public static final Map<String, String> ENCODING_MAP = Map.of(
 			"UTF-8", "UTF_8", //$NON-NLS-1$ //$NON-NLS-2$
 			"UTF-16", "UTF_16", //$NON-NLS-1$ //$NON-NLS-2$
 			"UTF-16BE", "UTF_16BE", //$NON-NLS-1$ //$NON-NLS-2$
@@ -85,14 +89,29 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	);
 
 	/**
-	 * Immutable map of encoding names to their StandardCharsets constant names.
+	 * Immutable set of supported encoding names that can be converted to StandardCharsets constants.
+	 * @since 1.3
 	 */
-	protected static final Map<String, String> ENCODING_MAP = Collections.unmodifiableMap(encodingMapInternal);
+	public static final Set<String> ENCODINGS = ENCODING_MAP.keySet();
 
 	/**
-	 * Immutable set of supported encoding names that can be converted to StandardCharsets constants.
+	 * Maps standard charset names (e.g., "UTF-8") to their corresponding
+	 * StandardCharsets constant names (e.g., "UTF_8").
+	 * @deprecated Use {@link #ENCODING_MAP} instead. This field is maintained for backward
+	 *             compatibility but is immutable and will throw UnsupportedOperationException
+	 *             if modification is attempted.
 	 */
-	protected static final Set<String> ENCODINGS = Collections.unmodifiableSet(encodingMapInternal.keySet());
+	@Deprecated
+	static final Map<String, String> encodingmap = ENCODING_MAP;
+
+	/**
+	 * Set of supported encoding names that can be converted to StandardCharsets constants.
+	 * @deprecated Use {@link #ENCODINGS} instead. This field is maintained for backward
+	 *             compatibility but is immutable and will throw UnsupportedOperationException
+	 *             if modification is attempted.
+	 */
+	@Deprecated
+	static final Set<String> encodings = ENCODINGS;
 
 	/**
 	 * Immutable record to hold node data for encoding transformations.
@@ -127,16 +146,16 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	protected static final String KEY_REPLACE = "replace"; //$NON-NLS-1$
 
 	/**
-	 * @deprecated Use {@link #ENCODING_MAP} instead. This field will be removed in a future version.
+	 * @deprecated Use {@link #KEY_ENCODING} instead. This field will be removed in a future version.
 	 */
 	@Deprecated(forRemoval = true)
-	static Map<String, String> encodingmap = ENCODING_MAP;
+	protected static final String ENCODING = KEY_ENCODING;
 
 	/**
-	 * @deprecated Use {@link #ENCODINGS} instead. This field will be removed in a future version.
+	 * @deprecated Use {@link #KEY_REPLACE} instead. This field will be removed in a future version.
 	 */
 	@Deprecated(forRemoval = true)
-	static Set<String> encodings = ENCODINGS;
+	protected static final String REPLACE = KEY_REPLACE;
 
 	/**
 	 * Finds all occurrences of the encoding pattern that this handler processes
@@ -179,54 +198,106 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	}
 
 	/**
-	 * Finds the value of a variable by searching through the enclosing method or type declaration.
-	 * Searches for variable declarations and returns the string literal value if found.
+	 * Checks if a string literal contains a known encoding that can be converted
+	 * to a StandardCharsets constant.
 	 *
-	 * @param variable the variable name to search for, must not be null
-	 * @param context the AST node context to start the search from, must not be null
-	 * @return the uppercase string literal value of the variable, or null if not found
+	 * @param literal the string literal to check, may be null
+	 * @return true if the literal contains a known encoding, false otherwise
 	 */
-	protected static String findVariableValue(SimpleName variable, ASTNode context) {
-		ASTNode current= context.getParent();
-		while (current != null && !(current instanceof MethodDeclaration) && !(current instanceof TypeDeclaration)) {
-			current= current.getParent();
+	protected static boolean isKnownEncoding(StringLiteral literal) {
+		if (literal == null) {
+			return false;
 		}
+		return ENCODINGS.contains(literal.getLiteralValue().toUpperCase(Locale.ROOT));
+	}
 
-		if (current instanceof MethodDeclaration) {
-			MethodDeclaration method= (MethodDeclaration) current;
-			Block body= method.getBody();
-			if (body == null) {
-				return null;
+	/**
+	 * Gets the StandardCharsets constant name for a given encoding string literal.
+	 *
+	 * @param literal the string literal containing the encoding name, may be null
+	 * @return the StandardCharsets constant name (e.g., "UTF_8"), or null if the literal
+	 *         is null or contains an unknown encoding
+	 */
+	protected static String getEncodingConstantName(StringLiteral literal) {
+		if (literal == null) {
+			return null;
+		}
+		return ENCODING_MAP.get(literal.getLiteralValue().toUpperCase(Locale.ROOT));
+	}
+
+	/**
+	 * Finds the enclosing MethodDeclaration or TypeDeclaration for a given AST node.
+	 *
+	 * @param node the starting node for the search, may be null
+	 * @return the enclosing MethodDeclaration or TypeDeclaration, or null if not found
+	 */
+	private static ASTNode findEnclosingMethodOrType(ASTNode node) {
+		if (node == null) {
+			return null;
+		}
+		ASTNode current = node.getParent();
+		while (current != null && !(current instanceof MethodDeclaration) && !(current instanceof TypeDeclaration)) {
+			current = current.getParent();
+		}
+		return current;
+	}
+
+	/**
+	 * Extracts the string literal value from a variable declaration fragment if its initializer
+	 * is a string literal.
+	 *
+	 * @param fragment the variable declaration fragment to check, must not be null
+	 * @param variableIdentifier the identifier of the variable to match, must not be null
+	 * @return the uppercase string literal value if found, null otherwise
+	 */
+	private static String extractStringLiteralValue(VariableDeclarationFragment fragment, String variableIdentifier) {
+		if (!fragment.getName().getIdentifier().equals(variableIdentifier)) {
+			return null;
+		}
+		Expression initializer = fragment.getInitializer();
+		if (initializer instanceof StringLiteral) {
+			return ((StringLiteral) initializer).getLiteralValue().toUpperCase(Locale.ROOT);
+		}
+		return null;
+	}
+
+	/**
+	 * Searches for a variable's string literal value within a list of variable declaration fragments.
+	 *
+	 * @param fragments the list of fragments to search in, must not be null
+	 * @param variableIdentifier the identifier of the variable to find, must not be null
+	 * @return the uppercase string literal value if found, null otherwise
+	 */
+	private static String findValueInFragments(List<?> fragments, String variableIdentifier) {
+		for (Object frag : fragments) {
+			VariableDeclarationFragment fragment = (VariableDeclarationFragment) frag;
+			String value = extractStringLiteralValue(fragment, variableIdentifier);
+			if (value != null) {
+				return value;
 			}
-			List<?> statements= body.statements();
+		}
+		return null;
+	}
 
-			for (Object stmt : statements) {
-				if (stmt instanceof VariableDeclarationStatement) {
-					VariableDeclarationStatement varDeclStmt= (VariableDeclarationStatement) stmt;
-					for (Object frag : varDeclStmt.fragments()) {
-						VariableDeclarationFragment fragment= (VariableDeclarationFragment) frag;
-						if (fragment.getName().getIdentifier().equals(variable.getIdentifier())) {
-							Expression initializer= fragment.getInitializer();
-							if (initializer instanceof StringLiteral) {
-								return ((StringLiteral) initializer).getLiteralValue().toUpperCase(Locale.ROOT);
-							}
-						}
-					}
-				}
-			}
-		} else if (current instanceof TypeDeclaration) {
-			TypeDeclaration type= (TypeDeclaration) current;
-			FieldDeclaration[] fields= type.getFields();
-
-			for (FieldDeclaration field : fields) {
-				for (Object frag : field.fragments()) {
-					VariableDeclarationFragment fragment= (VariableDeclarationFragment) frag;
-					if (fragment.getName().getIdentifier().equals(variable.getIdentifier())) {
-						Expression initializer= fragment.getInitializer();
-						if (initializer instanceof StringLiteral) {
-							return ((StringLiteral) initializer).getLiteralValue().toUpperCase(Locale.ROOT);
-						}
-					}
+	/**
+	 * Searches for a variable's string literal value within method body statements.
+	 *
+	 * @param method the method declaration to search in, must not be null
+	 * @param variableIdentifier the identifier of the variable to find, must not be null
+	 * @return the uppercase string literal value if found, null otherwise
+	 */
+	private static String findVariableValueInMethod(MethodDeclaration method, String variableIdentifier) {
+		Block body = method.getBody();
+		if (body == null) {
+			return null;
+		}
+		List<?> statements = body.statements();
+		for (Object stmt : statements) {
+			if (stmt instanceof VariableDeclarationStatement) {
+				VariableDeclarationStatement varDeclStmt = (VariableDeclarationStatement) stmt;
+				String value = findValueInFragments(varDeclStmt.fragments(), variableIdentifier);
+				if (value != null) {
+					return value;
 				}
 			}
 		}
@@ -234,102 +305,213 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	}
 
 	/**
-	 * Generates preview text showing the code before and after the encoding fix is applied.
+	 * Searches for a variable's string literal value within type field declarations.
 	 *
-	 * @param afterRefactoring true to show the code after applying the fix, false to show before
-	 * @param cb the change behavior configuration, must not be null
-	 * @return preview text showing the encoding pattern, never null
+	 * @param type the type declaration to search in, must not be null
+	 * @param variableIdentifier the identifier of the variable to find, must not be null
+	 * @return the uppercase string literal value if found, null otherwise
+	 */
+	private static String findVariableValueInType(TypeDeclaration type, String variableIdentifier) {
+		FieldDeclaration[] fields = type.getFields();
+		for (FieldDeclaration field : fields) {
+			String value = findValueInFragments(field.fragments(), variableIdentifier);
+			if (value != null) {
+				return value;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Finds the value of a variable by searching for its declaration in the enclosing
+	 * method or type. This is used to resolve variable references to their string literal
+	 * initializer values.
+	 *
+	 * @param variable the SimpleName representing the variable reference, may be null
+	 * @param context the AST node providing context for the search, may be null
+	 * @return the uppercase string literal value of the variable's initializer,
+	 *         or null if the variable is null, context is null, or the value cannot be found
+	 */
+	protected static String findVariableValue(SimpleName variable, ASTNode context) {
+		if (variable == null || context == null) {
+			return null;
+		}
+
+		ASTNode enclosing = findEnclosingMethodOrType(context);
+		if (enclosing == null) {
+			return null;
+		}
+
+		String variableIdentifier = variable.getIdentifier();
+		if (enclosing instanceof MethodDeclaration) {
+			return findVariableValueInMethod((MethodDeclaration) enclosing, variableIdentifier);
+		} else if (enclosing instanceof TypeDeclaration) {
+			return findVariableValueInType((TypeDeclaration) enclosing, variableIdentifier);
+		}
+		return null;
+	}
+
+	/**
+	 * Generates a preview string showing the code before or after the refactoring.
+	 *
+	 * @param afterRefactoring true to show the code after refactoring, false for before
+	 * @param cb the change behavior configuration
+	 * @return the preview string, never null
 	 */
 	public abstract String getPreview(boolean afterRefactoring, ChangeBehavior cb);
 
 	/**
-	 * Removes UnsupportedEncodingException from method throws clauses or catch blocks
-	 * when the encoding is changed from a string to a Charset constant.
+	 * Finds the enclosing MethodDeclaration or TryStatement for exception handling removal.
 	 *
-	 * @param visited the AST node being processed, must not be null
-	 * @param group the text edit group for grouping changes, must not be null
-	 * @param rewrite the AST rewrite instance, must not be null
-	 * @param importRewriter the import rewrite instance, must not be null
+	 * @param node the starting node for the search
+	 * @return the enclosing MethodDeclaration or TryStatement, or null if not found
 	 */
-	protected void removeUnsupportedEncodingException(final ASTNode visited, TextEditGroup group, ASTRewrite rewrite, ImportRewrite importRewriter) {
-		ASTNode parent= visited.getParent();
+	private static ASTNode findEnclosingMethodOrTry(ASTNode node) {
+		ASTNode parent = node.getParent();
 		while (parent != null && !(parent instanceof MethodDeclaration) && !(parent instanceof TryStatement)) {
-			parent= parent.getParent();
+			parent = parent.getParent();
 		}
+		return parent;
+	}
 
-		if (parent instanceof MethodDeclaration) {
-			MethodDeclaration method= (MethodDeclaration) parent;
-			ListRewrite throwsRewrite= rewrite.getListRewrite(method, MethodDeclaration.THROWN_EXCEPTION_TYPES_PROPERTY);
-			List<Type> thrownExceptions= method.thrownExceptionTypes();
-			for (Type exceptionType : thrownExceptions) {
-				if (isUnsupportedEncodingException(exceptionType)) {
-					throwsRewrite.remove(exceptionType, group);
-					importRewriter.removeImport(JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION);
-				}
-			}
-		} else if (parent instanceof TryStatement) {
-			TryStatement tryStatement= (TryStatement) parent;
+	/**
+	 * Checks if a type represents UnsupportedEncodingException.
+	 *
+	 * @param type the type to check
+	 * @return true if the type is UnsupportedEncodingException
+	 */
+	private static boolean isUnsupportedEncodingException(Type type) {
+		return type.toString().equals(UNSUPPORTED_ENCODING_EXCEPTION);
+	}
 
-			List<CatchClause> catchClauses= tryStatement.catchClauses();
-			for (CatchClause catchClause : catchClauses) {
-				SingleVariableDeclaration exception= catchClause.getException();
-				Type exceptionType= exception.getType();
-
-				if (exceptionType instanceof UnionType) {
-					UnionType unionType= (UnionType) exceptionType;
-					ListRewrite unionRewrite= rewrite.getListRewrite(unionType, UnionType.TYPES_PROPERTY);
-
-					List<Type> types= unionType.types();
-					// Two-phase approach: collect targets then remove to avoid concurrent modification
-					List<Type> typesToRemove= types.stream()
-							.filter(type -> isUnsupportedEncodingException(type))
-							.toList();
-					
-					for (Type type : typesToRemove) {
-						unionRewrite.remove(type, group);
-					}
-
-					if (types.size() == 1) {
-						rewrite.replace(unionType, types.get(0), group);
-					} else if (types.isEmpty()) {
-						rewrite.remove(catchClause, group);
-					}
-				} else if (isUnsupportedEncodingException(exceptionType)) {
-					rewrite.remove(catchClause, group);
-					importRewriter.removeImport(JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION);
-				}
-			}
-
-			// Cache the result of catchClauses() to avoid repeated calls
-			List<CatchClause> catchClausesAfter= tryStatement.catchClauses();
-			if (catchClausesAfter.isEmpty() && tryStatement.getFinally() == null) {
-				Block tryBlock= tryStatement.getBody();
-
-				if (tryStatement.resources().isEmpty() && tryBlock.statements().isEmpty()) {
-					rewrite.remove(tryStatement, group);
-				} else if (tryStatement.resources().isEmpty()) {
-					rewrite.replace(tryStatement, tryBlock, group);
-				}
+	/**
+	 * Removes UnsupportedEncodingException from method's throws clause.
+	 *
+	 * @param method the method declaration to modify
+	 * @param rewrite the AST rewrite to use
+	 * @param group the text edit group
+	 * @param importRewriter the import rewrite to use
+	 */
+	private static void removeExceptionFromMethodThrows(MethodDeclaration method, ASTRewrite rewrite, TextEditGroup group, ImportRewrite importRewriter) {
+		ListRewrite throwsRewrite = rewrite.getListRewrite(method, MethodDeclaration.THROWN_EXCEPTION_TYPES_PROPERTY);
+		List<Type> thrownExceptions = method.thrownExceptionTypes();
+		for (Type exceptionType : thrownExceptions) {
+			if (isUnsupportedEncodingException(exceptionType)) {
+				throwsRewrite.remove(exceptionType, group);
+				importRewriter.removeImport(JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION);
 			}
 		}
 	}
 
 	/**
-	 * Checks if a type represents UnsupportedEncodingException.
-	 * Uses type binding when available for accurate type resolution, falls back to string matching.
-	 * 
-	 * @param type The type to check, must not be null
-	 * @return true if the type is UnsupportedEncodingException, false otherwise
+	 * Handles UnsupportedEncodingException removal from a union type in a catch clause.
+	 *
+	 * @param unionType the union type to modify
+	 * @param catchClause the catch clause containing the union type
+	 * @param rewrite the AST rewrite to use
+	 * @param group the text edit group
 	 */
-	private static boolean isUnsupportedEncodingException(Type type) {
-		// Try to use binding for more robust type checking
-		if (type.resolveBinding() != null) {
-			String qualifiedName= type.resolveBinding().getQualifiedName();
-			return JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION.equals(qualifiedName);
+	private static void removeExceptionFromUnionType(UnionType unionType, CatchClause catchClause, ASTRewrite rewrite, TextEditGroup group) {
+		ListRewrite unionRewrite = rewrite.getListRewrite(unionType, UnionType.TYPES_PROPERTY);
+		List<Type> types = unionType.types();
+
+		// Collect types to remove first to avoid modification during iteration
+		List<Type> typesToRemove = types.stream()
+				.filter(AbstractExplicitEncoding::isUnsupportedEncodingException)
+				.toList();
+
+		typesToRemove.forEach(type -> unionRewrite.remove(type, group));
+
+		// Calculate remaining count after scheduled removals
+		int remainingCount = types.size() - typesToRemove.size();
+		if (remainingCount == 1) {
+			// Find the remaining type (not in removal list)
+			Type remainingType = types.stream()
+					.filter(type -> !typesToRemove.contains(type))
+					.findFirst()
+					.orElse(null);
+			if (remainingType != null) {
+				rewrite.replace(unionType, remainingType, group);
+			}
+		} else if (remainingCount == 0) {
+			rewrite.remove(catchClause, group);
 		}
-		// Fallback to string matching
-		String typeString= type.toString();
-		return UNSUPPORTED_ENCODING_EXCEPTION.equals(typeString);
+	}
+
+	/**
+	 * Removes UnsupportedEncodingException from catch clauses in a try statement.
+	 *
+	 * @param tryStatement the try statement to process
+	 * @param rewrite the AST rewrite to use
+	 * @param group the text edit group
+	 * @param importRewriter the import rewrite to use
+	 */
+	private static void removeExceptionFromTryCatch(TryStatement tryStatement, ASTRewrite rewrite, TextEditGroup group, ImportRewrite importRewriter) {
+		List<CatchClause> catchClauses = tryStatement.catchClauses();
+		for (CatchClause catchClause : catchClauses) {
+			SingleVariableDeclaration exception = catchClause.getException();
+			Type exceptionType = exception.getType();
+
+			if (exceptionType instanceof UnionType) {
+				removeExceptionFromUnionType((UnionType) exceptionType, catchClause, rewrite, group);
+			} else if (isUnsupportedEncodingException(exceptionType)) {
+				rewrite.remove(catchClause, group);
+				importRewriter.removeImport(JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION);
+			}
+		}
+	}
+
+	/**
+	 * Simplifies a try statement that has become empty after removing catch clauses.
+	 *
+	 * @param tryStatement the try statement to check and simplify
+	 * @param rewrite the AST rewrite to use
+	 * @param group the text edit group
+	 */
+	private static void simplifyEmptyTryStatement(TryStatement tryStatement, ASTRewrite rewrite, TextEditGroup group) {
+		if (!tryStatement.catchClauses().isEmpty() || tryStatement.getFinally() != null) {
+			return;
+		}
+
+		Block tryBlock = tryStatement.getBody();
+		boolean hasResources = !tryStatement.resources().isEmpty();
+		boolean hasStatements = !tryBlock.statements().isEmpty();
+
+		if (!hasResources && !hasStatements) {
+			rewrite.remove(tryStatement, group);
+		} else if (!hasResources) {
+			rewrite.replace(tryStatement, tryBlock, group);
+		}
+	}
+
+	/**
+	 * Removes UnsupportedEncodingException from the enclosing method's throws clause
+	 * or from catch clauses in a try statement. This is called after converting string-based
+	 * encoding to StandardCharsets, since StandardCharsets methods don't throw
+	 * UnsupportedEncodingException.
+	 *
+	 * <p>For method declarations, removes UnsupportedEncodingException from the throws clause.
+	 * For try statements, removes catch clauses that only catch UnsupportedEncodingException,
+	 * or removes the exception type from union types in multi-catch clauses.
+	 *
+	 * @param visited the AST node that was modified, must not be null
+	 * @param group the text edit group for tracking changes, must not be null
+	 * @param rewrite the AST rewrite context, must not be null
+	 * @param importRewriter the import rewrite for removing unused imports, must not be null
+	 */
+	protected void removeUnsupportedEncodingException(final ASTNode visited, TextEditGroup group, ASTRewrite rewrite, ImportRewrite importRewriter) {
+		ASTNode parent = findEnclosingMethodOrTry(visited);
+		if (parent == null) {
+			return;
+		}
+
+		if (parent instanceof MethodDeclaration) {
+			removeExceptionFromMethodThrows((MethodDeclaration) parent, rewrite, group, importRewriter);
+		} else if (parent instanceof TryStatement) {
+			TryStatement tryStatement = (TryStatement) parent;
+			removeExceptionFromTryCatch(tryStatement, rewrite, group, importRewriter);
+			simplifyEmptyTryStatement(tryStatement, rewrite, group);
+		}
 	}
 
 }
