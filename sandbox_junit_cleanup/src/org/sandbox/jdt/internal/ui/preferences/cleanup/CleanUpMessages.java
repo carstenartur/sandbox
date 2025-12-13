@@ -35,7 +35,7 @@ package org.sandbox.jdt.internal.ui.preferences.cleanup;
 
 import org.eclipse.osgi.util.NLS;
 
-public class CleanUpMessages {
+public final class CleanUpMessages {
 	private static final String BUNDLE_NAME= "org.sandbox.jdt.internal.ui.preferences.cleanup.CleanUpMessages"; //$NON-NLS-1$
 	public static String JavaFeatureTabPage_GroupName_JUnit;
 	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP;
@@ -60,5 +60,9 @@ public class CleanUpMessages {
 	static {
 		// initialize resource bundle
 		NLS.initializeMessages(BUNDLE_NAME, CleanUpMessages.class);
+	}
+	
+	private CleanUpMessages() {
+		// Utility class - prevent instantiation
 	}
 }

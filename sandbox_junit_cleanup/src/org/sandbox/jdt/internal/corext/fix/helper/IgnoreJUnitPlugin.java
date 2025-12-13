@@ -59,18 +59,18 @@ public class IgnoreJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataholder= new ReferenceHolder<>();
-		HelperVisitor.callMarkerAnnotationVisitor(ORG_JUNIT_IGNORE, compilationUnit, dataholder, nodesprocessed,
+		ReferenceHolder<Integer, JunitHolder> dataHolder= new ReferenceHolder<>();
+		HelperVisitor.callMarkerAnnotationVisitor(ORG_JUNIT_IGNORE, compilationUnit, dataHolder, nodesprocessed,
 				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
-		HelperVisitor.callNormalAnnotationVisitor(ORG_JUNIT_IGNORE, compilationUnit, dataholder, nodesprocessed,
+		HelperVisitor.callNormalAnnotationVisitor(ORG_JUNIT_IGNORE, compilationUnit, dataHolder, nodesprocessed,
 				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
-		HelperVisitor.callSingleMemberAnnotationVisitor(ORG_JUNIT_IGNORE, compilationUnit, dataholder, nodesprocessed,
+		HelperVisitor.callSingleMemberAnnotationVisitor(ORG_JUNIT_IGNORE, compilationUnit, dataHolder, nodesprocessed,
 				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Annotation node,
-			ReferenceHolder<Integer, JunitHolder> dataholder) {
+			ReferenceHolder<Integer, JunitHolder> dataHolder) {
 		JunitHolder mh= new JunitHolder();
 		mh.minv= node;
 		mh.minvname= node.getTypeName().getFullyQualifiedName();
@@ -78,15 +78,15 @@ public class IgnoreJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 			Expression value= mynode.getValue();
 			mh.value= value.toString();
 		}
-		dataholder.put(dataholder.size(), mh);
-		operations.add(fixcore.rewrite(dataholder));
+		dataHolder.put(dataHolder.size(), mh);
+		operations.add(fixcore.rewrite(dataHolder));
 		return false;
 	}
 
 	@Override
 	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
-			JunitHolder mh) {
-		Annotation minv= mh.getAnnotation();
+			JunitHolder junitHolder) {
+		Annotation minv= junitHolder.getAnnotation();
 		Annotation newAnnotation= null;
 		if (minv instanceof SingleMemberAnnotation mynode) {
 			newAnnotation= ast.newSingleMemberAnnotation();

@@ -61,16 +61,16 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataholder= new ReferenceHolder<>();
-		HelperVisitor.callSingleMemberAnnotationVisitor(ORG_JUNIT_RUNWITH, compilationUnit, dataholder, nodesprocessed,
+		ReferenceHolder<Integer, JunitHolder> dataHolder= new ReferenceHolder<>();
+		HelperVisitor.callSingleMemberAnnotationVisitor(ORG_JUNIT_RUNWITH, compilationUnit, dataHolder, nodesprocessed,
 				(visited, aholder) -> processFoundNodeRunWith(fixcore, operations, visited, aholder));
-		HelperVisitor.callSingleMemberAnnotationVisitor(ORG_JUNIT_SUITE_SUITECLASSES, compilationUnit, dataholder,
+		HelperVisitor.callSingleMemberAnnotationVisitor(ORG_JUNIT_SUITE_SUITECLASSES, compilationUnit, dataHolder,
 				nodesprocessed, (visited, aholder) -> processFoundNodeSuite(fixcore, operations, visited, aholder));
 	}
 
 	private boolean processFoundNodeRunWith(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Annotation node,
-			ReferenceHolder<Integer, JunitHolder> dataholder) {
+			ReferenceHolder<Integer, JunitHolder> dataHolder) {
 		JunitHolder mh= new JunitHolder();
 		mh.minv= node;
 		mh.minvname= node.getTypeName().getFullyQualifiedName();
@@ -84,8 +84,8 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 						ITypeBinding actualTypeBinding= typeArguments[0];
 						if (ORG_JUNIT_SUITE.equals(actualTypeBinding.getQualifiedName())) {
 							mh.value= ORG_JUNIT_RUNWITH;
-							dataholder.put(dataholder.size(), mh);
-							operations.add(fixcore.rewrite(dataholder));
+							dataHolder.put(dataHolder.size(), mh);
+							operations.add(fixcore.rewrite(dataHolder));
 						}
 						return false;
 					}
@@ -97,23 +97,23 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 
 	private boolean processFoundNodeSuite(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Annotation node,
-			ReferenceHolder<Integer, JunitHolder> dataholder) {
+			ReferenceHolder<Integer, JunitHolder> dataHolder) {
 		JunitHolder mh= new JunitHolder();
 		mh.minv= node;
 		mh.minvname= node.getTypeName().getFullyQualifiedName();
 		mh.value= ORG_JUNIT_SUITE_SUITECLASSES;
-		dataholder.put(dataholder.size(), mh);
-		operations.add(fixcore.rewrite(dataholder));
+		dataHolder.put(dataHolder.size(), mh);
+		operations.add(fixcore.rewrite(dataHolder));
 		return false;
 	}
 
 	@Override
 	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
-			JunitHolder mh) {
-		Annotation minv= mh.getAnnotation();
+			JunitHolder junitHolder) {
+		Annotation minv= junitHolder.getAnnotation();
 		Annotation newAnnotation= null;
 		SingleMemberAnnotation mynode= (SingleMemberAnnotation) minv;
-		if (ORG_JUNIT_SUITE_SUITECLASSES.equals(mh.value)) {
+		if (ORG_JUNIT_SUITE_SUITECLASSES.equals(junitHolder.value)) {
 			newAnnotation= ast.newSingleMemberAnnotation();
 			((SingleMemberAnnotation) newAnnotation)
 					.setValue(ASTNodes.createMoveTarget(rewriter, mynode.getValue()));

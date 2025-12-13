@@ -1067,7 +1067,7 @@ public abstract class AbstractTool<T> {
 	}
 
 	abstract void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
-			JunitHolder mh);
+			JunitHolder junitHolder);
 
 	private void processMethod(MethodDeclaration method, ASTRewrite rewriter, AST ast, TextEditGroup group,
 			ImportRewrite importRewriter, String methodname, String methodnamejunit5) {
@@ -1296,8 +1296,8 @@ public abstract class AbstractTool<T> {
 		ASTRewrite rewriter= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
 		ImportRewrite importRewriter= cuRewrite.getImportRewrite();
-		JunitHolder mh= hit.get(hit.size() - 1);
-		process2Rewrite(group, rewriter, ast, importRewriter, mh);
+		JunitHolder junitHolder= hit.get(hit.size() - 1);
+		process2Rewrite(group, rewriter, ast, importRewriter, junitHolder);
 		hit.remove(hit.size() - 1);
 	}
 

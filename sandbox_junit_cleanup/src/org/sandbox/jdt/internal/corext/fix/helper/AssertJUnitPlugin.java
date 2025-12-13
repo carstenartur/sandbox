@@ -61,35 +61,35 @@ public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataholder= new ReferenceHolder<>();
+		ReferenceHolder<Integer, JunitHolder> dataHolder= new ReferenceHolder<>();
 		allassertionmethods.forEach(assertionmethod -> {
-			HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSERT, assertionmethod, compilationUnit, dataholder,
+			HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSERT, assertionmethod, compilationUnit, dataHolder,
 					nodesprocessed, (visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 		});
 		allassertionmethods.forEach(assertionmethod -> {
 			HelperVisitor.callImportDeclarationVisitor(ORG_JUNIT_ASSERT + "." + assertionmethod, compilationUnit,
-					dataholder, nodesprocessed,
+					dataHolder, nodesprocessed,
 					(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 		});
-		HelperVisitor.callImportDeclarationVisitor(ORG_JUNIT_ASSERT, compilationUnit, dataholder, nodesprocessed,
+		HelperVisitor.callImportDeclarationVisitor(ORG_JUNIT_ASSERT, compilationUnit, dataHolder, nodesprocessed,
 				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, ASTNode node,
-			ReferenceHolder<Integer, JunitHolder> dataholder) {
+			ReferenceHolder<Integer, JunitHolder> dataHolder) {
 		JunitHolder mh= new JunitHolder();
 		mh.minv= node;
-		dataholder.put(dataholder.size(), mh);
-		operations.add(fixcore.rewrite(dataholder));
+		dataHolder.put(dataHolder.size(), mh);
+		operations.add(fixcore.rewrite(dataHolder));
 		return false;
 	}
 
 	@Override
 	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
-			JunitHolder mh) {
-		if (mh.minv instanceof MethodInvocation) {
-			MethodInvocation node= mh.getMethodInvocation();
+			JunitHolder junitHolder) {
+		if (junitHolder.minv instanceof MethodInvocation) {
+			MethodInvocation node= junitHolder.getMethodInvocation();
 			Expression assertexpression= node.getExpression();
 			if ("assertThat".equals(node.getName().getIdentifier()) &&
 					assertexpression instanceof SimpleName &&
@@ -115,7 +115,7 @@ public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 				}
 			}
 		} else {
-			changeImportDeclaration(mh.getImportDeclaration(), importRewriter, group);
+			changeImportDeclaration(junitHolder.getImportDeclaration(), importRewriter, group);
 		}
 	}
 	
