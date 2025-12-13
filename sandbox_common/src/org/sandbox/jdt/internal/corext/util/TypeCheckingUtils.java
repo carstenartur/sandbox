@@ -64,7 +64,7 @@ public final class TypeCheckingUtils {
 	 * @param supertype the interface type binding
 	 * @return true if the type implements the interface
 	 */
-	static boolean implementsInterface(ITypeBinding subtype, ITypeBinding supertype) {
+	public static boolean implementsInterface(ITypeBinding subtype, ITypeBinding supertype) {
 		for (ITypeBinding iface : subtype.getInterfaces()) {
 			if (iface.getQualifiedName().equals(supertype.getQualifiedName())
 					|| implementsInterface(iface, supertype)) {

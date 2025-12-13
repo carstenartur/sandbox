@@ -104,7 +104,7 @@ public final class ASTNavigationUtils {
 	 * @param fullyQualifiedTypeName the fully qualified type name
 	 * @return the TypeDeclaration if found, or null otherwise
 	 */
-	static TypeDeclaration findTypeDeclarationInCompilationUnit(CompilationUnit unit, String fullyQualifiedTypeName) {
+	public static TypeDeclaration findTypeDeclarationInCompilationUnit(CompilationUnit unit, String fullyQualifiedTypeName) {
 		for (Object obj : unit.types()) {
 			if (obj instanceof TypeDeclaration) {
 				TypeDeclaration typeDecl = (TypeDeclaration) obj;
@@ -124,7 +124,7 @@ public final class ASTNavigationUtils {
 	 * @param cu the compilation unit to search
 	 * @return the TypeDeclaration if found, or null otherwise
 	 */
-	static TypeDeclaration findTypeDeclarationInCompilationUnit(ITypeBinding typeBinding, CompilationUnit cu) {
+	public static TypeDeclaration findTypeDeclarationInCompilationUnit(ITypeBinding typeBinding, CompilationUnit cu) {
 		final TypeDeclaration[] result = { null };
 
 		cu.accept(new ASTVisitor() {
@@ -162,7 +162,7 @@ public final class ASTNavigationUtils {
 	 * @param typeBinding the type binding to find
 	 * @return the TypeDeclaration if found, or null otherwise
 	 */
-	static TypeDeclaration findTypeDeclarationInProject(ITypeBinding typeBinding) {
+	public static TypeDeclaration findTypeDeclarationInProject(ITypeBinding typeBinding) {
 		IType type = (IType) typeBinding.getJavaElement();
 		return type != null ? findTypeDeclaration(type.getJavaProject(), type.getFullyQualifiedName()) : null;
 	}
@@ -174,7 +174,7 @@ public final class ASTNavigationUtils {
 	 * @param qualifiedTypeName the qualified type name to find
 	 * @return the TypeDeclaration if found, or null otherwise
 	 */
-	static TypeDeclaration findTypeDeclarationInType(TypeDeclaration typeDecl, String qualifiedTypeName) {
+	public static TypeDeclaration findTypeDeclarationInType(TypeDeclaration typeDecl, String qualifiedTypeName) {
 		if (getQualifiedName(typeDecl).equals(qualifiedTypeName)) {
 			return typeDecl;
 		}
@@ -196,7 +196,7 @@ public final class ASTNavigationUtils {
 	 * @param cu the compilation unit to search first
 	 * @return the type declaration if found, or null otherwise
 	 */
-	static ASTNode findTypeDeclarationForBinding(ITypeBinding typeBinding, CompilationUnit cu) {
+	public static ASTNode findTypeDeclarationForBinding(ITypeBinding typeBinding, CompilationUnit cu) {
 		if (typeBinding == null)
 			return null;
 
@@ -210,7 +210,7 @@ public final class ASTNavigationUtils {
 	 * @param typeDecl the type declaration
 	 * @return the fully qualified name including package and nested class separators
 	 */
-	static String getQualifiedName(TypeDeclaration typeDecl) {
+	public static String getQualifiedName(TypeDeclaration typeDecl) {
 		StringBuilder qualifiedName = new StringBuilder(typeDecl.getName().getIdentifier());
 		ASTNode parent = typeDecl.getParent();
 
@@ -237,7 +237,7 @@ public final class ASTNavigationUtils {
 	 * @param iCompilationUnit the compilation unit to parse
 	 * @return the parsed CompilationUnit
 	 */
-	static CompilationUnit parseCompilationUnit(org.eclipse.jdt.core.ICompilationUnit iCompilationUnit) {
+	public static CompilationUnit parseCompilationUnit(org.eclipse.jdt.core.ICompilationUnit iCompilationUnit) {
 		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
 		parser.setKind(ASTParser.K_COMPILATION_UNIT);
 		parser.setSource(iCompilationUnit);

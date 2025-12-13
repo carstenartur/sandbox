@@ -61,7 +61,7 @@ public final class AnnotationUtils {
 	 * @param annotationClass the fully qualified annotation class name
 	 * @return true if the annotation is present
 	 */
-	static boolean hasAnnotation(List<?> modifiers, String annotationClass) {
+	public static boolean hasAnnotation(List<?> modifiers, String annotationClass) {
 		return modifiers.stream()
 				.filter(Annotation.class::isInstance)
 				.map(Annotation.class::cast)
@@ -99,7 +99,7 @@ public final class AnnotationUtils {
 	 * @param keyword the modifier keyword to check for
 	 * @return true if the modifier is present
 	 */
-	static boolean hasModifier(List<?> modifiers, Modifier.ModifierKeyword keyword) {
+	public static boolean hasModifier(List<?> modifiers, Modifier.ModifierKeyword keyword) {
 		return modifiers.stream()
 				.filter(Modifier.class::isInstance)
 				.map(Modifier.class::cast)

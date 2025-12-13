@@ -77,7 +77,7 @@ public final class NamingUtils {
 	 * @return a 5-character hexadecimal checksum
 	 * @throws RuntimeException if SHA-256 algorithm is not available (should never happen in standard JVM environments)
 	 */
-	static String generateChecksum(String input) {
+	public static String generateChecksum(String input) {
 		try {
 			MessageDigest md = MessageDigest.getInstance("SHA-256");
 			byte[] hashBytes = md.digest(input.getBytes(StandardCharsets.UTF_8));
@@ -155,7 +155,7 @@ public final class NamingUtils {
 	 * @param type the type to extract from
 	 * @return the type name, or null if not a recognized type
 	 */
-	static String extractTypeName(Type type) {
+	public static String extractTypeName(Type type) {
 		if (type instanceof QualifiedType) {
 			return extractQualifiedTypeName((QualifiedType) type);
 		} else if (type instanceof SimpleType) {
