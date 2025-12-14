@@ -161,23 +161,24 @@ public class Refactorer {
             pipeline.setName(ast.newSimpleName("stream"));
             
             // Chain each operation
-            for (ProspectiveOperation op : operations) {
+            String paramName = loopVarName; // Start with the loop variable name
+            for (int i = 0; i < operations.size(); i++) {
+                ProspectiveOperation op = operations.get(i);
                 MethodInvocation next = ast.newMethodInvocation();
                 next.setExpression(pipeline);
                 next.setName(ast.newSimpleName(op.getSuitableMethod()));
-                
-                // Get the variable name for this operation's parameter
-                String paramName = loopVarName; // Default to loop variable
-                if (op == operations.get(operations.size() - 1) && operations.size() > 1) {
-                    // Last operation in a chain - use the variable from the previous map
-                    paramName = getVariableNameFromPreviousOp(operations, operations.size() - 1);
-                }
-                
+
+                // Use the current paramName for this operation
                 List<Expression> args = op.getArguments(ast, paramName);
                 for (Expression arg : args) {
                     next.arguments().add(arg);
                 }
                 pipeline = next;
+
+                // Update paramName for the next operation, if any
+                if (i + 1 < operations.size()) {
+                    paramName = getVariableNameFromPreviousOp(operations, i + 1);
+                }
             }
         } else {
             // Simple forEach without stream()
