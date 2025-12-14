@@ -90,6 +90,82 @@ import org.sandbox.jdt.internal.corext.util.TypeCheckingUtils;
  */
 public abstract class AbstractTool<T> extends AbstractToolBase<T> {
 
+	// Re-expose JUnitConstants for backward compatibility with subclasses
+	// Annotation Names (simple names)
+	protected static final String ANNOTATION_AFTER_EACH = ANNOTATION_AFTER_EACH;
+	protected static final String ANNOTATION_BEFORE_EACH = ANNOTATION_BEFORE_EACH;
+	protected static final String ANNOTATION_AFTER_ALL = JUnitConstants.ANNOTATION_AFTER_ALL;
+	protected static final String ANNOTATION_BEFORE_ALL = JUnitConstants.ANNOTATION_BEFORE_ALL;
+	protected static final String ANNOTATION_DISABLED = JUnitConstants.ANNOTATION_DISABLED;
+	protected static final String ANNOTATION_TEST = JUnitConstants.ANNOTATION_TEST;
+	protected static final String ANNOTATION_SELECT_CLASSES = JUnitConstants.ANNOTATION_SELECT_CLASSES;
+	protected static final String ANNOTATION_SUITE = JUnitConstants.ANNOTATION_SUITE;
+
+	// Method Names
+	protected static final String METHOD_AFTER = METHOD_AFTER;
+	protected static final String METHOD_BEFORE = METHOD_BEFORE;
+
+	// Internal Class/Interface Names
+	protected static final String ASSERTIONS = JUnitConstants.ASSERTIONS;
+	protected static final String ASSUMPTIONS = JUnitConstants.ASSUMPTIONS;
+
+	// Fully Qualified References - JUnit 4
+	protected static final String ORG_JUNIT_AFTER = ORG_JUNIT_AFTER;
+	protected static final String ORG_JUNIT_BEFORE = ORG_JUNIT_BEFORE;
+	protected static final String ORG_JUNIT_AFTERCLASS = ORG_JUNIT_AFTERCLASS;
+	protected static final String ORG_JUNIT_BEFORECLASS = ORG_JUNIT_BEFORECLASS;
+	protected static final String ORG_JUNIT_RULE = ORG_JUNIT_RULE;
+	protected static final String ORG_JUNIT_CLASS_RULE = ORG_JUNIT_CLASS_RULE;
+	protected static final String ORG_JUNIT_RULES_TEMPORARY_FOLDER = ORG_JUNIT_RULES_TEMPORARY_FOLDER;
+	protected static final String ORG_JUNIT_RULES_TEST_NAME = ORG_JUNIT_RULES_TEST_NAME;
+	protected static final String ORG_JUNIT_RULES_EXTERNAL_RESOURCE = ORG_JUNIT_RULES_EXTERNAL_RESOURCE;
+	protected static final String ORG_JUNIT_RUNWITH = JUnitConstants.ORG_JUNIT_RUNWITH;
+	protected static final String ORG_JUNIT_SUITE = JUnitConstants.ORG_JUNIT_SUITE;
+	protected static final String ORG_JUNIT_SUITE_SUITECLASSES = JUnitConstants.ORG_JUNIT_SUITE_SUITECLASSES;
+	protected static final String ORG_JUNIT_TEST = JUnitConstants.ORG_JUNIT_TEST;
+	protected static final String ORG_JUNIT_IGNORE = JUnitConstants.ORG_JUNIT_IGNORE;
+	protected static final String ORG_JUNIT_ASSERT = JUnitConstants.ORG_JUNIT_ASSERT;
+	protected static final String ORG_JUNIT_ASSUME = JUnitConstants.ORG_JUNIT_ASSUME;
+	protected static final String ORG_JUNIT_FIX_METHOD_ORDER = JUnitConstants.ORG_JUNIT_FIX_METHOD_ORDER;
+
+	// Fully Qualified References - JUnit 5 / Jupiter
+	protected static final String ORG_JUNIT_JUPITER_API_AFTER_EACH = ORG_JUNIT_JUPITER_API_AFTER_EACH;
+	protected static final String ORG_JUNIT_JUPITER_API_AFTER_ALL = JUnitConstants.ORG_JUNIT_JUPITER_API_AFTER_ALL;
+	protected static final String ORG_JUNIT_JUPITER_API_BEFORE_ALL = JUnitConstants.ORG_JUNIT_JUPITER_API_BEFORE_ALL;
+	protected static final String ORG_JUNIT_JUPITER_API_BEFORE_EACH = ORG_JUNIT_JUPITER_API_BEFORE_EACH;
+	protected static final String ORG_JUNIT_JUPITER_API_ASSERTIONS = JUnitConstants.ORG_JUNIT_JUPITER_API_ASSERTIONS;
+	protected static final String ORG_JUNIT_JUPITER_DISABLED = JUnitConstants.ORG_JUNIT_JUPITER_DISABLED;
+	protected static final String ORG_JUNIT_JUPITER_API_IO_TEMP_DIR = JUnitConstants.ORG_JUNIT_JUPITER_API_IO_TEMP_DIR;
+	protected static final String ORG_JUNIT_JUPITER_API_TEST_INFO = ORG_JUNIT_JUPITER_API_TEST_INFO;
+	protected static final String ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH = ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH;
+	protected static final String ORG_JUNIT_JUPITER_TEST = JUnitConstants.ORG_JUNIT_JUPITER_TEST;
+	protected static final String ORG_JUNIT_JUPITER_API_ASSUMPTIONS = JUnitConstants.ORG_JUNIT_JUPITER_API_ASSUMPTIONS;
+
+	// Fully Qualified References - JUnit Platform
+	protected static final String ORG_JUNIT_JUPITER_SUITE = JUnitConstants.ORG_JUNIT_JUPITER_SUITE;
+	protected static final String ORG_JUNIT_PLATFORM_SUITE_API_SELECT_CLASSES = JUnitConstants.ORG_JUNIT_PLATFORM_SUITE_API_SELECT_CLASSES;
+
+	// Private constants used internally in AbstractTool
+	private static final String ANNOTATION_REGISTER_EXTENSION = JUnitConstants.ANNOTATION_REGISTER_EXTENSION;
+	private static final String ANNOTATION_EXTEND_WITH = JUnitConstants.ANNOTATION_EXTEND_WITH;
+	private static final String METHOD_AFTER_EACH = JUnitConstants.METHOD_AFTER_EACH;
+	private static final String METHOD_BEFORE_EACH = JUnitConstants.METHOD_BEFORE_EACH;
+	private static final String METHOD_AFTER_ALL = JUnitConstants.METHOD_AFTER_ALL;
+	private static final String METHOD_BEFORE_ALL = JUnitConstants.METHOD_BEFORE_ALL;
+	private static final String TEST_NAME = JUnitConstants.TEST_NAME;
+	private static final String VARIABLE_NAME_CONTEXT = JUnitConstants.VARIABLE_NAME_CONTEXT;
+	private static final String EXTENSION_CONTEXT = JUnitConstants.EXTENSION_CONTEXT;
+	private static final String ORG_JUNIT_JUPITER_API_EXTENSION_REGISTER_EXTENSION = JUnitConstants.ORG_JUNIT_JUPITER_API_EXTENSION_REGISTER_EXTENSION;
+	private static final String ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK = JUnitConstants.ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK;
+	private static final String ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK = JUnitConstants.ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK;
+	private static final String ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_ALL_CALLBACK = JUnitConstants.ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_ALL_CALLBACK;
+	private static final String ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_ALL_CALLBACK = JUnitConstants.ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_ALL_CALLBACK;
+	private static final String ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT = JUnitConstants.ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT;
+	private static final String AFTER_ALL_CALLBACK = JUnitConstants.AFTER_ALL_CALLBACK;
+	private static final String BEFORE_ALL_CALLBACK = JUnitConstants.BEFORE_ALL_CALLBACK;
+	private static final String AFTER_EACH_CALLBACK = JUnitConstants.AFTER_EACH_CALLBACK;
+	private static final String BEFORE_EACH_CALLBACK = JUnitConstants.BEFORE_EACH_CALLBACK;
+
 	// Assertion Method Names
 	protected static final Set<String> twoparam = Set.of("assertEquals", "assertNotEquals", "assertArrayEquals",
 			"assertSame", "assertNotSame", "assertThat");
@@ -113,12 +189,12 @@ public abstract class AbstractTool<T> extends AbstractToolBase<T> {
 			ImportRewrite importRewrite, TextEditGroup group) {
 		while (typeBinding != null) {
 			// Stop when we reach ExternalResource itself
-			if (JUnitConstants.ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(typeBinding.getQualifiedName())) {
+			if (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(typeBinding.getQualifiedName())) {
 				break;
 			}
 
 			// Process types that extend ExternalResource
-			if (isExternalResource(typeBinding, JUnitConstants.ORG_JUNIT_RULES_EXTERNAL_RESOURCE)) {
+			if (isExternalResource(typeBinding, ORG_JUNIT_RULES_EXTERNAL_RESOURCE)) {
 				TypeDeclaration typeDecl= ASTNavigationUtils.findTypeDeclarationInProject(typeBinding);
 				if (typeDecl != null) {
 					adaptTypeDeclaration(typeDecl, rewrite, ast, importRewrite, group);
@@ -174,12 +250,12 @@ public abstract class AbstractTool<T> extends AbstractToolBase<T> {
 		removeSuperclassType(typeDecl, rewriteToUse, group);
 		
 		// Update lifecycle methods: before() -> beforeEach(), after() -> afterEach()
-		updateLifecycleMethodsInClass(typeDecl, rewriteToUse, ast, group, importRewriteToUse, JUnitConstants.METHOD_BEFORE,
-				JUnitConstants.METHOD_AFTER, JUnitConstants.METHOD_BEFORE_EACH, JUnitConstants.METHOD_AFTER_EACH);
+		updateLifecycleMethodsInClass(typeDecl, rewriteToUse, ast, group, importRewriteToUse, METHOD_BEFORE,
+				METHOD_AFTER, METHOD_BEFORE_EACH, METHOD_AFTER_EACH);
 
 		// Add required JUnit 5 callback imports
-		importRewriteToUse.addImport(JUnitConstants.ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
-		importRewriteToUse.addImport(JUnitConstants.ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
+		importRewriteToUse.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
+		importRewriteToUse.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
 
 		// If we created a separate rewriter, commit the change
 		if (rewriteToUse != globalRewrite) {
@@ -242,7 +318,7 @@ public abstract class AbstractTool<T> extends AbstractToolBase<T> {
 		// Left side: this.testName
 		FieldAccess fieldAccess = ast.newFieldAccess();
 		fieldAccess.setExpression(ast.newThisExpression());
-		fieldAccess.setName(ast.newSimpleName(JUnitConstants.TEST_NAME));
+		fieldAccess.setName(ast.newSimpleName(TEST_NAME));
 		assignment.setLeftHandSide(fieldAccess);
 		
 		// Right side: testInfo.getDisplayName()
@@ -308,10 +384,10 @@ public abstract class AbstractTool<T> extends AbstractToolBase<T> {
 
 		// Check if context argument is already present
 		boolean hasContextArgument= argsRewrite.getRewrittenList().stream().anyMatch(
-				arg -> arg instanceof SimpleName && JUnitConstants.VARIABLE_NAME_CONTEXT.equals(((SimpleName) arg).getIdentifier()));
+				arg -> arg instanceof SimpleName && VARIABLE_NAME_CONTEXT.equals(((SimpleName) arg).getIdentifier()));
 
 		if (!hasContextArgument) {
-			argsRewrite.insertFirst(ast.newSimpleName(JUnitConstants.VARIABLE_NAME_CONTEXT), group);
+			argsRewrite.insertFirst(ast.newSimpleName(VARIABLE_NAME_CONTEXT), group);
 		}
 	}
 
@@ -335,7 +411,7 @@ public abstract class AbstractTool<T> extends AbstractToolBase<T> {
 		
 		// Create @ExtendWith(ClassName.class) annotation
 		SingleMemberAnnotation newAnnotation= ast.newSingleMemberAnnotation();
-		newAnnotation.setTypeName(ast.newName(JUnitConstants.ANNOTATION_EXTEND_WITH));
+		newAnnotation.setTypeName(ast.newName(ANNOTATION_EXTEND_WITH));
 		TypeLiteral newTypeLiteral= ast.newTypeLiteral();
 		newTypeLiteral.setType(ast.newSimpleType(ast.newSimpleName(className)));
 		newAnnotation.setValue(newTypeLiteral);
@@ -345,7 +421,7 @@ public abstract class AbstractTool<T> extends AbstractToolBase<T> {
 		modifierListRewrite.insertFirst(newAnnotation, group);
 		
 		// Add import for @ExtendWith
-		importRewriter.addImport(JUnitConstants.ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH);
+		importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH);
 	}
 
 	/**
@@ -411,18 +487,18 @@ public abstract class AbstractTool<T> extends AbstractToolBase<T> {
 	 */
 	private void addRegisterExtensionToField(FieldDeclaration field, ASTRewrite rewrite, AST ast,
 			ImportRewrite importRewrite, TextEditGroup group) {
-		boolean hasRegisterExtension = AnnotationUtils.hasAnnotationBySimpleName(field.modifiers(), JUnitConstants.ANNOTATION_REGISTER_EXTENSION);
+		boolean hasRegisterExtension = AnnotationUtils.hasAnnotationBySimpleName(field.modifiers(), ANNOTATION_REGISTER_EXTENSION);
 
 		ListRewrite listRewrite = rewrite.getListRewrite(field, FieldDeclaration.MODIFIERS2_PROPERTY);
 		boolean hasPendingRegisterExtension = listRewrite.getRewrittenList().stream()
 				.anyMatch(rewritten -> rewritten instanceof MarkerAnnotation && ((MarkerAnnotation) rewritten)
-						.getTypeName().getFullyQualifiedName().equals(JUnitConstants.ANNOTATION_REGISTER_EXTENSION));
+						.getTypeName().getFullyQualifiedName().equals(ANNOTATION_REGISTER_EXTENSION));
 
 		if (!hasRegisterExtension && !hasPendingRegisterExtension) {
 			MarkerAnnotation registerExtensionAnnotation = ast.newMarkerAnnotation();
-			registerExtensionAnnotation.setTypeName(ast.newName(JUnitConstants.ANNOTATION_REGISTER_EXTENSION));
+			registerExtensionAnnotation.setTypeName(ast.newName(ANNOTATION_REGISTER_EXTENSION));
 			listRewrite.insertFirst(registerExtensionAnnotation, group);
-			importRewrite.addImport(JUnitConstants.ORG_JUNIT_JUPITER_API_EXTENSION_REGISTER_EXTENSION);
+			importRewrite.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_REGISTER_EXTENSION);
 		}
 	}
 
@@ -437,7 +513,7 @@ public abstract class AbstractTool<T> extends AbstractToolBase<T> {
 	private void addTestNameField(TypeDeclaration parentClass, ASTRewrite rewriter, TextEditGroup group) {
 		AST ast= parentClass.getAST();
 		VariableDeclarationFragment fragment= ast.newVariableDeclarationFragment();
-		fragment.setName(ast.newSimpleName(JUnitConstants.TEST_NAME));
+		fragment.setName(ast.newSimpleName(TEST_NAME));
 
 		FieldDeclaration fieldDeclaration= ast.newFieldDeclaration(fragment);
 		fieldDeclaration.setType(ast.newSimpleType(ast.newName("String")));
@@ -501,7 +577,7 @@ public abstract class AbstractTool<T> extends AbstractToolBase<T> {
 		// Add the ExtensionContext (or similar) parameter
 		SingleVariableDeclaration param= ast.newSingleVariableDeclaration();
 		param.setType(ast.newSimpleType(ast.newName(paramType)));
-		param.setName(ast.newSimpleName(JUnitConstants.VARIABLE_NAME_CONTEXT));
+		param.setName(ast.newSimpleName(VARIABLE_NAME_CONTEXT));
 		method.parameters().add(param);
 
 		// Copy the body from the old method
@@ -539,11 +615,11 @@ public abstract class AbstractTool<T> extends AbstractToolBase<T> {
 
 		// Add JUnit 5 callback interfaces (before/after each or all depending on static)
 		nestedClass.superInterfaceTypes()
-				.add(ast.newSimpleType(ast.newName(JUnitConstants.ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK)));
+				.add(ast.newSimpleType(ast.newName(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK)));
 		nestedClass.superInterfaceTypes()
-				.add(ast.newSimpleType(ast.newName(JUnitConstants.ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK)));
-		importRewriter.addImport(JUnitConstants.ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
-		importRewriter.addImport(JUnitConstants.ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
+				.add(ast.newSimpleType(ast.newName(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK)));
+		importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
+		importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
 
 		// Transfer lifecycle methods from anonymous class to new class
 		ListRewrite bodyRewrite= rewriter.getListRewrite(nestedClass, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);
@@ -552,13 +628,13 @@ public abstract class AbstractTool<T> extends AbstractToolBase<T> {
 				MethodDeclaration method= (MethodDeclaration) decl;
 
 				// Convert before() -> beforeEach(ExtensionContext) and after() -> afterEach(ExtensionContext)
-				if (isLifecycleMethod(method, JUnitConstants.METHOD_BEFORE)) {
-					MethodDeclaration beforeEachMethod= createLifecycleCallbackMethod(ast, JUnitConstants.METHOD_BEFORE_EACH,
-							JUnitConstants.EXTENSION_CONTEXT, method.getBody(), group);
+				if (isLifecycleMethod(method, METHOD_BEFORE)) {
+					MethodDeclaration beforeEachMethod= createLifecycleCallbackMethod(ast, METHOD_BEFORE_EACH,
+							EXTENSION_CONTEXT, method.getBody(), group);
 					bodyRewrite.insertLast(beforeEachMethod, group);
-				} else if (isLifecycleMethod(method, JUnitConstants.METHOD_AFTER)) {
-					MethodDeclaration afterEachMethod= createLifecycleCallbackMethod(ast, JUnitConstants.METHOD_AFTER_EACH,
-							JUnitConstants.EXTENSION_CONTEXT, method.getBody(), group);
+				} else if (isLifecycleMethod(method, METHOD_AFTER)) {
+					MethodDeclaration afterEachMethod= createLifecycleCallbackMethod(ast, METHOD_AFTER_EACH,
+							EXTENSION_CONTEXT, method.getBody(), group);
 					bodyRewrite.insertLast(afterEachMethod, group);
 				}
 			}
@@ -589,9 +665,9 @@ public abstract class AbstractTool<T> extends AbstractToolBase<T> {
 	    removeExternalResourceSuperclass(classInstanceCreation, rewriter, importRewriter, group);
 	    
 	    // Add required JUnit 5 callback imports
-	    importRewriter.addImport(JUnitConstants.ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
-	    importRewriter.addImport(JUnitConstants.ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
-	    importRewriter.addImport(JUnitConstants.ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT);
+	    importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
+	    importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
+	    importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT);
 	}
 
 	/**
@@ -611,21 +687,21 @@ public abstract class AbstractTool<T> extends AbstractToolBase<T> {
 		// Check if ExtensionContext parameter already exists (in AST or pending rewrites)
 		boolean hasExtensionContext= method.parameters().stream()
 				.anyMatch(param -> param instanceof SingleVariableDeclaration && isExtensionContext(
-						(SingleVariableDeclaration) param, JUnitConstants.ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT))
+						(SingleVariableDeclaration) param, ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT))
 				|| rewrite.getListRewrite(method, MethodDeclaration.PARAMETERS_PROPERTY).getRewrittenList().stream()
 						.anyMatch(param -> param instanceof SingleVariableDeclaration
-								&& JUnitConstants.EXTENSION_CONTEXT.equals(((SingleVariableDeclaration) param).getType().toString()));
+								&& EXTENSION_CONTEXT.equals(((SingleVariableDeclaration) param).getType().toString()));
 
 		if (!hasExtensionContext) {
 			// Add ExtensionContext parameter
 			SingleVariableDeclaration newParam= ast.newSingleVariableDeclaration();
-			newParam.setType(ast.newSimpleType(ast.newName(JUnitConstants.EXTENSION_CONTEXT)));
-			newParam.setName(ast.newSimpleName(JUnitConstants.VARIABLE_NAME_CONTEXT));
+			newParam.setType(ast.newSimpleType(ast.newName(EXTENSION_CONTEXT)));
+			newParam.setName(ast.newSimpleName(VARIABLE_NAME_CONTEXT));
 			ListRewrite listRewrite= rewrite.getListRewrite(method, MethodDeclaration.PARAMETERS_PROPERTY);
 			listRewrite.insertLast(newParam, group);
 
 			// Add import for ExtensionContext
-			importRewrite.addImport(JUnitConstants.ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT);
+			importRewrite.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT);
 		}
 	}
 
@@ -833,7 +909,7 @@ public abstract class AbstractTool<T> extends AbstractToolBase<T> {
 	 * @return true if the type is exactly ExternalResource
 	 */
 	protected boolean isDirect(ITypeBinding fieldTypeBinding) {
-	    return JUnitConstants.ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(fieldTypeBinding.getQualifiedName());
+	    return ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(fieldTypeBinding.getQualifiedName());
 	}
 	
 	/**
@@ -844,7 +920,7 @@ public abstract class AbstractTool<T> extends AbstractToolBase<T> {
 	 */
 	protected boolean isDirectlyExtendingExternalResource(ITypeBinding binding) {
 	    ITypeBinding superclass = binding.getSuperclass();
-	    return superclass != null && JUnitConstants.ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(superclass.getQualifiedName());
+	    return superclass != null && ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(superclass.getQualifiedName());
 	}
 
 	private boolean isExtensionContext(SingleVariableDeclaration param, String className) {
@@ -964,9 +1040,9 @@ public abstract class AbstractTool<T> extends AbstractToolBase<T> {
 		}
 
 		updateLifecycleMethodsInClass(node, rewriter, ast, group, importRewriter, 
-				JUnitConstants.METHOD_BEFORE, JUnitConstants.METHOD_AFTER,
-				fieldStatic ? JUnitConstants.METHOD_BEFORE_ALL : JUnitConstants.METHOD_BEFORE_EACH,
-				fieldStatic ? JUnitConstants.METHOD_AFTER_ALL : JUnitConstants.METHOD_AFTER_EACH);
+				METHOD_BEFORE, METHOD_AFTER,
+				fieldStatic ? METHOD_BEFORE_ALL : METHOD_BEFORE_EACH,
+				fieldStatic ? METHOD_AFTER_ALL : METHOD_AFTER_EACH);
 	}
 
 	/**
@@ -982,12 +1058,12 @@ public abstract class AbstractTool<T> extends AbstractToolBase<T> {
 			TextEditGroup group, ImportRewrite importRewriter) {
 		String ruleAnnotation = null;
 		
-		if (AnnotationUtils.isAnnotatedWith(field, JUnitConstants.ORG_JUNIT_RULE) 
-				&& isExternalResource(field, JUnitConstants.ORG_JUNIT_RULES_EXTERNAL_RESOURCE)) {
-			ruleAnnotation = JUnitConstants.ORG_JUNIT_RULE;
-		} else if (AnnotationUtils.isAnnotatedWith(field, JUnitConstants.ORG_JUNIT_CLASS_RULE) 
-				&& isExternalResource(field, JUnitConstants.ORG_JUNIT_RULES_EXTERNAL_RESOURCE)) {
-			ruleAnnotation = JUnitConstants.ORG_JUNIT_CLASS_RULE;
+		if (AnnotationUtils.isAnnotatedWith(field, ORG_JUNIT_RULE) 
+				&& isExternalResource(field, ORG_JUNIT_RULES_EXTERNAL_RESOURCE)) {
+			ruleAnnotation = ORG_JUNIT_RULE;
+		} else if (AnnotationUtils.isAnnotatedWith(field, ORG_JUNIT_CLASS_RULE) 
+				&& isExternalResource(field, ORG_JUNIT_RULES_EXTERNAL_RESOURCE)) {
+			ruleAnnotation = ORG_JUNIT_CLASS_RULE;
 		}
 		
 		if (ruleAnnotation != null) {
@@ -1008,17 +1084,17 @@ public abstract class AbstractTool<T> extends AbstractToolBase<T> {
 	private CallbackConfig determineCallbackConfig(boolean fieldStatic) {
 		if (fieldStatic) {
 			return new CallbackConfig(
-					JUnitConstants.BEFORE_ALL_CALLBACK,
-					JUnitConstants.AFTER_ALL_CALLBACK,
-					JUnitConstants.ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_ALL_CALLBACK,
-					JUnitConstants.ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_ALL_CALLBACK
+					BEFORE_ALL_CALLBACK,
+					AFTER_ALL_CALLBACK,
+					ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_ALL_CALLBACK,
+					ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_ALL_CALLBACK
 			);
 		} else {
 			return new CallbackConfig(
-					JUnitConstants.BEFORE_EACH_CALLBACK,
-					JUnitConstants.AFTER_EACH_CALLBACK,
-					JUnitConstants.ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK,
-					JUnitConstants.ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK
+					BEFORE_EACH_CALLBACK,
+					AFTER_EACH_CALLBACK,
+					ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK,
+					ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK
 			);
 		}
 	}
@@ -1048,22 +1124,22 @@ public abstract class AbstractTool<T> extends AbstractToolBase<T> {
 
 	public void process(Annotation node, IJavaProject jproject, ASTRewrite rewrite, AST ast, TextEditGroup group,
 			ImportRewrite importRewriter, CompilationUnit cu, String className) {
-		if (!JUnitConstants.ORG_JUNIT_RULE.equals(node.resolveTypeBinding().getQualifiedName())) {
+		if (!ORG_JUNIT_RULE.equals(node.resolveTypeBinding().getQualifiedName())) {
 			return;
 		}
 		FieldDeclaration field= ASTNodes.getParent(node, FieldDeclaration.class);
 		ITypeBinding fieldTypeBinding= ((VariableDeclarationFragment) field.fragments().get(0)).resolveBinding()
 				.getType();
-		if (!isExternalResource(fieldTypeBinding, JUnitConstants.ORG_JUNIT_RULES_EXTERNAL_RESOURCE)
+		if (!isExternalResource(fieldTypeBinding, ORG_JUNIT_RULES_EXTERNAL_RESOURCE)
 				|| fieldTypeBinding.isAnonymous()) {
 			return;
 		}
 		if (isDirect(fieldTypeBinding)) {
 			rewrite.remove(field, group);
-			importRewriter.removeImport(JUnitConstants.ORG_JUNIT_RULE);
+			importRewriter.removeImport(ORG_JUNIT_RULE);
 		}
 		addExtendWithAnnotation(rewrite, ast, group, importRewriter, className, field);
-		importRewriter.removeImport(JUnitConstants.ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
+		importRewriter.removeImport(ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
 	}
 
 	/**
@@ -1152,10 +1228,10 @@ public abstract class AbstractTool<T> extends AbstractToolBase<T> {
 	    updateMethodReferences(parentClass, ast, rewriter, group);
 
 	    // Update imports
-	    importRewrite.addImport(JUnitConstants.ORG_JUNIT_JUPITER_API_TEST_INFO);
-	    importRewrite.addImport(JUnitConstants.ORG_JUNIT_JUPITER_API_BEFORE_EACH);
-	    importRewrite.removeImport(JUnitConstants.ORG_JUNIT_RULE);
-	    importRewrite.removeImport(JUnitConstants.ORG_JUNIT_RULES_TEST_NAME);
+	    importRewrite.addImport(ORG_JUNIT_JUPITER_API_TEST_INFO);
+	    importRewrite.addImport(ORG_JUNIT_JUPITER_API_BEFORE_EACH);
+	    importRewrite.removeImport(ORG_JUNIT_RULE);
+	    importRewrite.removeImport(ORG_JUNIT_RULES_TEST_NAME);
 	}
 
 	protected void refactorTestnameInClassAndSubclasses(TextEditGroup group, ASTRewrite rewriter, AST ast,
@@ -1197,7 +1273,7 @@ public abstract class AbstractTool<T> extends AbstractToolBase<T> {
 	    ImportRewrite importRewriteToUse = getImportRewrite(node, ast, importRewriter);
 
 	    rewriteToUse.remove(node.getSuperclassType(), group);
-	    importRewriteToUse.removeImport(JUnitConstants.ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
+	    importRewriteToUse.removeImport(ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
 
 	    ListRewrite listRewrite = rewriteToUse.getListRewrite(node, TypeDeclaration.SUPER_INTERFACE_TYPES_PROPERTY);
 	    addInterfaceCallback(listRewrite, ast, beforeCallback, group, importRewriteToUse, importBeforeCallback);
@@ -1213,7 +1289,7 @@ public abstract class AbstractTool<T> extends AbstractToolBase<T> {
 		// Check if the anonymous class inherits from ExternalResource
 		ITypeBinding typeBinding= anonymousClass.resolveTypeBinding();
 		if (typeBinding.getSuperclass() != null
-				&& JUnitConstants.ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(typeBinding.getSuperclass().getQualifiedName())) {
+				&& ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(typeBinding.getSuperclass().getQualifiedName())) {
 
 			// Remove the superclass by replacing the type in the ClassInstanceCreation
 			Type type= anonymousClass.getType();
@@ -1223,7 +1299,7 @@ public abstract class AbstractTool<T> extends AbstractToolBase<T> {
 			}
 
 			// Remove the import of the superclass
-			importRewriter.removeImport(JUnitConstants.ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
+			importRewriter.removeImport(ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
 		}
 	}
 	/**
@@ -1354,7 +1430,7 @@ public abstract class AbstractTool<T> extends AbstractToolBase<T> {
 				FieldDeclaration.class);
 		if (fieldDecl != null) {
 			// Remove the @Rule annotation
-			removeRuleAnnotation(fieldDecl, rewriter, group, importRewriter, JUnitConstants.ORG_JUNIT_RULE);
+			removeRuleAnnotation(fieldDecl, rewriter, group, importRewriter, ORG_JUNIT_RULE);
 
 			// Add the @RegisterExtension annotation
 			addRegisterExtensionAnnotation(fieldDecl, rewriter, ast, importRewriter, group);
@@ -1411,7 +1487,7 @@ public abstract class AbstractTool<T> extends AbstractToolBase<T> {
 
 	private boolean shouldProcessNode(TypeDeclaration node) {
 		ITypeBinding binding= node.resolveBinding();
-		return binding != null && isExternalResource(binding, JUnitConstants.ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
+		return binding != null && isExternalResource(binding, ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
 	}
 
 	private void updateLifecycleMethodsInClass(TypeDeclaration node, ASTRewrite globalRewrite, AST ast,
@@ -1448,9 +1524,9 @@ public abstract class AbstractTool<T> extends AbstractToolBase<T> {
 	            method.getBody().accept(new ASTVisitor() {
 	                @Override
 	                public boolean visit(MethodInvocation node) {
-	                    if (node.getExpression() != null && JUnitConstants.ORG_JUNIT_RULES_TEST_NAME
+	                    if (node.getExpression() != null && ORG_JUNIT_RULES_TEST_NAME
 	                            .equals(node.getExpression().resolveTypeBinding().getQualifiedName())) {
-	                        SimpleName newFieldAccess = ast.newSimpleName(JUnitConstants.TEST_NAME);
+	                        SimpleName newFieldAccess = ast.newSimpleName(TEST_NAME);
 	                        rewriter.replace(node, newFieldAccess, group);
 	                    }
 	                    return super.visit(node);
