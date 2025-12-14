@@ -199,8 +199,8 @@ public class ProspectiveOperation {
     public LambdaExpression createLambda(AST ast, String loopVarName) {
         LambdaExpression lambda = ast.newLambdaExpression();
         
-        // Create parameter using VariableDeclarationFragment (as per TODO common pitfalls)
-        VariableDeclarationFragment param = ast.newVariableDeclarationFragment();
+        // Create parameter using SingleVariableDeclaration (as per existing code pattern)
+        SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
         param.setName(ast.newSimpleName(loopVarName != null ? loopVarName : "item"));
         lambda.parameters().add(param);
         
@@ -211,12 +211,9 @@ public class ProspectiveOperation {
                     // For MAP: use expression directly for simple cases
                     lambda.setBody(ASTNode.copySubtree(ast, originalExpression));
                 } else if (originalStatement != null) {
-                    // For MAP with statement: create block with return
+                    // For MAP with statement: create block
                     org.eclipse.jdt.core.dom.Block block = ast.newBlock();
                     block.statements().add(ASTNode.copySubtree(ast, originalStatement));
-                    ReturnStatement returnStmt = ast.newReturnStatement();
-                    returnStmt.setExpression(ast.newSimpleName(loopVarName));
-                    block.statements().add(returnStmt);
                     lambda.setBody(block);
                 }
                 break;
@@ -280,7 +277,7 @@ public class ProspectiveOperation {
             case FILTER:
                 return "filter";
             case FOREACH:
-                return eager ? "forEach" : "forEachOrdered";
+                return eager ? "forEachOrdered" : "forEach";
             case REDUCE:
                 return "reduce";
             case ANYMATCH:
@@ -288,7 +285,7 @@ public class ProspectiveOperation {
             case NONEMATCH:
                 return "noneMatch";
             default:
-                return "unknown";
+                throw new IllegalStateException("Unknown operation type: " + operationType);
         }
     }
     

@@ -213,7 +213,7 @@ public class PreconditionsChecker {
         return (method != null) ? method.getBody() : null;
     }
     
-    /** Hilfsmethode: Findet das umgebende Statement für einen AST-Knoten. */
+    /** Helper method: Finds the enclosing statement for an AST node. */
     private Statement findEnclosingStatement(ASTNode node) {
         ASTNode current = node;
         while (current != null && !(current instanceof Statement)) {
