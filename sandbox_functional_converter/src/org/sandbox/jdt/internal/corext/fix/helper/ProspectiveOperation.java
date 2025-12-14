@@ -25,7 +25,6 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Expression;
-import org.eclipse.jdt.core.dom.ExpressionMethodReference;
 import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.NumberLiteral;
@@ -454,9 +453,11 @@ public class ProspectiveOperation {
         switch (reducerType) {
             case INCREMENT:
                 // Use Integer::sum to sum the mapped 1's for counting
+                // Note: Assumes Integer type. For Double/Long, this may need enhancement.
                 return createMethodReference(ast, "Integer", "sum");
             case SUM:
                 // Use Integer::sum method reference for sum += x
+                // Note: Assumes Integer type. For Double/Long, this may need enhancement.
                 return createMethodReference(ast, "Integer", "sum");
             case DECREMENT:
                 // For i--, we need a different approach since we subtract
@@ -508,8 +509,8 @@ public class ProspectiveOperation {
     }
     
     /**
-     * Creates a counting lambda like (accumulator, _item) -> accumulator + 1 or accumulator - 1.
-     * Used only for DECREMENT (i--) operations.
+     * Creates a lambda like (accumulator, _item) -> accumulator - _item.
+     * Used only for DECREMENT (i--, i -= 1) operations.
      */
     private LambdaExpression createCountingLambda(AST ast, InfixExpression.Operator operator) {
         LambdaExpression lambda = ast.newLambdaExpression();
@@ -522,7 +523,7 @@ public class ProspectiveOperation {
         lambda.parameters().add(param1);
         lambda.parameters().add(param2);
         
-        // Body: accumulator + 1 or accumulator - 1
+        // Body: accumulator - _item (where _item is mapped to 1)
         InfixExpression operationExpr = ast.newInfixExpression();
         operationExpr.setLeftOperand(ast.newSimpleName("accumulator"));
         operationExpr.setRightOperand(ast.newSimpleName("_item"));
@@ -802,7 +803,7 @@ public class ProspectiveOperation {
     
     public enum ReducerType {
         INCREMENT,      // i++, ++i
-        DECREMENT,      // i--, --i, i -= x
+        DECREMENT,      // i--, --i, i -= 1
         SUM,            // sum += x
         PRODUCT,        // product *= x
         STRING_CONCAT   // s += string
