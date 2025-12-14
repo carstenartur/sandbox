@@ -217,7 +217,7 @@ public final class LifecycleMethodAdapter {
 	 * @param ast the AST instance
 	 * @param methodName the callback method name (e.g., "beforeEach", "afterEach")
 	 * @param paramType the parameter type name (e.g., "ExtensionContext")
-	 * @param oldBody the body from the original lifecycle method (will be copied)
+	 * @param oldBody the body from the original lifecycle method (will be copied and cleaned)
 	 * @param group the text edit group
 	 * @return the new method declaration
 	 */
@@ -235,13 +235,41 @@ public final class LifecycleMethodAdapter {
 		param.setName(ast.newSimpleName(VARIABLE_NAME_CONTEXT));
 		method.parameters().add(param);
 
-		// Copy the body from the old method
+		// Copy the body from the old method and remove super calls to lifecycle methods
 		if (oldBody != null) {
 			Block newBody = (Block) ASTNode.copySubtree(ast, oldBody);
+			removeSuperLifecycleCalls(newBody);
 			method.setBody(newBody);
 		}
 
 		return method;
+	}
+
+	/**
+	 * Removes super calls to lifecycle methods (before/after) from a method body.
+	 * When converting ExternalResource to callback interfaces, super calls to lifecycle
+	 * methods should be removed as the callback interfaces don't have such super methods.
+	 * 
+	 * @param body the method body to clean
+	 */
+	private static void removeSuperLifecycleCalls(Block body) {
+		body.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(SuperMethodInvocation node) {
+				String methodName = node.getName().getIdentifier();
+				// Remove super calls to lifecycle methods
+				if (METHOD_BEFORE.equals(methodName) || METHOD_AFTER.equals(methodName) ||
+					METHOD_BEFORE_EACH.equals(methodName) || METHOD_AFTER_EACH.equals(methodName) ||
+					METHOD_BEFORE_ALL.equals(methodName) || METHOD_AFTER_ALL.equals(methodName)) {
+					// Replace the super call with an empty statement by removing it from parent
+					ASTNode parent = node.getParent();
+					if (parent != null) {
+						parent.delete();
+					}
+				}
+				return super.visit(node);
+			}
+		});
 	}
 
 	/**
