@@ -1184,7 +1184,7 @@ public class Java8CleanUpTest {
 	}
 
 	@ParameterizedTest
-	@EnumSource(value = UseFunctionalLoop.class, names = {"SIMPLECONVERT"})
+	@EnumSource(value = UseFunctionalLoop.class, names = {"SIMPLECONVERT", "CHAININGMAP"})
 	public void testSimpleForEachConversion(UseFunctionalLoop test) throws CoreException {
 		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("TestDemo.java", test.given, false, null);

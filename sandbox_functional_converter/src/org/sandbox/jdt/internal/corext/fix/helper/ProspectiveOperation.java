@@ -36,13 +36,40 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 
 public class ProspectiveOperation {
+    /**
+     * The original expression being analyzed or transformed.
+     * <p>
+     * This is set directly when the {@link ProspectiveOperation} is constructed with an {@link Expression}.
+     * If constructed with a {@link org.eclipse.jdt.core.dom.Statement}, this is set to the expression
+     * contained within the statement (if applicable, e.g., for {@link org.eclipse.jdt.core.dom.ExpressionStatement}).
+     */
     private Expression originalExpression;
+
+    /**
+     * The original statement being analyzed or transformed.
+     * <p>
+     * This is set when the {@link ProspectiveOperation} is constructed with a {@link org.eclipse.jdt.core.dom.Statement}.
+     * If the statement is an {@link org.eclipse.jdt.core.dom.ExpressionStatement}, its expression is also
+     * extracted and stored in {@link #originalExpression}.
+     * Otherwise, {@link #originalExpression} may be null.
+     */
+    private org.eclipse.jdt.core.dom.Statement originalStatement;
+
     private OperationType operationType;
     private Set<String> neededVariables = new HashSet<>();
     private Expression reducingVariable;
 
+    /**
+     * The name of the loop variable associated with this operation, if applicable.
+     * <p>
+     * This is set when the {@link ProspectiveOperation} is constructed with a statement and a loop variable name.
+     * It is used to track the variable iterated over in enhanced for-loops or similar constructs.
+     */
+    private String loopVariableName;
+
     // Sammelt alle verwendeten Variablen
     private void collectNeededVariables(Expression expression) {
+        if (expression == null) return;
         expression.accept(new ASTVisitor() {
             @Override
             public boolean visit(SimpleName node) {
@@ -51,10 +78,21 @@ public class ProspectiveOperation {
             }
         });
     }
+    
     public ProspectiveOperation(Expression expression, OperationType operationType) {
         this.originalExpression = expression;
         this.operationType = operationType;
         collectNeededVariables(expression);
+    }
+    
+    public ProspectiveOperation(org.eclipse.jdt.core.dom.Statement statement, OperationType operationType, String loopVarName) {
+        this.originalStatement = statement;
+        this.operationType = operationType;
+        this.loopVariableName = loopVarName;
+        if (statement instanceof org.eclipse.jdt.core.dom.ExpressionStatement) {
+            this.originalExpression = ((org.eclipse.jdt.core.dom.ExpressionStatement) statement).getExpression();
+            collectNeededVariables(this.originalExpression);
+        }
     }
 
     /** (1) Gibt den ursprünglichen Ausdruck zurück */
@@ -71,6 +109,70 @@ public class ProspectiveOperation {
     public String getStreamOperation() {
         return operationType == OperationType.MAP ? "map" :
                operationType == OperationType.REDUCE ? "reduce" : "unknown";
+    }
+    
+    /** Returns the suitable stream method name for this operation type */
+    public String getSuitableMethod() {
+        switch (operationType) {
+            case MAP:
+                return "map";
+            case FILTER:
+                return "filter";
+            case FOREACH:
+                return "forEachOrdered";
+            case REDUCE:
+                return "reduce";
+            case ANYMATCH:
+                return "anyMatch";
+            case NONEMATCH:
+                return "noneMatch";
+            default:
+                return "unknown";
+        }
+    }
+    
+    /**
+     * Generate the lambda arguments for this operation
+     * Based on NetBeans ProspectiveOperation.getArguments()
+     */
+    public List<Expression> getArguments(AST ast, String paramName) {
+        List<Expression> args = new ArrayList<>();
+        
+        if (operationType == OperationType.REDUCE) {
+            return getArgumentsForReducer(ast);
+        }
+        
+        // Create lambda expression for MAP, FILTER, FOREACH, ANYMATCH, NONEMATCH
+        LambdaExpression lambda = ast.newLambdaExpression();
+        
+        // Create parameter
+        VariableDeclarationFragment param = ast.newVariableDeclarationFragment();
+        param.setName(ast.newSimpleName(paramName != null ? paramName : "item"));
+        lambda.parameters().add(param);
+        
+        // Create lambda body based on operation type
+        if (operationType == OperationType.MAP && originalExpression != null) {
+            // For MAP: lambda body is the expression
+            lambda.setBody(ASTNode.copySubtree(ast, originalExpression));
+        } else if (operationType == OperationType.FOREACH && originalStatement != null) {
+            // For FOREACH: lambda body is the statement (as block)
+            if (originalStatement instanceof org.eclipse.jdt.core.dom.Block) {
+                lambda.setBody(ASTNode.copySubtree(ast, originalStatement));
+            } else {
+                org.eclipse.jdt.core.dom.Block block = ast.newBlock();
+                block.statements().add(ASTNode.copySubtree(ast, originalStatement));
+                lambda.setBody(block);
+            }
+        } else if (originalExpression != null) {
+            // Default: use expression as body
+            lambda.setBody(ASTNode.copySubtree(ast, originalExpression));
+        } else {
+            // Defensive: neither originalExpression nor originalStatement is available
+            throw new IllegalStateException("Cannot create lambda: both originalExpression and originalStatement are null for operationType " + operationType);
+        }
+        
+        args.add(lambda);
+        return args;
     }
 
     /** (4) Erstellt eine Lambda-Expression für Streams */
