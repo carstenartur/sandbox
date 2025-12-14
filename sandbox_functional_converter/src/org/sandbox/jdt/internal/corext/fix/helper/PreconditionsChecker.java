@@ -142,7 +142,7 @@ public class PreconditionsChecker {
             AstProcessorBuilder.with(new ReferenceHolder<String, Object>())
                 .processor()
                 .callAssignmentVisitor((node, h) -> {
-                    if (node.getLeftHandSide() instanceof SimpleName name) {
+                    if (((Assignment) node).getLeftHandSide() instanceof SimpleName name) {
                         if (name.getIdentifier().equals(varName)) {
                             modified[0] = true;
                         }
