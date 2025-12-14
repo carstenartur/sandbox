@@ -1188,7 +1188,10 @@ public class Java8CleanUpTest {
 		"SIMPLECONVERT", 
 		"CHAININGMAP", 
 		"ChainingFilterMapForEachConvert",
-		"SmoothLongerChaining"
+		"SmoothLongerChaining",
+		"MergingOperations",
+		"BeautificationWorks",
+		"BeautificationWorks2"
 	})
 	public void testSimpleForEachConversion(UseFunctionalLoop test) throws CoreException {
 		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null);
@@ -1197,9 +1200,16 @@ public class Java8CleanUpTest {
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
 	}
 
-	@Disabled
 	@ParameterizedTest
-	@EnumSource(UseFunctionalLoop.class)
+	@EnumSource(value = UseFunctionalLoop.class, names = {
+		"SIMPLECONVERT", 
+		"CHAININGMAP", 
+		"ChainingFilterMapForEachConvert",
+		"SmoothLongerChaining",
+		"MergingOperations",
+		"BeautificationWorks",
+		"BeautificationWorks2"
+	})
 	public void testExplicitEncodingParametrized(UseFunctionalLoop test) throws CoreException {
 		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("TestDemo.java", test.given, false, null);
