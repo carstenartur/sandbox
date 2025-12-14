@@ -454,16 +454,6 @@ public abstract class AbstractTool<T> {
 
 	/**
 	 * Adds a JUnit 5 callback interface to a type's super interface list if not already present.
-	 * 
-	 * @param listRewrite the list rewrite for the super interface types
-	 * @param ast the AST instance
-	 * @param callbackName the simple name of the callback interface
-	 * @param group the text edit group
-	 * @param importRewriter the import rewriter
-	 * @param classtoimport the fully qualified name of the callback interface to import
-	 */
-	/**
-	 * Adds a JUnit 5 callback interface to a type's super interface list if not already present.
 	 * Used when refactoring ExternalResource implementations to implement callback interfaces.
 	 * 
 	 * @param listRewrite the list rewrite for the super interface types
