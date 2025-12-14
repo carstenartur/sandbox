@@ -96,6 +96,8 @@ public class PreconditionsChecker {
      * - i++, i--, ++i, --i
      * - sum += x, product *= x, count -= 1
      * - Other compound assignments (|=, &=, etc.)
+     * 
+     * Note: If multiple reducers exist, only the first one is tracked.
      */
     public boolean isReducer() {
         return hasReducer;
@@ -104,6 +106,8 @@ public class PreconditionsChecker {
     /**
      * Returns the statement containing the reducer pattern.
      * Required by TODO section 2.
+     * 
+     * Note: If multiple reducers exist in the loop, this returns only the first one encountered.
      */
     public Statement getReducer() {
         return reducerStatement;

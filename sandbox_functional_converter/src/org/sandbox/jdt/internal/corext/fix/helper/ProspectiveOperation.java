@@ -201,7 +201,7 @@ public class ProspectiveOperation {
         
         // Create parameter using SingleVariableDeclaration (as per existing code pattern)
         SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
-        param.setName(ast.newSimpleName(loopVarName != null ? loopVarName : "item"));
+        param.setName(ast.newSimpleName(loopVarName != null ? loopVarName : "x"));
         lambda.parameters().add(param);
         
         // Create lambda body based on operation type
@@ -247,8 +247,8 @@ public class ProspectiveOperation {
                 break;
                 
             case REDUCE:
-                // For REDUCE: create accumulator lambda
-                // This is handled separately in getArgumentsForReducer
+                // For REDUCE: accumulator lambda is created separately
+                // This returns the accumulator function, not a mapping function
                 return createAccumulatorLambda(ast);
                 
             default:
