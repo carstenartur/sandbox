@@ -101,6 +101,56 @@ public class Test extends ArrayList<String> {
 		IProgressMonitor subProgressMonitor4= subMonitor.split(2);
 	}
 }
+"""), //$NON-NLS-1$
+		WithFlags(
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
+public class Test {
+	public void doWork(IProgressMonitor monitor) {
+		monitor.beginTask("Task", 100);
+		IProgressMonitor sub= new SubProgressMonitor(monitor, 50, SubProgressMonitor.SUPPRESS_SUBTASK_LABEL);
+	}
+}
+""", //$NON-NLS-1$
+"""
+package test;
+import static org.eclipse.core.runtime.SubMonitor.SUPPRESS_SUBTASK;
+
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
+public class Test {
+	public void doWork(IProgressMonitor monitor) {
+		SubMonitor subMonitor=SubMonitor.convert(monitor,"Task",100);
+		IProgressMonitor sub= subMonitor.split(50,SubProgressMonitor.SUPPRESS_SUBTASK_LABEL);
+	}
+}
+"""), //$NON-NLS-1$
+		UniqueVariableName(
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
+public class Test {
+	public void doWork(IProgressMonitor monitor) {
+		String subMonitor = "test";
+		monitor.beginTask("Task", 100);
+		IProgressMonitor sub= new SubProgressMonitor(monitor, 50);
+	}
+}
+""", //$NON-NLS-1$
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
+public class Test {
+	public void doWork(IProgressMonitor monitor) {
+		String subMonitor = "test";
+		SubMonitor subMonitor2=SubMonitor.convert(monitor,"Task",100);
+		IProgressMonitor sub= subMonitor2.split(50);
+	}
+}
 """); //$NON-NLS-1$
 
 		String given;
@@ -140,8 +190,30 @@ public class Test {
         }
     }
 }
-""") //$NON-NLS-1$
-		;
+"""), //$NON-NLS-1$
+		SubProgressMonitorWithoutBeginTask(
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
+public class Test {
+	public void doWork(IProgressMonitor monitor) {
+		IProgressMonitor sub= new SubProgressMonitor(monitor, 50);
+	}
+}
+"""), //$NON-NLS-1$
+		BeginTaskNotInExpressionStatement(
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+public class Test {
+	public void doWork(IProgressMonitor monitor) {
+		if (monitor.beginTask("Task", 100)) {
+			// This should not be transformed
+		}
+	}
+}
+"""); //$NON-NLS-1$
 
 		NOJFaceCleanupCases(String given) {
 			this.given=given;
