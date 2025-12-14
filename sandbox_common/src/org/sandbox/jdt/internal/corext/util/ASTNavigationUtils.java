@@ -46,10 +46,7 @@ public final class ASTNavigationUtils {
 	 * @return the containing CompilationUnit, or null if not found
 	 */
 	public static CompilationUnit findCompilationUnit(ASTNode node) {
-		while (node != null && !(node instanceof CompilationUnit)) {
-			node = node.getParent();
-		}
-		return (CompilationUnit) node;
+		return ASTNodes.getTypedAncestor(node, CompilationUnit.class);
 	}
 
 	/**
@@ -59,10 +56,7 @@ public final class ASTNavigationUtils {
 	 * @return the enclosing TypeDeclaration, or null if none found
 	 */
 	public static TypeDeclaration getParentTypeDeclaration(ASTNode node) {
-		while (node != null && !(node instanceof TypeDeclaration)) {
-			node = node.getParent();
-		}
-		return (TypeDeclaration) node;
+		return ASTNodes.getTypedAncestor(node, TypeDeclaration.class);
 	}
 
 	/**
@@ -222,8 +216,8 @@ public final class ASTNavigationUtils {
 		}
 
 		// Add package name
-		CompilationUnit compilationUnit = (CompilationUnit) typeDecl.getRoot();
-		if (compilationUnit.getPackage() != null) {
+		CompilationUnit compilationUnit = ASTNodes.getTypedAncestor(typeDecl, CompilationUnit.class);
+		if (compilationUnit != null && compilationUnit.getPackage() != null) {
 			String packageName = compilationUnit.getPackage().getName().getFullyQualifiedName();
 			qualifiedName.insert(0, packageName + "."); //$NON-NLS-1$
 		}
