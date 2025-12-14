@@ -187,16 +187,28 @@ public abstract class AbstractTool<T> {
 		return new ScopeAnalyzer(root).getUsedVariableNames(node.getStartPosition(), node.getLength());
 	}
 
+	/**
+	 * Adapts the superclass hierarchy for types extending ExternalResource.
+	 * Walks up the inheritance chain, transforming each type to use JUnit 5 extensions
+	 * until reaching ExternalResource itself.
+	 * 
+	 * @param typeBinding the type binding to start from
+	 * @param rewrite the AST rewriter
+	 * @param ast the AST instance
+	 * @param importRewrite the import rewriter
+	 * @param group the text edit group
+	 */
 	private void adaptExternalResourceHierarchy(ITypeBinding typeBinding, ASTRewrite rewrite, AST ast,
 			ImportRewrite importRewrite, TextEditGroup group) {
 		while (typeBinding != null) {
-			// Stop condition: Don't go further down if the current type is ExternalResource
+			// Stop when we reach ExternalResource itself
 			if (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(typeBinding.getQualifiedName())) {
 				break;
 			}
 
+			// Process types that extend ExternalResource
 			if (isExternalResource(typeBinding, ORG_JUNIT_RULES_EXTERNAL_RESOURCE)) {
-				TypeDeclaration typeDecl= findTypeDeclarationInProject(typeBinding);
+				TypeDeclaration typeDecl= ASTNavigationUtils.findTypeDeclarationInProject(typeBinding);
 				if (typeDecl != null) {
 					adaptTypeDeclaration(typeDecl, rewrite, ast, importRewrite, group);
 				}
@@ -206,6 +218,17 @@ public abstract class AbstractTool<T> {
 		}
 	}
 
+	/**
+	 * Renames super.before() and super.after() calls to match JUnit 5 lifecycle method names.
+	 * Also ensures that the ExtensionContext parameter is passed to super calls.
+	 * 
+	 * @param oldMethodName the old method name (e.g., "before")
+	 * @param newMethodName the new method name (e.g., "beforeEach")
+	 * @param method the method containing super calls to update
+	 * @param rewriter the AST rewriter
+	 * @param ast the AST instance
+	 * @param group the text edit group
+	 */
 	private void adaptSuperBeforeCalls(String oldMethodName, String newMethodName, MethodDeclaration method, ASTRewrite rewriter,
 			AST ast, TextEditGroup group) {
 		method.accept(new ASTVisitor() {
@@ -220,20 +243,36 @@ public abstract class AbstractTool<T> {
 		});
 	}
 
+	/**
+	 * Adapts a type declaration that extends ExternalResource to use JUnit 5 lifecycle callbacks.
+	 * Removes the ExternalResource superclass and updates lifecycle methods (before/after).
+	 * 
+	 * @param typeDecl the type declaration to adapt
+	 * @param globalRewrite the global AST rewriter (may be different from typeDecl's AST)
+	 * @param ast the AST instance
+	 * @param importRewrite the import rewriter
+	 * @param group the text edit group
+	 */
 	private void adaptTypeDeclaration(TypeDeclaration typeDecl, ASTRewrite globalRewrite, AST ast,
 			ImportRewrite importRewrite, TextEditGroup group) {
+		// Create separate rewriters if the type declaration is in a different compilation unit
 		ASTRewrite rewriteToUse = getASTRewrite(typeDecl, ast, globalRewrite);
 		ImportRewrite importRewriteToUse = getImportRewrite(typeDecl, ast, importRewrite);
 
+		// Remove ExternalResource superclass
 		removeSuperclassType(typeDecl, rewriteToUse, group);
+		
+		// Update lifecycle methods: before() -> beforeEach(), after() -> afterEach()
 		updateLifecycleMethodsInClass(typeDecl, rewriteToUse, ast, group, importRewriteToUse, METHOD_BEFORE,
 				METHOD_AFTER, METHOD_BEFORE_EACH, METHOD_AFTER_EACH);
 
+		// Add required JUnit 5 callback imports
 		importRewriteToUse.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
 		importRewriteToUse.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
 
+		// If we created a separate rewriter, commit the change
 		if (rewriteToUse != globalRewrite) {
-			createChangeForRewrite(findCompilationUnit(typeDecl), rewriteToUse);
+			createChangeForRewrite(ASTNavigationUtils.findCompilationUnit(typeDecl), rewriteToUse);
 		}
 	}
 
@@ -337,6 +376,15 @@ public abstract class AbstractTool<T> {
 		modifierRewrite.insertFirst(annotation, group);
 	}
 
+	/**
+	 * Adds the ExtensionContext parameter to method invocations if not already present.
+	 * Used when migrating JUnit 4 lifecycle methods to JUnit 5 callback interfaces.
+	 * 
+	 * @param node the method invocation node (MethodInvocation or SuperMethodInvocation)
+	 * @param rewriter the AST rewriter
+	 * @param ast the AST instance
+	 * @param group the text edit group
+	 */
 	private void addContextArgumentIfMissing(ASTNode node, ASTRewrite rewriter, AST ast, TextEditGroup group) {
 		ListRewrite argsRewrite;
 		if (node instanceof MethodInvocation) {
@@ -347,27 +395,45 @@ public abstract class AbstractTool<T> {
 			return; // Only supports MethodInvocation and SuperMethodInvocation
 		}
 
+		// Check if context argument is already present
 		boolean hasContextArgument= argsRewrite.getRewrittenList().stream().anyMatch(
-				arg -> arg instanceof SimpleName && ((SimpleName) arg).getIdentifier().equals(VARIABLE_NAME_CONTEXT));
+				arg -> arg instanceof SimpleName && VARIABLE_NAME_CONTEXT.equals(((SimpleName) arg).getIdentifier()));
 
 		if (!hasContextArgument) {
 			argsRewrite.insertFirst(ast.newSimpleName(VARIABLE_NAME_CONTEXT), group);
 		}
 	}
 
+	/**
+	 * Adds the @ExtendWith annotation to a class for JUnit 5 extension integration.
+	 * Used when migrating JUnit 4 @Rule fields to JUnit 5 @RegisterExtension.
+	 * 
+	 * @param rewrite the AST rewriter
+	 * @param ast the AST instance
+	 * @param group the text edit group
+	 * @param importRewriter the import rewriter
+	 * @param className the simple name of the extension class
+	 * @param field the field that triggered the need for this annotation
+	 */
 	protected void addExtendWithAnnotation(ASTRewrite rewrite, AST ast, TextEditGroup group,
 			ImportRewrite importRewriter, String className, FieldDeclaration field) {
 		TypeDeclaration parentClass= getParentTypeDeclaration(field);
 		if (parentClass == null) {
 			return;
 		}
+		
+		// Create @ExtendWith(ClassName.class) annotation
 		SingleMemberAnnotation newAnnotation= ast.newSingleMemberAnnotation();
 		newAnnotation.setTypeName(ast.newName(ANNOTATION_EXTEND_WITH));
-		final TypeLiteral newTypeLiteral= ast.newTypeLiteral();
+		TypeLiteral newTypeLiteral= ast.newTypeLiteral();
 		newTypeLiteral.setType(ast.newSimpleType(ast.newSimpleName(className)));
 		newAnnotation.setValue(newTypeLiteral);
+		
+		// Add annotation to class
 		ListRewrite modifierListRewrite= rewrite.getListRewrite(parentClass, TypeDeclaration.MODIFIERS2_PROPERTY);
 		modifierListRewrite.insertFirst(newAnnotation, group);
+		
+		// Add import for @ExtendWith
 		importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH);
 	}
 
@@ -396,8 +462,19 @@ public abstract class AbstractTool<T> {
 	 * @param importRewriter the import rewriter
 	 * @param classtoimport the fully qualified name of the callback interface to import
 	 */
+	/**
+	 * Adds a JUnit 5 callback interface to a type's super interface list if not already present.
+	 * Used when refactoring ExternalResource implementations to implement callback interfaces.
+	 * 
+	 * @param listRewrite the list rewrite for the super interface types
+	 * @param ast the AST instance
+	 * @param callbackName the simple name of the callback interface (e.g., "BeforeEachCallback")
+	 * @param group the text edit group
+	 * @param importRewriter the import rewriter
+	 * @param fullyQualifiedCallbackName the fully qualified name of the callback interface to import
+	 */
 	private void addInterfaceCallback(ListRewrite listRewrite, AST ast, String callbackName, TextEditGroup group,
-			ImportRewrite importRewriter, String classtoimport) {
+			ImportRewrite importRewriter, String fullyQualifiedCallbackName) {
 		// Check if the interface already exists in the list
 		boolean hasCallback= listRewrite.getRewrittenList().stream().anyMatch(type -> type instanceof SimpleType
 				&& ((SimpleType) type).getName().getFullyQualifiedName().equals(callbackName));
@@ -406,7 +483,7 @@ public abstract class AbstractTool<T> {
 			// Add interface if it doesn't already exist
 			listRewrite.insertLast(ast.newSimpleType(ast.newName(callbackName)), group);
 		}
-		importRewriter.addImport(classtoimport);
+		importRewriter.addImport(fullyQualifiedCallbackName);
 	}
 
 	/**
@@ -448,7 +525,7 @@ public abstract class AbstractTool<T> {
 	 */
 	private void addRegisterExtensionToField(FieldDeclaration field, ASTRewrite rewrite, AST ast,
 			ImportRewrite importRewrite, TextEditGroup group) {
-		boolean hasRegisterExtension = hasAnnotationByName(field.modifiers(), ANNOTATION_REGISTER_EXTENSION);
+		boolean hasRegisterExtension = AnnotationUtils.hasAnnotationBySimpleName(field.modifiers(), ANNOTATION_REGISTER_EXTENSION);
 
 		ListRewrite listRewrite = rewrite.getListRewrite(field, FieldDeclaration.MODIFIERS2_PROPERTY);
 		boolean hasPendingRegisterExtension = listRewrite.getRewrittenList().stream()
@@ -464,12 +541,13 @@ public abstract class AbstractTool<T> {
 	}
 
 	/**
-	 * Checks if the given modifiers list contains an annotation with the specified simple name.
+	 * Adds a private String field named 'testName' to the class.
+	 * Used when migrating JUnit 4 TestName rule to JUnit 5 TestInfo parameter.
+	 * 
+	 * @param parentClass the class to add the field to
+	 * @param rewriter the AST rewriter
+	 * @param group the text edit group
 	 */
-	private boolean hasAnnotationByName(List<?> modifiers, String annotationSimpleName) {
-	    return AnnotationUtils.hasAnnotationBySimpleName(modifiers, annotationSimpleName);
-	}
-
 	private void addTestNameField(TypeDeclaration parentClass, ASTRewrite rewriter, TextEditGroup group) {
 		AST ast= parentClass.getAST();
 		VariableDeclarationFragment fragment= ast.newVariableDeclarationFragment();
@@ -483,10 +561,14 @@ public abstract class AbstractTool<T> {
 		listRewrite.insertFirst(fieldDeclaration, group);
 	}
 
-	private String capitalizeFirstLetter(String input) {
-	    return NamingUtils.capitalizeFirstLetter(input);
-	}
-
+	/**
+	 * Creates a compilation unit change for the given AST rewrite.
+	 * Used when creating changes in separate compilation units during refactoring.
+	 * 
+	 * @param compilationUnit the compilation unit being modified
+	 * @param rewrite the AST rewrite to apply
+	 * @return the compilation unit change
+	 */
 	private CompilationUnitChange createChangeForRewrite(CompilationUnit compilationUnit, ASTRewrite rewrite) {
 		try {
 			// Access the IDocument of the CompilationUnit
@@ -511,6 +593,17 @@ public abstract class AbstractTool<T> {
 		}
 	}
 
+	/**
+	 * Creates a lifecycle callback method for JUnit 5 extension interfaces.
+	 * Used when converting ExternalResource before()/after() methods to callback methods.
+	 * 
+	 * @param ast the AST instance
+	 * @param methodName the callback method name (e.g., "beforeEach", "afterEach")
+	 * @param paramType the parameter type name (e.g., "ExtensionContext")
+	 * @param oldBody the body from the original lifecycle method (will be copied)
+	 * @param group the text edit group
+	 * @return the new method declaration
+	 */
 	private MethodDeclaration createLifecycleCallbackMethod(AST ast, String methodName, String paramType, Block oldBody,
 			TextEditGroup group) {
 
@@ -519,13 +612,13 @@ public abstract class AbstractTool<T> {
 		method.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.PUBLIC_KEYWORD));
 		method.setReturnType2(ast.newPrimitiveType(PrimitiveType.VOID));
 
-		// Add the ExtensionContext parameter
+		// Add the ExtensionContext (or similar) parameter
 		SingleVariableDeclaration param= ast.newSingleVariableDeclaration();
 		param.setType(ast.newSimpleType(ast.newName(paramType)));
-		param.setName(ast.newSimpleName("context"));
+		param.setName(ast.newSimpleName(VARIABLE_NAME_CONTEXT));
 		method.parameters().add(param);
 
-		// Copy the body of the old method
+		// Copy the body from the old method
 		if (oldBody != null) {
 			Block newBody= (Block) ASTNode.copySubtree(ast, oldBody);
 			method.setBody(newBody);
@@ -534,6 +627,20 @@ public abstract class AbstractTool<T> {
 		return method;
 	}
 
+	/**
+	 * Creates a nested class from an anonymous ExternalResource declaration.
+	 * Converts anonymous class lifecycle methods (before/after) to JUnit 5 callback methods
+	 * (beforeEach/afterEach) and implements the appropriate callback interfaces.
+	 * 
+	 * @param anonymousClass the anonymous class to convert
+	 * @param className the name for the new nested class
+	 * @param fieldStatic whether the field is static (affects which callbacks to implement)
+	 * @param rewriter the AST rewriter
+	 * @param ast the AST instance
+	 * @param importRewriter the import rewriter
+	 * @param group the text edit group
+	 * @return the newly created nested class declaration
+	 */
 	private TypeDeclaration createNestedClassFromAnonymous(AnonymousClassDeclaration anonymousClass, String className,
 			boolean fieldStatic, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter, TextEditGroup group) {
 
@@ -544,7 +651,7 @@ public abstract class AbstractTool<T> {
 			nestedClass.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.STATIC_KEYWORD));
 		}
 
-		// Add the interfaces
+		// Add JUnit 5 callback interfaces (before/after each or all depending on static)
 		nestedClass.superInterfaceTypes()
 				.add(ast.newSimpleType(ast.newName(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK)));
 		nestedClass.superInterfaceTypes()
@@ -552,27 +659,27 @@ public abstract class AbstractTool<T> {
 		importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
 		importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
 
-		// Transfer the body of the anonymous class to the new class
+		// Transfer lifecycle methods from anonymous class to new class
 		ListRewrite bodyRewrite= rewriter.getListRewrite(nestedClass, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);
 		for (Object decl : anonymousClass.bodyDeclarations()) {
 			if (decl instanceof MethodDeclaration) {
 				MethodDeclaration method= (MethodDeclaration) decl;
 
-				// Convert before() -> beforeEach() and after() -> afterEach()
+				// Convert before() -> beforeEach(ExtensionContext) and after() -> afterEach(ExtensionContext)
 				if (isLifecycleMethod(method, METHOD_BEFORE)) {
-					MethodDeclaration beforeEachMethod= createLifecycleCallbackMethod(ast, "beforeEach",
-							"ExtensionContext", method.getBody(), group);
+					MethodDeclaration beforeEachMethod= createLifecycleCallbackMethod(ast, METHOD_BEFORE_EACH,
+							EXTENSION_CONTEXT, method.getBody(), group);
 					bodyRewrite.insertLast(beforeEachMethod, group);
 				} else if (isLifecycleMethod(method, METHOD_AFTER)) {
-					MethodDeclaration afterEachMethod= createLifecycleCallbackMethod(ast, "afterEach",
-							"ExtensionContext", method.getBody(), group);
+					MethodDeclaration afterEachMethod= createLifecycleCallbackMethod(ast, METHOD_AFTER_EACH,
+							EXTENSION_CONTEXT, method.getBody(), group);
 					bodyRewrite.insertLast(afterEachMethod, group);
 				}
 			}
 		}
 
-		// Add the new class to the outer class
-		TypeDeclaration parentType= findEnclosingTypeDeclaration(anonymousClass);
+		// Add the new class to the enclosing type
+		TypeDeclaration parentType= ASTNavigationUtils.findEnclosingTypeDeclaration(anonymousClass);
 		if (parentType != null) {
 			ListRewrite enclosingBodyRewrite= rewriter.getListRewrite(parentType,
 					TypeDeclaration.BODY_DECLARATIONS_PROPERTY);
@@ -582,52 +689,63 @@ public abstract class AbstractTool<T> {
 		return nestedClass;
 	}
 
+	/**
+	 * Ensures that an anonymous ExternalResource class is properly rewritten for JUnit 5.
+	 * Removes the ExternalResource superclass and adds necessary JUnit 5 callback imports.
+	 * 
+	 * @param classInstanceCreation the class instance creation containing the anonymous class
+	 * @param rewriter the AST rewriter
+	 * @param importRewriter the import rewriter
+	 * @param group the text edit group
+	 */
 	private void ensureClassInstanceRewrite(ClassInstanceCreation classInstanceCreation, ASTRewrite rewriter,
 	                                        ImportRewrite importRewriter, TextEditGroup group) {
 	    removeExternalResourceSuperclass(classInstanceCreation, rewriter, importRewriter, group);
-	    ensureImport(importRewriter, ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
-	    ensureImport(importRewriter, ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
-	    ensureImport(importRewriter, ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT);
+	    
+	    // Add required JUnit 5 callback imports
+	    importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
+	    importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
+	    importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT);
 	}
 
+	/**
+	 * Ensures that a method declaration has an ExtensionContext parameter.
+	 * Adds the parameter if missing. Used when converting ExternalResource lifecycle
+	 * methods to JUnit 5 callback interface methods.
+	 * 
+	 * @param method the method declaration to check and update
+	 * @param rewrite the AST rewriter
+	 * @param ast the AST instance
+	 * @param group the text edit group
+	 * @param importRewrite the import rewriter
+	 */
 	private void ensureExtensionContextParameter(MethodDeclaration method, ASTRewrite rewrite, AST ast,
 			TextEditGroup group, ImportRewrite importRewrite) {
 
-		// Check if ExtensionContext already exists (in the AST or in the rewrite)
+		// Check if ExtensionContext parameter already exists (in AST or pending rewrites)
 		boolean hasExtensionContext= method.parameters().stream()
 				.anyMatch(param -> param instanceof SingleVariableDeclaration && isExtensionContext(
 						(SingleVariableDeclaration) param, ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT))
 				|| rewrite.getListRewrite(method, MethodDeclaration.PARAMETERS_PROPERTY).getRewrittenList().stream()
 						.anyMatch(param -> param instanceof SingleVariableDeclaration
-								&& ((SingleVariableDeclaration) param).getType().toString().equals(EXTENSION_CONTEXT));
+								&& EXTENSION_CONTEXT.equals(((SingleVariableDeclaration) param).getType().toString()));
 
 		if (!hasExtensionContext) {
-			// Add new parameter
+			// Add ExtensionContext parameter
 			SingleVariableDeclaration newParam= ast.newSingleVariableDeclaration();
 			newParam.setType(ast.newSimpleType(ast.newName(EXTENSION_CONTEXT)));
 			newParam.setName(ast.newSimpleName(VARIABLE_NAME_CONTEXT));
 			ListRewrite listRewrite= rewrite.getListRewrite(method, MethodDeclaration.PARAMETERS_PROPERTY);
 			listRewrite.insertLast(newParam, group);
 
-			// Add import
+			// Add import for ExtensionContext
 			importRewrite.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT);
 		}
 	}
 
-	private void ensureImport(ImportRewrite importRewriter, String importName) {
-	    if (importRewriter != null && importName != null) {
-	        importRewriter.addImport(importName);
-	    }
-	}
-
-	private void ensureRemoval(ImportRewrite importRewriter, String importName) {
-	    if (importRewriter != null && importName != null) {
-	        importRewriter.removeImport(importName);
-	    }
-	}
-
 	/**
 	 * Extracts the class name from a field declaration's initializer.
+	 * Delegates to {@link NamingUtils#extractClassNameFromField(FieldDeclaration)}.
 	 * 
 	 * @param field the field declaration to extract from
 	 * @return the class name, or null if not found
@@ -636,12 +754,9 @@ public abstract class AbstractTool<T> {
 	    return NamingUtils.extractClassNameFromField(field);
 	}
 
-	private String extractFieldName(FieldDeclaration fieldDeclaration) {
-	    return NamingUtils.extractFieldName(fieldDeclaration);
-	}
-
 	/**
 	 * Extracts the fully qualified type name from a QualifiedType AST node.
+	 * Delegates to {@link NamingUtils#extractQualifiedTypeName(QualifiedType)}.
 	 * 
 	 * @param qualifiedType the qualified type to extract from
 	 * @return the fully qualified class name
@@ -649,14 +764,6 @@ public abstract class AbstractTool<T> {
 	protected String extractQualifiedTypeName(QualifiedType qualifiedType) {
 	    return NamingUtils.extractQualifiedTypeName(qualifiedType);
 	}
-
-	/**
-	 * General method to extract a type's fully qualified name.
-	 */
-	private String extractTypeName(Type type) {
-	    return NamingUtils.extractTypeName(type);
-	}
-
 
 	/**
 	 * Finds JUnit migration opportunities in the compilation unit.
@@ -670,62 +777,13 @@ public abstract class AbstractTool<T> {
 	public abstract void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed);
 
-	private CompilationUnit findCompilationUnit(ASTNode node) {
-	    return ASTNavigationUtils.findCompilationUnit(node);
-	}
-
-	private TypeDeclaration findEnclosingTypeDeclaration(ASTNode node) {
-	    return ASTNavigationUtils.findEnclosingTypeDeclaration(node);
-	}
-
-	public TypeDeclaration findTypeDeclaration(IJavaProject javaProject, String fullyQualifiedTypeName) {
-	    return ASTNavigationUtils.findTypeDeclaration(javaProject, fullyQualifiedTypeName);
-	}
-
-	private ASTNode findTypeDeclarationForBinding(ITypeBinding typeBinding, CompilationUnit cu) {
-	    return ASTNavigationUtils.findTypeDeclarationForBinding(typeBinding, cu);
-	}
-
-	private TypeDeclaration findTypeDeclarationInCompilationUnit(CompilationUnit unit, String fullyQualifiedTypeName) {
-	    return ASTNavigationUtils.findTypeDeclarationInCompilationUnit(unit, fullyQualifiedTypeName);
-	}
-
-	private TypeDeclaration findTypeDeclarationInCompilationUnit(ITypeBinding typeBinding, CompilationUnit cu) {
-	    return ASTNavigationUtils.findTypeDeclarationInCompilationUnit(typeBinding, cu);
-	}
-
-	private TypeDeclaration findTypeDeclarationInProject(ITypeBinding typeBinding) {
-	    return ASTNavigationUtils.findTypeDeclarationInProject(typeBinding);
-	}
-
-	private TypeDeclaration findTypeDeclarationInType(TypeDeclaration typeDecl, String qualifiedTypeName) {
-	    return ASTNavigationUtils.findTypeDeclarationInType(typeDecl, qualifiedTypeName);
-	}
-
-
 	/**
-	 * Generates a short SHA-256 checksum for the given input.
+	 * Gets all direct and indirect subclasses of the given type.
+	 * Uses the JDT type hierarchy to discover subclasses in the project.
 	 * 
-	 * @param input the string to hash
-	 * @return a 5-character hexadecimal checksum
-	 * @throws RuntimeException if SHA-256 algorithm is not available (should never happen in standard JVM environments)
+	 * @param typeBinding the type binding to find subclasses for
+	 * @return list of type bindings for all subclasses
 	 */
-	private String generateChecksum(String input) {
-	    return NamingUtils.generateChecksum(input);
-	}
-
-	/**
-	 * Generates a unique nested class name based on the anonymous class content and field name.
-	 * Uses a checksum of the class code to ensure uniqueness.
-	 * 
-	 * @param anonymousClass the anonymous class declaration
-	 * @param baseName the base name from the field
-	 * @return a unique class name combining capitalized base name and checksum
-	 */
-	private String generateUniqueNestedClassName(AnonymousClassDeclaration anonymousClass, String baseName) {
-	    return NamingUtils.generateUniqueNestedClassName(anonymousClass, baseName);
-	}
-
 	private List<ITypeBinding> getAllSubclasses(ITypeBinding typeBinding) {
 		List<ITypeBinding> subclasses= new ArrayList<>();
 
@@ -788,7 +846,7 @@ public abstract class AbstractTool<T> {
 	}
 
 	private ImportRewrite getImportRewrite(ASTNode node, AST globalAST, ImportRewrite globalImportRewrite) {
-	    CompilationUnit compilationUnit = findCompilationUnit(node);
+	    CompilationUnit compilationUnit = ASTNavigationUtils.findCompilationUnit(node);
 	    return (node.getAST() == globalAST) ? globalImportRewrite : ImportRewrite.create(compilationUnit, true);
 	}
 
@@ -811,11 +869,25 @@ public abstract class AbstractTool<T> {
 	 */
 	public abstract String getPreview(boolean afterRefactoring);
 
-	// Helper method: Determines the fully qualified name of a TypeDeclaration
-	private String getQualifiedName(TypeDeclaration typeDecl) {
-	    return ASTNavigationUtils.getQualifiedName(typeDecl);
+	/**
+	 * Gets the parent TypeDeclaration for the given AST node.
+	 * Delegates to {@link ASTNavigationUtils#getParentTypeDeclaration(ASTNode)}.
+	 * 
+	 * @param node the AST node to start from
+	 * @return the enclosing TypeDeclaration, or null if none found
+	 */
+	protected TypeDeclaration getParentTypeDeclaration(ASTNode node) {
+	    return ASTNavigationUtils.getParentTypeDeclaration(node);
 	}
 
+	/**
+	 * Finds the type definition (TypeDeclaration or AnonymousClassDeclaration) for a field.
+	 * Checks the field's initializer and type binding to locate the definition.
+	 * 
+	 * @param fieldDeclaration the field declaration to analyze
+	 * @param cu the compilation unit containing the field
+	 * @return the type definition node, or null if not found
+	 */
 	protected ASTNode getTypeDefinitionForField(FieldDeclaration fieldDeclaration, CompilationUnit cu) {
 	    return (ASTNode) fieldDeclaration.fragments().stream()
 	            .filter(VariableDeclarationFragment.class::isInstance)
@@ -840,23 +912,26 @@ public abstract class AbstractTool<T> {
 
 	        // Check type binding
 	        ITypeBinding typeBinding = classInstanceCreation.resolveTypeBinding();
-	        return findTypeDeclarationForBinding(typeBinding, cu);
+	        return ASTNavigationUtils.findTypeDeclarationForBinding(typeBinding, cu);
 	    }
 
 	    // Check field type if no initialization is present
 	    IVariableBinding fieldBinding = fragment.resolveBinding();
 	    if (fieldBinding != null) {
 	        ITypeBinding fieldTypeBinding = fieldBinding.getType();
-	        return findTypeDeclarationForBinding(fieldTypeBinding, cu);
+	        return ASTNavigationUtils.findTypeDeclarationForBinding(fieldTypeBinding, cu);
 	    }
 
 	    return null; // No matching type definition found
 	}
 
-	private boolean hasAnnotation(List<?> modifiers, String annotationClass) {
-	    return AnnotationUtils.hasAnnotation(modifiers, annotationClass);
-	}
-
+	/**
+	 * Checks if a class has either a default constructor or no constructors at all.
+	 * Used to determine if ExternalResource subclasses can be easily migrated.
+	 * 
+	 * @param classNode the class to check
+	 * @return true if the class has a default constructor or no constructors
+	 */
 	protected boolean hasDefaultConstructorOrNoConstructor(TypeDeclaration classNode) {
 	    boolean hasConstructor = false;
 
@@ -873,18 +948,6 @@ public abstract class AbstractTool<T> {
 	        }
 	    }
 	    return !hasConstructor; // No constructor present
-	}
-
-	private boolean hasModifier(List<?> modifiers, Modifier.ModifierKeyword keyword) {
-	    return AnnotationUtils.hasModifier(modifiers, keyword);
-	}
-
-	private boolean implementsInterface(ITypeBinding subtype, ITypeBinding supertype) {
-	    return TypeCheckingUtils.implementsInterface(subtype, supertype);
-	}
-
-	private boolean isAnnotatedWithRule(BodyDeclaration declaration, String annotationClass) {
-	    return AnnotationUtils.isAnnotatedWith(declaration, annotationClass);
 	}
 
 	/**
@@ -1055,10 +1118,10 @@ public abstract class AbstractTool<T> {
 			TextEditGroup group, ImportRewrite importRewriter) {
 		String ruleAnnotation = null;
 		
-		if (isAnnotatedWithRule(field, ORG_JUNIT_RULE) 
+		if (AnnotationUtils.isAnnotatedWith(field, ORG_JUNIT_RULE) 
 				&& isExternalResource(field, ORG_JUNIT_RULES_EXTERNAL_RESOURCE)) {
 			ruleAnnotation = ORG_JUNIT_RULE;
-		} else if (isAnnotatedWithRule(field, ORG_JUNIT_CLASS_RULE) 
+		} else if (AnnotationUtils.isAnnotatedWith(field, ORG_JUNIT_CLASS_RULE) 
 				&& isExternalResource(field, ORG_JUNIT_RULES_EXTERNAL_RESOURCE)) {
 			ruleAnnotation = ORG_JUNIT_CLASS_RULE;
 		}
@@ -1187,8 +1250,8 @@ public abstract class AbstractTool<T> {
 	        ClassInstanceCreation classInstanceCreation = (ClassInstanceCreation) parent;
 	        ensureClassInstanceRewrite(classInstanceCreation, rewriter, importRewriter, group);
 
-	        String fieldName = extractFieldName(fieldDeclaration);
-	        String nestedClassName = generateUniqueNestedClassName(anonymousClass, fieldName);
+	        String fieldName = NamingUtils.extractFieldName(fieldDeclaration);
+	        String nestedClassName = NamingUtils.generateUniqueNestedClassName(anonymousClass, fieldName);
 	        TypeDeclaration nestedClass = createNestedClassFromAnonymous(anonymousClass, nestedClassName, fieldStatic,
 	                rewriter, ast, importRewriter, group);
 
@@ -1197,25 +1260,38 @@ public abstract class AbstractTool<T> {
 	    }
 	}
 
+	/**
+	 * Refactors TestName field usage in a class and optionally in its subclasses.
+	 * Replaces JUnit 4 @Rule TestName with a @BeforeEach method that captures test info.
+	 * 
+	 * @param group the text edit group
+	 * @param rewriter the AST rewriter
+	 * @param ast the AST instance
+	 * @param importRewrite the import rewriter
+	 * @param node the TestName field declaration to replace
+	 */
 	protected void refactorTestnameInClass(TextEditGroup group, ASTRewrite rewriter, AST ast,
 	                                       ImportRewrite importRewrite, FieldDeclaration node) {
 	    if (node == null || rewriter == null || ast == null || importRewrite == null) {
 	        return;
 	    }
 
+	    // Remove the old @Rule TestName field
 	    rewriter.remove(node, group);
 
+	    // Add new infrastructure: @BeforeEach init method and private String testName field
 	    TypeDeclaration parentClass = ASTNodes.getParent(node, TypeDeclaration.class);
 	    addBeforeEachInitMethod(parentClass, rewriter, group);
 	    addTestNameField(parentClass, rewriter, group);
 
-	    // Update methods
+	    // Update method references from testNameField.getMethodName() to just testName
 	    updateMethodReferences(parentClass, ast, rewriter, group);
 
-	    ensureImport(importRewrite, ORG_JUNIT_JUPITER_API_TEST_INFO);
-	    ensureImport(importRewrite, ORG_JUNIT_JUPITER_API_BEFORE_EACH);
-	    ensureRemoval(importRewrite, ORG_JUNIT_RULE);
-	    ensureRemoval(importRewrite, ORG_JUNIT_RULES_TEST_NAME);
+	    // Update imports
+	    importRewrite.addImport(ORG_JUNIT_JUPITER_API_TEST_INFO);
+	    importRewrite.addImport(ORG_JUNIT_JUPITER_API_BEFORE_EACH);
+	    importRewrite.removeImport(ORG_JUNIT_RULE);
+	    importRewrite.removeImport(ORG_JUNIT_RULES_TEST_NAME);
 	}
 
 	protected void refactorTestnameInClassAndSubclasses(TextEditGroup group, ASTRewrite rewriter, AST ast,
@@ -1232,7 +1308,7 @@ public abstract class AbstractTool<T> {
 	    for (ITypeBinding subclassBinding : subclasses) {
 	        IType subclassType = (IType) subclassBinding.getJavaElement();
 
-	        CompilationUnit subclassUnit = parseCompilationUnit(subclassType.getCompilationUnit());
+	        CompilationUnit subclassUnit = ASTNavigationUtils.parseCompilationUnit(subclassType.getCompilationUnit());
 	        subclassUnit.accept(new ASTVisitor() {
 	            @Override
 	            public boolean visit(TypeDeclaration subclassNode) {
@@ -1264,7 +1340,7 @@ public abstract class AbstractTool<T> {
 	    addInterfaceCallback(listRewrite, ast, afterCallback, group, importRewriteToUse, importAfterCallback);
 
 	    if (rewriteToUse != rewriter) {
-	        createChangeForRewrite(findCompilationUnit(node), rewriteToUse);
+	        createChangeForRewrite(ASTNavigationUtils.findCompilationUnit(node), rewriteToUse);
 	    }
 	}
 
