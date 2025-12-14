@@ -27,6 +27,7 @@ import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.osgi.framework.Bundle;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -115,8 +116,15 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 	 */
 	private static void logDebug(String message) {
 		if (isDebugEnabled()) {
-			ILog log = Platform.getLog(Platform.getBundle(BUNDLE_ID));
-			log.log(new Status(Status.INFO, BUNDLE_ID, "JFacePlugin: " + message)); //$NON-NLS-1$
+			try {
+				Bundle bundle = Platform.getBundle(BUNDLE_ID);
+				if (bundle != null) {
+					ILog log = Platform.getLog(bundle);
+					log.log(Status.info("JFacePlugin: " + message)); //$NON-NLS-1$
+				}
+			} catch (Exception e) {
+				// Silently ignore logging errors
+			}
 		}
 	}
 
