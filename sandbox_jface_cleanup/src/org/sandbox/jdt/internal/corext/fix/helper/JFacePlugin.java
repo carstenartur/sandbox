@@ -160,7 +160,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				if (node.arguments().size() != 2) {
 					return true;
 				}
-				logDebug("Found beginTask at position " + node.getStartPosition() + ": " + node); //$NON-NLS-1$ //$NON-NLS-2$
+				logDebug("Found beginTask at position " + node.getStartPosition() + " (type: " + node.getClass().getSimpleName() + ")"); //$NON-NLS-1$ //$NON-NLS-2$
 				
 				// Check if parent is ExpressionStatement, otherwise skip
 				if (!(node.getParent() instanceof ExpressionStatement)) {
