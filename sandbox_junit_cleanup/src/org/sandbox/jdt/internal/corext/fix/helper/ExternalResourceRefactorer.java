@@ -203,7 +203,7 @@ public final class ExternalResourceRefactorer {
 		ASTNode parent = anonymousClass.getParent();
 		if (parent instanceof ClassInstanceCreation) {
 			ClassInstanceCreation classInstanceCreation = (ClassInstanceCreation) parent;
-			ensureClassInstanceRewrite(classInstanceCreation, rewriter, importRewriter, group);
+			ensureClassInstanceRewrite(classInstanceCreation, rewriter, importRewriter, group, fieldStatic);
 
 			String fieldName = NamingUtils.extractFieldName(fieldDeclaration);
 			String nestedClassName = NamingUtils.generateUniqueNestedClassName(anonymousClass, fieldName);
@@ -263,15 +263,17 @@ public final class ExternalResourceRefactorer {
 			if (decl instanceof MethodDeclaration) {
 				MethodDeclaration method = (MethodDeclaration) decl;
 
-				// Convert before() -> beforeEach(ExtensionContext) and after() -> afterEach(ExtensionContext)
+				// Convert before() -> beforeEach/beforeAll(ExtensionContext) and after() -> afterEach/afterAll(ExtensionContext)
 				if (isLifecycleMethod(method, METHOD_BEFORE)) {
-					MethodDeclaration beforeEachMethod = LifecycleMethodAdapter.createLifecycleCallbackMethod(ast,
-							METHOD_BEFORE_EACH, EXTENSION_CONTEXT, method.getBody(), group);
-					bodyRewrite.insertLast(beforeEachMethod, group);
+					String beforeMethodName = fieldStatic ? METHOD_BEFORE_ALL : METHOD_BEFORE_EACH;
+					MethodDeclaration beforeCallbackMethod = LifecycleMethodAdapter.createLifecycleCallbackMethod(ast,
+							beforeMethodName, EXTENSION_CONTEXT, method.getBody(), group);
+					bodyRewrite.insertLast(beforeCallbackMethod, group);
 				} else if (isLifecycleMethod(method, METHOD_AFTER)) {
-					MethodDeclaration afterEachMethod = LifecycleMethodAdapter.createLifecycleCallbackMethod(ast,
-							METHOD_AFTER_EACH, EXTENSION_CONTEXT, method.getBody(), group);
-					bodyRewrite.insertLast(afterEachMethod, group);
+					String afterMethodName = fieldStatic ? METHOD_AFTER_ALL : METHOD_AFTER_EACH;
+					MethodDeclaration afterCallbackMethod = LifecycleMethodAdapter.createLifecycleCallbackMethod(ast,
+							afterMethodName, EXTENSION_CONTEXT, method.getBody(), group);
+					bodyRewrite.insertLast(afterCallbackMethod, group);
 				}
 			}
 		}
@@ -295,14 +297,20 @@ public final class ExternalResourceRefactorer {
 	 * @param rewriter the AST rewriter
 	 * @param importRewriter the import rewriter
 	 * @param group the text edit group
+	 * @param fieldStatic true if the field is static (use BeforeAll/AfterAll), false for instance (use BeforeEach/AfterEach)
 	 */
 	public static void ensureClassInstanceRewrite(ClassInstanceCreation classInstanceCreation, ASTRewrite rewriter,
-			ImportRewrite importRewriter, TextEditGroup group) {
+			ImportRewrite importRewriter, TextEditGroup group, boolean fieldStatic) {
 		removeExternalResourceSuperclass(classInstanceCreation, rewriter, importRewriter, group);
 
 		// Add required JUnit 5 callback imports
-		importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
-		importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
+		if (fieldStatic) {
+			importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_ALL_CALLBACK);
+			importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_ALL_CALLBACK);
+		} else {
+			importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
+			importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
+		}
 		importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT);
 	}
 

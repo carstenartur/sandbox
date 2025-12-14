@@ -50,9 +50,10 @@ import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 
+import static org.sandbox.jdt.internal.corext.fix.helper.JUnitConstants.*;
+
 /**
- *
- *
+ * Plugin to migrate JUnit 4 ExternalResource rules to JUnit 5 extensions.
  */
 public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 

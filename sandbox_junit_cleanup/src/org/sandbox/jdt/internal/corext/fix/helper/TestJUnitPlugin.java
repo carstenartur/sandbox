@@ -33,6 +33,8 @@ package org.sandbox.jdt.internal.corext.fix.helper;
  * #L%
  */
 
+import static org.sandbox.jdt.internal.corext.fix.helper.JUnitConstants.*;
+
 /**
  * Plugin to migrate JUnit 4 @Test annotations to JUnit 5 @Test.
  */
