@@ -486,10 +486,10 @@ public class ProspectiveOperation {
     private LambdaExpression createBinaryOperatorLambda(AST ast, InfixExpression.Operator operator) {
         LambdaExpression lambda = ast.newLambdaExpression();
         
-        // Parameters: (accumulator, _item)
-        VariableDeclarationFragment param1 = ast.newVariableDeclarationFragment();
+        // Parameters: (accumulator, _item) - use SingleVariableDeclaration for lambda parameters
+        SingleVariableDeclaration param1 = ast.newSingleVariableDeclaration();
         param1.setName(ast.newSimpleName("accumulator"));
-        VariableDeclarationFragment param2 = ast.newVariableDeclarationFragment();
+        SingleVariableDeclaration param2 = ast.newSingleVariableDeclaration();
         param2.setName(ast.newSimpleName("_item"));
         lambda.parameters().add(param1);
         lambda.parameters().add(param2);
