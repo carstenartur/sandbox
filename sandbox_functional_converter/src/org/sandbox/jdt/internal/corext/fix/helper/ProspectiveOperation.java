@@ -525,7 +525,7 @@ public class ProspectiveOperation {
         // Body: accumulator + 1 or accumulator - 1
         InfixExpression operationExpr = ast.newInfixExpression();
         operationExpr.setLeftOperand(ast.newSimpleName("accumulator"));
-        operationExpr.setRightOperand(ast.newNumberLiteral("1"));
+        operationExpr.setRightOperand(ast.newSimpleName("_item"));
         operationExpr.setOperator(operator);
         lambda.setBody(operationExpr);
         
