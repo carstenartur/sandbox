@@ -115,13 +115,8 @@ public class StreamPipelineBuilder {
             return null;
         }
         
-        if (operations.isEmpty()) {
-            return null;
-        }
-        
         // Check if we need .stream() or can use direct .forEach()
-        boolean needsStream = operations.size() > 1 || 
-                              operations.get(0).getOperationType() != ProspectiveOperation.OperationType.FOREACH;
+        boolean needsStream = requiresStreamPrefix();
         
         MethodInvocation pipeline;
         if (needsStream) {
@@ -322,5 +317,19 @@ public class StreamPipelineBuilder {
             }
         }
         return loopVarName;
+    }
+    
+    /**
+     * Determines whether the stream pipeline requires an explicit .stream() prefix.
+     * 
+     * <p>Returns false if the pipeline consists of a single FOREACH operation,
+     * which can be called directly on the collection. Returns true for all other cases,
+     * including multiple operations or non-FOREACH terminal operations.
+     * 
+     * @return true if .stream() is required, false if direct collection method can be used
+     */
+    private boolean requiresStreamPrefix() {
+        return operations.size() > 1 || 
+               operations.get(0).getOperationType() != ProspectiveOperation.OperationType.FOREACH;
     }
 }
