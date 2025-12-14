@@ -196,7 +196,21 @@ public class Refactorer {
     }
     
     /**
-     * Parse loop body into a list of ProspectiveOperations
+     * Analyzes the body of an enhanced for-loop and extracts a list of {@link ProspectiveOperation}
+     * objects representing the operations that can be mapped to stream operations.
+     * <p>
+     * This method inspects the statements within the loop body to identify possible
+     * stream operations such as {@code map} (for variable declarations with initializers)
+     * and {@code forEach} (for the final or sole statement). For block bodies, it processes
+     * each statement in order, treating variable declarations with initializers as {@code map}
+     * operations and the last statement as a {@code forEach} operation. For single-statement
+     * bodies, it treats the statement as a {@code forEach} operation.
+     *
+     * @param body the {@link Statement} representing the loop body; may be a {@link Block} or a single statement
+     * @param loopVarName the name of the loop variable currently in scope; may be updated if a map operation is found
+     * @return a list of {@link ProspectiveOperation} objects, in the order they should be applied,
+     *         representing the sequence of stream operations inferred from the loop body
+     * @see ProspectiveOperation
      */
     private List<ProspectiveOperation> parseLoopBody(Statement body, String loopVarName) {
         List<ProspectiveOperation> operations = new ArrayList<>();
