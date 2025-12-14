@@ -45,6 +45,7 @@ import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
@@ -1156,11 +1157,6 @@ public abstract class AbstractTool<T> {
 		}
 	}
 
-	// Use a method to create a CompilationUnit from an ICompilationUnit
-	private CompilationUnit parseCompilationUnit(ICompilationUnit iCompilationUnit) {
-	    return ASTNavigationUtils.parseCompilationUnit(iCompilationUnit);
-	}
-
 	public void process(Annotation node, IJavaProject jproject, ASTRewrite rewrite, AST ast, TextEditGroup group,
 			ImportRewrite importRewriter, CompilationUnit cu, String className) {
 		if (!ORG_JUNIT_RULE.equals(node.resolveTypeBinding().getQualifiedName())) {
@@ -1487,6 +1483,62 @@ public abstract class AbstractTool<T> {
 					rewriter.set(fragmentNode, VariableDeclarationFragment.INITIALIZER_PROPERTY, newInstance, group);
 				}
 			}
+		}
+	}
+
+	/**
+	 * Standard helper for processing found nodes in the common pattern.
+	 * Creates a JunitHolder, stores the node, adds it to the data holder,
+	 * and creates a rewrite operation.
+	 * 
+	 * @param fixcore the cleanup fix core
+	 * @param operations the set of operations to add to
+	 * @param node the AST node that was found
+	 * @param dataHolder the reference holder for storing data
+	 * @return false to continue visiting
+	 */
+	protected boolean addStandardRewriteOperation(JUnitCleanUpFixCore fixcore,
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, ASTNode node,
+			ReferenceHolder<Integer, JunitHolder> dataHolder) {
+		JunitHolder mh = new JunitHolder();
+		mh.minv = node;
+		dataHolder.put(dataHolder.size(), mh);
+		operations.add(fixcore.rewrite(dataHolder));
+		return false;
+	}
+
+	/**
+	 * Handles import declaration changes for migrating JUnit 4 to JUnit 5.
+	 * Supports both static and regular imports, including wildcard imports.
+	 * 
+	 * @param node the import declaration to change
+	 * @param importRewriter the import rewriter to use
+	 * @param sourceClass the JUnit 4 fully qualified class name (e.g., "org.junit.Assert")
+	 * @param targetClass the JUnit 5 fully qualified class name (e.g., "org.junit.jupiter.api.Assertions")
+	 */
+	protected void changeImportDeclaration(ImportDeclaration node, ImportRewrite importRewriter,
+			String sourceClass, String targetClass) {
+		String importName = node.getName().getFullyQualifiedName();
+		
+		// Handle static wildcard import (e.g., import static org.junit.Assert.*)
+		if (node.isStatic() && importName.equals(sourceClass)) {
+			importRewriter.removeStaticImport(sourceClass + ".*");
+			importRewriter.addStaticImport(targetClass, "*", false);
+			return;
+		}
+		
+		// Handle regular class import (e.g., import org.junit.Assert)
+		if (importName.equals(sourceClass)) {
+			importRewriter.removeImport(sourceClass);
+			importRewriter.addImport(targetClass);
+			return;
+		}
+		
+		// Handle static method import (e.g., import static org.junit.Assert.assertEquals)
+		if (node.isStatic() && importName.startsWith(sourceClass + ".")) {
+			String methodName = importName.substring((sourceClass + ".").length());
+			importRewriter.removeStaticImport(sourceClass + "." + methodName);
+			importRewriter.addStaticImport(targetClass, methodName, false);
 		}
 	}
 

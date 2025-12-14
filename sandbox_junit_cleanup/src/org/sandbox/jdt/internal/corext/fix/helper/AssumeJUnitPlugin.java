@@ -85,11 +85,7 @@ public class AssumeJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, ASTNode node,
 			ReferenceHolder<Integer, JunitHolder> dataHolder) {
-		JunitHolder mh= new JunitHolder();
-		mh.minv= node;
-		dataHolder.put(dataHolder.size(), mh);
-		operations.add(fixcore.rewrite(dataHolder));
-		return false;
+		return addStandardRewriteOperation(fixcore, operations, node, dataHolder);
 	}
 	
 	@Override
@@ -119,29 +115,27 @@ public class AssumeJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 		}
 	}
 
-	// Helper-Methode, um zu prüfen, ob `assumeThat` zu `org.junit.Assume` gehört
+	/**
+	 * Checks if the assumeThat method belongs to org.junit.Assume.
+	 * 
+	 * @param node the method invocation to check
+	 * @return true if the method is from org.junit.Assume
+	 */
 	private boolean isJUnitAssume(MethodInvocation node) {
 		IMethodBinding binding = node.resolveMethodBinding();
 		return binding != null && ORG_JUNIT_ASSUME.equals(binding.getDeclaringClass().getQualifiedName());
 	}
 
+	/**
+	 * Changes import declarations for JUnit 4 Assume to JUnit 5 Assumptions.
+	 * Delegates to base class implementation.
+	 * 
+	 * @param node the import declaration to change
+	 * @param importRewriter the import rewriter to use
+	 * @param group text edit group (unused - import rewrites are tracked separately)
+	 */
 	public void changeImportDeclaration(ImportDeclaration node, ImportRewrite importRewriter, TextEditGroup group) {
-		String importName= node.getName().getFullyQualifiedName();
-		if (node.isStatic() && importName.equals(ORG_JUNIT_ASSUME)) {
-			importRewriter.removeStaticImport(ORG_JUNIT_ASSUME + ".*");
-			importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSUMPTIONS, "*", false);
-			return;
-		}
-		if (importName.equals(ORG_JUNIT_ASSUME)) {
-			importRewriter.removeImport(ORG_JUNIT_ASSUME);
-			importRewriter.addImport(ORG_JUNIT_JUPITER_API_ASSUMPTIONS);
-			return;
-		}
-		if (node.isStatic() && importName.startsWith(ORG_JUNIT_ASSUME + ".")) {
-			String methodName= importName.substring((ORG_JUNIT_ASSUME + ".").length());
-			importRewriter.removeStaticImport(ORG_JUNIT_ASSUME + "." + methodName);
-			importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSUMPTIONS, methodName, false);
-		}
+		changeImportDeclaration(node, importRewriter, ORG_JUNIT_ASSUME, ORG_JUNIT_JUPITER_API_ASSUMPTIONS);
 	}
 
 	@Override

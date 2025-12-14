@@ -78,11 +78,7 @@ public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, ASTNode node,
 			ReferenceHolder<Integer, JunitHolder> dataHolder) {
-		JunitHolder mh= new JunitHolder();
-		mh.minv= node;
-		dataHolder.put(dataHolder.size(), mh);
-		operations.add(fixcore.rewrite(dataHolder));
-		return false;
+		return addStandardRewriteOperation(fixcore, operations, node, dataHolder);
 	}
 
 	@Override
@@ -119,23 +115,16 @@ public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 		}
 	}
 	
+	/**
+	 * Changes import declarations for JUnit 4 Assert to JUnit 5 Assertions.
+	 * Delegates to base class implementation.
+	 * 
+	 * @param node the import declaration to change
+	 * @param importRewriter the import rewriter to use
+	 * @param group text edit group (unused - import rewrites are tracked separately)
+	 */
 	public void changeImportDeclaration(ImportDeclaration node, ImportRewrite importRewriter, TextEditGroup group) {
-		String importName= node.getName().getFullyQualifiedName();
-		if (node.isStatic() && importName.equals(ORG_JUNIT_ASSERT)) {
-			importRewriter.removeStaticImport(ORG_JUNIT_ASSERT + ".*");
-			importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, "*", false);
-			return;
-		}
-		if (importName.equals(ORG_JUNIT_ASSERT)) {
-			importRewriter.removeImport(ORG_JUNIT_ASSERT);
-			importRewriter.addImport(ORG_JUNIT_JUPITER_API_ASSERTIONS);
-			return;
-		}
-		if (node.isStatic() && importName.startsWith(ORG_JUNIT_ASSERT + ".")) {
-			String methodName= importName.substring((ORG_JUNIT_ASSERT + ".").length());
-			importRewriter.removeStaticImport(ORG_JUNIT_ASSERT + "." + methodName);
-			importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, methodName, false);
-		}
+		changeImportDeclaration(node, importRewriter, ORG_JUNIT_ASSERT, ORG_JUNIT_JUPITER_API_ASSERTIONS);
 	}
 
 	@Override
