@@ -58,9 +58,10 @@ import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 
+import static org.sandbox.jdt.internal.corext.fix.helper.JUnitConstants.*;
+
 /**
- *
- *
+ * Plugin to migrate JUnit 3 TestCase classes to JUnit 5.
  */
 public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
@@ -179,7 +180,7 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 	                if ("junit.framework.Assert".equals(fullyQualifiedName) || "junit.framework.Assume".equals(fullyQualifiedName)) {
 //	                    correctAssertionOrder(node, rewriter, ast, group);
 
-	                    reorderParameters(node, rewriter, group, oneparam, twoparam);
+	                    reorderParameters(node, rewriter, group, ONEPARAM_ASSERTIONS, TWOPARAM_ASSERTIONS);
 //	    				SimpleName newQualifier= ast.newSimpleName(ASSERTIONS);
 //	    				Expression expression= assertexpression;
 //	    				if (expression != null) {

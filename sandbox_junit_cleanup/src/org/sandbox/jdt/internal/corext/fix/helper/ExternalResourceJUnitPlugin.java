@@ -92,7 +92,8 @@ public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<In
 		if (!isDirectlyExtendingExternalResource(node.resolveBinding())) {
 			boolean hasLifecycleMethod = false;
 			for (MethodDeclaration method : node.getMethods()) {
-				if (isLifecycleMethod(method, METHOD_BEFORE) || isLifecycleMethod(method, METHOD_AFTER)) {
+				String methodName = method.getName().getIdentifier();
+				if (METHOD_BEFORE.equals(methodName) || METHOD_AFTER.equals(methodName)) {
 					hasLifecycleMethod = true;
 					break;
 				}
