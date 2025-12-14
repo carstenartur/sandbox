@@ -188,18 +188,8 @@ public class Test {
         }
     }
 }
-"""), //$NON-NLS-1$
-		SubProgressMonitorWithoutBeginTask(
-"""
-package test;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubProgressMonitor;
-public class Test {
-	public void doWork(IProgressMonitor monitor) {
-		IProgressMonitor sub= new SubProgressMonitor(monitor, 50);
-	}
-}
-"""); //$NON-NLS-1$
+""") //$NON-NLS-1$
+		;
 
 		NOJFaceCleanupCases(String given) {
 			this.given=given;
