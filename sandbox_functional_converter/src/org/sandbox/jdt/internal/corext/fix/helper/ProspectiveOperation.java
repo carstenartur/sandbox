@@ -104,6 +104,15 @@ public class ProspectiveOperation {
         collectNeededVariables(expression);
     }
     
+    /**
+     * Constructor for operations with a statement.
+     * 
+     * @param statement the statement to process
+     * @param operationType the type of operation (MAP, FOREACH, etc.)
+     * @param loopVarName the loop variable name; for side-effect MAP operations, this represents
+     *                    the variable to be returned in the lambda body (may be the current variable
+     *                    name in the pipeline, not necessarily the original loop variable)
+     */
     public ProspectiveOperation(org.eclipse.jdt.core.dom.Statement statement, OperationType operationType, String loopVarName) {
         this.originalStatement = statement;
         this.operationType = operationType;
