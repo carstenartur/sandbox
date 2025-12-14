@@ -100,8 +100,6 @@ public class StringGetBytesExplicitEncoding extends AbstractExplicitEncoding<Met
 			} catch (CoreException e) {
 				JavaManipulationPlugin.log(e); // should never happen
 			}
-//			listRewrite.replace(nodedata.visited, callToCharsetDefaultCharset, group);
-//			removeNLSComment(cuRewrite, visited, group);
 		} else {
 			listRewrite.insertLast(callToCharsetDefaultCharset, group);
 		}

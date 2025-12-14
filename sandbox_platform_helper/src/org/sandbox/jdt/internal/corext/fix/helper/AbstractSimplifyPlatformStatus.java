@@ -15,7 +15,6 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.List;
 import java.util.Set;
-//import java.util.function.BiPredicate;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Status;
@@ -75,11 +74,7 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 		try {
 			ReferenceHolder<ASTNode, Object> dataholder= new ReferenceHolder<>();
 			HelperVisitor.callClassInstanceCreationVisitor(Status.class, compilationUnit, dataholder, nodesprocessed, (visited, holder) -> {
-				if (nodesprocessed.contains(visited) || 
-//						(visited.arguments().size() != 3)&&
-//						(visited.arguments().size() != 4)&&
-						(visited.arguments().size() != 5)
-						) {
+				if (nodesprocessed.contains(visited) || visited.arguments().size() != 5) {
 					return false;
 				}
 				/**
@@ -99,9 +94,7 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 				if (!"IStatus.OK".equals(argstring3.toString())) { //$NON-NLS-1$
 					return false;
 				}
-//				QualifiedName argstring5 = (QualifiedName) arguments.get(4);
 				QualifiedName argstring1 = (QualifiedName) arguments.get(0);
-//				String mybinding= argstring1.getFullyQualifiedName();
 				if (istatus.equals(argstring1.toString())) {
 					operations.add(fixcore.rewrite(visited,holder));
 					nodesprocessed.add(visited);
@@ -129,7 +122,6 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 		staticCall.setName(ast.newSimpleName(methodname));
 		List<ASTNode> arguments= visited.arguments();
 		List<ASTNode> staticCallArguments= staticCall.arguments();
-//		int positionmessage= arguments.size() == 5 ? 3 : 2;
 		int positionmessage= 3;
 		staticCallArguments.add(ASTNodes.createMoveTarget(rewrite,
 				ASTNodes.getUnparenthesedExpression(arguments.get(positionmessage))));
@@ -145,20 +137,12 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 			}
 			break;
 		case 4:
-//			return;
-//			ASTNode node= arguments.get(3);
-//			if (!node.toString().equals("null")) { //$NON-NLS-1$
-//				staticCallArguments.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(node)));
-//			}
 			break;
 		case 3:
-//			return;
 		default:
 			break;
 		}
 		ASTNodes.replaceButKeepComment(rewrite, visited, staticCall, group);
-//		QualifiedName stat= (QualifiedName) arguments.get(0);
-//		importRemover.removeImport(IStatus.class.getCanonicalName());
 		remover.registerRemovedNode(visited);
 		remover.applyRemoves(importRewrite);
 	}

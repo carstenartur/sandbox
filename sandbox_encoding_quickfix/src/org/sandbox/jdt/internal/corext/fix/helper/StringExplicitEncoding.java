@@ -120,7 +120,6 @@ public class StringExplicitEncoding extends AbstractExplicitEncoding<ClassInstan
 			} catch (CoreException e) {
 				JavaManipulationPlugin.log(e); // should not occur
 			}
-//			listRewrite.replace(nodedata.visited(), callToCharsetDefaultCharset, group);
 		} else {
 			listRewrite.insertLast(callToCharsetDefaultCharset, group);
 		}
