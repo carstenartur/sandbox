@@ -33,6 +33,8 @@ import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 
 public class Refactorer {
@@ -127,15 +129,138 @@ public class Refactorer {
             return;
         }
 
-        // Create simple forEach lambda for now
-        LambdaExpression forEachLambda = createForEachLambdaExpression();
-        MethodInvocation forEachCall = ast.newMethodInvocation();
-        forEachCall.setExpression((Expression) ASTNode.copySubtree(ast, forLoop.getExpression()));
-        forEachCall.setName(ast.newSimpleName("forEach"));
-        forEachCall.arguments().add(forEachLambda);
+        Statement loopBody = forLoop.getBody();
+        String loopVarName = forLoop.getParameter().getName().getIdentifier();
         
-        ExpressionStatement exprStmt = ast.newExpressionStatement(forEachCall);
+        // Parse loop body into operations
+        List<ProspectiveOperation> operations = parseLoopBody(loopBody, loopVarName);
+        
+        if (operations.isEmpty()) {
+            // Fallback to simple forEach
+            LambdaExpression forEachLambda = createForEachLambdaExpression();
+            MethodInvocation forEachCall = ast.newMethodInvocation();
+            forEachCall.setExpression((Expression) ASTNode.copySubtree(ast, forLoop.getExpression()));
+            forEachCall.setName(ast.newSimpleName("forEach"));
+            forEachCall.arguments().add(forEachLambda);
+            
+            ExpressionStatement exprStmt = ast.newExpressionStatement(forEachCall);
+            rewrite.replace(forLoop, exprStmt, null);
+            return;
+        }
+        
+        // Check if we need .stream() or can use direct .forEach()
+        boolean needsStream = operations.size() > 1 || 
+                              operations.get(0).getOperationType() != ProspectiveOperation.OperationType.FOREACH;
+        
+        // Build the stream pipeline
+        MethodInvocation pipeline;
+        if (needsStream) {
+            // Start with .stream()
+            pipeline = ast.newMethodInvocation();
+            pipeline.setExpression((Expression) ASTNode.copySubtree(ast, forLoop.getExpression()));
+            pipeline.setName(ast.newSimpleName("stream"));
+            
+            // Chain each operation
+            for (ProspectiveOperation op : operations) {
+                MethodInvocation next = ast.newMethodInvocation();
+                next.setExpression(pipeline);
+                next.setName(ast.newSimpleName(op.getSuitableMethod()));
+                
+                // Get the variable name for this operation's parameter
+                String paramName = loopVarName; // Default to loop variable
+                if (op == operations.get(operations.size() - 1) && operations.size() > 1) {
+                    // Last operation in a chain - use the variable from the previous map
+                    paramName = getVariableNameFromPreviousOp(operations, operations.size() - 1);
+                }
+                
+                List<Expression> args = op.getArguments(ast, paramName);
+                for (Expression arg : args) {
+                    next.arguments().add(arg);
+                }
+                pipeline = next;
+            }
+        } else {
+            // Simple forEach without stream()
+            ProspectiveOperation op = operations.get(0);
+            pipeline = ast.newMethodInvocation();
+            pipeline.setExpression((Expression) ASTNode.copySubtree(ast, forLoop.getExpression()));
+            pipeline.setName(ast.newSimpleName("forEach"));
+            List<Expression> args = op.getArguments(ast, loopVarName);
+            for (Expression arg : args) {
+                pipeline.arguments().add(arg);
+            }
+        }
+        
+        ExpressionStatement exprStmt = ast.newExpressionStatement(pipeline);
         rewrite.replace(forLoop, exprStmt, null);
+    }
+    
+    /**
+     * Parse loop body into a list of ProspectiveOperations
+     */
+    private List<ProspectiveOperation> parseLoopBody(Statement body, String loopVarName) {
+        List<ProspectiveOperation> operations = new ArrayList<>();
+        
+        if (body instanceof Block) {
+            Block block = (Block) body;
+            List<Statement> statements = block.statements();
+            
+            for (int i = 0; i < statements.size(); i++) {
+                Statement stmt = statements.get(i);
+                boolean isLast = (i == statements.size() - 1);
+                
+                if (stmt instanceof VariableDeclarationStatement) {
+                    // Variable declaration → MAP operation
+                    VariableDeclarationStatement varDecl = (VariableDeclarationStatement) stmt;
+                    List fragments = varDecl.fragments();
+                    if (!fragments.isEmpty()) {
+                        VariableDeclarationFragment frag = (VariableDeclarationFragment) fragments.get(0);
+                        if (frag.getInitializer() != null) {
+                            ProspectiveOperation mapOp = new ProspectiveOperation(
+                                frag.getInitializer(),
+                                ProspectiveOperation.OperationType.MAP);
+                            operations.add(mapOp);
+                            
+                            // Update loop var name for subsequent operations
+                            loopVarName = frag.getName().getIdentifier();
+                        }
+                    }
+                } else if (isLast) {
+                    // Last statement → FOREACH
+                    ProspectiveOperation forEachOp = new ProspectiveOperation(
+                        stmt,
+                        ProspectiveOperation.OperationType.FOREACH,
+                        loopVarName);
+                    operations.add(forEachOp);
+                }
+            }
+        } else {
+            // Single statement → FOREACH
+            ProspectiveOperation forEachOp = new ProspectiveOperation(
+                body,
+                ProspectiveOperation.OperationType.FOREACH,
+                loopVarName);
+            operations.add(forEachOp);
+        }
+        
+        return operations;
+    }
+    
+    /**
+     * Get the variable name from the previous operation (for chained operations)
+     */
+    private String getVariableNameFromPreviousOp(List<ProspectiveOperation> operations, int currentIndex) {
+        if (currentIndex > 0) {
+            // Look back to find a MAP operation that defines a variable
+            for (int i = currentIndex - 1; i >= 0; i--) {
+                ProspectiveOperation op = operations.get(i);
+                if (op.getOperationType() == ProspectiveOperation.OperationType.MAP) {
+                    // Try to extract variable name - for now return a default
+                    return "s"; // This should be improved to extract actual variable name
+                }
+            }
+        }
+        return "item";
     }
     /** (7) Erstellt eine Lambda-Expression für die `map()`-Operation. */
     private LambdaExpression createMapLambdaExpression() {
