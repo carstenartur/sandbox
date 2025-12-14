@@ -209,8 +209,11 @@ public final class ASTNavigationUtils {
 		ASTNode parent = typeDecl.getParent();
 
 		// Process nested classes
-		while (parent instanceof TypeDeclaration) {
-			TypeDeclaration parentType = (TypeDeclaration) parent;
+		while (parent != null) {
+			TypeDeclaration parentType = ASTNodes.as(parent, TypeDeclaration.class);
+			if (parentType == null) {
+				break;
+			}
 			qualifiedName.insert(0, parentType.getName().getIdentifier() + "$"); // $ for nested classes //$NON-NLS-1$
 			parent = parent.getParent();
 		}
