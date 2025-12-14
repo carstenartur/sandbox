@@ -86,19 +86,12 @@ public class FileReaderExplicitEncoding extends AbstractExplicitEncoding<ClassIn
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
 		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, (String) data.get(visited),getCharsetConstants());
-		/**
-		 * new FileInputStream(<filename>)
-		 */
-		ClassInstanceCreation fisclassInstance= ast.newClassInstanceCreation();
-		fisclassInstance.setType(ast.newSimpleType(ASTRewriteUtils.addImport(FileInputStream.class.getCanonicalName(), cuRewrite, ast)));
-		fisclassInstance.arguments().add(ASTRewriteUtils.createMoveTargetForExpression(rewrite, (Expression) visited.arguments().get(0)));
-		/**
-		 * new InputStreamReader(new FileInputStream(<filename>))
-		 */
-		ClassInstanceCreation isrclassInstance= ast.newClassInstanceCreation();
-		isrclassInstance.setType(ast.newSimpleType(ASTRewriteUtils.addImport(InputStreamReader.class.getCanonicalName(), cuRewrite, ast)));
-		isrclassInstance.arguments().add(fisclassInstance);
-		isrclassInstance.arguments().add(callToCharsetDefaultCharset);
+		
+		Expression filenameArg= ASTRewriteUtils.createMoveTargetForExpression(rewrite, (Expression) visited.arguments().get(0));
+		ClassInstanceCreation fisclassInstance= ASTRewriteUtils.createInstanceCreation(ast, cuRewrite,
+				FileInputStream.class.getCanonicalName(), filenameArg);
+		ClassInstanceCreation isrclassInstance= ASTRewriteUtils.createInstanceCreation(ast, cuRewrite,
+				InputStreamReader.class.getCanonicalName(), fisclassInstance, (Expression) callToCharsetDefaultCharset);
 
 		ASTNodes.replaceButKeepComment(rewrite, visited, isrclassInstance, group);
 	}

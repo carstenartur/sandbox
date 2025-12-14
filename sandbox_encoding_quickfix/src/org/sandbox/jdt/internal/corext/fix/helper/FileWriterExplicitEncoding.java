@@ -65,19 +65,12 @@ public class FileWriterExplicitEncoding extends AbstractExplicitEncoding<ClassIn
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
 		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, (String) data.get(visited),getCharsetConstants());
-		/**
-		 * new FileOutputStream(<filename>)
-		 */
-		ClassInstanceCreation fosclassInstance= ast.newClassInstanceCreation();
-		fosclassInstance.setType(ast.newSimpleType(ASTRewriteUtils.addImport(FileOutputStream.class.getCanonicalName(), cuRewrite, ast)));
-		fosclassInstance.arguments().add(ASTRewriteUtils.createMoveTargetForExpression(rewrite, (Expression) visited.arguments().get(0)));
-		/**
-		 * new OutputStreamWriter(new FileOutputStream(<filename>))
-		 */
-		ClassInstanceCreation oswclassInstance= ast.newClassInstanceCreation();
-		oswclassInstance.setType(ast.newSimpleType(ASTRewriteUtils.addImport(OutputStreamWriter.class.getCanonicalName(), cuRewrite, ast)));
-		oswclassInstance.arguments().add(fosclassInstance);
-		oswclassInstance.arguments().add(callToCharsetDefaultCharset);
+		
+		Expression filenameArg= ASTRewriteUtils.createMoveTargetForExpression(rewrite, (Expression) visited.arguments().get(0));
+		ClassInstanceCreation fosclassInstance= ASTRewriteUtils.createInstanceCreation(ast, cuRewrite,
+				FileOutputStream.class.getCanonicalName(), filenameArg);
+		ClassInstanceCreation oswclassInstance= ASTRewriteUtils.createInstanceCreation(ast, cuRewrite,
+				OutputStreamWriter.class.getCanonicalName(), fosclassInstance, (Expression) callToCharsetDefaultCharset);
 
 		ASTNodes.replaceButKeepComment(rewrite, visited, oswclassInstance, group);
 	}

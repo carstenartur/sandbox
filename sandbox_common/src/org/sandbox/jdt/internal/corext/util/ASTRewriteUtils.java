@@ -15,6 +15,7 @@ package org.sandbox.jdt.internal.corext.util;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -71,5 +72,43 @@ public final class ASTRewriteUtils {
 			return createMoveTargetForExpression(rewrite, (Expression) node);
 		}
 		return ASTNodes.createMoveTarget(rewrite, node);
+	}
+
+	/**
+	 * Creates a new instance creation with the specified type and argument.
+	 * Common pattern for wrapping streams with readers/writers.
+	 *
+	 * @param ast the AST context, must not be null
+	 * @param cuRewrite the compilation unit rewrite, must not be null
+	 * @param typeName the fully qualified class name, must not be null
+	 * @param argument the argument expression to add, must not be null
+	 * @return the created ClassInstanceCreation, never null
+	 */
+	public static ClassInstanceCreation createInstanceCreation(AST ast, CompilationUnitRewrite cuRewrite, 
+			String typeName, Expression argument) {
+		ClassInstanceCreation instance = ast.newClassInstanceCreation();
+		instance.setType(ast.newSimpleType(addImport(typeName, cuRewrite, ast)));
+		instance.arguments().add(argument);
+		return instance;
+	}
+
+	/**
+	 * Creates a new instance creation with the specified type and two arguments.
+	 * Common pattern for wrapping streams with readers/writers that need a charset.
+	 *
+	 * @param ast the AST context, must not be null
+	 * @param cuRewrite the compilation unit rewrite, must not be null
+	 * @param typeName the fully qualified class name, must not be null
+	 * @param firstArgument the first argument expression to add, must not be null
+	 * @param secondArgument the second argument expression to add, must not be null
+	 * @return the created ClassInstanceCreation, never null
+	 */
+	public static ClassInstanceCreation createInstanceCreation(AST ast, CompilationUnitRewrite cuRewrite,
+			String typeName, Expression firstArgument, Expression secondArgument) {
+		ClassInstanceCreation instance = ast.newClassInstanceCreation();
+		instance.setType(ast.newSimpleType(addImport(typeName, cuRewrite, ast)));
+		instance.arguments().add(firstArgument);
+		instance.arguments().add(secondArgument);
+		return instance;
 	}
 }
