@@ -25,7 +25,7 @@ This has been accomplished by:
 - Added `createAccumulatorExpression()` to dispatch to appropriate accumulator generator
 - Added `createMethodReference()` to create `Integer::sum` style method references
 - Added `createBinaryOperatorLambda()` to create `(accumulator, _item) -> accumulator op _item` lambdas
-- Added `createCountingLambda()` to create `(accumulator, _item) -> accumulator ± 1` lambdas
+- Added `createCountingLambda()` to create `(accumulator, _item) -> accumulator ± _item` lambdas
 - Added getter methods: `getAccumulatorVariableName()`, `getReducerType()`
 - Added imports: `ExpressionMethodReference`, `TypeMethodReference`
 
