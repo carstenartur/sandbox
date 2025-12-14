@@ -66,10 +66,10 @@ Implemented methods:
 - ✅ `isReducer()` - Checks if the loop contains a reducer pattern
 - ✅ `getReducer()` - Returns the statement containing the reducer pattern
 
-### 3. ⏳ Enable Additional Tests (ONGOING - 7 of 20+ PASSING)
+### 3. ⏳ Enable Additional Tests (ONGOING - 7 PASSING, 2 ENABLED)
 **File**: `sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/Java8CleanUpTest.java`
 
-**Status**: 7 tests currently enabled and passing
+**Status**: 7 tests confirmed passing, 2 additional tests now enabled for validation
 
 Currently passing tests:
 1. ✅ SIMPLECONVERT - simple forEach
@@ -79,11 +79,11 @@ Currently passing tests:
 5. ✅ MergingOperations - complex if-statement with side effects
 6. ✅ BeautificationWorks - variable reassignment handling
 7. ✅ BeautificationWorks2 - unused variable elimination
+8. ⏳ ContinuingIfFilterSingleStatement - continue as filter with nested if (ENABLED - testing)
+9. ⏳ NonFilteringIfChaining - if statements with side effects (ENABLED - testing)
 
 **Next priority tests to enable** (in suggested order):
 
-8. ⏳ ContinuingIfFilterSingleStatement - continue as filter with nested if
-9. ⏳ NonFilteringIfChaining - if statements with side effects
 10. ⏳ SimpleReducer - basic reduce operation
 11. ⏳ ChainedReducer - filter + reduce
 12. ⏳ IncrementReducer - increment operations
