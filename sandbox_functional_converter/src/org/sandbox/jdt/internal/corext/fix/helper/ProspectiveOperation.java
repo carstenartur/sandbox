@@ -67,6 +67,12 @@ public class ProspectiveOperation {
      * It is used to track the variable iterated over in enhanced for-loops or similar constructs.
      */
     private String loopVariableName;
+    
+    /**
+     * The name of the variable produced by this operation (for MAP operations).
+     * This is used to track variable names through the stream pipeline.
+     */
+    private String producedVariableName;
 
     // Sammelt alle verwendeten Variablen
     private void collectNeededVariables(Expression expression) {
@@ -94,6 +100,17 @@ public class ProspectiveOperation {
             this.originalExpression = ((org.eclipse.jdt.core.dom.ExpressionStatement) statement).getExpression();
             collectNeededVariables(this.originalExpression);
         }
+    }
+    
+    /**
+     * Constructor for MAP operations with a produced variable name.
+     * Used when a variable declaration creates a new variable in the stream pipeline.
+     */
+    public ProspectiveOperation(Expression expression, OperationType operationType, String producedVarName) {
+        this.originalExpression = expression;
+        this.operationType = operationType;
+        this.producedVariableName = producedVarName;
+        collectNeededVariables(expression);
     }
 
     /** (1) Gibt den ursprünglichen Ausdruck zurück */
@@ -155,6 +172,11 @@ public class ProspectiveOperation {
         if (operationType == OperationType.MAP && originalExpression != null) {
             // For MAP: lambda body is the expression
             lambda.setBody(ASTNode.copySubtree(ast, originalExpression));
+        } else if (operationType == OperationType.FILTER && originalExpression != null) {
+            // For FILTER: wrap condition in parentheses
+            ParenthesizedExpression parenExpr = ast.newParenthesizedExpression();
+            parenExpr.setExpression((Expression) ASTNode.copySubtree(ast, originalExpression));
+            lambda.setBody(parenExpr);
         } else if (operationType == OperationType.FOREACH && originalStatement != null) {
             // For FOREACH: lambda body is the statement (as block)
             if (originalStatement instanceof org.eclipse.jdt.core.dom.Block) {
@@ -331,6 +353,14 @@ public class ProspectiveOperation {
      */
     public Expression getReducingVariable() {
         return reducingVariable;
+    }
+    
+    /**
+     * Returns the variable name produced by this operation (for MAP operations).
+     * This is used to track variable names through the stream pipeline.
+     */
+    public String getProducedVariableName() {
+        return producedVariableName;
     }
 
     /** (4) Erstellt eine Lambda-Expression für Streams */
