@@ -127,49 +127,15 @@ public class Refactorer {
             return;
         }
 
-        boolean hasReturn = false;
-        boolean isReduction = false;
-        List<Statement> operations = getListRepresentation(forLoop.getBody(), true);
-        for (Statement operation : operations) {
-            if (operation instanceof IfStatement) {
-                IfStatement ifStatement = (IfStatement) operation;
-                if (isReturningIf(ifStatement)) {
-                    hasReturn = true;
-                }
-            } else if (operation instanceof ExpressionStatement) {
-                Expression expr = ((ExpressionStatement) operation).getExpression();
-                if (expr instanceof Assignment) {
-                    isReduction = true;
-                }
-            }
-        }
-
-        if (isReduction) {
-            LambdaExpression reduceLambda = createReduceLambdaExpression();
-            MethodInvocation reduceCall = ast.newMethodInvocation();
-            reduceCall.setExpression((Expression) ASTNode.copySubtree(ast, forLoop.getExpression()));
-            reduceCall.setName(ast.newSimpleName("reduce"));
-            reduceCall.arguments().add(ast.newSimpleName("0"));
-            reduceCall.arguments().add(reduceLambda);
-            
-            rewrite.replace(forLoop, reduceCall, null);
-        } else if (hasReturn) {
-            LambdaExpression mapLambda = createMapLambdaExpression();
-            MethodInvocation mapCall = ast.newMethodInvocation();
-            mapCall.setExpression((Expression) ASTNode.copySubtree(ast, forLoop.getExpression()));
-            mapCall.setName(ast.newSimpleName("stream"));
-            mapCall.arguments().add(mapLambda);
-            
-            rewrite.replace(forLoop, mapCall, null);
-        } else {
-            LambdaExpression forEachLambda = createForEachLambdaExpression();
-            MethodInvocation forEachCall = ast.newMethodInvocation();
-            forEachCall.setExpression((Expression) ASTNode.copySubtree(ast, forLoop.getExpression()));
-            forEachCall.setName(ast.newSimpleName("forEach"));
-            forEachCall.arguments().add(forEachLambda);
-            
-            rewrite.replace(forLoop, forEachCall, null);
-        }
+        // Create simple forEach lambda for now
+        LambdaExpression forEachLambda = createForEachLambdaExpression();
+        MethodInvocation forEachCall = ast.newMethodInvocation();
+        forEachCall.setExpression((Expression) ASTNode.copySubtree(ast, forLoop.getExpression()));
+        forEachCall.setName(ast.newSimpleName("forEach"));
+        forEachCall.arguments().add(forEachLambda);
+        
+        ExpressionStatement exprStmt = ast.newExpressionStatement(forEachCall);
+        rewrite.replace(forLoop, exprStmt, null);
     }
     /** (7) Erstellt eine Lambda-Expression für die `map()`-Operation. */
     private LambdaExpression createMapLambdaExpression() {
@@ -192,15 +158,20 @@ public class Refactorer {
     private LambdaExpression createForEachLambdaExpression() {
         LambdaExpression lambda = ast.newLambdaExpression();
         
-        // Korrekte Deklaration des Lambda-Parameters
-        SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
-        param.setName((SimpleName) ASTNode.copySubtree(ast, forLoop.getParameter().getName()));
-        lambda.parameters().add(param);
+        // Use VariableDeclarationFragment for the parameter (simpler form without type)
+        org.eclipse.jdt.core.dom.VariableDeclarationFragment paramFragment = ast.newVariableDeclarationFragment();
+        paramFragment.setName((SimpleName) ASTNode.copySubtree(ast, forLoop.getParameter().getName()));
+        lambda.parameters().add(paramFragment);
         
         Statement body = forLoop.getBody();
         if (body instanceof ExpressionStatement) {
+            // Single expression - use expression as lambda body
             lambda.setBody(ASTNode.copySubtree(ast, ((ExpressionStatement) body).getExpression()));
+        } else if (body instanceof Block) {
+            // Block body - copy the whole block
+            lambda.setBody(ASTNode.copySubtree(ast, body));
         } else {
+            // Other statement type - wrap in block
             Block block = ast.newBlock();
             block.statements().add(ASTNode.copySubtree(ast, body));
             lambda.setBody(block);

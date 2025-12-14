@@ -360,6 +360,6 @@ public class ProspectiveOperation {
     }
 
     public enum OperationType {
-        MAP, REDUCE, UNKNOWN
+        MAP, FOREACH, FILTER, REDUCE, ANYMATCH, NONEMATCH
     }
 }
