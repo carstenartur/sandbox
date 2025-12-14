@@ -110,7 +110,7 @@ public class JHViewContentProvider implements IStructuredContentProvider {
 			for (ICompilationUnit unit : pf.getCompilationUnits()) {
 				// now create the AST for the ICompilationUnits
 				CompilationUnit parse= parse(unit);
-				parse.accept(visitor);
+				visitor.process(parse);
 			}
 		} catch (JavaModelException e1) {
 			e1.printStackTrace();

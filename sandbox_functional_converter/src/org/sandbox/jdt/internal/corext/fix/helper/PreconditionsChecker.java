@@ -20,8 +20,15 @@ import java.util.Set;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.sandbox.jdt.internal.common.AstProcessorBuilder;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
+
 import java.util.*;
 
+/**
+ * Analyzes a loop statement to check various preconditions for safe refactoring
+ * to stream operations. Uses AstProcessorBuilder for cleaner AST traversal.
+ */
 public class PreconditionsChecker {
     private final Statement loop;
 //    private final CompilationUnit compilationUnit;
@@ -79,45 +86,41 @@ public class PreconditionsChecker {
         return iteratesOverIterable;
     }
 
-    /** Methode zur Analyse der Schleife und Identifikation relevanter Elemente. */
+    /** 
+     * Methode zur Analyse der Schleife und Identifikation relevanter Elemente.
+     * Uses AstProcessorBuilder for cleaner and more maintainable AST traversal.
+     */
     private void analyzeLoop() {
-        loop.accept(new ASTVisitor() {
-            @Override
-            public boolean visit(VariableDeclarationFragment node) {
+        ReferenceHolder<String, Object> holder = new ReferenceHolder<>();
+        
+        AstProcessorBuilder.with(holder)
+            .processor()
+            .callVariableDeclarationFragmentVisitor((node, h) -> {
                 innerVariables.add(node);
-                return super.visit(node);
-            }
-
-            @Override
-            public boolean visit(BreakStatement node) {
+                return true;
+            })
+            .callBreakStatementVisitor((node, h) -> {
                 containsBreak = true;
-                return super.visit(node);
-            }
-
-            @Override
-            public boolean visit(ContinueStatement node) {
+                return true;
+            })
+            .callContinueStatementVisitor((node, h) -> {
                 containsContinue = true;
-                return super.visit(node);
-            }
-
-            @Override
-            public boolean visit(ReturnStatement node) {
+                return true;
+            })
+            .callReturnStatementVisitor((node, h) -> {
                 containsReturn = true;
-                return super.visit(node);
-            }
-
-            @Override
-            public boolean visit(ThrowStatement node) {
+                return true;
+            })
+            .callThrowStatementVisitor((node, h) -> {
                 throwsException = true;
-                return super.visit(node);
-            }
-            
-            @Override
-            public boolean visit(EnhancedForStatement node) {
+                return true;
+            })
+            .callEnhancedForStatementVisitor((node, h) -> {
                 iteratesOverIterable = true;
-                return super.visit(node);
-            }
-        });
+                return true;
+            })
+            .build(loop);
+        
         analyzeEffectivelyFinalVariables();
     }
     
@@ -136,18 +139,20 @@ public class PreconditionsChecker {
         final boolean[] modified = {false};
         ASTNode methodBody = getEnclosingMethodBody(var);
         if (methodBody != null) {
-            methodBody.accept(new ASTVisitor() {
-                @Override
-                public boolean visit(Assignment node) {
-                    if (node.getLeftHandSide() instanceof SimpleName) {
-                        SimpleName name = (SimpleName) node.getLeftHandSide();
-                        if (name.getIdentifier().equals(var.getName().getIdentifier())) {
+            ReferenceHolder<String, Object> holder = new ReferenceHolder<>();
+            String varName = var.getName().getIdentifier();
+            
+            AstProcessorBuilder.with(holder)
+                .processor()
+                .callAssignmentVisitor((node, h) -> {
+                    if (node.getLeftHandSide() instanceof SimpleName name) {
+                        if (name.getIdentifier().equals(varName)) {
                             modified[0] = true;
                         }
                     }
-                    return super.visit(node);
-                }
-            });
+                    return true;
+                })
+                .build(methodBody);
         }
         return !modified[0];
     }
