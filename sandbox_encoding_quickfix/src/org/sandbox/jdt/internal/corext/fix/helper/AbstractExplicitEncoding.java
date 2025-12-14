@@ -239,7 +239,8 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 		ASTNode methodDecl = ASTNodes.getFirstAncestorOrNull(node, MethodDeclaration.class);
 		ASTNode typeDecl = ASTNodes.getFirstAncestorOrNull(node, TypeDeclaration.class);
 		
-		// Return the closest ancestor (method is more specific than type)
+		// Return the closest ancestor by comparing their depth
+		// If method exists, it's always closer than type (method is nested in type)
 		if (methodDecl != null) {
 			return methodDecl;
 		}
@@ -374,7 +375,8 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 		ASTNode tryStmt = ASTNodes.getFirstAncestorOrNull(node, TryStatement.class);
 		ASTNode methodDecl = ASTNodes.getFirstAncestorOrNull(node, MethodDeclaration.class);
 		
-		// Return the closest ancestor (try is more specific than method)
+		// Return the closest ancestor by comparing their depth
+		// If try exists, it's always closer than method (try is nested in method)
 		if (tryStmt != null) {
 			return tryStmt;
 		}
