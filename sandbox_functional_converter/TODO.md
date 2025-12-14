@@ -21,14 +21,22 @@
 - **MAP Extraction from REDUCE**: Compound assignments like `i += foo(l)` now properly extract `foo(l)` as a MAP operation
 - **Side-Effect Handling**: Statements like `foo(l)` in the middle of a loop are wrapped as MAPs with side effects
 - **Return Statement Generation**: MAP operations with statements now include proper return statements
+- **Type-Aware Literal Mapping**: StreamPipelineBuilder now detects accumulator variable types and creates appropriate literals:
+  - `double` → maps to `1.0`
+  - `float` → maps to `1.0f`
+  - `long` → maps to `1L`
+  - `int` → maps to `1`
+  - This enables proper handling of INCREMENT/DECREMENT operations on different numeric types
 - **StreamPipelineBuilder Architecture**: Complete implementation covering:
   - `analyze()` - Precondition checking and loop body parsing
   - `parseLoopBody()` - Recursive statement analysis with nested IF support
   - `buildPipeline()` - Stream chain construction with proper variable tracking
   - `wrapPipeline()` - Statement wrapping (assignments for REDUCE, expressions for others)
-  - `detectReduceOperation()` - Pattern matching for all reducer types
+  - `detectReduceOperation()` - Pattern matching for all reducer types with type tracking
   - `getVariableNameFromPreviousOp()` - Variable dependency tracking
   - `requiresStreamPrefix()` - Smart decision on .stream() vs direct collection methods
+  - `getVariableType()` - Type resolution for accumulator variables
+  - `addMapBeforeReduce()` - Type-aware MAP insertion before REDUCE operations
 
 **Next Steps**:
 - ⏳ Run tests to validate newly enabled REDUCE tests (DOUBLEINCREMENTREDUCER, DecrementingReducer)
@@ -73,11 +81,13 @@ Current implementation: ~40% complete
   - [x] REDUCE operations wrapped in assignment statement (variable = pipeline)
   - [x] Accumulator variable detection and tracking
   - [x] MAP to constants for counting (_item -> 1)
+  - [x] Type-aware literal mapping (1.0 for double, 1L for long, etc.)
   - [x] Method references for Integer::sum
   - [x] ReducerType enum (INCREMENT, DECREMENT, SUM, PRODUCT, STRING_CONCAT)
   - [x] Test implementation with actual test runs
-  - [ ] Fix any edge cases discovered during testing
-- [x] Enabling additional REDUCE tests (ChainedReducer, IncrementReducer, AccumulatingMapReduce)
+  - [x] Type resolution for accumulator variables
+- [x] Enabling additional REDUCE tests (ChainedReducer, IncrementReducer, AccumulatingMapReduce, DOUBLEINCREMENTREDUCER, DecrementingReducer)
+- [ ] Validate newly enabled tests pass with type-aware enhancements
 - [ ] Operation optimization (merge consecutive filters, remove redundant operations)
 
 ### ❌ Not Started
@@ -89,7 +99,7 @@ Current implementation: ~40% complete
 ## Priority Tasks
 
 ### 0. ✅ Create StreamPipelineBuilder (COMPLETED)
-**Status**: StreamPipelineBuilder class is fully implemented and integrated
+**Status**: StreamPipelineBuilder class is fully implemented and integrated with type-aware literal mapping
 
 **Current Implementation (in StreamPipelineBuilder.java)**:
 - `analyze()` - Checks preconditions and parses loop body
@@ -98,8 +108,10 @@ Current implementation: ~40% complete
 - `wrapPipeline()` - Wraps pipeline in appropriate statement (including assignments for REDUCE)
 - `getVariableNameFromPreviousOp()` - Tracks variable names through pipeline
 - `requiresStreamPrefix()` - Determines when .stream() is needed
-- `detectReduceOperation()` - Detects REDUCE patterns (i++, +=, etc.)
+- `detectReduceOperation()` - Detects REDUCE patterns (i++, +=, etc.) with type tracking
 - `extractReduceExpression()` - Extracts RHS expression from compound assignments for MAP operations
+- `getVariableType()` - Resolves types of accumulator variables from declarations
+- `addMapBeforeReduce()` - Creates type-aware MAP operations (1.0 for double, 1L for long, etc.)
 - Full support for MAP, FILTER, FOREACH, REDUCE operations
 - Recursive nested IF statement processing for filter chains
 - Variable dependency tracking through the pipeline
