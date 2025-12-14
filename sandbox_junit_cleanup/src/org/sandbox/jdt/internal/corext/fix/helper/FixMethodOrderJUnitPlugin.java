@@ -56,14 +56,14 @@ public class FixMethodOrderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataholder= new ReferenceHolder<>();
-		HelperVisitor.callSingleMemberAnnotationVisitor("org.junit.FixMethodOrder", compilationUnit, dataholder, nodesprocessed,
+		ReferenceHolder<Integer, JunitHolder> dataHolder= new ReferenceHolder<>();
+		HelperVisitor.callSingleMemberAnnotationVisitor(ORG_JUNIT_FIX_METHOD_ORDER, compilationUnit, dataHolder, nodesprocessed,
 				(visited, aholder) -> processFoundNodeRunWith(fixcore, operations, visited, aholder));
 	}
 
 	private boolean processFoundNodeRunWith(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Annotation node,
-			ReferenceHolder<Integer, JunitHolder> dataholder) {
+			ReferenceHolder<Integer, JunitHolder> dataHolder) {
 		
 		return false;
 	}
@@ -83,7 +83,7 @@ public class FixMethodOrderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 	
 	@Override
 	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
-			JunitHolder mh) {
+			JunitHolder junitHolder) {
 		// TODO Auto-generated method stub
 		
 	}

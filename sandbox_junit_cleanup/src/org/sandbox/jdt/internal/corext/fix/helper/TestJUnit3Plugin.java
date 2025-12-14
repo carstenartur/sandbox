@@ -67,31 +67,32 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataholder= new ReferenceHolder<>();
-		HelperVisitor.callTypeDeclarationVisitor("junit.framework.TestCase", compilationUnit, dataholder,
+		ReferenceHolder<Integer, JunitHolder> dataHolder= new ReferenceHolder<>();
+		HelperVisitor.callTypeDeclarationVisitor("junit.framework.TestCase", compilationUnit, dataHolder,
 				nodesprocessed,
 				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder, nodesprocessed));
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, TypeDeclaration node,
-			ReferenceHolder<Integer, JunitHolder> dataholder, Set<ASTNode> nodesprocessed) {
+			ReferenceHolder<Integer, JunitHolder> dataHolder, Set<ASTNode> nodesprocessed) {
 		if (!nodesprocessed.contains(node)) {
-			boolean nothingtochange= true;
+			boolean hasLifecycleMethod = false;
 			for (MethodDeclaration method : node.getMethods()) {
 				if (!isTestMethod(method)) {
-					nothingtochange= false;
+					hasLifecycleMethod = true;
+					break;
 				}
 			}
-			if (nothingtochange) {
+			if (!hasLifecycleMethod) {
 				return false;
 			}
 
 			nodesprocessed.add(node);
 			JunitHolder mh= new JunitHolder();
 			mh.minv= node;
-			dataholder.put(dataholder.size(), mh);
-			operations.add(fixcore.rewrite(dataholder));
+			dataHolder.put(dataHolder.size(), mh);
+			operations.add(fixcore.rewrite(dataHolder));
 		}
 		return false;
 	}
@@ -142,8 +143,8 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 
 	@Override
 	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
-			JunitHolder mh) {
-		TypeDeclaration node= mh.getTypeDeclaration();
+			JunitHolder junitHolder) {
+		TypeDeclaration node= junitHolder.getTypeDeclaration();
 		// Remove `extends TestCase`
 		Type superclass= node.getSuperclassType();
 		if (superclass != null && "TestCase".equals(superclass.toString())) {

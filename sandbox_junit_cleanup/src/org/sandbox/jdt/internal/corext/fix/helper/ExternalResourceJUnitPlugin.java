@@ -57,39 +57,40 @@ public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<In
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataholder= new ReferenceHolder<>();
-		HelperVisitor.callTypeDeclarationVisitor(ORG_JUNIT_RULES_EXTERNAL_RESOURCE, compilationUnit, dataholder,
+		ReferenceHolder<Integer, JunitHolder> dataHolder= new ReferenceHolder<>();
+		HelperVisitor.callTypeDeclarationVisitor(ORG_JUNIT_RULES_EXTERNAL_RESOURCE, compilationUnit, dataHolder,
 				nodesprocessed, (visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder,nodesprocessed));
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, TypeDeclaration node,
-			ReferenceHolder<Integer, JunitHolder> dataholder, Set<ASTNode> nodesprocessed) {
+			ReferenceHolder<Integer, JunitHolder> dataHolder, Set<ASTNode> nodesprocessed) {
 		if (!nodesprocessed.contains(node)) {
 			if (!isDirectlyExtendingExternalResource(node.resolveBinding())) {
-				boolean nothingtochange=true;
+				boolean hasLifecycleMethod = false;
 				for (MethodDeclaration method : node.getMethods()) {
 					if (isLifecycleMethod(method, METHOD_BEFORE) || isLifecycleMethod(method, METHOD_AFTER)) {
-						nothingtochange=false;
+						hasLifecycleMethod = true;
+						break;
 					}
 				}
-				if(nothingtochange) {
+				if (!hasLifecycleMethod) {
 					return false;
 				}
 			}
 			nodesprocessed.add(node);
 			JunitHolder mh= new JunitHolder();
 			mh.minv= node;
-			dataholder.put(dataholder.size(), mh);
-			operations.add(fixcore.rewrite(dataholder));
+			dataHolder.put(dataHolder.size(), mh);
+			operations.add(fixcore.rewrite(dataHolder));
 		}
 		return false;
 	}
 
 	@Override
 	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
-			JunitHolder mh) {
-		TypeDeclaration node= mh.getTypeDeclaration();
+			JunitHolder junitHolder) {
+		TypeDeclaration node= junitHolder.getTypeDeclaration();
 		modifyExternalResourceClass(node, null, false, rewriter, ast, group, importRewriter);
 	}
 	
@@ -97,26 +98,27 @@ public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<In
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {
 			return """
-						private String testName;
+					class MyExternalResource implements BeforeEachCallback, AfterEachCallback {
+						@Override
+						public void beforeEach(ExtensionContext context) throws Exception {
+						}
 
-						@BeforeEach
-						void init(TestInfo testInfo) {
-							this.testName = testInfo.getDisplayName();
+						@Override
+						public void afterEach(ExtensionContext context) {
 						}
-						@Test
-						public void test(){
-							System.out.println("Test name: " + testName);
-						}
+					}
 					"""; //$NON-NLS-1$
 		}
 		return """
-					@Rule
-					public TestName tn = new TestName();
-
-					@Test
-					public void test(){
-						System.out.println("Test name: " + tn.getMethodName());
+				class MyExternalResource extends ExternalResource {
+					@Override
+					protected void before() throws Throwable {
 					}
+
+					@Override
+					protected void after() {
+					}
+				}
 				"""; //$NON-NLS-1$
 	}
 

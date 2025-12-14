@@ -1,24 +1,127 @@
 # Sandbox Project
 
-This repository serves as a sandbox to experiment with various tools and build strategies.
+A collection of experimental Eclipse JDT (Java Development Tools) cleanup plugins and tools. This repository demonstrates how to build custom JDT cleanups, quick fixes, and related tooling for Eclipse-based Java development.
+
+## Overview
+
+This project provides:
+
+- **Custom JDT Cleanup Plugins**: Automated code transformations for encoding, JUnit migration, functional programming patterns, and more
+- **Eclipse Product Build**: A complete Eclipse product with bundled features
+- **P2 Update Site**: Installable plugins via Eclipse update mechanism
+- **Test Infrastructure**: JUnit 5-based tests for all cleanup implementations
+
+All plugins are work-in-progress and intended for experimentation and learning.
 
 ## Table of Contents
 
+- [Overview](#overview)
 - [Build Instructions](#build-instructions)
 - [CI Status](#ci-status)
 - [What's Included](#whats-included)
 - [Projects](#projects)
   - [sandbox_cleanup_application](#1-sandbox_cleanup_application)
   - [sandbox_encoding_quickfix](#2-sandbox_encoding_quickfix)
+    - [Encoding Cleanup – Replace Platform Encoding with Explicit Charset](#encoding-cleanup-replace-platform-encoding-with-explicit-charset)
+    - [Based on Test Coverage](#based-on-test-coverage)
+    - [Cleanup Strategies](#cleanup-strategies)
+    - [Java Version Awareness](#java-version-awareness)
+    - [Supported Classes and APIs](#supported-classes-and-apis)
+    - [Examples](#examples)
+      - [Example: FileReader Replacement](#example-filereader-replacement)
+      - [Example: Channels.newReader (Java 10+)](#example-channelsnewreader-java-10)
+      - [Example: Files.readAllLines (Java 10+)](#example-filesreadalllines-java-10)
+      - [Example: Scanner (Java 10+)](#example-scanner-java-10)
+      - [Example: SAX InputSource](#example-sax-inputsource)
+    - [Aggregation Mode Example](#aggregation-mode-example)
+    - [Additional Fixes](#additional-fixes)
+    - [Cleanup Mode × Java Version Matrix](#cleanup-mode-java-version-matrix)
+    - [Usage](#usage)
+    - [Encoding Cleanup – Strategy Variants](#encoding-cleanup-strategy-variants)
+      - [Strategy: Prefer UTF-8](#strategy-prefer-utf-8)
+      - [Strategy: Keep Behavior](#strategy-keep-behavior)
+      - [Strategy: Aggregate UTF-8](#strategy-aggregate-utf-8)
+      - [Summary Table](#summary-table)
+    - [Charset Literal Replacement Table](#charset-literal-replacement-table)
+    - [Limitations](#limitations)
   - [sandbox_extra_search](#3-sandbox_extra_search)
   - [sandbox_usage_view](#4-sandbox_usage_view)
   - [sandbox_platform_helper](#5-sandbox_platform_helper)
+    - [Platform Status Cleanup – Simplification of `new Status(...)` Calls](#platform-status-cleanup-simplification-of-new-status-calls)
+    - [Motivation](#motivation)
+    - [Before/After Comparison](#beforeafter-comparison)
+    - [Examples](#examples-1)
+      - [Java 8: With `StatusHelper`](#java-8-with-statushelper)
+      - [Java 11+: With `Status.warning(...)`](#java-11-with-statuswarning)
+      - [With Exception](#with-exception)
+    - [Cleanup Strategy Selection](#cleanup-strategy-selection)
+    - [Requirements](#requirements)
+    - [Usage](#usage-1)
+    - [Limitations](#limitations-1)
   - [sandbox_tools](#6-sandbox_tools)
   - [sandbox_functional_converter](#7-sandbox_functional_converter)
+    - [Functional Converter Cleanup – Transform Imperative Loops into Functional Java 8 Streams](#functional-converter-cleanup-transform-imperative-loops-into-functional-java-8-streams)
+    - [Source and Test Basis](#source-and-test-basis)
+    - [Supported Transformations](#supported-transformations)
+    - [Examples](#examples-2)
+    - [Reductions (Accumulators)](#reductions-accumulators)
+    - [Not Yet Supported (Disabled Tests)](#not-yet-supported-disabled-tests)
+    - [Ignored Cases – No Cleanup Triggered](#ignored-cases-no-cleanup-triggered)
+    - [Java Version Compatibility](#java-version-compatibility)
+    - [Cleanup Name & Activation](#cleanup-name-activation)
+    - [Limitations](#limitations-2)
+    - [Summary](#summary)
   - [sandbox_junit](#8-sandbox_junit)
+    - [JUnit Cleanup – Feature Overview](#junit-cleanup-feature-overview)
+    - [Migration Summary](#migration-summary)
+    - [JUnit 3 Classes and Methods](#junit-3-classes-and-methods)
+      - [JUnit 3 Migration Summary Table](#junit-3-migration-summary-table)
+      - [Class Structure Transformations](#class-structure-transformations)
+      - [Test Method Transformations](#test-method-transformations)
+      - [Setup and Teardown Methods](#setup-and-teardown-methods)
+      - [Test Suite Migration](#test-suite-migration)
+    - [JUnit 4 Annotations and Classes](#junit-4-annotations-and-classes)
+      - [JUnit 4 Migration Summary Table](#junit-4-migration-summary-table)
+      - [Lifecycle Annotations](#lifecycle-annotations)
+      - [Test Annotations](#test-annotations)
+      - [Test Suite Annotations](#test-suite-annotations)
+      - [Rule Annotations](#rule-annotations)
+    - [JUnit Assertion Migration – JUnit 3 and 4 to JUnit 5](#junit-assertion-migration-junit-3-and-4-to-junit-5)
+      - [Supported Assertion Methods](#supported-assertion-methods)
+      - [Parameter Order Differences](#parameter-order-differences)
+      - [Assertion Mapping Table](#assertion-mapping-table)
+      - [Example Transformations](#example-transformations)
+        - [Equality Check](#equality-check)
+        - [Null Check](#null-check)
+        - [Boolean Assertions](#boolean-assertions)
+        - [Identity Assertions](#identity-assertions)
+        - [NotNull Assertions](#notnull-assertions)
+        - [Fail Statements](#fail-statements)
+    - [JUnit Assumption Migration](#junit-assumption-migration)
+      - [Supported Assumption Methods](#supported-assumption-methods)
+      - [Assumption Mapping Table](#assumption-mapping-table)
+    - [Notes](#notes)
+    - [Limitations](#limitations-3)
+    - [Usage](#usage-2)
 - [Installation](#installation)
 
 ## Build Instructions
+
+### Prerequisites
+
+**IMPORTANT**: This project (main branch, targeting Eclipse 2025-09) requires **Java 21** or later.
+
+The project uses Tycho 5.0.1 which requires Java 21. Building with Java 17 or earlier will fail with:
+```
+UnsupportedClassVersionError: ... has been compiled by a more recent version of the Java Runtime (class file version 65.0)
+```
+
+Verify your Java version:
+```bash
+java -version  # Should show Java 21 or later
+```
+
+### Building
 
 To build the project, including a WAR file that contains the update site, run:
 
@@ -29,6 +132,26 @@ mvn -Dinclude=web -Pjacoco verify
 - The product will be located in `sandbox_product/target`
 - The WAR file will be located in `sandbox_web/target`
 
+### Troubleshooting
+
+#### Build fails with `UnsupportedClassVersionError` or `TypeNotPresentException`
+
+This error occurs when building with Java 17 or earlier:
+
+```
+TypeNotPresentException: Type P2ArtifactRepositoryLayout not present
+...class file version 65.0, this version only recognizes class file versions up to 61.0
+```
+
+**Solution**: Upgrade to Java 21 or later. Verify with `java -version`.
+
+#### Build fails with `Unable to provision` errors
+
+This usually indicates a Java version mismatch. Check that:
+1. `JAVA_HOME` is set to Java 21+
+2. `java -version` shows Java 21+
+3. Maven is using the correct Java version: `mvn -version`
+
 ---
 
 ## CI Status
@@ -36,49 +159,41 @@ mvn -Dinclude=web -Pjacoco verify
 ### main (2025-09)
 
 [![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)  
-[![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)  
-[![Codacy Security Scan](https://github.com/carstenartur/sandbox/actions/workflows/codacy.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/codacy.yml)  
-[![PMD](https://github.com/carstenartur/sandbox/actions/workflows/pmd.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/pmd.yml)
-
-### 2022-12
-
-[![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg?branch=2022-12)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)  
-[![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg?branch=2022-12)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)  
-[![Codacy Security Scan](https://github.com/carstenartur/sandbox/actions/workflows/codacy.yml/badge.svg?branch=2022-12)](https://github.com/carstenartur/sandbox/actions/workflows/codacy.yml)  
-[![PMD](https://github.com/carstenartur/sandbox/actions/workflows/pmd.yml/badge.svg?branch=2022-12)](https://github.com/carstenartur/sandbox/actions/workflows/pmd.yml)
+[![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)
 
 ### 2022-09
 
 [![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg?branch=2022-09)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)  
-[![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg?branch=2022-09)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)  
-[![Codacy Security Scan](https://github.com/carstenartur/sandbox/actions/workflows/codacy.yml/badge.svg?branch=2022-09)](https://github.com/carstenartur/sandbox/actions/workflows/codacy.yml)  
-[![PMD](https://github.com/carstenartur/sandbox/actions/workflows/pmd.yml/badge.svg?branch=2022-09)](https://github.com/carstenartur/sandbox/actions/workflows/pmd.yml)
+[![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg?branch=2022-09)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)
 
 ### 2022-06
 
 [![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg?branch=2022-06)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)  
-[![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg?branch=2022-06)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)  
-[![Codacy Security Scan](https://github.com/carstenartur/sandbox/actions/workflows/codacy.yml/badge.svg?branch=2022-06)](https://github.com/carstenartur/sandbox/actions/workflows/codacy.yml)  
-[![PMD](https://github.com/carstenartur/sandbox/actions/workflows/pmd.yml/badge.svg?branch=2022-06)](https://github.com/carstenartur/sandbox/actions/workflows/pmd.yml)
+[![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg?branch=2022-06)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)
 
 ---
 
 ## What's Included
 
-Java version per branch:
+### Java Version by Branch
 
-- Since `2024-06`: Java 21  
-- From `2022-12` onwards: Java 17  
-- Up to `2022-06`: Java 11
+| Branch          | Java Version | Tycho Version |
+|-----------------|--------------|---------------|
+| `main` (2025-09)| Java 21      | 5.0.1         |
+| `2024-06`+      | Java 21      | 5.0.x         |
+| `2022-12`+      | Java 17      | 4.x           |
+| Up to `2022-06` | Java 11      | 3.x           |
 
-Topics covered:
+**Note**: Tycho 5.x requires Java 21+ at build time. Attempting to build with Java 17 will result in `UnsupportedClassVersionError`.
 
-- Building for different Eclipse versions via GitHub Actions  
-- Creating custom JDT cleanups  
-- Setting up the SpotBugs Maven plugin to fail the build on issues  
-- Writing JUnit 5-based tests for JDT cleanups  
-- Configuring JaCoCo for test coverage  
-- Building an Eclipse product including new features  
+### Topics Covered
+
+- Building for different Eclipse versions via GitHub Actions
+- Creating custom JDT cleanups
+- Setting up the SpotBugs Maven plugin to fail the build on issues
+- Writing JUnit 5-based tests for JDT cleanups
+- Configuring JaCoCo for test coverage
+- Building an Eclipse product including new features
 - Automatically building a WAR file including a P2 update site
 
 ---
@@ -376,7 +491,6 @@ The cleanup recognizes common charset string literals and replaces them with the
 | `"UTF-16BE"`       | `StandardCharsets.UTF_16BE`        |
 | `"UTF-16LE"`       | `StandardCharsets.UTF_16LE`        |
 
-
 ---
 
 #### Limitations
@@ -389,8 +503,7 @@ The cleanup recognizes common charset string literals and replaces them with the
 
 This documentation is based on test-driven implementations in the `sandbox_encoding_quickfix_test` module and reflects support for modern and legacy encoding cleanup across Java 7 to 22.
 
-Partial implementation to highlight platform encoding usage via API changes.  
-Reference: https://openjdk.java.net/jeps/400
+> **Reference**: [JEP 400: UTF-8 by Default](https://openjdk.java.net/jeps/400) – Partial implementation to highlight platform encoding usage via API changes.
 
 ### 3. `sandbox_extra_search`
 
@@ -522,12 +635,9 @@ This cleanup is available as part of the JDT Clean Up framework. It can be run v
 
 ---
 
-This documentation is based on the cleanup logic and test cases in  
-`Java8CleanUpTest.java` and `Java9CleanUpTest.java`.  
-Manual review is advised for edge cases or plugin-specific conventions.
+This documentation is based on the cleanup logic and test cases in `Java8CleanUpTest.java` and `Java9CleanUpTest.java`. Manual review is advised for edge cases or plugin-specific conventions.
 
-PoC for a QuickFix to migrate code based on new platform features:  
-https://www.eclipse.org/eclipse/news/4.20/platform_isv.php#simpler-status-creation
+> **Reference**: [Eclipse 4.20 Platform ISV – Simpler Status Creation](https://www.eclipse.org/eclipse/news/4.20/platform_isv.php#simpler-status-creation) – PoC for a QuickFix to migrate code based on new platform features.
 
 ### 6. `sandbox_tools`
 
@@ -687,11 +797,9 @@ The Functional Converter Cleanup:
 
 ---
 
-For roadmap or contributions, see the test class:
-`Java8CleanUpTest.java` in the `sandbox_functional_converter_test` module.
+For roadmap or contributions, see the test class `Java8CleanUpTest.java` in the `sandbox_functional_converter_test` module.
 
-Converts `Iterator` loops to functional loops.  
-See: https://github.com/carstenartur/sandbox/wiki/Functional-Converter
+> **Wiki**: [Functional Converter](https://github.com/carstenartur/sandbox/wiki/Functional-Converter) – Converts `Iterator` loops to functional loops.
 
 ### 8. `sandbox_junit`
 
@@ -707,126 +815,508 @@ It is based on verified transformations from the following test files:
 
 #### Migration Summary
 
-The table below summarizes how legacy JUnit constructs are translated to modern JUnit 5 equivalents:
+The cleanup handles a comprehensive set of JUnit 3 and JUnit 4 constructs, including:
 
-| Legacy JUnit Construct                      | Origin     | JUnit 5 Equivalent                         |
-|--------------------------------------------|------------|--------------------------------------------|
-| `extends TestCase`                         | JUnit 3    | (removed) – no base class needed           |
-| `setUp()`                                   | JUnit 3    | `@BeforeEach`                              |
-| `tearDown()`                                | JUnit 3    | `@AfterEach`                               |
-| `test*` method name prefix                  | JUnit 3    | `@Test` + rename to descriptive name       |
-| `@Test`                                     | JUnit 4    | `@Test` (from `org.junit.jupiter.api`)     |
-| `@Before` / `@After`                        | JUnit 4    | `@BeforeEach` / `@AfterEach`               |
-| `@BeforeClass` / `@AfterClass`             | JUnit 4    | `@BeforeAll` / `@AfterAll`                 |
-| `@Ignore`                                   | JUnit 4    | `@Disabled`                                |
-| `@Test(expected = Exception.class)`         | JUnit 4    | `assertThrows(Exception.class, ...)`       |
-| `@Test(timeout = ...)`                      | JUnit 4    | `assertTimeout(Duration.ofMillis(...), ...)` |
-| `@Rule`, `@ClassRule`                       | JUnit 4    | `@RegisterExtension` / `@ExtendWith`       |
-| `junit.framework.Assert` or `org.junit.Assert` methods | JUnit 3/4 | `org.junit.jupiter.api.Assertions` methods |
+- **Class structure**: `extends TestCase`, test method naming conventions
+- **Lifecycle methods**: Setup, teardown, class-level initialization
+- **Annotations**: Test markers, lifecycle annotations, ignore/disable markers
+- **Assertions**: All JUnit assertion methods with parameter reordering
+- **Assumptions**: Precondition checking methods
+- **Test suites**: Suite runners and configuration
+- **Rules**: `@Rule`, `@ClassRule`, including `TemporaryFolder`, `TestName`, `ExternalResource`
 
 ---
 
-#### Migration Details
+#### JUnit 3 Classes and Methods
 
-##### JUnit 3 Migration
+The cleanup tool handles all major JUnit 3 constructs used in legacy test codebases.
 
-###### Class Structure
+##### JUnit 3 Migration Summary Table
 
-- **Remove `extends TestCase`**
-- **Remove `suite()` and `main()` methods**
+| JUnit 3 Construct                 | Description                           | JUnit 5 Equivalent                         |
+|----------------------------------|---------------------------------------|--------------------------------------------|
+| `junit.framework.TestCase`       | Base class for tests                  | (removed) – no base class needed           |
+| `extends TestCase`               | Class inheritance                     | (removed) – use annotations instead        |
+| `public void testXxx()`          | Test method naming convention         | `@Test void xxx()` – descriptive names     |
+| `protected void setUp()`         | Setup before each test                | `@BeforeEach void setUp()`                 |
+| `protected void tearDown()`      | Cleanup after each test               | `@AfterEach void tearDown()`               |
+| `public static Test suite()`     | Test suite definition                 | `@TestMethodOrder` + `@Order` annotations  |
+| `TestSuite.addTest(...)`         | Adding tests to suite                 | Individual `@Test` methods with ordering   |
+| `junit.framework.Assert.*`       | Assertion methods                     | `org.junit.jupiter.api.Assertions.*`       |
 
-###### Test Methods
+---
 
-Before:
+##### Class Structure Transformations
+
+The cleanup removes the `extends TestCase` inheritance and eliminates the need for JUnit 3's base class.
+
+**Before:**
 ```java
-public void testExample() {
-    // test logic
+import junit.framework.TestCase;
+
+public class MyTest extends TestCase {
+    public MyTest(String name) {
+        super(name);
+    }
 }
 ```
 
-After:
+**After:**
+```java
+import org.junit.jupiter.api.Test;
+
+public class MyTest {
+    // Constructor removed - no longer needed
+}
+```
+
+**Changes Applied:**
+- Remove `extends TestCase` from class declaration
+- Remove constructor that calls `super(name)`
+- Remove `import junit.framework.TestCase`
+- Add appropriate JUnit 5 imports
+
+---
+
+##### Test Method Transformations
+
+JUnit 3 uses naming conventions (`testXxx`) to identify test methods. JUnit 5 uses the `@Test` annotation.
+
+**Before:**
+```java
+public void testBasicAssertions() {
+    assertEquals("Values should match", 42, 42);
+    assertTrue("Condition should be true", true);
+}
+```
+
+**After:**
 ```java
 @Test
-void example() {
-    // test logic
+@Order(1)
+public void testBasicAssertions() {
+    assertEquals(42, 42, "Values should match");
+    assertTrue(true, "Condition should be true");
 }
 ```
 
-###### Setup and Teardown
+**Changes Applied:**
+- Add `@Test` annotation
+- Add `@Order` annotation if part of a suite (maintains test execution order)
+- Reorder assertion parameters (message moves to last position)
+- Optionally rename to more descriptive names (removing `test` prefix)
 
-Before:
+---
+
+##### Setup and Teardown Methods
+
+JUnit 3 uses method name conventions for setup and teardown. JUnit 5 uses annotations.
+
+**Before:**
 ```java
+@Override
 protected void setUp() throws Exception {
-    // setup
+    // Setup before each test
 }
 
+@Override
 protected void tearDown() throws Exception {
-    // teardown
+    // Cleanup after each test
 }
 ```
 
-After:
+**After:**
 ```java
 @BeforeEach
-void setUp() throws Exception {
-    // setup
+public void setUp() throws Exception {
+    // Setup before each test
 }
 
 @AfterEach
-void tearDown() throws Exception {
-    // teardown
+public void tearDown() throws Exception {
+    // Cleanup after each test
 }
 ```
 
+**Changes Applied:**
+- Replace implicit naming convention with `@BeforeEach` annotation
+- Replace implicit naming convention with `@AfterEach` annotation
+- Remove `@Override` annotation (no longer overriding from base class)
+- Methods can remain `protected` or become `public`
+
 ---
 
-##### JUnit 4 Migration
+##### Test Suite Migration
 
-###### Annotations
+JUnit 3 uses `suite()` methods and `TestSuite` class. JUnit 5 uses `@TestMethodOrder` with ordering annotations.
 
-Before:
+**Before:**
 ```java
+public static Test suite() {
+    TestSuite suite = new TestSuite();
+    suite.addTest(new MyTest("testBasicAssertions"));
+    suite.addTest(new MyTest("testArrayAssertions"));
+    suite.addTest(new MyTest("testWithAssume"));
+    return suite;
+}
+```
+
+**After:**
+```java
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+public class MyTest {
+    @Test
+    @Order(1)
+    public void testBasicAssertions() { }
+
+    @Test
+    @Order(2)
+    public void testArrayAssertions() { }
+
+    @Test
+    @Order(3)
+    public void testWithAssume() { }
+}
+```
+
+**Changes Applied:**
+- Remove `suite()` method completely
+- Add `@TestMethodOrder(MethodOrderer.OrderAnnotation.class)` to class
+- Add `@Order(n)` annotations to maintain execution order
+- Add required imports:
+  - `org.junit.jupiter.api.TestMethodOrder`
+  - `org.junit.jupiter.api.MethodOrderer`
+  - `org.junit.jupiter.api.Order`
+
+---
+
+#### JUnit 4 Annotations and Classes
+
+The cleanup tool handles all major JUnit 4 annotations, lifecycle methods, and special constructs.
+
+##### JUnit 4 Migration Summary Table
+
+| JUnit 4 Construct                 | Description                           | JUnit 5 Equivalent                         |
+|----------------------------------|---------------------------------------|--------------------------------------------|
+| `@Test`                          | Test method marker                    | `@Test` (from `org.junit.jupiter.api`)     |
+| `@Before`                        | Setup before each test                | `@BeforeEach`                              |
+| `@After`                         | Cleanup after each test               | `@AfterEach`                               |
+| `@BeforeClass`                   | Setup before all tests (static)       | `@BeforeAll`                               |
+| `@AfterClass`                    | Cleanup after all tests (static)      | `@AfterAll`                                |
+| `@Ignore`                        | Disable a test                        | `@Disabled`                                |
+| `@Ignore("reason")`              | Disable with message                  | `@Disabled("reason")`                      |
+| `@Test(expected = Ex.class)`     | Expected exception test               | `assertThrows(Ex.class, () -> {...})`      |
+| `@Test(timeout = ms)`            | Timeout test                          | `assertTimeout(Duration.ofMillis(ms), ...)` |
+| `@RunWith(Suite.class)`          | Suite runner                          | `@Suite`                                   |
+| `@Suite.SuiteClasses({...})`     | Suite configuration                   | `@SelectClasses({...})`                    |
+| `@Rule`                          | Test rule (instance-level)            | `@RegisterExtension`                       |
+| `@ClassRule`                     | Test rule (class-level, static)       | `@RegisterExtension` (static)              |
+| `@FixMethodOrder`                | Test method ordering                  | `@TestMethodOrder`                         |
+| `org.junit.Assert.*`             | Assertion methods                     | `org.junit.jupiter.api.Assertions.*`       |
+| `org.junit.Assume.*`             | Assumption methods                    | `org.junit.jupiter.api.Assumptions.*`      |
+
+---
+
+##### Lifecycle Annotations
+
+JUnit 4 lifecycle annotations are replaced with JUnit 5 equivalents.
+
+**Before:**
+```java
+import org.junit.Before;
+import org.junit.After;
+import org.junit.BeforeClass;
+import org.junit.AfterClass;
+
+@BeforeClass
+public static void setUpBeforeClass() throws Exception {
+    // Setup before all tests
+}
+
+@AfterClass
+public static void tearDownAfterClass() throws Exception {
+    // Cleanup after all tests
+}
+
 @Before
-public void init() {}
+public void setUp() throws Exception {
+    // Setup before each test
+}
 
 @After
-public void cleanup() {}
-
-@Test(expected = IOException.class)
-public void testException() {}
-
-@Test(timeout = 1000)
-public void testTimeout() {}
-
-@Ignore
-public void ignoredTest() {}
+public void tearDown() throws Exception {
+    // Cleanup after each test
+}
 ```
 
-After:
+**After:**
 ```java
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
+
+@BeforeAll
+public static void setUpBeforeClass() throws Exception {
+    // Setup before all tests
+}
+
+@AfterAll
+public static void tearDownAfterClass() throws Exception {
+    // Cleanup after all tests
+}
+
 @BeforeEach
-void init() {}
+public void setUp() throws Exception {
+    // Setup before each test
+}
 
 @AfterEach
-void cleanup() {}
+public void tearDown() throws Exception {
+    // Cleanup after each test
+}
+```
+
+**Changes Applied:**
+- `@Before` → `@BeforeEach`
+- `@After` → `@AfterEach`
+- `@BeforeClass` → `@BeforeAll`
+- `@AfterClass` → `@AfterAll`
+- Update imports accordingly
+
+---
+
+##### Test Annotations
+
+**@Test Annotation:**
+
+Basic `@Test` annotation is migrated from JUnit 4 to JUnit 5:
+
+**Before:**
+```java
+import org.junit.Test;
 
 @Test
-void testException() {
-    assertThrows(IOException.class, () -> {
-        // code that throws
-    });
+public void myTest() {
+    // test code
 }
+```
+
+**After:**
+```java
+import org.junit.jupiter.api.Test;
 
 @Test
-void testTimeout() {
-    assertTimeout(Duration.ofMillis(1000), () -> {
-        // code
-    });
+public void myTest() {
+    // test code
 }
+```
+
+**@Ignore / @Disabled:**
+
+**Before:**
+```java
+import org.junit.Ignore;
+import org.junit.Test;
+
+@Ignore
+@Test
+public void ignoredTestWithoutMessage() {
+    fail("This test is ignored");
+}
+
+@Ignore("Ignored with message")
+@Test
+public void ignoredTestWithMessage() {
+    fail("This test is ignored with a message");
+}
+```
+
+**After:**
+```java
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 @Disabled
-void ignoredTest() {}
+@Test
+public void ignoredTestWithoutMessage() {
+    Assertions.fail("This test is ignored");
+}
+
+@Disabled("Ignored with message")
+@Test
+public void ignoredTestWithMessage() {
+    Assertions.fail("This test is ignored with a message");
+}
 ```
+
+**Changes Applied:**
+- `@Ignore` → `@Disabled`
+- `@Ignore("reason")` → `@Disabled("reason")`
+- Update imports
+
+---
+
+##### Test Suite Annotations
+
+**Before:**
+```java
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
+
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    MyTest.class,
+    OtherTest.class
+})
+public class MyTestSuite {
+}
+```
+
+**After:**
+```java
+import org.junit.platform.suite.api.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+
+@Suite
+@SelectClasses({
+    MyTest.class,
+    OtherTest.class
+})
+public class MyTestSuite {
+}
+```
+
+**Changes Applied:**
+- `@RunWith(Suite.class)` → `@Suite`
+- `@Suite.SuiteClasses({...})` → `@SelectClasses({...})`
+- Update imports to JUnit Platform Suite API
+
+---
+
+##### Rule Annotations
+
+JUnit 4 `@Rule` and `@ClassRule` are migrated to JUnit 5 `@RegisterExtension`.
+
+**TemporaryFolder Rule:**
+
+**Before:**
+```java
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
+
+@Rule
+public TemporaryFolder tempFolder = new TemporaryFolder();
+
+@Test
+public void test() throws IOException {
+    File newFile = tempFolder.newFile("myfile.txt");
+}
+```
+
+**After:**
+```java
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+
+@TempDir
+Path tempFolder;
+
+@Test
+public void test() throws IOException {
+    File newFile = tempFolder.resolve("myfile.txt").toFile();
+}
+```
+
+**TestName Rule:**
+
+**Before:**
+```java
+import org.junit.Rule;
+import org.junit.rules.TestName;
+
+@Rule
+public TestName tn = new TestName();
+
+@Test
+public void test() {
+    System.out.println("Test name: " + tn.getMethodName());
+}
+```
+
+**After:**
+```java
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.BeforeEach;
+
+private String testName;
+
+@BeforeEach
+void init(TestInfo testInfo) {
+    this.testName = testInfo.getDisplayName();
+}
+
+@Test
+public void test() {
+    System.out.println("Test name: " + testName);
+}
+```
+
+**ExternalResource Rule:**
+
+**Before:**
+```java
+import org.junit.Rule;
+import org.junit.rules.ExternalResource;
+
+@Rule
+public ExternalResource er = new ExternalResource() {
+    @Override
+    protected void before() throws Throwable {
+        // setup
+    }
+
+    @Override
+    protected void after() {
+        // cleanup
+    }
+};
+```
+
+**After:**
+```java
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
+
+@RegisterExtension
+public Er_5b8b4 er = new Er_5b8b4();
+
+class Er_5b8b4 implements BeforeEachCallback, AfterEachCallback {
+    public void beforeEach(ExtensionContext context) {
+        // setup
+    }
+
+    public void afterEach(ExtensionContext context) {
+        // cleanup
+    }
+}
+```
+
+**Changes Applied:**
+- `@Rule` → `@RegisterExtension`
+- `@ClassRule` (static) → `@RegisterExtension` (static)
+- `TemporaryFolder` → `@TempDir Path`
+- `TestName` → `TestInfo` parameter in `@BeforeEach`
+- `ExternalResource` → Custom extension implementing `BeforeEachCallback` / `AfterEachCallback`
+- For class rules: `BeforeAllCallback` / `AfterAllCallback`
+
+---
 
 #### JUnit Assertion Migration – JUnit 3 and 4 to JUnit 5
 
@@ -836,10 +1326,33 @@ This includes:
 - Updating imports to `org.junit.jupiter.api.Assertions`
 - Reordering parameters: JUnit 5 places the message **last**
 - Safely transforming legacy assertion method calls
+- Handling special cases like `assertThat` with Hamcrest matchers
 
 ---
 
-#### Parameter Order Differences
+##### Supported Assertion Methods
+
+The cleanup handles the following assertion methods from JUnit 3/4:
+
+| Assertion Method       | Parameter Count | Description                           |
+|------------------------|-----------------|---------------------------------------|
+| `assertEquals`         | 2 or 3          | Assert two values are equal           |
+| `assertNotEquals`      | 2 or 3          | Assert two values are not equal       |
+| `assertArrayEquals`    | 2 or 3          | Assert two arrays are equal           |
+| `assertSame`           | 2 or 3          | Assert two objects are the same       |
+| `assertNotSame`        | 2 or 3          | Assert two objects are not the same   |
+| `assertTrue`           | 1 or 2          | Assert condition is true              |
+| `assertFalse`          | 1 or 2          | Assert condition is false             |
+| `assertNull`           | 1 or 2          | Assert object is null                 |
+| `assertNotNull`        | 1 or 2          | Assert object is not null             |
+| `fail`                 | 0 or 1          | Explicitly fail the test              |
+| `assertThat`           | 2 or 3          | Assert with Hamcrest matcher          |
+
+**Note**: The parameter count includes the optional message parameter.
+
+---
+
+##### Parameter Order Differences
 
 | Framework | Signature Format                            |
 |-----------|---------------------------------------------|
@@ -852,7 +1365,7 @@ This includes:
 
 ---
 
-#### Assertion Mapping Table
+##### Assertion Mapping Table
 
 | JUnit 3/4 Assertion                        | JUnit 5 Equivalent                         |
 |-------------------------------------------|--------------------------------------------|
@@ -872,6 +1385,17 @@ This includes:
 | `assertNotNull("msg", object)`            | `assertNotNull(object, "msg")`             |
 | `fail()`                                  | `fail()`                                   |
 | `fail("msg")`                              | `fail("msg")`                               |
+| `assertArrayEquals("msg", expected, actual)` | `assertArrayEquals(expected, actual, "msg")` |
+| `assertNotEquals("msg", expected, actual)` | `assertNotEquals(expected, actual, "msg")` |
+
+**assertThat Special Handling:**
+
+| JUnit 4 Assertion                          | JUnit 5 Equivalent                         |
+|-------------------------------------------|--------------------------------------------|
+| `Assert.assertThat(value, matcher)`       | `assertThat(value, matcher)` (Hamcrest)    |
+| `Assert.assertThat("msg", value, matcher)`| `assertThat("msg", value, matcher)` (Hamcrest) |
+
+> **Note**: `assertThat` is migrated to use Hamcrest's `MatcherAssert.assertThat` with static import, not JUnit 5's Assertions.
 
 ---
 
@@ -965,32 +1489,152 @@ fail("Unexpected state reached");
 
 ---
 
+#### JUnit Assumption Migration
+
+The cleanup also handles JUnit 4 assumption methods, which are used for conditional test execution.
+
+##### Supported Assumption Methods
+
+The cleanup handles the following assumption methods from JUnit 4:
+
+| Assumption Method  | Parameter Count | Description                              |
+|--------------------|-----------------|------------------------------------------|
+| `assumeTrue`       | 1 or 2          | Assume condition is true                 |
+| `assumeFalse`      | 1 or 2          | Assume condition is false                |
+| `assumeNotNull`    | 1 or 2          | Assume object is not null                |
+| `assumeThat`       | 2 or 3          | Assume with Hamcrest matcher             |
+
+---
+
+##### Assumption Mapping Table
+
+| JUnit 4 Assumption                         | JUnit 5 Equivalent                         |
+|-------------------------------------------|--------------------------------------------|
+| `Assume.assumeTrue(condition)`            | `Assumptions.assumeTrue(condition)`        |
+| `Assume.assumeTrue("msg", condition)`     | `Assumptions.assumeTrue(condition, "msg")` |
+| `Assume.assumeFalse(condition)`           | `Assumptions.assumeFalse(condition)`       |
+| `Assume.assumeFalse("msg", condition)`    | `Assumptions.assumeFalse(condition, "msg")`|
+| `Assume.assumeNotNull(object)`            | `Assumptions.assumeNotNull(object)`        |
+| `Assume.assumeNotNull("msg", object)`     | `Assumptions.assumeNotNull(object, "msg")` |
+| `Assume.assumeThat(value, matcher)`       | `assumeThat(value, matcher)` (Hamcrest)    |
+| `Assume.assumeThat("msg", value, matcher)`| `assumeThat("msg", value, matcher)` (Hamcrest) |
+
+**Example:**
+
+**Before:**
+```java
+import org.junit.Assume;
+
+@Test
+public void testWithAssume() {
+    Assume.assumeTrue("Precondition failed", true);
+    Assume.assumeFalse("Precondition not met", false);
+    Assume.assumeNotNull("Value should not be null", new Object());
+}
+```
+
+**After:**
+```java
+import org.junit.jupiter.api.Assumptions;
+
+@Test
+public void testWithAssume() {
+    Assumptions.assumeTrue(true, "Precondition failed");
+    Assumptions.assumeFalse(false, "Precondition not met");
+    Assumptions.assumeNotNull(new Object(), "Value should not be null");
+}
+```
+
+**Changes Applied:**
+- `org.junit.Assume` → `org.junit.jupiter.api.Assumptions`
+- Parameter order changed (message moved to last position)
+- `assumeThat` uses Hamcrest's static import from `org.hamcrest.junit.MatcherAssume`
+
+---
+
 #### Notes
 
-- The cleanup uses `org.junit.jupiter.api.Assertions` for all migrated assertions.
-- Parameter reordering is applied conservatively, only if the first argument is a string literal.
-- Other transformations (e.g. `assertThat`) are handled separately.
+- The cleanup uses `org.junit.jupiter.api.Assertions` for all migrated assertions
+- The cleanup uses `org.junit.jupiter.api.Assumptions` for all migrated assumptions
+- Parameter reordering is applied conservatively, only if the first argument is a string literal
+- `assertThat` is migrated to use Hamcrest's `MatcherAssert.assertThat` with static import
+- `assumeThat` is migrated to use Hamcrest's `MatcherAssume.assumeThat` with static import
+- Import statements are updated automatically:
+  - `org.junit.*` → `org.junit.jupiter.api.*`
+  - `org.junit.runners.*` → `org.junit.platform.suite.api.*`
+  - Static imports are preserved with updated package names
+
 ---
 
 #### Limitations
 
 - **Custom Runners and Complex Rules**  
-  Tests using `@RunWith(...)`, custom runners, or sophisticated `@Rule` implementations may need to be migrated manually.
+  Tests using `@RunWith(...)` with custom runners, or sophisticated `@Rule` implementations may need manual migration.
+  
+- **Test Suites (JUnit 3)**  
+  Legacy `TestSuite` usage is automatically migrated using `@TestMethodOrder` and `@Order` annotations to preserve test execution order.
 
-- **Test Suites**  
-  Legacy `TestSuite` usage is not automatically migrated and should be replaced with JUnit 5 `@Nested` classes or display name tags.
+- **Parameterized Tests**  
+  JUnit 4 parameterized tests (`@RunWith(Parameterized.class)`) are not automatically migrated and require manual conversion to JUnit 5's `@ParameterizedTest`.
+
+- **Theories**  
+  JUnit 4 theories (`@RunWith(Theories.class)`) are not automatically migrated.
+
+- **Expected Exceptions and Timeouts**  
+  The cleanup currently does not automatically migrate `@Test(expected=...)` and `@Test(timeout=...)` attributes. These require manual conversion to `assertThrows()` and `assertTimeout()`.
+
+- **Custom Matchers**  
+  Custom Hamcrest matchers should be reviewed after migration to ensure compatibility.
+
+- **Static Imports**  
+  Both wildcard (`import static org.junit.Assert.*`) and explicit static imports are handled, but code style may vary.
 
 ---
 
 #### Usage
 
-The JUnit Cleanup can be executed from within Eclipse.  
-It scans Java test files and applies the transformations described above automatically.
+The JUnit Cleanup can be executed from within Eclipse using the Clean Up framework.
+
+**Via Eclipse UI:**
+
+1. Select Java files or packages in the Package Explorer
+2. Right-click → **Source** → **Clean Up...**
+3. Choose **Configure...** to customize cleanup settings
+4. Enable **JUnit Cleanup** options in the configuration
+5. Click **Finish** to apply the cleanup
+
+**Via Save Actions:**
+
+Configure automatic cleanup on save:
+
+1. **Window** → **Preferences** → **Java** → **Editor** → **Save Actions**
+2. Enable **Perform the selected actions on save**
+3. Enable **Additional actions** → **Configure...**
+4. Enable JUnit-related cleanup options
+5. Apply changes
+
+**Supported Cleanup Operations:**
+
+The JUnit Cleanup includes multiple sub-operations that can be enabled independently:
+
+- Migrate JUnit 3 test classes to JUnit 5
+- Migrate JUnit 4 annotations to JUnit 5
+- Update assertion method calls (parameter reordering)
+- Update assumption method calls (parameter reordering)
+- Migrate `@Rule` and `@ClassRule` to extensions
+- Update test suite configurations
+- Fix method ordering annotations
+
+**Note**: The cleanup is safe and non-destructive. It only transforms code that matches known patterns from JUnit 3/4 to JUnit 5 equivalents.
 
 ---
 
 This documentation is based on the test coverage provided in the JUnit 3 and 4 cleanup test cases. Manual adjustments may be necessary for advanced use cases or project-specific setups.
-Cleanup to migrate JUnit 4 tests to JUnit 5.
+
+**Test Coverage:**
+- `sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/JUnit3CleanupCases.java`
+- `sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/JUnitCleanupCases.java`
+- `sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/JUnitMigrationCleanUpTest.java`
 
 <a href="/marketplace-client-intro?mpc_install=6454408" class="drag" title="Drag to your running Eclipse* workspace. *Requires Eclipse Marketplace Client">
 <img style="width:80px;" typeof="foaf:Image" class="img-responsive" src="https://marketplace.eclipse.org/modules/custom/eclipsefdn/eclipsefdn_marketplace/images/btn-install.svg" alt="Drag to your running Eclipse* workspace. *Requires Eclipse Marketplace Client" />

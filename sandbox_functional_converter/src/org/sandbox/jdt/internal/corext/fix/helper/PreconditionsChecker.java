@@ -19,8 +19,16 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.*;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.sandbox.jdt.internal.common.AstProcessorBuilder;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
+
 import java.util.*;
 
+/**
+ * Analyzes a loop statement to check various preconditions for safe refactoring
+ * to stream operations. Uses AstProcessorBuilder for cleaner AST traversal.
+ */
 public class PreconditionsChecker {
     private final Statement loop;
 //    private final CompilationUnit compilationUnit;
@@ -78,45 +86,38 @@ public class PreconditionsChecker {
         return iteratesOverIterable;
     }
 
-    /** Methode zur Analyse der Schleife und Identifikation relevanter Elemente. */
+    /** 
+     * Methode zur Analyse der Schleife und Identifikation relevanter Elemente.
+     * Uses AstProcessorBuilder for cleaner and more maintainable AST traversal.
+     */
     private void analyzeLoop() {
-        loop.accept(new ASTVisitor() {
-            @Override
-            public boolean visit(VariableDeclarationFragment node) {
+        AstProcessorBuilder.with(new ReferenceHolder<String, Object>())
+            .onVariableDeclarationFragment((node, h) -> {
                 innerVariables.add(node);
-                return super.visit(node);
-            }
-
-            @Override
-            public boolean visit(BreakStatement node) {
+                return true;
+            })
+            .onBreakStatement((node, h) -> {
                 containsBreak = true;
-                return super.visit(node);
-            }
-
-            @Override
-            public boolean visit(ContinueStatement node) {
+                return true;
+            })
+            .onContinueStatement((node, h) -> {
                 containsContinue = true;
-                return super.visit(node);
-            }
-
-            @Override
-            public boolean visit(ReturnStatement node) {
+                return true;
+            })
+            .onReturnStatement((node, h) -> {
                 containsReturn = true;
-                return super.visit(node);
-            }
-
-            @Override
-            public boolean visit(ThrowStatement node) {
+                return true;
+            })
+            .onThrowStatement((node, h) -> {
                 throwsException = true;
-                return super.visit(node);
-            }
-            
-            @Override
-            public boolean visit(EnhancedForStatement node) {
+                return true;
+            })
+            .onEnhancedForStatement((node, h) -> {
                 iteratesOverIterable = true;
-                return super.visit(node);
-            }
-        });
+                return true;
+            })
+            .build(loop);
+        
         analyzeEffectivelyFinalVariables();
     }
     
@@ -135,27 +136,25 @@ public class PreconditionsChecker {
         final boolean[] modified = {false};
         ASTNode methodBody = getEnclosingMethodBody(var);
         if (methodBody != null) {
-            methodBody.accept(new ASTVisitor() {
-                @Override
-                public boolean visit(Assignment node) {
-                    if (node.getLeftHandSide() instanceof SimpleName) {
-                        SimpleName name = (SimpleName) node.getLeftHandSide();
-                        if (name.getIdentifier().equals(var.getName().getIdentifier())) {
+            String varName = var.getName().getIdentifier();
+            
+            AstProcessorBuilder.with(new ReferenceHolder<String, Object>())
+                .onAssignment((node, h) -> {
+                    if (node.getLeftHandSide() instanceof SimpleName name) {
+                        if (name.getIdentifier().equals(varName)) {
                             modified[0] = true;
                         }
                     }
-                    return super.visit(node);
-                }
-            });
+                    return true;
+                })
+                .build(methodBody);
         }
         return !modified[0];
     }
     
     /** Hilfsmethode: Findet den umgebenden Methodenrumpf einer Variablendeklaration. */
     private ASTNode getEnclosingMethodBody(ASTNode node) {
-        while (node != null && !(node instanceof MethodDeclaration)) {
-            node = node.getParent();
-        }
-        return (node != null) ? ((MethodDeclaration) node).getBody() : null;
+        MethodDeclaration method = ASTNodes.getFirstAncestorOrNull(node, MethodDeclaration.class);
+        return (method != null) ? method.getBody() : null;
     }
 }

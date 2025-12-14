@@ -1183,6 +1183,15 @@ public class Java8CleanUpTest {
 		}
 	}
 
+	@ParameterizedTest
+	@EnumSource(value = UseFunctionalLoop.class, names = {"SIMPLECONVERT"})
+	public void testSimpleForEachConversion(UseFunctionalLoop test) throws CoreException {
+		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null);
+		ICompilationUnit cu= pack.createCompilationUnit("TestDemo.java", test.given, false, null);
+		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
+	}
+
 	@Disabled
 	@ParameterizedTest
 	@EnumSource(UseFunctionalLoop.class)

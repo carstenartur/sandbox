@@ -19,5 +19,6 @@ Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.ui.workbench.texteditor,
  org.eclipse.core.expressions,
  org.eclipse.jdt.core.manipulation,
- org.eclipse.platform
+ org.eclipse.platform,
+ sandbox_common
 
