@@ -1362,6 +1362,16 @@ public abstract class AbstractTool<T> {
 			importRewriter.removeImport(ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
 		}
 	}
+	/**
+	 * Removes a @Rule or @ClassRule annotation from a body declaration.
+	 * Also removes the corresponding import statement.
+	 * 
+	 * @param declaration the body declaration to remove the annotation from
+	 * @param rewriter the AST rewriter
+	 * @param group the text edit group
+	 * @param importRewriter the import rewriter
+	 * @param annotationclass the fully qualified annotation class name to remove
+	 */
 	private void removeRuleAnnotation(BodyDeclaration declaration, ASTRewrite rewriter, TextEditGroup group,
 			ImportRewrite importRewriter, String annotationclass) {
 		List<?> modifiers= declaration.modifiers();
@@ -1378,12 +1388,28 @@ public abstract class AbstractTool<T> {
 		}
 	}
 
+	/**
+	 * Removes the superclass type from a type declaration.
+	 * Used when converting ExternalResource subclasses to implement callback interfaces.
+	 * 
+	 * @param typeDecl the type declaration to modify
+	 * @param rewrite the AST rewriter
+	 * @param group the text edit group
+	 */
 	private void removeSuperclassType(TypeDeclaration typeDecl, ASTRewrite rewrite, TextEditGroup group) {
 		if (typeDecl.getSuperclassType() != null) {
 			rewrite.remove(typeDecl.getSuperclassType(), group);
 		}
 	}
 
+	/**
+	 * Removes "throws Throwable" from a method declaration.
+	 * JUnit 5 lifecycle methods don't need to declare Throwable.
+	 * 
+	 * @param method the method declaration to modify
+	 * @param rewriter the AST rewriter
+	 * @param group the text edit group
+	 */
 	private void removeThrowsThrowable(MethodDeclaration method, ASTRewrite rewriter, TextEditGroup group) {
 		List<?> thrownExceptionTypes= method.thrownExceptionTypes();
 		for (Object exceptionType : thrownExceptionTypes) {
@@ -1393,11 +1419,21 @@ public abstract class AbstractTool<T> {
 					ListRewrite listRewrite= rewriter.getListRewrite(method,
 							MethodDeclaration.THROWN_EXCEPTION_TYPES_PROPERTY);
 					listRewrite.remove(exception, group);
+					break; // Only one Throwable should be present
 				}
 			}
 		}
 	}
 
+	/**
+	 * Reorders method invocation parameters according to the specified order.
+	 * Used internally to reorder JUnit assertion parameters.
+	 * 
+	 * @param rewriter the AST rewriter
+	 * @param node the method invocation to reorder
+	 * @param group the text edit group
+	 * @param order array specifying the new order (indices into current arguments)
+	 */
 	private void reorderParameters(ASTRewrite rewriter, MethodInvocation node, TextEditGroup group, int... order) {
 		ListRewrite listRewrite= rewriter.getListRewrite(node, MethodInvocation.ARGUMENTS_PROPERTY);
 		List<Expression> arguments= node.arguments();

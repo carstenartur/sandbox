@@ -49,8 +49,12 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 
 /**
- *
- *
+ * Plugin to migrate JUnit 4 ExternalResource classes to JUnit 5 lifecycle callbacks.
+ * <p>
+ * Transforms classes that extend {@code org.junit.rules.ExternalResource} to implement
+ * JUnit 5 callback interfaces ({@code BeforeEachCallback}, {@code AfterEachCallback}).
+ * Renames lifecycle methods (before/after) to match JUnit 5 naming conventions.
+ * </p>
  */
 public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
@@ -62,28 +66,45 @@ public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<In
 				nodesprocessed, (visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder,nodesprocessed));
 	}
 
+	/**
+	 * Processes a type declaration that extends ExternalResource.
+	 * Only processes types that either:
+	 * - Directly extend ExternalResource, or
+	 * - Indirectly extend ExternalResource AND have before()/after() lifecycle methods
+	 * 
+	 * @param fixcore the cleanup fix core
+	 * @param operations the set of operations to add to
+	 * @param node the type declaration found
+	 * @param dataHolder the reference holder for data
+	 * @param nodesprocessed set of already processed nodes
+	 * @return false to continue visiting
+	 */
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, TypeDeclaration node,
 			ReferenceHolder<Integer, JunitHolder> dataHolder, Set<ASTNode> nodesprocessed) {
-		if (!nodesprocessed.contains(node)) {
-			if (!isDirectlyExtendingExternalResource(node.resolveBinding())) {
-				boolean hasLifecycleMethod = false;
-				for (MethodDeclaration method : node.getMethods()) {
-					if (isLifecycleMethod(method, METHOD_BEFORE) || isLifecycleMethod(method, METHOD_AFTER)) {
-						hasLifecycleMethod = true;
-						break;
-					}
-				}
-				if (!hasLifecycleMethod) {
-					return false;
+		if (nodesprocessed.contains(node)) {
+			return false;
+		}
+		
+		// For indirect subclasses, only process if they have lifecycle methods
+		if (!isDirectlyExtendingExternalResource(node.resolveBinding())) {
+			boolean hasLifecycleMethod = false;
+			for (MethodDeclaration method : node.getMethods()) {
+				if (isLifecycleMethod(method, METHOD_BEFORE) || isLifecycleMethod(method, METHOD_AFTER)) {
+					hasLifecycleMethod = true;
+					break;
 				}
 			}
-			nodesprocessed.add(node);
-			JunitHolder mh= new JunitHolder();
-			mh.minv= node;
-			dataHolder.put(dataHolder.size(), mh);
-			operations.add(fixcore.rewrite(dataHolder));
+			if (!hasLifecycleMethod) {
+				return false;
+			}
 		}
+		
+		nodesprocessed.add(node);
+		JunitHolder mh= new JunitHolder();
+		mh.minv= node;
+		dataHolder.put(dataHolder.size(), mh);
+		operations.add(fixcore.rewrite(dataHolder));
 		return false;
 	}
 
