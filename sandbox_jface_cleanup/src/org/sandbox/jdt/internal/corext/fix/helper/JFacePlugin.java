@@ -30,7 +30,6 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.IBinding;
-import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
@@ -85,8 +84,6 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 		public String minvname;
 		public Set<ClassInstanceCreation> setofcic = new HashSet<>();
 		public Set<ASTNode> nodesprocessed;
-		public IVariableBinding monitorBinding;
-		public Block enclosingBlock;
 	}
 
 	@Override
@@ -120,12 +117,6 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				mh.minv = node;
 				mh.minvname = name;
 				mh.nodesprocessed = nodesprocessed;
-				// Store the binding if it's a variable binding
-				if (ibinding instanceof IVariableBinding) {
-					mh.monitorBinding = (IVariableBinding) ibinding;
-				}
-				// Store the enclosing block for scope analysis
-				mh.enclosingBlock = ASTNodes.getTypedAncestor(node, Block.class);
 				holder.put(holder.size(), mh);
 			}
 			return true;
