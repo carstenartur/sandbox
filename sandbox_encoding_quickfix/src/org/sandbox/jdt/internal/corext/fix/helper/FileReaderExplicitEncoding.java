@@ -25,7 +25,6 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 
@@ -35,7 +34,6 @@ import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
-import org.sandbox.jdt.internal.corext.util.ASTRewriteUtils;
 
 /**
  * Change
@@ -86,12 +84,19 @@ public class FileReaderExplicitEncoding extends AbstractExplicitEncoding<ClassIn
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
 		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, (String) data.get(visited),getCharsetConstants());
-		
-		Expression filenameArg= ASTRewriteUtils.createMoveTargetForExpression(rewrite, (Expression) visited.arguments().get(0));
-		ClassInstanceCreation fisclassInstance= ASTRewriteUtils.createInstanceCreation(ast, cuRewrite,
-				FileInputStream.class.getCanonicalName(), filenameArg);
-		ClassInstanceCreation isrclassInstance= ASTRewriteUtils.createInstanceCreation(ast, cuRewrite,
-				InputStreamReader.class.getCanonicalName(), fisclassInstance, (Expression) callToCharsetDefaultCharset);
+		/**
+		 * new FileInputStream(<filename>)
+		 */
+		ClassInstanceCreation fisclassInstance= ast.newClassInstanceCreation();
+		fisclassInstance.setType(ast.newSimpleType(addImport(FileInputStream.class.getCanonicalName(), cuRewrite, ast)));
+		fisclassInstance.arguments().add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression((ASTNode) visited.arguments().get(0))));
+		/**
+		 * new InputStreamReader(new FileInputStream(<filename>))
+		 */
+		ClassInstanceCreation isrclassInstance= ast.newClassInstanceCreation();
+		isrclassInstance.setType(ast.newSimpleType(addImport(InputStreamReader.class.getCanonicalName(), cuRewrite, ast)));
+		isrclassInstance.arguments().add(fisclassInstance);
+		isrclassInstance.arguments().add(callToCharsetDefaultCharset);
 
 		ASTNodes.replaceButKeepComment(rewrite, visited, isrclassInstance, group);
 	}
