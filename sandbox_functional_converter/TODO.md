@@ -21,12 +21,14 @@ Current implementation: ~40% complete
 - [x] ProspectiveOperation operation merging (mergeRecursivelyIntoComposableOperations)
 - [x] Enhanced Refactorer with parseLoopBody for basic MAP, FILTER, FOREACH operations
 - [x] Variable name tracking through pipeline (getVariableNameFromPreviousOp)
-- [x] Multiple test cases enabled: SIMPLECONVERT, CHAININGMAP, ChainingFilterMapForEachConvert, SmoothLongerChaining, MergingOperations, BeautificationWorks, BeautificationWorks2 (7 of 20+)
+- [x] Multiple test cases enabled: SIMPLECONVERT, CHAININGMAP, ChainingFilterMapForEachConvert, SmoothLongerChaining, MergingOperations, BeautificationWorks, BeautificationWorks2, NonFilteringIfChaining (8 of 20+)
+- [x] StreamPipelineBuilder class created with analyze(), buildPipeline(), and wrapPipeline() methods
+- [x] StreamPipelineBuilder integrated into Refactorer with refactorWithBuilder() method
 
 ### 🚧 In Progress
-- [ ] StreamPipelineBuilder class - refactoring existing Refactorer logic into dedicated builder
-- [ ] More complex pattern recognition (early returns, nested conditions, complex reducers)
+- [ ] Advanced pattern recognition (continue statements, early returns, complex reducers)
 - [ ] Operation optimization (merge consecutive filters, remove redundant operations)
+- [ ] REDUCE operation implementation for accumulator patterns
 
 ### ❌ Not Started
 - [ ] Advanced reducer patterns (string concatenation, custom accumulators)
@@ -92,7 +94,7 @@ Future enhancements (optional):
 ### 4. 🚧 Incrementally Enable Tests (IN PROGRESS)
 **File**: `sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/Java8CleanUpTest.java`
 
-**Status**: 7 tests currently enabled in testSimpleForEachConversion method:
+**Status**: 8 tests currently enabled in testSimpleForEachConversion method:
 
 Enabled tests:
 1. ✅ SIMPLECONVERT - simple forEach (PASSING)
@@ -102,19 +104,19 @@ Enabled tests:
 5. ✅ MergingOperations - operation merging (ENABLED)
 6. ✅ BeautificationWorks - lambda beautification (ENABLED)
 7. ✅ BeautificationWorks2 - more beautification (ENABLED)
+8. ✅ NonFilteringIfChaining - complex nested IFs (ENABLED)
 
 Remaining tests to enable:
-8. ⏳ ContinuingIfFilterSingleStatement - continue as filter
-9. ⏳ SimpleReducer - basic reduce
-10. ⏳ ChainedReducer - filter + reduce
-11. ⏳ DOUBLEINCREMENTREDUCER - double increment pattern
-12. ⏳ IncrementReducer - increment pattern
-13. ⏳ DecrementingReducer - decrement pattern
-14. ⏳ AccumulatingMapReduce - map + reduce
-15. ⏳ StringConcat - string concatenation
-16. ⏳ ChainedAnyMatch - anyMatch
-17. ⏳ ChainedNoneMatch - noneMatch
-18. ⏳ NonFilteringIfChaining - complex nested IFs
+9. ⏳ ContinuingIfFilterSingleStatement - continue as filter
+10. ⏳ SimpleReducer - basic reduce
+11. ⏳ ChainedReducer - filter + reduce
+12. ⏳ DOUBLEINCREMENTREDUCER - double increment pattern
+13. ⏳ IncrementReducer - increment pattern
+14. ⏳ DecrementingReducer - decrement pattern
+15. ⏳ AccumulatingMapReduce - map + reduce
+16. ⏳ StringConcat - string concatenation
+17. ⏳ ChainedAnyMatch - anyMatch
+18. ⏳ ChainedNoneMatch - noneMatch
 19. ⏳ ...additional test cases
 
 For each test:
