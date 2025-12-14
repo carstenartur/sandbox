@@ -63,7 +63,7 @@ Current implementation: ~40% complete
   - [x] ReducerType enum (INCREMENT, DECREMENT, SUM, PRODUCT, STRING_CONCAT)
   - [x] Test implementation with actual test runs
   - [ ] Fix any edge cases discovered during testing
-- [ ] Enabling additional REDUCE tests (ChainedReducer, IncrementReducer, AccumulatingMapReduce)
+- [x] Enabling additional REDUCE tests (ChainedReducer, IncrementReducer, AccumulatingMapReduce)
 - [ ] Operation optimization (merge consecutive filters, remove redundant operations)
 
 ### ❌ Not Started
