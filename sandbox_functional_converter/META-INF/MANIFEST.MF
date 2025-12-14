@@ -2,6 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: functional_converter
 Bundle-SymbolicName: sandbox_functional_converter;singleton:=true
+Bundle-Vendor: sandbox
 Bundle-Version: 1.2.2.qualifier
 Bundle-RequiredExecutionEnvironment: JavaSE-21
 Require-Bundle: org.eclipse.core.runtime,
@@ -21,5 +22,6 @@ Require-Bundle: org.eclipse.core.runtime,
 Bundle-ActivationPolicy: lazy
 Eclipse-RegisterBuddy: org.eclipse.jdt.core.manipulation
 Eclipse-BuddyPolicy: global
+Import-Package: org.sandbox.jdt.internal.common,
+ org.sandbox.jdt.internal.corext.fix2
 Automatic-Module-Name: sandbox.functional.converter
-Import-Package: org.sandbox.jdt.internal.common

@@ -39,6 +39,8 @@ public class PreconditionsChecker {
     private boolean throwsException = false;
     private boolean containsNEFs = false;
     private boolean iteratesOverIterable = false;
+    private boolean hasReducer = false;
+    private Statement reducerStatement = null;
 
     public PreconditionsChecker(Statement loop, CompilationUnit compilationUnit) {
         this.loop = loop;
@@ -85,14 +87,40 @@ public class PreconditionsChecker {
     public boolean iteratesOverIterable() {
         return iteratesOverIterable;
     }
+    
+    /**
+     * Checks if the loop contains a reducer pattern.
+     * Required by TODO section 2.
+     * 
+     * Scans loop body for accumulator patterns:
+     * - i++, i--, ++i, --i
+     * - sum += x, product *= x, count -= 1
+     * - Other compound assignments (|=, &=, etc.)
+     * 
+     * Note: If multiple reducers exist, only the first one is tracked.
+     */
+    public boolean isReducer() {
+        return hasReducer;
+    }
+    
+    /**
+     * Returns the statement containing the reducer pattern.
+     * Required by TODO section 2.
+     * 
+     * Note: If multiple reducers exist in the loop, this returns only the first one encountered.
+     */
+    public Statement getReducer() {
+        return reducerStatement;
+    }
 
     /** 
      * Methode zur Analyse der Schleife und Identifikation relevanter Elemente.
      * Uses AstProcessorBuilder for cleaner and more maintainable AST traversal.
      */
     private void analyzeLoop() {
-        AstProcessorBuilder.with(new ReferenceHolder<String, Object>())
-            .onVariableDeclarationFragment((node, h) -> {
+        AstProcessorBuilder<String, Object> builder = AstProcessorBuilder.with(new ReferenceHolder<String, Object>());
+        
+        builder.onVariableDeclarationFragment((node, h) -> {
                 innerVariables.add(node);
                 return true;
             })
@@ -116,7 +144,45 @@ public class PreconditionsChecker {
                 iteratesOverIterable = true;
                 return true;
             })
-            .build(loop);
+            .onAssignment((node, h) -> {
+                // Detect compound assignments: +=, -=, *=, /=, |=, &=, etc.
+                if (node.getOperator() != Assignment.Operator.ASSIGN) {
+                    hasReducer = true;
+                    if (reducerStatement == null) {
+                        reducerStatement = ASTNodes.getFirstAncestorOrNull(node, Statement.class);
+                    }
+                }
+                return true;
+            });
+        
+        // Use processor() to access PostfixExpression and PrefixExpression visitors
+        builder.processor()
+            .callPostfixExpressionVisitor((node, h) -> {
+                PostfixExpression postfix = (PostfixExpression) node;
+                // Detect i++, i--
+                if (postfix.getOperator() == PostfixExpression.Operator.INCREMENT ||
+                    postfix.getOperator() == PostfixExpression.Operator.DECREMENT) {
+                    hasReducer = true;
+                    if (reducerStatement == null) {
+                        reducerStatement = ASTNodes.getFirstAncestorOrNull(node, Statement.class);
+                    }
+                }
+                return true;
+            })
+            .callPrefixExpressionVisitor((node, h) -> {
+                PrefixExpression prefix = (PrefixExpression) node;
+                // Detect ++i, --i
+                if (prefix.getOperator() == PrefixExpression.Operator.INCREMENT ||
+                    prefix.getOperator() == PrefixExpression.Operator.DECREMENT) {
+                    hasReducer = true;
+                    if (reducerStatement == null) {
+                        reducerStatement = ASTNodes.getFirstAncestorOrNull(node, Statement.class);
+                    }
+                }
+                return true;
+            });
+        
+        builder.build(loop);
         
         analyzeEffectivelyFinalVariables();
     }
