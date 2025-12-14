@@ -161,24 +161,21 @@ public class Refactorer {
             pipeline.setName(ast.newSimpleName("stream"));
             
             // Chain each operation
-            String paramName = loopVarName; // Start with the loop variable name
             for (int i = 0; i < operations.size(); i++) {
                 ProspectiveOperation op = operations.get(i);
                 MethodInvocation next = ast.newMethodInvocation();
                 next.setExpression(pipeline);
                 next.setName(ast.newSimpleName(op.getSuitableMethod()));
 
+                // Get the current parameter name for this operation
+                String paramName = getVariableNameFromPreviousOp(operations, i, loopVarName);
+                
                 // Use the current paramName for this operation
                 List<Expression> args = op.getArguments(ast, paramName);
                 for (Expression arg : args) {
                     next.arguments().add(arg);
                 }
                 pipeline = next;
-
-                // Update paramName for the next operation, if any
-                if (i + 1 < operations.size()) {
-                    paramName = getVariableNameFromPreviousOp(operations, i + 1);
-                }
             }
         } else {
             // Simple forEach without stream()
@@ -201,11 +198,12 @@ public class Refactorer {
      * objects representing the operations that can be mapped to stream operations.
      * <p>
      * This method inspects the statements within the loop body to identify possible
-     * stream operations such as {@code map} (for variable declarations with initializers)
-     * and {@code forEach} (for the final or sole statement). For block bodies, it processes
-     * each statement in order, treating variable declarations with initializers as {@code map}
-     * operations and the last statement as a {@code forEach} operation. For single-statement
-     * bodies, it treats the statement as a {@code forEach} operation.
+     * stream operations such as {@code map} (for variable declarations with initializers),
+     * {@code filter} (for IF statements), and {@code forEach} (for the final or sole statement).
+     * For block bodies, it processes each statement in order, treating:
+     * - IF statements with single block body as FILTER operations
+     * - Variable declarations with initializers as MAP operations
+     * - The last statement as a FOREACH operation
      *
      * @param body the {@link Statement} representing the loop body; may be a {@link Block} or a single statement
      * @param loopVarName the name of the loop variable currently in scope; may be updated if a map operation is found
@@ -215,6 +213,7 @@ public class Refactorer {
      */
     private List<ProspectiveOperation> parseLoopBody(Statement body, String loopVarName) {
         List<ProspectiveOperation> operations = new ArrayList<>();
+        String currentVarName = loopVarName; // Track the current variable name through the pipeline
         
         if (body instanceof Block) {
             Block block = (Block) body;
@@ -231,13 +230,41 @@ public class Refactorer {
                     if (!fragments.isEmpty()) {
                         VariableDeclarationFragment frag = fragments.get(0);
                         if (frag.getInitializer() != null) {
+                            String newVarName = frag.getName().getIdentifier();
                             ProspectiveOperation mapOp = new ProspectiveOperation(
                                 frag.getInitializer(),
-                                ProspectiveOperation.OperationType.MAP);
+                                ProspectiveOperation.OperationType.MAP,
+                                newVarName);
                             operations.add(mapOp);
                             
-                            // Update loop var name for subsequent operations
-                            loopVarName = frag.getName().getIdentifier();
+                            // Update current var name for subsequent operations
+                            currentVarName = newVarName;
+                        }
+                    }
+                } else if (stmt instanceof IfStatement && !isLast) {
+                    // IF statement (not the last statement) → potential FILTER or nested processing
+                    IfStatement ifStmt = (IfStatement) stmt;
+                    
+                    // Check if this is a filtering IF (simple condition with block body)
+                    if (ifStmt.getElseStatement() == null) {
+                        Statement thenStmt = ifStmt.getThenStatement();
+                        
+                        // Add FILTER operation for the condition
+                        ProspectiveOperation filterOp = new ProspectiveOperation(
+                            ifStmt.getExpression(),
+                            ProspectiveOperation.OperationType.FILTER);
+                        operations.add(filterOp);
+                        
+                        // Process the body of the IF statement recursively
+                        List<ProspectiveOperation> nestedOps = parseLoopBody(thenStmt, currentVarName);
+                        operations.addAll(nestedOps);
+                        
+                        // Update current var name if the nested operations produced a new variable
+                        if (!nestedOps.isEmpty()) {
+                            ProspectiveOperation lastNested = nestedOps.get(nestedOps.size() - 1);
+                            if (lastNested.getProducedVariableName() != null) {
+                                currentVarName = lastNested.getProducedVariableName();
+                            }
                         }
                     }
                 } else if (isLast) {
@@ -245,16 +272,30 @@ public class Refactorer {
                     ProspectiveOperation forEachOp = new ProspectiveOperation(
                         stmt,
                         ProspectiveOperation.OperationType.FOREACH,
-                        loopVarName);
+                        currentVarName);
                     operations.add(forEachOp);
                 }
+            }
+        } else if (body instanceof IfStatement) {
+            // Single IF statement → process as filter with nested body
+            IfStatement ifStmt = (IfStatement) body;
+            if (ifStmt.getElseStatement() == null) {
+                // Add FILTER operation
+                ProspectiveOperation filterOp = new ProspectiveOperation(
+                    ifStmt.getExpression(),
+                    ProspectiveOperation.OperationType.FILTER);
+                operations.add(filterOp);
+                
+                // Process the then statement
+                List<ProspectiveOperation> nestedOps = parseLoopBody(ifStmt.getThenStatement(), currentVarName);
+                operations.addAll(nestedOps);
             }
         } else {
             // Single statement → FOREACH
             ProspectiveOperation forEachOp = new ProspectiveOperation(
                 body,
                 ProspectiveOperation.OperationType.FOREACH,
-                loopVarName);
+                currentVarName);
             operations.add(forEachOp);
         }
         
@@ -265,30 +306,24 @@ public class Refactorer {
      * Determines the variable name to use for the current operation in a chain of stream operations.
      * <p>
      * This method inspects the list of {@link ProspectiveOperation}s up to {@code currentIndex - 1}
-     * to find if a previous MAP operation exists. If so, it returns a default variable name ("s")
-     * to represent the result of the MAP operation. Otherwise, it returns "item" as the default variable name.
+     * to find if a previous MAP operation exists. If so, it returns the produced variable name
+     * from that MAP operation. Otherwise, it returns the loop variable name.
      * </p>
      *
      * @param operations   the list of prospective operations representing the loop body transformation
      * @param currentIndex the index of the current operation in the list; operations before this index are considered
-     * @return "s" if a previous MAP operation is found (currently always "s" as a placeholder), otherwise "item"
-     * @implNote
-     *   <b>Limitation:</b> Currently, this method always returns "s" when a previous MAP operation is found,
-     *   rather than extracting the actual variable name introduced by the MAP. This should be improved
-     *   in the future to reflect the real variable name used in the stream chain.
+     * @param loopVarName  the original loop variable name
+     * @return the variable name produced by the most recent MAP operation, or the loop variable name if none found
      */
-    private String getVariableNameFromPreviousOp(List<ProspectiveOperation> operations, int currentIndex) {
-        if (currentIndex > 0) {
-            // Look back to find a MAP operation that defines a variable
-            for (int i = currentIndex - 1; i >= 0; i--) {
-                ProspectiveOperation op = operations.get(i);
-                if (op.getOperationType() == ProspectiveOperation.OperationType.MAP) {
-                    // Try to extract variable name - for now return a default
-                    return "s"; // This should be improved to extract actual variable name
-                }
+    private String getVariableNameFromPreviousOp(List<ProspectiveOperation> operations, int currentIndex, String loopVarName) {
+        // Look back to find the most recent operation that produces a variable
+        for (int i = currentIndex - 1; i >= 0; i--) {
+            ProspectiveOperation op = operations.get(i);
+            if (op.getProducedVariableName() != null) {
+                return op.getProducedVariableName();
             }
         }
-        return "item";
+        return loopVarName;
     }
     /** (7) Erstellt eine Lambda-Expression für die `map()`-Operation. */
     private LambdaExpression createMapLambdaExpression() {
