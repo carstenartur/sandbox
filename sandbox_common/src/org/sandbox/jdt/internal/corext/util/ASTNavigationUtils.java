@@ -100,8 +100,8 @@ public final class ASTNavigationUtils {
 	 */
 	public static TypeDeclaration findTypeDeclarationInCompilationUnit(CompilationUnit unit, String fullyQualifiedTypeName) {
 		for (Object obj : unit.types()) {
-			if (obj instanceof TypeDeclaration) {
-				TypeDeclaration typeDecl = (TypeDeclaration) obj;
+			TypeDeclaration typeDecl = ASTNodes.as(obj, TypeDeclaration.class);
+			if (typeDecl != null) {
 				TypeDeclaration result = findTypeDeclarationInType(typeDecl, fullyQualifiedTypeName);
 				if (result != null) {
 					return result;
