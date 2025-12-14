@@ -91,9 +91,7 @@ public class PreconditionsChecker {
      * Uses AstProcessorBuilder for cleaner and more maintainable AST traversal.
      */
     private void analyzeLoop() {
-        ReferenceHolder<String, Object> holder = new ReferenceHolder<>();
-        
-        AstProcessorBuilder.with(holder)
+        AstProcessorBuilder.with(new ReferenceHolder<String, Object>())
             .processor()
             .callVariableDeclarationFragmentVisitor((node, h) -> {
                 innerVariables.add(node);
@@ -139,10 +137,9 @@ public class PreconditionsChecker {
         final boolean[] modified = {false};
         ASTNode methodBody = getEnclosingMethodBody(var);
         if (methodBody != null) {
-            ReferenceHolder<String, Object> holder = new ReferenceHolder<>();
             String varName = var.getName().getIdentifier();
             
-            AstProcessorBuilder.with(holder)
+            AstProcessorBuilder.with(new ReferenceHolder<String, Object>())
                 .processor()
                 .callAssignmentVisitor((node, h) -> {
                     if (node.getLeftHandSide() instanceof SimpleName name) {

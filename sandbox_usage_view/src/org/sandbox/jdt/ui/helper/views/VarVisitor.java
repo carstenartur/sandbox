@@ -48,15 +48,12 @@ final class VarVisitor {
 	 * @param node the AST node to process
 	 */
 	public void process(ASTNode node) {
-		ReferenceHolder<String, Set<IVariableBinding>> holder = new ReferenceHolder<>();
-		holder.put("vars", methods); //$NON-NLS-1$
-		
-		AstProcessorBuilder.with(holder)
+		AstProcessorBuilder.with(new ReferenceHolder<String, Object>())
 			.processor()
 			.callSimpleNameVisitor((simpleName, dataHolder) -> {
 				IBinding binding = simpleName.resolveBinding();
 				if (binding instanceof IVariableBinding varBinding) {
-					dataHolder.get("vars").add(varBinding); //$NON-NLS-1$
+					methods.add(varBinding);
 				}
 				return true;
 			})
