@@ -6,14 +6,21 @@
 
 **Activities**:
 1. ✅ Enabled 3 additional REDUCE tests: ChainedReducer, IncrementReducer, AccumulatingMapReduce
-2. 🚧 Running tests to validate REDUCE implementation
-3. 🚧 Debugging and fixing any issues discovered
-4. 📝 Updating documentation to reflect completed work
+2. ✅ Enhanced StreamPipelineBuilder to extract MAP operations from REDUCE expressions
+3. ✅ Added side-effect statement handling for non-last statements in loops
+4. ✅ Updated ProspectiveOperation to generate proper return statements for side-effect MAPs
+5. 🚧 Running tests to validate implementation
+6. 📝 Updating documentation to reflect completed work
+
+**Implementation Enhancements**:
+- **MAP Extraction from REDUCE**: Compound assignments like `i += foo(l)` now properly extract `foo(l)` as a MAP operation
+- **Side-Effect Handling**: Statements like `foo(l)` in the middle of a loop are wrapped as MAPs with side effects
+- **Return Statement Generation**: MAP operations with statements now include proper return statements
 
 **Next Steps**:
-- Validate that newly enabled tests pass
-- Fix any edge cases discovered
-- Enable remaining REDUCE tests (DOUBLEINCREMENTREDUCER, DecrementingReducer, etc.)
+- Build and run tests to validate the enhancements
+- Fix any edge cases discovered during testing
+- Enable remaining REDUCE tests if current tests pass
 - Move on to AnyMatch/NoneMatch pattern implementation
 
 ---
@@ -78,9 +85,11 @@ Current implementation: ~40% complete
 - `getVariableNameFromPreviousOp()` - Tracks variable names through pipeline
 - `requiresStreamPrefix()` - Determines when .stream() is needed
 - `detectReduceOperation()` - Detects REDUCE patterns (i++, +=, etc.)
+- `extractReduceExpression()` - Extracts RHS expression from compound assignments for MAP operations
 - Full support for MAP, FILTER, FOREACH, REDUCE operations
 - Recursive nested IF statement processing for filter chains
 - Variable dependency tracking through the pipeline
+- **Side-effect statement handling**: Non-last statements wrapped as MAP operations with return statements
 
 **Integration**:
 - Refactorer.refactorWithBuilder() uses StreamPipelineBuilder
@@ -196,12 +205,14 @@ For each test:
    - ✅ Detect `sum += x` → `.reduce(sum, Integer::sum)` or similar
    - ✅ Detect `count += 1` → `.map(_item -> 1).reduce(count, Integer::sum)`
    - ✅ Track accumulator variable name via `accumulatorVariable` field
+   - ✅ Extract RHS expressions for compound assignments: `i += foo(l)` → `.map(l -> foo(l)).reduce(i, Integer::sum)`
 
 2. **✅ Generate REDUCE operations in ProspectiveOperation**:
    - ✅ Create mapping lambda: `_item -> 1` for counting operations
    - ✅ Create reducer method reference: `Integer::sum` for INCREMENT/SUM
    - ✅ Create reducer lambda for other operators: `(accumulator, _item) -> accumulator + _item`
    - ✅ Handle identity value as accumulator variable reference
+   - ✅ Generate proper return statements for side-effect MAP operations
 
 3. **✅ Update StreamPipelineBuilder.wrapPipeline()**:
    - ✅ REDUCE operations return a value, not void
@@ -211,16 +222,23 @@ For each test:
 
 4. **✅ Handle different reducer patterns**:
    - ✅ `i++` / `i--` → counting with map to 1, ReducerType.INCREMENT/DECREMENT
-   - ✅ `sum += expr` → ReducerType.SUM with Integer::sum
+   - ✅ `sum += expr` → ReducerType.SUM with Integer::sum, MAP extraction for expressions
    - ✅ `product *= expr` → ReducerType.PRODUCT with multiply lambda
-   - ⏳ `s += string` → ReducerType.STRING_CONCAT (implemented, needs testing)
+   - ✅ `s += string` → ReducerType.STRING_CONCAT (implemented, needs testing)
+
+5. **✅ Handle side-effect statements**:
+   - ✅ Non-last statements like `foo(l);` wrapped as MAP operations
+   - ✅ Block body with statement and return statement: `.map(l -> { foo(l); return l; })`
+   - ✅ Properly chains with subsequent operations
 
 **Challenges Addressed**:
 - ✅ REDUCE changes the overall structure (assignment vs expression statement) - handled by wrapPipeline
 - ✅ Track which variable is the accumulator - accumulatorVariable field
 - ✅ Determine the correct identity value - use accumulator variable reference
 - ✅ Generate method references or appropriate lambda expressions - createAccumulatorExpression
-- ⏳ Complex interaction with other operations (filter + reduce, map + reduce) - needs testing
+- ✅ Extract expressions from compound assignments - extractReduceExpression method
+- ✅ Handle side-effect statements before REDUCE - wrap as MAP with return statement
+- ⏳ Complex interaction with other operations (filter + reduce, map + reduce) - implemented, needs testing
 
 
 **Estimated Effort**: 6-8 hours
