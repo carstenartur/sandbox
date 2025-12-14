@@ -98,7 +98,6 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				if (node.arguments().size() != 2) {
 					return true;
 				}
-				System.out.println("begintask[" + node.getStartPosition() + "] " + node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 				
 				// Check if parent is ExpressionStatement, otherwise skip
 				if (!(node.getParent() instanceof ExpressionStatement)) {
@@ -149,7 +148,6 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				if (firstArgName == null || !mh.minvname.equals(firstArgName)) {
 					return true;
 				}
-				System.out.println("init[" + node.getStartPosition() + "] " + node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 				mh.setofcic.add(node);
 				operations.add(fixcore.rewrite(holder));
 				return true;
@@ -180,7 +178,6 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 			
 			if (!nodesprocessed.contains(minv)) {
 				nodesprocessed.add(minv);
-				System.out.println("rewrite methodinvocation [" + minv.getStartPosition() + "] " + minv); //$NON-NLS-1$ //$NON-NLS-2$
 				
 				// Ensure parent is ExpressionStatement
 				if (!(minv.getParent() instanceof ExpressionStatement)) {
@@ -218,7 +215,6 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				newVariableDeclarationStatement.setInitializer(staticCall);
 
 				ASTNodes.replaceButKeepComment(rewrite, minv, newVariableDeclarationStatement, group);
-				System.out.println("result " + staticCall); //$NON-NLS-1$
 			}
 			
 			for (ClassInstanceCreation submon : mh.setofcic) {
@@ -228,7 +224,6 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				}
 				
 				ASTNode origarg = (ASTNode) arguments.get(1);
-				System.out.println("rewrite spminstance [" + submon.getStartPosition() + "] " + submon); //$NON-NLS-1$ //$NON-NLS-2$
 				
 				/**
 				 * Handle both 2-arg and 3-arg SubProgressMonitor constructors:
