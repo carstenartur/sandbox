@@ -208,6 +208,32 @@ public class StreamPipelineBuilder {
     }
     
     /**
+     * Extracts the expression from a REDUCE operation's right-hand side.
+     * For example, in "i += foo(l)", extracts "foo(l)".
+     * 
+     * @param stmt the statement containing the reduce operation
+     * @return the expression to be mapped, or null if none
+     */
+    private Expression extractReduceExpression(Statement stmt) {
+        if (!(stmt instanceof ExpressionStatement)) {
+            return null;
+        }
+        
+        ExpressionStatement exprStmt = (ExpressionStatement) stmt;
+        Expression expr = exprStmt.getExpression();
+        
+        if (expr instanceof Assignment) {
+            Assignment assignment = (Assignment) expr;
+            // Return the right-hand side expression for compound assignments
+            if (assignment.getOperator() != Assignment.Operator.ASSIGN) {
+                return assignment.getRightHandSide();
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
      * Detects if a statement contains a REDUCE pattern (i++, sum += x, etc.).
      * 
      * @param stmt the statement to check
@@ -375,6 +401,19 @@ public class StreamPipelineBuilder {
                             }
                         }
                     }
+                } else if (!isLast) {
+                    // Non-last statement that's not a variable declaration or IF
+                    // This is a side-effect statement like foo(l) - wrap it in a MAP that returns the current variable
+                    // Only do this if it's not a REDUCE operation (which should only be the last statement)
+                    ProspectiveOperation reduceCheck = detectReduceOperation(stmt);
+                    if (reduceCheck == null) {
+                        // Create a MAP operation with side effect that returns the loop variable
+                        ProspectiveOperation mapOp = new ProspectiveOperation(
+                            stmt,
+                            ProspectiveOperation.OperationType.MAP,
+                            currentVarName);
+                        ops.add(mapOp);
+                    }
                 } else if (isLast) {
                     // Last statement → Check for REDUCE first, otherwise FOREACH
                     ProspectiveOperation reduceOp = detectReduceOperation(stmt);
@@ -390,6 +429,19 @@ public class StreamPipelineBuilder {
                                 ProspectiveOperation.OperationType.MAP,
                                 "_item");
                             ops.add(mapOp);
+                        } else if (reduceOp.getReducerType() == ProspectiveOperation.ReducerType.SUM ||
+                                   reduceOp.getReducerType() == ProspectiveOperation.ReducerType.PRODUCT ||
+                                   reduceOp.getReducerType() == ProspectiveOperation.ReducerType.STRING_CONCAT) {
+                            // For SUM/PRODUCT/STRING_CONCAT with expressions (e.g., i += foo(l)),
+                            // extract the right-hand side as a MAP operation
+                            Expression mapExpression = extractReduceExpression(stmt);
+                            if (mapExpression != null) {
+                                ProspectiveOperation mapOp = new ProspectiveOperation(
+                                    mapExpression,
+                                    ProspectiveOperation.OperationType.MAP,
+                                    currentVarName);
+                                ops.add(mapOp);
+                            }
                         }
                         ops.add(reduceOp);
                     } else {
@@ -429,6 +481,19 @@ public class StreamPipelineBuilder {
                         ProspectiveOperation.OperationType.MAP,
                         "_item");
                     ops.add(mapOp);
+                } else if (reduceOp.getReducerType() == ProspectiveOperation.ReducerType.SUM ||
+                           reduceOp.getReducerType() == ProspectiveOperation.ReducerType.PRODUCT ||
+                           reduceOp.getReducerType() == ProspectiveOperation.ReducerType.STRING_CONCAT) {
+                    // For SUM/PRODUCT/STRING_CONCAT with expressions (e.g., i += foo(l)),
+                    // extract the right-hand side as a MAP operation
+                    Expression mapExpression = extractReduceExpression(body);
+                    if (mapExpression != null) {
+                        ProspectiveOperation mapOp = new ProspectiveOperation(
+                            mapExpression,
+                            ProspectiveOperation.OperationType.MAP,
+                            currentVarName);
+                        ops.add(mapOp);
+                    }
                 }
                 ops.add(reduceOp);
             } else {

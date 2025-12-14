@@ -203,6 +203,19 @@ public class ProspectiveOperation {
         if (operationType == OperationType.MAP && originalExpression != null) {
             // For MAP: lambda body is the expression
             lambda.setBody(ASTNode.copySubtree(ast, originalExpression));
+        } else if (operationType == OperationType.MAP && originalStatement != null) {
+            // For MAP with statement: create block with statement and return
+            org.eclipse.jdt.core.dom.Block block = ast.newBlock();
+            block.statements().add(ASTNode.copySubtree(ast, originalStatement));
+            
+            // Add return statement if we have a loop variable to return
+            if (loopVariableName != null || paramName != null) {
+                ReturnStatement returnStmt = ast.newReturnStatement();
+                returnStmt.setExpression(ast.newSimpleName(loopVariableName != null ? loopVariableName : paramName));
+                block.statements().add(returnStmt);
+            }
+            
+            lambda.setBody(block);
         } else if (operationType == OperationType.FILTER && originalExpression != null) {
             // For FILTER: wrap condition in parentheses
             ParenthesizedExpression parenExpr = ast.newParenthesizedExpression();
