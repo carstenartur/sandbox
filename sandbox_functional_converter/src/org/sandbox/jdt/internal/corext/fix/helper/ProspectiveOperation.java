@@ -509,7 +509,7 @@ public class ProspectiveOperation {
     
     /**
      * Creates a counting lambda like (accumulator, _item) -> accumulator + 1 or accumulator - 1.
-     * Used for INCREMENT (i++) and DECREMENT (i--) operations.
+     * Used only for DECREMENT (i--) operations.
      */
     private LambdaExpression createCountingLambda(AST ast, InfixExpression.Operator operator) {
         LambdaExpression lambda = ast.newLambdaExpression();
