@@ -64,7 +64,7 @@ Current implementation: ~40% complete
 - Default is to use StreamPipelineBuilder
 
 **Next Steps**:
-- Add support for continue statements (negated filters)
+- [x] Continue statement handling (negated filters) - COMPLETED
 - Implement REDUCE operation support
 - Add AnyMatch/NoneMatch pattern detection
 
