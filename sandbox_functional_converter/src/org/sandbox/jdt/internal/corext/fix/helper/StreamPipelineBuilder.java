@@ -329,6 +329,9 @@ public class StreamPipelineBuilder {
      * @return true if .stream() is required, false if direct collection method can be used
      */
     private boolean requiresStreamPrefix() {
+        if (operations.isEmpty()) {
+            return true;
+        }
         return operations.size() > 1 || 
                operations.get(0).getOperationType() != ProspectiveOperation.OperationType.FOREACH;
     }
