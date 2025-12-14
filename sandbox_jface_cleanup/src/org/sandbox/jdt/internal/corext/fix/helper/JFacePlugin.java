@@ -99,9 +99,20 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 					return true;
 				}
 				System.out.println("begintask[" + node.getStartPosition() + "] " + node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-				SimpleName sn = ASTNodes.as(node.getExpression(), SimpleName.class);
+				
+				// Check if parent is ExpressionStatement, otherwise skip
+				if (!(node.getParent() instanceof ExpressionStatement)) {
+					return true;
+				}
+				
+				Expression expr = node.getExpression();
+				SimpleName sn = ASTNodes.as(expr, SimpleName.class);
 				if (sn != null) {
 					IBinding ibinding = sn.resolveBinding();
+					// Add null-check for binding
+					if (ibinding == null) {
+						return true;
+					}
 					String name = ibinding.getName();
 					MonitorHolder mh = new MonitorHolder();
 					mh.minv = node;
@@ -110,53 +121,34 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 					holder.put(holder.size(), mh);
 				}
 				return true;
-			}
-			System.out.println("begintask[" + node.getStartPosition() + "] " + node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-			
-			// Check if parent is ExpressionStatement, otherwise skip
-			if (!(node.getParent() instanceof ExpressionStatement)) {
-				return true;
-			}
-			
-			Expression expr = node.getExpression();
-			SimpleName sn = ASTNodes.as(expr, SimpleName.class);
-			if (sn != null) {
-				IBinding ibinding = sn.resolveBinding();
-				// Add null-check for binding
-				if (ibinding == null) {
+			}, s -> ASTNodes.getTypedAncestor(s, Block.class))
+			.callClassInstanceCreationVisitor(SubProgressMonitor.class, (node, holder) -> {
+				// Guard against empty holder
+				if (holder.isEmpty()) {
 					return true;
 				}
-				String name = ibinding.getName();
-				MonitorHolder mh = new MonitorHolder();
-				mh.minv = node;
-				mh.minvname = name;
-				mh.nodesprocessed = nodesprocessed;
-				holder.put(holder.size(), mh);
-			}
-			return true;
-		}, s -> ASTNodes.getTypedAncestor(s, Block.class))
-		.callClassInstanceCreationVisitor(SubProgressMonitor.class, (node, holder) -> {
-			// Guard against empty holder
-			if (holder.isEmpty()) {
-				return true;
-			}
-			MonitorHolder mh = holder.get(holder.size() - 1);
-			List<?> arguments = node.arguments();
-			if (arguments.isEmpty()) {
-				return true;
-			}
-			
-			// Safe handling of first argument - extract identifier from expression
-			Object firstArg = arguments.get(0);
-			String firstArgName = null;
-			
-			// Try to extract SimpleName from the expression
-			SimpleName sn = ASTNodes.as((ASTNode) firstArg, SimpleName.class);
-			if (sn != null) {
-				firstArgName = sn.getIdentifier();
-			}
-			
-			if (firstArgName == null || !mh.minvname.equals(firstArgName)) {
+				MonitorHolder mh = holder.get(holder.size() - 1);
+				List<?> arguments = node.arguments();
+				if (arguments.isEmpty()) {
+					return true;
+				}
+				
+				// Safe handling of first argument - extract identifier from expression
+				Object firstArg = arguments.get(0);
+				String firstArgName = null;
+				
+				// Try to extract SimpleName from the expression
+				SimpleName sn = ASTNodes.as((ASTNode) firstArg, SimpleName.class);
+				if (sn != null) {
+					firstArgName = sn.getIdentifier();
+				}
+				
+				if (firstArgName == null || !mh.minvname.equals(firstArgName)) {
+					return true;
+				}
+				System.out.println("init[" + node.getStartPosition() + "] " + node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				mh.setofcic.add(node);
+				operations.add(fixcore.rewrite(holder));
 				return true;
 			})
 			.build(compilationUnit);
