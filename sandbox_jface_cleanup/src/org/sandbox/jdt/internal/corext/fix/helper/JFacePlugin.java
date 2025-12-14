@@ -13,6 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
@@ -26,6 +27,8 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.SimpleName;
@@ -56,10 +59,9 @@ import org.sandbox.jdt.internal.corext.fix.JfaceCleanUpFixCore;
  * variable and refer to it instead of the root monitor for the remainder of the
  * method. All calls to SubProgressMonitor(IProgressMonitor, int) should be
  * replaced by calls to SubMonitor.split(int). If a SubProgressMonitor is
- * constructed using the SUPPRESS_SUBTASK_LABEL flag, replace it with the
- * two-argument version of SubMonitor.split(int, int) using
- * SubMonitor.SUPPRESS_SUBTASK as the second argument. It is not necessary to
- * call done on an instance of SubMonitor. Example:
+ * constructed using the SUPPRESS_SUBTASK_LABEL flag, it will be transformed to
+ * SubMonitor.split(int, int) with the flags parameter preserved. It is not
+ * necessary to call done on an instance of SubMonitor. Example:
  *
  * Consider the following example: void someMethod(IProgressMonitor pm) {
  * pm.beginTask("Main Task", 100); SubProgressMonitor subMonitor1= new
@@ -97,9 +99,23 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 					return true;
 				}
 				System.out.println("begintask[" + node.getStartPosition() + "] " + node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-				SimpleName sn = ASTNodes.as(node.getExpression(), SimpleName.class);
+				
+				// Check if parent is ExpressionStatement, otherwise skip
+				if (!(node.getParent() instanceof ExpressionStatement)) {
+					return true;
+				}
+				
+				Expression expr = node.getExpression();
+				if (expr == null) {
+					return true;
+				}
+				SimpleName sn = ASTNodes.as(expr, SimpleName.class);
 				if (sn != null) {
 					IBinding ibinding = sn.resolveBinding();
+					// Add null-check for binding
+					if (ibinding == null) {
+						return true;
+					}
 					String name = ibinding.getName();
 					MonitorHolder mh = new MonitorHolder();
 					mh.minv = node;
@@ -110,10 +126,27 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				return true;
 			}, s -> ASTNodes.getTypedAncestor(s, Block.class))
 			.callClassInstanceCreationVisitor(SubProgressMonitor.class, (node, holder) -> {
+				// Guard against empty holder
+				if (holder.isEmpty()) {
+					return true;
+				}
 				MonitorHolder mh = holder.get(holder.size() - 1);
 				List<?> arguments = node.arguments();
-				SimpleName simplename = (SimpleName) arguments.get(0);
-				if (!mh.minvname.equals(simplename.getIdentifier())) {
+				if (arguments.isEmpty()) {
+					return true;
+				}
+				
+				// Safe handling of first argument - extract identifier from expression
+				Expression firstArg = (Expression) arguments.get(0);
+				String firstArgName = null;
+				
+				// Try to extract SimpleName from the expression
+				SimpleName sn = ASTNodes.as(firstArg, SimpleName.class);
+				if (sn != null) {
+					firstArgName = sn.getIdentifier();
+				}
+				
+				if (firstArgName == null || !mh.minvname.equals(firstArgName)) {
 					return true;
 				}
 				System.out.println("init[" + node.getStartPosition() + "] " + node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -130,15 +163,30 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 		ASTRewrite rewrite = cuRewrite.getASTRewrite();
 		AST ast = cuRewrite.getRoot().getAST();
 		ImportRewrite importRemover = cuRewrite.getImportRewrite();
+		
+		// Guard against empty holder
+		if (hit.isEmpty()) {
+			return;
+		}
+		
 		Set<ASTNode> nodesprocessed = hit.get(hit.size() - 1).nodesprocessed;
 		for (Entry<Integer, MonitorHolder> entry : hit.entrySet()) {
 
 			MonitorHolder mh = entry.getValue();
 			MethodInvocation minv = mh.minv;
-			String identifier = "subMonitor"; //$NON-NLS-1$
+			
+			// Generate unique identifier name for SubMonitor variable
+			String identifier = generateUniqueVariableName(minv, "subMonitor"); //$NON-NLS-1$
+			
 			if (!nodesprocessed.contains(minv)) {
 				nodesprocessed.add(minv);
 				System.out.println("rewrite methodinvocation [" + minv.getStartPosition() + "] " + minv); //$NON-NLS-1$ //$NON-NLS-2$
+				
+				// Ensure parent is ExpressionStatement
+				if (!(minv.getParent() instanceof ExpressionStatement)) {
+					continue;
+				}
+				
 				List<ASTNode> arguments = minv.arguments();
 
 				/**
@@ -172,26 +220,69 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				ASTNodes.replaceButKeepComment(rewrite, minv, newVariableDeclarationStatement, group);
 				System.out.println("result " + staticCall); //$NON-NLS-1$
 			}
+			
 			for (ClassInstanceCreation submon : mh.setofcic) {
-				ASTNode origarg = (ASTNode) submon.arguments().get(1);
+				List<?> arguments = submon.arguments();
+				if (arguments.size() < 2) {
+					continue;
+				}
+				
+				ASTNode origarg = (ASTNode) arguments.get(1);
 				System.out.println("rewrite spminstance [" + submon.getStartPosition() + "] " + submon); //$NON-NLS-1$ //$NON-NLS-2$
+				
 				/**
-				 *
-				 * IProgressMonitor subProgressMonitor= new SubProgressMonitor(monitor, 1);
-				 * IProgressMonitor subProgressMonitor= subMonitor.split(1);
-				 *
+				 * Handle both 2-arg and 3-arg SubProgressMonitor constructors:
+				 * 
+				 * 2-arg: new SubProgressMonitor(monitor, work)
+				 *   -> subMonitor.split(work)
+				 *   
+				 * 3-arg: new SubProgressMonitor(monitor, work, flags)
+				 *   -> subMonitor.split(work, flags)
 				 */
 				MethodInvocation newMethodInvocation2 = ast.newMethodInvocation();
 				newMethodInvocation2.setName(ast.newSimpleName("split")); //$NON-NLS-1$
 				newMethodInvocation2.setExpression(ASTNodeFactory.newName(ast, identifier));
 				List<ASTNode> splitCallArguments = newMethodInvocation2.arguments();
 
+				// Add the work amount (second argument)
 				splitCallArguments
 				.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(origarg)));
+				
+				// Check for 3-arg constructor (with flags)
+				if (arguments.size() >= 3) {
+					ASTNode flagsArg = (ASTNode) arguments.get(2);
+					splitCallArguments.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(flagsArg)));
+				}
+				
 				ASTNodes.replaceButKeepComment(rewrite, submon, newMethodInvocation2, group);
 				importRemover.removeImport(SubProgressMonitor.class.getCanonicalName());
 			}
 		}
+	}
+	
+	/**
+	 * Generate a unique variable name that doesn't collide with existing variables in scope.
+	 * 
+	 * @param node The AST node context for scope analysis
+	 * @param baseName The base name to use (e.g., "subMonitor")
+	 * @return A unique variable name
+	 */
+	private String generateUniqueVariableName(ASTNode node, String baseName) {
+		Collection<String> usedNames = getUsedVariableNames(node);
+		
+		// If base name is not used, return it
+		if (!usedNames.contains(baseName)) {
+			return baseName;
+		}
+		
+		// Otherwise, append a number until we find an unused name
+		int counter = 2;
+		String candidate = baseName + counter;
+		while (usedNames.contains(candidate)) {
+			counter++;
+			candidate = baseName + counter;
+		}
+		return candidate;
 	}
 
 	@Override
