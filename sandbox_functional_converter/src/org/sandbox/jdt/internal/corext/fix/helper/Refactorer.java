@@ -378,8 +378,14 @@ public class Refactorer {
      * Determines whether to use the StreamPipelineBuilder for refactoring.
      * Returns true to enable the builder-based approach.
      */
+    /**
+     * Determines whether to use the StreamPipelineBuilder for refactoring.
+     * Returns true by default. To enable the legacy implementation for testing or fallback,
+     * set the system property "org.sandbox.jdt.useLegacyLoopRefactor" to "true".
+     */
     private boolean useStreamPipelineBuilder() {
-        return true; // Enable StreamPipelineBuilder by default
+        // If the system property is set to true, use the legacy implementation.
+        return !Boolean.getBoolean("org.sandbox.jdt.useLegacyLoopRefactor");
     }
     
     /**
