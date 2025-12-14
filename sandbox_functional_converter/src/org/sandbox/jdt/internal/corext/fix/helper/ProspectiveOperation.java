@@ -453,13 +453,14 @@ public class ProspectiveOperation {
         
         switch (reducerType) {
             case INCREMENT:
-                // Use (accumulator, _item) -> accumulator + 1 lambda for i++
-                return createCountingLambda(ast, InfixExpression.Operator.PLUS);
+                // Use Integer::sum to sum the mapped 1's for counting
+                return createMethodReference(ast, "Integer", "sum");
             case SUM:
                 // Use Integer::sum method reference for sum += x
                 return createMethodReference(ast, "Integer", "sum");
             case DECREMENT:
-                // Use (accumulator, _item) -> accumulator - 1 lambda for i--
+                // For i--, we need a different approach since we subtract
+                // We can't use a simple method reference for subtraction
                 return createCountingLambda(ast, InfixExpression.Operator.MINUS);
             case PRODUCT:
                 // Use (accumulator, _item) -> accumulator * _item lambda
