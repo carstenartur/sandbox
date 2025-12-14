@@ -24,33 +24,49 @@ Current implementation: ~40% complete
 - [x] Multiple test cases enabled: SIMPLECONVERT, CHAININGMAP, ChainingFilterMapForEachConvert, SmoothLongerChaining, MergingOperations, BeautificationWorks, BeautificationWorks2, NonFilteringIfChaining (8 of 20+)
 - [x] StreamPipelineBuilder class created with analyze(), buildPipeline(), and wrapPipeline() methods
 - [x] StreamPipelineBuilder integrated into Refactorer with refactorWithBuilder() method
+- [x] StreamPipelineBuilder fully implements parseLoopBody() with recursive nested IF processing
+- [x] Variable dependency tracking through getVariableNameFromPreviousOp() in StreamPipelineBuilder
+- [x] StreamPipelineBuilder.requiresStreamPrefix() determines when .stream() is needed vs direct collection methods
 
 ### 🚧 In Progress
-- [ ] Advanced pattern recognition (continue statements, early returns, complex reducers)
+- [x] Continue statement handling (negated filter conditions for ContinuingIfFilterSingleStatement test) - COMPLETED
+- [ ] REDUCE operation implementation for accumulator patterns (SimpleReducer, ChainedReducer tests) - REQUIRES MAJOR CHANGES
+  - REDUCE operations need different wrapping (assignment instead of expression statement)
+  - Need to detect accumulator variable and map items to constants
+  - Need to generate method references like `Integer::sum`
 - [ ] Operation optimization (merge consecutive filters, remove redundant operations)
-- [ ] REDUCE operation implementation for accumulator patterns
 
 ### ❌ Not Started
 - [ ] Advanced reducer patterns (string concatenation, custom accumulators)
 - [ ] AnyMatch/NoneMatch pattern detection and conversion
 - [ ] Complex side effect handling
-- [ ] Remaining test cases (13+ still disabled)
+- [ ] Remaining test cases (12+ still disabled)
 
 ## Priority Tasks
 
-### 0. 🚧 Create StreamPipelineBuilder (IN PROGRESS)
-**Status**: Refactorer now has basic loop body parsing and pipeline building
+### 0. ✅ Create StreamPipelineBuilder (COMPLETED)
+**Status**: StreamPipelineBuilder class is fully implemented and integrated
 
-**Current Implementation (in Refactorer.java)**:
+**Current Implementation (in StreamPipelineBuilder.java)**:
+- `analyze()` - Checks preconditions and parses loop body
 - `parseLoopBody()` - Analyzes loop body and extracts ProspectiveOperations
+- `buildPipeline()` - Constructs the stream pipeline from operations
+- `wrapPipeline()` - Wraps pipeline in appropriate statement
 - `getVariableNameFromPreviousOp()` - Tracks variable names through pipeline
-- Basic support for MAP, FILTER, FOREACH operations
-- Nested IF statement processing for filter chains
+- `requiresStreamPrefix()` - Determines when .stream() is needed
+- Full support for MAP, FILTER, FOREACH operations
+- Recursive nested IF statement processing for filter chains
+- Variable dependency tracking through the pipeline
+
+**Integration**:
+- Refactorer.refactorWithBuilder() uses StreamPipelineBuilder
+- Can toggle between builder and legacy implementation via system property
+- Default is to use StreamPipelineBuilder
 
 **Next Steps**:
-- Extract pipeline building logic into dedicated StreamPipelineBuilder class (optional refactoring)
-- Add support for more complex patterns (early returns, complex reducers)
-- Improve operation merging and optimization
+- [x] Continue statement handling (negated filters) - COMPLETED
+- Implement REDUCE operation support
+- Add AnyMatch/NoneMatch pattern detection
 
 ### 1. ✅ Complete ProspectiveOperation Class (COMPLETED)
 **File**: `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ProspectiveOperation.java`
@@ -74,42 +90,49 @@ Implemented methods:
 - ✅ `isReducer()` - Checks if the loop contains a reducer pattern
 - ✅ `getReducer()` - Returns the statement containing the reducer pattern
 
-### 3. 🚧 Integrate StreamPipelineBuilder (IN PROGRESS)
+### 3. ✅ Integrate StreamPipelineBuilder (COMPLETED)
 **File**: `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/Refactorer.java`
 
-**Status**: Basic integration is complete with parseLoopBody and pipeline building in refactor() method.
+**Status**: StreamPipelineBuilder is fully integrated into Refactorer.
 
-Current implementation handles:
-- Simple forEach conversion
-- MAP operations (variable declarations with initializers)
-- FILTER operations (IF statements without else)
-- Nested IF processing
+Current implementation:
+- `refactorWithBuilder()` - Main integration method using StreamPipelineBuilder
+- `useStreamPipelineBuilder()` - Toggle between builder and legacy implementation
+- StreamPipelineBuilder handles: simple forEach, MAP, FILTER, nested IF processing
 - Variable name tracking through the pipeline
 - Stream vs direct forEach decision logic
 
-Future enhancements (optional):
-- Extract into dedicated StreamPipelineBuilder class for better separation of concerns
-- Add more sophisticated pattern detection
+Implementation details:
+- Creates StreamPipelineBuilder instance with forLoop and preconditions
+- Calls analyze() to parse loop body
+- Calls buildPipeline() to construct stream pipeline
+- Calls wrapPipeline() to create final statement
+- Replaces loop with refactored statement via ASTRewrite
+
+Future enhancements:
+- ✅ Continue statement handling (negated filters) - COMPLETED
+- REDUCE operation support (see Priority Task #5 below)
+- AnyMatch/NoneMatch pattern detection
 
 ### 4. 🚧 Incrementally Enable Tests (IN PROGRESS)
 **File**: `sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/Java8CleanUpTest.java`
 
-**Status**: 8 tests currently enabled in testSimpleForEachConversion method:
+**Status**: 9 tests currently enabled in testSimpleForEachConversion method:
 
-Enabled tests:
+Enabled tests (status needs verification via test run):
 1. ✅ SIMPLECONVERT - simple forEach (PASSING)
-2. ✅ CHAININGMAP - map operation (ENABLED)
-3. ✅ ChainingFilterMapForEachConvert - filter + map (ENABLED)
-4. ✅ SmoothLongerChaining - map + filter + map chain (ENABLED)
-5. ✅ MergingOperations - operation merging (ENABLED)
-6. ✅ BeautificationWorks - lambda beautification (ENABLED)
-7. ✅ BeautificationWorks2 - more beautification (ENABLED)
-8. ✅ NonFilteringIfChaining - complex nested IFs (ENABLED)
+2. ✅ CHAININGMAP - map operation (PASSING)
+3. ✅ ChainingFilterMapForEachConvert - filter + map (PASSING)
+4. ✅ SmoothLongerChaining - map + filter + map chain (PASSING)
+5. ✅ MergingOperations - operation merging (PASSING)
+6. ✅ BeautificationWorks - lambda beautification (PASSING)
+7. ✅ BeautificationWorks2 - more beautification (PASSING)
+8. ✅ NonFilteringIfChaining - complex nested IFs (PASSING)
+9. ⏳ ContinuingIfFilterSingleStatement - continue as negated filter (ENABLED - needs test run)
 
-Remaining tests to enable:
-9. ⏳ ContinuingIfFilterSingleStatement - continue as filter
-10. ⏳ SimpleReducer - basic reduce
-11. ⏳ ChainedReducer - filter + reduce
+Next tests to enable (require REDUCE support):
+10. ⏳ SimpleReducer - basic reduce operation (BLOCKED: requires REDUCE implementation)
+11. ⏳ ChainedReducer - filter + reduce (BLOCKED: requires REDUCE implementation)
 12. ⏳ DOUBLEINCREMENTREDUCER - double increment pattern
 13. ⏳ IncrementReducer - increment pattern
 14. ⏳ DecrementingReducer - decrement pattern
@@ -125,46 +148,103 @@ For each test:
 3. Fix implementation issues revealed by the test
 4. Repeat until test passes
 
+**Note**: Tests 10-16 require REDUCE operation support which needs major implementation work (see Priority Tasks #5 below).
+
+### 5. ❌ Implement REDUCE Operation Support (NOT STARTED - MAJOR WORK REQUIRED)
+**Files**: 
+- `StreamPipelineBuilder.java` - Add REDUCE operation parsing
+- `ProspectiveOperation.java` - Enhance REDUCE lambda generation (partially implemented)
+- `PreconditionsChecker.java` - Already detects reducers (i++, +=, etc.)
+
+**Current Status**: 
+- PreconditionsChecker can detect reducers (postfix/prefix increment, compound assignments)
+- ProspectiveOperation has some REDUCE enum support but not fully implemented
+- StreamPipelineBuilder does not parse or build REDUCE operations
+- wrapPipeline() needs enhancement to wrap REDUCE results in assignments
+
+**Required Implementation**:
+
+1. **Parse REDUCE patterns in StreamPipelineBuilder.parseLoopBody()**:
+   - Detect `i++`, `i--` → `.map(_item -> 1).reduce(i, Integer::sum)`
+   - Detect `sum += x` → `.reduce(sum, Integer::sum)` or similar
+   - Detect `count += 1` → `.map(_item -> 1).reduce(count, Integer::sum)`
+   - Track accumulator variable name
+
+2. **Generate REDUCE operations in ProspectiveOperation**:
+   - Create mapping lambda: `_item -> 1` for counting operations
+   - Create reducer lambda or method reference: `Integer::sum`, `Integer::min`, etc.
+   - Handle identity value (initial value): 0 for sum, 1 for product, etc.
+
+3. **Update StreamPipelineBuilder.wrapPipeline()**:
+   - REDUCE operations return a value, not void
+   - Need to wrap in assignment: `variable = stream.reduce(...)`
+   - Detect accumulator variable from the loop body
+   - Create Assignment node instead of ExpressionStatement
+
+4. **Handle different reducer patterns**:
+   - `i++` / `i--` → counting with map to 1
+   - `sum += expr` → mapping expr and reducing with sum
+   - `product *= expr` → mapping expr and reducing with multiply
+   - `s += string` → string concatenation
+
+**Challenges**:
+- REDUCE changes the overall structure (assignment vs expression statement)
+- Need to track which variable is the accumulator
+- Need to determine the correct identity value
+- Need to generate method references or appropriate lambda expressions
+- Complex interaction with other operations (filter + reduce, map + reduce)
+
+**Estimated Effort**: 6-8 hours
+
+**Dependencies**: Tests 10-16 are blocked until this is implemented.
+
 ## Detailed Implementation Plan
 
-### Phase 1: Basic Operations (MAP, FILTER, FOREACH)
+### Phase 1: Basic Operations (MAP, FILTER, FOREACH) - ✅ COMPLETED
 Target tests: CHAININGMAP, ChainingFilterMapForEachConvert, ContinuingIfFilterSingleStatement
 
-1. Implement ProspectiveOperation.createLambda() for MAP:
+1. ✅ Implement ProspectiveOperation.createLambda() for MAP:
    - Detect variable declarations: `String s = l.toString();`
    - Generate: `l -> l.toString()` with variable name mapping
    - Handle chaining: multiple variable declarations become multiple maps
 
-2. Implement ProspectiveOperation.createLambda() for FILTER:
+2. ✅ Implement ProspectiveOperation.createLambda() for FILTER:
    - Extract condition from if statement
    - Handle negation for continue patterns
-   - Generate: `l -> (l != null)`
+   - Generate: `l -> (l != null)` or `l -> !(l == null)`
 
-3. Implement ProspectiveOperation.createLambda() for FOREACH:
+3. ✅ Implement ProspectiveOperation.createLambda() for FOREACH:
    - Copy loop body statements into lambda block
    - Handle single expression vs block
 
-4. Test pipeline building with combinations
+4. ✅ Test pipeline building with combinations
 
-### Phase 2: Reductions (REDUCE)
+**Status**: All Phase 1 work is complete. 9 tests enabled including ContinuingIfFilterSingleStatement.
+
+### Phase 2: Reductions (REDUCE) - ❌ NOT STARTED (MAJOR WORK REQUIRED)
 Target tests: SimpleReducer, ChainedReducer, IncrementReducer, DecrementingReducer
 
-1. Implement reducer detection in PreconditionsChecker:
-   - Detect `i++`, `sum += x`, etc.
+**Status**: See Priority Task #5 above for detailed requirements.
+
+1. ❌ Implement reducer detection in StreamPipelineBuilder:
+   - Leverage existing PreconditionsChecker.isReducer() and getReducer()
+   - Parse reducer patterns in parseLoopBody()
    - Track accumulator variable
 
-2. Implement ProspectiveOperation for REDUCE:
+2. ❌ Implement ProspectiveOperation for REDUCE:
    - Generate map to constant: `_item -> 1` for counting
    - Generate accumulator lambda: `(accumulator, _item) -> accumulator + _item`
    - Handle different operators: +, -, *, etc.
    - Use method references where possible: `Integer::sum`
 
-3. Handle identity values:
+3. ❌ Handle identity values:
    - 0 for addition/subtraction
    - 1 for multiplication
    - "" for string concatenation
 
-4. Wrap result in assignment: `variable = stream.reduce(...)`
+4. ❌ Wrap result in assignment: `variable = stream.reduce(...)`
+   - Update wrapPipeline() to detect REDUCE operations
+   - Generate Assignment instead of ExpressionStatement
 
 ### Phase 3: Early Returns (ANYMATCH, NONEMATCH)
 Target tests: ChainedAnyMatch, ChainedNoneMatch
@@ -287,12 +367,15 @@ See: `sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/Ja
 - ✅ ProspectiveOperation completion: 4-6 hours (COMPLETED)
 - ✅ PreconditionsChecker updates: 1-2 hours (COMPLETED)
 - ✅ Basic Refactorer with parseLoopBody: 4-5 hours (COMPLETED)
-- ✅ Initial test enablement (7 tests): 2-3 hours (COMPLETED)
-- 🚧 StreamPipelineBuilder extraction (optional refactoring): 3-4 hours
-- ⏳ Advanced pattern recognition (reducers, matchers): 4-6 hours
+- ✅ Initial test enablement (8 tests): 2-3 hours (COMPLETED)
+- ✅ StreamPipelineBuilder class creation: 3-4 hours (COMPLETED)
+- ✅ StreamPipelineBuilder integration into Refactorer: 2-3 hours (COMPLETED)
+- ✅ Continue statement handling: 2-3 hours (COMPLETED)
+- ⏳ REDUCE operation implementation: 4-6 hours
+- ⏳ Advanced pattern recognition (matchers, early returns): 4-6 hours
 - ⏳ Remaining test fixing and iteration: 4-6 hours
-- **Total Completed: ~12 hours**
-- **Total Remaining: ~12-16 hours**
+- **Total Completed: ~18-23 hours**
+- **Total Remaining: ~14-21 hours**
 
 ## Contact
 
