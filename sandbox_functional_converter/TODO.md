@@ -16,10 +16,9 @@ Current implementation: ~40% complete
 - [x] Basic Refactorer with simple forEach conversion
 - [x] ProspectiveOperation enum with all 6 operation types
 - [x] First test case enabled (SIMPLECONVERT)
-
-### ⏳ In Progress
-- [ ] ProspectiveOperation lambda generation methods
-- [ ] PreconditionsChecker reducer detection
+- [x] ProspectiveOperation lambda generation methods (setEager, createLambda, getStreamMethod, getStreamArguments, getReducingVariable)
+- [x] PreconditionsChecker reducer detection (isReducer, getReducer)
+- [x] ProspectiveOperation operation merging (mergeRecursivelyIntoComposableOperations)
 
 ### ❌ Not Started
 - [ ] StreamPipelineBuilder class - needs to be created after ProspectiveOperation is complete
@@ -31,8 +30,8 @@ Current implementation: ~40% complete
 
 ## Priority Tasks
 
-### 0. Create StreamPipelineBuilder (PREREQUISITE)
-**Note**: StreamPipelineBuilder was initially created but removed due to compilation errors. It needs to be re-created after the prerequisite methods in ProspectiveOperation and PreconditionsChecker are implemented.
+### 0. Create StreamPipelineBuilder (NEXT PRIORITY)
+**Status**: Prerequisites completed (ProspectiveOperation and PreconditionsChecker methods implemented)
 
 The StreamPipelineBuilder should:
 - Analyze loop body and classify statements into stream operations
@@ -42,67 +41,27 @@ The StreamPipelineBuilder should:
 
 This will be a ~400 line class based on the NetBeans Refactorer pattern.
 
-### 1. Complete ProspectiveOperation Class (HIGH PRIORITY)
+### 1. ✅ Complete ProspectiveOperation Class (COMPLETED)
 **File**: `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ProspectiveOperation.java`
 
-Add these methods:
+**Status**: All required methods have been implemented.
 
-```java
-// Core methods needed by StreamPipelineBuilder
-public void setEager(boolean eager) { ... }
-public LambdaExpression createLambda(AST ast, String loopVarName) { ... }
-public String getStreamMethod() { ... }
-public List<Expression> getStreamArguments(AST ast, String loopVarName) { ... }
-public Expression getReducingVariable() { ... }
+Implemented methods:
+- ✅ `setEager(boolean eager)` - Sets whether this operation should be executed eagerly
+- ✅ `createLambda(AST ast, String loopVarName)` - Creates a lambda expression for this operation
+- ✅ `getStreamMethod()` - Returns the stream method name for this operation
+- ✅ `getStreamArguments(AST ast, String loopVarName)` - Returns the arguments for the stream method call
+- ✅ `getReducingVariable()` - Returns the reducing variable expression
+- ✅ `mergeRecursivelyIntoComposableOperations(List<ProspectiveOperation> ops)` - Static factory method for merging operations
 
-// Static factory method
-public static List<ProspectiveOperation> mergeRecursivelyIntoComposableOperations(List<ProspectiveOperation> ops) { ... }
-```
-
-#### Implementation Guide:
-
-**createLambda()**:
-- MAP: `x -> { <stmt>; return x; }` or simpler form for expressions
-- FILTER: `x -> (<condition>)` with optional negation
-- FOREACH: `x -> { <stmt> }` 
-- REDUCE: Create map to constant, then reduce with accumulator function
-- ANYMATCH: `x -> (<condition>)`
-- NONEMATCH: `x -> (<condition>)`
-
-**getStreamMethod()**:
-- MAP → "map"
-- FILTER → "filter"
-- FOREACH → "forEach" or "forEachOrdered"
-- REDUCE → "reduce"
-- ANYMATCH → "anyMatch"
-- NONEMATCH → "noneMatch"
-
-**getStreamArguments()**:
-- MAP, FILTER, FOREACH, ANYMATCH, NONEMATCH: return list with lambda
-- REDUCE: return list with [identityValue, accumulatorLambda] or just [lambda]
-
-**mergeRecursivelyIntoComposableOperations()**:
-- Merge consecutive MAP operations that transform the same variable
-- Combine FILTERs with AND
-- Cannot merge terminal operations (FOREACH, REDUCE, ANYMATCH, NONEMATCH)
-
-### 2. Enhance PreconditionsChecker (MEDIUM PRIORITY)
+### 2. ✅ Enhance PreconditionsChecker (COMPLETED)
 **File**: `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/PreconditionsChecker.java`
 
-Add these methods:
+**Status**: All required methods have been implemented.
 
-```java
-public boolean isReducer() { ... }
-public Statement getReducer() { ... }
-```
-
-#### Implementation Guide:
-- Scan loop body for accumulator patterns:
-  - `i++`, `i--`, `++i`, `--i`
-  - `sum += x`, `product *= x`, `count -= 1`
-  - Other compound assignments (|=, &=, etc.)
-- Store the reducer statement if found
-- Return true if accumulator detected
+Implemented methods:
+- ✅ `isReducer()` - Checks if the loop contains a reducer pattern
+- ✅ `getReducer()` - Returns the statement containing the reducer pattern
 
 ### 3. Integrate StreamPipelineBuilder (HIGH PRIORITY)
 **File**: `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/Refactorer.java`
@@ -312,11 +271,12 @@ See: `sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/Ja
 
 ## Estimated Effort
 
-- ProspectiveOperation completion: 4-6 hours
-- PreconditionsChecker updates: 1-2 hours
+- ✅ ProspectiveOperation completion: 4-6 hours (COMPLETED)
+- ✅ PreconditionsChecker updates: 1-2 hours (COMPLETED)
+- StreamPipelineBuilder creation: 6-8 hours
 - StreamPipelineBuilder integration: 1-2 hours
 - Test fixing and iteration: 3-4 hours
-- **Total: 9-14 hours**
+- **Total Remaining: 10-14 hours**
 
 ## Contact
 

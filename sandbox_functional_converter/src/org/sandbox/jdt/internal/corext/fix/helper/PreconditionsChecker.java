@@ -90,14 +90,17 @@ public class PreconditionsChecker {
     
     /**
      * Checks if the loop contains a reducer pattern.
-     * Required by TODO section 2.
      * 
-     * Scans loop body for accumulator patterns:
-     * - i++, i--, ++i, --i
-     * - sum += x, product *= x, count -= 1
-     * - Other compound assignments (|=, &=, etc.)
+     * <p>Scans loop body for accumulator patterns such as:
+     * <ul>
+     * <li>i++, i--, ++i, --i</li>
+     * <li>sum += x, product *= x, count -= 1</li>
+     * <li>Other compound assignments (|=, &=, etc.)</li>
+     * </ul>
      * 
-     * Note: If multiple reducers exist, only the first one is tracked.
+     * @return true if a reducer pattern is detected, false otherwise
+     * 
+     * @see #getReducer()
      */
     public boolean isReducer() {
         return hasReducer;
@@ -105,9 +108,12 @@ public class PreconditionsChecker {
     
     /**
      * Returns the statement containing the reducer pattern.
-     * Required by TODO section 2.
      * 
-     * Note: If multiple reducers exist in the loop, this returns only the first one encountered.
+     * <p>If multiple reducers exist in the loop, this returns only the first one encountered.</p>
+     * 
+     * @return the statement containing the reducer, or null if no reducer was detected
+     * 
+     * @see #isReducer()
      */
     public Statement getReducer() {
         return reducerStatement;
