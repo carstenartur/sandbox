@@ -41,7 +41,7 @@ public class JHViewContentProvider implements IStructuredContentProvider {
 
 	@Override
 	public Object[] getElements(Object inputElement) {
-		VarVisitor visitor= new VarVisitor(this);
+		VarVisitor visitor= new VarVisitor();
 		//		if (inputElement instanceof JEAttribute) {
 		//			JEAttribute jeAttribute = (JEAttribute) inputElement;
 		//			if (jeAttribute instanceof JERoot) {

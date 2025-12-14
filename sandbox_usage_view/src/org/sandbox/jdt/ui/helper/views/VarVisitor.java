@@ -31,13 +31,6 @@ final class VarVisitor {
 	Set<IVariableBinding> methods= new HashSet<>();
 
 	/**
-	 * @param jhViewContentProvider
-	 */
-	VarVisitor(JHViewContentProvider jhViewContentProvider) {
-		// Constructor for compatibility
-	}
-
-	/**
 	 * Process the AST node and collect all variable bindings.
 	 * Uses AstProcessorBuilder API for processing SimpleName nodes.
 	 * 
