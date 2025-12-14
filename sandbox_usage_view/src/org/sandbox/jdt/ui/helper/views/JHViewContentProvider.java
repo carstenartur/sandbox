@@ -41,7 +41,7 @@ public class JHViewContentProvider implements IStructuredContentProvider {
 
 	@Override
 	public Object[] getElements(Object inputElement) {
-		VarVisitor visitor= new VarVisitor(this);
+		VarVisitor visitor= new VarVisitor();
 		//		if (inputElement instanceof JEAttribute) {
 		//			JEAttribute jeAttribute = (JEAttribute) inputElement;
 		//			if (jeAttribute instanceof JERoot) {
@@ -65,7 +65,7 @@ public class JHViewContentProvider implements IStructuredContentProvider {
 					if (javaElement instanceof ICompilationUnit) {
 						// now create the AST for the ICompilationUnits
 						CompilationUnit parse= parse((ICompilationUnit) javaElement);
-						parse.accept(visitor);
+						visitor.process(parse);
 					} else if (javaElement instanceof IJavaProject jproject) {
 						// now create the AST for the ICompilationUnits
 						try {
@@ -110,7 +110,7 @@ public class JHViewContentProvider implements IStructuredContentProvider {
 			for (ICompilationUnit unit : pf.getCompilationUnits()) {
 				// now create the AST for the ICompilationUnits
 				CompilationUnit parse= parse(unit);
-				parse.accept(visitor);
+				visitor.process(parse);
 			}
 		} catch (JavaModelException e1) {
 			e1.printStackTrace();
