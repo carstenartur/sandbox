@@ -118,6 +118,10 @@ public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 	/**
 	 * Changes import declarations for JUnit 4 Assert to JUnit 5 Assertions.
 	 * Delegates to base class implementation.
+	 * 
+	 * @param node the import declaration to change
+	 * @param importRewriter the import rewriter to use
+	 * @param group text edit group (unused - import rewrites are tracked separately)
 	 */
 	public void changeImportDeclaration(ImportDeclaration node, ImportRewrite importRewriter, TextEditGroup group) {
 		changeImportDeclaration(node, importRewriter, ORG_JUNIT_ASSERT, ORG_JUNIT_JUPITER_API_ASSERTIONS);

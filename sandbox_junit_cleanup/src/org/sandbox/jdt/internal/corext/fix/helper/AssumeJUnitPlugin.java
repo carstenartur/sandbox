@@ -129,6 +129,10 @@ public class AssumeJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 	/**
 	 * Changes import declarations for JUnit 4 Assume to JUnit 5 Assumptions.
 	 * Delegates to base class implementation.
+	 * 
+	 * @param node the import declaration to change
+	 * @param importRewriter the import rewriter to use
+	 * @param group text edit group (unused - import rewrites are tracked separately)
 	 */
 	public void changeImportDeclaration(ImportDeclaration node, ImportRewrite importRewriter, TextEditGroup group) {
 		changeImportDeclaration(node, importRewriter, ORG_JUNIT_ASSUME, ORG_JUNIT_JUPITER_API_ASSUMPTIONS);
