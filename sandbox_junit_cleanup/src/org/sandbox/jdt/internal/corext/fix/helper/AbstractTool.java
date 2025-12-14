@@ -1491,6 +1491,62 @@ public abstract class AbstractTool<T> {
 	}
 
 	/**
+	 * Standard helper for processing found nodes in the common pattern.
+	 * Creates a JunitHolder, stores the node, adds it to the data holder,
+	 * and creates a rewrite operation.
+	 * 
+	 * @param fixcore the cleanup fix core
+	 * @param operations the set of operations to add to
+	 * @param node the AST node that was found
+	 * @param dataHolder the reference holder for storing data
+	 * @return false to continue visiting
+	 */
+	protected boolean addStandardRewriteOperation(JUnitCleanUpFixCore fixcore,
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, ASTNode node,
+			ReferenceHolder<Integer, JunitHolder> dataHolder) {
+		JunitHolder mh = new JunitHolder();
+		mh.minv = node;
+		dataHolder.put(dataHolder.size(), mh);
+		operations.add(fixcore.rewrite(dataHolder));
+		return false;
+	}
+
+	/**
+	 * Handles import declaration changes for migrating JUnit 4 to JUnit 5.
+	 * Supports both static and regular imports, including wildcard imports.
+	 * 
+	 * @param node the import declaration to change
+	 * @param importRewriter the import rewriter to use
+	 * @param sourceClass the JUnit 4 fully qualified class name (e.g., "org.junit.Assert")
+	 * @param targetClass the JUnit 5 fully qualified class name (e.g., "org.junit.jupiter.api.Assertions")
+	 */
+	protected void changeImportDeclaration(ImportDeclaration node, ImportRewrite importRewriter,
+			String sourceClass, String targetClass) {
+		String importName = node.getName().getFullyQualifiedName();
+		
+		// Handle static wildcard import (e.g., import static org.junit.Assert.*)
+		if (node.isStatic() && importName.equals(sourceClass)) {
+			importRewriter.removeStaticImport(sourceClass + ".*");
+			importRewriter.addStaticImport(targetClass, "*", false);
+			return;
+		}
+		
+		// Handle regular class import (e.g., import org.junit.Assert)
+		if (importName.equals(sourceClass)) {
+			importRewriter.removeImport(sourceClass);
+			importRewriter.addImport(targetClass);
+			return;
+		}
+		
+		// Handle static method import (e.g., import static org.junit.Assert.assertEquals)
+		if (node.isStatic() && importName.startsWith(sourceClass + ".")) {
+			String methodName = importName.substring((sourceClass + ".").length());
+			importRewriter.removeStaticImport(sourceClass + "." + methodName);
+			importRewriter.addStaticImport(targetClass, methodName, false);
+		}
+	}
+
+	/**
 	 * Applies the JUnit migration rewrite to the compilation unit.
 	 * Delegates to the abstract process2Rewrite method for actual transformation.
 	 * 
