@@ -142,6 +142,9 @@ public class ProspectiveOperation {
         } else if (originalExpression != null) {
             // Default: use expression as body
             lambda.setBody(ASTNode.copySubtree(ast, originalExpression));
+        } else {
+            // Defensive: neither originalExpression nor originalStatement is available
+            throw new IllegalStateException("Cannot create lambda: both originalExpression and originalStatement are null for operationType " + operationType);
         }
         
         args.add(lambda);
