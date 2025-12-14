@@ -208,6 +208,69 @@ public class StreamPipelineBuilder {
     }
     
     /**
+     * Extracts the expression from a REDUCE operation's right-hand side.
+     * For example, in "i += foo(l)", extracts "foo(l)".
+     * 
+     * @param stmt the statement containing the reduce operation
+     * @return the expression to be mapped, or null if none
+     */
+    private Expression extractReduceExpression(Statement stmt) {
+        if (!(stmt instanceof ExpressionStatement)) {
+            return null;
+        }
+        
+        ExpressionStatement exprStmt = (ExpressionStatement) stmt;
+        Expression expr = exprStmt.getExpression();
+        
+        if (expr instanceof Assignment) {
+            Assignment assignment = (Assignment) expr;
+            // Return the right-hand side expression for compound assignments
+            if (assignment.getOperator() != Assignment.Operator.ASSIGN) {
+                return assignment.getRightHandSide();
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Adds a MAP operation before a REDUCE operation based on the reducer type.
+     * For INCREMENT/DECREMENT: maps to 1
+     * For SUM/PRODUCT/STRING_CONCAT: extracts and maps the RHS expression
+     * 
+     * @param ops the list to add the MAP operation to
+     * @param reduceOp the REDUCE operation
+     * @param stmt the statement containing the reduce operation
+     * @param currentVarName the current variable name in the pipeline
+     */
+    private void addMapBeforeReduce(List<ProspectiveOperation> ops, ProspectiveOperation reduceOp, 
+                                     Statement stmt, String currentVarName) {
+        if (reduceOp.getReducerType() == ProspectiveOperation.ReducerType.INCREMENT ||
+            reduceOp.getReducerType() == ProspectiveOperation.ReducerType.DECREMENT) {
+            // Create a MAP operation that maps each item to 1
+            org.eclipse.jdt.core.dom.NumberLiteral one = ast.newNumberLiteral("1");
+            ProspectiveOperation mapOp = new ProspectiveOperation(
+                one,
+                ProspectiveOperation.OperationType.MAP,
+                "_item");
+            ops.add(mapOp);
+        } else if (reduceOp.getReducerType() == ProspectiveOperation.ReducerType.SUM ||
+                   reduceOp.getReducerType() == ProspectiveOperation.ReducerType.PRODUCT ||
+                   reduceOp.getReducerType() == ProspectiveOperation.ReducerType.STRING_CONCAT) {
+            // For SUM/PRODUCT/STRING_CONCAT with expressions (e.g., i += foo(l)),
+            // extract the right-hand side as a MAP operation
+            Expression mapExpression = extractReduceExpression(stmt);
+            if (mapExpression != null) {
+                ProspectiveOperation mapOp = new ProspectiveOperation(
+                    mapExpression,
+                    ProspectiveOperation.OperationType.MAP,
+                    currentVarName);
+                ops.add(mapOp);
+            }
+        }
+    }
+    
+    /**
      * Detects if a statement contains a REDUCE pattern (i++, sum += x, etc.).
      * 
      * @param stmt the statement to check
@@ -375,22 +438,26 @@ public class StreamPipelineBuilder {
                             }
                         }
                     }
+                } else if (!isLast) {
+                    // Non-last statement that's not a variable declaration or IF
+                    // This is a side-effect statement like foo(l) - wrap it in a MAP that returns the current variable
+                    // Only do this if it's not a REDUCE operation (which should only be the last statement)
+                    ProspectiveOperation reduceCheck = detectReduceOperation(stmt);
+                    if (reduceCheck == null) {
+                        // Create a MAP operation with side effect that returns the current variable
+                        // Note: For side-effect MAPs, the third parameter is the variable to return, not the loop variable
+                        ProspectiveOperation mapOp = new ProspectiveOperation(
+                            stmt,
+                            ProspectiveOperation.OperationType.MAP,
+                            currentVarName);
+                        ops.add(mapOp);
+                    }
                 } else if (isLast) {
                     // Last statement → Check for REDUCE first, otherwise FOREACH
                     ProspectiveOperation reduceOp = detectReduceOperation(stmt);
                     if (reduceOp != null) {
-                        // For INCREMENT/DECREMENT reducers, we need to add a MAP operation first
-                        // to convert items to 1: .map(_item -> 1).reduce(i, Integer::sum)
-                        if (reduceOp.getReducerType() == ProspectiveOperation.ReducerType.INCREMENT ||
-                            reduceOp.getReducerType() == ProspectiveOperation.ReducerType.DECREMENT) {
-                            // Create a MAP operation that maps each item to 1
-                            org.eclipse.jdt.core.dom.NumberLiteral one = ast.newNumberLiteral("1");
-                            ProspectiveOperation mapOp = new ProspectiveOperation(
-                                one,
-                                ProspectiveOperation.OperationType.MAP,
-                                "_item");
-                            ops.add(mapOp);
-                        }
+                        // Add MAP operation before REDUCE based on reducer type
+                        addMapBeforeReduce(ops, reduceOp, stmt, currentVarName);
                         ops.add(reduceOp);
                     } else {
                         // Regular FOREACH operation
@@ -420,16 +487,8 @@ public class StreamPipelineBuilder {
             // Single statement → Check for REDUCE first, otherwise FOREACH
             ProspectiveOperation reduceOp = detectReduceOperation(body);
             if (reduceOp != null) {
-                // For INCREMENT/DECREMENT reducers, add a MAP operation first
-                if (reduceOp.getReducerType() == ProspectiveOperation.ReducerType.INCREMENT ||
-                    reduceOp.getReducerType() == ProspectiveOperation.ReducerType.DECREMENT) {
-                    org.eclipse.jdt.core.dom.NumberLiteral one = ast.newNumberLiteral("1");
-                    ProspectiveOperation mapOp = new ProspectiveOperation(
-                        one,
-                        ProspectiveOperation.OperationType.MAP,
-                        "_item");
-                    ops.add(mapOp);
-                }
+                // Add MAP operation before REDUCE based on reducer type
+                addMapBeforeReduce(ops, reduceOp, body, currentVarName);
                 ops.add(reduceOp);
             } else {
                 // Regular FOREACH operation
