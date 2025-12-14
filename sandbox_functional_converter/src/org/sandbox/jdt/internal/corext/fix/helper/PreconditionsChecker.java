@@ -149,7 +149,7 @@ public class PreconditionsChecker {
                     node.getOperator() == PostfixExpression.Operator.DECREMENT) {
                     hasReducer = true;
                     if (reducerStatement == null) {
-                        reducerStatement = findEnclosingStatement(node);
+                        reducerStatement = ASTNodes.getFirstAncestorOrNull(node, Statement.class);
                     }
                 }
                 return true;
@@ -160,7 +160,7 @@ public class PreconditionsChecker {
                     node.getOperator() == PrefixExpression.Operator.DECREMENT) {
                     hasReducer = true;
                     if (reducerStatement == null) {
-                        reducerStatement = findEnclosingStatement(node);
+                        reducerStatement = ASTNodes.getFirstAncestorOrNull(node, Statement.class);
                     }
                 }
                 return true;
@@ -170,7 +170,7 @@ public class PreconditionsChecker {
                 if (node.getOperator() != Assignment.Operator.ASSIGN) {
                     hasReducer = true;
                     if (reducerStatement == null) {
-                        reducerStatement = findEnclosingStatement(node);
+                        reducerStatement = ASTNodes.getFirstAncestorOrNull(node, Statement.class);
                     }
                 }
                 return true;
@@ -215,14 +215,5 @@ public class PreconditionsChecker {
     private ASTNode getEnclosingMethodBody(ASTNode node) {
         MethodDeclaration method = ASTNodes.getFirstAncestorOrNull(node, MethodDeclaration.class);
         return (method != null) ? method.getBody() : null;
-    }
-    
-    /** Helper method: Finds the enclosing statement for an AST node. */
-    private Statement findEnclosingStatement(ASTNode node) {
-        ASTNode current = node;
-        while (current != null && !(current instanceof Statement)) {
-            current = current.getParent();
-        }
-        return (Statement) current;
     }
 }
