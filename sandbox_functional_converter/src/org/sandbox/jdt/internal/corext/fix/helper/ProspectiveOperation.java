@@ -453,12 +453,14 @@ public class ProspectiveOperation {
         
         switch (reducerType) {
             case INCREMENT:
+                // Use (accumulator, _item) -> accumulator + 1 lambda for i++
+                return createCountingLambda(ast, InfixExpression.Operator.PLUS);
             case SUM:
-                // Use Integer::sum method reference
+                // Use Integer::sum method reference for sum += x
                 return createMethodReference(ast, "Integer", "sum");
             case DECREMENT:
-                // Use (accumulator, _item) -> accumulator - _item lambda
-                return createBinaryOperatorLambda(ast, InfixExpression.Operator.MINUS);
+                // Use (accumulator, _item) -> accumulator - 1 lambda for i--
+                return createCountingLambda(ast, InfixExpression.Operator.MINUS);
             case PRODUCT:
                 // Use (accumulator, _item) -> accumulator * _item lambda
                 return createBinaryOperatorLambda(ast, InfixExpression.Operator.TIMES);
@@ -482,8 +484,6 @@ public class ProspectiveOperation {
     
     /**
      * Creates a binary operator lambda like (accumulator, _item) -> accumulator + _item.
-     * Note: Lambda parameters must use SingleVariableDeclaration (not VariableDeclarationFragment)
-     * as required by the Eclipse JDT AST specification for lambda expressions.
      */
     private LambdaExpression createBinaryOperatorLambda(AST ast, InfixExpression.Operator operator) {
         LambdaExpression lambda = ast.newLambdaExpression();
@@ -500,6 +500,31 @@ public class ProspectiveOperation {
         InfixExpression operationExpr = ast.newInfixExpression();
         operationExpr.setLeftOperand(ast.newSimpleName("accumulator"));
         operationExpr.setRightOperand(ast.newSimpleName("_item"));
+        operationExpr.setOperator(operator);
+        lambda.setBody(operationExpr);
+        
+        return lambda;
+    }
+    
+    /**
+     * Creates a counting lambda like (accumulator, _item) -> accumulator + 1 or accumulator - 1.
+     * Used for INCREMENT (i++) and DECREMENT (i--) operations.
+     */
+    private LambdaExpression createCountingLambda(AST ast, InfixExpression.Operator operator) {
+        LambdaExpression lambda = ast.newLambdaExpression();
+        
+        // Parameters: (accumulator, _item)
+        SingleVariableDeclaration param1 = ast.newSingleVariableDeclaration();
+        param1.setName(ast.newSimpleName("accumulator"));
+        SingleVariableDeclaration param2 = ast.newSingleVariableDeclaration();
+        param2.setName(ast.newSimpleName("_item"));
+        lambda.parameters().add(param1);
+        lambda.parameters().add(param2);
+        
+        // Body: accumulator + 1 or accumulator - 1
+        InfixExpression operationExpr = ast.newInfixExpression();
+        operationExpr.setLeftOperand(ast.newSimpleName("accumulator"));
+        operationExpr.setRightOperand(ast.newNumberLiteral("1"));
         operationExpr.setOperator(operator);
         lambda.setBody(operationExpr);
         

@@ -166,8 +166,9 @@ public class StreamPipelineBuilder {
     /**
      * Wraps the pipeline in an appropriate statement.
      * 
-     * <p>For most pipelines, this wraps the method invocation in an ExpressionStatement.
-     * For REDUCE operations, this wraps the result in an assignment statement.
+     * <p>Wraps the method invocation in an ExpressionStatement. For REDUCE operations
+     * with a tracked accumulator variable, wraps the pipeline in an assignment statement
+     * (e.g., "i = stream.reduce(...)") instead of a plain expression statement.
      * 
      * @param pipeline the pipeline method invocation
      * @return a Statement wrapping the pipeline
@@ -435,8 +436,9 @@ public class StreamPipelineBuilder {
                 ProspectiveOperation forEachOp = new ProspectiveOperation(
                     body,
                     ProspectiveOperation.OperationType.FOREACH,
-                currentVarName);
-            ops.add(forEachOp);
+                    currentVarName);
+                ops.add(forEachOp);
+            }
         }
         
         return ops;
