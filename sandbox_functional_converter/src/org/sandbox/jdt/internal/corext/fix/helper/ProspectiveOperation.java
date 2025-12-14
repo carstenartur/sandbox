@@ -177,8 +177,9 @@ public class ProspectiveOperation {
     }
     
     /**
-     * Sets whether this operation should be executed eagerly.
-     * Required by TODO section 1.
+     * Sets whether this operation should be executed eagerly (e.g., forEachOrdered vs forEach).
+     * 
+     * @param eager true if the operation should be executed in order, false otherwise
      */
     public void setEager(boolean eager) {
         this.eager = eager;
@@ -186,15 +187,20 @@ public class ProspectiveOperation {
     
     /**
      * Creates a lambda expression for this operation.
-     * Required by TODO section 1.
      * 
-     * Implementation based on TODO guidelines:
-     * - MAP: x -> { <stmt>; return x; } or simpler form for expressions
-     * - FILTER: x -> (<condition>) with optional negation
-     * - FOREACH: x -> { <stmt> }
-     * - REDUCE: Create map to constant, then reduce with accumulator function
-     * - ANYMATCH: x -> (<condition>)
-     * - NONEMATCH: x -> (<condition>)
+     * <p>Implementation details:
+     * <ul>
+     * <li>MAP: x -> { &lt;stmt&gt;; return x; } or simpler form for expressions</li>
+     * <li>FILTER: x -> (&lt;condition&gt;) with optional negation</li>
+     * <li>FOREACH: x -> { &lt;stmt&gt; }</li>
+     * <li>REDUCE: Create map to constant, then reduce with accumulator function</li>
+     * <li>ANYMATCH: x -> (&lt;condition&gt;)</li>
+     * <li>NONEMATCH: x -> (&lt;condition&gt;)</li>
+     * </ul>
+     * 
+     * @param ast the AST to create nodes in
+     * @param loopVarName the name of the loop variable to use as lambda parameter
+     * @return a lambda expression representing this operation
      */
     public LambdaExpression createLambda(AST ast, String loopVarName) {
         LambdaExpression lambda = ast.newLambdaExpression();
@@ -260,15 +266,18 @@ public class ProspectiveOperation {
     
     /**
      * Returns the stream method name for this operation.
-     * Required by TODO section 1.
      * 
-     * Implementation based on TODO guidelines:
-     * - MAP → "map"
-     * - FILTER → "filter"
-     * - FOREACH → "forEach" or "forEachOrdered"
-     * - REDUCE → "reduce"
-     * - ANYMATCH → "anyMatch"
-     * - NONEMATCH → "noneMatch"
+     * <p>Mapping:
+     * <ul>
+     * <li>MAP → "map"</li>
+     * <li>FILTER → "filter"</li>
+     * <li>FOREACH → "forEach" or "forEachOrdered" (depending on eager flag)</li>
+     * <li>REDUCE → "reduce"</li>
+     * <li>ANYMATCH → "anyMatch"</li>
+     * <li>NONEMATCH → "noneMatch"</li>
+     * </ul>
+     * 
+     * @return the stream API method name for this operation
      */
     public String getStreamMethod() {
         switch (operationType) {
@@ -291,11 +300,16 @@ public class ProspectiveOperation {
     
     /**
      * Returns the arguments for the stream method call.
-     * Required by TODO section 1.
      * 
-     * Implementation based on TODO guidelines:
-     * - MAP, FILTER, FOREACH, ANYMATCH, NONEMATCH: return list with lambda
-     * - REDUCE: return list with [identityValue, accumulatorLambda] or just [lambda]
+     * <p>For most operations (MAP, FILTER, FOREACH, ANYMATCH, NONEMATCH), 
+     * returns a list containing the lambda expression.</p>
+     * 
+     * <p>For REDUCE operations, returns a list with [identityValue, accumulatorLambda] 
+     * or just [lambda] depending on whether an identity value can be determined.</p>
+     * 
+     * @param ast the AST to create nodes in
+     * @param loopVarName the name of the loop variable to use as lambda parameter
+     * @return a list of expressions to pass as arguments to the stream method
      */
     public List<Expression> getStreamArguments(AST ast, String loopVarName) {
         List<Expression> args = new ArrayList<>();
@@ -311,8 +325,9 @@ public class ProspectiveOperation {
     }
     
     /**
-     * Returns the reducing variable expression.
-     * Required by TODO section 1.
+     * Returns the reducing variable expression for REDUCE operations.
+     * 
+     * @return the expression representing the variable being reduced
      */
     public Expression getReducingVariable() {
         return reducingVariable;
