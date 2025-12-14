@@ -1156,11 +1156,6 @@ public abstract class AbstractTool<T> {
 		}
 	}
 
-	// Use a method to create a CompilationUnit from an ICompilationUnit
-	private CompilationUnit parseCompilationUnit(ICompilationUnit iCompilationUnit) {
-	    return ASTNavigationUtils.parseCompilationUnit(iCompilationUnit);
-	}
-
 	public void process(Annotation node, IJavaProject jproject, ASTRewrite rewrite, AST ast, TextEditGroup group,
 			ImportRewrite importRewriter, CompilationUnit cu, String className) {
 		if (!ORG_JUNIT_RULE.equals(node.resolveTypeBinding().getQualifiedName())) {
