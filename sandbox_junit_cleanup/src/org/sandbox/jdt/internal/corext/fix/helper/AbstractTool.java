@@ -438,13 +438,7 @@ public abstract class AbstractTool<T> {
 		if (node instanceof FieldDeclaration) {
 			return (FieldDeclaration) node;
 		} else if (node instanceof ClassInstanceCreation) {
-			ASTNode parent = node.getParent();
-			if (parent instanceof VariableDeclarationFragment) {
-				ASTNode grandParent = parent.getParent();
-				if (grandParent instanceof FieldDeclaration) {
-					return (FieldDeclaration) grandParent;
-				}
-			}
+			return ASTNodes.getParent(node, FieldDeclaration.class);
 		}
 		return null;
 	}
@@ -1130,7 +1124,7 @@ public abstract class AbstractTool<T> {
 		if (!ORG_JUNIT_RULE.equals(node.resolveTypeBinding().getQualifiedName())) {
 			return;
 		}
-		FieldDeclaration field= (FieldDeclaration) node.getParent();
+		FieldDeclaration field= ASTNodes.getParent(node, FieldDeclaration.class);
 		ITypeBinding fieldTypeBinding= ((VariableDeclarationFragment) field.fragments().get(0)).resolveBinding()
 				.getType();
 		if (!isExternalResource(fieldTypeBinding, ORG_JUNIT_RULES_EXTERNAL_RESOURCE)
@@ -1211,7 +1205,7 @@ public abstract class AbstractTool<T> {
 
 	    rewriter.remove(node, group);
 
-	    TypeDeclaration parentClass = (TypeDeclaration) node.getParent();
+	    TypeDeclaration parentClass = ASTNodes.getParent(node, TypeDeclaration.class);
 	    addBeforeEachInitMethod(parentClass, rewriter, group);
 	    addTestNameField(parentClass, rewriter, group);
 
@@ -1228,7 +1222,11 @@ public abstract class AbstractTool<T> {
 	                                                    ImportRewrite importRewrite, FieldDeclaration node) {
 	    refactorTestnameInClass(group, rewriter, ast, importRewrite, node);
 
-	    ITypeBinding typeBinding = ((TypeDeclaration) node.getParent()).resolveBinding();
+	    TypeDeclaration parentClass = ASTNodes.getParent(node, TypeDeclaration.class);
+	    if (parentClass == null) {
+	        return;
+	    }
+	    ITypeBinding typeBinding = parentClass.resolveBinding();
 	    List<ITypeBinding> subclasses = getAllSubclasses(typeBinding);
 
 	    for (ITypeBinding subclassBinding : subclasses) {

@@ -83,7 +83,7 @@ public class RuleTemporayFolderJUnitPlugin extends AbstractTool<ReferenceHolder<
 			JunitHolder junitHolder) {
 		FieldDeclaration field= junitHolder.getFieldDeclaration();
 		rewriter.remove(field, group);
-		TypeDeclaration parentClass= (TypeDeclaration) field.getParent();
+		TypeDeclaration parentClass= ASTNodes.getParent(field, TypeDeclaration.class);
 
 		importRewriter.addImport(ORG_JUNIT_JUPITER_API_IO_TEMP_DIR);
 		importRewriter.removeImport(ORG_JUNIT_RULE);

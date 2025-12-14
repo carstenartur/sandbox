@@ -17,6 +17,7 @@ import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SuperFieldAccess;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.internal.corext.dom.AbortSearchException;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 
 class CheckNodeForValidReferences {
 	private static final String ITERATOR_NAME= Iterator.class.getCanonicalName();
@@ -39,7 +40,7 @@ class CheckNodeForValidReferences {
 					throw new AbortSearchException();
 				}
 				if (fLocalVarsOnly && visitedField.getLocationInParent() == MethodInvocation.EXPRESSION_PROPERTY) {
-					MethodInvocation methodInvocation= (MethodInvocation) visitedField.getParent();
+					MethodInvocation methodInvocation= ASTNodes.getParent(visitedField, MethodInvocation.class);
 					IMethodBinding methodInvocationBinding= methodInvocation.resolveMethodBinding();
 					if (methodInvocationBinding == null) {
 						throw new AbortSearchException();
@@ -59,7 +60,7 @@ class CheckNodeForValidReferences {
 					throw new AbortSearchException();
 				}
 				if (fLocalVarsOnly && visitedField.getLocationInParent() == MethodInvocation.EXPRESSION_PROPERTY) {
-					MethodInvocation methodInvocation= (MethodInvocation) visitedField.getParent();
+					MethodInvocation methodInvocation= ASTNodes.getParent(visitedField, MethodInvocation.class);
 					IMethodBinding methodInvocationBinding= methodInvocation.resolveMethodBinding();
 					if (methodInvocationBinding == null) {
 						throw new AbortSearchException();
@@ -136,7 +137,7 @@ class CheckNodeForValidReferences {
 					ITypeBinding simpleNameTypeBinding= simpleNameVarBinding.getType();
 					if (AbstractTool.isOfType(simpleNameTypeBinding, ITERATOR_NAME)) {
 						if (simpleName.getLocationInParent() == MethodInvocation.EXPRESSION_PROPERTY) {
-							MethodInvocation methodInvocation= (MethodInvocation) simpleName.getParent();
+							MethodInvocation methodInvocation= ASTNodes.getParent(simpleName, MethodInvocation.class);
 							IMethodBinding methodInvocationBinding= methodInvocation.resolveMethodBinding();
 							if (methodInvocationBinding == null) {
 								throw new AbortSearchException();

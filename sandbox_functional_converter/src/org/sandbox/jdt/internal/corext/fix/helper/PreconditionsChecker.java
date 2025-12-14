@@ -19,6 +19,7 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.*;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import java.util.*;
 
 public class PreconditionsChecker {
@@ -153,9 +154,7 @@ public class PreconditionsChecker {
     
     /** Hilfsmethode: Findet den umgebenden Methodenrumpf einer Variablendeklaration. */
     private ASTNode getEnclosingMethodBody(ASTNode node) {
-        while (node != null && !(node instanceof MethodDeclaration)) {
-            node = node.getParent();
-        }
-        return (node != null) ? ((MethodDeclaration) node).getBody() : null;
+        MethodDeclaration method = ASTNodes.getFirstAncestorOrNull(node, MethodDeclaration.class);
+        return (method != null) ? method.getBody() : null;
     }
 }
