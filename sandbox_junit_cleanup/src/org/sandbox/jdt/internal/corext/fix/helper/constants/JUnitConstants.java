@@ -11,7 +11,7 @@
  * Contributors:
  *     Carsten Hammer
  *******************************************************************************/
-package org.sandbox.jdt.internal.corext.fix.helper.base;
+package org.sandbox.jdt.internal.corext.fix.helper.constants;
 
 /**
  * Constants for JUnit 3, 4, and 5 types, annotations, and methods.
