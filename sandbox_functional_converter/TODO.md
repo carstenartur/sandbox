@@ -24,33 +24,46 @@ Current implementation: ~40% complete
 - [x] Multiple test cases enabled: SIMPLECONVERT, CHAININGMAP, ChainingFilterMapForEachConvert, SmoothLongerChaining, MergingOperations, BeautificationWorks, BeautificationWorks2, NonFilteringIfChaining (8 of 20+)
 - [x] StreamPipelineBuilder class created with analyze(), buildPipeline(), and wrapPipeline() methods
 - [x] StreamPipelineBuilder integrated into Refactorer with refactorWithBuilder() method
+- [x] StreamPipelineBuilder fully implements parseLoopBody() with recursive nested IF processing
+- [x] Variable dependency tracking through getVariableNameFromPreviousOp() in StreamPipelineBuilder
+- [x] StreamPipelineBuilder.requiresStreamPrefix() determines when .stream() is needed vs direct collection methods
 
 ### 🚧 In Progress
-- [ ] Advanced pattern recognition (continue statements, early returns, complex reducers)
+- [ ] Continue statement handling (negated filter conditions for ContinuingIfFilterSingleStatement test)
+- [ ] REDUCE operation implementation for accumulator patterns (SimpleReducer, ChainedReducer tests)
 - [ ] Operation optimization (merge consecutive filters, remove redundant operations)
-- [ ] REDUCE operation implementation for accumulator patterns
 
 ### ❌ Not Started
 - [ ] Advanced reducer patterns (string concatenation, custom accumulators)
 - [ ] AnyMatch/NoneMatch pattern detection and conversion
 - [ ] Complex side effect handling
-- [ ] Remaining test cases (13+ still disabled)
+- [ ] Remaining test cases (12+ still disabled)
 
 ## Priority Tasks
 
-### 0. 🚧 Create StreamPipelineBuilder (IN PROGRESS)
-**Status**: Refactorer now has basic loop body parsing and pipeline building
+### 0. ✅ Create StreamPipelineBuilder (COMPLETED)
+**Status**: StreamPipelineBuilder class is fully implemented and integrated
 
-**Current Implementation (in Refactorer.java)**:
+**Current Implementation (in StreamPipelineBuilder.java)**:
+- `analyze()` - Checks preconditions and parses loop body
 - `parseLoopBody()` - Analyzes loop body and extracts ProspectiveOperations
+- `buildPipeline()` - Constructs the stream pipeline from operations
+- `wrapPipeline()` - Wraps pipeline in appropriate statement
 - `getVariableNameFromPreviousOp()` - Tracks variable names through pipeline
-- Basic support for MAP, FILTER, FOREACH operations
-- Nested IF statement processing for filter chains
+- `requiresStreamPrefix()` - Determines when .stream() is needed
+- Full support for MAP, FILTER, FOREACH operations
+- Recursive nested IF statement processing for filter chains
+- Variable dependency tracking through the pipeline
+
+**Integration**:
+- Refactorer.refactorWithBuilder() uses StreamPipelineBuilder
+- Can toggle between builder and legacy implementation via system property
+- Default is to use StreamPipelineBuilder
 
 **Next Steps**:
-- Extract pipeline building logic into dedicated StreamPipelineBuilder class (optional refactoring)
-- Add support for more complex patterns (early returns, complex reducers)
-- Improve operation merging and optimization
+- Add support for continue statements (negated filters)
+- Implement REDUCE operation support
+- Add AnyMatch/NoneMatch pattern detection
 
 ### 1. ✅ Complete ProspectiveOperation Class (COMPLETED)
 **File**: `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ProspectiveOperation.java`
@@ -74,42 +87,49 @@ Implemented methods:
 - ✅ `isReducer()` - Checks if the loop contains a reducer pattern
 - ✅ `getReducer()` - Returns the statement containing the reducer pattern
 
-### 3. 🚧 Integrate StreamPipelineBuilder (IN PROGRESS)
+### 3. ✅ Integrate StreamPipelineBuilder (COMPLETED)
 **File**: `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/Refactorer.java`
 
-**Status**: Basic integration is complete with parseLoopBody and pipeline building in refactor() method.
+**Status**: StreamPipelineBuilder is fully integrated into Refactorer.
 
-Current implementation handles:
-- Simple forEach conversion
-- MAP operations (variable declarations with initializers)
-- FILTER operations (IF statements without else)
-- Nested IF processing
+Current implementation:
+- `refactorWithBuilder()` - Main integration method using StreamPipelineBuilder
+- `useStreamPipelineBuilder()` - Toggle between builder and legacy implementation
+- StreamPipelineBuilder handles: simple forEach, MAP, FILTER, nested IF processing
 - Variable name tracking through the pipeline
 - Stream vs direct forEach decision logic
 
-Future enhancements (optional):
-- Extract into dedicated StreamPipelineBuilder class for better separation of concerns
-- Add more sophisticated pattern detection
+Implementation details:
+- Creates StreamPipelineBuilder instance with forLoop and preconditions
+- Calls analyze() to parse loop body
+- Calls buildPipeline() to construct stream pipeline
+- Calls wrapPipeline() to create final statement
+- Replaces loop with refactored statement via ASTRewrite
+
+Future enhancements:
+- Continue statement handling (negated filters)
+- REDUCE operation support
+- AnyMatch/NoneMatch pattern detection
 
 ### 4. 🚧 Incrementally Enable Tests (IN PROGRESS)
 **File**: `sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/Java8CleanUpTest.java`
 
-**Status**: 8 tests currently enabled in testSimpleForEachConversion method:
+**Status**: 8 tests currently enabled and passing in testSimpleForEachConversion method:
 
-Enabled tests:
+Enabled and passing tests:
 1. ✅ SIMPLECONVERT - simple forEach (PASSING)
-2. ✅ CHAININGMAP - map operation (ENABLED)
-3. ✅ ChainingFilterMapForEachConvert - filter + map (ENABLED)
-4. ✅ SmoothLongerChaining - map + filter + map chain (ENABLED)
-5. ✅ MergingOperations - operation merging (ENABLED)
-6. ✅ BeautificationWorks - lambda beautification (ENABLED)
-7. ✅ BeautificationWorks2 - more beautification (ENABLED)
-8. ✅ NonFilteringIfChaining - complex nested IFs (ENABLED)
+2. ✅ CHAININGMAP - map operation (PASSING)
+3. ✅ ChainingFilterMapForEachConvert - filter + map (PASSING)
+4. ✅ SmoothLongerChaining - map + filter + map chain (PASSING)
+5. ✅ MergingOperations - operation merging (PASSING)
+6. ✅ BeautificationWorks - lambda beautification (PASSING)
+7. ✅ BeautificationWorks2 - more beautification (PASSING)
+8. ✅ NonFilteringIfChaining - complex nested IFs (PASSING)
 
-Remaining tests to enable:
-9. ⏳ ContinuingIfFilterSingleStatement - continue as filter
-10. ⏳ SimpleReducer - basic reduce
-11. ⏳ ChainedReducer - filter + reduce
+Next tests to enable (priority order):
+9. ⏳ ContinuingIfFilterSingleStatement - continue as negated filter (NEXT)
+10. ⏳ SimpleReducer - basic reduce operation (NEXT)
+11. ⏳ ChainedReducer - filter + reduce (NEXT)
 12. ⏳ DOUBLEINCREMENTREDUCER - double increment pattern
 13. ⏳ IncrementReducer - increment pattern
 14. ⏳ DecrementingReducer - decrement pattern
@@ -287,12 +307,15 @@ See: `sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/Ja
 - ✅ ProspectiveOperation completion: 4-6 hours (COMPLETED)
 - ✅ PreconditionsChecker updates: 1-2 hours (COMPLETED)
 - ✅ Basic Refactorer with parseLoopBody: 4-5 hours (COMPLETED)
-- ✅ Initial test enablement (7 tests): 2-3 hours (COMPLETED)
-- 🚧 StreamPipelineBuilder extraction (optional refactoring): 3-4 hours
-- ⏳ Advanced pattern recognition (reducers, matchers): 4-6 hours
+- ✅ Initial test enablement (8 tests): 2-3 hours (COMPLETED)
+- ✅ StreamPipelineBuilder class creation: 3-4 hours (COMPLETED)
+- ✅ StreamPipelineBuilder integration into Refactorer: 2-3 hours (COMPLETED)
+- 🚧 Continue statement handling: 2-3 hours (IN PROGRESS)
+- ⏳ REDUCE operation implementation: 4-6 hours
+- ⏳ Advanced pattern recognition (matchers, early returns): 4-6 hours
 - ⏳ Remaining test fixing and iteration: 4-6 hours
-- **Total Completed: ~12 hours**
-- **Total Remaining: ~12-16 hours**
+- **Total Completed: ~18-23 hours**
+- **Total Remaining: ~14-21 hours**
 
 ## Contact
 
