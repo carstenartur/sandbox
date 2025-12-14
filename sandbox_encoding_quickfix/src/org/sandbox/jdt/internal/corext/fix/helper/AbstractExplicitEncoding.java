@@ -239,8 +239,10 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 		ASTNode methodDecl = ASTNodes.getFirstAncestorOrNull(node, MethodDeclaration.class);
 		ASTNode typeDecl = ASTNodes.getFirstAncestorOrNull(node, TypeDeclaration.class);
 		
-		// Return the closest ancestor by comparing their depth
-		// If method exists, it's always closer than type (method is nested in type)
+		// Return the closest ancestor. In Java, methods are always declared inside types,
+		// so if a MethodDeclaration exists, it is guaranteed to be closer than any TypeDeclaration.
+		// getFirstAncestorOrNull returns the nearest ancestor of each type, so we just need to
+		// prefer the more specific (nested) one.
 		if (methodDecl != null) {
 			return methodDecl;
 		}
@@ -375,8 +377,10 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 		ASTNode tryStmt = ASTNodes.getFirstAncestorOrNull(node, TryStatement.class);
 		ASTNode methodDecl = ASTNodes.getFirstAncestorOrNull(node, MethodDeclaration.class);
 		
-		// Return the closest ancestor by comparing their depth
-		// If try exists, it's always closer than method (try is nested in method)
+		// Return the closest ancestor. In Java, try statements are always inside method bodies,
+		// so if a TryStatement exists, it is guaranteed to be closer than any MethodDeclaration.
+		// getFirstAncestorOrNull returns the nearest ancestor of each type, so we just need to
+		// prefer the more specific (nested) one.
 		if (tryStmt != null) {
 			return tryStmt;
 		}
