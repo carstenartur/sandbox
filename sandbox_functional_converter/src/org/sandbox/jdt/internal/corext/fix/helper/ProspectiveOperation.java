@@ -25,6 +25,7 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionMethodReference;
 import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.NumberLiteral;
@@ -32,6 +33,7 @@ import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.TypeMethodReference;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 
@@ -73,6 +75,17 @@ public class ProspectiveOperation {
      * This is used to track variable names through the stream pipeline.
      */
     private String producedVariableName;
+    
+    /**
+     * The name of the accumulator variable for REDUCE operations.
+     * Used to track which variable is being accumulated (e.g., "i" in "i++").
+     */
+    private String accumulatorVariableName;
+    
+    /**
+     * The reducer type for REDUCE operations (INCREMENT, DECREMENT, SUM, etc.).
+     */
+    private ReducerType reducerType;
 
     // Sammelt alle verwendeten Variablen
     private void collectNeededVariables(Expression expression) {
@@ -111,6 +124,25 @@ public class ProspectiveOperation {
         this.operationType = operationType;
         this.producedVariableName = producedVarName;
         collectNeededVariables(expression);
+    }
+    
+    /**
+     * Constructor for REDUCE operations with accumulator variable and reducer type.
+     * Used when a reducer pattern (i++, sum += x, etc.) is detected.
+     * 
+     * @param statement the statement containing the reducer
+     * @param accumulatorVarName the name of the accumulator variable (e.g., "i", "sum")
+     * @param reducerType the type of reducer (INCREMENT, SUM, etc.)
+     */
+    public ProspectiveOperation(org.eclipse.jdt.core.dom.Statement statement, String accumulatorVarName, ReducerType reducerType) {
+        this.originalStatement = statement;
+        this.operationType = OperationType.REDUCE;
+        this.accumulatorVariableName = accumulatorVarName;
+        this.reducerType = reducerType;
+        if (statement instanceof org.eclipse.jdt.core.dom.ExpressionStatement) {
+            this.originalExpression = ((org.eclipse.jdt.core.dom.ExpressionStatement) statement).getExpression();
+            collectNeededVariables(this.originalExpression);
+        }
     }
 
     /** (1) Gibt den ursprünglichen Ausdruck zurück */
@@ -362,6 +394,22 @@ public class ProspectiveOperation {
     public String getProducedVariableName() {
         return producedVariableName;
     }
+    
+    /**
+     * Returns the accumulator variable name for REDUCE operations.
+     * @return the accumulator variable name, or null if not a REDUCE operation
+     */
+    public String getAccumulatorVariableName() {
+        return accumulatorVariableName;
+    }
+    
+    /**
+     * Returns the reducer type for REDUCE operations.
+     * @return the reducer type, or null if not a REDUCE operation
+     */
+    public ReducerType getReducerType() {
+        return reducerType;
+    }
 
     /** (4) Erstellt eine Lambda-Expression für Streams */
     public LambdaExpression getLambdaExpression(AST ast) {
@@ -377,12 +425,83 @@ public class ProspectiveOperation {
     private List<Expression> getArgumentsForReducer(AST ast) {
         List<Expression> arguments = new ArrayList<>();
         if (operationType == OperationType.REDUCE) {
-            Expression identity = getIdentityElement(ast);
-            if (identity != null) arguments.add(identity);
-            LambdaExpression accumulator = createAccumulatorLambda(ast);
+            // First argument: identity element (the accumulator variable reference)
+            if (accumulatorVariableName != null) {
+                arguments.add(ast.newSimpleName(accumulatorVariableName));
+            } else {
+                // Fallback to default identity
+                Expression identity = getIdentityElement(ast);
+                if (identity != null) arguments.add(identity);
+            }
+            
+            // Second argument: accumulator function (method reference or lambda)
+            Expression accumulator = createAccumulatorExpression(ast);
             if (accumulator != null) arguments.add(accumulator);
         }
         return arguments;
+    }
+    
+    /**
+     * Creates the accumulator expression for REDUCE operations.
+     * Returns a method reference (e.g., Integer::sum) when possible, or a lambda otherwise.
+     */
+    private Expression createAccumulatorExpression(AST ast) {
+        if (reducerType == null) {
+            // Fallback to legacy behavior
+            return createAccumulatorLambda(ast);
+        }
+        
+        switch (reducerType) {
+            case INCREMENT:
+            case SUM:
+                // Use Integer::sum method reference
+                return createMethodReference(ast, "Integer", "sum");
+            case DECREMENT:
+                // Use (accumulator, _item) -> accumulator - _item lambda
+                return createBinaryOperatorLambda(ast, InfixExpression.Operator.MINUS);
+            case PRODUCT:
+                // Use (accumulator, _item) -> accumulator * _item lambda
+                return createBinaryOperatorLambda(ast, InfixExpression.Operator.TIMES);
+            case STRING_CONCAT:
+                // Use (accumulator, _item) -> accumulator + _item lambda
+                return createBinaryOperatorLambda(ast, InfixExpression.Operator.PLUS);
+            default:
+                return createAccumulatorLambda(ast);
+        }
+    }
+    
+    /**
+     * Creates a method reference like Integer::sum.
+     */
+    private TypeMethodReference createMethodReference(AST ast, String typeName, String methodName) {
+        TypeMethodReference methodRef = ast.newTypeMethodReference();
+        methodRef.setType(ast.newSimpleType(ast.newSimpleName(typeName)));
+        methodRef.setName(ast.newSimpleName(methodName));
+        return methodRef;
+    }
+    
+    /**
+     * Creates a binary operator lambda like (accumulator, _item) -> accumulator + _item.
+     */
+    private LambdaExpression createBinaryOperatorLambda(AST ast, InfixExpression.Operator operator) {
+        LambdaExpression lambda = ast.newLambdaExpression();
+        
+        // Parameters: (accumulator, _item)
+        VariableDeclarationFragment param1 = ast.newVariableDeclarationFragment();
+        param1.setName(ast.newSimpleName("accumulator"));
+        VariableDeclarationFragment param2 = ast.newVariableDeclarationFragment();
+        param2.setName(ast.newSimpleName("_item"));
+        lambda.parameters().add(param1);
+        lambda.parameters().add(param2);
+        
+        // Body: accumulator + _item (or other operator)
+        InfixExpression operationExpr = ast.newInfixExpression();
+        operationExpr.setLeftOperand(ast.newSimpleName("accumulator"));
+        operationExpr.setRightOperand(ast.newSimpleName("_item"));
+        operationExpr.setOperator(operator);
+        lambda.setBody(operationExpr);
+        
+        return lambda;
     }
 
     /** (6) Ermittelt das Identitätselement (`0`, `1`) für `reduce()` */
@@ -651,5 +770,13 @@ public class ProspectiveOperation {
 
     public enum OperationType {
         MAP, FOREACH, FILTER, REDUCE, ANYMATCH, NONEMATCH
+    }
+    
+    public enum ReducerType {
+        INCREMENT,      // i++, ++i
+        DECREMENT,      // i--, --i
+        SUM,            // sum += x
+        PRODUCT,        // product *= x
+        STRING_CONCAT   // s += string
     }
 }
