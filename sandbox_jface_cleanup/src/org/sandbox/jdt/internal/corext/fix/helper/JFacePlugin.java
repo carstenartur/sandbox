@@ -211,7 +211,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				if (firstArgName == null || !mh.minvname.equals(firstArgName)) {
 					return true;
 				}
-				logDebug("Found SubProgressMonitor at position " + node.getStartPosition() + ": " + node); //$NON-NLS-1$ //$NON-NLS-2$
+				logDebug("Found SubProgressMonitor construction at position " + node.getStartPosition() + " for variable '" + firstArgName + "'"); //$NON-NLS-1$ //$NON-NLS-2$
 				mh.setofcic.add(node);
 				operations.add(fixcore.rewrite(holder));
 				return true;
