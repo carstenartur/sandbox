@@ -261,7 +261,20 @@ public class Refactorer {
     }
     
     /**
-     * Get the variable name from the previous operation (for chained operations)
+     * Determines the variable name to use for the current operation in a chain of stream operations.
+     * <p>
+     * This method inspects the list of {@link ProspectiveOperation}s up to {@code currentIndex - 1}
+     * to find if a previous MAP operation exists. If so, it returns a default variable name ("s")
+     * to represent the result of the MAP operation. Otherwise, it returns "item" as the default variable name.
+     * </p>
+     *
+     * @param operations   the list of prospective operations representing the loop body transformation
+     * @param currentIndex the index of the current operation in the list; operations before this index are considered
+     * @return "s" if a previous MAP operation is found (currently always "s" as a placeholder), otherwise "item"
+     * @implNote
+     *   <b>Limitation:</b> Currently, this method always returns "s" when a previous MAP operation is found,
+     *   rather than extracting the actual variable name introduced by the MAP. This should be improved
+     *   in the future to reflect the real variable name used in the stream chain.
      */
     private String getVariableNameFromPreviousOp(List<ProspectiveOperation> operations, int currentIndex) {
         if (currentIndex > 0) {
