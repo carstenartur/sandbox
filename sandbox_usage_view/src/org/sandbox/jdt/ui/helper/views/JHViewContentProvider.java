@@ -65,7 +65,7 @@ public class JHViewContentProvider implements IStructuredContentProvider {
 					if (javaElement instanceof ICompilationUnit) {
 						// now create the AST for the ICompilationUnits
 						CompilationUnit parse= parse((ICompilationUnit) javaElement);
-						parse.accept(visitor);
+						visitor.process(parse);
 					} else if (javaElement instanceof IJavaProject jproject) {
 						// now create the AST for the ICompilationUnits
 						try {
