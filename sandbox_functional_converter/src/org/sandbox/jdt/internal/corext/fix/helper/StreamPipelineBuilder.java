@@ -62,6 +62,7 @@ public class StreamPipelineBuilder {
     private boolean analyzed = false;
     private boolean convertible = false;
     private String accumulatorVariable = null;
+    private String accumulatorType = null;
 
     /**
      * Creates a new StreamPipelineBuilder for the given for-loop.
@@ -235,7 +236,7 @@ public class StreamPipelineBuilder {
     
     /**
      * Adds a MAP operation before a REDUCE operation based on the reducer type.
-     * For INCREMENT/DECREMENT: maps to 1
+     * For INCREMENT/DECREMENT: maps to 1 (or 1.0 for double types)
      * For SUM/PRODUCT/STRING_CONCAT: extracts and maps the RHS expression
      * 
      * @param ops the list to add the MAP operation to
@@ -247,8 +248,17 @@ public class StreamPipelineBuilder {
                                      Statement stmt, String currentVarName) {
         if (reduceOp.getReducerType() == ProspectiveOperation.ReducerType.INCREMENT ||
             reduceOp.getReducerType() == ProspectiveOperation.ReducerType.DECREMENT) {
-            // Create a MAP operation that maps each item to 1
-            org.eclipse.jdt.core.dom.NumberLiteral one = ast.newNumberLiteral("1");
+            // Create a MAP operation that maps each item to 1 (or 1.0 for double types)
+            String literalValue = "1";
+            if (accumulatorType != null && accumulatorType.equals("double")) {
+                literalValue = "1.0";
+            } else if (accumulatorType != null && accumulatorType.equals("float")) {
+                literalValue = "1.0f";
+            } else if (accumulatorType != null && accumulatorType.equals("long")) {
+                literalValue = "1L";
+            }
+            
+            org.eclipse.jdt.core.dom.NumberLiteral one = ast.newNumberLiteral(literalValue);
             ProspectiveOperation mapOp = new ProspectiveOperation(
                 one,
                 ProspectiveOperation.OperationType.MAP,
@@ -300,6 +310,7 @@ public class StreamPipelineBuilder {
                 }
                 
                 accumulatorVariable = varName;
+                accumulatorType = getVariableType(varName);
                 return new ProspectiveOperation(stmt, varName, reducerType);
             }
         }
@@ -320,6 +331,7 @@ public class StreamPipelineBuilder {
                 }
                 
                 accumulatorVariable = varName;
+                accumulatorType = getVariableType(varName);
                 return new ProspectiveOperation(stmt, varName, reducerType);
             }
         }
@@ -345,6 +357,7 @@ public class StreamPipelineBuilder {
                 }
                 
                 accumulatorVariable = varName;
+                accumulatorType = getVariableType(varName);
                 return new ProspectiveOperation(stmt, varName, reducerType);
             }
         }
@@ -578,5 +591,64 @@ public class StreamPipelineBuilder {
         negation.setOperator(PrefixExpression.Operator.NOT);
         negation.setOperand((Expression) ASTNode.copySubtree(ast, condition));
         return negation;
+    }
+    
+    /**
+     * Attempts to determine the type name of a variable by searching for its declaration
+     * in the method containing the for-loop.
+     * 
+     * @param varName the variable name to look up
+     * @return the simple type name (e.g., "double", "int") or null if not found
+     */
+    private String getVariableType(String varName) {
+        // Walk up the AST to find the containing method or block
+        ASTNode parent = forLoop.getParent();
+        while (parent != null && !(parent instanceof org.eclipse.jdt.core.dom.MethodDeclaration) &&
+               !(parent instanceof org.eclipse.jdt.core.dom.Block)) {
+            parent = parent.getParent();
+        }
+        
+        if (parent == null) {
+            return null;
+        }
+        
+        // Search for variable declarations in the method/block
+        if (parent instanceof org.eclipse.jdt.core.dom.MethodDeclaration) {
+            org.eclipse.jdt.core.dom.MethodDeclaration method = (org.eclipse.jdt.core.dom.MethodDeclaration) parent;
+            return searchBlockForVariableType(method.getBody(), varName);
+        } else if (parent instanceof org.eclipse.jdt.core.dom.Block) {
+            return searchBlockForVariableType((org.eclipse.jdt.core.dom.Block) parent, varName);
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Searches a block for a variable declaration and returns its type.
+     * 
+     * @param block the block to search
+     * @param varName the variable name to find
+     * @return the simple type name or null if not found
+     */
+    private String searchBlockForVariableType(org.eclipse.jdt.core.dom.Block block, String varName) {
+        if (block == null) {
+            return null;
+        }
+        
+        for (Object stmtObj : block.statements()) {
+            if (stmtObj instanceof VariableDeclarationStatement) {
+                VariableDeclarationStatement varDecl = (VariableDeclarationStatement) stmtObj;
+                for (Object fragObj : varDecl.fragments()) {
+                    if (fragObj instanceof VariableDeclarationFragment) {
+                        VariableDeclarationFragment frag = (VariableDeclarationFragment) fragObj;
+                        if (frag.getName().getIdentifier().equals(varName)) {
+                            org.eclipse.jdt.core.dom.Type type = varDecl.getType();
+                            return type.toString();
+                        }
+                    }
+                }
+            }
+        }
+        return null;
     }
 }
