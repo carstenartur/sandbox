@@ -18,6 +18,7 @@ import java.util.List;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.ContinueStatement;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
@@ -25,7 +26,9 @@ import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.IfStatement;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.PostfixExpression;
 import org.eclipse.jdt.core.dom.PrefixExpression;
+import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
@@ -58,6 +61,7 @@ public class StreamPipelineBuilder {
     private String loopVariableName;
     private boolean analyzed = false;
     private boolean convertible = false;
+    private String accumulatorVariable = null;
 
     /**
      * Creates a new StreamPipelineBuilder for the given for-loop.
@@ -162,8 +166,9 @@ public class StreamPipelineBuilder {
     /**
      * Wraps the pipeline in an appropriate statement.
      * 
-     * <p>For most pipelines, this wraps the method invocation in an ExpressionStatement.
-     * For REDUCE operations, this may wrap the result in an assignment.
+     * <p>Wraps the method invocation in an ExpressionStatement. For REDUCE operations
+     * with a tracked accumulator variable, wraps the pipeline in an assignment statement
+     * (e.g., "i = stream.reduce(...)") instead of a plain expression statement.
      * 
      * @param pipeline the pipeline method invocation
      * @return a Statement wrapping the pipeline
@@ -173,10 +178,24 @@ public class StreamPipelineBuilder {
             return null;
         }
         
-        // For now, wrap in an ExpressionStatement
-        // Future: handle REDUCE operations with assignment
-        ExpressionStatement exprStmt = ast.newExpressionStatement(pipeline);
-        return exprStmt;
+        // Check if we have a REDUCE operation
+        boolean hasReduce = operations.stream()
+            .anyMatch(op -> op.getOperationType() == ProspectiveOperation.OperationType.REDUCE);
+        
+        if (hasReduce && accumulatorVariable != null) {
+            // Wrap in assignment: variable = pipeline
+            Assignment assignment = ast.newAssignment();
+            assignment.setLeftHandSide(ast.newSimpleName(accumulatorVariable));
+            assignment.setOperator(Assignment.Operator.ASSIGN);
+            assignment.setRightHandSide(pipeline);
+            
+            ExpressionStatement exprStmt = ast.newExpressionStatement(assignment);
+            return exprStmt;
+        } else {
+            // Wrap in an ExpressionStatement for FOREACH and other operations
+            ExpressionStatement exprStmt = ast.newExpressionStatement(pipeline);
+            return exprStmt;
+        }
     }
 
     /**
@@ -186,6 +205,88 @@ public class StreamPipelineBuilder {
      */
     public List<ProspectiveOperation> getOperations() {
         return operations;
+    }
+    
+    /**
+     * Detects if a statement contains a REDUCE pattern (i++, sum += x, etc.).
+     * 
+     * @param stmt the statement to check
+     * @return a ProspectiveOperation for REDUCE if detected, null otherwise
+     */
+    private ProspectiveOperation detectReduceOperation(Statement stmt) {
+        if (!(stmt instanceof ExpressionStatement)) {
+            return null;
+        }
+        
+        ExpressionStatement exprStmt = (ExpressionStatement) stmt;
+        Expression expr = exprStmt.getExpression();
+        
+        // Check for postfix increment/decrement: i++, i--
+        if (expr instanceof PostfixExpression) {
+            PostfixExpression postfix = (PostfixExpression) expr;
+            if (postfix.getOperand() instanceof SimpleName) {
+                String varName = ((SimpleName) postfix.getOperand()).getIdentifier();
+                ProspectiveOperation.ReducerType reducerType;
+                
+                if (postfix.getOperator() == PostfixExpression.Operator.INCREMENT) {
+                    reducerType = ProspectiveOperation.ReducerType.INCREMENT;
+                } else if (postfix.getOperator() == PostfixExpression.Operator.DECREMENT) {
+                    reducerType = ProspectiveOperation.ReducerType.DECREMENT;
+                } else {
+                    return null;
+                }
+                
+                accumulatorVariable = varName;
+                return new ProspectiveOperation(stmt, varName, reducerType);
+            }
+        }
+        
+        // Check for prefix increment/decrement: ++i, --i
+        if (expr instanceof PrefixExpression) {
+            PrefixExpression prefix = (PrefixExpression) expr;
+            if (prefix.getOperand() instanceof SimpleName) {
+                String varName = ((SimpleName) prefix.getOperand()).getIdentifier();
+                ProspectiveOperation.ReducerType reducerType;
+                
+                if (prefix.getOperator() == PrefixExpression.Operator.INCREMENT) {
+                    reducerType = ProspectiveOperation.ReducerType.INCREMENT;
+                } else if (prefix.getOperator() == PrefixExpression.Operator.DECREMENT) {
+                    reducerType = ProspectiveOperation.ReducerType.DECREMENT;
+                } else {
+                    return null;
+                }
+                
+                accumulatorVariable = varName;
+                return new ProspectiveOperation(stmt, varName, reducerType);
+            }
+        }
+        
+        // Check for compound assignments: +=, -=, *=, etc.
+        if (expr instanceof Assignment) {
+            Assignment assignment = (Assignment) expr;
+            if (assignment.getLeftHandSide() instanceof SimpleName &&
+                assignment.getOperator() != Assignment.Operator.ASSIGN) {
+                
+                String varName = ((SimpleName) assignment.getLeftHandSide()).getIdentifier();
+                ProspectiveOperation.ReducerType reducerType;
+                
+                if (assignment.getOperator() == Assignment.Operator.PLUS_ASSIGN) {
+                    reducerType = ProspectiveOperation.ReducerType.SUM;
+                } else if (assignment.getOperator() == Assignment.Operator.TIMES_ASSIGN) {
+                    reducerType = ProspectiveOperation.ReducerType.PRODUCT;
+                } else if (assignment.getOperator() == Assignment.Operator.MINUS_ASSIGN) {
+                    reducerType = ProspectiveOperation.ReducerType.DECREMENT;
+                } else {
+                    // Other assignment operators not yet supported
+                    return null;
+                }
+                
+                accumulatorVariable = varName;
+                return new ProspectiveOperation(stmt, varName, reducerType);
+            }
+        }
+        
+        return null;
     }
 
     /**
@@ -275,12 +376,30 @@ public class StreamPipelineBuilder {
                         }
                     }
                 } else if (isLast) {
-                    // Last statement → FOREACH
-                    ProspectiveOperation forEachOp = new ProspectiveOperation(
-                        stmt,
-                        ProspectiveOperation.OperationType.FOREACH,
-                        currentVarName);
-                    ops.add(forEachOp);
+                    // Last statement → Check for REDUCE first, otherwise FOREACH
+                    ProspectiveOperation reduceOp = detectReduceOperation(stmt);
+                    if (reduceOp != null) {
+                        // For INCREMENT/DECREMENT reducers, we need to add a MAP operation first
+                        // to convert items to 1: .map(_item -> 1).reduce(i, Integer::sum)
+                        if (reduceOp.getReducerType() == ProspectiveOperation.ReducerType.INCREMENT ||
+                            reduceOp.getReducerType() == ProspectiveOperation.ReducerType.DECREMENT) {
+                            // Create a MAP operation that maps each item to 1
+                            org.eclipse.jdt.core.dom.NumberLiteral one = ast.newNumberLiteral("1");
+                            ProspectiveOperation mapOp = new ProspectiveOperation(
+                                one,
+                                ProspectiveOperation.OperationType.MAP,
+                                "_item");
+                            ops.add(mapOp);
+                        }
+                        ops.add(reduceOp);
+                    } else {
+                        // Regular FOREACH operation
+                        ProspectiveOperation forEachOp = new ProspectiveOperation(
+                            stmt,
+                            ProspectiveOperation.OperationType.FOREACH,
+                            currentVarName);
+                        ops.add(forEachOp);
+                    }
                 }
             }
         } else if (body instanceof IfStatement) {
@@ -298,12 +417,28 @@ public class StreamPipelineBuilder {
                 ops.addAll(nestedOps);
             }
         } else {
-            // Single statement → FOREACH
-            ProspectiveOperation forEachOp = new ProspectiveOperation(
-                body,
-                ProspectiveOperation.OperationType.FOREACH,
-                currentVarName);
-            ops.add(forEachOp);
+            // Single statement → Check for REDUCE first, otherwise FOREACH
+            ProspectiveOperation reduceOp = detectReduceOperation(body);
+            if (reduceOp != null) {
+                // For INCREMENT/DECREMENT reducers, add a MAP operation first
+                if (reduceOp.getReducerType() == ProspectiveOperation.ReducerType.INCREMENT ||
+                    reduceOp.getReducerType() == ProspectiveOperation.ReducerType.DECREMENT) {
+                    org.eclipse.jdt.core.dom.NumberLiteral one = ast.newNumberLiteral("1");
+                    ProspectiveOperation mapOp = new ProspectiveOperation(
+                        one,
+                        ProspectiveOperation.OperationType.MAP,
+                        "_item");
+                    ops.add(mapOp);
+                }
+                ops.add(reduceOp);
+            } else {
+                // Regular FOREACH operation
+                ProspectiveOperation forEachOp = new ProspectiveOperation(
+                    body,
+                    ProspectiveOperation.OperationType.FOREACH,
+                    currentVarName);
+                ops.add(forEachOp);
+            }
         }
         
         return ops;

@@ -30,10 +30,14 @@ Current implementation: ~40% complete
 
 ### 🚧 In Progress
 - [x] Continue statement handling (negated filter conditions for ContinuingIfFilterSingleStatement test) - COMPLETED
-- [ ] REDUCE operation implementation for accumulator patterns (SimpleReducer, ChainedReducer tests) - REQUIRES MAJOR CHANGES
-  - REDUCE operations need different wrapping (assignment instead of expression statement)
-  - Need to detect accumulator variable and map items to constants
-  - Need to generate method references like `Integer::sum`
+- [x] REDUCE operation implementation for accumulator patterns (SimpleReducer, ChainedReducer tests) - IMPLEMENTED (needs testing)
+  - [x] REDUCE operations wrapped in assignment statement (variable = pipeline)
+  - [x] Accumulator variable detection and tracking
+  - [x] MAP to constants for counting (_item -> 1)
+  - [x] Method references for Integer::sum
+  - [x] ReducerType enum (INCREMENT, DECREMENT, SUM, PRODUCT, STRING_CONCAT)
+  - [ ] Test implementation with actual test runs
+  - [ ] Fix any edge cases discovered during testing
 - [ ] Operation optimization (merge consecutive filters, remove redundant operations)
 
 ### ❌ Not Started
@@ -51,10 +55,11 @@ Current implementation: ~40% complete
 - `analyze()` - Checks preconditions and parses loop body
 - `parseLoopBody()` - Analyzes loop body and extracts ProspectiveOperations
 - `buildPipeline()` - Constructs the stream pipeline from operations
-- `wrapPipeline()` - Wraps pipeline in appropriate statement
+- `wrapPipeline()` - Wraps pipeline in appropriate statement (including assignments for REDUCE)
 - `getVariableNameFromPreviousOp()` - Tracks variable names through pipeline
 - `requiresStreamPrefix()` - Determines when .stream() is needed
-- Full support for MAP, FILTER, FOREACH operations
+- `detectReduceOperation()` - Detects REDUCE patterns (i++, +=, etc.)
+- Full support for MAP, FILTER, FOREACH, REDUCE operations
 - Recursive nested IF statement processing for filter chains
 - Variable dependency tracking through the pipeline
 
@@ -65,7 +70,7 @@ Current implementation: ~40% complete
 
 **Next Steps**:
 - [x] Continue statement handling (negated filters) - COMPLETED
-- Implement REDUCE operation support
+- [x] Implement REDUCE operation support - IMPLEMENTED (needs testing)
 - Add AnyMatch/NoneMatch pattern detection
 
 ### 1. ✅ Complete ProspectiveOperation Class (COMPLETED)
@@ -148,51 +153,55 @@ For each test:
 3. Fix implementation issues revealed by the test
 4. Repeat until test passes
 
-**Note**: Tests 10-16 require REDUCE operation support which needs major implementation work (see Priority Tasks #5 below).
+**Note**: Tests 10-16 require REDUCE operation support which has been implemented but needs testing.
 
-### 5. ❌ Implement REDUCE Operation Support (NOT STARTED - MAJOR WORK REQUIRED)
+### 5. ✅ Implement REDUCE Operation Support (IMPLEMENTED - NEEDS TESTING)
 **Files**: 
-- `StreamPipelineBuilder.java` - Add REDUCE operation parsing
-- `ProspectiveOperation.java` - Enhance REDUCE lambda generation (partially implemented)
+- `StreamPipelineBuilder.java` - REDUCE operation parsing implemented
+- `ProspectiveOperation.java` - Enhanced REDUCE lambda generation with method references
 - `PreconditionsChecker.java` - Already detects reducers (i++, +=, etc.)
 
 **Current Status**: 
-- PreconditionsChecker can detect reducers (postfix/prefix increment, compound assignments)
-- ProspectiveOperation has some REDUCE enum support but not fully implemented
-- StreamPipelineBuilder does not parse or build REDUCE operations
-- wrapPipeline() needs enhancement to wrap REDUCE results in assignments
+- ✅ PreconditionsChecker can detect reducers (postfix/prefix increment, compound assignments)
+- ✅ ProspectiveOperation fully supports REDUCE with ReducerType enum
+- ✅ StreamPipelineBuilder parses and detects REDUCE operations
+- ✅ wrapPipeline() wraps REDUCE results in assignments
+- ✅ Method references (Integer::sum) supported
+- ⏳ Implementation needs testing with actual test runs
 
-**Required Implementation**:
+**Implementation Details**:
 
-1. **Parse REDUCE patterns in StreamPipelineBuilder.parseLoopBody()**:
-   - Detect `i++`, `i--` → `.map(_item -> 1).reduce(i, Integer::sum)`
-   - Detect `sum += x` → `.reduce(sum, Integer::sum)` or similar
-   - Detect `count += 1` → `.map(_item -> 1).reduce(count, Integer::sum)`
-   - Track accumulator variable name
+1. **✅ Parse REDUCE patterns in StreamPipelineBuilder.parseLoopBody()**:
+   - ✅ Detect `i++`, `i--` → `.map(_item -> 1).reduce(i, Integer::sum)`
+   - ✅ Detect `sum += x` → `.reduce(sum, Integer::sum)` or similar
+   - ✅ Detect `count += 1` → `.map(_item -> 1).reduce(count, Integer::sum)`
+   - ✅ Track accumulator variable name via `accumulatorVariable` field
 
-2. **Generate REDUCE operations in ProspectiveOperation**:
-   - Create mapping lambda: `_item -> 1` for counting operations
-   - Create reducer lambda or method reference: `Integer::sum`, `Integer::min`, etc.
-   - Handle identity value (initial value): 0 for sum, 1 for product, etc.
+2. **✅ Generate REDUCE operations in ProspectiveOperation**:
+   - ✅ Create mapping lambda: `_item -> 1` for counting operations
+   - ✅ Create reducer method reference: `Integer::sum` for INCREMENT/SUM
+   - ✅ Create reducer lambda for other operators: `(accumulator, _item) -> accumulator + _item`
+   - ✅ Handle identity value as accumulator variable reference
 
-3. **Update StreamPipelineBuilder.wrapPipeline()**:
-   - REDUCE operations return a value, not void
-   - Need to wrap in assignment: `variable = stream.reduce(...)`
-   - Detect accumulator variable from the loop body
-   - Create Assignment node instead of ExpressionStatement
+3. **✅ Update StreamPipelineBuilder.wrapPipeline()**:
+   - ✅ REDUCE operations return a value, not void
+   - ✅ Wrap in assignment: `variable = stream.reduce(...)`
+   - ✅ Detect accumulator variable from the loop body
+   - ✅ Create Assignment node instead of ExpressionStatement
 
-4. **Handle different reducer patterns**:
-   - `i++` / `i--` → counting with map to 1
-   - `sum += expr` → mapping expr and reducing with sum
-   - `product *= expr` → mapping expr and reducing with multiply
-   - `s += string` → string concatenation
+4. **✅ Handle different reducer patterns**:
+   - ✅ `i++` / `i--` → counting with map to 1, ReducerType.INCREMENT/DECREMENT
+   - ✅ `sum += expr` → ReducerType.SUM with Integer::sum
+   - ✅ `product *= expr` → ReducerType.PRODUCT with multiply lambda
+   - ⏳ `s += string` → ReducerType.STRING_CONCAT (implemented, needs testing)
 
-**Challenges**:
-- REDUCE changes the overall structure (assignment vs expression statement)
-- Need to track which variable is the accumulator
-- Need to determine the correct identity value
-- Need to generate method references or appropriate lambda expressions
-- Complex interaction with other operations (filter + reduce, map + reduce)
+**Challenges Addressed**:
+- ✅ REDUCE changes the overall structure (assignment vs expression statement) - handled by wrapPipeline
+- ✅ Track which variable is the accumulator - accumulatorVariable field
+- ✅ Determine the correct identity value - use accumulator variable reference
+- ✅ Generate method references or appropriate lambda expressions - createAccumulatorExpression
+- ⏳ Complex interaction with other operations (filter + reduce, map + reduce) - needs testing
+
 
 **Estimated Effort**: 6-8 hours
 
