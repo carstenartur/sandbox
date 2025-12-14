@@ -870,17 +870,6 @@ public abstract class AbstractTool<T> {
 	public abstract String getPreview(boolean afterRefactoring);
 
 	/**
-	 * Gets the parent TypeDeclaration for the given AST node.
-	 * Delegates to {@link ASTNavigationUtils#getParentTypeDeclaration(ASTNode)}.
-	 * 
-	 * @param node the AST node to start from
-	 * @return the enclosing TypeDeclaration, or null if none found
-	 */
-	protected TypeDeclaration getParentTypeDeclaration(ASTNode node) {
-	    return ASTNavigationUtils.getParentTypeDeclaration(node);
-	}
-
-	/**
 	 * Finds the type definition (TypeDeclaration or AnonymousClassDeclaration) for a field.
 	 * Checks the field's initializer and type binding to locate the definition.
 	 * 
