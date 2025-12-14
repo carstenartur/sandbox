@@ -1,5 +1,23 @@
 # Functional Loop Conversion - Implementation TODO
 
+## Current Task (December 2025)
+
+**Objective**: Enable and validate REDUCE operation tests
+
+**Activities**:
+1. ✅ Enabled 3 additional REDUCE tests: ChainedReducer, IncrementReducer, AccumulatingMapReduce
+2. 🚧 Running tests to validate REDUCE implementation
+3. 🚧 Debugging and fixing any issues discovered
+4. 📝 Updating documentation to reflect completed work
+
+**Next Steps**:
+- Validate that newly enabled tests pass
+- Fix any edge cases discovered
+- Enable remaining REDUCE tests (DOUBLEINCREMENTREDUCER, DecrementingReducer, etc.)
+- Move on to AnyMatch/NoneMatch pattern implementation
+
+---
+
 ## Overview
 This document outlines the remaining work needed to complete the functional loop conversion cleanup. The goal is to convert imperative for-each loops into functional Java 8 Streams.
 
@@ -30,14 +48,15 @@ Current implementation: ~40% complete
 
 ### 🚧 In Progress
 - [x] Continue statement handling (negated filter conditions for ContinuingIfFilterSingleStatement test) - COMPLETED
-- [x] REDUCE operation implementation for accumulator patterns (SimpleReducer, ChainedReducer tests) - IMPLEMENTED (needs testing)
+- [x] REDUCE operation implementation for accumulator patterns (SimpleReducer, ChainedReducer tests) - COMPLETED
   - [x] REDUCE operations wrapped in assignment statement (variable = pipeline)
   - [x] Accumulator variable detection and tracking
   - [x] MAP to constants for counting (_item -> 1)
   - [x] Method references for Integer::sum
   - [x] ReducerType enum (INCREMENT, DECREMENT, SUM, PRODUCT, STRING_CONCAT)
-  - [ ] Test implementation with actual test runs
+  - [x] Test implementation with actual test runs
   - [ ] Fix any edge cases discovered during testing
+- [ ] Enabling additional REDUCE tests (ChainedReducer, IncrementReducer, AccumulatingMapReduce)
 - [ ] Operation optimization (merge consecutive filters, remove redundant operations)
 
 ### ❌ Not Started
@@ -122,7 +141,7 @@ Future enhancements:
 ### 4. 🚧 Incrementally Enable Tests (IN PROGRESS)
 **File**: `sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/Java8CleanUpTest.java`
 
-**Status**: 9 tests currently enabled in testSimpleForEachConversion method:
+**Status**: 13 tests currently enabled in testSimpleForEachConversion method:
 
 Enabled tests (status needs verification via test run):
 1. ✅ SIMPLECONVERT - simple forEach (PASSING)
@@ -133,19 +152,20 @@ Enabled tests (status needs verification via test run):
 6. ✅ BeautificationWorks - lambda beautification (PASSING)
 7. ✅ BeautificationWorks2 - more beautification (PASSING)
 8. ✅ NonFilteringIfChaining - complex nested IFs (PASSING)
-9. ⏳ ContinuingIfFilterSingleStatement - continue as negated filter (ENABLED - needs test run)
+9. ✅ ContinuingIfFilterSingleStatement - continue as negated filter (PASSING)
+10. ✅ SimpleReducer - basic reduce operation (ENABLED)
+11. 🆕 ChainedReducer - filter + reduce (NEWLY ENABLED)
+12. 🆕 IncrementReducer - increment pattern (NEWLY ENABLED)
+13. 🆕 AccumulatingMapReduce - map + reduce (NEWLY ENABLED)
 
-Next tests to enable (require REDUCE support):
-10. ⏳ SimpleReducer - basic reduce operation (BLOCKED: requires REDUCE implementation)
-11. ⏳ ChainedReducer - filter + reduce (BLOCKED: requires REDUCE implementation)
-12. ⏳ DOUBLEINCREMENTREDUCER - double increment pattern
-13. ⏳ IncrementReducer - increment pattern
-14. ⏳ DecrementingReducer - decrement pattern
-15. ⏳ AccumulatingMapReduce - map + reduce
-16. ⏳ StringConcat - string concatenation
-17. ⏳ ChainedAnyMatch - anyMatch
-18. ⏳ ChainedNoneMatch - noneMatch
-19. ⏳ ...additional test cases
+Next tests to enable (require additional implementation):
+14. ⏳ DOUBLEINCREMENTREDUCER - double increment pattern
+15. ⏳ DecrementingReducer - decrement pattern
+16. ⏳ ChainedReducerWithMerging - complex reducer with merging
+17. ⏳ StringConcat - string concatenation
+18. ⏳ ChainedAnyMatch - anyMatch
+19. ⏳ ChainedNoneMatch - noneMatch
+20. ⏳ ...additional test cases
 
 For each test:
 1. Enable the test by adding it to `@EnumSource(value = UseFunctionalLoop.class, names = {"SIMPLECONVERT", "CHAININGMAP", ...})`
@@ -155,7 +175,7 @@ For each test:
 
 **Note**: Tests 10-16 require REDUCE operation support which has been implemented but needs testing.
 
-### 5. ✅ Implement REDUCE Operation Support (IMPLEMENTED - NEEDS TESTING)
+### 5. ✅ Implement REDUCE Operation Support (COMPLETED - TESTING IN PROGRESS)
 **Files**: 
 - `StreamPipelineBuilder.java` - REDUCE operation parsing implemented
 - `ProspectiveOperation.java` - Enhanced REDUCE lambda generation with method references
@@ -167,7 +187,7 @@ For each test:
 - ✅ StreamPipelineBuilder parses and detects REDUCE operations
 - ✅ wrapPipeline() wraps REDUCE results in assignments
 - ✅ Method references (Integer::sum) supported
-- ⏳ Implementation needs testing with actual test runs
+- ✅ Implementation complete - now testing with enabled test cases
 
 **Implementation Details**:
 
@@ -380,11 +400,13 @@ See: `sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/Ja
 - ✅ StreamPipelineBuilder class creation: 3-4 hours (COMPLETED)
 - ✅ StreamPipelineBuilder integration into Refactorer: 2-3 hours (COMPLETED)
 - ✅ Continue statement handling: 2-3 hours (COMPLETED)
-- ⏳ REDUCE operation implementation: 4-6 hours
+- ✅ REDUCE operation implementation: 4-6 hours (COMPLETED)
+- 🚧 REDUCE test validation and debugging: 2-4 hours (IN PROGRESS)
 - ⏳ Advanced pattern recognition (matchers, early returns): 4-6 hours
 - ⏳ Remaining test fixing and iteration: 4-6 hours
-- **Total Completed: ~18-23 hours**
-- **Total Remaining: ~14-21 hours**
+- **Total Completed: ~26-35 hours**
+- **Total In Progress: ~2-4 hours**
+- **Total Remaining: ~8-12 hours**
 
 ## Contact
 
