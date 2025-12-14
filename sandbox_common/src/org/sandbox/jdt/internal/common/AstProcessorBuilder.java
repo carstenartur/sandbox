@@ -25,10 +25,18 @@ import java.util.Set;
 import java.util.function.BiPredicate;
 
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Assignment;
+import org.eclipse.jdt.core.dom.BreakStatement;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.ContinueStatement;
+import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.ReturnStatement;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.ThrowStatement;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 
 /**
  * A fluent builder class that provides a simplified entry point for configuring and
@@ -40,11 +48,11 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
  * ReferenceHolder<String, Object> holder = new ReferenceHolder<>();
  * AstProcessorBuilder.with(holder)
  *     .onMethodInvocation("myMethod", (node, h) -> {
- *         // process method invocation
+ *         // node is MethodInvocation, no cast needed
  *         return true;
  *     })
- *     .onTypeDeclaration((node, h) -> {
- *         // process type declaration
+ *     .onAssignment((node, h) -> {
+ *         // node is Assignment, no cast needed
  *         return true;
  *     })
  *     .build(compilationUnit);
@@ -185,6 +193,94 @@ public final class AstProcessorBuilder<V, T> {
 	 */
 	public AstProcessorBuilder<V, T> onClassInstanceCreation(Class<?> classType, BiPredicate<ClassInstanceCreation, ReferenceHolder<V, T>> predicate) {
 		processor.callClassInstanceCreationVisitor(classType, predicate);
+		return this;
+	}
+
+	/**
+	 * Registers a visitor for VariableDeclarationFragment nodes.
+	 *
+	 * @param predicate the predicate to test and process matching nodes
+	 * @return this builder for method chaining
+	 */
+	public AstProcessorBuilder<V, T> onVariableDeclarationFragment(BiPredicate<VariableDeclarationFragment, ReferenceHolder<V, T>> predicate) {
+		processor.callVariableDeclarationFragmentVisitor((node, holder) -> predicate.test((VariableDeclarationFragment) node, holder));
+		return this;
+	}
+
+	/**
+	 * Registers a visitor for Assignment nodes.
+	 *
+	 * @param predicate the predicate to test and process matching nodes
+	 * @return this builder for method chaining
+	 */
+	public AstProcessorBuilder<V, T> onAssignment(BiPredicate<Assignment, ReferenceHolder<V, T>> predicate) {
+		processor.callAssignmentVisitor((node, holder) -> predicate.test((Assignment) node, holder));
+		return this;
+	}
+
+	/**
+	 * Registers a visitor for BreakStatement nodes.
+	 *
+	 * @param predicate the predicate to test and process matching nodes
+	 * @return this builder for method chaining
+	 */
+	public AstProcessorBuilder<V, T> onBreakStatement(BiPredicate<BreakStatement, ReferenceHolder<V, T>> predicate) {
+		processor.callBreakStatementVisitor((node, holder) -> predicate.test((BreakStatement) node, holder));
+		return this;
+	}
+
+	/**
+	 * Registers a visitor for ContinueStatement nodes.
+	 *
+	 * @param predicate the predicate to test and process matching nodes
+	 * @return this builder for method chaining
+	 */
+	public AstProcessorBuilder<V, T> onContinueStatement(BiPredicate<ContinueStatement, ReferenceHolder<V, T>> predicate) {
+		processor.callContinueStatementVisitor((node, holder) -> predicate.test((ContinueStatement) node, holder));
+		return this;
+	}
+
+	/**
+	 * Registers a visitor for ReturnStatement nodes.
+	 *
+	 * @param predicate the predicate to test and process matching nodes
+	 * @return this builder for method chaining
+	 */
+	public AstProcessorBuilder<V, T> onReturnStatement(BiPredicate<ReturnStatement, ReferenceHolder<V, T>> predicate) {
+		processor.callReturnStatementVisitor((node, holder) -> predicate.test((ReturnStatement) node, holder));
+		return this;
+	}
+
+	/**
+	 * Registers a visitor for ThrowStatement nodes.
+	 *
+	 * @param predicate the predicate to test and process matching nodes
+	 * @return this builder for method chaining
+	 */
+	public AstProcessorBuilder<V, T> onThrowStatement(BiPredicate<ThrowStatement, ReferenceHolder<V, T>> predicate) {
+		processor.callThrowStatementVisitor((node, holder) -> predicate.test((ThrowStatement) node, holder));
+		return this;
+	}
+
+	/**
+	 * Registers a visitor for EnhancedForStatement nodes.
+	 *
+	 * @param predicate the predicate to test and process matching nodes
+	 * @return this builder for method chaining
+	 */
+	public AstProcessorBuilder<V, T> onEnhancedForStatement(BiPredicate<EnhancedForStatement, ReferenceHolder<V, T>> predicate) {
+		processor.callEnhancedForStatementVisitor((node, holder) -> predicate.test((EnhancedForStatement) node, holder));
+		return this;
+	}
+
+	/**
+	 * Registers a visitor for SimpleName nodes.
+	 *
+	 * @param predicate the predicate to test and process matching nodes
+	 * @return this builder for method chaining
+	 */
+	public AstProcessorBuilder<V, T> onSimpleName(BiPredicate<SimpleName, ReferenceHolder<V, T>> predicate) {
+		processor.callSimpleNameVisitor((node, holder) -> predicate.test((SimpleName) node, holder));
 		return this;
 	}
 

@@ -38,8 +38,7 @@ final class VarVisitor {
 	 */
 	public void process(ASTNode node) {
 		AstProcessorBuilder.with(new ReferenceHolder<String, Object>())
-			.processor()
-			.callSimpleNameVisitor((simpleName, dataHolder) -> {
+			.onSimpleName((simpleName, dataHolder) -> {
 				IBinding binding = simpleName.resolveBinding();
 				if (binding instanceof IVariableBinding varBinding) {
 					methods.add(varBinding);

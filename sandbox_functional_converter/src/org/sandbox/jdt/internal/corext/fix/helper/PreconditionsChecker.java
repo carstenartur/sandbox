@@ -92,28 +92,27 @@ public class PreconditionsChecker {
      */
     private void analyzeLoop() {
         AstProcessorBuilder.with(new ReferenceHolder<String, Object>())
-            .processor()
-            .callVariableDeclarationFragmentVisitor((node, h) -> {
-                innerVariables.add((VariableDeclarationFragment) node);
+            .onVariableDeclarationFragment((node, h) -> {
+                innerVariables.add(node);
                 return true;
             })
-            .callBreakStatementVisitor((node, h) -> {
+            .onBreakStatement((node, h) -> {
                 containsBreak = true;
                 return true;
             })
-            .callContinueStatementVisitor((node, h) -> {
+            .onContinueStatement((node, h) -> {
                 containsContinue = true;
                 return true;
             })
-            .callReturnStatementVisitor((node, h) -> {
+            .onReturnStatement((node, h) -> {
                 containsReturn = true;
                 return true;
             })
-            .callThrowStatementVisitor((node, h) -> {
+            .onThrowStatement((node, h) -> {
                 throwsException = true;
                 return true;
             })
-            .callEnhancedForStatementVisitor((node, h) -> {
+            .onEnhancedForStatement((node, h) -> {
                 iteratesOverIterable = true;
                 return true;
             })
@@ -140,9 +139,8 @@ public class PreconditionsChecker {
             String varName = var.getName().getIdentifier();
             
             AstProcessorBuilder.with(new ReferenceHolder<String, Object>())
-                .processor()
-                .callAssignmentVisitor((node, h) -> {
-                    if (((Assignment) node).getLeftHandSide() instanceof SimpleName name) {
+                .onAssignment((node, h) -> {
+                    if (node.getLeftHandSide() instanceof SimpleName name) {
                         if (name.getIdentifier().equals(varName)) {
                             modified[0] = true;
                         }
