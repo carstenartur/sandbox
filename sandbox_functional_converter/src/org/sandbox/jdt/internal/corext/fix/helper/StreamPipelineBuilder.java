@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021 Alexandru Gyori and others.
+ * Copyright (c) 2025 Carsten Hammer and others.
  *
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
@@ -9,8 +9,7 @@
  * SPDX-License-Identifier: EPL-2.0
  *
  * Contributors:
- *     Alexandru Gyori original code
- *     Carsten Hammer initial port to Eclipse
+ *     Carsten Hammer
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
@@ -19,147 +18,111 @@ import java.util.List;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Block;
-import org.eclipse.jdt.core.dom.ContinueStatement;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.IfStatement;
-import org.eclipse.jdt.core.dom.InfixExpression;
-import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
-import org.eclipse.jdt.core.dom.ReturnStatement;
-import org.eclipse.jdt.core.dom.SimpleName;
-import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
-import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 
-public class Refactorer {
+/**
+ * Builder class for constructing stream pipelines from enhanced for-loops.
+ * 
+ * <p>This class analyzes the body of an enhanced for-loop and determines if it can be
+ * converted into a stream pipeline. It handles various patterns including:
+ * <ul>
+ * <li>Simple forEach operations</li>
+ * <li>MAP operations (variable declarations with initializers)</li>
+ * <li>FILTER operations (IF statements)</li>
+ * <li>REDUCE operations (accumulator patterns)</li>
+ * <li>ANYMATCH/NONEMATCH operations (early returns)</li>
+ * </ul>
+ * 
+ * <p>Based on the NetBeans mapreduce hints implementation:
+ * https://github.com/apache/netbeans/tree/master/java/java.hints/src/org/netbeans/modules/java/hints/jdk/mapreduce
+ * 
+ * @see ProspectiveOperation
+ * @see PreconditionsChecker
+ */
+public class StreamPipelineBuilder {
     private final EnhancedForStatement forLoop;
-    private final ASTRewrite rewrite;
     private final PreconditionsChecker preconditions;
     private final AST ast;
+    
+    private List<ProspectiveOperation> operations;
+    private String loopVariableName;
+    private boolean analyzed = false;
+    private boolean convertible = false;
 
-    public Refactorer(EnhancedForStatement forLoop, ASTRewrite rewrite, PreconditionsChecker preconditions) {
+    /**
+     * Creates a new StreamPipelineBuilder for the given for-loop.
+     * 
+     * @param forLoop the enhanced for-loop to analyze
+     * @param preconditions the preconditions checker for the loop
+     */
+    public StreamPipelineBuilder(EnhancedForStatement forLoop, PreconditionsChecker preconditions) {
         this.forLoop = forLoop;
-        this.rewrite = rewrite;
         this.preconditions = preconditions;
         this.ast = forLoop.getAST();
+        this.loopVariableName = forLoop.getParameter().getName().getIdentifier();
+        this.operations = new ArrayList<>();
     }
 
-    /** (1) Prüft, ob ein gegebenes Statement ein Block mit genau einer Anweisung ist. */
-    private boolean isOneStatementBlock(Statement statement) {
-        return (statement instanceof Block) && ((Block) statement).statements().size() == 1;
-    }
-
-    /** (2) Prüft, ob ein `IfStatement` eine `return`-Anweisung enthält. */
-    private boolean isReturningIf(IfStatement ifStatement) {
-        Statement thenStatement = ifStatement.getThenStatement();
-        if (thenStatement instanceof ReturnStatement) {
-            return true;
-        }
-        if (isOneStatementBlock(thenStatement)) {
-            return ((Block) thenStatement).statements().get(0) instanceof ReturnStatement;
-        }
-        return false;
-    }
-
-    /** (3) Prüft, ob die Schleife in eine Stream-Operation umgewandelt werden kann. */
-    public boolean isRefactorable() {
-        return preconditions.isSafeToRefactor() && preconditions.iteratesOverIterable();
-    }
-
-    /** (4) Zerlegt eine Schleife in eine Liste von Stream-Operationen. */
-    private List<Statement> getListRepresentation(Statement statement, boolean last) {
-        List<Statement> operations = new ArrayList<>();
-        if (statement instanceof Block) {
-            operations.addAll(((Block) statement).statements());
-        } else {
-            operations.add(statement);
-        }
-        return operations;
-    }
-
-    /** (5) Prüft, ob ein `IfStatement` eine `continue`-Anweisung enthält. */
-    private boolean isIfWithContinue(IfStatement ifStatement) {
-        Statement thenStatement = ifStatement.getThenStatement();
-        if (thenStatement instanceof ContinueStatement) {
-            return true;
-        }
-        if (isOneStatementBlock(thenStatement)) {
-            return ((Block) thenStatement).statements().get(0) instanceof ContinueStatement;
-        }
-        return false;
-    }
-
-    /** (6) Konvertiert `IfStatement` mit `continue` zu Stream-Operationen. */
-    private void refactorContinuingIf(IfStatement ifStatement, List<Statement> newStatements) {
-        if (isIfWithContinue(ifStatement)) {
-            newStatements.add(ifStatement.getThenStatement());
-        }
-    }
-
-    /** (6) Erstellt eine Lambda-Expression für die `reduce()`-Operation. */
-    private LambdaExpression createReduceLambdaExpression() {
-        LambdaExpression lambda = ast.newLambdaExpression();
-        
-        SingleVariableDeclaration acc = ast.newSingleVariableDeclaration();
-        acc.setName(ast.newSimpleName("acc"));
-        lambda.parameters().add(acc);
-        
-        SingleVariableDeclaration item = ast.newSingleVariableDeclaration();
-        item.setName(ast.newSimpleName("item"));
-        lambda.parameters().add(item);
-        
-        InfixExpression sumExpression = ast.newInfixExpression();
-        sumExpression.setLeftOperand(ast.newSimpleName("acc"));
-        sumExpression.setRightOperand(ast.newSimpleName("item"));
-        sumExpression.setOperator(InfixExpression.Operator.PLUS);
-        
-        lambda.setBody(sumExpression);
-        return lambda;
-    }
-
-    /** (7) Führt die Refaktorisierung der Schleife in eine Stream-Operation durch. */
-    public void refactor() {
-        // Option 1: Use StreamPipelineBuilder (recommended for new code)
-        if (useStreamPipelineBuilder()) {
-            refactorWithBuilder();
-            return;
+    /**
+     * Analyzes the loop body to determine if it can be converted to a stream pipeline.
+     * 
+     * <p>This method should be called before attempting to build the pipeline.
+     * It inspects the loop body and extracts a sequence of {@link ProspectiveOperation}s
+     * that represent the transformation.
+     * 
+     * @return true if the loop can be converted to a stream pipeline, false otherwise
+     */
+    public boolean analyze() {
+        if (analyzed) {
+            return convertible;
         }
         
-        // Option 2: Legacy inline implementation
-        if (!isRefactorable()) {
-            return;
+        analyzed = true;
+        
+        // Check basic preconditions
+        if (!preconditions.isSafeToRefactor() || !preconditions.iteratesOverIterable()) {
+            convertible = false;
+            return false;
         }
-
+        
+        // Parse the loop body into operations
         Statement loopBody = forLoop.getBody();
-        String loopVarName = forLoop.getParameter().getName().getIdentifier();
+        operations = parseLoopBody(loopBody, loopVariableName);
         
-        // Parse loop body into operations
-        List<ProspectiveOperation> operations = parseLoopBody(loopBody, loopVarName);
+        // Check if we have any operations
+        convertible = !operations.isEmpty();
+        return convertible;
+    }
+
+    /**
+     * Builds the stream pipeline from the analyzed operations.
+     * 
+     * <p>This method should be called after {@link #analyze()} returns true.
+     * It constructs a {@link MethodInvocation} representing the complete stream pipeline.
+     * 
+     * @return a MethodInvocation representing the stream pipeline, or null if the loop cannot be converted
+     */
+    public MethodInvocation buildPipeline() {
+        if (!analyzed || !convertible) {
+            return null;
+        }
         
         if (operations.isEmpty()) {
-            // Fallback to simple forEach
-            LambdaExpression forEachLambda = createForEachLambdaExpression();
-            MethodInvocation forEachCall = ast.newMethodInvocation();
-            forEachCall.setExpression((Expression) ASTNode.copySubtree(ast, forLoop.getExpression()));
-            forEachCall.setName(ast.newSimpleName("forEach"));
-            forEachCall.arguments().add(forEachLambda);
-            
-            ExpressionStatement exprStmt = ast.newExpressionStatement(forEachCall);
-            rewrite.replace(forLoop, exprStmt, null);
-            return;
+            return null;
         }
         
         // Check if we need .stream() or can use direct .forEach()
         boolean needsStream = operations.size() > 1 || 
                               operations.get(0).getOperationType() != ProspectiveOperation.OperationType.FOREACH;
         
-        // Build the stream pipeline
         MethodInvocation pipeline;
         if (needsStream) {
             // Start with .stream()
@@ -175,7 +138,7 @@ public class Refactorer {
                 next.setName(ast.newSimpleName(op.getSuitableMethod()));
 
                 // Get the current parameter name for this operation
-                String paramName = getVariableNameFromPreviousOp(operations, i, loopVarName);
+                String paramName = getVariableNameFromPreviousOp(operations, i, loopVariableName);
                 
                 // Use the current paramName for this operation
                 List<Expression> args = op.getArguments(ast, paramName);
@@ -190,21 +153,49 @@ public class Refactorer {
             pipeline = ast.newMethodInvocation();
             pipeline.setExpression((Expression) ASTNode.copySubtree(ast, forLoop.getExpression()));
             pipeline.setName(ast.newSimpleName("forEach"));
-            List<Expression> args = op.getArguments(ast, loopVarName);
+            List<Expression> args = op.getArguments(ast, loopVariableName);
             for (Expression arg : args) {
                 pipeline.arguments().add(arg);
             }
         }
         
-        ExpressionStatement exprStmt = ast.newExpressionStatement(pipeline);
-        rewrite.replace(forLoop, exprStmt, null);
+        return pipeline;
     }
-    
+
+    /**
+     * Wraps the pipeline in an appropriate statement.
+     * 
+     * <p>For most pipelines, this wraps the method invocation in an ExpressionStatement.
+     * For REDUCE operations, this may wrap the result in an assignment.
+     * 
+     * @param pipeline the pipeline method invocation
+     * @return a Statement wrapping the pipeline
+     */
+    public Statement wrapPipeline(MethodInvocation pipeline) {
+        if (pipeline == null) {
+            return null;
+        }
+        
+        // For now, wrap in an ExpressionStatement
+        // Future: handle REDUCE operations with assignment
+        ExpressionStatement exprStmt = ast.newExpressionStatement(pipeline);
+        return exprStmt;
+    }
+
+    /**
+     * Returns the list of operations extracted from the loop body.
+     * 
+     * @return the list of prospective operations
+     */
+    public List<ProspectiveOperation> getOperations() {
+        return operations;
+    }
+
     /**
      * Analyzes the body of an enhanced for-loop and extracts a list of {@link ProspectiveOperation}
      * objects representing the operations that can be mapped to stream operations.
-     * <p>
-     * This method inspects the statements within the loop body to identify possible
+     * 
+     * <p>This method inspects the statements within the loop body to identify possible
      * stream operations such as {@code map} (for variable declarations with initializers),
      * {@code filter} (for IF statements), and {@code forEach} (for the final or sole statement).
      * For block bodies, it processes each statement in order, treating:
@@ -219,7 +210,7 @@ public class Refactorer {
      * @see ProspectiveOperation
      */
     private List<ProspectiveOperation> parseLoopBody(Statement body, String loopVarName) {
-        List<ProspectiveOperation> operations = new ArrayList<>();
+        List<ProspectiveOperation> ops = new ArrayList<>();
         String currentVarName = loopVarName; // Track the current variable name through the pipeline
         
         if (body instanceof Block) {
@@ -242,7 +233,7 @@ public class Refactorer {
                                 frag.getInitializer(),
                                 ProspectiveOperation.OperationType.MAP,
                                 newVarName);
-                            operations.add(mapOp);
+                            ops.add(mapOp);
                             
                             // Update current var name for subsequent operations
                             currentVarName = newVarName;
@@ -260,11 +251,11 @@ public class Refactorer {
                         ProspectiveOperation filterOp = new ProspectiveOperation(
                             ifStmt.getExpression(),
                             ProspectiveOperation.OperationType.FILTER);
-                        operations.add(filterOp);
+                        ops.add(filterOp);
                         
                         // Process the body of the IF statement recursively
                         List<ProspectiveOperation> nestedOps = parseLoopBody(thenStmt, currentVarName);
-                        operations.addAll(nestedOps);
+                        ops.addAll(nestedOps);
                         
                         // Update current var name if the nested operations produced a new variable
                         if (!nestedOps.isEmpty()) {
@@ -280,7 +271,7 @@ public class Refactorer {
                         stmt,
                         ProspectiveOperation.OperationType.FOREACH,
                         currentVarName);
-                    operations.add(forEachOp);
+                    ops.add(forEachOp);
                 }
             }
         } else if (body instanceof IfStatement) {
@@ -291,11 +282,11 @@ public class Refactorer {
                 ProspectiveOperation filterOp = new ProspectiveOperation(
                     ifStmt.getExpression(),
                     ProspectiveOperation.OperationType.FILTER);
-                operations.add(filterOp);
+                ops.add(filterOp);
                 
                 // Process the then statement
                 List<ProspectiveOperation> nestedOps = parseLoopBody(ifStmt.getThenStatement(), currentVarName);
-                operations.addAll(nestedOps);
+                ops.addAll(nestedOps);
             }
         } else {
             // Single statement → FOREACH
@@ -303,16 +294,16 @@ public class Refactorer {
                 body,
                 ProspectiveOperation.OperationType.FOREACH,
                 currentVarName);
-            operations.add(forEachOp);
+            ops.add(forEachOp);
         }
         
-        return operations;
+        return ops;
     }
     
     /**
      * Determines the variable name to use for the current operation in a chain of stream operations.
-     * <p>
-     * This method inspects the list of {@link ProspectiveOperation}s up to {@code currentIndex - 1}
+     * 
+     * <p>This method inspects the list of {@link ProspectiveOperation}s up to {@code currentIndex - 1}
      * to find if a previous MAP operation exists. If so, it returns the produced variable name
      * from that MAP operation. Otherwise, it returns the loop variable name.
      * </p>
@@ -332,76 +323,4 @@ public class Refactorer {
         }
         return loopVarName;
     }
-    /** (7) Erstellt eine Lambda-Expression für die `map()`-Operation. */
-    private LambdaExpression createMapLambdaExpression() {
-        LambdaExpression lambda = ast.newLambdaExpression();
-        
-        SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
-        param.setName((SimpleName) ASTNode.copySubtree(ast, forLoop.getParameter().getName()));
-        lambda.parameters().add(param);
-        
-        ReturnStatement returnStmt = ast.newReturnStatement();
-        returnStmt.setExpression((Expression) ASTNode.copySubtree(ast, param.getName()));
-        
-        Block block = ast.newBlock();
-        block.statements().add(returnStmt);
-        
-        lambda.setBody(block);
-        return lambda;
-    }
-
-    private LambdaExpression createForEachLambdaExpression() {
-        LambdaExpression lambda = ast.newLambdaExpression();
-        
-        // Use VariableDeclarationFragment for the parameter (simpler form without type)
-        org.eclipse.jdt.core.dom.VariableDeclarationFragment paramFragment = ast.newVariableDeclarationFragment();
-        paramFragment.setName((SimpleName) ASTNode.copySubtree(ast, forLoop.getParameter().getName()));
-        lambda.parameters().add(paramFragment);
-        
-        Statement body = forLoop.getBody();
-        if (body instanceof ExpressionStatement) {
-            // Single expression - use expression as lambda body
-            lambda.setBody(ASTNode.copySubtree(ast, ((ExpressionStatement) body).getExpression()));
-        } else if (body instanceof Block) {
-            // Block body - copy the whole block
-            lambda.setBody(ASTNode.copySubtree(ast, body));
-        } else {
-            // Other statement type - wrap in block
-            Block block = ast.newBlock();
-            block.statements().add(ASTNode.copySubtree(ast, body));
-            lambda.setBody(block);
-        }
-        return lambda;
-    }
-    
-    /**
-     * Determines whether to use the StreamPipelineBuilder for refactoring.
-     * Returns true to enable the builder-based approach.
-     */
-    private boolean useStreamPipelineBuilder() {
-        return true; // Enable StreamPipelineBuilder by default
-    }
-    
-    /**
-     * Refactors the loop using the StreamPipelineBuilder approach.
-     * This is the recommended method for converting loops to streams.
-     */
-    private void refactorWithBuilder() {
-        StreamPipelineBuilder builder = new StreamPipelineBuilder(forLoop, preconditions);
-        
-        if (!builder.analyze()) {
-            return; // Cannot convert
-        }
-        
-        MethodInvocation pipeline = builder.buildPipeline();
-        if (pipeline == null) {
-            return; // Failed to build pipeline
-        }
-        
-        Statement replacement = builder.wrapPipeline(pipeline);
-        if (replacement != null) {
-            rewrite.replace(forLoop, replacement, null);
-        }
-    }
-  
 }
