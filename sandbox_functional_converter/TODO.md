@@ -13,23 +13,34 @@ Current implementation: ~40% complete
 ## Current State
 
 ### ✅ Completed
-- [x] StreamPipelineBuilder class (390 lines) - framework for complex pipelines
 - [x] Basic Refactorer with simple forEach conversion
 - [x] ProspectiveOperation enum with all 6 operation types
 - [x] First test case enabled (SIMPLECONVERT)
-- [x] Pattern recognition logic for filters, reducers, matchers
 
 ### ⏳ In Progress
 - [ ] ProspectiveOperation lambda generation methods
-- [ ] Integration of StreamPipelineBuilder into Refactorer
 - [ ] PreconditionsChecker reducer detection
 
 ### ❌ Not Started
+- [ ] StreamPipelineBuilder class - needs to be created after ProspectiveOperation is complete
+- [ ] Pattern recognition logic for filters, reducers, matchers
+- [ ] Integration of StreamPipelineBuilder into Refactorer
 - [ ] Variable dependency tracking
 - [ ] Operation merging/optimization
 - [ ] Most test cases (19 of 20 still disabled)
 
 ## Priority Tasks
+
+### 0. Create StreamPipelineBuilder (PREREQUISITE)
+**Note**: StreamPipelineBuilder was initially created but removed due to compilation errors. It needs to be re-created after the prerequisite methods in ProspectiveOperation and PreconditionsChecker are implemented.
+
+The StreamPipelineBuilder should:
+- Analyze loop body and classify statements into stream operations
+- Detect patterns (if-continue → filter, early return → anyMatch/noneMatch)
+- Build stream pipelines by chaining operations
+- Handle variable dependencies
+
+This will be a ~400 line class based on the NetBeans Refactorer pattern.
 
 ### 1. Complete ProspectiveOperation Class (HIGH PRIORITY)
 **File**: `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ProspectiveOperation.java`
