@@ -802,7 +802,7 @@ public class ProspectiveOperation {
     
     public enum ReducerType {
         INCREMENT,      // i++, ++i
-        DECREMENT,      // i--, --i
+        DECREMENT,      // i--, --i, i -= x
         SUM,            // sum += x
         PRODUCT,        // product *= x
         STRING_CONCAT   // s += string
