@@ -16,32 +16,36 @@ package org.sandbox.jdt.ui.helper.views;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.SimpleName;
+import org.sandbox.jdt.internal.common.AstProcessorBuilder;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
 
-final class VarVisitor extends ASTVisitor {
-	/**
-	 *
-	 */
-	private final JHViewContentProvider varvisitor;
+/**
+ * Visitor class that collects all variable bindings from SimpleName nodes
+ * using the AstProcessorBuilder API for cleaner and more maintainable code.
+ */
+final class VarVisitor {
 	Set<IVariableBinding> methods= new HashSet<>();
 
 	/**
-	 * @param jhViewContentProvider
+	 * Process the AST node and collect all variable bindings.
+	 * Uses AstProcessorBuilder API for processing SimpleName nodes.
+	 * 
+	 * @param node the AST node to process
 	 */
-	VarVisitor(JHViewContentProvider jhViewContentProvider) {
-		varvisitor= jhViewContentProvider;
-	}
-
-	@Override
-	public boolean visit(SimpleName node) {
-		IBinding binding= node.resolveBinding();
-		if (binding instanceof IVariableBinding varBinding) {
-			methods.add(varBinding);
-		}
-		return true;
+	public void process(ASTNode node) {
+		AstProcessorBuilder.with(new ReferenceHolder<String, Object>())
+			.onSimpleName((simpleName, dataHolder) -> {
+				IBinding binding = simpleName.resolveBinding();
+				if (binding instanceof IVariableBinding varBinding) {
+					methods.add(varBinding);
+				}
+				return true;
+			})
+			.build(node);
 	}
 
 	public Set<IVariableBinding> getVars() {

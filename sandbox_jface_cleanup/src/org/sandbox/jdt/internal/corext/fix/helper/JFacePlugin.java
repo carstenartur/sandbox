@@ -40,7 +40,7 @@ import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
-import org.sandbox.jdt.internal.common.ASTProcessor;
+import org.sandbox.jdt.internal.common.AstProcessorBuilder;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JfaceCleanUpFixCore;
 
@@ -91,10 +91,24 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed,
 			boolean createForOnlyIfVarUsed) {
 		ReferenceHolder<Integer, MonitorHolder> dataholder = new ReferenceHolder<>();
-		ASTProcessor<ReferenceHolder<Integer, MonitorHolder>, Integer, MonitorHolder> astp = new ASTProcessor<>(
-				dataholder, nodesprocessed);
-		astp.callMethodInvocationVisitor(IProgressMonitor.class, "beginTask", (node, holder) -> { //$NON-NLS-1$
-			if (node.arguments().size() != 2) {
+		
+		AstProcessorBuilder.with(dataholder, nodesprocessed)
+			.processor()
+			.callMethodInvocationVisitor(IProgressMonitor.class, "beginTask", (node, holder) -> { //$NON-NLS-1$
+				if (node.arguments().size() != 2) {
+					return true;
+				}
+				System.out.println("begintask[" + node.getStartPosition() + "] " + node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				SimpleName sn = ASTNodes.as(node.getExpression(), SimpleName.class);
+				if (sn != null) {
+					IBinding ibinding = sn.resolveBinding();
+					String name = ibinding.getName();
+					MonitorHolder mh = new MonitorHolder();
+					mh.minv = node;
+					mh.minvname = name;
+					mh.nodesprocessed = nodesprocessed;
+					holder.put(holder.size(), mh);
+				}
 				return true;
 			}
 			System.out.println("begintask[" + node.getStartPosition() + "] " + node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -144,12 +158,8 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 			
 			if (firstArgName == null || !mh.minvname.equals(firstArgName)) {
 				return true;
-			}
-			System.out.println("init[" + node.getStartPosition() + "] " + node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-			mh.setofcic.add(node);
-			operations.add(fixcore.rewrite(holder));
-			return true;
-		}).build(compilationUnit);
+			})
+			.build(compilationUnit);
 	}
 
 	@Override
