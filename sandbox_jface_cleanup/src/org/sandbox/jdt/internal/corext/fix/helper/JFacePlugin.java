@@ -270,7 +270,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 			
 			if (!nodesprocessed.contains(minv)) {
 				nodesprocessed.add(minv);
-				logDebug("Rewriting beginTask at position " + minv.getStartPosition() + ": " + minv); //$NON-NLS-1$ //$NON-NLS-2$
+				logDebug("Rewriting beginTask at position " + minv.getStartPosition() + " (method: " + minv.getName() + ")"); //$NON-NLS-1$ //$NON-NLS-2$
 				
 				// Ensure parent is ExpressionStatement
 				if (!(minv.getParent() instanceof ExpressionStatement)) {
