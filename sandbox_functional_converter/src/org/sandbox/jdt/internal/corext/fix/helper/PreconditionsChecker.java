@@ -118,8 +118,9 @@ public class PreconditionsChecker {
      * Uses AstProcessorBuilder for cleaner and more maintainable AST traversal.
      */
     private void analyzeLoop() {
-        AstProcessorBuilder.with(new ReferenceHolder<String, Object>())
-            .onVariableDeclarationFragment((node, h) -> {
+        AstProcessorBuilder<String, Object> builder = AstProcessorBuilder.with(new ReferenceHolder<String, Object>());
+        
+        builder.onVariableDeclarationFragment((node, h) -> {
                 innerVariables.add(node);
                 return true;
             })
@@ -143,28 +144,6 @@ public class PreconditionsChecker {
                 iteratesOverIterable = true;
                 return true;
             })
-            .onPostfixExpression((node, h) -> {
-                // Detect i++, i--
-                if (node.getOperator() == PostfixExpression.Operator.INCREMENT ||
-                    node.getOperator() == PostfixExpression.Operator.DECREMENT) {
-                    hasReducer = true;
-                    if (reducerStatement == null) {
-                        reducerStatement = ASTNodes.getFirstAncestorOrNull(node, Statement.class);
-                    }
-                }
-                return true;
-            })
-            .onPrefixExpression((node, h) -> {
-                // Detect ++i, --i
-                if (node.getOperator() == PrefixExpression.Operator.INCREMENT ||
-                    node.getOperator() == PrefixExpression.Operator.DECREMENT) {
-                    hasReducer = true;
-                    if (reducerStatement == null) {
-                        reducerStatement = ASTNodes.getFirstAncestorOrNull(node, Statement.class);
-                    }
-                }
-                return true;
-            })
             .onAssignment((node, h) -> {
                 // Detect compound assignments: +=, -=, *=, /=, |=, &=, etc.
                 if (node.getOperator() != Assignment.Operator.ASSIGN) {
@@ -174,8 +153,36 @@ public class PreconditionsChecker {
                     }
                 }
                 return true;
+            });
+        
+        // Use processor() to access PostfixExpression and PrefixExpression visitors
+        builder.processor()
+            .callPostfixExpressionVisitor((node, h) -> {
+                PostfixExpression postfix = (PostfixExpression) node;
+                // Detect i++, i--
+                if (postfix.getOperator() == PostfixExpression.Operator.INCREMENT ||
+                    postfix.getOperator() == PostfixExpression.Operator.DECREMENT) {
+                    hasReducer = true;
+                    if (reducerStatement == null) {
+                        reducerStatement = ASTNodes.getFirstAncestorOrNull(node, Statement.class);
+                    }
+                }
+                return true;
             })
-            .build(loop);
+            .callPrefixExpressionVisitor((node, h) -> {
+                PrefixExpression prefix = (PrefixExpression) node;
+                // Detect ++i, --i
+                if (prefix.getOperator() == PrefixExpression.Operator.INCREMENT ||
+                    prefix.getOperator() == PrefixExpression.Operator.DECREMENT) {
+                    hasReducer = true;
+                    if (reducerStatement == null) {
+                        reducerStatement = ASTNodes.getFirstAncestorOrNull(node, Statement.class);
+                    }
+                }
+                return true;
+            });
+        
+        builder.build(loop);
         
         analyzeEffectivelyFinalVariables();
     }
