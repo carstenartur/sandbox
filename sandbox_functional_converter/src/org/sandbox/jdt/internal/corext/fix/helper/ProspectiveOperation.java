@@ -36,11 +36,35 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 
 public class ProspectiveOperation {
+    /**
+     * The original expression being analyzed or transformed.
+     * <p>
+     * This is set directly when the {@link ProspectiveOperation} is constructed with an {@link Expression}.
+     * If constructed with a {@link org.eclipse.jdt.core.dom.Statement}, this is set to the expression
+     * contained within the statement (if applicable, e.g., for {@link org.eclipse.jdt.core.dom.ExpressionStatement}).
+     */
     private Expression originalExpression;
+
+    /**
+     * The original statement being analyzed or transformed.
+     * <p>
+     * This is set when the {@link ProspectiveOperation} is constructed with a {@link org.eclipse.jdt.core.dom.Statement}.
+     * If the statement is an {@link org.eclipse.jdt.core.dom.ExpressionStatement}, its expression is also
+     * extracted and stored in {@link #originalExpression}.
+     * Otherwise, {@link #originalExpression} may be null.
+     */
     private org.eclipse.jdt.core.dom.Statement originalStatement;
+
     private OperationType operationType;
     private Set<String> neededVariables = new HashSet<>();
     private Expression reducingVariable;
+
+    /**
+     * The name of the loop variable associated with this operation, if applicable.
+     * <p>
+     * This is set when the {@link ProspectiveOperation} is constructed with a statement and a loop variable name.
+     * It is used to track the variable iterated over in enhanced for-loops or similar constructs.
+     */
     private String loopVariableName;
 
     // Sammelt alle verwendeten Variablen
