@@ -26,6 +26,7 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 
@@ -35,6 +36,7 @@ import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.sandbox.jdt.internal.corext.util.ASTRewriteUtils;
 
 /**
  * Change
@@ -104,20 +106,20 @@ public class PrintStreamExplicitEncoding extends AbstractExplicitEncoding<ClassI
 		 * new FileOutputStream(<filename>)
 		 */
 		ClassInstanceCreation fosclassInstance= ast.newClassInstanceCreation();
-		fosclassInstance.setType(ast.newSimpleType(addImport(FileOutputStream.class.getCanonicalName(), cuRewrite, ast)));
-		fosclassInstance.arguments().add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression((ASTNode) visited.arguments().get(0))));
+		fosclassInstance.setType(ast.newSimpleType(ASTRewriteUtils.addImport(FileOutputStream.class.getCanonicalName(), cuRewrite, ast)));
+		fosclassInstance.arguments().add(ASTRewriteUtils.createMoveTargetForExpression(rewrite, (Expression) visited.arguments().get(0)));
 		/**
 		 * new OutputStreamWriter(new FileOutputStream(<filename>))
 		 */
 		ClassInstanceCreation oswclassInstance= ast.newClassInstanceCreation();
-		oswclassInstance.setType(ast.newSimpleType(addImport(OutputStreamWriter.class.getCanonicalName(), cuRewrite, ast)));
+		oswclassInstance.setType(ast.newSimpleType(ASTRewriteUtils.addImport(OutputStreamWriter.class.getCanonicalName(), cuRewrite, ast)));
 		oswclassInstance.arguments().add(fosclassInstance);
 		oswclassInstance.arguments().add(callToCharsetDefaultCharset);
 		/**
 		 * new BufferedWriter(new OutputStreamWriter(new FileOutputStream(<filename>)))
 		 */
 		ClassInstanceCreation bwclassInstance= ast.newClassInstanceCreation();
-		bwclassInstance.setType(ast.newSimpleType(addImport(BufferedWriter.class.getCanonicalName(), cuRewrite, ast)));
+		bwclassInstance.setType(ast.newSimpleType(ASTRewriteUtils.addImport(BufferedWriter.class.getCanonicalName(), cuRewrite, ast)));
 		bwclassInstance.arguments().add(oswclassInstance);
 
 		ASTNodes.replaceButKeepComment(rewrite, visited, bwclassInstance, group);

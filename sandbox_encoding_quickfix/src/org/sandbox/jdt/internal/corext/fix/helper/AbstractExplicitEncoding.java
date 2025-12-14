@@ -48,6 +48,7 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
+import org.sandbox.jdt.internal.corext.util.ASTRewriteUtils;
 
 
 /**
@@ -192,10 +193,11 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	 * @param ast AST, must not be null
 	 * @return simple name of a class if the import was added and fully qualified name if there was
 	 *         a conflict; never null
+	 * @deprecated Use {@link ASTRewriteUtils#addImport(String, CompilationUnitRewrite, AST)} instead.
 	 */
+	@Deprecated
 	protected static Name addImport(String typeName, final CompilationUnitRewrite cuRewrite, AST ast) {
-		String importedName = cuRewrite.getImportRewrite().addImport(typeName);
-		return ast.newName(importedName);
+		return ASTRewriteUtils.addImport(typeName, cuRewrite, ast);
 	}
 
 	/**
