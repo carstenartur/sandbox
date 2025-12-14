@@ -190,12 +190,12 @@ public class ProspectiveOperation {
      * 
      * <p>Implementation details:
      * <ul>
-     * <li>MAP: x -> { &lt;stmt&gt;; return x; } or simpler form for expressions</li>
-     * <li>FILTER: x -> (&lt;condition&gt;) with optional negation</li>
-     * <li>FOREACH: x -> { &lt;stmt&gt; }</li>
+     * <li>MAP: x -&gt; { &lt;stmt&gt;; return x; } or simpler form for expressions</li>
+     * <li>FILTER: x -&gt; (&lt;condition&gt;) with optional negation</li>
+     * <li>FOREACH: x -&gt; { &lt;stmt&gt; }</li>
      * <li>REDUCE: Create map to constant, then reduce with accumulator function</li>
-     * <li>ANYMATCH: x -> (&lt;condition&gt;)</li>
-     * <li>NONEMATCH: x -> (&lt;condition&gt;)</li>
+     * <li>ANYMATCH: x -&gt; (&lt;condition&gt;)</li>
+     * <li>NONEMATCH: x -&gt; (&lt;condition&gt;)</li>
      * </ul>
      * 
      * @param ast the AST to create nodes in
@@ -304,8 +304,8 @@ public class ProspectiveOperation {
      * <p>For most operations (MAP, FILTER, FOREACH, ANYMATCH, NONEMATCH), 
      * returns a list containing the lambda expression.</p>
      * 
-     * <p>For REDUCE operations, returns a list with [identityValue, accumulatorLambda] 
-     * or just [lambda] depending on whether an identity value can be determined.</p>
+     * <p>For REDUCE operations, returns a list with the identity value followed by 
+     * the accumulator lambda, or just the lambda if no identity value can be determined.</p>
      * 
      * @param ast the AST to create nodes in
      * @param loopVarName the name of the loop variable to use as lambda parameter
