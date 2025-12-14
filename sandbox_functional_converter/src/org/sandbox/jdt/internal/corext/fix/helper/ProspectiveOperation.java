@@ -58,6 +58,7 @@ public class ProspectiveOperation {
     private OperationType operationType;
     private Set<String> neededVariables = new HashSet<>();
     private Expression reducingVariable;
+    private boolean eager = false;
 
     /**
      * The name of the loop variable associated with this operation, if applicable.
@@ -173,6 +174,151 @@ public class ProspectiveOperation {
         
         args.add(lambda);
         return args;
+    }
+    
+    /**
+     * Sets whether this operation should be executed eagerly.
+     * Required by TODO section 1.
+     */
+    public void setEager(boolean eager) {
+        this.eager = eager;
+    }
+    
+    /**
+     * Creates a lambda expression for this operation.
+     * Required by TODO section 1.
+     * 
+     * Implementation based on TODO guidelines:
+     * - MAP: x -> { <stmt>; return x; } or simpler form for expressions
+     * - FILTER: x -> (<condition>) with optional negation
+     * - FOREACH: x -> { <stmt> }
+     * - REDUCE: Create map to constant, then reduce with accumulator function
+     * - ANYMATCH: x -> (<condition>)
+     * - NONEMATCH: x -> (<condition>)
+     */
+    public LambdaExpression createLambda(AST ast, String loopVarName) {
+        LambdaExpression lambda = ast.newLambdaExpression();
+        
+        // Create parameter using VariableDeclarationFragment (as per TODO common pitfalls)
+        VariableDeclarationFragment param = ast.newVariableDeclarationFragment();
+        param.setName(ast.newSimpleName(loopVarName != null ? loopVarName : "item"));
+        lambda.parameters().add(param);
+        
+        // Create lambda body based on operation type
+        switch (operationType) {
+            case MAP:
+                if (originalExpression != null) {
+                    // For MAP: use expression directly for simple cases
+                    lambda.setBody(ASTNode.copySubtree(ast, originalExpression));
+                } else if (originalStatement != null) {
+                    // For MAP with statement: create block with return
+                    org.eclipse.jdt.core.dom.Block block = ast.newBlock();
+                    block.statements().add(ASTNode.copySubtree(ast, originalStatement));
+                    ReturnStatement returnStmt = ast.newReturnStatement();
+                    returnStmt.setExpression(ast.newSimpleName(loopVarName));
+                    block.statements().add(returnStmt);
+                    lambda.setBody(block);
+                }
+                break;
+                
+            case FILTER:
+            case ANYMATCH:
+            case NONEMATCH:
+                // For FILTER/ANYMATCH/NONEMATCH: x -> (<condition>)
+                if (originalExpression != null) {
+                    lambda.setBody(ASTNode.copySubtree(ast, originalExpression));
+                }
+                break;
+                
+            case FOREACH:
+                // For FOREACH: x -> { <stmt> } (no return)
+                if (originalStatement != null) {
+                    if (originalStatement instanceof org.eclipse.jdt.core.dom.Block) {
+                        lambda.setBody(ASTNode.copySubtree(ast, originalStatement));
+                    } else {
+                        org.eclipse.jdt.core.dom.Block block = ast.newBlock();
+                        block.statements().add(ASTNode.copySubtree(ast, originalStatement));
+                        lambda.setBody(block);
+                    }
+                } else if (originalExpression != null) {
+                    org.eclipse.jdt.core.dom.Block block = ast.newBlock();
+                    org.eclipse.jdt.core.dom.ExpressionStatement exprStmt = ast.newExpressionStatement(
+                        (Expression) ASTNode.copySubtree(ast, originalExpression));
+                    block.statements().add(exprStmt);
+                    lambda.setBody(block);
+                }
+                break;
+                
+            case REDUCE:
+                // For REDUCE: create accumulator lambda
+                // This is handled separately in getArgumentsForReducer
+                return createAccumulatorLambda(ast);
+                
+            default:
+                throw new IllegalStateException("Unknown operation type: " + operationType);
+        }
+        
+        return lambda;
+    }
+    
+    /**
+     * Returns the stream method name for this operation.
+     * Required by TODO section 1.
+     * 
+     * Implementation based on TODO guidelines:
+     * - MAP → "map"
+     * - FILTER → "filter"
+     * - FOREACH → "forEach" or "forEachOrdered"
+     * - REDUCE → "reduce"
+     * - ANYMATCH → "anyMatch"
+     * - NONEMATCH → "noneMatch"
+     */
+    public String getStreamMethod() {
+        switch (operationType) {
+            case MAP:
+                return "map";
+            case FILTER:
+                return "filter";
+            case FOREACH:
+                return eager ? "forEach" : "forEachOrdered";
+            case REDUCE:
+                return "reduce";
+            case ANYMATCH:
+                return "anyMatch";
+            case NONEMATCH:
+                return "noneMatch";
+            default:
+                return "unknown";
+        }
+    }
+    
+    /**
+     * Returns the arguments for the stream method call.
+     * Required by TODO section 1.
+     * 
+     * Implementation based on TODO guidelines:
+     * - MAP, FILTER, FOREACH, ANYMATCH, NONEMATCH: return list with lambda
+     * - REDUCE: return list with [identityValue, accumulatorLambda] or just [lambda]
+     */
+    public List<Expression> getStreamArguments(AST ast, String loopVarName) {
+        List<Expression> args = new ArrayList<>();
+        
+        if (operationType == OperationType.REDUCE) {
+            return getArgumentsForReducer(ast);
+        }
+        
+        // For other operations: create lambda
+        LambdaExpression lambda = createLambda(ast, loopVarName);
+        args.add(lambda);
+        return args;
+    }
+    
+    /**
+     * Returns the reducing variable expression.
+     * Required by TODO section 1.
+     */
+    public Expression getReducingVariable() {
+        return reducingVariable;
     }
 
     /** (4) Erstellt eine Lambda-Expression für Streams */

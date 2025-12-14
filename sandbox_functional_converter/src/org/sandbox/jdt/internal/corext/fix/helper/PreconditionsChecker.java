@@ -39,6 +39,8 @@ public class PreconditionsChecker {
     private boolean throwsException = false;
     private boolean containsNEFs = false;
     private boolean iteratesOverIterable = false;
+    private boolean hasReducer = false;
+    private Statement reducerStatement = null;
 
     public PreconditionsChecker(Statement loop, CompilationUnit compilationUnit) {
         this.loop = loop;
@@ -85,6 +87,27 @@ public class PreconditionsChecker {
     public boolean iteratesOverIterable() {
         return iteratesOverIterable;
     }
+    
+    /**
+     * Checks if the loop contains a reducer pattern.
+     * Required by TODO section 2.
+     * 
+     * Scans loop body for accumulator patterns:
+     * - i++, i--, ++i, --i
+     * - sum += x, product *= x, count -= 1
+     * - Other compound assignments (|=, &=, etc.)
+     */
+    public boolean isReducer() {
+        return hasReducer;
+    }
+    
+    /**
+     * Returns the statement containing the reducer pattern.
+     * Required by TODO section 2.
+     */
+    public Statement getReducer() {
+        return reducerStatement;
+    }
 
     /** 
      * Methode zur Analyse der Schleife und Identifikation relevanter Elemente.
@@ -114,6 +137,38 @@ public class PreconditionsChecker {
             })
             .onEnhancedForStatement((node, h) -> {
                 iteratesOverIterable = true;
+                return true;
+            })
+            .onPostfixExpression((node, h) -> {
+                // Detect i++, i--
+                if (node.getOperator() == PostfixExpression.Operator.INCREMENT ||
+                    node.getOperator() == PostfixExpression.Operator.DECREMENT) {
+                    hasReducer = true;
+                    if (reducerStatement == null) {
+                        reducerStatement = findEnclosingStatement(node);
+                    }
+                }
+                return true;
+            })
+            .onPrefixExpression((node, h) -> {
+                // Detect ++i, --i
+                if (node.getOperator() == PrefixExpression.Operator.INCREMENT ||
+                    node.getOperator() == PrefixExpression.Operator.DECREMENT) {
+                    hasReducer = true;
+                    if (reducerStatement == null) {
+                        reducerStatement = findEnclosingStatement(node);
+                    }
+                }
+                return true;
+            })
+            .onAssignment((node, h) -> {
+                // Detect compound assignments: +=, -=, *=, /=, |=, &=, etc.
+                if (node.getOperator() != Assignment.Operator.ASSIGN) {
+                    hasReducer = true;
+                    if (reducerStatement == null) {
+                        reducerStatement = findEnclosingStatement(node);
+                    }
+                }
                 return true;
             })
             .build(loop);
@@ -156,5 +211,14 @@ public class PreconditionsChecker {
     private ASTNode getEnclosingMethodBody(ASTNode node) {
         MethodDeclaration method = ASTNodes.getFirstAncestorOrNull(node, MethodDeclaration.class);
         return (method != null) ? method.getBody() : null;
+    }
+    
+    /** Hilfsmethode: Findet das umgebende Statement für einen AST-Knoten. */
+    private Statement findEnclosingStatement(ASTNode node) {
+        ASTNode current = node;
+        while (current != null && !(current instanceof Statement)) {
+            current = current.getParent();
+        }
+        return (Statement) current;
     }
 }
