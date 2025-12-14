@@ -141,24 +141,14 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				return true;
 			}
 			
-			// Safe handling of first argument - accept any expression
+			// Safe handling of first argument - extract identifier from expression
 			Object firstArg = arguments.get(0);
-			if (!(firstArg instanceof Expression)) {
-				return true;
-			}
-			
-			Expression firstExpr = (Expression) firstArg;
 			String firstArgName = null;
 			
-			// Handle SimpleName case
-			if (firstExpr instanceof SimpleName) {
-				firstArgName = ((SimpleName) firstExpr).getIdentifier();
-			} else {
-				// For other expressions, try to extract identifier
-				SimpleName sn = ASTNodes.as(firstExpr, SimpleName.class);
-				if (sn != null) {
-					firstArgName = sn.getIdentifier();
-				}
+			// Try to extract SimpleName from the expression
+			SimpleName sn = ASTNodes.as((ASTNode) firstArg, SimpleName.class);
+			if (sn != null) {
+				firstArgName = sn.getIdentifier();
 			}
 			
 			if (firstArgName == null || !mh.minvname.equals(firstArgName)) {
