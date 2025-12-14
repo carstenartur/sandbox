@@ -482,11 +482,13 @@ public class ProspectiveOperation {
     
     /**
      * Creates a binary operator lambda like (accumulator, _item) -> accumulator + _item.
+     * Note: Lambda parameters must use SingleVariableDeclaration (not VariableDeclarationFragment)
+     * as required by the Eclipse JDT AST specification for lambda expressions.
      */
     private LambdaExpression createBinaryOperatorLambda(AST ast, InfixExpression.Operator operator) {
         LambdaExpression lambda = ast.newLambdaExpression();
         
-        // Parameters: (accumulator, _item) - use SingleVariableDeclaration for lambda parameters
+        // Parameters: (accumulator, _item)
         SingleVariableDeclaration param1 = ast.newSingleVariableDeclaration();
         param1.setName(ast.newSimpleName("accumulator"));
         SingleVariableDeclaration param2 = ast.newSingleVariableDeclaration();

@@ -61,7 +61,7 @@ public class StreamPipelineBuilder {
     private String loopVariableName;
     private boolean analyzed = false;
     private boolean convertible = false;
-    private String accumulatorVariable = null;  // Track accumulator variable for REDUCE operations
+    private String accumulatorVariable = null;
 
     /**
      * Creates a new StreamPipelineBuilder for the given for-loop.
