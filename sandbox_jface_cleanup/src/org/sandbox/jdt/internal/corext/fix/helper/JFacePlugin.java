@@ -318,7 +318,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				}
 				
 				ASTNode origarg = (ASTNode) arguments.get(1);
-				logDebug("Rewriting SubProgressMonitor at position " + submon.getStartPosition() + ": " + submon); //$NON-NLS-1$ //$NON-NLS-2$
+				logDebug("Rewriting SubProgressMonitor at position " + submon.getStartPosition() + " (ClassInstanceCreation)"); //$NON-NLS-1$ //$NON-NLS-2$
 				
 				/**
 				 * Handle both 2-arg and 3-arg SubProgressMonitor constructors:
