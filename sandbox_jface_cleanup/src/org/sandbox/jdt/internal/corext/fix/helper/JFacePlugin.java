@@ -60,10 +60,9 @@ import org.sandbox.jdt.internal.corext.fix.JfaceCleanUpFixCore;
  * variable and refer to it instead of the root monitor for the remainder of the
  * method. All calls to SubProgressMonitor(IProgressMonitor, int) should be
  * replaced by calls to SubMonitor.split(int). If a SubProgressMonitor is
- * constructed using the SUPPRESS_SUBTASK_LABEL flag, replace it with the
- * two-argument version of SubMonitor.split(int, int) using
- * SubMonitor.SUPPRESS_SUBTASK as the second argument. It is not necessary to
- * call done on an instance of SubMonitor. Example:
+ * constructed using the SUPPRESS_SUBTASK_LABEL flag, it will be transformed to
+ * SubMonitor.split(int, int) with the flags parameter preserved. It is not
+ * necessary to call done on an instance of SubMonitor. Example:
  *
  * Consider the following example: void someMethod(IProgressMonitor pm) {
  * pm.beginTask("Main Task", 100); SubProgressMonitor subMonitor1= new
@@ -236,8 +235,6 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				System.out.println("result " + staticCall); //$NON-NLS-1$
 			}
 			
-			boolean needsSuppressSubtaskImport = false;
-			
 			for (ClassInstanceCreation submon : mh.setofcic) {
 				List<?> arguments = submon.arguments();
 				if (arguments.size() < 2) {
@@ -255,7 +252,6 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				 *   
 				 * 3-arg: new SubProgressMonitor(monitor, work, flags)
 				 *   -> subMonitor.split(work, flags)
-				 *   If flags contains SUPPRESS_SUBTASK_LABEL, import SubMonitor.SUPPRESS_SUBTASK
 				 */
 				MethodInvocation newMethodInvocation2 = ast.newMethodInvocation();
 				newMethodInvocation2.setName(ast.newSimpleName("split")); //$NON-NLS-1$
@@ -270,24 +266,10 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				if (arguments.size() >= 3) {
 					ASTNode flagsArg = (ASTNode) arguments.get(2);
 					splitCallArguments.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(flagsArg)));
-					
-					// Check if we need to import SUPPRESS_SUBTASK constant
-					// This is a simplified check - in real code we'd parse the flags expression
-					String flagsStr = flagsArg.toString();
-					if (flagsStr.contains("SUPPRESS_SUBTASK")) {
-						needsSuppressSubtaskImport = true;
-					}
 				}
 				
 				ASTNodes.replaceButKeepComment(rewrite, submon, newMethodInvocation2, group);
 				importRemover.removeImport(SubProgressMonitor.class.getCanonicalName());
-			}
-			
-			// Add SubMonitor import if needed (already handled by addImport above)
-			// Add SUPPRESS_SUBTASK import if needed
-			if (needsSuppressSubtaskImport) {
-				// Import the field - this will create a static import for SubMonitor.SUPPRESS_SUBTASK
-				cuRewrite.getImportRewrite().addStaticImport(SubMonitor.class.getCanonicalName(), "SUPPRESS_SUBTASK", false); //$NON-NLS-1$
 			}
 		}
 	}
