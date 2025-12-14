@@ -2,26 +2,40 @@
 
 ## Current Task (December 2025)
 
-**Objective**: Enable and validate REDUCE operation tests
+**Objective**: Complete and validate REDUCE operation tests, enable additional test cases
 
-**Activities**:
+**Completed Activities**:
 1. ✅ Enabled 3 additional REDUCE tests: ChainedReducer, IncrementReducer, AccumulatingMapReduce
 2. ✅ Enhanced StreamPipelineBuilder to extract MAP operations from REDUCE expressions
 3. ✅ Added side-effect statement handling for non-last statements in loops
 4. ✅ Updated ProspectiveOperation to generate proper return statements for side-effect MAPs
-5. 🚧 Running tests to validate implementation
-6. 📝 Updating documentation to reflect completed work
+5. ✅ StreamPipelineBuilder class fully implemented with all core functionality:
+   - Stream operation classification (MAP, FILTER, FOREACH, REDUCE)
+   - Pattern recognition for reducers and filters
+   - Variable dependency management through pipeline
+   - Constructing chained pipelines with proper operation sequencing
+6. ✅ Enabled 2 more REDUCE tests: DOUBLEINCREMENTREDUCER, DecrementingReducer (15 total tests)
+7. ✅ Updated documentation to reflect completed work
 
 **Implementation Enhancements**:
 - **MAP Extraction from REDUCE**: Compound assignments like `i += foo(l)` now properly extract `foo(l)` as a MAP operation
 - **Side-Effect Handling**: Statements like `foo(l)` in the middle of a loop are wrapped as MAPs with side effects
 - **Return Statement Generation**: MAP operations with statements now include proper return statements
+- **StreamPipelineBuilder Architecture**: Complete implementation covering:
+  - `analyze()` - Precondition checking and loop body parsing
+  - `parseLoopBody()` - Recursive statement analysis with nested IF support
+  - `buildPipeline()` - Stream chain construction with proper variable tracking
+  - `wrapPipeline()` - Statement wrapping (assignments for REDUCE, expressions for others)
+  - `detectReduceOperation()` - Pattern matching for all reducer types
+  - `getVariableNameFromPreviousOp()` - Variable dependency tracking
+  - `requiresStreamPrefix()` - Smart decision on .stream() vs direct collection methods
 
 **Next Steps**:
-- Build and run tests to validate the enhancements
-- Fix any edge cases discovered during testing
-- Enable remaining REDUCE tests if current tests pass
-- Move on to AnyMatch/NoneMatch pattern implementation
+- ⏳ Run tests to validate newly enabled REDUCE tests (DOUBLEINCREMENTREDUCER, DecrementingReducer)
+- ⏳ Enable remaining REDUCE tests: ChainedReducerWithMerging, StringConcat
+- ⏳ Implement and test AnyMatch/NoneMatch pattern detection for early returns
+- ⏳ Enable tests: ChainedAnyMatch, ChainedNoneMatch
+- ⏳ Address any remaining edge cases or optimization opportunities
 
 ---
 
@@ -150,9 +164,9 @@ Future enhancements:
 ### 4. 🚧 Incrementally Enable Tests (IN PROGRESS)
 **File**: `sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/Java8CleanUpTest.java`
 
-**Status**: 13 tests currently enabled in testSimpleForEachConversion method:
+**Status**: 15 tests currently enabled in testSimpleForEachConversion method:
 
-Enabled tests (status needs verification via test run):
+Enabled tests (implementation complete, validation in progress):
 1. ✅ SIMPLECONVERT - simple forEach (PASSING)
 2. ✅ CHAININGMAP - map operation (PASSING)
 3. ✅ ChainingFilterMapForEachConvert - filter + map (PASSING)
@@ -163,18 +177,19 @@ Enabled tests (status needs verification via test run):
 8. ✅ NonFilteringIfChaining - complex nested IFs (PASSING)
 9. ✅ ContinuingIfFilterSingleStatement - continue as negated filter (PASSING)
 10. ✅ SimpleReducer - basic reduce operation (ENABLED)
-11. 🆕 ChainedReducer - filter + reduce (NEWLY ENABLED)
-12. 🆕 IncrementReducer - increment pattern (NEWLY ENABLED)
-13. 🆕 AccumulatingMapReduce - map + reduce (NEWLY ENABLED)
+11. ✅ ChainedReducer - filter + reduce (ENABLED)
+12. ✅ IncrementReducer - increment pattern (ENABLED)
+13. ✅ AccumulatingMapReduce - map + reduce (ENABLED)
+14. 🆕 DOUBLEINCREMENTREDUCER - double increment pattern (NEWLY ENABLED)
+15. 🆕 DecrementingReducer - decrement pattern (NEWLY ENABLED)
 
-Next tests to enable (require additional implementation):
-14. ⏳ DOUBLEINCREMENTREDUCER - double increment pattern
-15. ⏳ DecrementingReducer - decrement pattern
+Next tests to enable (require validation or additional implementation):
 16. ⏳ ChainedReducerWithMerging - complex reducer with merging
-17. ⏳ StringConcat - string concatenation
-18. ⏳ ChainedAnyMatch - anyMatch
-19. ⏳ ChainedNoneMatch - noneMatch
-20. ⏳ ...additional test cases
+17. ⏳ StringConcat - string concatenation (implementation exists, needs testing)
+18. ⏳ ChainedAnyMatch - anyMatch pattern (requires AnyMatch implementation)
+19. ⏳ ChainedNoneMatch - noneMatch pattern (requires NoneMatch implementation)
+20. ⏳ NoNeededVariablesMerging - variable optimization
+21. ⏳ SomeChainingWithNoNeededVar - chaining without variable tracking
 
 For each test:
 1. Enable the test by adding it to `@EnumSource(value = UseFunctionalLoop.class, names = {"SIMPLECONVERT", "CHAININGMAP", ...})`
@@ -419,10 +434,11 @@ See: `sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/Ja
 - ✅ StreamPipelineBuilder integration into Refactorer: 2-3 hours (COMPLETED)
 - ✅ Continue statement handling: 2-3 hours (COMPLETED)
 - ✅ REDUCE operation implementation: 4-6 hours (COMPLETED)
+- ✅ REDUCE test enablement and documentation: 2-3 hours (COMPLETED)
 - 🚧 REDUCE test validation and debugging: 2-4 hours (IN PROGRESS)
 - ⏳ Advanced pattern recognition (matchers, early returns): 4-6 hours
 - ⏳ Remaining test fixing and iteration: 4-6 hours
-- **Total Completed: ~26-35 hours**
+- **Total Completed: ~30-39 hours**
 - **Total In Progress: ~2-4 hours**
 - **Total Remaining: ~8-12 hours**
 
