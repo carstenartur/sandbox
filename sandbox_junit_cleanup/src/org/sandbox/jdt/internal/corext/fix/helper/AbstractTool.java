@@ -92,8 +92,8 @@ public abstract class AbstractTool<T> extends AbstractToolBase<T> {
 
 	// Re-expose JUnitConstants for backward compatibility with subclasses
 	// Annotation Names (simple names)
-	protected static final String ANNOTATION_AFTER_EACH = ANNOTATION_AFTER_EACH;
-	protected static final String ANNOTATION_BEFORE_EACH = ANNOTATION_BEFORE_EACH;
+	protected static final String ANNOTATION_AFTER_EACH = JUnitConstants.ANNOTATION_AFTER_EACH;
+	protected static final String ANNOTATION_BEFORE_EACH = JUnitConstants.ANNOTATION_BEFORE_EACH;
 	protected static final String ANNOTATION_AFTER_ALL = JUnitConstants.ANNOTATION_AFTER_ALL;
 	protected static final String ANNOTATION_BEFORE_ALL = JUnitConstants.ANNOTATION_BEFORE_ALL;
 	protected static final String ANNOTATION_DISABLED = JUnitConstants.ANNOTATION_DISABLED;
@@ -102,23 +102,23 @@ public abstract class AbstractTool<T> extends AbstractToolBase<T> {
 	protected static final String ANNOTATION_SUITE = JUnitConstants.ANNOTATION_SUITE;
 
 	// Method Names
-	protected static final String METHOD_AFTER = METHOD_AFTER;
-	protected static final String METHOD_BEFORE = METHOD_BEFORE;
+	protected static final String METHOD_AFTER = JUnitConstants.METHOD_AFTER;
+	protected static final String METHOD_BEFORE = JUnitConstants.METHOD_BEFORE;
 
 	// Internal Class/Interface Names
 	protected static final String ASSERTIONS = JUnitConstants.ASSERTIONS;
 	protected static final String ASSUMPTIONS = JUnitConstants.ASSUMPTIONS;
 
 	// Fully Qualified References - JUnit 4
-	protected static final String ORG_JUNIT_AFTER = ORG_JUNIT_AFTER;
-	protected static final String ORG_JUNIT_BEFORE = ORG_JUNIT_BEFORE;
-	protected static final String ORG_JUNIT_AFTERCLASS = ORG_JUNIT_AFTERCLASS;
-	protected static final String ORG_JUNIT_BEFORECLASS = ORG_JUNIT_BEFORECLASS;
-	protected static final String ORG_JUNIT_RULE = ORG_JUNIT_RULE;
-	protected static final String ORG_JUNIT_CLASS_RULE = ORG_JUNIT_CLASS_RULE;
-	protected static final String ORG_JUNIT_RULES_TEMPORARY_FOLDER = ORG_JUNIT_RULES_TEMPORARY_FOLDER;
-	protected static final String ORG_JUNIT_RULES_TEST_NAME = ORG_JUNIT_RULES_TEST_NAME;
-	protected static final String ORG_JUNIT_RULES_EXTERNAL_RESOURCE = ORG_JUNIT_RULES_EXTERNAL_RESOURCE;
+	protected static final String ORG_JUNIT_AFTER = JUnitConstants.ORG_JUNIT_AFTER;
+	protected static final String ORG_JUNIT_BEFORE = JUnitConstants.ORG_JUNIT_BEFORE;
+	protected static final String ORG_JUNIT_AFTERCLASS = JUnitConstants.ORG_JUNIT_AFTERCLASS;
+	protected static final String ORG_JUNIT_BEFORECLASS = JUnitConstants.ORG_JUNIT_BEFORECLASS;
+	protected static final String ORG_JUNIT_RULE = JUnitConstants.ORG_JUNIT_RULE;
+	protected static final String ORG_JUNIT_CLASS_RULE = JUnitConstants.ORG_JUNIT_CLASS_RULE;
+	protected static final String ORG_JUNIT_RULES_TEMPORARY_FOLDER = JUnitConstants.ORG_JUNIT_RULES_TEMPORARY_FOLDER;
+	protected static final String ORG_JUNIT_RULES_TEST_NAME = JUnitConstants.ORG_JUNIT_RULES_TEST_NAME;
+	protected static final String ORG_JUNIT_RULES_EXTERNAL_RESOURCE = JUnitConstants.ORG_JUNIT_RULES_EXTERNAL_RESOURCE;
 	protected static final String ORG_JUNIT_RUNWITH = JUnitConstants.ORG_JUNIT_RUNWITH;
 	protected static final String ORG_JUNIT_SUITE = JUnitConstants.ORG_JUNIT_SUITE;
 	protected static final String ORG_JUNIT_SUITE_SUITECLASSES = JUnitConstants.ORG_JUNIT_SUITE_SUITECLASSES;
@@ -129,15 +129,15 @@ public abstract class AbstractTool<T> extends AbstractToolBase<T> {
 	protected static final String ORG_JUNIT_FIX_METHOD_ORDER = JUnitConstants.ORG_JUNIT_FIX_METHOD_ORDER;
 
 	// Fully Qualified References - JUnit 5 / Jupiter
-	protected static final String ORG_JUNIT_JUPITER_API_AFTER_EACH = ORG_JUNIT_JUPITER_API_AFTER_EACH;
+	protected static final String ORG_JUNIT_JUPITER_API_AFTER_EACH = JUnitConstants.ORG_JUNIT_JUPITER_API_AFTER_EACH;
 	protected static final String ORG_JUNIT_JUPITER_API_AFTER_ALL = JUnitConstants.ORG_JUNIT_JUPITER_API_AFTER_ALL;
 	protected static final String ORG_JUNIT_JUPITER_API_BEFORE_ALL = JUnitConstants.ORG_JUNIT_JUPITER_API_BEFORE_ALL;
-	protected static final String ORG_JUNIT_JUPITER_API_BEFORE_EACH = ORG_JUNIT_JUPITER_API_BEFORE_EACH;
+	protected static final String ORG_JUNIT_JUPITER_API_BEFORE_EACH = JUnitConstants.ORG_JUNIT_JUPITER_API_BEFORE_EACH;
 	protected static final String ORG_JUNIT_JUPITER_API_ASSERTIONS = JUnitConstants.ORG_JUNIT_JUPITER_API_ASSERTIONS;
 	protected static final String ORG_JUNIT_JUPITER_DISABLED = JUnitConstants.ORG_JUNIT_JUPITER_DISABLED;
 	protected static final String ORG_JUNIT_JUPITER_API_IO_TEMP_DIR = JUnitConstants.ORG_JUNIT_JUPITER_API_IO_TEMP_DIR;
-	protected static final String ORG_JUNIT_JUPITER_API_TEST_INFO = ORG_JUNIT_JUPITER_API_TEST_INFO;
-	protected static final String ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH = ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH;
+	protected static final String ORG_JUNIT_JUPITER_API_TEST_INFO = JUnitConstants.ORG_JUNIT_JUPITER_API_TEST_INFO;
+	protected static final String ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH = JUnitConstants.ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH;
 	protected static final String ORG_JUNIT_JUPITER_TEST = JUnitConstants.ORG_JUNIT_JUPITER_TEST;
 	protected static final String ORG_JUNIT_JUPITER_API_ASSUMPTIONS = JUnitConstants.ORG_JUNIT_JUPITER_API_ASSUMPTIONS;
 
