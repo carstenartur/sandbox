@@ -106,6 +106,9 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				}
 				
 				Expression expr = node.getExpression();
+				if (expr == null) {
+					return true;
+				}
 				SimpleName sn = ASTNodes.as(expr, SimpleName.class);
 				if (sn != null) {
 					IBinding ibinding = sn.resolveBinding();
