@@ -42,6 +42,7 @@ import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
@@ -235,11 +236,17 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 		if (node == null) {
 			return null;
 		}
-		ASTNode current = node.getParent();
-		while (current != null && !(current instanceof MethodDeclaration) && !(current instanceof TypeDeclaration)) {
-			current = current.getParent();
+		ASTNode methodDecl = ASTNodes.getFirstAncestorOrNull(node, MethodDeclaration.class);
+		ASTNode typeDecl = ASTNodes.getFirstAncestorOrNull(node, TypeDeclaration.class);
+		
+		// Return the closest ancestor. In Java, methods are always declared inside types,
+		// so if a MethodDeclaration exists, it is guaranteed to be closer than any TypeDeclaration.
+		// getFirstAncestorOrNull returns the nearest ancestor of each type, so we just need to
+		// prefer the more specific (nested) one.
+		if (methodDecl != null) {
+			return methodDecl;
 		}
-		return current;
+		return typeDecl;
 	}
 
 	/**
@@ -367,11 +374,17 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	 * @return the enclosing MethodDeclaration or TryStatement, or null if not found
 	 */
 	private static ASTNode findEnclosingMethodOrTry(ASTNode node) {
-		ASTNode parent = node.getParent();
-		while (parent != null && !(parent instanceof MethodDeclaration) && !(parent instanceof TryStatement)) {
-			parent = parent.getParent();
+		ASTNode tryStmt = ASTNodes.getFirstAncestorOrNull(node, TryStatement.class);
+		ASTNode methodDecl = ASTNodes.getFirstAncestorOrNull(node, MethodDeclaration.class);
+		
+		// Return the closest ancestor. In Java, try statements are always inside method bodies,
+		// so if a TryStatement exists, it is guaranteed to be closer than any MethodDeclaration.
+		// getFirstAncestorOrNull returns the nearest ancestor of each type, so we just need to
+		// prefer the more specific (nested) one.
+		if (tryStmt != null) {
+			return tryStmt;
 		}
-		return parent;
+		return methodDecl;
 	}
 
 	/**

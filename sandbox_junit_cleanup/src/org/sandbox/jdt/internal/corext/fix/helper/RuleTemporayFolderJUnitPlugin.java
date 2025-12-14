@@ -47,6 +47,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
@@ -83,7 +84,7 @@ public class RuleTemporayFolderJUnitPlugin extends AbstractTool<ReferenceHolder<
 			JunitHolder junitHolder) {
 		FieldDeclaration field= junitHolder.getFieldDeclaration();
 		rewriter.remove(field, group);
-		TypeDeclaration parentClass= (TypeDeclaration) field.getParent();
+		TypeDeclaration parentClass= ASTNodes.getParent(field, TypeDeclaration.class);
 
 		importRewriter.addImport(ORG_JUNIT_JUPITER_API_IO_TEMP_DIR);
 		importRewriter.removeImport(ORG_JUNIT_RULE);
