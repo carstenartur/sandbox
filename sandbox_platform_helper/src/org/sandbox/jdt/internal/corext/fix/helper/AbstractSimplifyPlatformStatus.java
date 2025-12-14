@@ -37,7 +37,6 @@ import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.SimplifyPlatformStatusFixCore;
-import org.sandbox.jdt.internal.corext.util.ASTRewriteUtils;
 
 /**
  * @param <T> Type found in Visitor
@@ -60,11 +59,10 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 	 * @param ast       AST
 	 * @return simple name of a class if the import was added and fully qualified
 	 *         name if there was a conflict
-	 * @deprecated Use {@link ASTRewriteUtils#addImport(String, CompilationUnitRewrite, AST)} instead.
 	 */
-	@Deprecated
 	protected static Name addImport(String typeName, final CompilationUnitRewrite cuRewrite, AST ast) {
-		return ASTRewriteUtils.addImport(typeName, cuRewrite, ast);
+		String importedName= cuRewrite.getImportRewrite().addImport(typeName);
+		return ast.newName(importedName);
 	}
 
 	public abstract String getPreview(boolean afterRefactoring);
