@@ -94,7 +94,7 @@ public class PreconditionsChecker {
         AstProcessorBuilder.with(new ReferenceHolder<String, Object>())
             .processor()
             .callVariableDeclarationFragmentVisitor((node, h) -> {
-                innerVariables.add(node);
+                innerVariables.add((VariableDeclarationFragment) node);
                 return true;
             })
             .callBreakStatementVisitor((node, h) -> {
