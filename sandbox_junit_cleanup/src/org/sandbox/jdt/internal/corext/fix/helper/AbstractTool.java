@@ -76,6 +76,10 @@ import org.eclipse.text.edits.TextEdit;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
+import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
+import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
+import org.sandbox.jdt.internal.corext.util.NamingUtils;
+import org.sandbox.jdt.internal.corext.util.TypeCheckingUtils;
 
 /**
  * Abstract base class for JUnit migration tools.

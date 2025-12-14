@@ -11,7 +11,7 @@
  * Contributors:
  *     Carsten Hammer
  *******************************************************************************/
-package org.sandbox.jdt.internal.corext.fix.helper;
+package org.sandbox.jdt.internal.corext.util;
 
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IType;
@@ -53,19 +53,6 @@ public final class ASTNavigationUtils {
 	}
 
 	/**
-	 * Finds the enclosing TypeDeclaration for the given AST node.
-	 * 
-	 * @param node the AST node to start from
-	 * @return the enclosing TypeDeclaration, or null if not found
-	 */
-	public static TypeDeclaration findEnclosingTypeDeclaration(ASTNode node) {
-		while (node != null && !(node instanceof TypeDeclaration)) {
-			node = node.getParent();
-		}
-		return (TypeDeclaration) node;
-	}
-
-	/**
 	 * Gets the parent TypeDeclaration for the given AST node.
 	 * 
 	 * @param node the AST node to start from
@@ -79,11 +66,23 @@ public final class ASTNavigationUtils {
 	}
 
 	/**
+	 * Finds the enclosing TypeDeclaration for the given AST node.
+	 * This is an alias for {@link #getParentTypeDeclaration(ASTNode)}.
+	 * 
+	 * @param node the AST node to start from
+	 * @return the enclosing TypeDeclaration, or null if not found
+	 */
+	public static TypeDeclaration findEnclosingTypeDeclaration(ASTNode node) {
+		return getParentTypeDeclaration(node);
+	}
+
+	/**
 	 * Finds a type declaration by its fully qualified name within a Java project.
 	 * 
 	 * @param javaProject the Java project to search in
 	 * @param fullyQualifiedTypeName the fully qualified type name
 	 * @return the TypeDeclaration if found, or null otherwise
+	 * @throws RuntimeException if there is an error accessing the Java model
 	 */
 	public static TypeDeclaration findTypeDeclaration(IJavaProject javaProject, String fullyQualifiedTypeName) {
 		try {
@@ -93,7 +92,7 @@ public final class ASTNavigationUtils {
 				return findTypeDeclarationInCompilationUnit(unit, fullyQualifiedTypeName);
 			}
 		} catch (JavaModelException e) {
-			e.printStackTrace();
+			throw new RuntimeException("Failed to find type declaration for: " + fullyQualifiedTypeName, e); //$NON-NLS-1$
 		}
 		return null;
 	}
@@ -105,7 +104,7 @@ public final class ASTNavigationUtils {
 	 * @param fullyQualifiedTypeName the fully qualified type name
 	 * @return the TypeDeclaration if found, or null otherwise
 	 */
-	static TypeDeclaration findTypeDeclarationInCompilationUnit(CompilationUnit unit, String fullyQualifiedTypeName) {
+	public static TypeDeclaration findTypeDeclarationInCompilationUnit(CompilationUnit unit, String fullyQualifiedTypeName) {
 		for (Object obj : unit.types()) {
 			if (obj instanceof TypeDeclaration) {
 				TypeDeclaration typeDecl = (TypeDeclaration) obj;
@@ -125,7 +124,7 @@ public final class ASTNavigationUtils {
 	 * @param cu the compilation unit to search
 	 * @return the TypeDeclaration if found, or null otherwise
 	 */
-	static TypeDeclaration findTypeDeclarationInCompilationUnit(ITypeBinding typeBinding, CompilationUnit cu) {
+	public static TypeDeclaration findTypeDeclarationInCompilationUnit(ITypeBinding typeBinding, CompilationUnit cu) {
 		final TypeDeclaration[] result = { null };
 
 		cu.accept(new ASTVisitor() {
@@ -163,7 +162,7 @@ public final class ASTNavigationUtils {
 	 * @param typeBinding the type binding to find
 	 * @return the TypeDeclaration if found, or null otherwise
 	 */
-	static TypeDeclaration findTypeDeclarationInProject(ITypeBinding typeBinding) {
+	public static TypeDeclaration findTypeDeclarationInProject(ITypeBinding typeBinding) {
 		IType type = (IType) typeBinding.getJavaElement();
 		return type != null ? findTypeDeclaration(type.getJavaProject(), type.getFullyQualifiedName()) : null;
 	}
@@ -175,7 +174,7 @@ public final class ASTNavigationUtils {
 	 * @param qualifiedTypeName the qualified type name to find
 	 * @return the TypeDeclaration if found, or null otherwise
 	 */
-	static TypeDeclaration findTypeDeclarationInType(TypeDeclaration typeDecl, String qualifiedTypeName) {
+	public static TypeDeclaration findTypeDeclarationInType(TypeDeclaration typeDecl, String qualifiedTypeName) {
 		if (getQualifiedName(typeDecl).equals(qualifiedTypeName)) {
 			return typeDecl;
 		}
@@ -197,7 +196,7 @@ public final class ASTNavigationUtils {
 	 * @param cu the compilation unit to search first
 	 * @return the type declaration if found, or null otherwise
 	 */
-	static ASTNode findTypeDeclarationForBinding(ITypeBinding typeBinding, CompilationUnit cu) {
+	public static ASTNode findTypeDeclarationForBinding(ITypeBinding typeBinding, CompilationUnit cu) {
 		if (typeBinding == null)
 			return null;
 
@@ -211,14 +210,14 @@ public final class ASTNavigationUtils {
 	 * @param typeDecl the type declaration
 	 * @return the fully qualified name including package and nested class separators
 	 */
-	static String getQualifiedName(TypeDeclaration typeDecl) {
+	public static String getQualifiedName(TypeDeclaration typeDecl) {
 		StringBuilder qualifiedName = new StringBuilder(typeDecl.getName().getIdentifier());
 		ASTNode parent = typeDecl.getParent();
 
 		// Process nested classes
 		while (parent instanceof TypeDeclaration) {
 			TypeDeclaration parentType = (TypeDeclaration) parent;
-			qualifiedName.insert(0, parentType.getName().getIdentifier() + "$"); // $ for nested classes
+			qualifiedName.insert(0, parentType.getName().getIdentifier() + "$"); // $ for nested classes //$NON-NLS-1$
 			parent = parent.getParent();
 		}
 
@@ -226,7 +225,7 @@ public final class ASTNavigationUtils {
 		CompilationUnit compilationUnit = (CompilationUnit) typeDecl.getRoot();
 		if (compilationUnit.getPackage() != null) {
 			String packageName = compilationUnit.getPackage().getName().getFullyQualifiedName();
-			qualifiedName.insert(0, packageName + ".");
+			qualifiedName.insert(0, packageName + "."); //$NON-NLS-1$
 		}
 
 		return qualifiedName.toString();
@@ -238,7 +237,7 @@ public final class ASTNavigationUtils {
 	 * @param iCompilationUnit the compilation unit to parse
 	 * @return the parsed CompilationUnit
 	 */
-	static CompilationUnit parseCompilationUnit(org.eclipse.jdt.core.ICompilationUnit iCompilationUnit) {
+	public static CompilationUnit parseCompilationUnit(org.eclipse.jdt.core.ICompilationUnit iCompilationUnit) {
 		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
 		parser.setKind(ASTParser.K_COMPILATION_UNIT);
 		parser.setSource(iCompilationUnit);

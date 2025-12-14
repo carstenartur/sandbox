@@ -11,7 +11,7 @@
  * Contributors:
  *     Carsten Hammer
  *******************************************************************************/
-package org.sandbox.jdt.internal.corext.fix.helper;
+package org.sandbox.jdt.internal.corext.util;
 
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ITypeBinding;
@@ -64,7 +64,7 @@ public final class TypeCheckingUtils {
 	 * @param supertype the interface type binding
 	 * @return true if the type implements the interface
 	 */
-	static boolean implementsInterface(ITypeBinding subtype, ITypeBinding supertype) {
+	public static boolean implementsInterface(ITypeBinding subtype, ITypeBinding supertype) {
 		for (ITypeBinding iface : subtype.getInterfaces()) {
 			if (iface.getQualifiedName().equals(supertype.getQualifiedName())
 					|| implementsInterface(iface, supertype)) {

@@ -11,7 +11,7 @@
  * Contributors:
  *     Carsten Hammer
  *******************************************************************************/
-package org.sandbox.jdt.internal.corext.fix.helper;
+package org.sandbox.jdt.internal.corext.util;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -67,7 +67,7 @@ public final class NamingUtils {
 		// Capitalize field name for class naming convention
 		String capitalizedBaseName = capitalizeFirstLetter(baseName);
 
-		return capitalizedBaseName + "_" + checksum;
+		return capitalizedBaseName + "_" + checksum; //$NON-NLS-1$
 	}
 
 	/**
@@ -77,9 +77,9 @@ public final class NamingUtils {
 	 * @return a 5-character hexadecimal checksum
 	 * @throws RuntimeException if SHA-256 algorithm is not available (should never happen in standard JVM environments)
 	 */
-	static String generateChecksum(String input) {
+	public static String generateChecksum(String input) {
 		try {
-			MessageDigest md = MessageDigest.getInstance("SHA-256");
+			MessageDigest md = MessageDigest.getInstance("SHA-256"); //$NON-NLS-1$
 			byte[] hashBytes = md.digest(input.getBytes(StandardCharsets.UTF_8));
 			StringBuilder hexString = new StringBuilder();
 			for (byte b : hashBytes) {
@@ -91,7 +91,7 @@ public final class NamingUtils {
 			}
 			return hexString.toString().substring(0, GENERATED_CLASS_NAME_CHECKSUM_LENGTH);
 		} catch (NoSuchAlgorithmException e) {
-			throw new RuntimeException("SHA-256 algorithm not found", e);
+			throw new RuntimeException("SHA-256 algorithm not found", e); //$NON-NLS-1$
 		}
 	}
 
@@ -125,7 +125,7 @@ public final class NamingUtils {
 				.filter(VariableDeclarationFragment.class::isInstance)
 				.map(fragment -> ((VariableDeclarationFragment) fragment).getName().getIdentifier())
 				.findFirst()
-				.orElse("UnnamedField");
+				.orElse("UnnamedField"); //$NON-NLS-1$
 	}
 
 	/**
@@ -141,7 +141,7 @@ public final class NamingUtils {
 		while (currentType instanceof QualifiedType) {
 			QualifiedType currentQualified = (QualifiedType) currentType;
 			if (fullClassName.length() > 0) {
-				fullClassName.insert(0, ".");
+				fullClassName.insert(0, "."); //$NON-NLS-1$
 			}
 			fullClassName.insert(0, currentQualified.getName().getFullyQualifiedName());
 			currentType = currentQualified.getQualifier();
@@ -155,7 +155,7 @@ public final class NamingUtils {
 	 * @param type the type to extract from
 	 * @return the type name, or null if not a recognized type
 	 */
-	static String extractTypeName(Type type) {
+	public static String extractTypeName(Type type) {
 		if (type instanceof QualifiedType) {
 			return extractQualifiedTypeName((QualifiedType) type);
 		} else if (type instanceof SimpleType) {
