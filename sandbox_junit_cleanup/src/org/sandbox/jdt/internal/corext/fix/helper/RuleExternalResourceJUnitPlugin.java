@@ -95,16 +95,13 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 		ASTNode node2= getTypeDefinitionForField(fieldDeclaration, cu);
 
 		if (node2 instanceof TypeDeclaration) {
-			System.out.println("TypeDeclaration gefunden: " + ((TypeDeclaration) node2).getName());
 			modifyExternalResourceClass((TypeDeclaration) node2, fieldDeclaration, fieldStatic, rewriter, ast, group,
 					importRewriter);
 		} else if (node2 instanceof AnonymousClassDeclaration typeNode) {
-			System.out.println("AnonymousClassDeclaration gefunden." + typeNode);
 			refactorAnonymousClassToImplementCallbacks(typeNode, fieldDeclaration, fieldStatic, rewriter, ast, group,
 					importRewriter);
-		} else {
-			System.out.println("Keine passende Typdefinition gefunden." + node2);
 		}
+		// If no matching type definition found, no action needed
 	}
 
 	@Override

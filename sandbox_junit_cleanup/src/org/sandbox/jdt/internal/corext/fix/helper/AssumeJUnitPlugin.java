@@ -115,7 +115,12 @@ public class AssumeJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 		}
 	}
 
-	// Helper-Methode, um zu prüfen, ob `assumeThat` zu `org.junit.Assume` gehört
+	/**
+	 * Checks if the assumeThat method belongs to org.junit.Assume.
+	 * 
+	 * @param node the method invocation to check
+	 * @return true if the method is from org.junit.Assume
+	 */
 	private boolean isJUnitAssume(MethodInvocation node) {
 		IMethodBinding binding = node.resolveMethodBinding();
 		return binding != null && ORG_JUNIT_ASSUME.equals(binding.getDeclaringClass().getQualifiedName());

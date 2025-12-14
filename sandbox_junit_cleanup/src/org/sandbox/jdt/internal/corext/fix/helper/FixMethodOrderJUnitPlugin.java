@@ -84,8 +84,7 @@ public class FixMethodOrderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 	@Override
 	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
-		// TODO Auto-generated method stub
-		
+		// Not yet implemented - FixMethodOrder migration is a placeholder
 	}
 
 	@Override
