@@ -69,11 +69,11 @@ public final class DocumentHelper {
 			throw new RuntimeException("Failed to connect to text file buffer: " + e.getMessage(), e);
 		} finally {
 			try {
-				// Optional: Disconnect if no further changes are pending
+				// Disconnect from the buffer
 				bufferManager.disconnect(icu.getPath(), LocationKind.IFILE, null);
 			} catch (CoreException e) {
-				// Disconnection failed, but we only log it
-				e.printStackTrace();
+				// Disconnection failed, wrap and re-throw
+				throw new RuntimeException("Failed to disconnect from text file buffer: " + e.getMessage(), e);
 			}
 		}
 	}
@@ -105,7 +105,6 @@ public final class DocumentHelper {
 			return change;
 
 		} catch (Exception e) {
-			e.printStackTrace();
 			throw new RuntimeException("Error creating change for rewrite: " + e.getMessage(), e);
 		}
 	}

@@ -241,12 +241,21 @@ public final class ExternalResourceRefactorer {
 		}
 
 		// Add JUnit 5 callback interfaces (before/after each or all depending on static)
-		nestedClass.superInterfaceTypes()
-				.add(ast.newSimpleType(ast.newName(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK)));
-		nestedClass.superInterfaceTypes()
-				.add(ast.newSimpleType(ast.newName(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK)));
-		importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
-		importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
+		if (fieldStatic) {
+			nestedClass.superInterfaceTypes()
+					.add(ast.newSimpleType(ast.newName(BEFORE_ALL_CALLBACK)));
+			nestedClass.superInterfaceTypes()
+					.add(ast.newSimpleType(ast.newName(AFTER_ALL_CALLBACK)));
+			importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_ALL_CALLBACK);
+			importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_ALL_CALLBACK);
+		} else {
+			nestedClass.superInterfaceTypes()
+					.add(ast.newSimpleType(ast.newName(BEFORE_EACH_CALLBACK)));
+			nestedClass.superInterfaceTypes()
+					.add(ast.newSimpleType(ast.newName(AFTER_EACH_CALLBACK)));
+			importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
+			importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
+		}
 
 		// Transfer lifecycle methods from anonymous class to new class
 		ListRewrite bodyRewrite = rewriter.getListRewrite(nestedClass, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);
@@ -504,7 +513,7 @@ public final class ExternalResourceRefactorer {
 
 			// Change the type of the FieldDeclaration
 			Type newType = ast.newSimpleType(ast.newName(nestedClassName));
-			rewriter.set(fieldDecl.getType(), org.eclipse.jdt.core.dom.SimpleType.NAME_PROPERTY, newType, group);
+			rewriter.replace(fieldDecl.getType(), newType, group);
 
 			// Add the initialization
 			for (Object fragment : fieldDecl.fragments()) {
@@ -512,7 +521,7 @@ public final class ExternalResourceRefactorer {
 					VariableDeclarationFragment fragmentNode = (VariableDeclarationFragment) fragment;
 					ClassInstanceCreation newInstance = ast.newClassInstanceCreation();
 					newInstance.setType(ast.newSimpleType(ast.newName(nestedClassName)));
-					rewriter.set(fragmentNode, VariableDeclarationFragment.INITIALIZER_PROPERTY, newInstance, group);
+					rewriter.replace(fragmentNode.getInitializer(), newInstance, group);
 				}
 			}
 		}
