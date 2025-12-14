@@ -124,7 +124,8 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 					log.log(new Status(IStatus.INFO, BUNDLE_ID, "JFacePlugin: " + message)); //$NON-NLS-1$
 				}
 			} catch (Exception e) {
-				// Silently ignore logging errors
+				System.err.println("Failed to log debug message: " + e.getMessage());
+				e.printStackTrace(System.err);
 			}
 		}
 	}
