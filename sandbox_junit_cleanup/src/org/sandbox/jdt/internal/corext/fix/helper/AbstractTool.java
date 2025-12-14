@@ -458,20 +458,20 @@ public abstract class AbstractTool<T> {
 	 * 
 	 * @param listRewrite the list rewrite for the super interface types
 	 * @param ast the AST instance
-	 * @param callbackName the simple name of the callback interface (e.g., "BeforeEachCallback")
+	 * @param simpleCallbackName the simple name of the callback interface (e.g., "BeforeEachCallback")
 	 * @param group the text edit group
 	 * @param importRewriter the import rewriter
 	 * @param fullyQualifiedCallbackName the fully qualified name of the callback interface to import
 	 */
-	private void addInterfaceCallback(ListRewrite listRewrite, AST ast, String callbackName, TextEditGroup group,
+	private void addInterfaceCallback(ListRewrite listRewrite, AST ast, String simpleCallbackName, TextEditGroup group,
 			ImportRewrite importRewriter, String fullyQualifiedCallbackName) {
 		// Check if the interface already exists in the list
 		boolean hasCallback= listRewrite.getRewrittenList().stream().anyMatch(type -> type instanceof SimpleType
-				&& ((SimpleType) type).getName().getFullyQualifiedName().equals(callbackName));
+				&& simpleCallbackName.equals(((SimpleType) type).getName().getFullyQualifiedName()));
 
 		if (!hasCallback) {
 			// Add interface if it doesn't already exist
-			listRewrite.insertLast(ast.newSimpleType(ast.newName(callbackName)), group);
+			listRewrite.insertLast(ast.newSimpleType(ast.newName(simpleCallbackName)), group);
 		}
 		importRewriter.addImport(fullyQualifiedCallbackName);
 	}
@@ -1553,7 +1553,7 @@ public abstract class AbstractTool<T> {
 		processMethod(method, rewriteToUse, ast, group, importRewriteToUse, oldMethodName, newMethodName);
 
 		if (rewriteToUse != globalRewrite) {
-			createChangeForRewrite(findCompilationUnit(node), rewriteToUse);
+			createChangeForRewrite(ASTNavigationUtils.findCompilationUnit(node), rewriteToUse);
 		}
 	}
 
