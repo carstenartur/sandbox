@@ -139,12 +139,9 @@ public final class NamingUtils {
 	public static String extractQualifiedTypeName(QualifiedType qualifiedType) {
 		StringBuilder fullClassName = new StringBuilder();
 		Type currentType = qualifiedType;
+		QualifiedType currentQualified;
 
-		while (currentType != null) {
-			QualifiedType currentQualified = ASTNodes.as(currentType, QualifiedType.class);
-			if (currentQualified == null) {
-				break;
-			}
+		while ((currentQualified = ASTNodes.as(currentType, QualifiedType.class)) != null) {
 			if (fullClassName.length() > 0) {
 				fullClassName.insert(0, "."); //$NON-NLS-1$
 			}

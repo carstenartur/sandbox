@@ -125,8 +125,11 @@ public final class ASTNavigationUtils {
 			private boolean checkAndMatchBinding(AbstractTypeDeclaration node, ITypeBinding typeBinding) {
 				ITypeBinding binding = node.resolveBinding();
 				if (binding != null && ASTNodes.areBindingsEqual(binding, typeBinding)) {
-					result[0] = (TypeDeclaration) node;
-					return false;
+					TypeDeclaration typeDecl = ASTNodes.as(node, TypeDeclaration.class);
+					if (typeDecl != null) {
+						result[0] = typeDecl;
+						return false;
+					}
 				}
 				return true;
 			}
