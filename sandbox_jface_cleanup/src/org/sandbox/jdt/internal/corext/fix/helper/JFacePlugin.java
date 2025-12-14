@@ -137,11 +137,11 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				}
 				
 				// Safe handling of first argument - extract identifier from expression
-				Object firstArg = arguments.get(0);
+				Expression firstArg = (Expression) arguments.get(0);
 				String firstArgName = null;
 				
 				// Try to extract SimpleName from the expression
-				SimpleName sn = ASTNodes.as((ASTNode) firstArg, SimpleName.class);
+				SimpleName sn = ASTNodes.as(firstArg, SimpleName.class);
 				if (sn != null) {
 					firstArgName = sn.getIdentifier();
 				}
