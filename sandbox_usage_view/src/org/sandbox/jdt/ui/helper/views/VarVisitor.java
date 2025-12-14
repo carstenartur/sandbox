@@ -28,17 +28,13 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
  * using the AstProcessorBuilder API for cleaner and more maintainable code.
  */
 final class VarVisitor {
-	/**
-	 *
-	 */
-	private final JHViewContentProvider varvisitor;
 	Set<IVariableBinding> methods= new HashSet<>();
 
 	/**
 	 * @param jhViewContentProvider
 	 */
 	VarVisitor(JHViewContentProvider jhViewContentProvider) {
-		varvisitor= jhViewContentProvider;
+		// Constructor for compatibility
 	}
 
 	/**
