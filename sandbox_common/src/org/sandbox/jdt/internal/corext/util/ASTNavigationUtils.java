@@ -100,8 +100,8 @@ public final class ASTNavigationUtils {
 	 */
 	public static TypeDeclaration findTypeDeclarationInCompilationUnit(CompilationUnit unit, String fullyQualifiedTypeName) {
 		for (Object obj : unit.types()) {
-			TypeDeclaration typeDecl = ASTNodes.as(obj, TypeDeclaration.class);
-			if (typeDecl != null) {
+			if (obj instanceof TypeDeclaration) {
+				TypeDeclaration typeDecl = (TypeDeclaration) obj;
 				TypeDeclaration result = findTypeDeclarationInType(typeDecl, fullyQualifiedTypeName);
 				if (result != null) {
 					return result;
@@ -125,11 +125,8 @@ public final class ASTNavigationUtils {
 			private boolean checkAndMatchBinding(AbstractTypeDeclaration node, ITypeBinding typeBinding) {
 				ITypeBinding binding = node.resolveBinding();
 				if (binding != null && ASTNodes.areBindingsEqual(binding, typeBinding)) {
-					TypeDeclaration typeDecl = ASTNodes.as(node, TypeDeclaration.class);
-					if (typeDecl != null) {
-						result[0] = typeDecl;
-						return false;
-					}
+					result[0] = (TypeDeclaration) node;
+					return false;
 				}
 				return true;
 			}
@@ -212,11 +209,8 @@ public final class ASTNavigationUtils {
 		ASTNode parent = typeDecl.getParent();
 
 		// Process nested classes
-		while (parent != null) {
-			TypeDeclaration parentType = ASTNodes.as(parent, TypeDeclaration.class);
-			if (parentType == null) {
-				break;
-			}
+		while (parent instanceof TypeDeclaration) {
+			TypeDeclaration parentType = (TypeDeclaration) parent;
 			qualifiedName.insert(0, parentType.getName().getIdentifier() + "$"); // $ for nested classes //$NON-NLS-1$
 			parent = parent.getParent();
 		}

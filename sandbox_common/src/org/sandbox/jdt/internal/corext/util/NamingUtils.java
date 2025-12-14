@@ -18,13 +18,11 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
-import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.QualifiedType;
 import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
-import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 
 /**
  * Utility class for naming and string operations.
@@ -105,11 +103,11 @@ public final class NamingUtils {
 	 */
 	public static String extractClassNameFromField(FieldDeclaration field) {
 		for (Object fragmentObj : field.fragments()) {
-			VariableDeclarationFragment fragment = ASTNodes.as(fragmentObj, VariableDeclarationFragment.class);
-			if (fragment != null) {
-				ClassInstanceCreation creation = ASTNodes.as(fragment.getInitializer(), ClassInstanceCreation.class);
-				if (creation != null) {
-					return extractTypeName(creation.getType());
+			if (fragmentObj instanceof VariableDeclarationFragment) {
+				VariableDeclarationFragment fragment = (VariableDeclarationFragment) fragmentObj;
+				if (fragment.getInitializer() instanceof org.eclipse.jdt.core.dom.ClassInstanceCreation) {
+					return extractTypeName(
+							((org.eclipse.jdt.core.dom.ClassInstanceCreation) fragment.getInitializer()).getType());
 				}
 			}
 		}
@@ -139,9 +137,9 @@ public final class NamingUtils {
 	public static String extractQualifiedTypeName(QualifiedType qualifiedType) {
 		StringBuilder fullClassName = new StringBuilder();
 		Type currentType = qualifiedType;
-		QualifiedType currentQualified;
 
-		while ((currentQualified = ASTNodes.as(currentType, QualifiedType.class)) != null) {
+		while (currentType instanceof QualifiedType) {
+			QualifiedType currentQualified = (QualifiedType) currentType;
 			if (fullClassName.length() > 0) {
 				fullClassName.insert(0, "."); //$NON-NLS-1$
 			}
@@ -158,13 +156,10 @@ public final class NamingUtils {
 	 * @return the type name, or null if not a recognized type
 	 */
 	public static String extractTypeName(Type type) {
-		QualifiedType qualifiedType = ASTNodes.as(type, QualifiedType.class);
-		if (qualifiedType != null) {
-			return extractQualifiedTypeName(qualifiedType);
-		}
-		SimpleType simpleType = ASTNodes.as(type, SimpleType.class);
-		if (simpleType != null) {
-			return simpleType.getName().getFullyQualifiedName();
+		if (type instanceof QualifiedType) {
+			return extractQualifiedTypeName((QualifiedType) type);
+		} else if (type instanceof SimpleType) {
+			return ((SimpleType) type).getName().getFullyQualifiedName();
 		}
 		return null;
 	}
