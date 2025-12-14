@@ -212,9 +212,9 @@ public class Refactorer {
                 if (stmt instanceof VariableDeclarationStatement) {
                     // Variable declaration → MAP operation
                     VariableDeclarationStatement varDecl = (VariableDeclarationStatement) stmt;
-                    List fragments = varDecl.fragments();
+                    List<VariableDeclarationFragment> fragments = varDecl.fragments();
                     if (!fragments.isEmpty()) {
-                        VariableDeclarationFragment frag = (VariableDeclarationFragment) fragments.get(0);
+                        VariableDeclarationFragment frag = fragments.get(0);
                         if (frag.getInitializer() != null) {
                             ProspectiveOperation mapOp = new ProspectiveOperation(
                                 frag.getInitializer(),
