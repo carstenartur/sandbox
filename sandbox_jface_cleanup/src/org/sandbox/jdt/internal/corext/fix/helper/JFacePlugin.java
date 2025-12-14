@@ -19,7 +19,10 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.eclipse.core.runtime.ILog;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.jdt.core.dom.AST;
@@ -45,33 +48,29 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JfaceCleanUpFixCore;
 
 /**
- *
- * SubProgressMonitor has been deprecated What is affected: Clients that refer
- * to org.eclipse.core.runtime.SubProgressMonitor.
- *
- * Description: org.eclipse.core.runtime.SubProgressMonitor has been deprecated
- * and replaced by org.eclipse.core.runtime.SubMonitor.
- *
- * Action required:
- *
- * Calls to IProgressMonitor.beginTask on the root monitor should be replaced by
- * a call to SubMonitor.convert. Keep the returned SubMonitor around as a local
- * variable and refer to it instead of the root monitor for the remainder of the
- * method. All calls to SubProgressMonitor(IProgressMonitor, int) should be
- * replaced by calls to SubMonitor.split(int). If a SubProgressMonitor is
- * constructed using the SUPPRESS_SUBTASK_LABEL flag, it will be transformed to
- * SubMonitor.split(int, int) with the flags parameter preserved. It is not
- * necessary to call done on an instance of SubMonitor. Example:
- *
- * Consider the following example: void someMethod(IProgressMonitor pm) {
- * pm.beginTask("Main Task", 100); SubProgressMonitor subMonitor1= new
- * SubProgressMonitor(pm, 60); try { doSomeWork(subMonitor1); } finally {
- * subMonitor1.done(); } SubProgressMonitor subMonitor2= new
- * SubProgressMonitor(pm, 40); try { doSomeMoreWork(subMonitor2); } finally {
- * subMonitor2.done(); } } The above code should be refactored to this: void
- * someMethod(IProgressMonitor pm) { SubMonitor subMonitor =
- * SubMonitor.convert(pm, "Main Task", 100); doSomeWork(subMonitor.split(60));
- * doSomeMoreWork(subMonitor.split(40)); }
+ * Cleanup transformation for migrating from deprecated {@link SubProgressMonitor} to {@link SubMonitor}.
+ * 
+ * <p>This helper transforms progress monitor usage patterns in Eclipse JDT code:</p>
+ * <ul>
+ * <li>Converts {@code IProgressMonitor.beginTask()} to {@code SubMonitor.convert()}</li>
+ * <li>Replaces {@code new SubProgressMonitor(monitor, work)} with {@code subMonitor.split(work)}</li>
+ * <li>Handles both 2-argument and 3-argument SubProgressMonitor constructors</li>
+ * <li>Generates unique variable names to avoid collisions in scope</li>
+ * </ul>
+ * 
+ * <p><b>Migration Pattern:</b></p>
+ * <pre>
+ * // Before:
+ * monitor.beginTask("Main Task", 100);
+ * IProgressMonitor subMon = new SubProgressMonitor(monitor, 60);
+ * 
+ * // After:
+ * SubMonitor subMonitor = SubMonitor.convert(monitor, "Main Task", 100);
+ * IProgressMonitor subMon = subMonitor.split(60);
+ * </pre>
+ * 
+ * @see SubProgressMonitor
+ * @see SubMonitor
  */
 public class JFacePlugin extends
 AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
@@ -79,13 +78,66 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 	public static final String CLASS_INSTANCE_CREATION = "ClassInstanceCreation"; //$NON-NLS-1$
 	public static final String METHODINVOCATION = "MethodInvocation"; //$NON-NLS-1$
 
+	/** Debug option key for enabling JFace plugin transformation logging */
+	private static final String DEBUG_OPTION = "sandbox_jface_cleanup/debug/jfaceplugin"; //$NON-NLS-1$
+	
+	/** Bundle symbolic name for logging */
+	private static final String BUNDLE_ID = "sandbox_jface_cleanup"; //$NON-NLS-1$
+
+	/**
+	 * Holder for monitor-related transformation data.
+	 * Tracks beginTask invocations and associated SubProgressMonitor instances.
+	 */
 	public static class MonitorHolder {
+		/** The beginTask method invocation to be converted */
 		public MethodInvocation minv;
+		/** The monitor variable name from beginTask expression */
 		public String minvname;
+		/** Set of SubProgressMonitor constructions to be converted to split() calls */
 		public Set<ClassInstanceCreation> setofcic = new HashSet<>();
+		/** Nodes that have been processed to avoid duplicate transformations */
 		public Set<ASTNode> nodesprocessed;
 	}
 
+	/**
+	 * Checks if debug logging is enabled for JFace plugin transformations.
+	 * 
+	 * @return {@code true} if debug logging is enabled, {@code false} otherwise
+	 */
+	private static boolean isDebugEnabled() {
+		return Platform.inDebugMode() && "true".equalsIgnoreCase(Platform.getDebugOption(DEBUG_OPTION)); //$NON-NLS-1$
+	}
+
+	/**
+	 * Logs a debug message if debug mode is enabled.
+	 * 
+	 * @param message the message to log
+	 */
+	private static void logDebug(String message) {
+		if (isDebugEnabled()) {
+			ILog log = Platform.getLog(Platform.getBundle(BUNDLE_ID));
+			log.log(new Status(Status.INFO, BUNDLE_ID, "JFacePlugin: " + message)); //$NON-NLS-1$
+		}
+	}
+
+	/**
+	 * Finds and identifies SubProgressMonitor usage patterns to be transformed.
+	 * 
+	 * <p>This method scans the compilation unit for:</p>
+	 * <ul>
+	 * <li>{@code beginTask} method invocations on IProgressMonitor instances</li>
+	 * <li>{@code SubProgressMonitor} constructor invocations that reference the same monitor</li>
+	 * </ul>
+	 * 
+	 * <p>When both patterns are found in the same scope, a cleanup operation is registered
+	 * to transform them to the SubMonitor pattern.</p>
+	 * 
+	 * @param fixcore the cleanup fix core instance
+	 * @param compilationUnit the compilation unit to analyze
+	 * @param operations set to collect identified cleanup operations
+	 * @param nodesprocessed set of nodes already processed to avoid duplicates
+	 * @param createForOnlyIfVarUsed flag to control when operations are created (unused in this implementation)
+	 */
 	@Override
 	public void find(JfaceCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed,
@@ -98,7 +150,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				if (node.arguments().size() != 2) {
 					return true;
 				}
-				System.out.println("begintask[" + node.getStartPosition() + "] " + node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				logDebug("Found beginTask at position " + node.getStartPosition() + ": " + node); //$NON-NLS-1$ //$NON-NLS-2$
 				
 				// Check if parent is ExpressionStatement, otherwise skip
 				if (!(node.getParent() instanceof ExpressionStatement)) {
@@ -149,7 +201,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				if (firstArgName == null || !mh.minvname.equals(firstArgName)) {
 					return true;
 				}
-				System.out.println("init[" + node.getStartPosition() + "] " + node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				logDebug("Found SubProgressMonitor at position " + node.getStartPosition() + ": " + node); //$NON-NLS-1$ //$NON-NLS-2$
 				mh.setofcic.add(node);
 				operations.add(fixcore.rewrite(holder));
 				return true;
@@ -157,6 +209,34 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 			.build(compilationUnit);
 	}
 
+	/**
+	 * Rewrites AST nodes to transform SubProgressMonitor patterns to SubMonitor.
+	 * 
+	 * <p>Performs two main transformations:</p>
+	 * <ol>
+	 * <li><b>beginTask → convert:</b> Transforms {@code monitor.beginTask(msg, work)} 
+	 *     to {@code SubMonitor subMonitor = SubMonitor.convert(monitor, msg, work)}</li>
+	 * <li><b>SubProgressMonitor → split:</b> Transforms constructor calls:
+	 *     <ul>
+	 *     <li>2-arg: {@code new SubProgressMonitor(monitor, work)} → {@code subMonitor.split(work)}</li>
+	 *     <li>3-arg: {@code new SubProgressMonitor(monitor, work, flags)} → {@code subMonitor.split(work, flags)}</li>
+	 *     </ul>
+	 * </li>
+	 * </ol>
+	 * 
+	 * <p>The transformation ensures:</p>
+	 * <ul>
+	 * <li>Unique variable names for SubMonitor to avoid collisions</li>
+	 * <li>Preservation of flags parameter in 3-arg constructors</li>
+	 * <li>Removal of SubProgressMonitor import</li>
+	 * <li>Addition of SubMonitor import</li>
+	 * </ul>
+	 * 
+	 * @param upp the cleanup fix core instance
+	 * @param hit the holder containing identified monitor patterns to transform
+	 * @param cuRewrite the compilation unit rewrite context
+	 * @param group the text edit group for tracking changes
+	 */
 	@Override
 	public void rewrite(JfaceCleanUpFixCore upp, final ReferenceHolder<Integer, MonitorHolder> hit,
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
@@ -180,7 +260,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 			
 			if (!nodesprocessed.contains(minv)) {
 				nodesprocessed.add(minv);
-				System.out.println("rewrite methodinvocation [" + minv.getStartPosition() + "] " + minv); //$NON-NLS-1$ //$NON-NLS-2$
+				logDebug("Rewriting beginTask at position " + minv.getStartPosition() + ": " + minv); //$NON-NLS-1$ //$NON-NLS-2$
 				
 				// Ensure parent is ExpressionStatement
 				if (!(minv.getParent() instanceof ExpressionStatement)) {
@@ -218,7 +298,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				newVariableDeclarationStatement.setInitializer(staticCall);
 
 				ASTNodes.replaceButKeepComment(rewrite, minv, newVariableDeclarationStatement, group);
-				System.out.println("result " + staticCall); //$NON-NLS-1$
+				logDebug("Created SubMonitor.convert call: " + staticCall); //$NON-NLS-1$
 			}
 			
 			for (ClassInstanceCreation submon : mh.setofcic) {
@@ -228,7 +308,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				}
 				
 				ASTNode origarg = (ASTNode) arguments.get(1);
-				System.out.println("rewrite spminstance [" + submon.getStartPosition() + "] " + submon); //$NON-NLS-1$ //$NON-NLS-2$
+				logDebug("Rewriting SubProgressMonitor at position " + submon.getStartPosition() + ": " + submon); //$NON-NLS-1$ //$NON-NLS-2$
 				
 				/**
 				 * Handle both 2-arg and 3-arg SubProgressMonitor constructors:
@@ -261,11 +341,15 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 	}
 	
 	/**
-	 * Generate a unique variable name that doesn't collide with existing variables in scope.
+	 * Generates a unique variable name that doesn't collide with existing variables in scope.
 	 * 
-	 * @param node The AST node context for scope analysis
-	 * @param baseName The base name to use (e.g., "subMonitor")
-	 * @return A unique variable name
+	 * <p>This method ensures the SubMonitor variable name doesn't conflict with other
+	 * variables visible at the transformation point. If the base name is already in use,
+	 * a numeric suffix is appended (e.g., "subMonitor2", "subMonitor3", etc.).</p>
+	 * 
+	 * @param node the AST node context for scope analysis
+	 * @param baseName the base name to use (e.g., "subMonitor")
+	 * @return a unique variable name that doesn't exist in the current scope
 	 */
 	private String generateUniqueVariableName(ASTNode node, String baseName) {
 		Collection<String> usedNames = getUsedVariableNames(node);
