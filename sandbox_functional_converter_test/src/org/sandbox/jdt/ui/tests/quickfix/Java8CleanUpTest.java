@@ -1192,7 +1192,8 @@ public class Java8CleanUpTest {
 		"MergingOperations",
 		"BeautificationWorks",
 		"BeautificationWorks2",
-		"NonFilteringIfChaining"
+		"NonFilteringIfChaining",
+		"ContinuingIfFilterSingleStatement"
 	})
 	public void testSimpleForEachConversion(UseFunctionalLoop test) throws CoreException {
 		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null);

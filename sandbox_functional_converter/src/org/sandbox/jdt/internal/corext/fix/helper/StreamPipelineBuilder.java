@@ -19,11 +19,13 @@ import java.util.List;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.ContinueStatement;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.IfStatement;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
@@ -242,21 +244,33 @@ public class StreamPipelineBuilder {
                     if (ifStmt.getElseStatement() == null) {
                         Statement thenStmt = ifStmt.getThenStatement();
                         
-                        // Add FILTER operation for the condition
-                        ProspectiveOperation filterOp = new ProspectiveOperation(
-                            ifStmt.getExpression(),
-                            ProspectiveOperation.OperationType.FILTER);
-                        ops.add(filterOp);
-                        
-                        // Process the body of the IF statement recursively
-                        List<ProspectiveOperation> nestedOps = parseLoopBody(thenStmt, currentVarName);
-                        ops.addAll(nestedOps);
-                        
-                        // Update current var name if the nested operations produced a new variable
-                        if (!nestedOps.isEmpty()) {
-                            ProspectiveOperation lastNested = nestedOps.get(nestedOps.size() - 1);
-                            if (lastNested.getProducedVariableName() != null) {
-                                currentVarName = lastNested.getProducedVariableName();
+                        // Check if this is an "if (condition) continue;" pattern
+                        if (isIfWithContinue(ifStmt)) {
+                            // Convert "if (condition) continue;" to ".filter(x -> !(condition))"
+                            Expression negatedCondition = createNegatedExpression(ast, ifStmt.getExpression());
+                            ProspectiveOperation filterOp = new ProspectiveOperation(
+                                negatedCondition,
+                                ProspectiveOperation.OperationType.FILTER);
+                            ops.add(filterOp);
+                            // Don't process the body since it's just a continue statement
+                        } else {
+                            // Regular filter with nested processing
+                            // Add FILTER operation for the condition
+                            ProspectiveOperation filterOp = new ProspectiveOperation(
+                                ifStmt.getExpression(),
+                                ProspectiveOperation.OperationType.FILTER);
+                            ops.add(filterOp);
+                            
+                            // Process the body of the IF statement recursively
+                            List<ProspectiveOperation> nestedOps = parseLoopBody(thenStmt, currentVarName);
+                            ops.addAll(nestedOps);
+                            
+                            // Update current var name if the nested operations produced a new variable
+                            if (!nestedOps.isEmpty()) {
+                                ProspectiveOperation lastNested = nestedOps.get(nestedOps.size() - 1);
+                                if (lastNested.getProducedVariableName() != null) {
+                                    currentVarName = lastNested.getProducedVariableName();
+                                }
                             }
                         }
                     }
@@ -334,5 +348,41 @@ public class StreamPipelineBuilder {
         }
         return operations.size() > 1 || 
                operations.get(0).getOperationType() != ProspectiveOperation.OperationType.FOREACH;
+    }
+    
+    /**
+     * Checks if an IF statement contains a continue statement.
+     * This pattern should be converted to a negated filter.
+     * 
+     * @param ifStatement the IF statement to check
+     * @return true if the then branch contains a continue statement
+     */
+    private boolean isIfWithContinue(IfStatement ifStatement) {
+        Statement thenStatement = ifStatement.getThenStatement();
+        if (thenStatement instanceof ContinueStatement) {
+            return true;
+        }
+        if (thenStatement instanceof Block) {
+            Block block = (Block) thenStatement;
+            if (block.statements().size() == 1 && block.statements().get(0) instanceof ContinueStatement) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * Creates a negated expression for filter operations.
+     * Used when converting "if (condition) continue;" to ".filter(x -> !(condition))".
+     * 
+     * @param ast the AST to create nodes in
+     * @param condition the condition to negate
+     * @return a negated expression
+     */
+    private Expression createNegatedExpression(AST ast, Expression condition) {
+        PrefixExpression negation = ast.newPrefixExpression();
+        negation.setOperator(PrefixExpression.Operator.NOT);
+        negation.setOperand((Expression) ASTNode.copySubtree(ast, condition));
+        return negation;
     }
 }
