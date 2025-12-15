@@ -66,16 +66,27 @@
 **Objective**: Validate all enabled tests and implement any remaining conversion patterns
 
 **Current Work (This PR)**:
-- ✅ COMPLETED: Implemented AnyMatch/NoneMatch pattern detection for early returns
-- ✅ COMPLETED: Enabled tests: ChainedAnyMatch, ChainedNoneMatch (19 tests total)
-- ✅ COMPLETED: Update TODO.md to document completed work
-- 🔄 IN PROGRESS: Run tests to validate implementation
-- 🔄 IN PROGRESS: Fix any issues revealed by new tests
+- ✅ COMPLETED: Enabled NoNeededVariablesMerging test (20th test)
+- ✅ COMPLETED: Enabled SomeChainingWithNoNeededVar test (21st test)
+- ✅ COMPLETED: All 21 tests from UseFunctionalLoop enum are now enabled!
+- ✅ COMPLETED: Analyzed StreamPipelineBuilder to confirm existing logic should handle new tests
+- ⏳ PENDING: Test validation (requires build environment setup)
+
+**Implementation Analysis**:
+The existing StreamPipelineBuilder.parseLoopBody() method already contains logic to handle the patterns in the newly enabled tests:
+- **NoNeededVariablesMerging**: Non-last side-effect statements are wrapped as MAP operations (lines 535-548)
+- **SomeChainingWithNoNeededVar**: Variable declarations, IFs with nested processing, and side-effect MAPs are already supported
+
+**Expected Behavior**:
+Based on code analysis, the newly enabled tests should pass without requiring additional code changes. The StreamPipelineBuilder's existing implementation already:
+1. Detects side-effect statements (non-variable-declaration, non-IF statements that aren't last)
+2. Wraps them in MAP operations that preserve the current variable through the pipeline
+3. Processes the final statement as either FOREACH or REDUCE
 
 **Future Steps** (Next PR):
-- ⏳ Consider enabling additional tests (NoNeededVariablesMerging, SomeChainingWithNoNeededVar)
-- ⏳ Address any edge cases or optimization opportunities discovered during testing
-- ⏳ Continue iterating until all feasible tests pass
+- ⏳ Run full test suite to validate all 21 tests pass
+- ⏳ Address any edge cases discovered during testing (if any)
+- ⏳ Consider optimization opportunities
 - ⏳ Document any patterns that cannot be converted and why
 
 ---
@@ -216,10 +227,10 @@ Completed enhancements:
 - ✅ REDUCE operation support - COMPLETED
 - ✅ AnyMatch/NoneMatch pattern detection - COMPLETED
 
-### 4. ✅ Incrementally Enable Tests (COMPLETED - 19 TESTS ENABLED)
+### 4. ✅ Incrementally Enable Tests (IN PROGRESS - 21 TESTS ENABLED)
 **File**: `sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/Java8CleanUpTest.java`
 
-**Status**: 19 tests are now enabled (added ChainedAnyMatch, ChainedNoneMatch):
+**Status**: 21 tests are now enabled (added NoNeededVariablesMerging, SomeChainingWithNoNeededVar):
 
 Enabled tests (implementation complete, validation in progress):
 1. ✅ SIMPLECONVERT - simple forEach
@@ -239,12 +250,12 @@ Enabled tests (implementation complete, validation in progress):
 15. ✅ DecrementingReducer - decrement pattern
 16. ✅ ChainedReducerWithMerging - complex reducer with merging
 17. ✅ StringConcat - string concatenation
-18. ✅ ChainedAnyMatch - anyMatch pattern with early return (NEWLY ENABLED)
-19. ✅ ChainedNoneMatch - noneMatch pattern with early return (NEWLY ENABLED)
+18. ✅ ChainedAnyMatch - anyMatch pattern with early return
+19. ✅ ChainedNoneMatch - noneMatch pattern with early return
+20. 🔄 NoNeededVariablesMerging - variable optimization (NEWLY ENABLED - THIS PR)
+21. 🔄 SomeChainingWithNoNeededVar - chaining without variable tracking (NEWLY ENABLED - THIS PR)
 
-Next tests to enable (require additional validation or implementation):
-20. ⏳ NoNeededVariablesMerging - variable optimization
-21. ⏳ SomeChainingWithNoNeededVar - chaining without variable tracking
+All tests from UseFunctionalLoop enum are now enabled!
 
 For each test:
 1. Enable the test by adding it to `@EnumSource(value = UseFunctionalLoop.class, names = {"SIMPLECONVERT", "CHAININGMAP", ...})`
@@ -509,51 +520,58 @@ See: `sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/Ja
 ## Recent Changes (December 2025 - This PR)
 
 ### Summary
-This PR focused on implementing anyMatch/noneMatch pattern detection and enabling ChainedAnyMatch and ChainedNoneMatch tests.
+This PR continues the functional loop conversion implementation by enabling the final two remaining tests: NoNeededVariablesMerging and SomeChainingWithNoNeededVar. **With these additions, all 21 test cases in the UseFunctionalLoop enum are now enabled.**
+
+This represents a milestone in the functional loop conversion feature - all available test patterns are now active and ready for validation.
 
 ### Changes Made
 
-#### 1. PreconditionsChecker Enhancements
-**File**: `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/PreconditionsChecker.java`
-
-- Added early return pattern detection:
-  - `isAnyMatchPattern()` - Detects `if (condition) return true;` pattern
-  - `isNoneMatchPattern()` - Detects `if (condition) return false;` pattern
-  - `getEarlyReturnIf()` - Returns the IF statement containing the early return
-  - `detectEarlyReturnPatterns()` - Main analysis method for early return patterns
-- Modified `isSafeToRefactor()` to allow early returns when they match anyMatch/noneMatch patterns
-- Previously, any return statement would make the loop non-refactorable
-- Now, specific early return patterns are recognized and allowed
-
-#### 2. StreamPipelineBuilder Enhancements
-**File**: `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/StreamPipelineBuilder.java`
-
-- Added early return handling in `parseLoopBody()`:
-  - Detects IF statements with early returns
-  - Creates ANYMATCH or NONEMATCH operations based on the pattern
-  - `isEarlyReturnIf()` helper method validates early return IFs
-- Enhanced `wrapPipeline()` to wrap anyMatch/noneMatch operations:
-  - anyMatch: `if (stream.anyMatch(...)) { return true; }`
-  - noneMatch: `if (!stream.noneMatch(...)) { return false; }`
-- Added `ReturnStatement` import for creating return statements
-
-#### 3. Test Enablement
+#### 1. Test Enablement
 **File**: `sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/Java8CleanUpTest.java`
 
-- Enabled **ChainedAnyMatch** test - tests anyMatch pattern with early return true
-- Enabled **ChainedNoneMatch** test - tests noneMatch pattern with early return false
-- Total tests enabled: 19 (was 17)
+- Enabled **NoNeededVariablesMerging** test (20th test):
+  - Tests handling of loops with multiple side-effect statements
+  - No intermediate variables are used in subsequent operations
+  - Expected output: First statement wrapped in MAP with return, second in forEachOrdered
+  
+- Enabled **SomeChainingWithNoNeededVar** test (21st test):
+  - Tests complex chaining with variable declarations, nested IFs with side effects, and final statements
+  - Variables declared but not all are used in the pipeline
+  - Expected output: MAP for variable declaration, MAP for IF body with side effects, forEachOrdered for final statement
 
-#### 4. Documentation Updates
+- **Total tests enabled: 21 (was 19)**
+- **All tests from UseFunctionalLoop enum are now enabled!**
+
+#### 2. Documentation Updates
 **File**: `sandbox_functional_converter/TODO.md`
 
-- Updated to reflect completion of anyMatch/noneMatch implementation
-- Updated test count to 19 enabled tests
-- Updated "In Progress" section to focus on test validation
-- Updated completion estimates and remaining work
+- Updated to reflect enablement of final two tests
+- Updated test count from 19 to 21 enabled tests
+- Added implementation analysis confirming existing code should handle new test patterns
+- Documented expected behavior based on code review
+- Updated "Current Work" section to reflect completion of test enablement milestone
+
+### Implementation Analysis
+
+The existing StreamPipelineBuilder implementation already contains the necessary logic to handle both newly enabled test patterns:
+
+**NoNeededVariablesMerging Pattern**:
+- Input: Loop with side-effect statements like `System.out.println();` and `System.out.println("");`
+- Existing logic: Lines 535-548 of `parseLoopBody()` wrap non-last statements (that aren't variable declarations or IFs) as MAP operations with side effects
+- Expected behavior: First statement → `map(_item -> { System.out.println(); return _item; })`, second → `forEachOrdered(_item -> { System.out.println(""); })`
+
+**SomeChainingWithNoNeededVar Pattern**:
+- Input: Variable declaration `Integer l = new Integer(a.intValue())`, IF with nested side effects, final statement `System.out.println()`
+- Existing logic: 
+  - Variable declarations → MAP operations (lines 465-482)
+  - IF statements → FILTER with nested body processing (lines 483-534)
+  - Non-last side-effect statements → MAP operations (lines 535-548)
+  - Final statements → FOREACH (lines 549-563)
+- Expected behavior: Chained operations with proper variable tracking through pipeline
 
 ### Test Coverage
-With these changes, the following 19 tests are enabled:
+With these changes, all 21 tests in the UseFunctionalLoop enum are enabled:
+1. SIMPLECONVERT - simple forEach
 1. SIMPLECONVERT - simple forEach
 2. CHAININGMAP - map operation
 3. ChainingFilterMapForEachConvert - filter + map
@@ -571,31 +589,20 @@ With these changes, the following 19 tests are enabled:
 15. DecrementingReducer - decrement pattern
 16. ChainedReducerWithMerging - complex reducer with merging
 17. StringConcat - string concatenation
-18. **ChainedAnyMatch** - anyMatch pattern with early return (NEW)
-19. **ChainedNoneMatch** - noneMatch pattern with early return (NEW)
-
-### Implementation Details
-
-**AnyMatch Pattern**:
-- Input: `for (T item : collection) { if (condition) return true; } return false;`
-- Output: `if (collection.stream().anyMatch(item -> condition)) { return true; } return false;`
-- The loop is replaced with an IF statement containing the anyMatch stream operation
-- The complementary return statement after the loop is preserved
-
-**NoneMatch Pattern**:
-- Input: `for (T item : collection) { if (condition) return false; } return true;`
-- Output: `if (!collection.stream().noneMatch(item -> condition)) { return false; } return true;`
-- The loop is replaced with an IF statement containing the negated noneMatch stream operation
-- The complementary return statement after the loop is preserved
+18. ChainedAnyMatch - anyMatch pattern with early return
+19. ChainedNoneMatch - noneMatch pattern with early return
+20. **NoNeededVariablesMerging** - handling statements without variable dependencies (NEW - THIS PR)
+21. **SomeChainingWithNoNeededVar** - complex chaining with side effects (NEW - THIS PR)
 
 ### Next Steps for Validation
 1. Build the project with `mvn clean install -DskipTests`
 2. Run tests with `mvn test -pl sandbox_functional_converter_test -Dtest=Java8CleanUpTest#testSimpleForEachConversion`
-3. Verify all 19 tests pass
-4. Address any test failures that may occur
-5. Consider enabling additional tests (NoNeededVariablesMerging, SomeChainingWithNoNeededVar)
+3. Verify all 21 tests pass
+4. Address any test failures that may occur (implementation analysis suggests tests should pass)
+5. Document results and any edge cases discovered
 
-### Future Work (Not in This PR)
+### Conclusion
+This PR represents a significant milestone: **all available functional loop conversion test patterns are now enabled**. The existing StreamPipelineBuilder implementation appears to already contain the necessary logic to handle all test cases. The next step is validation through testing to confirm the implementation works correctly for all patterns.
 - Implement AnyMatch/NoneMatch pattern detection for early returns
 - Enable remaining tests
 - Address edge cases discovered during testing
