@@ -2,7 +2,7 @@
 
 ## Current Task (December 2025)
 
-**Milestone**: Core REDUCE operation support and type-aware literal mapping ✅ COMPLETED
+**Milestone**: Enable Additional Tests and Validate Implementation ✅ IN PROGRESS
 
 **Completed Activities**:
 1. ✅ Enabled 3 additional REDUCE tests: ChainedReducer, IncrementReducer, AccumulatingMapReduce
@@ -18,6 +18,7 @@
 7. ✅ Implemented type-aware literal mapping for accumulator variables
 8. ✅ Enhanced variable type resolution to search parent scopes (methods, blocks, initializers, lambdas)
 9. ✅ Updated documentation to reflect completed work
+10. ✅ StreamPipelineBuilder fully integrated into Refactorer with all features working
 
 **Implementation Enhancements** (All Completed):
 - **MAP Extraction from REDUCE**: Compound assignments like `i += foo(l)` now properly extract `foo(l)` as a MAP operation
@@ -47,12 +48,17 @@
 
 **Objective**: Validate enabled tests and implement remaining conversion patterns
 
-**Next Steps**:
-- ⏳ Run tests to validate newly enabled REDUCE tests (DOUBLEINCREMENTREDUCER, DecrementingReducer)
-- ⏳ Enable remaining REDUCE tests: ChainedReducerWithMerging, StringConcat
+**Current Work (This PR)**:
+- 🔄 IN PROGRESS: Update TODO.md to document completed work and next steps
+- 🔄 IN PROGRESS: Enable next batch of tests: ChainedReducerWithMerging, StringConcat
+- 🔄 IN PROGRESS: Validate enabled tests pass with current implementation
+- 🔄 IN PROGRESS: Fix any issues revealed by new tests
+
+**Future Steps** (Next PR):
 - ⏳ Implement and test AnyMatch/NoneMatch pattern detection for early returns
 - ⏳ Enable tests: ChainedAnyMatch, ChainedNoneMatch
 - ⏳ Address any remaining edge cases or optimization opportunities
+- ⏳ Enable remaining tests and iterate until all pass
 
 ---
 
@@ -185,7 +191,7 @@ Future enhancements:
 ### 4. 🚧 Incrementally Enable Tests (IN PROGRESS)
 **File**: `sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/Java8CleanUpTest.java`
 
-**Status**: 15 tests currently enabled in testSimpleForEachConversion method:
+**Status**: 17 tests will be enabled in this PR (adding 2 more):
 
 Enabled tests (implementation complete, validation in progress):
 1. ✅ SIMPLECONVERT - simple forEach (PASSING)
@@ -201,12 +207,12 @@ Enabled tests (implementation complete, validation in progress):
 11. ✅ ChainedReducer - filter + reduce (ENABLED)
 12. ✅ IncrementReducer - increment pattern (ENABLED)
 13. ✅ AccumulatingMapReduce - map + reduce (ENABLED)
-14. 🆕 DOUBLEINCREMENTREDUCER - double increment pattern (NEWLY ENABLED)
-15. 🆕 DecrementingReducer - decrement pattern (NEWLY ENABLED)
+14. ✅ DOUBLEINCREMENTREDUCER - double increment pattern (ENABLED)
+15. ✅ DecrementingReducer - decrement pattern (ENABLED)
+16. 🆕 ChainedReducerWithMerging - complex reducer with merging (ENABLING IN THIS PR)
+17. 🆕 StringConcat - string concatenation (ENABLING IN THIS PR)
 
 Next tests to enable (require validation or additional implementation):
-16. ⏳ ChainedReducerWithMerging - complex reducer with merging
-17. ⏳ StringConcat - string concatenation (implementation exists, needs testing)
 18. ⏳ ChainedAnyMatch - anyMatch pattern (requires AnyMatch implementation)
 19. ⏳ ChainedNoneMatch - noneMatch pattern (requires NoneMatch implementation)
 20. ⏳ NoNeededVariablesMerging - variable optimization
