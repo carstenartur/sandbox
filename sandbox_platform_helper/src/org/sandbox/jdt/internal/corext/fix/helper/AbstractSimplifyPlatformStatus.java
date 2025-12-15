@@ -15,7 +15,6 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.List;
 import java.util.Set;
-//import java.util.function.BiPredicate;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Status;
@@ -43,12 +42,12 @@ import org.sandbox.jdt.internal.corext.fix.SimplifyPlatformStatusFixCore;
  * @param <T> Type found in Visitor
  */
 public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
-	String methodname;
-	String istatus;
+	String methodName;
+	String expectedStatusLiteral;
 
-	public AbstractSimplifyPlatformStatus(String methodname, String istatus) {
-		this.methodname= methodname;
-		this.istatus= istatus;
+	public AbstractSimplifyPlatformStatus(String methodName, String expectedStatusLiteral) {
+		this.methodName= methodName;
+		this.expectedStatusLiteral= expectedStatusLiteral;
 	}
 
 	/**
@@ -73,35 +72,40 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 		try {
 			ReferenceHolder<ASTNode, Object> dataholder= new ReferenceHolder<>();
 			HelperVisitor.callClassInstanceCreationVisitor(Status.class, compilationUnit, dataholder, nodesprocessed, (visited, holder) -> {
-				if (nodesprocessed.contains(visited) || 
-//						(visited.arguments().size() != 3)&&
-//						(visited.arguments().size() != 4)&&
-						(visited.arguments().size() != 5)
-						) {
+				if (nodesprocessed.contains(visited) || (visited.arguments().size() != 5)) {
 					return false;
 				}
 				/**
-				 * new Status(INFO, callerClass, OK, message, null);
-				 * new Status(WARNING, callerClass, OK, message, null);
-				 * new Status(WARNING, callerClass, OK, message, exception);
-				 * new Status(ERROR, callerClass, OK, message, null);
-				 * new Status(ERROR, callerClass, OK, message, exception);
+				 * Expected pattern: new Status(severity, pluginId, IStatus.OK, message, throwable)
+				 * Where:
+				 *   - severity is IStatus.INFO, IStatus.WARNING, or IStatus.ERROR
+				 *   - pluginId is a String
+				 *   - code is IStatus.OK (mandatory for this transformation)
+				 *   - message is a String
+				 *   - throwable is a Throwable or null
 				 *
-				 *
-				 * IStatus status = new Status(IStatus.WARNING, "plugin id", IStatus.OK, "important message", e);
-				 * IStatus status = new Status(IStatus.WARNING, "plugin id", "important message", null);
-				 * IStatus status = new Status(IStatus.WARNING, "plugin id", "important message");
+				 * Transforms to: Status.info(message, throwable) / Status.warning(message, throwable) / Status.error(message, throwable)
 				 */
 				List<Expression> arguments= visited.arguments();
-				QualifiedName argstring3 = (QualifiedName) arguments.get(2);
-				if (!"IStatus.OK".equals(argstring3.toString())) { //$NON-NLS-1$
+				
+				// Safely check if argument at index 2 (code) is IStatus.OK
+				Expression codeArg= arguments.get(2);
+				if (!(codeArg instanceof QualifiedName)) {
 					return false;
 				}
-//				QualifiedName argstring5 = (QualifiedName) arguments.get(4);
-				QualifiedName argstring1 = (QualifiedName) arguments.get(0);
-//				String mybinding= argstring1.getFullyQualifiedName();
-				if (istatus.equals(argstring1.toString())) {
-					operations.add(fixcore.rewrite(visited,holder));
+				QualifiedName codeQualifiedName= (QualifiedName) codeArg;
+				if (!"IStatus.OK".equals(codeQualifiedName.toString())) { //$NON-NLS-1$
+					return false;
+				}
+				
+				// Safely check if argument at index 0 (severity) matches expected status literal
+				Expression severityArg= arguments.get(0);
+				if (!(severityArg instanceof QualifiedName)) {
+					return false;
+				}
+				QualifiedName severityQualifiedName= (QualifiedName) severityArg;
+				if (expectedStatusLiteral.equals(severityQualifiedName.toString())) {
+					operations.add(fixcore.rewrite(visited, holder));
 					nodesprocessed.add(visited);
 					return false;
 				}
@@ -120,43 +124,30 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 		ImportRemover remover= cuRewrite.getImportRemover();
 
 		/**
-		 * Add call to Status.warning(),Status.error() and Status.info()
+		 * Create call to Status.warning(), Status.error(), or Status.info()
 		 */
 		MethodInvocation staticCall= ast.newMethodInvocation();
 		staticCall.setExpression(ASTNodeFactory.newName(ast, Status.class.getSimpleName()));
-		staticCall.setName(ast.newSimpleName(methodname));
+		staticCall.setName(ast.newSimpleName(methodName));
+		
 		List<ASTNode> arguments= visited.arguments();
 		List<ASTNode> staticCallArguments= staticCall.arguments();
-//		int positionmessage= arguments.size() == 5 ? 3 : 2;
-		int positionmessage= 3;
+		
+		// Add message argument (always at position 3 for 5-argument constructor)
+		int messagePosition= 3;
 		staticCallArguments.add(ASTNodes.createMoveTarget(rewrite,
-				ASTNodes.getUnparenthesedExpression(arguments.get(positionmessage))));
-		ASTNode node2= arguments.get(2);
-		switch (arguments.size()) {
-		/**
-		 * new Status(IStatus.WARNING, JavaManipulation.ID_PLUGIN, IJavaStatusConstants.INTERNAL_ERROR, message, error)
-		 */
-		case 5:
-			ASTNode node4= arguments.get(4);
-			if (!node4.toString().equals("null") && node2.toString().equals("IStatus.OK")) { //$NON-NLS-1$ //$NON-NLS-2$
-				staticCallArguments.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(node4)));
+				ASTNodes.getUnparenthesedExpression(arguments.get(messagePosition))));
+		
+		// Add throwable argument if present (at position 4) and not null
+		if (arguments.size() == 5) {
+			ASTNode throwableArg= arguments.get(4);
+			ASTNode codeArg= arguments.get(2);
+			if (!throwableArg.toString().equals("null") && codeArg.toString().equals("IStatus.OK")) { //$NON-NLS-1$ //$NON-NLS-2$
+				staticCallArguments.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(throwableArg)));
 			}
-			break;
-		case 4:
-//			return;
-//			ASTNode node= arguments.get(3);
-//			if (!node.toString().equals("null")) { //$NON-NLS-1$
-//				staticCallArguments.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(node)));
-//			}
-			break;
-		case 3:
-//			return;
-		default:
-			break;
 		}
+		
 		ASTNodes.replaceButKeepComment(rewrite, visited, staticCall, group);
-//		QualifiedName stat= (QualifiedName) arguments.get(0);
-//		importRemover.removeImport(IStatus.class.getCanonicalName());
 		remover.registerRemovedNode(visited);
 		remover.applyRemoves(importRewrite);
 	}
