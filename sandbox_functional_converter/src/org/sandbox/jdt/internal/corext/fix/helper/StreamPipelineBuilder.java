@@ -614,29 +614,57 @@ public class StreamPipelineBuilder {
     
     /**
      * Attempts to determine the type name of a variable by searching for its declaration
-     * in the method containing the for-loop.
+     * in the method containing the for-loop and parent scopes.
      * 
      * @param varName the variable name to look up
      * @return the simple type name (e.g., "double", "int") or null if not found
      */
     private String getVariableType(String varName) {
-        // Walk up the AST to find the containing method or block
-        ASTNode parent = forLoop.getParent();
-        while (parent != null && !(parent instanceof org.eclipse.jdt.core.dom.MethodDeclaration) &&
-               !(parent instanceof org.eclipse.jdt.core.dom.Block)) {
-            parent = parent.getParent();
-        }
+        // Walk up the AST tree searching for the variable in each scope
+        ASTNode currentNode = forLoop.getParent();
         
-        if (parent == null) {
-            return null;
-        }
-        
-        // Search for variable declarations in the method/block
-        if (parent instanceof org.eclipse.jdt.core.dom.MethodDeclaration) {
-            org.eclipse.jdt.core.dom.MethodDeclaration method = (org.eclipse.jdt.core.dom.MethodDeclaration) parent;
-            return searchBlockForVariableType(method.getBody(), varName);
-        } else if (parent instanceof org.eclipse.jdt.core.dom.Block) {
-            return searchBlockForVariableType((org.eclipse.jdt.core.dom.Block) parent, varName);
+        while (currentNode != null) {
+            // Search in blocks
+            if (currentNode instanceof org.eclipse.jdt.core.dom.Block) {
+                org.eclipse.jdt.core.dom.Block block = (org.eclipse.jdt.core.dom.Block) currentNode;
+                String type = searchBlockForVariableType(block, varName);
+                if (type != null) {
+                    return type;
+                }
+            }
+            // Search in method bodies
+            else if (currentNode instanceof org.eclipse.jdt.core.dom.MethodDeclaration) {
+                org.eclipse.jdt.core.dom.MethodDeclaration method = (org.eclipse.jdt.core.dom.MethodDeclaration) currentNode;
+                if (method.getBody() != null) {
+                    String type = searchBlockForVariableType(method.getBody(), varName);
+                    if (type != null) {
+                        return type;
+                    }
+                }
+            }
+            // Search in initializer blocks (instance or static)
+            else if (currentNode instanceof org.eclipse.jdt.core.dom.Initializer) {
+                org.eclipse.jdt.core.dom.Initializer initializer = (org.eclipse.jdt.core.dom.Initializer) currentNode;
+                if (initializer.getBody() != null) {
+                    String type = searchBlockForVariableType(initializer.getBody(), varName);
+                    if (type != null) {
+                        return type;
+                    }
+                }
+            }
+            // Search in lambda expressions
+            else if (currentNode instanceof org.eclipse.jdt.core.dom.LambdaExpression) {
+                org.eclipse.jdt.core.dom.LambdaExpression lambda = (org.eclipse.jdt.core.dom.LambdaExpression) currentNode;
+                if (lambda.getBody() instanceof org.eclipse.jdt.core.dom.Block) {
+                    String type = searchBlockForVariableType((org.eclipse.jdt.core.dom.Block) lambda.getBody(), varName);
+                    if (type != null) {
+                        return type;
+                    }
+                }
+            }
+            
+            // Move up to parent scope
+            currentNode = currentNode.getParent();
         }
         
         return null;
