@@ -2,7 +2,7 @@
 
 ## Current Task (December 2025)
 
-**Objective**: Complete and validate REDUCE operation tests, enable additional test cases ✅ COMPLETED
+**Milestone**: Core REDUCE operation support and type-aware literal mapping ✅ COMPLETED
 
 **Completed Activities**:
 1. ✅ Enabled 3 additional REDUCE tests: ChainedReducer, IncrementReducer, AccumulatingMapReduce
@@ -16,7 +16,8 @@
    - Constructing chained pipelines with proper operation sequencing
 6. ✅ Enabled 2 more REDUCE tests: DOUBLEINCREMENTREDUCER, DecrementingReducer (15 total tests)
 7. ✅ Implemented type-aware literal mapping for accumulator variables
-8. ✅ Updated documentation to reflect completed work
+8. ✅ Enhanced variable type resolution to search parent scopes (methods, blocks, initializers, lambdas)
+9. ✅ Updated documentation to reflect completed work
 
 **Implementation Enhancements** (All Completed):
 - **MAP Extraction from REDUCE**: Compound assignments like `i += foo(l)` now properly extract `foo(l)` as a MAP operation
@@ -28,6 +29,7 @@
   - `long` → maps to `1L`
   - `int` → maps to `1`
   - This enables proper handling of INCREMENT/DECREMENT operations on different numeric types
+- **Robust Type Resolution**: Enhanced `getVariableType()` to walk up AST tree through all parent scopes and support multiple parent types
 - **StreamPipelineBuilder Architecture**: Complete implementation covering:
   - `analyze()` - Precondition checking and loop body parsing
   - `parseLoopBody()` - Recursive statement analysis with nested IF support
@@ -36,8 +38,14 @@
   - `detectReduceOperation()` - Pattern matching for all reducer types with type tracking
   - `getVariableNameFromPreviousOp()` - Variable dependency tracking
   - `requiresStreamPrefix()` - Smart decision on .stream() vs direct collection methods
-  - `getVariableType()` - Type resolution for accumulator variables
+  - `getVariableType()` - Type resolution for accumulator variables across parent scopes
   - `addMapBeforeReduce()` - Type-aware MAP insertion before REDUCE operations
+
+---
+
+## Next Milestone: Test Validation and Additional Patterns
+
+**Objective**: Validate enabled tests and implement remaining conversion patterns
 
 **Next Steps**:
 - ⏳ Run tests to validate newly enabled REDUCE tests (DOUBLEINCREMENTREDUCER, DecrementingReducer)
