@@ -215,7 +215,9 @@ public final class TestNameRefactorer {
 				}
 			}
 		} catch (JavaModelException e) {
-			throw new RuntimeException("Failed to get subclasses for type: " + typeBinding.getQualifiedName(), e);
+			System.err.println("Failed to get subclasses for type: " + typeBinding.getQualifiedName());
+			e.printStackTrace();
+			return new ArrayList<>();
 		}
 		return subclasses;
 	}
