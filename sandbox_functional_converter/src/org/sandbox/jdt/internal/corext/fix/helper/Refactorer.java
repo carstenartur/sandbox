@@ -42,12 +42,14 @@ public class Refactorer {
     private final ASTRewrite rewrite;
     private final PreconditionsChecker preconditions;
     private final AST ast;
+    private final org.eclipse.text.edits.TextEditGroup group;
 
-    public Refactorer(EnhancedForStatement forLoop, ASTRewrite rewrite, PreconditionsChecker preconditions) {
+    public Refactorer(EnhancedForStatement forLoop, ASTRewrite rewrite, PreconditionsChecker preconditions, org.eclipse.text.edits.TextEditGroup group) {
         this.forLoop = forLoop;
         this.rewrite = rewrite;
         this.preconditions = preconditions;
         this.ast = forLoop.getAST();
+        this.group = group;
     }
 
     /** (1) Prüft, ob ein gegebenes Statement ein Block mit genau einer Anweisung ist. */
@@ -151,7 +153,7 @@ public class Refactorer {
             forEachCall.arguments().add(forEachLambda);
             
             ExpressionStatement exprStmt = ast.newExpressionStatement(forEachCall);
-            rewrite.replace(forLoop, exprStmt, null);
+            rewrite.replace(forLoop, exprStmt, group);
             return;
         }
         
@@ -197,7 +199,7 @@ public class Refactorer {
         }
         
         ExpressionStatement exprStmt = ast.newExpressionStatement(pipeline);
-        rewrite.replace(forLoop, exprStmt, null);
+        rewrite.replace(forLoop, exprStmt, group);
     }
     
     /**
@@ -406,7 +408,7 @@ public class Refactorer {
         
         Statement replacement = builder.wrapPipeline(pipeline);
         if (replacement != null) {
-            rewrite.replace(forLoop, replacement, null);
+            rewrite.replace(forLoop, replacement, group);
         }
     }
   
