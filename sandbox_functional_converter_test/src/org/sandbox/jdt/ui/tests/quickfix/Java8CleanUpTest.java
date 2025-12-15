@@ -1201,7 +1201,9 @@ public class Java8CleanUpTest {
 		"DOUBLEINCREMENTREDUCER",
 		"DecrementingReducer",
 		"ChainedReducerWithMerging",
-		"StringConcat"
+		"StringConcat",
+		"ChainedAnyMatch",
+		"ChainedNoneMatch"
 	})
 	public void testSimpleForEachConversion(UseFunctionalLoop test) throws CoreException {
 		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null);

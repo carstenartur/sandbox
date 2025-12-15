@@ -41,6 +41,9 @@ public class PreconditionsChecker {
     private boolean iteratesOverIterable = false;
     private boolean hasReducer = false;
     private Statement reducerStatement = null;
+    private boolean isAnyMatchPattern = false;
+    private boolean isNoneMatchPattern = false;
+    private IfStatement earlyReturnIf = null;
 
     public PreconditionsChecker(Statement loop, CompilationUnit compilationUnit) {
         this.loop = loop;
@@ -50,7 +53,9 @@ public class PreconditionsChecker {
 
     /** (1) Prüft, ob die Schleife sicher in eine Stream-Operation umgewandelt werden kann. */
     public boolean isSafeToRefactor() {
-        return !throwsException && !containsBreak && !containsContinue && !containsReturn && !containsNEFs;
+        // Allow early returns if they match anyMatch/noneMatch patterns
+        boolean allowedReturn = containsReturn && (isAnyMatchPattern || isNoneMatchPattern);
+        return !throwsException && !containsBreak && !containsContinue && (!containsReturn || allowedReturn) && !containsNEFs;
     }
 
     /** (2) Überprüft, ob die Schleife eine Exception wirft. */
@@ -117,6 +122,37 @@ public class PreconditionsChecker {
      */
     public Statement getReducer() {
         return reducerStatement;
+    }
+    
+    /**
+     * Checks if the loop matches the anyMatch pattern.
+     * 
+     * <p>AnyMatch pattern: loop contains {@code if (condition) return true;}</p>
+     * 
+     * @return true if anyMatch pattern is detected
+     */
+    public boolean isAnyMatchPattern() {
+        return isAnyMatchPattern;
+    }
+    
+    /**
+     * Checks if the loop matches the noneMatch pattern.
+     * 
+     * <p>NoneMatch pattern: loop contains {@code if (condition) return false;}</p>
+     * 
+     * @return true if noneMatch pattern is detected
+     */
+    public boolean isNoneMatchPattern() {
+        return isNoneMatchPattern;
+    }
+    
+    /**
+     * Returns the IF statement containing the early return for anyMatch/noneMatch patterns.
+     * 
+     * @return the IF statement with early return, or null if no pattern detected
+     */
+    public IfStatement getEarlyReturnIf() {
+        return earlyReturnIf;
     }
 
     /** 
@@ -190,6 +226,9 @@ public class PreconditionsChecker {
         
         builder.build(loop);
         
+        // Detect anyMatch/noneMatch patterns
+        detectEarlyReturnPatterns();
+        
         analyzeEffectivelyFinalVariables();
     }
     
@@ -228,5 +267,110 @@ public class PreconditionsChecker {
     private ASTNode getEnclosingMethodBody(ASTNode node) {
         MethodDeclaration method = ASTNodes.getFirstAncestorOrNull(node, MethodDeclaration.class);
         return (method != null) ? method.getBody() : null;
+    }
+    
+    /**
+     * Detects anyMatch and noneMatch patterns in the loop.
+     * 
+     * <p>Patterns:
+     * <ul>
+     * <li>AnyMatch: {@code if (condition) return true;}</li>
+     * <li>NoneMatch: {@code if (condition) return false;}</li>
+     * </ul>
+     * 
+     * <p>These patterns must be the only statement with a return in the loop body.
+     */
+    private void detectEarlyReturnPatterns() {
+        if (!containsReturn || !(loop instanceof EnhancedForStatement)) {
+            return;
+        }
+        
+        EnhancedForStatement forLoop = (EnhancedForStatement) loop;
+        Statement body = forLoop.getBody();
+        
+        // Find all IF statements with return statements in the loop
+        final List<IfStatement> ifStatementsWithReturn = new ArrayList<>();
+        
+        // Use ASTVisitor to find IF statements
+        body.accept(new ASTVisitor() {
+            @Override
+            public boolean visit(IfStatement node) {
+                if (hasReturnInThenBranch(node)) {
+                    ifStatementsWithReturn.add(node);
+                }
+                return true;
+            }
+        });
+        
+        // For anyMatch/noneMatch, we expect exactly one IF with return
+        if (ifStatementsWithReturn.size() != 1) {
+            return;
+        }
+        
+        IfStatement ifStmt = ifStatementsWithReturn.get(0);
+        
+        // Check if the IF returns a boolean literal
+        BooleanLiteral returnValue = getReturnValueFromIf(ifStmt);
+        if (returnValue == null) {
+            return;
+        }
+        
+        // Determine pattern based on return value
+        if (returnValue.booleanValue()) {
+            // if (condition) return true; → anyMatch
+            isAnyMatchPattern = true;
+            earlyReturnIf = ifStmt;
+        } else {
+            // if (condition) return false; → noneMatch  
+            isNoneMatchPattern = true;
+            earlyReturnIf = ifStmt;
+        }
+    }
+    
+    /**
+     * Checks if the IF statement has a return in its then branch.
+     */
+    private boolean hasReturnInThenBranch(IfStatement ifStmt) {
+        Statement thenStmt = ifStmt.getThenStatement();
+        
+        // Direct return statement
+        if (thenStmt instanceof ReturnStatement) {
+            return true;
+        }
+        
+        // Block with single return statement
+        if (thenStmt instanceof Block) {
+            Block block = (Block) thenStmt;
+            if (block.statements().size() == 1 && block.statements().get(0) instanceof ReturnStatement) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Extracts the boolean literal value from a return statement in an IF.
+     * 
+     * @return the BooleanLiteral if the IF returns a boolean literal, null otherwise
+     */
+    private BooleanLiteral getReturnValueFromIf(IfStatement ifStmt) {
+        Statement thenStmt = ifStmt.getThenStatement();
+        ReturnStatement returnStmt = null;
+        
+        if (thenStmt instanceof ReturnStatement) {
+            returnStmt = (ReturnStatement) thenStmt;
+        } else if (thenStmt instanceof Block) {
+            Block block = (Block) thenStmt;
+            if (block.statements().size() == 1 && block.statements().get(0) instanceof ReturnStatement) {
+                returnStmt = (ReturnStatement) block.statements().get(0);
+            }
+        }
+        
+        if (returnStmt != null && returnStmt.getExpression() instanceof BooleanLiteral) {
+            return (BooleanLiteral) returnStmt.getExpression();
+        }
+        
+        return null;
     }
 }
