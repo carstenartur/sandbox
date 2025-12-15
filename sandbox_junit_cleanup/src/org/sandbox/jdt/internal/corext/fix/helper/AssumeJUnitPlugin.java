@@ -105,7 +105,7 @@ public class AssumeJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 				}
 				ASTNodes.replaceButKeepComment(rewriter,minv, newAssumeThatCall, group);
 			} else {
-				reorderParameters(minv, rewriter, group, ONEPARAM_ASSUMPTIONS, TWOPARAM_ASSUMPTIONS);
+				reorderParameters(minv, rewriter, group, ONEPARAM_ASSUMPTIONS, MULTI_PARAM_ASSUMPTIONS);
 				SimpleName newQualifier= ast.newSimpleName(ASSUMPTIONS);
 				Expression expression= minv.getExpression();
 				if (expression != null) {

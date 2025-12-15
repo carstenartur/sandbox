@@ -104,8 +104,6 @@ public final class DocumentHelper {
 
 			return change;
 
-		} catch (CoreException e) {
-			throw new RuntimeException("Error creating change for rewrite: " + e.getMessage(), e);
 		} catch (IllegalArgumentException e) {
 			throw new RuntimeException("Invalid argument in change for rewrite: " + e.getMessage(), e);
 		}
