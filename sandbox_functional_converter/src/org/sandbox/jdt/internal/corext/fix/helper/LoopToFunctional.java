@@ -55,35 +55,16 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 	public void rewrite(UseFunctionalCallFixCore upp, final EnhancedForStatement forLoop,
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
 		ASTRewrite rewrite = cuRewrite.getASTRewrite();
-//		AST ast = cuRewrite.getRoot().getAST();
-		/**
-		 * for (Integer l : ls){
-		 * 		  System.out.println(l);
-		 * 		}
-		 *
-		 * loopBody= {  System.out.println(l);	}
-		 *
-		 * parameter= Integer l
-		 *
-		 * expr= ls
-		 *
-		 */
-
-//		PreconditionsChecker pc = new PreconditionsChecker(loop, ast);
-//		Refactorer refactorer = new Refactorer(loop, ast, pc,rewrite);
-//		if (pc.isSafeToRefactor() && refactorer.isRefactorable()) {
-//			ASTNodes.replaceButKeepComment(rewrite, loop, refactorer.refactor(rewrite), group);
-//		}
 		
 		PreconditionsChecker pc = new PreconditionsChecker(forLoop, (CompilationUnit) forLoop.getRoot());
-        Refactorer refactorer = new Refactorer(forLoop, rewrite, pc);
-        if (pc.isSafeToRefactor() && refactorer.isRefactorable()) {
-            refactorer.refactor();
-            // Anwenden der Änderungen auf das Dokument
-            // Beispiel:
-            // TextEdit edits = rewrite.rewriteAST(document, null);
-            // edits.apply(document);
-        }
+		Refactorer refactorer = new Refactorer(forLoop, rewrite, pc, group);
+		
+		if (!pc.isSafeToRefactor() || !refactorer.isRefactorable()) {
+			// Loop cannot be safely refactored to functional style
+			return;
+		}
+		
+		refactorer.refactor();
 	}
 
 	@Override

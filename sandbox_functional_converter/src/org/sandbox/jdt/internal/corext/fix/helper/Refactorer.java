@@ -36,18 +36,22 @@ import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.text.edits.TextEditGroup;
 
 public class Refactorer {
     private final EnhancedForStatement forLoop;
     private final ASTRewrite rewrite;
     private final PreconditionsChecker preconditions;
     private final AST ast;
+    private final TextEditGroup group;
 
-    public Refactorer(EnhancedForStatement forLoop, ASTRewrite rewrite, PreconditionsChecker preconditions) {
+    public Refactorer(EnhancedForStatement forLoop, ASTRewrite rewrite, PreconditionsChecker preconditions, TextEditGroup group) {
         this.forLoop = forLoop;
         this.rewrite = rewrite;
         this.preconditions = preconditions;
         this.ast = forLoop.getAST();
+        this.group = group;
     }
 
     /** (1) Prüft, ob ein gegebenes Statement ein Block mit genau einer Anweisung ist. */
@@ -151,7 +155,7 @@ public class Refactorer {
             forEachCall.arguments().add(forEachLambda);
             
             ExpressionStatement exprStmt = ast.newExpressionStatement(forEachCall);
-            rewrite.replace(forLoop, exprStmt, null);
+            ASTNodes.replaceButKeepComment(rewrite, forLoop, exprStmt, group);
             return;
         }
         
@@ -197,7 +201,7 @@ public class Refactorer {
         }
         
         ExpressionStatement exprStmt = ast.newExpressionStatement(pipeline);
-        rewrite.replace(forLoop, exprStmt, null);
+        ASTNodes.replaceButKeepComment(rewrite, forLoop, exprStmt, group);
     }
     
     /**
@@ -406,7 +410,7 @@ public class Refactorer {
         
         Statement replacement = builder.wrapPipeline(pipeline);
         if (replacement != null) {
-            rewrite.replace(forLoop, replacement, null);
+            ASTNodes.replaceButKeepComment(rewrite, forLoop, replacement, group);
         }
     }
   
