@@ -111,7 +111,7 @@ public class Java8CleanUpTest {
 			        double len=0.;
 			        for(int i : ints)
 			            len++;
-			 
+
 			    }
 			}""",
 
@@ -135,7 +135,7 @@ public class Java8CleanUpTest {
 					        List<Integer> ints=new ArrayList<>();
 					        double len=0.;
 					        len = ints.stream().map(_item -> 1.0).reduce(len, (accumulator, _item) -> accumulator + 1);
-					 
+
 					    }
 					}"""),
 		ChainingFilterMapForEachConvert("""
@@ -158,8 +158,8 @@ public class Java8CleanUpTest {
 			                System.out.println(s);
 			            }
 			        }
-			 
-			 
+
+
 			    }
 			}""",
 
@@ -179,8 +179,8 @@ public class Java8CleanUpTest {
 					        ls.stream().filter(l -> (l!=null)).map(l -> l.toString()).forEachOrdered(s -> {
 					            System.out.println(s);
 					        });
-					 
-					 
+
+
 					    }
 					}"""),
 		SmoothLongerChaining("""
@@ -204,8 +204,8 @@ public class Java8CleanUpTest {
 			                System.out.println(s);
 			            }
 			        }
-			 
-			 
+
+
 			    }
 			}""",
 
@@ -225,8 +225,8 @@ public class Java8CleanUpTest {
 					        ls.stream().map(a -> new Integer(a.intValue())).filter(l -> (l!=null)).map(l -> l.toString()).forEachOrdered(s -> {
 					            System.out.println(s);
 					        });
-					 
-					 
+
+
 					    }
 					}"""),
 		NonFilteringIfChaining("""
@@ -252,8 +252,8 @@ public class Java8CleanUpTest {
 			                System.out.println("cucu");
 			            }
 			        }
-			 
-			 
+
+
 			    }
 			}""",
 
@@ -277,8 +277,8 @@ public class Java8CleanUpTest {
 					        }).forEachOrdered(_item -> {
 					            System.out.println("cucu");
 					        });
-					 
-					 
+
+
 					    }
 					}"""),
 		ContinuingIfFilterSingleStatement("""
@@ -348,12 +348,12 @@ public class Java8CleanUpTest {
 			            if(o==null)
 			                return true;
 			        }
-			 
+
 			        return false;
 
 
 			    }
-			 
+
 			    Object foo(Object o)
 			    {
 			        return o;
@@ -376,12 +376,12 @@ public class Java8CleanUpTest {
 					        if (ls.stream().map(l -> l.toString()).map(s -> foo(s)).anyMatch(o -> (o==null))) {
 					            return true;
 					        }
-					 
+
 					        return false;
 
 
 					    }
-					 
+
 					    Object foo(Object o)
 					    {
 					        return o;
@@ -407,12 +407,12 @@ public class Java8CleanUpTest {
 			            if(o==null)
 			                return false;
 			        }
-			 
+
 			        return true;
 
 
 			    }
-			 
+
 			    Object foo(Object o)
 			    {
 			        return o;
@@ -435,12 +435,12 @@ public class Java8CleanUpTest {
 					        if (!ls.stream().map(l -> l.toString()).map(s -> foo(s)).noneMatch(o -> (o==null))) {
 					            return false;
 					        }
-					 
+
 					        return true;
 
 
 					    }
-					 
+
 					    Object foo(Object o)
 					    {
 					        return o;
@@ -458,14 +458,14 @@ public class Java8CleanUpTest {
 			        new TestDemo().test(Arrays.asList(1, 2, 3,7));
 			    }
 
-			 
+
 			    public Boolean test(List<Integer> ls) throws Exception {
 			        Integer i=0;
 			        for(Integer l : ls)
 			        {
 			            System.out.println();
 			            System.out.println("");
-			 
+
 			        }
 			        System.out.println(i);
 			        return false;
@@ -474,7 +474,7 @@ public class Java8CleanUpTest {
 			    }
 			    private void foo(Object o, int i) throws Exception
 			    {
-			 
+
 			    }
 			}""",
 
@@ -490,7 +490,7 @@ public class Java8CleanUpTest {
 					        new TestDemo().test(Arrays.asList(1, 2, 3,7));
 					    }
 
-					 
+
 					    public Boolean test(List<Integer> ls) throws Exception {
 					        Integer i=0;
 					        ls.stream().map(_item -> {
@@ -506,7 +506,7 @@ public class Java8CleanUpTest {
 					    }
 					    private void foo(Object o, int i) throws Exception
 					    {
-					 
+
 					    }
 					}"""),
 		SomeChainingWithNoNeededVar("""
@@ -536,12 +536,12 @@ public class Java8CleanUpTest {
 			            }
 			            System.out.println();
 			        }
-			 
+
 			        return true;
 
 
 			    }
-			 
+
 			    Object foo(Object o)
 			    {
 			        return o;
@@ -575,12 +575,12 @@ public class Java8CleanUpTest {
 					        }).forEachOrdered(_item -> {
 					            System.out.println();
 					        });
-					 
+
 					        return true;
 
 
 					    }
-					 
+
 					    Object foo(Object o)
 					    {
 					        return o;
@@ -598,7 +598,7 @@ public class Java8CleanUpTest {
 			        new TestDemo().test(Arrays.asList(1, 2, 3,7));
 			    }
 
-			 
+
 			    public Boolean test(List<Integer> ls) {
 			        Integer i=0;
 			        for(Integer l : ls)
@@ -622,7 +622,7 @@ public class Java8CleanUpTest {
 					        new TestDemo().test(Arrays.asList(1, 2, 3,7));
 					    }
 
-					 
+
 					    public Boolean test(List<Integer> ls) {
 					        Integer i=0;
 					        i = ls.stream().map(_item -> 1).reduce(i, Integer::sum);
@@ -644,7 +644,7 @@ public class Java8CleanUpTest {
 			        new TestDemo().test(Arrays.asList(1, 2, 3,7));
 			    }
 
-			 
+
 			    public Boolean test(List<Integer> ls) {
 			        Integer i=0;
 			        for(Integer l : ls)
@@ -654,7 +654,7 @@ public class Java8CleanUpTest {
 			                foo(l);
 			                i++;
 			            }
-			 
+
 			        }
 			        System.out.println(i);
 			        return true;
@@ -663,7 +663,7 @@ public class Java8CleanUpTest {
 			    }
 			    private void foo(Object o)
 			    {
-			 
+
 			    }
 			}""",
 
@@ -679,7 +679,7 @@ public class Java8CleanUpTest {
 					        new TestDemo().test(Arrays.asList(1, 2, 3,7));
 					    }
 
-					 
+
 					    public Boolean test(List<Integer> ls) {
 					        Integer i=0;
 					        i = ls.stream().filter(l -> (l!=null)).map(l -> {
@@ -693,7 +693,7 @@ public class Java8CleanUpTest {
 					    }
 					    private void foo(Object o)
 					    {
-					 
+
 					    }
 					}"""),
 		ChainedReducerWithMerging("""
@@ -708,7 +708,7 @@ public class Java8CleanUpTest {
 			        new TestDemo().test(Arrays.asList(1, 2, 3,7));
 			    }
 
-			 
+
 			    public Boolean test(List<Integer> ls) {
 			        Integer i=0;
 			        for(Integer l : ls)
@@ -721,7 +721,7 @@ public class Java8CleanUpTest {
 			                foo(l);
 			                i--;
 			            }
-			 
+
 			        }
 			        System.out.println(i);
 			        return true;
@@ -730,7 +730,7 @@ public class Java8CleanUpTest {
 			    }
 			    private void foo(Object o)
 			    {
-			 
+
 			    }
 			}""",
 
@@ -746,7 +746,7 @@ public class Java8CleanUpTest {
 					        new TestDemo().test(Arrays.asList(1, 2, 3,7));
 					    }
 
-					 
+
 					    public Boolean test(List<Integer> ls) {
 					        Integer i=0;
 					        i = ls.stream().map(l -> {
@@ -765,7 +765,7 @@ public class Java8CleanUpTest {
 					    }
 					    private void foo(Object o)
 					    {
-					 
+
 					    }
 					}"""),
 		IncrementReducer("package test1;\n"
@@ -962,10 +962,10 @@ public class Java8CleanUpTest {
 			                System.out.println(len2);
 			                System.out.println();
 			            }
-			 
+
 			        }
 			        return false;
-			 
+
 			    }
 			}""",
 
@@ -999,7 +999,7 @@ public class Java8CleanUpTest {
 					            }
 					        });
 					        return false;
-					 
+
 					    }
 					}"""),
 		BeautificationWorks("""
@@ -1027,10 +1027,10 @@ public class Java8CleanUpTest {
 			            String s = "foo";
 			            s=s.toString();
 			            System.out.println(s);
-			 
+
 			        }
 			        return false;
-			 
+
 			    }
 			}""",
 
@@ -1058,7 +1058,7 @@ public class Java8CleanUpTest {
 					            System.out.println(s);
 					        });
 					        return false;
-					 
+
 					    }
 					}"""),
 		BeautificationWorks2("""
@@ -1086,10 +1086,10 @@ public class Java8CleanUpTest {
 			            String s = "foo";
 			            s=s.toString();
 			            System.out.println();
-			 
+
 			        }
 			        return false;
-			 
+
 			    }
 			}""",
 
@@ -1117,7 +1117,7 @@ public class Java8CleanUpTest {
 					            System.out.println();
 					        });
 					        return false;
-					 
+
 					    }
 					}"""),
 		DecrementingReducer("""
@@ -1143,7 +1143,7 @@ public class Java8CleanUpTest {
 			        for(String str : strs)
 			            i-=1;
 			        return false;
-			 
+
 			    }
 			}""",
 
@@ -1169,7 +1169,7 @@ public class Java8CleanUpTest {
 					        int j = 0;
 					        i = strs.stream().map(_item -> 1).reduce(i, (accumulator, _item) -> accumulator - _item);
 					        return false;
-					 
+
 					    }
 					}""");
 
@@ -1249,7 +1249,7 @@ public class Java8CleanUpTest {
 				        for(String str:strs)
 				            i++;
 				        return false;
-				 
+
 				    }
 				}""",
 
@@ -1265,7 +1265,7 @@ public class Java8CleanUpTest {
 				        new TestDemo().test(Arrays.asList(1, 2, 3,7));
 				    }
 
-				 
+
 				    public Boolean test(List<Integer> ls) {
 				        Integer i=0;
 				        for(Integer l : ls)
@@ -1277,7 +1277,7 @@ public class Java8CleanUpTest {
 				            {
 				                i++;
 				            }
-				 
+
 				        }
 				        System.out.println(i);
 				        return true;
@@ -1286,7 +1286,7 @@ public class Java8CleanUpTest {
 				    }
 				    private void foo(Object o, int i)
 				    {
-				 
+
 				    }
 				}""",
 
@@ -1302,7 +1302,7 @@ public class Java8CleanUpTest {
 				        new TestDemo().test(Arrays.asList(1, 2, 3,7));
 				    }
 
-				 
+
 				    public Boolean test(List<Integer> ls) {
 				        Integer i=0;
 				        for(Integer l : ls)
@@ -1311,7 +1311,7 @@ public class Java8CleanUpTest {
 				            {
 				                break;
 				            }
-				 
+
 				        }
 				        System.out.println(i);
 				        return true;
@@ -1320,7 +1320,7 @@ public class Java8CleanUpTest {
 				    }
 				    private void foo(Object o, int i)
 				    {
-				 
+
 				    }
 				}""",
 
@@ -1336,7 +1336,7 @@ public class Java8CleanUpTest {
 				        new TestDemo().test(Arrays.asList(1, 2, 3,7));
 				    }
 
-				 
+
 				    public int test(List<Integer> ls) {
 				        Integer i=0;
 				        for(Integer l : ls)
@@ -1345,7 +1345,7 @@ public class Java8CleanUpTest {
 				            {
 				                return 0;
 				            }
-				 
+
 				        }
 				        System.out.println(i);
 				        return 1;
@@ -1354,7 +1354,7 @@ public class Java8CleanUpTest {
 				    }
 				    private void foo(Object o, int i)
 				    {
-				 
+
 				    }
 				}""",
 
@@ -1370,7 +1370,7 @@ public class Java8CleanUpTest {
 				        new TestDemo().test(Arrays.asList(1, 2, 3,7));
 				    }
 
-				 
+
 				    public Boolean test(List<Integer> ls) {
 				        Integer i=0;
 				        for(Integer l : ls)
@@ -1381,7 +1381,7 @@ public class Java8CleanUpTest {
 				            }
 				            if(l.toString()==null)
 				                return true;
-				 
+
 				        }
 				        System.out.println(i);
 				        return false;
@@ -1390,7 +1390,7 @@ public class Java8CleanUpTest {
 				    }
 				    private void foo(Object o, int i)
 				    {
-				 
+
 				    }
 				}""",
 
@@ -1406,7 +1406,7 @@ public class Java8CleanUpTest {
 				        new TestDemo().test(Arrays.asList(1, 2, 3,7));
 				    }
 
-				 
+
 				    public Boolean test(List<Integer> ls) {
 				        Integer i=0;
 				        label:
@@ -1418,7 +1418,7 @@ public class Java8CleanUpTest {
 				            }
 				            if(l.toString()==null)
 				                return true;
-				 
+
 				        }
 				        System.out.println(i);
 				        return false;
@@ -1427,7 +1427,7 @@ public class Java8CleanUpTest {
 				    }
 				    private void foo(Object o, int i)
 				    {
-				 
+
 				    }
 				}""",
 
@@ -1443,10 +1443,10 @@ public class Java8CleanUpTest {
 				        new TestDemo().test(Arrays.asList(1, 2, 3,7));
 				    }
 
-				 
+
 				    public Boolean test(List<Integer> ls) {
 				        Integer i=0;
-				 
+
 				        for(Integer l : ls)
 				        {
 				            if(l==null)
@@ -1455,7 +1455,7 @@ public class Java8CleanUpTest {
 				            }
 				            else if(l.toString()==null)
 				                return true;
-				 
+
 				        }
 				        System.out.println(i);
 				        return false;
@@ -1464,7 +1464,7 @@ public class Java8CleanUpTest {
 				    }
 				    private void foo(Object o, int i)
 				    {
-				 
+
 				    }
 				}""",
 
@@ -1480,10 +1480,10 @@ public class Java8CleanUpTest {
 				        new TestDemo().test(Arrays.asList(1, 2, 3,7));
 				    }
 
-				 
+
 				    public Boolean test(List<Integer> ls) throws Exception {
 				        Integer i=0;
-				 
+
 				        for(Integer l : ls)
 				        {
 				            foo(l,1);
@@ -1493,7 +1493,7 @@ public class Java8CleanUpTest {
 				            }
 				            else if(l.toString()==null)
 				                return true;
-				 
+
 				        }
 				        System.out.println(i);
 				        return false;
@@ -1502,7 +1502,7 @@ public class Java8CleanUpTest {
 				    }
 				    private void foo(Object o, int i) throws Exception
 				    {
-				 
+
 				    }
 				}"""
 			,
@@ -1519,14 +1519,14 @@ public class Java8CleanUpTest {
 				        new TestDemo().test(Arrays.asList(1, 2, 3,7));
 				    }
 
-				 
+
 				    public Boolean test(List<Integer> ls) throws Exception {
 				        Integer i=0;
-				 
+
 				        for(Integer l : ls)
 				        {
 				            throw new Exception();
-				 
+
 				        }
 				        System.out.println(i);
 				        return false;
@@ -1535,7 +1535,7 @@ public class Java8CleanUpTest {
 				    }
 				    private void foo(Object o, int i) throws Exception
 				    {
-				 
+
 				    }
 				}"""
 			,
@@ -1580,7 +1580,7 @@ public class Java8CleanUpTest {
 				            }
 				            //j++;
 				        }
-				 
+
 				    }
 				}"""
 			,
@@ -1613,7 +1613,7 @@ public class Java8CleanUpTest {
 				            System.out.println("gugu");
 				        }
 				        return false;
-				 
+
 				    }
 				}"""
 			,
@@ -1645,7 +1645,7 @@ public class Java8CleanUpTest {
 				            }
 				        }
 				        return;
-				 
+
 				    }
 				}"""
 
