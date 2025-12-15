@@ -62,6 +62,7 @@ public class StreamPipelineBuilder {
     private boolean analyzed = false;
     private boolean convertible = false;
     private String accumulatorVariable = null;
+    private String accumulatorType = null;
 
     /**
      * Creates a new StreamPipelineBuilder for the given for-loop.
@@ -235,7 +236,7 @@ public class StreamPipelineBuilder {
     
     /**
      * Adds a MAP operation before a REDUCE operation based on the reducer type.
-     * For INCREMENT/DECREMENT: maps to 1
+     * For INCREMENT/DECREMENT: maps to 1 (or 1.0 for double types)
      * For SUM/PRODUCT/STRING_CONCAT: extracts and maps the RHS expression
      * 
      * @param ops the list to add the MAP operation to
@@ -247,10 +248,38 @@ public class StreamPipelineBuilder {
                                      Statement stmt, String currentVarName) {
         if (reduceOp.getReducerType() == ProspectiveOperation.ReducerType.INCREMENT ||
             reduceOp.getReducerType() == ProspectiveOperation.ReducerType.DECREMENT) {
-            // Create a MAP operation that maps each item to 1
-            org.eclipse.jdt.core.dom.NumberLiteral one = ast.newNumberLiteral("1");
+            // Create a MAP operation that maps each item to 1 (or 1.0 for double types)
+            Expression mapExpr;
+            if (accumulatorType != null && accumulatorType.equals("double")) {
+                mapExpr = ast.newNumberLiteral("1.0");
+            } else if (accumulatorType != null && accumulatorType.equals("float")) {
+                mapExpr = ast.newNumberLiteral("1.0f");
+            } else if (accumulatorType != null && accumulatorType.equals("long")) {
+                mapExpr = ast.newNumberLiteral("1L");
+            } else if (accumulatorType != null && accumulatorType.equals("byte")) {
+                // (byte) 1
+                org.eclipse.jdt.core.dom.CastExpression cast = ast.newCastExpression();
+                cast.setType(ast.newPrimitiveType(org.eclipse.jdt.core.dom.PrimitiveType.BYTE));
+                cast.setExpression(ast.newNumberLiteral("1"));
+                mapExpr = cast;
+            } else if (accumulatorType != null && accumulatorType.equals("short")) {
+                // (short) 1
+                org.eclipse.jdt.core.dom.CastExpression cast = ast.newCastExpression();
+                cast.setType(ast.newPrimitiveType(org.eclipse.jdt.core.dom.PrimitiveType.SHORT));
+                cast.setExpression(ast.newNumberLiteral("1"));
+                mapExpr = cast;
+            } else if (accumulatorType != null && accumulatorType.equals("char")) {
+                // (char) 1
+                org.eclipse.jdt.core.dom.CastExpression cast = ast.newCastExpression();
+                cast.setType(ast.newPrimitiveType(org.eclipse.jdt.core.dom.PrimitiveType.CHAR));
+                cast.setExpression(ast.newNumberLiteral("1"));
+                mapExpr = cast;
+            } else {
+                mapExpr = ast.newNumberLiteral("1");
+            }
+            
             ProspectiveOperation mapOp = new ProspectiveOperation(
-                one,
+                mapExpr,
                 ProspectiveOperation.OperationType.MAP,
                 "_item");
             ops.add(mapOp);
@@ -300,6 +329,7 @@ public class StreamPipelineBuilder {
                 }
                 
                 accumulatorVariable = varName;
+                accumulatorType = getVariableType(varName);
                 return new ProspectiveOperation(stmt, varName, reducerType);
             }
         }
@@ -320,6 +350,7 @@ public class StreamPipelineBuilder {
                 }
                 
                 accumulatorVariable = varName;
+                accumulatorType = getVariableType(varName);
                 return new ProspectiveOperation(stmt, varName, reducerType);
             }
         }
@@ -345,6 +376,7 @@ public class StreamPipelineBuilder {
                 }
                 
                 accumulatorVariable = varName;
+                accumulatorType = getVariableType(varName);
                 return new ProspectiveOperation(stmt, varName, reducerType);
             }
         }
@@ -578,5 +610,129 @@ public class StreamPipelineBuilder {
         negation.setOperator(PrefixExpression.Operator.NOT);
         negation.setOperand((Expression) ASTNode.copySubtree(ast, condition));
         return negation;
+    }
+    
+    /**
+     * Attempts to determine the type name of a variable by searching for its declaration
+     * in the method containing the for-loop and parent scopes.
+     * 
+     * @param varName the variable name to look up
+     * @return the simple type name (e.g., "double", "int") or null if not found
+     */
+    private String getVariableType(String varName) {
+        // Walk up the AST tree searching for the variable in each scope
+        ASTNode currentNode = forLoop.getParent();
+        
+        while (currentNode != null) {
+            // Search in blocks
+            if (currentNode instanceof org.eclipse.jdt.core.dom.Block) {
+                org.eclipse.jdt.core.dom.Block block = (org.eclipse.jdt.core.dom.Block) currentNode;
+                String type = searchBlockForVariableType(block, varName);
+                if (type != null) {
+                    return type;
+                }
+            }
+            // Search in method bodies
+            else if (currentNode instanceof org.eclipse.jdt.core.dom.MethodDeclaration) {
+                org.eclipse.jdt.core.dom.MethodDeclaration method = (org.eclipse.jdt.core.dom.MethodDeclaration) currentNode;
+                if (method.getBody() != null) {
+                    String type = searchBlockForVariableType(method.getBody(), varName);
+                    if (type != null) {
+                        return type;
+                    }
+                }
+            }
+            // Search in initializer blocks (instance or static)
+            else if (currentNode instanceof org.eclipse.jdt.core.dom.Initializer) {
+                org.eclipse.jdt.core.dom.Initializer initializer = (org.eclipse.jdt.core.dom.Initializer) currentNode;
+                if (initializer.getBody() != null) {
+                    String type = searchBlockForVariableType(initializer.getBody(), varName);
+                    if (type != null) {
+                        return type;
+                    }
+                }
+            }
+            // Search in lambda expressions
+            else if (currentNode instanceof org.eclipse.jdt.core.dom.LambdaExpression) {
+                org.eclipse.jdt.core.dom.LambdaExpression lambda = (org.eclipse.jdt.core.dom.LambdaExpression) currentNode;
+                if (lambda.getBody() instanceof org.eclipse.jdt.core.dom.Block) {
+                    String type = searchBlockForVariableType((org.eclipse.jdt.core.dom.Block) lambda.getBody(), varName);
+                    if (type != null) {
+                        return type;
+                    }
+                }
+            }
+            
+            // Move up to parent scope
+            currentNode = currentNode.getParent();
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Searches a block for a variable declaration and returns its type.
+     * 
+     * @param block the block to search
+     * @param varName the variable name to find
+     * @return the simple type name or null if not found
+     */
+    private String searchBlockForVariableType(org.eclipse.jdt.core.dom.Block block, String varName) {
+        if (block == null) {
+            return null;
+        }
+        
+        for (Object stmtObj : block.statements()) {
+            if (stmtObj instanceof VariableDeclarationStatement) {
+                VariableDeclarationStatement varDecl = (VariableDeclarationStatement) stmtObj;
+                for (Object fragObj : varDecl.fragments()) {
+                    if (fragObj instanceof VariableDeclarationFragment) {
+                        VariableDeclarationFragment frag = (VariableDeclarationFragment) fragObj;
+                        if (frag.getName().getIdentifier().equals(varName)) {
+                            org.eclipse.jdt.core.dom.Type type = varDecl.getType();
+                            // Robustly extract the simple type name
+                            if (type.isPrimitiveType()) {
+                                // For primitive types: int, double, etc.
+                                return ((org.eclipse.jdt.core.dom.PrimitiveType) type).getPrimitiveTypeCode().toString();
+                            } else if (type.isSimpleType()) {
+                                // For reference types: get the simple name
+                                org.eclipse.jdt.core.dom.SimpleType simpleType = (org.eclipse.jdt.core.dom.SimpleType) type;
+                                // Try to use binding if available
+                                org.eclipse.jdt.core.dom.ITypeBinding binding = simpleType.resolveBinding();
+                                if (binding != null) {
+                                    return binding.getName();
+                                } else {
+                                    return simpleType.getName().getFullyQualifiedName();
+                                }
+                            } else if (type.isArrayType()) {
+                                // For array types, get the element type recursively and append "[]"
+                                org.eclipse.jdt.core.dom.ArrayType arrayType = (org.eclipse.jdt.core.dom.ArrayType) type;
+                                org.eclipse.jdt.core.dom.Type elementType = arrayType.getElementType();
+                                String elementTypeName;
+                                if (elementType.isPrimitiveType()) {
+                                    elementTypeName = ((org.eclipse.jdt.core.dom.PrimitiveType) elementType).getPrimitiveTypeCode().toString();
+                                } else if (elementType.isSimpleType()) {
+                                    org.eclipse.jdt.core.dom.SimpleType simpleType = (org.eclipse.jdt.core.dom.SimpleType) elementType;
+                                    org.eclipse.jdt.core.dom.ITypeBinding binding = simpleType.resolveBinding();
+                                    if (binding != null) {
+                                        elementTypeName = binding.getName();
+                                    } else {
+                                        elementTypeName = simpleType.getName().getFullyQualifiedName();
+                                    }
+                                } else {
+                                    // Fallback for other types
+                                    elementTypeName = elementType.toString();
+                                }
+                                return elementTypeName + "[]";
+                            } else {
+                                // Fallback for other types (e.g., parameterized, qualified, etc.)
+                                return type.toString();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return null;
     }
 }
