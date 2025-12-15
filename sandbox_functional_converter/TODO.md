@@ -66,14 +66,15 @@
 **Objective**: Validate all enabled tests and implement any remaining conversion patterns
 
 **Current Work (This PR)**:
-- ✅ COMPLETED: Implemented AnyMatch/NoneMatch pattern detection for early returns
-- ✅ COMPLETED: Enabled tests: ChainedAnyMatch, ChainedNoneMatch (19 tests total)
-- ✅ COMPLETED: Update TODO.md to document completed work
+- ✅ COMPLETED: Implemented AnyMatch/NoneMatch pattern detection for early returns (previous PR)
+- ✅ COMPLETED: Enabled tests: ChainedAnyMatch, ChainedNoneMatch (19 tests total - previous PR)
+- ✅ COMPLETED: Enabled NoNeededVariablesMerging test (20th test)
+- ✅ COMPLETED: Enabled SomeChainingWithNoNeededVar test (21st test)
+- 🔄 IN PROGRESS: Verify StreamPipelineBuilder handles statements without variable dependencies
 - 🔄 IN PROGRESS: Run tests to validate implementation
-- 🔄 IN PROGRESS: Fix any issues revealed by new tests
+- 🔄 IN PROGRESS: Fix any issues revealed by newly enabled tests
 
 **Future Steps** (Next PR):
-- ⏳ Consider enabling additional tests (NoNeededVariablesMerging, SomeChainingWithNoNeededVar)
 - ⏳ Address any edge cases or optimization opportunities discovered during testing
 - ⏳ Continue iterating until all feasible tests pass
 - ⏳ Document any patterns that cannot be converted and why
@@ -216,10 +217,10 @@ Completed enhancements:
 - ✅ REDUCE operation support - COMPLETED
 - ✅ AnyMatch/NoneMatch pattern detection - COMPLETED
 
-### 4. ✅ Incrementally Enable Tests (COMPLETED - 19 TESTS ENABLED)
+### 4. ✅ Incrementally Enable Tests (IN PROGRESS - 21 TESTS ENABLED)
 **File**: `sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/Java8CleanUpTest.java`
 
-**Status**: 19 tests are now enabled (added ChainedAnyMatch, ChainedNoneMatch):
+**Status**: 21 tests are now enabled (added NoNeededVariablesMerging, SomeChainingWithNoNeededVar):
 
 Enabled tests (implementation complete, validation in progress):
 1. ✅ SIMPLECONVERT - simple forEach
@@ -239,12 +240,12 @@ Enabled tests (implementation complete, validation in progress):
 15. ✅ DecrementingReducer - decrement pattern
 16. ✅ ChainedReducerWithMerging - complex reducer with merging
 17. ✅ StringConcat - string concatenation
-18. ✅ ChainedAnyMatch - anyMatch pattern with early return (NEWLY ENABLED)
-19. ✅ ChainedNoneMatch - noneMatch pattern with early return (NEWLY ENABLED)
+18. ✅ ChainedAnyMatch - anyMatch pattern with early return
+19. ✅ ChainedNoneMatch - noneMatch pattern with early return
+20. 🔄 NoNeededVariablesMerging - variable optimization (NEWLY ENABLED - THIS PR)
+21. 🔄 SomeChainingWithNoNeededVar - chaining without variable tracking (NEWLY ENABLED - THIS PR)
 
-Next tests to enable (require additional validation or implementation):
-20. ⏳ NoNeededVariablesMerging - variable optimization
-21. ⏳ SomeChainingWithNoNeededVar - chaining without variable tracking
+All tests from UseFunctionalLoop enum are now enabled!
 
 For each test:
 1. Enable the test by adding it to `@EnumSource(value = UseFunctionalLoop.class, names = {"SIMPLECONVERT", "CHAININGMAP", ...})`
@@ -509,51 +510,28 @@ See: `sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/Ja
 ## Recent Changes (December 2025 - This PR)
 
 ### Summary
-This PR focused on implementing anyMatch/noneMatch pattern detection and enabling ChainedAnyMatch and ChainedNoneMatch tests.
+This PR continues the functional loop conversion implementation by enabling the final two remaining tests: NoNeededVariablesMerging and SomeChainingWithNoNeededVar. With these additions, all 21 test cases in the UseFunctionalLoop enum are now enabled.
 
 ### Changes Made
 
-#### 1. PreconditionsChecker Enhancements
-**File**: `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/PreconditionsChecker.java`
-
-- Added early return pattern detection:
-  - `isAnyMatchPattern()` - Detects `if (condition) return true;` pattern
-  - `isNoneMatchPattern()` - Detects `if (condition) return false;` pattern
-  - `getEarlyReturnIf()` - Returns the IF statement containing the early return
-  - `detectEarlyReturnPatterns()` - Main analysis method for early return patterns
-- Modified `isSafeToRefactor()` to allow early returns when they match anyMatch/noneMatch patterns
-- Previously, any return statement would make the loop non-refactorable
-- Now, specific early return patterns are recognized and allowed
-
-#### 2. StreamPipelineBuilder Enhancements
-**File**: `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/StreamPipelineBuilder.java`
-
-- Added early return handling in `parseLoopBody()`:
-  - Detects IF statements with early returns
-  - Creates ANYMATCH or NONEMATCH operations based on the pattern
-  - `isEarlyReturnIf()` helper method validates early return IFs
-- Enhanced `wrapPipeline()` to wrap anyMatch/noneMatch operations:
-  - anyMatch: `if (stream.anyMatch(...)) { return true; }`
-  - noneMatch: `if (!stream.noneMatch(...)) { return false; }`
-- Added `ReturnStatement` import for creating return statements
-
-#### 3. Test Enablement
+#### 1. Test Enablement
 **File**: `sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/Java8CleanUpTest.java`
 
-- Enabled **ChainedAnyMatch** test - tests anyMatch pattern with early return true
-- Enabled **ChainedNoneMatch** test - tests noneMatch pattern with early return false
-- Total tests enabled: 19 (was 17)
+- Enabled **NoNeededVariablesMerging** test (20th test) - tests handling of statements without intermediate variable dependencies
+- Enabled **SomeChainingWithNoNeededVar** test (21st test) - tests complex chaining with side effects and no variable tracking
+- Total tests enabled: 21 (was 19)
+- **All tests from UseFunctionalLoop enum are now enabled!**
 
-#### 4. Documentation Updates
+#### 2. Documentation Updates
 **File**: `sandbox_functional_converter/TODO.md`
 
-- Updated to reflect completion of anyMatch/noneMatch implementation
-- Updated test count to 19 enabled tests
-- Updated "In Progress" section to focus on test validation
-- Updated completion estimates and remaining work
+- Updated to reflect enablement of final two tests
+- Updated test count from 19 to 21 enabled tests
+- Marked task as enabling all available test cases
+- Updated "Current Work" section to focus on test validation
 
 ### Test Coverage
-With these changes, the following 19 tests are enabled:
+With these changes, all 21 tests in the UseFunctionalLoop enum are enabled:
 1. SIMPLECONVERT - simple forEach
 2. CHAININGMAP - map operation
 3. ChainingFilterMapForEachConvert - filter + map
