@@ -700,6 +700,7 @@ public class StreamPipelineBuilder {
                                 // Fallback for other types (e.g., parameterized, qualified, etc.)
                                 return type.toString();
                             }
+                        }
                     }
                 }
             }
