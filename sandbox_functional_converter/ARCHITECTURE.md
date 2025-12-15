@@ -339,7 +339,7 @@ for (int i : ints)
 
 Becomes:
 ```java
-len = ints.stream().map(_item -> 1.0).reduce(len, (accumulator, _item) -> accumulator + 1);
+len = ints.stream().map(_item -> 1.0).reduce(len, (accumulator, _item) -> accumulator + _item);
 ```
 
 Type mappings:
