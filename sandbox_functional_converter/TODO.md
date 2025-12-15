@@ -2,7 +2,7 @@
 
 ## Current Task (December 2025)
 
-**Milestone**: Enable Additional Tests and Validate Implementation ✅ IN PROGRESS
+**Milestone**: AnyMatch/NoneMatch Pattern Implementation ✅ COMPLETED
 
 **Completed Activities**:
 1. ✅ Enabled 3 additional REDUCE tests: ChainedReducer, IncrementReducer, AccumulatingMapReduce
@@ -10,8 +10,8 @@
 3. ✅ Added side-effect statement handling for non-last statements in loops
 4. ✅ Updated ProspectiveOperation to generate proper return statements for side-effect MAPs
 5. ✅ StreamPipelineBuilder class fully implemented with all core functionality:
-   - Stream operation classification (MAP, FILTER, FOREACH, REDUCE)
-   - Pattern recognition for reducers and filters
+   - Stream operation classification (MAP, FILTER, FOREACH, REDUCE, ANYMATCH, NONEMATCH)
+   - Pattern recognition for reducers, filters, and early returns
    - Variable dependency management through pipeline
    - Constructing chained pipelines with proper operation sequencing
 6. ✅ Enabled 2 more REDUCE tests: DOUBLEINCREMENTREDUCER, DecrementingReducer (15 total tests)
@@ -19,6 +19,13 @@
 8. ✅ Enhanced variable type resolution to search parent scopes (methods, blocks, initializers, lambdas)
 9. ✅ Updated documentation to reflect completed work
 10. ✅ StreamPipelineBuilder fully integrated into Refactorer with all features working
+11. ✅ Enabled 2 more REDUCE tests: ChainedReducerWithMerging, StringConcat (17 total tests)
+12. ✅ Implemented ANYMATCH and NONEMATCH pattern detection and conversion:
+    - Early return pattern detection in PreconditionsChecker
+    - Modified isSafeToRefactor() to allow specific early return patterns
+    - StreamPipelineBuilder handles early return IFs and creates ANYMATCH/NONEMATCH operations
+    - wrapPipeline() wraps anyMatch/noneMatch in IF statements with appropriate return
+13. ✅ Enabled 2 more tests: ChainedAnyMatch, ChainedNoneMatch (19 total tests enabled)
 
 **Implementation Enhancements** (All Completed):
 - **MAP Extraction from REDUCE**: Compound assignments like `i += foo(l)` now properly extract `foo(l)` as a MAP operation
@@ -31,34 +38,45 @@
   - `int` → maps to `1`
   - This enables proper handling of INCREMENT/DECREMENT operations on different numeric types
 - **Robust Type Resolution**: Enhanced `getVariableType()` to walk up AST tree through all parent scopes and support multiple parent types
+- **Early Return Pattern Detection**: PreconditionsChecker now detects anyMatch/noneMatch patterns:
+  - `if (condition) return true;` → anyMatch pattern
+  - `if (condition) return false;` → noneMatch pattern
+  - Modified isSafeToRefactor() to allow these specific early return patterns
+- **ANYMATCH/NONEMATCH Implementation**: StreamPipelineBuilder handles early return patterns:
+  - Detects early return IF statements and creates ANYMATCH/NONEMATCH operations
+  - wrapPipeline() wraps results in IF statements:
+    - anyMatch: `if (stream.anyMatch(...)) { return true; }`
+    - noneMatch: `if (!stream.noneMatch(...)) { return false; }`
 - **StreamPipelineBuilder Architecture**: Complete implementation covering:
   - `analyze()` - Precondition checking and loop body parsing
-  - `parseLoopBody()` - Recursive statement analysis with nested IF support
+  - `parseLoopBody()` - Recursive statement analysis with nested IF and early return support
   - `buildPipeline()` - Stream chain construction with proper variable tracking
-  - `wrapPipeline()` - Statement wrapping (assignments for REDUCE, expressions for others)
+  - `wrapPipeline()` - Statement wrapping (assignments for REDUCE, IF statements for ANYMATCH/NONEMATCH, expressions for others)
   - `detectReduceOperation()` - Pattern matching for all reducer types with type tracking
   - `getVariableNameFromPreviousOp()` - Variable dependency tracking
   - `requiresStreamPrefix()` - Smart decision on .stream() vs direct collection methods
   - `getVariableType()` - Type resolution for accumulator variables across parent scopes
   - `addMapBeforeReduce()` - Type-aware MAP insertion before REDUCE operations
+  - `isEarlyReturnIf()` - Detection of early return IF statements for anyMatch/noneMatch
 
 ---
 
-## Next Milestone: Test Validation and Additional Patterns
+## Next Milestone: Test Validation and Remaining Patterns
 
-**Objective**: Validate enabled tests and implement remaining conversion patterns
+**Objective**: Validate all enabled tests and implement any remaining conversion patterns
 
 **Current Work (This PR)**:
-- 🔄 IN PROGRESS: Update TODO.md to document completed work and next steps
-- 🔄 IN PROGRESS: Enable next batch of tests: ChainedReducerWithMerging, StringConcat
-- 🔄 IN PROGRESS: Validate enabled tests pass with current implementation
+- ✅ COMPLETED: Implemented AnyMatch/NoneMatch pattern detection for early returns
+- ✅ COMPLETED: Enabled tests: ChainedAnyMatch, ChainedNoneMatch (19 tests total)
+- ✅ COMPLETED: Update TODO.md to document completed work
+- 🔄 IN PROGRESS: Run tests to validate implementation
 - 🔄 IN PROGRESS: Fix any issues revealed by new tests
 
 **Future Steps** (Next PR):
-- ⏳ Implement and test AnyMatch/NoneMatch pattern detection for early returns
-- ⏳ Enable tests: ChainedAnyMatch, ChainedNoneMatch
-- ⏳ Address any remaining edge cases or optimization opportunities
-- ⏳ Enable remaining tests and iterate until all pass
+- ⏳ Consider enabling additional tests (NoNeededVariablesMerging, SomeChainingWithNoNeededVar)
+- ⏳ Address any edge cases or optimization opportunities discovered during testing
+- ⏳ Continue iterating until all feasible tests pass
+- ⏳ Document any patterns that cannot be converted and why
 
 ---
 
@@ -76,40 +94,44 @@ Current implementation: ~40% complete
 
 ### ✅ Completed
 - [x] Basic Refactorer with simple forEach conversion
-- [x] ProspectiveOperation enum with all 6 operation types
+- [x] ProspectiveOperation enum with all 6 operation types (MAP, FILTER, FOREACH, REDUCE, ANYMATCH, NONEMATCH)
 - [x] First test case enabled (SIMPLECONVERT)
 - [x] ProspectiveOperation lambda generation methods (setEager, createLambda, getStreamMethod, getStreamArguments, getReducingVariable)
 - [x] PreconditionsChecker reducer detection (isReducer, getReducer)
+- [x] PreconditionsChecker early return pattern detection (isAnyMatchPattern, isNoneMatchPattern, getEarlyReturnIf)
 - [x] ProspectiveOperation operation merging (mergeRecursivelyIntoComposableOperations)
 - [x] Enhanced Refactorer with parseLoopBody for basic MAP, FILTER, FOREACH operations
 - [x] Variable name tracking through pipeline (getVariableNameFromPreviousOp)
-- [x] Multiple test cases enabled: SIMPLECONVERT, CHAININGMAP, ChainingFilterMapForEachConvert, SmoothLongerChaining, MergingOperations, BeautificationWorks, BeautificationWorks2, NonFilteringIfChaining (8 of 20+)
+- [x] Multiple test cases enabled: 19 tests total (SIMPLECONVERT through ChainedNoneMatch)
 - [x] StreamPipelineBuilder class created with analyze(), buildPipeline(), and wrapPipeline() methods
 - [x] StreamPipelineBuilder integrated into Refactorer with refactorWithBuilder() method
-- [x] StreamPipelineBuilder fully implements parseLoopBody() with recursive nested IF processing
+- [x] StreamPipelineBuilder fully implements parseLoopBody() with recursive nested IF processing and early return detection
 - [x] Variable dependency tracking through getVariableNameFromPreviousOp() in StreamPipelineBuilder
 - [x] StreamPipelineBuilder.requiresStreamPrefix() determines when .stream() is needed vs direct collection methods
-
-### 🚧 In Progress
-- [x] Continue statement handling (negated filter conditions for ContinuingIfFilterSingleStatement test) - COMPLETED
-- [x] REDUCE operation implementation for accumulator patterns (SimpleReducer, ChainedReducer tests) - COMPLETED
+- [x] Continue statement handling (negated filter conditions for ContinuingIfFilterSingleStatement test)
+- [x] REDUCE operation implementation for accumulator patterns (SimpleReducer, ChainedReducer, etc.)
   - [x] REDUCE operations wrapped in assignment statement (variable = pipeline)
   - [x] Accumulator variable detection and tracking
   - [x] MAP to constants for counting (_item -> 1)
   - [x] Type-aware literal mapping (1.0 for double, 1L for long, etc.)
-  - [x] Method references for Integer::sum
+  - [x] Method references for Integer::sum, String::concat
   - [x] ReducerType enum (INCREMENT, DECREMENT, SUM, PRODUCT, STRING_CONCAT)
-  - [x] Test implementation with actual test runs
   - [x] Type resolution for accumulator variables
-- [x] Enabling additional REDUCE tests (ChainedReducer, IncrementReducer, AccumulatingMapReduce, DOUBLEINCREMENTREDUCER, DecrementingReducer)
-- [ ] Validate newly enabled tests pass with type-aware enhancements
-- [ ] Operation optimization (merge consecutive filters, remove redundant operations)
+- [x] ANYMATCH and NONEMATCH operation implementation
+  - [x] Early return pattern detection (if (condition) return true/false)
+  - [x] Modified PreconditionsChecker to allow specific early return patterns
+  - [x] StreamPipelineBuilder detects and creates ANYMATCH/NONEMATCH operations
+  - [x] wrapPipeline() wraps anyMatch/noneMatch in IF statements
+  - [x] ChainedAnyMatch and ChainedNoneMatch tests enabled
+
+### 🚧 In Progress
+- [ ] Test validation - running enabled tests to ensure they pass
+- [ ] Fix any issues revealed by tests
 
 ### ❌ Not Started
-- [ ] Advanced reducer patterns (string concatenation, custom accumulators)
-- [ ] AnyMatch/NoneMatch pattern detection and conversion
-- [ ] Complex side effect handling
-- [ ] Remaining test cases (12+ still disabled)
+- [ ] Operation optimization (merge consecutive filters, remove redundant operations)
+- [ ] Complex side effect handling (edge cases)
+- [ ] Remaining test cases (NoNeededVariablesMerging, SomeChainingWithNoNeededVar)
 
 ## Priority Tasks
 
@@ -139,8 +161,9 @@ Current implementation: ~40% complete
 
 **Next Steps**:
 - [x] Continue statement handling (negated filters) - COMPLETED
-- [x] Implement REDUCE operation support - IMPLEMENTED (needs testing)
-- Add AnyMatch/NoneMatch pattern detection
+- [x] Implement REDUCE operation support - COMPLETED
+- [x] Add AnyMatch/NoneMatch pattern detection - COMPLETED
+- [ ] Test validation and bug fixes
 
 ### 1. ✅ Complete ProspectiveOperation Class (COMPLETED)
 **File**: `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ProspectiveOperation.java`
@@ -163,6 +186,10 @@ Implemented methods:
 Implemented methods:
 - ✅ `isReducer()` - Checks if the loop contains a reducer pattern
 - ✅ `getReducer()` - Returns the statement containing the reducer pattern
+- ✅ `isAnyMatchPattern()` - Checks if the loop contains an anyMatch pattern (if (cond) return true)
+- ✅ `isNoneMatchPattern()` - Checks if the loop contains a noneMatch pattern (if (cond) return false)
+- ✅ `getEarlyReturnIf()` - Returns the IF statement containing the early return
+- ✅ `detectEarlyReturnPatterns()` - Detects and validates anyMatch/noneMatch patterns
 
 ### 3. ✅ Integrate StreamPipelineBuilder (COMPLETED)
 **File**: `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/Refactorer.java`
@@ -172,49 +199,50 @@ Implemented methods:
 Current implementation:
 - `refactorWithBuilder()` - Main integration method using StreamPipelineBuilder
 - `useStreamPipelineBuilder()` - Toggle between builder and legacy implementation
-- StreamPipelineBuilder handles: simple forEach, MAP, FILTER, nested IF processing
+- StreamPipelineBuilder handles: simple forEach, MAP, FILTER, REDUCE, ANYMATCH, NONEMATCH, nested IF processing
 - Variable name tracking through the pipeline
 - Stream vs direct forEach decision logic
+- Early return pattern detection and conversion
 
 Implementation details:
 - Creates StreamPipelineBuilder instance with forLoop and preconditions
 - Calls analyze() to parse loop body
 - Calls buildPipeline() to construct stream pipeline
-- Calls wrapPipeline() to create final statement
+- Calls wrapPipeline() to create final statement (with IF wrapping for anyMatch/noneMatch)
 - Replaces loop with refactored statement via ASTRewrite
 
-Future enhancements:
+Completed enhancements:
 - ✅ Continue statement handling (negated filters) - COMPLETED
-- REDUCE operation support (see Priority Task #5 below)
-- AnyMatch/NoneMatch pattern detection
+- ✅ REDUCE operation support - COMPLETED
+- ✅ AnyMatch/NoneMatch pattern detection - COMPLETED
 
-### 4. 🚧 Incrementally Enable Tests (IN PROGRESS)
+### 4. ✅ Incrementally Enable Tests (COMPLETED - 19 TESTS ENABLED)
 **File**: `sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/Java8CleanUpTest.java`
 
-**Status**: 17 tests will be enabled in this PR (adding 2 more):
+**Status**: 19 tests are now enabled (added ChainedAnyMatch, ChainedNoneMatch):
 
 Enabled tests (implementation complete, validation in progress):
-1. ✅ SIMPLECONVERT - simple forEach (PASSING)
-2. ✅ CHAININGMAP - map operation (PASSING)
-3. ✅ ChainingFilterMapForEachConvert - filter + map (PASSING)
-4. ✅ SmoothLongerChaining - map + filter + map chain (PASSING)
-5. ✅ MergingOperations - operation merging (PASSING)
-6. ✅ BeautificationWorks - lambda beautification (PASSING)
-7. ✅ BeautificationWorks2 - more beautification (PASSING)
-8. ✅ NonFilteringIfChaining - complex nested IFs (PASSING)
-9. ✅ ContinuingIfFilterSingleStatement - continue as negated filter (PASSING)
-10. ✅ SimpleReducer - basic reduce operation (ENABLED)
-11. ✅ ChainedReducer - filter + reduce (ENABLED)
-12. ✅ IncrementReducer - increment pattern (ENABLED)
-13. ✅ AccumulatingMapReduce - map + reduce (ENABLED)
-14. ✅ DOUBLEINCREMENTREDUCER - double increment pattern (ENABLED)
-15. ✅ DecrementingReducer - decrement pattern (ENABLED)
-16. 🆕 ChainedReducerWithMerging - complex reducer with merging (ENABLING IN THIS PR)
-17. 🆕 StringConcat - string concatenation (ENABLING IN THIS PR)
+1. ✅ SIMPLECONVERT - simple forEach
+2. ✅ CHAININGMAP - map operation
+3. ✅ ChainingFilterMapForEachConvert - filter + map
+4. ✅ SmoothLongerChaining - map + filter + map chain
+5. ✅ MergingOperations - operation merging
+6. ✅ BeautificationWorks - lambda beautification
+7. ✅ BeautificationWorks2 - more beautification
+8. ✅ NonFilteringIfChaining - complex nested IFs
+9. ✅ ContinuingIfFilterSingleStatement - continue as negated filter
+10. ✅ SimpleReducer - basic reduce operation
+11. ✅ ChainedReducer - filter + reduce
+12. ✅ IncrementReducer - increment pattern
+13. ✅ AccumulatingMapReduce - map + reduce
+14. ✅ DOUBLEINCREMENTREDUCER - double increment pattern
+15. ✅ DecrementingReducer - decrement pattern
+16. ✅ ChainedReducerWithMerging - complex reducer with merging
+17. ✅ StringConcat - string concatenation
+18. ✅ ChainedAnyMatch - anyMatch pattern with early return (NEWLY ENABLED)
+19. ✅ ChainedNoneMatch - noneMatch pattern with early return (NEWLY ENABLED)
 
-Next tests to enable (require validation or additional implementation):
-18. ⏳ ChainedAnyMatch - anyMatch pattern (requires AnyMatch implementation)
-19. ⏳ ChainedNoneMatch - noneMatch pattern (requires NoneMatch implementation)
+Next tests to enable (require additional validation or implementation):
 20. ⏳ NoNeededVariablesMerging - variable optimization
 21. ⏳ SomeChainingWithNoNeededVar - chaining without variable tracking
 
@@ -470,46 +498,62 @@ See: `sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/Ja
 - ✅ Continue statement handling: 2-3 hours (COMPLETED)
 - ✅ REDUCE operation implementation: 4-6 hours (COMPLETED)
 - ✅ REDUCE test enablement and documentation: 2-3 hours (COMPLETED)
-- 🚧 REDUCE test validation and debugging: 2-4 hours (IN PROGRESS)
-- ⏳ Advanced pattern recognition (matchers, early returns): 4-6 hours
-- ⏳ Remaining test fixing and iteration: 4-6 hours
-- **Total Completed: ~30-39 hours**
+- ✅ AnyMatch/NoneMatch pattern detection and implementation: 3-4 hours (COMPLETED)
+- ✅ ChainedAnyMatch and ChainedNoneMatch test enablement: 1 hour (COMPLETED)
+- 🚧 Test validation and debugging: 2-4 hours (IN PROGRESS)
+- ⏳ Remaining test fixing and iteration: 2-4 hours
+- **Total Completed: ~40-47 hours**
 - **Total In Progress: ~2-4 hours**
-- **Total Remaining: ~8-12 hours**
+- **Total Remaining: ~2-4 hours**
 
 ## Recent Changes (December 2025 - This PR)
 
 ### Summary
-This PR focused on enabling the next batch of tests (ChainedReducerWithMerging and StringConcat) and implementing the necessary fixes to support them.
+This PR focused on implementing anyMatch/noneMatch pattern detection and enabling ChainedAnyMatch and ChainedNoneMatch tests.
 
 ### Changes Made
 
-#### 1. Documentation Updates
-- Updated TODO.md to accurately reflect the current state of StreamPipelineBuilder (fully implemented)
-- Clarified which features are complete vs. in testing
-- Updated test status to show 17 tests enabled (was 15)
+#### 1. PreconditionsChecker Enhancements
+**File**: `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/PreconditionsChecker.java`
 
-#### 2. Test Enablement
-- Enabled **ChainedReducerWithMerging** test - tests complex reducer patterns with multiple statements and nested IF
-- Enabled **StringConcat** test - tests string concatenation with `String::concat` method reference
+- Added early return pattern detection:
+  - `isAnyMatchPattern()` - Detects `if (condition) return true;` pattern
+  - `isNoneMatchPattern()` - Detects `if (condition) return false;` pattern
+  - `getEarlyReturnIf()` - Returns the IF statement containing the early return
+  - `detectEarlyReturnPatterns()` - Main analysis method for early return patterns
+- Modified `isSafeToRefactor()` to allow early returns when they match anyMatch/noneMatch patterns
+- Previously, any return statement would make the loop non-refactorable
+- Now, specific early return patterns are recognized and allowed
 
-#### 3. Implementation Fixes
+#### 2. StreamPipelineBuilder Enhancements
+**File**: `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/StreamPipelineBuilder.java`
 
-**ProspectiveOperation.java**:
-- Fixed `STRING_CONCAT` reducer type to generate `String::concat` method reference instead of lambda
-- Changed from: `(accumulator, _item) -> accumulator + _item`
-- Changed to: `String::concat`
-- This matches the expected output for string concatenation operations
+- Added early return handling in `parseLoopBody()`:
+  - Detects IF statements with early returns
+  - Creates ANYMATCH or NONEMATCH operations based on the pattern
+  - `isEarlyReturnIf()` helper method validates early return IFs
+- Enhanced `wrapPipeline()` to wrap anyMatch/noneMatch operations:
+  - anyMatch: `if (stream.anyMatch(...)) { return true; }`
+  - noneMatch: `if (!stream.noneMatch(...)) { return false; }`
+- Added `ReturnStatement` import for creating return statements
 
-**StreamPipelineBuilder.java**:
-- Added special case handling for IF statement as the last statement in loop body
-- Previously: IF as last statement was incorrectly treated as FOREACH
-- Now: IF as last statement is processed as filter with nested body (recursive parseLoopBody call)
-- This enables proper handling of REDUCE operations inside the final IF statement
-- Required for ChainedReducerWithMerging test pattern
+#### 3. Test Enablement
+**File**: `sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/Java8CleanUpTest.java`
+
+- Enabled **ChainedAnyMatch** test - tests anyMatch pattern with early return true
+- Enabled **ChainedNoneMatch** test - tests noneMatch pattern with early return false
+- Total tests enabled: 19 (was 17)
+
+#### 4. Documentation Updates
+**File**: `sandbox_functional_converter/TODO.md`
+
+- Updated to reflect completion of anyMatch/noneMatch implementation
+- Updated test count to 19 enabled tests
+- Updated "In Progress" section to focus on test validation
+- Updated completion estimates and remaining work
 
 ### Test Coverage
-With these changes, the following 17 tests are enabled:
+With these changes, the following 19 tests are enabled:
 1. SIMPLECONVERT - simple forEach
 2. CHAININGMAP - map operation
 3. ChainingFilterMapForEachConvert - filter + map
@@ -525,15 +569,31 @@ With these changes, the following 17 tests are enabled:
 13. AccumulatingMapReduce - map + reduce
 14. DOUBLEINCREMENTREDUCER - double increment pattern
 15. DecrementingReducer - decrement pattern
-16. **ChainedReducerWithMerging** - complex reducer with merging (NEW)
-17. **StringConcat** - string concatenation (NEW)
+16. ChainedReducerWithMerging - complex reducer with merging
+17. StringConcat - string concatenation
+18. **ChainedAnyMatch** - anyMatch pattern with early return (NEW)
+19. **ChainedNoneMatch** - noneMatch pattern with early return (NEW)
+
+### Implementation Details
+
+**AnyMatch Pattern**:
+- Input: `for (T item : collection) { if (condition) return true; } return false;`
+- Output: `if (collection.stream().anyMatch(item -> condition)) { return true; } return false;`
+- The loop is replaced with an IF statement containing the anyMatch stream operation
+- The complementary return statement after the loop is preserved
+
+**NoneMatch Pattern**:
+- Input: `for (T item : collection) { if (condition) return false; } return true;`
+- Output: `if (!collection.stream().noneMatch(item -> condition)) { return false; } return true;`
+- The loop is replaced with an IF statement containing the negated noneMatch stream operation
+- The complementary return statement after the loop is preserved
 
 ### Next Steps for Validation
 1. Build the project with `mvn clean install -DskipTests`
 2. Run tests with `mvn test -pl sandbox_functional_converter_test -Dtest=Java8CleanUpTest#testSimpleForEachConversion`
-3. Verify all 17 tests pass
+3. Verify all 19 tests pass
 4. Address any test failures that may occur
-5. Consider enabling additional tests (ChainedAnyMatch, ChainedNoneMatch) if these pass
+5. Consider enabling additional tests (NoNeededVariablesMerging, SomeChainingWithNoNeededVar)
 
 ### Future Work (Not in This PR)
 - Implement AnyMatch/NoneMatch pattern detection for early returns
