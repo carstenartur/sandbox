@@ -662,8 +662,44 @@ public class StreamPipelineBuilder {
                         VariableDeclarationFragment frag = (VariableDeclarationFragment) fragObj;
                         if (frag.getName().getIdentifier().equals(varName)) {
                             org.eclipse.jdt.core.dom.Type type = varDecl.getType();
-                            return type.toString();
-                        }
+                            // Robustly extract the simple type name
+                            if (type.isPrimitiveType()) {
+                                // For primitive types: int, double, etc.
+                                return ((org.eclipse.jdt.core.dom.PrimitiveType) type).getPrimitiveTypeCode().toString();
+                            } else if (type.isSimpleType()) {
+                                // For reference types: get the simple name
+                                org.eclipse.jdt.core.dom.SimpleType simpleType = (org.eclipse.jdt.core.dom.SimpleType) type;
+                                // Try to use binding if available
+                                org.eclipse.jdt.core.dom.ITypeBinding binding = simpleType.resolveBinding();
+                                if (binding != null) {
+                                    return binding.getName();
+                                } else {
+                                    return simpleType.getName().getFullyQualifiedName();
+                                }
+                            } else if (type.isArrayType()) {
+                                // For array types, get the element type recursively and append "[]"
+                                org.eclipse.jdt.core.dom.ArrayType arrayType = (org.eclipse.jdt.core.dom.ArrayType) type;
+                                org.eclipse.jdt.core.dom.Type elementType = arrayType.getElementType();
+                                String elementTypeName;
+                                if (elementType.isPrimitiveType()) {
+                                    elementTypeName = ((org.eclipse.jdt.core.dom.PrimitiveType) elementType).getPrimitiveTypeCode().toString();
+                                } else if (elementType.isSimpleType()) {
+                                    org.eclipse.jdt.core.dom.SimpleType simpleType = (org.eclipse.jdt.core.dom.SimpleType) elementType;
+                                    org.eclipse.jdt.core.dom.ITypeBinding binding = simpleType.resolveBinding();
+                                    if (binding != null) {
+                                        elementTypeName = binding.getName();
+                                    } else {
+                                        elementTypeName = simpleType.getName().getFullyQualifiedName();
+                                    }
+                                } else {
+                                    // Fallback for other types
+                                    elementTypeName = elementType.toString();
+                                }
+                                return elementTypeName + "[]";
+                            } else {
+                                // Fallback for other types (e.g., parameterized, qualified, etc.)
+                                return type.toString();
+                            }
                     }
                 }
             }
