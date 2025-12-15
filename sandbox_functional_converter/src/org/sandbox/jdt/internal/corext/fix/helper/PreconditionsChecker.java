@@ -289,16 +289,18 @@ public class PreconditionsChecker {
         Statement body = forLoop.getBody();
         
         // Find all IF statements with return statements in the loop
-        List<IfStatement> ifStatementsWithReturn = new ArrayList<>();
+        final List<IfStatement> ifStatementsWithReturn = new ArrayList<>();
         
-        AstProcessorBuilder.with(new ReferenceHolder<String, Object>())
-            .onIfStatement((node, h) -> {
+        // Use ASTVisitor to find IF statements
+        body.accept(new ASTVisitor() {
+            @Override
+            public boolean visit(IfStatement node) {
                 if (hasReturnInThenBranch(node)) {
                     ifStatementsWithReturn.add(node);
                 }
                 return true;
-            })
-            .build(body);
+            }
+        });
         
         // For anyMatch/noneMatch, we expect exactly one IF with return
         if (ifStatementsWithReturn.size() != 1) {
