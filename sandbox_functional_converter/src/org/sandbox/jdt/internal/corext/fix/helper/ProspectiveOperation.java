@@ -489,8 +489,8 @@ public class ProspectiveOperation {
                 // Use (accumulator, _item) -> accumulator * _item lambda
                 return createBinaryOperatorLambda(ast, InfixExpression.Operator.TIMES);
             case STRING_CONCAT:
-                // Use (accumulator, _item) -> accumulator + _item lambda
-                return createBinaryOperatorLambda(ast, InfixExpression.Operator.PLUS);
+                // Use String::concat method reference for string concatenation
+                return createMethodReference(ast, "String", "concat");
             default:
                 return createAccumulatorLambda(ast);
         }

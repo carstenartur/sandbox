@@ -470,6 +470,20 @@ public class StreamPipelineBuilder {
                             }
                         }
                     }
+                } else if (stmt instanceof IfStatement && isLast) {
+                    // Last statement is an IF → process as filter with nested body
+                    IfStatement ifStmt = (IfStatement) stmt;
+                    if (ifStmt.getElseStatement() == null) {
+                        // Add FILTER operation for the condition
+                        ProspectiveOperation filterOp = new ProspectiveOperation(
+                            ifStmt.getExpression(),
+                            ProspectiveOperation.OperationType.FILTER);
+                        ops.add(filterOp);
+                        
+                        // Process the body of the IF statement recursively
+                        List<ProspectiveOperation> nestedOps = parseLoopBody(ifStmt.getThenStatement(), currentVarName);
+                        ops.addAll(nestedOps);
+                    }
                 } else if (!isLast) {
                     // Non-last statement that's not a variable declaration or IF
                     // This is a side-effect statement like foo(l) - wrap it in a MAP that returns the current variable
