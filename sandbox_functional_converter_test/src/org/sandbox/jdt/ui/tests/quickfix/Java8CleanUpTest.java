@@ -1184,8 +1184,8 @@ public class Java8CleanUpTest {
 
 	@ParameterizedTest
 	@EnumSource(value = UseFunctionalLoop.class, names = {
-		"SIMPLECONVERT", 
-		"CHAININGMAP", 
+		"SIMPLECONVERT",
+		"CHAININGMAP",
 		"ChainingFilterMapForEachConvert",
 		"SmoothLongerChaining",
 		"MergingOperations",
