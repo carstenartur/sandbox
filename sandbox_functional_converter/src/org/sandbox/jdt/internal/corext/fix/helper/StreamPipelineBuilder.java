@@ -28,6 +28,7 @@ import org.eclipse.jdt.core.dom.IfStatement;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.PostfixExpression;
 import org.eclipse.jdt.core.dom.PrefixExpression;
+import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
@@ -63,6 +64,8 @@ public class StreamPipelineBuilder {
     private boolean convertible = false;
     private String accumulatorVariable = null;
     private String accumulatorType = null;
+    private boolean isAnyMatchPattern = false;
+    private boolean isNoneMatchPattern = false;
 
     /**
      * Creates a new StreamPipelineBuilder for the given for-loop.
@@ -76,6 +79,8 @@ public class StreamPipelineBuilder {
         this.ast = forLoop.getAST();
         this.loopVariableName = forLoop.getParameter().getName().getIdentifier();
         this.operations = new ArrayList<>();
+        this.isAnyMatchPattern = preconditions.isAnyMatchPattern();
+        this.isNoneMatchPattern = preconditions.isNoneMatchPattern();
     }
 
     /**
@@ -171,12 +176,55 @@ public class StreamPipelineBuilder {
      * with a tracked accumulator variable, wraps the pipeline in an assignment statement
      * (e.g., "i = stream.reduce(...)") instead of a plain expression statement.
      * 
+     * <p>For ANYMATCH and NONEMATCH operations, wraps the pipeline in an IF statement:
+     * <ul>
+     * <li>ANYMATCH: {@code if (stream.anyMatch(...)) { return true; }}</li>
+     * <li>NONEMATCH: {@code if (!stream.noneMatch(...)) { return false; }}</li>
+     * </ul>
+     * 
      * @param pipeline the pipeline method invocation
      * @return a Statement wrapping the pipeline
      */
     public Statement wrapPipeline(MethodInvocation pipeline) {
         if (pipeline == null) {
             return null;
+        }
+        
+        // Check for ANYMATCH or NONEMATCH operations
+        boolean hasAnyMatch = operations.stream()
+            .anyMatch(op -> op.getOperationType() == ProspectiveOperation.OperationType.ANYMATCH);
+        boolean hasNoneMatch = operations.stream()
+            .anyMatch(op -> op.getOperationType() == ProspectiveOperation.OperationType.NONEMATCH);
+        
+        if (hasAnyMatch) {
+            // Wrap in: if (stream.anyMatch(...)) { return true; }
+            IfStatement ifStmt = ast.newIfStatement();
+            ifStmt.setExpression(pipeline);
+            
+            Block thenBlock = ast.newBlock();
+            ReturnStatement returnStmt = ast.newReturnStatement();
+            returnStmt.setExpression(ast.newBooleanLiteral(true));
+            thenBlock.statements().add(returnStmt);
+            ifStmt.setThenStatement(thenBlock);
+            
+            return ifStmt;
+        } else if (hasNoneMatch) {
+            // Wrap in: if (!stream.noneMatch(...)) { return false; }
+            IfStatement ifStmt = ast.newIfStatement();
+            
+            // Create negated expression: !stream.noneMatch(...)
+            PrefixExpression negation = ast.newPrefixExpression();
+            negation.setOperator(PrefixExpression.Operator.NOT);
+            negation.setOperand(pipeline);
+            ifStmt.setExpression(negation);
+            
+            Block thenBlock = ast.newBlock();
+            ReturnStatement returnStmt = ast.newReturnStatement();
+            returnStmt.setExpression(ast.newBooleanLiteral(false));
+            thenBlock.statements().add(returnStmt);
+            ifStmt.setThenStatement(thenBlock);
+            
+            return ifStmt;
         }
         
         // Check if we have a REDUCE operation
@@ -440,8 +488,19 @@ public class StreamPipelineBuilder {
                     if (ifStmt.getElseStatement() == null) {
                         Statement thenStmt = ifStmt.getThenStatement();
                         
-                        // Check if this is an "if (condition) continue;" pattern
-                        if (isIfWithContinue(ifStmt)) {
+                        // Check if this is an early return pattern (anyMatch/noneMatch)
+                        if (isEarlyReturnIf(ifStmt)) {
+                            // Create ANYMATCH or NONEMATCH operation
+                            ProspectiveOperation.OperationType opType = isAnyMatchPattern ? 
+                                ProspectiveOperation.OperationType.ANYMATCH :
+                                ProspectiveOperation.OperationType.NONEMATCH;
+                            
+                            ProspectiveOperation matchOp = new ProspectiveOperation(
+                                ifStmt.getExpression(),
+                                opType);
+                            ops.add(matchOp);
+                            // Don't process the body since it's just a return statement
+                        } else if (isIfWithContinue(ifStmt)) {
                             // Convert "if (condition) continue;" to ".filter(x -> !(condition))"
                             Expression negatedCondition = createNegatedExpression(ast, ifStmt.getExpression());
                             ProspectiveOperation filterOp = new ProspectiveOperation(
@@ -455,10 +514,23 @@ public class StreamPipelineBuilder {
                         }
                     }
                 } else if (stmt instanceof IfStatement && isLast) {
-                    // Last statement is an IF → process as filter with nested body
+                    // Last statement is an IF → check for early return or process as filter with nested body
                     IfStatement ifStmt = (IfStatement) stmt;
                     if (ifStmt.getElseStatement() == null) {
-                        processIfAsFilter(ops, ifStmt, currentVarName, false);
+                        // Check if this is an early return pattern (anyMatch/noneMatch)
+                        if (isEarlyReturnIf(ifStmt)) {
+                            // Create ANYMATCH or NONEMATCH operation
+                            ProspectiveOperation.OperationType opType = isAnyMatchPattern ? 
+                                ProspectiveOperation.OperationType.ANYMATCH :
+                                ProspectiveOperation.OperationType.NONEMATCH;
+                            
+                            ProspectiveOperation matchOp = new ProspectiveOperation(
+                                ifStmt.getExpression(),
+                                opType);
+                            ops.add(matchOp);
+                        } else {
+                            processIfAsFilter(ops, ifStmt, currentVarName, false);
+                        }
                     }
                 } else if (!isLast) {
                     // Non-last statement that's not a variable declaration or IF
@@ -618,6 +690,22 @@ public class StreamPipelineBuilder {
             }
         }
         return false;
+    }
+    
+    /**
+     * Checks if the IF statement contains an early return (for anyMatch/noneMatch patterns).
+     * 
+     * @param ifStatement the IF statement to check
+     * @return true if the IF contains a return statement matching the detected pattern
+     */
+    private boolean isEarlyReturnIf(IfStatement ifStatement) {
+        if (!isAnyMatchPattern && !isNoneMatchPattern) {
+            return false;
+        }
+        
+        // Check if this IF statement is the early return IF from preconditions
+        IfStatement earlyReturnIf = preconditions.getEarlyReturnIf();
+        return earlyReturnIf != null && earlyReturnIf == ifStatement;
     }
     
     /**
