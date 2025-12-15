@@ -62,9 +62,9 @@ import static org.sandbox.jdt.internal.corext.fix.helper.JUnitConstants.*;
 public class AssumeJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
 	// Assume-specific method sets (different from assertion methods)
-	private static final Set<String> TWOPARAM_ASSUMPTIONS = Set.of("assumeTrue", "assumeFalse", "assumeNotNull","assumeThat");
+	private static final Set<String> MULTI_PARAM_ASSUMPTIONS = Set.of("assumeTrue", "assumeFalse", "assumeNotNull", "assumeThat");
 	private static final Set<String> ONEPARAM_ASSUMPTIONS = Set.of("assumeTrue", "assumeFalse", "assumeNotNull");
-	private static final Set<String> ALL_ASSUMPTION_METHODS = Stream.of(TWOPARAM_ASSUMPTIONS, ONEPARAM_ASSUMPTIONS)
+	private static final Set<String> ALL_ASSUMPTION_METHODS = Stream.of(MULTI_PARAM_ASSUMPTIONS, ONEPARAM_ASSUMPTIONS)
 			.flatMap(Set::stream).collect(Collectors.toSet());
 
 	@Override
