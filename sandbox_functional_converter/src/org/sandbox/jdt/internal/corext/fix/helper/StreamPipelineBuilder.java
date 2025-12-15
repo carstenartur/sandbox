@@ -249,18 +249,37 @@ public class StreamPipelineBuilder {
         if (reduceOp.getReducerType() == ProspectiveOperation.ReducerType.INCREMENT ||
             reduceOp.getReducerType() == ProspectiveOperation.ReducerType.DECREMENT) {
             // Create a MAP operation that maps each item to 1 (or 1.0 for double types)
-            String literalValue = "1";
+            Expression mapExpr;
             if (accumulatorType != null && accumulatorType.equals("double")) {
-                literalValue = "1.0";
+                mapExpr = ast.newNumberLiteral("1.0");
             } else if (accumulatorType != null && accumulatorType.equals("float")) {
-                literalValue = "1.0f";
+                mapExpr = ast.newNumberLiteral("1.0f");
             } else if (accumulatorType != null && accumulatorType.equals("long")) {
-                literalValue = "1L";
+                mapExpr = ast.newNumberLiteral("1L");
+            } else if (accumulatorType != null && accumulatorType.equals("byte")) {
+                // (byte) 1
+                org.eclipse.jdt.core.dom.CastExpression cast = ast.newCastExpression();
+                cast.setType(ast.newPrimitiveType(org.eclipse.jdt.core.dom.PrimitiveType.BYTE));
+                cast.setExpression(ast.newNumberLiteral("1"));
+                mapExpr = cast;
+            } else if (accumulatorType != null && accumulatorType.equals("short")) {
+                // (short) 1
+                org.eclipse.jdt.core.dom.CastExpression cast = ast.newCastExpression();
+                cast.setType(ast.newPrimitiveType(org.eclipse.jdt.core.dom.PrimitiveType.SHORT));
+                cast.setExpression(ast.newNumberLiteral("1"));
+                mapExpr = cast;
+            } else if (accumulatorType != null && accumulatorType.equals("char")) {
+                // (char) 1
+                org.eclipse.jdt.core.dom.CastExpression cast = ast.newCastExpression();
+                cast.setType(ast.newPrimitiveType(org.eclipse.jdt.core.dom.PrimitiveType.CHAR));
+                cast.setExpression(ast.newNumberLiteral("1"));
+                mapExpr = cast;
+            } else {
+                mapExpr = ast.newNumberLiteral("1");
             }
             
-            org.eclipse.jdt.core.dom.NumberLiteral one = ast.newNumberLiteral(literalValue);
             ProspectiveOperation mapOp = new ProspectiveOperation(
-                one,
+                mapExpr,
                 ProspectiveOperation.OperationType.MAP,
                 "_item");
             ops.add(mapOp);
