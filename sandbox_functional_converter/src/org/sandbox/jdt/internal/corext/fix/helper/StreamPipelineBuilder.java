@@ -451,24 +451,14 @@ public class StreamPipelineBuilder {
                             // Don't process the body since it's just a continue statement
                         } else {
                             // Regular filter with nested processing
-                            // Add FILTER operation for the condition
-                            ProspectiveOperation filterOp = new ProspectiveOperation(
-                                ifStmt.getExpression(),
-                                ProspectiveOperation.OperationType.FILTER);
-                            ops.add(filterOp);
-                            
-                            // Process the body of the IF statement recursively
-                            List<ProspectiveOperation> nestedOps = parseLoopBody(thenStmt, currentVarName);
-                            ops.addAll(nestedOps);
-                            
-                            // Update current var name if the nested operations produced a new variable
-                            if (!nestedOps.isEmpty()) {
-                                ProspectiveOperation lastNested = nestedOps.get(nestedOps.size() - 1);
-                                if (lastNested.getProducedVariableName() != null) {
-                                    currentVarName = lastNested.getProducedVariableName();
-                                }
-                            }
+                            currentVarName = processIfAsFilter(ops, ifStmt, currentVarName, true);
                         }
+                    }
+                } else if (stmt instanceof IfStatement && isLast) {
+                    // Last statement is an IF → process as filter with nested body
+                    IfStatement ifStmt = (IfStatement) stmt;
+                    if (ifStmt.getElseStatement() == null) {
+                        processIfAsFilter(ops, ifStmt, currentVarName, false);
                     }
                 } else if (!isLast) {
                     // Non-last statement that's not a variable declaration or IF
@@ -574,6 +564,39 @@ public class StreamPipelineBuilder {
         }
         return operations.size() > 1 || 
                operations.get(0).getOperationType() != ProspectiveOperation.OperationType.FOREACH;
+    }
+    
+    /**
+     * Processes an IF statement as a filter operation with nested body parsing.
+     * Adds a FILTER operation for the condition and recursively processes the body.
+     * 
+     * @param ops the list of operations to add to
+     * @param ifStmt the IF statement to process
+     * @param currentVarName the current variable name in the pipeline
+     * @param updateVarName whether to update currentVarName based on nested operations
+     * @return the updated currentVarName (only modified if updateVarName is true)
+     */
+    private String processIfAsFilter(List<ProspectiveOperation> ops, IfStatement ifStmt, 
+                                      String currentVarName, boolean updateVarName) {
+        // Add FILTER operation for the condition
+        ProspectiveOperation filterOp = new ProspectiveOperation(
+            ifStmt.getExpression(),
+            ProspectiveOperation.OperationType.FILTER);
+        ops.add(filterOp);
+        
+        // Process the body of the IF statement recursively
+        List<ProspectiveOperation> nestedOps = parseLoopBody(ifStmt.getThenStatement(), currentVarName);
+        ops.addAll(nestedOps);
+        
+        // Update current var name if requested and nested operations produced a new variable
+        if (updateVarName && !nestedOps.isEmpty()) {
+            ProspectiveOperation lastNested = nestedOps.get(nestedOps.size() - 1);
+            if (lastNested.getProducedVariableName() != null) {
+                return lastNested.getProducedVariableName();
+            }
+        }
+        
+        return currentVarName;
     }
     
     /**
