@@ -297,12 +297,14 @@ public class StreamPipelineBuilder {
     /**
      * Extracts the non-accumulator argument from Math.max/min call.
      * For example, in "max = Math.max(max, foo(l))", extracts "foo(l)".
+     * Returns null if the non-accumulator argument is just the loop variable (identity mapping).
      * 
      * @param stmt the statement containing the Math.max/min operation
      * @param accumulatorVar the accumulator variable name
-     * @return the expression to be mapped, or null if none
+     * @param currentVarName the current variable name in the pipeline (loop variable or mapped variable)
+     * @return the expression to be mapped, or null if it's an identity mapping or no mapping needed
      */
-    private Expression extractMathMaxMinArgument(Statement stmt, String accumulatorVar) {
+    private Expression extractMathMaxMinArgument(Statement stmt, String accumulatorVar, String currentVarName) {
         if (!(stmt instanceof ExpressionStatement)) {
             return null;
         }
@@ -339,6 +341,10 @@ public class StreamPipelineBuilder {
                     SimpleName name = (SimpleName) arg;
                     if (accumulatorVar.equals(name.getIdentifier())) {
                         continue; // This is the accumulator, skip it
+                    }
+                    // Check if this is just the current loop/pipeline variable (identity mapping)
+                    if (currentVarName.equals(name.getIdentifier())) {
+                        return null; // Skip identity mapping
                     }
                 }
                 // Return the non-accumulator argument
@@ -385,7 +391,8 @@ public class StreamPipelineBuilder {
             }
         } else if (isMinMaxReducer(reducerType)) {
             // For MAX/MIN: extract non-accumulator argument
-            Expression mapExpression = extractMathMaxMinArgument(stmt, accumulatorVariable);
+            // Skip creating map if it's just an identity mapping (e.g., num -> num)
+            Expression mapExpression = extractMathMaxMinArgument(stmt, accumulatorVariable, currentVarName);
             if (mapExpression != null) {
                 ProspectiveOperation mapOp = new ProspectiveOperation(
                     mapExpression,

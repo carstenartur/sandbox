@@ -1197,7 +1197,7 @@ public class Java8CleanUpTest {
 					class TestDemo {
 					    public int findMax(List<Integer> numbers) {
 					        int max = Integer.MIN_VALUE;
-					        max = numbers.stream().map(num -> num).reduce(max, Math::max);
+					        max = numbers.stream().reduce(max, Math::max);
 					        return max;
 					    }
 					}"""),
@@ -1226,7 +1226,7 @@ public class Java8CleanUpTest {
 					class TestDemo {
 					    public int findMin(List<Integer> numbers) {
 					        int min = Integer.MAX_VALUE;
-					        min = numbers.stream().map(num -> num).reduce(min, Math::min);
+					        min = numbers.stream().reduce(min, Math::min);
 					        return min;
 					    }
 					}"""),
@@ -1315,7 +1315,7 @@ public class Java8CleanUpTest {
 					class TestDemo {
 					    public int findMaxEvenNumber(List<Integer> numbers) {
 					        int max = 0;
-					        max = numbers.stream().filter(num -> (num % 2 == 0)).map(num -> num).reduce(max, Math::max);
+					        max = numbers.stream().filter(num -> (num % 2 == 0)).reduce(max, Math::max);
 					        return max;
 					    }
 					}"""),
@@ -1345,7 +1345,7 @@ public class Java8CleanUpTest {
 					class TestDemo {
 					    public int findMinSquaredValue(List<Integer> numbers) {
 					        int min = Integer.MAX_VALUE;
-					        min = numbers.stream().map(num -> num * num).map(squared -> squared).reduce(min, Math::min);
+					        min = numbers.stream().map(num -> num * num).reduce(min, Math::min);
 					        return min;
 					    }
 					}""");
