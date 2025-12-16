@@ -149,6 +149,31 @@ public class Test {
 		IProgressMonitor sub= subMonitor2.split(50);
 	}
 }
+"""), //$NON-NLS-1$
+	IdempotenceAlreadyConverted(
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
+public class Test {
+	public void doWork(IProgressMonitor monitor) {
+		SubMonitor subMonitor=SubMonitor.convert(monitor,"Task",100);
+		IProgressMonitor sub= subMonitor.split(50);
+		IProgressMonitor sub2= subMonitor.split(30);
+	}
+}
+""", //$NON-NLS-1$
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
+public class Test {
+	public void doWork(IProgressMonitor monitor) {
+		SubMonitor subMonitor=SubMonitor.convert(monitor,"Task",100);
+		IProgressMonitor sub= subMonitor.split(50);
+		IProgressMonitor sub2= subMonitor.split(30);
+	}
+}
 """); //$NON-NLS-1$
 
 		String given;
