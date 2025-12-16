@@ -649,6 +649,8 @@ This documentation is based on the cleanup logic and test cases in `Java8CleanUp
 
 This cleanup modernizes imperative Java loop constructs by transforming them into functional-style equivalents using Java 8 Streams, `map`, `filter`, `reduce`, and `forEach`.
 
+> **📐 Architecture Documentation**: See [ARCHITECTURE.md](sandbox_functional_converter/ARCHITECTURE.md) for detailed implementation details, design patterns, and internal components.
+
 ---
 
 #### Source and Test Basis
@@ -659,33 +661,61 @@ This cleanup is fully tested in:
 
 The test class defines:
 
-- A parameterized `EnumSource` with 30+ fully supported loop transformation cases
-- A list of `@Disabled` scenarios (future features)
-- A set of `@ValueSource` cases where no change should be applied
+- **21 enabled test cases** covering fully supported loop transformation patterns
+- A list of `@Disabled` scenarios representing future features and unsupported patterns
+- A set of `@ValueSource` cases where no transformation should be applied (edge cases)
 
 ---
 
 #### Supported Transformations
 
-The cleanup currently supports:
+The cleanup currently supports the following patterns:
 
 | Pattern                                 | Transformed To                                      |
 |----------------------------------------|-----------------------------------------------------|
 | Simple enhanced for-loops              | `list.forEach(...)` or `list.stream().forEach(...)` |
 | Mapping inside loops                   | `.stream().map(...)`                                |
 | Filtering via `if` or `continue`       | `.stream().filter(...)`                             |
+| Null safety checks                     | `.filter(Objects::nonNull).map(...)`                |
 | Reductions (sum/counter)               | `.stream().map(...).reduce(...)`                    |
 | `String` concatenation in loops        | `.reduce(..., String::concat)`                      |
-| Null checks + mapping                  | `.filter(Objects::nonNull).map(...)`                |
-| Conditional early `return true/false`  | `.anyMatch(...)` / `.noneMatch(...)`                |
+| Conditional early `return true`        | `.anyMatch(...)`                                    |
+| Conditional early `return false`       | `.noneMatch(...)`                                   |
 | Method calls inside mapping/filtering  | `map(x -> method(x))`, `filter(...)`                |
 | Combined `filter`, `map`, `forEach`    | Chained stream transformations                      |
+| Increment/decrement reducers           | `.map(_item -> 1).reduce(0, Integer::sum)`          |
+| Compound assignment reducers           | `.map(expr).reduce(init, operator)`                 |
+
+**Enabled Test Cases** (21 total):
+- `SIMPLECONVERT`, `CHAININGMAP`, `ChainingFilterMapForEachConvert`
+- `SmoothLongerChaining`, `MergingOperations`, `BeautificationWorks`, `BeautificationWorks2`
+- `NonFilteringIfChaining`, `ContinuingIfFilterSingleStatement`
+- `SimpleReducer`, `ChainedReducer`, `IncrementReducer`, `AccumulatingMapReduce`
+- `DOUBLEINCREMENTREDUCER`, `DecrementingReducer`, `ChainedReducerWithMerging`, `StringConcat`
+- `ChainedAnyMatch`, `ChainedNoneMatch`
+- `NoNeededVariablesMerging`, `SomeChainingWithNoNeededVar`
 
 ---
 
 #### Examples
 
-**Imperative loop:**
+##### Simple forEach Conversion
+**Before:**
+```java
+for (Integer l : list) {
+    System.out.println(l);
+}
+```
+
+**After:**
+```java
+list.forEach(l -> System.out.println(l));
+```
+
+---
+
+##### Filter + Map + forEach Chain
+**Before:**
 ```java
 for (Integer l : list) {
     if (l != null) {
@@ -695,19 +725,71 @@ for (Integer l : list) {
 }
 ```
 
-**Functional:**
+**After:**
 ```java
 list.stream()
-    .filter(l -> l != null)
-    .map(Object::toString)
-    .forEach(System.out::println);
+    .filter(l -> (l != null))
+    .map(l -> l.toString())
+    .forEachOrdered(s -> {
+        System.out.println(s);
+    });
+```
+
+---
+
+##### Null Safety with Objects::nonNull
+**Before:**
+```java
+for (Integer l : list) {
+    if (l == null) {
+        continue;
+    }
+    String s = l.toString();
+    System.out.println(s);
+}
+```
+
+**After:**
+```java
+list.stream()
+    .filter(l -> !(l == null))
+    .map(l -> l.toString())
+    .forEachOrdered(s -> {
+        System.out.println(s);
+    });
+```
+
+---
+
+##### AnyMatch Pattern (Early Return)
+**Before:**
+```java
+for (Integer l : list) {
+    String s = l.toString();
+    Object o = foo(s);
+    if (o == null)
+        return true;
+}
+return false;
+```
+
+**After:**
+```java
+if (list.stream()
+        .map(l -> l.toString())
+        .map(s -> foo(s))
+        .anyMatch(o -> (o == null))) {
+    return true;
+}
+return false;
 ```
 
 ---
 
 #### Reductions (Accumulators)
 
-**Example:**
+##### Increment Counter
+**Before:**
 ```java
 int count = 0;
 for (String s : list) {
@@ -715,45 +797,65 @@ for (String s : list) {
 }
 ```
 
-**Transformed:**
+**After:**
 ```java
 int count = list.stream()
-    .map(x -> 1)
+    .map(_item -> 1)
+    .reduce(0, Integer::sum);
+```
+
+---
+
+##### Mapped Reduction
+**Before:**
+```java
+int sum = 0;
+for (Integer l : list) {
+    sum += foo(l);
+}
+```
+
+**After:**
+```java
+int sum = list.stream()
+    .map(l -> foo(l))
     .reduce(0, Integer::sum);
 ```
 
 Also supported:
 
-- Decrementing: `i -= 1` → `.reduce(i, (a, b) -> a - b)`
-- Custom mapped reductions: `.map(this::foo).reduce(...)`
+- **Decrementing**: `i -= 1` → `.reduce(i, (a, b) -> a - b)`
+- **Type-aware literals**: `1` for int, `1L` for long, `1.0` for double, `1.0f` for float
+- **String concatenation**: `.reduce("", String::concat)`
 
 ---
 
 #### Not Yet Supported (Disabled Tests)
 
-The following patterns are present but currently **not supported** and are marked `@Disabled`:
+The following patterns are currently **not supported** and are marked `@Disabled` in the test suite:
 
 | Pattern Description                                 | Reason / Required Feature                          |
 |-----------------------------------------------------|-----------------------------------------------------|
 | `Map.put(...)` inside loop                          | Needs `Collectors.toMap(...)` support               |
-| Early `break`/`return` inside loop body             | Requires stream short-circuit modeling             |
+| Early `break` inside loop body                      | Requires stream short-circuit modeling (`findFirst()`) |
 | Labeled `continue` or `break` (`label:`)            | Not expressible via Stream API                     |
 | Complex `if-else-return` branches                   | Requires flow graph and branching preservation      |
 | `throw` inside loop                                 | Non-convertible – not compatible with Stream flow  |
-| Multiple side effects in loop (e.g., `i++`, `j++`)  | State mutation not easily transferable              |
+| Multiple accumulators in one loop                   | State mutation not easily transferable              |
 
-These are valid test cases but intentionally **excluded from transformation** for semantic safety.
+These patterns are intentionally **excluded from transformation** to maintain semantic correctness and safety.
 
 ---
 
 #### Ignored Cases – No Cleanup Triggered
 
-Tests in the `@ValueSource` section confirm the cleanup **does not act** in edge cases, e.g.:
+The cleanup **does not modify** code in the following edge cases (validated by `@ValueSource` tests):
 
 - Non-loop constructs
-- Loops over arrays instead of `List`
-- Loops using early `return`, `throw`, or `continue label`
+- Loops over arrays instead of `List` or `Iterable`
+- Loops with early `return`, `throw`, or labeled `continue`
 - Loops mixing multiple mutable accumulators
+- Loops with side effects that cannot be safely preserved
 
 ---
 
@@ -761,12 +863,13 @@ Tests in the `@ValueSource` section confirm the cleanup **does not act** in edge
 
 | API Used                      | Requires Java |
 |-------------------------------|---------------|
-| `Stream`, `map`, `filter`     | Java 8        |
-| `Collectors.toList()`         | Java 8        |
-| `Stream.anyMatch/noneMatch`   | Java 8        |
-| `Stream.reduce(...)`          | Java 8        |
+| `Stream`, `map`, `filter`     | Java 8+       |
+| `forEach`, `forEachOrdered`   | Java 8+       |
+| `anyMatch`, `noneMatch`       | Java 8+       |
+| `reduce`                      | Java 8+       |
+| `Collectors.toList()`         | Java 8+       |
 
-This cleanup is designed for Java 8+ projects and avoids APIs introduced in later versions.
+This cleanup is designed for **Java 8+** projects and uses only APIs available since Java 8.
 
 ---
 
@@ -776,13 +879,18 @@ This cleanup is designed for Java 8+ projects and avoids APIs introduced in late
 |---------------------------------------------|-----------------------------|
 | `MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP` | `true` (enable this feature) |
 
+**Usage:**
+- Via **Eclipse Clean Up...** under the appropriate cleanup category
+- Via **JDT Batch tooling** or **Save Actions**
+
 ---
 
 #### Limitations
 
 - Does not preserve external loop-scoped variables (e.g., index tracking, multiple accumulators)
 - Cannot convert control structures with `return`, `break`, `continue label`, or `throw`
-- Currently does not support loops producing `Map<K,V>` outputs or grouping
+- Does not support loops producing `Map<K,V>` outputs or grouping patterns (future feature)
+- Does not merge consecutive filters/maps (could be optimized in future versions)
 
 ---
 
@@ -790,16 +898,18 @@ This cleanup is designed for Java 8+ projects and avoids APIs introduced in late
 
 The Functional Converter Cleanup:
 
-- Applies safe and proven transformations
-- Targets common loop structures
-- Helps modernize Java 5/6/7-style loops to Java 8 stream-based idioms
-- Uses an extensive test suite for coverage and correctness
+- **Applies safe and proven transformations** across 21 tested patterns
+- **Targets common loop structures** found in legacy codebases
+- **Modernizes Java 5/6/7-style loops** to Java 8 stream-based idioms
+- **Uses an extensive test suite** for coverage and correctness
+- **Maintains semantic safety** by excluding complex patterns
 
 ---
 
-For roadmap or contributions, see the test class `Java8CleanUpTest.java` in the `sandbox_functional_converter_test` module.
-
-> **Wiki**: [Functional Converter](https://github.com/carstenartur/sandbox/wiki/Functional-Converter) – Converts `Iterator` loops to functional loops.
+**Further Reading:**
+- **Implementation Details**: [ARCHITECTURE.md](sandbox_functional_converter/ARCHITECTURE.md) – In-depth architecture documentation
+- **Test Coverage**: `Java8CleanUpTest.java` in the `sandbox_functional_converter_test` module
+- **Wiki**: [Functional Converter](https://github.com/carstenartur/sandbox/wiki/Functional-Converter) – Converts `Iterator` loops to functional loops
 
 ### 8. `sandbox_junit`
 
