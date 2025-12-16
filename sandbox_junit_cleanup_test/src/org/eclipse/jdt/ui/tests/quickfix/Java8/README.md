@@ -54,14 +54,14 @@ Tests for JUnit 4 Rules → JUnit 5 Extensions migrations.
 - **Coverage**:
   - `TemporaryFolder` → `@TempDir` with `Path`
   - `TestName` → `TestInfo` with `@BeforeEach` initialization
-  - `ExternalResource` → Custom extensions implementing `BeforeEachCallback`/`AfterEachCallback`
+  - *(Disabled)* Anonymous `ExternalResource` → Custom extensions (hash-based class names make exact matching brittle)
+  - *(Disabled)* `@ClassRule` → static `@RegisterExtension` (hash-based class names make exact matching brittle)
   - `@Rule` → `@RegisterExtension`
-  - `@ClassRule` → static `@RegisterExtension` with `BeforeAllCallback`/`AfterAllCallback`
 - **Key scenarios**:
-  - Anonymous inner class resources → named inner classes
   - Nested/inner class resources
   - Multiple rules in same test class
   - Static vs instance rules
+- **Note**: Anonymous ExternalResource migrations are covered by `JUnitCleanupCases.RuleAnonymousExternalResource` and `RuleNestedExternalResource` parameterized tests
 
 #### `MigrationRunnersTest.java`
 Tests for `@RunWith` migrations.
