@@ -1,14 +1,25 @@
 # Functional Loop Conversion - Implementation TODO
 
-## Status Summary (December 2025)
+## Status Summary (December 2025 - Updated)
 
-**Current Milestone**: Full StreamPipelineBuilder Implementation ✅ **COMPLETE**
+**Current Milestone**: Full StreamPipelineBuilder Implementation + Code Cleanup ✅ **COMPLETE**
 
 ### Key Accomplishments
 - ✅ **StreamPipelineBuilder** - Fully implemented (849 lines) with complete stream operation analysis and pipeline construction
-- ✅ **Tests Enabled** - All 21 tests from UseFunctionalLoop enum are now enabled
+- ✅ **Tests Enabled** - All 27 tests from UseFunctionalLoop enum are now enabled
 - ✅ **Refactorer Integration** - StreamPipelineBuilder integrated via `refactorWithBuilder()` method
 - ✅ **Operation Types Supported** - MAP, FILTER, FOREACH, REDUCE, ANYMATCH, NONEMATCH all working
+- ✅ **Code Cleanup** - Removed dead code (TreeUtilities.java, legacy Refactorer methods) - 78% code reduction in Refactorer.java
+- ✅ **Math.max/Math.min Support** - Full support for MAX/MIN reduction patterns with Math::max and Math::min method references
+
+### Code Quality Improvements (December 2025)
+**Dead Code Removal**:
+- Removed `TreeUtilities.java` - completely unused utility class
+- Refactored `Refactorer.java` from 417 lines to 93 lines (78% reduction)
+  - Removed legacy implementation methods: `isOneStatementBlock()`, `isReturningIf()`, `getListRepresentation()`, `isIfWithContinue()`, `refactorContinuingIf()`, `createReduceLambdaExpression()`, `createMapLambdaExpression()`, `createForEachLambdaExpression()`
+  - Removed legacy `parseLoopBody()` and `getVariableNameFromPreviousOp()` methods (now in StreamPipelineBuilder)
+- All functionality consolidated in `StreamPipelineBuilder` class
+- Cleaner, more maintainable codebase
 
 ### StreamPipelineBuilder Capabilities
 The `StreamPipelineBuilder` class provides comprehensive loop-to-stream conversion:
@@ -26,12 +37,15 @@ The `StreamPipelineBuilder` class provides comprehensive loop-to-stream conversi
 4. **Code Quality** - Run CodeQL security scanning and address any findings
 5. **Documentation** - Update user-facing documentation with examples and limitations
 
-### Tests Enabled (21/21)
+### Tests Enabled (27/27) ✅ ALL COMPLETE
 SIMPLECONVERT, CHAININGMAP, ChainingFilterMapForEachConvert, SmoothLongerChaining, 
 MergingOperations, BeautificationWorks, BeautificationWorks2, NonFilteringIfChaining,
 ContinuingIfFilterSingleStatement, SimpleReducer, ChainedReducer, IncrementReducer,
 AccumulatingMapReduce, DOUBLEINCREMENTREDUCER, DecrementingReducer, ChainedReducerWithMerging,
-StringConcat, ChainedAnyMatch, ChainedNoneMatch, NoNeededVariablesMerging, SomeChainingWithNoNeededVar
+StringConcat, ChainedAnyMatch, ChainedNoneMatch, NoNeededVariablesMerging, SomeChainingWithNoNeededVar,
+**MaxReducer, MinReducer, MaxWithExpression, MinWithExpression, FilteredMaxReduction, ChainedMapWithMinReduction**
+
+**Note**: Math.max/Math.min patterns (last 6 tests) have full implementation support with Math::max and Math::min method references.
 
 ---
 
