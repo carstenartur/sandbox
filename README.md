@@ -643,7 +643,177 @@ This documentation is based on the cleanup logic and test cases in `Java8CleanUp
 
 **While-to-For** loop converter — already merged into Eclipse JDT.
 
-### 7. `sandbox_functional_converter`
+### 7. `sandbox_jface_cleanup`
+
+#### JFace Cleanup – SubProgressMonitor to SubMonitor Migration
+
+The **JFace Cleanup** automates the migration from the deprecated `SubProgressMonitor` API to the modern `SubMonitor` API introduced in Eclipse 3.4.
+
+---
+
+#### Purpose
+
+`SubProgressMonitor` has been deprecated in favor of `SubMonitor`, which provides:
+- **Simpler API**: Fluent interface with method chaining
+- **Better null safety**: Built-in null handling for progress monitors
+- **Improved work allocation**: More intuitive split() semantics
+- **Idempotent transformations**: The cleanup can be run multiple times safely
+- **Forward compatibility**: SubMonitor is the recommended API since Eclipse 3.4+
+
+This cleanup is designed to be **idempotent** – already migrated code will not be transformed again, ensuring safe repeated application.
+
+---
+
+#### Migration Pattern
+
+The cleanup transforms the classic `beginTask()` + `SubProgressMonitor` pattern into the modern `SubMonitor.convert()` + `split()` pattern.
+
+##### Basic Transformation
+
+**Before:**
+```java
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
+
+public void doWork(IProgressMonitor monitor) {
+    monitor.beginTask("Main Task", 100);
+    IProgressMonitor sub1 = new SubProgressMonitor(monitor, 60);
+    IProgressMonitor sub2 = new SubProgressMonitor(monitor, 40);
+}
+```
+
+**After:**
+```java
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
+
+public void doWork(IProgressMonitor monitor) {
+    SubMonitor subMonitor = SubMonitor.convert(monitor, "Main Task", 100);
+    IProgressMonitor sub1 = subMonitor.split(60);
+    IProgressMonitor sub2 = subMonitor.split(40);
+}
+```
+
+##### With Style Flags
+
+The cleanup also handles `SubProgressMonitor` constructor calls with style flags:
+
+**Before:**
+```java
+IProgressMonitor sub = new SubProgressMonitor(monitor, 50, SubProgressMonitor.PREPEND_MAIN_LABEL_TO_SUBTASK);
+```
+
+**After:**
+```java
+SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
+IProgressMonitor sub = subMonitor.split(50, SubMonitor.PREPEND_MAIN_LABEL_TO_SUBTASK);
+```
+
+---
+
+#### Unique Variable Name Handling
+
+If the scope already contains a variable named `subMonitor`, the cleanup generates a unique name:
+
+**Before:**
+```java
+public void doWork(IProgressMonitor monitor) {
+    String subMonitor = "test";  // Name collision
+    monitor.beginTask("Task", 100);
+    IProgressMonitor sub = new SubProgressMonitor(monitor, 50);
+}
+```
+
+**After:**
+```java
+public void doWork(IProgressMonitor monitor) {
+    String subMonitor = "test";
+    SubMonitor subMonitor2 = SubMonitor.convert(monitor, "Task", 100);
+    IProgressMonitor sub = subMonitor2.split(50);
+}
+```
+
+---
+
+#### Idempotence
+
+The cleanup is **idempotent** – code that has already been migrated to `SubMonitor` will not be modified:
+
+**Input (Already Migrated):**
+```java
+public void doWork(IProgressMonitor monitor) {
+    SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
+    IProgressMonitor sub = subMonitor.split(50);
+    IProgressMonitor sub2 = subMonitor.split(30);
+}
+```
+
+**Output:**
+```java
+// No changes - code is already using SubMonitor pattern
+public void doWork(IProgressMonitor monitor) {
+    SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
+    IProgressMonitor sub = subMonitor.split(50);
+    IProgressMonitor sub2 = subMonitor.split(30);
+}
+```
+
+---
+
+#### Official Eclipse Documentation
+
+- **SubMonitor API**: [SubMonitor JavaDoc](https://help.eclipse.org/latest/topic/org.eclipse.platform.doc.isv/reference/api/org/eclipse/core/runtime/SubMonitor.html)
+- **SubProgressMonitor (Deprecated)**: [SubProgressMonitor JavaDoc](https://help.eclipse.org/latest/topic/org.eclipse.platform.doc.isv/reference/api/org/eclipse/core/runtime/SubProgressMonitor.html)
+- **Eclipse 3.4 Migration Guide**: SubMonitor was introduced in Eclipse 3.4 as the preferred way to handle progress monitors
+
+---
+
+#### Requirements
+
+- **Eclipse Version**: 3.4+ (for `SubMonitor` API availability)
+- **Java Version**: Compatible with Java 8+
+
+---
+
+#### Cleanup Name & Activation
+
+| Eclipse Cleanup ID                   | Value                       |
+|--------------------------------------|-----------------------------|
+| `MYCleanUpConstants.JFACE_CLEANUP`   | `true` (enable this feature)|
+
+**Usage:**
+- Via **Eclipse Clean Up...** under the JFace category
+- Via **Save Actions** in Eclipse preferences
+- Via **JDT Batch tooling**
+
+---
+
+#### Limitations
+
+- Only transforms code that follows the standard pattern of `monitor.beginTask()` followed by `new SubProgressMonitor()`
+- Does not handle cases where monitors are passed through multiple layers without the beginTask call
+- Name collision resolution uses simple numeric suffixes (subMonitor2, subMonitor3, etc.)
+
+---
+
+#### Test Coverage
+
+The cleanup is thoroughly tested in:
+- `sandbox_jface_cleanup_test/src/org/sandbox/jdt/ui/tests/quickfix/Java8CleanUpTest.java`
+
+Test cases cover:
+- Basic transformation patterns
+- Multiple SubProgressMonitor instances per method
+- Style flags (2-arg and 3-arg constructors)
+- Variable name collisions
+- Idempotence verification
+- Mixed scenarios (some methods converted, others not)
+- Nested classes and inner classes
+- Import handling and name clash scenarios
+
+---
+
+### 8. `sandbox_functional_converter`
 
 #### Functional Converter Cleanup – Transform Imperative Loops into Functional Java 8 Streams
 
@@ -1002,7 +1172,7 @@ The Functional Converter Cleanup:
 - **Test Coverage**: `Java8CleanUpTest.java` in the `sandbox_functional_converter_test` module
 - **Wiki**: [Functional Converter](https://github.com/carstenartur/sandbox/wiki/Functional-Converter) – Converts `Iterator` loops to functional loops
 
-### 8. `sandbox_junit`
+### 9. `sandbox_junit`
 
 #### JUnit Cleanup – Feature Overview
 
