@@ -108,11 +108,11 @@ public class Java8CleanUpTest {
 			    public static void main( String[] args) {
 			        // TODO code application logic here
 			        List<Integer> ints=new ArrayList<>();
-			        double len=0.;\s\s\s\s\s\s\s\s
+			        double len=0.;
 			        for(int i : ints)
 			            len++;
-			 \s\s\s\s\s\s\s\s\s\s\s
-			    }\s\s\s\s
+
+			    }
 			}""",
 
 				"""
@@ -133,10 +133,10 @@ public class Java8CleanUpTest {
 					    public static void main( String[] args) {
 					        // TODO code application logic here
 					        List<Integer> ints=new ArrayList<>();
-					        double len=0.;\s\s\s\s\s\s\s\s
+					        double len=0.;
 					        len = ints.stream().map(_item -> 1.0).reduce(len, (accumulator, _item) -> accumulator + 1);
-					 \s\s\s\s\s\s\s\s\s\s\s
-					    }\s\s\s\s
+
+					    }
 					}"""),
 		ChainingFilterMapForEachConvert("""
 			package test1;
@@ -150,7 +150,7 @@ public class Java8CleanUpTest {
 			        new TestDemo().test(Arrays.asList(1, 2, 3));
 			    }
 
-			    public void test(List<Integer> ls) {\s\s\s\s\s\s\s\s
+			    public void test(List<Integer> ls) {
 			        for (Integer l : ls) {
 			            if(l!=null)
 			            {
@@ -158,8 +158,8 @@ public class Java8CleanUpTest {
 			                System.out.println(s);
 			            }
 			        }
-			 \s\s\s\s\s\s\s\s\s\s\s
-			 \s\s\s\s\s\s\s
+
+
 			    }
 			}""",
 
@@ -175,12 +175,12 @@ public class Java8CleanUpTest {
 					        new TestDemo().test(Arrays.asList(1, 2, 3));
 					    }
 
-					    public void test(List<Integer> ls) {\s\s\s\s\s\s\s\s
+					    public void test(List<Integer> ls) {
 					        ls.stream().filter(l -> (l!=null)).map(l -> l.toString()).forEachOrdered(s -> {
 					            System.out.println(s);
 					        });
-					 \s\s\s\s\s\s\s\s\s\s\s
-					 \s\s\s\s\s\s\s
+
+
 					    }
 					}"""),
 		SmoothLongerChaining("""
@@ -195,7 +195,7 @@ public class Java8CleanUpTest {
 			        new TestDemo().test(Arrays.asList(1,2,3));
 			    }
 
-			    public void test(List<Integer> ls) {\s\s\s\s\s\s\s\s
+			    public void test(List<Integer> ls) {
 			        for (Integer a : ls) {
 			            Integer l = new Integer(a.intValue());
 			            if(l!=null)
@@ -204,8 +204,8 @@ public class Java8CleanUpTest {
 			                System.out.println(s);
 			            }
 			        }
-			 \s\s\s\s\s\s\s\s\s\s\s
-			 \s\s\s\s\s\s\s
+
+
 			    }
 			}""",
 
@@ -221,12 +221,12 @@ public class Java8CleanUpTest {
 					        new TestDemo().test(Arrays.asList(1,2,3));
 					    }
 
-					    public void test(List<Integer> ls) {\s\s\s\s\s\s\s\s
+					    public void test(List<Integer> ls) {
 					        ls.stream().map(a -> new Integer(a.intValue())).filter(l -> (l!=null)).map(l -> l.toString()).forEachOrdered(s -> {
 					            System.out.println(s);
 					        });
-					 \s\s\s\s\s\s\s\s\s\s\s
-					 \s\s\s\s\s\s\s
+
+
 					    }
 					}"""),
 		NonFilteringIfChaining("""
@@ -241,19 +241,19 @@ public class Java8CleanUpTest {
 			        new TestDemo().test(Arrays.asList(1,2,3));
 			    }
 
-			    public void test(List<Integer> ls) {\s\s\s\s\s\s\s\s
+			    public void test(List<Integer> ls) {
 			        for (Integer a : ls) {
 			            Integer l = new Integer(a.intValue());
 			            if(l!=null)
-			            {\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s
+			            {
 			                String s = l.toString();
 			                if(s!=null)
 			                    System.out.println(s);
 			                System.out.println("cucu");
 			            }
 			        }
-			 \s\s\s\s\s\s\s\s\s\s\s
-			 \s\s\s\s\s\s\s
+
+
 			    }
 			}""",
 
@@ -269,7 +269,7 @@ public class Java8CleanUpTest {
 					        new TestDemo().test(Arrays.asList(1,2,3));
 					    }
 
-					    public void test(List<Integer> ls) {\s\s\s\s\s\s\s\s
+					    public void test(List<Integer> ls) {
 					        ls.stream().map(a -> new Integer(a.intValue())).filter(l -> (l!=null)).map(l -> l.toString()).map(s -> {
 					            if(s!=null)
 					                System.out.println(s);
@@ -277,8 +277,8 @@ public class Java8CleanUpTest {
 					        }).forEachOrdered(_item -> {
 					            System.out.println("cucu");
 					        });
-					 \s\s\s\s\s\s\s\s\s\s\s
-					 \s\s\s\s\s\s\s
+
+
 					    }
 					}"""),
 		ContinuingIfFilterSingleStatement("""
@@ -294,15 +294,14 @@ public class Java8CleanUpTest {
 			    }
 
 			    public void test(List<Integer> ls) {
-			        for (Integer l : ls) {\s\s\s\s\s\s\s\s\s\s\s\s
+			        for (Integer l : ls) {
 			            if (l == null) {
 			                continue;
 			            }
 			            String s = l.toString();
 			            if (s != null) {
 			                System.out.println(s);
-			            }\s\s\s\s\s
-
+			            }
 			        }
 
 
@@ -349,12 +348,12 @@ public class Java8CleanUpTest {
 			            if(o==null)
 			                return true;
 			        }
-			 \s\s\s\s\s\s\s
+
 			        return false;
 
 
 			    }
-			 \s\s\s
+
 			    Object foo(Object o)
 			    {
 			        return o;
@@ -377,12 +376,12 @@ public class Java8CleanUpTest {
 					        if (ls.stream().map(l -> l.toString()).map(s -> foo(s)).anyMatch(o -> (o==null))) {
 					            return true;
 					        }
-					 \s\s\s\s\s\s\s
+
 					        return false;
 
 
 					    }
-					 \s\s\s
+
 					    Object foo(Object o)
 					    {
 					        return o;
@@ -408,12 +407,12 @@ public class Java8CleanUpTest {
 			            if(o==null)
 			                return false;
 			        }
-			 \s\s\s\s\s\s\s
+
 			        return true;
 
 
 			    }
-			 \s\s\s
+
 			    Object foo(Object o)
 			    {
 			        return o;
@@ -436,12 +435,12 @@ public class Java8CleanUpTest {
 					        if (!ls.stream().map(l -> l.toString()).map(s -> foo(s)).noneMatch(o -> (o==null))) {
 					            return false;
 					        }
-					 \s\s\s\s\s\s\s
+
 					        return true;
 
 
 					    }
-					 \s\s\s
+
 					    Object foo(Object o)
 					    {
 					        return o;
@@ -459,23 +458,23 @@ public class Java8CleanUpTest {
 			        new TestDemo().test(Arrays.asList(1, 2, 3,7));
 			    }
 
-			 \s\s
+
 			    public Boolean test(List<Integer> ls) throws Exception {
-			        Integer i=0;\s\s\s\s\s\s\s\s
+			        Integer i=0;
 			        for(Integer l : ls)
-			        {\s\s\s\s\s\s\s\s\s
+			        {
 			            System.out.println();
 			            System.out.println("");
-			 \s\s\s\s\s\s\s\s\s\s\s
+
 			        }
 			        System.out.println(i);
 			        return false;
 
 
-			    }\s\s\s\s
+			    }
 			    private void foo(Object o, int i) throws Exception
 			    {
-			 \s\s\s\s\s\s\s
+
 			    }
 			}""",
 
@@ -491,10 +490,10 @@ public class Java8CleanUpTest {
 					        new TestDemo().test(Arrays.asList(1, 2, 3,7));
 					    }
 
-					 \s\s
+
 					    public Boolean test(List<Integer> ls) throws Exception {
-					        Integer i=0;\s\s\s\s\s\s\s\s
-					        ls.stream().map(_item -> {\s\s\s\s\s\s\s\s\s
+					        Integer i=0;
+					        ls.stream().map(_item -> {
 					            System.out.println();
 					            return _item;
 					        }).forEachOrdered(_item -> {
@@ -504,10 +503,10 @@ public class Java8CleanUpTest {
 					        return false;
 
 
-					    }\s\s\s\s
+					    }
 					    private void foo(Object o, int i) throws Exception
 					    {
-					 \s\s\s\s\s\s\s
+
 					    }
 					}"""),
 		SomeChainingWithNoNeededVar("""
@@ -534,15 +533,15 @@ public class Java8CleanUpTest {
 			                    System.out.println(s);
 			                }
 			                System.out.println("cucu");
-			            }\s\s\s
+			            }
 			            System.out.println();
 			        }
-			 \s\s\s\s\s\s\s
+
 			        return true;
 
 
 			    }
-			 \s\s\s\s\s\s\s
+
 			    Object foo(Object o)
 			    {
 			        return o;
@@ -571,17 +570,17 @@ public class Java8CleanUpTest {
 					                    System.out.println(s);
 					                }
 					                System.out.println("cucu");
-					            }\s\s\s
+					            }
 					            return l;
 					        }).forEachOrdered(_item -> {
 					            System.out.println();
 					        });
-					 \s\s\s\s\s\s\s
+
 					        return true;
 
 
 					    }
-					 \s\s\s\s\s\s\s
+
 					    Object foo(Object o)
 					    {
 					        return o;
@@ -599,7 +598,7 @@ public class Java8CleanUpTest {
 			        new TestDemo().test(Arrays.asList(1, 2, 3,7));
 			    }
 
-			 \s\s
+
 			    public Boolean test(List<Integer> ls) {
 			        Integer i=0;
 			        for(Integer l : ls)
@@ -608,7 +607,7 @@ public class Java8CleanUpTest {
 			        return true;
 
 
-			    }\s\s\s\s
+			    }
 			}""",
 
 				"""
@@ -623,7 +622,7 @@ public class Java8CleanUpTest {
 					        new TestDemo().test(Arrays.asList(1, 2, 3,7));
 					    }
 
-					 \s\s
+
 					    public Boolean test(List<Integer> ls) {
 					        Integer i=0;
 					        i = ls.stream().map(_item -> 1).reduce(i, Integer::sum);
@@ -631,7 +630,7 @@ public class Java8CleanUpTest {
 					        return true;
 
 
-					    }\s\s\s\s
+					    }
 					}"""),
 		ChainedReducer("""
 			package test1;
@@ -645,26 +644,26 @@ public class Java8CleanUpTest {
 			        new TestDemo().test(Arrays.asList(1, 2, 3,7));
 			    }
 
-			 \s\s
+
 			    public Boolean test(List<Integer> ls) {
 			        Integer i=0;
 			        for(Integer l : ls)
-			        {\s\s\s\s\s\s\s\s\s\s\s\s\s
+			        {
 			            if(l!=null)
 			            {
 			                foo(l);
 			                i++;
 			            }
-			 \s\s\s\s\s\s\s\s\s\s\s
+
 			        }
 			        System.out.println(i);
 			        return true;
 
 
-			    }\s\s\s\s
+			    }
 			    private void foo(Object o)
 			    {
-			 \s\s\s\s\s\s\s
+
 			    }
 			}""",
 
@@ -680,7 +679,7 @@ public class Java8CleanUpTest {
 					        new TestDemo().test(Arrays.asList(1, 2, 3,7));
 					    }
 
-					 \s\s
+
 					    public Boolean test(List<Integer> ls) {
 					        Integer i=0;
 					        i = ls.stream().filter(l -> (l!=null)).map(l -> {
@@ -691,10 +690,10 @@ public class Java8CleanUpTest {
 					        return true;
 
 
-					    }\s\s\s\s
+					    }
 					    private void foo(Object o)
 					    {
-					 \s\s\s\s\s\s\s
+
 					    }
 					}"""),
 		ChainedReducerWithMerging("""
@@ -709,29 +708,29 @@ public class Java8CleanUpTest {
 			        new TestDemo().test(Arrays.asList(1, 2, 3,7));
 			    }
 
-			 \s\s
+
 			    public Boolean test(List<Integer> ls) {
 			        Integer i=0;
 			        for(Integer l : ls)
-			        {\s\s\s\s\s\s\s\s
+			        {
 			            String s =l.toString();
 			            System.out.println(s);
 			            foo(l);
 			            if(l!=null)
 			            {
-			                foo(l);\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s
+			                foo(l);
 			                i--;
 			            }
-			 \s\s\s\s\s\s\s\s\s\s\s
+
 			        }
 			        System.out.println(i);
 			        return true;
 
 
-			    }\s\s\s\s
+			    }
 			    private void foo(Object o)
 			    {
-			 \s\s\s\s\s\s\s
+
 			    }
 			}""",
 
@@ -747,10 +746,10 @@ public class Java8CleanUpTest {
 					        new TestDemo().test(Arrays.asList(1, 2, 3,7));
 					    }
 
-					 \s\s
+
 					    public Boolean test(List<Integer> ls) {
 					        Integer i=0;
-					        i = ls.stream().map(l -> {\s\s\s\s\s\s\s\s
+					        i = ls.stream().map(l -> {
 					            String s =l.toString();
 					            System.out.println(s);
 					            foo(l);
@@ -763,10 +762,10 @@ public class Java8CleanUpTest {
 					        return true;
 
 
-					    }\s\s\s\s
+					    }
 					    private void foo(Object o)
 					    {
-					 \s\s\s\s\s\s\s
+
 					    }
 					}"""),
 		IncrementReducer("package test1;\n"
@@ -955,7 +954,7 @@ public class Java8CleanUpTest {
 			        int i = 0;
 			        int j = 0;
 			        for(String str: strs)
-			        {\s\s\s\s\s\s\s\s\s\s\s\s
+			        {
 			            int len1=str.length();
 			            int len2 = str.length();
 			            if(len1%2==0){
@@ -963,10 +962,10 @@ public class Java8CleanUpTest {
 			                System.out.println(len2);
 			                System.out.println();
 			            }
-			 \s\s\s\s\s\s\s\s\s\s\s
+
 			        }
 			        return false;
-			 \s\s\s\s\s\s\s
+
 			    }
 			}""",
 
@@ -990,7 +989,7 @@ public class Java8CleanUpTest {
 					        List<String> strs = new ArrayList<String>();
 					        int i = 0;
 					        int j = 0;
-					        strs.forEach(str -> {\s\s\s\s\s\s\s\s\s\s\s\s
+					        strs.forEach(str -> {
 					            int len1=str.length();
 					            int len2 = str.length();
 					            if (len1%2==0) {
@@ -1000,7 +999,7 @@ public class Java8CleanUpTest {
 					            }
 					        });
 					        return false;
-					 \s\s\s\s\s\s\s
+
 					    }
 					}"""),
 		BeautificationWorks("""
@@ -1024,14 +1023,14 @@ public class Java8CleanUpTest {
 			        int i = 0;
 			        int j = 0;
 			        for(String str: strs)
-			        {\s\s\s\s\s\s\s\s\s\s\s\s
+			        {
 			            String s = "foo";
 			            s=s.toString();
 			            System.out.println(s);
-			 \s\s\s\s\s\s\s\s\s\s\s
+
 			        }
 			        return false;
-			 \s\s\s\s\s\s\s
+
 			    }
 			}""",
 
@@ -1059,7 +1058,7 @@ public class Java8CleanUpTest {
 					            System.out.println(s);
 					        });
 					        return false;
-					 \s\s\s\s\s\s\s
+
 					    }
 					}"""),
 		BeautificationWorks2("""
@@ -1083,14 +1082,14 @@ public class Java8CleanUpTest {
 			        int i = 0;
 			        int j = 0;
 			        for(String str: strs)
-			        {\s\s\s\s\s\s\s\s\s\s\s\s
+			        {
 			            String s = "foo";
 			            s=s.toString();
 			            System.out.println();
-			 \s\s\s\s\s\s\s\s\s\s\s
+
 			        }
 			        return false;
-			 \s\s\s\s\s\s\s
+
 			    }
 			}""",
 
@@ -1118,7 +1117,7 @@ public class Java8CleanUpTest {
 					            System.out.println();
 					        });
 					        return false;
-					 \s\s\s\s\s\s\s
+
 					    }
 					}"""),
 		DecrementingReducer("""
@@ -1144,7 +1143,7 @@ public class Java8CleanUpTest {
 			        for(String str : strs)
 			            i-=1;
 			        return false;
-			 \s\s\s\s\s\s\s
+
 			    }
 			}""",
 
@@ -1170,7 +1169,7 @@ public class Java8CleanUpTest {
 					        int j = 0;
 					        i = strs.stream().map(_item -> 1).reduce(i, (accumulator, _item) -> accumulator - _item);
 					        return false;
-					 \s\s\s\s\s\s\s
+
 					    }
 					}""");
 
@@ -1185,8 +1184,8 @@ public class Java8CleanUpTest {
 
 	@ParameterizedTest
 	@EnumSource(value = UseFunctionalLoop.class, names = {
-		"SIMPLECONVERT", 
-		"CHAININGMAP", 
+		"SIMPLECONVERT",
+		"CHAININGMAP",
 		"ChainingFilterMapForEachConvert",
 		"SmoothLongerChaining",
 		"MergingOperations",
@@ -1250,7 +1249,7 @@ public class Java8CleanUpTest {
 				        for(String str:strs)
 				            i++;
 				        return false;
-				 \s\s\s\s\s\s\s
+
 				    }
 				}""",
 
@@ -1266,28 +1265,28 @@ public class Java8CleanUpTest {
 				        new TestDemo().test(Arrays.asList(1, 2, 3,7));
 				    }
 
-				 \s\s
+
 				    public Boolean test(List<Integer> ls) {
 				        Integer i=0;
 				        for(Integer l : ls)
-				        {\s\s\s\s\s\s\s\s
+				        {
 				            String s =l.toString();
 				            System.out.println(s);
-				            foo(l,i);\s\s\s\s\s\s\s\s\s\s\s\s
+				            foo(l,i);
 				            if(l!=null)
-				            {\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s
+				            {
 				                i++;
 				            }
-				 \s\s\s\s\s\s\s\s\s\s\s
+
 				        }
 				        System.out.println(i);
 				        return true;
 
 
-				    }\s\s\s\s
+				    }
 				    private void foo(Object o, int i)
 				    {
-				 \s\s\s\s\s\s\s
+
 				    }
 				}""",
 
@@ -1303,25 +1302,25 @@ public class Java8CleanUpTest {
 				        new TestDemo().test(Arrays.asList(1, 2, 3,7));
 				    }
 
-				 \s\s
+
 				    public Boolean test(List<Integer> ls) {
 				        Integer i=0;
 				        for(Integer l : ls)
-				        {\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s
+				        {
 				            if(l!=null)
-				            {\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s
+				            {
 				                break;
 				            }
-				 \s\s\s\s\s\s\s\s\s\s\s
+
 				        }
 				        System.out.println(i);
 				        return true;
 
 
-				    }\s\s\s\s
+				    }
 				    private void foo(Object o, int i)
 				    {
-				 \s\s\s\s\s\s\s
+
 				    }
 				}""",
 
@@ -1337,25 +1336,25 @@ public class Java8CleanUpTest {
 				        new TestDemo().test(Arrays.asList(1, 2, 3,7));
 				    }
 
-				 \s\s
+
 				    public int test(List<Integer> ls) {
 				        Integer i=0;
 				        for(Integer l : ls)
-				        {\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s
+				        {
 				            if(l!=null)
-				            {\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s
+				            {
 				                return 0;
 				            }
-				 \s\s\s\s\s\s\s\s\s\s\s
+
 				        }
 				        System.out.println(i);
 				        return 1;
 
 
-				    }\s\s\s\s
+				    }
 				    private void foo(Object o, int i)
 				    {
-				 \s\s\s\s\s\s\s
+
 				    }
 				}""",
 
@@ -1371,27 +1370,27 @@ public class Java8CleanUpTest {
 				        new TestDemo().test(Arrays.asList(1, 2, 3,7));
 				    }
 
-				 \s\s
+
 				    public Boolean test(List<Integer> ls) {
 				        Integer i=0;
 				        for(Integer l : ls)
-				        {\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s
+				        {
 				            if(l==null)
-				            {\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s
+				            {
 				                return true;
 				            }
 				            if(l.toString()==null)
 				                return true;
-				 \s\s\s\s\s\s\s\s\s\s\s
+
 				        }
 				        System.out.println(i);
 				        return false;
 
 
-				    }\s\s\s\s
+				    }
 				    private void foo(Object o, int i)
 				    {
-				 \s\s\s\s\s\s\s
+
 				    }
 				}""",
 
@@ -1407,28 +1406,28 @@ public class Java8CleanUpTest {
 				        new TestDemo().test(Arrays.asList(1, 2, 3,7));
 				    }
 
-				 \s\s
+
 				    public Boolean test(List<Integer> ls) {
 				        Integer i=0;
 				        label:
 				        for(Integer l : ls)
-				        {\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s
+				        {
 				            if(l==null)
-				            {\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s
+				            {
 				                continue label;
 				            }
 				            if(l.toString()==null)
 				                return true;
-				 \s\s\s\s\s\s\s\s\s\s\s
+
 				        }
 				        System.out.println(i);
 				        return false;
 
 
-				    }\s\s\s\s
+				    }
 				    private void foo(Object o, int i)
 				    {
-				 \s\s\s\s\s\s\s
+
 				    }
 				}""",
 
@@ -1444,28 +1443,28 @@ public class Java8CleanUpTest {
 				        new TestDemo().test(Arrays.asList(1, 2, 3,7));
 				    }
 
-				 \s\s
+
 				    public Boolean test(List<Integer> ls) {
 				        Integer i=0;
-				 \s\s\s\s\s\s\s
+
 				        for(Integer l : ls)
-				        {\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s
+				        {
 				            if(l==null)
-				            {\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s
+				            {
 				                continue;
 				            }
 				            else if(l.toString()==null)
 				                return true;
-				 \s\s\s\s\s\s\s\s\s\s\s
+
 				        }
 				        System.out.println(i);
 				        return false;
 
 
-				    }\s\s\s\s
+				    }
 				    private void foo(Object o, int i)
 				    {
-				 \s\s\s\s\s\s\s
+
 				    }
 				}""",
 
@@ -1481,29 +1480,29 @@ public class Java8CleanUpTest {
 				        new TestDemo().test(Arrays.asList(1, 2, 3,7));
 				    }
 
-				 \s\s
+
 				    public Boolean test(List<Integer> ls) throws Exception {
 				        Integer i=0;
-				 \s\s\s\s\s\s\s
+
 				        for(Integer l : ls)
-				        {\s\s\s\s\s\s\s\s\s
+				        {
 				            foo(l,1);
 				            if(l==null)
-				            {\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s
+				            {
 				                continue;
 				            }
 				            else if(l.toString()==null)
 				                return true;
-				 \s\s\s\s\s\s\s\s\s\s\s
+
 				        }
 				        System.out.println(i);
 				        return false;
 
 
-				    }\s\s\s\s
+				    }
 				    private void foo(Object o, int i) throws Exception
 				    {
-				 \s\s\s\s\s\s\s
+
 				    }
 				}"""
 			,
@@ -1520,23 +1519,23 @@ public class Java8CleanUpTest {
 				        new TestDemo().test(Arrays.asList(1, 2, 3,7));
 				    }
 
-				 \s\s
+
 				    public Boolean test(List<Integer> ls) throws Exception {
 				        Integer i=0;
-				 \s\s\s\s\s\s\s
+
 				        for(Integer l : ls)
-				        {\s\s\s\s\s\s\s\s\s
-				            throw new Exception();\s\s\s\s\s\s\s\s\s\s\s\s
-				 \s\s\s\s\s\s\s\s\s\s\s
+				        {
+				            throw new Exception();
+
 				        }
 				        System.out.println(i);
 				        return false;
 
 
-				    }\s\s\s\s
+				    }
 				    private void foo(Object o, int i) throws Exception
 				    {
-				 \s\s\s\s\s\s\s
+
 				    }
 				}"""
 			,
@@ -1581,7 +1580,7 @@ public class Java8CleanUpTest {
 				            }
 				            //j++;
 				        }
-				 \s\s\s\s\s\s\s
+
 				    }
 				}"""
 			,
@@ -1607,14 +1606,14 @@ public class Java8CleanUpTest {
 				        int i = 0;
 				        int j = 0;
 				        for(String str: strs)
-				        {\s\s\s\s\s\s\s\s\s\s\s\s
+				        {
 				            if(str!=null){
 				                return true;
 				            }
 				            System.out.println("gugu");
 				        }
 				        return false;
-				 \s\s\s\s\s\s\s
+
 				    }
 				}"""
 			,
@@ -1640,13 +1639,13 @@ public class Java8CleanUpTest {
 				        int i = 0;
 				        int j = 0;
 				        for(String str: strs)
-				        {\s\s\s\s\s\s\s\s\s\s\s\s
+				        {
 				            if(str!=null){
 				                return;
 				            }
 				        }
 				        return;
-				 \s\s\s\s\s\s\s
+
 				    }
 				}"""
 
