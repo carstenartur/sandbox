@@ -52,21 +52,16 @@ for (Integer l : ls) {
 
 **Example:**
 ```java
-// REJECTED: Labeled continue
-label:
-for (Integer l : ls) {
-    if (l == null) {
-        continue label;  // Can't convert this safely
-    }
-    System.out.println(l);
+// Rejected: labeled continue
+label: for (Integer l : ls) {
+    if (l == null) continue label;  // Cannot convert safely
+    process(l);
 }
 
-// ACCEPTED: Unlabeled continue
+// Accepted: unlabeled continue → filter
 for (Integer l : ls) {
-    if (l == null) {
-        continue;  // Converts to .filter(l -> !(l == null))
-    }
-    System.out.println(l);
+    if (l == null) continue;  // Converts to .filter(l -> !(l == null))
+    process(l);
 }
 ```
 

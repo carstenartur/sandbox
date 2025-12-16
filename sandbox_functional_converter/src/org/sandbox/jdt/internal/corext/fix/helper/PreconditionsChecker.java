@@ -57,7 +57,9 @@ public class PreconditionsChecker {
     public boolean isSafeToRefactor() {
         // Allow early returns if they match anyMatch/noneMatch/allMatch patterns
         boolean allowedReturn = containsReturn && (isAnyMatchPattern || isNoneMatchPattern || isAllMatchPattern);
-        return !throwsException && !containsBreak && !containsContinue && !containsLabeledContinue && (!containsReturn || allowedReturn) && !containsNEFs;
+        // Note: Unlabeled continues are allowed and will be converted to filters by StreamPipelineBuilder
+        // Only labeled continues are rejected here
+        return !throwsException && !containsBreak && !containsLabeledContinue && (!containsReturn || allowedReturn) && !containsNEFs;
     }
 
     /** (2) Überprüft, ob die Schleife eine Exception wirft. */

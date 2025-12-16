@@ -914,7 +914,10 @@ public class StreamPipelineBuilder {
     /**
      * Checks if an IF statement contains a continue statement.
      * This pattern should be converted to a negated filter.
-     * Only handles unlabeled continue statements - labeled continues are rejected.
+     * 
+     * <p>This method identifies whether an IF statement contains a continue that can be
+     * converted to a filter operation. The actual rejection of labeled continues happens
+     * earlier in {@link PreconditionsChecker#isSafeToRefactor()}.
      * 
      * @param ifStatement the IF statement to check
      * @return true if the then branch contains an unlabeled continue statement
@@ -1126,6 +1129,11 @@ public class StreamPipelineBuilder {
      * - Produced variables don't shadow loop variables improperly
      * - Accumulator variables don't leak into lambda scopes
      * 
+     * <p>This validation is complementary to {@link #isSafeSideEffect(Statement, String, List)}.
+     * While {@code isSafeSideEffect} performs early detection of obvious assignment issues,
+     * this method performs comprehensive scope checking across the entire pipeline to catch
+     * variable availability issues.
+     * 
      * @param operations the list of operations to validate
      * @param loopVarName the loop variable name
      * @return true if all variables are properly scoped, false otherwise
@@ -1192,12 +1200,17 @@ public class StreamPipelineBuilder {
      * <li>Modifications to shared mutable state</li>
      * </ul>
      * 
+     * <p><b>Note:</b> This method only validates simple variable assignments (SimpleName on LHS).
+     * Array element assignments and field assignments are not validated here and are conservatively
+     * allowed, as they may be part of valid stream pipeline patterns. This is a design decision
+     * that prioritizes not rejecting valid patterns over catching all potential issues.
+     * 
      * @param stmt the statement to check
-     * @param loopVarName the loop variable name
+     * @param currentVarName the current variable name in the pipeline (may differ from loop variable if mapped)
      * @param operations the list of operations (to check for accumulators)
      * @return true if the statement is safe to include in a stream pipeline
      */
-    private boolean isSafeSideEffect(Statement stmt, String loopVarName, List<ProspectiveOperation> operations) {
+    private boolean isSafeSideEffect(Statement stmt, String currentVarName, List<ProspectiveOperation> operations) {
         if (!(stmt instanceof ExpressionStatement)) {
             // Only expression statements can be safe side-effects
             // Other statement types (if, while, for, etc.) should be handled differently
@@ -1212,11 +1225,13 @@ public class StreamPipelineBuilder {
             Assignment assignment = (Assignment) expr;
             Expression lhs = assignment.getLeftHandSide();
             
+            // Only validate SimpleName assignments (simple variables)
+            // Array access and field access are conservatively allowed
             if (lhs instanceof SimpleName) {
                 String varName = ((SimpleName) lhs).getIdentifier();
                 
-                // Assignment to loop variable or mapped variables is unsafe
-                if (varName.equals(loopVarName)) {
+                // Assignment to current pipeline variable is unsafe (would modify loop/mapped var)
+                if (varName.equals(currentVarName)) {
                     return false;
                 }
                 

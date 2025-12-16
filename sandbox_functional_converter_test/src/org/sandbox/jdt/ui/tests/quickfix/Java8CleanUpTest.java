@@ -2061,6 +2061,22 @@ public class Java8CleanUpTest {
 				        }
 				        System.out.println(count);
 				    }
+				}""",
+			
+			// Test case: Assignment to external variable in non-last statement (should NOT convert)
+			"""
+				package testdemo;
+				
+				import java.util.List;
+				
+				class TestDemo {
+				    public void processWithExternalAssignment(List<String> items) {
+				        StringBuilder result = new StringBuilder();
+				        for (String item : items) {
+				            result = new StringBuilder(item);  // Assignment to external var (non-last statement)
+				            System.out.println(item);
+				        }
+				    }
 				}"""
 
 	})
