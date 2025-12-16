@@ -71,8 +71,8 @@ public class CodeCleanupApplicationTest {
 		originalErr = System.err;
 		outContent = new ByteArrayOutputStream();
 		errContent = new ByteArrayOutputStream();
-		System.setOut(new PrintStream(outContent));
-		System.setErr(new PrintStream(errContent));
+		System.setOut(new PrintStream(outContent, true, StandardCharsets.UTF_8));
+		System.setErr(new PrintStream(errContent, true, StandardCharsets.UTF_8));
 	}
 
 	@AfterEach
@@ -95,7 +95,7 @@ public class CodeCleanupApplicationTest {
 		assertEquals(0, result.length);
 		
 		// Help text should be printed to stdout
-		String output = outContent.toString();
+		String output = outContent.toString(StandardCharsets.UTF_8);
 		assertTrue(output.contains("Usage:"), "Help output should contain usage information");
 	}
 
@@ -111,7 +111,7 @@ public class CodeCleanupApplicationTest {
 		assertNull(result);
 		
 		// Error message should be printed
-		String output = outContent.toString();
+		String output = outContent.toString(StandardCharsets.UTF_8);
 		assertTrue(output.contains("configuration file") || output.contains("config"), 
 				"Output should mention configuration file error");
 	}
@@ -129,7 +129,7 @@ public class CodeCleanupApplicationTest {
 		assertEquals(0, result.length);
 		
 		// Error message should be printed to stderr
-		String errorOutput = errContent.toString();
+		String errorOutput = errContent.toString(StandardCharsets.UTF_8);
 		assertTrue(errorOutput.contains("config") || errorOutput.contains("Configuration"),
 				"Error output should mention config file problem");
 	}
@@ -149,7 +149,7 @@ public class CodeCleanupApplicationTest {
 		assertNull(result);
 		
 		// Error message should be printed
-		String output = outContent.toString();
+		String output = outContent.toString(StandardCharsets.UTF_8);
 		assertTrue(output.contains("quiet") || output.contains("verbose"),
 				"Output should mention quiet/verbose conflict");
 	}
@@ -192,7 +192,7 @@ public class CodeCleanupApplicationTest {
 		assertEquals(0, result.length);
 		
 		// Error message should be printed to stderr
-		String errorOutput = errContent.toString();
+		String errorOutput = errContent.toString(StandardCharsets.UTF_8);
 		assertTrue(errorOutput.contains("doesn't exist") || errorOutput.contains("File"),
 				"Error output should mention file doesn't exist");
 	}
@@ -211,7 +211,7 @@ public class CodeCleanupApplicationTest {
 		assertNull(result);
 		
 		// Error message should be printed
-		String output = outContent.toString();
+		String output = outContent.toString(StandardCharsets.UTF_8);
 		assertTrue(output.contains("files") || output.contains("directories"),
 				"Output should mention no files/directories specified");
 	}
@@ -309,7 +309,7 @@ public class CodeCleanupApplicationTest {
 		assertEquals(IApplication.EXIT_OK, result);
 		
 		// In verbose mode, should see configuration file message
-		String output = outContent.toString();
+		String output = outContent.toString(StandardCharsets.UTF_8);
 		assertTrue(output.contains("configuration file") || output.contains("Starting cleanup"), 
 				"Verbose mode should produce progress output");
 	}
@@ -330,7 +330,7 @@ public class CodeCleanupApplicationTest {
 		assertEquals(IApplication.EXIT_OK, result);
 		
 		// In quiet mode, stdout should be minimal (no "Starting cleanup" messages)
-		String output = outContent.toString();
+		String output = outContent.toString(StandardCharsets.UTF_8);
 		assertTrue(output.isEmpty() || !output.contains("Starting cleanup"), 
 				"Quiet mode should suppress normal output");
 	}
@@ -348,7 +348,7 @@ public class CodeCleanupApplicationTest {
 		assertEquals(IApplication.EXIT_OK, result);
 		
 		// Should see error message about config file
-		String errorOutput = errContent.toString();
+		String errorOutput = errContent.toString(StandardCharsets.UTF_8);
 		assertTrue(errorOutput.contains("config") || errorOutput.contains("Configuration"), 
 				"Should report configuration file error");
 	}
@@ -369,7 +369,7 @@ public class CodeCleanupApplicationTest {
 		assertEquals(IApplication.EXIT_OK, result);
 		
 		// Should see error message about the conflict
-		String output = outContent.toString();
+		String output = outContent.toString(StandardCharsets.UTF_8);
 		assertTrue(output.contains("quiet") || output.contains("verbose"), 
 				"Should report quiet/verbose conflict");
 	}
@@ -437,7 +437,7 @@ public class CodeCleanupApplicationTest {
 		
 		assertEquals(IApplication.EXIT_OK, result);
 		
-		String output = outContent.toString();
+		String output = outContent.toString(StandardCharsets.UTF_8);
 		assertTrue(output.contains("Usage:"), "Help should be displayed");
 	}
 
