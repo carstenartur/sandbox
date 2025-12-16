@@ -210,10 +210,25 @@ public class CodeCleanupApplication implements IApplication {
 			CleanUpRefactoring refactoring = new CleanUpRefactoring();
 			refactoring.addCompilationUnit(cu);
 			
-			// Get all registered cleanups
+			// Get all registered cleanups and configure with options if provided
 			ICleanUp[] cleanUps = JavaPlugin.getDefault().getCleanUpRegistry().createCleanUps();
-			for (ICleanUp cleanUp : cleanUps) {
-				refactoring.addCleanUp(cleanUp);
+			if (this.options != null && cleanUps.length > 0) {
+				// Create CleanUpOptions from the provided options map
+				CleanUpOptions cleanUpOptions = new CleanUpOptions();
+				for (Map.Entry<String, String> entry : this.options.entrySet()) {
+					cleanUpOptions.setOption(entry.getKey(), entry.getValue());
+				}
+				// Set options on each cleanup
+				for (ICleanUp cleanUp : cleanUps) {
+					cleanUp.setOptions(cleanUpOptions);
+					refactoring.addCleanUp(cleanUp);
+				}
+			} else {
+				// Use default options from profile
+				refactoring.setUseOptionsFromProfile(true);
+				for (ICleanUp cleanUp : cleanUps) {
+					refactoring.addCleanUp(cleanUp);
+				}
 			}
 
 			// Check conditions
@@ -390,16 +405,6 @@ public class CodeCleanupApplication implements IApplication {
 				System.out.println(Messages.bind(Messages.CommandLineConfigFile, this.configName));
 			}
 			System.out.println(Messages.bind(Messages.CommandLineStart));
-		}
-
-		// Set cleanup options if provided
-		if (this.options != null) {
-			CleanUpOptions cleanUpOptions = new CleanUpOptions();
-			for (Map.Entry<String, String> entry : this.options.entrySet()) {
-				cleanUpOptions.setOption(entry.getKey(), entry.getValue());
-			}
-			// Store options for cleanup registry to use
-			JavaPlugin.getDefault().getCleanUpRegistry().getDefaultOptions(null).addAll(cleanUpOptions);
 		}
 
 		// clean up the list of files and/or directories
