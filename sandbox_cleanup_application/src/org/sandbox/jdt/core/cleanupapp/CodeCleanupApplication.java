@@ -22,36 +22,32 @@ package org.sandbox.jdt.core.cleanupapp;
 
 
 import java.io.BufferedInputStream;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IConfigurationElement;
-import org.eclipse.core.runtime.IExtension;
-import org.eclipse.core.runtime.IExtensionPoint;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.equinox.app.IApplication;
 import org.eclipse.equinox.app.IApplicationContext;
+import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.JavaCore;
-import org.eclipse.jdt.core.formatter.CodeFormatter;
-import org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants;
-import org.eclipse.jdt.internal.compiler.env.IModule;
 import org.eclipse.jdt.internal.core.util.Util;
-import org.eclipse.jdt.internal.formatter.DefaultCodeFormatter;
-import org.eclipse.jface.text.BadLocationException;
-import org.eclipse.jface.text.Document;
-import org.eclipse.jface.text.IDocument;
+import org.eclipse.jdt.internal.corext.fix.CleanUpRefactoring;
+import org.eclipse.jdt.internal.ui.JavaPlugin;
+import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
+import org.eclipse.jdt.ui.cleanup.ICleanUp;
+import org.eclipse.ltk.core.refactoring.Change;
+import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 import org.eclipse.osgi.util.NLS;
-import org.eclipse.text.edits.TextEdit;
 
 public class CodeCleanupApplication implements IApplication {
 	private static final File[] FILES = new File[0];
@@ -66,13 +62,9 @@ public class CodeCleanupApplication implements IApplication {
 
 	private String configName;
 
-	private Map<?, ?> options = null;
+	private Map<String, String> options = null;
 
 	private static final String PDE_LAUNCH = "-pdelaunch"; //$NON-NLS-1$
-
-	public static final int M_FORMAT_NEW = Integer.valueOf(0).intValue();
-
-	public static final int M_FORMAT_EXISTING = Integer.valueOf(1).intValue();
 
 	private boolean quiet = false;
 
@@ -91,9 +83,9 @@ public class CodeCleanupApplication implements IApplication {
 	private final static class Messages extends NLS {
 		private static final String BUNDLE_NAME = "org.eclipse.jdt.core.formatterapp.messages";//$NON-NLS-1$
 
-		public static final String CommandLineFormatting = null;
+		public static final String CommandLineCleaning = null;
 
-		public static final String FormatProblem = null;
+		public static final String CleanupProblem = null;
 
 		public static final String CaughtException = null;
 
@@ -120,6 +112,10 @@ public class CodeCleanupApplication implements IApplication {
 		public static final String CommandLineStart = null;
 
 		public static final String CommandLineDone = null;
+
+		public static final String FileOutsideWorkspace = null;
+
+		public static final String CleanupFatalError = null;
 
 		public static String CommandLineUsage;
 		public static String WorkspaceRequired;
@@ -181,41 +177,85 @@ public class CodeCleanupApplication implements IApplication {
 		}
 	}
 	/**
-	 * Format the given Java source file.
+	 * Clean up the given Java source file.
 	 */
-	private void formatFile(final File file, final CodeFormatter codeFormatter) {
-		final IDocument doc = new Document();
+	private void cleanFile(final File file) {
 		try {
-			// read the file
+			// Verbose output
 			if (this.verbose) {
-				System.out.println(Messages.bind(Messages.CommandLineFormatting, file.getAbsolutePath()));
+				System.out.println(Messages.bind(Messages.CommandLineCleaning, file.getAbsolutePath()));
 			}
-			final String contents = new String(org.eclipse.jdt.internal.compiler.util.Util.getFileCharContent(file, null));
-			// format the file (the meat and potatoes)
-			doc.set(contents);
-			final int kind = (file.getName().equals(IModule.MODULE_INFO_JAVA)? CodeFormatter.K_MODULE_INFO
-					: CodeFormatter.K_COMPILATION_UNIT) | CodeFormatter.F_INCLUDE_COMMENTS;
-			final TextEdit edit = codeFormatter.format(kind, contents, 0, contents.length(), 0, null);
-			if (edit != null) {
-				edit.apply(doc);
-			} else {
-				System.err.println(Messages.bind(Messages.FormatProblem, file.getAbsolutePath()));
+
+			// Convert file to workspace IFile
+			IPath filePath = Path.fromOSString(file.getAbsolutePath());
+			IFile iFile = ResourcesPlugin.getWorkspace().getRoot().getFileForLocation(filePath);
+			
+			if (iFile == null || !iFile.exists()) {
+				if (!this.quiet) {
+					System.err.println(Messages.bind(Messages.FileOutsideWorkspace, file.getAbsolutePath()));
+				}
 				return;
 			}
 
-			// write the file
-			try (BufferedWriter out = new BufferedWriter(new FileWriter(file,StandardCharsets.UTF_8));){
-				out.write(doc.get());
-				out.flush();
+			// Get the compilation unit
+			ICompilationUnit cu = JavaCore.createCompilationUnitFrom(iFile);
+			if (cu == null) {
+				if (!this.quiet) {
+					System.err.println(Messages.bind(Messages.CleanupProblem, file.getAbsolutePath()));
+				}
+				return;
 			}
-		} catch (IOException e) {
-			final String errorMessage = Messages.bind(Messages.CaughtException, "IOException", e.getLocalizedMessage()); //$NON-NLS-1$
+
+			// Create and configure the cleanup refactoring
+			CleanUpRefactoring refactoring = new CleanUpRefactoring();
+			refactoring.addCompilationUnit(cu);
+			
+			// Get all registered cleanups and configure with options if provided
+			ICleanUp[] cleanUps = JavaPlugin.getDefault().getCleanUpRegistry().createCleanUps();
+			if (this.options != null && cleanUps.length > 0) {
+				// Create CleanUpOptions from the provided options map
+				CleanUpOptions cleanUpOptions = new CleanUpOptions();
+				for (Map.Entry<String, String> entry : this.options.entrySet()) {
+					cleanUpOptions.setOption(entry.getKey(), entry.getValue());
+				}
+				// Set options on each cleanup
+				for (ICleanUp cleanUp : cleanUps) {
+					cleanUp.setOptions(cleanUpOptions);
+					refactoring.addCleanUp(cleanUp);
+				}
+			} else {
+				// Use default options from profile
+				refactoring.setUseOptionsFromProfile(true);
+				for (ICleanUp cleanUp : cleanUps) {
+					refactoring.addCleanUp(cleanUp);
+				}
+			}
+
+			// Check conditions
+			RefactoringStatus status = refactoring.checkAllConditions(new NullProgressMonitor());
+			if (status.hasFatalError()) {
+				if (!this.quiet) {
+					System.err.println(Messages.bind(Messages.CleanupFatalError, file.getAbsolutePath(), status.getMessageMatchingSeverity(RefactoringStatus.FATAL)));
+				}
+				return;
+			}
+
+			// Create and perform the change
+			Change change = refactoring.createChange(new NullProgressMonitor());
+			if (change != null) {
+				change.perform(new NullProgressMonitor());
+				cu.save(new NullProgressMonitor(), true);
+				iFile.refreshLocal(1, new NullProgressMonitor());
+			}
+
+		} catch (CoreException e) {
+			final String errorMessage = Messages.bind(Messages.CaughtException, "CoreException", e.getLocalizedMessage()); //$NON-NLS-1$
 			Util.log(e, errorMessage);
-			System.err.println(Messages.bind(Messages.ExceptionSkip ,errorMessage));
-		} catch (BadLocationException e) {
-			final String errorMessage = Messages.bind(Messages.CaughtException, "BadLocationException", e.getLocalizedMessage()); //$NON-NLS-1$
+			System.err.println(Messages.bind(Messages.ExceptionSkip, errorMessage));
+		} catch (Exception e) {
+			final String errorMessage = Messages.bind(Messages.CaughtException, e.getClass().getSimpleName(), e.getLocalizedMessage());
 			Util.log(e, errorMessage);
-			System.err.println(Messages.bind(Messages.ExceptionSkip ,errorMessage));
+			System.err.println(Messages.bind(Messages.ExceptionSkip, errorMessage));
 		}
 	}
 
@@ -228,7 +268,7 @@ public class CodeCleanupApplication implements IApplication {
 		
 		int fileCounter = 0;
 
-		File[] filesToFormat = new File[INITIALSIZE];
+		File[] filesToCleanup = new File[INITIALSIZE];
 
 		loop: while (index < argCount) {
 			final String currentArg = argsArray[index++];
@@ -259,10 +299,10 @@ public class CodeCleanupApplication implements IApplication {
 					// the current arg should be a file or a directory name
 					final File file = new File(currentArg);
 					if (file.exists()) {
-						if (filesToFormat.length == fileCounter) {
-							System.arraycopy(filesToFormat, 0, filesToFormat = new File[fileCounter * 2], 0, fileCounter);
+						if (filesToCleanup.length == fileCounter) {
+							System.arraycopy(filesToCleanup, 0, filesToCleanup = new File[fileCounter * 2], 0, fileCounter);
 						}
-						filesToFormat[fileCounter++] = file;
+						filesToCleanup[fileCounter++] = file;
 					} else {
 						String canonicalPath;
 						try {
@@ -305,22 +345,27 @@ public class CodeCleanupApplication implements IApplication {
 			displayHelp(Messages.bind(Messages.CommandLineErrorFileDir));
 			return null;
 		}
-		if (filesToFormat.length != fileCounter) {
-			System.arraycopy(filesToFormat, 0, filesToFormat = new File[fileCounter], 0, fileCounter);
+		if (filesToCleanup.length != fileCounter) {
+			System.arraycopy(filesToCleanup, 0, filesToCleanup = new File[fileCounter], 0, fileCounter);
 		}
-		return filesToFormat;
+		return filesToCleanup;
 	}
 
 	/**
 	 * Return a Java Properties file representing the options that are in the
 	 * specified configuration file.
 	 */
-	private static Properties readConfig(final String filename) {
+	private static Map<String, String> readConfig(final String filename) {
 		final File configFile = new File(filename);
 		try (BufferedInputStream stream = new BufferedInputStream(new FileInputStream(configFile));){
 			final Properties formatterOptions = new Properties();
 			formatterOptions.load(stream);
-			return formatterOptions;
+			// Convert Properties to Map<String, String>
+			Map<String, String> options = new HashMap<>();
+			for (String key : formatterOptions.stringPropertyNames()) {
+				options.put(key, formatterOptions.getProperty(key));
+			}
+			return options;
 		} catch (IOException e) {
 			String canonicalPath = null;
 			try {
@@ -345,13 +390,13 @@ public class CodeCleanupApplication implements IApplication {
 	}
 
 	/**
-	 * Runs the Java code formatter application
+	 * Runs the Java code cleanup application
 	 */
 	@Override
 	public Object start(final IApplicationContext context) throws Exception {
-		final File[] filesToFormat = processCommandLine((String[]) context.getArguments().get(IApplicationContext.APPLICATION_ARGS));
+		final File[] filesToCleanup = processCommandLine((String[]) context.getArguments().get(IApplicationContext.APPLICATION_ARGS));
 
-		if (filesToFormat == null) {
+		if (filesToCleanup == null) {
 			return IApplication.EXIT_OK;
 		}
 
@@ -362,14 +407,12 @@ public class CodeCleanupApplication implements IApplication {
 			System.out.println(Messages.bind(Messages.CommandLineStart));
 		}
 
-		final CodeFormatter codeFormatter = createCodeFormatter(this.options,
-				M_FORMAT_EXISTING);
-		// format the list of files and/or directories
-		for (final File file : filesToFormat) {
+		// clean up the list of files and/or directories
+		for (final File file : filesToCleanup) {
 			if (file.isDirectory()) {
-				formatDirTree(file, codeFormatter);
+				cleanDirTree(file);
 			} else if (Util.isJavaLikeFileName(file.getPath())) {
-				formatFile(file, codeFormatter);
+				cleanFile(file);
 			}
 		}
 		if (!this.quiet) {
@@ -396,10 +439,10 @@ public class CodeCleanupApplication implements IApplication {
 		displayHelp();
 	}
 	/**
-	 * Recursively format the Java source code that is contained in the
+	 * Recursively clean up the Java source code that is contained in the
 	 * directory rooted at dir.
 	 */
-	private void formatDirTree(final File dir, final CodeFormatter codeFormatter) {
+	private void cleanDirTree(final File dir) {
 
 		final File[] files = dir.listFiles();
 		if (files == null) {
@@ -408,51 +451,10 @@ public class CodeCleanupApplication implements IApplication {
 
 		for (final File file : files) {
 			if (file.isDirectory()) {
-				formatDirTree(file, codeFormatter);
+				cleanDirTree(file);
 			} else if (Util.isJavaLikeFileName(file.getPath())) {
-				formatFile(file, codeFormatter);
+				cleanFile(file);
 			}
 		}
-	}
-
-	private static CodeFormatter createCodeFormatter(Map options, final int mode) {
-		if (options == null) {
-			options = JavaCore.getOptions();
-		}
-		final Map currentOptions = new HashMap(options);
-		if (mode == M_FORMAT_NEW) {
-			// disable the option for not formatting comments starting on first column
-			currentOptions.put(DefaultCodeFormatterConstants.FORMATTER_COMMENT_FORMAT_LINE_COMMENT_STARTING_ON_FIRST_COLUMN, DefaultCodeFormatterConstants.TRUE);
-			// disable the option for not indenting comments starting on first column
-			currentOptions.put(DefaultCodeFormatterConstants.FORMATTER_NEVER_INDENT_BLOCK_COMMENTS_ON_FIRST_COLUMN, DefaultCodeFormatterConstants.FALSE);
-			currentOptions.put(DefaultCodeFormatterConstants.FORMATTER_NEVER_INDENT_LINE_COMMENTS_ON_FIRST_COLUMN, DefaultCodeFormatterConstants.FALSE);
-		}
-		final String formatterId = (String) options.get(JavaCore.JAVA_FORMATTER);
-		if (formatterId != null) {
-			final IExtensionPoint extension = Platform.getExtensionRegistry().getExtensionPoint(JavaCore.PLUGIN_ID,
-					JavaCore.JAVA_FORMATTER_EXTENSION_POINT_ID);
-			if (extension != null) {
-				for (final IExtension extension2 : extension.getExtensions()) {
-					for (final IConfigurationElement configElement : extension2.getConfigurationElements()) {
-						final String initializerID = configElement.getAttribute("id"); //$NON-NLS-1$
-						if (initializerID != null && initializerID.equals(formatterId)) {
-							try {
-								final Object execExt = configElement.createExecutableExtension("class"); //$NON-NLS-1$
-								if (execExt instanceof CodeFormatter formatter) {
-									formatter.setOptions(currentOptions);
-									return formatter;
-								}
-							} catch (CoreException e) {
-								Util.log(e.getStatus());
-								break;
-							}
-						}
-					}
-				}
-			}
-			Util.log(IStatus.WARNING,
-					"Unable to instantiate formatter extension '" + formatterId + "', returning built-in formatter."); //$NON-NLS-1$ //$NON-NLS-2$
-		}
-		return new DefaultCodeFormatter(currentOptions);
 	}
 }
