@@ -455,9 +455,9 @@ public class StreamPipelineBuilder {
      * Creates a typed literal "1" appropriate for the accumulator type.
      * Handles int, long, float, double, byte, short, char types.
      * 
-     * @return an Expression representing the typed literal 1
+     * @return an Expression representing the typed literal 1 (never null)
      */
-    private Expression createTypedLiteralOne() {
+    private org.eclipse.jdt.annotation.NonNull Expression createTypedLiteralOne() {
         if (accumulatorType == null) {
             return ast.newNumberLiteral("1");
         }
@@ -694,12 +694,6 @@ public class StreamPipelineBuilder {
      */
     private List<ProspectiveOperation> parseLoopBody(Statement body, String loopVarName) {
         List<ProspectiveOperation> ops = new ArrayList<>();
-        
-        // Defensive null check
-        if (body == null || loopVarName == null) {
-            return ops; // Return empty list to signal conversion should be rejected
-        }
-        
         String currentVarName = loopVarName; // Track the current variable name through the pipeline
         
         if (body instanceof Block) {
@@ -1236,20 +1230,17 @@ public class StreamPipelineBuilder {
         
         for (ProspectiveOperation op : operations) {
             if (op == null) {
-                // Skip null operations defensively
-                continue;
+                throw new IllegalStateException("Encountered null ProspectiveOperation in operations list");
             }
             
             // Check consumed variables are available
             Set<String> consumed = op.getConsumedVariables();
-            if (consumed != null) {
-                for (String var : consumed) {
-                    // Skip the loop variable and accumulator variables (they're in outer scope)
-                    if (!var.equals(loopVarName) && !isAccumulatorVariable(var, operations)) {
-                        if (!availableVars.contains(var)) {
-                            // Variable used before it's defined - this is a scope violation
-                            return false;
-                        }
+            for (String var : consumed) {
+                // Skip the loop variable and accumulator variables (they're in outer scope)
+                if (!var.equals(loopVarName) && !isAccumulatorVariable(var, operations)) {
+                    if (!availableVars.contains(var)) {
+                        // Variable used before it's defined - this is a scope violation
+                        return false;
                     }
                 }
             }

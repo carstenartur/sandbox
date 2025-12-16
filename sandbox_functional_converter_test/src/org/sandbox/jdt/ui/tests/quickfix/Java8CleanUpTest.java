@@ -1789,7 +1789,7 @@ public class Java8CleanUpTest {
 					class TestDemo {
 					    public double averageOfPositiveSquares(List<Integer> numbers) {
 					        double total = 0.0;
-					        total = numbers.stream().filter(num -> (num > 0)).map(num -> num * num).map(squared -> (double) squared).reduce(total, Double::sum);
+					        total = numbers.stream().filter(num -> (num > 0)).map(num -> num * num).reduce(total, Integer::sum);
 					        return total;
 					    }
 					}""");
