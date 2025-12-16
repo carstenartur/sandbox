@@ -35,6 +35,7 @@ public class PreconditionsChecker {
     private final Set<VariableDeclarationFragment> innerVariables = new HashSet<>();
     private boolean containsBreak = false;
     private boolean containsContinue = false;
+    private boolean containsLabeledContinue = false;
     private boolean containsReturn = false;
     private boolean throwsException = false;
     private boolean containsNEFs = false;
@@ -56,7 +57,9 @@ public class PreconditionsChecker {
     public boolean isSafeToRefactor() {
         // Allow early returns if they match anyMatch/noneMatch/allMatch patterns
         boolean allowedReturn = containsReturn && (isAnyMatchPattern || isNoneMatchPattern || isAllMatchPattern);
-        return !throwsException && !containsBreak && !containsContinue && (!containsReturn || allowedReturn) && !containsNEFs;
+        // Note: Unlabeled continues are allowed and will be converted to filters by StreamPipelineBuilder
+        // Only labeled continues are rejected here
+        return !throwsException && !containsBreak && !containsLabeledContinue && (!containsReturn || allowedReturn) && !containsNEFs;
     }
 
     /** (2) Überprüft, ob die Schleife eine Exception wirft. */
@@ -186,6 +189,10 @@ public class PreconditionsChecker {
             })
             .onContinueStatement((node, h) -> {
                 containsContinue = true;
+                // Check if continue has a label (labeled continue should prevent conversion)
+                if (node.getLabel() != null) {
+                    containsLabeledContinue = true;
+                }
                 return true;
             })
             .onReturnStatement((node, h) -> {

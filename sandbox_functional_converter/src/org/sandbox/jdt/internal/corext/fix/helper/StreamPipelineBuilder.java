@@ -14,7 +14,9 @@
 package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -124,8 +126,19 @@ public class StreamPipelineBuilder {
         operations = parseLoopBody(loopBody, loopVariableName);
         
         // Check if we have any operations
-        convertible = !operations.isEmpty();
-        return convertible;
+        if (operations.isEmpty()) {
+            convertible = false;
+            return false;
+        }
+        
+        // Validate variable scoping
+        if (!validateVariableScope(operations, loopVariableName)) {
+            convertible = false;
+            return false;
+        }
+        
+        convertible = true;
+        return true;
     }
 
     /**
@@ -760,6 +773,13 @@ public class StreamPipelineBuilder {
                     // Only do this if it's not a REDUCE operation (which should only be the last statement)
                     ProspectiveOperation reduceCheck = detectReduceOperation(stmt);
                     if (reduceCheck == null) {
+                        // Check if this is a safe side-effect
+                        if (!isSafeSideEffect(stmt, currentVarName, ops)) {
+                            // Unsafe side-effect - don't convert this loop
+                            // Return empty list to signal conversion should be rejected
+                            return new ArrayList<>();
+                        }
+                        
                         // Create a MAP operation with side effect that returns the current variable
                         // Note: For side-effect MAPs, the third parameter is the variable to return, not the loop variable
                         ProspectiveOperation mapOp = new ProspectiveOperation(
@@ -897,18 +917,26 @@ public class StreamPipelineBuilder {
      * Checks if an IF statement contains a continue statement.
      * This pattern should be converted to a negated filter.
      * 
+     * <p>This method identifies whether an IF statement contains a continue that can be
+     * converted to a filter operation. The actual rejection of labeled continues happens
+     * earlier in {@link PreconditionsChecker#isSafeToRefactor()}.
+     * 
      * @param ifStatement the IF statement to check
-     * @return true if the then branch contains a continue statement
+     * @return true if the then branch contains an unlabeled continue statement
      */
     private boolean isIfWithContinue(IfStatement ifStatement) {
         Statement thenStatement = ifStatement.getThenStatement();
         if (thenStatement instanceof ContinueStatement) {
-            return true;
+            ContinueStatement continueStmt = (ContinueStatement) thenStatement;
+            // Only allow unlabeled continues
+            return continueStmt.getLabel() == null;
         }
         if (thenStatement instanceof Block) {
             Block block = (Block) thenStatement;
             if (block.statements().size() == 1 && block.statements().get(0) instanceof ContinueStatement) {
-                return true;
+                ContinueStatement continueStmt = (ContinueStatement) block.statements().get(0);
+                // Only allow unlabeled continues
+                return continueStmt.getLabel() == null;
             }
         }
         return false;
@@ -1094,5 +1122,133 @@ public class StreamPipelineBuilder {
         ifStmt.setThenStatement(thenBlock);
         
         return ifStmt;
+    }
+    
+    /**
+     * Validates that variables used in operations are properly scoped.
+     * Checks that:
+     * - Consumed variables are available in the current scope
+     * - Produced variables don't shadow loop variables improperly
+     * - Accumulator variables don't leak into lambda scopes
+     * 
+     * <p>This validation is complementary to {@link #isSafeSideEffect(Statement, String, List)}.
+     * While {@code isSafeSideEffect} performs early detection of obvious assignment issues,
+     * this method performs comprehensive scope checking across the entire pipeline to catch
+     * variable availability issues.
+     * 
+     * @param operations the list of operations to validate
+     * @param loopVarName the loop variable name
+     * @return true if all variables are properly scoped, false otherwise
+     */
+    private boolean validateVariableScope(List<ProspectiveOperation> operations, String loopVarName) {
+        Set<String> availableVars = new HashSet<>();
+        availableVars.add(loopVarName);
+        
+        for (ProspectiveOperation op : operations) {
+            // Check consumed variables are available
+            Set<String> consumed = op.getConsumedVariables();
+            for (String var : consumed) {
+                // Skip the loop variable and accumulator variables (they're in outer scope)
+                if (!var.equals(loopVarName) && !isAccumulatorVariable(var, operations)) {
+                    if (!availableVars.contains(var)) {
+                        // Variable used before it's defined - this is a scope violation
+                        return false;
+                    }
+                }
+            }
+            
+            // Add produced variables to available set
+            String produced = op.getProducedVariableName();
+            if (produced != null) {
+                availableVars.add(produced);
+            }
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Checks if a variable is an accumulator variable in any REDUCE operation.
+     * 
+     * @param varName the variable name to check
+     * @param operations the list of operations
+     * @return true if the variable is an accumulator, false otherwise
+     */
+    private boolean isAccumulatorVariable(String varName, List<ProspectiveOperation> operations) {
+        for (ProspectiveOperation op : operations) {
+            if (op.getOperationType() == ProspectiveOperation.OperationType.REDUCE) {
+                if (varName.equals(op.getAccumulatorVariableName())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * Checks if a statement is safe to convert as a side-effect in a stream pipeline.
+     * Side-effects are statements that don't directly produce a value but perform actions.
+     * 
+     * <p>Safe side-effects include:
+     * <ul>
+     * <li>Method calls that don't modify loop variables or accumulators</li>
+     * <li>System.out.println and similar logging</li>
+     * <li>Statements that don't contain assignments to variables outside the lambda scope</li>
+     * </ul>
+     * 
+     * <p>Unsafe side-effects that should prevent conversion:
+     * <ul>
+     * <li>Assignments to variables declared outside the loop (except accumulators)</li>
+     * <li>Modifications to shared mutable state</li>
+     * </ul>
+     * 
+     * <p><b>Note:</b> This method only validates simple variable assignments (SimpleName on LHS).
+     * Array element assignments and field assignments are not validated here and are conservatively
+     * allowed, as they may be part of valid stream pipeline patterns. This is a design decision
+     * that prioritizes not rejecting valid patterns over catching all potential issues.
+     * 
+     * @param stmt the statement to check
+     * @param currentVarName the current variable name in the pipeline (may differ from loop variable if mapped)
+     * @param operations the list of operations (to check for accumulators)
+     * @return true if the statement is safe to include in a stream pipeline
+     */
+    private boolean isSafeSideEffect(Statement stmt, String currentVarName, List<ProspectiveOperation> operations) {
+        if (!(stmt instanceof ExpressionStatement)) {
+            // Only expression statements can be safe side-effects
+            // Other statement types (if, while, for, etc.) should be handled differently
+            return false;
+        }
+        
+        ExpressionStatement exprStmt = (ExpressionStatement) stmt;
+        Expression expr = exprStmt.getExpression();
+        
+        // Check for assignments - these are potentially unsafe if they modify external variables
+        if (expr instanceof Assignment) {
+            Assignment assignment = (Assignment) expr;
+            Expression lhs = assignment.getLeftHandSide();
+            
+            // Only validate SimpleName assignments (simple variables)
+            // Array access and field access are conservatively allowed
+            if (lhs instanceof SimpleName) {
+                String varName = ((SimpleName) lhs).getIdentifier();
+                
+                // Assignment to current pipeline variable is unsafe (would modify loop/mapped var)
+                if (varName.equals(currentVarName)) {
+                    return false;
+                }
+                
+                // Assignment to accumulator variables is handled by REDUCE, not side-effects
+                if (isAccumulatorVariable(varName, operations)) {
+                    return false;
+                }
+                
+                // Other assignments to external variables are unsafe for conversion
+                // This is a conservative approach - we could refine this further
+                return false;
+            }
+        }
+        
+        // Method calls and other expressions are generally safe
+        return true;
     }
 }

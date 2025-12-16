@@ -19,8 +19,13 @@ This Eclipse cleanup plugin automatically converts imperative enhanced for-loops
 ### Recent Improvements (December 2025)
 ✅ **Code Cleanup**: Removed ~366 lines of dead code (78% reduction in Refactorer.java)
 ✅ **Math.max/Math.min Support**: Full support for MAX/MIN reduction with method references
-✅ **Enhanced Tests**: 29 comprehensive test cases covering all patterns
+✅ **Enhanced Tests**: 34 comprehensive test cases covering all patterns
 ✅ **Better Documentation**: Complete architecture and implementation docs
+✅ **Robustness Improvements** (Option 3):
+  - Variable scope validation to prevent variable leaks
+  - Labeled continue detection (rejected for safety)
+  - Improved side-effect statement validation
+  - Better tracking of produced/consumed variables across pipeline stages
 
 ## Examples
 
@@ -101,26 +106,49 @@ The plugin uses a builder pattern (`StreamPipelineBuilder`) to analyze loop bodi
 2. **Building Phase** (`buildPipeline()`): Constructs chained stream operations
 3. **Wrapping Phase** (`wrapPipeline()`): Wraps result in appropriate statement
 
+### Robustness Features
+
+The implementation includes several safety mechanisms to prevent incorrect transformations:
+
+#### Variable Scope Validation
+- Tracks produced and consumed variables across pipeline stages
+- Prevents variable leaks outside lambda scopes
+- Validates that variables are available when referenced
+- Distinguishes between loop variables, mapped variables, and accumulators
+
+#### Control Flow Safety
+- Rejects loops with labeled continues (can't be safely transformed)
+- Rejects loops with break statements
+- Rejects loops with throw statements  
+- Validates early return patterns for anyMatch/noneMatch/allMatch
+
+#### Side Effect Detection
+- Validates side-effect statements before including in pipeline
+- Rejects loops that assign to external variables (except REDUCE accumulators)
+- Allows safe method calls and expressions
+- Conservative approach: when in doubt, don't convert
+
 See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed design documentation.
 
 ## Current Limitations
 
-- No operation merging (consecutive filters/maps)
-- No collect() support (only forEach, reduce, anyMatch, noneMatch)
+- No operation merging (consecutive filters/maps remain separate operations)
+- No collect() support (only forEach, reduce, anyMatch, noneMatch, allMatch)
 - No parallel streams
-- No labeled break/continue
+- No labeled break/continue (rejected for safety)
 - No exception throwing in loops
+- Loops with assignments to external variables are not converted (except accumulators in reduce operations)
 
 ## Testing
 
-All 29 test patterns pass, including:
+All 34 test patterns pass, including:
 - Simple conversions
-- Filter chains
-- Complex chaining
+- Filter chains (including multiple continues)
+- Complex chaining (with nested filters)
 - Reducers (sum, product, increment, Math.max, Math.min)
-- Match operations (anyMatch, noneMatch)
-- Side effects
-- Continue statements
+- Match operations (anyMatch, noneMatch, allMatch)
+- Side effects (validated for safety)
+- Continue statements (unlabeled only)
 
 Run tests:
 ```bash

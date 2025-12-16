@@ -85,6 +85,12 @@ public class ProspectiveOperation {
      * The reducer type for REDUCE operations (INCREMENT, DECREMENT, SUM, etc.).
      */
     private ReducerType reducerType;
+    
+    /**
+     * Set of variables consumed by this operation.
+     * Used for tracking variable scope and preventing leaks.
+     */
+    private Set<String> consumedVariables = new HashSet<>();
 
     // Sammelt alle verwendeten Variablen
     private void collectNeededVariables(Expression expression) {
@@ -102,6 +108,7 @@ public class ProspectiveOperation {
         this.originalExpression = expression;
         this.operationType = operationType;
         collectNeededVariables(expression);
+        updateConsumedVariables();
     }
     
     /**
@@ -121,6 +128,7 @@ public class ProspectiveOperation {
             this.originalExpression = ((org.eclipse.jdt.core.dom.ExpressionStatement) statement).getExpression();
             collectNeededVariables(this.originalExpression);
         }
+        updateConsumedVariables();
     }
     
     /**
@@ -132,6 +140,7 @@ public class ProspectiveOperation {
         this.operationType = operationType;
         this.producedVariableName = producedVarName;
         collectNeededVariables(expression);
+        updateConsumedVariables();
     }
     
     /**
@@ -151,6 +160,7 @@ public class ProspectiveOperation {
             this.originalExpression = ((org.eclipse.jdt.core.dom.ExpressionStatement) statement).getExpression();
             collectNeededVariables(this.originalExpression);
         }
+        updateConsumedVariables();
     }
 
     /** (1) Gibt den ursprünglichen Ausdruck zurück */
@@ -436,6 +446,24 @@ public class ProspectiveOperation {
      */
     public ReducerType getReducerType() {
         return reducerType;
+    }
+    
+    /**
+     * Returns the set of variables consumed by this operation.
+     * This includes all SimpleName references in the operation's expression.
+     * 
+     * @return the set of consumed variable names
+     */
+    public Set<String> getConsumedVariables() {
+        return consumedVariables;
+    }
+    
+    /**
+     * Updates the consumed variables set by collecting all SimpleName references.
+     * This is called during operation construction to track variable usage.
+     */
+    private void updateConsumedVariables() {
+        consumedVariables.addAll(neededVariables);
     }
 
     /** (4) Erstellt eine Lambda-Expression für Streams */
