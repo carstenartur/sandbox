@@ -1005,66 +1005,24 @@ public class StreamPipelineBuilder {
                         ops.add(mapOp);
                     }
                 } else if (isLast) {
-                    // Last statement → Check for COLLECT, then REDUCE, otherwise FOREACH
+                    // Last statement → Check for REDUCE, otherwise FOREACH
                     // TODO: Collector support disabled due to safety concerns (see PR review comments)
                     // - Variable naming heuristics are unreliable for determining collection type
                     // - Cannot safely determine if getters have side effects
                     // - Cannot guarantee key uniqueness for toMap() without runtime information
-                    // ProspectiveOperation collectOp = detectCollectOperation(stmt, currentVarName);
-                    ProspectiveOperation collectOp = null;  // Temporarily disabled
-                    if (collectOp != null) {
-                        // Collection accumulation pattern detected
-                        // Need to add a MAP operation if the expression is not just the loop variable
-                        ProspectiveOperation.CollectorType collectorType = collectOp.getCollectorType();
-                        
-                        if (collectorType == ProspectiveOperation.CollectorType.TO_MAP) {
-                            // For TO_MAP, we don't add a MAP operation here
-                            // The lambda mappers are handled in getArgumentsForCollector
-                            ops.add(collectOp);
-                        } else {
-                            // For TO_LIST/TO_SET, check if we need a MAP operation
-                            // Get the expression being collected
-                            Expression collectExpr = null;
-                            if (stmt instanceof ExpressionStatement) {
-                                Expression expr = ((ExpressionStatement) stmt).getExpression();
-                                if (expr instanceof MethodInvocation) {
-                                    MethodInvocation methodInv = (MethodInvocation) expr;
-                                    List<?> args = methodInv.arguments();
-                                    if (!args.isEmpty() && args.get(0) instanceof Expression) {
-                                        collectExpr = (Expression) args.get(0);
-                                    }
-                                }
-                            }
-                            
-                            // Check if the expression is not just the loop variable
-                            boolean needsMap = !isIdentityMapping(collectExpr, currentVarName);
-                            
-                            if (needsMap && collectExpr != null) {
-                                // Add MAP operation before COLLECT
-                                ProspectiveOperation mapOp = new ProspectiveOperation(
-                                    collectExpr,
-                                    ProspectiveOperation.OperationType.MAP,
-                                    "_collected");
-                                ops.add(mapOp);
-                                currentVarName = "_collected";
-                            }
-                            
-                            ops.add(collectOp);
-                        }
+                    // Collector feature code has been removed to avoid SpotBugs warnings about dead code
+                    ProspectiveOperation reduceOp = detectReduceOperation(stmt);
+                    if (reduceOp != null) {
+                        // Add MAP operation before REDUCE based on reducer type
+                        addMapBeforeReduce(ops, reduceOp, stmt, currentVarName);
+                        ops.add(reduceOp);
                     } else {
-                        ProspectiveOperation reduceOp = detectReduceOperation(stmt);
-                        if (reduceOp != null) {
-                            // Add MAP operation before REDUCE based on reducer type
-                            addMapBeforeReduce(ops, reduceOp, stmt, currentVarName);
-                            ops.add(reduceOp);
-                        } else {
-                            // Regular FOREACH operation
-                            ProspectiveOperation forEachOp = new ProspectiveOperation(
-                                stmt,
-                                ProspectiveOperation.OperationType.FOREACH,
-                                currentVarName);
-                            ops.add(forEachOp);
-                        }
+                        // Regular FOREACH operation
+                        ProspectiveOperation forEachOp = new ProspectiveOperation(
+                            stmt,
+                            ProspectiveOperation.OperationType.FOREACH,
+                            currentVarName);
+                        ops.add(forEachOp);
                     }
                 }
             }
