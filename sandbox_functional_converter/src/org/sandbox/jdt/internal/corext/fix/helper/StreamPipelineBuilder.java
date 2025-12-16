@@ -87,11 +87,25 @@ public class StreamPipelineBuilder {
      * 
      * @param forLoop the enhanced for-loop to analyze
      * @param preconditions the preconditions checker for the loop
+     * @throws IllegalArgumentException if forLoop or preconditions is null
      */
     public StreamPipelineBuilder(EnhancedForStatement forLoop, PreconditionsChecker preconditions) {
+        if (forLoop == null) {
+            throw new IllegalArgumentException("forLoop cannot be null");
+        }
+        if (preconditions == null) {
+            throw new IllegalArgumentException("preconditions cannot be null");
+        }
+        
         this.forLoop = forLoop;
         this.preconditions = preconditions;
         this.ast = forLoop.getAST();
+        
+        // Defensive: ensure loop parameter and name are available
+        if (forLoop.getParameter() == null || forLoop.getParameter().getName() == null) {
+            throw new IllegalArgumentException("forLoop must have a valid parameter with a name");
+        }
+        
         this.loopVariableName = forLoop.getParameter().getName().getIdentifier();
         this.operations = new ArrayList<>();
         this.isAnyMatchPattern = preconditions.isAnyMatchPattern();
@@ -364,28 +378,59 @@ public class StreamPipelineBuilder {
     
     /**
      * Adds a MAP operation before a REDUCE operation based on the reducer type.
-     * For INCREMENT/DECREMENT: maps to 1 (or 1.0 for double types)
-     * For SUM/PRODUCT/STRING_CONCAT: extracts and maps the RHS expression
-     * For MAX/MIN: extracts and maps the non-accumulator argument from Math.max/min
      * 
-     * @param ops the list to add the MAP operation to
-     * @param reduceOp the REDUCE operation
-     * @param stmt the statement containing the reduce operation
-     * @param currentVarName the current variable name in the pipeline
+     * <p>Mapping strategy by reducer type:
+     * <ul>
+     * <li><b>INCREMENT/DECREMENT:</b> Maps to 1 (or 1.0 for double types)</li>
+     * <li><b>SUM/PRODUCT/STRING_CONCAT:</b> Extracts and maps the RHS expression</li>
+     * <li><b>MAX/MIN:</b> Extracts and maps the non-accumulator argument from Math.max/min</li>
+     * </ul>
+     * 
+     * <p>This method ensures that the stream pipeline properly transforms elements
+     * before applying the reduction operation.
+     * 
+     * @param ops the list to add the MAP operation to (must not be null)
+     * @param reduceOp the REDUCE operation (must not be null and must be a REDUCE type)
+     * @param stmt the statement containing the reduce operation (must not be null)
+     * @param currentVarName the current variable name in the pipeline (must not be null)
+     * @throws IllegalArgumentException if any parameter is null or reduceOp is not a REDUCE operation
      */
     private void addMapBeforeReduce(List<ProspectiveOperation> ops, ProspectiveOperation reduceOp, 
                                      Statement stmt, String currentVarName) {
+        // Defensive null checks
+        if (ops == null) {
+            throw new IllegalArgumentException("ops list cannot be null");
+        }
+        if (reduceOp == null) {
+            throw new IllegalArgumentException("reduceOp cannot be null");
+        }
+        if (stmt == null) {
+            throw new IllegalArgumentException("stmt cannot be null");
+        }
+        if (currentVarName == null) {
+            throw new IllegalArgumentException("currentVarName cannot be null");
+        }
+        if (reduceOp.getOperationType() != ProspectiveOperation.OperationType.REDUCE) {
+            throw new IllegalArgumentException("reduceOp must be a REDUCE operation");
+        }
+        
         ProspectiveOperation.ReducerType reducerType = reduceOp.getReducerType();
+        if (reducerType == null) {
+            // No reducer type specified - cannot add map operation
+            return;
+        }
         
         if (reducerType == ProspectiveOperation.ReducerType.INCREMENT ||
             reducerType == ProspectiveOperation.ReducerType.DECREMENT) {
             // Create a MAP operation that maps each item to 1 (type-aware)
             Expression mapExpr = createTypedLiteralOne();
-            ProspectiveOperation mapOp = new ProspectiveOperation(
-                mapExpr,
-                ProspectiveOperation.OperationType.MAP,
-                "_item");
-            ops.add(mapOp);
+            if (mapExpr != null) {
+                ProspectiveOperation mapOp = new ProspectiveOperation(
+                    mapExpr,
+                    ProspectiveOperation.OperationType.MAP,
+                    "_item");
+                ops.add(mapOp);
+            }
         } else if (isArithmeticReducer(reducerType)) {
             // For SUM/PRODUCT/STRING_CONCAT: extract RHS expression
             Expression mapExpression = extractReduceExpression(stmt);
@@ -647,11 +692,18 @@ public class StreamPipelineBuilder {
      * @param body the {@link Statement} representing the loop body; may be a {@link Block} or a single statement
      * @param loopVarName the name of the loop variable currently in scope; may be updated if a map operation is found
      * @return a list of {@link ProspectiveOperation} objects, in the order they should be applied,
-     *         representing the sequence of stream operations inferred from the loop body
+     *         representing the sequence of stream operations inferred from the loop body;
+     *         returns an empty list if body is null or cannot be converted
      * @see ProspectiveOperation
      */
     private List<ProspectiveOperation> parseLoopBody(Statement body, String loopVarName) {
         List<ProspectiveOperation> ops = new ArrayList<>();
+        
+        // Defensive null check
+        if (body == null || loopVarName == null) {
+            return ops; // Return empty list to signal conversion should be rejected
+        }
+        
         String currentVarName = loopVarName; // Track the current variable name through the pipeline
         
         if (body instanceof Block) {
@@ -847,16 +899,34 @@ public class StreamPipelineBuilder {
      * from that MAP operation. Otherwise, it returns the loop variable name.
      * </p>
      *
-     * @param operations   the list of prospective operations representing the loop body transformation
+     * <p><b>Example:</b></p>
+     * <pre>
+     * for (Integer num : numbers) {
+     *     int squared = num * num;  // MAP: num -> squared
+     *     if (squared > 100) {      // FILTER uses 'squared', not 'num'
+     *         System.out.println(squared);
+     *     }
+     * }
+     * </pre>
+     *
+     * @param operations   the list of prospective operations representing the loop body transformation (must not be null)
      * @param currentIndex the index of the current operation in the list; operations before this index are considered
-     * @param loopVarName  the original loop variable name
+     * @param loopVarName  the original loop variable name (must not be null)
      * @return the variable name produced by the most recent MAP operation, or the loop variable name if none found
+     * @throws IllegalArgumentException if operations or loopVarName is null
      */
     private String getVariableNameFromPreviousOp(List<ProspectiveOperation> operations, int currentIndex, String loopVarName) {
+        if (operations == null) {
+            throw new IllegalArgumentException("operations cannot be null");
+        }
+        if (loopVarName == null) {
+            throw new IllegalArgumentException("loopVarName cannot be null");
+        }
+        
         // Look back to find the most recent operation that produces a variable
         for (int i = currentIndex - 1; i >= 0; i--) {
             ProspectiveOperation op = operations.get(i);
-            if (op.getProducedVariableName() != null) {
+            if (op != null && op.getProducedVariableName() != null) {
                 return op.getProducedVariableName();
             }
         }
@@ -1126,40 +1196,71 @@ public class StreamPipelineBuilder {
     
     /**
      * Validates that variables used in operations are properly scoped.
-     * Checks that:
-     * - Consumed variables are available in the current scope
-     * - Produced variables don't shadow loop variables improperly
-     * - Accumulator variables don't leak into lambda scopes
      * 
-     * <p>This validation is complementary to {@link #isSafeSideEffect(Statement, String, List)}.
-     * While {@code isSafeSideEffect} performs early detection of obvious assignment issues,
-     * this method performs comprehensive scope checking across the entire pipeline to catch
-     * variable availability issues.
+     * <p>This method ensures that:
+     * <ul>
+     * <li>Consumed variables are available in the current scope (defined earlier in pipeline)</li>
+     * <li>Produced variables don't shadow loop variables improperly</li>
+     * <li>Accumulator variables don't leak into lambda scopes</li>
+     * </ul>
      * 
-     * @param operations the list of operations to validate
-     * @param loopVarName the loop variable name
+     * <p><b>Relationship with {@link #isSafeSideEffect}:</b></p>
+     * <p>While {@code isSafeSideEffect} performs early detection of obvious assignment issues
+     * during pipeline construction, this method performs comprehensive scope checking across 
+     * the entire pipeline to catch variable availability issues. Both methods work together 
+     * to ensure safe conversions:
+     * <ul>
+     * <li>{@code isSafeSideEffect}: Detects unsafe assignments to external/loop variables</li>
+     * <li>{@code validateVariableScope}: Validates all variables are properly defined and scoped</li>
+     * </ul>
+     * 
+     * <p><b>Algorithm:</b></p>
+     * <p>Tracks available variables as we process operations in sequence. For each operation:
+     * <ol>
+     * <li>Check that all consumed variables (except loop var and accumulators) are available</li>
+     * <li>Add any produced variables to the available set for subsequent operations</li>
+     * <li>Return false if any consumed variable is used before being defined</li>
+     * </ol>
+     * 
+     * @param operations the list of operations to validate (must not be null)
+     * @param loopVarName the loop variable name (must not be null)
      * @return true if all variables are properly scoped, false otherwise
+     * @throws IllegalArgumentException if operations or loopVarName is null
      */
     private boolean validateVariableScope(List<ProspectiveOperation> operations, String loopVarName) {
+        if (operations == null) {
+            throw new IllegalArgumentException("operations cannot be null");
+        }
+        if (loopVarName == null) {
+            throw new IllegalArgumentException("loopVarName cannot be null");
+        }
+        
         Set<String> availableVars = new HashSet<>();
         availableVars.add(loopVarName);
         
         for (ProspectiveOperation op : operations) {
+            if (op == null) {
+                // Skip null operations defensively
+                continue;
+            }
+            
             // Check consumed variables are available
             Set<String> consumed = op.getConsumedVariables();
-            for (String var : consumed) {
-                // Skip the loop variable and accumulator variables (they're in outer scope)
-                if (!var.equals(loopVarName) && !isAccumulatorVariable(var, operations)) {
-                    if (!availableVars.contains(var)) {
-                        // Variable used before it's defined - this is a scope violation
-                        return false;
+            if (consumed != null) {
+                for (String var : consumed) {
+                    // Skip the loop variable and accumulator variables (they're in outer scope)
+                    if (!var.equals(loopVarName) && !isAccumulatorVariable(var, operations)) {
+                        if (!availableVars.contains(var)) {
+                            // Variable used before it's defined - this is a scope violation
+                            return false;
+                        }
                     }
                 }
             }
             
             // Add produced variables to available set
             String produced = op.getProducedVariableName();
-            if (produced != null) {
+            if (produced != null && !produced.isEmpty()) {
                 availableVars.add(produced);
             }
         }
@@ -1198,21 +1299,32 @@ public class StreamPipelineBuilder {
      * 
      * <p>Unsafe side-effects that should prevent conversion:
      * <ul>
-     * <li>Assignments to variables declared outside the loop (except accumulators)</li>
-     * <li>Modifications to shared mutable state</li>
+     * <li>Assignments to variables declared outside the loop (except accumulators in last statement)</li>
+     * <li>Modifications to shared mutable state via simple variable assignments</li>
      * </ul>
      * 
-     * <p><b>Note:</b> This method only validates simple variable assignments (SimpleName on LHS).
-     * Array element assignments and field assignments are not validated here and are conservatively
-     * allowed, as they may be part of valid stream pipeline patterns. This is a design decision
-     * that prioritizes not rejecting valid patterns over catching all potential issues.
+     * <p><b>Design Decision - Limited Scope:</b></p>
+     * <p>This method only validates simple variable assignments (SimpleName on LHS).
+     * Array element assignments, field assignments, and method calls are conservatively
+     * allowed, as they may be part of valid stream pipeline patterns. This design choice
+     * prioritizes not rejecting valid patterns over catching all potential issues.
+     * 
+     * <p><b>Relationship with {@link #validateVariableScope}:</b></p>
+     * <p>While {@code isSafeSideEffect} performs early detection of obvious assignment issues
+     * during pipeline construction, {@link #validateVariableScope} performs comprehensive 
+     * scope checking across the entire pipeline to catch variable availability issues.
+     * Both methods work together to ensure safe conversions.
      * 
      * @param stmt the statement to check
      * @param currentVarName the current variable name in the pipeline (may differ from loop variable if mapped)
      * @param operations the list of operations (to check for accumulators)
-     * @return true if the statement is safe to include in a stream pipeline
+     * @return true if the statement is safe to include in a stream pipeline, false otherwise
      */
     private boolean isSafeSideEffect(Statement stmt, String currentVarName, List<ProspectiveOperation> operations) {
+        if (stmt == null) {
+            return false;
+        }
+        
         if (!(stmt instanceof ExpressionStatement)) {
             // Only expression statements can be safe side-effects
             // Other statement types (if, while, for, etc.) should be handled differently
@@ -1221,6 +1333,11 @@ public class StreamPipelineBuilder {
         
         ExpressionStatement exprStmt = (ExpressionStatement) stmt;
         Expression expr = exprStmt.getExpression();
+        
+        // Null check for safety
+        if (expr == null) {
+            return false;
+        }
         
         // Check for assignments - these are potentially unsafe if they modify external variables
         if (expr instanceof Assignment) {
@@ -1243,9 +1360,12 @@ public class StreamPipelineBuilder {
                 }
                 
                 // Other assignments to external variables are unsafe for conversion
-                // This is a conservative approach - we could refine this further
+                // This is a conservative approach - we could refine this further if needed
                 return false;
             }
+            
+            // Non-SimpleName assignments (array access, field access) are allowed
+            // This is a deliberate design choice - see method documentation
         }
         
         // Method calls and other expressions are generally safe
