@@ -27,6 +27,7 @@ import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.LambdaExpression;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.NumberLiteral;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.ReturnStatement;
@@ -200,13 +201,16 @@ public class ProspectiveOperation {
      * @param collectorType the type of collector (TO_LIST, TO_SET, TO_MAP)
      * @param expression the expression being collected (for add) or key expression (for put)
      * @param valueExpression the value expression (only for TO_MAP, null otherwise)
+     * @param loopVarName the loop variable name to use in lambda parameters
      */
     public ProspectiveOperation(org.eclipse.jdt.core.dom.Statement statement, String collectorVarName, 
-                                CollectorType collectorType, Expression expression, Expression valueExpression) {
+                                CollectorType collectorType, Expression expression, Expression valueExpression,
+                                String loopVarName) {
         this.originalStatement = statement;
         this.operationType = OperationType.COLLECT;
         this.collectorVariableName = collectorVarName;
         this.collectorType = collectorType;
+        this.loopVariableName = loopVarName;  // Store loop variable name
         if (collectorType == CollectorType.TO_MAP) {
             this.mapKeyExpression = expression;
             this.mapValueExpression = valueExpression;
@@ -612,7 +616,9 @@ public class ProspectiveOperation {
                 if (mapKeyExpression != null) {
                     LambdaExpression keyMapper = ast.newLambdaExpression();
                     VariableDeclarationFragment keyParam = ast.newVariableDeclarationFragment();
-                    keyParam.setName(ast.newSimpleName("item"));
+                    // Use the actual loop variable name, not "item"
+                    String paramName = (loopVariableName != null) ? loopVariableName : "item";
+                    keyParam.setName(ast.newSimpleName(paramName));
                     keyMapper.parameters().add(keyParam);
                     keyMapper.setBody(ASTNode.copySubtree(ast, mapKeyExpression));
                     collectorsCall.arguments().add(keyMapper);
@@ -622,7 +628,9 @@ public class ProspectiveOperation {
                 if (mapValueExpression != null) {
                     LambdaExpression valueMapper = ast.newLambdaExpression();
                     VariableDeclarationFragment valueParam = ast.newVariableDeclarationFragment();
-                    valueParam.setName(ast.newSimpleName("item"));
+                    // Use the actual loop variable name, not "item"
+                    String paramName = (loopVariableName != null) ? loopVariableName : "item";
+                    valueParam.setName(ast.newSimpleName(paramName));
                     valueMapper.parameters().add(valueParam);
                     valueMapper.setBody(ASTNode.copySubtree(ast, mapValueExpression));
                     collectorsCall.arguments().add(valueMapper);

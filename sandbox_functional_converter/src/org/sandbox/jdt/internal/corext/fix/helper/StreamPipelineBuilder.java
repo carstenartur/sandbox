@@ -668,9 +668,10 @@ public class StreamPipelineBuilder {
      * - Have no complex control flow (no labeled break/continue, no throws)
      * 
      * @param stmt the statement to check
+     * @param loopVarName the current loop variable name
      * @return a ProspectiveOperation for COLLECT if detected and safe, null otherwise
      */
-    private ProspectiveOperation detectCollectOperation(Statement stmt) {
+    private ProspectiveOperation detectCollectOperation(Statement stmt, String loopVarName) {
         if (!(stmt instanceof ExpressionStatement)) {
             return null;
         }
@@ -708,7 +709,7 @@ public class StreamPipelineBuilder {
                     return null;
                 }
                 
-                return new ProspectiveOperation(stmt, collectionVarName, collectorType, addExpr, null);
+                return new ProspectiveOperation(stmt, collectionVarName, collectorType, addExpr, null, loopVarName);
             }
         }
         
@@ -730,7 +731,7 @@ public class StreamPipelineBuilder {
                 }
                 
                 return new ProspectiveOperation(stmt, collectionVarName, 
-                    ProspectiveOperation.CollectorType.TO_MAP, keyExpr, valueExpr);
+                    ProspectiveOperation.CollectorType.TO_MAP, keyExpr, valueExpr, loopVarName);
             }
         }
         
@@ -1005,7 +1006,12 @@ public class StreamPipelineBuilder {
                     }
                 } else if (isLast) {
                     // Last statement → Check for COLLECT, then REDUCE, otherwise FOREACH
-                    ProspectiveOperation collectOp = detectCollectOperation(stmt);
+                    // TODO: Collector support disabled due to safety concerns (see PR review comments)
+                    // - Variable naming heuristics are unreliable for determining collection type
+                    // - Cannot safely determine if getters have side effects
+                    // - Cannot guarantee key uniqueness for toMap() without runtime information
+                    // ProspectiveOperation collectOp = detectCollectOperation(stmt, currentVarName);
+                    ProspectiveOperation collectOp = null;  // Temporarily disabled
                     if (collectOp != null) {
                         // Collection accumulation pattern detected
                         // Need to add a MAP operation if the expression is not just the loop variable

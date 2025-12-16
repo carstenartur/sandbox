@@ -1555,123 +1555,12 @@ public class Java8CleanUpTest {
 					            System.out.println(num);
 					        });
 					    }
-					}"""),
-		ListCollectorSimple("""
-			package test1;
-
-			import java.util.ArrayList;
-			import java.util.List;
-
-			class TestDemo {
-			    public void collectToList(List<Integer> numbers) {
-			        List<Integer> result = new ArrayList<>();
-			        for (Integer num : numbers) {
-			            result.add(num);
-			        }
-			    }
-			}""",
-
-				"""
-					package test1;
-
-					import java.util.ArrayList;
-					import java.util.List;
-					import java.util.stream.Collectors;
-
-					class TestDemo {
-					    public void collectToList(List<Integer> numbers) {
-					        List<Integer> result = new ArrayList<>();
-					        result = numbers.stream().collect(Collectors.toList());
-					    }
-					}"""),
-		ListCollectorWithMap("""
-			package test1;
-
-			import java.util.ArrayList;
-			import java.util.List;
-
-			class TestDemo {
-			    public void collectMappedList(List<String> strings) {
-			        List<Integer> lengths = new ArrayList<>();
-			        for (String str : strings) {
-			            lengths.add(str.length());
-			        }
-			    }
-			}""",
-
-				"""
-					package test1;
-
-					import java.util.ArrayList;
-					import java.util.List;
-					import java.util.stream.Collectors;
-
-					class TestDemo {
-					    public void collectMappedList(List<String> strings) {
-					        List<Integer> lengths = new ArrayList<>();
-					        lengths = strings.stream().map(str -> str.length()).collect(Collectors.toList());
-					    }
-					}"""),
-		SetCollectorSimple("""
-			package test1;
-
-			import java.util.HashSet;
-			import java.util.List;
-			import java.util.Set;
-
-			class TestDemo {
-			    public void collectToSet(List<String> items) {
-			        Set<String> uniqueSet = new HashSet<>();
-			        for (String item : items) {
-			            uniqueSet.add(item);
-			        }
-			    }
-			}""",
-
-				"""
-					package test1;
-
-					import java.util.HashSet;
-					import java.util.List;
-					import java.util.Set;
-					import java.util.stream.Collectors;
-
-					class TestDemo {
-					    public void collectToSet(List<String> items) {
-					        Set<String> uniqueSet = new HashSet<>();
-					        uniqueSet = items.stream().collect(Collectors.toSet());
-					    }
-					}"""),
-		MapCollectorSimple("""
-			package test1;
-
-			import java.util.HashMap;
-			import java.util.List;
-			import java.util.Map;
-
-			class TestDemo {
-			    public void collectToMap(List<String> items) {
-			        Map<String, Integer> map = new HashMap<>();
-			        for (String item : items) {
-			            map.put(item, item.length());
-			        }
-			    }
-			}""",
-
-				"""
-					package test1;
-
-					import java.util.HashMap;
-					import java.util.List;
-					import java.util.Map;
-					import java.util.stream.Collectors;
-
-					class TestDemo {
-					    public void collectToMap(List<String> items) {
-					        Map<String, Integer> map = new HashMap<>();
-					        map = items.stream().collect(Collectors.toMap(item -> item, item -> item.length()));
-					    }
 					}""");
+		
+		// NOTE: Collector support test cases (ListCollectorSimple, ListCollectorWithMap, 
+		// SetCollectorSimple, MapCollectorSimple) have been removed due to safety concerns
+		// identified in code review. The feature needs proper type resolution and safety
+		// analysis before it can be enabled. See PR review comments for details.
 
 		String given;
 		String expected;
