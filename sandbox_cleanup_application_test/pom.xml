@@ -27,7 +27,7 @@
 				<configuration>
 					<useJDK>BREE</useJDK>
 					<skip>false</skip>
-					<useUIHarness>true</useUIHarness>
+					<useUIHarness>false</useUIHarness>
 					<dependencies>
 						<dependency>
 							<type>eclipse-plugin</type>
