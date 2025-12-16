@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.eclipse.jdt.ui.tests.quickfix.Java8;
 
+import java.nio.file.Path;
+
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
@@ -89,6 +91,7 @@ public class MigrationRulesToExtensionsTest {
 				package test;
 				import java.io.File;
 				import java.io.IOException;
+				import java.nio.file.Path;
 				
 				import org.junit.jupiter.api.Test;
 				import org.junit.jupiter.api.io.TempDir;
@@ -349,6 +352,7 @@ public class MigrationRulesToExtensionsTest {
 				"""
 				package test;
 				import java.io.File;
+				import java.nio.file.Path;
 				
 				import org.junit.jupiter.api.Test;
 				import org.junit.jupiter.api.io.TempDir;
