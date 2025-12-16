@@ -50,6 +50,7 @@ public class MigrationAssertionsTest {
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", testCase.given, true, null);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { testCase.expected }, null);
 	}
 
