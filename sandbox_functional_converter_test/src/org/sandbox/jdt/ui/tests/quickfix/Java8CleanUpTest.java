@@ -1318,6 +1318,36 @@ public class Java8CleanUpTest {
 					        max = numbers.stream().filter(num -> (num % 2 == 0)).map(num -> num).reduce(max, Math::max);
 					        return max;
 					    }
+					}"""),
+		ChainedMapWithMinReduction("""
+			package test1;
+
+			import java.util.ArrayList;
+			import java.util.List;
+
+			class TestDemo {
+			    public int findMinSquaredValue(List<Integer> numbers) {
+			        int min = Integer.MAX_VALUE;
+			        for (Integer num : numbers) {
+			            int squared = num * num;
+			            min = Math.min(min, squared);
+			        }
+			        return min;
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.ArrayList;
+					import java.util.List;
+
+					class TestDemo {
+					    public int findMinSquaredValue(List<Integer> numbers) {
+					        int min = Integer.MAX_VALUE;
+					        min = numbers.stream().map(num -> num * num).map(squared -> squared).reduce(min, Math::min);
+					        return min;
+					    }
 					}""");
 
 		String given;
@@ -1356,7 +1386,8 @@ public class Java8CleanUpTest {
 		"MinReducer",
 		"MaxWithExpression",
 		"MinWithExpression",
-		"FilteredMaxReduction"
+		"FilteredMaxReduction",
+		"ChainedMapWithMinReduction"
 	})
 	public void testSimpleForEachConversion(UseFunctionalLoop test) throws CoreException {
 		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null);

@@ -43,8 +43,20 @@ import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
  * <li>Simple forEach operations</li>
  * <li>MAP operations (variable declarations with initializers)</li>
  * <li>FILTER operations (IF statements)</li>
- * <li>REDUCE operations (accumulator patterns)</li>
+ * <li>REDUCE operations (accumulator patterns including SUM, PRODUCT, INCREMENT, MAX, MIN)</li>
  * <li>ANYMATCH/NONEMATCH operations (early returns)</li>
+ * </ul>
+ * 
+ * <p><b>Supported Reduction Patterns:</b>
+ * <ul>
+ * <li>INCREMENT: {@code i++}, {@code ++i}</li>
+ * <li>DECREMENT: {@code i--}, {@code --i}, {@code i -= 1}</li>
+ * <li>SUM: {@code sum += value}</li>
+ * <li>PRODUCT: {@code product *= value}</li>
+ * <li>STRING_CONCAT: {@code str += substring}</li>
+ * <li>MAX: {@code max = Math.max(max, value)}</li>
+ * <li>MIN: {@code min = Math.min(min, value)}</li>
+ * <li>CUSTOM_AGGREGATE: Custom aggregation patterns</li>
  * </ul>
  * 
  * <p>Based on the NetBeans mapreduce hints implementation:

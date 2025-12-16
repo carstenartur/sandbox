@@ -62,9 +62,12 @@ private ProspectiveOperation detectReduceOperation(Statement stmt)
 ```
 - Detects postfix/prefix increment: `i++`, `++i` → `.map(_item -> 1).reduce(i, Integer::sum)`
 - Detects compound assignment: `i += expr` → `.map(expr).reduce(i, Integer::sum)`
+- Detects Math.max pattern: `max = Math.max(max, value)` → `.map(value).reduce(max, Math::max)`
+- Detects Math.min pattern: `min = Math.min(min, value)` → `.map(value).reduce(min, Math::min)`
 - Supports multiple operator types: `+=`, `-=`, `*=`, string concat
 - Type-aware: generates appropriate literals (1.0 for double, 1L for long, etc.)
 - Extracts map expressions from compound assignments via `extractReduceExpression()`
+- Extracts non-accumulator arguments from Math.max/min via `extractMathMaxMinArgument()`
 
 ##### `getVariableNameFromPreviousOp()` - Variable Tracking
 Tracks variable names through the pipeline.
@@ -96,6 +99,17 @@ enum OperationType {
     REDUCE,     // Terminal accumulation: (acc, x) -> acc op x
     ANYMATCH,   // Terminal match: x -> condition (returns true if any match)
     NONEMATCH   // Terminal match: x -> condition (returns true if none match)
+}
+
+enum ReducerType {
+    INCREMENT,       // i++, ++i
+    DECREMENT,       // i--, --i, i -= 1
+    SUM,             // sum += x
+    PRODUCT,         // product *= x
+    STRING_CONCAT,   // s += string
+    MAX,             // max = Math.max(max, x)
+    MIN,             // min = Math.min(min, x)
+    CUSTOM_AGGREGATE // Custom aggregation patterns
 }
 ```
 
@@ -302,6 +316,68 @@ ls.stream().map(_item -> {
 ```
 **Operations**: MAP (with side effect) → FOREACH
 
+### Pattern 10: Max Reduction
+**Input**:
+```java
+int max = Integer.MIN_VALUE;
+for (Integer num : numbers) {
+    max = Math.max(max, num);
+}
+```
+**Output**:
+```java
+int max = Integer.MIN_VALUE;
+max = numbers.stream().map(num -> num).reduce(max, Math::max);
+```
+**Operations**: MAP → REDUCE (with Math::max)
+
+### Pattern 11: Min Reduction
+**Input**:
+```java
+int min = Integer.MAX_VALUE;
+for (Integer num : numbers) {
+    min = Math.min(min, num);
+}
+```
+**Output**:
+```java
+int min = Integer.MAX_VALUE;
+min = numbers.stream().map(num -> num).reduce(min, Math::min);
+```
+**Operations**: MAP → REDUCE (with Math::min)
+
+### Pattern 12: Max with Expression
+**Input**:
+```java
+int maxLen = 0;
+for (String str : strings) {
+    maxLen = Math.max(maxLen, str.length());
+}
+```
+**Output**:
+```java
+int maxLen = 0;
+maxLen = strings.stream().map(str -> str.length()).reduce(maxLen, Math::max);
+```
+**Operations**: MAP (expression) → REDUCE (with Math::max)
+
+### Pattern 13: Filtered Max Reduction
+**Input**:
+```java
+int max = 0;
+for (Integer num : numbers) {
+    if (num % 2 == 0) {
+        max = Math.max(max, num);
+    }
+}
+```
+**Output**:
+```java
+int max = 0;
+max = numbers.stream().filter(num -> (num % 2 == 0)).map(num -> num).reduce(max, Math::max);
+```
+**Operations**: FILTER → MAP → REDUCE (with Math::max)
+
 ## Variable Dependency Tracking
 
 The builder tracks variable names through the pipeline to ensure correct lambda parameters:
@@ -366,13 +442,16 @@ Type mappings:
 ## Testing
 
 ### Test Coverage
-All 21 test cases from `UseFunctionalLoop` enum are enabled:
+All 26 test cases from `UseFunctionalLoop` enum are enabled:
 - Simple conversions (SIMPLECONVERT, CHAININGMAP)
 - Filter chains (ChainingFilterMapForEachConvert, NonFilteringIfChaining)
 - Complex chains (SmoothLongerChaining, MergingOperations)
-- Reducers (SimpleReducer, ChainedReducer, IncrementReducer, etc.)
+- Reducers (SimpleReducer, ChainedReducer, IncrementReducer, DecrementingReducer)
+- Max/Min reducers (MaxReducer, MinReducer, MaxWithExpression, MinWithExpression)
+- Complex reducers (FilteredMaxReduction, ChainedMapWithMinReduction)
 - Match operations (ChainedAnyMatch, ChainedNoneMatch)
 - Side effects (NoNeededVariablesMerging, SomeChainingWithNoNeededVar)
+- String operations (StringConcat)
 
 ### Test Execution
 ```bash
