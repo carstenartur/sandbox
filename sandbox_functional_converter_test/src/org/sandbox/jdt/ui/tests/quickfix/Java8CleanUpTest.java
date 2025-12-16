@@ -1171,6 +1171,122 @@ public class Java8CleanUpTest {
 					        return false;
 
 					    }
+					}"""),
+		MaxReducer("""
+			package test1;
+
+			import java.util.ArrayList;
+			import java.util.List;
+
+			class TestDemo {
+			    public int findMax(List<Integer> numbers) {
+			        int max = Integer.MIN_VALUE;
+			        for (Integer num : numbers) {
+			            max = Math.max(max, num);
+			        }
+			        return max;
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.ArrayList;
+					import java.util.List;
+
+					class TestDemo {
+					    public int findMax(List<Integer> numbers) {
+					        int max = Integer.MIN_VALUE;
+					        max = numbers.stream().map(num -> num).reduce(max, Math::max);
+					        return max;
+					    }
+					}"""),
+		MinReducer("""
+			package test1;
+
+			import java.util.ArrayList;
+			import java.util.List;
+
+			class TestDemo {
+			    public int findMin(List<Integer> numbers) {
+			        int min = Integer.MAX_VALUE;
+			        for (Integer num : numbers) {
+			            min = Math.min(min, num);
+			        }
+			        return min;
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.ArrayList;
+					import java.util.List;
+
+					class TestDemo {
+					    public int findMin(List<Integer> numbers) {
+					        int min = Integer.MAX_VALUE;
+					        min = numbers.stream().map(num -> num).reduce(min, Math::min);
+					        return min;
+					    }
+					}"""),
+		MaxWithExpression("""
+			package test1;
+
+			import java.util.ArrayList;
+			import java.util.List;
+
+			class TestDemo {
+			    public int findMaxLength(List<String> strings) {
+			        int maxLen = 0;
+			        for (String str : strings) {
+			            maxLen = Math.max(maxLen, str.length());
+			        }
+			        return maxLen;
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.ArrayList;
+					import java.util.List;
+
+					class TestDemo {
+					    public int findMaxLength(List<String> strings) {
+					        int maxLen = 0;
+					        maxLen = strings.stream().map(str -> str.length()).reduce(maxLen, Math::max);
+					        return maxLen;
+					    }
+					}"""),
+		MinWithExpression("""
+			package test1;
+
+			import java.util.ArrayList;
+			import java.util.List;
+
+			class TestDemo {
+			    public double findMinValue(List<Double> values) {
+			        double minVal = Double.MAX_VALUE;
+			        for (Double val : values) {
+			            minVal = Math.min(minVal, val * 2.0);
+			        }
+			        return minVal;
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.ArrayList;
+					import java.util.List;
+
+					class TestDemo {
+					    public double findMinValue(List<Double> values) {
+					        double minVal = Double.MAX_VALUE;
+					        minVal = values.stream().map(val -> val * 2.0).reduce(minVal, Math::min);
+					        return minVal;
+					    }
 					}""");
 
 		String given;
@@ -1204,7 +1320,11 @@ public class Java8CleanUpTest {
 		"ChainedAnyMatch",
 		"ChainedNoneMatch",
 		"NoNeededVariablesMerging",
-		"SomeChainingWithNoNeededVar"
+		"SomeChainingWithNoNeededVar",
+		"MaxReducer",
+		"MinReducer",
+		"MaxWithExpression",
+		"MinWithExpression"
 	})
 	public void testSimpleForEachConversion(UseFunctionalLoop test) throws CoreException {
 		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null);

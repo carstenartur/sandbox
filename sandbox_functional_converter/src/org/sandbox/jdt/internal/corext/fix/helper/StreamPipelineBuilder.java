@@ -283,9 +283,65 @@ public class StreamPipelineBuilder {
     }
     
     /**
+     * Extracts the non-accumulator argument from Math.max/min call.
+     * For example, in "max = Math.max(max, foo(l))", extracts "foo(l)".
+     * 
+     * @param stmt the statement containing the Math.max/min operation
+     * @param accumulatorVar the accumulator variable name
+     * @return the expression to be mapped, or null if none
+     */
+    private Expression extractMathMaxMinArgument(Statement stmt, String accumulatorVar) {
+        if (!(stmt instanceof ExpressionStatement)) {
+            return null;
+        }
+        
+        ExpressionStatement exprStmt = (ExpressionStatement) stmt;
+        Expression expr = exprStmt.getExpression();
+        
+        if (!(expr instanceof Assignment)) {
+            return null;
+        }
+        
+        Assignment assignment = (Assignment) expr;
+        if (assignment.getOperator() != Assignment.Operator.ASSIGN) {
+            return null;
+        }
+        
+        Expression rhs = assignment.getRightHandSide();
+        if (!(rhs instanceof MethodInvocation)) {
+            return null;
+        }
+        
+        MethodInvocation methodInv = (MethodInvocation) rhs;
+        List<?> args = methodInv.arguments();
+        if (args.size() != 2) {
+            return null;
+        }
+        
+        // Find the argument that is NOT the accumulator variable
+        for (Object argObj : args) {
+            if (argObj instanceof Expression) {
+                Expression arg = (Expression) argObj;
+                // Skip if this argument is just the accumulator variable
+                if (arg instanceof SimpleName) {
+                    SimpleName name = (SimpleName) arg;
+                    if (accumulatorVar.equals(name.getIdentifier())) {
+                        continue; // This is the accumulator, skip it
+                    }
+                }
+                // Return the non-accumulator argument
+                return arg;
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
      * Adds a MAP operation before a REDUCE operation based on the reducer type.
      * For INCREMENT/DECREMENT: maps to 1 (or 1.0 for double types)
      * For SUM/PRODUCT/STRING_CONCAT: extracts and maps the RHS expression
+     * For MAX/MIN: extracts and maps the non-accumulator argument from Math.max/min
      * 
      * @param ops the list to add the MAP operation to
      * @param reduceOp the REDUCE operation
@@ -344,11 +400,24 @@ public class StreamPipelineBuilder {
                     currentVarName);
                 ops.add(mapOp);
             }
+        } else if (reduceOp.getReducerType() == ProspectiveOperation.ReducerType.MAX ||
+                   reduceOp.getReducerType() == ProspectiveOperation.ReducerType.MIN) {
+            // For MAX/MIN (e.g., max = Math.max(max, foo(l))),
+            // extract the non-accumulator argument as a MAP operation
+            Expression mapExpression = extractMathMaxMinArgument(stmt, accumulatorVariable);
+            if (mapExpression != null) {
+                ProspectiveOperation mapOp = new ProspectiveOperation(
+                    mapExpression,
+                    ProspectiveOperation.OperationType.MAP,
+                    currentVarName);
+                ops.add(mapOp);
+            }
         }
     }
     
     /**
      * Detects if a statement contains a REDUCE pattern (i++, sum += x, etc.).
+     * Also detects MAX/MIN patterns like: max = Math.max(max, x)
      * 
      * @param stmt the statement to check
      * @return a ProspectiveOperation for REDUCE if detected, null otherwise
@@ -406,26 +475,94 @@ public class StreamPipelineBuilder {
         // Check for compound assignments: +=, -=, *=, etc.
         if (expr instanceof Assignment) {
             Assignment assignment = (Assignment) expr;
-            if (assignment.getLeftHandSide() instanceof SimpleName &&
-                assignment.getOperator() != Assignment.Operator.ASSIGN) {
-                
+            if (assignment.getLeftHandSide() instanceof SimpleName) {
                 String varName = ((SimpleName) assignment.getLeftHandSide()).getIdentifier();
-                ProspectiveOperation.ReducerType reducerType;
                 
-                if (assignment.getOperator() == Assignment.Operator.PLUS_ASSIGN) {
-                    reducerType = ProspectiveOperation.ReducerType.SUM;
-                } else if (assignment.getOperator() == Assignment.Operator.TIMES_ASSIGN) {
-                    reducerType = ProspectiveOperation.ReducerType.PRODUCT;
-                } else if (assignment.getOperator() == Assignment.Operator.MINUS_ASSIGN) {
-                    reducerType = ProspectiveOperation.ReducerType.DECREMENT;
-                } else {
-                    // Other assignment operators not yet supported
-                    return null;
+                // Check for simple assignment operators first
+                if (assignment.getOperator() != Assignment.Operator.ASSIGN) {
+                    ProspectiveOperation.ReducerType reducerType;
+                    
+                    if (assignment.getOperator() == Assignment.Operator.PLUS_ASSIGN) {
+                        reducerType = ProspectiveOperation.ReducerType.SUM;
+                    } else if (assignment.getOperator() == Assignment.Operator.TIMES_ASSIGN) {
+                        reducerType = ProspectiveOperation.ReducerType.PRODUCT;
+                    } else if (assignment.getOperator() == Assignment.Operator.MINUS_ASSIGN) {
+                        reducerType = ProspectiveOperation.ReducerType.DECREMENT;
+                    } else {
+                        // Other assignment operators not yet supported
+                        return null;
+                    }
+                    
+                    accumulatorVariable = varName;
+                    accumulatorType = getVariableType(varName);
+                    return new ProspectiveOperation(stmt, varName, reducerType);
                 }
                 
-                accumulatorVariable = varName;
-                accumulatorType = getVariableType(varName);
-                return new ProspectiveOperation(stmt, varName, reducerType);
+                // Check for regular assignment with Math.max/Math.min pattern
+                // Pattern: max = Math.max(max, x) or min = Math.min(min, x)
+                if (assignment.getOperator() == Assignment.Operator.ASSIGN) {
+                    Expression rhs = assignment.getRightHandSide();
+                    ProspectiveOperation.ReducerType reducerType = detectMathMaxMinPattern(varName, rhs);
+                    if (reducerType != null) {
+                        accumulatorVariable = varName;
+                        accumulatorType = getVariableType(varName);
+                        return new ProspectiveOperation(stmt, varName, reducerType);
+                    }
+                }
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Detects Math.max/Math.min patterns in an expression.
+     * Patterns: max = Math.max(max, x) or min = Math.min(min, x)
+     * 
+     * @param varName the accumulator variable name
+     * @param expr the right-hand side expression to check
+     * @return MAX or MIN if pattern detected, null otherwise
+     */
+    private ProspectiveOperation.ReducerType detectMathMaxMinPattern(String varName, Expression expr) {
+        if (!(expr instanceof MethodInvocation)) {
+            return null;
+        }
+        
+        MethodInvocation methodInv = (MethodInvocation) expr;
+        
+        // Check if it's a Math.max or Math.min call
+        if (methodInv.getExpression() instanceof SimpleName) {
+            SimpleName className = (SimpleName) methodInv.getExpression();
+            if (!"Math".equals(className.getIdentifier())) {
+                return null;
+            }
+            
+            String methodName = methodInv.getName().getIdentifier();
+            if (!"max".equals(methodName) && !"min".equals(methodName)) {
+                return null;
+            }
+            
+            // Check if one of the arguments is the accumulator variable
+            List<?> args = methodInv.arguments();
+            if (args.size() != 2) {
+                return null;
+            }
+            
+            boolean hasAccumulatorArg = false;
+            for (Object argObj : args) {
+                if (argObj instanceof SimpleName) {
+                    SimpleName argName = (SimpleName) argObj;
+                    if (varName.equals(argName.getIdentifier())) {
+                        hasAccumulatorArg = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (hasAccumulatorArg) {
+                return "max".equals(methodName) ? 
+                    ProspectiveOperation.ReducerType.MAX : 
+                    ProspectiveOperation.ReducerType.MIN;
             }
         }
         
