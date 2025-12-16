@@ -101,10 +101,9 @@ public class StreamPipelineBuilder {
         this.preconditions = preconditions;
         this.ast = forLoop.getAST();
         
-        // Defensive: ensure loop parameter and name are available
-        if (forLoop.getParameter() == null || forLoop.getParameter().getName() == null) {
-            throw new IllegalArgumentException("forLoop must have a valid parameter with a name");
-        }
+        // Internal invariant: EnhancedForStatement must have a parameter with a name
+        assert forLoop.getParameter() != null && forLoop.getParameter().getName() != null
+                : "forLoop must have a valid parameter with a name";
         
         this.loopVariableName = forLoop.getParameter().getName().getIdentifier();
         this.operations = new ArrayList<>();
