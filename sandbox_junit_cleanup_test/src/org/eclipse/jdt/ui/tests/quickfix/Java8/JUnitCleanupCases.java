@@ -690,8 +690,7 @@ public class MyTest {
 	public void test3() {
 	}
 
-	class Er_5b8b4 implements org.junit.jupiter.api.extension.BeforeEachCallback,
-			org.junit.jupiter.api.extension.AfterEachCallback {
+	class Er_5b8b4 implements BeforeEachCallback, AfterEachCallback {
 		public void beforeEach(ExtensionContext context) {
 		}
 

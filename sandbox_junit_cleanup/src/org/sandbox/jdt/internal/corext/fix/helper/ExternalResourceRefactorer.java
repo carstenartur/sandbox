@@ -241,21 +241,21 @@ public final class ExternalResourceRefactorer {
 		}
 
 		// Add JUnit 5 callback interfaces (before/after each or all depending on static)
-		// Use fully qualified names in the implements clause for nested classes
+		// Use addImport to get the appropriate name (simple or qualified based on conflicts)
 		if (fieldStatic) {
+			String beforeAllName = importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_ALL_CALLBACK);
+			String afterAllName = importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_ALL_CALLBACK);
 			nestedClass.superInterfaceTypes()
-					.add(ast.newSimpleType(ast.newName(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_ALL_CALLBACK)));
+					.add(ast.newSimpleType(ast.newName(beforeAllName)));
 			nestedClass.superInterfaceTypes()
-					.add(ast.newSimpleType(ast.newName(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_ALL_CALLBACK)));
-			importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_ALL_CALLBACK);
-			importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_ALL_CALLBACK);
+					.add(ast.newSimpleType(ast.newName(afterAllName)));
 		} else {
+			String beforeEachName = importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
+			String afterEachName = importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
 			nestedClass.superInterfaceTypes()
-					.add(ast.newSimpleType(ast.newName(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK)));
+					.add(ast.newSimpleType(ast.newName(beforeEachName)));
 			nestedClass.superInterfaceTypes()
-					.add(ast.newSimpleType(ast.newName(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK)));
-			importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
-			importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
+					.add(ast.newSimpleType(ast.newName(afterEachName)));
 		}
 
 		// Transfer lifecycle methods from anonymous class to new class
