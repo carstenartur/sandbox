@@ -424,20 +424,38 @@ Type mappings:
 - `float` → `1.0f`
 - `double` → `1.0`
 
+## Code Quality and Maintainability (December 2025)
+
+### Recent Code Cleanup
+As part of the December 2025 improvements, significant dead code was removed:
+- **TreeUtilities.java**: Completely removed (unused utility class with no callers)
+- **Refactorer.java**: Legacy implementation removed, reducing file from 417 lines to 93 lines (78% reduction)
+  - Removed legacy methods: `isOneStatementBlock()`, `isReturningIf()`, `getListRepresentation()`, `isIfWithContinue()`, `refactorContinuingIf()`, `createReduceLambdaExpression()`, `createMapLambdaExpression()`, `createForEachLambdaExpression()`, and legacy `parseLoopBody()`
+  - All functionality now consolidated in `StreamPipelineBuilder` class
+  - Legacy implementation was never executed since `useStreamPipelineBuilder()` returns true by default
+
+### Current Implementation Status
+- **Primary implementation**: `StreamPipelineBuilder` (849 lines) - comprehensive, well-tested
+- **Fallback**: Legacy implementation removed - no longer needed
+- **Helper classes**: All necessary classes (`AbstractFunctionalCall`, `LoopToFunctional`, `PreconditionsChecker`, `ProspectiveOperation`) are in active use
+
 ## Limitations and Future Work
 
 ### Current Limitations
-1. **No operation merging**: Consecutive filters/maps are not merged
-2. **No collect() support**: Only forEach and reduce terminals
+1. **No operation merging**: Consecutive filters/maps are not merged (e.g., `.filter(x -> x > 0).filter(x -> x < 100)` not merged to single filter)
+2. **No collect() support**: Only forEach, reduce, anyMatch, and noneMatch terminals supported
 3. **No parallel streams**: Always generates sequential streams
-4. **Limited method references**: Could use more method references vs lambdas
+4. **Limited method references**: More opportunities exist for method references vs lambdas
+5. **No labeled break/continue**: Loops with labeled break or continue are not converted
+6. **No exception throwing**: Loops that throw exceptions are not converted
 
 ### Future Enhancements
-1. **Operation optimization**: Merge consecutive filters with && logic
-2. **Extended terminals**: Support collect(), findFirst(), count(), etc.
-3. **Method reference detection**: Auto-convert lambdas to method references where possible
+1. **Operation optimization**: Merge consecutive filters with && logic, merge consecutive maps
+2. **Extended terminals**: Support collect(), findFirst(), count(), sum(), etc.
+3. **Method reference detection**: Auto-convert lambdas to method references where possible (e.g., `x -> x.toString()` to `Object::toString`)
 4. **Parallel stream option**: User preference for parallel vs sequential
-5. **Complex reducers**: Support for more complex accumulation patterns
+5. **Complex reducers**: Support for more complex accumulation patterns beyond current set
+6. **Exception handling**: Support loops with controlled exception throwing patterns
 
 ## Testing
 
