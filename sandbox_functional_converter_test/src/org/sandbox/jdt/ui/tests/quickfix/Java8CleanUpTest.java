@@ -2044,6 +2044,23 @@ public class Java8CleanUpTest {
 				        return;
 
 				    }
+				}""",
+			
+			// Test case: Loop modifying external variable (should NOT convert due to unsafe side effect)
+			"""
+				package testdemo;
+				
+				import java.util.List;
+				
+				class TestDemo {
+				    public void processWithExternalModification(List<String> items) {
+				        int count = 0;
+				        for (String item : items) {
+				            System.out.println(item);
+				            count = count + 1;  // Assignment to external variable
+				        }
+				        System.out.println(count);
+				    }
 				}"""
 
 	})

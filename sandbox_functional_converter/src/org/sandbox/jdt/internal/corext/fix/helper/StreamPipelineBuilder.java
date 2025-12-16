@@ -771,6 +771,13 @@ public class StreamPipelineBuilder {
                     // Only do this if it's not a REDUCE operation (which should only be the last statement)
                     ProspectiveOperation reduceCheck = detectReduceOperation(stmt);
                     if (reduceCheck == null) {
+                        // Check if this is a safe side-effect
+                        if (!isSafeSideEffect(stmt, currentVarName, ops)) {
+                            // Unsafe side-effect - don't convert this loop
+                            // Return empty list to signal conversion should be rejected
+                            return new ArrayList<>();
+                        }
+                        
                         // Create a MAP operation with side effect that returns the current variable
                         // Note: For side-effect MAPs, the third parameter is the variable to return, not the loop variable
                         ProspectiveOperation mapOp = new ProspectiveOperation(
@@ -1166,5 +1173,65 @@ public class StreamPipelineBuilder {
             }
         }
         return false;
+    }
+    
+    /**
+     * Checks if a statement is safe to convert as a side-effect in a stream pipeline.
+     * Side-effects are statements that don't directly produce a value but perform actions.
+     * 
+     * <p>Safe side-effects include:
+     * <ul>
+     * <li>Method calls that don't modify loop variables or accumulators</li>
+     * <li>System.out.println and similar logging</li>
+     * <li>Statements that don't contain assignments to variables outside the lambda scope</li>
+     * </ul>
+     * 
+     * <p>Unsafe side-effects that should prevent conversion:
+     * <ul>
+     * <li>Assignments to variables declared outside the loop (except accumulators)</li>
+     * <li>Modifications to shared mutable state</li>
+     * </ul>
+     * 
+     * @param stmt the statement to check
+     * @param loopVarName the loop variable name
+     * @param operations the list of operations (to check for accumulators)
+     * @return true if the statement is safe to include in a stream pipeline
+     */
+    private boolean isSafeSideEffect(Statement stmt, String loopVarName, List<ProspectiveOperation> operations) {
+        if (!(stmt instanceof ExpressionStatement)) {
+            // Only expression statements can be safe side-effects
+            // Other statement types (if, while, for, etc.) should be handled differently
+            return false;
+        }
+        
+        ExpressionStatement exprStmt = (ExpressionStatement) stmt;
+        Expression expr = exprStmt.getExpression();
+        
+        // Check for assignments - these are potentially unsafe if they modify external variables
+        if (expr instanceof Assignment) {
+            Assignment assignment = (Assignment) expr;
+            Expression lhs = assignment.getLeftHandSide();
+            
+            if (lhs instanceof SimpleName) {
+                String varName = ((SimpleName) lhs).getIdentifier();
+                
+                // Assignment to loop variable or mapped variables is unsafe
+                if (varName.equals(loopVarName)) {
+                    return false;
+                }
+                
+                // Assignment to accumulator variables is handled by REDUCE, not side-effects
+                if (isAccumulatorVariable(varName, operations)) {
+                    return false;
+                }
+                
+                // Other assignments to external variables are unsafe for conversion
+                // This is a conservative approach - we could refine this further
+                return false;
+            }
+        }
+        
+        // Method calls and other expressions are generally safe
+        return true;
     }
 }
