@@ -809,7 +809,7 @@ Test cases cover:
 - Idempotence verification
 - Mixed scenarios (some methods converted, others not)
 - Nested classes and inner classes
-- Import handling and name clash scenarios
+- Import handling when SubProgressMonitor and SubMonitor imports coexist
 
 ---
 
