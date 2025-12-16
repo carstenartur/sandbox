@@ -2,6 +2,22 @@
 
 This document tracks missing features and bugs in the JUnit migration cleanup implementation that were discovered during test suite refactoring.
 
+## 📖 About This Document
+
+This TODO tracks **missing features** in the **JUnit migration cleanup** itself, NOT migration of this repository's own test code.
+
+**Important Context:**
+- This repository's test code **already uses JUnit 5** (see `Migration*Test.java` files)
+- The JUnit 4 code in `JUnitCleanupCases.java` is **intentional test data** - it's the "before" state that the cleanup should transform
+- The **sandbox_junit_cleanup** module provides an Eclipse cleanup that migrates OTHER projects from JUnit 4 to JUnit 5
+- This document tracks which migration features work and which still need to be implemented
+
+**For Contributors:**
+- To add a new migration feature, create a plugin class in `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/`
+- Add tests in the `Migration*Test.java` files 
+- Enable the tests when the feature is complete
+- Update this TODO to track progress
+
 ## 🔴 Critical Missing Features
 
 ### 1. TemporaryFolder → @TempDir Migration
@@ -175,6 +191,49 @@ When a feature is implemented:
 - Cleanup Constants: `/sandbox_common/src/org/sandbox/jdt/internal/corext/fix2/MYCleanUpConstants.java`
 - Production Code: `/sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/*`
 - Legacy Test Data: `JUnitCleanupCases.java`, `JUnit3CleanupCases.java`
+
+---
+
+---
+
+## 📊 Repository Status (Updated 2025-12-16)
+
+### Test Infrastructure
+- **All test files already use JUnit 5**: The actual test classes (`Migration*Test.java`) use `org.junit.jupiter.api.*` annotations
+- **JUnit 4 code in test data is intentional**: Files like `JUnitCleanupCases.java` contain JUnit 4 code as **test inputs** (the "given" strings) to validate the cleanup transformations
+- **Test pattern**: Each test creates a JUnit 4 code sample, runs the cleanup, and verifies it produces the expected JUnit 5 output
+
+### Implementation Architecture
+The JUnit cleanup is implemented using a plugin architecture:
+- **`JUnitCleanUpFixCore`**: Enum listing all cleanup plugins
+- **Plugin classes** (in `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/`):
+  - `BeforeJUnitPlugin`, `AfterJUnitPlugin` - Lifecycle annotations
+  - `TestJUnitPlugin` - @Test annotation migration
+  - `AssertJUnitPlugin` - Assertion method migration
+  - `AssumeJUnitPlugin` - Assumption method migration
+  - `RuleTemporayFolderJUnitPlugin` - TemporaryFolder rule (currently incomplete)
+  - `RunWithJUnitPlugin` - @RunWith annotation (currently incomplete)
+  - And more...
+- **Abstract base classes**:
+  - `AbstractMarkerAnnotationJUnitPlugin` - For simple annotation replacements
+  - `AbstractTool<T>` - Base for all plugins
+
+### What's Working Well
+The cleanup successfully handles:
+- Simple annotation replacements (@Before → @BeforeEach, @After → @AfterEach, etc.)
+- Assertion parameter reordering (message-last in JUnit 5)
+- Static vs. instance import management
+- TestName Rule → TestInfo migration
+- ExternalResource extension migration
+- Basic assumption methods (assumeTrue, assumeFalse, assumeNotNull)
+
+### What Needs Implementation
+The missing features require more complex AST transformations:
+1. **@Test(expected)** - Requires wrapping method body in assertThrows lambda
+2. **TemporaryFolder** - Requires changing field type AND updating method calls
+3. **@RunWith(Suite)** - Requires annotation parameter transformation
+4. **Parameterized tests** - Complex transformation to @ParameterizedTest
+5. **Timeout** - Similar to expected, needs method body wrapping or annotation migration
 
 ---
 
