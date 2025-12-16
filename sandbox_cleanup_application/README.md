@@ -22,13 +22,13 @@ This application processes Java source files using configured cleanup rules, app
 ## Application ID
 
 ```
-org.sandbox.jdt.core.JavaCleanup
+sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup
 ```
 
 ## Command-Line Syntax
 
 ```bash
-eclipse -nosplash -application org.sandbox.jdt.core.JavaCleanup -data <workspace> [OPTIONS] <files or directories>
+eclipse -nosplash -application sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup -data <workspace> [OPTIONS] <files or directories>
 ```
 
 ### Required Arguments
@@ -123,7 +123,7 @@ Clean up a single Java file using a specific configuration:
 
 ```bash
 eclipse -nosplash \
-  -application org.sandbox.jdt.core.JavaCleanup \
+  -application sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup \
   -data /path/to/workspace \
   -config cleanup-config.properties \
   MyClass.java
@@ -135,7 +135,7 @@ Process all Java files in a directory tree with verbose logging:
 
 ```bash
 eclipse -nosplash \
-  -application org.sandbox.jdt.core.JavaCleanup \
+  -application sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup \
   -data /path/to/workspace \
   -config cleanup-config.properties \
   -verbose \
@@ -148,7 +148,7 @@ Process specific files silently (only show errors):
 
 ```bash
 eclipse -nosplash \
-  -application org.sandbox.jdt.core.JavaCleanup \
+  -application sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup \
   -data /path/to/workspace \
   -config cleanup-config.properties \
   -quiet \
@@ -161,7 +161,7 @@ Show usage information:
 
 ```bash
 eclipse -nosplash \
-  -application org.sandbox.jdt.core.JavaCleanup \
+  -application sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup \
   -help
 ```
 
@@ -171,7 +171,7 @@ Clean up an entire project directory:
 
 ```bash
 eclipse -nosplash \
-  -application org.sandbox.jdt.core.JavaCleanup \
+  -application sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup \
   -data /home/user/workspace \
   -config /home/user/my-cleanups.properties \
   /home/user/workspace/MyProject/src
@@ -270,7 +270,7 @@ If you don't have an existing workspace, create an empty one:
 ```bash
 mkdir -p /tmp/cleanup-workspace
 eclipse -nosplash \
-  -application org.sandbox.jdt.core.JavaCleanup \
+  -application sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup \
   -data /tmp/cleanup-workspace \
   -config cleanup.properties \
   /tmp/cleanup-workspace/src/Test.java
@@ -337,7 +337,7 @@ ECLIPSE="/opt/eclipse/eclipse"
 for project in ProjectA ProjectB ProjectC; do
   echo "Processing $project..."
   $ECLIPSE -nosplash \
-    -application org.sandbox.jdt.core.JavaCleanup \
+    -application sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup \
     -data $WORKSPACE \
     -config $CONFIG \
     -verbose \
@@ -354,7 +354,7 @@ Use in continuous integration pipelines:
 - name: Run Java Cleanup
   run: |
     eclipse -nosplash \
-      -application org.sandbox.jdt.core.JavaCleanup \
+      -application sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup \
       -data $GITHUB_WORKSPACE \
       -config .github/cleanup-config.properties \
       -quiet \
@@ -367,15 +367,15 @@ Create different configurations for different scenarios:
 
 ```bash
 # Minimal cleanup (formatting only)
-eclipse -nosplash -application org.sandbox.jdt.core.JavaCleanup \
+eclipse -nosplash -application sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup \
   -data workspace -config minimal.properties src/
 
 # Aggressive cleanup (all transformations)
-eclipse -nosplash -application org.sandbox.jdt.core.JavaCleanup \
+eclipse -nosplash -application sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup \
   -data workspace -config aggressive.properties src/
 
 # Code style enforcement
-eclipse -nosplash -application org.sandbox.jdt.core.JavaCleanup \
+eclipse -nosplash -application sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup \
   -data workspace -config style.properties src/
 ```
 
