@@ -676,7 +676,7 @@ The cleanup currently supports the following patterns:
 | Simple enhanced for-loops              | `list.forEach(...)` or `list.stream().forEach(...)` |
 | Mapping inside loops                   | `.stream().map(...)`                                |
 | Filtering via `if` or `continue`       | `.stream().filter(...)`                             |
-| Null safety checks                     | `.filter(Objects::nonNull).map(...)`                |
+| Null safety checks                     | `.filter(l -> l != null).map(...)`                  |
 | Reductions (sum/counter)               | `.stream().map(...).reduce(...)`                    |
 | `String` concatenation in loops        | `.reduce(..., String::concat)`                      |
 | Conditional early `return true`        | `.anyMatch(...)`                                    |
