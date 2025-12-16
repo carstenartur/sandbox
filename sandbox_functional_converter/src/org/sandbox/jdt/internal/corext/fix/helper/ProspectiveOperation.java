@@ -184,6 +184,8 @@ public class ProspectiveOperation {
                 return "anyMatch";
             case NONEMATCH:
                 return "noneMatch";
+            case ALLMATCH:
+                return "allMatch";
             default:
                 return "unknown";
         }
@@ -302,7 +304,8 @@ public class ProspectiveOperation {
             case FILTER:
             case ANYMATCH:
             case NONEMATCH:
-                // For FILTER/ANYMATCH/NONEMATCH: x -> (<condition>)
+            case ALLMATCH:
+                // For FILTER/ANYMATCH/NONEMATCH/ALLMATCH: x -> (<condition>)
                 if (originalExpression != null) {
                     lambda.setBody(ASTNode.copySubtree(ast, originalExpression));
                 }
@@ -350,6 +353,7 @@ public class ProspectiveOperation {
      * <li>REDUCE → "reduce"</li>
      * <li>ANYMATCH → "anyMatch"</li>
      * <li>NONEMATCH → "noneMatch"</li>
+     * <li>ALLMATCH → "allMatch"</li>
      * </ul>
      * 
      * @return the stream API method name for this operation
@@ -368,6 +372,8 @@ public class ProspectiveOperation {
                 return "anyMatch";
             case NONEMATCH:
                 return "noneMatch";
+            case ALLMATCH:
+                return "allMatch";
             default:
                 throw new IllegalStateException("Unknown operation type: " + operationType);
         }
@@ -843,7 +849,7 @@ public class ProspectiveOperation {
     }
 
     public enum OperationType {
-        MAP, FOREACH, FILTER, REDUCE, ANYMATCH, NONEMATCH
+        MAP, FOREACH, FILTER, REDUCE, ANYMATCH, NONEMATCH, ALLMATCH
     }
     
     public enum ReducerType {
