@@ -17,7 +17,7 @@ This Eclipse cleanup plugin automatically converts imperative enhanced for-loops
 - **Continue statements**: `if (condition) continue;` → `.filter(x -> !(condition))`
 
 ### Recent Improvements (December 2025)
-✅ **Code Cleanup**: Removed 371 lines of dead code (78% reduction in Refactorer.java)
+✅ **Code Cleanup**: Removed ~366 lines of dead code (78% reduction in Refactorer.java)
 ✅ **Math.max/Math.min Support**: Full support for MAX/MIN reduction with method references
 ✅ **Enhanced Tests**: 29 comprehensive test cases covering all patterns
 ✅ **Better Documentation**: Complete architecture and implementation docs

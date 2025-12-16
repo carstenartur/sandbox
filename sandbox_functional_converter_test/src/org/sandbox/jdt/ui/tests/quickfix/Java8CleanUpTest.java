@@ -1352,7 +1352,6 @@ public class Java8CleanUpTest {
 		ComplexFilterMapMaxReduction("""
 			package test1;
 
-			import java.util.ArrayList;
 			import java.util.List;
 
 			class TestDemo {
@@ -1371,7 +1370,6 @@ public class Java8CleanUpTest {
 				"""
 					package test1;
 
-					import java.util.ArrayList;
 					import java.util.List;
 
 					class TestDemo {
@@ -1384,7 +1382,6 @@ public class Java8CleanUpTest {
 		ContinueWithMapAndForEach("""
 			package test1;
 
-			import java.util.Arrays;
 			import java.util.List;
 
 			class TestDemo {
@@ -1402,7 +1399,6 @@ public class Java8CleanUpTest {
 				"""
 					package test1;
 
-					import java.util.Arrays;
 					import java.util.List;
 
 					class TestDemo {

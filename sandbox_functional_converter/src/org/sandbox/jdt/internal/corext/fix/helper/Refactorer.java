@@ -42,34 +42,16 @@ public class Refactorer {
         return preconditions.isSafeToRefactor() && preconditions.iteratesOverIterable();
     }
 
-    /** Performs the refactoring of the loop into a stream operation. */
+    /** 
+     * Performs the refactoring of the loop into a stream operation.
+     * Uses StreamPipelineBuilder for all conversions.
+     */
     public void refactor() {
-        // Use StreamPipelineBuilder for all refactoring
-        if (useStreamPipelineBuilder()) {
-            refactorWithBuilder();
-            return;
-        }
-        
-        // Legacy implementation removed - StreamPipelineBuilder is now the only implementation
-    }
-    
-    /**
-     * Determines whether to use the StreamPipelineBuilder for refactoring.
-     * Returns true to enable the builder-based approach.
-     */
-    /**
-     * Determines whether to use the StreamPipelineBuilder for refactoring.
-     * Returns true by default. To enable the legacy implementation for testing or fallback,
-     * set the system property "org.sandbox.jdt.useLegacyLoopRefactor" to "true".
-     */
-    private boolean useStreamPipelineBuilder() {
-        // If the system property is set to true, use the legacy implementation.
-        return !Boolean.getBoolean("org.sandbox.jdt.useLegacyLoopRefactor");
+        refactorWithBuilder();
     }
     
     /**
      * Refactors the loop using the StreamPipelineBuilder approach.
-     * This is the recommended method for converting loops to streams.
      */
     private void refactorWithBuilder() {
         StreamPipelineBuilder builder = new StreamPipelineBuilder(forLoop, preconditions);
