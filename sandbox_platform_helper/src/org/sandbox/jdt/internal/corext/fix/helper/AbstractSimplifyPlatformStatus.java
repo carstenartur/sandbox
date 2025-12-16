@@ -139,12 +139,10 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 				ASTNodes.getUnparenthesedExpression(arguments.get(messagePosition))));
 		
 		// Add throwable argument if present (at position 4) and not null
-		if (arguments.size() == 5) {
-			ASTNode throwableArg= arguments.get(4);
-			ASTNode codeArg= arguments.get(2);
-			if (!throwableArg.toString().equals("null") && codeArg.toString().equals("IStatus.OK")) { //$NON-NLS-1$ //$NON-NLS-2$
-				staticCallArguments.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(throwableArg)));
-			}
+		ASTNode throwableArg= arguments.get(4);
+		ASTNode codeArg= arguments.get(2);
+		if (!throwableArg.toString().equals("null") && codeArg.toString().equals("IStatus.OK")) { //$NON-NLS-1$ //$NON-NLS-2$
+			staticCallArguments.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(throwableArg)));
 		}
 		
 		ASTNodes.replaceButKeepComment(rewrite, visited, staticCall, group);
