@@ -23,7 +23,28 @@ import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava8;
 
-
+/**
+ * Tests for JFace cleanup that migrates from deprecated SubProgressMonitor to SubMonitor.
+ * 
+ * <p>This test suite validates the SubProgressMonitor → SubMonitor migration cleanup.
+ * For detailed migration patterns and documentation, see the JFace Cleanup section
+ * in the main repository README.md.</p>
+ * 
+ * <p>Test coverage includes:</p>
+ * <ul>
+ * <li>Basic transformation patterns (beginTask + SubProgressMonitor → convert + split)</li>
+ * <li>Multiple SubProgressMonitor instances per method</li>
+ * <li>Style flags (2-arg and 3-arg constructors)</li>
+ * <li>Variable name collision handling</li>
+ * <li>Idempotence verification (already converted code remains unchanged)</li>
+ * <li>Mixed state scenarios (some methods converted, others not)</li>
+ * <li>Nested/inner class scenarios</li>
+ * <li>Lambda expressions with progress monitors</li>
+ * <li>Import handling when both SubProgressMonitor and SubMonitor APIs are imported together</li>
+ * </ul>
+ * 
+ * @see MYCleanUpConstants#JFACE_CLEANUP
+ */
 public class Java8CleanUpTest {
 
 	@RegisterExtension
@@ -172,6 +193,136 @@ public class Test {
 		SubMonitor subMonitor=SubMonitor.convert(monitor,"Task",100);
 		IProgressMonitor sub= subMonitor.split(50);
 		IProgressMonitor sub2= subMonitor.split(30);
+	}
+}
+"""), //$NON-NLS-1$
+	MixedStateOneConvertedOneNot(
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
+public class Test {
+	// This method already uses SubMonitor - should not be modified
+	public void alreadyConverted(IProgressMonitor monitor) {
+		SubMonitor subMonitor=SubMonitor.convert(monitor,"Already converted",50);
+		IProgressMonitor sub= subMonitor.split(25);
+	}
+	// This method still uses SubProgressMonitor - should be converted
+	public void needsConversion(IProgressMonitor monitor) {
+		monitor.beginTask("Needs conversion", 100);
+		IProgressMonitor sub= new SubProgressMonitor(monitor, 60);
+	}
+}
+""", //$NON-NLS-1$
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
+public class Test {
+	// This method already uses SubMonitor - should not be modified
+	public void alreadyConverted(IProgressMonitor monitor) {
+		SubMonitor subMonitor=SubMonitor.convert(monitor,"Already converted",50);
+		IProgressMonitor sub= subMonitor.split(25);
+	}
+	// This method still uses SubProgressMonitor - should be converted
+	public void needsConversion(IProgressMonitor monitor) {
+		SubMonitor subMonitor=SubMonitor.convert(monitor,"Needs conversion",100);
+		IProgressMonitor sub= subMonitor.split(60);
+	}
+}
+"""), //$NON-NLS-1$
+	NestedInnerClass(
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
+public class Test {
+	public void outerMethod(IProgressMonitor monitor) {
+		monitor.beginTask("Outer task", 50);
+		IProgressMonitor sub= new SubProgressMonitor(monitor, 25);
+	}
+	class InnerClass {
+		public void innerMethod(IProgressMonitor monitor) {
+			monitor.beginTask("Inner task", 100);
+			IProgressMonitor sub= new SubProgressMonitor(monitor, 50);
+		}
+	}
+}
+""", //$NON-NLS-1$
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
+public class Test {
+	public void outerMethod(IProgressMonitor monitor) {
+		SubMonitor subMonitor=SubMonitor.convert(monitor,"Outer task",50);
+		IProgressMonitor sub= subMonitor.split(25);
+	}
+	class InnerClass {
+		public void innerMethod(IProgressMonitor monitor) {
+			SubMonitor subMonitor=SubMonitor.convert(monitor,"Inner task",100);
+			IProgressMonitor sub= subMonitor.split(50);
+		}
+	}
+}
+"""), //$NON-NLS-1$
+	LambdaScenario(
+"""
+package test;
+import java.util.function.Consumer;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
+public class Test {
+	public void withLambda(IProgressMonitor monitor) {
+		Consumer<IProgressMonitor> task = m -> {
+			m.beginTask("Lambda task", 100);
+			IProgressMonitor sub = new SubProgressMonitor(m, 50);
+		};
+		task.accept(monitor);
+	}
+}
+""", //$NON-NLS-1$
+"""
+package test;
+import java.util.function.Consumer;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
+public class Test {
+	public void withLambda(IProgressMonitor monitor) {
+		Consumer<IProgressMonitor> task = m -> {
+			SubMonitor subMonitor=SubMonitor.convert(m,"Lambda task",100);
+			IProgressMonitor sub = subMonitor.split(50);
+		};
+		task.accept(monitor);
+	}
+}
+"""), //$NON-NLS-1$
+	BothImportsCoexist(
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
+// Simulating a scenario where both imports might coexist
+public class Test {
+	public void doWork(IProgressMonitor monitor) {
+		monitor.beginTask("Task with both imports", 100);
+		// Only Eclipse's SubProgressMonitor should be converted
+		IProgressMonitor sub= new SubProgressMonitor(monitor, 50);
+	}
+}
+""", //$NON-NLS-1$
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
+// Simulating a scenario where both imports might coexist
+public class Test {
+	public void doWork(IProgressMonitor monitor) {
+		SubMonitor subMonitor=SubMonitor.convert(monitor,"Task with both imports",100);
+		// Only Eclipse's SubProgressMonitor should be converted
+		IProgressMonitor sub= subMonitor.split(50);
 	}
 }
 """); //$NON-NLS-1$
