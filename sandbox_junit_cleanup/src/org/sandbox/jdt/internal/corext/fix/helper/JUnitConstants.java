@@ -78,6 +78,13 @@ public final class JUnitConstants {
 	public static final String ORG_JUNIT_ASSUME = "org.junit.Assume";
 	public static final String ORG_JUNIT_FIX_METHOD_ORDER = "org.junit.FixMethodOrder";
 
+	// ===== JUnit 4 Runner Fully Qualified References =====
+
+	public static final String ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER = "org.mockito.junit.MockitoJUnitRunner";
+	public static final String ORG_MOCKITO_RUNNERS_MOCKITO_JUNIT_RUNNER = "org.mockito.runners.MockitoJUnitRunner";
+	public static final String ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER = "org.springframework.test.context.junit4.SpringRunner";
+	public static final String ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_JUNIT4_CLASS_RUNNER = "org.springframework.test.context.junit4.SpringJUnit4ClassRunner";
+
 	// ===== JUnit 5 / Jupiter Fully Qualified References =====
 
 	public static final String ORG_JUNIT_JUPITER_API_AFTER_EACH = "org.junit.jupiter.api.AfterEach";
@@ -97,6 +104,11 @@ public final class JUnitConstants {
 	public static final String ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH = "org.junit.jupiter.api.extension.ExtendWith";
 	public static final String ORG_JUNIT_JUPITER_TEST = "org.junit.jupiter.api.Test";
 	public static final String ORG_JUNIT_JUPITER_API_ASSUMPTIONS = "org.junit.jupiter.api.Assumptions";
+
+	// ===== JUnit 5 Extension Fully Qualified References =====
+
+	public static final String ORG_MOCKITO_JUNIT_JUPITER_MOCKITO_EXTENSION = "org.mockito.junit.jupiter.MockitoExtension";
+	public static final String ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT_JUPITER_SPRING_EXTENSION = "org.springframework.test.context.junit.jupiter.SpringExtension";
 
 	// ===== JUnit Platform Fully Qualified References =====
 

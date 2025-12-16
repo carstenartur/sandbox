@@ -149,7 +149,6 @@ public class MigrationRunnersTest {
 		}, null);
 	}
 
-	@Disabled("Not yet implemented - MockitoJUnitRunner migration")
 	@Test
 	public void migrates_runWith_mockito() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
@@ -198,7 +197,6 @@ public class MigrationRunnersTest {
 		}, null);
 	}
 
-	@Disabled("Not yet implemented - SpringRunner migration")
 	@Test
 	public void migrates_runWith_spring() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);

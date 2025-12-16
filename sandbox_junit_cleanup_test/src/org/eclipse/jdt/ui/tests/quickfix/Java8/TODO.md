@@ -11,6 +11,7 @@ The plugin successfully handles most common JUnit 4 to JUnit 5 migrations:
 - **Assertions**: All standard assertions with correct parameter reordering
 - **Assumptions**: Basic assumptions and Hamcrest assumeThat
 - **Rules**: TestName → TestInfo, ExternalResource extension pattern
+- **Runners**: MockitoJUnitRunner → MockitoExtension, SpringRunner → SpringExtension
 
 ### What's Not Working ❌
 Complex transformations that require code body changes:
@@ -18,13 +19,12 @@ Complex transformations that require code body changes:
 - **Parameterized tests**: @RunWith(Parameterized.class)
 - **Timeout handling**: @Test(timeout) and Timeout rule
 - **TemporaryFolder**: Rule field migration incomplete
-- **Runner migrations**: Mockito, Spring runners (simple but not implemented)
-- **Suite migration**: @RunWith(Suite.class)
+- **Suite migration**: @RunWith(Suite.class) (simple runner replacement works, but suite-specific migration incomplete)
 
 ### Migration Coverage
-- **~60% of common patterns** are fully supported
-- **~30% are complex** and require AST body transformations
-- **~10% are simple** but not yet implemented
+- **~70% of common patterns** are fully supported
+- **~25% are complex** and require AST body transformations
+- **~5% are simple** but not yet implemented
 
 
 ## 📖 About This Document
@@ -215,25 +215,30 @@ This is a complex transformation requiring:
 - Changing field initialization to parameter injection
 
 #### 9. @RunWith(MockitoJUnitRunner.class) → @ExtendWith(MockitoExtension.class)
-**Status:** Not Implemented  
+**Status:** ✅ **IMPLEMENTED** (as of 2025-12-16)  
 **Priority:** High (commonly used pattern)  
 **Complexity:** Low (simple annotation replacement)  
-**Tracked in:** `MigrationRunnersTest.migrates_runWith_mockito` (disabled)
+**Tracked in:** `MigrationRunnersTest.migrates_runWith_mockito` (enabled)
 
 **Implementation Notes:**
-This should be straightforward - similar to IgnoreJUnitPlugin:
-- Remove @RunWith(MockitoJUnitRunner.class)
-- Add @ExtendWith(MockitoExtension.class)
-- Update imports
+- Implemented in RunWithJUnitPlugin
+- Removes @RunWith(MockitoJUnitRunner.class)
+- Adds @ExtendWith(MockitoExtension.class)
+- Handles both org.mockito.junit.MockitoJUnitRunner and org.mockito.runners.MockitoJUnitRunner
+- Updates imports appropriately
 
 #### 10. @RunWith(SpringRunner.class) → @ExtendWith(SpringExtension.class)
-**Status:** Not Implemented  
+**Status:** ✅ **IMPLEMENTED** (as of 2025-12-16)  
 **Priority:** High (commonly used pattern)  
 **Complexity:** Low (simple annotation replacement)  
-**Tracked in:** `MigrationRunnersTest.migrates_runWith_spring` (disabled)
+**Tracked in:** `MigrationRunnersTest.migrates_runWith_spring` (enabled)
 
 **Implementation Notes:**
-Similar to Mockito runner migration above.
+- Implemented in RunWithJUnitPlugin
+- Removes @RunWith(SpringRunner.class)
+- Adds @ExtendWith(SpringExtension.class)
+- Handles both SpringRunner and SpringJUnit4ClassRunner
+- Updates imports appropriately
 
 ---
 
@@ -262,6 +267,11 @@ Similar to Mockito runner migration above.
   - Adds @BeforeEach initialization method
 - ✅ **ExternalResource extension** (ExternalResourceJUnitPlugin, RuleExternalResourceJUnitPlugin)
   - Migrates custom ExternalResource subclasses to use JUnit 5 extension pattern
+- ✅ **@RunWith runners migration** (RunWithJUnitPlugin)
+  - @RunWith(MockitoJUnitRunner.class) → @ExtendWith(MockitoExtension.class)
+  - @RunWith(SpringRunner.class) → @ExtendWith(SpringExtension.class)
+  - Supports both old and new package names for Mockito runners
+  - Supports both SpringRunner and SpringJUnit4ClassRunner
 
 ### In Progress / Partially Working
 - 🔴 **TemporaryFolder → @TempDir** (RuleTemporayFolderJUnitPlugin exists but incomplete)
