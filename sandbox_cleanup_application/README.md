@@ -4,7 +4,7 @@ Command-line application for running Eclipse JDT code cleanups on Java source fi
 
 ## Overview
 
-The Sandbox Cleanup Application (`org.sandbox.jdt.core.JavaCleanup`) is an Equinox application that allows you to run Eclipse JDT cleanup operations on Java files without launching the full Eclipse IDE. It's similar to the Eclipse Java Code Formatter command-line tool.
+The Sandbox Cleanup Application is an Equinox application that allows you to run Eclipse JDT cleanup operations on Java files without launching the full Eclipse IDE. It's similar to the Eclipse Java Code Formatter command-line tool.
 
 This application processes Java source files using configured cleanup rules, applying transformations such as:
 - Organizing imports
