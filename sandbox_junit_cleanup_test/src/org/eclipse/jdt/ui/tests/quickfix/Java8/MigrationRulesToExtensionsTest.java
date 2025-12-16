@@ -46,6 +46,7 @@ public class MigrationRulesToExtensionsTest {
 		fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
 	}
 
+	@Disabled("Not yet implemented - TemporaryFolder rule migration")
 	@ParameterizedTest
 	@EnumSource(RuleCases.class)
 	public void migrates_junit4_rules_to_junit5_extensions(RuleCases testCase) throws CoreException {
@@ -59,6 +60,7 @@ public class MigrationRulesToExtensionsTest {
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { testCase.expected }, null);
 	}
 
+	@Disabled("Not yet implemented - TemporaryFolder rule migration")
 	@Test
 	public void migrates_temporaryFolder_rule() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);

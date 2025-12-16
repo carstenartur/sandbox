@@ -258,7 +258,16 @@ When moving test cases from `JUnitMigrationCleanUpTest` to focused classes:
 4. Update method name to follow new convention
 5. Keep original test if it tests complex multi-file scenarios
 
+## Implementation Tracking
+
+See [TODO.md](TODO.md) for:
+- Missing features that need to be implemented in production code
+- Bugs discovered during testing
+- Implementation progress tracking
+- Prioritized list of work items
+
 ## Related Documentation
+- [TODO: Implementation Tracking](TODO.md) - Track missing features and bugs
 - [JUnit Migration Cleanup Feature](../../../../../../../sandbox_junit_cleanup/README.md)
 - [Eclipse JDT CleanUp API](https://help.eclipse.org/latest/topic/org.eclipse.jdt.doc.isv/reference/api/org/eclipse/jdt/ui/cleanup/package-summary.html)
 - [JUnit 5 User Guide](https://junit.org/junit5/docs/current/user-guide/)

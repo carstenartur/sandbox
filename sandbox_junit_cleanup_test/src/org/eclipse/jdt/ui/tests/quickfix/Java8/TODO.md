@@ -1,0 +1,181 @@
+# JUnit Migration Test Suite - Implementation Tracking
+
+This document tracks missing features and bugs in the JUnit migration cleanup implementation that were discovered during test suite refactoring.
+
+## 🔴 Critical Missing Features
+
+### 1. TemporaryFolder → @TempDir Migration
+**Status:** Not Implemented  
+**Priority:** High  
+**Affected Tests:**
+- `MigrationRulesToExtensionsTest.migrates_temporaryFolder_rule`
+- `MigrationRulesToExtensionsTest.migrates_junit4_rules_to_junit5_extensions` (TemporaryFolderBasic case)
+- `MigrationCombinationsTest.migrates_test_with_temporaryFolder_and_testName`
+
+**Description:**
+The cleanup should migrate JUnit 4's `@Rule TemporaryFolder` to JUnit 5's `@TempDir Path`:
+
+```java
+// JUnit 4
+@Rule
+public TemporaryFolder tempFolder = new TemporaryFolder();
+
+@Test
+public void test() throws IOException {
+    File file = tempFolder.newFile("test.txt");
+}
+
+// Should become JUnit 5
+@TempDir
+Path tempFolder;
+
+@Test
+public void test() throws IOException {
+    File file = tempFolder.resolve("test.txt").toFile();
+}
+```
+
+**Implementation Notes:**
+- Replace `@Rule TemporaryFolder` field with `@TempDir Path` field
+- Update method calls: `tempFolder.newFile(name)` → `tempFolder.resolve(name).toFile()`
+- Update method calls: `tempFolder.newFolder(name)` → `tempFolder.resolve(name).toFile()`
+- Add `import java.nio.file.Path`
+- Add `import org.junit.jupiter.api.io.TempDir`
+- Remove `import org.junit.Rule`
+- Remove `import org.junit.rules.TemporaryFolder`
+
+---
+
+### 2. @RunWith(Suite.class) → @Suite Migration
+**Status:** Not Implemented  
+**Priority:** High  
+**Affected Tests:**
+- `MigrationRunnersTest.migrates_runWith_suite`
+- `MigrationCombinationsTest.migrates_suite_with_assertions_and_lifecycle`
+
+**Description:**
+The cleanup should migrate JUnit 4's `@RunWith(Suite.class)` to JUnit 5's `@Suite`:
+
+```java
+// JUnit 4
+@RunWith(Suite.class)
+@Suite.SuiteClasses({TestClass1.class, TestClass2.class})
+public class MyTestSuite {
+}
+
+// Should become JUnit 5
+@Suite
+@SelectClasses({TestClass1.class, TestClass2.class})
+public class MyTestSuite {
+}
+```
+
+**Implementation Notes:**
+- Remove `@RunWith(Suite.class)` annotation
+- Add `@Suite` annotation (from `org.junit.platform.suite.api.Suite`)
+- Replace `@Suite.SuiteClasses` with `@SelectClasses` (from `org.junit.platform.suite.api.SelectClasses`)
+- Update imports accordingly
+
+---
+
+## 🟡 Medium Priority Issues
+
+### 3. assumeThat with Hamcrest - Unused Import
+**Status:** Bug in Cleanup  
+**Priority:** Medium  
+**Affected Tests:**
+- `MigrationAssumptionsTest.migrates_assumeThat_with_hamcrest`
+
+**Description:**
+When migrating `Assume.assumeThat()` with Hamcrest matchers, the cleanup correctly uses static import for `assumeThat` from `org.hamcrest.junit.MatcherAssume`, but it also adds an unused `import org.junit.jupiter.api.Assumptions` that should be removed.
+
+**Current Behavior:**
+```java
+import static org.hamcrest.junit.MatcherAssume.assumeThat;
+
+import org.hamcrest.CoreMatchers;
+import org.junit.jupiter.api.Assumptions;  // ← UNUSED, should be removed
+import org.junit.jupiter.api.Test;
+```
+
+**Expected Behavior:**
+The `Assumptions` import should not be added when Hamcrest's `assumeThat` is used.
+
+---
+
+## 🟢 Already Disabled (Future Work)
+
+These features are documented as not yet implemented and already have disabled tests:
+
+### 4. @Test(expected=Exception.class) → assertThrows()
+**Status:** Not Implemented  
+**Tracked in:** `MigrationExceptionsTest` (all tests disabled)
+
+### 5. ExpectedException Rule → assertThrows()
+**Status:** Not Implemented  
+**Tracked in:** `MigrationExceptionsTest` (all tests disabled)
+
+### 6. @Test(timeout=...) → @Timeout
+**Status:** Not Implemented  
+**Tracked in:** `MigrationTestAnnotationTest.migrates_test_timeout_parameter` (disabled)
+
+### 7. @Rule Timeout → @Timeout
+**Status:** Not Implemented  
+**Tracked in:** `MigrationRulesToExtensionsTest.migrates_timeout_rule` (disabled)
+
+### 8. @RunWith(Parameterized) → @ParameterizedTest
+**Status:** Not Implemented  
+**Tracked in:** `MigrationRunnersTest.migrates_runWith_parameterized` (disabled)
+
+### 9. @RunWith(MockitoJUnitRunner) → @ExtendWith(MockitoExtension)
+**Status:** Not Implemented  
+**Tracked in:** `MigrationRunnersTest.migrates_runWith_mockito` (disabled)
+
+### 10. @RunWith(SpringRunner) → @ExtendWith(SpringExtension)
+**Status:** Not Implemented  
+**Tracked in:** `MigrationRunnersTest.migrates_runWith_spring` (disabled)
+
+---
+
+## ✅ Implementation Progress
+
+### Completed Features
+- ✅ Assertions migration (assertEquals, assertTrue, etc.) with parameter order changes
+- ✅ Static import conversions (Assert.* → Assertions.*)
+- ✅ Lifecycle annotations (@Before/@After/@BeforeClass/@AfterClass)
+- ✅ @Ignore → @Disabled
+- ✅ TestName Rule → TestInfo with @BeforeEach initialization
+- ✅ @Test annotation migration
+- ✅ assumeTrue, assumeFalse, assumeNotNull (non-Hamcrest)
+
+### In Progress
+- 🔴 TemporaryFolder → @TempDir
+- 🔴 @RunWith(Suite.class) → @Suite
+- 🟡 assumeThat Hamcrest import cleanup
+
+---
+
+## How to Use This Document
+
+1. **For Contributors:** Pick an item from the "Critical Missing Features" section to implement
+2. **For Reviewers:** Check this list against test results to verify progress
+3. **For Maintainers:** Update status as features are implemented and tests are enabled
+
+When a feature is implemented:
+1. Update the status in this document
+2. Enable the corresponding disabled tests
+3. Verify all tests pass
+4. Move the item to "Completed Features" section
+
+---
+
+## Related Files
+
+- Test Classes: `/sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/Migration*.java`
+- Cleanup Constants: `/sandbox_common/src/org/sandbox/jdt/internal/corext/fix2/MYCleanUpConstants.java`
+- Production Code: `/sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/*`
+- Legacy Test Data: `JUnitCleanupCases.java`, `JUnit3CleanupCases.java`
+
+---
+
+Last Updated: 2025-12-16
