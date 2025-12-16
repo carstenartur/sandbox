@@ -1332,7 +1332,8 @@ public class StreamPipelineBuilder {
         ExpressionStatement exprStmt = (ExpressionStatement) stmt;
         Expression expr = exprStmt.getExpression();
         
-        // Null check for safety
+        // Defensive null check: a null expression indicates a malformed or incomplete AST.
+        // In that case we conservatively abort stream conversion by returning false.
         if (expr == null) {
             return false;
         }
