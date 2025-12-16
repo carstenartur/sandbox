@@ -47,13 +47,46 @@ public class PreconditionsChecker {
     private boolean isAllMatchPattern = false;
     private IfStatement earlyReturnIf = null;
 
+    /**
+     * Constructor for PreconditionsChecker.
+     * 
+     * @param loop the statement containing the loop to analyze (must not be null)
+     * @param compilationUnit the compilation unit containing the loop
+     * @throws IllegalArgumentException if loop is null
+     */
     public PreconditionsChecker(Statement loop, CompilationUnit compilationUnit) {
+        if (loop == null) {
+            throw new IllegalArgumentException("loop cannot be null");
+        }
+        
         this.loop = loop;
 //        this.compilationUnit = compilationUnit;
         analyzeLoop();
     }
 
-    /** (1) Prüft, ob die Schleife sicher in eine Stream-Operation umgewandelt werden kann. */
+    /**
+     * Checks if the loop is safe to refactor to stream operations.
+     * 
+     * <p>A loop is safe to refactor if it meets all of the following conditions:
+     * <ul>
+     * <li>Does not throw exceptions (throwsException == false)</li>
+     * <li>Does not contain break statements (containsBreak == false)</li>
+     * <li>Does not contain labeled continue statements (containsLabeledContinue == false)</li>
+     * <li>Does not contain return statements OR contains only pattern-matching returns (anyMatch/noneMatch/allMatch)</li>
+     * <li>All variables are effectively final (containsNEFs == false)</li>
+     * </ul>
+     * 
+     * <p><b>Note on continue statements:</b> Unlabeled continue statements are allowed and will be
+     * converted to filter operations by StreamPipelineBuilder. Only labeled continues are rejected
+     * because they cannot be safely translated to stream operations.</p>
+     * 
+     * <p><b>Pattern-matching early returns:</b> Early returns matching anyMatch, noneMatch, or
+     * allMatch patterns are allowed because they can be converted to the corresponding terminal
+     * stream operations.</p>
+     * 
+     * @return true if the loop can be safely converted to stream operations, false otherwise
+     * @see StreamPipelineBuilder#parseLoopBody
+     */
     public boolean isSafeToRefactor() {
         // Allow early returns if they match anyMatch/noneMatch/allMatch patterns
         boolean allowedReturn = containsReturn && (isAnyMatchPattern || isNoneMatchPattern || isAllMatchPattern);
@@ -173,8 +206,20 @@ public class PreconditionsChecker {
     }
 
     /** 
-     * Methode zur Analyse der Schleife und Identifikation relevanter Elemente.
-     * Uses AstProcessorBuilder for cleaner and more maintainable AST traversal.
+     * Analyzes the loop statement to identify relevant elements for refactoring.
+     * 
+     * <p>This method uses {@link AstProcessorBuilder} for cleaner and more maintainable AST traversal.
+     * It performs the following analysis:
+     * <ul>
+     * <li>Collects variable declarations within the loop</li>
+     * <li>Detects control flow statements (break, continue, return, throw)</li>
+     * <li>Identifies reducer patterns (i++, sum += x, etc.)</li>
+     * <li>Detects early return patterns (anyMatch, noneMatch, allMatch)</li>
+     * <li>Checks if variables are effectively final</li>
+     * </ul>
+     * 
+     * <p>The analysis results are stored in instance variables that can be queried
+     * via getter methods like {@link #isSafeToRefactor()}, {@link #isReducer()}, etc.</p>
      */
     private void analyzeLoop() {
         AstProcessorBuilder<String, Object> builder = AstProcessorBuilder.with(new ReferenceHolder<String, Object>());
@@ -253,7 +298,15 @@ public class PreconditionsChecker {
         analyzeEffectivelyFinalVariables();
     }
     
-    /** Prüft, ob Variablen innerhalb der Schleife effektiv final sind. */
+    /**
+     * Checks if variables declared within the loop are effectively final.
+     * 
+     * <p>A variable is effectively final if it is never modified after its initialization.
+     * This is important for stream operations because lambda expressions can only capture
+     * effectively final variables from their enclosing scope.</p>
+     * 
+     * <p>Sets {@link #containsNEFs} to true if any non-effectively-final variable is found.</p>
+     */
     private void analyzeEffectivelyFinalVariables() {
         for (VariableDeclarationFragment var : innerVariables) {
             if (!isEffectivelyFinal(var)) {
