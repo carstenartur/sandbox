@@ -38,6 +38,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.osgi.framework.Bundle;
 
 /**
  * Test class for CodeCleanupApplication command-line argument parsing and behavior.
@@ -463,7 +464,7 @@ public class CodeCleanupApplicationTest {
 		}
 
 		@Override
-		public String getBrandingBundle() {
+		public Bundle getBrandingBundle() {
 			return null;
 		}
 
