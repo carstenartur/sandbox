@@ -491,6 +491,15 @@ public class ProspectiveOperation {
             case STRING_CONCAT:
                 // Use (a, b) -> a + b lambda for string concatenation (null-safe)
                 return createBinaryOperatorLambda(ast, InfixExpression.Operator.PLUS);
+            case MAX:
+                // Use Math::max method reference for max accumulation
+                return createMathMethodReference(ast, "max");
+            case MIN:
+                // Use Math::min method reference for min accumulation
+                return createMathMethodReference(ast, "min");
+            case CUSTOM_AGGREGATE:
+                // For custom aggregation, use a generic accumulator lambda
+                return createAccumulatorLambda(ast);
             default:
                 return createAccumulatorLambda(ast);
         }
@@ -502,6 +511,20 @@ public class ProspectiveOperation {
     private TypeMethodReference createMethodReference(AST ast, String typeName, String methodName) {
         TypeMethodReference methodRef = ast.newTypeMethodReference();
         methodRef.setType(ast.newSimpleType(ast.newSimpleName(typeName)));
+        methodRef.setName(ast.newSimpleName(methodName));
+        return methodRef;
+    }
+    
+    /**
+     * Creates a method reference like Math::max or Math::min.
+     * 
+     * @param ast the AST to create nodes in
+     * @param methodName the method name ("max" or "min")
+     * @return a TypeMethodReference for Math::methodName
+     */
+    private TypeMethodReference createMathMethodReference(AST ast, String methodName) {
+        TypeMethodReference methodRef = ast.newTypeMethodReference();
+        methodRef.setType(ast.newSimpleType(ast.newSimpleName("Math")));
         methodRef.setName(ast.newSimpleName(methodName));
         return methodRef;
     }
@@ -824,10 +847,13 @@ public class ProspectiveOperation {
     }
     
     public enum ReducerType {
-        INCREMENT,      // i++, ++i
-        DECREMENT,      // i--, --i, i -= 1
-        SUM,            // sum += x
-        PRODUCT,        // product *= x
-        STRING_CONCAT   // s += string
+        INCREMENT,       // i++, ++i
+        DECREMENT,       // i--, --i, i -= 1
+        SUM,             // sum += x
+        PRODUCT,         // product *= x
+        STRING_CONCAT,   // s += string
+        MAX,             // max = Math.max(max, x)
+        MIN,             // min = Math.min(min, x)
+        CUSTOM_AGGREGATE // Custom aggregation patterns
     }
 }
