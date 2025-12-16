@@ -415,8 +415,7 @@ public class StreamPipelineBuilder {
         
         ProspectiveOperation.ReducerType reducerType = reduceOp.getReducerType();
         if (reducerType == null) {
-            // No reducer type specified - cannot add map operation
-            return;
+            throw new IllegalArgumentException("reduceOp must have a non-null reducerType for REDUCE operations");
         }
         
         if (reducerType == ProspectiveOperation.ReducerType.INCREMENT ||
