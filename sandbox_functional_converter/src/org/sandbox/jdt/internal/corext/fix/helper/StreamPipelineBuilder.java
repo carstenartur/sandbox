@@ -424,13 +424,11 @@ public class StreamPipelineBuilder {
             reducerType == ProspectiveOperation.ReducerType.DECREMENT) {
             // Create a MAP operation that maps each item to 1 (type-aware)
             Expression mapExpr = createTypedLiteralOne();
-            if (mapExpr != null) {
-                ProspectiveOperation mapOp = new ProspectiveOperation(
-                    mapExpr,
-                    ProspectiveOperation.OperationType.MAP,
-                    "_item");
-                ops.add(mapOp);
-            }
+            ProspectiveOperation mapOp = new ProspectiveOperation(
+                mapExpr,
+                ProspectiveOperation.OperationType.MAP,
+                "_item");
+            ops.add(mapOp);
         } else if (isArithmeticReducer(reducerType)) {
             // For SUM/PRODUCT/STRING_CONCAT: extract RHS expression
             Expression mapExpression = extractReduceExpression(stmt);
