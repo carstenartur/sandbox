@@ -1348,6 +1348,69 @@ public class Java8CleanUpTest {
 					        min = numbers.stream().map(num -> num * num).reduce(min, Math::min);
 					        return min;
 					    }
+					}"""),
+		ComplexFilterMapMaxReduction("""
+			package test1;
+
+			import java.util.ArrayList;
+			import java.util.List;
+
+			class TestDemo {
+			    public int findMaxPositiveSquare(List<Integer> numbers) {
+			        int max = 0;
+			        for (Integer num : numbers) {
+			            if (num > 0) {
+			                int squared = num * num;
+			                max = Math.max(max, squared);
+			            }
+			        }
+			        return max;
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.ArrayList;
+					import java.util.List;
+
+					class TestDemo {
+					    public int findMaxPositiveSquare(List<Integer> numbers) {
+					        int max = 0;
+					        max = numbers.stream().filter(num -> (num > 0)).map(num -> num * num).reduce(max, Math::max);
+					        return max;
+					    }
+					}"""),
+		ContinueWithMapAndForEach("""
+			package test1;
+
+			import java.util.Arrays;
+			import java.util.List;
+
+			class TestDemo {
+			    public void processPositiveSquares(List<Integer> numbers) {
+			        for (Integer num : numbers) {
+			            if (num <= 0) {
+			                continue;
+			            }
+			            int squared = num * num;
+			            System.out.println(squared);
+			        }
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.Arrays;
+					import java.util.List;
+
+					class TestDemo {
+					    public void processPositiveSquares(List<Integer> numbers) {
+					        numbers.stream().filter(num -> !(num <= 0)).map(num -> num * num).forEachOrdered(squared -> {
+					            System.out.println(squared);
+					        });
+					    }
 					}""");
 
 		String given;
@@ -1387,7 +1450,9 @@ public class Java8CleanUpTest {
 		"MaxWithExpression",
 		"MinWithExpression",
 		"FilteredMaxReduction",
-		"ChainedMapWithMinReduction"
+		"ChainedMapWithMinReduction",
+		"ComplexFilterMapMaxReduction",
+		"ContinueWithMapAndForEach"
 	})
 	public void testSimpleForEachConversion(UseFunctionalLoop test) throws CoreException {
 		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null);

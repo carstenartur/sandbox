@@ -2,15 +2,16 @@
 
 ## Status Summary (December 2025 - Updated)
 
-**Current Milestone**: Full StreamPipelineBuilder Implementation + Code Cleanup ✅ **COMPLETE**
+**Current Milestone**: Full StreamPipelineBuilder Implementation + Code Cleanup + Enhanced Tests ✅ **COMPLETE**
 
 ### Key Accomplishments
 - ✅ **StreamPipelineBuilder** - Fully implemented (849 lines) with complete stream operation analysis and pipeline construction
-- ✅ **Tests Enabled** - All 27 tests from UseFunctionalLoop enum are now enabled
+- ✅ **Tests Enabled** - All 27 original tests + 2 new comprehensive tests (29 total)
 - ✅ **Refactorer Integration** - StreamPipelineBuilder integrated via `refactorWithBuilder()` method
 - ✅ **Operation Types Supported** - MAP, FILTER, FOREACH, REDUCE, ANYMATCH, NONEMATCH all working
 - ✅ **Code Cleanup** - Removed dead code (TreeUtilities.java, legacy Refactorer methods) - 78% code reduction in Refactorer.java
 - ✅ **Math.max/Math.min Support** - Full support for MAX/MIN reduction patterns with Math::max and Math::min method references
+- ✅ **New Test Cases** - Added ComplexFilterMapMaxReduction and ContinueWithMapAndForEach for comprehensive edge case coverage
 
 ### Code Quality Improvements (December 2025)
 **Dead Code Removal**:
@@ -20,6 +21,11 @@
   - Removed legacy `parseLoopBody()` and `getVariableNameFromPreviousOp()` methods (now in StreamPipelineBuilder)
 - All functionality consolidated in `StreamPipelineBuilder` class
 - Cleaner, more maintainable codebase
+
+**Test Enhancements**:
+- Added `ComplexFilterMapMaxReduction`: Tests filter + map + Math.max reduction pipeline
+- Added `ContinueWithMapAndForEach`: Tests continue statement with map and forEach chaining
+- These tests validate complex interaction patterns and ensure robustness
 
 ### StreamPipelineBuilder Capabilities
 The `StreamPipelineBuilder` class provides comprehensive loop-to-stream conversion:
@@ -37,15 +43,20 @@ The `StreamPipelineBuilder` class provides comprehensive loop-to-stream conversi
 4. **Code Quality** - Run CodeQL security scanning and address any findings
 5. **Documentation** - Update user-facing documentation with examples and limitations
 
-### Tests Enabled (27/27) ✅ ALL COMPLETE
+### Tests Enabled (29/29) ✅ ALL COMPLETE + NEW TESTS
 SIMPLECONVERT, CHAININGMAP, ChainingFilterMapForEachConvert, SmoothLongerChaining, 
 MergingOperations, BeautificationWorks, BeautificationWorks2, NonFilteringIfChaining,
 ContinuingIfFilterSingleStatement, SimpleReducer, ChainedReducer, IncrementReducer,
 AccumulatingMapReduce, DOUBLEINCREMENTREDUCER, DecrementingReducer, ChainedReducerWithMerging,
 StringConcat, ChainedAnyMatch, ChainedNoneMatch, NoNeededVariablesMerging, SomeChainingWithNoNeededVar,
-**MaxReducer, MinReducer, MaxWithExpression, MinWithExpression, FilteredMaxReduction, ChainedMapWithMinReduction**
+MaxReducer, MinReducer, MaxWithExpression, MinWithExpression, FilteredMaxReduction, ChainedMapWithMinReduction,
+**ComplexFilterMapMaxReduction** (NEW), **ContinueWithMapAndForEach** (NEW)
 
-**Note**: Math.max/Math.min patterns (last 6 tests) have full implementation support with Math::max and Math::min method references.
+**New Tests Added (December 2025)**:
+- **ComplexFilterMapMaxReduction**: Tests combination of filter, map, and Math.max reduction
+- **ContinueWithMapAndForEach**: Tests continue statement with map and forEach operations
+
+**Note**: Math.max/Math.min patterns have full implementation support with Math::max and Math::min method references.
 
 ---
 
