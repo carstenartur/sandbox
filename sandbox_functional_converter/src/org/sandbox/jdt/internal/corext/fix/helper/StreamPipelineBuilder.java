@@ -124,8 +124,19 @@ public class StreamPipelineBuilder {
         operations = parseLoopBody(loopBody, loopVariableName);
         
         // Check if we have any operations
-        convertible = !operations.isEmpty();
-        return convertible;
+        if (operations.isEmpty()) {
+            convertible = false;
+            return false;
+        }
+        
+        // Validate variable scoping
+        if (!validateVariableScope(operations, loopVariableName)) {
+            convertible = false;
+            return false;
+        }
+        
+        convertible = true;
+        return true;
     }
 
     /**
@@ -896,19 +907,24 @@ public class StreamPipelineBuilder {
     /**
      * Checks if an IF statement contains a continue statement.
      * This pattern should be converted to a negated filter.
+     * Only handles unlabeled continue statements - labeled continues are rejected.
      * 
      * @param ifStatement the IF statement to check
-     * @return true if the then branch contains a continue statement
+     * @return true if the then branch contains an unlabeled continue statement
      */
     private boolean isIfWithContinue(IfStatement ifStatement) {
         Statement thenStatement = ifStatement.getThenStatement();
         if (thenStatement instanceof ContinueStatement) {
-            return true;
+            ContinueStatement continueStmt = (ContinueStatement) thenStatement;
+            // Only allow unlabeled continues
+            return continueStmt.getLabel() == null;
         }
         if (thenStatement instanceof Block) {
             Block block = (Block) thenStatement;
             if (block.statements().size() == 1 && block.statements().get(0) instanceof ContinueStatement) {
-                return true;
+                ContinueStatement continueStmt = (ContinueStatement) block.statements().get(0);
+                // Only allow unlabeled continues
+                return continueStmt.getLabel() == null;
             }
         }
         return false;
@@ -1094,5 +1110,61 @@ public class StreamPipelineBuilder {
         ifStmt.setThenStatement(thenBlock);
         
         return ifStmt;
+    }
+    
+    /**
+     * Validates that variables used in operations are properly scoped.
+     * Checks that:
+     * - Consumed variables are available in the current scope
+     * - Produced variables don't shadow loop variables improperly
+     * - Accumulator variables don't leak into lambda scopes
+     * 
+     * @param operations the list of operations to validate
+     * @param loopVarName the loop variable name
+     * @return true if all variables are properly scoped, false otherwise
+     */
+    private boolean validateVariableScope(List<ProspectiveOperation> operations, String loopVarName) {
+        Set<String> availableVars = new HashSet<>();
+        availableVars.add(loopVarName);
+        
+        for (ProspectiveOperation op : operations) {
+            // Check consumed variables are available
+            Set<String> consumed = op.getConsumedVariables();
+            for (String var : consumed) {
+                // Skip the loop variable and accumulator variables (they're in outer scope)
+                if (!var.equals(loopVarName) && !isAccumulatorVariable(var, operations)) {
+                    if (!availableVars.contains(var)) {
+                        // Variable used before it's defined - this is a scope violation
+                        return false;
+                    }
+                }
+            }
+            
+            // Add produced variables to available set
+            String produced = op.getProducedVariableName();
+            if (produced != null) {
+                availableVars.add(produced);
+            }
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Checks if a variable is an accumulator variable in any REDUCE operation.
+     * 
+     * @param varName the variable name to check
+     * @param operations the list of operations
+     * @return true if the variable is an accumulator, false otherwise
+     */
+    private boolean isAccumulatorVariable(String varName, List<ProspectiveOperation> operations) {
+        for (ProspectiveOperation op : operations) {
+            if (op.getOperationType() == ProspectiveOperation.OperationType.REDUCE) {
+                if (varName.equals(op.getAccumulatorVariableName())) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

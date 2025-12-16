@@ -1524,6 +1524,37 @@ public class Java8CleanUpTest {
 					            System.out.println(item);
 					        });
 					    }
+					}"""),
+		MultipleContinueFilters("""
+			package test1;
+
+			import java.util.List;
+
+			class TestDemo {
+			    public void processFiltered(List<Integer> numbers) {
+			        for (Integer num : numbers) {
+			            if (num == null) {
+			                continue;
+			            }
+			            if (num <= 0) {
+			                continue;
+			            }
+			            System.out.println(num);
+			        }
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.List;
+
+					class TestDemo {
+					    public void processFiltered(List<Integer> numbers) {
+					        numbers.stream().filter(num -> !(num == null)).filter(num -> !(num <= 0)).forEachOrdered(num -> {
+					            System.out.println(num);
+					        });
+					    }
 					}""");
 
 		String given;
@@ -1569,7 +1600,8 @@ public class Java8CleanUpTest {
 		"SimpleAllMatch",
 		"AllMatchWithNullCheck",
 		"ChainedAllMatch",
-		"NestedFilterCombination"
+		"NestedFilterCombination",
+		"MultipleContinueFilters"
 	})
 	public void testSimpleForEachConversion(UseFunctionalLoop test) throws CoreException {
 		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null);
