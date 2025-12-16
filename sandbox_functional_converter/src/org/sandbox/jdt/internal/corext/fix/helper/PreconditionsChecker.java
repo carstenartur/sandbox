@@ -43,6 +43,7 @@ public class PreconditionsChecker {
     private Statement reducerStatement = null;
     private boolean isAnyMatchPattern = false;
     private boolean isNoneMatchPattern = false;
+    private boolean isAllMatchPattern = false;
     private IfStatement earlyReturnIf = null;
 
     public PreconditionsChecker(Statement loop, CompilationUnit compilationUnit) {
@@ -53,8 +54,8 @@ public class PreconditionsChecker {
 
     /** (1) Prüft, ob die Schleife sicher in eine Stream-Operation umgewandelt werden kann. */
     public boolean isSafeToRefactor() {
-        // Allow early returns if they match anyMatch/noneMatch patterns
-        boolean allowedReturn = containsReturn && (isAnyMatchPattern || isNoneMatchPattern);
+        // Allow early returns if they match anyMatch/noneMatch/allMatch patterns
+        boolean allowedReturn = containsReturn && (isAnyMatchPattern || isNoneMatchPattern || isAllMatchPattern);
         return !throwsException && !containsBreak && !containsContinue && (!containsReturn || allowedReturn) && !containsNEFs;
     }
 
@@ -144,6 +145,19 @@ public class PreconditionsChecker {
      */
     public boolean isNoneMatchPattern() {
         return isNoneMatchPattern;
+    }
+    
+    /**
+     * Checks if the loop matches the allMatch pattern.
+     * 
+     * <p>AllMatch pattern: loop contains {@code if (condition) return false;} 
+     * but the method returns true after the loop, or 
+     * {@code if (!condition) return false;} checking all elements meet a condition.</p>
+     * 
+     * @return true if allMatch pattern is detected
+     */
+    public boolean isAllMatchPattern() {
+        return isAllMatchPattern;
     }
     
     /**
@@ -270,15 +284,24 @@ public class PreconditionsChecker {
     }
     
     /**
-     * Detects anyMatch and noneMatch patterns in the loop.
+     * Detects anyMatch, noneMatch, and allMatch patterns in the loop.
      * 
      * <p>Patterns:
      * <ul>
      * <li>AnyMatch: {@code if (condition) return true;}</li>
      * <li>NoneMatch: {@code if (condition) return false;}</li>
+     * <li>AllMatch: {@code if (!condition) return false;} or {@code if (condition) return false;} when negated</li>
      * </ul>
      * 
      * <p>These patterns must be the only statement with a return in the loop body.
+     * 
+     * <p>AllMatch is typically used in patterns like:
+     * <pre>
+     * for (Item item : items) {
+     *     if (!item.isValid()) return false;
+     * }
+     * return true;
+     * </pre>
      */
     private void detectEarlyReturnPatterns() {
         if (!containsReturn || !(loop instanceof EnhancedForStatement)) {
@@ -302,7 +325,7 @@ public class PreconditionsChecker {
             }
         });
         
-        // For anyMatch/noneMatch, we expect exactly one IF with return
+        // For anyMatch/noneMatch/allMatch, we expect exactly one IF with return
         if (ifStatementsWithReturn.size() != 1) {
             return;
         }
@@ -321,9 +344,22 @@ public class PreconditionsChecker {
             isAnyMatchPattern = true;
             earlyReturnIf = ifStmt;
         } else {
-            // if (condition) return false; → noneMatch  
-            isNoneMatchPattern = true;
-            earlyReturnIf = ifStmt;
+            // if (condition) return false; → could be noneMatch OR allMatch
+            // Distinguish based on condition negation:
+            // - if (!condition) return false; → allMatch(condition) [check all elements meet condition]
+            // - if (condition) return false; → noneMatch(condition) [ensure no element meets condition]
+            
+            // Check if condition is a negated expression (PrefixExpression with NOT)
+            Expression condition = ifStmt.getExpression();
+            if (isNegatedCondition(condition)) {
+                // if (!condition) return false; → allMatch
+                isAllMatchPattern = true;
+                earlyReturnIf = ifStmt;
+            } else {
+                // if (condition) return false; → noneMatch
+                isNoneMatchPattern = true;
+                earlyReturnIf = ifStmt;
+            }
         }
     }
     
@@ -372,5 +408,16 @@ public class PreconditionsChecker {
         }
         
         return null;
+    }
+    
+    /**
+     * Checks if an expression is a negated condition (starts with !).
+     * 
+     * @param expr the expression to check
+     * @return true if the expression is a PrefixExpression with NOT operator
+     */
+    private boolean isNegatedCondition(Expression expr) {
+        return expr instanceof PrefixExpression &&
+               ((PrefixExpression) expr).getOperator() == PrefixExpression.Operator.NOT;
     }
 }

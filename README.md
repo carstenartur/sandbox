@@ -661,7 +661,7 @@ This cleanup is fully tested in:
 
 The test class defines:
 
-- **21 enabled test cases** covering fully supported loop transformation patterns
+- **25 enabled test cases** covering fully supported loop transformation patterns
 - A list of `@Disabled` scenarios representing future features and unsupported patterns
 - A set of `@ValueSource` cases where no transformation should be applied (edge cases)
 
@@ -678,15 +678,18 @@ The cleanup currently supports the following patterns:
 | Filtering via `if` or `continue`       | `.stream().filter(...)`                             |
 | Null safety checks                     | `.filter(l -> l != null).map(...)`                  |
 | Reductions (sum/counter)               | `.stream().map(...).reduce(...)`                    |
+| **MAX/MIN reductions**                 | `.reduce(init, Math::max)` or `.reduce(init, Math::min)` |
 | `String` concatenation in loops        | `.reduce(..., String::concat)`                      |
 | Conditional early `return true`        | `.anyMatch(...)`                                    |
 | Conditional early `return false`       | `.noneMatch(...)`                                   |
+| **Conditional check all valid**        | `.allMatch(...)`                                    |
 | Method calls inside mapping/filtering  | `map(x -> method(x))`, `filter(...)`                |
 | Combined `filter`, `map`, `forEach`    | Chained stream transformations                      |
+| **Nested conditionals**                | Multiple `.filter(...)` operations                  |
 | Increment/decrement reducers           | `.map(_item -> 1).reduce(0, Integer::sum)`          |
 | Compound assignment reducers           | `.map(expr).reduce(init, operator)`                 |
 
-**Enabled Test Cases** (21 total):
+**Enabled Test Cases** (25 total):
 - `SIMPLECONVERT`, `CHAININGMAP`, `ChainingFilterMapForEachConvert`
 - `SmoothLongerChaining`, `MergingOperations`, `BeautificationWorks`, `BeautificationWorks2`
 - `NonFilteringIfChaining`, `ContinuingIfFilterSingleStatement`
@@ -694,6 +697,11 @@ The cleanup currently supports the following patterns:
 - `DOUBLEINCREMENTREDUCER`, `DecrementingReducer`, `ChainedReducerWithMerging`, `StringConcat`
 - `ChainedAnyMatch`, `ChainedNoneMatch`
 - `NoNeededVariablesMerging`, `SomeChainingWithNoNeededVar`
+- **`MaxReducer`, `MinReducer`, `MaxWithExpression`, `MinWithExpression`**
+- **`FilteredMaxReduction`, `ChainedMapWithMinReduction`, `ComplexFilterMapMaxReduction`**
+- **`ContinueWithMapAndForEach`**
+- **`SimpleAllMatch`, `AllMatchWithNullCheck`, `ChainedAllMatch`**
+- **`NestedFilterCombination`**
 
 ---
 
@@ -782,6 +790,89 @@ if (list.stream()
     return true;
 }
 return false;
+```
+
+---
+
+##### AllMatch Pattern (Check All Valid)
+**Before:**
+```java
+for (String item : items) {
+    if (!item.startsWith("valid")) {
+        return false;
+    }
+}
+return true;
+```
+
+**After:**
+```java
+if (!items.stream().allMatch(item -> item.startsWith("valid"))) {
+    return false;
+}
+return true;
+```
+
+---
+
+##### MAX/MIN Reduction
+**Before:**
+```java
+int max = Integer.MIN_VALUE;
+for (Integer num : numbers) {
+    max = Math.max(max, num);
+}
+```
+
+**After:**
+```java
+int max = Integer.MIN_VALUE;
+max = numbers.stream().reduce(max, Math::max);
+```
+
+Similarly for `Math.min()` → `.reduce(min, Math::min)`
+
+---
+
+##### MAX/MIN with Expression Mapping
+**Before:**
+```java
+int maxLen = 0;
+for (String str : strings) {
+    maxLen = Math.max(maxLen, str.length());
+}
+```
+
+**After:**
+```java
+int maxLen = 0;
+maxLen = strings.stream()
+    .map(str -> str.length())
+    .reduce(maxLen, Math::max);
+```
+
+---
+
+##### Nested Conditional Filters
+**Before:**
+```java
+for (String item : items) {
+    if (item != null) {
+        if (item.length() > 5) {
+            System.out.println(item);
+        }
+    }
+}
+```
+
+**After:**
+```java
+items.stream()
+    .filter(item -> (item != null))
+    .filter(item -> (item.length() > 5))
+    .forEachOrdered(item -> {
+        System.out.println(item);
+    });
 ```
 
 ---

@@ -1407,6 +1407,123 @@ public class Java8CleanUpTest {
 					            System.out.println(squared);
 					        });
 					    }
+					}"""),
+		SimpleAllMatch("""
+			package test1;
+
+			import java.util.List;
+
+			class TestDemo {
+			    public boolean allValid(List<String> items) {
+			        for (String item : items) {
+			            if (!item.startsWith("valid")) {
+			                return false;
+			            }
+			        }
+			        return true;
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.List;
+
+					class TestDemo {
+					    public boolean allValid(List<String> items) {
+					        if (!items.stream().allMatch(item -> item.startsWith("valid"))) {
+					            return false;
+					        }
+					        return true;
+					    }
+					}"""),
+		AllMatchWithNullCheck("""
+			package test1;
+
+			import java.util.List;
+
+			class TestDemo {
+			    public boolean allNonNull(List<Object> items) {
+			        for (Object item : items) {
+			            if (!(item != null)) {
+			                return false;
+			            }
+			        }
+			        return true;
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.List;
+
+					class TestDemo {
+					    public boolean allNonNull(List<Object> items) {
+					        if (!items.stream().allMatch(item -> (item != null))) {
+					            return false;
+					        }
+					        return true;
+					    }
+					}"""),
+		ChainedAllMatch("""
+			package test1;
+
+			import java.util.List;
+
+			class TestDemo {
+			    public boolean allLongEnough(List<String> items) {
+			        for (String item : items) {
+			            int len = item.length();
+			            if (!(len > 5)) {
+			                return false;
+			            }
+			        }
+			        return true;
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.List;
+
+					class TestDemo {
+					    public boolean allLongEnough(List<String> items) {
+					        if (!items.stream().map(item -> item.length()).allMatch(len -> (len > 5))) {
+					            return false;
+					        }
+					        return true;
+					    }
+					}"""),
+		NestedFilterCombination("""
+			package test1;
+
+			import java.util.List;
+
+			class TestDemo {
+			    public void processValidItems(List<String> items) {
+			        for (String item : items) {
+			            if (item != null) {
+			                if (item.length() > 5) {
+			                    System.out.println(item);
+			                }
+			            }
+			        }
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.List;
+
+					class TestDemo {
+					    public void processValidItems(List<String> items) {
+					        items.stream().filter(item -> (item != null)).filter(item -> (item.length() > 5)).forEachOrdered(item -> {
+					            System.out.println(item);
+					        });
+					    }
 					}""");
 
 		String given;
@@ -1448,7 +1565,11 @@ public class Java8CleanUpTest {
 		"FilteredMaxReduction",
 		"ChainedMapWithMinReduction",
 		"ComplexFilterMapMaxReduction",
-		"ContinueWithMapAndForEach"
+		"ContinueWithMapAndForEach",
+		"SimpleAllMatch",
+		"AllMatchWithNullCheck",
+		"ChainedAllMatch",
+		"NestedFilterCombination"
 	})
 	public void testSimpleForEachConversion(UseFunctionalLoop test) throws CoreException {
 		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null);
