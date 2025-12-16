@@ -298,7 +298,7 @@ public class Test {
 	}
 }
 """), //$NON-NLS-1$
-	ImportClashDifferentPackage(
+	BothImportsCoexist(
 """
 package test;
 import org.eclipse.core.runtime.IProgressMonitor;
