@@ -27,11 +27,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -337,7 +339,8 @@ public class CodeCleanupApplicationTest {
 
 	private File createTempJavaFile(String filename) throws IOException {
 		File javaFile = new File(tempDir, filename);
-		try (FileWriter writer = new FileWriter(javaFile)) {
+		try (OutputStreamWriter writer = new OutputStreamWriter(
+				new FileOutputStream(javaFile), StandardCharsets.UTF_8)) {
 			writer.write("public class " + filename.replace(".java", "") + " {\n");
 			writer.write("    public static void main(String[] args) {\n");
 			writer.write("        System.out.println(\"Hello\");\n");
