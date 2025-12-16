@@ -49,9 +49,10 @@ import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 
+import static org.sandbox.jdt.internal.corext.fix.helper.JUnitConstants.*;
+
 /**
- *
- *
+ * Plugin to migrate JUnit 4 TestName rule to JUnit 5 TestInfo parameter.
  */
 public class RuleTestnameJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 

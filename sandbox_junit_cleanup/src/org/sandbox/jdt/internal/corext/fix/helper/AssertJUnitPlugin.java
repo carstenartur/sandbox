@@ -52,9 +52,10 @@ import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 
+import static org.sandbox.jdt.internal.corext.fix.helper.JUnitConstants.*;
+
 /**
- *
- *
+ * Migrates JUnit 4 Assert calls to JUnit 5 Assertions.
  */
 public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
@@ -62,11 +63,11 @@ public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder= new ReferenceHolder<>();
-		allassertionmethods.forEach(assertionmethod -> {
+		ALL_ASSERTION_METHODS.forEach(assertionmethod -> {
 			HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSERT, assertionmethod, compilationUnit, dataHolder,
 					nodesprocessed, (visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 		});
-		allassertionmethods.forEach(assertionmethod -> {
+		ALL_ASSERTION_METHODS.forEach(assertionmethod -> {
 			HelperVisitor.callImportDeclarationVisitor(ORG_JUNIT_ASSERT + "." + assertionmethod, compilationUnit,
 					dataHolder, nodesprocessed,
 					(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
@@ -103,7 +104,7 @@ public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 					argumentRewrite.replace((ASTNode) node.arguments().get(2), matcher, group);
 				}
 			} else {
-				reorderParameters(node, rewriter, group, oneparam, twoparam);
+				reorderParameters(node, rewriter, group, ONEPARAM_ASSERTIONS, TWOPARAM_ASSERTIONS);
 				SimpleName newQualifier= ast.newSimpleName(ASSERTIONS);
 				Expression expression= assertexpression;
 				if (expression != null) {

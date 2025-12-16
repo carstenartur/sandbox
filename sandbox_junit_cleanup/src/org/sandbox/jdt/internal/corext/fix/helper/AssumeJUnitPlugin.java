@@ -54,26 +54,28 @@ import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 
+import static org.sandbox.jdt.internal.corext.fix.helper.JUnitConstants.*;
+
 /**
- *
- *
+ * Migrates JUnit 4 Assume calls to JUnit 5 Assumptions.
  */
 public class AssumeJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
-	private static final Set<String> twoparam= Set.of("assumeTrue", "assumeFalse", "assumeNotNull","assumeThat");
-	private static final Set<String> oneparam= Set.of("assumeTrue", "assumeFalse", "assumeNotNull");
-	private static final Set<String> allassumemethods= Stream.of(twoparam, oneparam).flatMap(Set::stream)
-			.collect(Collectors.toSet());
+	// Assume-specific method sets (different from assertion methods)
+	private static final Set<String> MULTI_PARAM_ASSUMPTIONS = Set.of("assumeTrue", "assumeFalse", "assumeNotNull", "assumeThat");
+	private static final Set<String> ONEPARAM_ASSUMPTIONS = Set.of("assumeTrue", "assumeFalse", "assumeNotNull");
+	private static final Set<String> ALL_ASSUMPTION_METHODS = Stream.of(MULTI_PARAM_ASSUMPTIONS, ONEPARAM_ASSUMPTIONS)
+			.flatMap(Set::stream).collect(Collectors.toSet());
 
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder= new ReferenceHolder<>();
-		allassumemethods.forEach(assertionmethod -> {
+		ALL_ASSUMPTION_METHODS.forEach(assertionmethod -> {
 			HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSUME, assertionmethod, compilationUnit, dataHolder,
 					nodesprocessed, (visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 		});
-		allassumemethods.forEach(assertionmethod -> {
+		ALL_ASSUMPTION_METHODS.forEach(assertionmethod -> {
 			HelperVisitor.callImportDeclarationVisitor(ORG_JUNIT_ASSUME + "." + assertionmethod, compilationUnit,
 					dataHolder, nodesprocessed,
 					(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
@@ -103,7 +105,7 @@ public class AssumeJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 				}
 				ASTNodes.replaceButKeepComment(rewriter,minv, newAssumeThatCall, group);
 			} else {
-				reorderParameters(minv, rewriter, group, oneparam, twoparam);
+				reorderParameters(minv, rewriter, group, ONEPARAM_ASSUMPTIONS, MULTI_PARAM_ASSUMPTIONS);
 				SimpleName newQualifier= ast.newSimpleName(ASSUMPTIONS);
 				Expression expression= minv.getExpression();
 				if (expression != null) {

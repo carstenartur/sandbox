@@ -690,8 +690,7 @@ public class MyTest {
 	public void test3() {
 	}
 
-	class Er_5b8b4 implements org.junit.jupiter.api.extension.BeforeEachCallback,
-			org.junit.jupiter.api.extension.AfterEachCallback {
+	class Er_5b8b4 implements BeforeEachCallback, AfterEachCallback {
 		public void beforeEach(ExtensionContext context) {
 		}
 
@@ -893,8 +892,7 @@ public class MyTest {
         System.out.println("Test with multiple resources");
     }
 
-	class SecondRule_c4213 implements org.junit.jupiter.api.extension.BeforeEachCallback,
-			org.junit.jupiter.api.extension.AfterEachCallback {
+	class SecondRule_c4213 implements BeforeEachCallback, AfterEachCallback {
 		public void beforeEach(ExtensionContext context) {
 			System.out.println("Second rule before");
 		}
@@ -904,8 +902,7 @@ public class MyTest {
 		}
 	}
 
-	class AnonymousRule_9ea4e implements org.junit.jupiter.api.extension.BeforeEachCallback,
-			org.junit.jupiter.api.extension.AfterEachCallback {
+	class AnonymousRule_9ea4e implements BeforeEachCallback, AfterEachCallback {
 		public void beforeEach(ExtensionContext context) {
 			System.out.println("Anonymous rule before");
 		}
