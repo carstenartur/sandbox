@@ -345,10 +345,9 @@ public class PreconditionsChecker {
             earlyReturnIf = ifStmt;
         } else {
             // if (condition) return false; → could be noneMatch OR allMatch
-            // To distinguish: allMatch typically has a negated condition
-            // For now, we'll treat it as noneMatch and let the user decide
-            // A more sophisticated analysis would check if the condition is negated
-            // and if there's a "return true" after the loop
+            // Distinguish based on condition negation:
+            // - if (!condition) return false; → allMatch(condition) [check all elements meet condition]
+            // - if (condition) return false; → noneMatch(condition) [ensure no element meets condition]
             
             // Check if condition is a negated expression (PrefixExpression with NOT)
             Expression condition = ifStmt.getExpression();

@@ -227,38 +227,10 @@ public class StreamPipelineBuilder {
             return ifStmt;
         } else if (hasNoneMatch) {
             // Wrap in: if (!stream.noneMatch(...)) { return false; }
-            IfStatement ifStmt = ast.newIfStatement();
-            
-            // Create negated expression: !stream.noneMatch(...)
-            PrefixExpression negation = ast.newPrefixExpression();
-            negation.setOperator(PrefixExpression.Operator.NOT);
-            negation.setOperand(pipeline);
-            ifStmt.setExpression(negation);
-            
-            Block thenBlock = ast.newBlock();
-            ReturnStatement returnStmt = ast.newReturnStatement();
-            returnStmt.setExpression(ast.newBooleanLiteral(false));
-            thenBlock.statements().add(returnStmt);
-            ifStmt.setThenStatement(thenBlock);
-            
-            return ifStmt;
+            return createNegatedEarlyReturnIf(pipeline, false);
         } else if (hasAllMatch) {
             // Wrap in: if (!stream.allMatch(...)) { return false; }
-            IfStatement ifStmt = ast.newIfStatement();
-            
-            // Create negated expression: !stream.allMatch(...)
-            PrefixExpression negation = ast.newPrefixExpression();
-            negation.setOperator(PrefixExpression.Operator.NOT);
-            negation.setOperand(pipeline);
-            ifStmt.setExpression(negation);
-            
-            Block thenBlock = ast.newBlock();
-            ReturnStatement returnStmt = ast.newReturnStatement();
-            returnStmt.setExpression(ast.newBooleanLiteral(false));
-            thenBlock.statements().add(returnStmt);
-            ifStmt.setThenStatement(thenBlock);
-            
-            return ifStmt;
+            return createNegatedEarlyReturnIf(pipeline, false);
         }
         
         // Check if we have a REDUCE operation
@@ -1095,5 +1067,32 @@ public class StreamPipelineBuilder {
             }
         }
         return null;
+    }
+    
+    /**
+     * Creates an IF statement that wraps a negated pipeline expression with an early return.
+     * Used for noneMatch and allMatch patterns.
+     * 
+     * @param pipeline the stream pipeline expression
+     * @param returnValue the boolean value to return (true or false)
+     * @return an IF statement: if (!pipeline) { return returnValue; }
+     */
+    private IfStatement createNegatedEarlyReturnIf(MethodInvocation pipeline, boolean returnValue) {
+        IfStatement ifStmt = ast.newIfStatement();
+        
+        // Create negated expression: !pipeline
+        PrefixExpression negation = ast.newPrefixExpression();
+        negation.setOperator(PrefixExpression.Operator.NOT);
+        negation.setOperand(pipeline);
+        ifStmt.setExpression(negation);
+        
+        // Create then block with return statement
+        Block thenBlock = ast.newBlock();
+        ReturnStatement returnStmt = ast.newReturnStatement();
+        returnStmt.setExpression(ast.newBooleanLiteral(returnValue));
+        thenBlock.statements().add(returnStmt);
+        ifStmt.setThenStatement(thenBlock);
+        
+        return ifStmt;
     }
 }
