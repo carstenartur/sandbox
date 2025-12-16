@@ -350,48 +350,19 @@ public class StreamPipelineBuilder {
      */
     private void addMapBeforeReduce(List<ProspectiveOperation> ops, ProspectiveOperation reduceOp, 
                                      Statement stmt, String currentVarName) {
-        if (reduceOp.getReducerType() == ProspectiveOperation.ReducerType.INCREMENT ||
-            reduceOp.getReducerType() == ProspectiveOperation.ReducerType.DECREMENT) {
-            // Create a MAP operation that maps each item to 1 (or 1.0 for double types)
-            Expression mapExpr;
-            if (accumulatorType != null && accumulatorType.equals("double")) {
-                mapExpr = ast.newNumberLiteral("1.0");
-            } else if (accumulatorType != null && accumulatorType.equals("float")) {
-                mapExpr = ast.newNumberLiteral("1.0f");
-            } else if (accumulatorType != null && accumulatorType.equals("long")) {
-                mapExpr = ast.newNumberLiteral("1L");
-            } else if (accumulatorType != null && accumulatorType.equals("byte")) {
-                // (byte) 1
-                org.eclipse.jdt.core.dom.CastExpression cast = ast.newCastExpression();
-                cast.setType(ast.newPrimitiveType(org.eclipse.jdt.core.dom.PrimitiveType.BYTE));
-                cast.setExpression(ast.newNumberLiteral("1"));
-                mapExpr = cast;
-            } else if (accumulatorType != null && accumulatorType.equals("short")) {
-                // (short) 1
-                org.eclipse.jdt.core.dom.CastExpression cast = ast.newCastExpression();
-                cast.setType(ast.newPrimitiveType(org.eclipse.jdt.core.dom.PrimitiveType.SHORT));
-                cast.setExpression(ast.newNumberLiteral("1"));
-                mapExpr = cast;
-            } else if (accumulatorType != null && accumulatorType.equals("char")) {
-                // (char) 1
-                org.eclipse.jdt.core.dom.CastExpression cast = ast.newCastExpression();
-                cast.setType(ast.newPrimitiveType(org.eclipse.jdt.core.dom.PrimitiveType.CHAR));
-                cast.setExpression(ast.newNumberLiteral("1"));
-                mapExpr = cast;
-            } else {
-                mapExpr = ast.newNumberLiteral("1");
-            }
-            
+        ProspectiveOperation.ReducerType reducerType = reduceOp.getReducerType();
+        
+        if (reducerType == ProspectiveOperation.ReducerType.INCREMENT ||
+            reducerType == ProspectiveOperation.ReducerType.DECREMENT) {
+            // Create a MAP operation that maps each item to 1 (type-aware)
+            Expression mapExpr = createTypedLiteralOne();
             ProspectiveOperation mapOp = new ProspectiveOperation(
                 mapExpr,
                 ProspectiveOperation.OperationType.MAP,
                 "_item");
             ops.add(mapOp);
-        } else if (reduceOp.getReducerType() == ProspectiveOperation.ReducerType.SUM ||
-                   reduceOp.getReducerType() == ProspectiveOperation.ReducerType.PRODUCT ||
-                   reduceOp.getReducerType() == ProspectiveOperation.ReducerType.STRING_CONCAT) {
-            // For SUM/PRODUCT/STRING_CONCAT with expressions (e.g., i += foo(l)),
-            // extract the right-hand side as a MAP operation
+        } else if (isArithmeticReducer(reducerType)) {
+            // For SUM/PRODUCT/STRING_CONCAT: extract RHS expression
             Expression mapExpression = extractReduceExpression(stmt);
             if (mapExpression != null) {
                 ProspectiveOperation mapOp = new ProspectiveOperation(
@@ -400,10 +371,8 @@ public class StreamPipelineBuilder {
                     currentVarName);
                 ops.add(mapOp);
             }
-        } else if (reduceOp.getReducerType() == ProspectiveOperation.ReducerType.MAX ||
-                   reduceOp.getReducerType() == ProspectiveOperation.ReducerType.MIN) {
-            // For MAX/MIN (e.g., max = Math.max(max, foo(l))),
-            // extract the non-accumulator argument as a MAP operation
+        } else if (isMinMaxReducer(reducerType)) {
+            // For MAX/MIN: extract non-accumulator argument
             Expression mapExpression = extractMathMaxMinArgument(stmt, accumulatorVariable);
             if (mapExpression != null) {
                 ProspectiveOperation mapOp = new ProspectiveOperation(
@@ -413,6 +382,74 @@ public class StreamPipelineBuilder {
                 ops.add(mapOp);
             }
         }
+    }
+    
+    /**
+     * Creates a typed literal "1" appropriate for the accumulator type.
+     * Handles int, long, float, double, byte, short, char types.
+     * 
+     * @return an Expression representing the typed literal 1
+     */
+    private Expression createTypedLiteralOne() {
+        if (accumulatorType == null) {
+            return ast.newNumberLiteral("1");
+        }
+        
+        switch (accumulatorType) {
+            case "double":
+                return ast.newNumberLiteral("1.0");
+            case "float":
+                return ast.newNumberLiteral("1.0f");
+            case "long":
+                return ast.newNumberLiteral("1L");
+            case "byte":
+                return createCastExpression(org.eclipse.jdt.core.dom.PrimitiveType.BYTE, "1");
+            case "short":
+                return createCastExpression(org.eclipse.jdt.core.dom.PrimitiveType.SHORT, "1");
+            case "char":
+                return createCastExpression(org.eclipse.jdt.core.dom.PrimitiveType.CHAR, "1");
+            default:
+                return ast.newNumberLiteral("1");
+        }
+    }
+    
+    /**
+     * Creates a cast expression for the given primitive type.
+     * Example: (byte) 1, (short) 1
+     * 
+     * @param typeCode the primitive type code
+     * @param literal the literal value to cast
+     * @return a CastExpression
+     */
+    private org.eclipse.jdt.core.dom.CastExpression createCastExpression(
+            org.eclipse.jdt.core.dom.PrimitiveType.Code typeCode, String literal) {
+        org.eclipse.jdt.core.dom.CastExpression cast = ast.newCastExpression();
+        cast.setType(ast.newPrimitiveType(typeCode));
+        cast.setExpression(ast.newNumberLiteral(literal));
+        return cast;
+    }
+    
+    /**
+     * Checks if the reducer type is an arithmetic reducer.
+     * 
+     * @param type the reducer type to check
+     * @return true if it's SUM, PRODUCT, or STRING_CONCAT
+     */
+    private boolean isArithmeticReducer(ProspectiveOperation.ReducerType type) {
+        return type == ProspectiveOperation.ReducerType.SUM ||
+               type == ProspectiveOperation.ReducerType.PRODUCT ||
+               type == ProspectiveOperation.ReducerType.STRING_CONCAT;
+    }
+    
+    /**
+     * Checks if the reducer type is a min/max reducer.
+     * 
+     * @param type the reducer type to check
+     * @return true if it's MAX or MIN
+     */
+    private boolean isMinMaxReducer(ProspectiveOperation.ReducerType type) {
+        return type == ProspectiveOperation.ReducerType.MAX ||
+               type == ProspectiveOperation.ReducerType.MIN;
     }
     
     /**

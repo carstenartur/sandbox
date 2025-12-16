@@ -1287,6 +1287,37 @@ public class Java8CleanUpTest {
 					        minVal = values.stream().map(val -> val * 2.0).reduce(minVal, Math::min);
 					        return minVal;
 					    }
+					}"""),
+		FilteredMaxReduction("""
+			package test1;
+
+			import java.util.ArrayList;
+			import java.util.List;
+
+			class TestDemo {
+			    public int findMaxEvenNumber(List<Integer> numbers) {
+			        int max = 0;
+			        for (Integer num : numbers) {
+			            if (num % 2 == 0) {
+			                max = Math.max(max, num);
+			            }
+			        }
+			        return max;
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.ArrayList;
+					import java.util.List;
+
+					class TestDemo {
+					    public int findMaxEvenNumber(List<Integer> numbers) {
+					        int max = 0;
+					        max = numbers.stream().filter(num -> (num % 2 == 0)).map(num -> num).reduce(max, Math::max);
+					        return max;
+					    }
 					}""");
 
 		String given;
@@ -1324,7 +1355,8 @@ public class Java8CleanUpTest {
 		"MaxReducer",
 		"MinReducer",
 		"MaxWithExpression",
-		"MinWithExpression"
+		"MinWithExpression",
+		"FilteredMaxReduction"
 	})
 	public void testSimpleForEachConversion(UseFunctionalLoop test) throws CoreException {
 		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null);
