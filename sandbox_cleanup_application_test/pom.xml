@@ -15,7 +15,8 @@
 		<dependency>
 			<groupId>org.sandbox</groupId>
 			<artifactId>sandbox_cleanup_application</artifactId>
-			</dependency>
+			<version>1.2.2-SNAPSHOT</version>
+		</dependency>
 	</dependencies>
 	<build>
 		<testSourceDirectory>src</testSourceDirectory>

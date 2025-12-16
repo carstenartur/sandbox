@@ -303,10 +303,10 @@ public class CodeCleanupApplicationTest {
 		return (File[]) method.invoke(app, (Object) args);
 	}
 
+	@SuppressWarnings("unchecked")
 	private Map<String, String> getOptions() throws Exception {
 		Field field = CodeCleanupApplication.class.getDeclaredField("options");
 		field.setAccessible(true);
-		@SuppressWarnings("unchecked")
 		Map<String, String> options = (Map<String, String>) field.get(app);
 		return options;
 	}
@@ -325,12 +325,12 @@ public class CodeCleanupApplicationTest {
 
 	private File createTempConfigFile() throws IOException {
 		File configFile = new File(tempDir, "cleanup-config.properties");
-		try (FileWriter writer = new FileWriter(configFile)) {
+		try (java.io.FileOutputStream fos = new java.io.FileOutputStream(configFile)) {
 			Properties props = new Properties();
 			props.setProperty("cleanup.format_source_code", "true");
 			props.setProperty("cleanup.organize_imports", "true");
 			props.setProperty("cleanup.remove_unused_imports", "true");
-			props.store(writer, "Test cleanup configuration");
+			props.store(fos, "Test cleanup configuration");
 		}
 		return configFile;
 	}
