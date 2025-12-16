@@ -91,6 +91,34 @@ public class ProspectiveOperation {
      * Used for tracking variable scope and preventing leaks.
      */
     private Set<String> consumedVariables = new HashSet<>();
+    
+    /**
+     * The collector type for COLLECT operations (TO_LIST, TO_SET, TO_MAP, etc.).
+     */
+    private CollectorType collectorType;
+    
+    /**
+     * The target collection variable name for COLLECT operations.
+     * Used to track which collection is being built (e.g., "result" in "result.add(x)").
+     */
+    private String collectorVariableName;
+    
+    /**
+     * The expression to add to the collection for COLLECT operations.
+     * For list.add(expr) → expr becomes the mapper
+     * For map.put(keyExpr, valueExpr) → keyExpr and valueExpr become the mappers
+     */
+    private Expression collectorExpression;
+    
+    /**
+     * For TO_MAP collectors, stores the key mapping expression.
+     */
+    private Expression mapKeyExpression;
+    
+    /**
+     * For TO_MAP collectors, stores the value mapping expression.
+     */
+    private Expression mapValueExpression;
 
     // Sammelt alle verwendeten Variablen
     private void collectNeededVariables(Expression expression) {
@@ -162,6 +190,36 @@ public class ProspectiveOperation {
         }
         updateConsumedVariables();
     }
+    
+    /**
+     * Constructor for COLLECT operations.
+     * Used when a collection accumulation pattern (list.add, set.add, map.put) is detected.
+     * 
+     * @param statement the statement containing the collector (e.g., list.add(x))
+     * @param collectorVarName the name of the collection variable (e.g., "result")
+     * @param collectorType the type of collector (TO_LIST, TO_SET, TO_MAP)
+     * @param expression the expression being collected (for add) or key expression (for put)
+     * @param valueExpression the value expression (only for TO_MAP, null otherwise)
+     */
+    public ProspectiveOperation(org.eclipse.jdt.core.dom.Statement statement, String collectorVarName, 
+                                CollectorType collectorType, Expression expression, Expression valueExpression) {
+        this.originalStatement = statement;
+        this.operationType = OperationType.COLLECT;
+        this.collectorVariableName = collectorVarName;
+        this.collectorType = collectorType;
+        if (collectorType == CollectorType.TO_MAP) {
+            this.mapKeyExpression = expression;
+            this.mapValueExpression = valueExpression;
+        } else {
+            this.collectorExpression = expression;
+        }
+        if (statement instanceof org.eclipse.jdt.core.dom.ExpressionStatement) {
+            this.originalExpression = ((org.eclipse.jdt.core.dom.ExpressionStatement) statement).getExpression();
+            collectNeededVariables(this.originalExpression);
+        }
+        updateConsumedVariables();
+    }
+
 
     /** (1) Gibt den ursprünglichen Ausdruck zurück */
     public Expression getExpression() {
@@ -196,6 +254,8 @@ public class ProspectiveOperation {
                 return "noneMatch";
             case ALLMATCH:
                 return "allMatch";
+            case COLLECT:
+                return "collect";
             default:
                 return "unknown";
         }
@@ -210,6 +270,10 @@ public class ProspectiveOperation {
         
         if (operationType == OperationType.REDUCE) {
             return getArgumentsForReducer(ast);
+        }
+        
+        if (operationType == OperationType.COLLECT) {
+            return getArgumentsForCollector(ast);
         }
         
         // Create lambda expression for MAP, FILTER, FOREACH, ANYMATCH, NONEMATCH
@@ -364,6 +428,7 @@ public class ProspectiveOperation {
      * <li>ANYMATCH → "anyMatch"</li>
      * <li>NONEMATCH → "noneMatch"</li>
      * <li>ALLMATCH → "allMatch"</li>
+     * <li>COLLECT → "collect"</li>
      * </ul>
      * 
      * @return the stream API method name for this operation
@@ -384,6 +449,8 @@ public class ProspectiveOperation {
                 return "noneMatch";
             case ALLMATCH:
                 return "allMatch";
+            case COLLECT:
+                return "collect";
             default:
                 throw new IllegalStateException("Unknown operation type: " + operationType);
         }
@@ -449,6 +516,22 @@ public class ProspectiveOperation {
     }
     
     /**
+     * Returns the collector type for COLLECT operations.
+     * @return the collector type, or null if not a COLLECT operation
+     */
+    public CollectorType getCollectorType() {
+        return collectorType;
+    }
+    
+    /**
+     * Returns the collector variable name for COLLECT operations.
+     * @return the collector variable name, or null if not a COLLECT operation
+     */
+    public String getCollectorVariableName() {
+        return collectorVariableName;
+    }
+    
+    /**
      * Returns the set of variables consumed by this operation.
      * This includes all SimpleName references in the operation's expression.
      * 
@@ -493,6 +576,69 @@ public class ProspectiveOperation {
             Expression accumulator = createAccumulatorExpression(ast);
             if (accumulator != null) arguments.add(accumulator);
         }
+        return arguments;
+    }
+    
+    /**
+     * Generates the arguments for a collect() operation.
+     * Returns a MethodInvocation for Collectors.toList(), toSet(), or toMap().
+     * 
+     * @param ast the AST to create nodes in
+     * @return a list containing the Collectors method invocation
+     */
+    private List<Expression> getArgumentsForCollector(AST ast) {
+        List<Expression> arguments = new ArrayList<>();
+        
+        // Create Collectors.toXxx() method invocation
+        MethodInvocation collectorsCall = ast.newMethodInvocation();
+        collectorsCall.setExpression(ast.newSimpleName("Collectors"));
+        
+        switch (collectorType) {
+            case TO_LIST:
+                // Collectors.toList()
+                collectorsCall.setName(ast.newSimpleName("toList"));
+                break;
+                
+            case TO_SET:
+                // Collectors.toSet()
+                collectorsCall.setName(ast.newSimpleName("toSet"));
+                break;
+                
+            case TO_MAP:
+                // Collectors.toMap(keyMapper, valueMapper)
+                collectorsCall.setName(ast.newSimpleName("toMap"));
+                
+                // Create key mapper lambda
+                if (mapKeyExpression != null) {
+                    LambdaExpression keyMapper = ast.newLambdaExpression();
+                    VariableDeclarationFragment keyParam = ast.newVariableDeclarationFragment();
+                    keyParam.setName(ast.newSimpleName("item"));
+                    keyMapper.parameters().add(keyParam);
+                    keyMapper.setBody(ASTNode.copySubtree(ast, mapKeyExpression));
+                    collectorsCall.arguments().add(keyMapper);
+                }
+                
+                // Create value mapper lambda
+                if (mapValueExpression != null) {
+                    LambdaExpression valueMapper = ast.newLambdaExpression();
+                    VariableDeclarationFragment valueParam = ast.newVariableDeclarationFragment();
+                    valueParam.setName(ast.newSimpleName("item"));
+                    valueMapper.parameters().add(valueParam);
+                    valueMapper.setBody(ASTNode.copySubtree(ast, mapValueExpression));
+                    collectorsCall.arguments().add(valueMapper);
+                }
+                break;
+                
+            case TO_COLLECTION:
+                // For now, default to toList() for generic collections
+                collectorsCall.setName(ast.newSimpleName("toList"));
+                break;
+                
+            default:
+                throw new IllegalStateException("Unknown collector type: " + collectorType);
+        }
+        
+        arguments.add(collectorsCall);
         return arguments;
     }
     
@@ -877,7 +1023,7 @@ public class ProspectiveOperation {
     }
 
     public enum OperationType {
-        MAP, FOREACH, FILTER, REDUCE, ANYMATCH, NONEMATCH, ALLMATCH
+        MAP, FOREACH, FILTER, REDUCE, ANYMATCH, NONEMATCH, ALLMATCH, COLLECT
     }
     
     public enum ReducerType {
@@ -889,5 +1035,12 @@ public class ProspectiveOperation {
         MAX,             // max = Math.max(max, x)
         MIN,             // min = Math.min(min, x)
         CUSTOM_AGGREGATE // Custom aggregation patterns
+    }
+    
+    public enum CollectorType {
+        TO_LIST,         // list.add(x) → Collectors.toList()
+        TO_SET,          // set.add(x) → Collectors.toSet()
+        TO_MAP,          // map.put(k, v) → Collectors.toMap(kMapper, vMapper)
+        TO_COLLECTION    // Generic collection → Collectors.toCollection()
     }
 }
