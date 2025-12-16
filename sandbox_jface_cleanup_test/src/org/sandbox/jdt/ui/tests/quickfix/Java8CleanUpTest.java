@@ -40,7 +40,7 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava8;
  * <li>Mixed state scenarios (some methods converted, others not)</li>
  * <li>Nested/inner class scenarios</li>
  * <li>Lambda expressions with progress monitors</li>
- * <li>Import handling and name clash scenarios</li>
+ * <li>Import handling when both SubProgressMonitor and SubMonitor APIs are imported together</li>
  * </ul>
  * 
  * @see MYCleanUpConstants#JFACE_CLEANUP
