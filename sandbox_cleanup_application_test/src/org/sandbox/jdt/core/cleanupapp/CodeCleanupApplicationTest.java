@@ -48,6 +48,7 @@ import org.junit.jupiter.api.io.TempDir;
  * - Quiet vs verbose conflict detection
  * - Config mode handling
  * - File validation
+ * - Integration tests via start() method validating public API behavior
  */
 public class CodeCleanupApplicationTest {
 
@@ -289,6 +290,87 @@ public class CodeCleanupApplicationTest {
 		assertNotNull(result);
 		assertEquals(1, result.length);
 		assertTrue(result[0].isDirectory(), "Result should be a directory");
+	}
+
+	/**
+	 * Integration test: Verify verbose mode produces output
+	 */
+	@Test
+	public void testStartWithVerboseMode() throws Exception {
+		File configFile = createTempConfigFile();
+		File javaFile = createTempJavaFile("VerboseTest.java");
+		
+		IApplicationContext context = new MockApplicationContext(
+			new String[] { "-config", configFile.getAbsolutePath(), "-verbose", javaFile.getAbsolutePath() }
+		);
+		Object result = app.start(context);
+		
+		assertEquals(IApplication.EXIT_OK, result);
+		
+		// In verbose mode, should see configuration file message
+		String output = outContent.toString();
+		assertTrue(output.contains("configuration file") || output.contains("Starting cleanup"), 
+				"Verbose mode should produce progress output");
+	}
+
+	/**
+	 * Integration test: Verify quiet mode suppresses output
+	 */
+	@Test
+	public void testStartWithQuietMode() throws Exception {
+		File configFile = createTempConfigFile();
+		File javaFile = createTempJavaFile("QuietTest.java");
+		
+		IApplicationContext context = new MockApplicationContext(
+			new String[] { "-config", configFile.getAbsolutePath(), "-quiet", javaFile.getAbsolutePath() }
+		);
+		Object result = app.start(context);
+		
+		assertEquals(IApplication.EXIT_OK, result);
+		
+		// In quiet mode, stdout should be minimal (no "Starting cleanup" messages)
+		String output = outContent.toString();
+		assertTrue(output.isEmpty() || !output.contains("Starting cleanup"), 
+				"Quiet mode should suppress normal output");
+	}
+
+	/**
+	 * Integration test: Verify error handling for missing config
+	 */
+	@Test
+	public void testStartWithMissingConfig() throws Exception {
+		IApplicationContext context = new MockApplicationContext(
+			new String[] { "-config", "/nonexistent/config.properties", "dummy.java" }
+		);
+		Object result = app.start(context);
+		
+		assertEquals(IApplication.EXIT_OK, result);
+		
+		// Should see error message about config file
+		String errorOutput = errContent.toString();
+		assertTrue(errorOutput.contains("config") || errorOutput.contains("Configuration"), 
+				"Should report configuration file error");
+	}
+
+	/**
+	 * Integration test: Verify conflict between quiet and verbose flags
+	 */
+	@Test
+	public void testStartWithQuietVerboseConflict() throws Exception {
+		File configFile = createTempConfigFile();
+		File javaFile = createTempJavaFile("ConflictTest.java");
+		
+		IApplicationContext context = new MockApplicationContext(
+			new String[] { "-config", configFile.getAbsolutePath(), "-quiet", "-verbose", javaFile.getAbsolutePath() }
+		);
+		Object result = app.start(context);
+		
+		assertEquals(IApplication.EXIT_OK, result);
+		
+		// Should see error message about the conflict
+		String output = outContent.toString();
+		assertTrue(output.contains("quiet") || output.contains("verbose"), 
+				"Should report quiet/verbose conflict");
 	}
 
 	// Helper methods using reflection to access private methods and fields
