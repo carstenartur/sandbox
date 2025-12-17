@@ -94,17 +94,22 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 				
 				// If binding resolution failed, try to get name from the AST
 				if (runnerQualifiedName == null || runnerQualifiedName.isEmpty()) {
-					// Get the simple name from the AST type
-					runnerSimpleName = myvalue.getType().toString();
-					// If it contains a dot, it's a qualified name
-					if (runnerSimpleName != null && runnerSimpleName.contains(".")) {
-						int lastDot = runnerSimpleName.lastIndexOf('.');
-						String extractedSimpleName = runnerSimpleName.substring(lastDot + 1);
-						runnerQualifiedName = runnerSimpleName;
-						runnerSimpleName = extractedSimpleName;
-					} else {
-						// It's already a simple name, no qualified name available
-						runnerQualifiedName = runnerSimpleName;
+					Type runnerType = myvalue.getType();
+					if (runnerType != null) {
+						// Get the fully qualified name from the AST type
+						String typeName = runnerType.toString();
+						if (typeName != null && !typeName.isEmpty()) {
+							// Check if it contains a dot (fully qualified)
+							if (typeName.contains(".")) {
+								runnerQualifiedName = typeName;
+								int lastDot = typeName.lastIndexOf('.');
+								runnerSimpleName = typeName.substring(lastDot + 1);
+							} else {
+								// It's a simple name
+								runnerSimpleName = typeName;
+								// We don't have the qualified name, so we'll rely on simple name matching
+							}
+						}
 					}
 				}
 				
