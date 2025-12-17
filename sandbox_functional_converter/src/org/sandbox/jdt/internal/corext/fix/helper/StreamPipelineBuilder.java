@@ -457,7 +457,7 @@ public class StreamPipelineBuilder {
      * 
      * @return an Expression representing the typed literal 1 (never null)
      */
-    private org.eclipse.jdt.annotation.NonNull Expression createTypedLiteralOne() {
+    private Expression createTypedLiteralOne() {
         if (accumulatorType == null) {
             return ast.newNumberLiteral("1");
         }
