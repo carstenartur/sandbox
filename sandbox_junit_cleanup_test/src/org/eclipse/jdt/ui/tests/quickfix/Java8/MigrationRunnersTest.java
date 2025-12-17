@@ -40,34 +40,6 @@ public class MigrationRunnersTest {
 	@BeforeEach
 	public void setup() throws CoreException {
 		fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
-		
-		// Add stub classes for Mockito
-		IPackageFragment mockitoJunitPack = fRoot.createPackageFragment("org.mockito.junit", false, null);
-		mockitoJunitPack.createCompilationUnit("MockitoJUnitRunner.java",
-				"""
-				package org.mockito.junit;
-				public class MockitoJUnitRunner {}
-				""", false, null);
-		
-		IPackageFragment mockitoRunnersPack = fRoot.createPackageFragment("org.mockito.runners", false, null);
-		mockitoRunnersPack.createCompilationUnit("MockitoJUnitRunner.java",
-				"""
-				package org.mockito.runners;
-				public class MockitoJUnitRunner {}
-				""", false, null);
-		
-		// Add stub classes for Spring
-		IPackageFragment springJunit4Pack = fRoot.createPackageFragment("org.springframework.test.context.junit4", false, null);
-		springJunit4Pack.createCompilationUnit("SpringRunner.java",
-				"""
-				package org.springframework.test.context.junit4;
-				public class SpringRunner {}
-				""", false, null);
-		springJunit4Pack.createCompilationUnit("SpringJUnit4ClassRunner.java",
-				"""
-				package org.springframework.test.context.junit4;
-				public class SpringJUnit4ClassRunner {}
-				""", false, null);
 	}
 
 	@Disabled("Not yet implemented - @RunWith(Suite.class) migration")
