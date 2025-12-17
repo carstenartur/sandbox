@@ -109,15 +109,10 @@ public class ProspectiveOperation {
      * 
      * @param expression the expression to process (must not be null)
      * @param operationType the type of operation (must not be null)
-     * @throws IllegalArgumentException if expression or operationType is null
      */
     public ProspectiveOperation(Expression expression, OperationType operationType) {
-        if (expression == null) {
-            throw new IllegalArgumentException("expression cannot be null");
-        }
-        if (operationType == null) {
-            throw new IllegalArgumentException("operationType cannot be null");
-        }
+        assert expression != null : "expression cannot be null";
+        assert operationType != null : "operationType cannot be null";
         
         this.originalExpression = expression;
         this.operationType = operationType;
@@ -133,15 +128,10 @@ public class ProspectiveOperation {
      * @param loopVarName the loop variable name; for side-effect MAP operations, this represents
      *                    the variable to be returned in the lambda body (may be the current variable
      *                    name in the pipeline, not necessarily the original loop variable)
-     * @throws IllegalArgumentException if statement or operationType is null
      */
     public ProspectiveOperation(org.eclipse.jdt.core.dom.Statement statement, OperationType operationType, String loopVarName) {
-        if (statement == null) {
-            throw new IllegalArgumentException("statement cannot be null");
-        }
-        if (operationType == null) {
-            throw new IllegalArgumentException("operationType cannot be null");
-        }
+        assert statement != null : "statement cannot be null";
+        assert operationType != null : "operationType cannot be null";
         
         this.originalStatement = statement;
         this.operationType = operationType;
@@ -160,15 +150,10 @@ public class ProspectiveOperation {
      * @param expression the expression that produces the new variable (must not be null)
      * @param operationType the type of operation (should be MAP) (must not be null)
      * @param producedVarName the name of the variable produced by this operation
-     * @throws IllegalArgumentException if expression or operationType is null
      */
     public ProspectiveOperation(Expression expression, OperationType operationType, String producedVarName) {
-        if (expression == null) {
-            throw new IllegalArgumentException("expression cannot be null");
-        }
-        if (operationType == null) {
-            throw new IllegalArgumentException("operationType cannot be null");
-        }
+        assert expression != null : "expression cannot be null";
+        assert operationType != null : "operationType cannot be null";
         
         this.originalExpression = expression;
         this.operationType = operationType;
@@ -184,18 +169,11 @@ public class ProspectiveOperation {
      * @param statement the statement containing the reducer (must not be null)
      * @param accumulatorVarName the name of the accumulator variable (e.g., "i", "sum") (must not be null)
      * @param reducerType the type of reducer (INCREMENT, SUM, etc.) (must not be null)
-     * @throws IllegalArgumentException if any parameter is null
      */
     public ProspectiveOperation(org.eclipse.jdt.core.dom.Statement statement, String accumulatorVarName, ReducerType reducerType) {
-        if (statement == null) {
-            throw new IllegalArgumentException("statement cannot be null");
-        }
-        if (accumulatorVarName == null) {
-            throw new IllegalArgumentException("accumulatorVarName cannot be null");
-        }
-        if (reducerType == null) {
-            throw new IllegalArgumentException("reducerType cannot be null");
-        }
+        assert statement != null : "statement cannot be null";
+        assert accumulatorVarName != null : "accumulatorVarName cannot be null";
+        assert reducerType != null : "reducerType cannot be null";
         
         this.originalStatement = statement;
         this.operationType = OperationType.REDUCE;

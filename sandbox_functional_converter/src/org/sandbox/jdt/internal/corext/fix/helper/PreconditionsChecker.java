@@ -52,12 +52,10 @@ public class PreconditionsChecker {
      * 
      * @param loop the statement containing the loop to analyze (must not be null)
      * @param compilationUnit the compilation unit containing the loop
-     * @throws IllegalArgumentException if loop is null
      */
     public PreconditionsChecker(Statement loop, CompilationUnit compilationUnit) {
-        if (loop == null) {
-            throw new IllegalArgumentException("loop cannot be null");
-        }
+        // Internal invariant: loop parameter must not be null
+        assert loop != null : "loop cannot be null";
         
         this.loop = loop;
 //        this.compilationUnit = compilationUnit;
