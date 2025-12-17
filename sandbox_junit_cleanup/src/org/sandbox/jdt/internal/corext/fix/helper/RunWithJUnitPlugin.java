@@ -79,21 +79,11 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 			Expression value= mynode.getValue();
 			if (value instanceof TypeLiteral myvalue) {
 				ITypeBinding classBinding= myvalue.resolveTypeBinding();
-				String runnerQualifiedName = null;
-				
-				// Try to get qualified name from binding
 				if (classBinding != null) {
-					runnerQualifiedName = classBinding.getQualifiedName();
-				}
-				
-				// If binding resolution failed, try to get name from the AST
-				if (runnerQualifiedName == null || runnerQualifiedName.isEmpty()) {
-					runnerQualifiedName = myvalue.getType().toString();
-				}
-				
-				if (runnerQualifiedName != null) {
+					String runnerQualifiedName = classBinding.getQualifiedName();
+					
 					// Handle Suite runner
-					if (classBinding != null && classBinding.isParameterizedType()) {
+					if (classBinding.isParameterizedType()) {
 						ITypeBinding[] typeArguments= classBinding.getTypeArguments();
 						if (typeArguments.length > 0) {
 							ITypeBinding actualTypeBinding= typeArguments[0];
@@ -108,8 +98,7 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 					
 					// Handle Mockito runners
 					if (ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER.equals(runnerQualifiedName) ||
-							ORG_MOCKITO_RUNNERS_MOCKITO_JUNIT_RUNNER.equals(runnerQualifiedName) ||
-							"MockitoJUnitRunner".equals(runnerQualifiedName)) {
+							ORG_MOCKITO_RUNNERS_MOCKITO_JUNIT_RUNNER.equals(runnerQualifiedName)) {
 						mh.value= ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER;
 						dataHolder.put(dataHolder.size(), mh);
 						operations.add(fixcore.rewrite(dataHolder));
@@ -118,9 +107,7 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 					
 					// Handle Spring runners
 					if (ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER.equals(runnerQualifiedName) ||
-							ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_JUNIT4_CLASS_RUNNER.equals(runnerQualifiedName) ||
-							"SpringRunner".equals(runnerQualifiedName) ||
-							"SpringJUnit4ClassRunner".equals(runnerQualifiedName)) {
+							ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_JUNIT4_CLASS_RUNNER.equals(runnerQualifiedName)) {
 						mh.value= ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER;
 						dataHolder.put(dataHolder.size(), mh);
 						operations.add(fixcore.rewrite(dataHolder));
