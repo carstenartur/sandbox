@@ -28,8 +28,11 @@ import java.util.*;
 /**
  * Analyzes a loop statement to check various preconditions for safe refactoring
  * to stream operations. Uses AstProcessorBuilder for cleaner AST traversal.
+ * 
+ * <p>This class is final to prevent subclassing and potential finalizer attacks,
+ * since the constructor calls analysis methods that could potentially throw exceptions.</p>
  */
-public class PreconditionsChecker {
+public final class PreconditionsChecker {
     private final Statement loop;
 //    private final CompilationUnit compilationUnit;
     private final Set<VariableDeclarationFragment> innerVariables = new HashSet<>();

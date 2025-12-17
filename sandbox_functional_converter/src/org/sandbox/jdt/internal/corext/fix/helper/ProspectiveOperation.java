@@ -36,7 +36,13 @@ import org.eclipse.jdt.core.dom.TypeMethodReference;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 
-public class ProspectiveOperation {
+/**
+ * Represents a prospective stream operation extracted from a loop body.
+ * 
+ * <p>This class is final to prevent subclassing and potential finalizer attacks,
+ * since constructors call analysis methods that could potentially throw exceptions.</p>
+ */
+public final class ProspectiveOperation {
     /**
      * The original expression being analyzed or transformed.
      * <p>
