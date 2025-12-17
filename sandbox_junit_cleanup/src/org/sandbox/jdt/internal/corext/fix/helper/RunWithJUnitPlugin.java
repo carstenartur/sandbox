@@ -108,43 +108,39 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 					}
 				}
 				
-				if (runnerQualifiedName != null || runnerSimpleName != null) {
-					// Handle Suite runner
-					if (classBinding != null && classBinding.isParameterizedType()) {
-						ITypeBinding[] typeArguments= classBinding.getTypeArguments();
-						if (typeArguments.length > 0) {
-							ITypeBinding actualTypeBinding= typeArguments[0];
-							if (ORG_JUNIT_SUITE.equals(actualTypeBinding.getQualifiedName())) {
-								mh.value= ORG_JUNIT_RUNWITH;
-								dataHolder.put(dataHolder.size(), mh);
-								operations.add(fixcore.rewrite(dataHolder));
-								return false;
-							}
+				// Handle Suite runner
+				if (classBinding != null && classBinding.isParameterizedType()) {
+					ITypeBinding[] typeArguments= classBinding.getTypeArguments();
+					if (typeArguments.length > 0) {
+						ITypeBinding actualTypeBinding= typeArguments[0];
+						if (ORG_JUNIT_SUITE.equals(actualTypeBinding.getQualifiedName())) {
+							mh.value= ORG_JUNIT_RUNWITH;
+							dataHolder.put(dataHolder.size(), mh);
+							operations.add(fixcore.rewrite(dataHolder));
+							return false;
 						}
 					}
-					
-					// Handle Mockito runners - check both qualified and simple names
-					if ((runnerQualifiedName != null && (
-							ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER.equals(runnerQualifiedName) ||
-							ORG_MOCKITO_RUNNERS_MOCKITO_JUNIT_RUNNER.equals(runnerQualifiedName))) ||
-							(runnerSimpleName != null && "MockitoJUnitRunner".equals(runnerSimpleName))) {
-						mh.value= ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER;
-						dataHolder.put(dataHolder.size(), mh);
-						operations.add(fixcore.rewrite(dataHolder));
-						return false;
-					}
-					
-					// Handle Spring runners - check both qualified and simple names
-					if ((runnerQualifiedName != null && (
-							ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER.equals(runnerQualifiedName) ||
-							ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_JUNIT4_CLASS_RUNNER.equals(runnerQualifiedName))) ||
-							(runnerSimpleName != null && ("SpringRunner".equals(runnerSimpleName) ||
-							"SpringJUnit4ClassRunner".equals(runnerSimpleName)))) {
-						mh.value= ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER;
-						dataHolder.put(dataHolder.size(), mh);
-						operations.add(fixcore.rewrite(dataHolder));
-						return false;
-					}
+				}
+				
+				// Handle Mockito runners - check both qualified and simple names
+				if ((ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER.equals(runnerQualifiedName) ||
+						ORG_MOCKITO_RUNNERS_MOCKITO_JUNIT_RUNNER.equals(runnerQualifiedName)) ||
+						"MockitoJUnitRunner".equals(runnerSimpleName)) {
+					mh.value= ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER;
+					dataHolder.put(dataHolder.size(), mh);
+					operations.add(fixcore.rewrite(dataHolder));
+					return false;
+				}
+				
+				// Handle Spring runners - check both qualified and simple names
+				if ((ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER.equals(runnerQualifiedName) ||
+						ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_JUNIT4_CLASS_RUNNER.equals(runnerQualifiedName)) ||
+						("SpringRunner".equals(runnerSimpleName) ||
+						"SpringJUnit4ClassRunner".equals(runnerSimpleName))) {
+					mh.value= ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER;
+					dataHolder.put(dataHolder.size(), mh);
+					operations.add(fixcore.rewrite(dataHolder));
+					return false;
 				}
 			}
 		}
