@@ -37,7 +37,7 @@ public class CodeCleanupApplicationWrapper implements IApplication {
 	 * Deals with the messages in the properties file (cut n' pasted from a generated class).
 	 */
 	private final static class Messages extends NLS {
-		private static final String BUNDLE_NAME = "org.eclipse.jdt.core.formatterapp.messages";//$NON-NLS-1$
+		private static final String BUNDLE_NAME = "org.sandbox.jdt.core.cleanupapp.messages";//$NON-NLS-1$
 
 		public static String CommandLineUsage;
 		public static String WorkspaceRequired;
