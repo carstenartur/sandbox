@@ -48,4 +48,13 @@ ION,EI_EXPOSE_REP,EI_EXPOSE_REP2,MS_PKGPROTECT,MS_MUTABLE_ARRAY"/>
   <Match>
     <Bug pattern="CT_CONSTRUCTOR_THROW"/>
   </Match>
+  <Match>
+    <!-- CT_CONSTRUCTOR_THROW suppression for PreconditionsChecker:
+         The class is final to prevent subclassing and finalizer attacks.
+         All potentially exception-throwing code is wrapped in try-catch.
+         No exceptions escape the constructor - all are caught and handled gracefully.
+         The object is always fully initialized with safe default values. -->
+    <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+    <Class name="org.sandbox.jdt.internal.corext.fix.helper.PreconditionsChecker"/>
+  </Match>
 </FindBugsFilter>
