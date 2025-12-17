@@ -62,7 +62,14 @@ public final class PreconditionsChecker {
         
         this.loop = loop;
 //        this.compilationUnit = compilationUnit;
-        analyzeLoop();
+        
+        try {
+            analyzeLoop();
+        } catch (Exception e) {
+            // If analysis fails, treat loop as unsafe to refactor
+            // Set flags to prevent conversion
+            this.containsBreak = true; // Conservatively block conversion
+        }
     }
 
     /**
