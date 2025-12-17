@@ -80,18 +80,35 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 			if (value instanceof TypeLiteral myvalue) {
 				ITypeBinding classBinding= myvalue.resolveTypeBinding();
 				String runnerQualifiedName = null;
+				String runnerSimpleName = null;
 				
 				// Try to get qualified name from binding
 				if (classBinding != null) {
 					runnerQualifiedName = classBinding.getQualifiedName();
+					// Extract simple name from qualified name
+					if (runnerQualifiedName != null && !runnerQualifiedName.isEmpty()) {
+						int lastDot = runnerQualifiedName.lastIndexOf('.');
+						runnerSimpleName = lastDot >= 0 ? runnerQualifiedName.substring(lastDot + 1) : runnerQualifiedName;
+					}
 				}
 				
 				// If binding resolution failed, try to get name from the AST
 				if (runnerQualifiedName == null || runnerQualifiedName.isEmpty()) {
-					runnerQualifiedName = myvalue.getType().toString();
+					// Get the simple name from the AST type
+					runnerSimpleName = myvalue.getType().toString();
+					// If it contains a dot, it's a qualified name
+					if (runnerSimpleName != null && runnerSimpleName.contains(".")) {
+						int lastDot = runnerSimpleName.lastIndexOf('.');
+						String extractedSimpleName = runnerSimpleName.substring(lastDot + 1);
+						runnerQualifiedName = runnerSimpleName;
+						runnerSimpleName = extractedSimpleName;
+					} else {
+						// It's already a simple name, no qualified name available
+						runnerQualifiedName = runnerSimpleName;
+					}
 				}
 				
-				if (runnerQualifiedName != null) {
+				if (runnerQualifiedName != null || runnerSimpleName != null) {
 					// Handle Suite runner
 					if (classBinding != null && classBinding.isParameterizedType()) {
 						ITypeBinding[] typeArguments= classBinding.getTypeArguments();
@@ -106,21 +123,23 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 						}
 					}
 					
-					// Handle Mockito runners
-					if (ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER.equals(runnerQualifiedName) ||
-							ORG_MOCKITO_RUNNERS_MOCKITO_JUNIT_RUNNER.equals(runnerQualifiedName) ||
-							"MockitoJUnitRunner".equals(runnerQualifiedName)) {
+					// Handle Mockito runners - check both qualified and simple names
+					if ((runnerQualifiedName != null && (
+							ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER.equals(runnerQualifiedName) ||
+							ORG_MOCKITO_RUNNERS_MOCKITO_JUNIT_RUNNER.equals(runnerQualifiedName))) ||
+							(runnerSimpleName != null && "MockitoJUnitRunner".equals(runnerSimpleName))) {
 						mh.value= ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER;
 						dataHolder.put(dataHolder.size(), mh);
 						operations.add(fixcore.rewrite(dataHolder));
 						return false;
 					}
 					
-					// Handle Spring runners
-					if (ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER.equals(runnerQualifiedName) ||
-							ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_JUNIT4_CLASS_RUNNER.equals(runnerQualifiedName) ||
-							"SpringRunner".equals(runnerQualifiedName) ||
-							"SpringJUnit4ClassRunner".equals(runnerQualifiedName)) {
+					// Handle Spring runners - check both qualified and simple names
+					if ((runnerQualifiedName != null && (
+							ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER.equals(runnerQualifiedName) ||
+							ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_JUNIT4_CLASS_RUNNER.equals(runnerQualifiedName))) ||
+							(runnerSimpleName != null && ("SpringRunner".equals(runnerSimpleName) ||
+							"SpringJUnit4ClassRunner".equals(runnerSimpleName)))) {
 						mh.value= ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER;
 						dataHolder.put(dataHolder.size(), mh);
 						operations.add(fixcore.rewrite(dataHolder));
