@@ -57,13 +57,16 @@ public final class PreconditionsChecker {
      * @param compilationUnit the compilation unit containing the loop
      */
     public PreconditionsChecker(Statement loop, CompilationUnit compilationUnit) {
-        // Internal invariant: loop parameter must not be null
-        assert loop != null : "loop cannot be null";
-        
         this.loop = loop;
 //        this.compilationUnit = compilationUnit;
         
+        // Analyze the loop in a try-catch to prevent partial initialization
+        // if any exception occurs during analysis
         try {
+            // Internal invariant: loop parameter must not be null
+            if (loop == null) {
+                throw new IllegalStateException("loop parameter must not be null");
+            }
             analyzeLoop();
         } catch (Exception e) {
             // If analysis fails, treat loop as unsafe to refactor
