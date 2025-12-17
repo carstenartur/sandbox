@@ -57,17 +57,20 @@ public final class PreconditionsChecker {
      * @param compilationUnit the compilation unit containing the loop
      */
     public PreconditionsChecker(Statement loop, CompilationUnit compilationUnit) {
+        // Set loop field first - if null, we'll handle it gracefully in the catch block
         this.loop = loop;
 //        this.compilationUnit = compilationUnit;
         
         // Analyze the loop in a try-catch to prevent partial initialization
         // if any exception occurs during analysis
         try {
-            // Internal invariant: loop parameter must not be null
-            if (loop == null) {
-                throw new IllegalStateException("loop parameter must not be null");
+            // Perform analysis only if loop is not null
+            if (loop != null) {
+                analyzeLoop();
+            } else {
+                // Null loop - treat as unsafe to refactor
+                this.containsBreak = true;
             }
-            analyzeLoop();
         } catch (Exception e) {
             // If analysis fails, treat loop as unsafe to refactor
             // Set flags to prevent conversion
