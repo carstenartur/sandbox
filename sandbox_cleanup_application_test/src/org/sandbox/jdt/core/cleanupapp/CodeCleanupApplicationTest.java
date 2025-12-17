@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -379,7 +380,16 @@ public class CodeCleanupApplicationTest {
 	private File[] processCommandLine(String[] args) throws Exception {
 		Method method = CodeCleanupApplication.class.getDeclaredMethod("processCommandLine", String[].class);
 		method.setAccessible(true);
-		return (File[]) method.invoke(app, (Object) args);
+		try {
+			return (File[]) method.invoke(app, (Object) args);
+		} catch (InvocationTargetException e) {
+			// Unwrap and rethrow the actual exception
+			Throwable cause = e.getCause();
+			if (cause instanceof Exception) {
+				throw (Exception) cause;
+			}
+			throw e;
+		}
 	}
 
 	@SuppressWarnings("unchecked")
