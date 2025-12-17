@@ -40,6 +40,8 @@ public final class JUnitConstants {
 	public static final String ANNOTATION_TEST = "Test";
 	public static final String ANNOTATION_SELECT_CLASSES = "SelectClasses";
 	public static final String ANNOTATION_SUITE = "Suite";
+	public static final String MOCKITO_EXTENSION = "MockitoExtension";
+	public static final String SPRING_EXTENSION = "SpringExtension";
 
 	// ===== Method Names =====
 

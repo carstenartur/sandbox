@@ -174,6 +174,7 @@ public class MigrationRunnersTest {
 
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
 
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
 				"""
@@ -222,6 +223,7 @@ public class MigrationRunnersTest {
 
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
 
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
 				"""

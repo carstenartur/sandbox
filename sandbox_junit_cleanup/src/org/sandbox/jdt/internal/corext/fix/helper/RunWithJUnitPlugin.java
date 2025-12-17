@@ -145,17 +145,19 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 					.setValue(ASTNodes.createMoveTarget(rewriter, mynode.getValue()));
 			newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_SELECT_CLASSES));
 			importRewriter.addImport(ORG_JUNIT_PLATFORM_SUITE_API_SELECT_CLASSES);
+			importRewriter.removeImport(ORG_JUNIT_SUITE_SUITECLASSES);
 		} else if (ORG_JUNIT_RUNWITH.equals(junitHolder.value)) {
 			// Handle @RunWith(Suite.class) migration
 			newAnnotation= ast.newMarkerAnnotation();
 			newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_SUITE));
 			importRewriter.addImport(ORG_JUNIT_JUPITER_SUITE);
+			importRewriter.removeImport(ORG_JUNIT_SUITE);
 		} else if (ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER.equals(junitHolder.value)) {
 			// Handle @RunWith(MockitoJUnitRunner.class) migration
 			SingleMemberAnnotation extendWithAnnotation= ast.newSingleMemberAnnotation();
 			extendWithAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_EXTEND_WITH));
 			TypeLiteral typeLiteral= ast.newTypeLiteral();
-			typeLiteral.setType(ast.newSimpleType(ast.newName("MockitoExtension")));
+			typeLiteral.setType(ast.newSimpleType(ast.newName(MOCKITO_EXTENSION)));
 			extendWithAnnotation.setValue(typeLiteral);
 			newAnnotation= extendWithAnnotation;
 			importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH);
@@ -167,7 +169,7 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 			SingleMemberAnnotation extendWithAnnotation= ast.newSingleMemberAnnotation();
 			extendWithAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_EXTEND_WITH));
 			TypeLiteral typeLiteral= ast.newTypeLiteral();
-			typeLiteral.setType(ast.newSimpleType(ast.newName("SpringExtension")));
+			typeLiteral.setType(ast.newSimpleType(ast.newName(SPRING_EXTENSION)));
 			extendWithAnnotation.setValue(typeLiteral);
 			newAnnotation= extendWithAnnotation;
 			importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH);
@@ -178,7 +180,6 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 		
 		if (newAnnotation != null) {
 			ASTNodes.replaceButKeepComment(rewriter, minv, newAnnotation, group);
-			importRewriter.removeImport(ORG_JUNIT_SUITE);
 			importRewriter.removeImport(ORG_JUNIT_RUNWITH);
 		}
 	}
