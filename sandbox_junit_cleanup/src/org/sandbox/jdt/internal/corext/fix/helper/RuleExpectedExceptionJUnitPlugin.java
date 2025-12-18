@@ -51,8 +51,8 @@ import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Statement;
-import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.TypeLiteral;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
@@ -236,7 +236,9 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 			assertThrows.arguments().add(ASTNode.copySubtree(ast, collector.expectedException));
 		} else {
 			// Default to Exception.class if no specific exception was expected
-			assertThrows.arguments().add(ast.newSimpleName("Exception.class"));
+			TypeLiteral exceptionClass = ast.newTypeLiteral();
+			exceptionClass.setType(ast.newSimpleType(ast.newSimpleName("Exception")));
+			assertThrows.arguments().add(exceptionClass);
 		}
 		
 		// Add lambda as second argument
