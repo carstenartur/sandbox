@@ -273,19 +273,47 @@ This project follows **GitHub best practices** for code quality:
 - Ensure all security issues are addressed before merging
 - Keep coverage high to validate cleanup logic correctness
 
+## Branch Conventions
+
+- **Default Branch**: `main` - All new development should be based on and target the `main` branch
+- **Branch Naming**: Use descriptive names (e.g., `feature/new-cleanup`, `fix/encoding-issue`)
+- **Multi-Version Support**: See the Multi-Version Support section for information on backporting to release-specific branches
+
+## Plugin Documentation Requirements
+
+All plugin directories (e.g., `sandbox_encoding_quickfix`, `sandbox_junit_cleanup`) **MUST** contain two mandatory documentation files:
+
+1. **`architecture.md`**: Design and architecture overview
+   - Describes the plugin's purpose, structure, and key components
+   - Documents design patterns and implementation approaches
+   - Explains integration points with Eclipse JDT
+   - Should be read before making changes to understand the codebase
+
+2. **`todo.md`**: Open tasks and follow-ups
+   - Lists pending features, known issues, and planned improvements
+   - Tracks implementation milestones and progress
+   - Documents future enhancements and technical debt
+   - Should be updated when new tasks are identified or completed
+
+**Pull Request Requirements**:
+- When touching plugin code, PRs **MUST** mention that these files were reviewed and updated if necessary
+- New plugins **MUST** include both files before being merged
+- Significant architectural changes **MUST** update `architecture.md`
+- New features or identified issues **MUST** update `todo.md`
+
 ## Development Workflow
 
-1. **Branch Naming**: Use descriptive names (e.g., `feature/new-cleanup`, `fix/encoding-issue`)
-2. **Commits**: Write clear commit messages explaining the change
-3. **Testing**: Always run tests before committing
-4. **CI**: All checks must pass (Maven build, SpotBugs, CodeQL, Codacy)
-5. **Pull Requests**: 
+1. **Commits**: Write clear commit messages explaining the change
+2. **Testing**: Always run tests before committing
+3. **CI**: All checks must pass (Maven build, SpotBugs, CodeQL, Codacy)
+4. **Pull Requests**: 
    - **Keep PRs small and focused**: Each PR should address a single aspect or concern
    - **Avoid mixing changes**: Don't combine formatting changes with logic changes, or multiple unrelated features
    - **Split large changes**: If many changes are needed, split them into multiple PRs that belong to the same issue
    - **Goal**: Make changes easy to understand and review - large diffs mixing different concerns are difficult to review
    - Include description of changes and test results
-   - For backporting features, PRs may need to target multiple branches (see Multi-Version Support below)
+   - For backporting features, PRs may need to target multiple branches (see Multi-Version Support above)
+   - **Plugin changes**: Confirm that `architecture.md` and `todo.md` were reviewed and updated as needed
 
 ## Common Commands
 
