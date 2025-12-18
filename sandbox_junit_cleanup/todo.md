@@ -50,10 +50,12 @@ Migrate timeout specifications:
 **Effort**: 12-15 hours
 
 Generalize ExternalResourceRefactorer to handle other JUnit 4 rules:
-- `TemporaryFolder` → `@TempDir`
+- ~~`TemporaryFolder` → `@TempDir`~~ ✅ **COMPLETED**
 - `ExpectedException` → `assertThrows()`
 - `ErrorCollector` → multiple assertions
 - Custom rules → extension implementations
+
+**Status**: TemporaryFolder migration fully implemented with comprehensive test coverage.
 
 **Benefits**:
 - Complete JUnit 4 to 5 migration capability
