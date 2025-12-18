@@ -1004,7 +1004,7 @@ public class MyTest {
 """
 package test;
 
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
@@ -1015,7 +1015,7 @@ public class MyTest {
 
 	@Test
 	public void testExpectedException() {
-		IllegalArgumentException exception = assertThrowsExactly(IllegalArgumentException.class, () -> {
+		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
 			doSomething();
 		});
 		assertTrue(exception.getMessage().contains("Invalid argument"));

@@ -227,10 +227,9 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 		}
 		lambda.setBody(lambdaBody);
 		
-		// Create assertThrows method invocation
+		// Create assertThrows method invocation (use assertThrows by default)
 		MethodInvocation assertThrows = ast.newMethodInvocation();
-		boolean useExactly = collector.expectedException != null;
-		assertThrows.setName(ast.newSimpleName(useExactly ? "assertThrowsExactly" : "assertThrows"));
+		assertThrows.setName(ast.newSimpleName("assertThrows"));
 		
 		// Add exception class argument
 		if (collector.expectedException != null) {
@@ -335,7 +334,7 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 			return """
 					@Test
 					public void test() {
-						IllegalArgumentException exception = assertThrowsExactly(IllegalArgumentException.class, () -> {
+						IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
 							doSomething();
 						});
 						assertTrue(exception.getMessage().contains("Invalid argument"));
