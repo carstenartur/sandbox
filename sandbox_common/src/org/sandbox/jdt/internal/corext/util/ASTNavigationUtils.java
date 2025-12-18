@@ -238,32 +238,4 @@ public final class ASTNavigationUtils {
 		parser.setResolveBindings(true);
 		return (CompilationUnit) parser.createAST(null);
 	}
-
-	/**
-	 * Finds all child nodes of the specified type within a given node's subtree.
-	 * Performs a depth-first search of the AST tree to collect all nodes of the requested type.
-	 * 
-	 * @param <T> the type of AST nodes to find
-	 * @param node the root node to search within
-	 * @param type the class of the child node type to find
-	 * @return a list of all child nodes of the specified type (may be empty, never null)
-	 */
-	public static <T extends ASTNode> java.util.List<T> findChildrenOfType(ASTNode node, Class<T> type) {
-		java.util.List<T> results = new java.util.ArrayList<>();
-		if (node == null || type == null) {
-			return results;
-		}
-
-		node.accept(new ASTVisitor() {
-			@SuppressWarnings("unchecked")
-			@Override
-			public void preVisit(ASTNode visitedNode) {
-				if (type.isInstance(visitedNode)) {
-					results.add((T) visitedNode);
-				}
-			}
-		});
-
-		return results;
-	}
 }
