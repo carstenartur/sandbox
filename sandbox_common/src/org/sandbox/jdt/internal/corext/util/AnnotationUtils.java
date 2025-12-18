@@ -104,4 +104,67 @@ public final class AnnotationUtils {
 				.map(Modifier.class::cast)
 				.anyMatch(modifier -> modifier.getKeyword().equals(keyword));
 	}
+
+	/**
+	 * Finds and returns an annotation with the specified qualified name from a list of modifiers.
+	 * 
+	 * @param modifiers the list of modifiers to search
+	 * @param annotationClass the fully qualified annotation class name
+	 * @return the annotation if found, or null if not present
+	 */
+	public static Annotation findAnnotation(List<?> modifiers, String annotationClass) {
+		return modifiers.stream()
+				.filter(Annotation.class::isInstance)
+				.map(Annotation.class::cast)
+				.filter(annotation -> {
+					var binding = annotation.resolveTypeBinding();
+					return binding != null && annotationClass.equals(binding.getQualifiedName());
+				})
+				.findFirst()
+				.orElse(null);
+	}
+
+	/**
+	 * Removes an annotation from a body declaration using AST rewrite.
+	 * 
+	 * @param declaration the body declaration containing the annotation
+	 * @param annotationClass the fully qualified annotation class name to remove
+	 * @param rewrite the AST rewrite to record the change
+	 * @return true if the annotation was found and removed, false otherwise
+	 */
+	public static boolean removeAnnotation(BodyDeclaration declaration, String annotationClass,
+			org.eclipse.jdt.core.dom.rewrite.ASTRewrite rewrite) {
+		Annotation annotation = findAnnotation(declaration.modifiers(), annotationClass);
+		if (annotation != null) {
+			rewrite.remove(annotation, null);
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Retrieves the value of a named attribute from an annotation.
+	 * 
+	 * @param annotation the annotation to query
+	 * @param attributeName the name of the attribute to retrieve
+	 * @return the annotation value expression, or null if the attribute is not present
+	 */
+	public static org.eclipse.jdt.core.dom.Expression getAnnotationValue(Annotation annotation, String attributeName) {
+		if (annotation instanceof org.eclipse.jdt.core.dom.NormalAnnotation) {
+			org.eclipse.jdt.core.dom.NormalAnnotation normalAnnotation = (org.eclipse.jdt.core.dom.NormalAnnotation) annotation;
+			for (Object valueObj : normalAnnotation.values()) {
+				if (valueObj instanceof org.eclipse.jdt.core.dom.MemberValuePair) {
+					org.eclipse.jdt.core.dom.MemberValuePair pair = (org.eclipse.jdt.core.dom.MemberValuePair) valueObj;
+					if (attributeName.equals(pair.getName().getIdentifier())) {
+						return pair.getValue();
+					}
+				}
+			}
+		} else if (annotation instanceof org.eclipse.jdt.core.dom.SingleMemberAnnotation && "value".equals(attributeName)) {
+			// For single member annotations, the implicit attribute name is "value"
+			org.eclipse.jdt.core.dom.SingleMemberAnnotation singleAnnotation = (org.eclipse.jdt.core.dom.SingleMemberAnnotation) annotation;
+			return singleAnnotation.getValue();
+		}
+		return null;
+	}
 }

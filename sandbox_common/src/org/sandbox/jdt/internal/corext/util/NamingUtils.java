@@ -163,4 +163,127 @@ public final class NamingUtils {
 		}
 		return null;
 	}
+
+	/**
+	 * Converts a string to UpperCamelCase (PascalCase).
+	 * Handles various input formats including snake_case, kebab-case, and space-separated words.
+	 * 
+	 * @param input the string to convert
+	 * @return the string in UpperCamelCase format, or the original string if null or empty
+	 */
+	public static String toUpperCamelCase(String input) {
+		if (input == null || input.isEmpty()) {
+			return input;
+		}
+		
+		// Split by common separators: underscore, hyphen, space
+		String[] words = input.split("[_\\-\\s]+"); //$NON-NLS-1$
+		StringBuilder result = new StringBuilder();
+		
+		for (String word : words) {
+			if (!word.isEmpty()) {
+				result.append(Character.toUpperCase(word.charAt(0)));
+				result.append(word.substring(1).toLowerCase());
+			}
+		}
+		
+		return result.toString();
+	}
+
+	/**
+	 * Converts a string to lowerCamelCase.
+	 * Handles various input formats including snake_case, kebab-case, and space-separated words.
+	 * 
+	 * @param input the string to convert
+	 * @return the string in lowerCamelCase format, or the original string if null or empty
+	 */
+	public static String toLowerCamelCase(String input) {
+		if (input == null || input.isEmpty()) {
+			return input;
+		}
+		
+		String upperCamel = toUpperCamelCase(input);
+		if (upperCamel.isEmpty()) {
+			return upperCamel;
+		}
+		
+		return Character.toLowerCase(upperCamel.charAt(0)) + upperCamel.substring(1);
+	}
+
+	/**
+	 * Converts a string to snake_case.
+	 * Handles CamelCase, PascalCase, and other input formats.
+	 * 
+	 * @param input the string to convert
+	 * @return the string in snake_case format, or the original string if null or empty
+	 */
+	public static String toSnakeCase(String input) {
+		if (input == null || input.isEmpty()) {
+			return input;
+		}
+		
+		// Replace common separators with underscores first
+		String normalized = input.replaceAll("[\\-\\s]+", "_"); //$NON-NLS-1$ //$NON-NLS-2$
+		
+		// Insert underscores before uppercase letters (for CamelCase)
+		String result = normalized.replaceAll("([a-z])([A-Z])", "$1_$2"); //$NON-NLS-1$ //$NON-NLS-2$
+		
+		// Convert to lowercase
+		return result.toLowerCase();
+	}
+
+	/**
+	 * Checks if a string is a valid Java identifier.
+	 * A valid identifier starts with a letter, underscore, or dollar sign,
+	 * and can contain letters, digits, underscores, or dollar signs.
+	 * Reserved keywords are considered invalid identifiers.
+	 * 
+	 * @param name the string to check
+	 * @return true if the string is a valid Java identifier, false otherwise
+	 */
+	public static boolean isValidJavaIdentifier(String name) {
+		if (name == null || name.isEmpty()) {
+			return false;
+		}
+		
+		// Check if it's a reserved keyword
+		if (isJavaKeyword(name)) {
+			return false;
+		}
+		
+		// Check first character
+		if (!Character.isJavaIdentifierStart(name.charAt(0))) {
+			return false;
+		}
+		
+		// Check remaining characters
+		for (int i = 1; i < name.length(); i++) {
+			if (!Character.isJavaIdentifierPart(name.charAt(i))) {
+				return false;
+			}
+		}
+		
+		return true;
+	}
+
+	/**
+	 * Checks if a string is a Java reserved keyword.
+	 * 
+	 * @param word the string to check
+	 * @return true if the string is a Java keyword, false otherwise
+	 */
+	private static boolean isJavaKeyword(String word) {
+		// Java keywords and reserved words (including literal values)
+		return switch (word) {
+			case "abstract", "assert", "boolean", "break", "byte", "case", "catch", "char", 
+			     "class", "const", "continue", "default", "do", "double", "else", "enum", 
+			     "extends", "final", "finally", "float", "for", "goto", "if", "implements", 
+			     "import", "instanceof", "int", "interface", "long", "native", "new", "package", 
+			     "private", "protected", "public", "return", "short", "static", "strictfp", 
+			     "super", "switch", "synchronized", "this", "throw", "throws", "transient", 
+			     "try", "void", "volatile", "while", "true", "false", "null", 
+			     "var", "yield", "record", "sealed", "permits", "non-sealed" -> true;
+			default -> false;
+		};
+	}
 }

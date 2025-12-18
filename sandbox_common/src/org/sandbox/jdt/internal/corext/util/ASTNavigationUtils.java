@@ -238,4 +238,69 @@ public final class ASTNavigationUtils {
 		parser.setResolveBindings(true);
 		return (CompilationUnit) parser.createAST(null);
 	}
+
+	/**
+	 * Finds the nearest parent node of the specified type.
+	 * Walks up the AST tree from the given node until a node of the requested type is found.
+	 * This is a generic method that complements the existing specific finder methods.
+	 * 
+	 * @param <T> the type of AST node to find
+	 * @param node the starting node
+	 * @param type the class of the parent node type to find
+	 * @return the nearest parent node of the specified type, or null if not found
+	 */
+	public static <T extends ASTNode> T findParentOfType(ASTNode node, Class<T> type) {
+		return ASTNodes.getTypedAncestor(node, type);
+	}
+
+	/**
+	 * Finds all child nodes of the specified type within a given node's subtree.
+	 * Performs a depth-first search of the AST tree to collect all nodes of the requested type.
+	 * 
+	 * @param <T> the type of AST nodes to find
+	 * @param node the root node to search within
+	 * @param type the class of the child node type to find
+	 * @return a list of all child nodes of the specified type (may be empty, never null)
+	 */
+	public static <T extends ASTNode> java.util.List<T> findChildrenOfType(ASTNode node, Class<T> type) {
+		java.util.List<T> results = new java.util.ArrayList<>();
+		if (node == null || type == null) {
+			return results;
+		}
+
+		node.accept(new ASTVisitor() {
+			@SuppressWarnings("unchecked")
+			@Override
+			public void preVisit(ASTNode visitedNode) {
+				if (type.isInstance(visitedNode)) {
+					results.add((T) visitedNode);
+				}
+			}
+		});
+
+		return results;
+	}
+
+	/**
+	 * Finds the enclosing method declaration for a given AST node.
+	 * Walks up the AST tree to find the nearest MethodDeclaration ancestor.
+	 * 
+	 * @param node the node to find the enclosing method for
+	 * @return the enclosing method declaration, or null if the node is not within a method
+	 */
+	public static org.eclipse.jdt.core.dom.MethodDeclaration getEnclosingMethod(ASTNode node) {
+		return ASTNodes.getTypedAncestor(node, org.eclipse.jdt.core.dom.MethodDeclaration.class);
+	}
+
+	/**
+	 * Finds the enclosing type (class) declaration for a given AST node.
+	 * Walks up the AST tree to find the nearest TypeDeclaration ancestor.
+	 * This is an alias for {@link #findEnclosingTypeDeclaration(ASTNode)}.
+	 * 
+	 * @param node the node to find the enclosing class for
+	 * @return the enclosing type declaration, or null if the node is not within a class/interface
+	 */
+	public static TypeDeclaration getEnclosingClass(ASTNode node) {
+		return findEnclosingTypeDeclaration(node);
+	}
 }

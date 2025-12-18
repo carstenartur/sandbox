@@ -35,11 +35,34 @@ import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 
 /**
+ * Processor for building and executing AST visitor chains.
+ * This class provides a fluent API for configuring visitor callbacks for different AST node types
+ * and then building a visitor chain that processes the AST tree.
+ * 
+ * <p>The processor maintains a linked map of visitor callbacks associated with specific AST node types
+ * (represented by {@link VisitorEnum}). When {@link #build(ASTNode)} is called, the processor creates
+ * a visitor chain that processes nodes in the order the callbacks were registered.</p>
+ * 
+ * <p><strong>Usage Example:</strong></p>
+ * <pre>
+ * ASTProcessor&lt;MyDataHolder, String, Object&gt; processor = new ASTProcessor&lt;&gt;(dataHolder, processedNodes);
+ * processor
+ *     .callMethodInvocationVisitor((node, holder) -&gt; {
+ *         // Process method invocation
+ *         return true;
+ *     })
+ *     .callFieldDeclarationVisitor((node, holder) -&gt; {
+ *         // Process field declaration
+ *         return true;
+ *     })
+ *     .build(compilationUnit);
+ * </pre>
  *
+ * @param <E> the type of data holder that implements {@link HelperVisitorProvider}
+ * @param <V> the type of keys in the data holder
+ * @param <T> the type of values in the data holder
+ * 
  * @author chammer
- * @param <E>
- * @param <V>
- * @param <T>
  * @since 1.15
  */
 public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {

@@ -30,6 +30,11 @@ import java.util.stream.Stream;
 import org.eclipse.jdt.core.dom.ASTNode;
 
 /**
+ * Enumeration of AST visitor types corresponding to Eclipse JDT AST node types.
+ * Each enum value represents a specific type of AST node that can be visited during AST traversal.
+ * This enum provides a type-safe way to identify and process different AST node types.
+ * 
+ * <p>Each visitor enum value corresponds to a constant defined in {@link org.eclipse.jdt.core.dom.ASTNode}.</p>
  *
  * @author chammer
  * @since 1.15
@@ -37,17 +42,20 @@ import org.eclipse.jdt.core.dom.ASTNode;
 public enum VisitorEnum {
 
 	/**
-	 *
+	 * Visitor for {@link org.eclipse.jdt.core.dom.AnnotationTypeDeclaration} nodes.
+	 * Represents annotation type declarations (e.g., {@code @interface MyAnnotation}).
 	 */
 	AnnotationTypeDeclaration(ASTNode.ANNOTATION_TYPE_DECLARATION),
 
 	/**
-	 *
+	 * Visitor for {@link org.eclipse.jdt.core.dom.AnnotationTypeMemberDeclaration} nodes.
+	 * Represents members of annotation type declarations.
 	 */
 	AnnotationTypeMemberDeclaration(ASTNode.ANNOTATION_TYPE_MEMBER_DECLARATION),
 
 	/**
-	 *
+	 * Visitor for {@link org.eclipse.jdt.core.dom.AnonymousClassDeclaration} nodes.
+	 * Represents anonymous class declarations.
 	 */
 	AnonymousClassDeclaration(ASTNode.ANONYMOUS_CLASS_DECLARATION),
 
