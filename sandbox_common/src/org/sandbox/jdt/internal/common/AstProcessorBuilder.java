@@ -1262,17 +1262,6 @@ public final class AstProcessorBuilder<V, T> {
 	}
 	
 	/**
-	 * Registers a visitor for VisitorEnum nodes.
-	 *
-	 * @param predicate the predicate to test and process matching nodes
-	 * @return this builder for method chaining
-	 */
-	public AstProcessorBuilder<V, T> onVisitorEnum(BiPredicate<VisitorEnum, ReferenceHolder<V, T>> predicate) {
-		processor.callVisitorEnumVisitor((node, holder) -> predicate.test((VisitorEnum) node, holder));
-		return this;
-	}
-	
-	/**
 	 * Registers a visitor for WhileStatement nodes.
 	 *
 	 * @param predicate the predicate to test and process matching nodes
