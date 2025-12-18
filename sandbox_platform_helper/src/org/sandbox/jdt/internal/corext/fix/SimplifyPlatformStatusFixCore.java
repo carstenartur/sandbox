@@ -28,6 +28,7 @@ import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.helper.AbstractSimplifyPlatformStatus;
+import org.sandbox.jdt.internal.corext.fix.helper.MultiStatusSimplifyPlatformStatus;
 import org.sandbox.jdt.internal.corext.fix.helper.StatusErrorSimplifyPlatformStatus;
 import org.sandbox.jdt.internal.corext.fix.helper.StatusInfoSimplifyPlatformStatus;
 import org.sandbox.jdt.internal.corext.fix.helper.StatusWarningSimplifyPlatformStatus;
@@ -37,7 +38,8 @@ public enum SimplifyPlatformStatusFixCore {
 
 	STATUSWARNING(new StatusWarningSimplifyPlatformStatus()),
 	STATUSERROR(new StatusErrorSimplifyPlatformStatus()),
-	STATUSINFO(new StatusInfoSimplifyPlatformStatus());
+	STATUSINFO(new StatusInfoSimplifyPlatformStatus()),
+	MULTISTATUS(new MultiStatusSimplifyPlatformStatus());
 
 	AbstractSimplifyPlatformStatus<ASTNode> platformstatus;
 

@@ -249,6 +249,95 @@ public class Java9CleanUpTest {
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
 	}
 
+	enum MultiStatusPatterns {
+
+		MULTISTATUS_BASIC("""
+			package test1;
+			import org.eclipse.core.runtime.IStatus;
+			import org.eclipse.core.runtime.MultiStatus;
+			public class E1 {
+				void bla(Throwable e) {
+					MultiStatus status = new MultiStatus("my.plugin.id", 1, "important message", e);
+				}
+			}""", //$NON-NLS-1$
+
+				"""
+					package test1;
+					import org.eclipse.core.runtime.IStatus;
+					import org.eclipse.core.runtime.MultiStatus;
+					public class E1 {
+						void bla(Throwable e) {
+							MultiStatus status = new MultiStatus("my.plugin.id", IStatus.OK, "important message", e);
+						}
+					}"""), //$NON-NLS-1$
+		MULTISTATUS_WITH_CONSTANT("""
+			package test1;
+			import org.eclipse.core.runtime.IStatus;
+			import org.eclipse.core.runtime.MultiStatus;
+			public class E1 {
+				private static final int ERROR_CODE = 100;
+				void bla(Throwable e) {
+					MultiStatus status = new MultiStatus("my.plugin.id", ERROR_CODE, "important message", e);
+				}
+			}""", //$NON-NLS-1$
+
+				"""
+					package test1;
+					import org.eclipse.core.runtime.IStatus;
+					import org.eclipse.core.runtime.MultiStatus;
+					public class E1 {
+						private static final int ERROR_CODE = 100;
+						void bla(Throwable e) {
+							MultiStatus status = new MultiStatus("my.plugin.id", IStatus.OK, "important message", e);
+						}
+					}"""); //$NON-NLS-1$
+
+		String given;
+		String expected;
+
+		MultiStatusPatterns(String given, String expected) {
+			this.given=given;
+			this.expected=expected;
+		}
+	}
+
+	@ParameterizedTest
+	@EnumSource(MultiStatusPatterns.class)
+	public void testMultiStatusParametrized(MultiStatusPatterns test) throws CoreException {
+		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
+		ICompilationUnit cu= pack.createCompilationUnit("E1.java", test.given, false, null); //$NON-NLS-1$
+		context.enable(MYCleanUpConstants.SIMPLIFY_STATUS_CLEANUP);
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
+	}
+
+	enum MultiStatusPatternsDontTouch {
+
+		ALREADY_OK("""
+			package test1;
+			import org.eclipse.core.runtime.IStatus;
+			import org.eclipse.core.runtime.MultiStatus;
+			public class E1 {
+				void bla(Throwable e) {
+					MultiStatus status = new MultiStatus("my.plugin.id", IStatus.OK, "important message", e);
+				}
+			}"""); //$NON-NLS-1$
+
+		String given;
+
+		MultiStatusPatternsDontTouch(String given) {
+			this.given=given;
+		}
+	}
+
+	@ParameterizedTest
+	@EnumSource(MultiStatusPatternsDontTouch.class)
+	public void testMultiStatusDontTouch(MultiStatusPatternsDontTouch test) throws CoreException {
+		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
+		ICompilationUnit cu= pack.createCompilationUnit("E1.java", test.given, false, null); //$NON-NLS-1$
+		context.enable(MYCleanUpConstants.SIMPLIFY_STATUS_CLEANUP);
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+	}
+
 //	@ParameterizedTest
 //	@EnumSource(PlatformStatusPatternsDontTouch.class)
 //	public void testPlatformStatus_donttouch(PlatformStatusPatternsDontTouch test) throws CoreException {

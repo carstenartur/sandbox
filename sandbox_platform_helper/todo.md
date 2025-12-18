@@ -2,68 +2,45 @@
 
 ## Status Summary
 
-**Current State**: Stable implementation for Status object simplification
+**Current State**: Stable implementation for Status and MultiStatus simplification
 
 ### Completed
 - ✅ Status factory method transformation (Java 11+)
 - ✅ Java version detection
 - ✅ Test coverage for Status transformations
+- ✅ Plugin ID preservation option
+- ✅ MultiStatus code normalization (to IStatus.OK)
 
 ### In Progress
 - None currently
 
 ### Pending
-- [ ] MultiStatus simplification support
+- [ ] Advanced MultiStatus pattern detection (detect .add() calls)
 - [ ] Custom Status subclass handling
-- [ ] Optional plugin ID preservation
 - [ ] Additional Platform API simplifications
 
 ## Priority Tasks
 
-### 1. MultiStatus Support
-**Priority**: Medium  
-**Effort**: 6-8 hours
+### 1. Advanced MultiStatus Pattern Detection
+**Priority**: Low  
+**Effort**: 8-10 hours
 
-Simplify MultiStatus creation:
+Detect and optimize MultiStatus usage with .add() calls:
 ```java
-// Before
-IStatus status = new MultiStatus(pluginId, code, message, exception);
-status.add(new Status(...));
-status.add(new Status(...));
+// Detect this pattern
+MultiStatus status = new MultiStatus(pluginId, code, message, null);
+status.add(new Status(IStatus.ERROR, pluginId, "error1", null));
+status.add(new Status(IStatus.WARNING, pluginId, "warning1", null));
 
-// After
-IStatus status = MultiStatus.of(
-    Status.error("Error 1"),
-    Status.error("Error 2")
-);
+// Suggest optimization (future enhancement)
 ```
 
 **Benefits**:
-- Cleaner multi-error handling
-- Less verbose status aggregation
-- Better readability
+- More comprehensive MultiStatus handling
+- Better pattern recognition
+- Potential for suggesting alternative approaches
 
-### 2. Plugin ID Preservation Option
-**Priority**: Low  
-**Effort**: 4-6 hours
-
-Add option to preserve plugin ID in transformations:
-```java
-// Current transformation loses plugin ID
-new Status(IStatus.ERROR, "my.plugin", "message") 
-  → Status.error("message", null)
-
-// Optional transformation preserves plugin ID
-new Status(IStatus.ERROR, "my.plugin", "message")
-  → Status.error("my.plugin", "message", null)
-```
-
-**Implementation**:
-- Add preference for plugin ID handling
-- Update transformation logic
-- Update tests
-
-### 3. Expand to Other Platform APIs
+### 2. Expand to Other Platform APIs
 **Priority**: Medium  
 **Effort**: 10-12 hours
 
@@ -79,11 +56,32 @@ Simplify additional Eclipse Platform APIs:
 
 ## Known Issues
 
-### Plugin ID Context Loss
-**Status**: Known Limitation  
+### MultiStatus Factory Methods
+**Status**: Not Available  
+**Priority**: N/A
+
+Eclipse Platform's MultiStatus class does not have factory methods like `Status.error()` or `Status.warning()`. The current implementation normalizes the status code to `IStatus.OK`, which is appropriate since MultiStatus overall status is determined by its child statuses.
+
+### Plugin ID Preservation Default
+**Status**: Configurable  
 **Priority**: Low
 
-Factory methods don't include plugin ID, relying on context. In some cases, specific plugin ID is needed for debugging. See Priority Task #2 for potential solution.
+The plugin ID preservation option defaults to `false` (plugin ID is omitted). Users can enable it via preferences if they need to preserve plugin IDs in factory method calls. This maintains backward compatibility with existing cleanup behavior.
+
+## Configuration Notes
+
+### Default Behavior
+- **Status cleanup**: Enabled via preferences, disabled by default
+- **Plugin ID preservation**: Disabled by default (plugin ID omitted in factory methods)
+- **MultiStatus normalization**: Included when Status cleanup is enabled
+
+### Preferences Location
+1. **Preferences > Java > Code Style > Clean Up**
+2. Select or create a cleanup profile
+3. Navigate to **Platform Status** section
+4. Options:
+   - **Simplify Platform Status**: Enable Status/MultiStatus cleanups
+   - **Preserve plugin ID in Status factory methods**: Keep plugin ID as first parameter
 
 ## Future Enhancements
 

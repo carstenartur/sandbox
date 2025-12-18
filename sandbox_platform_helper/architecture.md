@@ -115,13 +115,33 @@ Experimental cleanup for Eclipse Platform code. The factory methods are part of 
 ## Known Limitations
 
 1. **Java 11+ Only**: Requires Java 11 or later (aligned with current Eclipse support)
-2. **Status Class Only**: Only handles `org.eclipse.core.runtime.Status`
+2. **Status Class Only**: Only handles `org.eclipse.core.runtime.Status` and `org.eclipse.core.runtime.MultiStatus`
 3. **Simple Cases**: Complex Status creation patterns may not be transformed
-4. **Plugin ID Removed**: Factory methods don't include plugin ID (uses default from context)
+4. **Plugin ID Handling**: By default, plugin ID is removed in factory methods (can be preserved with option)
+
+## Configuration Options
+
+### Plugin ID Preservation
+
+By default, Status factory method transformations omit the plugin ID parameter:
+- **Default**: `new Status(IStatus.ERROR, "my.plugin", IStatus.OK, "msg", e)` → `Status.error("msg", e)`
+- **With preservation enabled**: `new Status(IStatus.ERROR, "my.plugin", IStatus.OK, "msg", e)` → `Status.error("my.plugin", "msg", e)`
+
+To enable plugin ID preservation:
+1. Open **Preferences > Java > Code Style > Clean Up**
+2. Edit a cleanup profile
+3. Navigate to the **Platform Status** section
+4. Check **"Preserve plugin ID in Status factory methods"**
+
+### MultiStatus Simplification
+
+MultiStatus doesn't have factory methods like Status, but the cleanup can normalize the status code:
+- Transforms any status code to `IStatus.OK` in MultiStatus constructors
+- Example: `new MultiStatus(pluginId, 123, "msg", e)` → `new MultiStatus(pluginId, IStatus.OK, "msg", e)`
+- Rationale: MultiStatus overall status is determined by child statuses, so the code should typically be `IStatus.OK`
 
 ## Future Enhancements
 
 - Support for custom Status subclasses
-- Preserve plugin ID as additional parameter if desired
-- Multi-status simplification
+- More sophisticated MultiStatus pattern detection (e.g., detecting and optimizing .add() patterns)
 - Integration with Eclipse logging framework updates
