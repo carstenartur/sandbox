@@ -58,6 +58,10 @@ import org.sandbox.jdt.internal.corext.fix.SimplifyPlatformStatusFixCore;
  */
 public class MultiStatusSimplifyPlatformStatus extends AbstractSimplifyPlatformStatus<ClassInstanceCreation> {
 
+	private static final String ISTATUS_OK = "IStatus.OK"; //$NON-NLS-1$
+	private static final String ISTATUS_SIMPLE_NAME = "IStatus"; //$NON-NLS-1$
+	private static final String OK_SIMPLE_NAME = "OK"; //$NON-NLS-1$
+
 	public MultiStatusSimplifyPlatformStatus() {
 		super("", ""); // MultiStatus doesn't use factory method names //$NON-NLS-1$ //$NON-NLS-2$
 	}
@@ -99,7 +103,7 @@ public class MultiStatusSimplifyPlatformStatus extends AbstractSimplifyPlatformS
 				Expression codeArg= arguments.get(1);
 				if (codeArg instanceof QualifiedName) {
 					QualifiedName codeQualifiedName= (QualifiedName) codeArg;
-					if ("IStatus.OK".equals(codeQualifiedName.toString())) { //$NON-NLS-1$
+					if (ISTATUS_OK.equals(codeQualifiedName.toString())) {
 						// Already using IStatus.OK, no transformation needed
 						return false;
 					}
@@ -144,8 +148,8 @@ public class MultiStatusSimplifyPlatformStatus extends AbstractSimplifyPlatformS
 		
 		// Replace code with IStatus.OK
 		QualifiedName okConstant= ast.newQualifiedName(
-				ast.newSimpleName("IStatus"), //$NON-NLS-1$
-				ast.newSimpleName("OK")); //$NON-NLS-1$
+				ast.newSimpleName(ISTATUS_SIMPLE_NAME),
+				ast.newSimpleName(OK_SIMPLE_NAME));
 		newArguments.add(okConstant);
 		
 		// Copy message (argument 2)
