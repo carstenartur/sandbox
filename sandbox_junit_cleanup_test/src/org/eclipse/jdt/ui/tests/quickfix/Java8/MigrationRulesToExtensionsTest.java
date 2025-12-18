@@ -331,6 +331,80 @@ public class MigrationRulesToExtensionsTest {
 						File root = tmpDir.toFile();
 					}
 				}
+				"""),
+		TemporaryFolderWithNoArgNewFile(
+				"""
+				package test;
+				import java.io.File;
+				import org.junit.Rule;
+				import org.junit.Test;
+				import org.junit.rules.TemporaryFolder;
+				
+				public class MyTest {
+					@Rule
+					public TemporaryFolder folder = new TemporaryFolder();
+					
+					@Test
+					public void test() throws Exception {
+						File file = folder.newFile();
+					}
+				}
+				""",
+				"""
+				package test;
+				import java.io.File;
+				import java.nio.file.Files;
+				import java.nio.file.Path;
+				
+				import org.junit.jupiter.api.Test;
+				import org.junit.jupiter.api.io.TempDir;
+				
+				public class MyTest {
+					@TempDir
+					Path folder;
+					
+					@Test
+					public void test() throws Exception {
+						File file = Files.createTempFile(folder, "", null).toFile();
+					}
+				}
+				"""),
+		TemporaryFolderWithNoArgNewFolder(
+				"""
+				package test;
+				import java.io.File;
+				import org.junit.Rule;
+				import org.junit.Test;
+				import org.junit.rules.TemporaryFolder;
+				
+				public class MyTest {
+					@Rule
+					public TemporaryFolder folder = new TemporaryFolder();
+					
+					@Test
+					public void test() throws Exception {
+						File dir = folder.newFolder();
+					}
+				}
+				""",
+				"""
+				package test;
+				import java.io.File;
+				import java.nio.file.Files;
+				import java.nio.file.Path;
+				
+				import org.junit.jupiter.api.Test;
+				import org.junit.jupiter.api.io.TempDir;
+				
+				public class MyTest {
+					@TempDir
+					Path folder;
+					
+					@Test
+					public void test() throws Exception {
+						File dir = Files.createTempDirectory(folder, "").toFile();
+					}
+				}
 				""");
 
 		final String given;
