@@ -974,6 +974,57 @@ public class MyTest {
 		File newFile = tempFolder.resolve("myfile.txt").toFile();
 	}
 }
+"""), //$NON-NLS-1$
+		ExpectedExceptionRule(
+"""
+package test;
+import org.junit.Test;
+import org.junit.Rule;
+import org.junit.rules.ExpectedException;
+/**
+ * Test with ExpectedException rule
+ */
+public class MyTest {
+
+	@Rule
+	public ExpectedException thrown = ExpectedException.none();
+
+	@Test
+	public void testExpectedException() {
+		thrown.expect(IllegalArgumentException.class);
+		thrown.expectMessage("Invalid argument");
+		doSomething();
+	}
+
+	private void doSomething() {
+		throw new IllegalArgumentException("Invalid argument");
+	}
+}
+""", //$NON-NLS-1$
+"""
+package test;
+
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.api.Test;
+/**
+ * Test with ExpectedException rule
+ */
+public class MyTest {
+
+	@Test
+	public void testExpectedException() {
+		IllegalArgumentException exception = assertThrowsExactly(IllegalArgumentException.class, () -> {
+			doSomething();
+		});
+		assertTrue(exception.getMessage().contains("Invalid argument"));
+	}
+
+	private void doSomething() {
+		throw new IllegalArgumentException("Invalid argument");
+	}
+}
 """); //$NON-NLS-1$
 
 		String given;
