@@ -2,12 +2,16 @@
 
 ## Status Summary
 
-**Current State**: Basic functional search view for class/API lookup
+**Current State**: Functional search view for class/API lookup with improved robustness and error handling
 
 ### Completed
 - ✅ Basic search view UI
 - ✅ Eclipse JDT search engine integration
 - ✅ Results display with navigation
+- ✅ Robustness improvements (defensive null checks, proper resource management)
+- ✅ Proper generics usage (eliminated raw types)
+- ✅ Enhanced error logging and user feedback
+- ✅ Extended deprecated class list (Observable, Hashtable, Dictionary, security.acl.*, etc.)
 
 ### In Progress
 - None currently
@@ -100,6 +104,28 @@ Currently only searches workspace code, not external JARs. Consider adding:
 - JAR file indexing
 - Maven/Gradle dependency search
 - Binary class file search
+
+## Recent Improvements (2024)
+
+### Code Robustness Enhancements
+- **Resource Management**: Implemented try-with-resources for all streams to prevent resource leaks
+- **Null Safety**: Added defensive null checks throughout to prevent NPEs in edge cases:
+  - Workspace availability checks
+  - Project array validation
+  - Dialog settings initialization guards
+- **Type Safety**: Eliminated raw types, using proper generics for all collections
+- **Error Handling**: Replaced `printStackTrace()` with proper `JavaPlugin.log()` calls
+- **User Feedback**: Added specific error messages for different failure scenarios
+
+### Deprecated Class List Extensions
+Added commonly deprecated/legacy JDK classes:
+- `java.util.Observable` and `java.util.Observer` (deprecated observer pattern)
+- `java.util.Hashtable`, `java.util.Dictionary`, `java.util.Properties` (legacy collections)
+- `java.rmi.server.LogStream` (deprecated RMI class)
+- `javax.security.auth.Policy` (deprecated security class)
+- `java.security.acl.*` package classes (Acl, AclEntry, Group, Owner, Permission, NotOwnerException, etc.)
+
+These additions help identify more legacy code during Eclipse/Java version upgrades.
 
 ## Future Enhancements
 

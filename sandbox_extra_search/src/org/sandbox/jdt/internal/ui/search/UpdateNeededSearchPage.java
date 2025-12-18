@@ -64,7 +64,7 @@ public class UpdateNeededSearchPage extends DialogPage implements ISearchPage {
 
 	private ISearchPageContainer fContainer;
 
-	Map<String, Set<String>> listofClassLists;
+	private Map<String, Set<String>> listofClassLists;
 
 	private IDialogSettings fDialogSettings;
 
@@ -113,6 +113,13 @@ public class UpdateNeededSearchPage extends DialogPage implements ISearchPage {
 		int scope;
 
 		public static SearchSettingsData create(IDialogSettings settings, Map<String, Set<String>> listofClassLists) {
+			if (settings == null) {
+				// Use defaults if settings are not available
+				return new SearchSettingsData(IJavaSearchConstants.REFERENCES, 
+						JavaSearchScopeFactory.NO_JRE, 
+						ISearchPageContainer.WORKSPACE_SCOPE);
+			}
+			
 			int limitto;
 			try {
 				limitto = settings.getInt("limitTo"); //$NON-NLS-1$
@@ -132,18 +139,24 @@ public class UpdateNeededSearchPage extends DialogPage implements ISearchPage {
 				myscope = ISearchPageContainer.WORKSPACE_SCOPE;
 			}
 			SearchSettingsData ssd = new SearchSettingsData(limitto, includemask, myscope);
-			listofClassLists.keySet().forEach(lc -> {
-				ssd.put(lc, settings.getBoolean(lc));
-			});
+			if (listofClassLists != null) {
+				listofClassLists.keySet().forEach(lc -> {
+					ssd.put(lc, settings.getBoolean(lc));
+				});
+			}
 			return ssd;
 		}
 
 		public void store(IDialogSettings settings, Map<String, Set<String>> listofClassLists) {
+			if (settings == null || listofClassLists == null) {
+				return;
+			}
 			settings.put("scope", scope); //$NON-NLS-1$
 			settings.put("limitTo", limitTo); //$NON-NLS-1$
 			settings.put("includeMask", includeMask); //$NON-NLS-1$
 			listofClassLists.keySet().forEach(lc -> {
-				settings.put(lc, this.get(lc));
+				Boolean value = this.get(lc);
+				settings.put(lc, value != null ? value.booleanValue() : false);
 			});
 		}
 
@@ -153,6 +166,9 @@ public class UpdateNeededSearchPage extends DialogPage implements ISearchPage {
 	public void createControl(Composite parent) {
 		initializeDialogUnits(parent);
 		listofClassLists = readClassList();
+		if (listofClassLists.isEmpty()) {
+			JavaPlugin.logErrorMessage(Messages.UpdateNeededSearchPage_ClassListLoadFailed);
+		}
 		readConfiguration();
 
 		ScrolledComposite scrolledComposite = new ScrolledComposite(parent, SWT.V_SCROLL | SWT.BORDER);
@@ -164,22 +180,25 @@ public class UpdateNeededSearchPage extends DialogPage implements ISearchPage {
 
 		Label lblNewLabel = new Label(composite, SWT.NONE);
 		lblNewLabel.setText("Select legacy classes to search for"); //$NON-NLS-1$
-		listofClassLists.keySet().forEach(lc -> {
-			Button btnCheckButton = new Button(composite, SWT.CHECK);
-			btnCheckButton.setSelection(!leaveoutsearch.get(lc));
-			btnCheckButton.setText(lc);
-			btnCheckButton.addSelectionListener(new SelectionAdapter() {
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-					Button button = (Button) e.widget;
-					if (button.getSelection()) {
-						leaveoutsearch.put(lc, Boolean.FALSE);
-					} else {
-						leaveoutsearch.put(lc, Boolean.TRUE);
+		if (listofClassLists != null && !listofClassLists.isEmpty()) {
+			listofClassLists.keySet().forEach(lc -> {
+				Button btnCheckButton = new Button(composite, SWT.CHECK);
+				Boolean selection = leaveoutsearch.get(lc);
+				btnCheckButton.setSelection(selection == null || !selection.booleanValue());
+				btnCheckButton.setText(lc);
+				btnCheckButton.addSelectionListener(new SelectionAdapter() {
+					@Override
+					public void widgetSelected(SelectionEvent e) {
+						Button button = (Button) e.widget;
+						if (button.getSelection()) {
+							leaveoutsearch.put(lc, Boolean.FALSE);
+						} else {
+							leaveoutsearch.put(lc, Boolean.TRUE);
+						}
 					}
-				}
+				});
 			});
-		});
+		}
 		scrolledComposite.setContent(composite);
 		scrolledComposite.setMinSize(composite.computeSize(SWT.DEFAULT, SWT.DEFAULT));
 		setControl(scrolledComposite);
@@ -286,6 +305,10 @@ public class UpdateNeededSearchPage extends DialogPage implements ISearchPage {
 
 		IJavaElement element = null;
 		IWorkspaceRoot wspace = ResourcesPlugin.getWorkspace().getRoot();
+		if (wspace == null) {
+			JavaPlugin.logErrorMessage(Messages.UpdateNeededSearchPage_WorkspaceNotAvailable);
+			return false;
+		}
 
 		List<QuerySpecification> arl = new ArrayList<>();
 
@@ -295,7 +318,12 @@ public class UpdateNeededSearchPage extends DialogPage implements ISearchPage {
 			}
 
 			for (String checkclass : lc.getValue()) {
-				for (IProject pr : wspace.getProjects()) {
+				IProject[] projects = wspace.getProjects();
+				if (projects == null || projects.length == 0) {
+					JavaPlugin.logErrorMessage(Messages.UpdateNeededSearchPage_NoProjectsFound);
+					break;
+				}
+				for (IProject pr : projects) {
 					try {
 						if (pr.isNatureEnabled("org.eclipse.jdt.core.javanature")) { //$NON-NLS-1$
 							IJavaProject project = JavaCore.create(pr);
@@ -306,7 +334,7 @@ public class UpdateNeededSearchPage extends DialogPage implements ISearchPage {
 							}
 						}
 					} catch (CoreException e) {
-						e.printStackTrace();
+						JavaPlugin.log(e);
 					}
 				}
 
@@ -335,26 +363,40 @@ public class UpdateNeededSearchPage extends DialogPage implements ISearchPage {
 		fContainer = container;
 	}
 
+	/**
+	 * Reads the list of deprecated/legacy classes from classlist.properties.
+	 * 
+	 * @return a map of category names to sets of fully-qualified class names,
+	 *         or an empty map if loading fails
+	 */
 	private Map<String, Set<String>> readClassList() {
-		listofClassLists = new HashMap<>();
+		Map<String, Set<String>> result = new HashMap<>();
 		String filename = "/org/sandbox/jdt/internal/ui/search/classlist.properties"; //$NON-NLS-1$
+		
 		try (InputStream input = getClass().getClassLoader().getResourceAsStream(filename)) {
-
-			Properties prop = new Properties();
-
 			if (input == null) {
+				JavaPlugin.logErrorMessage(Messages.UpdateNeededSearchPage_ClassListNotFound);
 				return Collections.emptyMap();
 			}
 
+			Properties prop = new Properties();
 			prop.load(input);
-			@SuppressWarnings({ "rawtypes", "unchecked" })
-			Map<String, String> sprop = new HashMap(prop);
-			sprop.forEach((key, value) -> listofClassLists.put(value, new HashSet<>()));
-			sprop.forEach((key, value) -> listofClassLists.get(value).add(key));
+			
+			// Build category -> class set map
+			Map<String, String> sprop = new HashMap<>();
+			for (String key : prop.stringPropertyNames()) {
+				sprop.put(key, prop.getProperty(key));
+			}
+			
+			// Initialize category sets
+			sprop.forEach((key, value) -> result.putIfAbsent(value, new HashSet<>()));
+			// Populate class names into category sets
+			sprop.forEach((key, value) -> result.get(value).add(key));
 
 		} catch (IOException e) {
+			JavaPlugin.log(e);
 			return Collections.emptyMap();
 		}
-		return listofClassLists;
+		return result;
 	}
 }

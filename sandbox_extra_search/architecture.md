@@ -116,6 +116,23 @@ Testing focuses on search accuracy and UI responsiveness:
 3. **Workspace Only**: Doesn't search in external JARs or libraries
 4. **Basic Filtering**: Limited filtering options for results
 
+## Recent Changes
+
+### Robustness Improvements (2024)
+Enhanced error handling and defensive programming practices:
+- Added try-with-resources for all resource streams to prevent leaks
+- Implemented defensive null checks for workspace, projects, and dialog settings
+- Replaced raw types with proper generics in class list management
+- Improved error logging using `JavaPlugin.log()` instead of `printStackTrace()`
+- Added graceful degradation when classlist.properties fails to load
+- Enhanced user feedback with specific error messages for different failure scenarios
+
+### Extended Deprecated Class List
+Added more legacy/deprecated JDK classes for comprehensive migration support:
+- Legacy collections: `Observable`, `Observer`, `Hashtable`, `Dictionary`, `Properties`
+- Deprecated RMI classes: `LogStream`
+- Deprecated security classes: `javax.security.auth.Policy`, `java.security.acl.*` package
+
 ## Future Enhancements
 
 - Integration with Eclipse's deprecation warnings

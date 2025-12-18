@@ -39,9 +39,14 @@ public class OpenUpdateSearchPageAction implements IWorkbenchWindowActionDelegat
 
 	@Override
 	public void run(IAction action) {
-		if (fWindow == null || fWindow.getActivePage() == null) {
+		if (fWindow == null) {
 			beep();
-			JavaPlugin.logErrorMessage(Messages.OpenUpdateSearchPageAction_0);
+			JavaPlugin.logErrorMessage(Messages.OpenUpdateSearchPageAction_WindowNotAvailable);
+			return;
+		}
+		if (fWindow.getActivePage() == null) {
+			beep();
+			JavaPlugin.logErrorMessage(Messages.OpenUpdateSearchPageAction_PageNotAvailable);
 			return;
 		}
 		NewSearchUI.openSearchDialog(fWindow, UPDATENEEDED_SEARCH_PAGE_ID);
@@ -58,10 +63,17 @@ public class OpenUpdateSearchPageAction implements IWorkbenchWindowActionDelegat
 	}
 
 	protected void beep() {
-		IWorkbenchWindow activeWorkbenchWindow = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
-		Shell shell= activeWorkbenchWindow.getShell();
-		if (shell != null && shell.getDisplay() != null) {
-			shell.getDisplay().beep();
+		try {
+			IWorkbenchWindow activeWorkbenchWindow = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
+			if (activeWorkbenchWindow == null) {
+				return;
+			}
+			Shell shell = activeWorkbenchWindow.getShell();
+			if (shell != null && shell.getDisplay() != null) {
+				shell.getDisplay().beep();
+			}
+		} catch (Exception e) {
+			// Ignore - beep is not critical
 		}
 	}
 }
