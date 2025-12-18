@@ -1283,16 +1283,16 @@ public final class AstProcessorBuilder<V, T> {
 		return this;
 	}
 
-/**
- * Registers a visitor for YieldStatement nodes.
- *
- * @param predicate the predicate to test and process matching nodes
- * @return this builder for method chaining
- */
-public AstProcessorBuilder<V, T> onYieldStatement(BiPredicate<YieldStatement, ReferenceHolder<V, T>> predicate) {
-processor.callYieldStatementVisitor((node, holder) -> predicate.test((YieldStatement) node, holder));
-return this;
-}
+	/**
+	 * Registers a visitor for YieldStatement nodes.
+	 *
+	 * @param predicate the predicate to test and process matching nodes
+	 * @return this builder for method chaining
+	 */
+	public AstProcessorBuilder<V, T> onYieldStatement(BiPredicate<YieldStatement, ReferenceHolder<V, T>> predicate) {
+		processor.callYieldStatementVisitor((node, holder) -> predicate.test((YieldStatement) node, holder));
+		return this;
+	}
 
 	/**
 	 * Provides access to the underlying ASTProcessor for advanced configuration.
