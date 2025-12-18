@@ -201,6 +201,16 @@ Search tool for critical classes during Eclipse/Java upgrades.
 - **Repositories**: Eclipse 2025-09, Orbit, JustJ, EGit
 - **Tycho Configuration**: Version 5.0.1 with P2 repositories
 
+**Eclipse Target Platform Compilation**:
+
+The entire sandbox project, particularly the Eclipse plugins, is compiled against an Eclipse target platform defined in the `sandbox_target/eclipse.target` file. This target platform specifies:
+- Eclipse 2025-09 as the primary platform version
+- Required Eclipse features (JDT, SDK, PDE, etc.)
+- External dependencies from Eclipse Orbit
+- Additional components (EGit, JustJ, license features)
+
+The target platform ensures consistent compilation across all environments and pins specific Eclipse versions and dependencies for reproducible builds. When building the project, Maven Tycho resolves dependencies from the P2 repositories specified in the target platform rather than from Maven Central.
+
 ## Important Patterns and Practices
 
 ### Eclipse JDT Cleanup Pattern
@@ -254,7 +264,10 @@ The project aims to support building against multiple Eclipse versions for backp
 
 - Use `tycho-maven-plugin` for Eclipse builds
 - P2 repositories are defined in parent POM
-- Dependency resolution uses target platform, not Maven Central
+- **Dependency resolution uses target platform, not Maven Central**
+  - All Eclipse plugins in the sandbox project are compiled against the Eclipse target platform defined in `sandbox_target/eclipse.target`
+  - Tycho resolves dependencies from P2 repositories specified in the target platform
+  - This ensures version consistency and reproducible builds across different environments
 - Use `eclipse-plugin` packaging type
 
 ### Code Quality
