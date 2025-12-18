@@ -32,8 +32,6 @@ The `sandbox_common` module provides shared utilities, constants, and base class
 
 The module provides common utilities that are used by multiple cleanup implementations:
 - **AST manipulation helpers** (`HelperVisitor`, `ASTProcessor`, `ASTNavigationUtils`)
-  - `ASTNavigationUtils`: Methods for finding descendant nodes of specific types
-  - For parent node navigation, use Eclipse JDT's `ASTNodes.getTypedAncestor()` directly
 - **Annotation utilities** (`AnnotationUtils`)
   - Check for annotations, find annotations, remove annotations, get annotation values
 - **Naming utilities** (`NamingUtils`)
