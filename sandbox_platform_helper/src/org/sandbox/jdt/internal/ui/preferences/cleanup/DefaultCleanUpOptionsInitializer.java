@@ -22,5 +22,6 @@ public class DefaultCleanUpOptionsInitializer implements ICleanUpOptionsInitiali
 	@Override
 	public void setDefaultOptions(CleanUpOptions options) {
 		options.setOption(MYCleanUpConstants.SIMPLIFY_STATUS_CLEANUP, CleanUpOptions.FALSE);
+		options.setOption(MYCleanUpConstants.SIMPLIFY_STATUS_PRESERVE_PLUGIN_ID, CleanUpOptions.FALSE);
 	}
 }

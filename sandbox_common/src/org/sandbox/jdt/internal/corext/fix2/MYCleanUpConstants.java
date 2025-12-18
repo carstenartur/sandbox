@@ -76,6 +76,18 @@ public class MYCleanUpConstants {
 	public static final String SIMPLIFY_STATUS_CLEANUP= "cleanup.simplify_status_creation"; //$NON-NLS-1$
 
 	/**
+	 * Preserve plugin ID in Status factory method transformations.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 * <p>
+	 * Default: FALSE (plugin ID is omitted in factory methods)
+	 * 
+	 * @see CleanUpOptionsCore#TRUE
+	 * @see CleanUpOptionsCore#FALSE
+	 */
+	public static final String SIMPLIFY_STATUS_PRESERVE_PLUGIN_ID= "cleanup.simplify_status_preserve_plugin_id"; //$NON-NLS-1$
+
+	/**
 	 *
 	 */
 	public static final String XML_CLEANUP= "cleanup.xmlcleanup"; //$NON-NLS-1$

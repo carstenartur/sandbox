@@ -69,6 +69,12 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 
 	public void find(SimplifyPlatformStatusFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) throws CoreException {
+		find(fixcore, compilationUnit, operations, nodesprocessed, false);
+	}
+
+	public void find(SimplifyPlatformStatusFixCore fixcore, CompilationUnit compilationUnit,
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed,
+			boolean preservePluginId) throws CoreException {
 		try {
 			ReferenceHolder<ASTNode, Object> dataholder= new ReferenceHolder<>();
 			HelperVisitor.callClassInstanceCreationVisitor(Status.class, compilationUnit, dataholder, nodesprocessed, (visited, holder) -> {
@@ -105,7 +111,7 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 				}
 				QualifiedName severityQualifiedName= (QualifiedName) severityArg;
 				if (expectedStatusLiteral.equals(severityQualifiedName.toString())) {
-					operations.add(fixcore.rewrite(visited, holder));
+					operations.add(fixcore.rewrite(visited, holder, preservePluginId));
 					nodesprocessed.add(visited);
 					return false;
 				}
@@ -118,6 +124,12 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 
 	public void rewrite(SimplifyPlatformStatusFixCore upp, final ClassInstanceCreation visited,
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group, ReferenceHolder<ASTNode, Object> holder) {
+		rewrite(upp, visited, cuRewrite, group, holder, false);
+	}
+
+	public void rewrite(SimplifyPlatformStatusFixCore upp, final ClassInstanceCreation visited,
+			final CompilationUnitRewrite cuRewrite, TextEditGroup group, ReferenceHolder<ASTNode, Object> holder,
+			boolean preservePluginId) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
 		ImportRewrite importRewrite= cuRewrite.getImportRewrite();
@@ -132,6 +144,12 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 		
 		List<ASTNode> arguments= visited.arguments();
 		List<ASTNode> staticCallArguments= staticCall.arguments();
+		
+		// Add plugin ID if preservation is enabled (at position 1 in original 5-argument constructor)
+		if (preservePluginId) {
+			staticCallArguments.add(ASTNodes.createMoveTarget(rewrite,
+					ASTNodes.getUnparenthesedExpression(arguments.get(1))));
+		}
 		
 		// Add message argument (always at position 3 for 5-argument constructor)
 		int messagePosition= 3;

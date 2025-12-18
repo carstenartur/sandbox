@@ -14,6 +14,7 @@
 package org.sandbox.jdt.internal.ui.fix;
 
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.SIMPLIFY_STATUS_CLEANUP;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.SIMPLIFY_STATUS_PRESERVE_PLUGIN_ID;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.PlatformStatusCleanUpFix_refactor;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.PlatformStatusCleanUp_description;
 
@@ -69,8 +70,9 @@ public class SimplifyPlatformStatusCleanUpCore extends AbstractCleanUp {
 		}
 		Set<CompilationUnitRewriteOperationWithSourceRange> operations= new LinkedHashSet<>();
 		Set<ASTNode> nodesprocessed= new HashSet<>();
+		boolean preservePluginId= isEnabled(SIMPLIFY_STATUS_PRESERVE_PLUGIN_ID);
 		for (var i : computeFixSet) {
-			i.findOperations(compilationUnit, operations, nodesprocessed);
+			i.findOperations(compilationUnit, operations, nodesprocessed, preservePluginId);
 		}
 		if (operations.isEmpty()) {
 			return null;
