@@ -115,17 +115,11 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 				}
 				
 				// Handle Suite runner
-				if (classBinding != null && classBinding.isParameterizedType()) {
-					ITypeBinding[] typeArguments= classBinding.getTypeArguments();
-					if (typeArguments.length > 0) {
-						ITypeBinding actualTypeBinding= typeArguments[0];
-						if (ORG_JUNIT_SUITE.equals(actualTypeBinding.getQualifiedName())) {
-							mh.value= ORG_JUNIT_RUNWITH;
-							dataHolder.put(dataHolder.size(), mh);
-							operations.add(fixcore.rewrite(dataHolder));
-							return false;
-						}
-					}
+				if (ORG_JUNIT_SUITE.equals(runnerQualifiedName) || "Suite".equals(runnerSimpleName)) {
+					mh.value= ORG_JUNIT_RUNWITH;
+					dataHolder.put(dataHolder.size(), mh);
+					operations.add(fixcore.rewrite(dataHolder));
+					return false;
 				}
 				
 				// Handle Mockito runners - check both qualified and simple names
