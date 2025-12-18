@@ -90,6 +90,15 @@ public enum SimplifyPlatformStatusFixCore {
 		return rewrite(visited, holder, false);
 	}
 
+	/**
+	 * Creates a rewrite operation for the given Status or MultiStatus creation.
+	 *
+	 * @param visited the ClassInstanceCreation node to rewrite
+	 * @param holder reference holder for additional context
+	 * @param preservePluginId if true, preserves the plugin ID parameter in the transformation;
+	 *                         if false (default), omits the plugin ID
+	 * @return a CompilationUnitRewriteOperation for the transformation
+	 */
 	public CompilationUnitRewriteOperationWithSourceRange rewrite(final ClassInstanceCreation visited,
 			ReferenceHolder<ASTNode, Object> holder, boolean preservePluginId) {
 		return new CompilationUnitRewriteOperationWithSourceRange() {
