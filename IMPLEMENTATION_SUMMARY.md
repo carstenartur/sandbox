@@ -48,12 +48,11 @@ public static final String METHOD_GET_PROPERTY= "getProperty";
 **File**: `ASTNavigationUtils.java` (existing file, enhanced)
 
 **New Methods**:
-1. `findParentOfType(ASTNode node, Class<T> type)` → Generic parent finder
-2. `findChildrenOfType(ASTNode node, Class<T> type)` → Generic children finder
-3. `getEnclosingMethod(ASTNode node)` → Finds enclosing method
-4. `getEnclosingClass(ASTNode node)` → Finds enclosing class
+1. `findChildrenOfType(ASTNode node, Class<T> type)` → Finds all descendants of a type
 
-**Note**: File already existed with many utilities. New methods complement existing functionality.
+**Note**: Removed duplicate wrapper methods (`findParentOfType`, `getEnclosingMethod`, `getEnclosingClass`) that duplicated Eclipse JDT's `ASTNodes.getTypedAncestor()`. Users should use the standard JDT API directly for parent node navigation.
+
+**File already existed** with many utilities. New method complements existing functionality without duplicating standard JDT UI API.
 
 ### 5. Documentation Improvements ✅
 
@@ -129,14 +128,16 @@ Since creating a full `sandbox_common_test` module requires significant infrastr
 - `sandbox_jface_cleanup`
 - And others...
 
+**Note**: Wrapper methods that duplicated Eclipse JDT's standard `ASTNodes` API were removed to avoid duplication. Users should use `ASTNodes.getTypedAncestor()` directly for parent node navigation.
+
 ## Statistics
 
 **Files Modified**: 7 Java files
 **Files Updated**: 2 documentation files  
 **Files Created**: 1 test guide
-**Lines Added**: ~600 lines of code + documentation
+**Lines Added**: ~500 lines of code + documentation
 **Breaking Changes**: 0
-**New Public APIs**: 11 new public methods
+**New Public APIs**: 8 new public methods (removed 3 duplicate wrappers)
 
 ## Next Steps (Optional)
 
