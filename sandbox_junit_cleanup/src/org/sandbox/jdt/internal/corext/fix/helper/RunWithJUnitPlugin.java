@@ -107,7 +107,7 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 				
 				// Handle Suite runner
 				if (ORG_JUNIT_SUITE.equals(runnerQualifiedName)) {
-					mh.value= ORG_JUNIT_SUITE;
+					mh.value= ORG_JUNIT_RUNWITH;
 					dataHolder.put(dataHolder.size(), mh);
 					operations.add(fixcore.rewrite(dataHolder));
 					return false;
