@@ -234,8 +234,8 @@ public class Java9CleanUpTest {
 		String expected;
 
 		PlatformStatusPatternsWithPluginId(String given, String expected) {
-			this.given=given;
-			this.expected=expected;
+			this.given = given;
+			this.expected = expected;
 		}
 	}
 
@@ -296,8 +296,8 @@ public class Java9CleanUpTest {
 		String expected;
 
 		MultiStatusPatterns(String given, String expected) {
-			this.given=given;
-			this.expected=expected;
+			this.given = given;
+			this.expected = expected;
 		}
 	}
 

@@ -90,7 +90,7 @@ public enum SimplifyPlatformStatusFixCore {
 		return rewrite(visited, holder, false);
 	}
 
-	public CompilationUnitRewriteOperationWithSourceRange rewrite(final ClassInstanceCreation visited, 
+	public CompilationUnitRewriteOperationWithSourceRange rewrite(final ClassInstanceCreation visited,
 			ReferenceHolder<ASTNode, Object> holder, boolean preservePluginId) {
 		return new CompilationUnitRewriteOperationWithSourceRange() {
 			@Override
