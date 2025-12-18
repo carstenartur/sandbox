@@ -16,10 +16,34 @@
 - [ ] Extract additional shared utilities from individual plugins
 - [ ] Create dedicated test module for common utilities
 - [ ] Enhance documentation of available utilities
+- [ ] Monitor Eclipse JDT UI for new AST node types and update helper APIs accordingly
 
 ## Priority Tasks
 
-### 1. Audit for Additional Shared Code
+### 1. Monitor Eclipse JDT AST Changes
+**Priority**: Medium (Ongoing Maintenance)  
+**Effort**: 1-2 hours per Eclipse release
+
+Regularly check Eclipse JDT UI releases for new AST node types:
+- Review Eclipse JDT UI release notes for AST changes
+- Check for new node types in `org.eclipse.jdt.core.dom` package
+- Update helper visitor APIs (`HelperVisitor`, `ASTProcessor`, etc.) to support new nodes
+- Ensure utilities like `ASTNavigationUtils` handle all current node types
+
+**Process**:
+1. When new Eclipse version is released, check JDT UI changelog
+2. Identify new AST node types or modifications
+3. Update `VisitorEnum` if new visitor methods are needed
+4. Extend `HelperVisitor` and related APIs to support new nodes
+5. Test with sample code using new AST features
+6. Update documentation
+
+**Benefits**:
+- Keeps utilities current with Eclipse JDT
+- Prevents missing node type support
+- Ensures complete AST coverage
+
+### 2. Audit for Additional Shared Code
 **Priority**: Medium  
 **Effort**: 4-6 hours
 
@@ -34,7 +58,7 @@ Scan all sandbox plugins for duplicated utility code that could be centralized i
 - Improves maintainability
 - Easier to port to Eclipse JDT
 
-### 2. Create Dedicated Test Module
+### 3. Create Dedicated Test Module
 **Priority**: Low  
 **Effort**: 2-3 hours
 
@@ -45,7 +69,7 @@ Currently, shared utilities lack dedicated unit tests. Consider creating `sandbo
 - Test any shared utility methods
 - Follow existing test patterns from other modules
 
-### 3. Document Available Utilities
+### 4. Document Available Utilities
 **Priority**: Medium  
 **Effort**: 2-3 hours
 

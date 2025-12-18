@@ -31,10 +31,14 @@ The `sandbox_common` module provides shared utilities, constants, and base class
 ### Shared Utilities
 
 The module provides common utilities that are used by multiple cleanup implementations:
-- AST manipulation helpers
-- Type resolution utilities
-- Import management functions
-- Code transformation helpers
+- **AST manipulation helpers** (`HelperVisitor`, `ASTProcessor`, `ASTNavigationUtils`)
+- **Type resolution utilities** (`TypeCheckingUtils`)
+- **Import management functions**
+- **Code transformation helpers**
+- **Annotation utilities** (`AnnotationUtils`)
+- **Naming utilities** (`NamingUtils`)
+
+**Important**: When implementing AST operations using these APIs, regularly check if new AST nodes have been added in Eclipse JDT UI. If new node types are introduced in JDT, the helper APIs in this module should be extended to support them. This ensures the utilities remain complete and up-to-date with the latest Eclipse JDT capabilities.
 
 ## Package Structure
 
