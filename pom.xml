@@ -25,6 +25,7 @@
 		<module>sandbox_target</module>
 		<module>sandbox_cleanup_application</module>
 		<module>sandbox_cleanup_application_feature</module>
+		<module>sandbox_cleanup_application_test</module>
 		<module>sandbox_common</module>
 		<module>sandbox_test_commons</module>
 		<module>sandbox_encoding_quickfix</module>
