@@ -283,17 +283,19 @@ This project follows **GitHub best practices** for code quality:
 
 All plugin directories (e.g., `sandbox_encoding_quickfix`, `sandbox_junit_cleanup`) **MUST** contain two mandatory documentation files:
 
-1. **`architecture.md`**: Design and architecture overview
+1. **`architecture.md`** (or `ARCHITECTURE.md`): Design and architecture overview
    - Describes the plugin's purpose, structure, and key components
    - Documents design patterns and implementation approaches
    - Explains integration points with Eclipse JDT
    - Should be read before making changes to understand the codebase
 
-2. **`todo.md`**: Open tasks and follow-ups
+2. **`todo.md`** (or `TODO.md`): Open tasks and follow-ups
    - Lists pending features, known issues, and planned improvements
    - Tracks implementation milestones and progress
    - Documents future enhancements and technical debt
    - Should be updated when new tasks are identified or completed
+
+**Note**: File naming may use either lowercase (`architecture.md`, `todo.md`) or uppercase (`ARCHITECTURE.md`, `TODO.md`). Both are acceptable, but consistency within each plugin is preferred.
 
 **Pull Request Requirements**:
 - When touching plugin code, PRs **MUST** mention that these files were reviewed and updated if necessary
