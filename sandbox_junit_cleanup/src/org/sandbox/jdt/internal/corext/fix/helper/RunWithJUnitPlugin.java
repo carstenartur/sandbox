@@ -96,11 +96,16 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 						if (typeName != null && typeName.contains(".")) {
 							runnerQualifiedName = typeName;
 						}
-						// If it's just a simple name, we can't safely migrate it
+						// Special case: Suite is a JUnit library class, so we can safely migrate it
+						// even with just the simple name (unlike third-party frameworks)
+						else if ("Suite".equals(typeName)) {
+							runnerQualifiedName = ORG_JUNIT_SUITE;
+						}
+						// For other simple names, we can't safely migrate to avoid false positives
 					}
 				}
 				
-				// Handle Suite runner - only check qualified name to avoid false positives
+				// Handle Suite runner
 				if (ORG_JUNIT_SUITE.equals(runnerQualifiedName)) {
 					mh.value= ORG_JUNIT_RUNWITH;
 					dataHolder.put(dataHolder.size(), mh);
