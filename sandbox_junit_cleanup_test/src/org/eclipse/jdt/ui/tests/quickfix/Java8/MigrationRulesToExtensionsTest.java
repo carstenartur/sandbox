@@ -258,6 +258,79 @@ public class MigrationRulesToExtensionsTest {
 						File file = Files.createFile(folder.resolve("test.txt")).toFile();
 					}
 				}
+				"""),
+		TemporaryFolderWithNewFolder(
+				"""
+				package test;
+				import java.io.File;
+				import org.junit.Rule;
+				import org.junit.Test;
+				import org.junit.rules.TemporaryFolder;
+				
+				public class MyTest {
+					@Rule
+					public TemporaryFolder tempFolder = new TemporaryFolder();
+					
+					@Test
+					public void test() throws Exception {
+						File dir = tempFolder.newFolder("subdir");
+					}
+				}
+				""",
+				"""
+				package test;
+				import java.io.File;
+				import java.nio.file.Files;
+				import java.nio.file.Path;
+				
+				import org.junit.jupiter.api.Test;
+				import org.junit.jupiter.api.io.TempDir;
+				
+				public class MyTest {
+					@TempDir
+					Path tempFolder;
+					
+					@Test
+					public void test() throws Exception {
+						File dir = Files.createDirectories(tempFolder.resolve("subdir")).toFile();
+					}
+				}
+				"""),
+		TemporaryFolderWithGetRoot(
+				"""
+				package test;
+				import java.io.File;
+				import org.junit.Rule;
+				import org.junit.Test;
+				import org.junit.rules.TemporaryFolder;
+				
+				public class MyTest {
+					@Rule
+					public TemporaryFolder tmpDir = new TemporaryFolder();
+					
+					@Test
+					public void test() {
+						File root = tmpDir.getRoot();
+					}
+				}
+				""",
+				"""
+				package test;
+				import java.io.File;
+				import java.nio.file.Path;
+				
+				import org.junit.jupiter.api.Test;
+				import org.junit.jupiter.api.io.TempDir;
+				
+				public class MyTest {
+					@TempDir
+					Path tmpDir;
+					
+					@Test
+					public void test() {
+						File root = tmpDir.toFile();
+					}
+				}
 				""");
 
 		final String given;
