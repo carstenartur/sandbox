@@ -46,18 +46,27 @@ Migrate timeout specifications:
 - Handle TimeUnit conversions
 
 ### 3. Rule Migration Framework
-**Priority**: High  
-**Effort**: 12-15 hours
+**Priority**: Medium  
+**Effort**: 8-10 hours
 
-Generalize ExternalResourceRefactorer to handle other JUnit 4 rules:
-- `TemporaryFolder` → `@TempDir`
-- `ExpectedException` → `assertThrows()`
+Generalize and complete the rule migration framework for remaining JUnit 4 rules:
+- ✅ `TemporaryFolder` → `@TempDir` (implemented)
+- ✅ `TestName` → `TestInfo` parameter (implemented)
+- ✅ `ExternalResource` → Extension callbacks (implemented)
+- ✅ `ExpectedException` → `assertThrows()` (implemented)
 - `ErrorCollector` → multiple assertions
+- `Verifier` → custom assertions
 - Custom rules → extension implementations
 
 **Benefits**:
 - Complete JUnit 4 to 5 migration capability
 - Reduces manual migration effort significantly
+
+**Recent Progress**:
+- Added `RuleExpectedExceptionJUnitPlugin` for migrating ExpectedException to assertThrows
+- Handles expect() and expectMessage() patterns
+- Wraps code in lambda expressions for assertThrows
+- Validates exception messages using assertTrue with contains()
 
 ### 4. Enhanced Reporting
 **Priority**: Low  

@@ -281,6 +281,19 @@ Each plugin class extends `AbstractTool` and specializes for a specific JUnit mi
 - Orchestrates `TestNameRefactorer` for TestName rule migration
 - Manages method signature updates across test hierarchies
 
+### RuleExpectedExceptionJUnitPlugin
+- Migrates JUnit 4 `ExpectedException` @Rule to JUnit 5 `assertThrows`
+- Detects `thrown.expect()` and `thrown.expectMessage()` calls
+- Wraps test code in lambda expressions for `assertThrows`
+- Handles exception message validation using `assertTrue` with `contains()`
+- Removes the @Rule field declaration
+- Updates imports from `org.junit.rules.ExpectedException` to `org.junit.jupiter.api.Assertions`
+
+### RuleTemporaryFolderJUnitPlugin
+- Migrates JUnit 4 `TemporaryFolder` @Rule to JUnit 5 `@TempDir`
+- Updates file creation methods to use Path API
+- Transforms `tempFolder.newFile()` to `tempFolder.resolve().toFile()`
+
 ## Data Flow
 
 ### Typical Transformation Flow
