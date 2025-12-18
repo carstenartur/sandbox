@@ -325,7 +325,7 @@ public class Java9CleanUpTest {
 		String given;
 
 		MultiStatusPatternsDontTouch(String given) {
-			this.given=given;
+			this.given = given;
 		}
 	}
 
