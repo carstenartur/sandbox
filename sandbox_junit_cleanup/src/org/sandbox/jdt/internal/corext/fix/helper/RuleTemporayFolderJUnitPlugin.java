@@ -83,13 +83,17 @@ public class RuleTemporayFolderJUnitPlugin extends AbstractTool<ReferenceHolder<
 		rewriter.remove(field, group);
 		TypeDeclaration parentClass= ASTNodes.getParent(field, TypeDeclaration.class);
 
+		// Add JUnit 5 imports and remove JUnit 4 imports
 		importRewriter.addImport(ORG_JUNIT_JUPITER_API_IO_TEMP_DIR);
+		importRewriter.addImport("java.nio.file.Path");
+		importRewriter.addImport("java.nio.file.Files");
 		importRewriter.removeImport(ORG_JUNIT_RULE);
 		importRewriter.removeImport(ORG_JUNIT_RULES_TEMPORARY_FOLDER);
 
 		VariableDeclarationFragment originalFragment= (VariableDeclarationFragment) field.fragments().get(0);
 		String originalName= originalFragment.getName().getIdentifier();
 
+		// Create new field: @TempDir Path fieldName;
 		VariableDeclarationFragment tempDirFragment= ast.newVariableDeclarationFragment();
 		tempDirFragment.setName(ast.newSimpleName(originalName));
 
@@ -104,22 +108,74 @@ public class RuleTemporayFolderJUnitPlugin extends AbstractTool<ReferenceHolder<
 		rewriter.getListRewrite(parentClass, TypeDeclaration.BODY_DECLARATIONS_PROPERTY).insertFirst(tempDirField,
 				group);
 
+		// Transform method invocations
 		for (MethodDeclaration method : parentClass.getMethods()) {
 			method.accept(new ASTVisitor() {
 				@Override
 				public boolean visit(MethodInvocation node) {
-					if (node.getName().getIdentifier().equals("newFile")) {
+					if (node.getExpression() == null) {
+						return super.visit(node);
+					}
+					
+					String expressionName = node.getExpression().toString();
+					if (!originalName.equals(expressionName)) {
+						return super.visit(node);
+					}
+
+					String methodName = node.getName().getIdentifier();
+					
+					// Handle newFile() and newFile(String)
+					if ("newFile".equals(methodName)) {
+						// Files.createFile(tempDir.resolve(...)).toFile()
+						MethodInvocation createFileInvocation= ast.newMethodInvocation();
+						createFileInvocation.setExpression(ast.newName("Files"));
+						createFileInvocation.setName(ast.newSimpleName("createFile"));
+						
 						MethodInvocation resolveInvocation= ast.newMethodInvocation();
-						resolveInvocation.setExpression(ast.newSimpleName("tempFolder"));
+						resolveInvocation.setExpression(ast.newSimpleName(originalName));
 						resolveInvocation.setName(ast.newSimpleName("resolve"));
 						resolveInvocation.arguments().addAll(ASTNode.copySubtrees(ast, node.arguments()));
-
+						
+						createFileInvocation.arguments().add(resolveInvocation);
+						
 						MethodInvocation toFileInvocation= ast.newMethodInvocation();
-						toFileInvocation.setExpression(resolveInvocation);
+						toFileInvocation.setExpression(createFileInvocation);
 						toFileInvocation.setName(ast.newSimpleName("toFile"));
-
+						
 						rewriter.replace(node, toFileInvocation, group);
 					}
+					// Handle newFolder() and newFolder(String...)
+					else if ("newFolder".equals(methodName)) {
+						// Files.createDirectories(tempDir.resolve(...)).toFile()
+						MethodInvocation createDirInvocation= ast.newMethodInvocation();
+						createDirInvocation.setExpression(ast.newName("Files"));
+						
+						// Use createDirectories for varargs support
+						createDirInvocation.setName(ast.newSimpleName("createDirectories"));
+						
+						MethodInvocation resolveInvocation= ast.newMethodInvocation();
+						resolveInvocation.setExpression(ast.newSimpleName(originalName));
+						resolveInvocation.setName(ast.newSimpleName("resolve"));
+						resolveInvocation.arguments().addAll(ASTNode.copySubtrees(ast, node.arguments()));
+						
+						createDirInvocation.arguments().add(resolveInvocation);
+						
+						MethodInvocation toFileInvocation= ast.newMethodInvocation();
+						toFileInvocation.setExpression(createDirInvocation);
+						toFileInvocation.setName(ast.newSimpleName("toFile"));
+						
+						rewriter.replace(node, toFileInvocation, group);
+					}
+					// Handle getRoot()
+					else if ("getRoot".equals(methodName)) {
+						// tempDir.toFile()
+						MethodInvocation toFileInvocation= ast.newMethodInvocation();
+						toFileInvocation.setExpression(ast.newSimpleName(originalName));
+						toFileInvocation.setName(ast.newSimpleName("toFile"));
+						
+						rewriter.replace(node, toFileInvocation, group);
+					}
+					
 					return super.visit(node);
 				}
 			});
@@ -135,7 +191,7 @@ public class RuleTemporayFolderJUnitPlugin extends AbstractTool<ReferenceHolder<
 
 						@Test
 						public void test3() throws IOException{
-							File newFile = tempFolder.resolve("myfile.txt").toFile();
+							File newFile = Files.createFile(tempFolder.resolve("myfile.txt")).toFile();
 						}
 					"""; //$NON-NLS-1$
 		}
