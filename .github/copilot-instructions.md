@@ -201,6 +201,16 @@ Search tool for critical classes during Eclipse/Java upgrades.
 - **Repositories**: Eclipse 2025-09, Orbit, JustJ, EGit
 - **Tycho Configuration**: Version 5.0.1 with P2 repositories
 
+**Eclipse Target Platform Compilation**:
+
+The entire sandbox project, particularly the Eclipse plugins, is compiled against an Eclipse target platform defined in the `sandbox_target/eclipse.target` file. This target platform specifies:
+- Eclipse 2025-09 as the primary platform version
+- Required Eclipse features (JDT, SDK, PDE, etc.)
+- External dependencies from Eclipse Orbit
+- Additional components (EGit, JustJ, license features)
+
+The target platform ensures consistent compilation across all environments and pins specific Eclipse versions and dependencies for reproducible builds. When building the project, Maven Tycho resolves dependencies from the P2 repositories specified in the target platform rather than from Maven Central.
+
 ## Important Patterns and Practices
 
 ### Eclipse JDT Cleanup Pattern
@@ -254,7 +264,10 @@ The project aims to support building against multiple Eclipse versions for backp
 
 - Use `tycho-maven-plugin` for Eclipse builds
 - P2 repositories are defined in parent POM
-- Dependency resolution uses target platform, not Maven Central
+- **Dependency resolution uses target platform, not Maven Central**
+  - All Eclipse plugins in the sandbox project are compiled against the Eclipse target platform defined in `sandbox_target/eclipse.target`
+  - Tycho resolves dependencies from P2 repositories specified in the target platform
+  - This ensures version consistency and reproducible builds across different environments
 - Use `eclipse-plugin` packaging type
 
 ### Code Quality
@@ -273,19 +286,49 @@ This project follows **GitHub best practices** for code quality:
 - Ensure all security issues are addressed before merging
 - Keep coverage high to validate cleanup logic correctness
 
+## Branch Conventions
+
+- **Default Branch**: `main` - All new development should be based on and target the `main` branch
+- **Branch Naming**: Use descriptive names (e.g., `feature/new-cleanup`, `fix/encoding-issue`)
+- **Multi-Version Support**: See the Multi-Version Support section for information on backporting to release-specific branches
+
+## Plugin Documentation Requirements
+
+All plugin directories (e.g., `sandbox_encoding_quickfix`, `sandbox_junit_cleanup`) **MUST** contain two mandatory documentation files:
+
+1. **`architecture.md`** (or `ARCHITECTURE.md`): Design and architecture overview
+   - Describes the plugin's purpose, structure, and key components
+   - Documents design patterns and implementation approaches
+   - Explains integration points with Eclipse JDT
+   - Should be read before making changes to understand the codebase
+
+2. **`todo.md`** (or `TODO.md`): Open tasks and follow-ups
+   - Lists pending features, known issues, and planned improvements
+   - Tracks implementation milestones and progress
+   - Documents future enhancements and technical debt
+   - Should be updated when new tasks are identified or completed
+
+**Note**: File naming may use either lowercase (`architecture.md`, `todo.md`) or uppercase (`ARCHITECTURE.md`, `TODO.md`). Both are acceptable, but consistency within each plugin is preferred.
+
+**Pull Request Requirements**:
+- When touching plugin code, PRs **MUST** mention that these files were reviewed and updated if necessary
+- New plugins **MUST** include both files before being merged
+- Significant architectural changes **MUST** update `architecture.md`
+- New features or identified issues **MUST** update `todo.md`
+
 ## Development Workflow
 
-1. **Branch Naming**: Use descriptive names (e.g., `feature/new-cleanup`, `fix/encoding-issue`)
-2. **Commits**: Write clear commit messages explaining the change
-3. **Testing**: Always run tests before committing
-4. **CI**: All checks must pass (Maven build, SpotBugs, CodeQL, Codacy)
-5. **Pull Requests**: 
+1. **Commits**: Write clear commit messages explaining the change
+2. **Testing**: Always run tests before committing
+3. **CI**: All checks must pass (Maven build, SpotBugs, CodeQL, Codacy)
+4. **Pull Requests**: 
    - **Keep PRs small and focused**: Each PR should address a single aspect or concern
    - **Avoid mixing changes**: Don't combine formatting changes with logic changes, or multiple unrelated features
    - **Split large changes**: If many changes are needed, split them into multiple PRs that belong to the same issue
    - **Goal**: Make changes easy to understand and review - large diffs mixing different concerns are difficult to review
    - Include description of changes and test results
-   - For backporting features, PRs may need to target multiple branches (see Multi-Version Support below)
+   - For backporting features, PRs may need to target multiple branches (see Multi-Version Support above)
+   - **Plugin changes**: Confirm that `architecture.md` and `todo.md` were reviewed and updated as needed
 
 ## Common Commands
 
