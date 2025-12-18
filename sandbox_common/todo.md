@@ -2,19 +2,29 @@
 
 ## Status Summary
 
-**Current State**: Stable foundation module providing shared constants and utilities
+**Current State**: Enhanced foundation module with improved utilities and documentation
 
 ### Completed
 - ✅ `MYCleanUpConstants` - Central repository for cleanup constants
 - ✅ Package structure mirrors Eclipse JDT for easy porting
 - ✅ Integration with all sandbox plugins
+- ✅ **NEW**: All constants in `LibStandardNames` are now public with comprehensive Javadoc
+- ✅ **NEW**: Extended `AnnotationUtils` with `findAnnotation()`, `removeAnnotation()`, and `getAnnotationValue()` methods
+- ✅ **NEW**: Extended `NamingUtils` with `toUpperCamelCase()`, `toLowerCamelCase()`, `toSnakeCase()`, and `isValidJavaIdentifier()` methods
+- ✅ **NEW**: Extended `ASTNavigationUtils` with generic `findParentOfType()`, `findChildrenOfType()`, `getEnclosingMethod()`, and `getEnclosingClass()` methods
+- ✅ **NEW**: Comprehensive Javadoc for `ReferenceHolder`, `ASTProcessor`, and `VisitorEnum`
 
 ### In Progress
 - None currently
 
 ### Pending
+- [ ] Create dedicated test module (`sandbox_common_test`) for unit testing utilities
+- [ ] Add unit tests for `AnnotationUtils` methods
+- [ ] Add unit tests for `NamingUtils` methods
+- [ ] Add unit tests for `ASTNavigationUtils` methods
+- [ ] Add unit tests for `LibStandardNames` constant integrity
+- [ ] Add unit tests for `ReferenceHolder` functionality
 - [ ] Extract additional shared utilities from individual plugins
-- [ ] Create dedicated test module for common utilities
 - [ ] Enhance documentation of available utilities
 - [ ] Monitor Eclipse JDT UI for new AST node types and update helper APIs accordingly
 
