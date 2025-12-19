@@ -77,20 +77,22 @@ public class SchemaTransformationUtils {
 			// Perform transformation
 			StreamSource source = new StreamSource(schemaPath.toFile());
 			Path tempOutput = Files.createTempFile("formatted-schema", ".xml");
-			StreamResult result = new StreamResult(tempOutput.toFile());
+			
+			try {
+				StreamResult result = new StreamResult(tempOutput.toFile());
+				transformer.transform(source, result);
 
-			transformer.transform(source, result);
-
-			// Read transformed content
-			String transformed = Files.readString(tempOutput, StandardCharsets.UTF_8);
-			
-			// Post-process: normalize whitespace and convert leading spaces to tabs
-			transformed = normalizeWhitespace(transformed);
-			
-			// Clean up temp file
-			Files.deleteIfExists(tempOutput);
-			
-			return transformed;
+				// Read transformed content
+				String transformed = Files.readString(tempOutput, StandardCharsets.UTF_8);
+				
+				// Post-process: normalize whitespace and convert leading spaces to tabs
+				transformed = normalizeWhitespace(transformed);
+				
+				return transformed;
+			} finally {
+				// Ensure temp file is always deleted
+				Files.deleteIfExists(tempOutput);
+			}
 		}
 	}
 	
@@ -99,19 +101,21 @@ public class SchemaTransformationUtils {
 	 * - Reduce excessive empty lines (max 2 consecutive empty lines)
 	 * - Convert leading 4-space indentation to tabs (not inside text nodes)
 	 * - Preserve comments and content
+	 * - Preserve original line ending style (CRLF vs LF)
 	 * 
 	 * @param content the XML content to normalize
 	 * @return normalized content
 	 */
 	private static String normalizeWhitespace(String content) {
-		// Reduce excessive empty lines - keep max 2 consecutive empty lines
-		content = content.replaceAll("(\r?\n){3,}", "\n\n");
+		// Reduce excessive empty lines - keep max 2 consecutive empty lines,
+		// preserving the original line ending style (LF vs CRLF)
+		content = content.replaceAll("(\\r?\\n){3,}", "$1$1");
 		
 		// Convert leading 4 spaces to tabs (only at line start, not in text content)
 		// This pattern matches lines that start with spaces (after optional newline)
 		Pattern leadingSpaces = Pattern.compile("^( {4})+", Pattern.MULTILINE);
 		Matcher matcher = leadingSpaces.matcher(content);
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 		
 		while (matcher.find()) {
 			String spaces = matcher.group();

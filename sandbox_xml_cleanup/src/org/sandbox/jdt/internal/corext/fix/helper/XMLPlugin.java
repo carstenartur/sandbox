@@ -42,6 +42,7 @@ import org.sandbox.jdt.internal.corext.fix.XMLCleanUpFixCore;
 public class XMLPlugin extends AbstractTool<XMLCandidateHit> {
 
 	private static final ILog LOG = Platform.getLog(XMLPlugin.class);
+	private static final String PLUGIN_ID = "org.sandbox.jdt.internal.corext.fix.helper";
 	
 	// PDE-relevant file names
 	private static final Set<String> PDE_FILE_NAMES = Set.of(
@@ -75,6 +76,9 @@ public class XMLPlugin extends AbstractTool<XMLCandidateHit> {
 	public void find(XMLCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesProcessed,
 			boolean createForOnlyIfVarUsed) {
+		// Clear cache at start of each cleanup run to avoid stale file references
+		processedFiles.clear();
+		
 		try {
 			// Get the resource associated with the compilation unit
 			IResource resource = compilationUnit.getJavaElement().getResource();
@@ -94,7 +98,7 @@ public class XMLPlugin extends AbstractTool<XMLCandidateHit> {
 						try {
 							processFile(fixcore, file, operations, compilationUnit);
 						} catch (Exception e) {
-							LOG.log(new Status(IStatus.ERROR, "org.sandbox.jdt.internal.corext.fix.helper", 
+							LOG.log(new Status(IStatus.ERROR, PLUGIN_ID, 
 								"Error processing file: " + file.getName(), e));
 						}
 					}
@@ -103,7 +107,7 @@ public class XMLPlugin extends AbstractTool<XMLCandidateHit> {
 			});
 
 		} catch (CoreException e) {
-			LOG.log(new Status(IStatus.ERROR, "org.sandbox.jdt.internal.corext.fix.helper", 
+			LOG.log(new Status(IStatus.ERROR, PLUGIN_ID, 
 				"Error during XML cleanup", e));
 		}
 	}
@@ -207,7 +211,7 @@ public class XMLPlugin extends AbstractTool<XMLCandidateHit> {
 			// Mark file as processed
 			processedFiles.add(filePath);
 			
-			LOG.log(new Status(IStatus.INFO, "org.sandbox.jdt.internal.corext.fix.helper",
+			LOG.log(new Status(IStatus.INFO, PLUGIN_ID,
 				"Queued transformation for: " + file.getName()));
 		}
 	}
@@ -217,7 +221,7 @@ public class XMLPlugin extends AbstractTool<XMLCandidateHit> {
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
 		
 		if (hit.file == null || hit.transformedContent == null) {
-			LOG.log(new Status(IStatus.WARNING, "org.sandbox.jdt.internal.corext.fix.helper",
+			LOG.log(new Status(IStatus.WARNING, PLUGIN_ID,
 				"Invalid XMLCandidateHit: missing file or transformed content"));
 			return;
 		}
@@ -233,11 +237,11 @@ public class XMLPlugin extends AbstractTool<XMLCandidateHit> {
 			// Refresh the resource to sync with filesystem
 			hit.file.refreshLocal(IResource.DEPTH_ZERO, null);
 			
-			LOG.log(new Status(IStatus.INFO, "org.sandbox.jdt.internal.corext.fix.helper",
+			LOG.log(new Status(IStatus.INFO, PLUGIN_ID,
 				"Applied transformation to: " + hit.file.getName()));
 			
 		} catch (CoreException e) {
-			LOG.log(new Status(IStatus.ERROR, "org.sandbox.jdt.internal.corext.fix.helper",
+			LOG.log(new Status(IStatus.ERROR, PLUGIN_ID,
 				"Failed to write transformed content to: " + hit.file.getName(), e));
 		}
 	}

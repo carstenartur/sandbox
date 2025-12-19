@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2024 Carsten Hammer.
+ * Copyright (c) 2025 Carsten Hammer.
  *
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
@@ -161,6 +161,8 @@ public class XMLCleanupTransformationTest {
 
 	/**
 	 * Test that excessive empty lines are reduced.
+	 * The normalization replaces 3 or more line breaks with 2 line breaks,
+	 * which means max 1 empty line between content lines.
 	 */
 	@Test
 	public void testEmptyLineReduction() throws Exception {
@@ -184,7 +186,8 @@ public class XMLCleanupTransformationTest {
 			
 			String transformed = SchemaTransformationUtils.transform(tempFile, false);
 			
-			// Should not have more than 2 consecutive empty lines (3+ newlines in a row)
+			// The pattern (\r?\n){3,} matches 3 or more line breaks and replaces with $1$1 (2 line breaks)
+			// This means we should have at most 2 consecutive newlines (which equals 1 empty line)
 			// Count consecutive newlines using a simple check
 			int maxConsecutiveNewlines = 0;
 			int currentConsecutive = 0;
@@ -198,7 +201,7 @@ public class XMLCleanupTransformationTest {
 			}
 			
 			assertTrue(maxConsecutiveNewlines <= 2,
-				"Should not have more than 2 consecutive newlines, found: " + maxConsecutiveNewlines);
+				"Should not have more than 2 consecutive newlines (1 empty line), found: " + maxConsecutiveNewlines);
 			
 		} finally {
 			Files.deleteIfExists(tempFile);

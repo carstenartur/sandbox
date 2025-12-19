@@ -28,13 +28,14 @@ import org.eclipse.ui.IMarkerResolutionGenerator2;
 public class ExsdMarkerResolutionGenerator implements IMarkerResolutionGenerator2 {
 
 	private static final ILog LOG = Platform.getLog(ExsdMarkerResolutionGenerator.class);
+	private static final String PLUGIN_ID = "org.sandbox.jdt.internal.corext.fix.helper";
 	
 	@Override
 	public boolean hasResolutions(IMarker marker) {
 		try {
 			return "my.exsd.cleanup.marker".equals(marker.getType());
 		} catch (CoreException e) {
-			LOG.log(new Status(IStatus.ERROR, "org.sandbox.jdt.internal.corext.fix.helper",
+			LOG.log(new Status(IStatus.ERROR, PLUGIN_ID,
 				"Error checking marker type", e));
 		}
 		return false;

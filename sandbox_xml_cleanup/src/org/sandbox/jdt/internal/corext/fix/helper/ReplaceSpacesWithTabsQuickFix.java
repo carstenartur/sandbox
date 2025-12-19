@@ -34,6 +34,7 @@ import org.eclipse.ui.IMarkerResolution;
 public class ReplaceSpacesWithTabsQuickFix implements IMarkerResolution {
 	
 	private static final ILog LOG = Platform.getLog(ReplaceSpacesWithTabsQuickFix.class);
+	private static final String PLUGIN_ID = "org.sandbox.jdt.internal.corext.fix.helper";
 	
 	@Override
 	public String getLabel() {
@@ -45,7 +46,7 @@ public class ReplaceSpacesWithTabsQuickFix implements IMarkerResolution {
 		try {
 			IResource resource = marker.getResource();
 			if (!(resource instanceof IFile)) {
-				LOG.log(new Status(IStatus.WARNING, "org.sandbox.jdt.internal.corext.fix.helper",
+				LOG.log(new Status(IStatus.WARNING, PLUGIN_ID,
 					"Marker resource is not a file: " + resource));
 				return;
 			}
@@ -56,6 +57,12 @@ public class ReplaceSpacesWithTabsQuickFix implements IMarkerResolution {
 			String content;
 			try (InputStream is = file.getContents()) {
 				content = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+			}
+
+			// Detect original line ending style
+			String lineEnding = "\n";
+			if (content.contains("\r\n")) {
+				lineEnding = "\r\n";
 			}
 
 			// Replace leading 4 spaces with tabs (line by line to avoid replacing inline spaces)
@@ -85,7 +92,7 @@ public class ReplaceSpacesWithTabsQuickFix implements IMarkerResolution {
 				result.append(line.substring(leadingSpaces));
 				
 				if (i < lines.length - 1) {
-					result.append("\n");
+					result.append(lineEnding);
 				}
 			}
 
@@ -100,14 +107,14 @@ public class ReplaceSpacesWithTabsQuickFix implements IMarkerResolution {
 			// Delete marker
 			marker.delete();
 			
-			LOG.log(new Status(IStatus.INFO, "org.sandbox.jdt.internal.corext.fix.helper",
+			LOG.log(new Status(IStatus.INFO, PLUGIN_ID,
 				"Replaced leading spaces with tabs in: " + file.getName()));
 			
 		} catch (CoreException e) {
-			LOG.log(new Status(IStatus.ERROR, "org.sandbox.jdt.internal.corext.fix.helper",
+			LOG.log(new Status(IStatus.ERROR, PLUGIN_ID,
 				"Error applying quick fix", e));
 		} catch (Exception e) {
-			LOG.log(new Status(IStatus.ERROR, "org.sandbox.jdt.internal.corext.fix.helper",
+			LOG.log(new Status(IStatus.ERROR, PLUGIN_ID,
 				"Unexpected error applying quick fix", e));
 		}
 	}
