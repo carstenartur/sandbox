@@ -32,11 +32,15 @@ The `sandbox_common` module provides shared utilities, constants, and base class
 
 The module provides common utilities that are used by multiple cleanup implementations:
 - **AST manipulation helpers** (`HelperVisitor`, `ASTProcessor`, `ASTNavigationUtils`)
+- **Annotation utilities** (`AnnotationUtils`)
+  - Check for annotations, find annotations, remove annotations, get annotation values
+- **Naming utilities** (`NamingUtils`)
+  - Case conversions (camelCase, PascalCase, snake_case)
+  - Java identifier validation
+  - Checksum generation for unique naming
 - **Type resolution utilities** (`TypeCheckingUtils`)
 - **Import management functions**
 - **Code transformation helpers**
-- **Annotation utilities** (`AnnotationUtils`)
-- **Naming utilities** (`NamingUtils`)
 
 **Important**: When implementing AST operations using these APIs, regularly check if new AST nodes have been added in Eclipse JDT UI. If new node types are introduced in JDT, the helper APIs in this module should be extended to support them. This ensures the utilities remain complete and up-to-date with the latest Eclipse JDT capabilities.
 
@@ -107,7 +111,23 @@ To contribute to Eclipse JDT:
 
 ## Testing
 
-Tests for common utilities are distributed across the test modules of plugins that use them, rather than having a dedicated test module for `sandbox_common`.
+### Current State
+Currently, testing for common utilities is indirect through dependent plugins. Direct unit tests for utilities are planned but not yet implemented.
+
+### Test Module Creation
+A dedicated `sandbox_common_test` module should be created following the pattern of other test modules (e.g., `sandbox_platform_helper_test`). This module would:
+- Provide unit tests for all utility methods
+- Test constant integrity and consistency
+- Validate thread-safety of `ReferenceHolder`
+- Test AST navigation utilities with sample AST structures
+- Ensure annotation utilities work correctly with different annotation types
+
+### Testing Strategy
+Future improvements:
+- Direct unit tests for utility methods
+- Integration tests for constant integrity
+- Validation that all cleanup IDs are unique
+- Verification that constants follow naming conventions
 
 ## Future Enhancements
 

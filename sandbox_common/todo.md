@@ -2,19 +2,21 @@
 
 ## Status Summary
 
-**Current State**: Stable foundation module providing shared constants and utilities
+**Current State**: Stable foundation module with improved documentation
 
 ### Completed
 - ✅ `MYCleanUpConstants` - Central repository for cleanup constants
 - ✅ Package structure mirrors Eclipse JDT for easy porting
 - ✅ Integration with all sandbox plugins
+- ✅ All constants in `LibStandardNames` are now public with comprehensive Javadoc
+- ✅ Comprehensive Javadoc for `ReferenceHolder`, `ASTProcessor`, and `VisitorEnum`
 
 ### In Progress
 - None currently
 
 ### Pending
+- [ ] Create dedicated test module for unit testing utilities
 - [ ] Extract additional shared utilities from individual plugins
-- [ ] Create dedicated test module for common utilities
 - [ ] Enhance documentation of available utilities
 - [ ] Monitor Eclipse JDT UI for new AST node types and update helper APIs accordingly
 
