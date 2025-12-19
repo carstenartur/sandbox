@@ -1,32 +1,36 @@
+/*******************************************************************************
+ * Copyright (c) 2024 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer - initial API and implementation
+ *******************************************************************************/
 package org.sandbox.jdt.ui.tests.quickfix.rules;
-
-/*-
- * #%L
- * Sandbox test commons
- * %%
- * Copyright (C) 2024 hammer
- * %%
- * This program and the accompanying materials are made available under the
- * terms of the Eclipse Public License 2.0 which is available at
- * http://www.eclipse.org/legal/epl-2.0.
- * 
- * This Source Code may also be made available under the following Secondary
- * Licenses when the conditions for such availability set forth in the Eclipse
- * Public License, v. 2.0 are satisfied: GNU General Public License, version 2
- * with the GNU Classpath Exception which is
- * available at https://www.gnu.org/software/classpath/license.html.
- * 
- * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
- * #L%
- */
-
 
 import org.eclipse.jdt.core.JavaCore;
 
-public class EclipseJava8 extends AbstractEclipseJava {
-	private static final String TESTRESOURCES_RTSTUBS18_JAR= "testresources/rtstubs18.jar"; //$NON-NLS-1$
+/**
+ * JUnit 5 extension that configures tests to run with Java 8 runtime stubs.
+ * <p>
+ * This class provides the necessary test environment setup for testing code
+ * transformations and cleanups that target Java 8 language features and APIs.
+ * </p>
+ */
+public final class EclipseJava8 extends AbstractEclipseJava {
+	
+	/** Path to the Java 8 runtime stubs JAR file used for testing. */
+	private static final String RT_STUBS_JAR_PATH = "testresources/rtstubs18.jar"; //$NON-NLS-1$
 
+	/**
+	 * Constructs a new test configuration for Java 8.
+	 */
 	public EclipseJava8() {
-		super(TESTRESOURCES_RTSTUBS18_JAR, JavaCore.VERSION_1_8);
+		super(RT_STUBS_JAR_PATH, JavaCore.VERSION_1_8);
 	}
 }
