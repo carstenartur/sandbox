@@ -174,8 +174,10 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 			// Handle @RunWith(Suite.class) migration
 			newAnnotation= ast.newMarkerAnnotation();
 			newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_SUITE));
+			// Add new import FIRST, then remove old ones
 			importRewriter.addImport(ORG_JUNIT_JUPITER_SUITE);
 			importRewriter.removeImport(ORG_JUNIT_SUITE);
+			importRewriter.removeImport(ORG_JUNIT_RUNWITH);
 		} else if (ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER.equals(junitHolder.value)) {
 			// Handle @RunWith(MockitoJUnitRunner.class) migration
 			SingleMemberAnnotation extendWithAnnotation= ast.newSingleMemberAnnotation();
