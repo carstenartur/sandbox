@@ -51,7 +51,7 @@ public class ExplicitEncodingCleanUpTest {
 	@ParameterizedTest
 	@EnumSource(ExplicitEncodingPatternsKeepBehavior.class)
 	public void testExplicitEncodingParametrizedKeepBehavior(ExplicitEncodingPatternsKeepBehavior test) throws CoreException {
-		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null);
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("E1.java", test.given, false, null);
 		context.enable(MYCleanUpConstants.EXPLICITENCODING_CLEANUP);
 		context.enable(MYCleanUpConstants.EXPLICITENCODING_KEEP_BEHAVIOR);
@@ -65,7 +65,7 @@ public class ExplicitEncodingCleanUpTest {
 	@ParameterizedTest
 	@EnumSource(ExplicitEncodingPatternsPreferUTF8.class)
 	public void testExplicitEncodingParametrizedPreferUTF8(ExplicitEncodingPatternsPreferUTF8 test) throws CoreException {
-		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null);
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("E1.java", test.given, false, null);
 		context.enable(MYCleanUpConstants.EXPLICITENCODING_CLEANUP);
 		context.disable(MYCleanUpConstants.EXPLICITENCODING_KEEP_BEHAVIOR);
@@ -78,7 +78,7 @@ public class ExplicitEncodingCleanUpTest {
 	@ParameterizedTest
 	@EnumSource(ExplicitEncodingPatternsAggregateUTF8.class)
 	public void testExplicitEncodingParametrizedAggregateUTF8(ExplicitEncodingPatternsAggregateUTF8 test) throws CoreException {
-		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null);
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("E1.java", test.given, false, null);
 		context.enable(MYCleanUpConstants.EXPLICITENCODING_CLEANUP);
 		context.disable(MYCleanUpConstants.EXPLICITENCODING_KEEP_BEHAVIOR);
@@ -89,7 +89,7 @@ public class ExplicitEncodingCleanUpTest {
 
 	@Test
 	public void testExplicitEncodingdonttouch() throws CoreException {
-		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null);
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("E2.java",
 				"""
 						package test1;
