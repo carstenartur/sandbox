@@ -323,9 +323,11 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 			ITypeBinding typeBinding = typeLiteral.getType().resolveBinding();
 			if (typeBinding != null) {
 				String qualifiedName = typeBinding.getQualifiedName();
-				// Return simple name from qualified name
-				int lastDot = qualifiedName.lastIndexOf('.');
-				return lastDot >= 0 ? qualifiedName.substring(lastDot + 1) : qualifiedName;
+				if (qualifiedName != null) {
+					// Return simple name from qualified name
+					int lastDot = qualifiedName.lastIndexOf('.');
+					return lastDot >= 0 ? qualifiedName.substring(lastDot + 1) : qualifiedName;
+				}
 			}
 			// Fallback to toString which works for simple cases
 			return typeLiteral.getType().toString();
