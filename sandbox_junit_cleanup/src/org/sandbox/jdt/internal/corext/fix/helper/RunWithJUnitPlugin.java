@@ -107,7 +107,7 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 				
 				// Handle Suite runner
 				if (ORG_JUNIT_SUITE.equals(runnerQualifiedName)) {
-					mh.value= ORG_JUNIT_SUITE;
+					mh.value= ORG_JUNIT_RUNWITH;
 					dataHolder.put(dataHolder.size(), mh);
 					operations.add(fixcore.rewrite(dataHolder));
 					return false;
@@ -162,7 +162,7 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 			newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_SELECT_CLASSES));
 			importRewriter.addImport(ORG_JUNIT_PLATFORM_SUITE_API_SELECT_CLASSES);
 			importRewriter.removeImport(ORG_JUNIT_SUITE_SUITECLASSES);
-		} else if (ORG_JUNIT_SUITE.equals(junitHolder.value)) {
+		} else if (ORG_JUNIT_RUNWITH.equals(junitHolder.value)) {
 			// Handle @RunWith(Suite.class) migration
 			newAnnotation= ast.newMarkerAnnotation();
 			newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_SUITE));
