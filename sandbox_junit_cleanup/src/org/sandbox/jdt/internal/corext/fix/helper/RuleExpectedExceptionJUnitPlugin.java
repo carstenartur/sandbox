@@ -252,7 +252,7 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 			listRewrite.remove(stmt, group);
 		}
 		
-		// Create variable declaration or standalone statement
+		// Add new statements to method body
 		if (collector.expectedMessage != null) {
 			// Need to capture exception to check message
 			String exceptionVarName = "exception";
