@@ -83,15 +83,39 @@ public class RuleTemporayFolderJUnitPlugin extends AbstractTool<ReferenceHolder<
 		rewriter.remove(field, group);
 		TypeDeclaration parentClass= ASTNodes.getParent(field, TypeDeclaration.class);
 
+		VariableDeclarationFragment originalFragment= (VariableDeclarationFragment) field.fragments().get(0);
+		String originalName= originalFragment.getName().getIdentifier();
+
+		// Check which methods are being called to determine if Files import is needed
+		final boolean[] needsFilesImport = {false};
+		for (MethodDeclaration method : parentClass.getMethods()) {
+			method.accept(new ASTVisitor() {
+				@Override
+				public boolean visit(MethodInvocation node) {
+					if (node.getExpression() == null) {
+						return super.visit(node);
+					}
+					String expressionName = node.getExpression().toString();
+					if (!originalName.equals(expressionName)) {
+						return super.visit(node);
+					}
+					String methodName = node.getName().getIdentifier();
+					if ("newFile".equals(methodName) || "newFolder".equals(methodName)) {
+						needsFilesImport[0] = true;
+					}
+					return super.visit(node);
+				}
+			});
+		}
+
 		// Add JUnit 5 imports and remove JUnit 4 imports
 		importRewriter.addImport(ORG_JUNIT_JUPITER_API_IO_TEMP_DIR);
 		importRewriter.addImport("java.nio.file.Path");
-		importRewriter.addImport("java.nio.file.Files");
+		if (needsFilesImport[0]) {
+			importRewriter.addImport("java.nio.file.Files");
+		}
 		importRewriter.removeImport(ORG_JUNIT_RULE);
 		importRewriter.removeImport(ORG_JUNIT_RULES_TEMPORARY_FOLDER);
-
-		VariableDeclarationFragment originalFragment= (VariableDeclarationFragment) field.fragments().get(0);
-		String originalName= originalFragment.getName().getIdentifier();
 
 		// Create new field: @TempDir Path fieldName;
 		VariableDeclarationFragment tempDirFragment= ast.newVariableDeclarationFragment();
@@ -127,7 +151,7 @@ public class RuleTemporayFolderJUnitPlugin extends AbstractTool<ReferenceHolder<
 					// Handle newFile() and newFile(String)
 					if ("newFile".equals(methodName)) {
 						if (node.arguments().isEmpty()) {
-							// newFile() with no args -> Files.createTempFile(tempDir, "junit", null).toFile()
+							// newFile() with no args -> Files.createTempFile(tempDir, "", null).toFile()
 							MethodInvocation createTempFileInvocation= ast.newMethodInvocation();
 							createTempFileInvocation.setExpression(ast.newName("Files"));
 							createTempFileInvocation.setName(ast.newSimpleName("createTempFile"));
@@ -163,7 +187,7 @@ public class RuleTemporayFolderJUnitPlugin extends AbstractTool<ReferenceHolder<
 					// Handle newFolder() and newFolder(String...)
 					else if ("newFolder".equals(methodName)) {
 						if (node.arguments().isEmpty()) {
-							// newFolder() with no args -> Files.createTempDirectory(tempDir, "junit").toFile()
+							// newFolder() with no args -> Files.createTempDirectory(tempDir, "").toFile()
 							MethodInvocation createTempDirInvocation= ast.newMethodInvocation();
 							createTempDirInvocation.setExpression(ast.newName("Files"));
 							createTempDirInvocation.setName(ast.newSimpleName("createTempDirectory"));
