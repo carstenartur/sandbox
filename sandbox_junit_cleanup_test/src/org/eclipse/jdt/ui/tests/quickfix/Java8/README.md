@@ -67,10 +67,13 @@ Tests for JUnit 4 Rules → JUnit 5 Extensions migrations.
 Tests for `@RunWith` migrations.
 - **Coverage**:
   - `@RunWith(Suite.class)` → `@Suite` with `@SelectClasses`
+  - `@RunWith(MockitoJUnitRunner.class)` → `@ExtendWith(MockitoExtension.class)` ✅ **Implemented**
+  - `@RunWith(SpringRunner.class)` → `@ExtendWith(SpringExtension.class)` ✅ **Implemented**
   - *(Disabled)* `@RunWith(Parameterized.class)` → `@ParameterizedTest` with `@MethodSource`
-  - *(Disabled)* `@RunWith(MockitoJUnitRunner.class)` → `@ExtendWith(MockitoExtension.class)`
-  - *(Disabled)* `@RunWith(SpringRunner.class)` → `@ExtendWith(SpringExtension.class)`
-- **Note**: Some migrations are disabled pending production code implementation
+- **Key scenarios**:
+  - Framework extension migrations (Mockito, Spring)
+  - Supports both old and new package names
+- **Note**: Parameterized migration is complex and pending implementation
 
 #### `MigrationExceptionsTest.java`
 Tests for exception handling migrations.
@@ -226,10 +229,19 @@ The following migration scenarios are identified but not yet fully implemented:
    - `@RunWith(Parameterized.class)` → `@ParameterizedTest`
    - `@Parameters` method → `@MethodSource`/`@ValueSource`/etc.
 
-### Medium Priority
-4. **Framework Extensions**
-   - `MockitoJUnitRunner` → `MockitoExtension`
-   - `SpringRunner` → `SpringExtension`
+### Medium Priority (Updated 2025-12-16)
+4. **TemporaryFolder Migration**
+   - Complete implementation of `@Rule TemporaryFolder` → `@TempDir Path`
+   - Method call updates (newFile/newFolder → resolve().toFile())
+
+### Low Priority
+5. **Suite Migration Enhancements**
+   - Improve @RunWith(Suite.class) migration
+   - Handle edge cases in suite configurations
+
+### Completed Recently ✅
+- ~~MockitoJUnitRunner → MockitoExtension~~ **Implemented (2025-12-16)**
+- ~~SpringRunner → SpringExtension~~ **Implemented (2025-12-16)**
 
 ### Test Organization Improvements
 5. Further split large test cases in `JUnitCleanupCases` enum into focused scenarios

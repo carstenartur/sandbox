@@ -42,6 +42,7 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
+import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
@@ -79,17 +80,63 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 			Expression value= mynode.getValue();
 			if (value instanceof TypeLiteral myvalue) {
 				ITypeBinding classBinding= myvalue.resolveTypeBinding();
-				if (classBinding != null && classBinding.isParameterizedType()) {
-					ITypeBinding[] typeArguments= classBinding.getTypeArguments();
-					if (typeArguments.length > 0) {
-						ITypeBinding actualTypeBinding= typeArguments[0];
-						if (ORG_JUNIT_SUITE.equals(actualTypeBinding.getQualifiedName())) {
-							mh.value= ORG_JUNIT_RUNWITH;
-							dataHolder.put(dataHolder.size(), mh);
-							operations.add(fixcore.rewrite(dataHolder));
+				String runnerQualifiedName = null;
+				
+				// Try to get qualified name from binding
+				// For TypeLiteral (e.g., Suite.class), we need to get the type being referenced, not Class itself
+				if (classBinding != null) {
+					// Get the type from the TypeLiteral's type, not from the Class binding
+					Type type = myvalue.getType();
+					if (type != null) {
+						ITypeBinding typeBinding = type.resolveBinding();
+						if (typeBinding != null) {
+							runnerQualifiedName = typeBinding.getQualifiedName();
 						}
-						return false;
 					}
+				}
+				
+				// If binding resolution failed, try to get fully qualified name from the AST
+				if (runnerQualifiedName == null || runnerQualifiedName.isEmpty()) {
+					Type runnerType = myvalue.getType();
+					if (runnerType != null) {
+						String typeName = runnerType.toString();
+						// Only use it if it's a fully qualified name (contains a dot)
+						if (typeName != null && typeName.contains(".")) {
+							runnerQualifiedName = typeName;
+						}
+						// Special case: Suite is a JUnit library class, so we can safely migrate it
+						// even with just the simple name (unlike third-party frameworks)
+						else if ("Suite".equals(typeName)) {
+							runnerQualifiedName = ORG_JUNIT_SUITE;
+						}
+						// For other simple names, we can't safely migrate to avoid false positives
+					}
+				}
+				
+				// Handle Suite runner
+				if (ORG_JUNIT_SUITE.equals(runnerQualifiedName)) {
+					mh.value= ORG_JUNIT_RUNWITH;
+					dataHolder.put(dataHolder.size(), mh);
+					operations.add(fixcore.rewrite(dataHolder));
+					return false;
+				}
+				
+				// Handle Mockito runners - only check qualified names to avoid false positives
+				if (ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER.equals(runnerQualifiedName) ||
+						ORG_MOCKITO_RUNNERS_MOCKITO_JUNIT_RUNNER.equals(runnerQualifiedName)) {
+					mh.value= ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER;
+					dataHolder.put(dataHolder.size(), mh);
+					operations.add(fixcore.rewrite(dataHolder));
+					return false;
+				}
+				
+				// Handle Spring runners - only check qualified names to avoid false positives
+				if (ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER.equals(runnerQualifiedName) ||
+						ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_JUNIT4_CLASS_RUNNER.equals(runnerQualifiedName)) {
+					mh.value= ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER;
+					dataHolder.put(dataHolder.size(), mh);
+					operations.add(fixcore.rewrite(dataHolder));
+					return false;
 				}
 			}
 		}
@@ -113,21 +160,54 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 			JunitHolder junitHolder) {
 		Annotation minv= junitHolder.getAnnotation();
 		Annotation newAnnotation= null;
-		SingleMemberAnnotation mynode= (SingleMemberAnnotation) minv;
+		
 		if (ORG_JUNIT_SUITE_SUITECLASSES.equals(junitHolder.value)) {
+			// Handle @Suite.SuiteClasses migration
+			SingleMemberAnnotation mynode= (SingleMemberAnnotation) minv;
 			newAnnotation= ast.newSingleMemberAnnotation();
 			((SingleMemberAnnotation) newAnnotation)
 					.setValue(ASTNodes.createMoveTarget(rewriter, mynode.getValue()));
 			newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_SELECT_CLASSES));
 			importRewriter.addImport(ORG_JUNIT_PLATFORM_SUITE_API_SELECT_CLASSES);
-		} else {
+			importRewriter.removeImport(ORG_JUNIT_SUITE_SUITECLASSES);
+		} else if (ORG_JUNIT_RUNWITH.equals(junitHolder.value)) {
+			// Handle @RunWith(Suite.class) migration
 			newAnnotation= ast.newMarkerAnnotation();
 			newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_SUITE));
+			// Add new import FIRST, then remove old ones
 			importRewriter.addImport(ORG_JUNIT_JUPITER_SUITE);
+			importRewriter.removeImport(ORG_JUNIT_SUITE);
+			importRewriter.removeImport(ORG_JUNIT_RUNWITH);
+		} else if (ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER.equals(junitHolder.value)) {
+			// Handle @RunWith(MockitoJUnitRunner.class) migration
+			SingleMemberAnnotation extendWithAnnotation= ast.newSingleMemberAnnotation();
+			extendWithAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_EXTEND_WITH));
+			TypeLiteral typeLiteral= ast.newTypeLiteral();
+			typeLiteral.setType(ast.newSimpleType(ast.newName(MOCKITO_EXTENSION)));
+			extendWithAnnotation.setValue(typeLiteral);
+			newAnnotation= extendWithAnnotation;
+			importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH);
+			importRewriter.addImport(ORG_MOCKITO_JUNIT_JUPITER_MOCKITO_EXTENSION);
+			importRewriter.removeImport(ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER);
+			importRewriter.removeImport(ORG_MOCKITO_RUNNERS_MOCKITO_JUNIT_RUNNER);
+		} else if (ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER.equals(junitHolder.value)) {
+			// Handle @RunWith(SpringRunner.class) migration
+			SingleMemberAnnotation extendWithAnnotation= ast.newSingleMemberAnnotation();
+			extendWithAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_EXTEND_WITH));
+			TypeLiteral typeLiteral= ast.newTypeLiteral();
+			typeLiteral.setType(ast.newSimpleType(ast.newName(SPRING_EXTENSION)));
+			extendWithAnnotation.setValue(typeLiteral);
+			newAnnotation= extendWithAnnotation;
+			importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH);
+			importRewriter.addImport(ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT_JUPITER_SPRING_EXTENSION);
+			importRewriter.removeImport(ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER);
+			importRewriter.removeImport(ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_JUNIT4_CLASS_RUNNER);
 		}
-		ASTNodes.replaceButKeepComment(rewriter, minv, newAnnotation, group);
-		importRewriter.removeImport(ORG_JUNIT_SUITE);
-		importRewriter.removeImport(ORG_JUNIT_RUNWITH);
+		
+		if (newAnnotation != null) {
+			ASTNodes.replaceButKeepComment(rewriter, minv, newAnnotation, group);
+			importRewriter.removeImport(ORG_JUNIT_RUNWITH);
+		}
 	}
 	
 	@Override
