@@ -1769,8 +1769,8 @@ public class Java8CleanUpTest {
 			import java.util.List;
 
 			class TestDemo {
-			    public double averageOfPositiveSquares(List<Integer> numbers) {
-			        double total = 0.0;
+			    public int sumOfPositiveSquares(List<Integer> numbers) {
+			        int total = 0;
 			        for (Integer num : numbers) {
 			            if (num > 0) {
 			                int squared = num * num;
@@ -1787,8 +1787,8 @@ public class Java8CleanUpTest {
 					import java.util.List;
 
 					class TestDemo {
-					    public double averageOfPositiveSquares(List<Integer> numbers) {
-					        double total = 0.0;
+					    public int sumOfPositiveSquares(List<Integer> numbers) {
+					        int total = 0;
 					        total = numbers.stream().filter(num -> (num > 0)).map(num -> num * num).reduce(total, Integer::sum);
 					        return total;
 					    }
