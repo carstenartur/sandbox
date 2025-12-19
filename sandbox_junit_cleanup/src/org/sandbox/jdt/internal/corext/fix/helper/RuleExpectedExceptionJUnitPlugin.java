@@ -130,14 +130,40 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 		importRewriter.removeImport(ORG_JUNIT_RULE);
 		importRewriter.removeImport(ORG_JUNIT_RULES_EXPECTED_EXCEPTION);
 		
-		// Add JUnit 5 static imports for assertion methods
-		importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, "assertThrows", false);
-		importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, "assertTrue", false);
-		
 		// Find the parent class to process test methods
 		TypeDeclaration parentClass = ASTNodes.getParent(field, TypeDeclaration.class);
 		if (parentClass == null) {
 			return;
+		}
+		
+		// Track whether we need static imports
+		boolean needsAssertThrows = false;
+		boolean needsAssertTrue = false;
+		
+		// First pass: check if any methods use ExpectedException
+		for (MethodDeclaration method : parentClass.getMethods()) {
+			Block body = method.getBody();
+			if (body == null) {
+				continue;
+			}
+			
+			ExpectedExceptionCollector collector = new ExpectedExceptionCollector(fieldName);
+			body.accept(collector);
+			
+			if (collector.hasExpectations()) {
+				needsAssertThrows = true;
+				if (collector.expectedMessage != null) {
+					needsAssertTrue = true;
+				}
+			}
+		}
+		
+		// Add JUnit 5 static imports only if needed
+		if (needsAssertThrows) {
+			importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, "assertThrows", false);
+		}
+		if (needsAssertTrue) {
+			importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, "assertTrue", false);
 		}
 		
 		// Process each test method to find and transform ExpectedException usage
