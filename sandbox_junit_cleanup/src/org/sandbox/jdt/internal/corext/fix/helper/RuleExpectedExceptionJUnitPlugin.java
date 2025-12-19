@@ -78,12 +78,8 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder = new ReferenceHolder<>();
-		// Handle @Rule annotations
+		// Handle @Rule annotations only (ExpectedException is not used with @ClassRule)
 		HelperVisitor.callFieldDeclarationVisitor(ORG_JUNIT_RULE, ORG_JUNIT_RULES_EXPECTED_EXCEPTION, compilationUnit,
-				dataHolder, nodesprocessed,
-				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
-		// Handle @ClassRule annotations
-		HelperVisitor.callFieldDeclarationVisitor(ORG_JUNIT_CLASS_RULE, ORG_JUNIT_RULES_EXPECTED_EXCEPTION, compilationUnit,
 				dataHolder, nodesprocessed,
 				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 	}
@@ -114,7 +110,6 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 		
 		// Remove JUnit 4 imports
 		importRewriter.removeImport(ORG_JUNIT_RULE);
-		importRewriter.removeImport(ORG_JUNIT_CLASS_RULE);
 		importRewriter.removeImport(ORG_JUNIT_RULES_EXPECTED_EXCEPTION);
 		
 		// Find the parent class to process test methods
