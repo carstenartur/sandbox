@@ -337,7 +337,7 @@ public class Java8CleanUpTest {
 	@ParameterizedTest
 	@EnumSource(While2EnhancedForLoop.class)
 	public void testWhile2enhancedForLoopParametrized(While2EnhancedForLoop test) throws CoreException {
-		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
 		ICompilationUnit cu= pack.createCompilationUnit("TestDemo.java", test.given, false, null); //$NON-NLS-1$
 		context.enable(CleanUpConstants.CONTROL_STATEMENTS_CONVERT_FOR_LOOP_TO_ENHANCED);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
@@ -443,7 +443,7 @@ public class Java8CleanUpTest {
 	@ParameterizedTest
 	@EnumSource(NOWhile2EnhancedForLoop.class)
 	public void testWhile2enhancedForLoopdonttouch(NOWhile2EnhancedForLoop test) throws CoreException {
-		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
 		ICompilationUnit cu= pack.createCompilationUnit("Test.java",test.given,false, null); //$NON-NLS-1$
 		context.enable(CleanUpConstants.CONTROL_STATEMENTS_CONVERT_FOR_LOOP_TO_ENHANCED);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
