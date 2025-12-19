@@ -144,7 +144,14 @@ public class MYCleanUpConstants {
 	 */
 	public static final String JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE= "cleanup.junitcleanup_4_ruleexternalresource"; //$NON-NLS-1$
 	/**
-	 * 
+	 * Cleanup option key for migrating JUnit 4 {@code ExpectedException} {@code @Rule}
+	 * usages to JUnit 5 {@code assertThrows} assertions.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 * <p>
+	 *
+	 * @see CleanUpOptionsCore#TRUE
+	 * @see CleanUpOptionsCore#FALSE
 	 */
 	public static final String JUNIT_CLEANUP_4_RULEEXPECTEDEXCEPTION= "cleanup.junitcleanup_4_ruleexpectedexception"; //$NON-NLS-1$
 	/**

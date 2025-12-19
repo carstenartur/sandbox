@@ -13,26 +13,6 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-/*-
- * #%L
- * Sandbox junit cleanup
- * %%
- * Copyright (C) 2025 hammer
- * %%
- * This program and the accompanying materials are made available under the
- * terms of the Eclipse Public License 2.0 which is available at
- * http://www.eclipse.org/legal/epl-2.0.
- * 
- * This Source Code may also be made available under the following Secondary
- * Licenses when the conditions for such availability set forth in the Eclipse
- * Public License, v. 2.0 are satisfied: GNU General Public License, version 2
- * with the GNU Classpath Exception which is
- * available at https://www.gnu.org/software/classpath/license.html.
- * 
- * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
- * #L%
- */
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -98,7 +78,12 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder = new ReferenceHolder<>();
+		// Handle @Rule annotations
 		HelperVisitor.callFieldDeclarationVisitor(ORG_JUNIT_RULE, ORG_JUNIT_RULES_EXPECTED_EXCEPTION, compilationUnit,
+				dataHolder, nodesprocessed,
+				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+		// Handle @ClassRule annotations
+		HelperVisitor.callFieldDeclarationVisitor(ORG_JUNIT_CLASS_RULE, ORG_JUNIT_RULES_EXPECTED_EXCEPTION, compilationUnit,
 				dataHolder, nodesprocessed,
 				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 	}
@@ -108,7 +93,7 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 			ReferenceHolder<Integer, JunitHolder> dataHolder) {
 		JunitHolder mh = new JunitHolder();
 		VariableDeclarationFragment fragment = (VariableDeclarationFragment) node.fragments().get(0);
-		ITypeBinding binding = fragment.resolveBinding().getType();
+		ITypeBinding binding = fragment.resolveBinding() != null ? fragment.resolveBinding().getType() : null;
 		if (binding != null && ORG_JUNIT_RULES_EXPECTED_EXCEPTION.equals(binding.getQualifiedName())) {
 			mh.minv = node;
 			dataHolder.put(dataHolder.size(), mh);
@@ -129,6 +114,7 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 		
 		// Remove JUnit 4 imports
 		importRewriter.removeImport(ORG_JUNIT_RULE);
+		importRewriter.removeImport(ORG_JUNIT_CLASS_RULE);
 		importRewriter.removeImport(ORG_JUNIT_RULES_EXPECTED_EXCEPTION);
 		
 		// Find the parent class to process test methods
@@ -303,8 +289,13 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 			
 			org.eclipse.jdt.core.dom.VariableDeclarationStatement varDecl = ast.newVariableDeclarationStatement(varFragment);
 			
-			// Determine exception type from expectedException
-			String exceptionType = getExceptionTypeName(collector.expectedException);
+			// Determine exception type from expectedException, defaulting to Exception when none is specified
+			String exceptionType;
+			if (collector.expectedException != null) {
+				exceptionType = getExceptionTypeName(collector.expectedException);
+			} else {
+				exceptionType = "Exception";
+			}
 			varDecl.setType(ast.newSimpleType(ast.newSimpleName(exceptionType)));
 			
 			// Add message assertion
@@ -328,6 +319,15 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 	private String getExceptionTypeName(Expression classLiteral) {
 		if (classLiteral instanceof org.eclipse.jdt.core.dom.TypeLiteral) {
 			org.eclipse.jdt.core.dom.TypeLiteral typeLiteral = (org.eclipse.jdt.core.dom.TypeLiteral) classLiteral;
+			// Try to use type binding for fully qualified name
+			ITypeBinding typeBinding = typeLiteral.getType().resolveBinding();
+			if (typeBinding != null) {
+				String qualifiedName = typeBinding.getQualifiedName();
+				// Return simple name from qualified name
+				int lastDot = qualifiedName.lastIndexOf('.');
+				return lastDot >= 0 ? qualifiedName.substring(lastDot + 1) : qualifiedName;
+			}
+			// Fallback to toString which works for simple cases
 			return typeLiteral.getType().toString();
 		}
 		return "Exception";
