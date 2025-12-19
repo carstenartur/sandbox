@@ -39,6 +39,20 @@ public enum XMLCleanUpFixCore {
 	XMLCleanUpFixCore(AbstractTool<? extends XMLCandidateHit> xmlsimplify) {
 		this.xmlfound= (AbstractTool<XMLCandidateHit>) xmlsimplify;
 	}
+	
+	/**
+	 * Set whether to enable indentation for XML cleanup.
+	 * 
+	 * @param enable true to enable indentation, false for compact output (default)
+	 */
+	public static void setEnableIndent(boolean enable) {
+		// Configure all XMLPlugin instances
+		for (XMLCleanUpFixCore fixCore : XMLCleanUpFixCore.values()) {
+			if (fixCore.xmlfound instanceof XMLPlugin) {
+				((XMLPlugin) fixCore.xmlfound).setEnableIndent(enable);
+			}
+		}
+	}
 
 	public String getPreview(boolean i) {
 		return xmlfound.getPreview(i);
@@ -74,7 +88,9 @@ public enum XMLCleanUpFixCore {
 				} else {
 					rangeComputer= new TightSourceRangeComputer();
 				}
-				rangeComputer.addTightSourceNode(hit.whileStatement);
+				if (hit.whileStatement != null) {
+					rangeComputer.addTightSourceNode(hit.whileStatement);
+				}
 				rewrite.setTargetSourceRangeComputer(rangeComputer);
 				xmlfound.rewrite(XMLCleanUpFixCore.this, hit, cuRewrite, group);
 			}
