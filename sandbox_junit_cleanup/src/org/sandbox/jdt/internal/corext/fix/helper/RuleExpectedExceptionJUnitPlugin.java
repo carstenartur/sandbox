@@ -130,8 +130,9 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 		importRewriter.removeImport(ORG_JUNIT_RULE);
 		importRewriter.removeImport(ORG_JUNIT_RULES_EXPECTED_EXCEPTION);
 		
-		// Add JUnit 5 import for Assertions
-		importRewriter.addImport(ORG_JUNIT_JUPITER_API_ASSERTIONS);
+		// Add JUnit 5 static imports for assertion methods
+		importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, "assertThrows", false);
+		importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, "assertTrue", false);
 		
 		// Find the parent class to process test methods
 		TypeDeclaration parentClass = ASTNodes.getParent(field, TypeDeclaration.class);
