@@ -154,6 +154,53 @@ This usually indicates a Java version mismatch. Check that:
 
 ---
 
+## Eclipse Version Configuration
+
+The Eclipse version (SimRel release) used by this project is **not centrally configured**. When updating to a new Eclipse release, you must update the version reference in **multiple files** throughout the repository.
+
+### Files to Update
+
+When migrating to a new Eclipse version, update the following files:
+
+1. **`pom.xml`** (root)
+   - Repository URLs in the `<repositories>` section
+   - Example: `https://download.eclipse.org/releases/2025-09/`
+   - Also update Orbit repository URL: `https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2025-09/`
+
+2. **`sandbox_target/eclipse.target`**
+   - Primary Eclipse release repository URL in first `<location>` block
+   - Example: `<repository location="https://download.eclipse.org/releases/2025-09/"/>`
+   - Also update Orbit repository URL
+
+3. **`sandbox_product/category.xml`**
+   - Repository reference location
+   - Example: `<repository-reference location="https://download.eclipse.org/releases/2025-09/" .../>`
+
+4. **`sandbox_product/sandbox.product`**
+   - Repository locations in `<repositories>` section
+   - Example: `<repository location="https://download.eclipse.org/releases/2025-09/" .../>`
+
+5. **`sandbox_oomph/sandbox.setup`**
+   - P2 repository URL in the version-specific `<setupTask>` block
+   - Example: `<repository url="https://download.eclipse.org/releases/2025-09"/>`
+
+### Version Consistency Guidelines
+
+- **Use HTTPS**: All Eclipse download URLs should use `https://` (not `http://`)
+- **Use explicit versions**: Prefer explicit version URLs (e.g., `2025-09`) over `latest` for reproducible builds
+- **Keep versions aligned**: All files should reference the same Eclipse SimRel version
+- **Git URLs**: Use HTTPS for git clone URLs (e.g., `https://github.com/...`, not `git://`)
+- **Main branch**: All Oomph setup files should reference the `main` branch, not `master`
+
+### Current Configuration
+
+- **Eclipse Version**: 2025-09
+- **Java Version**: 21
+- **Tycho Version**: 5.0.1
+- **Default Branch**: `main`
+
+---
+
 ## CI Status
 
 ### main (2025-09)
