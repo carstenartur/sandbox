@@ -34,6 +34,7 @@ package org.sandbox.jdt.internal.corext.fix.helper;
  */
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -287,7 +288,15 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 		// Add new statements to method body
 		if (collector.expectedMessage != null) {
 			// Need to capture exception to check message
+			// Generate a unique variable name to avoid conflicts
+			Collection<String> usedNames = getUsedVariableNames(methodBody);
 			String exceptionVarName = "exception";
+			int counter = 1;
+			while (usedNames.contains(exceptionVarName)) {
+				exceptionVarName = "exception" + counter;
+				counter++;
+			}
+			
 			VariableDeclarationFragment varFragment = ast.newVariableDeclarationFragment();
 			varFragment.setName(ast.newSimpleName(exceptionVarName));
 			varFragment.setInitializer(assertThrows);
