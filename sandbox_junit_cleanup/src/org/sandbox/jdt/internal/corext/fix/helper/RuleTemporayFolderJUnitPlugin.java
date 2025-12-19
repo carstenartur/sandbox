@@ -40,7 +40,6 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
-import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
@@ -74,18 +73,7 @@ public class RuleTemporayFolderJUnitPlugin extends AbstractTool<ReferenceHolder<
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, FieldDeclaration node,
 			ReferenceHolder<Integer, JunitHolder> dataHolder) {
-		JunitHolder mh= new JunitHolder();
-		VariableDeclarationFragment fragment= (VariableDeclarationFragment) node.fragments().get(0);
-		ITypeBinding variableBinding= fragment.resolveBinding();
-		if (variableBinding != null) {
-			ITypeBinding binding= variableBinding.getType();
-			if (binding != null && ORG_JUNIT_RULES_TEMPORARY_FOLDER.equals(binding.getQualifiedName())) {
-				mh.minv= node;
-				dataHolder.put(dataHolder.size(), mh);
-				operations.add(fixcore.rewrite(dataHolder));
-			}
-		}
-		return false;
+		return addStandardRewriteOperation(fixcore, operations, node, dataHolder);
 	}
 	
 	@Override
