@@ -83,8 +83,16 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 				String runnerQualifiedName = null;
 				
 				// Try to get qualified name from binding
+				// For TypeLiteral (e.g., Suite.class), we need to get the type being referenced, not Class itself
 				if (classBinding != null) {
-					runnerQualifiedName = classBinding.getQualifiedName();
+					// Get the type from the TypeLiteral's type, not from the Class binding
+					Type type = myvalue.getType();
+					if (type != null) {
+						ITypeBinding typeBinding = type.resolveBinding();
+						if (typeBinding != null) {
+							runnerQualifiedName = typeBinding.getQualifiedName();
+						}
+					}
 				}
 				
 				// If binding resolution failed, try to get fully qualified name from the AST
