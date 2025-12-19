@@ -140,7 +140,7 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 		boolean needsAssertThrows = false;
 		boolean needsAssertTrue = false;
 		
-		// First pass: check if any methods use ExpectedException
+		// First pass: check if any methods use ExpectedException to determine imports needed
 		for (MethodDeclaration method : parentClass.getMethods()) {
 			Block body = method.getBody();
 			if (body == null) {
@@ -155,6 +155,11 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 				if (collector.expectedMessage != null) {
 					needsAssertTrue = true;
 				}
+			}
+			
+			// Early exit once we know we need both imports
+			if (needsAssertThrows && needsAssertTrue) {
+				break;
 			}
 		}
 		
