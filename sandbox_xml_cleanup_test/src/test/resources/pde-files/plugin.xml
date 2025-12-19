@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+    <extension
+          point="org.eclipse.ui.views">
+       <view
+             class="org.example.views.SampleView"
+             icon="icons/sample.gif"
+             id="org.example.views.SampleView"
+             name="Sample View"
+             restorable="true">
+       </view>
+       
+       
+       <view
+             class="org.example.views.AnotherView"
+             id="org.example.views.AnotherView"
+             name="Another View">
+       </view>
+    </extension>
+    
+    <extension
+          point="org.eclipse.ui.commands">
+       <command
+             defaultHandler="org.example.handlers.SampleHandler"
+             id="org.example.commands.sampleCommand"
+             name="Sample Command">
+       </command>
+    </extension>
+    
+    <!-- This is a comment that should be preserved -->
+    
+    <extension
+          point="org.eclipse.ui.menus">
+       <menuContribution
+             locationURI="toolbar:org.eclipse.ui.main.toolbar">
+          <toolbar
+                id="org.example.toolbar">
+             <command
+                   commandId="org.example.commands.sampleCommand"
+                   icon="icons/sample.gif"
+                   tooltip="Execute sample command">
+             </command>
+          </toolbar>
+       </menuContribution>
+    </extension>
+</plugin>

@@ -18,7 +18,12 @@
 		</dependency>
 	</dependencies>
 	<build>
-		<testSourceDirectory>src</testSourceDirectory>
+		<testSourceDirectory>src/test/java</testSourceDirectory>
+		<testResources>
+			<testResource>
+				<directory>src/test/resources</directory>
+			</testResource>
+		</testResources>
 		<plugins>
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>

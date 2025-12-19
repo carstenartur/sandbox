@@ -2,118 +2,255 @@
 
 ## Overview
 
-The XML cleanup plugin provides automated refactoring and modernization for XML files in Eclipse projects. This includes formatting, structure optimization, and best practices enforcement for XML-based configuration files.
+The XML cleanup plugin provides automated refactoring and optimization for PDE-relevant XML files in Eclipse projects. It focuses on reducing file size while maintaining semantic integrity through XSLT transformation, whitespace normalization, and optional indentation.
 
 ## Purpose
 
-- Modernize XML configuration files
-- Apply XML best practices automatically
-- Simplify verbose XML patterns
-- Ensure consistent XML formatting across projects
+- Optimize PDE XML configuration files for size and consistency
+- Apply secure XSLT transformations with whitespace normalization
+- Convert leading spaces to tabs (4 spaces → 1 tab)
+- Provide optional indentation control (default: OFF for size reduction)
+- Integrate with Eclipse workspace APIs for safe file updates
 
-## Supported XML Types
+## Supported XML Types (PDE Files Only)
 
-The plugin focuses on XML files commonly found in Eclipse projects:
-- plugin.xml (Eclipse plugin manifests)
-- feature.xml (Eclipse feature definitions)
-- Maven POM files (pom.xml)
-- Build configuration files
-- Other XML-based configuration
+The plugin **only** processes PDE-relevant XML files in typical Eclipse plugin locations:
 
-## Transformation Examples
+### Supported File Names
+- `plugin.xml` - Eclipse plugin manifests
+- `feature.xml` - Eclipse feature definitions
+- `fragment.xml` - Eclipse fragment manifests
 
-### XML Simplification
+### Supported File Extensions
+- `*.exsd` - Extension point schema definitions
+- `*.xsd` - XML schema definitions
 
-The plugin can simplify verbose XML patterns such as:
-- Removing unnecessary namespaces
-- Consolidating redundant elements
-- Applying formatting standards
-- Updating deprecated XML patterns
+### Supported Locations
+Files must be in one of these locations to be processed:
+- **Project root** - Files directly in project folder
+- **OSGI-INF** - OSGi declarative services directory
+- **META-INF** - Manifest and metadata directory
+
+**Note**: All other XML files (e.g., `pom.xml`, `build.xml`, arbitrary `*.xml` files) are **ignored** to avoid unintended transformations.
+
+## Transformation Process
+
+### 1. XSLT Transformation
+- Uses `formatter.xsl` stylesheet from classpath
+- Applies secure XML processing (external DTD/entities disabled)
+- Preserves XML structure, comments, and content
+- **Default: `indent="no"`** - Produces compact output for size reduction
+- **Optional: `indent="yes"`** - Enabled via `XML_CLEANUP_INDENT` preference
+
+### 2. Whitespace Normalization
+After XSLT transformation, the following post-processing is applied:
+
+- **Reduce excessive empty lines** - Maximum 2 consecutive empty lines
+- **Leading space to tab conversion** - Only at line start (not inline text)
+  - Converts groups of 4 leading spaces to 1 tab
+  - Preserves remainder spaces (e.g., 5 spaces → 1 tab + 1 space)
+  - **Does NOT touch inline text or content nodes**
+
+### 3. Change Detection
+- Only writes file if content actually changed
+- Uses Eclipse workspace APIs (`IFile.setContents()`)
+- Maintains file history (`IResource.KEEP_HISTORY`)
+- Refreshes resource after update
 
 ## Core Components
 
-### XMLCleanUp
+### XMLPlugin
 
-**Location**: `org.sandbox.jdt.internal.corext.fix.XMLCleanUp`
+**Location**: `org.sandbox.jdt.internal.corext.fix.helper.XMLPlugin`
 
-**Purpose**: Main cleanup implementation for XML file modernization
+**Purpose**: Main cleanup processor for PDE XML files
 
 **Key Features**:
-- XML parsing and analysis
-- Pattern-based transformations
-- Structure optimization
-- Formatting enforcement
+- Filters files by name, extension, and location (PDE-relevant only)
+- Scans project using Eclipse resource APIs
+- Avoids duplicate processing via cache
+- Creates meaningful `XMLCandidateHit` objects with file info
+- Integrates with Eclipse `ILog` for proper logging (no `System.out`/`printStackTrace`)
+
+### SchemaTransformationUtils
+
+**Location**: `org.sandbox.jdt.internal.corext.fix.helper.SchemaTransformationUtils`
+
+**Purpose**: XSLT transformation and post-processing utilities
+
+**Key Features**:
+- Loads `formatter.xsl` from classpath resources
+- Configures secure `TransformerFactory` settings
+- Supports configurable indentation (default: OFF)
+- Performs whitespace normalization
+- Converts leading 4-space indentation to tabs
+
+### XMLCandidateHit
+
+**Location**: `org.sandbox.jdt.internal.corext.fix.helper.XMLCandidateHit`
+
+**Purpose**: Represents a candidate XML file for cleanup
+
+**Fields**:
+- `IFile file` - The XML file to process
+- `String originalContent` - Original file content
+- `String transformedContent` - Transformed content after processing
+- `ASTNode whileStatement` - Placeholder for Eclipse cleanup framework
+
+### XMLCleanUpFixCore
+
+**Location**: `org.sandbox.jdt.internal.corext.fix.XMLCleanUpFixCore`
+
+**Purpose**: Enum-based registry of XML cleanup operations
+
+**Features**:
+- Registers `XMLPlugin` as `ECLIPSEPLUGIN` cleanup
+- Provides static `setEnableIndent(boolean)` method
+- Creates rewrite operations for Eclipse cleanup framework
+
+### XMLCleanUpCore
+
+**Location**: `org.sandbox.jdt.internal.ui.fix.XMLCleanUpCore`
+
+**Purpose**: Eclipse cleanup integration
+
+**Features**:
+- Reads `XML_CLEANUP` and `XML_CLEANUP_INDENT` preferences
+- Configures indent preference before processing
+- Creates `CompilationUnitRewriteOperation` for file updates
 
 ## Package Structure
 
 - `org.sandbox.jdt.internal.corext.fix.*` - Core cleanup logic
-- `org.sandbox.jdt.internal.ui.*` - UI components and preferences
+- `org.sandbox.jdt.internal.corext.fix.helper.*` - Transformation utilities
+- `org.sandbox.jdt.internal.ui.fix.*` - UI components and preferences
 
 **Eclipse JDT Correspondence**:
 - Maps to `org.eclipse.jdt.internal.corext.fix.*` pattern
 - Can be ported by replacing `sandbox` with `eclipse`
+- Follows Eclipse PDE conventions for plugin XML cleanup
 
 ## Design Patterns
 
-### XML DOM Pattern
-Uses DOM parsing for XML transformations:
+### Secure XML Processing
 ```java
-Document doc = parser.parse(xmlFile);
-// Analyze and transform DOM
-transformer.transform(new DOMSource(doc), new StreamResult(xmlFile));
+TransformerFactory factory = TransformerFactory.newInstance();
+factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, "");
+factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
 ```
 
-### Visitor Pattern
-Traverses XML structure to identify cleanup opportunities:
+### Leading Space to Tab Conversion
 ```java
-NodeList nodes = doc.getElementsByTagName("*");
-for (int i = 0; i < nodes.getLength(); i++) {
-    Node node = nodes.item(i);
-    // Check for cleanup patterns
-}
+Pattern leadingSpaces = Pattern.compile("^( {4})+", Pattern.MULTILINE);
+Matcher matcher = leadingSpaces.matcher(content);
+// Replace only at line start, not inline
 ```
 
-## Eclipse JDT Integration
+### Eclipse Workspace Integration
+```java
+byte[] newContent = transformedContent.getBytes(StandardCharsets.UTF_8);
+ByteArrayInputStream inputStream = new ByteArrayInputStream(newContent);
+file.setContents(inputStream, IResource.KEEP_HISTORY, null);
+file.refreshLocal(IResource.DEPTH_ZERO, null);
+```
 
-### Current State
-Experimental XML cleanup capabilities. May be more appropriate for Eclipse PDE (Plugin Development Environment) than JDT.
+## Eclipse Integration
 
-### Contribution Path
-1. Refine XML cleanup transformations
-2. Evaluate if better suited for Eclipse PDE
-3. Gather community feedback
-4. Consider integration with Eclipse XML editors
+### Cleanup Preferences
+
+**Default Behavior** (when `XML_CLEANUP` is enabled):
+- `indent="no"` - Compact output, no extra whitespace
+- Reduces file size by removing unnecessary whitespace
+- Converts leading spaces to tabs
+- Preserves semantic content
+
+**Optional Behavior** (when `XML_CLEANUP_INDENT` is enabled):
+- `indent="yes"` - Minimal indentation applied
+- Still converts leading spaces to tabs
+- Slightly larger file size but more readable
+
+### Constants
+
+Defined in `sandbox_common/src/org/sandbox/jdt/internal/corext/fix2/MYCleanUpConstants.java`:
+
+- `XML_CLEANUP` - Enable XML cleanup (default: OFF)
+- `XML_CLEANUP_INDENT` - Enable indentation (default: OFF)
+
+### Integration Points
+
+- Registered in `plugin.xml` as `org.eclipse.jdt.ui.cleanup.xmlcleanup`
+- Uses Eclipse resource visitor pattern to scan projects
+- Leverages Eclipse logging framework (`ILog`, `Status`)
+- Integrates with Eclipse cleanup framework
 
 ## Build Configuration
 
 - **Module Type**: Eclipse Plugin (OSGi bundle)
 - **Packaging**: `eclipse-plugin`
 - **Dependencies**: 
-  - Eclipse Core
-  - XML parsing libraries
+  - Eclipse Core Resources
+  - Eclipse JDT Core
+  - XML parsing libraries (built-in Java XML APIs)
   - `sandbox_common` for cleanup constants
 
 ## Testing
 
 ### Test Module
-`sandbox_xml_cleanup_test` contains test cases for XML transformations:
-- XML parsing and transformation tests
-- plugin.xml cleanup tests
-- pom.xml optimization tests
-- Formatting tests
+`sandbox_xml_cleanup_test` contains test cases for XML transformations with focus on:
+- Size reduction verification
+- Semantic equality (using XMLUnit, ignoring whitespace)
+- Idempotency (second run produces no change)
+- Leading-indent-only tab conversion
+- PDE file filtering accuracy
 
 ## Known Limitations
 
-1. **Limited XML Types**: Currently supports subset of XML file types
-2. **Basic Transformations**: Simple pattern-based transformations only
-3. **No Schema Validation**: Doesn't validate against XML schemas
-4. **Manual Review Needed**: Complex XML may require manual review after cleanup
+1. **PDE Files Only**: Only processes plugin.xml, feature.xml, fragment.xml, *.exsd, *.xsd in specific locations
+2. **Location Restricted**: Files must be in project root, OSGI-INF, or META-INF
+3. **Leading Tabs Only**: Tab conversion only applies to leading whitespace, not inline content
+4. **No Schema Validation**: Doesn't validate against XML schemas (relies on Eclipse PDE validation)
+5. **Requires Compilation Unit**: Integration with Eclipse cleanup framework requires Java compilation unit context
+
+## Security Considerations
+
+### Secure XML Processing
+- External DTD access disabled
+- External entity resolution disabled
+- DOCTYPE declarations disallowed
+- Secure processing mode enabled
+
+### No Arbitrary File Access
+- Only processes PDE-relevant files in known locations
+- Uses Eclipse workspace APIs (no direct filesystem writes)
+- Maintains file history for undo capability
+
+## Tab Conversion Rule
+
+**Important**: Tab conversion is **only** applied to leading whitespace:
+
+✅ **Converted**:
+```xml
+    <element>  <!-- 4 leading spaces → 1 tab -->
+```
+
+❌ **Not Converted**:
+```xml
+<element attr="value    with    spaces"/>  <!-- Inline spaces preserved -->
+```
+
+This ensures that:
+- Indentation is normalized to tabs
+- XML attribute values are not modified
+- Text content spacing is preserved
+- Only structural whitespace is affected
 
 ## Future Enhancements
 
-- Expand to more XML file types
-- Schema-aware transformations
-- Integration with Eclipse XML editors
-- XML validation and error detection
-- Custom transformation rules
-- Batch XML processing across projects
+- Support for build.properties formatting
+- Integration with Eclipse XML editor for real-time cleanup
+- Batch processing UI for multiple projects
+- Configurable tab width
+- Additional whitespace normalization rules
+- Integration with Eclipse PDE validation framework
