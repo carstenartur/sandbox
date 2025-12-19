@@ -184,10 +184,21 @@ public class XMLCleanupTransformationTest {
 			
 			String transformed = SchemaTransformationUtils.transform(tempFile, false);
 			
-			// Should not have more than 2 consecutive empty lines
-			String threeEmptyLines = "\n\n\n";
-			assertTrue(!transformed.contains(threeEmptyLines) || transformed.split(threeEmptyLines).length <= 1,
-				"Should not have more than 2 consecutive empty lines");
+			// Should not have more than 2 consecutive empty lines (3+ newlines in a row)
+			// Count consecutive newlines using a simple check
+			int maxConsecutiveNewlines = 0;
+			int currentConsecutive = 0;
+			for (int i = 0; i < transformed.length(); i++) {
+				if (transformed.charAt(i) == '\n') {
+					currentConsecutive++;
+					maxConsecutiveNewlines = Math.max(maxConsecutiveNewlines, currentConsecutive);
+				} else if (transformed.charAt(i) != '\r') {
+					currentConsecutive = 0;
+				}
+			}
+			
+			assertTrue(maxConsecutiveNewlines <= 2,
+				"Should not have more than 2 consecutive newlines, found: " + maxConsecutiveNewlines);
 			
 		} finally {
 			Files.deleteIfExists(tempFile);

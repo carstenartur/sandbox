@@ -16,11 +16,8 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
@@ -201,12 +198,9 @@ public class XMLPlugin extends AbstractTool<XMLCandidateHit> {
 			XMLCandidateHit hit = new XMLCandidateHit(file, originalContent);
 			hit.transformedContent = transformedContent;
 			
-			// Use the compilation unit's first node as a placeholder for the operation
+			// Use the compilation unit as a placeholder for the operation
 			// This is required by the Eclipse cleanup framework
-			List<ASTNode> astNodes = Arrays.asList((ASTNode) compilationUnit);
-			if (!astNodes.isEmpty()) {
-				hit.whileStatement = astNodes.get(0);
-			}
+			hit.whileStatement = compilationUnit;
 			
 			operations.add(fixcore.rewrite(hit));
 			
