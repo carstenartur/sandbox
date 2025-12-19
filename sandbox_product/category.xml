@@ -32,6 +32,6 @@
          Description of sandbox category
       </description>
    </category-def>
-   <repository-reference location="https://download.eclipse.org/releases/2024-12/" name="eclipse" enabled="true" />
+   <repository-reference location="https://download.eclipse.org/releases/2025-09/" name="eclipse" enabled="true" />
    <repository-reference location="https://download.eclipse.org/technology/babel/update-site/latest/" name="babel" enabled="true" />
 </site>

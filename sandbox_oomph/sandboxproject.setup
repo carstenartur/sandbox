@@ -106,7 +106,8 @@
   <setupTask
       xsi:type="git:GitCloneTask"
       id="git.clone.sandbox"
-      remoteURI="https://github.com/carstenartur/sandbox.git">
+      remoteURI="https://github.com/carstenartur/sandbox.git"
+      checkoutBranch="main">
     <annotation
         source="http://www.eclipse.org/oomph/setup/InducedChoices">
       <detail
@@ -148,11 +149,11 @@
       xsi:type="projects:ProjectsBuildTask">
     <description>Build all imported projects</description>
   </setupTask>
-  <!-- Stream definition for the master branch -->
+  <!-- Stream definition for the main branch -->
   <stream
-      name="master"
-      label="Master">
-    <description>Development stream tracking the master branch</description>
+      name="main"
+      label="Main">
+    <description>Development stream tracking the main branch</description>
   </stream>
   <description>Sandbox provides Eclipse plugins for code cleanup and tools development.</description>
 </setup:Project>

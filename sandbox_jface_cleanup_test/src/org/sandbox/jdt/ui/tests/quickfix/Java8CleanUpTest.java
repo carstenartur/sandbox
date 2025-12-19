@@ -340,7 +340,7 @@ public class Test {
 	@ParameterizedTest
 	@EnumSource(JFaceCleanupCases.class)
 	public void testJFaceCleanupParametrized(JFaceCleanupCases test) throws CoreException {
-		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
 		ICompilationUnit cu= pack.createCompilationUnit("Test.java", test.given, false, null); //$NON-NLS-1$
 		context.enable(MYCleanUpConstants.JFACE_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
@@ -378,7 +378,7 @@ public class Test {
 	@ParameterizedTest
 	@EnumSource(NOJFaceCleanupCases.class)
 	public void testJFaceCleanupdonttouch(NOJFaceCleanupCases test) throws CoreException {
-		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
 		ICompilationUnit cu= pack.createCompilationUnit("Test.java",test.given,false, null); //$NON-NLS-1$
 		context.enable(MYCleanUpConstants.JFACE_CLEANUP);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
