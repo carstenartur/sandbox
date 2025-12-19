@@ -228,7 +228,7 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 		
 		// Create lambda expression with the code that should throw
 		LambdaExpression lambda = ast.newLambdaExpression();
-		lambda.setParentheses(false);
+		lambda.setParentheses(true);  // Required for zero-parameter lambdas
 		
 		Block lambdaBody = ast.newBlock();
 		for (Statement stmt : statements) {
