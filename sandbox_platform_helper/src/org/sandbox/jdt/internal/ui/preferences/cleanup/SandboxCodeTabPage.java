@@ -44,11 +44,5 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				CleanUpMessages.JavaFeatureTabPage_CheckboxName_SimplifyPlatformStatus,
 				MYCleanUpConstants.SIMPLIFY_STATUS_CLEANUP, FALSE_TRUE);
 		registerPreference(simplify_status);
-		
-		intent(java1d8Group);
-		final CheckboxPreference preserve_plugin_id= createCheckboxPref(java1d8Group, numColumns,
-				CleanUpMessages.JavaFeatureTabPage_CheckboxName_PreservePluginId,
-				MYCleanUpConstants.SIMPLIFY_STATUS_PRESERVE_PLUGIN_ID, FALSE_TRUE);
-		registerPreference(preserve_plugin_id);
 	}
 }

@@ -8,13 +8,13 @@
 - ✅ Status factory method transformation (Java 11+)
 - ✅ Java version detection
 - ✅ Test coverage for Status transformations
-- ✅ Plugin ID preservation option
 - ✅ MultiStatus code normalization (to IStatus.OK)
 
 ### In Progress
 - None currently
 
 ### Pending
+- [ ] Plugin ID preservation (awaiting Eclipse Platform API support)
 - [ ] Advanced MultiStatus pattern detection (detect .add() calls)
 - [ ] Custom Status subclass handling
 - [ ] Additional Platform API simplifications
@@ -56,24 +56,26 @@ Simplify additional Eclipse Platform APIs:
 
 ## Known Issues
 
+### Plugin ID Preservation Not Applicable
+**Status**: Eclipse Platform API Limitation  
+**Priority**: N/A
+
+The Eclipse Platform's Status factory methods (error(), warning(), info()) do not support plugin ID parameters. They only accept (message, exception) arguments. Therefore, the plugin ID preservation option has been deferred until Eclipse Platform adds this capability.
+
+Current behavior: Plugin ID from `new Status(IStatus.ERROR, "plugin.id", IStatus.OK, "msg", e)` is always dropped when transforming to `Status.error("msg", e)`.
+
 ### MultiStatus Factory Methods
 **Status**: Not Available  
 **Priority**: N/A
 
 Eclipse Platform's MultiStatus class does not have factory methods like `Status.error()` or `Status.warning()`. The current implementation normalizes the status code to `IStatus.OK`, which is appropriate since MultiStatus overall status is determined by its child statuses.
 
-### Plugin ID Preservation Default
-**Status**: Configurable  
-**Priority**: Low
-
-The plugin ID preservation option defaults to `false` (plugin ID is omitted). Users can enable it via preferences if they need to preserve plugin IDs in factory method calls. This maintains backward compatibility with existing cleanup behavior.
-
 ## Configuration Notes
 
 ### Default Behavior
 - **Status cleanup**: Enabled via preferences, disabled by default
-- **Plugin ID preservation**: Disabled by default (plugin ID omitted in factory methods)
 - **MultiStatus normalization**: Included when Status cleanup is enabled
+- **Plugin ID**: Always omitted in Status factory methods (API limitation)
 
 ### Preferences Location
 1. **Preferences > Java > Code Style > Clean Up**
@@ -81,7 +83,9 @@ The plugin ID preservation option defaults to `false` (plugin ID is omitted). Us
 3. Navigate to **Platform Status** section
 4. Options:
    - **Simplify Platform Status**: Enable Status/MultiStatus cleanups
-   - **Preserve plugin ID in Status factory methods**: Keep plugin ID as first parameter
+
+### Removed Options
+- ~~**Preserve plugin ID in Status factory methods**~~: Removed because Eclipse Platform Status factory methods don't support plugin ID parameters
 
 ## Future Enhancements
 

@@ -145,11 +145,9 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 		List<ASTNode> arguments= visited.arguments();
 		List<ASTNode> staticCallArguments= staticCall.arguments();
 		
-		// Add plugin ID if preservation is enabled (at position 1 in original 5-argument constructor)
-		if (preservePluginId) {
-			staticCallArguments.add(ASTNodes.createMoveTarget(rewrite,
-					ASTNodes.getUnparenthesedExpression(arguments.get(1))));
-		}
+		// Note: preservePluginId parameter is not used for Status factory methods
+		// because the Eclipse Platform Status.error(), Status.warning(), and Status.info()
+		// methods only accept (message, exception) parameters, not plugin ID.
 		
 		// Add message argument (always at position 3 for 5-argument constructor)
 		int messagePosition= 3;
