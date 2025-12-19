@@ -137,7 +137,7 @@ public class MultiStatusSimplifyPlatformStatus extends AbstractSimplifyPlatformS
 		Name multiStatusName= addImport(MultiStatus.class.getName(), cuRewrite, ast);
 		newMultiStatus.setType(ast.newSimpleType(multiStatusName));
 		
-		List<ASTNode> arguments= visited.arguments();
+		List<Expression> arguments= visited.arguments();
 		List<Expression> newArguments= newMultiStatus.arguments();
 		
 		// Copy pluginId (argument 0)
