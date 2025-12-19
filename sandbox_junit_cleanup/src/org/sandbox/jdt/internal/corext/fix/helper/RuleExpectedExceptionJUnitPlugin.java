@@ -168,11 +168,6 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 			return;
 		}
 
-		// Remove expect and expectMessage statements
-		for (Statement stmt : collector.expectStatements) {
-			rewriter.remove(stmt, group);
-		}
-
 		// Find the remaining statements after expect/expectMessage
 		List<Statement> remainingStatements = getRemainingStatements(body, collector.expectStatements);
 		
@@ -180,7 +175,7 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 			return;
 		}
 
-		// Create assertThrows wrapper
+		// Create assertThrows wrapper - this will handle removing all statements and adding new ones
 		createAssertThrowsWrapper(remainingStatements, collector, rewriter, ast, group, body);
 	}
 
@@ -206,7 +201,7 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 	/**
 	 * Creates the assertThrows wrapper around the remaining statements.
 	 * 
-	 * @param statements the statements to wrap
+	 * @param statements the statements to wrap (non-expect statements)
 	 * @param collector the collector with exception expectations
 	 * @param rewriter the AST rewriter
 	 * @param ast the AST instance
@@ -244,8 +239,20 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 		// Add lambda as second argument
 		assertThrows.arguments().add(lambda);
 		
+		// Get list rewrite for method body
+		ListRewrite listRewrite = rewriter.getListRewrite(methodBody, Block.STATEMENTS_PROPERTY);
+		
+		// Remove expect/expectMessage statements
+		for (Statement stmt : collector.expectStatements) {
+			listRewrite.remove(stmt, group);
+		}
+		
+		// Remove original statements (that will be wrapped in lambda)
+		for (Statement stmt : statements) {
+			listRewrite.remove(stmt, group);
+		}
+		
 		// Create variable declaration or standalone statement
-		Statement newStatement;
 		if (collector.expectedMessage != null) {
 			// Need to capture exception to check message
 			String exceptionVarName = "exception";
@@ -259,32 +266,15 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 			String exceptionType = getExceptionTypeName(collector.expectedException);
 			varDecl.setType(ast.newSimpleType(ast.newSimpleName(exceptionType)));
 			
-			newStatement = varDecl;
-			
 			// Add message assertion
 			MethodInvocation messageAssertion = createMessageAssertion(ast, exceptionVarName, collector.expectedMessage);
 			
-			// Replace all original statements with assertThrows and message check
-			ListRewrite listRewrite = rewriter.getListRewrite(methodBody, Block.STATEMENTS_PROPERTY);
-			
-			// Remove all old statements
-			for (Statement stmt : statements) {
-				listRewrite.remove(stmt, group);
-			}
-			
 			// Add new statements
-			listRewrite.insertLast(newStatement, group);
+			listRewrite.insertLast(varDecl, group);
 			listRewrite.insertLast(ast.newExpressionStatement(messageAssertion), group);
 		} else {
 			// No message check needed, just wrap in assertThrows
-			newStatement = ast.newExpressionStatement(assertThrows);
-			
-			// Replace original statements
-			ListRewrite listRewrite = rewriter.getListRewrite(methodBody, Block.STATEMENTS_PROPERTY);
-			for (Statement stmt : statements) {
-				listRewrite.remove(stmt, group);
-			}
-			listRewrite.insertLast(newStatement, group);
+			listRewrite.insertLast(ast.newExpressionStatement(assertThrows), group);
 		}
 	}
 
