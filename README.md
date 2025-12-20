@@ -1,5 +1,15 @@
 # Sandbox Project
 
+**Ein experimentelles Repository für Eclipse JDT (Java Development Tools) Cleanup-Plugins und Tools.**
+
+Dies ist eine Sammlung experimenteller Eclipse-Erweiterungen für automatisierte Code-Transformationen, Quick Fixes und verwandte Werkzeuge für die Eclipse-basierte Java-Entwicklung. Das Repository dient als Experimentierplattform und Lernressource.
+
+**Haupttechnologien:** Eclipse JDT, Java 21, Maven/Tycho 5.0.1
+
+**Status:** Work in Progress – alle Plugins sind experimentell und für Testzwecke gedacht.
+
+---
+
 A collection of experimental Eclipse JDT (Java Development Tools) cleanup plugins and tools. This repository demonstrates how to build custom JDT cleanups, quick fixes, and related tooling for Eclipse-based Java development.
 
 ## Overview
@@ -17,6 +27,7 @@ All plugins are work-in-progress and intended for experimentation and learning.
 
 - [Overview](#overview)
 - [Build Instructions](#build-instructions)
+- [Quickstart](#quickstart)
 - [CI Status](#ci-status)
 - [What's Included](#whats-included)
 - [Projects](#projects)
@@ -59,7 +70,20 @@ All plugins are work-in-progress and intended for experimentation and learning.
     - [Usage](#usage-1)
     - [Limitations](#limitations-1)
   - [sandbox_tools](#6-sandbox_tools)
-  - [sandbox_functional_converter](#7-sandbox_functional_converter)
+  - [sandbox_jface_cleanup](#7-sandbox_jface_cleanup)
+    - [JFace Cleanup – SubProgressMonitor to SubMonitor Migration](#jface-cleanup--subprogressmonitor-to-submonitor-migration)
+    - [Purpose](#purpose)
+    - [Migration Pattern](#migration-pattern)
+      - [Basic Transformation](#basic-transformation)
+      - [With Style Flags](#with-style-flags)
+    - [Unique Variable Name Handling](#unique-variable-name-handling)
+    - [Idempotence](#idempotence)
+    - [Official Eclipse Documentation](#official-eclipse-documentation)
+    - [Requirements](#requirements-2)
+    - [Cleanup Name & Activation](#cleanup-name-activation-1)
+    - [Limitations](#limitations-4)
+    - [Test Coverage](#test-coverage)
+  - [sandbox_functional_converter](#8-sandbox_functional_converter)
     - [Functional Converter Cleanup – Transform Imperative Loops into Functional Java 8 Streams](#functional-converter-cleanup-transform-imperative-loops-into-functional-java-8-streams)
     - [Source and Test Basis](#source-and-test-basis)
     - [Supported Transformations](#supported-transformations)
@@ -71,7 +95,7 @@ All plugins are work-in-progress and intended for experimentation and learning.
     - [Cleanup Name & Activation](#cleanup-name-activation)
     - [Limitations](#limitations-2)
     - [Summary](#summary)
-  - [sandbox_junit](#8-sandbox_junit)
+  - [sandbox_junit](#9-sandbox_junit)
     - [JUnit Cleanup – Feature Overview](#junit-cleanup-feature-overview)
     - [Migration Summary](#migration-summary)
     - [JUnit 3 Classes and Methods](#junit-3-classes-and-methods)
@@ -104,6 +128,8 @@ All plugins are work-in-progress and intended for experimentation and learning.
     - [Limitations](#limitations-3)
     - [Usage](#usage-2)
 - [Installation](#installation)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Build Instructions
 
@@ -198,6 +224,45 @@ When migrating to a new Eclipse version, update the following files:
 - **Java Version**: 21
 - **Tycho Version**: 5.0.1
 - **Default Branch**: `main`
+
+---
+
+## Quickstart
+
+### Using the Eclipse Product
+
+After building the project, you can run the Eclipse product with the bundled cleanup plugins:
+
+```bash
+# Navigate to the product directory
+cd sandbox_product/target/products/org.sandbox.product/
+
+# Launch Eclipse
+./eclipse
+```
+
+### Using Cleanup Plugins via Command Line
+
+You can apply cleanup transformations using the Eclipse JDT formatter application pattern:
+
+```bash
+eclipse -nosplash -consolelog -debug \
+  -application org.eclipse.jdt.core.JavaCodeFormatter \
+  -verbose -config MyCleanupSettings.ini MyClassToCleanup.java
+```
+
+> **Note**: Replace `MyCleanupSettings.ini` with your cleanup configuration file and `MyClassToCleanup.java` with the Java file you want to process.
+
+### Installing as Eclipse Plugins
+
+You can install the cleanup plugins into your existing Eclipse installation using the P2 update site:
+
+1. In Eclipse, go to **Help** → **Install New Software...**
+2. Click **Add...** and enter the update site URL (see [Installation](#installation) section)
+3. Select the desired cleanup features
+4. Follow the installation wizard
+
+> **Warning**: Use only with a test Eclipse installation. These plugins are experimental and may affect your IDE stability.
 
 ---
 
@@ -2071,3 +2136,69 @@ https://github.com/carstenartur/sandbox/raw/main
 > **Warning:**  
 > Use only with a fresh Eclipse installation that can be discarded after testing.  
 > It may break your setup. Don’t say you weren’t warned...
+---
+
+## Contributing
+
+Contributions are welcome! This is an experimental sandbox project for testing Eclipse JDT cleanup implementations.
+
+### How to Contribute
+
+1. **Fork the repository** on GitHub
+2. **Create a feature branch** from `main` (the default branch):
+   ```bash
+   git checkout -b feature/my-new-cleanup
+   ```
+3. **Make your changes** following the existing code structure and conventions
+4. **Test your changes** thoroughly:
+   ```bash
+   mvn -Pjacoco verify
+   ```
+5. **Commit your changes** with clear commit messages:
+   ```bash
+   git commit -m "feat: add new cleanup for XYZ pattern"
+   ```
+6. **Push to your fork** and **create a Pull Request** targeting the `main` branch
+
+### Guidelines
+
+- Follow existing code patterns and cleanup structures
+- Add comprehensive test cases for new cleanups
+- Update documentation (README, architecture.md, todo.md) as needed
+- Ensure SpotBugs, CodeQL, and all tests pass
+- Keep changes focused and minimal
+
+### Reporting Issues
+
+Found a bug or have a feature request? Please [open an issue](https://github.com/carstenartur/sandbox/issues) on GitHub with:
+- Clear description of the problem or suggestion
+- Steps to reproduce (for bugs)
+- Expected vs. actual behavior
+- Eclipse and Java version information
+
+**Note**: This project primarily serves as an experimental playground. Features that prove stable and useful may be contributed upstream to Eclipse JDT.
+
+---
+
+## License
+
+This project is licensed under the **Eclipse Public License 2.0 (EPL-2.0)**.
+
+See the [LICENSE.txt](LICENSE.txt) file for the full license text.
+
+### Eclipse Public License 2.0
+
+The Eclipse Public License (EPL) is a free and open-source software license maintained by the Eclipse Foundation. Key points:
+
+- ✅ **Commercial use** allowed
+- ✅ **Modification** allowed
+- ✅ **Distribution** allowed
+- ✅ **Patent grant** included
+- ⚠️ **Disclose source** for modifications
+- ⚠️ **License and copyright notice** required
+
+For more information, visit: https://www.eclipse.org/legal/epl-2.0/
+
+---
+
+**Copyright © 2021-2025 Carsten Hammer and contributors**
