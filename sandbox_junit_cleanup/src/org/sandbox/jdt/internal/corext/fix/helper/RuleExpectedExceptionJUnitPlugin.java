@@ -1,0 +1,324 @@
+/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.LambdaExpression;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
+
+import static org.sandbox.jdt.internal.corext.fix.helper.JUnitConstants.*;
+
+/**
+ * Plugin to migrate JUnit 4 ExpectedException rule to JUnit 5 assertThrows.
+ */
+public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
+
+	@Override
+	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
+		ReferenceHolder<Integer, JunitHolder> dataHolder = new ReferenceHolder<>();
+		HelperVisitor.callFieldDeclarationVisitor(ORG_JUNIT_RULE, ORG_JUNIT_RULES_EXPECTED_EXCEPTION, compilationUnit,
+				dataHolder, nodesprocessed,
+				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+	}
+
+	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, FieldDeclaration node,
+			ReferenceHolder<Integer, JunitHolder> dataHolder) {
+		JunitHolder mh = new JunitHolder();
+		VariableDeclarationFragment fragment = (VariableDeclarationFragment) node.fragments().get(0);
+		ITypeBinding binding = fragment.resolveBinding().getType();
+		if (binding != null && ORG_JUNIT_RULES_EXPECTED_EXCEPTION.equals(binding.getQualifiedName())) {
+			mh.minv = node;
+			dataHolder.put(dataHolder.size(), mh);
+			operations.add(fixcore.rewrite(dataHolder));
+		}
+		return false;
+	}
+
+	@Override
+	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+			JunitHolder junitHolder) {
+		FieldDeclaration field = junitHolder.getFieldDeclaration();
+		TypeDeclaration parentClass = ASTNodes.getParent(field, TypeDeclaration.class);
+
+		VariableDeclarationFragment originalFragment = (VariableDeclarationFragment) field.fragments().get(0);
+		String fieldName = originalFragment.getName().getIdentifier();
+
+		// Remove the field declaration
+		rewriter.remove(field, group);
+
+		// Remove old imports
+		importRewriter.removeImport(ORG_JUNIT_RULE);
+		importRewriter.removeImport(ORG_JUNIT_RULES_EXPECTED_EXCEPTION);
+
+		// Add new imports
+		importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, "assertThrows", false);
+
+		// Transform all test methods that use the ExpectedException field
+		for (MethodDeclaration method : parentClass.getMethods()) {
+			transformTestMethod(method, fieldName, rewriter, ast, group, importRewriter, parentClass);
+		}
+	}
+
+	private void transformTestMethod(MethodDeclaration method, String fieldName, ASTRewrite rewriter, AST ast,
+			TextEditGroup group, ImportRewrite importRewriter, TypeDeclaration parentClass) {
+		Block methodBody = method.getBody();
+		if (methodBody == null) {
+			return;
+		}
+
+		List<Statement> statements = methodBody.statements();
+		if (statements.isEmpty()) {
+			return;
+		}
+
+		// Find expect() and expectMessage() calls
+		ExpectedExceptionInfo info = findExpectedExceptionCalls(statements, fieldName);
+
+		if (info.expectCall == null) {
+			// This method doesn't use the ExpectedException field
+			return;
+		}
+
+		// Generate a unique variable name for the exception if we need to check the message
+		String exceptionVarName = null;
+		if (info.expectMessageCall != null) {
+			Collection<String> usedNames = getUsedVariableNames(method);
+			exceptionVarName = generateUniqueVariableName("exception", usedNames);
+		}
+
+		// Create assertThrows call
+		MethodInvocation assertThrowsCall = ast.newMethodInvocation();
+		assertThrowsCall.setName(ast.newSimpleName("assertThrows"));
+
+		// Add exception class as first argument
+		Expression exceptionClass = (Expression) ASTNode.copySubtree(ast,
+				(Expression) info.expectCall.arguments().get(0));
+		assertThrowsCall.arguments().add(exceptionClass);
+
+		// Create lambda with remaining statements
+		LambdaExpression lambda = ast.newLambdaExpression();
+		lambda.setParentheses(true);
+
+		Block lambdaBody = ast.newBlock();
+
+		// Copy all statements after the expect/expectMessage calls
+		int startIndex = info.lastExpectStatementIndex + 1;
+		for (int i = startIndex; i < statements.size(); i++) {
+			Statement stmt = statements.get(i);
+			lambdaBody.statements().add(ASTNode.copySubtree(ast, stmt));
+		}
+
+		lambda.setBody(lambdaBody);
+		assertThrowsCall.arguments().add(lambda);
+
+		// Create the new statement
+		Statement newStatement;
+		if (exceptionVarName != null) {
+			// Need to capture exception for message check
+			// ExceptionType exceptionVar = assertThrows(ExceptionType.class, () -> { ... });
+			VariableDeclarationFragment fragment = ast.newVariableDeclarationFragment();
+			fragment.setName(ast.newSimpleName(exceptionVarName));
+			fragment.setInitializer(assertThrowsCall);
+
+			VariableDeclarationStatement varDecl = ast.newVariableDeclarationStatement(fragment);
+			// Extract the exception type name from the class literal
+			String exceptionTypeName = extractExceptionTypeName(info.expectCall);
+			varDecl.setType(ast.newSimpleType(ast.newName(exceptionTypeName)));
+
+			newStatement = varDecl;
+		} else {
+			// No message check needed, just call assertThrows
+			newStatement = ast.newExpressionStatement(assertThrowsCall);
+		}
+
+		// Remove old expect/expectMessage calls and statements after them
+		for (int i = statements.size() - 1; i >= info.firstExpectStatementIndex; i--) {
+			rewriter.remove(statements.get(i), group);
+		}
+
+		// Insert the new assertThrows statement
+		rewriter.getListRewrite(methodBody, Block.STATEMENTS_PROPERTY).insertLast(newStatement, group);
+
+		// If there's a message expectation, add the assertion
+		if (info.expectMessageCall != null && exceptionVarName != null) {
+			Expression messageArg = (Expression) info.expectMessageCall.arguments().get(0);
+			
+			// Create: assertEquals("message", exception.getMessage());
+			MethodInvocation getMessageCall = ast.newMethodInvocation();
+			getMessageCall.setExpression(ast.newSimpleName(exceptionVarName));
+			getMessageCall.setName(ast.newSimpleName("getMessage"));
+
+			MethodInvocation assertEqualsCall = ast.newMethodInvocation();
+			assertEqualsCall.setName(ast.newSimpleName("assertEquals"));
+			assertEqualsCall.arguments().add(ASTNode.copySubtree(ast, messageArg));
+			assertEqualsCall.arguments().add(getMessageCall);
+
+			ExpressionStatement assertStatement = ast.newExpressionStatement(assertEqualsCall);
+			rewriter.getListRewrite(methodBody, Block.STATEMENTS_PROPERTY).insertLast(assertStatement, group);
+
+			// Add assertEquals import
+			importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, "assertEquals", false);
+		}
+	}
+
+	private ExpectedExceptionInfo findExpectedExceptionCalls(List<Statement> statements, String fieldName) {
+		ExpectedExceptionInfo info = new ExpectedExceptionInfo();
+		
+		for (int i = 0; i < statements.size(); i++) {
+			Statement stmt = statements.get(i);
+			if (!(stmt instanceof ExpressionStatement)) {
+				continue;
+			}
+
+			Expression expr = ((ExpressionStatement) stmt).getExpression();
+			if (!(expr instanceof MethodInvocation)) {
+				continue;
+			}
+
+			MethodInvocation invocation = (MethodInvocation) expr;
+			Expression expression = invocation.getExpression();
+			if (expression == null || !(expression instanceof SimpleName)) {
+				continue;
+			}
+
+			SimpleName receiver = (SimpleName) expression;
+			if (!fieldName.equals(receiver.getIdentifier())) {
+				continue;
+			}
+
+			String methodName = invocation.getName().getIdentifier();
+			if ("expect".equals(methodName)) {
+				info.expectCall = invocation;
+				if (info.firstExpectStatementIndex == -1) {
+					info.firstExpectStatementIndex = i;
+				}
+				info.lastExpectStatementIndex = i;
+			} else if ("expectMessage".equals(methodName)) {
+				info.expectMessageCall = invocation;
+				if (info.firstExpectStatementIndex == -1) {
+					info.firstExpectStatementIndex = i;
+				}
+				info.lastExpectStatementIndex = i;
+			}
+		}
+
+		return info;
+	}
+
+	private String extractExceptionTypeName(MethodInvocation expectCall) {
+		// The argument is typically a TypeLiteral like IllegalArgumentException.class
+		if (!expectCall.arguments().isEmpty()) {
+			Expression arg = (Expression) expectCall.arguments().get(0);
+			String argStr = arg.toString();
+			// Remove .class suffix
+			if (argStr.endsWith(".class")) {
+				return argStr.substring(0, argStr.length() - ".class".length());
+			}
+		}
+		return "Exception";
+	}
+
+	private String generateUniqueVariableName(String baseName, Collection<String> usedNames) {
+		if (!usedNames.contains(baseName)) {
+			return baseName;
+		}
+		int counter = 1;
+		String candidateName;
+		do {
+			candidateName = baseName + counter;
+			counter++;
+		} while (usedNames.contains(candidateName));
+		return candidateName;
+	}
+
+	@Override
+	public String getPreview(boolean afterRefactoring) {
+		if (afterRefactoring) {
+			return """
+					import static org.junit.jupiter.api.Assertions.assertEquals;
+					import static org.junit.jupiter.api.Assertions.assertThrows;
+					
+					import org.junit.jupiter.api.Test;
+					
+					public class MyTest {
+						@Test
+						public void testException() {
+							IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+								throw new IllegalArgumentException("Invalid argument");
+							});
+							assertEquals("Invalid argument", exception.getMessage());
+						}
+					}
+					"""; //$NON-NLS-1$
+		}
+		return """
+				import org.junit.Rule;
+				import org.junit.Test;
+				import org.junit.rules.ExpectedException;
+				
+				public class MyTest {
+					@Rule
+					public ExpectedException thrown = ExpectedException.none();
+					
+					@Test
+					public void testException() {
+						thrown.expect(IllegalArgumentException.class);
+						thrown.expectMessage("Invalid argument");
+						throw new IllegalArgumentException("Invalid argument");
+					}
+				}
+				"""; //$NON-NLS-1$
+	}
+
+	@Override
+	public String toString() {
+		return "RuleExpectedException"; //$NON-NLS-1$
+	}
+
+	private static class ExpectedExceptionInfo {
+		MethodInvocation expectCall;
+		MethodInvocation expectMessageCall;
+		int firstExpectStatementIndex = -1;
+		int lastExpectStatementIndex = -1;
+	}
+}

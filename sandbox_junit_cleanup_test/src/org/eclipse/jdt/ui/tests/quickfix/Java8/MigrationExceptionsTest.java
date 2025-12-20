@@ -122,7 +122,6 @@ public class MigrationExceptionsTest {
 		}, null);
 	}
 
-	@Disabled("Not yet implemented - ExpectedException rule migration")
 	@Test
 	public void migrates_expectedException_rule_basic() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
@@ -167,7 +166,6 @@ public class MigrationExceptionsTest {
 		}, null);
 	}
 
-	@Disabled("Not yet implemented - ExpectedException with message")
 	@Test
 	public void migrates_expectedException_rule_with_message() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
