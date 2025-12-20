@@ -2,10 +2,6 @@
 
 ## Pending Implementation
 
-# Method Reusability Finder - TODO
-
-## Pending Implementation
-
 ### Core Features
 - [ ] Implement basic method similarity detection in `MethodReuseFinder`
 - [ ] Implement AST-based pattern matching in `CodePatternMatcher`
