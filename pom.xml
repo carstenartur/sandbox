@@ -51,6 +51,9 @@
 		<module>sandbox_junit_cleanup</module>
 		<module>sandbox_junit_cleanup_feature</module>
 		<module>sandbox_junit_cleanup_test</module>
+		<module>sandbox_method_reuse</module>
+		<module>sandbox_method_reuse_feature</module>
+		<module>sandbox_method_reuse_test</module>
 		<module>sandbox_usage_view</module>
 		<module>sandbox_usage_view_feature</module>
 		<module>sandbox_product</module>
@@ -450,6 +453,21 @@ See README.md for more information.
 			<dependency>
 				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_junit_cleanup_test</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_method_reuse</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_method_reuse_feature</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_method_reuse_test</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
