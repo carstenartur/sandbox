@@ -1,6 +1,12 @@
 # Sandbox Project
 
+[![License](https://img.shields.io/badge/License-EPL%202.0-blue.svg)](https://www.eclipse.org/legal/epl-2.0/)
+[![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)
+[![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)
+
 A collection of experimental Eclipse JDT (Java Development Tools) cleanup plugins and tools. This repository demonstrates how to build custom JDT cleanups, quick fixes, and related tooling for Eclipse-based Java development.
+
+**Default Branch:** `main` – All development and pull requests should target the `main` branch.
 
 ## Overview
 
@@ -20,92 +26,9 @@ All plugins are work-in-progress and intended for experimentation and learning.
 - [CI Status](#ci-status)
 - [What's Included](#whats-included)
 - [Projects](#projects)
-  - [sandbox_cleanup_application](#1-sandbox_cleanup_application)
-  - [sandbox_encoding_quickfix](#2-sandbox_encoding_quickfix)
-    - [Encoding Cleanup – Replace Platform Encoding with Explicit Charset](#encoding-cleanup-replace-platform-encoding-with-explicit-charset)
-    - [Based on Test Coverage](#based-on-test-coverage)
-    - [Cleanup Strategies](#cleanup-strategies)
-    - [Java Version Awareness](#java-version-awareness)
-    - [Supported Classes and APIs](#supported-classes-and-apis)
-    - [Examples](#examples)
-      - [Example: FileReader Replacement](#example-filereader-replacement)
-      - [Example: Channels.newReader (Java 10+)](#example-channelsnewreader-java-10)
-      - [Example: Files.readAllLines (Java 10+)](#example-filesreadalllines-java-10)
-      - [Example: Scanner (Java 10+)](#example-scanner-java-10)
-      - [Example: SAX InputSource](#example-sax-inputsource)
-    - [Aggregation Mode Example](#aggregation-mode-example)
-    - [Additional Fixes](#additional-fixes)
-    - [Cleanup Mode × Java Version Matrix](#cleanup-mode-java-version-matrix)
-    - [Usage](#usage)
-    - [Encoding Cleanup – Strategy Variants](#encoding-cleanup-strategy-variants)
-      - [Strategy: Prefer UTF-8](#strategy-prefer-utf-8)
-      - [Strategy: Keep Behavior](#strategy-keep-behavior)
-      - [Strategy: Aggregate UTF-8](#strategy-aggregate-utf-8)
-      - [Summary Table](#summary-table)
-    - [Charset Literal Replacement Table](#charset-literal-replacement-table)
-    - [Limitations](#limitations)
-  - [sandbox_extra_search](#3-sandbox_extra_search)
-  - [sandbox_usage_view](#4-sandbox_usage_view)
-  - [sandbox_platform_helper](#5-sandbox_platform_helper)
-    - [Platform Status Cleanup – Simplification of `new Status(...)` Calls](#platform-status-cleanup-simplification-of-new-status-calls)
-    - [Motivation](#motivation)
-    - [Before/After Comparison](#beforeafter-comparison)
-    - [Examples](#examples-1)
-      - [Java 8: With `StatusHelper`](#java-8-with-statushelper)
-      - [Java 11+: With `Status.warning(...)`](#java-11-with-statuswarning)
-      - [With Exception](#with-exception)
-    - [Cleanup Strategy Selection](#cleanup-strategy-selection)
-    - [Requirements](#requirements)
-    - [Usage](#usage-1)
-    - [Limitations](#limitations-1)
-  - [sandbox_tools](#6-sandbox_tools)
-  - [sandbox_functional_converter](#7-sandbox_functional_converter)
-    - [Functional Converter Cleanup – Transform Imperative Loops into Functional Java 8 Streams](#functional-converter-cleanup-transform-imperative-loops-into-functional-java-8-streams)
-    - [Source and Test Basis](#source-and-test-basis)
-    - [Supported Transformations](#supported-transformations)
-    - [Examples](#examples-2)
-    - [Reductions (Accumulators)](#reductions-accumulators)
-    - [Not Yet Supported (Disabled Tests)](#not-yet-supported-disabled-tests)
-    - [Ignored Cases – No Cleanup Triggered](#ignored-cases-no-cleanup-triggered)
-    - [Java Version Compatibility](#java-version-compatibility)
-    - [Cleanup Name & Activation](#cleanup-name-activation)
-    - [Limitations](#limitations-2)
-    - [Summary](#summary)
-  - [sandbox_junit](#8-sandbox_junit)
-    - [JUnit Cleanup – Feature Overview](#junit-cleanup-feature-overview)
-    - [Migration Summary](#migration-summary)
-    - [JUnit 3 Classes and Methods](#junit-3-classes-and-methods)
-      - [JUnit 3 Migration Summary Table](#junit-3-migration-summary-table)
-      - [Class Structure Transformations](#class-structure-transformations)
-      - [Test Method Transformations](#test-method-transformations)
-      - [Setup and Teardown Methods](#setup-and-teardown-methods)
-      - [Test Suite Migration](#test-suite-migration)
-    - [JUnit 4 Annotations and Classes](#junit-4-annotations-and-classes)
-      - [JUnit 4 Migration Summary Table](#junit-4-migration-summary-table)
-      - [Lifecycle Annotations](#lifecycle-annotations)
-      - [Test Annotations](#test-annotations)
-      - [Test Suite Annotations](#test-suite-annotations)
-      - [Rule Annotations](#rule-annotations)
-    - [JUnit Assertion Migration – JUnit 3 and 4 to JUnit 5](#junit-assertion-migration-junit-3-and-4-to-junit-5)
-      - [Supported Assertion Methods](#supported-assertion-methods)
-      - [Parameter Order Differences](#parameter-order-differences)
-      - [Assertion Mapping Table](#assertion-mapping-table)
-      - [Example Transformations](#example-transformations)
-        - [Equality Check](#equality-check)
-        - [Null Check](#null-check)
-        - [Boolean Assertions](#boolean-assertions)
-        - [Identity Assertions](#identity-assertions)
-        - [NotNull Assertions](#notnull-assertions)
-        - [Fail Statements](#fail-statements)
-    - [JUnit Assumption Migration](#junit-assumption-migration)
-      - [Supported Assumption Methods](#supported-assumption-methods)
-      - [Assumption Mapping Table](#assumption-mapping-table)
-    - [Notes](#notes)
-    - [Limitations](#limitations-3)
-    - [Usage](#usage-2)
 - [Installation](#installation)
-
-## Build Instructions
+- [Contributing](#contributing)
+- [License](#license)
 
 ### Prerequisites
 
@@ -2062,12 +1985,87 @@ This documentation is based on the test coverage provided in the JUnit 3 and 4 c
 
 ## Installation
 
-You can use the P2 update site:
+### For Users
+
+You can install the plugins using the P2 update site:
 
 ```
 https://github.com/carstenartur/sandbox/raw/main
 ```
 
-> **Warning:**  
-> Use only with a fresh Eclipse installation that can be discarded after testing.  
-> It may break your setup. Don’t say you weren’t warned...
+**Installation Steps:**
+
+1. Open Eclipse
+2. Go to **Help** → **Install New Software...**
+3. Click **Add...** to add a new repository
+4. Enter a name (e.g., "Sandbox Cleanups") and the URL above
+5. Select the features you want to install
+6. Follow the installation wizard
+
+> **⚠️ Warning:**  
+> These plugins are **experimental**. Use only with a fresh Eclipse installation that can be discarded after testing.  
+> They may break your setup. Don't say you weren't warned!
+
+### For Developers
+
+To build and develop the project locally, see the [Build Instructions](#build-instructions) section above.
+
+---
+
+## Contributing
+
+Contributions are welcome! This is an experimental sandbox project for developing Eclipse JDT cleanups and related tools.
+
+### How to Contribute
+
+1. **Fork the repository** on GitHub
+2. **Clone your fork** locally:
+   ```bash
+   git clone https://github.com/YOUR-USERNAME/sandbox.git
+   ```
+3. **Create a feature branch** based on `main`:
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+4. **Make your changes** following the existing code style and conventions
+5. **Test your changes** thoroughly:
+   ```bash
+   mvn -Pjacoco verify
+   ```
+6. **Commit your changes** with clear commit messages:
+   ```bash
+   git commit -m "feat: Add new cleanup for XYZ"
+   ```
+7. **Push to your fork**:
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+8. **Open a Pull Request** targeting the `main` branch
+
+### Contribution Guidelines
+
+- **Base branch:** All PRs should target `main`
+- **Code quality:** Ensure SpotBugs, CodeQL, and tests pass
+- **Test coverage:** Add tests for new features
+- **Documentation:** Update relevant documentation (README, architecture.md, todo.md)
+- **Commit messages:** Use conventional commit format (e.g., `feat:`, `fix:`, `docs:`)
+
+### Reporting Issues
+
+Found a bug or have a feature request? Please [open an issue](https://github.com/carstenartur/sandbox/issues) on GitHub.
+
+### Questions?
+
+For questions or discussions, feel free to open an issue or start a discussion on GitHub.
+
+---
+
+## License
+
+This project is licensed under the **Eclipse Public License 2.0 (EPL-2.0)**.
+
+See the [LICENSE.txt](LICENSE.txt) file for the full license text.
+
+**SPDX-License-Identifier:** EPL-2.0
+
+Copyright © 2021 Carsten Hammer and contributors.
