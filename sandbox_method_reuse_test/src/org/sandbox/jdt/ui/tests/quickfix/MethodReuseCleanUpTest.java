@@ -64,7 +64,7 @@ public class MethodReuseCleanUpTest {
 	@ParameterizedTest
 	@EnumSource(MethodReuseScenarios.class)
 	public void testMethodReuse(MethodReuseScenarios test) throws CoreException {
-		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null);
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("Test.java", test.given, false, null);
 		context.enable(MYCleanUpConstants.METHOD_REUSE_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
