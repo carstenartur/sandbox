@@ -108,7 +108,15 @@ public class CodeSequenceMatcher {
 }
 
 /**
- * Variable Mapping - Tracks the mapping between variable names in target and candidate code
+ * Represents a one-to-one mapping between variable names in the target code and
+ * variable names in the candidate code.
+ * <p>
+ * This helper is used by {@link CodeSequenceMatcher} (via
+ * {@code VariableMappingMatcher}) to normalize variable names when comparing
+ * AST subtrees. It maintains a bidirectional mapping (target → candidate and
+ * candidate → target) and enforces consistency: once a name pair is mapped,
+ * subsequent mappings for either name must match the original pair or the
+ * mapping is considered invalid.
  */
 class VariableMapping {
 	// Maps from target variable name to candidate variable name
