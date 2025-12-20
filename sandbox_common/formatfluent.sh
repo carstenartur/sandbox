@@ -1,2 +1,0 @@
-#!/bin/sh
-awk '{print "    /**\n     *\n     * @param bs\n     * @return\n     */\n    public ASTProcessor<E> call" $0 "Visitor(\n			BiPredicate<ASTNode, E> bs) {\n		return call" $0 "Visitor(bs,null);\n	}\n	\n    /**\n     *\n     * @param bs\n     * @param navigate\n     * @return\n     */\n    public ASTProcessor<E> call" $0 "Visitor(\n			BiPredicate<ASTNode, E> bs, Function<ASTNode, ASTNode> navigate) {\n		nodetypelist.put(VisitorEnum." $0 ", new NodeHolder(bs,navigate));\n		return this;\n	}\n"}' <input.txt >output.txt
