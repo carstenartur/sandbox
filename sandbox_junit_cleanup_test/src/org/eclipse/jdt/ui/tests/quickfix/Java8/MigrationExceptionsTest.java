@@ -167,7 +167,7 @@ public class MigrationExceptionsTest {
 		}, null);
 	}
 
-	@Disabled("Not yet implemented - ExpectedException with message")
+	@Disabled("temporarily disabled: failing in CI (see PR #320)")
 	@Test
 	public void migrates_expectedException_rule_with_message() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
