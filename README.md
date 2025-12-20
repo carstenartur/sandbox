@@ -1,16 +1,10 @@
 # Sandbox Project
 
-**Ein experimentelles Repository für Eclipse JDT (Java Development Tools) Cleanup-Plugins und Tools.**
-
-Dies ist eine Sammlung experimenteller Eclipse-Erweiterungen für automatisierte Code-Transformationen, Quick Fixes und verwandte Werkzeuge für die Eclipse-basierte Java-Entwicklung. Das Repository dient als Experimentierplattform und Lernressource.
-
-**Haupttechnologien:** Eclipse JDT, Java 21, Maven/Tycho 5.0.1
-
-**Status:** Work in Progress – alle Plugins sind experimentell und für Testzwecke gedacht.
-
----
-
 A collection of experimental Eclipse JDT (Java Development Tools) cleanup plugins and tools. This repository demonstrates how to build custom JDT cleanups, quick fixes, and related tooling for Eclipse-based Java development.
+
+**Main Technologies:** Eclipse JDT, Java 21, Maven/Tycho 5.0.1
+
+**Status:** Work in Progress – All plugins are experimental and intended for testing purposes.
 
 ## Overview
 
@@ -130,6 +124,7 @@ All plugins are work-in-progress and intended for experimentation and learning.
     - [Usage](#usage-2)
 - [Installation](#installation)
 - [Contributing](#contributing)
+- [Release Process](#release-process)
 - [License](#license)
 
 ## Build Instructions
@@ -2178,6 +2173,123 @@ Found a bug or have a feature request? Please [open an issue](https://github.com
 - Eclipse and Java version information
 
 **Note**: This project primarily serves as an experimental playground. Features that prove stable and useful may be contributed upstream to Eclipse JDT.
+
+---
+
+## Release Process
+
+This section describes how to create and publish a new release of the Sandbox project.
+
+### Prerequisites
+
+- Write access to the repository
+- Local environment with Java 21 and Maven configured
+- All tests passing on the `main` branch
+
+### Release Steps
+
+#### 1. Update Version Numbers
+
+Update the version in all `pom.xml` files from `X.Y.Z-SNAPSHOT` to `X.Y.Z`:
+
+```bash
+# Example: Updating from 1.2.2-SNAPSHOT to 1.2.2
+mvn versions:set -DnewVersion=1.2.2
+mvn versions:commit
+```
+
+#### 2. Verify the Build
+
+Ensure all tests pass and the build completes successfully:
+
+```bash
+# Run full build with tests and coverage
+mvn clean verify -Pjacoco
+
+# Build with WAR file
+mvn -Dinclude=web -Pjacoco verify
+```
+
+#### 3. Commit Version Changes
+
+Commit the version updates:
+
+```bash
+git add .
+git commit -m "Release version 1.2.2"
+git push origin main
+```
+
+#### 4. Create a Git Tag
+
+Tag the release commit:
+
+```bash
+git tag -a v1.2.2 -m "Release version 1.2.2"
+git push origin v1.2.2
+```
+
+#### 5. Create GitHub Release
+
+1. Go to the [GitHub Releases page](https://github.com/carstenartur/sandbox/releases)
+2. Click **"Draft a new release"**
+3. Select the tag you just created (e.g., `v1.2.2`)
+4. Set the release title (e.g., `Release 1.2.2`)
+5. Add release notes describing:
+   - New features
+   - Bug fixes
+   - Breaking changes (if any)
+   - Known issues
+6. Click **"Publish release"**
+
+#### 6. Automated Publishing
+
+When a GitHub release is created, the `maven-publish.yml` workflow automatically:
+- Builds the project with Maven
+- Publishes artifacts to GitHub Packages
+- Makes the P2 update site available
+
+#### 7. Prepare for Next Development Iteration
+
+Update versions to the next SNAPSHOT version:
+
+```bash
+# Example: Updating to 1.2.3-SNAPSHOT for next development cycle
+mvn versions:set -DnewVersion=1.2.3-SNAPSHOT
+mvn versions:commit
+
+git add .
+git commit -m "Prepare for next development iteration: 1.2.3-SNAPSHOT"
+git push origin main
+```
+
+### Version Numbering
+
+This project follows [Semantic Versioning](https://semver.org/):
+
+- **MAJOR** version (X.0.0): Incompatible API changes
+- **MINOR** version (0.X.0): New functionality in a backward-compatible manner
+- **PATCH** version (0.0.X): Backward-compatible bug fixes
+
+### Release Artifacts
+
+Each release produces:
+- **Eclipse Product**: Installable Eclipse IDE with bundled plugins (`sandbox_product/target`)
+- **P2 Update Site**: For installing plugins into existing Eclipse (`sandbox_web/target`)
+- **WAR File**: Web-deployable update site
+- **Maven Artifacts**: Published to GitHub Packages
+
+### Troubleshooting
+
+**Build fails during release:**
+- Ensure all tests pass locally: `mvn clean verify -Pjacoco`
+- Check Java version: `java -version` (must be 21+)
+- Verify Maven version: `mvn -version` (3.9.x recommended)
+
+**GitHub Actions workflow fails:**
+- Check workflow run logs in the Actions tab
+- Ensure the tag was pushed correctly: `git ls-remote --tags origin`
+- Verify permissions for GitHub Packages publishing
 
 ---
 
