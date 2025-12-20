@@ -169,4 +169,9 @@ public class MYCleanUpConstants {
 	 *
 	 */
 	public static final String USEFUNCTIONALLOOP_CLEANUP= "cleanup.functionalloop"; //$NON-NLS-1$
+
+	/**
+	 *
+	 */
+	public static final String METHOD_REUSE_CLEANUP= "cleanup.method_reuse"; //$NON-NLS-1$
 }
