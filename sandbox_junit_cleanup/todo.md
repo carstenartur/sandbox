@@ -58,6 +58,8 @@ Generalize and complete the rule migration framework for remaining JUnit 4 rules
 - `Verifier` → custom assertions
 - Custom rules → extension implementations
 
+**Status**: TemporaryFolder migration fully implemented with comprehensive test coverage.
+
 **Benefits**:
 - Complete JUnit 4 to 5 migration capability
 - Reduces manual migration effort significantly

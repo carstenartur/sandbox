@@ -14,6 +14,7 @@
 package org.sandbox.jdt.internal.ui.fix;
 
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.XML_CLEANUP;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.XML_CLEANUP_INDENT;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.XMLCleanUpFix_refactor;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.XMLCleanUp_description;
 
@@ -69,6 +70,11 @@ public class XMLCleanUpCore extends AbstractCleanUp {
 				) {
 			return null;
 		}
+		
+		// Configure indent preference
+		boolean enableIndent = isEnabled(XML_CLEANUP_INDENT);
+		XMLCleanUpFixCore.setEnableIndent(enableIndent);
+		
 		Set<CompilationUnitRewriteOperation> operations= new LinkedHashSet<>();
 		Set<ASTNode> nodesprocessed= new HashSet<>();
 		computeFixSet.forEach(i -> i.findOperations(compilationUnit, operations, nodesprocessed,

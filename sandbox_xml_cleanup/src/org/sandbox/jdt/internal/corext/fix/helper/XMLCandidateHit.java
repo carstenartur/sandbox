@@ -13,10 +13,40 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.jdt.core.dom.ASTNode;
 
+/**
+ * Represents a candidate XML file for cleanup transformation.
+ */
 public class XMLCandidateHit {
 
+	/** The AST node (used for Eclipse cleanup framework integration) */
 	public ASTNode whileStatement;
-
+	
+	/** The XML file to be processed */
+	public IFile file;
+	
+	/** Original content before transformation */
+	public String originalContent;
+	
+	/** Transformed content after processing */
+	public String transformedContent;
+	
+	/**
+	 * Create a hit with file information.
+	 * 
+	 * @param file the file to process
+	 * @param originalContent the original file content
+	 */
+	public XMLCandidateHit(IFile file, String originalContent) {
+		this.file = file;
+		this.originalContent = originalContent;
+	}
+	
+	/**
+	 * Default constructor for backward compatibility.
+	 */
+	public XMLCandidateHit() {
+	}
 }

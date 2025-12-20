@@ -79,6 +79,19 @@ public class MYCleanUpConstants {
 	 *
 	 */
 	public static final String XML_CLEANUP= "cleanup.xmlcleanup"; //$NON-NLS-1$
+	
+	/**
+	 * Enable indentation for XML cleanup. When disabled (default), indent="no" is used
+	 * to minimize file size. When enabled, minimal indentation is applied.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 * <p>
+	 *
+	 * @see CleanUpOptionsCore#TRUE
+	 * @see CleanUpOptionsCore#FALSE
+	 */
+	public static final String XML_CLEANUP_INDENT= "cleanup.xmlcleanup_indent"; //$NON-NLS-1$
+	
 	/**
 	 *
 	 */
