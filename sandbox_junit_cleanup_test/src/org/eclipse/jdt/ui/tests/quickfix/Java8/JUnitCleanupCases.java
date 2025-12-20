@@ -946,6 +946,8 @@ public class MyTest {
 package test;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -971,7 +973,7 @@ public class MyTest {
 	@Test
 	public void test3() throws IOException{
 		System.out.println("Test name: " + testName);
-		File newFile = tempFolder.resolve("myfile.txt").toFile();
+		File newFile = Files.createFile(tempFolder.resolve("myfile.txt")).toFile();
 	}
 }
 """); //$NON-NLS-1$
