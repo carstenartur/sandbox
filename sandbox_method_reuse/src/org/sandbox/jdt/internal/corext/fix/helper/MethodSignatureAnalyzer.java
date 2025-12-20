@@ -93,7 +93,7 @@ public class MethodSignatureAnalyzer {
 		for (Object obj : params) {
 			if (obj instanceof SingleVariableDeclaration) {
 				SingleVariableDeclaration svd = (SingleVariableDeclaration) obj;
-				types.add(svd.getType().toString());
+				types.add(svd.getType() != null ? svd.getType().toString() : "");
 			}
 		}
 		return types.toArray(new String[0]);

@@ -22,7 +22,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
-import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava11;
+import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava8;
 
 /**
  * Method Reuse Cleanup Tests
@@ -32,7 +32,7 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava11;
 public class MethodReuseCleanUpTest {
 
 	@RegisterExtension
-	AbstractEclipseJava context= new EclipseJava11();
+	AbstractEclipseJava context= new EclipseJava8();
 
 	enum MethodReuseScenarios {
 		// Test case 1: Simple inline sequence with different variable names
@@ -139,7 +139,7 @@ public class MethodReuseCleanUpTest {
 	@ParameterizedTest
 	@EnumSource(MethodReuseScenarios.class)
 	public void testMethodReuse(MethodReuseScenarios test) throws CoreException {
-		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null);
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("Test.java", test.given, false, null);
 		context.enable(MYCleanUpConstants.METHOD_REUSE_INLINE_SEQUENCES);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
