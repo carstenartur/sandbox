@@ -122,6 +122,8 @@ All plugins are work-in-progress and intended for experimentation and learning.
     - [Notes](#notes)
     - [Limitations](#limitations-3)
     - [Usage](#usage-2)
+  - [sandbox_method_reuse](#10-sandbox_method_reuse)
+  - [sandbox_xml_cleanup](#11-sandbox_xml_cleanup)
 - [Installation](#installation)
 - [Contributing](#contributing)
 - [Release Process](#release-process)
@@ -2118,6 +2120,228 @@ This documentation is based on the test coverage provided in the JUnit 3 and 4 c
 <a href="/marketplace-client-intro?mpc_install=6454408" class="drag" title="Drag to your running Eclipse* workspace. *Requires Eclipse Marketplace Client">
 <img style="width:80px;" typeof="foaf:Image" class="img-responsive" src="https://marketplace.eclipse.org/modules/custom/eclipsefdn/eclipsefdn_marketplace/images/btn-install.svg" alt="Drag to your running Eclipse* workspace. *Requires Eclipse Marketplace Client" />
 </a>
+
+---
+
+### 10. `sandbox_method_reuse`
+
+#### Method Reusability Finder – Code Duplication Detection
+
+The **Method Reusability Finder** is an Eclipse JDT cleanup plugin that analyzes selected methods to identify potentially reusable code patterns across the codebase. It helps developers discover duplicate or similar code that could be refactored to improve code quality and maintainability.
+
+---
+
+#### Purpose
+
+- **Code Duplication Detection**: Identify similar code patterns using both token-based and AST-based analysis
+- **Intelligent Matching**: Recognize code similarity even when variable names differ
+- **Eclipse Integration**: Seamlessly integrate as a cleanup action in Eclipse JDT
+- **Performance**: Efficient analysis that scales to large codebases
+
+---
+
+#### Key Features
+
+##### Similarity Analysis
+- **Token-based similarity**: Compares normalized token sequences
+- **AST-based similarity**: Compares abstract syntax tree structures
+- **Variable name normalization**: Ignores variable name differences
+- **Control flow analysis**: Matches similar control structures
+
+##### Inline Code Detection
+- Searches method bodies for inline code sequences
+- Finds code that matches a target method's body
+- Identifies refactoring opportunities within methods
+
+##### Safety Analysis
+- Analyzes semantic safety of replacements
+- Detects field modifications and side effects
+- Checks for complex control flow
+
+---
+
+#### Components
+
+| Component                      | Purpose                                           |
+|--------------------------------|---------------------------------------------------|
+| `MethodReuseFinder`            | Searches project for similar methods             |
+| `MethodSignatureAnalyzer`      | Analyzes and compares method signatures          |
+| `CodePatternMatcher`           | AST-based pattern matching                        |
+| `InlineCodeSequenceFinder`     | Finds inline code sequences                       |
+| `CodeSequenceMatcher`          | Matches statement sequences with normalization    |
+| `VariableMapping`              | Tracks variable name mappings                     |
+| `MethodCallReplacer`           | Generates method invocation replacement code      |
+| `SideEffectAnalyzer`           | Analyzes safety of replacements                   |
+
+---
+
+#### Configuration
+
+Cleanup options are defined in `MYCleanUpConstants`:
+- `METHOD_REUSE_CLEANUP` - Enable/disable the cleanup
+- `METHOD_REUSE_INLINE_SEQUENCES` - Enable inline code sequence detection
+
+---
+
+#### Usage
+
+This cleanup is available as part of the JDT Clean Up framework:
+- **Eclipse UI** → Source → Clean Up
+- **Automated build tools** using Eclipse JDT APIs
+
+---
+
+#### Implementation Status
+
+This is a new plugin currently under development. The initial implementation focuses on:
+- Basic method similarity detection
+- AST-based pattern matching
+- Integration with Eclipse cleanup framework
+
+See `sandbox_method_reuse/TODO.md` for pending features and improvements.
+
+---
+
+### 11. `sandbox_xml_cleanup`
+
+#### XML Cleanup – PDE File Optimization
+
+The **XML Cleanup** plugin provides automated refactoring and optimization for PDE-relevant XML files in Eclipse projects. It focuses on reducing file size while maintaining semantic integrity through XSLT transformation, whitespace normalization, and optional indentation.
+
+---
+
+#### Purpose
+
+- Optimize PDE XML configuration files for size and consistency
+- Apply secure XSLT transformations with whitespace normalization
+- Convert leading spaces to tabs (4 spaces → 1 tab)
+- Provide optional indentation control (default: OFF for size reduction)
+- Integrate with Eclipse workspace APIs for safe file updates
+
+---
+
+#### Supported XML Types (PDE Files Only)
+
+The plugin **only** processes PDE-relevant XML files:
+
+**Supported File Names:**
+- `plugin.xml` - Eclipse plugin manifests
+- `feature.xml` - Eclipse feature definitions
+- `fragment.xml` - Eclipse fragment manifests
+
+**Supported File Extensions:**
+- `*.exsd` - Extension point schema definitions
+- `*.xsd` - XML schema definitions
+
+**Supported Locations:**
+Files must be in one of these locations:
+- **Project root** - Files directly in project folder
+- **OSGI-INF** - OSGi declarative services directory
+- **META-INF** - Manifest and metadata directory
+
+> **Note**: All other XML files (e.g., `pom.xml`, `build.xml`) are **ignored** to avoid unintended transformations.
+
+---
+
+#### Transformation Process
+
+##### 1. XSLT Transformation
+- Uses secure XML processing (external DTD/entities disabled)
+- Preserves XML structure, comments, and content
+- **Default: `indent="no"`** - Produces compact output for size reduction
+- **Optional: `indent="yes"`** - Enabled via `XML_CLEANUP_INDENT` preference
+
+##### 2. Whitespace Normalization
+- **Reduce excessive empty lines** - Maximum 2 consecutive empty lines
+- **Leading space to tab conversion** - Only at line start (not inline text)
+  - Converts groups of 4 leading spaces to 1 tab
+  - Preserves remainder spaces (e.g., 5 spaces → 1 tab + 1 space)
+  - **Does NOT touch inline text or content nodes**
+
+##### 3. Change Detection
+- Only writes file if content actually changed
+- Uses Eclipse workspace APIs (`IFile.setContents()`)
+- Maintains file history (`IResource.KEEP_HISTORY`)
+- Refreshes resource after update
+
+---
+
+#### Configuration
+
+**Default Behavior** (when `XML_CLEANUP` is enabled):
+- `indent="no"` - Compact output, no extra whitespace
+- Reduces file size by removing unnecessary whitespace
+- Converts leading spaces to tabs
+- Preserves semantic content
+
+**Optional Behavior** (when `XML_CLEANUP_INDENT` is enabled):
+- `indent="yes"` - Minimal indentation applied
+- Still converts leading spaces to tabs
+- Slightly larger file size but more readable
+
+**Constants** (defined in `MYCleanUpConstants`):
+- `XML_CLEANUP` - Enable XML cleanup (default: OFF)
+- `XML_CLEANUP_INDENT` - Enable indentation (default: OFF)
+
+---
+
+#### Security Features
+
+The plugin implements secure XML processing:
+- External DTD access disabled
+- External entity resolution disabled
+- DOCTYPE declarations disallowed
+- Secure processing mode enabled
+
+---
+
+#### Tab Conversion Rule
+
+Tab conversion is **only** applied to leading whitespace:
+
+✅ **Converted**:
+```xml
+    <element>  <!-- 4 leading spaces → 1 tab -->
+```
+
+❌ **Not Converted**:
+```xml
+<element attr="value    with    spaces"/>  <!-- Inline spaces preserved -->
+```
+
+This ensures that:
+- Indentation is normalized to tabs
+- XML attribute values are not modified
+- Text content spacing is preserved
+- Only structural whitespace is affected
+
+---
+
+#### Usage
+
+This cleanup is available as part of the JDT Clean Up framework:
+- **Eclipse UI** → Source → Clean Up
+- Configure via cleanup preferences: `XML_CLEANUP` and `XML_CLEANUP_INDENT`
+
+---
+
+#### Limitations
+
+1. **PDE Files Only**: Only processes plugin.xml, feature.xml, fragment.xml, *.exsd, *.xsd
+2. **Location Restricted**: Files must be in project root, OSGI-INF, or META-INF
+3. **Leading Tabs Only**: Tab conversion only applies to leading whitespace, not inline content
+4. **No Schema Validation**: Doesn't validate against XML schemas (relies on Eclipse PDE validation)
+
+---
+
+#### Test Coverage
+
+The `sandbox_xml_cleanup_test` module contains comprehensive test cases for:
+- Size reduction verification
+- Semantic equality (using XMLUnit, ignoring whitespace)
+- Idempotency (second run produces no change)
+- Leading-indent-only tab conversion
+- PDE file filtering accuracy
 
 ---
 
