@@ -100,7 +100,6 @@ public class MigrationRulesToExtensionsTest {
 				public class MyTest {
 					@TempDir
 					Path tempFolder;
-					
 					@Test
 					public void testWithTempFile() throws IOException {
 						File newFile = Files.createFile(tempFolder.resolve("myfile.txt")).toFile();
@@ -252,7 +251,6 @@ public class MigrationRulesToExtensionsTest {
 				public class MyTest {
 					@TempDir
 					Path folder;
-					
 					@Test
 					public void test() throws Exception {
 						File file = Files.createFile(folder.resolve("test.txt")).toFile();
@@ -289,7 +287,6 @@ public class MigrationRulesToExtensionsTest {
 				public class MyTest {
 					@TempDir
 					Path tempFolder;
-					
 					@Test
 					public void test() throws Exception {
 						File dir = Files.createDirectories(tempFolder.resolve("subdir")).toFile();
@@ -325,7 +322,6 @@ public class MigrationRulesToExtensionsTest {
 				public class MyTest {
 					@TempDir
 					Path tmpDir;
-					
 					@Test
 					public void test() {
 						File root = tmpDir.toFile();
@@ -362,7 +358,6 @@ public class MigrationRulesToExtensionsTest {
 				public class MyTest {
 					@TempDir
 					Path folder;
-					
 					@Test
 					public void test() throws Exception {
 						File file = Files.createTempFile(folder, "", null).toFile();
@@ -399,7 +394,6 @@ public class MigrationRulesToExtensionsTest {
 				public class MyTest {
 					@TempDir
 					Path folder;
-					
 					@Test
 					public void test() throws Exception {
 						File dir = Files.createTempDirectory(folder, "").toFile();
