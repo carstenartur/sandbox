@@ -28,7 +28,6 @@
 					<useJDK>BREE</useJDK>
 					<skip>false</skip>
 					<useUIHarness>true</useUIHarness>
-					<testRuntime>junit-platform</testRuntime>
 					<dependencies>
 						<dependency>
 							<type>eclipse-plugin</type>
