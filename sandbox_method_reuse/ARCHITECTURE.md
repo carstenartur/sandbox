@@ -136,10 +136,81 @@ The Method Reusability Finder is an Eclipse JDT cleanup plugin that analyzes sel
 - `normalizeAST()` - Normalizes AST for comparison
 - `extractPattern()` - Extracts reusable patterns
 
+### 6. InlineCodeSequenceFinder (Inline Detection)
+
+**Location**: `org.sandbox.jdt.internal.corext.fix.helper.InlineCodeSequenceFinder`
+
+**Responsibilities**:
+- Searches method bodies for inline code sequences
+- Finds code that matches a target method's body
+- Identifies refactoring opportunities within methods
+
+**Key Methods**:
+- `findInlineSequences()` - Searches for matching inline code
+- `searchInMethod()` - Examines individual methods for matches
+- `InlineSequenceMatch` - Result class with match details
+
+### 7. CodeSequenceMatcher (Sequence Matching)
+
+**Location**: `org.sandbox.jdt.internal.corext.fix.helper.CodeSequenceMatcher`
+
+**Responsibilities**:
+- AST subtree matching with variable normalization
+- Recognizes structurally equivalent code with different variable names
+- Creates variable mappings between target and candidate code
+
+**Key Methods**:
+- `matchSequence()` - Matches statement sequences
+- `matchStatement()` - Matches individual statements
+- `VariableMappingMatcher` - Custom ASTMatcher for variable tracking
+
+### 8. VariableMapping (Variable Tracking)
+
+**Location**: `org.sandbox.jdt.internal.corext.fix.helper.VariableMapping`
+
+**Responsibilities**:
+- Tracks variable name mappings
+- Ensures consistent bidirectional mappings
+- Validates mapping consistency
+
+**Key Methods**:
+- `addMapping()` - Adds or verifies a variable mapping
+- `getCandidateName()` - Looks up mapped name
+- `isValid()` - Checks if mapping is valid
+
+### 9. MethodCallReplacer (Code Generation)
+
+**Location**: `org.sandbox.jdt.internal.corext.fix.helper.MethodCallReplacer`
+
+**Responsibilities**:
+- Generates method invocation replacement code
+- Creates argument lists based on variable mapping
+- Applies AST rewrites to replace code sequences
+
+**Key Methods**:
+- `createMethodCall()` - Creates a method invocation node
+- `replaceWithMethodCall()` - Applies the replacement
+- `canCreateMethodCall()` - Validates replacement feasibility
+
+### 10. SideEffectAnalyzer (Safety Analysis)
+
+**Location**: `org.sandbox.jdt.internal.corext.fix.helper.SideEffectAnalyzer`
+
+**Responsibilities**:
+- Analyzes semantic safety of replacements
+- Detects field modifications and side effects
+- Checks for complex control flow
+
+**Key Methods**:
+- `isSafeToReplace()` - Determines if replacement is safe
+- `hasFieldModifications()` - Checks for field modifications
+- `hasUnsafeMethodCalls()` - Checks for potentially unsafe calls
+
 ## Configuration
 
 Cleanup options are defined in `MYCleanUpConstants`:
 - `METHOD_REUSE_CLEANUP` - Enable/disable the cleanup
+- `METHOD_REUSE_INLINE_SEQUENCES` - Enable inline code sequence detection
 
 ## Integration Points
 

@@ -2,12 +2,30 @@
 
 ## Pending Implementation
 
+# Method Reusability Finder - TODO
+
+## Pending Implementation
+
 ### Core Features
 - [ ] Implement basic method similarity detection in `MethodReuseFinder`
 - [ ] Implement AST-based pattern matching in `CodePatternMatcher`
 - [ ] Implement method signature comparison in `MethodSignatureAnalyzer`
+- [x] Implement inline code sequence detection (InlineCodeSequenceFinder)
+- [x] Implement variable mapping and normalization (CodeSequenceMatcher, VariableMapping)
+- [x] Implement method call replacement generation (MethodCallReplacer)
+- [x] Implement side effect analysis (SideEffectAnalyzer)
+- [ ] Wire inline sequence detection into createFix() method
 - [ ] Add similarity threshold configuration
 - [ ] Create marker/warning system for detected duplicates
+
+### Inline Sequence Detection - Remaining Work
+- [ ] Complete integration in MethodReuseCleanUpCore.createFix()
+- [ ] Create CompilationUnitRewriteOperation for applying transformations
+- [ ] Add support for return statement replacement (not just variable declarations)
+- [ ] Handle edge cases (nested sequences, overlapping matches)
+- [ ] Implement confidence scoring for matches
+- [ ] Add configuration for minimum sequence length
+- [ ] Support for extracting new methods from inline sequences
 
 ### Algorithm Improvements
 - [ ] Add token-based similarity calculation
@@ -24,7 +42,13 @@
 - [ ] Implement batch analysis mode
 
 ### Testing
-- [ ] Add comprehensive test cases
+- [x] Add test cases for inline sequence detection
+  - [x] Simple inline sequence with different variable names
+  - [x] Inline with method call expressions
+  - [x] Multiple variable mapping
+- [ ] Enable and verify inline sequence tests
+- [ ] Add negative test cases (side effects, unsafe patterns)
+- [ ] Add comprehensive test cases for method similarity
 - [ ] Test with various Java versions (11, 17, 21)
 - [ ] Performance testing with large codebases
 - [ ] Test false positive rate
