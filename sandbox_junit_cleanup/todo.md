@@ -51,11 +51,11 @@ Migrate timeout specifications:
 
 Generalize ExternalResourceRefactorer to handle other JUnit 4 rules:
 - ~~`TemporaryFolder` → `@TempDir`~~ ✅ **COMPLETED**
-- `ExpectedException` → `assertThrows()`
+- ~~`ExpectedException` → `assertThrows()`~~ ✅ **COMPLETED**
 - `ErrorCollector` → multiple assertions
 - Custom rules → extension implementations
 
-**Status**: TemporaryFolder migration fully implemented with comprehensive test coverage.
+**Status**: TemporaryFolder and ExpectedException migrations fully implemented. ExpectedException handles basic expect() and expectMessage() patterns. ExpectedException with cause/matchers not yet supported.
 
 **Benefits**:
 - Complete JUnit 4 to 5 migration capability
