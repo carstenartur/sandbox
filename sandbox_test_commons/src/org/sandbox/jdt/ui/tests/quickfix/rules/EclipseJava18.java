@@ -1,0 +1,40 @@
+/*******************************************************************************
+ * Copyright (c) 2024 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer - initial API and implementation
+ *******************************************************************************/
+package org.sandbox.jdt.ui.tests.quickfix.rules;
+
+import org.eclipse.jdt.core.JavaCore;
+
+/**
+ * JUnit 5 extension that configures tests to run with Java 18 runtime stubs.
+ * <p>
+ * This class provides the necessary test environment setup for testing code
+ * transformations and cleanups that target Java 18 language features and APIs.
+ * </p>
+ * <p>
+ * Note: Currently uses Java 17 stubs as Java 18 did not introduce significant
+ * runtime API changes requiring separate stubs.
+ * </p>
+ */
+public final class EclipseJava18 extends AbstractEclipseJava {
+	
+	/** Path to the Java 17 runtime stubs JAR file used for Java 18 testing. */
+	private static final String RT_STUBS_JAR_PATH = "testresources/rtstubs_17.jar"; //$NON-NLS-1$
+
+	/**
+	 * Constructs a new test configuration for Java 18.
+	 */
+	public EclipseJava18() {
+		super(RT_STUBS_JAR_PATH, JavaCore.VERSION_17);
+	}
+}

@@ -1,0 +1,57 @@
+# This workflow will build a Java project with Maven
+# For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
+
+name: Java CI with Maven
+
+on:
+  push:
+    branches: [ main ] # , 2022-09, 2022-06 ]
+  pull_request:
+    branches: [ main ] # , 2022-09, 2022-06 ]
+
+jobs:
+  build:
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    env:
+      DISPLAY: :0
+      MAVEN_OPTS: -Djava.awt.headless=true
+
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0 # required for jgit timestamp provider to work
+    - name: Set up JDK 21
+      uses: actions/setup-java@v5
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+    - run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb xauth \
+           libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 libxrandr2 libxfixes3 \
+           libasound2t64 libnss3 libgbm1
+          sudo /usr/bin/Xvfb $DISPLAY -screen 0 1280x1024x24 &
+    - name: Cache Maven dependencies
+      uses: actions/cache@v5
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-maven-
+    - name: Set up Maven
+      uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1 # v5
+      with:
+        maven-version: 3.9.9
+    - name: Build with Maven
+      run: xvfb-run --auto-servernum mvn -e -V --batch-mode -Dtycho.localArtifacts=ignore -Pjacoco clean verify
+#       run: xvfb-run --auto-servernum mvn -e -V --batch-mode -Dtycho.localArtifacts=ignore -Pweb,jacoco clean verify
+    - name: Cleanup xvfb pidx build
+      uses: bcomnes/cleanup-xvfb@v1
+    - name: Publish Test Report
+      uses: mikepenz/action-junit-report@v6
+      if: always() # always run even if the previous step fails
+      with:
+        report_paths: '**/target/surefire-reports/TEST-*.xml'

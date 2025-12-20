@@ -1,0 +1,1 @@
+awk '{print "public BiFunction<? extends ASTNode,E,Boolean> add" $0 "(BiFunction<" $0 ",E,Boolean> bs) {\n		return suppliermap.put(Visitor." $0 ", bs);\n	}" "\n"}' <input.txt >output.txt

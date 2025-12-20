@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?pde version="3.8"?>
+<target includeMode="Feature" name="target platform for sandbox">
+	<locations>
+
+        <!-- 1. Haupt-Update-Site für Eclipse 2025-09 -->
+        <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
+            <repository location="https://download.eclipse.org/releases/2025-09/"/>
+            <unit id="org.eclipse.jdt.feature.group" version="0.0.0"/>
+            <unit id="org.eclipse.jdt.astview.feature.feature.group" version="0.0.0"/>
+            <unit id="org.eclipse.jdt.jeview.feature.feature.group" version="0.0.0"/>
+            <unit id="org.eclipse.sdk.feature.group" version="0.0.0"/>
+            <unit id="org.eclipse.pde.feature.group" version="0.0.0"/>
+            <unit id="org.eclipse.pde.spies.feature.group" version="0.0.0"/>
+            <unit id="org.eclipse.equinox.executable.feature.group" version="0.0.0"/>
+        </location>
+
+        <!-- 2. Eclipse 4.35 Integration Builds 
+        <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
+            <repository location="https://download.eclipse.org/eclipse/updates/4.35-I-builds"/>
+            <unit id="org.eclipse.equinox.executable.feature.group" version="0.0.0"/>
+        </location>-->
+
+        <!-- 3. Orbit Dependencies (Externe Abhängigkeiten) - upgraded to 2025-09 -->
+        <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
+            <repository location="https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2025-09/"/>
+            <unit id="org.apache.commons.commons-io" version="0.0.0"/>
+            <unit id="org.apache.commons.lang3" version="0.0.0"/>
+        </location>
+
+        <!-- 4. Eclipse Lizenzinformationen -->
+        <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
+            <repository location="https://download.eclipse.org/cbi/updates/license"/>
+            <unit id="org.eclipse.license.feature.group" version="0.0.0"/>
+        </location>
+
+        <!-- 5. EGit (Eclipse Git Client) -->
+        <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
+            <repository location="https://download.eclipse.org/egit/updates/"/>
+            <unit id="org.eclipse.egit.feature.group" version="0.0.0"/>
+            <unit id="org.eclipse.jgit.feature.group" version="0.0.0"/>
+        </location>
+<!-- 6. Bouncy Castle 1.81 aus Orbit Maven-OSGi -->
+<location includeAllPlatforms="false" includeConfigurePhase="false"
+          includeMode="planner" includeSource="true"
+          type="InstallableUnit">
+  <!-- Für reproduzierbare Builds auf eine feste Release-Nummer pinnen -->
+  <repository location="https://download.eclipse.org/tools/orbit/simrel/maven-osgi/release/4.37.0"/>
+  <unit id="bcutil" version="1.81.0"/>
+  <unit id="bcprov" version="1.81.0"/>
+  <unit id="bcpkix" version="1.81.0"/>
+  <unit id="bcpg"  version="1.81.0"/>
+</location>
+    </locations>
+
+</target>
+
+

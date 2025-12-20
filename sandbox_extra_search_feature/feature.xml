@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="sandbox_extra_search_feature"
+      label="Sandbox extra_search feature"
+      version="1.2.2.qualifier"
+      provider-name="sandbox"
+      plugin="sandbox_extra_search">
+
+   <description>
+      %description
+   </description>
+
+   <copyright>
+      %copyright
+   </copyright>
+
+   <license url="%licenseURL">
+      %license
+   </license>
+
+   <requires>
+      <import plugin="org.eclipse.core.runtime"/>
+      <import plugin="org.eclipse.core.filebuffers"/>
+      <import plugin="org.eclipse.core.filesystem"/>
+      <import plugin="org.eclipse.core.resources"/>
+      <import plugin="org.eclipse.core.expressions"/>
+      <import plugin="org.eclipse.jdt.core"/>
+      <import plugin="org.eclipse.jdt.ui"/>
+      <import plugin="org.eclipse.ltk.core.refactoring"/>
+      <import plugin="org.eclipse.text"/>
+      <import plugin="org.eclipse.swt"/>
+      <import plugin="org.eclipse.jface"/>
+      <import plugin="org.eclipse.ui.workbench"/>
+      <import plugin="org.eclipse.search"/>
+      <import plugin="org.eclipse.e4.core.services"/>
+   </requires>
+
+   <plugin
+         id="sandbox_extra_search"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+</feature>

@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Oomph Project Setup for the "sandbox" repository.
+  This setup file allows users to set up a working Eclipse development environment
+  for the sandbox project using the Eclipse Installer or "Import > Oomph > Projects".
+  
+  Fixed: GitHub URL, schema locations, project import, working sets, and added JRE task.
+-->
+<setup:Project
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:git="http://www.eclipse.org/oomph/setup/git/1.0"
+    xmlns:jdt="http://www.eclipse.org/oomph/setup/jdt/1.0"
+    xmlns:predicates="http://www.eclipse.org/oomph/predicates/1.0"
+    xmlns:projects="http://www.eclipse.org/oomph/setup/projects/1.0"
+    xmlns:setup="http://www.eclipse.org/oomph/setup/1.0"
+    xmlns:setup.workingsets="http://www.eclipse.org/oomph/setup/workingsets/1.0"
+    xsi:schemaLocation="
+        http://www.eclipse.org/oomph/setup/git/1.0 https://raw.githubusercontent.com/eclipse-oomph/oomph/master/setups/models/Git.ecore
+        http://www.eclipse.org/oomph/setup/jdt/1.0 https://raw.githubusercontent.com/eclipse-oomph/oomph/master/setups/models/JDT.ecore
+        http://www.eclipse.org/oomph/predicates/1.0 https://raw.githubusercontent.com/eclipse-oomph/oomph/master/setups/models/Predicates.ecore
+        http://www.eclipse.org/oomph/setup/projects/1.0 https://raw.githubusercontent.com/eclipse-oomph/oomph/master/setups/models/Projects.ecore
+        http://www.eclipse.org/oomph/setup/workingsets/1.0 https://raw.githubusercontent.com/eclipse-oomph/oomph/master/setups/models/SetupWorkingSets.ecore"
+    name="sandbox"
+    label="Sandbox Project">
+  <!-- Main project setup for sandbox development -->
+  <setupTask
+      xsi:type="setup:CompoundTask"
+      name="User Preferences">
+    <!-- User preference annotations for recording user choices -->
+    <annotation
+        source="http://www.eclipse.org/oomph/setup/UserPreferences">
+      <detail
+          key="/instance/org.eclipse.ui.editors/showWhitespaceCharacters">
+        <value>record</value>
+      </detail>
+      <detail
+          key="/instance/org.eclipse.jdt.core/org.eclipse.jdt.core.compiler.problem.potentiallyUnclosedCloseable">
+        <value>record</value>
+      </detail>
+      <detail
+          key="/instance/org.eclipse.jdt.core/org.eclipse.jdt.core.compiler.problem.explicitlyClosedAutoCloseable">
+        <value>record</value>
+      </detail>
+    </annotation>
+    <!-- JDT Core preferences -->
+    <setupTask
+        xsi:type="setup:CompoundTask"
+        name="org.eclipse.jdt.core">
+      <setupTask
+          xsi:type="setup:PreferenceTask"
+          key="/instance/org.eclipse.jdt.core/org.eclipse.jdt.core.compiler.problem.explicitlyClosedAutoCloseable"
+          value="warning"/>
+      <setupTask
+          xsi:type="setup:PreferenceTask"
+          key="/instance/org.eclipse.jdt.core/org.eclipse.jdt.core.compiler.problem.potentiallyUnclosedCloseable"
+          value="warning"/>
+    </setupTask>
+    <!-- Editor preferences -->
+    <setupTask
+        xsi:type="setup:CompoundTask"
+        name="org.eclipse.ui.editors">
+      <setupTask
+          xsi:type="setup:PreferenceTask"
+          key="/instance/org.eclipse.ui.editors/showWhitespaceCharacters"
+          value="true"/>
+    </setupTask>
+  </setupTask>
+  <!-- JRE configuration: JavaSE-21 required for sandbox development -->
+  <setupTask
+      xsi:type="jdt:JRETask"
+      version="JavaSE-21"
+      location="${jre.location-21}">
+    <description>Define the JRE needed to compile and run the Java projects of ${scope.project.label}</description>
+  </setupTask>
+  <!-- Memory settings for Eclipse IDE -->
+  <setupTask
+      xsi:type="setup:EclipseIniTask"
+      option="-Xmx"
+      value="2048m"
+      vm="true">
+    <description>Set the heap space needed to work with the projects of ${scope.project.label}</description>
+  </setupTask>
+  <!-- Package Explorer initialization: show working sets as root -->
+  <setupTask
+      xsi:type="setup:ResourceCreationTask"
+      excludedTriggers="STARTUP MANUAL"
+      targetURL="${workspace.location|uri}/.metadata/.plugins/org.eclipse.jdt.ui/dialog_settings.xml"
+      encoding="UTF-8">
+    <description>Initialize JDT's package explorer to show working sets as its root objects</description>
+    <content>
+      &lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?>
+      &lt;section name=&quot;Workbench&quot;>
+      	&lt;section name=&quot;org.eclipse.jdt.internal.ui.packageview.PackageExplorerPart&quot;>
+      		&lt;item value=&quot;true&quot; key=&quot;group_libraries&quot;/>
+      		&lt;item value=&quot;false&quot; key=&quot;linkWithEditor&quot;/>
+      		&lt;item value=&quot;2&quot; key=&quot;layout&quot;/>
+      		&lt;item value=&quot;2&quot; key=&quot;rootMode&quot;/>
+      		&lt;item value=&quot;&amp;lt;?xml version=&amp;quot;1.0&amp;quot; encoding=&amp;quot;UTF-8&amp;quot;?&amp;gt;&amp;#x0D;&amp;#x0A;&amp;lt;packageExplorer configured=&amp;quot;true&amp;quot; group_libraries=&amp;quot;1&amp;quot; layout=&amp;quot;2&amp;quot; linkWithEditor=&amp;quot;0&amp;quot; rootMode=&amp;quot;2&amp;quot; sortWorkingSets=&amp;quot;false&amp;quot; workingSetName=&amp;quot;&amp;quot;&amp;gt;&amp;#x0D;&amp;#x0A;&amp;lt;localWorkingSetManager&amp;gt;&amp;#x0D;&amp;#x0A;&amp;lt;workingSet editPageId=&amp;quot;org.eclipse.jdt.internal.ui.OthersWorkingSet&amp;quot; factoryID=&amp;quot;org.eclipse.ui.internal.WorkingSetFactory&amp;quot; id=&amp;quot;1382792884467_1&amp;quot; label=&amp;quot;Other Projects&amp;quot; name=&amp;quot;Other Projects&amp;quot;/&amp;gt;&amp;#x0D;&amp;#x0A;&amp;lt;/localWorkingSetManager&amp;gt;&amp;#x0D;&amp;#x0A;&amp;lt;activeWorkingSet workingSetName=&amp;quot;Other Projects&amp;quot;/&amp;gt;&amp;#x0D;&amp;#x0A;&amp;lt;allWorkingSets workingSetName=&amp;quot;Other Projects&amp;quot;/&amp;gt;&amp;#x0D;&amp;#x0A;&amp;lt;/packageExplorer&amp;gt;&quot; key=&quot;memento&quot;/>
+      	&lt;/section>
+      &lt;/section>
+    </content>
+  </setupTask>
+  <!-- Git clone task: clone the sandbox repository from GitHub -->
+  <setupTask
+      xsi:type="git:GitCloneTask"
+      id="git.clone.sandbox"
+      remoteURI="https://github.com/carstenartur/sandbox.git"
+      checkoutBranch="main">
+    <annotation
+        source="http://www.eclipse.org/oomph/setup/InducedChoices">
+      <detail
+          key="inherit">
+        <value>github.remoteURIs</value>
+      </detail>
+      <detail
+          key="label">
+        <value>${scope.project.label} Git repository</value>
+      </detail>
+      <detail
+          key="target">
+        <value>remoteURI</value>
+      </detail>
+    </annotation>
+    <description>Clone the ${scope.project.label} repository from GitHub</description>
+  </setupTask>
+  <!-- Import all Eclipse projects from the cloned repository -->
+  <setupTask
+      xsi:type="projects:ProjectsImportTask">
+    <sourceLocator
+        rootFolder="${git.clone.sandbox.location}"
+        locateNestedProjects="true"/>
+    <description>Import all Eclipse projects from the cloned sandbox repository</description>
+  </setupTask>
+  <!-- Working sets configuration: group sandbox projects together -->
+  <setupTask
+      xsi:type="setup.workingsets:WorkingSetTask">
+    <workingSet
+        name="${scope.project.label}">
+      <predicate
+          xsi:type="predicates:NamePredicate"
+          pattern="sandbox.*"/>
+    </workingSet>
+    <description>The dynamic working sets for ${scope.project.label}</description>
+  </setupTask>
+  <!-- Build imported projects -->
+  <setupTask
+      xsi:type="projects:ProjectsBuildTask">
+    <description>Build all imported projects</description>
+  </setupTask>
+  <!-- Stream definition for the main branch -->
+  <stream
+      name="main"
+      label="Main">
+    <description>Development stream tracking the main branch</description>
+  </stream>
+  <description>Sandbox provides Eclipse plugins for code cleanup and tools development.</description>
+</setup:Project>
