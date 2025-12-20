@@ -145,3 +145,19 @@ MultiStatus doesn't have factory methods like Status, but the cleanup can normal
 - More sophisticated MultiStatus pattern detection (e.g., detecting and optimizing .add() patterns)
 - Integration with Eclipse logging framework updates
 - If Eclipse Platform adds plugin ID support to Status factory methods, enable plugin ID preservation
+
+## Documentation Requirements
+
+### Feature Properties
+
+The corresponding feature module `sandbox_platform_helper_feature` MUST maintain:
+
+1. **feature.properties** - English language properties file containing:
+   - `description` - Clear description of the feature's purpose and capabilities
+   - `copyright` - Copyright notice with appropriate years
+   - `licenseURL` - URL to the Eclipse Public License
+   - `license` - Eclipse Public License text or reference
+
+2. **feature_de.properties** - German translation of all properties
+
+These files enable Eclipse's built-in localization mechanism and provide user-facing documentation in the Eclipse IDE. When updating feature capabilities, ensure both property files are updated accordingly.

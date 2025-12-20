@@ -71,6 +71,7 @@ public final class JUnitConstants {
 	public static final String ORG_JUNIT_RULES_TEMPORARY_FOLDER = "org.junit.rules.TemporaryFolder";
 	public static final String ORG_JUNIT_RULES_TEST_NAME = "org.junit.rules.TestName";
 	public static final String ORG_JUNIT_RULES_EXTERNAL_RESOURCE = "org.junit.rules.ExternalResource";
+	public static final String ORG_JUNIT_RULES_EXPECTED_EXCEPTION = "org.junit.rules.ExpectedException";
 	public static final String ORG_JUNIT_RUNWITH = "org.junit.runner.RunWith";
 	public static final String ORG_JUNIT_SUITE = "org.junit.runners.Suite";
 	public static final String ORG_JUNIT_SUITE_SUITECLASSES = "org.junit.runners.Suite.SuiteClasses";

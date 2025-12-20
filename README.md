@@ -2,6 +2,10 @@
 
 A collection of experimental Eclipse JDT (Java Development Tools) cleanup plugins and tools. This repository demonstrates how to build custom JDT cleanups, quick fixes, and related tooling for Eclipse-based Java development.
 
+**Main Technologies:** Eclipse JDT, Java 21, Maven/Tycho 5.0.1
+
+**Status:** Work in Progress – All plugins are experimental and intended for testing purposes.
+
 ## Overview
 
 This project provides:
@@ -17,6 +21,8 @@ All plugins are work-in-progress and intended for experimentation and learning.
 
 - [Overview](#overview)
 - [Build Instructions](#build-instructions)
+- [Eclipse Version Configuration](#eclipse-version-configuration)
+- [Quickstart](#quickstart)
 - [CI Status](#ci-status)
 - [What's Included](#whats-included)
 - [Projects](#projects)
@@ -59,7 +65,20 @@ All plugins are work-in-progress and intended for experimentation and learning.
     - [Usage](#usage-1)
     - [Limitations](#limitations-1)
   - [sandbox_tools](#6-sandbox_tools)
-  - [sandbox_functional_converter](#7-sandbox_functional_converter)
+  - [sandbox_jface_cleanup](#7-sandbox_jface_cleanup)
+    - [JFace Cleanup – SubProgressMonitor to SubMonitor Migration](#jface-cleanup--subprogressmonitor-to-submonitor-migration)
+    - [Purpose](#purpose)
+    - [Migration Pattern](#migration-pattern)
+      - [Basic Transformation](#basic-transformation)
+      - [With Style Flags](#with-style-flags)
+    - [Unique Variable Name Handling](#unique-variable-name-handling)
+    - [Idempotence](#idempotence)
+    - [Official Eclipse Documentation](#official-eclipse-documentation)
+    - [Requirements](#requirements-2)
+    - [Cleanup Name & Activation](#cleanup-name-activation-1)
+    - [Limitations](#limitations-4)
+    - [Test Coverage](#test-coverage)
+  - [sandbox_functional_converter](#8-sandbox_functional_converter)
     - [Functional Converter Cleanup – Transform Imperative Loops into Functional Java 8 Streams](#functional-converter-cleanup-transform-imperative-loops-into-functional-java-8-streams)
     - [Source and Test Basis](#source-and-test-basis)
     - [Supported Transformations](#supported-transformations)
@@ -71,7 +90,7 @@ All plugins are work-in-progress and intended for experimentation and learning.
     - [Cleanup Name & Activation](#cleanup-name-activation)
     - [Limitations](#limitations-2)
     - [Summary](#summary)
-  - [sandbox_junit](#8-sandbox_junit)
+  - [sandbox_junit](#9-sandbox_junit)
     - [JUnit Cleanup – Feature Overview](#junit-cleanup-feature-overview)
     - [Migration Summary](#migration-summary)
     - [JUnit 3 Classes and Methods](#junit-3-classes-and-methods)
@@ -103,7 +122,12 @@ All plugins are work-in-progress and intended for experimentation and learning.
     - [Notes](#notes)
     - [Limitations](#limitations-3)
     - [Usage](#usage-2)
+  - [sandbox_method_reuse](#10-sandbox_method_reuse)
+  - [sandbox_xml_cleanup](#11-sandbox_xml_cleanup)
 - [Installation](#installation)
+- [Contributing](#contributing)
+- [Release Process](#release-process)
+- [License](#license)
 
 ## Build Instructions
 
@@ -198,6 +222,45 @@ When migrating to a new Eclipse version, update the following files:
 - **Java Version**: 21
 - **Tycho Version**: 5.0.1
 - **Default Branch**: `main`
+
+---
+
+## Quickstart
+
+### Using the Eclipse Product
+
+After building the project, you can run the Eclipse product with the bundled cleanup plugins:
+
+```bash
+# Navigate to the product directory
+cd sandbox_product/target/products/org.sandbox.product/
+
+# Launch Eclipse
+./eclipse
+```
+
+### Using Cleanup Plugins via Command Line
+
+You can apply cleanup transformations using the Eclipse JDT formatter application pattern:
+
+```bash
+eclipse -nosplash -consolelog -debug \
+  -application org.eclipse.jdt.core.JavaCodeFormatter \
+  -verbose -config MyCleanupSettings.ini MyClassToCleanup.java
+```
+
+> **Note**: Replace `MyCleanupSettings.ini` with your cleanup configuration file and `MyClassToCleanup.java` with the Java file you want to process.
+
+### Installing as Eclipse Plugins
+
+You can install the cleanup plugins into your existing Eclipse installation using the P2 update site:
+
+1. In Eclipse, go to **Help** → **Install New Software...**
+2. Click **Add...** and enter the update site URL (see [Installation](#installation) section)
+3. Select the desired cleanup features
+4. Follow the installation wizard
+
+> **Warning**: Use only with a test Eclipse installation. These plugins are experimental and may affect your IDE stability.
 
 ---
 
@@ -2060,6 +2123,228 @@ This documentation is based on the test coverage provided in the JUnit 3 and 4 c
 
 ---
 
+### 10. `sandbox_method_reuse`
+
+#### Method Reusability Finder – Code Duplication Detection
+
+The **Method Reusability Finder** is an Eclipse JDT cleanup plugin that analyzes selected methods to identify potentially reusable code patterns across the codebase. It helps developers discover duplicate or similar code that could be refactored to improve code quality and maintainability.
+
+---
+
+#### Purpose
+
+- **Code Duplication Detection**: Identify similar code patterns using both token-based and AST-based analysis
+- **Intelligent Matching**: Recognize code similarity even when variable names differ
+- **Eclipse Integration**: Seamlessly integrate as a cleanup action in Eclipse JDT
+- **Performance**: Efficient analysis that scales to large codebases
+
+---
+
+#### Key Features
+
+##### Similarity Analysis
+- **Token-based similarity**: Compares normalized token sequences
+- **AST-based similarity**: Compares abstract syntax tree structures
+- **Variable name normalization**: Ignores variable name differences
+- **Control flow analysis**: Matches similar control structures
+
+##### Inline Code Detection
+- Searches method bodies for inline code sequences
+- Finds code that matches a target method's body
+- Identifies refactoring opportunities within methods
+
+##### Safety Analysis
+- Analyzes semantic safety of replacements
+- Detects field modifications and side effects
+- Checks for complex control flow
+
+---
+
+#### Components
+
+| Component                      | Purpose                                           |
+|--------------------------------|---------------------------------------------------|
+| `MethodReuseFinder`            | Searches project for similar methods             |
+| `MethodSignatureAnalyzer`      | Analyzes and compares method signatures          |
+| `CodePatternMatcher`           | AST-based pattern matching                        |
+| `InlineCodeSequenceFinder`     | Finds inline code sequences                       |
+| `CodeSequenceMatcher`          | Matches statement sequences with normalization    |
+| `VariableMapping`              | Tracks variable name mappings                     |
+| `MethodCallReplacer`           | Generates method invocation replacement code      |
+| `SideEffectAnalyzer`           | Analyzes safety of replacements                   |
+
+---
+
+#### Configuration
+
+Cleanup options are defined in `MYCleanUpConstants`:
+- `METHOD_REUSE_CLEANUP` - Enable/disable the cleanup
+- `METHOD_REUSE_INLINE_SEQUENCES` - Enable inline code sequence detection
+
+---
+
+#### Usage
+
+This cleanup is available as part of the JDT Clean Up framework:
+- **Eclipse UI** → Source → Clean Up
+- **Automated build tools** using Eclipse JDT APIs
+
+---
+
+#### Implementation Status
+
+This is a new plugin currently under development. The initial implementation focuses on:
+- Basic method similarity detection
+- AST-based pattern matching
+- Integration with Eclipse cleanup framework
+
+See `sandbox_method_reuse/TODO.md` for pending features and improvements.
+
+---
+
+### 11. `sandbox_xml_cleanup`
+
+#### XML Cleanup – PDE File Optimization
+
+The **XML Cleanup** plugin provides automated refactoring and optimization for PDE-relevant XML files in Eclipse projects. It focuses on reducing file size while maintaining semantic integrity through XSLT transformation, whitespace normalization, and optional indentation.
+
+---
+
+#### Purpose
+
+- Optimize PDE XML configuration files for size and consistency
+- Apply secure XSLT transformations with whitespace normalization
+- Convert leading spaces to tabs (4 spaces → 1 tab)
+- Provide optional indentation control (default: OFF for size reduction)
+- Integrate with Eclipse workspace APIs for safe file updates
+
+---
+
+#### Supported XML Types (PDE Files Only)
+
+The plugin **only** processes PDE-relevant XML files:
+
+**Supported File Names:**
+- `plugin.xml` - Eclipse plugin manifests
+- `feature.xml` - Eclipse feature definitions
+- `fragment.xml` - Eclipse fragment manifests
+
+**Supported File Extensions:**
+- `*.exsd` - Extension point schema definitions
+- `*.xsd` - XML schema definitions
+
+**Supported Locations:**
+Files must be in one of these locations:
+- **Project root** - Files directly in project folder
+- **OSGI-INF** - OSGi declarative services directory
+- **META-INF** - Manifest and metadata directory
+
+> **Note**: All other XML files (e.g., `pom.xml`, `build.xml`) are **ignored** to avoid unintended transformations.
+
+---
+
+#### Transformation Process
+
+##### 1. XSLT Transformation
+- Uses secure XML processing (external DTD/entities disabled)
+- Preserves XML structure, comments, and content
+- **Default: `indent="no"`** - Produces compact output for size reduction
+- **Optional: `indent="yes"`** - Enabled via `XML_CLEANUP_INDENT` preference
+
+##### 2. Whitespace Normalization
+- **Reduce excessive empty lines** - Maximum 2 consecutive empty lines
+- **Leading space to tab conversion** - Only at line start (not inline text)
+  - Converts groups of 4 leading spaces to 1 tab
+  - Preserves remainder spaces (e.g., 5 spaces → 1 tab + 1 space)
+  - **Does NOT touch inline text or content nodes**
+
+##### 3. Change Detection
+- Only writes file if content actually changed
+- Uses Eclipse workspace APIs (`IFile.setContents()`)
+- Maintains file history (`IResource.KEEP_HISTORY`)
+- Refreshes resource after update
+
+---
+
+#### Configuration
+
+**Default Behavior** (when `XML_CLEANUP` is enabled):
+- `indent="no"` - Compact output, no extra whitespace
+- Reduces file size by removing unnecessary whitespace
+- Converts leading spaces to tabs
+- Preserves semantic content
+
+**Optional Behavior** (when `XML_CLEANUP_INDENT` is enabled):
+- `indent="yes"` - Minimal indentation applied
+- Still converts leading spaces to tabs
+- Slightly larger file size but more readable
+
+**Constants** (defined in `MYCleanUpConstants`):
+- `XML_CLEANUP` - Enable XML cleanup (default: OFF)
+- `XML_CLEANUP_INDENT` - Enable indentation (default: OFF)
+
+---
+
+#### Security Features
+
+The plugin implements secure XML processing:
+- External DTD access disabled
+- External entity resolution disabled
+- DOCTYPE declarations disallowed
+- Secure processing mode enabled
+
+---
+
+#### Tab Conversion Rule
+
+Tab conversion is **only** applied to leading whitespace:
+
+✅ **Converted**:
+```xml
+    <element>  <!-- 4 leading spaces → 1 tab -->
+```
+
+❌ **Not Converted**:
+```xml
+<element attr="value    with    spaces"/>  <!-- Inline spaces preserved -->
+```
+
+This ensures that:
+- Indentation is normalized to tabs
+- XML attribute values are not modified
+- Text content spacing is preserved
+- Only structural whitespace is affected
+
+---
+
+#### Usage
+
+This cleanup is available as part of the JDT Clean Up framework:
+- **Eclipse UI** → Source → Clean Up
+- Configure via cleanup preferences: `XML_CLEANUP` and `XML_CLEANUP_INDENT`
+
+---
+
+#### Limitations
+
+1. **PDE Files Only**: Only processes plugin.xml, feature.xml, fragment.xml, *.exsd, *.xsd
+2. **Location Restricted**: Files must be in project root, OSGI-INF, or META-INF
+3. **Leading Tabs Only**: Tab conversion only applies to leading whitespace, not inline content
+4. **No Schema Validation**: Doesn't validate against XML schemas (relies on Eclipse PDE validation)
+
+---
+
+#### Test Coverage
+
+The `sandbox_xml_cleanup_test` module contains comprehensive test cases for:
+- Size reduction verification
+- Semantic equality (using XMLUnit, ignoring whitespace)
+- Idempotency (second run produces no change)
+- Leading-indent-only tab conversion
+- PDE file filtering accuracy
+
+---
+
 ## Installation
 
 You can use the P2 update site:
@@ -2071,3 +2356,186 @@ https://github.com/carstenartur/sandbox/raw/main
 > **Warning:**  
 > Use only with a fresh Eclipse installation that can be discarded after testing.  
 > It may break your setup. Don’t say you weren’t warned...
+---
+
+## Contributing
+
+Contributions are welcome! This is an experimental sandbox project for testing Eclipse JDT cleanup implementations.
+
+### How to Contribute
+
+1. **Fork the repository** on GitHub
+2. **Create a feature branch** from `main` (the default branch):
+   ```bash
+   git checkout -b feature/my-new-cleanup
+   ```
+3. **Make your changes** following the existing code structure and conventions
+4. **Test your changes** thoroughly:
+   ```bash
+   mvn -Pjacoco verify
+   ```
+5. **Commit your changes** with clear commit messages:
+   ```bash
+   git commit -m "feat: add new cleanup for XYZ pattern"
+   ```
+6. **Push to your fork** and **create a Pull Request** targeting the `main` branch
+
+### Guidelines
+
+- Follow existing code patterns and cleanup structures
+- Add comprehensive test cases for new cleanups
+- Update documentation (README, architecture.md, todo.md) as needed
+- Ensure SpotBugs, CodeQL, and all tests pass
+- Keep changes focused and minimal
+
+### Reporting Issues
+
+Found a bug or have a feature request? Please [open an issue](https://github.com/carstenartur/sandbox/issues) on GitHub with:
+- Clear description of the problem or suggestion
+- Steps to reproduce (for bugs)
+- Expected vs. actual behavior
+- Eclipse and Java version information
+
+**Note**: This project primarily serves as an experimental playground. Features that prove stable and useful may be contributed upstream to Eclipse JDT.
+
+---
+
+## Release Process
+
+This section describes how to create and publish a new release of the Sandbox project.
+
+### Prerequisites
+
+- Write access to the repository
+- Local environment with Java 21 and Maven configured
+- All tests passing on the `main` branch
+
+### Release Steps
+
+#### 1. Update Version Numbers
+
+Update the version in all `pom.xml` files from `X.Y.Z-SNAPSHOT` to `X.Y.Z`:
+
+```bash
+# Example: Updating from 1.2.2-SNAPSHOT to 1.2.2
+mvn versions:set -DnewVersion=1.2.2
+mvn versions:commit
+```
+
+#### 2. Verify the Build
+
+Ensure all tests pass and the build completes successfully:
+
+```bash
+# Run full build with tests and coverage
+mvn clean verify -Pjacoco
+
+# Build with WAR file
+mvn -Dinclude=web -Pjacoco verify
+```
+
+#### 3. Commit Version Changes
+
+Commit the version updates:
+
+```bash
+git add .
+git commit -m "Release version 1.2.2"
+git push origin main
+```
+
+#### 4. Create a Git Tag
+
+Tag the release commit:
+
+```bash
+git tag -a v1.2.2 -m "Release version 1.2.2"
+git push origin v1.2.2
+```
+
+#### 5. Create GitHub Release
+
+1. Go to the [GitHub Releases page](https://github.com/carstenartur/sandbox/releases)
+2. Click **"Draft a new release"**
+3. Select the tag you just created (e.g., `v1.2.2`)
+4. Set the release title (e.g., `Release 1.2.2`)
+5. Add release notes describing:
+   - New features
+   - Bug fixes
+   - Breaking changes (if any)
+   - Known issues
+6. Click **"Publish release"**
+
+#### 6. Automated Publishing
+
+When a GitHub release is created, the `maven-publish.yml` workflow automatically:
+- Builds the project with Maven
+- Publishes artifacts to GitHub Packages
+- Makes the P2 update site available
+
+#### 7. Prepare for Next Development Iteration
+
+Update versions to the next SNAPSHOT version:
+
+```bash
+# Example: Updating to 1.2.3-SNAPSHOT for next development cycle
+mvn versions:set -DnewVersion=1.2.3-SNAPSHOT
+mvn versions:commit
+
+git add .
+git commit -m "Prepare for next development iteration: 1.2.3-SNAPSHOT"
+git push origin main
+```
+
+### Version Numbering
+
+This project follows [Semantic Versioning](https://semver.org/):
+
+- **MAJOR** version (X.0.0): Incompatible API changes
+- **MINOR** version (0.X.0): New functionality in a backward-compatible manner
+- **PATCH** version (0.0.X): Backward-compatible bug fixes
+
+### Release Artifacts
+
+Each release produces:
+- **Eclipse Product**: Installable Eclipse IDE with bundled plugins (`sandbox_product/target`)
+- **P2 Update Site**: For installing plugins into existing Eclipse (`sandbox_web/target`)
+- **WAR File**: Web-deployable update site
+- **Maven Artifacts**: Published to GitHub Packages
+
+### Troubleshooting
+
+**Build fails during release:**
+- Ensure all tests pass locally: `mvn clean verify -Pjacoco`
+- Check Java version: `java -version` (must be 21+)
+- Verify Maven version: `mvn -version` (3.9.x recommended)
+
+**GitHub Actions workflow fails:**
+- Check workflow run logs in the Actions tab
+- Ensure the tag was pushed correctly: `git ls-remote --tags origin`
+- Verify permissions for GitHub Packages publishing
+
+---
+
+## License
+
+This project is licensed under the **Eclipse Public License 2.0 (EPL-2.0)**.
+
+See the [LICENSE.txt](LICENSE.txt) file for the full license text.
+
+### Eclipse Public License 2.0
+
+The Eclipse Public License (EPL) is a free and open-source software license maintained by the Eclipse Foundation. Key points:
+
+- ✅ **Commercial use** allowed
+- ✅ **Modification** allowed
+- ✅ **Distribution** allowed
+- ✅ **Patent grant** included
+- ⚠️ **Disclose source** for modifications
+- ⚠️ **License and copyright notice** required
+
+For more information, visit: https://www.eclipse.org/legal/epl-2.0/
+
+---
+
+**Copyright © 2021-2025 Carsten Hammer and contributors**

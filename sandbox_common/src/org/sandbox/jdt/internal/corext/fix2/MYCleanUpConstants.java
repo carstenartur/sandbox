@@ -169,4 +169,20 @@ public class MYCleanUpConstants {
 	 *
 	 */
 	public static final String USEFUNCTIONALLOOP_CLEANUP= "cleanup.functionalloop"; //$NON-NLS-1$
+
+	/**
+	 *
+	 */
+	public static final String METHOD_REUSE_CLEANUP= "cleanup.method_reuse"; //$NON-NLS-1$
+
+	/**
+	 * Enable detection of inline code sequences that can be replaced with method calls.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 * <p>
+	 *
+	 * @see CleanUpOptionsCore#TRUE
+	 * @see CleanUpOptionsCore#FALSE
+	 */
+	public static final String METHOD_REUSE_INLINE_SEQUENCES= "cleanup.method_reuse_inline_sequences"; //$NON-NLS-1$
 }
