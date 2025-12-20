@@ -95,3 +95,19 @@ Experimental JFace cleanup implementations. May benefit from community feedback 
 - Support for SWT cleanup as well
 - Integration with Eclipse Platform cleanups
 - JFace databinding modernization
+
+## Documentation Requirements
+
+### Feature Properties
+
+The corresponding feature module `sandbox_jface_cleanup_feature` MUST maintain:
+
+1. **feature.properties** - English language properties file containing:
+   - `description` - Clear description of the feature's purpose and capabilities
+   - `copyright` - Copyright notice with appropriate years
+   - `licenseURL` - URL to the Eclipse Public License
+   - `license` - Eclipse Public License text or reference
+
+2. **feature_de.properties** - German translation of all properties
+
+These files enable Eclipse's built-in localization mechanism and provide user-facing documentation in the Eclipse IDE. When updating feature capabilities, ensure both property files are updated accordingly.

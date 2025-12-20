@@ -316,6 +316,29 @@ All plugin directories (e.g., `sandbox_encoding_quickfix`, `sandbox_junit_cleanu
 - Significant architectural changes **MUST** update `architecture.md`
 - New features or identified issues **MUST** update `todo.md`
 
+## Feature Module Documentation Requirements
+
+All feature module directories (e.g., `sandbox_encoding_quickfix_feature`, `sandbox_junit_cleanup_feature`) **MUST** contain internationalization property files:
+
+1. **`feature.properties`** - English language properties file containing:
+   - `description` - Clear description of the feature's purpose and capabilities in plain text
+   - `copyright` - Copyright notice with appropriate years
+   - `licenseURL` - URL to the Eclipse Public License (https://www.eclipse.org/legal/epl-2.0/)
+   - `license` - Eclipse Public License text or reference
+   - Use `\n\` for line continuations in multi-line properties
+
+2. **`feature_de.properties`** - German translation of all properties
+   - Must contain the same keys as feature.properties
+   - Translations should be accurate and maintain the same meaning
+   - Technical terms (e.g., "JUnit", "Eclipse", "Java") typically remain unchanged
+
+**Purpose**: These files enable Eclipse's built-in localization mechanism and provide user-facing documentation in the Eclipse IDE Update Manager and feature installation dialogs.
+
+**Update Requirements**:
+- When adding new features to a plugin, update the corresponding feature module's property files
+- When changing feature capabilities, ensure both English and German descriptions are updated
+- PRs affecting feature functionality **SHOULD** review and update feature.properties files accordingly
+
 ## Development Workflow
 
 1. **Commits**: Write clear commit messages explaining the change
