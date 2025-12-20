@@ -47,6 +47,9 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 		Group codeQualityGroup= createGroup(numColumns, composite, CleanUpMessages.CodeQualityTabPage_GroupName_MethodReuse);
 		final CheckboxPreference method_reuse= createCheckboxPref(codeQualityGroup, numColumns, CleanUpMessages.CodeQualityTabPage_CheckboxName_MethodReuse, MYCleanUpConstants.METHOD_REUSE_CLEANUP, FALSE_TRUE);
 		intent(codeQualityGroup);
+		final CheckboxPreference inline_sequences= createCheckboxPref(codeQualityGroup, numColumns, CleanUpMessages.CodeQualityTabPage_CheckboxName_InlineSequences, MYCleanUpConstants.METHOD_REUSE_INLINE_SEQUENCES, FALSE_TRUE);
+		intent(codeQualityGroup);
 		registerPreference(method_reuse);
+		registerPreference(inline_sequences);
 	}
 }

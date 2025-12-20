@@ -22,5 +22,6 @@ public class DefaultCleanUpOptionsInitializer implements ICleanUpOptionsInitiali
 	@Override
 	public void setDefaultOptions(CleanUpOptions options) {
 		options.setOption(MYCleanUpConstants.METHOD_REUSE_CLEANUP, CleanUpOptions.FALSE);
+		options.setOption(MYCleanUpConstants.METHOD_REUSE_INLINE_SEQUENCES, CleanUpOptions.FALSE);
 	}
 }

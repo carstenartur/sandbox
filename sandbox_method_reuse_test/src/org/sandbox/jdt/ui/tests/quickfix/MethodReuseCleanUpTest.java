@@ -35,21 +35,96 @@ public class MethodReuseCleanUpTest {
 	AbstractEclipseJava context= new EclipseJava11();
 
 	enum MethodReuseScenarios {
-		// TODO: Add test scenarios
-		// Example test structure:
-		// SIMPLE_DUPLICATE("""
-		//     package test1;
-		//     class Test {
-		//         void method1() { int x = 0; x++; System.out.println(x); }
-		//         void method2() { int y = 0; y++; System.out.println(y); }
-		//     }""",
-		//     """
-		//     package test1;
-		//     class Test {
-		//         // Marker should be created for similar methods
-		//         void method1() { int x = 0; x++; System.out.println(x); }
-		//         void method2() { int y = 0; y++; System.out.println(y); }
-		//     }""");
+		// Test case 1: Simple inline sequence with different variable names
+		SIMPLE_INLINE_SEQUENCE("""
+			package test1;
+			public class Test {
+				public String formatName(String first, String last) {
+					return first.trim() + " " + last.trim();
+				}
+				
+				public void printUser(String firstName, String lastName) {
+					String name = firstName.trim() + " " + lastName.trim();
+					System.out.println(name);
+				}
+			}""",
+			"""
+			package test1;
+			public class Test {
+				public String formatName(String first, String last) {
+					return first.trim() + " " + last.trim();
+				}
+				
+				public void printUser(String firstName, String lastName) {
+					String name = formatName(firstName, lastName);
+					System.out.println(name);
+				}
+			}"""),
+		
+		// Test case 2: Inline sequence with method calls as expressions
+		INLINE_WITH_METHOD_CALLS("""
+			package test1;
+			public class Test {
+				public String combine(String a, String b) {
+					return a.toLowerCase() + b.toUpperCase();
+				}
+				
+				public void process(User u) {
+					String result = u.getFirst().toLowerCase() + u.getLast().toUpperCase();
+					System.out.println(result);
+				}
+				
+				class User {
+					String getFirst() { return ""; }
+					String getLast() { return ""; }
+				}
+			}""",
+			"""
+			package test1;
+			public class Test {
+				public String combine(String a, String b) {
+					return a.toLowerCase() + b.toUpperCase();
+				}
+				
+				public void process(User u) {
+					String result = combine(u.getFirst(), u.getLast());
+					System.out.println(result);
+				}
+				
+				class User {
+					String getFirst() { return ""; }
+					String getLast() { return ""; }
+				}
+			}"""),
+		
+		// Test case 3: Multiple variable mapping
+		MULTIPLE_VARIABLE_MAPPING("""
+			package test1;
+			public class Test {
+				public int calculate(int x, int y) {
+					int temp = x + y;
+					return temp * 2;
+				}
+				
+				public void compute(int a, int b) {
+					int result = a + b;
+					int finalValue = result * 2;
+					System.out.println(finalValue);
+				}
+			}""",
+			"""
+			package test1;
+			public class Test {
+				public int calculate(int x, int y) {
+					int temp = x + y;
+					return temp * 2;
+				}
+				
+				public void compute(int a, int b) {
+					int finalValue = calculate(a, b);
+					System.out.println(finalValue);
+				}
+			}""");
 
 		String given;
 		String expected;
@@ -60,13 +135,13 @@ public class MethodReuseCleanUpTest {
 		}
 	}
 
-	@Disabled("Not yet implemented")
+	@Disabled("Not yet fully implemented - core algorithm in place but integration pending")
 	@ParameterizedTest
 	@EnumSource(MethodReuseScenarios.class)
 	public void testMethodReuse(MethodReuseScenarios test) throws CoreException {
 		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("Test.java", test.given, false, null);
-		context.enable(MYCleanUpConstants.METHOD_REUSE_CLEANUP);
+		context.enable(MYCleanUpConstants.METHOD_REUSE_INLINE_SEQUENCES);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
 	}
 }

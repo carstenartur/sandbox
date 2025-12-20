@@ -14,6 +14,7 @@
 package org.sandbox.jdt.internal.ui.fix;
 
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.METHOD_REUSE_CLEANUP;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.METHOD_REUSE_INLINE_SEQUENCES;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +48,7 @@ public class MethodReuseCleanUpCore extends AbstractCleanUp {
 	}
 
 	public boolean requireAST() {
-		return isEnabled(METHOD_REUSE_CLEANUP);
+		return isEnabled(METHOD_REUSE_CLEANUP) || isEnabled(METHOD_REUSE_INLINE_SEQUENCES);
 	}
 
 	@Override
@@ -56,7 +57,7 @@ public class MethodReuseCleanUpCore extends AbstractCleanUp {
 		if (compilationUnit == null) {
 			return null;
 		}
-		if (!isEnabled(METHOD_REUSE_CLEANUP)) {
+		if (!isEnabled(METHOD_REUSE_CLEANUP) && !isEnabled(METHOD_REUSE_INLINE_SEQUENCES)) {
 			return null;
 		}
 		
@@ -68,6 +69,10 @@ public class MethodReuseCleanUpCore extends AbstractCleanUp {
 		// 3. Create markers/warnings for detected duplicates
 		// 4. Optionally suggest refactoring
 		
+		// For inline sequences detection:
+		// This would be integrated with the MethodReuseFinder to detect
+		// inline code sequences that can be replaced with method calls
+		
 		return null;
 	}
 
@@ -76,6 +81,9 @@ public class MethodReuseCleanUpCore extends AbstractCleanUp {
 		List<String> result= new ArrayList<>();
 		if (isEnabled(METHOD_REUSE_CLEANUP)) {
 			result.add("Find reusable method patterns");
+		}
+		if (isEnabled(METHOD_REUSE_INLINE_SEQUENCES)) {
+			result.add("Find inline code sequences that can be replaced with method calls");
 		}
 		return result.toArray(new String[0]);
 	}
@@ -99,6 +107,29 @@ public class MethodReuseCleanUpCore extends AbstractCleanUp {
 				
 				// After: Method reuse opportunity detected
 				// (warning marker would appear)
+				""";
+		}
+		if (isEnabled(METHOD_REUSE_INLINE_SEQUENCES)) {
+			return """
+				// Before:
+				String formatName(String first, String last) {
+					return first.trim() + " " + last.trim();
+				}
+				
+				void printUser(String firstName, String lastName) {
+					String name = firstName.trim() + " " + lastName.trim();
+					System.out.println(name);
+				}
+				
+				// After:
+				String formatName(String first, String last) {
+					return first.trim() + " " + last.trim();
+				}
+				
+				void printUser(String firstName, String lastName) {
+					String name = formatName(firstName, lastName);
+					System.out.println(name);
+				}
 				""";
 		}
 		return "";

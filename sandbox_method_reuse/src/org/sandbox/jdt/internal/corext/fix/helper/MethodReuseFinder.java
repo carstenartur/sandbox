@@ -13,13 +13,18 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.util.List;
+
+import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.sandbox.jdt.internal.corext.fix.helper.InlineCodeSequenceFinder.InlineSequenceMatch;
 
 /**
  * Method Reuse Finder - Searches for similar methods in the codebase
  * 
  * This class analyzes methods to find potential reuse opportunities
  * by comparing code structures, token sequences, and control flow.
+ * It also finds inline code sequences that match method bodies.
  */
 public class MethodReuseFinder {
 	
@@ -39,6 +44,18 @@ public class MethodReuseFinder {
 		// 5. Use AST comparison for structural similarity
 		// 6. Calculate similarity score
 		// 7. Return methods above threshold
+	}
+	
+	/**
+	 * Find inline code sequences that match the given method body
+	 * 
+	 * @param cu The compilation unit to search
+	 * @param method The method whose body to search for
+	 * @return List of inline sequence matches
+	 */
+	public static List<InlineSequenceMatch> findInlineCodeSequences(CompilationUnit cu, MethodDeclaration method) {
+		// Use the InlineCodeSequenceFinder to find matching sequences
+		return InlineCodeSequenceFinder.findInlineSequences(cu, method);
 	}
 	
 	/**

@@ -20,6 +20,7 @@ public class CleanUpMessages extends NLS {
 
 	public static String CodeQualityTabPage_GroupName_MethodReuse;
 	public static String CodeQualityTabPage_CheckboxName_MethodReuse;
+	public static String CodeQualityTabPage_CheckboxName_InlineSequences;
 
 	static {
 		NLS.initializeMessages(BUNDLE_NAME, CleanUpMessages.class);
