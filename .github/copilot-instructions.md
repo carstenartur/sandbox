@@ -211,6 +211,43 @@ The entire sandbox project, particularly the Eclipse plugins, is compiled agains
 
 The target platform ensures consistent compilation across all environments and pins specific Eclipse versions and dependencies for reproducible builds. When building the project, Maven Tycho resolves dependencies from the P2 repositories specified in the target platform rather than from Maven Central.
 
+### Feature Properties Files
+
+All feature modules (`*_feature` directories) use **feature.properties** files to externalize translatable strings. This is critical for Eclipse feature packaging and internationalization.
+
+**Structure of Feature Modules:**
+```
+sandbox_*_feature/
+├── feature.xml           # Feature definition with %placeholders
+├── feature.properties    # Property values for placeholders
+└── build.properties      # Must include both files
+```
+
+**Important**: When modifying `feature.xml`, **always update** the corresponding `feature.properties` file:
+
+1. **Adding a new placeholder** (e.g., `%newProperty` in feature.xml):
+   - Add `newProperty=value` to feature.properties
+   
+2. **Removing a placeholder**:
+   - Remove the property from feature.properties
+   
+3. **Renaming a placeholder**:
+   - Update both feature.xml reference AND feature.properties property name
+
+**Standard Properties (used in all features):**
+- `description` - Feature description text
+- `copyright` - Copyright notice
+- `license` - Full license text (Eclipse Public License 2.0)
+- `licenseURL` - License URL (https://www.eclipse.org/legal/epl-2.0/)
+
+**Why This Matters:**
+- **Build failures**: Missing properties cause Tycho build failures
+- **P2 metadata**: Properties appear in Eclipse update sites and installation dialogs
+- **Internationalization**: Enables translation to other languages
+- **Consistency**: Ensures uniform licensing and descriptions across all features
+
+**Verification**: After adding/modifying feature.properties, run `mvn clean verify` to ensure no build errors.
+
 ## Important Patterns and Practices
 
 ### Eclipse JDT Cleanup Pattern

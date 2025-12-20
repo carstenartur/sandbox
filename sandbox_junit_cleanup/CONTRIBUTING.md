@@ -409,6 +409,50 @@ System.out.println("Node: " + node.toString());
 3. Read ARCHITECTURE.md for design patterns
 4. Check TODO.md for known issues and feature status
 
+## Feature Module Maintenance
+
+When modifying the feature module (`sandbox_junit_cleanup_feature`):
+
+### Updating feature.xml and feature.properties
+
+**Important**: `feature.xml` and `feature.properties` must be kept synchronized:
+
+1. **If you add a new placeholder in feature.xml** (e.g., `%newProperty`):
+   ```xml
+   <feature>
+      <description>%newProperty</description>
+   </feature>
+   ```
+   Add the property to `sandbox_junit_cleanup_feature/feature.properties`:
+   ```properties
+   newProperty=My new description text
+   ```
+
+2. **If you remove a placeholder from feature.xml**:
+   - Remove the corresponding property from feature.properties
+
+3. **If you rename a placeholder**:
+   - Update both the feature.xml reference AND the property name in feature.properties
+
+### Common Feature Properties
+
+The feature.properties file should always contain:
+- `description` - Feature description
+- `copyright` - Copyright notice
+- `license` - Full license text
+- `licenseURL` - License URL
+
+**Why This Matters:**
+- Missing properties cause build failures
+- Properties are used in Eclipse update sites and installation dialogs
+- Enables internationalization support
+
+**Verification:**
+After modifying feature files, always run:
+```bash
+mvn clean verify -pl sandbox_junit_cleanup_feature
+```
+
 ## License
 
 All contributions must include the Eclipse Public License 2.0 header:

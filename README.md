@@ -201,6 +201,77 @@ When migrating to a new Eclipse version, update the following files:
 
 ---
 
+## Feature Properties Maintenance
+
+All feature modules in this repository use **feature.properties** files to externalize translatable strings referenced in **feature.xml** files. This is an Eclipse best practice for internationalization (i18n) support.
+
+### Feature Properties Files
+
+Each `*_feature` directory contains:
+- **`feature.xml`**: Feature definition with placeholder references (e.g., `%description`, `%license`, `%copyright`, `%licenseURL`)
+- **`feature.properties`**: Properties file defining the actual text values for these placeholders
+- **`build.properties`**: Build configuration that includes both files in the bundle
+
+### Important: Keep feature.xml and feature.properties Synchronized
+
+**When modifying feature.xml, always update the corresponding feature.properties file:**
+
+1. **Adding new placeholders** (e.g., `%newProperty`):
+   - Add the property definition to `feature.properties`
+   - Example: `newProperty=My new property value`
+
+2. **Removing placeholders**:
+   - Remove unused properties from `feature.properties`
+
+3. **Changing placeholder names**:
+   - Update both the reference in `feature.xml` AND the property name in `feature.properties`
+
+### Common Properties
+
+Standard properties used across all features:
+
+| Property | Description | Location in feature.xml |
+|----------|-------------|------------------------|
+| `description` | Feature description | `<description>%description</description>` |
+| `copyright` | Copyright notice | `<copyright>%copyright</copyright>` |
+| `license` | Full license text | `<license url="%licenseURL">%license</license>` |
+| `licenseURL` | License URL | `<license url="%licenseURL">` attribute |
+
+### Example Workflow
+
+When adding a new section to `feature.xml`:
+
+```xml
+<feature ...>
+   <description>%description</description>
+   <copyright>%copyright</copyright>
+   <license url="%licenseURL">%license</license>
+   
+   <!-- Adding new custom property -->
+   <update label="%updateSiteName" url="..."/>
+</feature>
+```
+
+Update `feature.properties`:
+```properties
+description=My feature description
+copyright=Copyright (c) 2025 Carsten Hammer...
+license=Eclipse Public License - v 2.0...
+licenseURL=https://www.eclipse.org/legal/epl-2.0/
+
+# New property for update site name
+updateSiteName=Sandbox Update Site
+```
+
+### Why This Matters
+
+- **Build failures**: Missing properties cause Eclipse/Tycho build failures
+- **Internationalization**: Properties files enable translation to other languages
+- **Consistency**: Centralized strings ensure consistent licensing and descriptions
+- **P2 Metadata**: Property values appear in Eclipse update sites and feature information dialogs
+
+---
+
 ## CI Status
 
 ### main (2025-09)
