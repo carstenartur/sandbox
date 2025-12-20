@@ -13,6 +13,9 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 
@@ -85,10 +88,14 @@ public class MethodSignatureAnalyzer {
 	 * @return Array of parameter type names
 	 */
 	private static String[] getParameterTypes(MethodDeclaration method) {
-		return method.parameters().stream()
-			.filter(SingleVariableDeclaration.class::isInstance)
-			.map(SingleVariableDeclaration.class::cast)
-			.map(param -> param.getType().toString())
-			.toArray(String[]::new);
+		List<?> params = method.parameters();
+		List<String> types = new ArrayList<>();
+		for (Object obj : params) {
+			if (obj instanceof SingleVariableDeclaration) {
+				SingleVariableDeclaration svd = (SingleVariableDeclaration) obj;
+				types.add(svd.getType().toString());
+			}
+		}
+		return types.toArray(new String[0]);
 	}
 }
