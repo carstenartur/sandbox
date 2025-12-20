@@ -13,14 +13,32 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import java.util.ArrayList;
+/*-
+ * #%L
+ * Sandbox junit cleanup
+ * %%
+ * Copyright (C) 2024 hammer
+ * %%
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0.
+ * 
+ * This Source Code may also be made available under the following Secondary
+ * Licenses when the conditions for such availability set forth in the Eclipse
+ * Public License, v. 2.0 are satisfied: GNU General Public License, version 2
+ * with the GNU Classpath Exception which is
+ * available at https://www.gnu.org/software/classpath/license.html.
+ * 
+ * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+ * #L%
+ */
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
@@ -32,7 +50,9 @@ import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.TypeLiteral;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -65,6 +85,9 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 			ReferenceHolder<Integer, JunitHolder> dataHolder) {
 		JunitHolder mh = new JunitHolder();
 		VariableDeclarationFragment fragment = (VariableDeclarationFragment) node.fragments().get(0);
+		if (fragment.resolveBinding() == null) {
+			return false;
+		}
 		ITypeBinding binding = fragment.resolveBinding().getType();
 		if (binding != null && ORG_JUNIT_RULES_EXPECTED_EXCEPTION.equals(binding.getQualifiedName())) {
 			mh.minv = node;
@@ -143,6 +166,13 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 
 		// Copy all statements after the expect/expectMessage calls
 		int startIndex = info.lastExpectStatementIndex + 1;
+		if (startIndex >= statements.size()) {
+			// Edge case: expect() is the last statement, no code to throw exception
+			// This would create an empty lambda that never throws, causing test to fail
+			// Skip transformation for this edge case
+			return;
+		}
+		
 		for (int i = startIndex; i < statements.size(); i++) {
 			Statement stmt = statements.get(i);
 			lambdaBody.statements().add(ASTNode.copySubtree(ast, stmt));
@@ -249,8 +279,30 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 		// The argument is typically a TypeLiteral like IllegalArgumentException.class
 		if (!expectCall.arguments().isEmpty()) {
 			Expression arg = (Expression) expectCall.arguments().get(0);
+			
+			// Use TypeLiteral API for robust type extraction
+			if (arg instanceof TypeLiteral typeLiteral) {
+				Type type = typeLiteral.getType();
+				if (type != null) {
+					ITypeBinding typeBinding = type.resolveBinding();
+					if (typeBinding != null) {
+						// Try qualified name first, fall back to simple name
+						String qualifiedName = typeBinding.getQualifiedName();
+						if (qualifiedName != null && !qualifiedName.isEmpty()) {
+							return qualifiedName;
+						}
+						String name = typeBinding.getName();
+						if (name != null && !name.isEmpty()) {
+							return name;
+						}
+					}
+					// Fallback: use the type's string representation
+					return type.toString();
+				}
+			}
+			
+			// Fallback for non-TypeLiteral expressions
 			String argStr = arg.toString();
-			// Remove .class suffix
 			if (argStr.endsWith(".class")) {
 				return argStr.substring(0, argStr.length() - ".class".length());
 			}
