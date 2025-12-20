@@ -430,6 +430,22 @@ Plugin tests in `JUnitMigrationCleanUpTest` validate end-to-end transformations 
 - [JUnit 5 User Guide](https://junit.org/junit5/docs/current/user-guide/)
 - [JUnit 4 to 5 Migration Guide](https://junit.org/junit5/docs/current/user-guide/#migrating-from-junit4)
 
+## Documentation Requirements
+
+### Feature Properties
+
+The corresponding feature module `sandbox_junit_cleanup_feature` MUST maintain:
+
+1. **feature.properties** - English language properties file containing:
+   - `description` - Clear description of the feature's purpose and capabilities
+   - `copyright` - Copyright notice with appropriate years
+   - `licenseURL` - URL to the Eclipse Public License
+   - `license` - Eclipse Public License text or reference
+
+2. **feature_de.properties** - German translation of all properties
+
+These files enable Eclipse's built-in localization mechanism and provide user-facing documentation in the Eclipse IDE. When updating feature capabilities, ensure both property files are updated accordingly.
+
 ## Maintainers
 
 This architecture was established during the refactoring effort to improve maintainability and modularity of the JUnit cleanup plugin. For questions or suggestions, please open an issue in the repository.

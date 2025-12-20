@@ -254,3 +254,19 @@ This ensures that:
 - Configurable tab width
 - Additional whitespace normalization rules
 - Integration with Eclipse PDE validation framework
+
+## Documentation Requirements
+
+### Feature Properties
+
+The corresponding feature module `sandbox_xml_cleanup_feature` MUST maintain:
+
+1. **feature.properties** - English language properties file containing:
+   - `description` - Clear description of the feature's purpose and capabilities
+   - `copyright` - Copyright notice with appropriate years
+   - `licenseURL` - URL to the Eclipse Public License
+   - `license` - Eclipse Public License text or reference
+
+2. **feature_de.properties** - German translation of all properties
+
+These files enable Eclipse's built-in localization mechanism and provide user-facing documentation in the Eclipse IDE. When updating feature capabilities, ensure both property files are updated accordingly.

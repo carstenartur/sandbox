@@ -125,3 +125,19 @@ Experimental cleanup for Eclipse Platform code. The factory methods are part of 
 - Preserve plugin ID as additional parameter if desired
 - Multi-status simplification
 - Integration with Eclipse logging framework updates
+
+## Documentation Requirements
+
+### Feature Properties
+
+The corresponding feature module `sandbox_platform_helper_feature` MUST maintain:
+
+1. **feature.properties** - English language properties file containing:
+   - `description` - Clear description of the feature's purpose and capabilities
+   - `copyright` - Copyright notice with appropriate years
+   - `licenseURL` - URL to the Eclipse Public License
+   - `license` - Eclipse Public License text or reference
+
+2. **feature_de.properties** - German translation of all properties
+
+These files enable Eclipse's built-in localization mechanism and provide user-facing documentation in the Eclipse IDE. When updating feature capabilities, ensure both property files are updated accordingly.

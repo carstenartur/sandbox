@@ -117,3 +117,19 @@ Testing focuses on naming analysis accuracy and view functionality:
 - Batch renaming capabilities
 - Export reports of naming issues
 - IDE-wide naming consistency checks
+
+## Documentation Requirements
+
+### Feature Properties
+
+The corresponding feature module `sandbox_usage_view_feature` MUST maintain:
+
+1. **feature.properties** - English language properties file containing:
+   - `description` - Clear description of the feature's purpose and capabilities
+   - `copyright` - Copyright notice with appropriate years
+   - `licenseURL` - URL to the Eclipse Public License
+   - `license` - Eclipse Public License text or reference
+
+2. **feature_de.properties** - German translation of all properties
+
+These files enable Eclipse's built-in localization mechanism and provide user-facing documentation in the Eclipse IDE. When updating feature capabilities, ensure both property files are updated accordingly.
