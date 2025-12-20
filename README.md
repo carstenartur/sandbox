@@ -27,6 +27,7 @@ All plugins are work-in-progress and intended for experimentation and learning.
 
 - [Overview](#overview)
 - [Build Instructions](#build-instructions)
+- [Eclipse Version Configuration](#eclipse-version-configuration)
 - [Quickstart](#quickstart)
 - [CI Status](#ci-status)
 - [What's Included](#whats-included)
