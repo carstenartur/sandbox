@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugin>
 	<extension point="org.eclipse.jdt.ui.cleanUps">
-		<cleanUpConfigurationUI class="org.sandbox.jdt.internal.ui.preferences.cleanup.SandboxCodeTabPage" cleanUpKind="cleanUp" name="SandboxCode" />
-		<cleanUpConfigurationUI class="org.sandbox.jdt.internal.ui.preferences.cleanup.SandboxCodeTabPage" name="SandboxCode" cleanUpKind="saveAction" />
+		<cleanUpConfigurationUI class="org.sandbox.jdt.internal.ui.preferences.cleanup.SandboxCodeTabPage" cleanUpKind="cleanUp" name="SandboxCode" icon="icons/full/obj16/sandbox.png" />
+		<cleanUpConfigurationUI class="org.sandbox.jdt.internal.ui.preferences.cleanup.SandboxCodeTabPage" name="SandboxCode" cleanUpKind="saveAction" icon="icons/full/obj16/sandbox.png" />
 		<cleanUpOptionsInitializer class="org.sandbox.jdt.internal.ui.preferences.cleanup.DefaultCleanUpOptionsInitializer" cleanUpKind="cleanUp"></cleanUpOptionsInitializer>
 		<cleanUpOptionsInitializer class="org.sandbox.jdt.internal.ui.preferences.cleanup.SaveActionCleanUpOptionsInitializer" cleanUpKind="saveAction"></cleanUpOptionsInitializer>
 		<cleanUp class="org.sandbox.jdt.internal.ui.fix.MethodReuseCleanUp" id="org.eclipse.jdt.ui.cleanup.methodreuse" />
