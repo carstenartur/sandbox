@@ -223,5 +223,5 @@
     </setupTask>
     <description></description>
   </version>
-  <description>eclipse version adjusted to sandbox requirements</description>
+  <description>This Oomph setup provisions an Eclipse installation tailored for the Sandbox project. It installs recommended features and preferences for developing and experimenting with Sandbox plugins.</description>
 </setup:Product>
