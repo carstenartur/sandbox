@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<setup:Configuration
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:setup="http://www.eclipse.org/oomph/setup/1.0"
+    name="sandbox"
+    label="Sandbox (IDE + Workspace + Projects)">
+
+  <description>
+    Installs a ready-to-use Eclipse (Sandbox Profile) and sets up the workspace
+    by cloning and importing the sandbox repository.
+  </description>
+
+  <!-- Include your Product setup -->
+  <setupTask
+      xsi:type="setup:SetupTask"
+      href="sandbox.setup#/"/>
+
+  <!-- Include your Project setup -->
+  <setupTask
+      xsi:type="setup:SetupTask"
+      href="sandboxproject.setup#/"/>
+
+</setup:Configuration>
