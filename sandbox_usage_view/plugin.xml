@@ -5,7 +5,7 @@
          point="org.eclipse.ui.views">
       <view
             name="JavaHelper View"
-            icon="icons/view.png"
+            icon="icons/full/obj16/sandbox.png"
             category="org.eclipse.jdt.ui.java"
             class="org.sandbox.jdt.ui.helper.views.JavaHelperView"
             id="org.eclipse.jdt.ui.helper.views.JavaHelperView">

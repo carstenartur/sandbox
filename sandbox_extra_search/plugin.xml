@@ -10,7 +10,7 @@
             showScopeSection="true"
             canSearchEnclosingProjects="true"
             label="%page.label"
-            icon="$nl$/icons/full/obj16/jsearch_obj.png"
+            icon="$nl$/icons/full/obj16/sandbox.png"
             extensions="java:90, jav:90"
             class="org.sandbox.jdt.internal.ui.search.UpdateNeededSearchPage"
             sizeHint="460,160"
@@ -43,7 +43,7 @@
 <!-- dialog group  -->
          <action
                label="%openUpdateSearchPageAction.label"
-               icon="$nl$/icons/full/obj16/jsearch_obj.png"
+               icon="$nl$/icons/full/obj16/sandbox.png"
                helpContextId="org.eclipse.jdt.ui.java_search_action_context"
                class="org.sandbox.jdt.internal.ui.search.OpenUpdateSearchPageAction"
                menubarPath="org.eclipse.search.menu/dialogGroup"
