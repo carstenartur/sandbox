@@ -515,7 +515,7 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 		return collectionType;
 	}
 
-	private Type importType(final ITypeBinding toImport, final ASTNode accessor, ImportRewrite imports,
+	private static Type importType(final ITypeBinding toImport, final ASTNode accessor, ImportRewrite imports,
 			final CompilationUnit compilationUnit, TypeLocation location) {
 		ImportRewriteContext importContext= new ContextSensitiveImportRewriteContext(compilationUnit,
 				accessor.getStartPosition(), imports);

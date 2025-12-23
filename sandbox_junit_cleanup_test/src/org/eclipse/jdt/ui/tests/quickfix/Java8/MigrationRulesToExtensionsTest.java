@@ -13,8 +13,6 @@
  *******************************************************************************/
 package org.eclipse.jdt.ui.tests.quickfix.Java8;
 
-import java.nio.file.Path;
-
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
