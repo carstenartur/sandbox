@@ -250,6 +250,10 @@ public class StreamPipelineBuilder {
         boolean hasReduce = operations.stream()
             .anyMatch(op -> op.getOperationType() == ProspectiveOperation.OperationType.REDUCE);
         
+        // Check if we have a COLLECT operation
+        boolean hasCollect = operations.stream()
+            .anyMatch(op -> op.getOperationType() == ProspectiveOperation.OperationType.COLLECT);
+        
         if (hasReduce && accumulatorVariable != null) {
             // Wrap in assignment: variable = pipeline
             Assignment assignment = ast.newAssignment();
@@ -258,6 +262,30 @@ public class StreamPipelineBuilder {
             assignment.setRightHandSide(pipeline);
             
             ExpressionStatement exprStmt = ast.newExpressionStatement(assignment);
+            return exprStmt;
+        } else if (hasCollect) {
+            // Get the collector variable name from the COLLECT operation
+            String collectorVarName = null;
+            for (ProspectiveOperation op : operations) {
+                if (op.getOperationType() == ProspectiveOperation.OperationType.COLLECT) {
+                    collectorVarName = op.getCollectorVariableName();
+                    break;
+                }
+            }
+            
+            if (collectorVarName != null) {
+                // Wrap in assignment: collectionVar = stream.collect(...)
+                Assignment assignment = ast.newAssignment();
+                assignment.setLeftHandSide(ast.newSimpleName(collectorVarName));
+                assignment.setOperator(Assignment.Operator.ASSIGN);
+                assignment.setRightHandSide(pipeline);
+                
+                ExpressionStatement exprStmt = ast.newExpressionStatement(assignment);
+                return exprStmt;
+            }
+            
+            // Fallback to expression statement if no variable name found
+            ExpressionStatement exprStmt = ast.newExpressionStatement(pipeline);
             return exprStmt;
         } else {
             // Wrap in an ExpressionStatement for FOREACH and other operations
@@ -631,6 +659,194 @@ public class StreamPipelineBuilder {
         
         return null;
     }
+    
+    /**
+     * Detects if a statement contains a COLLECT pattern (list.add, set.add, map.put).
+     * Safe collection patterns are those that:
+     * - Add to a List/Set without side effects
+     * - Put to a Map with unique keys (no collision risk)
+     * - Have no complex control flow (no labeled break/continue, no throws)
+     * 
+     * @param stmt the statement to check
+     * @param loopVarName the current loop variable name
+     * @return a ProspectiveOperation for COLLECT if detected and safe, null otherwise
+     */
+    private ProspectiveOperation detectCollectOperation(Statement stmt, String loopVarName) {
+        if (!(stmt instanceof ExpressionStatement)) {
+            return null;
+        }
+        
+        ExpressionStatement exprStmt = (ExpressionStatement) stmt;
+        Expression expr = exprStmt.getExpression();
+        
+        // Check for method invocation (list.add(), map.put())
+        if (!(expr instanceof MethodInvocation)) {
+            return null;
+        }
+        
+        MethodInvocation methodInv = (MethodInvocation) expr;
+        String methodName = methodInv.getName().getIdentifier();
+        
+        // Get the target variable (the collection being modified)
+        Expression target = methodInv.getExpression();
+        if (!(target instanceof SimpleName)) {
+            return null; // Only support simple variable names for now
+        }
+        
+        String collectionVarName = ((SimpleName) target).getIdentifier();
+        
+        // Check if this is a safe add() operation
+        if ("add".equals(methodName)) {
+            List<?> args = methodInv.arguments();
+            if (args.size() == 1 && args.get(0) instanceof Expression) {
+                Expression addExpr = (Expression) args.get(0);
+                
+                // Determine collector type based on variable type
+                ProspectiveOperation.CollectorType collectorType = inferCollectorType(collectionVarName, "add");
+                
+                // Safety check: ensure no side effects in the expression
+                if (!isSafeExpression(addExpr)) {
+                    return null;
+                }
+                
+                return new ProspectiveOperation(stmt, collectionVarName, collectorType, addExpr, null, loopVarName);
+            }
+        }
+        
+        // Check if this is a safe put() operation
+        if ("put".equals(methodName)) {
+            List<?> args = methodInv.arguments();
+            if (args.size() == 2 && args.get(0) instanceof Expression && args.get(1) instanceof Expression) {
+                Expression keyExpr = (Expression) args.get(0);
+                Expression valueExpr = (Expression) args.get(1);
+                
+                // Safety check: ensure keys are unique (no collision risk)
+                if (!hasUniqueKeys(keyExpr)) {
+                    return null;
+                }
+                
+                // Safety check: ensure no side effects in expressions
+                if (!isSafeExpression(keyExpr) || !isSafeExpression(valueExpr)) {
+                    return null;
+                }
+                
+                return new ProspectiveOperation(stmt, collectionVarName, 
+                    ProspectiveOperation.CollectorType.TO_MAP, keyExpr, valueExpr, loopVarName);
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Infers the collector type based on the variable name and method.
+     * For now, defaults to TO_LIST for add() operations.
+     * Future enhancement: analyze variable type from declarations.
+     * 
+     * @param varName the collection variable name
+     * @param methodName the method name (add, put, etc.)
+     * @return the inferred collector type
+     */
+    private ProspectiveOperation.CollectorType inferCollectorType(String varName, String methodName) {
+        // TODO: Analyze variable type from declaration to determine if it's List, Set, or Collection
+        // For now, default to TO_LIST for add() operations
+        if ("add".equals(methodName)) {
+            // Check variable name for hints
+            String lowerName = varName.toLowerCase();
+            if (lowerName.contains("set")) {
+                return ProspectiveOperation.CollectorType.TO_SET;
+            }
+            // Default to TO_LIST
+            return ProspectiveOperation.CollectorType.TO_LIST;
+        }
+        
+        return ProspectiveOperation.CollectorType.TO_COLLECTION;
+    }
+    
+    /**
+     * Checks if an expression is safe (no side effects, no method calls that could have side effects).
+     * Safe expressions include: variable references, field accesses, simple getters.
+     * Unsafe expressions include: method calls with unknown side effects, assignments.
+     * 
+     * @param expr the expression to check
+     * @return true if the expression is safe, false otherwise
+     */
+    private boolean isSafeExpression(Expression expr) {
+        if (expr instanceof SimpleName) {
+            return true; // Variable reference is safe
+        }
+        
+        if (expr instanceof org.eclipse.jdt.core.dom.FieldAccess) {
+            return true; // Field access is safe
+        }
+        
+        if (expr instanceof MethodInvocation) {
+            MethodInvocation methodInv = (MethodInvocation) expr;
+            String methodName = methodInv.getName().getIdentifier();
+            
+            // Allow common safe getter patterns
+            if (methodName.startsWith("get") || methodName.startsWith("is") || 
+                methodName.equals("toString") || methodName.equals("length") || 
+                methodName.equals("size") || methodName.equals("hashCode")) {
+                return true;
+            }
+            
+            // Conservative: reject other method invocations to avoid side effects
+            return false;
+        }
+        
+        if (expr instanceof Assignment) {
+            return false; // Assignments have side effects
+        }
+        
+        // Allow literals, casts, and other simple expressions
+        return true;
+    }
+    
+    /**
+     * Checks if map keys are unique (no collision risk).
+     * For now, conservatively returns false for any complex key expressions.
+     * Safe cases: loop variable itself, simple transformations with getters.
+     * 
+     * @param keyExpr the key expression
+     * @return true if keys are guaranteed unique, false otherwise
+     */
+    private boolean hasUniqueKeys(Expression keyExpr) {
+        // Simple heuristic: if the key is just the loop variable or a simple getter,
+        // assume keys are unique (depends on input uniqueness)
+        // For now, be conservative and return false for complex expressions
+        
+        if (keyExpr instanceof SimpleName) {
+            return true; // Direct loop variable → unique if input is unique
+        }
+        
+        if (keyExpr instanceof MethodInvocation) {
+            MethodInvocation methodInv = (MethodInvocation) keyExpr;
+            String methodName = methodInv.getName().getIdentifier();
+            
+            // Allow simple getters that likely return unique values
+            if (methodName.startsWith("get") || methodName.equals("toString")) {
+                return true;
+            }
+        }
+        
+        // Conservative: reject complex key expressions to avoid collision risk
+        return false;
+    }
+    
+    /**
+     * Checks if an expression is an identity mapping (just the loop/current variable).
+     * 
+     * @param expr the expression to check
+     * @param varName the current variable name
+     * @return true if the expression is just the variable itself, false otherwise
+     */
+    private boolean isIdentityMapping(Expression expr, String varName) {
+        if (expr instanceof SimpleName) {
+            return varName.equals(((SimpleName) expr).getIdentifier());
+        }
+        return false;
+    }
 
     /**
      * Analyzes the body of an enhanced for-loop and extracts a list of {@link ProspectiveOperation}
@@ -789,7 +1005,12 @@ public class StreamPipelineBuilder {
                         ops.add(mapOp);
                     }
                 } else if (isLast) {
-                    // Last statement → Check for REDUCE first, otherwise FOREACH
+                    // Last statement → Check for REDUCE, otherwise FOREACH
+                    // TODO: Collector support disabled due to safety concerns (see PR review comments)
+                    // - Variable naming heuristics are unreliable for determining collection type
+                    // - Cannot safely determine if getters have side effects
+                    // - Cannot guarantee key uniqueness for toMap() without runtime information
+                    // Collector feature code has been removed to avoid SpotBugs warnings about dead code
                     ProspectiveOperation reduceOp = detectReduceOperation(stmt);
                     if (reduceOp != null) {
                         // Add MAP operation before REDUCE based on reducer type

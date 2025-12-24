@@ -1556,6 +1556,11 @@ public class Java8CleanUpTest {
 					        });
 					    }
 					}""");
+		
+		// NOTE: Collector support test cases (ListCollectorSimple, ListCollectorWithMap, 
+		// SetCollectorSimple, MapCollectorSimple) have been removed due to safety concerns
+		// identified in code review. The feature needs proper type resolution and safety
+		// analysis before it can be enabled. See PR review comments for details.
 
 		String given;
 		String expected;
