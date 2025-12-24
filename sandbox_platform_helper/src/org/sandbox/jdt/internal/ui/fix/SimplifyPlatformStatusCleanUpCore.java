@@ -69,8 +69,11 @@ public class SimplifyPlatformStatusCleanUpCore extends AbstractCleanUp {
 		}
 		Set<CompilationUnitRewriteOperationWithSourceRange> operations= new LinkedHashSet<>();
 		Set<ASTNode> nodesprocessed= new HashSet<>();
+		// Note: preservePluginId is always false because Eclipse Platform Status factory methods
+		// don't support plugin ID parameters
+		boolean preservePluginId= false;
 		for (var i : computeFixSet) {
-			i.findOperations(compilationUnit, operations, nodesprocessed);
+			i.findOperations(compilationUnit, operations, nodesprocessed, preservePluginId);
 		}
 		if (operations.isEmpty()) {
 			return null;

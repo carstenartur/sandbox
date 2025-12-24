@@ -115,16 +115,36 @@ Experimental cleanup for Eclipse Platform code. The factory methods are part of 
 ## Known Limitations
 
 1. **Java 11+ Only**: Requires Java 11 or later (aligned with current Eclipse support)
-2. **Status Class Only**: Only handles `org.eclipse.core.runtime.Status`
+2. **Status Class Only**: Only handles `org.eclipse.core.runtime.Status` and `org.eclipse.core.runtime.MultiStatus`
 3. **Simple Cases**: Complex Status creation patterns may not be transformed
-4. **Plugin ID Removed**: Factory methods don't include plugin ID (uses default from context)
+4. **Plugin ID Not Preserved in Status Factory Methods**: The Eclipse Platform Status factory methods (error(), warning(), info()) only accept (message, exception) parameters and do not support plugin ID parameters
+
+## Configuration Options
+
+### Plugin ID Preservation
+
+**Note**: This option is currently not applicable to Status factory method transformations because the Eclipse Platform Status.error(), Status.warning(), and Status.info() methods do not support plugin ID parameters.
+
+The infrastructure for plugin ID preservation is in place for potential future use with other transformations or if Eclipse Platform adds plugin ID support to factory methods.
+
+Default transformation behavior:
+- **Always**: `new Status(IStatus.ERROR, "my.plugin", IStatus.OK, "msg", e)` → `Status.error("msg", e)`
+
+The plugin ID from the original constructor call is not preserved because the factory methods don't accept it.
+
+### MultiStatus Simplification
+
+MultiStatus doesn't have factory methods like Status, but the cleanup can normalize the status code:
+- Transforms any status code to `IStatus.OK` in MultiStatus constructors
+- Example: `new MultiStatus(pluginId, 123, "msg", e)` → `new MultiStatus(pluginId, IStatus.OK, "msg", e)`
+- Rationale: MultiStatus overall status is determined by child statuses, so the code should typically be `IStatus.OK`
 
 ## Future Enhancements
 
 - Support for custom Status subclasses
-- Preserve plugin ID as additional parameter if desired
-- Multi-status simplification
+- More sophisticated MultiStatus pattern detection (e.g., detecting and optimizing .add() patterns)
 - Integration with Eclipse logging framework updates
+- If Eclipse Platform adds plugin ID support to Status factory methods, enable plugin ID preservation
 
 ## Documentation Requirements
 
