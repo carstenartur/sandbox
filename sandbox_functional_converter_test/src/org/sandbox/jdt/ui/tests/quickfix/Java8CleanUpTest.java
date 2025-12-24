@@ -1555,6 +1555,243 @@ public class Java8CleanUpTest {
 					            System.out.println(num);
 					        });
 					    }
+					}"""),
+		
+		// New regression tests for edge cases and previously fixed behaviors
+		EmptyCollectionHandling("""
+			package test1;
+
+			import java.util.List;
+			import java.util.ArrayList;
+
+			class TestDemo {
+			    public void processEmpty() {
+			        List<String> items = new ArrayList<>();
+			        for (String item : items) {
+			            System.out.println(item);
+			        }
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.List;
+					import java.util.ArrayList;
+
+					class TestDemo {
+					    public void processEmpty() {
+					        List<String> items = new ArrayList<>();
+					        items.forEach(item -> System.out.println(item));
+					    }
+					}"""),
+		
+		FilterWithComplexCondition("""
+			package test1;
+
+			import java.util.List;
+
+			class TestDemo {
+			    public void processWithComplexFilter(List<String> items) {
+			        for (String item : items) {
+			            if (item != null && item.length() > 5 && item.startsWith("test")) {
+			                System.out.println(item);
+			            }
+			        }
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.List;
+
+					class TestDemo {
+					    public void processWithComplexFilter(List<String> items) {
+					        items.stream().filter(item -> (item != null && item.length() > 5 && item.startsWith("test"))).forEachOrdered(item -> {
+					            System.out.println(item);
+					        });
+					    }
+					}"""),
+		
+		ChainedFilterAndMapOperations("""
+			package test1;
+
+			import java.util.List;
+
+			class TestDemo {
+			    public void processChained(List<Integer> numbers) {
+			        for (Integer num : numbers) {
+			            if (num != null && num > 0) {
+			                int squared = num * num;
+			                if (squared < 100) {
+			                    System.out.println(squared);
+			                }
+			            }
+			        }
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.List;
+
+					class TestDemo {
+					    public void processChained(List<Integer> numbers) {
+					        numbers.stream().filter(num -> (num != null && num > 0)).map(num -> num * num).filter(squared -> (squared < 100)).forEachOrdered(squared -> {
+					            System.out.println(squared);
+					        });
+					    }
+					}"""),
+		
+		ContinueWithNestedConditions("""
+			package test1;
+
+			import java.util.List;
+
+			class TestDemo {
+			    public void processWithNestedContinue(List<String> items) {
+			        for (String item : items) {
+			            if (item == null || item.isEmpty()) {
+			                continue;
+			            }
+			            String upper = item.toUpperCase();
+			            System.out.println(upper);
+			        }
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.List;
+
+					class TestDemo {
+					    public void processWithNestedContinue(List<String> items) {
+					        items.stream().filter(item -> !(item == null || item.isEmpty())).map(item -> item.toUpperCase()).forEachOrdered(upper -> {
+					            System.out.println(upper);
+					        });
+					    }
+					}"""),
+		
+		MultipleMapOperations("""
+			package test1;
+
+			import java.util.List;
+
+			class TestDemo {
+			    public void processMultipleMaps(List<Integer> numbers) {
+			        for (Integer num : numbers) {
+			            int doubled = num * 2;
+			            int squared = doubled * doubled;
+			            String result = String.valueOf(squared);
+			            System.out.println(result);
+			        }
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.List;
+
+					class TestDemo {
+					    public void processMultipleMaps(List<Integer> numbers) {
+					        numbers.stream().map(num -> num * 2).map(doubled -> doubled * doubled).map(squared -> String.valueOf(squared)).forEachOrdered(result -> {
+					            System.out.println(result);
+					        });
+					    }
+					}"""),
+		
+		SumReductionWithFilter("""
+			package test1;
+
+			import java.util.List;
+
+			class TestDemo {
+			    public int sumPositiveNumbers(List<Integer> numbers) {
+			        int sum = 0;
+			        for (Integer num : numbers) {
+			            if (num > 0) {
+			                sum += num;
+			            }
+			        }
+			        return sum;
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.List;
+
+					class TestDemo {
+					    public int sumPositiveNumbers(List<Integer> numbers) {
+					        int sum = 0;
+					        sum = numbers.stream().filter(num -> (num > 0)).reduce(sum, Integer::sum);
+					        return sum;
+					    }
+					}"""),
+		
+		ComplexReductionWithMapping("""
+			package test1;
+
+			import java.util.List;
+
+			class TestDemo {
+			    public int sumOfSquares(List<Integer> numbers) {
+			        int sum = 0;
+			        for (Integer num : numbers) {
+			            int squared = num * num;
+			            sum += squared;
+			        }
+			        return sum;
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.List;
+
+					class TestDemo {
+					    public int sumOfSquares(List<Integer> numbers) {
+					        int sum = 0;
+					        sum = numbers.stream().map(num -> num * num).reduce(sum, Integer::sum);
+					        return sum;
+					    }
+					}"""),
+		
+		FilterMapReduceChain("""
+			package test1;
+
+			import java.util.List;
+
+			class TestDemo {
+			    public int sumOfPositiveSquares(List<Integer> numbers) {
+			        int total = 0;
+			        for (Integer num : numbers) {
+			            if (num > 0) {
+			                int squared = num * num;
+			                total += squared;
+			            }
+			        }
+			        return total;
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.List;
+
+					class TestDemo {
+					    public int sumOfPositiveSquares(List<Integer> numbers) {
+					        int total = 0;
+					        total = numbers.stream().filter(num -> (num > 0)).map(num -> num * num).reduce(total, Integer::sum);
+					        return total;
+					    }
 					}""");
 
 		String given;
@@ -1601,7 +1838,15 @@ public class Java8CleanUpTest {
 		"AllMatchWithNullCheck",
 		"ChainedAllMatch",
 		"NestedFilterCombination",
-		"MultipleContinueFilters"
+		"MultipleContinueFilters",
+		"EmptyCollectionHandling",
+		"FilterWithComplexCondition",
+		"ChainedFilterAndMapOperations",
+		"ContinueWithNestedConditions",
+		"MultipleMapOperations",
+		"SumReductionWithFilter",
+		"ComplexReductionWithMapping",
+		"FilterMapReduceChain"
 	})
 	public void testSimpleForEachConversion(UseFunctionalLoop test) throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null);
@@ -2076,6 +2321,96 @@ public class Java8CleanUpTest {
 				            result = new StringBuilder(item);  // Assignment to external var (non-last statement)
 				            System.out.println(item);
 				        }
+				    }
+				}""",
+			
+			// Additional negative test cases for regression testing
+			
+			// Test case: Loop with break statement (should NOT convert)
+			"""
+				package testdemo;
+				
+				import java.util.List;
+				
+				class TestDemo {
+				    public void processWithBreak(List<String> items) {
+				        for (String item : items) {
+				            if (item.equals("stop")) {
+				                break;
+				            }
+				            System.out.println(item);
+				        }
+				    }
+				}""",
+			
+			// Test case: Loop with throw statement (should NOT convert)
+			"""
+				package testdemo;
+				
+				import java.util.List;
+				
+				class TestDemo {
+				    public void processWithThrow(List<String> items) throws Exception {
+				        for (String item : items) {
+				            if (item == null) {
+				                throw new IllegalArgumentException("Null item");
+				            }
+				            System.out.println(item);
+				        }
+				    }
+				}""",
+			
+			// Test case: Loop with labeled continue (should NOT convert)
+			"""
+				package testdemo;
+				
+				import java.util.List;
+				
+				class TestDemo {
+				    public void processWithLabeledContinue(List<String> items) {
+				        outer:
+				        for (String item : items) {
+				            if (item.isEmpty()) {
+				                continue outer;
+				            }
+				            System.out.println(item);
+				        }
+				    }
+				}""",
+			
+			// Test case: Loop with non-effectively-final variable modification (should NOT convert)
+			"""
+				package testdemo;
+				
+				import java.util.List;
+				
+				class TestDemo {
+				    public void processWithMutableVar(List<String> items) {
+				        for (String item : items) {
+				            String modified = item;
+				            modified = modified.toUpperCase();
+				            modified = modified + "!";
+				            System.out.println(modified);
+				        }
+				    }
+				}""",
+			
+			// Test case: Loop with early return in middle (not anyMatch/noneMatch pattern)
+			"""
+				package testdemo;
+				
+				import java.util.List;
+				
+				class TestDemo {
+				    public boolean complexEarlyReturn(List<String> items) {
+				        for (String item : items) {
+				            System.out.println("Processing: " + item);
+				            if (item.length() > 5) {
+				                return true;
+				            }
+				            System.out.println("Done with: " + item);
+				        }
+				        return false;
 				    }
 				}"""
 

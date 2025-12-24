@@ -36,7 +36,13 @@ import org.eclipse.jdt.core.dom.TypeMethodReference;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 
-public class ProspectiveOperation {
+/**
+ * Represents a prospective stream operation extracted from a loop body.
+ * 
+ * <p>This class is final to prevent subclassing and potential finalizer attacks,
+ * since constructors call analysis methods that could potentially throw exceptions.</p>
+ */
+public final class ProspectiveOperation {
     /**
      * The original expression being analyzed or transformed.
      * <p>
@@ -104,7 +110,16 @@ public class ProspectiveOperation {
         });
     }
     
+    /**
+     * Constructor for operations with an expression.
+     * 
+     * @param expression the expression to process (must not be null)
+     * @param operationType the type of operation (must not be null)
+     */
     public ProspectiveOperation(Expression expression, OperationType operationType) {
+        assert expression != null : "expression cannot be null";
+        assert operationType != null : "operationType cannot be null";
+        
         this.originalExpression = expression;
         this.operationType = operationType;
         collectNeededVariables(expression);
@@ -114,13 +129,16 @@ public class ProspectiveOperation {
     /**
      * Constructor for operations with a statement.
      * 
-     * @param statement the statement to process
-     * @param operationType the type of operation (MAP, FOREACH, etc.)
+     * @param statement the statement to process (must not be null)
+     * @param operationType the type of operation (MAP, FOREACH, etc.) (must not be null)
      * @param loopVarName the loop variable name; for side-effect MAP operations, this represents
      *                    the variable to be returned in the lambda body (may be the current variable
      *                    name in the pipeline, not necessarily the original loop variable)
      */
     public ProspectiveOperation(org.eclipse.jdt.core.dom.Statement statement, OperationType operationType, String loopVarName) {
+        assert statement != null : "statement cannot be null";
+        assert operationType != null : "operationType cannot be null";
+        
         this.originalStatement = statement;
         this.operationType = operationType;
         this.loopVariableName = loopVarName;
@@ -134,8 +152,15 @@ public class ProspectiveOperation {
     /**
      * Constructor for MAP operations with a produced variable name.
      * Used when a variable declaration creates a new variable in the stream pipeline.
+     * 
+     * @param expression the expression that produces the new variable (must not be null)
+     * @param operationType the type of operation (should be MAP) (must not be null)
+     * @param producedVarName the name of the variable produced by this operation
      */
     public ProspectiveOperation(Expression expression, OperationType operationType, String producedVarName) {
+        assert expression != null : "expression cannot be null";
+        assert operationType != null : "operationType cannot be null";
+        
         this.originalExpression = expression;
         this.operationType = operationType;
         this.producedVariableName = producedVarName;
@@ -147,11 +172,15 @@ public class ProspectiveOperation {
      * Constructor for REDUCE operations with accumulator variable and reducer type.
      * Used when a reducer pattern (i++, sum += x, etc.) is detected.
      * 
-     * @param statement the statement containing the reducer
-     * @param accumulatorVarName the name of the accumulator variable (e.g., "i", "sum")
-     * @param reducerType the type of reducer (INCREMENT, SUM, etc.)
+     * @param statement the statement containing the reducer (must not be null)
+     * @param accumulatorVarName the name of the accumulator variable (e.g., "i", "sum") (must not be null)
+     * @param reducerType the type of reducer (INCREMENT, SUM, etc.) (must not be null)
      */
     public ProspectiveOperation(org.eclipse.jdt.core.dom.Statement statement, String accumulatorVarName, ReducerType reducerType) {
+        assert statement != null : "statement cannot be null";
+        assert accumulatorVarName != null : "accumulatorVarName cannot be null";
+        assert reducerType != null : "reducerType cannot be null";
+        
         this.originalStatement = statement;
         this.operationType = OperationType.REDUCE;
         this.accumulatorVariableName = accumulatorVarName;
@@ -204,8 +233,17 @@ public class ProspectiveOperation {
     /**
      * Generate the lambda arguments for this operation
      * Based on NetBeans ProspectiveOperation.getArguments()
+     * 
+     * @param ast the AST to create nodes in (must not be null)
+     * @param paramName the parameter name to use for the lambda (may be null, defaults to "item")
+     * @return a list of expressions to use as arguments for the stream method
+     * @throws IllegalArgumentException if ast is null
      */
     public List<Expression> getArguments(AST ast, String paramName) {
+        if (ast == null) {
+            throw new IllegalArgumentException("ast cannot be null");
+        }
+        
         List<Expression> args = new ArrayList<>();
         
         if (operationType == OperationType.REDUCE) {
@@ -215,9 +253,10 @@ public class ProspectiveOperation {
         // Create lambda expression for MAP, FILTER, FOREACH, ANYMATCH, NONEMATCH
         LambdaExpression lambda = ast.newLambdaExpression();
         
-        // Create parameter
+        // Create parameter with defensive null check
         VariableDeclarationFragment param = ast.newVariableDeclarationFragment();
-        param.setName(ast.newSimpleName(paramName != null ? paramName : "item"));
+        String effectiveParamName = (paramName != null && !paramName.isEmpty()) ? paramName : "item";
+        param.setName(ast.newSimpleName(effectiveParamName));
         lambda.parameters().add(param);
         
         // Create lambda body based on operation type
@@ -232,7 +271,8 @@ public class ProspectiveOperation {
             // Add return statement if we have a loop variable to return
             if (loopVariableName != null || paramName != null) {
                 ReturnStatement returnStmt = ast.newReturnStatement();
-                returnStmt.setExpression(ast.newSimpleName(loopVariableName != null ? loopVariableName : paramName));
+                String varToReturn = (loopVariableName != null) ? loopVariableName : effectiveParamName;
+                returnStmt.setExpression(ast.newSimpleName(varToReturn));
                 block.statements().add(returnStmt);
             }
             
