@@ -155,5 +155,5 @@
       label="Main">
     <description>Development stream tracking the main branch</description>
   </stream>
-  <description>Sandbox provides Eclipse plugins for code cleanup and tools development.</description>
+  <description>Sandbox provides Eclipse plugins for code cleanup and tools development. Configuration and features for the Sandbox project, including development tools adapted to Sandbox project requirements.</description>
 </setup:Project>

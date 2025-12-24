@@ -21,7 +21,6 @@ import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants;
-import org.eclipse.jdt.internal.corext.fix.CleanUpConstants;
 import org.eclipse.jdt.internal.ui.JavaPlugin;
 import org.eclipse.jdt.testplugin.TestOptions;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,7 +57,7 @@ public class ExplicitEncodingCleanUpTest {
 		context.disable(MYCleanUpConstants.EXPLICITENCODING_INSERT_UTF8);
 		context.disable(MYCleanUpConstants.EXPLICITENCODING_AGGREGATE_TO_UTF8);
 //		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
-		context.enable(CleanUpConstants.REMOVE_UNNECESSARY_NLS_TAGS);
+//		context.enable(CleanUpConstants.REMOVE_UNNECESSARY_NLS_TAGS);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
 	}
 
