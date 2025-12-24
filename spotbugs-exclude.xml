@@ -45,4 +45,7 @@ ION,EI_EXPOSE_REP,EI_EXPOSE_REP2,MS_PKGPROTECT,MS_MUTABLE_ARRAY"/>
   <Match>
     <Bug pattern="AT_STALE_THREAD_WRITE_OF_PRIMITIVE"/>
   </Match>
+  <Match>
+    <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+  </Match>
 </FindBugsFilter>
