@@ -14,7 +14,6 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Statement;
@@ -26,14 +25,13 @@ public class Refactorer {
     private final EnhancedForStatement forLoop;
     private final ASTRewrite rewrite;
     private final PreconditionsChecker preconditions;
-    private final AST ast;
     private final TextEditGroup group;
 
     public Refactorer(EnhancedForStatement forLoop, ASTRewrite rewrite, PreconditionsChecker preconditions, TextEditGroup group) {
         this.forLoop = forLoop;
         this.rewrite = rewrite;
         this.preconditions = preconditions;
-        this.ast = forLoop.getAST();
+        forLoop.getAST();
         this.group = group;
     }
 

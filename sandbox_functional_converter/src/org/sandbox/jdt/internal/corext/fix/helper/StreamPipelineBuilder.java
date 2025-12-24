@@ -279,14 +279,6 @@ public class StreamPipelineBuilder {
         }
     }
 
-    /**
-     * Returns the list of operations extracted from the loop body.
-     * 
-     * @return the list of prospective operations
-     */
-    public List<ProspectiveOperation> getOperations() {
-        return operations;
-    }
     
     /**
      * Extracts the expression from a REDUCE operation's right-hand side.
