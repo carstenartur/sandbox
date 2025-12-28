@@ -244,27 +244,7 @@ public abstract class AbstractTool<T> {
 		return AnnotationUtils.isFieldAnnotatedWith(field, annotationClass);
 	}
 
-	/**
-	 * Checks if a field has the static modifier.
-	 * 
-	 * @param field the field declaration to check
-	 * @return true if the field is static
-	 */
-	protected boolean isFieldStatic(FieldDeclaration field) {
-		return AnnotationUtils.isFieldStatic(field);
-	}
-
-	/**
-	 * Checks if an expression has a String type.
-	 * 
-	 * @param expression the expression to check
-	 * @param classType the class type (String.class)
-	 * @return true if the expression resolves to String type
-	 */
-	protected boolean isStringType(Expression expression, Class<String> classType) {
-		return TypeCheckingUtils.isStringType(expression, classType);
-	}
-
+	
 	/**
 	 * Checks if subtype is a subtype of or implements supertype.
 	 * 
