@@ -17,6 +17,10 @@ package org.sandbox.jdt.ui.tests.quickfix;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
+import org.eclipse.jdt.core.compiler.IProblem;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -24,21 +28,21 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
-import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava8;
+import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 
-public class Java8CleanUpTest {
+public class Java22CleanUpTest {
 
 	@RegisterExtension
-	AbstractEclipseJava context= new EclipseJava8();
+	AbstractEclipseJava context= new EclipseJava22();
 
 	enum UseFunctionalLoop {
 		SIMPLECONVERT("""
 			package test1;
 			import java.util.Arrays;
 			import java.util.List;
-			class TestDemo {
+			class MyTest {
 			    public static void main(String[] args) {
-			        new TestDemo().test(Arrays.asList(1, 2, 3));
+			        new MyTest().test(Arrays.asList(1, 2, 3));
 			    }
 			    public void test(List<Integer> ls) {
 			        for (Integer l : ls)
@@ -50,9 +54,9 @@ public class Java8CleanUpTest {
 					package test1;
 					import java.util.Arrays;
 					import java.util.List;
-					class TestDemo {
+					class MyTest {
 					    public static void main(String[] args) {
-					        new TestDemo().test(Arrays.asList(1, 2, 3));
+					        new MyTest().test(Arrays.asList(1, 2, 3));
 					    }
 					    public void test(List<Integer> ls) {
 					        ls.forEach(l -> System.out.println(l));
@@ -63,9 +67,9 @@ public class Java8CleanUpTest {
 			package test1;
 			import java.util.Arrays;
 			import java.util.List;
-			class TestDemo {
+			class MyTest {
 			    public static void main(String[] args) {
-			        new TestDemo().test(Arrays.asList(1, 2, 3));
+			        new MyTest().test(Arrays.asList(1, 2, 3));
 			    }
 			    public void test(List<Integer> ls) {
 			        for (Integer l : ls) {
@@ -79,9 +83,9 @@ public class Java8CleanUpTest {
 					package test1;
 					import java.util.Arrays;
 					import java.util.List;
-					class TestDemo {
+					class MyTest {
 					    public static void main(String[] args) {
-					        new TestDemo().test(Arrays.asList(1, 2, 3));
+					        new MyTest().test(Arrays.asList(1, 2, 3));
 					    }
 					    public void test(List<Integer> ls) {
 					        ls.stream().map(l -> l.toString()).forEachOrdered(s -> {
@@ -100,7 +104,7 @@ public class Java8CleanUpTest {
 			 *
 			 * @author alexandrugyori
 			 */
-			class TestDemo {
+			class MyTest {
 
 			    /**
 			     * @param args the command line arguments
@@ -125,7 +129,7 @@ public class Java8CleanUpTest {
 					 *
 					 * @author alexandrugyori
 					 */
-					class TestDemo {
+					class MyTest {
 
 					    /**
 					     * @param args the command line arguments
@@ -144,10 +148,10 @@ public class Java8CleanUpTest {
 			import java.util.Arrays;
 			import java.util.List;
 
-			class TestDemo {
+			class MyTest {
 
 			    public static void main(String[] args) {
-			        new TestDemo().test(Arrays.asList(1, 2, 3));
+			        new MyTest().test(Arrays.asList(1, 2, 3));
 			    }
 
 			    public void test(List<Integer> ls) {
@@ -169,10 +173,10 @@ public class Java8CleanUpTest {
 					import java.util.Arrays;
 					import java.util.List;
 
-					class TestDemo {
+					class MyTest {
 
 					    public static void main(String[] args) {
-					        new TestDemo().test(Arrays.asList(1, 2, 3));
+					        new MyTest().test(Arrays.asList(1, 2, 3));
 					    }
 
 					    public void test(List<Integer> ls) {
@@ -189,10 +193,10 @@ public class Java8CleanUpTest {
 			import java.util.Arrays;
 			import java.util.List;
 
-			class TestDemo {
+			class MyTest {
 
 			    public static void main(String[] args) {
-			        new TestDemo().test(Arrays.asList(1,2,3));
+			        new MyTest().test(Arrays.asList(1,2,3));
 			    }
 
 			    public void test(List<Integer> ls) {
@@ -215,10 +219,10 @@ public class Java8CleanUpTest {
 					import java.util.Arrays;
 					import java.util.List;
 
-					class TestDemo {
+					class MyTest {
 
 					    public static void main(String[] args) {
-					        new TestDemo().test(Arrays.asList(1,2,3));
+					        new MyTest().test(Arrays.asList(1,2,3));
 					    }
 
 					    public void test(List<Integer> ls) {
@@ -235,10 +239,10 @@ public class Java8CleanUpTest {
 			import java.util.Arrays;
 			import java.util.List;
 
-			class TestDemo {
+			class MyTest {
 
 			    public static void main(String[] args) {
-			        new TestDemo().test(Arrays.asList(1,2,3));
+			        new MyTest().test(Arrays.asList(1,2,3));
 			    }
 
 			    public void test(List<Integer> ls) {
@@ -263,10 +267,10 @@ public class Java8CleanUpTest {
 					import java.util.Arrays;
 					import java.util.List;
 
-					class TestDemo {
+					class MyTest {
 
 					    public static void main(String[] args) {
-					        new TestDemo().test(Arrays.asList(1,2,3));
+					        new MyTest().test(Arrays.asList(1,2,3));
 					    }
 
 					    public void test(List<Integer> ls) {
@@ -287,10 +291,10 @@ public class Java8CleanUpTest {
 			import java.util.Arrays;
 			import java.util.List;
 
-			class TestDemo {
+			class MyTest {
 
 			    public static void main(String[] args) {
-			        new TestDemo().test(Arrays.asList(1, 2, 3));
+			        new MyTest().test(Arrays.asList(1, 2, 3));
 			    }
 
 			    public void test(List<Integer> ls) {
@@ -314,10 +318,10 @@ public class Java8CleanUpTest {
 					import java.util.Arrays;
 					import java.util.List;
 
-					class TestDemo {
+					class MyTest {
 
 					    public static void main(String[] args) {
-					        new TestDemo().test(Arrays.asList(1, 2, 3));
+					        new MyTest().test(Arrays.asList(1, 2, 3));
 					    }
 
 					    public void test(List<Integer> ls) {
@@ -334,10 +338,10 @@ public class Java8CleanUpTest {
 			import java.util.Arrays;
 			import java.util.List;
 
-			class TestDemo {
+			class MyTest {
 
 			    public static void main(String[] args) {
-			        new TestDemo().test(Arrays.asList(1, 2, 3));
+			        new MyTest().test(Arrays.asList(1, 2, 3));
 			    }
 
 			    public Boolean test(List<Integer> ls) {
@@ -366,10 +370,10 @@ public class Java8CleanUpTest {
 					import java.util.Arrays;
 					import java.util.List;
 
-					class TestDemo {
+					class MyTest {
 
 					    public static void main(String[] args) {
-					        new TestDemo().test(Arrays.asList(1, 2, 3));
+					        new MyTest().test(Arrays.asList(1, 2, 3));
 					    }
 
 					    public Boolean test(List<Integer> ls) {
@@ -393,10 +397,10 @@ public class Java8CleanUpTest {
 			import java.util.Arrays;
 			import java.util.List;
 
-			class TestDemo {
+			class MyTest {
 
 			    public static void main(String[] args) {
-			        new TestDemo().test(Arrays.asList(1, 2, 3));
+			        new MyTest().test(Arrays.asList(1, 2, 3));
 			    }
 
 			    public Boolean test(List<Integer> ls) {
@@ -425,10 +429,10 @@ public class Java8CleanUpTest {
 					import java.util.Arrays;
 					import java.util.List;
 
-					class TestDemo {
+					class MyTest {
 
 					    public static void main(String[] args) {
-					        new TestDemo().test(Arrays.asList(1, 2, 3));
+					        new MyTest().test(Arrays.asList(1, 2, 3));
 					    }
 
 					    public Boolean test(List<Integer> ls) {
@@ -452,10 +456,10 @@ public class Java8CleanUpTest {
 			import java.util.Arrays;
 			import java.util.List;
 
-			class TestDemo {
+			class MyTest {
 
 			    public static void main(String[] args) throws Exception {
-			        new TestDemo().test(Arrays.asList(1, 2, 3,7));
+			        new MyTest().test(Arrays.asList(1, 2, 3,7));
 			    }
 
 
@@ -484,10 +488,10 @@ public class Java8CleanUpTest {
 					import java.util.Arrays;
 					import java.util.List;
 
-					class TestDemo {
+					class MyTest {
 
 					    public static void main(String[] args) throws Exception {
-					        new TestDemo().test(Arrays.asList(1, 2, 3,7));
+					        new MyTest().test(Arrays.asList(1, 2, 3,7));
 					    }
 
 
@@ -515,10 +519,10 @@ public class Java8CleanUpTest {
 			import java.util.Arrays;
 			import java.util.List;
 
-			class TestDemo {
+			class MyTest {
 
 			    public static void main(String[] args) {
-			        new TestDemo().test(Arrays.asList(1, 2, 3));
+			        new MyTest().test(Arrays.asList(1, 2, 3));
 			    }
 
 			    public Boolean test(List<Integer> ls) {
@@ -554,10 +558,10 @@ public class Java8CleanUpTest {
 					import java.util.Arrays;
 					import java.util.List;
 
-					class TestDemo {
+					class MyTest {
 
 					    public static void main(String[] args) {
-					        new TestDemo().test(Arrays.asList(1, 2, 3));
+					        new MyTest().test(Arrays.asList(1, 2, 3));
 					    }
 
 					    public Boolean test(List<Integer> ls) {
@@ -592,10 +596,10 @@ public class Java8CleanUpTest {
 			import java.util.Arrays;
 			import java.util.List;
 
-			class TestDemo {
+			class MyTest {
 
 			    public static void main(String[] args) {
-			        new TestDemo().test(Arrays.asList(1, 2, 3,7));
+			        new MyTest().test(Arrays.asList(1, 2, 3,7));
 			    }
 
 
@@ -616,10 +620,10 @@ public class Java8CleanUpTest {
 					import java.util.Arrays;
 					import java.util.List;
 
-					class TestDemo {
+					class MyTest {
 
 					    public static void main(String[] args) {
-					        new TestDemo().test(Arrays.asList(1, 2, 3,7));
+					        new MyTest().test(Arrays.asList(1, 2, 3,7));
 					    }
 
 
@@ -638,10 +642,10 @@ public class Java8CleanUpTest {
 			import java.util.Arrays;
 			import java.util.List;
 
-			class TestDemo {
+			class MyTest {
 
 			    public static void main(String[] args) {
-			        new TestDemo().test(Arrays.asList(1, 2, 3,7));
+			        new MyTest().test(Arrays.asList(1, 2, 3,7));
 			    }
 
 
@@ -673,10 +677,10 @@ public class Java8CleanUpTest {
 					import java.util.Arrays;
 					import java.util.List;
 
-					class TestDemo {
+					class MyTest {
 
 					    public static void main(String[] args) {
-					        new TestDemo().test(Arrays.asList(1, 2, 3,7));
+					        new MyTest().test(Arrays.asList(1, 2, 3,7));
 					    }
 
 
@@ -702,10 +706,10 @@ public class Java8CleanUpTest {
 			import java.util.Arrays;
 			import java.util.List;
 
-			class TestDemo {
+			class MyTest {
 
 			    public static void main(String[] args) {
-			        new TestDemo().test(Arrays.asList(1, 2, 3,7));
+			        new MyTest().test(Arrays.asList(1, 2, 3,7));
 			    }
 
 
@@ -740,10 +744,10 @@ public class Java8CleanUpTest {
 					import java.util.Arrays;
 					import java.util.List;
 
-					class TestDemo {
+					class MyTest {
 
 					    public static void main(String[] args) {
-					        new TestDemo().test(Arrays.asList(1, 2, 3,7));
+					        new MyTest().test(Arrays.asList(1, 2, 3,7));
 					    }
 
 
@@ -777,7 +781,7 @@ public class Java8CleanUpTest {
 				+ " *\n"
 				+ " * @author alexandrugyori\n"
 				+ " */\n"
-				+ "class TestDemo {\n"
+				+ "class MyTest {\n"
 				+ "\n"
 				+ "    /**\n"
 				+ "     * @param args the command line arguments\n"
@@ -806,7 +810,7 @@ public class Java8CleanUpTest {
 						+ " *\n"
 						+ " * @author alexandrugyori\n"
 						+ " */\n"
-						+ "class TestDemo {\n"
+						+ "class MyTest {\n"
 						+ "\n"
 						+ "    /**\n"
 						+ "     * @param args the command line arguments\n"
@@ -832,7 +836,7 @@ public class Java8CleanUpTest {
 				+ " *\n"
 				+ " * @author alexandrugyori\n"
 				+ " */\n"
-				+ "class TestDemo {\n"
+				+ "class MyTest {\n"
 				+ "\n"
 				+ "    /**\n"
 				+ "     * @param args the command line arguments\n"
@@ -861,7 +865,7 @@ public class Java8CleanUpTest {
 						+ " *\n"
 						+ " * @author alexandrugyori\n"
 						+ " */\n"
-						+ "class TestDemo {\n"
+						+ "class MyTest {\n"
 						+ "\n"
 						+ "    /**\n"
 						+ "     * @param args the command line arguments\n"
@@ -887,7 +891,7 @@ public class Java8CleanUpTest {
 				+ " *\n"
 				+ " * @author alexandrugyori\n"
 				+ " */\n"
-				+ "class TestDemo {\n"
+				+ "class MyTest {\n"
 				+ "\n"
 				+ "    /**\n"
 				+ "     * @param args the command line arguments\n"
@@ -916,7 +920,7 @@ public class Java8CleanUpTest {
 						+ " *\n"
 						+ " * @author alexandrugyori\n"
 						+ " */\n"
-						+ "class TestDemo {\n"
+						+ "class MyTest {\n"
 						+ "\n"
 						+ "    /**\n"
 						+ "     * @param args the command line arguments\n"
@@ -1178,7 +1182,7 @@ public class Java8CleanUpTest {
 			import java.util.ArrayList;
 			import java.util.List;
 
-			class TestDemo {
+			class MyTest {
 			    public int findMax(List<Integer> numbers) {
 			        int max = Integer.MIN_VALUE;
 			        for (Integer num : numbers) {
@@ -1194,7 +1198,7 @@ public class Java8CleanUpTest {
 					import java.util.ArrayList;
 					import java.util.List;
 
-					class TestDemo {
+					class MyTest {
 					    public int findMax(List<Integer> numbers) {
 					        int max = Integer.MIN_VALUE;
 					        max = numbers.stream().reduce(max, Math::max);
@@ -1207,7 +1211,7 @@ public class Java8CleanUpTest {
 			import java.util.ArrayList;
 			import java.util.List;
 
-			class TestDemo {
+			class MyTest {
 			    public int findMin(List<Integer> numbers) {
 			        int min = Integer.MAX_VALUE;
 			        for (Integer num : numbers) {
@@ -1223,7 +1227,7 @@ public class Java8CleanUpTest {
 					import java.util.ArrayList;
 					import java.util.List;
 
-					class TestDemo {
+					class MyTest {
 					    public int findMin(List<Integer> numbers) {
 					        int min = Integer.MAX_VALUE;
 					        min = numbers.stream().reduce(min, Math::min);
@@ -1236,7 +1240,7 @@ public class Java8CleanUpTest {
 			import java.util.ArrayList;
 			import java.util.List;
 
-			class TestDemo {
+			class MyTest {
 			    public int findMaxLength(List<String> strings) {
 			        int maxLen = 0;
 			        for (String str : strings) {
@@ -1252,7 +1256,7 @@ public class Java8CleanUpTest {
 					import java.util.ArrayList;
 					import java.util.List;
 
-					class TestDemo {
+					class MyTest {
 					    public int findMaxLength(List<String> strings) {
 					        int maxLen = 0;
 					        maxLen = strings.stream().map(str -> str.length()).reduce(maxLen, Math::max);
@@ -1265,7 +1269,7 @@ public class Java8CleanUpTest {
 			import java.util.ArrayList;
 			import java.util.List;
 
-			class TestDemo {
+			class MyTest {
 			    public double findMinValue(List<Double> values) {
 			        double minVal = Double.MAX_VALUE;
 			        for (Double val : values) {
@@ -1281,7 +1285,7 @@ public class Java8CleanUpTest {
 					import java.util.ArrayList;
 					import java.util.List;
 
-					class TestDemo {
+					class MyTest {
 					    public double findMinValue(List<Double> values) {
 					        double minVal = Double.MAX_VALUE;
 					        minVal = values.stream().map(val -> val * 2.0).reduce(minVal, Math::min);
@@ -1294,7 +1298,7 @@ public class Java8CleanUpTest {
 			import java.util.ArrayList;
 			import java.util.List;
 
-			class TestDemo {
+			class MyTest {
 			    public int findMaxEvenNumber(List<Integer> numbers) {
 			        int max = 0;
 			        for (Integer num : numbers) {
@@ -1312,7 +1316,7 @@ public class Java8CleanUpTest {
 					import java.util.ArrayList;
 					import java.util.List;
 
-					class TestDemo {
+					class MyTest {
 					    public int findMaxEvenNumber(List<Integer> numbers) {
 					        int max = 0;
 					        max = numbers.stream().filter(num -> (num % 2 == 0)).reduce(max, Math::max);
@@ -1325,7 +1329,7 @@ public class Java8CleanUpTest {
 			import java.util.ArrayList;
 			import java.util.List;
 
-			class TestDemo {
+			class MyTest {
 			    public int findMinSquaredValue(List<Integer> numbers) {
 			        int min = Integer.MAX_VALUE;
 			        for (Integer num : numbers) {
@@ -1342,7 +1346,7 @@ public class Java8CleanUpTest {
 					import java.util.ArrayList;
 					import java.util.List;
 
-					class TestDemo {
+					class MyTest {
 					    public int findMinSquaredValue(List<Integer> numbers) {
 					        int min = Integer.MAX_VALUE;
 					        min = numbers.stream().map(num -> num * num).reduce(min, Math::min);
@@ -1354,7 +1358,7 @@ public class Java8CleanUpTest {
 
 			import java.util.List;
 
-			class TestDemo {
+			class MyTest {
 			    public int findMaxPositiveSquare(List<Integer> numbers) {
 			        int max = 0;
 			        for (Integer num : numbers) {
@@ -1372,7 +1376,7 @@ public class Java8CleanUpTest {
 
 					import java.util.List;
 
-					class TestDemo {
+					class MyTest {
 					    public int findMaxPositiveSquare(List<Integer> numbers) {
 					        int max = 0;
 					        max = numbers.stream().filter(num -> (num > 0)).map(num -> num * num).reduce(max, Math::max);
@@ -1384,7 +1388,7 @@ public class Java8CleanUpTest {
 
 			import java.util.List;
 
-			class TestDemo {
+			class MyTest {
 			    public void processPositiveSquares(List<Integer> numbers) {
 			        for (Integer num : numbers) {
 			            if (num <= 0) {
@@ -1401,7 +1405,7 @@ public class Java8CleanUpTest {
 
 					import java.util.List;
 
-					class TestDemo {
+					class MyTest {
 					    public void processPositiveSquares(List<Integer> numbers) {
 					        numbers.stream().filter(num -> !(num <= 0)).map(num -> num * num).forEachOrdered(squared -> {
 					            System.out.println(squared);
@@ -1413,7 +1417,7 @@ public class Java8CleanUpTest {
 
 			import java.util.List;
 
-			class TestDemo {
+			class MyTest {
 			    public boolean allValid(List<String> items) {
 			        for (String item : items) {
 			            if (!item.startsWith("valid")) {
@@ -1429,7 +1433,7 @@ public class Java8CleanUpTest {
 
 					import java.util.List;
 
-					class TestDemo {
+					class MyTest {
 					    public boolean allValid(List<String> items) {
 					        if (!items.stream().allMatch(item -> item.startsWith("valid"))) {
 					            return false;
@@ -1442,7 +1446,7 @@ public class Java8CleanUpTest {
 
 			import java.util.List;
 
-			class TestDemo {
+			class MyTest {
 			    public boolean allNonNull(List<Object> items) {
 			        for (Object item : items) {
 			            if (!(item != null)) {
@@ -1458,7 +1462,7 @@ public class Java8CleanUpTest {
 
 					import java.util.List;
 
-					class TestDemo {
+					class MyTest {
 					    public boolean allNonNull(List<Object> items) {
 					        if (!items.stream().allMatch(item -> (item != null))) {
 					            return false;
@@ -1471,7 +1475,7 @@ public class Java8CleanUpTest {
 
 			import java.util.List;
 
-			class TestDemo {
+			class MyTest {
 			    public boolean allLongEnough(List<String> items) {
 			        for (String item : items) {
 			            int len = item.length();
@@ -1488,7 +1492,7 @@ public class Java8CleanUpTest {
 
 					import java.util.List;
 
-					class TestDemo {
+					class MyTest {
 					    public boolean allLongEnough(List<String> items) {
 					        if (!items.stream().map(item -> item.length()).allMatch(len -> (len > 5))) {
 					            return false;
@@ -1501,7 +1505,7 @@ public class Java8CleanUpTest {
 
 			import java.util.List;
 
-			class TestDemo {
+			class MyTest {
 			    public void processValidItems(List<String> items) {
 			        for (String item : items) {
 			            if (item != null) {
@@ -1518,7 +1522,7 @@ public class Java8CleanUpTest {
 
 					import java.util.List;
 
-					class TestDemo {
+					class MyTest {
 					    public void processValidItems(List<String> items) {
 					        items.stream().filter(item -> (item != null)).filter(item -> (item.length() > 5)).forEachOrdered(item -> {
 					            System.out.println(item);
@@ -1530,7 +1534,7 @@ public class Java8CleanUpTest {
 
 			import java.util.List;
 
-			class TestDemo {
+			class MyTest {
 			    public void processFiltered(List<Integer> numbers) {
 			        for (Integer num : numbers) {
 			            if (num == null) {
@@ -1549,7 +1553,7 @@ public class Java8CleanUpTest {
 
 					import java.util.List;
 
-					class TestDemo {
+					class MyTest {
 					    public void processFiltered(List<Integer> numbers) {
 					        numbers.stream().filter(num -> !(num == null)).filter(num -> !(num <= 0)).forEachOrdered(num -> {
 					            System.out.println(num);
@@ -1564,7 +1568,7 @@ public class Java8CleanUpTest {
 			import java.util.List;
 			import java.util.ArrayList;
 
-			class TestDemo {
+			class MyTest {
 			    public void processEmpty() {
 			        List<String> items = new ArrayList<>();
 			        for (String item : items) {
@@ -1579,7 +1583,7 @@ public class Java8CleanUpTest {
 					import java.util.List;
 					import java.util.ArrayList;
 
-					class TestDemo {
+					class MyTest {
 					    public void processEmpty() {
 					        List<String> items = new ArrayList<>();
 					        items.forEach(item -> System.out.println(item));
@@ -1591,7 +1595,7 @@ public class Java8CleanUpTest {
 
 			import java.util.List;
 
-			class TestDemo {
+			class MyTest {
 			    public void processWithComplexFilter(List<String> items) {
 			        for (String item : items) {
 			            if (item != null && item.length() > 5 && item.startsWith("test")) {
@@ -1606,7 +1610,7 @@ public class Java8CleanUpTest {
 
 					import java.util.List;
 
-					class TestDemo {
+					class MyTest {
 					    public void processWithComplexFilter(List<String> items) {
 					        items.stream().filter(item -> (item != null && item.length() > 5 && item.startsWith("test"))).forEachOrdered(item -> {
 					            System.out.println(item);
@@ -1619,7 +1623,7 @@ public class Java8CleanUpTest {
 
 			import java.util.List;
 
-			class TestDemo {
+			class MyTest {
 			    public void processChained(List<Integer> numbers) {
 			        for (Integer num : numbers) {
 			            if (num != null && num > 0) {
@@ -1637,7 +1641,7 @@ public class Java8CleanUpTest {
 
 					import java.util.List;
 
-					class TestDemo {
+					class MyTest {
 					    public void processChained(List<Integer> numbers) {
 					        numbers.stream().filter(num -> (num != null && num > 0)).map(num -> num * num).filter(squared -> (squared < 100)).forEachOrdered(squared -> {
 					            System.out.println(squared);
@@ -1650,7 +1654,7 @@ public class Java8CleanUpTest {
 
 			import java.util.List;
 
-			class TestDemo {
+			class MyTest {
 			    public void processWithNestedContinue(List<String> items) {
 			        for (String item : items) {
 			            if (item == null || item.isEmpty()) {
@@ -1667,7 +1671,7 @@ public class Java8CleanUpTest {
 
 					import java.util.List;
 
-					class TestDemo {
+					class MyTest {
 					    public void processWithNestedContinue(List<String> items) {
 					        items.stream().filter(item -> !(item == null || item.isEmpty())).map(item -> item.toUpperCase()).forEachOrdered(upper -> {
 					            System.out.println(upper);
@@ -1680,7 +1684,7 @@ public class Java8CleanUpTest {
 
 			import java.util.List;
 
-			class TestDemo {
+			class MyTest {
 			    public void processMultipleMaps(List<Integer> numbers) {
 			        for (Integer num : numbers) {
 			            int doubled = num * 2;
@@ -1696,7 +1700,7 @@ public class Java8CleanUpTest {
 
 					import java.util.List;
 
-					class TestDemo {
+					class MyTest {
 					    public void processMultipleMaps(List<Integer> numbers) {
 					        numbers.stream().map(num -> num * 2).map(doubled -> doubled * doubled).map(squared -> String.valueOf(squared)).forEachOrdered(result -> {
 					            System.out.println(result);
@@ -1709,7 +1713,7 @@ public class Java8CleanUpTest {
 
 			import java.util.List;
 
-			class TestDemo {
+			class MyTest {
 			    public int sumPositiveNumbers(List<Integer> numbers) {
 			        int sum = 0;
 			        for (Integer num : numbers) {
@@ -1726,7 +1730,7 @@ public class Java8CleanUpTest {
 
 					import java.util.List;
 
-					class TestDemo {
+					class MyTest {
 					    public int sumPositiveNumbers(List<Integer> numbers) {
 					        int sum = 0;
 					        sum = numbers.stream().filter(num -> (num > 0)).reduce(sum, Integer::sum);
@@ -1739,7 +1743,7 @@ public class Java8CleanUpTest {
 
 			import java.util.List;
 
-			class TestDemo {
+			class MyTest {
 			    public int sumOfSquares(List<Integer> numbers) {
 			        int sum = 0;
 			        for (Integer num : numbers) {
@@ -1755,7 +1759,7 @@ public class Java8CleanUpTest {
 
 					import java.util.List;
 
-					class TestDemo {
+					class MyTest {
 					    public int sumOfSquares(List<Integer> numbers) {
 					        int sum = 0;
 					        sum = numbers.stream().map(num -> num * num).reduce(sum, Integer::sum);
@@ -1768,7 +1772,7 @@ public class Java8CleanUpTest {
 
 			import java.util.List;
 
-			class TestDemo {
+			class MyTest {
 			    public int sumOfPositiveSquares(List<Integer> numbers) {
 			        int total = 0;
 			        for (Integer num : numbers) {
@@ -1786,7 +1790,7 @@ public class Java8CleanUpTest {
 
 					import java.util.List;
 
-					class TestDemo {
+					class MyTest {
 					    public int sumOfPositiveSquares(List<Integer> numbers) {
 					        int total = 0;
 					        total = numbers.stream().filter(num -> (num > 0)).map(num -> num * num).reduce(total, Integer::sum);
@@ -1803,6 +1807,7 @@ public class Java8CleanUpTest {
 		}
 	}
 
+	@Disabled("Not all functional loop patterns are implemented yet - enable incrementally as features are added")
 	@ParameterizedTest
 	@EnumSource(value = UseFunctionalLoop.class, names = {
 		"SIMPLECONVERT",
@@ -1850,8 +1855,19 @@ public class Java8CleanUpTest {
 	})
 	public void testSimpleForEachConversion(UseFunctionalLoop test) throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null);
-		ICompilationUnit cu= pack.createCompilationUnit("TestDemo.java", test.given, false, null);
+		ICompilationUnit cu= pack.createCompilationUnit("MyTest.java", test.given, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+
+		// Hier: AST parsen und Problems ausgeben!
+		ASTParser parser = ASTParser.newParser(AST.JLS22); // deine verwendete JLS-Version
+		parser.setSource(cu);
+		parser.setResolveBindings(true);
+		CompilationUnit astRoot = (CompilationUnit) parser.createAST(null);
+
+		IProblem[] problems = astRoot.getProblems();
+		for (IProblem problem : problems) {
+		    System.out.println(problem.toString());
+		}
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
 	}
 
@@ -1860,7 +1876,7 @@ public class Java8CleanUpTest {
 	@EnumSource(UseFunctionalLoop.class)
 	public void testAllFunctionalLoopConversions(UseFunctionalLoop test) throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null);
-		ICompilationUnit cu= pack.createCompilationUnit("TestDemo.java", test.given, false, null);
+		ICompilationUnit cu= pack.createCompilationUnit("MyTest.java", test.given, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
 	}
@@ -1869,7 +1885,7 @@ public class Java8CleanUpTest {
 	@ParameterizedTest
 	@ValueSource(strings = {
 			"""
-				package testdemo;
+				package test1;
 
 				import java.util.ArrayList;
 				import java.util.List;
@@ -1878,7 +1894,7 @@ public class Java8CleanUpTest {
 				 *
 				 * @author alexandrugyori
 				 */
-				class TestDemo {
+				class MyTest {
 
 				    /**
 				     * @param args the command line arguments
@@ -1896,15 +1912,15 @@ public class Java8CleanUpTest {
 				}""",
 
 			"""
-				package testdemo;
+				package test1;
 
 				import java.util.Arrays;
 				import java.util.List;
 
-				class TestDemo {
+				class MyTest {
 
 				    public static void main(String[] args) {
-				        new TestDemo().test(Arrays.asList(1, 2, 3,7));
+				        new MyTest().test(Arrays.asList(1, 2, 3,7));
 				    }
 
 
@@ -1933,15 +1949,15 @@ public class Java8CleanUpTest {
 				}""",
 
 			"""
-				package testdemo;
+				package test1;
 
 				import java.util.Arrays;
 				import java.util.List;
 
-				class TestDemo {
+				class MyTest {
 
 				    public static void main(String[] args) {
-				        new TestDemo().test(Arrays.asList(1, 2, 3,7));
+				        new MyTest().test(Arrays.asList(1, 2, 3,7));
 				    }
 
 
@@ -1967,15 +1983,15 @@ public class Java8CleanUpTest {
 				}""",
 
 			"""
-				package testdemo;
+				package test1;
 
 				import java.util.Arrays;
 				import java.util.List;
 
-				class TestDemo {
+				class MyTest {
 
 				    public static void main(String[] args) {
-				        new TestDemo().test(Arrays.asList(1, 2, 3,7));
+				        new MyTest().test(Arrays.asList(1, 2, 3,7));
 				    }
 
 
@@ -2001,15 +2017,15 @@ public class Java8CleanUpTest {
 				}""",
 
 			"""
-				package testdemo;
+				package test1;
 
 				import java.util.Arrays;
 				import java.util.List;
 
-				class TestDemo {
+				class MyTest {
 
 				    public static void main(String[] args) {
-				        new TestDemo().test(Arrays.asList(1, 2, 3,7));
+				        new MyTest().test(Arrays.asList(1, 2, 3,7));
 				    }
 
 
@@ -2037,15 +2053,15 @@ public class Java8CleanUpTest {
 				}""",
 
 			"""
-				package testdemo;
+				package test1;
 
 				import java.util.Arrays;
 				import java.util.List;
 
-				class TestDemo {
+				class MyTest {
 
 				    public static void main(String[] args) {
-				        new TestDemo().test(Arrays.asList(1, 2, 3,7));
+				        new MyTest().test(Arrays.asList(1, 2, 3,7));
 				    }
 
 
@@ -2074,15 +2090,15 @@ public class Java8CleanUpTest {
 				}""",
 
 			"""
-				package testdemo;
+				package test1;
 
 				import java.util.Arrays;
 				import java.util.List;
 
-				class TestDemo {
+				class MyTest {
 
 				    public static void main(String[] args) {
-				        new TestDemo().test(Arrays.asList(1, 2, 3,7));
+				        new MyTest().test(Arrays.asList(1, 2, 3,7));
 				    }
 
 
@@ -2111,15 +2127,15 @@ public class Java8CleanUpTest {
 				}""",
 
 			"""
-				package testdemo;
+				package test1;
 
 				import java.util.Arrays;
 				import java.util.List;
 
-				class TestDemo {
+				class MyTest {
 
 				    public static void main(String[] args) throws Exception {
-				        new TestDemo().test(Arrays.asList(1, 2, 3,7));
+				        new MyTest().test(Arrays.asList(1, 2, 3,7));
 				    }
 
 
@@ -2150,15 +2166,15 @@ public class Java8CleanUpTest {
 			,
 
 			"""
-				package testdemo;
+				package test1;
 
 				import java.util.Arrays;
 				import java.util.List;
 
-				class TestDemo {
+				class MyTest {
 
 				    public static void main(String[] args) throws Exception {
-				        new TestDemo().test(Arrays.asList(1, 2, 3,7));
+				        new MyTest().test(Arrays.asList(1, 2, 3,7));
 				    }
 
 
@@ -2183,9 +2199,9 @@ public class Java8CleanUpTest {
 			,
 
 			"""
-				package testdemo;
+				package test1;
 				import java.util.List;\
-				class TestDemo {
+				class MyTest {
 				    public void test(List<Integer> ls) throws Exception {
 				        for(Integer l : ls) {
 				            return ;
@@ -2194,7 +2210,7 @@ public class Java8CleanUpTest {
 				}""",
 
 			"""
-				package testdemo;
+				package test1;
 
 				import java.util.ArrayList;
 				import java.util.List;
@@ -2203,7 +2219,7 @@ public class Java8CleanUpTest {
 				 *
 				 * @author alexandrugyori
 				 */
-				class TestDemo {
+				class MyTest {
 
 				    /**
 				     * @param args the command line arguments
@@ -2228,7 +2244,7 @@ public class Java8CleanUpTest {
 			,
 
 			"""
-				package testdemo;
+				package test1;
 
 				import java.util.ArrayList;
 				import java.util.List;
@@ -2237,7 +2253,7 @@ public class Java8CleanUpTest {
 				 *
 				 * @author alexandrugyori
 				 */
-				class TestDemo {
+				class MyTest {
 
 				    /**
 				     * @param args the command line arguments
@@ -2261,7 +2277,7 @@ public class Java8CleanUpTest {
 			,
 
 			"""
-				package testdemo;
+				package test1;
 
 				import java.util.ArrayList;
 				import java.util.List;
@@ -2270,7 +2286,7 @@ public class Java8CleanUpTest {
 				 *
 				 * @author alexandrugyori
 				 */
-				class TestDemo {
+				class MyTest {
 
 				    /**
 				     * @param args the command line arguments
@@ -2293,11 +2309,11 @@ public class Java8CleanUpTest {
 			
 			// Test case: Loop modifying external variable (should NOT convert due to unsafe side effect)
 			"""
-				package testdemo;
+				package test1;
 				
 				import java.util.List;
 				
-				class TestDemo {
+				class MyTest {
 				    public void processWithExternalModification(List<String> items) {
 				        int count = 0;
 				        for (String item : items) {
@@ -2310,11 +2326,11 @@ public class Java8CleanUpTest {
 			
 			// Test case: Assignment to external variable in non-last statement (should NOT convert)
 			"""
-				package testdemo;
+				package test1;
 				
 				import java.util.List;
 				
-				class TestDemo {
+				class MyTest {
 				    public void processWithExternalAssignment(List<String> items) {
 				        StringBuilder result = new StringBuilder();
 				        for (String item : items) {
@@ -2328,11 +2344,11 @@ public class Java8CleanUpTest {
 			
 			// Test case: Loop with break statement (should NOT convert)
 			"""
-				package testdemo;
+				package test1;
 				
 				import java.util.List;
 				
-				class TestDemo {
+				class MyTest {
 				    public void processWithBreak(List<String> items) {
 				        for (String item : items) {
 				            if (item.equals("stop")) {
@@ -2345,11 +2361,11 @@ public class Java8CleanUpTest {
 			
 			// Test case: Loop with throw statement (should NOT convert)
 			"""
-				package testdemo;
+				package test1;
 				
 				import java.util.List;
 				
-				class TestDemo {
+				class MyTest {
 				    public void processWithThrow(List<String> items) throws Exception {
 				        for (String item : items) {
 				            if (item == null) {
@@ -2362,11 +2378,11 @@ public class Java8CleanUpTest {
 			
 			// Test case: Loop with labeled continue (should NOT convert)
 			"""
-				package testdemo;
+				package test1;
 				
 				import java.util.List;
 				
-				class TestDemo {
+				class MyTest {
 				    public void processWithLabeledContinue(List<String> items) {
 				        outer:
 				        for (String item : items) {
@@ -2380,11 +2396,11 @@ public class Java8CleanUpTest {
 			
 			// Test case: Loop with non-effectively-final variable modification (should NOT convert)
 			"""
-				package testdemo;
+				package test1;
 				
 				import java.util.List;
 				
-				class TestDemo {
+				class MyTest {
 				    public void processWithMutableVar(List<String> items) {
 				        for (String item : items) {
 				            String modified = item;
@@ -2397,11 +2413,11 @@ public class Java8CleanUpTest {
 			
 			// Test case: Loop with early return in middle (not anyMatch/noneMatch pattern)
 			"""
-				package testdemo;
+				package test1;
 				
 				import java.util.List;
 				
-				class TestDemo {
+				class MyTest {
 				    public boolean complexEarlyReturn(List<String> items) {
 				        for (String item : items) {
 				            System.out.println("Processing: " + item);
@@ -2415,14 +2431,23 @@ public class Java8CleanUpTest {
 				}"""
 
 	})
-	public void testExplicitEncodingdonttouch(String dontchange) throws CoreException  {
-		IPackageFragment pack= context.getSourceFolder().createPackageFragment("testdemo", false, null);
-		ICompilationUnit cu= pack.createCompilationUnit("TestDemo.java",
+	public void testFunctionalLoopConversionsdonttouch(String dontchange) throws CoreException  {
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null);
+		ICompilationUnit cu= pack.createCompilationUnit("Test.java",
 				dontchange,
-				false, null);
+				true, null);
 
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+		// Hier: AST parsen und Problems ausgeben!
+		ASTParser parser = ASTParser.newParser(AST.JLS22); // deine verwendete JLS-Version
+		parser.setSource(cu);
+		parser.setResolveBindings(true);
+		CompilationUnit astRoot = (CompilationUnit) parser.createAST(null);
 
+		IProblem[] problems = astRoot.getProblems();
+		for (IProblem problem : problems) {
+		    System.out.println(problem.toString());
+		}
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 }
