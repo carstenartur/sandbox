@@ -11,7 +11,7 @@
  * Contributors:
  *     Carsten Hammer
  *******************************************************************************/
-package org.sandbox.jdt.internal.corext.fix.helper;
+package org.sandbox.jdt.internal.corext.fix.helper.lib;
 
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
