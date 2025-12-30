@@ -37,7 +37,6 @@ import org.eclipse.equinox.app.IApplication;
 import org.eclipse.equinox.app.IApplicationContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.osgi.framework.Bundle;
@@ -104,7 +103,6 @@ public class CodeCleanupApplicationTest {
 	/**
 	 * Test that missing config file produces error
 	 */
-	@Disabled("Temporarily disabled due to NLS message loading issues - messages.properties not being loaded correctly")
 	@Test
 	public void testMissingConfigFile() throws Exception {
 		String[] args = { "-config" };
@@ -122,7 +120,6 @@ public class CodeCleanupApplicationTest {
 	/**
 	 * Test that config file that doesn't exist produces error
 	 */
-	@Disabled("Temporarily disabled due to NLS message loading issues - messages.properties not being loaded correctly")
 	@Test
 	public void testNonExistentConfigFile() throws Exception {
 		String[] args = { "-config", "/nonexistent/config.properties", "dummy.java" };
@@ -141,7 +138,6 @@ public class CodeCleanupApplicationTest {
 	/**
 	 * Test that -quiet and -verbose together produces error
 	 */
-	@Disabled("Temporarily disabled due to NLS message loading issues - messages.properties not being loaded correctly")
 	@Test
 	public void testQuietVerboseConflict() throws Exception {
 		File configFile = createTempConfigFile();
@@ -185,7 +181,6 @@ public class CodeCleanupApplicationTest {
 	/**
 	 * Test that non-existent file produces error
 	 */
-	@Disabled("Temporarily disabled due to NLS message loading issues - messages.properties not being loaded correctly")
 	@Test
 	public void testNonExistentFile() throws Exception {
 		File configFile = createTempConfigFile();
@@ -206,7 +201,6 @@ public class CodeCleanupApplicationTest {
 	/**
 	 * Test that no files specified produces error
 	 */
-	@Disabled("Temporarily disabled due to NLS message loading issues - messages.properties not being loaded correctly")
 	@Test
 	public void testNoFilesSpecified() throws Exception {
 		File configFile = createTempConfigFile();
@@ -303,7 +297,6 @@ public class CodeCleanupApplicationTest {
 	/**
 	 * Integration test: Verify verbose mode produces output
 	 */
-	@Disabled("Temporarily disabled due to NLS message loading issues - messages.properties not being loaded correctly")
 	@Test
 	public void testStartWithVerboseMode() throws Exception {
 		File configFile = createTempConfigFile();
@@ -346,7 +339,6 @@ public class CodeCleanupApplicationTest {
 	/**
 	 * Integration test: Verify error handling for missing config
 	 */
-	@Disabled("Temporarily disabled due to NLS message loading issues - messages.properties not being loaded correctly")
 	@Test
 	public void testStartWithMissingConfig() throws Exception {
 		IApplicationContext context = new MockApplicationContext(
@@ -365,7 +357,6 @@ public class CodeCleanupApplicationTest {
 	/**
 	 * Integration test: Verify conflict between quiet and verbose flags
 	 */
-	@Disabled("Temporarily disabled due to NLS message loading issues - messages.properties not being loaded correctly")
 	@Test
 	public void testStartWithQuietVerboseConflict() throws Exception {
 		File configFile = createTempConfigFile();
@@ -449,7 +440,6 @@ public class CodeCleanupApplicationTest {
 	/**
 	 * Integration test: Test start() method returns EXIT_OK for -help
 	 */
-	@Disabled("Temporarily disabled due to NLS message loading issues - messages.properties not being loaded correctly")
 	@Test
 	public void testStartWithHelp() throws Exception {
 		IApplicationContext context = new MockApplicationContext(new String[] { "-help" });

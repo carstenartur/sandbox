@@ -25,7 +25,6 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -47,7 +46,6 @@ import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.jdt.ui.cleanup.ICleanUp;
 import org.eclipse.ltk.core.refactoring.Change;
 import org.eclipse.ltk.core.refactoring.RefactoringStatus;
-import org.eclipse.osgi.util.NLS;
 
 public class CodeCleanupApplication implements IApplication {
 	private static final File[] FILES = new File[0];
@@ -77,105 +75,6 @@ public class CodeCleanupApplication implements IApplication {
 	private static final int CONFIG_MODE = 1;
 
 
-	/**
-	 * Deals with the messages in the properties file (cut n' pasted from a generated class).
-	 */
-	private final static class Messages extends NLS {
-		private static final String BUNDLE_NAME = "org.sandbox.jdt.core.cleanupapp.messages";//$NON-NLS-1$
-
-		public static final String CommandLineCleaning = null;
-
-		public static final String CleanupProblem = null;
-
-		public static final String CaughtException = null;
-
-		public static final String ExceptionSkip = null;
-
-		public static final String CommandLineErrorFile = null;
-
-		public static final String CommandLineErrorFileTryFullPath = null;
-
-		public static final String CommandLineErrorConfig = null;
-
-		public static final String CommandLineErrorNoConfigFile = null;
-
-		public static final String CommandLineErrorQuietVerbose = null;
-
-		public static final String CommandLineErrorFileDir = null;
-
-		public static final String ConfigFileNotFoundErrorTryFullPath = null;
-
-		public static final String ConfigFileReadingError = null;
-
-		public static final String CommandLineConfigFile = null;
-
-		public static final String CommandLineStart = null;
-
-		public static final String CommandLineDone = null;
-
-		public static final String FileOutsideWorkspace = null;
-
-		public static final String CleanupFatalError = null;
-
-		public static String CommandLineUsage;
-		public static String WorkspaceRequired;
-
-		static {
-			NLS.initializeMessages(BUNDLE_NAME, Messages.class);
-		}
-
-		/**
-		 * Bind the given message's substitution locations with the given string values.
-		 *
-		 * @param message
-		 *            the message to be manipulated
-		 * @return the manipulated String
-		 */
-		public static String bind(final String message) {
-			return bind(message, (Object[]) null);
-		}
-
-		/**
-		 * Bind the given message's substitution locations with the given string values.
-		 *
-		 * @param message
-		 *            the message to be manipulated
-		 * @param binding
-		 *            the object to be inserted into the message
-		 * @return the manipulated String
-		 */
-		public static String bind(final String message, final Object binding) {
-			return bind(message, new Object[] { binding });
-		}
-
-		/**
-		 * Bind the given message's substitution locations with the given string values.
-		 *
-		 * @param message
-		 *            the message to be manipulated
-		 * @param binding1
-		 *            An object to be inserted into the message
-		 * @param binding2
-		 *            A second object to be inserted into the message
-		 * @return the manipulated String
-		 */
-		public static String bind(final String message, final Object binding1, final Object binding2) {
-			return bind(message, new Object[] { binding1, binding2 });
-		}
-
-		/**
-		 * Bind the given message's substitution locations with the given string values.
-		 *
-		 * @param message
-		 *            the message to be manipulated
-		 * @param bindings
-		 *            An array of objects to be inserted into the message
-		 * @return the manipulated String
-		 */
-		public static String bind(final String message, final Object[] bindings) {
-			return MessageFormat.format(message, bindings);
-		}
-	}
 	/**
 	 * Clean up the given Java source file.
 	 */
