@@ -18,10 +18,8 @@ import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 import java.util.Collection;
 import java.util.Set;
 
-import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
@@ -30,7 +28,6 @@ import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
-import org.eclipse.jdt.core.dom.QualifiedType;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -44,7 +41,6 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
 import org.sandbox.jdt.internal.corext.util.NamingUtils;
-import org.sandbox.jdt.internal.corext.util.TypeCheckingUtils;
 
 /**
  * Abstract base class for JUnit migration tools.
@@ -78,17 +74,6 @@ public abstract class AbstractTool<T> {
 	}
 
 	/**
-	 * Extracts the fully qualified type name from a QualifiedType AST node.
-	 * Delegates to {@link NamingUtils#extractQualifiedTypeName(QualifiedType)}.
-	 * 
-	 * @param qualifiedType the qualified type to extract from
-	 * @return the fully qualified class name
-	 */
-	protected String extractQualifiedTypeName(QualifiedType qualifiedType) {
-		return NamingUtils.extractQualifiedTypeName(qualifiedType);
-	}
-
-	/**
 	 * Finds JUnit migration opportunities in the compilation unit.
 	 * Implementations should scan for patterns that need to be migrated from JUnit 3/4 to JUnit 5.
 	 * 
@@ -99,16 +84,6 @@ public abstract class AbstractTool<T> {
 	 */
 	public abstract void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed);
-
-	/**
-	 * Gets the parent TypeDeclaration for the given AST node.
-	 * 
-	 * @param node the AST node to start from
-	 * @return the enclosing TypeDeclaration, or null if none found
-	 */
-	protected TypeDeclaration getParentTypeDeclaration(ASTNode node) {
-		return ASTNavigationUtils.getParentTypeDeclaration(node);
-	}
 
 	/**
 	 * Gets a preview of the code before or after refactoring.
@@ -202,16 +177,6 @@ public abstract class AbstractTool<T> {
 	}
 
 	/**
-	 * Checks if the given type binding directly matches ExternalResource.
-	 * 
-	 * @param fieldTypeBinding the type binding to check
-	 * @return true if the type is exactly ExternalResource
-	 */
-	protected boolean isDirect(ITypeBinding fieldTypeBinding) {
-		return ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(fieldTypeBinding.getQualifiedName());
-	}
-
-	/**
 	 * Checks if the given type binding directly extends ExternalResource.
 	 * 
 	 * @param binding the type binding to check
@@ -223,17 +188,6 @@ public abstract class AbstractTool<T> {
 	}
 
 	/**
-	 * Checks if the given type binding is or extends ExternalResource.
-	 * 
-	 * @param typeBinding the type binding to check
-	 * @param typeToLookup the fully qualified type name to look for
-	 * @return true if the type is or extends the specified type
-	 */
-	protected boolean isExternalResource(ITypeBinding typeBinding, String typeToLookup) {
-		return TypeCheckingUtils.isTypeOrSubtype(typeBinding, typeToLookup);
-	}
-
-	/**
 	 * Checks if a field is annotated with the specified annotation.
 	 * 
 	 * @param field the field declaration to check
@@ -242,30 +196,6 @@ public abstract class AbstractTool<T> {
 	 */
 	protected boolean isFieldAnnotatedWith(FieldDeclaration field, String annotationClass) {
 		return AnnotationUtils.isFieldAnnotatedWith(field, annotationClass);
-	}
-
-	
-	/**
-	 * Checks if subtype is a subtype of or implements supertype.
-	 * 
-	 * @param subtype the potential subtype binding
-	 * @param supertype the supertype binding
-	 * @return true if subtype is a subtype of or implements supertype
-	 */
-	protected boolean isSubtypeOf(ITypeBinding subtype, ITypeBinding supertype) {
-		return TypeCheckingUtils.isSubtypeOf(subtype, supertype);
-	}
-
-	/**
-	 * Checks if the given type binding matches or is a subtype of the specified qualified name.
-	 * Traverses the superclass hierarchy to find a match.
-	 * 
-	 * @param typeBinding the type binding to check
-	 * @param qualifiedName the fully qualified type name to match
-	 * @return true if the type or any of its supertypes matches the qualified name
-	 */
-	protected boolean isTypeOrSubtype(ITypeBinding typeBinding, String qualifiedName) {
-		return TypeCheckingUtils.isTypeOrSubtype(typeBinding, qualifiedName);
 	}
 
 	/**
@@ -286,38 +216,6 @@ public abstract class AbstractTool<T> {
 				importRewriter);
 	}
 
-	/**
-	 * Process method for compatibility with older tools.
-	 * Handles JUnit 4 @Rule ExternalResource fields.
-	 * 
-	 * @param node the annotation node
-	 * @param jproject the Java project
-	 * @param rewrite the AST rewriter
-	 * @param ast the AST instance
-	 * @param group the text edit group
-	 * @param importRewriter the import rewriter
-	 * @param cu the compilation unit
-	 * @param className the class name
-	 */
-	public void process(Annotation node, IJavaProject jproject, ASTRewrite rewrite, AST ast, TextEditGroup group,
-			ImportRewrite importRewriter, CompilationUnit cu, String className) {
-		if (!ORG_JUNIT_RULE.equals(node.resolveTypeBinding().getQualifiedName())) {
-			return;
-		}
-		FieldDeclaration field = org.eclipse.jdt.internal.corext.dom.ASTNodes.getParent(node, FieldDeclaration.class);
-		ITypeBinding fieldTypeBinding = ((VariableDeclarationFragment) field.fragments().get(0)).resolveBinding()
-				.getType();
-		if (!isExternalResource(fieldTypeBinding, ORG_JUNIT_RULES_EXTERNAL_RESOURCE)
-				|| fieldTypeBinding.isAnonymous()) {
-			return;
-		}
-		if (isDirect(fieldTypeBinding)) {
-			rewrite.remove(field, group);
-			importRewriter.removeImport(ORG_JUNIT_RULE);
-		}
-		ExternalResourceRefactorer.addExtendWithAnnotation(rewrite, ast, group, importRewriter, className, field);
-		importRewriter.removeImport(ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
-	}
 
 	/**
 	 * Processes a JUnit migration by applying the necessary AST rewrites.
@@ -349,21 +247,6 @@ public abstract class AbstractTool<T> {
 			ImportRewrite importRewriter) {
 		ExternalResourceRefactorer.refactorAnonymousClassToImplementCallbacks(anonymousClass, fieldDeclaration,
 				fieldStatic, rewriter, ast, group, importRewriter);
-	}
-
-	/**
-	 * Refactors TestName field usage in a class.
-	 * Delegates to {@link TestNameRefactorer#refactorTestnameInClass}.
-	 * 
-	 * @param group the text edit group
-	 * @param rewriter the AST rewriter
-	 * @param ast the AST instance
-	 * @param importRewrite the import rewriter
-	 * @param node the TestName field declaration to replace
-	 */
-	protected void refactorTestnameInClass(TextEditGroup group, ASTRewrite rewriter, AST ast,
-			ImportRewrite importRewrite, FieldDeclaration node) {
-		TestNameRefactorer.refactorTestnameInClass(group, rewriter, ast, importRewrite, node);
 	}
 
 	/**
@@ -448,35 +331,5 @@ public abstract class AbstractTool<T> {
 		JunitHolder junitHolder = hit.get(hit.size() - 1);
 		process2Rewrite(group, rewriter, ast, importRewriter, junitHolder);
 		hit.remove(hit.size() - 1);
-	}
-
-	/**
-	 * Adds the @ExtendWith annotation to a class for JUnit 5 extension integration.
-	 * Delegates to {@link ExternalResourceRefactorer#addExtendWithAnnotation}.
-	 * 
-	 * @param rewrite the AST rewriter
-	 * @param ast the AST instance
-	 * @param group the text edit group
-	 * @param importRewriter the import rewriter
-	 * @param className the simple name of the extension class
-	 * @param field the field that triggered the need for this annotation
-	 */
-	protected void addExtendWithAnnotation(ASTRewrite rewrite, AST ast, TextEditGroup group,
-			ImportRewrite importRewriter, String className, FieldDeclaration field) {
-		ExternalResourceRefactorer.addExtendWithAnnotation(rewrite, ast, group, importRewriter, className, field);
-	}
-
-	/**
-	 * Adds an import to the class using ImportHelper.
-	 *
-	 * @param typeName  a fully qualified name of a type
-	 * @param cuRewrite CompilationUnitRewrite
-	 * @param ast       AST
-	 * @return simple name of a class if the import was added and fully qualified
-	 *         name if there was a conflict
-	 */
-	protected org.eclipse.jdt.core.dom.Name addImport(String typeName, final CompilationUnitRewrite cuRewrite,
-			AST ast) {
-		return ImportHelper.addImport(typeName, cuRewrite, ast);
 	}
 }
