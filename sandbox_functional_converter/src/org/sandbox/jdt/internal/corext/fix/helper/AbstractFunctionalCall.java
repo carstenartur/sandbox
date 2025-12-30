@@ -15,6 +15,7 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.Set;
 
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
@@ -30,7 +31,7 @@ public abstract class AbstractFunctionalCall<T extends ASTNode> {
 	public abstract void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed);
 
 	public abstract void rewrite(UseFunctionalCallFixCore useExplicitEncodingFixCore, T visited, CompilationUnitRewrite cuRewrite,
-			TextEditGroup group);
+			TextEditGroup group) throws CoreException;
 
 	public abstract String getPreview(boolean afterRefactoring);
 }

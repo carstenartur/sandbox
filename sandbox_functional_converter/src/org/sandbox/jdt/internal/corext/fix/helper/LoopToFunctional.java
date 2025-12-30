@@ -15,6 +15,8 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.Set;
 
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -44,6 +46,11 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 
 			@Override
 			public final boolean visit(final EnhancedForStatement visited) {
+				PreconditionsChecker pc = new PreconditionsChecker(visited, (CompilationUnit) visited.getRoot());
+				if (!pc.isSafeToRefactor() ) {
+					// Loop cannot be safely refactored to functional style
+					return false;
+				}
 				operations.add(fixcore.rewrite(visited));
 				nodesprocessed.add(visited);
 				return false;
@@ -52,18 +59,15 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 	}
 
 	@Override
-	public void rewrite(UseFunctionalCallFixCore upp, final EnhancedForStatement forLoop,
-			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
+	public void rewrite(UseFunctionalCallFixCore upp, final EnhancedForStatement visited,
+			final CompilationUnitRewrite cuRewrite, TextEditGroup group) throws CoreException {
 		ASTRewrite rewrite = cuRewrite.getASTRewrite();
-		
-		PreconditionsChecker pc = new PreconditionsChecker(forLoop, (CompilationUnit) forLoop.getRoot());
-		Refactorer refactorer = new Refactorer(forLoop, rewrite, pc, group);
-		
-		if (!pc.isSafeToRefactor() || !refactorer.isRefactorable()) {
+		PreconditionsChecker pc = new PreconditionsChecker(visited, (CompilationUnit) visited.getRoot());
+		Refactorer refactorer = new Refactorer(visited, rewrite, pc, group);
+		if (!pc.isSafeToRefactor()||!refactorer.isRefactorable()) {
 			// Loop cannot be safely refactored to functional style
-			return;
+			throw new CoreException(Status.CANCEL_STATUS);
 		}
-		
 		refactorer.refactor();
 	}
 

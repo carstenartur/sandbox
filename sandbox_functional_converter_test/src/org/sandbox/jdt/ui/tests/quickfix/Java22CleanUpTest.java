@@ -1810,48 +1810,48 @@ public class Java22CleanUpTest {
 	@Disabled("Not all functional loop patterns are implemented yet - enable incrementally as features are added")
 	@ParameterizedTest
 	@EnumSource(value = UseFunctionalLoop.class, names = {
-		"SIMPLECONVERT",
-		"CHAININGMAP",
-		"ChainingFilterMapForEachConvert",
-		"SmoothLongerChaining",
-		"MergingOperations",
-		"BeautificationWorks",
-		"BeautificationWorks2",
-		"NonFilteringIfChaining",
-		"ContinuingIfFilterSingleStatement",
-		"SimpleReducer",
-		"ChainedReducer",
-		"IncrementReducer",
-		"AccumulatingMapReduce",
-		"DOUBLEINCREMENTREDUCER",
-		"DecrementingReducer",
-		"ChainedReducerWithMerging",
-		"StringConcat",
-		"ChainedAnyMatch",
-		"ChainedNoneMatch",
-		"NoNeededVariablesMerging",
-		"SomeChainingWithNoNeededVar",
-		"MaxReducer",
-		"MinReducer",
-		"MaxWithExpression",
-		"MinWithExpression",
-		"FilteredMaxReduction",
-		"ChainedMapWithMinReduction",
-		"ComplexFilterMapMaxReduction",
-		"ContinueWithMapAndForEach",
-		"SimpleAllMatch",
-		"AllMatchWithNullCheck",
-		"ChainedAllMatch",
-		"NestedFilterCombination",
-		"MultipleContinueFilters",
-		"EmptyCollectionHandling",
-		"FilterWithComplexCondition",
-		"ChainedFilterAndMapOperations",
-		"ContinueWithNestedConditions",
-		"MultipleMapOperations",
-		"SumReductionWithFilter",
-		"ComplexReductionWithMapping",
-		"FilterMapReduceChain"
+		"SIMPLECONVERT"
+//		"CHAININGMAP",
+//		"ChainingFilterMapForEachConvert",
+//		"SmoothLongerChaining",
+//		"MergingOperations",
+//		"BeautificationWorks",
+//		"BeautificationWorks2",
+//		"NonFilteringIfChaining",
+//		"ContinuingIfFilterSingleStatement",
+//		"SimpleReducer",
+//		"ChainedReducer",
+//		"IncrementReducer",
+//		"AccumulatingMapReduce",
+//		"DOUBLEINCREMENTREDUCER",
+//		"DecrementingReducer",
+//		"ChainedReducerWithMerging",
+//		"StringConcat",
+//		"ChainedAnyMatch",
+//		"ChainedNoneMatch",
+//		"NoNeededVariablesMerging",
+//		"SomeChainingWithNoNeededVar",
+//		"MaxReducer",
+//		"MinReducer",
+//		"MaxWithExpression",
+//		"MinWithExpression",
+//		"FilteredMaxReduction",
+//		"ChainedMapWithMinReduction",
+//		"ComplexFilterMapMaxReduction",
+//		"ContinueWithMapAndForEach",
+//		"SimpleAllMatch",
+//		"AllMatchWithNullCheck",
+//		"ChainedAllMatch",
+//		"NestedFilterCombination",
+//		"MultipleContinueFilters",
+//		"EmptyCollectionHandling",
+//		"FilterWithComplexCondition",
+//		"ChainedFilterAndMapOperations",
+//		"ContinueWithNestedConditions",
+//		"MultipleMapOperations",
+//		"SumReductionWithFilter",
+//		"ComplexReductionWithMapping",
+//		"FilterMapReduceChain"
 	})
 	public void testSimpleForEachConversion(UseFunctionalLoop test) throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null);
@@ -1868,7 +1868,7 @@ public class Java22CleanUpTest {
 		for (IProblem problem : problems) {
 		    System.out.println(problem.toString());
 		}
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
 	}
 
 	@Disabled("Not all functional loop patterns are implemented yet - enable incrementally as features are added")
@@ -2431,11 +2431,9 @@ public class Java22CleanUpTest {
 				}"""
 
 	})
-	public void testFunctionalLoopConversionsdonttouch(String dontchange) throws CoreException  {
-		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null);
-		ICompilationUnit cu= pack.createCompilationUnit("Test.java",
-				dontchange,
-				true, null);
+	public void testFunctionalLoopConversionsdonttouch(String dontchange) throws CoreException {
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+		ICompilationUnit cu = pack.createCompilationUnit("Test.java", dontchange, true, null);
 
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		// Hier: AST parsen und Problems ausgeben!
@@ -2446,7 +2444,7 @@ public class Java22CleanUpTest {
 
 		IProblem[] problems = astRoot.getProblems();
 		for (IProblem problem : problems) {
-		    System.out.println(problem.toString());
+			System.out.println(problem.toString());
 		}
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
