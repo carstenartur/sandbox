@@ -31,7 +31,7 @@ public class Refactorer {
 		this.forLoop = forLoop;
 		this.rewrite = rewrite;
 		this.preconditions = preconditions;
-		forLoop.getAST();
+		//forLoop.getAST();
 		this.group = group;
 	}
 
