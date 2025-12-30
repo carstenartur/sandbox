@@ -11,7 +11,7 @@
  * Contributors:
  *     Carsten Hammer
  *******************************************************************************/
-package org.sandbox.jdt.internal.corext.fix.helper;
+package org.sandbox.jdt.internal.corext.fix.helper.lib;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
@@ -28,21 +28,6 @@ public final class ImportHelper {
 	// Private constructor to prevent instantiation
 	private ImportHelper() {
 		throw new UnsupportedOperationException("Utility class");
-	}
-
-	/**
-	 * Adds an import to the class. This method should be used for every class
-	 * reference added to the generated code.
-	 *
-	 * @param typeName  a fully qualified name of a type
-	 * @param cuRewrite CompilationUnitRewrite
-	 * @param ast       AST
-	 * @return simple name of a class if the import was added and fully qualified
-	 *         name if there was a conflict
-	 */
-	public static Name addImport(String typeName, final CompilationUnitRewrite cuRewrite, AST ast) {
-		String importedName = cuRewrite.getImportRewrite().addImport(typeName);
-		return ast.newName(importedName);
 	}
 
 	/**

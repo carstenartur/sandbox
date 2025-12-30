@@ -33,7 +33,6 @@ import org.eclipse.jdt.internal.corext.refactoring.util.TightSourceRangeComputer
 import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
-import org.sandbox.jdt.internal.corext.fix.helper.AbstractTool;
 import org.sandbox.jdt.internal.corext.fix.helper.AfterClassJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.AfterJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.AssertJUnitPlugin;
@@ -42,7 +41,6 @@ import org.sandbox.jdt.internal.corext.fix.helper.BeforeClassJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.BeforeJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.ExternalResourceJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.IgnoreJUnitPlugin;
-import org.sandbox.jdt.internal.corext.fix.helper.JunitHolder;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleExpectedExceptionJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleExternalResourceJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleTemporayFolderJUnitPlugin;
@@ -50,6 +48,8 @@ import org.sandbox.jdt.internal.corext.fix.helper.RuleTestnameJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RunWithJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.TestJUnit3Plugin;
 import org.sandbox.jdt.internal.corext.fix.helper.TestJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
 public enum JUnitCleanUpFixCore {

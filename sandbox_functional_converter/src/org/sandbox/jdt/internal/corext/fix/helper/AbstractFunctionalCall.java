@@ -32,8 +32,5 @@ public abstract class AbstractFunctionalCall<T extends ASTNode> {
 	public abstract void rewrite(UseFunctionalCallFixCore useExplicitEncodingFixCore, T visited, CompilationUnitRewrite cuRewrite,
 			TextEditGroup group);
 
-	
-
-
 	public abstract String getPreview(boolean afterRefactoring);
 }

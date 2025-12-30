@@ -143,7 +143,7 @@ public class MigrationCombinationsTest {
 		}, null);
 	}
 
-	@Disabled("Not yet implemented - TemporaryFolder rule migration")
+//	@Disabled("Not yet implemented - TemporaryFolder rule migration")
 	@Test
 	public void migrates_test_with_temporaryFolder_and_testName() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
@@ -179,33 +179,34 @@ public class MigrationCombinationsTest {
 
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
 				"""
-				package test;
-				import java.io.File;
-				import java.io.IOException;
-				import java.nio.file.Path;
-				
-				import org.junit.jupiter.api.BeforeEach;
-				import org.junit.jupiter.api.Test;
-				import org.junit.jupiter.api.TestInfo;
-				import org.junit.jupiter.api.io.TempDir;
-				
-				public class MyTest {
-					@TempDir
-					Path tempFolder;
-					
-					private String testName;
-					
-					@BeforeEach
-					void init(TestInfo testInfo) {
-						this.testName = testInfo.getDisplayName();
-					}
-					
-					@Test
-					public void testWithBothRules() throws IOException {
-						System.out.println("Test name: " + testName);
-						File newFile = tempFolder.resolve("myfile.txt").toFile();
-					}
-				}
+package test;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.io.TempDir;
+
+public class MyTest {
+	@TempDir
+	Path tempFolder;
+
+	private String testName;
+
+	@BeforeEach
+	void init(TestInfo testInfo) {
+		this.testName = testInfo.getDisplayName();
+	}
+
+	@Test
+	public void testWithBothRules() throws IOException {
+		System.out.println("Test name: " + testName);
+		File newFile = Files.createFile(tempFolder.resolve("myfile.txt")).toFile();
+	}
+}
 				"""
 		}, null);
 	}

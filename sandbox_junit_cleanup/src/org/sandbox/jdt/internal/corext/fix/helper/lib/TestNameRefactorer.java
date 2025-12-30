@@ -11,7 +11,9 @@
  * Contributors:
  *     Carsten Hammer
  *******************************************************************************/
-package org.sandbox.jdt.internal.corext.fix.helper;
+package org.sandbox.jdt.internal.corext.fix.helper.lib;
+
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,8 +44,6 @@ import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
-
-import static org.sandbox.jdt.internal.corext.fix.helper.JUnitConstants.*;
 
 /**
  * Helper class for refactoring JUnit 4 TestName rule to JUnit 5 TestInfo parameter.

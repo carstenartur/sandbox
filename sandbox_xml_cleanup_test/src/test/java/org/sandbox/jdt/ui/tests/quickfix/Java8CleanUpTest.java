@@ -16,7 +16,6 @@ package org.sandbox.jdt.ui.tests.quickfix;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
-import org.eclipse.jdt.internal.corext.fix.CleanUpConstants;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -113,7 +112,7 @@ public class Java8CleanUpTest {
 	public void testXMLCleanupdonttouch(NOXMLCleanupCases test) throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("Test.java",test.given,false, null);
-		context.enable(CleanUpConstants.CONTROL_STATEMENTS_CONVERT_FOR_LOOP_TO_ENHANCED);
+		context.enable(MYCleanUpConstants.XML_CLEANUP);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 }
