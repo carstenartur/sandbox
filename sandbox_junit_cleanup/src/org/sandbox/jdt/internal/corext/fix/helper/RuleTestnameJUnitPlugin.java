@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
+
 /*-
  * #%L
  * Sandbox junit cleanup
@@ -48,8 +50,8 @@ import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
-
-import static org.sandbox.jdt.internal.corext.fix.helper.JUnitConstants.*;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 /**
  * Plugin to migrate JUnit 4 TestName rule to JUnit 5 TestInfo parameter.
@@ -80,6 +82,7 @@ public class RuleTestnameJUnitPlugin extends AbstractTool<ReferenceHolder<Intege
 	}
 
 	@Override
+	protected
 	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
 		FieldDeclaration node= junitHolder.getFieldDeclaration();

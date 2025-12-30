@@ -11,7 +11,7 @@
  * Contributors:
  *     Carsten Hammer
  *******************************************************************************/
-package org.sandbox.jdt.internal.corext.fix.helper;
+package org.sandbox.jdt.internal.corext.fix.helper.lib;
 
 /*-
  * #%L
@@ -106,7 +106,7 @@ public abstract class AbstractMarkerAnnotationJUnitPlugin extends AbstractTool<R
 	}
 
 	@Override
-	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+	public void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
 		Annotation minv= junitHolder.getAnnotation();
 		MarkerAnnotation newAnnotation= ast.newMarkerAnnotation();

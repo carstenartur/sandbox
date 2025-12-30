@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
+
 /*-
  * #%L
  * Sandbox junit cleanup
@@ -53,8 +55,8 @@ import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
-
-import static org.sandbox.jdt.internal.corext.fix.helper.JUnitConstants.*;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 /**
  * Migrates JUnit 4 Assume calls to JUnit 5 Assumptions.
@@ -91,12 +93,14 @@ public class AssumeJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 	}
 	
 	@Override
+	protected
 	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
 		if (junitHolder.minv instanceof MethodInvocation) {
 			MethodInvocation minv= junitHolder.getMethodInvocation();
 			if ("assumeThat".equals(minv.getName().getIdentifier()) && isJUnitAssume(minv)) {
-				importRewriter.addStaticImport("org.hamcrest.junit.MatcherAssume", "assumeThat", true);
+				importRewriter.addStaticImport("org.junit.jupiter.api.Assumptions", "assumeThat", true);
+//				importRewriter.addStaticImport("org.hamcrest.junit.MatcherAssume", "assumeThat", true);
 				importRewriter.removeStaticImport("org.junit.Assume.assumeThat");
 				MethodInvocation newAssumeThatCall = ast.newMethodInvocation();
 				newAssumeThatCall.setName(ast.newSimpleName("assumeThat"));

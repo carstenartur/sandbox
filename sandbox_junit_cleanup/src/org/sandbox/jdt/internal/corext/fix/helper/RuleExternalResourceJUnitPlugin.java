@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
+
 /*-
  * #%L
  * Sandbox junit cleanup
@@ -49,8 +51,8 @@ import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
-
-import static org.sandbox.jdt.internal.corext.fix.helper.JUnitConstants.*;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 /**
  * Plugin to migrate JUnit 4 ExternalResource rules to JUnit 5 extensions.
@@ -86,7 +88,7 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 		return false;
 	}
 
-	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
 		FieldDeclaration fieldDeclaration= junitHolder.getFieldDeclaration();
 		boolean fieldStatic= isFieldAnnotatedWith(fieldDeclaration, ORG_JUNIT_CLASS_RULE);

@@ -11,7 +11,9 @@
  * Contributors:
  *     Carsten Hammer
  *******************************************************************************/
-package org.sandbox.jdt.internal.corext.fix.helper;
+package org.sandbox.jdt.internal.corext.fix.helper.lib;
+
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -37,8 +39,6 @@ import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
 import org.sandbox.jdt.internal.corext.util.NamingUtils;
-
-import static org.sandbox.jdt.internal.corext.fix.helper.JUnitConstants.*;
 
 /**
  * Helper class for refactoring JUnit 4 ExternalResource to JUnit 5 lifecycle callbacks.

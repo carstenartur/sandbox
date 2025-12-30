@@ -11,7 +11,9 @@
  * Contributors:
  *     Carsten Hammer
  *******************************************************************************/
-package org.sandbox.jdt.internal.corext.fix.helper;
+package org.sandbox.jdt.internal.corext.fix.helper.lib;
+
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
 import java.util.Collection;
 import java.util.Set;
@@ -43,8 +45,6 @@ import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
 import org.sandbox.jdt.internal.corext.util.NamingUtils;
 import org.sandbox.jdt.internal.corext.util.TypeCheckingUtils;
-
-import static org.sandbox.jdt.internal.corext.fix.helper.JUnitConstants.*;
 
 /**
  * Abstract base class for JUnit migration tools.
@@ -329,7 +329,7 @@ public abstract class AbstractTool<T> {
 	 * @param importRewriter the import rewriter
 	 * @param junitHolder the holder containing JUnit migration information
 	 */
-	abstract void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+	protected abstract void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder);
 
 	/**
