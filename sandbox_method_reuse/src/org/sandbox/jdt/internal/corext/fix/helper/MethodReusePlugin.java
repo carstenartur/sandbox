@@ -25,7 +25,20 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractMethodReuse;
 
 /**
  * Placeholder plugin for general method reuse detection
- * This is a placeholder for the METHOD_REUSE_CLEANUP constant
+ * 
+ * This is a placeholder implementation for the METHOD_REUSE_CLEANUP constant.
+ * It corresponds to general method reuse detection functionality that is planned
+ * for future implementation.
+ * 
+ * The METHOD_REUSE_CLEANUP constant is already used in the UI preferences but
+ * does not yet trigger any cleanup operations. This placeholder allows the enum
+ * structure to match the constant without implementing the full functionality.
+ * 
+ * Compare with InlineSequencesPlugin which provides the complete implementation
+ * for METHOD_REUSE_INLINE_SEQUENCES constant.
+ * 
+ * Future implementation should detect similar methods across the codebase and
+ * suggest refactoring opportunities. See MethodReuseFinder for planned functionality.
  */
 public class MethodReusePlugin extends AbstractMethodReuse<ASTNode> {
 

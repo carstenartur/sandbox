@@ -18,6 +18,7 @@ import java.util.Set;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.internal.core.manipulation.JavaManipulationPlugin;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
@@ -64,8 +65,7 @@ public enum MethodReuseCleanUpFixCore {
 		try {
 			tool.find(this, compilationUnit, operations, nodesprocessed);
 		} catch (CoreException e) {
-			// Log the exception but don't let it stop the cleanup process
-			// This is consistent with how other cleanups handle exceptions
+			JavaManipulationPlugin.log(e);
 		}
 	}
 
