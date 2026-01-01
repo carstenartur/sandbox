@@ -172,16 +172,28 @@ public class TestExpectedJUnitPlugin extends AbstractTool<ReferenceHolder<Intege
 		rewriter.getListRewrite(methodBody, Block.STATEMENTS_PROPERTY).insertLast(assertThrowsStatement, group);
 		
 		// Remove the expected parameter from @Test annotation
-		// If expected is the only parameter, replace with marker annotation
+		// If expected is the only parameter remaining, replace with marker annotation
 		@SuppressWarnings("unchecked")
 		List<MemberValuePair> testValues = testAnnotation.values();
-		if (testValues.size() == 1 && testValues.get(0) == expectedPair) {
-			// Only parameter is expected, so convert to marker annotation @Test
+		
+		// Count how many parameters will remain after removing expected
+		// (need to account for other parameters that might be removed by other plugins like timeout)
+		int remainingParams = 0;
+		for (MemberValuePair pair : testValues) {
+			String paramName = pair.getName().getIdentifier();
+			// Count parameters that are not expected and not timeout (which is handled by TestTimeoutJUnitPlugin)
+			if (!"expected".equals(paramName) && !"timeout".equals(paramName)) {
+				remainingParams++;
+			}
+		}
+		
+		if (remainingParams == 0) {
+			// No other meaningful parameters remain, convert to marker annotation @Test
 			MarkerAnnotation markerTestAnnotation = ast.newMarkerAnnotation();
 			markerTestAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_TEST));
 			ASTNodes.replaceButKeepComment(rewriter, testAnnotation, markerTestAnnotation, group);
 		} else {
-			// There are other parameters, just remove expected
+			// There are other parameters that need to be kept, just remove expected
 			rewriter.remove(expectedPair, group);
 		}
 		
