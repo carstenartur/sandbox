@@ -42,7 +42,6 @@
          fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
      }
  
-     @Disabled("Not yet implemented - @Test(expected) migration")
      @Test
      public void migrates_test_expected_to_assertThrows() throws CoreException {
          IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
@@ -81,7 +80,6 @@
          }, null);
      }
  
-     @Disabled("Not yet implemented - @Test(expected) with test body")
      @Test
      public void migrates_test_expected_with_method_call() throws CoreException {
          IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
