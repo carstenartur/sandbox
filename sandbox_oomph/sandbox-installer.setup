@@ -8,8 +8,19 @@
     label="Sandbox (IDE + Workspace + Projects)">
 
   <description>
-    Installs a ready-to-use Eclipse (Sandbox Profile) and sets up the workspace
-    by cloning and importing the sandbox repository.
+    This is the main Oomph installer configuration for the Sandbox project.
+    
+    It provides a complete, automated Eclipse development environment setup that:
+    - Installs Eclipse with the Sandbox Profile (customized IDE with all required plugins)
+    - Configures workspace preferences optimized for sandbox development
+    - Clones the sandbox repository from GitHub
+    - Imports all Eclipse projects automatically
+    - Sets up working sets for better project organization
+    - Configures Java 21 as the execution environment
+    
+    Use this configuration with the Eclipse Installer (Oomph) to get started quickly
+    with sandbox development. This is the recommended way to set up a new development
+    environment for contributing to the sandbox project.
   </description>
 
   <!-- Include your Product setup -->

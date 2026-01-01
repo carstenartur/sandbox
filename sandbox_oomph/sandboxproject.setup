@@ -155,5 +155,34 @@
       label="Main">
     <description>Development stream tracking the main branch</description>
   </stream>
-  <description>Sandbox provides Eclipse plugins for code cleanup and tools development.</description>
+  <description>
+    Sandbox Project - Eclipse plugins for automated Java code modernization and cleanup.
+    
+    This Oomph project setup automates the configuration of a development environment for
+    the sandbox repository, which contains experimental Eclipse JDT cleanups and tools.
+    
+    The sandbox project provides Eclipse plugins that include:
+    - Explicit encoding cleanup (replaces platform-dependent encoding with StandardCharsets.UTF_8)
+    - Platform helper cleanups (simplifies Status API usage)
+    - Functional converters (transforms imperative loops to Java 8+ Streams)
+    - JUnit migration tools (JUnit 3/4 to JUnit 5 conversion)
+    - XML formatting and cleanup tools
+    - Usage analysis views for code quality
+    
+    This setup file is designed for easy porting to Eclipse JDT core. The package structure
+    uses 'org.sandbox' prefix which can be directly replaced with 'org.eclipse' when
+    contributing features upstream to Eclipse JDT.
+    
+    The setup performs the following tasks:
+    1. Clones the sandbox repository from GitHub (main branch)
+    2. Imports all Eclipse plugin projects with nested project detection
+    3. Configures Java 21 as the JRE for compilation
+    4. Sets up JDT preferences for resource leak detection
+    5. Configures editor preferences (whitespace visibility, encoding)
+    6. Creates working sets to organize sandbox-related projects
+    7. Builds all imported projects automatically
+    
+    Use with Eclipse Installer or "File > Import > Oomph > Projects into Workspace"
+    to set up your sandbox development environment.
+  </description>
 </setup:Project>
