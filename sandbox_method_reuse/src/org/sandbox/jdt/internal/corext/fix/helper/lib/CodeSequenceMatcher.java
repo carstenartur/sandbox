@@ -120,16 +120,28 @@ public class CodeSequenceMatcher {
 		
 		@Override
 		public boolean match(SimpleName node, Object other) {
-			if (!(other instanceof SimpleName)) {
+			if (!(other instanceof org.eclipse.jdt.core.dom.ASTNode)) {
 				return false;
 			}
 			
-			SimpleName otherName = (SimpleName) other;
 			String targetName = node.getIdentifier();
-			String candidateName = otherName.getIdentifier();
 			
-			// Check if this is a consistent mapping
-			return mapping.addMapping(targetName, candidateName);
+			// If other is also a SimpleName, do normal name mapping
+			if (other instanceof SimpleName) {
+				SimpleName otherName = (SimpleName) other;
+				String candidateName = otherName.getIdentifier();
+				return mapping.addMapping(targetName, candidateName);
+			}
+			
+			// If other is a complex expression (not a SimpleName), store it as an expression mapping
+			// This handles cases like: parameter 'a' matching expression 'u.getFirst()'
+			if (other instanceof org.eclipse.jdt.core.dom.Expression) {
+				org.eclipse.jdt.core.dom.Expression candidateExpr = (org.eclipse.jdt.core.dom.Expression) other;
+				mapping.addExpressionMapping(targetName, candidateExpr);
+				return true;
+			}
+			
+			return false;
 		}
 	}
 }
