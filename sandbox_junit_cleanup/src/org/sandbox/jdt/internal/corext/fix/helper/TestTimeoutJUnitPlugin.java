@@ -102,7 +102,19 @@ public class TestTimeoutJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 		NormalAnnotation testAnnotation = (NormalAnnotation) junitHolder.getAnnotation();
 		MemberValuePair timeoutPair = (MemberValuePair) junitHolder.additionalInfo;
 		
-		long timeoutMillis = Long.parseLong(junitHolder.value);
+		String timeoutString = junitHolder.value;
+		if (timeoutString == null) {
+			// Cannot determine timeout value, skip refactoring for this method
+			return;
+		}
+		
+		final long timeoutMillis;
+		try {
+			timeoutMillis = Long.parseLong(timeoutString);
+		} catch (NumberFormatException e) {
+			// Malformed timeout value, skip refactoring for this method
+			return;
+		}
 		
 		// Determine the best time unit (optimize for readability)
 		// Use SECONDS if the value is >= 1000ms and evenly divisible by 1000
