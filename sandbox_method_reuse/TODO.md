@@ -10,14 +10,20 @@
 - [x] Implement variable mapping and normalization (CodeSequenceMatcher, VariableMapping)
 - [x] Implement method call replacement generation (MethodCallReplacer)
 - [x] Implement side effect analysis (SideEffectAnalyzer)
-- [ ] Wire inline sequence detection into createFix() method
+- [x] Wire inline sequence detection into createFix() method
+- [x] Create MethodReuseCleanUpFixCore enum for operation management
+- [x] Integrate with MethodReuseCleanUpCore
 - [ ] Add similarity threshold configuration
 - [ ] Create marker/warning system for detected duplicates
 
+### Inline Sequence Detection - Completed
+- [x] Complete integration in MethodReuseCleanUpCore.createFix()
+- [x] Create CompilationUnitRewriteOperation for applying transformations
+- [x] Add support for return statement replacement (matching return with variable declarations)
+- [x] Support for complex expression mappings (method calls as arguments)
+- [x] Enabled and passing test cases
+
 ### Inline Sequence Detection - Remaining Work
-- [ ] Complete integration in MethodReuseCleanUpCore.createFix()
-- [ ] Create CompilationUnitRewriteOperation for applying transformations
-- [ ] Add support for return statement replacement (not just variable declarations)
 - [ ] Handle edge cases (nested sequences, overlapping matches)
 - [ ] Implement confidence scoring for matches
 - [ ] Add configuration for minimum sequence length

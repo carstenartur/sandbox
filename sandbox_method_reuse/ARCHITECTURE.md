@@ -233,9 +233,26 @@ Cleanup options are defined in `MYCleanUpConstants`:
 
 ## Implementation Status
 
-This is a new plugin being developed to help developers identify code reuse opportunities. The initial implementation focuses on:
-- Basic method similarity detection
-- AST-based pattern matching
-- Integration with Eclipse cleanup framework
+The inline code sequence detection feature is now fully implemented and integrated:
 
-See TODO.md for pending features and improvements.
+### Completed Features
+- **Inline Code Sequence Detection**: Identifies code sequences in method bodies that match the body of existing methods and can be replaced with method calls
+- **Variable Mapping**: Normalizes variable names to recognize structurally equivalent code with different naming
+- **Expression Mapping**: Supports matching complex expressions (like method calls) as method arguments
+- **Return Statement Handling**: Matches return statements with variable declarations for seamless refactoring
+- **AST Rewriting**: Properly replaces matched code sequences with appropriate method invocations
+- **Test Coverage**: Three comprehensive test scenarios covering simple, expression-based, and multi-statement cases
+
+### Implementation Highlights
+1. **MethodReuseCleanUpFixCore**: Enum-based operation management following JUnitCleanUpFixCore pattern
+2. **Enhanced CodeSequenceMatcher**: Special handling for return statement vs variable declaration matching
+3. **Expression-Aware Variable Mapping**: Stores both simple name mappings and complex expression mappings
+4. **Smart Method Call Generation**: Uses expression mappings to create proper argument lists
+
+### Pending Work
+- Basic method similarity detection across different methods (future enhancement)
+- AST-based pattern matching for finding similar code patterns
+- Integration with Eclipse cleanup framework
+- Performance optimizations and caching
+
+See TODO.md for detailed pending features and improvements.
