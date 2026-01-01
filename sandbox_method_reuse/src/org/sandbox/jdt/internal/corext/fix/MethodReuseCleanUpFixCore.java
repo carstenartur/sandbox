@@ -120,6 +120,9 @@ public enum MethodReuseCleanUpFixCore {
 
 	@Override
 	public String toString() {
-		return tool.toString();
+		return switch (this) {
+			case METHOD_REUSE -> "Method Reuse Detection";
+			case INLINE_SEQUENCES -> "Inline Sequence Replacement";
+		};
 	}
 }
