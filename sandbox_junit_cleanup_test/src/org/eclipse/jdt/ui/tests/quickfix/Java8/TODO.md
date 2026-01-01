@@ -210,10 +210,10 @@ public void testWithTimeout() { }
 **Tracked in:** `MigrationRulesToExtensionsTest.migrates_timeout_rule` (disabled)
 
 #### 8. @RunWith(Parameterized.class) → @ParameterizedTest
-**Status:** Not Implemented  
+**Status:** ✅ **IMPLEMENTED**  
 **Priority:** High (commonly used pattern)  
 **Complexity:** Very High (requires major refactoring of test structure)  
-**Tracked in:** `MigrationRunnersTest.migrates_runWith_parameterized` (disabled)
+**Tracked in:** `MigrationRunnersTest.migrates_runWith_parameterized` (enabled)
 
 **Description:**
 This is a complex transformation requiring:

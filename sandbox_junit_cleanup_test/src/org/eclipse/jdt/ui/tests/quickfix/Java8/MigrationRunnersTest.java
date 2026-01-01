@@ -81,7 +81,6 @@ public class MigrationRunnersTest {
 		}, null);
 	}
 
-	@Disabled("Not yet implemented - Parameterized runner migration")
 	@Test
 	public void migrates_runWith_parameterized() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
