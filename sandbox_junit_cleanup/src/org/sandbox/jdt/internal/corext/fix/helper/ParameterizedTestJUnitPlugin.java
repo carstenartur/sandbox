@@ -222,7 +222,7 @@ public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<I
 		importRewriter.removeImport("java.util.Collection");
 		importRewriter.addImport(ORG_JUNIT_JUPITER_PARAMS_PARAMETERIZED_TEST);
 		importRewriter.addImport(ORG_JUNIT_JUPITER_PARAMS_PROVIDER_METHOD_SOURCE);
-		importRewriter.addImport(ORG_JUNIT_JUPITER_PARAMS_PROVIDER_ARGUMENTS);
+		// Note: Arguments is used with fully qualified name, not imported
 		importRewriter.addImport("java.util.stream.Stream");
 	}
 	
@@ -265,9 +265,9 @@ public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<I
 					streamOf.setName(ast.newSimpleName("of"));
 					
 					for (Expression row : dataRows) {
-						// Create Arguments.of(...) for each row
+						// Create Arguments.of(...) for each row using fully qualified name
 						MethodInvocation argumentsOf = ast.newMethodInvocation();
-						argumentsOf.setExpression(ast.newName(importRewriter.addImport(ORG_JUNIT_JUPITER_PARAMS_PROVIDER_ARGUMENTS)));
+						argumentsOf.setExpression(ast.newName(ORG_JUNIT_JUPITER_PARAMS_PROVIDER_ARGUMENTS));
 						argumentsOf.setName(ast.newSimpleName("of"));
 						
 						// Extract values from the row
