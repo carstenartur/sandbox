@@ -289,4 +289,42 @@ public class MigrationTestAnnotationTest {
 				"""
 		}, null);
 	}
+
+	@Test
+	public void migrates_test_timeout_with_other_parameters() throws CoreException {
+		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
+				"""
+				package test;
+				import org.junit.Test;
+				
+				public class MyTest {
+					@Test(expected = IllegalArgumentException.class, timeout = 2000)
+					public void testWithTimeoutAndExpected() {
+						throw new IllegalArgumentException("Expected exception");
+					}
+				}
+				""", false, null);
+
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
+
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+				"""
+				package test;
+				import java.util.concurrent.TimeUnit;
+				
+				import org.junit.jupiter.api.Test;
+				import org.junit.jupiter.api.Timeout;
+				
+				public class MyTest {
+					@Test(expected = IllegalArgumentException.class)
+					@Timeout(value = 2, unit = TimeUnit.SECONDS)
+					public void testWithTimeoutAndExpected() {
+						throw new IllegalArgumentException("Expected exception");
+					}
+				}
+				"""
+		}, null);
+	}
 }
