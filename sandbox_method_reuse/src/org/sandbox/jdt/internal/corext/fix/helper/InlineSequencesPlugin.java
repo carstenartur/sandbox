@@ -51,7 +51,7 @@ public class InlineSequencesPlugin extends AbstractMethodReuse<MethodDeclaration
 
 	@Override
 	public void find(Object fixcore, CompilationUnit compilationUnit,
-			Set<?> operations, Set<ASTNode> nodesprocessed) throws CoreException {
+			Set<?> operations, Set<ASTNode> nodesprocessed) {
 		
 		// Cast to the correct type
 		@SuppressWarnings("unchecked")
@@ -59,7 +59,7 @@ public class InlineSequencesPlugin extends AbstractMethodReuse<MethodDeclaration
 		MethodReuseCleanUpFixCore fixCore = (MethodReuseCleanUpFixCore) fixcore;
 		
 		// Use HelperVisitor to visit all methods in the compilation unit
-		ReferenceHolder<MethodDeclaration, InlineSequenceMatch> dataholder = new ReferenceHolder<>();
+		ReferenceHolder<ASTNode, Object> dataholder = new ReferenceHolder<>();
 		
 		HelperVisitor.callMethodDeclarationVisitor(compilationUnit, dataholder, nodesprocessed,
 				(node, holder) -> {
@@ -73,7 +73,9 @@ public class InlineSequencesPlugin extends AbstractMethodReuse<MethodDeclaration
 							continue;
 						}
 						if (!nodesprocessed.contains(matchingStatements.get(0))) {
-							ReferenceHolder<MethodDeclaration, InlineSequenceMatch> matchHolder = new ReferenceHolder<>(node, match);
+							// Create a ReferenceHolder to store both the method and the match
+							ReferenceHolder<ASTNode, Object> matchHolder = new ReferenceHolder<>();
+							matchHolder.put(node, match);
 							ops.add(fixCore.rewrite(matchHolder));
 							// Mark all statements in the match as processed
 							matchingStatements.forEach(nodesprocessed::add);
@@ -90,11 +92,21 @@ public class InlineSequencesPlugin extends AbstractMethodReuse<MethodDeclaration
 		// Cast to the correct types
 		MethodReuseCleanUpFixCore fixCore = (MethodReuseCleanUpFixCore) fixcore;
 		@SuppressWarnings("unchecked")
-		ReferenceHolder<MethodDeclaration, InlineSequenceMatch> typedHolder = 
-			(ReferenceHolder<MethodDeclaration, InlineSequenceMatch>) holder;
+		ReferenceHolder<ASTNode, Object> typedHolder = 
+			(ReferenceHolder<ASTNode, Object>) holder;
 		
-		MethodDeclaration targetMethod = typedHolder.get(0);
-		InlineSequenceMatch match = typedHolder.get(1);
+		// Get the method declaration (first key in the map)
+		MethodDeclaration targetMethod = null;
+		InlineSequenceMatch match = null;
+		for (var entry : typedHolder.entrySet()) {
+			targetMethod = (MethodDeclaration) entry.getKey();
+			match = (InlineSequenceMatch) entry.getValue();
+			break; // We only have one entry
+		}
+		
+		if (targetMethod == null || match == null) {
+			return;
+		}
 		
 		ASTRewrite rewrite = cuRewrite.getASTRewrite();
 		AST ast = rewrite.getAST();

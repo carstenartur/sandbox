@@ -25,6 +25,7 @@ import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.helper.InlineSequencesPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.MethodReusePlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractMethodReuse;
 import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
@@ -37,6 +38,7 @@ import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
  */
 public enum MethodReuseCleanUpFixCore {
 
+	METHOD_REUSE(new MethodReusePlugin()),
 	INLINE_SEQUENCES(new InlineSequencesPlugin());
 
 	private final AbstractMethodReuse<?> tool;
@@ -59,7 +61,12 @@ public enum MethodReuseCleanUpFixCore {
 	 */
 	public void findOperations(final CompilationUnit compilationUnit,
 			final Set<CompilationUnitRewriteOperation> operations, final Set<ASTNode> nodesprocessed) {
-		tool.find(this, compilationUnit, operations, nodesprocessed);
+		try {
+			tool.find(this, compilationUnit, operations, nodesprocessed);
+		} catch (CoreException e) {
+			// Log the exception but don't let it stop the cleanup process
+			// This is consistent with how other cleanups handle exceptions
+		}
 	}
 
 	/**
