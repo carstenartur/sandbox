@@ -299,8 +299,13 @@ public final class ProspectiveOperation {
 			ParenthesizedExpression parenExpr = ast.newParenthesizedExpression();
 			parenExpr.setExpression((Expression) ASTNode.copySubtree(ast, originalExpression));
 			lambda.setBody(parenExpr);
+		} else if (operationType == OperationType.FOREACH && originalExpression != null) {
+			// For FOREACH with a single expression (from ExpressionStatement):
+			// Use the expression directly as lambda body (without block)
+			// This produces: l -> System.out.println(l) instead of l -> { System.out.println(l); }
+			lambda.setBody(ASTNode.copySubtree(ast, originalExpression));
 		} else if (operationType == OperationType.FOREACH && originalStatement != null) {
-			// For FOREACH: lambda body is the statement (as block)
+			// For FOREACH with other statement types: lambda body is the statement (as block)
 			if (originalStatement instanceof org.eclipse.jdt.core.dom.Block) {
 				lambda.setBody(ASTNode.copySubtree(ast, originalStatement));
 			} else {
