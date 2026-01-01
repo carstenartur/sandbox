@@ -114,21 +114,6 @@ public class TestTimeoutJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 			timeUnit = "MILLISECONDS";
 		}
 		
-		// Remove the timeout parameter from @Test annotation
-		@SuppressWarnings("unchecked")
-		List<MemberValuePair> values = testAnnotation.values();
-		if (values.size() == 1) {
-			// If timeout is the only parameter, convert @Test(...) to @Test
-			MarkerAnnotation newTestAnnotation = ast.newMarkerAnnotation();
-			newTestAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_TEST));
-			importRewriter.addImport(ORG_JUNIT_JUPITER_TEST);
-			ASTNodes.replaceButKeepComment(rewriter, testAnnotation, newTestAnnotation, group);
-		} else {
-			// If there are other parameters, just remove the timeout parameter
-			rewriter.remove(timeoutPair, group);
-			importRewriter.addImport(ORG_JUNIT_JUPITER_TEST);
-		}
-		
 		// Add @Timeout annotation
 		NormalAnnotation timeoutAnnotation = ast.newNormalAnnotation();
 		timeoutAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_TIMEOUT));
@@ -154,6 +139,21 @@ public class TestTimeoutJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 		if (method != null) {
 			ListRewrite listRewrite = rewriter.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);
 			listRewrite.insertAfter(timeoutAnnotation, testAnnotation, group);
+		}
+		
+		// Remove the timeout parameter from @Test annotation
+		@SuppressWarnings("unchecked")
+		List<MemberValuePair> values = testAnnotation.values();
+		if (values.size() == 1) {
+			// If timeout is the only parameter, convert @Test(...) to @Test
+			MarkerAnnotation newTestAnnotation = ast.newMarkerAnnotation();
+			newTestAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_TEST));
+			importRewriter.addImport(ORG_JUNIT_JUPITER_TEST);
+			ASTNodes.replaceButKeepComment(rewriter, testAnnotation, newTestAnnotation, group);
+		} else {
+			// If there are other parameters, just remove the timeout parameter
+			rewriter.remove(timeoutPair, group);
+			importRewriter.addImport(ORG_JUNIT_JUPITER_TEST);
 		}
 		
 		// Add imports
