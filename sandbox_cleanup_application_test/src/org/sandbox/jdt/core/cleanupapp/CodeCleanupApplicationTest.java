@@ -477,7 +477,7 @@ public class CodeCleanupApplicationTest {
 	/**
 	 * Read the content of a file as a string
 	 */
-	private String readFileContent(File file) throws IOException {
+	private static String readFileContent(File file) throws IOException {
 		StringBuilder content = new StringBuilder();
 		try (java.io.BufferedReader reader = new java.io.BufferedReader(
 				new java.io.InputStreamReader(new java.io.FileInputStream(file), StandardCharsets.UTF_8))) {
