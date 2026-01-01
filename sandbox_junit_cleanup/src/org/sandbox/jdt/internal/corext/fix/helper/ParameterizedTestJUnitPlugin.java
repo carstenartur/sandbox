@@ -181,9 +181,14 @@ public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<I
 			}
 		}
 		
-		// Step 3: Transform @Parameters method
+		// Step 3: Transform @Parameters method and move it to the end
 		if (parametersMethod != null) {
 			transformParametersMethod(parametersMethod, rewriter, ast, group, importRewriter);
+			// Move the data provider method to the end of the class body
+			// This ensures test methods appear before the data provider in the output
+			ListRewrite bodyRewrite = rewriter.getListRewrite(typeDecl, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);
+			bodyRewrite.remove(parametersMethod, group);
+			bodyRewrite.insertLast(parametersMethod, group);
 		}
 		
 		// Step 4: Remove constructor
