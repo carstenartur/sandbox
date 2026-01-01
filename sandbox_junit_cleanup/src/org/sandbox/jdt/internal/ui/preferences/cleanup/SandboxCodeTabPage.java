@@ -115,6 +115,47 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 		final CheckboxPreference junit_runwith= createCheckboxPref(junitGroup, numColumns-1,
 				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_RUNWITH, MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH,
 				FALSE_TRUE);
+		
+		// Add Suite checkbox (depends on junit_runwith)
+		intent(junitGroup);
+		intent(junitGroup);
+		final CheckboxPreference junit_suite= createCheckboxPref(junitGroup, numColumns-2,
+				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_SUITE, MYCleanUpConstants.JUNIT_CLEANUP_4_SUITE,
+				FALSE_TRUE);
+		
+		// Add Parameterized checkbox (depends on junit_runwith)
+		intent(junitGroup);
+		intent(junitGroup);
+		final CheckboxPreference junit_parameterized= createCheckboxPref(junitGroup, numColumns-2,
+				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_PARAMETERIZED, MYCleanUpConstants.JUNIT_CLEANUP_4_PARAMETERIZED,
+				FALSE_TRUE);
+		
+		// Add Test timeout checkbox (depends on junit_test)
+		intent(junitGroup);
+		intent(junitGroup);
+		final CheckboxPreference junit_test_timeout= createCheckboxPref(junitGroup, numColumns-2,
+				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_TEST_TIMEOUT, MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_TIMEOUT,
+				FALSE_TRUE);
+		
+		// Add Test expected checkbox (depends on junit_test)
+		intent(junitGroup);
+		intent(junitGroup);
+		final CheckboxPreference junit_test_expected= createCheckboxPref(junitGroup, numColumns-2,
+				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_TEST_EXPECTED, MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_EXPECTED,
+				FALSE_TRUE);
+		
+		// Add Category checkbox
+		intent(junitGroup);
+		final CheckboxPreference junit_category= createCheckboxPref(junitGroup, numColumns-1,
+				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_CATEGORY, MYCleanUpConstants.JUNIT_CLEANUP_4_CATEGORY,
+				FALSE_TRUE);
+		
+		// Add Rule Timeout checkbox
+		intent(junitGroup);
+		final CheckboxPreference junit_ruletimeout= createCheckboxPref(junitGroup, numColumns-1,
+				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_RULETIMEOUT, MYCleanUpConstants.JUNIT_CLEANUP_4_RULETIMEOUT,
+				FALSE_TRUE);
+		
 		registerSlavePreference(junitcb, new CheckboxPreference[] {
 				junit_assert,
 				junit_assume,
@@ -128,7 +169,22 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				junit_ruletestname,
 				junit_ruleexternalresource,
 				junit_externalresource,
-				junit_runwith});
+				junit_ruletimeout,
+				junit_runwith,
+				junit_category});
+		
+		// Add nested dependencies for @Test parameters
+		registerSlavePreference(junit_test, new CheckboxPreference[] {
+				junit_test_timeout,
+				junit_test_expected
+		});
+		
+		// Add nested dependencies for @RunWith variants
+		registerSlavePreference(junit_runwith, new CheckboxPreference[] {
+				junit_suite,
+				junit_parameterized
+		});
+		
 		intent(junitGroup);
 		registerPreference(junitcb);
 		
