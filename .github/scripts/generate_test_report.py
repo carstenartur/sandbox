@@ -143,8 +143,8 @@ class TestScanner:
         if not src_dir.exists():
             return
         
-        # Find all Java test files
-        for java_file in src_dir.rglob('*Test.java'):
+        # Find all Java files and let annotation scanning decide which contain tests
+        for java_file in src_dir.rglob('*.java'):
             self.scan_java_file(java_file, plugin_name)
     
     def scan_all(self):
