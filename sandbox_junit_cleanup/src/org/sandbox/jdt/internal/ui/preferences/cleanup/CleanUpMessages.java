@@ -52,6 +52,12 @@ public final class CleanUpMessages {
 	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_RULEEXTERNALRESOURCE;
 	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_EXTERNALRESOURCE;
 	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_RUNWITH;
+	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_SUITE;
+	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_TEST_TIMEOUT;
+	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_TEST_EXPECTED;
+	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_PARAMETERIZED;
+	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_CATEGORY;
+	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_RULETIMEOUT;
 	public static String JavaFeatureTabPage_GroupName_JUnit3;
 	public static String JavaFeatureTabPage_CheckboxName_JUNIT3_CLEANUP;
 	public static String JavaFeatureTabPage_CheckboxName_JUNIT3_CLEANUP_TEST;

@@ -165,6 +165,22 @@ public class MYCleanUpConstants {
 	 */
 	public static final String JUNIT_CLEANUP_4_RUNWITH= "cleanup.junitcleanup_4_runwith"; //$NON-NLS-1$
 	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_TEST_TIMEOUT= "cleanup.junitcleanup_4_test_timeout"; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_TEST_EXPECTED= "cleanup.junitcleanup_4_test_expected"; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_PARAMETERIZED= "cleanup.junitcleanup_4_parameterized"; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_RULETIMEOUT= "cleanup.junitcleanup_4_ruletimeout"; //$NON-NLS-1$
+	/**
 	 *
 	 */
 	public static final String JFACE_CLEANUP= "cleanup.jfacecleanup"; //$NON-NLS-1$
