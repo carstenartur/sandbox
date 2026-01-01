@@ -62,12 +62,43 @@ public class CodeSequenceMatcher {
 	/**
 	 * Match two statements with variable mapping
 	 */
+	@SuppressWarnings("unchecked")
 	private static boolean matchStatement(Statement target, Statement candidate, VariableMapping mapping) {
 		if (target == null || candidate == null) {
 			return false;
 		}
 		
-		// Must be same statement type
+		// Special case: return statement can match variable declaration
+		// This allows matching code like "return x + y;" with "int result = x + y;"
+		if (target instanceof org.eclipse.jdt.core.dom.ReturnStatement && 
+			candidate instanceof org.eclipse.jdt.core.dom.VariableDeclarationStatement) {
+			
+			org.eclipse.jdt.core.dom.ReturnStatement returnStmt = (org.eclipse.jdt.core.dom.ReturnStatement) target;
+			org.eclipse.jdt.core.dom.VariableDeclarationStatement varDecl = (org.eclipse.jdt.core.dom.VariableDeclarationStatement) candidate;
+			
+			// Return statement must have an expression
+			if (returnStmt.getExpression() == null) {
+				return false;
+			}
+			
+			// Variable declaration must have exactly one fragment with an initializer
+			if (varDecl.fragments().size() != 1) {
+				return false;
+			}
+			
+			org.eclipse.jdt.core.dom.VariableDeclarationFragment fragment = 
+				(org.eclipse.jdt.core.dom.VariableDeclarationFragment) varDecl.fragments().get(0);
+			
+			if (fragment.getInitializer() == null) {
+				return false;
+			}
+			
+			// Match the return expression against the initializer expression
+			VariableMappingMatcher matcher = new VariableMappingMatcher(mapping);
+			return returnStmt.getExpression().subtreeMatch(matcher, fragment.getInitializer());
+		}
+		
+		// Must be same statement type for normal matching
 		if (target.getNodeType() != candidate.getNodeType()) {
 			return false;
 		}
