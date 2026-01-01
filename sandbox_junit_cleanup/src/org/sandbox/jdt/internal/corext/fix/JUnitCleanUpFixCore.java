@@ -48,6 +48,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.RuleTestnameJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RunWithJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.TestJUnit3Plugin;
 import org.sandbox.jdt.internal.corext.fix.helper.TestJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.TestTimeoutJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
@@ -58,6 +59,7 @@ public enum JUnitCleanUpFixCore {
 	AFTER(new AfterJUnitPlugin()),
 	TEST(new TestJUnitPlugin()),
 	TEST3(new TestJUnit3Plugin()),
+	TEST_TIMEOUT(new TestTimeoutJUnitPlugin()),
 	BEFORECLASS(new BeforeClassJUnitPlugin()),
 	AFTERCLASS(new AfterClassJUnitPlugin()),
 	IGNORE(new IgnoreJUnitPlugin()),

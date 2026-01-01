@@ -38,6 +38,7 @@ public final class JUnitConstants {
 	public static final String ANNOTATION_BEFORE_ALL = "BeforeAll";
 	public static final String ANNOTATION_DISABLED = "Disabled";
 	public static final String ANNOTATION_TEST = "Test";
+	public static final String ANNOTATION_TIMEOUT = "Timeout";
 	public static final String ANNOTATION_SELECT_CLASSES = "SelectClasses";
 	public static final String ANNOTATION_SUITE = "Suite";
 	public static final String MOCKITO_EXTENSION = "MockitoExtension";
@@ -106,6 +107,7 @@ public final class JUnitConstants {
 	public static final String ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_ALL_CALLBACK = "org.junit.jupiter.api.extension.AfterAllCallback";
 	public static final String ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH = "org.junit.jupiter.api.extension.ExtendWith";
 	public static final String ORG_JUNIT_JUPITER_TEST = "org.junit.jupiter.api.Test";
+	public static final String ORG_JUNIT_JUPITER_API_TIMEOUT = "org.junit.jupiter.api.Timeout";
 	public static final String ORG_JUNIT_JUPITER_API_ASSUMPTIONS = "org.junit.jupiter.api.Assumptions";
 
 	// ===== JUnit 5 Extension Fully Qualified References =====

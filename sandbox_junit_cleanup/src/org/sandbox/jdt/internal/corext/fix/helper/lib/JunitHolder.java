@@ -56,6 +56,9 @@ public class JunitHolder {
 	
 	/** Counter for tracking multiple transformations */
 	public int count;
+	
+	/** Additional context information for complex transformations */
+	public Object additionalInfo;
 
 	/**
 	 * Gets the node as an Annotation.
