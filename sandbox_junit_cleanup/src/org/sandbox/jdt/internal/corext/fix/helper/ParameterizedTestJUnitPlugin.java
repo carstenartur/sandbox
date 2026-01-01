@@ -152,6 +152,8 @@ public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<I
 			}
 			
 			// Find constructor
+			// Note: If multiple constructors exist, this uses the last one found.
+			// Typically, parameterized tests have only one constructor that accepts the test parameters.
 			if (method.isConstructor()) {
 				constructor = method;
 				@SuppressWarnings("unchecked")
@@ -315,6 +317,15 @@ public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<I
 	
 	/**
 	 * Extract data rows from Arrays.asList(new Object[][]{{...}, {...}})
+	 * 
+	 * Note: Currently only handles the specific pattern Arrays.asList(new Object[][] {...}).
+	 * Other JUnit 4 Parameterized data formats are not yet supported:
+	 * - Directly returning Object[][]
+	 * - Collection.singletonList()
+	 * - Other Collection implementations
+	 * 
+	 * @param expr The expression from @Parameters method return statement
+	 * @return List of array expressions representing test data rows
 	 */
 	private List<Expression> extractDataRows(Expression expr) {
 		List<Expression> rows = new ArrayList<>();
@@ -382,7 +393,9 @@ public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<I
 			// Create @MethodSource("methodName")
 			SingleMemberAnnotation methodSource = ast.newSingleMemberAnnotation();
 			methodSource.setTypeName(ast.newSimpleName(ANNOTATION_METHOD_SOURCE));
-			methodSource.setValue(ast.newStringLiteral(parametersMethodName));
+			org.eclipse.jdt.core.dom.StringLiteral stringLiteral = ast.newStringLiteral();
+			stringLiteral.setLiteralValue(parametersMethodName);
+			methodSource.setValue(stringLiteral);
 			
 			// Replace @Test with @ParameterizedTest and add @MethodSource
 			modifiersRewrite.replace(testAnnotation, parameterizedTest, group);
