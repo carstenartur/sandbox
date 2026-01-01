@@ -56,6 +56,7 @@
 		<module>sandbox_method_reuse_test</module>
 		<module>sandbox_usage_view</module>
 		<module>sandbox_usage_view_feature</module>
+		<module>sandbox_usage_view_test</module>
 		<module>sandbox_product</module>
 	</modules>
 	<repositories>
@@ -478,6 +479,11 @@ See README.md for more information.
 			<dependency>
 				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_usage_view_feature</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_usage_view_test</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
