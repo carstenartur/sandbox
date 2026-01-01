@@ -292,10 +292,9 @@ public class MigrationTestAnnotationTest {
 
 	@Test
 	public void migrates_test_timeout_with_other_parameters() throws CoreException {
-		// This test verifies that the timeout parameter is removed while preserving other parameters.
-		// Note: The 'expected' parameter is not yet supported in JUnit 5 and will be handled by a
-		// separate migration plugin (see MigrationExceptionsTest). This test focuses on ensuring
-		// the timeout migration works correctly even when other parameters are present.
+		// This test verifies that both timeout and expected parameters are migrated correctly.
+		// The timeout parameter is migrated to @Timeout annotation by TestTimeoutJUnitPlugin.
+		// The expected parameter is migrated to assertThrows() by TestExpectedJUnitPlugin.
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
 				"""
@@ -316,16 +315,20 @@ public class MigrationTestAnnotationTest {
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
 				"""
 				package test;
+				import static org.junit.jupiter.api.Assertions.assertThrows;
+				
 				import java.util.concurrent.TimeUnit;
 				
 				import org.junit.jupiter.api.Test;
 				import org.junit.jupiter.api.Timeout;
 				
 				public class MyTest {
-					@Test(expected = IllegalArgumentException.class)
+					@Test
 					@Timeout(value = 2, unit = TimeUnit.SECONDS)
 					public void testWithTimeoutAndExpected() {
-						throw new IllegalArgumentException("Expected exception");
+						assertThrows(IllegalArgumentException.class, () -> {
+							throw new IllegalArgumentException("Expected exception");
+						});
 					}
 				}
 				"""
