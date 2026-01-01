@@ -11,7 +11,7 @@ The plugin successfully handles most common JUnit 4 to JUnit 5 migrations:
 - **Assertions**: All standard assertions with correct parameter reordering
 - **Assumptions**: Basic assumptions and Hamcrest assumeThat
 - **Rules**: TestName → TestInfo, ExternalResource extension pattern
-- **Runners**: MockitoJUnitRunner → MockitoExtension, SpringRunner → SpringExtension
+- **Runners**: MockitoJUnitRunner → MockitoExtension, SpringRunner → SpringExtension, Suite → @Suite with @SelectClasses
 
 ### What's Not Working ❌
 Complex transformations that require code body changes:
@@ -19,11 +19,10 @@ Complex transformations that require code body changes:
 - **Parameterized tests**: @RunWith(Parameterized.class)
 - **Timeout handling**: @Test(timeout) and Timeout rule
 - **TemporaryFolder**: Rule field migration incomplete
-- **Suite migration**: @RunWith(Suite.class) (simple runner replacement works, but suite-specific migration incomplete)
 
 ### Migration Coverage
-- **~70% of common patterns** are fully supported
-- **~25% are complex** and require AST body transformations
+- **~75% of common patterns** are fully supported
+- **~20% are complex** and require AST body transformations
 - **~5% are simple** but not yet implemented
 
 
@@ -88,14 +87,14 @@ public void test() throws IOException {
 ---
 
 ### 2. @RunWith(Suite.class) → @Suite Migration
-**Status:** Not Implemented  
+**Status:** ✅ **IMPLEMENTED**  
 **Priority:** High  
 **Affected Tests:**
-- `MigrationRunnersTest.migrates_runWith_suite`
-- `MigrationCombinationsTest.migrates_suite_with_assertions_and_lifecycle`
+- `MigrationRunnersTest.migrates_runWith_suite` (enabled)
+- `MigrationCombinationsTest.migrates_suite_with_assertions_and_lifecycle` (enabled)
 
 **Description:**
-The cleanup should migrate JUnit 4's `@RunWith(Suite.class)` to JUnit 5's `@Suite`:
+The cleanup migrates JUnit 4's `@RunWith(Suite.class)` to JUnit 5's `@Suite`:
 
 ```java
 // JUnit 4
@@ -104,18 +103,18 @@ The cleanup should migrate JUnit 4's `@RunWith(Suite.class)` to JUnit 5's `@Suit
 public class MyTestSuite {
 }
 
-// Should become JUnit 5
+// Migrated to JUnit 5
 @Suite
 @SelectClasses({TestClass1.class, TestClass2.class})
 public class MyTestSuite {
 }
 ```
 
-**Implementation Notes:**
-- Remove `@RunWith(Suite.class)` annotation
-- Add `@Suite` annotation (from `org.junit.platform.suite.api.Suite`)
-- Replace `@Suite.SuiteClasses` with `@SelectClasses` (from `org.junit.platform.suite.api.SelectClasses`)
-- Update imports accordingly
+**Implementation:**
+- Implemented in `RunWithJUnitPlugin.java`
+- Removes `@RunWith(Suite.class)` annotation and adds `@Suite` (from `org.junit.platform.suite.api.Suite`)
+- Replaces `@Suite.SuiteClasses` with `@SelectClasses` (from `org.junit.platform.suite.api.SelectClasses`)
+- Correctly updates all imports
 
 ---
 
@@ -282,6 +281,7 @@ This is a complex transformation requiring:
 - ✅ **@RunWith runners migration** (RunWithJUnitPlugin)
   - @RunWith(MockitoJUnitRunner.class) → @ExtendWith(MockitoExtension.class)
   - @RunWith(SpringRunner.class) → @ExtendWith(SpringExtension.class)
+  - @RunWith(Suite.class) with @Suite.SuiteClasses → @Suite with @SelectClasses
   - Supports both old and new package names for Mockito runners
   - Supports both SpringRunner and SpringJUnit4ClassRunner
 

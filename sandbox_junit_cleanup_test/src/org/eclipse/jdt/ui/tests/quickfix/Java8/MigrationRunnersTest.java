@@ -42,7 +42,6 @@ public class MigrationRunnersTest {
 		fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
 	}
 
-	@Disabled("Not yet implemented - @RunWith(Suite.class) migration")
 	@Test
 	public void migrates_runWith_suite() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);

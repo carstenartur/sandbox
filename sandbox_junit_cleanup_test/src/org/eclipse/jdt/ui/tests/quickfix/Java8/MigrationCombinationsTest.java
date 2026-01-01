@@ -211,7 +211,6 @@ public class MyTest {
 		}, null);
 	}
 
-	@Disabled("Not yet implemented - @RunWith(Suite.class) migration")
 	@Test
 	public void migrates_suite_with_assertions_and_lifecycle() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
