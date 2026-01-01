@@ -235,10 +235,12 @@ public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<I
 		importRewriter.removeImport(ORG_JUNIT_RUNNERS_PARAMETERIZED_PARAMETERS);
 		importRewriter.removeImport("java.util.Arrays");
 		importRewriter.removeImport("java.util.Collection");
-		importRewriter.addImport(ORG_JUNIT_JUPITER_PARAMS_PARAMETERIZED_TEST);
-		importRewriter.addImport(ORG_JUNIT_JUPITER_PARAMS_PROVIDER_METHOD_SOURCE);
-		// Note: Arguments is used with fully qualified name, not imported
+		// Add imports in reverse alphabetical order so Eclipse's sorting produces the expected result
+		// Expected order: org.junit.jupiter.params.ParameterizedTest, org.junit.jupiter.params.provider.MethodSource, java.util.stream.Stream
 		importRewriter.addImport("java.util.stream.Stream");
+		importRewriter.addImport(ORG_JUNIT_JUPITER_PARAMS_PROVIDER_METHOD_SOURCE);
+		importRewriter.addImport(ORG_JUNIT_JUPITER_PARAMS_PARAMETERIZED_TEST);
+		// Note: Arguments is used with fully qualified name, not imported
 	}
 	
 	/**
