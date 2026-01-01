@@ -15,6 +15,7 @@ package org.sandbox.jdt.core.cleanupapp;
  *******************************************************************************/
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -438,6 +439,57 @@ public class CodeCleanupApplicationTest {
 	}
 
 	/**
+	 * Create a config file with While-to-Enhanced-For-Loop cleanup enabled
+	 */
+	private File createWhileToEnhancedForLoopConfigFile() throws IOException {
+		File configFile = new File(tempDir, "while-to-for-config.properties");
+		try (java.io.FileOutputStream fos = new java.io.FileOutputStream(configFile)) {
+			Properties props = new Properties();
+			// Enable the while-to-enhanced-for-loop cleanup
+			props.setProperty("cleanup.control_statements_convert_for_loop_to_enhanced", "true");
+			props.store(fos, "While-to-Enhanced-For-Loop cleanup configuration");
+		}
+		return configFile;
+	}
+
+	/**
+	 * Create a Java file with a while-loop pattern that should be converted
+	 */
+	private File createWhileLoopJavaFile() throws IOException {
+		File javaFile = new File(tempDir, "WhileLoopTest.java");
+		try (OutputStreamWriter writer = new OutputStreamWriter(
+				new FileOutputStream(javaFile), StandardCharsets.UTF_8)) {
+			writer.write("package test;\n");
+			writer.write("import java.util.*;\n");
+			writer.write("public class WhileLoopTest {\n");
+			writer.write("    void processStrings(List<String> strings) {\n");
+			writer.write("        Iterator it = strings.iterator();\n");
+			writer.write("        while (it.hasNext()) {\n");
+			writer.write("            String s = (String) it.next();\n");
+			writer.write("            System.out.println(s);\n");
+			writer.write("        }\n");
+			writer.write("    }\n");
+			writer.write("}\n");
+		}
+		return javaFile;
+	}
+
+	/**
+	 * Read the content of a file as a string
+	 */
+	private String readFileContent(File file) throws IOException {
+		StringBuilder content = new StringBuilder();
+		try (java.io.BufferedReader reader = new java.io.BufferedReader(
+				new java.io.InputStreamReader(new java.io.FileInputStream(file), StandardCharsets.UTF_8))) {
+			String line;
+			while ((line = reader.readLine()) != null) {
+				content.append(line).append("\n");
+			}
+		}
+		return content.toString();
+	}
+
+	/**
 	 * Integration test: Test start() method returns EXIT_OK for -help
 	 */
 	@Test
@@ -449,6 +501,46 @@ public class CodeCleanupApplicationTest {
 		
 		String output = outContent.toString(StandardCharsets.UTF_8);
 		assertTrue(output.contains("Usage:"), "Help should be displayed");
+	}
+
+	/**
+	 * Integration test: Verify While-to-Enhanced-For-Loop cleanup transformation
+	 * 
+	 * This test demonstrates how to use CodeCleanupApplication to execute a specific cleanup,
+	 * in this case the while-to-enhanced-for-loop conversion. It:
+	 * 1. Creates a config file with the cleanup option enabled
+	 * 2. Creates a Java file with a while-loop pattern
+	 * 3. Executes the cleanup via start() method
+	 * 4. Verifies the while-loop was transformed to an enhanced for-loop
+	 */
+	@Test
+	public void testStartWithWhileToEnhancedForLoopCleanup() throws Exception {
+		// Create config file with while-to-enhanced-for-loop cleanup enabled
+		File configFile = createWhileToEnhancedForLoopConfigFile();
+		
+		// Create Java file with while-loop pattern that should be converted
+		File javaFile = createWhileLoopJavaFile();
+		
+		// Execute cleanup
+		IApplicationContext context = new MockApplicationContext(
+			new String[] { "-config", configFile.getAbsolutePath(), javaFile.getAbsolutePath() }
+		);
+		Object result = app.start(context);
+		
+		assertEquals(IApplication.EXIT_OK, result);
+		
+		// Verify the transformation occurred
+		String fileContent = readFileContent(javaFile);
+		
+		// The while-loop should be replaced with enhanced for-loop
+		assertTrue(fileContent.contains("for (String s : strings)"), 
+				"File should contain enhanced for-loop: 'for (String s : strings)'");
+		
+		// The old while-loop pattern should no longer exist
+		assertFalse(fileContent.contains("while (it.hasNext())"), 
+				"File should not contain while-loop pattern");
+		assertFalse(fileContent.contains("Iterator it = strings.iterator()"), 
+				"File should not contain Iterator declaration");
 	}
 
 	/**
