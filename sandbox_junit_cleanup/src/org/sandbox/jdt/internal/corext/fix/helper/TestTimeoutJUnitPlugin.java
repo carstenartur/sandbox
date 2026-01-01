@@ -140,7 +140,7 @@ public class TestTimeoutJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 		unitPair.setValue(timeUnitName);
 		timeoutAnnotation.values().add(unitPair);
 		
-		// Add the @Timeout annotation to the method
+		// Add the @Timeout annotation to the method (after @Test)
 		MethodDeclaration method = ASTNodes.getParent(testAnnotation, MethodDeclaration.class);
 		if (method != null) {
 			ListRewrite listRewrite = rewriter.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);
@@ -148,21 +148,12 @@ public class TestTimeoutJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 		}
 		
 		// Remove the timeout parameter from @Test annotation
-		@SuppressWarnings("unchecked")
-		List<MemberValuePair> values = testAnnotation.values();
-		if (values.size() == 1) {
-			// If timeout is the only parameter, convert @Test(...) to @Test
-			MarkerAnnotation newTestAnnotation = ast.newMarkerAnnotation();
-			newTestAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_TEST));
-			importRewriter.addImport(ORG_JUNIT_JUPITER_TEST);
-			ASTNodes.replaceButKeepComment(rewriter, testAnnotation, newTestAnnotation, group);
-		} else {
-			// If there are other parameters, just remove the timeout parameter
-			rewriter.remove(timeoutPair, group);
-			importRewriter.addImport(ORG_JUNIT_JUPITER_TEST);
-		}
+		// Note: We simply remove the parameter value pair, which will effectively
+		// convert @Test(timeout=...) to @Test
+		rewriter.remove(timeoutPair, group);
 		
 		// Add imports
+		importRewriter.addImport(ORG_JUNIT_JUPITER_TEST);
 		importRewriter.addImport(ORG_JUNIT_JUPITER_API_TIMEOUT);
 		importRewriter.addImport("java.util.concurrent.TimeUnit");
 		importRewriter.removeImport(ORG_JUNIT_TEST);
