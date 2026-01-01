@@ -19,7 +19,6 @@ import java.util.Set;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
@@ -36,6 +35,7 @@ import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCo
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.refactoring.util.TightSourceRangeComputer;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.MethodReuseCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractMethodReuse;
@@ -53,29 +53,29 @@ public class InlineSequencesPlugin extends AbstractMethodReuse<MethodDeclaration
 	public void find(MethodReuseCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed) {
 		
-		// Visit all methods in the compilation unit to use as targets
-		compilationUnit.accept(new ASTVisitor() {
-			@Override
-			public boolean visit(MethodDeclaration node) {
-				// Search for inline sequences matching this method
-				List<InlineSequenceMatch> matches = InlineCodeSequenceFinder.findInlineSequences(compilationUnit, node);
-				
-				// Create operations for each match found
-				for (InlineSequenceMatch match : matches) {
-					List<Statement> matchingStatements = match.getMatchingStatements();
-					if (matchingStatements.isEmpty()) {
-						continue;
+		// Use HelperVisitor to visit all methods in the compilation unit
+		ReferenceHolder<MethodDeclaration, InlineSequenceMatch> dataholder = new ReferenceHolder<>();
+		
+		HelperVisitor.callMethodDeclarationVisitor(compilationUnit, dataholder, nodesprocessed,
+				(node, holder) -> {
+					// Search for inline sequences matching this method
+					List<InlineSequenceMatch> matches = InlineCodeSequenceFinder.findInlineSequences(compilationUnit, node);
+					
+					// Create operations for each match found
+					for (InlineSequenceMatch match : matches) {
+						List<Statement> matchingStatements = match.getMatchingStatements();
+						if (matchingStatements.isEmpty()) {
+							continue;
+						}
+						if (!nodesprocessed.contains(matchingStatements.get(0))) {
+							ReferenceHolder<MethodDeclaration, InlineSequenceMatch> matchHolder = new ReferenceHolder<>(node, match);
+							operations.add(fixcore.rewrite(matchHolder));
+							// Mark all statements in the match as processed
+							matchingStatements.forEach(nodesprocessed::add);
+						}
 					}
-					if (!nodesprocessed.contains(matchingStatements.get(0))) {
-						ReferenceHolder<MethodDeclaration, InlineSequenceMatch> holder = new ReferenceHolder<>(node, match);
-						operations.add(fixcore.rewrite(holder));
-						// Mark all statements in the match as processed
-						matchingStatements.forEach(nodesprocessed::add);
-					}
-				}
-				return true;
-			}
-		});
+					return false;
+				}, null);
 	}
 
 	@Override
