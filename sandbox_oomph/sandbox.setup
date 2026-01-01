@@ -250,7 +250,7 @@
     - Java 21 or later as the minimum required version
     - 2GB heap size for optimal performance
     - UTF-8 encoding by default
-    - Line numbers and whitespace characters visible in editors
+    - Line numbers visible in editors
     - Auto-refresh enabled for workspace resources
     - PDE DS annotations support enabled
     
