@@ -103,7 +103,7 @@ public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<I
 							while (parent != null && !(parent instanceof TypeDeclaration)) {
 								parent = parent.getParent();
 							}
-							if (parent instanceof TypeDeclaration) {
+							if (parent != null) {
 								mh.additionalInfo = parent;
 							}
 							
