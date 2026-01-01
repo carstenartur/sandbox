@@ -72,7 +72,7 @@
 					@Test
 					public void testException() {
 						assertThrows(IllegalArgumentException.class, () -> {
-						throw new IllegalArgumentException("Expected");
+							throw new IllegalArgumentException("Expected");
 						});
 					}
 				}
@@ -111,8 +111,8 @@
 					@Test
 					public void testNullPointerException() {
 						assertThrows(NullPointerException.class, () -> {
-						String str = null;
-						str.length();
+							String str = null;
+							str.length();
 						});
 					}
 				}
