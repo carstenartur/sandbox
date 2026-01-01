@@ -135,6 +135,10 @@ public class MYCleanUpConstants {
 	/**
 	 * 
 	 */
+	public static final String JUNIT_CLEANUP_4_CATEGORY= "cleanup.junitcleanup_4_category"; //$NON-NLS-1$
+	/**
+	 * 
+	 */
 	public static final String JUNIT_CLEANUP_4_TEST= "cleanup.junitcleanup_4_test"; //$NON-NLS-1$
 	/**
 	 * 

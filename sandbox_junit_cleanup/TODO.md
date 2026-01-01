@@ -11,6 +11,7 @@ This file was missing from the sandbox_junit_cleanup plugin. It has been created
 - ✅ Helper class extraction for maintainability
 - ✅ Comprehensive test coverage
 - ✅ Multiple plugin implementations for different migration scenarios
+- ✅ @Test(expected) parameter migration to assertThrows()
 
 ### In Progress
 - None currently
@@ -47,6 +48,25 @@ Migrate timeout specifications:
 - Update timeout values and units
 - Handle TimeUnit conversions
 - Optimize output: use SECONDS when timeout is divisible by 1000ms
+
+### 2a. Test Expected Exception Migration
+**Priority**: High  
+**Effort**: 8-10 hours  
+**Status**: ✅ **COMPLETED**
+
+Migrate @Test(expected) parameter to assertThrows():
+- JUnit 4 `@Test(expected = ExceptionClass.class)` → JUnit 5 `assertThrows(ExceptionClass.class, () -> {...})`
+- Wraps entire method body in assertThrows lambda
+- Removes expected parameter from @Test annotation
+- Adds static import for assertThrows
+- Works alongside timeout migration for combined parameters
+
+**Implementation**: TestExpectedJUnitPlugin handles this transformation by:
+- Detecting @Test annotations with expected parameter via NormalAnnotation visitor
+- Extracting the exception TypeLiteral
+- Creating lambda expression wrapping the method body
+- Generating assertThrows method invocation
+- Removing expected parameter (converts to marker annotation if only parameter)
 
 ### 3. Rule Migration Framework
 **Priority**: High  
@@ -102,12 +122,22 @@ Handle Hamcrest matcher migration:
 
 ### Test Categorization
 **Priority**: Low  
-**Effort**: 4-6 hours
+**Effort**: 4-6 hours  
+**Status**: ✅ **COMPLETED**
 
 Migrate JUnit 4 categories to JUnit 5 tags:
-- `@Category(FastTests.class)` → `@Tag("fast")`
+- `@Category(FastTests.class)` → `@Tag("FastTests")`
+- Handles single categories on methods and classes
+- Handles multiple categories: `@Category({Fast.class, Unit.class})` → `@Tag("Fast") @Tag("Unit")`
 - Update test suite configurations
 - Preserve category hierarchies
+
+**Implementation Notes**:
+- Implemented in CategoryJUnitPlugin
+- Extracts simple class name from TypeLiteral
+- Supports ArrayInitializer for multiple categories
+- Creates multiple @Tag annotations for multiple categories
+- Updates imports appropriately
 
 ## Testing Strategy
 

@@ -7,7 +7,8 @@ This document tracks missing features and bugs in the JUnit migration cleanup im
 ### What's Working ✅
 The plugin successfully handles most common JUnit 4 to JUnit 5 migrations:
 - **Lifecycle annotations**: @Before/@After/@BeforeClass/@AfterClass → @BeforeEach/@AfterEach/@BeforeAll/@AfterAll
-- **Test annotations**: @Ignore → @Disabled, basic @Test migration
+- **Test annotations**: @Ignore → @Disabled, basic @Test migration, @Test(timeout) → @Timeout
+- **Exception testing**: @Test(expected) → assertThrows()
 - **Assertions**: All standard assertions with correct parameter reordering
 - **Assumptions**: Basic assumptions and Hamcrest assumeThat
 - **Rules**: TestName → TestInfo, ExternalResource extension pattern
@@ -15,9 +16,7 @@ The plugin successfully handles most common JUnit 4 to JUnit 5 migrations:
 
 ### What's Not Working ❌
 Complex transformations that require code body changes:
-- **Exception testing**: @Test(expected) and ExpectedException rule
 - **Parameterized tests**: @RunWith(Parameterized.class)
-- **Timeout handling**: @Test(timeout) and Timeout rule
 - **TemporaryFolder**: Rule field migration incomplete
 
 ### Migration Coverage
@@ -148,10 +147,10 @@ The `Assumptions` import should not be added when Hamcrest's `assumeThat` is use
 These features are documented as not yet implemented and have disabled tests:
 
 #### 4. @Test(expected=Exception.class) → assertThrows()
-**Status:** Not Implemented  
+**Status:** ✅ **IMPLEMENTED**  
 **Priority:** High  
 **Complexity:** High (requires wrapping method body in lambda)  
-**Tracked in:** `MigrationExceptionsTest` (all 5 tests disabled)
+**Tracked in:** `MigrationExceptionsTest` (tests enabled)
 
 **Description:**
 ```java
@@ -169,6 +168,16 @@ public void testException() {
     });
 }
 ```
+
+**Implementation Notes:**
+- Implemented in TestExpectedJUnitPlugin
+- Detects @Test(expected=...) annotations via NormalAnnotation visitor
+- Extracts the exception TypeLiteral from the expected parameter
+- Creates lambda expression wrapping the entire method body
+- Generates assertThrows method invocation
+- Removes expected parameter from @Test (converts to marker annotation if only parameter)
+- Adds static import for assertThrows
+- Works alongside TestTimeoutJUnitPlugin for combined parameters
 
 #### 5. ExpectedException Rule → assertThrows()
 **Status:** Not Implemented  
@@ -262,6 +271,10 @@ This is a complex transformation requiring:
   - Supports both marker annotation (@Ignore) and single-member annotation (@Ignore("reason"))
 - ✅ **@Test annotation migration** (TestJUnitPlugin)
   - Migrates basic @Test from JUnit 4 to JUnit 5
+- ✅ **@Test(expected=...) → assertThrows()** (TestExpectedJUnitPlugin)
+  - Migrates expected parameter to assertThrows wrapping method body
+  - Handles lambda expression creation
+  - Works with combined parameters (e.g., timeout + expected)
 - ✅ **@Test(timeout=...) → @Timeout** (TestTimeoutJUnitPlugin)
   - Migrates timeout parameter to separate @Timeout annotation
   - Optimizes TimeUnit (SECONDS vs MILLISECONDS)
@@ -408,19 +421,20 @@ To implement a new migration (e.g., @RunWith(MockitoJUnitRunner) → @ExtendWith
 - ✅ MigrationIgnoreTest - all tests passing (except 5 known edge cases disabled)
 - ✅ MigrationAssertionsTest - all tests passing
 - ✅ MigrationAssumptionsTest - mostly passing (1 disabled for Hamcrest import issue)
-- ✅ MigrationTestAnnotationTest - basic @Test passing (1 disabled for timeout)
+- ✅ MigrationTestAnnotationTest - all tests passing including timeout
+- ✅ MigrationExceptionsTest - @Test(expected) tests passing (ExpectedException tests still disabled)
 - ✅ MigrationRulesToExtensionsTest - TestName and ExternalResource passing (5 disabled)
 
 ### Disabled Tests (Not Implemented)
-- ❌ MigrationExceptionsTest - 5 tests disabled (@Test(expected), ExpectedException)
+- ❌ MigrationExceptionsTest - 3 tests disabled (ExpectedException rule with message/cause)
 - ❌ MigrationRunnersTest - 4 tests disabled (Suite, Parameterized, Mockito, Spring)
 - ❌ MigrationCombinationsTest - 3 tests disabled (complex combinations)
 - ❌ MigrationRulesToExtensionsTest - 5 tests disabled (TemporaryFolder, Timeout)
 
 ### Test Statistics
 - **Total test methods**: ~50-60
-- **Enabled and passing**: ~35-40 (65-70%)
-- **Disabled (not implemented)**: ~15-20 (25-30%)
+- **Enabled and passing**: ~40-45 (70-75%)
+- **Disabled (not implemented)**: ~12-15 (20-25%)
 - **Known bugs**: ~2-3 (5%)
 
 

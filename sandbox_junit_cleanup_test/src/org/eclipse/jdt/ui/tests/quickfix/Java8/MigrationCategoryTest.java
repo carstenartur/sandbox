@@ -19,7 +19,6 @@ import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.junit.JUnitCore;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
@@ -27,10 +26,9 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava17;
 
 /**
- * Tests for migrating @Test annotation from JUnit 4 to JUnit 5.
- * Covers basic @Test migration and timeout parameter.
+ * Tests for migrating @Category to @Tag.
  */
-public class MigrationTestAnnotationTest {
+public class MigrationCategoryTest {
 
 	@RegisterExtension
 	AbstractEclipseJava context = new EclipseJava17();
@@ -43,293 +41,278 @@ public class MigrationTestAnnotationTest {
 	}
 
 	@Test
-	public void migrates_test_annotation_basic() throws CoreException {
+	public void migrates_single_category_on_method() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
 				"""
 				package test;
 				import org.junit.Test;
+				import org.junit.experimental.categories.Category;
 				
 				public class MyTest {
+					@Category(FastTests.class)
 					@Test
-					public void testSomething() {
+					public void fastTest() {
+						// test code
 					}
+				}
+				
+				interface FastTests {
 				}
 				""", false, null);
 
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_CATEGORY);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
 
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
 				"""
 				package test;
+				import org.junit.jupiter.api.Tag;
 				import org.junit.jupiter.api.Test;
 				
 				public class MyTest {
+					@Tag("FastTests")
 					@Test
-					public void testSomething() {
+					public void fastTest() {
+						// test code
 					}
+				}
+				
+				interface FastTests {
 				}
 				"""
 		}, null);
 	}
 
 	@Test
-	public void migrates_test_timeout_to_timeout_annotation() throws CoreException {
+	public void migrates_single_category_on_class() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
 				"""
 				package test;
 				import org.junit.Test;
+				import org.junit.experimental.categories.Category;
 				
+				@Category(IntegrationTests.class)
 				public class MyTest {
-					@Test(timeout = 1000)
-					public void testWithTimeout() {
-						// Test code
+					@Test
+					public void integrationTest() {
+						// test code
 					}
+				}
+				
+				interface IntegrationTests {
 				}
 				""", false, null);
 
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_CATEGORY);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
 
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
 				"""
 				package test;
-				import java.util.concurrent.TimeUnit;
-				
+				import org.junit.jupiter.api.Tag;
 				import org.junit.jupiter.api.Test;
-				import org.junit.jupiter.api.Timeout;
 				
+				@Tag("IntegrationTests")
 				public class MyTest {
 					@Test
-					@Timeout(value = 1, unit = TimeUnit.SECONDS)
-					public void testWithTimeout() {
-						// Test code
+					public void integrationTest() {
+						// test code
 					}
+				}
+				
+				interface IntegrationTests {
 				}
 				"""
 		}, null);
 	}
 
 	@Test
-	public void migrates_multiple_test_methods() throws CoreException {
+	public void migrates_multiple_categories() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
 				"""
 				package test;
 				import org.junit.Test;
+				import org.junit.experimental.categories.Category;
 				
 				public class MyTest {
+					@Category({FastTests.class, UnitTests.class})
 					@Test
-					public void test1() {
+					public void multiCategoryTest() {
+						// test code
 					}
-					
-					@Test
-					public void test2() {
-					}
-					
-					@Test
-					public void test3() {
-					}
+				}
+				
+				interface FastTests {
+				}
+				
+				interface UnitTests {
 				}
 				""", false, null);
 
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_CATEGORY);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
 
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
 				"""
 				package test;
+				import org.junit.jupiter.api.Tag;
 				import org.junit.jupiter.api.Test;
 				
 				public class MyTest {
+					@Tag("FastTests")
+					@Tag("UnitTests")
 					@Test
-					public void test1() {
+					public void multiCategoryTest() {
+						// test code
 					}
-					
-					@Test
-					public void test2() {
-					}
-					
-					@Test
-					public void test3() {
-					}
+				}
+				
+				interface FastTests {
+				}
+				
+				interface UnitTests {
 				}
 				"""
 		}, null);
 	}
 
 	@Test
-	public void migrates_test_timeout_with_milliseconds() throws CoreException {
+	public void migrates_mixed_categories_and_tests() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
 				"""
 				package test;
 				import org.junit.Test;
+				import org.junit.experimental.categories.Category;
 				
 				public class MyTest {
-					@Test(timeout = 500)
-					public void testWithMilliseconds() {
-						// Test code
+					@Category(FastTests.class)
+					@Test
+					public void fastTest() {
+						// test code
 					}
+					
+					@Category(SlowTests.class)
+					@Test
+					public void slowTest() {
+						// test code
+					}
+					
+					@Test
+					public void normalTest() {
+						// test code
+					}
+				}
+				
+				interface FastTests {
+				}
+				
+				interface SlowTests {
 				}
 				""", false, null);
 
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_CATEGORY);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
 
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
 				"""
 				package test;
-				import java.util.concurrent.TimeUnit;
-				
+				import org.junit.jupiter.api.Tag;
 				import org.junit.jupiter.api.Test;
-				import org.junit.jupiter.api.Timeout;
 				
 				public class MyTest {
+					@Tag("FastTests")
 					@Test
-					@Timeout(value = 500, unit = TimeUnit.MILLISECONDS)
-					public void testWithMilliseconds() {
-						// Test code
+					public void fastTest() {
+						// test code
 					}
+					
+					@Tag("SlowTests")
+					@Test
+					public void slowTest() {
+						// test code
+					}
+					
+					@Test
+					public void normalTest() {
+						// test code
+					}
+				}
+				
+				interface FastTests {
+				}
+				
+				interface SlowTests {
 				}
 				"""
 		}, null);
 	}
 
 	@Test
-	public void migrates_multiple_timeout_tests() throws CoreException {
+	public void migrates_category_on_both_class_and_method() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
 				"""
 				package test;
 				import org.junit.Test;
+				import org.junit.experimental.categories.Category;
 				
+				@Category(IntegrationTests.class)
 				public class MyTest {
-					@Test(timeout = 1000)
-					public void testOne() {
+					@Category(FastTests.class)
+					@Test
+					public void fastIntegrationTest() {
+						// test code
 					}
 					
-					@Test(timeout = 2000)
-					public void testTwo() {
+					@Test
+					public void normalIntegrationTest() {
+						// test code
 					}
-					
-					@Test(timeout = 500)
-					public void testThree() {
-					}
+				}
+				
+				interface FastTests {
+				}
+				
+				interface IntegrationTests {
 				}
 				""", false, null);
 
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_CATEGORY);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
 
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
 				"""
 				package test;
-				import java.util.concurrent.TimeUnit;
-				
+				import org.junit.jupiter.api.Tag;
 				import org.junit.jupiter.api.Test;
-				import org.junit.jupiter.api.Timeout;
 				
+				@Tag("IntegrationTests")
 				public class MyTest {
+					@Tag("FastTests")
 					@Test
-					@Timeout(value = 1, unit = TimeUnit.SECONDS)
-					public void testOne() {
+					public void fastIntegrationTest() {
+						// test code
 					}
 					
 					@Test
-					@Timeout(value = 2, unit = TimeUnit.SECONDS)
-					public void testTwo() {
-					}
-					
-					@Test
-					@Timeout(value = 500, unit = TimeUnit.MILLISECONDS)
-					public void testThree() {
+					public void normalIntegrationTest() {
+						// test code
 					}
 				}
-				"""
-		}, null);
-	}
-
-	@Test
-	public void migrates_large_timeout_value() throws CoreException {
-		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
-		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
-				"""
-				package test;
-				import org.junit.Test;
 				
-				public class MyTest {
-					@Test(timeout = 60000)
-					public void testWithLargeTimeout() {
-						// Test code
-					}
+				interface FastTests {
 				}
-				""", false, null);
-
-		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
-		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
-
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
-				"""
-				package test;
-				import java.util.concurrent.TimeUnit;
 				
-				import org.junit.jupiter.api.Test;
-				import org.junit.jupiter.api.Timeout;
-				
-				public class MyTest {
-					@Test
-					@Timeout(value = 60, unit = TimeUnit.SECONDS)
-					public void testWithLargeTimeout() {
-						// Test code
-					}
-				}
-				"""
-		}, null);
-	}
-
-	@Test
-	public void migrates_test_timeout_with_other_parameters() throws CoreException {
-		// This test verifies that both timeout and expected parameters are migrated correctly.
-		// The timeout parameter is migrated to @Timeout annotation by TestTimeoutJUnitPlugin.
-		// The expected parameter is migrated to assertThrows() by TestExpectedJUnitPlugin.
-		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
-		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
-				"""
-				package test;
-				import org.junit.Test;
-				
-				public class MyTest {
-					@Test(expected = IllegalArgumentException.class, timeout = 2000)
-					public void testWithTimeoutAndExpected() {
-						throw new IllegalArgumentException("Expected exception");
-					}
-				}
-				""", false, null);
-
-		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
-		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
-
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
-				"""
-				package test;
-				import static org.junit.jupiter.api.Assertions.assertThrows;
-				
-				import java.util.concurrent.TimeUnit;
-				
-				import org.junit.jupiter.api.Test;
-				import org.junit.jupiter.api.Timeout;
-				
-				public class MyTest {
-					@Test
-					@Timeout(value = 2, unit = TimeUnit.SECONDS)
-					public void testWithTimeoutAndExpected() {
-						assertThrows(IllegalArgumentException.class, () -> {
-							throw new IllegalArgumentException("Expected exception");
-						});
-					}
+				interface IntegrationTests {
 				}
 				"""
 		}, null);
