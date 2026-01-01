@@ -67,14 +67,32 @@ public class MethodCallReplacer {
 	@SuppressWarnings("unchecked")
 	private static List<Expression> createArguments(AST ast, MethodDeclaration targetMethod, VariableMapping variableMapping) {
 		List<Expression> arguments = new ArrayList<>();
-		Map<String, String> mappings = variableMapping.getMappings();
+		Map<String, String> nameMappings = variableMapping.getMappings();
+		Map<String, org.eclipse.jdt.core.dom.Expression> exprMappings = variableMapping.getExpressionMappings();
 		
 		// For each parameter in the target method, find the corresponding inline expression
 		List<SingleVariableDeclaration> parameters = targetMethod.parameters();
 		for (SingleVariableDeclaration param : parameters) {
 			String paramName = param.getName().getIdentifier();
-			String inlineName = mappings.get(paramName);
 			
+			// First check if there's an expression mapping (for complex expressions)
+			if (variableMapping.hasExpressionMapping(paramName)) {
+				org.eclipse.jdt.core.dom.Expression candidateExpr = exprMappings.get(paramName);
+				if (candidateExpr != null) {
+					// Copy the expression from the candidate code
+					Expression argExpr = (Expression) org.eclipse.jdt.core.dom.ASTNode.copySubtree(ast, candidateExpr);
+					arguments.add(argExpr);
+					continue;
+				} else if (exprMappings != null && exprMappings.containsKey(paramName)) {
+					// An expression mapping exists but the mapped expression is null - treat as mapping error
+					SimpleName arg = ast.newSimpleName("/* mapping error */");
+					arguments.add(arg);
+					continue;
+				}
+			}
+			
+			// Fall back to simple name mapping
+			String inlineName = nameMappings.get(paramName);
 			if (inlineName != null) {
 				// Create a simple name reference for the inline variable
 				SimpleName arg = ast.newSimpleName(inlineName);
