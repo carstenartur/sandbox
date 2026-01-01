@@ -260,13 +260,12 @@ public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<I
 		}
 		
 		// Change return type to Stream<org.junit.jupiter.params.provider.Arguments>
-		// Use fully qualified Arguments name to avoid import conflicts, add import for Stream
+		// Use fully qualified Arguments name to avoid import conflicts
 		Type streamType = ast.newSimpleType(ast.newSimpleName("Stream"));
 		Type argumentsType = ast.newSimpleType(ast.newName(ORG_JUNIT_JUPITER_PARAMS_PROVIDER_ARGUMENTS));
 		Type newReturnType = ast.newParameterizedType(streamType);
 		((org.eclipse.jdt.core.dom.ParameterizedType) newReturnType).typeArguments().add(argumentsType);
 		rewriter.set(method, MethodDeclaration.RETURN_TYPE2_PROPERTY, newReturnType, group);
-		importRewriter.addImport("java.util.stream.Stream");
 		
 		// Transform method body: Arrays.asList(new Object[][]...) -> Stream.of(Arguments.of(...), ...)
 		if (method.getBody() != null && !method.getBody().statements().isEmpty()) {
