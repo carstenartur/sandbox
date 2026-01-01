@@ -50,8 +50,13 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.VariableMapping;
 public class InlineSequencesPlugin extends AbstractMethodReuse<MethodDeclaration> {
 
 	@Override
-	public void find(MethodReuseCleanUpFixCore fixcore, CompilationUnit compilationUnit,
-			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed) {
+	public void find(Object fixcore, CompilationUnit compilationUnit,
+			Set<?> operations, Set<ASTNode> nodesprocessed) throws CoreException {
+		
+		// Cast to the correct type
+		@SuppressWarnings("unchecked")
+		Set<CompilationUnitRewriteOperation> ops = (Set<CompilationUnitRewriteOperation>) operations;
+		MethodReuseCleanUpFixCore fixCore = (MethodReuseCleanUpFixCore) fixcore;
 		
 		// Use HelperVisitor to visit all methods in the compilation unit
 		ReferenceHolder<MethodDeclaration, InlineSequenceMatch> dataholder = new ReferenceHolder<>();
@@ -69,7 +74,7 @@ public class InlineSequencesPlugin extends AbstractMethodReuse<MethodDeclaration
 						}
 						if (!nodesprocessed.contains(matchingStatements.get(0))) {
 							ReferenceHolder<MethodDeclaration, InlineSequenceMatch> matchHolder = new ReferenceHolder<>(node, match);
-							operations.add(fixcore.rewrite(matchHolder));
+							ops.add(fixCore.rewrite(matchHolder));
 							// Mark all statements in the match as processed
 							matchingStatements.forEach(nodesprocessed::add);
 						}
@@ -79,12 +84,17 @@ public class InlineSequencesPlugin extends AbstractMethodReuse<MethodDeclaration
 	}
 
 	@Override
-	public void rewrite(MethodReuseCleanUpFixCore fixcore, 
-			ReferenceHolder<MethodDeclaration, InlineSequenceMatch> holder,
+	public void rewrite(Object fixcore, ReferenceHolder<?, ?> holder,
 			CompilationUnitRewrite cuRewrite, TextEditGroup group) throws CoreException {
 		
-		MethodDeclaration targetMethod = holder.get(0);
-		InlineSequenceMatch match = holder.get(1);
+		// Cast to the correct types
+		MethodReuseCleanUpFixCore fixCore = (MethodReuseCleanUpFixCore) fixcore;
+		@SuppressWarnings("unchecked")
+		ReferenceHolder<MethodDeclaration, InlineSequenceMatch> typedHolder = 
+			(ReferenceHolder<MethodDeclaration, InlineSequenceMatch>) holder;
+		
+		MethodDeclaration targetMethod = typedHolder.get(0);
+		InlineSequenceMatch match = typedHolder.get(1);
 		
 		ASTRewrite rewrite = cuRewrite.getASTRewrite();
 		AST ast = rewrite.getAST();

@@ -94,6 +94,12 @@ public class MethodReuseFinder extends AbstractMethodReuse<ClassInstanceCreation
 	}
 	
 	@Override
+	public void find(Object fixcore, org.eclipse.jdt.core.dom.CompilationUnit compilationUnit,
+			java.util.Set<?> operations, java.util.Set<org.eclipse.jdt.core.dom.ASTNode> nodesprocessed) throws org.eclipse.core.runtime.CoreException {
+		// Default empty implementation - this finder is for discovery, not cleanup operations
+	}
+	
+	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {
 			return "IStatus status = Status.info(message);\n"; //$NON-NLS-1$
