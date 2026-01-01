@@ -173,6 +173,7 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 			newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_SELECT_CLASSES));
 			importRewriter.addImport(ORG_JUNIT_PLATFORM_SUITE_API_SELECT_CLASSES);
 			importRewriter.removeImport(ORG_JUNIT_SUITE_SUITECLASSES);
+			importRewriter.removeImport(ORG_JUNIT_SUITE);
 		} else if (ORG_JUNIT_RUNWITH.equals(junitHolder.value)) {
 			// Handle @RunWith(Suite.class) migration
 			newAnnotation= ast.newMarkerAnnotation();
