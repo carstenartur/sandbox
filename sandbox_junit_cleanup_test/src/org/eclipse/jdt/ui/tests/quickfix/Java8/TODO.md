@@ -178,10 +178,10 @@ public void testException() {
 **Tracked in:** `MigrationExceptionsTest` (disabled)
 
 #### 6. @Test(timeout=...) → @Timeout
-**Status:** Not Implemented  
+**Status:** ✅ **IMPLEMENTED**  
 **Priority:** Medium  
 **Complexity:** Medium  
-**Tracked in:** `MigrationTestAnnotationTest.migrates_test_timeout_parameter` (disabled)
+**Tracked in:** `MigrationTestAnnotationTest.migrates_test_timeout_to_timeout_annotation` (enabled)
 
 **Description:**
 ```java
@@ -194,6 +194,15 @@ public void testWithTimeout() { }
 @Timeout(value = 1, unit = TimeUnit.SECONDS)
 public void testWithTimeout() { }
 ```
+
+**Implementation Notes:**
+- Implemented in TestTimeoutJUnitPlugin
+- Detects @Test(timeout=...) annotations
+- Extracts timeout value in milliseconds
+- Converts to optimal TimeUnit (SECONDS if divisible by 1000, otherwise MILLISECONDS)
+- Removes timeout parameter from @Test
+- Adds new @Timeout annotation
+- Updates imports appropriately
 
 #### 7. @Rule Timeout → @Timeout
 **Status:** Not Implemented  
@@ -254,7 +263,10 @@ This is a complex transformation requiring:
   - Supports both marker annotation (@Ignore) and single-member annotation (@Ignore("reason"))
 - ✅ **@Test annotation migration** (TestJUnitPlugin)
   - Migrates basic @Test from JUnit 4 to JUnit 5
-  - Note: @Test(expected) and @Test(timeout) parameters not yet migrated (see below)
+- ✅ **@Test(timeout=...) → @Timeout** (TestTimeoutJUnitPlugin)
+  - Migrates timeout parameter to separate @Timeout annotation
+  - Optimizes TimeUnit (SECONDS vs MILLISECONDS)
+  - Handles multiple timeout tests in same class
 - ✅ **Assertions migration** (AssertJUnitPlugin)
   - assertEquals, assertTrue, assertFalse, assertNull, assertNotNull, etc.
   - Correctly reorders parameters (message parameter moves to last position in JUnit 5)
