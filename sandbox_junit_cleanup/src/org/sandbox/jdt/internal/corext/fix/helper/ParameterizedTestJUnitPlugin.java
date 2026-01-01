@@ -146,6 +146,7 @@ public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<I
 					String annotName = annot.getTypeName().getFullyQualifiedName();
 					if ("Parameters".equals(annotName) || ORG_JUNIT_RUNNERS_PARAMETERIZED_PARAMETERS.equals(annotName)) {
 						parametersMethod = method;
+						break;
 					}
 				}
 			}
