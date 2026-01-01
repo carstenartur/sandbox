@@ -83,7 +83,7 @@ public class InlineSequencesPlugin extends AbstractMethodReuse<MethodDeclaration
 						}
 					}
 					return false;
-				}, null);
+				});
 	}
 
 	@Override
