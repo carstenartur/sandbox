@@ -41,6 +41,7 @@ public final class JUnitConstants {
 	public static final String ANNOTATION_TIMEOUT = "Timeout";
 	public static final String ANNOTATION_SELECT_CLASSES = "SelectClasses";
 	public static final String ANNOTATION_SUITE = "Suite";
+	public static final String ANNOTATION_TAG = "Tag";
 	public static final String MOCKITO_EXTENSION = "MockitoExtension";
 	public static final String SPRING_EXTENSION = "SpringExtension";
 
@@ -82,6 +83,7 @@ public final class JUnitConstants {
 	public static final String ORG_JUNIT_ASSERT = "org.junit.Assert";
 	public static final String ORG_JUNIT_ASSUME = "org.junit.Assume";
 	public static final String ORG_JUNIT_FIX_METHOD_ORDER = "org.junit.FixMethodOrder";
+	public static final String ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORY = "org.junit.experimental.categories.Category";
 
 	// ===== JUnit 4 Runner Fully Qualified References =====
 
@@ -110,6 +112,7 @@ public final class JUnitConstants {
 	public static final String ORG_JUNIT_JUPITER_TEST = "org.junit.jupiter.api.Test";
 	public static final String ORG_JUNIT_JUPITER_API_TIMEOUT = "org.junit.jupiter.api.Timeout";
 	public static final String ORG_JUNIT_JUPITER_API_ASSUMPTIONS = "org.junit.jupiter.api.Assumptions";
+	public static final String ORG_JUNIT_JUPITER_API_TAG = "org.junit.jupiter.api.Tag";
 
 	// ===== JUnit 5 Extension Fully Qualified References =====
 
