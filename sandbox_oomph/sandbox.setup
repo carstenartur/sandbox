@@ -225,7 +225,7 @@
       Latest development version of the Sandbox Profile targeting Eclipse 2025-09.
       
       This version includes all the latest features and platform updates. It requires
-      Java 21 or newer and includes the full Eclipse Modeling Edition with all sandbox-specific
+      Java 21 or later and includes the full Eclipse Modeling Edition with all sandbox-specific
       configurations and preferences.
       
       Recommended for all active sandbox development.
@@ -247,7 +247,7 @@
     - WST for web and XML editing
     
     The profile is configured with:
-    - Java 21 as the minimum required version
+    - Java 21 or later as the minimum required version
     - 2GB heap size for optimal performance
     - UTF-8 encoding by default
     - Line numbers and whitespace characters visible in editors
