@@ -45,9 +45,11 @@ import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.ArrayInitializer;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.TypeLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
@@ -151,25 +153,34 @@ public class CategoryJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, J
 		Annotation minv= junitHolder.getAnnotation();
 		String[] categoryNames= junitHolder.value.split(",");
 		
-		// Get the parent node to insert multiple @Tag annotations
-		ASTNode parent= minv.getParent();
-		ListRewrite listRewrite= rewriter.getListRewrite(parent, parent.getLocationInParent());
+		// Determine if annotation is on a method or class and get the appropriate ListRewrite
+		ListRewrite listRewrite= null;
+		MethodDeclaration method= ASTNodes.getParent(minv, MethodDeclaration.class);
+		TypeDeclaration type= ASTNodes.getParent(minv, TypeDeclaration.class);
 		
-		// Create @Tag annotation for each category
-		for (String categoryName : categoryNames) {
-			SingleMemberAnnotation tagAnnotation= ast.newSingleMemberAnnotation();
-			tagAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_TAG));
-			
-			StringLiteral tagValue= ast.newStringLiteral();
-			tagValue.setLiteralValue(categoryName);
-			tagAnnotation.setValue(tagValue);
-			
-			// Insert the new annotation before the original one
-			listRewrite.insertBefore(tagAnnotation, minv, group);
+		if (method != null) {
+			listRewrite= rewriter.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);
+		} else if (type != null) {
+			listRewrite= rewriter.getListRewrite(type, TypeDeclaration.MODIFIERS2_PROPERTY);
 		}
 		
-		// Remove the original @Category annotation
-		listRewrite.remove(minv, group);
+		if (listRewrite != null) {
+			// Create @Tag annotation for each category
+			for (String categoryName : categoryNames) {
+				SingleMemberAnnotation tagAnnotation= ast.newSingleMemberAnnotation();
+				tagAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_TAG));
+				
+				StringLiteral tagValue= ast.newStringLiteral();
+				tagValue.setLiteralValue(categoryName);
+				tagAnnotation.setValue(tagValue);
+				
+				// Insert the new annotation before the original one
+				listRewrite.insertBefore(tagAnnotation, minv, group);
+			}
+			
+			// Remove the original @Category annotation
+			listRewrite.remove(minv, group);
+		}
 		
 		// Update imports
 		importRewriter.addImport(ORG_JUNIT_JUPITER_API_TAG);
