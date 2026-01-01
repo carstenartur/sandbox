@@ -74,12 +74,16 @@ public class TestTimeoutJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 						// Skip invalid timeout values
 						return false;
 					}
+				} else {
+					// Timeout value is not a simple number literal (could be a constant or expression)
+					// Skip this case as it requires more complex analysis
+					return false;
 				}
 				break;
 			}
 		}
 		
-		// Only process if we found a timeout parameter
+		// Only process if we found a timeout parameter with a valid numeric value
 		if (timeoutValue != null && timeoutPair != null) {
 			JunitHolder mh = new JunitHolder();
 			mh.minv = node;
@@ -102,14 +106,16 @@ public class TestTimeoutJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 		long timeoutMillis = Long.parseLong(junitHolder.value);
 		
 		// Determine the best time unit (optimize for readability)
+		// Use SECONDS if the value is >= 1000ms and evenly divisible by 1000
+		// This makes the timeout more readable (e.g., "5 seconds" vs "5000 milliseconds")
 		long timeoutValue;
 		String timeUnit;
-		if (timeoutMillis >= 1000 && timeoutMillis % 1000 == 0) {
-			// Use SECONDS if the value is divisible by 1000
+		if (timeoutMillis % 1000 == 0 && timeoutMillis >= 1000) {
+			// Use SECONDS for better readability (e.g., 1 second instead of 1000 milliseconds)
 			timeoutValue = timeoutMillis / 1000;
 			timeUnit = "SECONDS";
 		} else {
-			// Use MILLISECONDS otherwise
+			// Use MILLISECONDS for values < 1000ms or not evenly divisible by 1000
 			timeoutValue = timeoutMillis;
 			timeUnit = "MILLISECONDS";
 		}
