@@ -161,23 +161,19 @@ public class MYCleanUpConstants {
 	 */
 	public static final String JUNIT_CLEANUP_4_RUNWITH= "cleanup.junitcleanup_4_runwith"; //$NON-NLS-1$
 	/**
-	 * Migration of @Test(timeout=...) to @Timeout annotation
+	 * 
 	 */
 	public static final String JUNIT_CLEANUP_4_TEST_TIMEOUT= "cleanup.junitcleanup_4_test_timeout"; //$NON-NLS-1$
 	/**
-	 * Migration of @Test(expected=...) to assertThrows()
+	 * 
 	 */
 	public static final String JUNIT_CLEANUP_4_TEST_EXPECTED= "cleanup.junitcleanup_4_test_expected"; //$NON-NLS-1$
 	/**
-	 * Migration of @RunWith(Parameterized.class) to @ParameterizedTest
+	 * 
 	 */
 	public static final String JUNIT_CLEANUP_4_PARAMETERIZED= "cleanup.junitcleanup_4_parameterized"; //$NON-NLS-1$
 	/**
-	 * Migration of @Category to @Tag
-	 */
-	public static final String JUNIT_CLEANUP_4_CATEGORY= "cleanup.junitcleanup_4_category"; //$NON-NLS-1$
-	/**
-	 * Migration of @Rule Timeout to @Timeout
+	 * 
 	 */
 	public static final String JUNIT_CLEANUP_4_RULETIMEOUT= "cleanup.junitcleanup_4_ruletimeout"; //$NON-NLS-1$
 	/**

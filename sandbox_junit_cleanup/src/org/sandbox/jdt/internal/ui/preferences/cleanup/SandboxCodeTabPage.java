@@ -79,6 +79,21 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 		final CheckboxPreference junit_test= createCheckboxPref(junitGroup, numColumns-1,
 				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_TEST, MYCleanUpConstants.JUNIT_CLEANUP_4_TEST,
 				FALSE_TRUE);
+		
+		// Add Test timeout checkbox (depends on junit_test)
+		intent(junitGroup);
+		intent(junitGroup);
+		final CheckboxPreference junit_test_timeout= createCheckboxPref(junitGroup, numColumns-2,
+				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_TEST_TIMEOUT, MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_TIMEOUT,
+				FALSE_TRUE);
+		
+		// Add Test expected checkbox (depends on junit_test)
+		intent(junitGroup);
+		intent(junitGroup);
+		final CheckboxPreference junit_test_expected= createCheckboxPref(junitGroup, numColumns-2,
+				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_TEST_EXPECTED, MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_EXPECTED,
+				FALSE_TRUE);
+		
 		intent(junitGroup);
 		final CheckboxPreference junit_before= createCheckboxPref(junitGroup, numColumns-1,
 				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_BEFORE, MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORE,
@@ -128,20 +143,6 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 		intent(junitGroup);
 		final CheckboxPreference junit_parameterized= createCheckboxPref(junitGroup, numColumns-2,
 				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_PARAMETERIZED, MYCleanUpConstants.JUNIT_CLEANUP_4_PARAMETERIZED,
-				FALSE_TRUE);
-		
-		// Add Test timeout checkbox (depends on junit_test)
-		intent(junitGroup);
-		intent(junitGroup);
-		final CheckboxPreference junit_test_timeout= createCheckboxPref(junitGroup, numColumns-2,
-				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_TEST_TIMEOUT, MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_TIMEOUT,
-				FALSE_TRUE);
-		
-		// Add Test expected checkbox (depends on junit_test)
-		intent(junitGroup);
-		intent(junitGroup);
-		final CheckboxPreference junit_test_expected= createCheckboxPref(junitGroup, numColumns-2,
-				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_TEST_EXPECTED, MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_EXPECTED,
 				FALSE_TRUE);
 		
 		// Add Category checkbox
