@@ -194,13 +194,25 @@ public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<I
 		for (Object bodyDecl : typeDecl.bodyDeclarations()) {
 			if (bodyDecl instanceof FieldDeclaration) {
 				FieldDeclaration field = (FieldDeclaration) bodyDecl;
+				List<VariableDeclarationFragment> fragmentsToRemove = new ArrayList<>();
 				for (Object frag : field.fragments()) {
 					if (frag instanceof VariableDeclarationFragment) {
 						VariableDeclarationFragment fragment = (VariableDeclarationFragment) frag;
 						String fieldName = fragment.getName().getIdentifier();
 						if (paramFieldNames.contains(fieldName)) {
-							fieldListRewrite.remove(field, group);
-							break;
+							fragmentsToRemove.add(fragment);
+						}
+					}
+				}
+				if (!fragmentsToRemove.isEmpty()) {
+					if (fragmentsToRemove.size() == field.fragments().size()) {
+						// All fragments are parameter fields: remove entire declaration
+						fieldListRewrite.remove(field, group);
+					} else {
+						// Only some fragments are parameter fields: remove them individually
+						ListRewrite fragmentRewrite = rewriter.getListRewrite(field, FieldDeclaration.FRAGMENTS_PROPERTY);
+						for (VariableDeclarationFragment fragment : fragmentsToRemove) {
+							fragmentRewrite.remove(fragment, group);
 						}
 					}
 				}
