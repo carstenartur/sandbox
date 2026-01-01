@@ -26,39 +26,69 @@ The Method Reusability Finder is an Eclipse JDT cleanup plugin that analyzes sel
 ┌─────────────────────────────────────────────────────────┐
 │              MethodReuseCleanUpCore                      │
 │                (Core Cleanup Logic)                      │
-│  - find() - Identifies reusable methods                 │
-│  - rewrite() - Applies transformations                  │
-│  - Coordinates helper classes                           │
+│  - createFix() - Orchestrates cleanup process           │
+│  - computeFixSet() - Determines enabled fixes           │
+│  - Uses EnumSet<MethodReuseCleanUpFixCore>              │
+└─────────────────────┬───────────────────────────────────┘
+                      │
+                      ↓
+┌─────────────────────────────────────────────────────────┐
+│          MethodReuseCleanUpFixCore (Enum)                │
+│            (Fix Core Coordination)                       │
+│  - METHOD_REUSE - General similarity detection          │
+│  - INLINE_SEQUENCES - Inline code replacement           │
+│  - Each value has associated plugin                     │
+│  - findOperations() - Delegates to plugin               │
+│  - rewrite() - Creates rewrite operations               │
 └─────────────────────┬───────────────────────────────────┘
                       │
                       │ delegates to
                       ↓
-        ┌─────────────────────────────────┐
-        │       Helper Classes             │
-        │    (Analysis Services)           │
-        └─────────────────────────────────┘
-                      │
-        ┌─────────────┴─────────────┐
-        │                           │
-        ↓                           ↓
-┌──────────────────┐      ┌──────────────────┐
-│ MethodReuseFinder│      │MethodSignature   │
-│                  │      │   Analyzer       │
-│ - findSimilar()  │      │                  │
-│ - compare()      │      │ - analyze()      │
-│ - similarity()   │      │ - compare()      │
-└────────┬─────────┘      └──────────────────┘
-         │
-         ↓
-┌──────────────────┐
-│ CodePattern      │
-│   Matcher        │
-│                  │
-│ - matchAST()     │
-│ - tokenize()     │
-│ - normalize()    │
-└──────────────────┘
+        ┌──────────────────────────────────┐
+        │     AbstractMethodReuse          │
+        │   (Abstract Plugin Base)         │
+        │  - find()                        │
+        │  - rewrite()                     │
+        │  - getPreview()                  │
+        └──────────────┬───────────────────┘
+                       │
+        ┌──────────────┴──────────────────┐
+        ↓                                  ↓
+┌──────────────────┐            ┌──────────────────────┐
+│ MethodReusePlugin│            │InlineSequencesPlugin │
+│                  │            │                      │
+│ - General method │            │ - Uses Inline        │
+│   similarity     │            │   CodeSequence       │
+│   detection      │            │   Finder             │
+│   (placeholder)  │            │ - Variable mapping   │
+└──────────────────┘            └──────┬───────────────┘
+                                       │
+                        ┌──────────────┴──────────────┐
+                        ↓                             ↓
+              ┌──────────────────┐        ┌──────────────────┐
+              │ InlineCode       │        │ CodeSequence     │
+              │ SequenceFinder   │        │ Matcher          │
+              │                  │        │                  │
+              │ - findInline     │        │ - matchSequence()│
+              │   Sequences()    │        │ - Variable       │
+              └──────────────────┘        │   Mapping        │
+                                          └──────────────────┘
 ```
+
+## Pattern Used: Enum-Based Fix Core
+
+This plugin follows the **UseExplicitEncodingFixCore pattern** used elsewhere in the sandbox project:
+
+1. **Enum as Fix Core**: `MethodReuseCleanUpFixCore` is an enum with values for each fix type
+2. **Plugin Pattern**: Each enum value is associated with a plugin that extends `AbstractMethodReuse`
+3. **Delegation**: The enum delegates to plugins for find/rewrite operations
+4. **CleanUpCore Integration**: `MethodReuseCleanUpCore` uses `EnumSet` to manage enabled fixes
+
+### Benefits
+- **Separation of Concerns**: Each fix type has its own plugin class
+- **Extensibility**: Easy to add new fix types by adding enum values
+- **Consistency**: Follows established pattern in sandbox project
+- **Type Safety**: Enum provides compile-time type checking
 
 ## Core Components
 
@@ -75,142 +105,92 @@ The Method Reusability Finder is an Eclipse JDT cleanup plugin that analyzes sel
 
 ### 2. MethodReuseCleanUpCore (Core Logic)
 
-**Location**: `org.sandbox.jdt.internal.corext.fix.MethodReuseCleanUpCore`
+**Location**: `org.sandbox.jdt.internal.ui.fix.MethodReuseCleanUpCore`
 
 **Responsibilities**:
 - Implements the core cleanup algorithm
-- Coordinates helper classes for analysis
-- Manages AST traversal and method detection
-- Creates refactoring proposals
+- Uses `EnumSet<MethodReuseCleanUpFixCore>` to manage enabled fixes
+- Coordinates fix detection and application
 
 **Key Methods**:
-- `find()` - Scans AST for method declarations to analyze
-- `rewrite()` - Creates markers/warnings for similar methods found
-- `process()` - Orchestrates the analysis workflow
+- `createFix()` - Creates ICleanUpFix by delegating to enum values
+- `computeFixSet()` - Determines which fixes are enabled
+- `getPreview()` - Generates preview by aggregating from all enum values
 
-### 3. MethodReuseFinder (Similarity Analysis)
+### 3. MethodReuseCleanUpFixCore (Enum Fix Core)
 
-**Location**: `org.sandbox.jdt.internal.corext.fix.helper.MethodReuseFinder`
+**Location**: `org.sandbox.jdt.internal.corext.fix.MethodReuseCleanUpFixCore`
+
+**Enum Values**:
+- `METHOD_REUSE` - General method similarity detection (placeholder)
+- `INLINE_SEQUENCES` - Inline code sequence replacement
 
 **Responsibilities**:
-- Searches the project for similar methods
-- Computes similarity scores between methods
-- Uses both AST-based and token-based comparison
-
-**Analysis Techniques**:
-- **Token-based similarity**: Compares normalized token sequences
-- **AST-based similarity**: Compares abstract syntax tree structures
-- **Variable name normalization**: Ignores variable name differences
-- **Control flow analysis**: Matches similar control structures
+- Coordinates plugins for each fix type
+- Creates rewrite operations
+- Delegates to plugins for finding and rewriting
 
 **Key Methods**:
-- `findSimilarMethods()` - Searches project for similar code
-- `computeSimilarity()` - Calculates similarity percentage
-- `isReusable()` - Determines if method is a good refactoring candidate
+- `findOperations()` - Delegates to plugin's find() method
+- `rewrite()` - Creates CompilationUnitRewriteOperation
+- `getPreview()` - Gets preview from plugin
 
-### 4. MethodSignatureAnalyzer (Signature Analysis)
+### 4. AbstractMethodReuse (Abstract Plugin Base)
 
-**Location**: `org.sandbox.jdt.internal.corext.fix.helper.MethodSignatureAnalyzer`
+**Location**: `org.sandbox.jdt.internal.corext.fix.helper.AbstractMethodReuse`
 
 **Responsibilities**:
-- Analyzes method signatures
-- Compares parameter types and return types
-- Identifies compatible method signatures
+- Abstract base class for all method reuse plugins
+- Defines common interface for find/rewrite/preview
 
 **Key Methods**:
-- `analyzeSignature()` - Extracts signature information
-- `areCompatible()` - Determines if signatures are compatible
-- `suggestRefactoring()` - Proposes signature harmonization
+- `find()` - Find code patterns in compilation unit
+- `rewrite()` - Apply transformation to AST
+- `getPreview()` - Generate preview text
 
-### 5. CodePatternMatcher (Pattern Matching)
+### 5. MethodReusePlugin (Placeholder Plugin)
 
-**Location**: `org.sandbox.jdt.internal.corext.fix.helper.CodePatternMatcher`
+**Location**: `org.sandbox.jdt.internal.corext.fix.helper.MethodReusePlugin`
+
+**Status**: Placeholder implementation
 
 **Responsibilities**:
-- AST-based pattern matching
-- Normalizes code structures for comparison
-- Identifies common code patterns
+- General method similarity detection
+- Currently does nothing (future implementation)
 
-**Key Methods**:
-- `matchPattern()` - Matches AST patterns
-- `normalizeAST()` - Normalizes AST for comparison
-- `extractPattern()` - Extracts reusable patterns
+### 6. InlineSequencesPlugin (Active Plugin)
 
-### 6. InlineCodeSequenceFinder (Inline Detection)
+**Location**: `org.sandbox.jdt.internal.corext.fix.helper.InlineSequencesPlugin`
 
-**Location**: `org.sandbox.jdt.internal.corext.fix.helper.InlineCodeSequenceFinder`
+**Status**: Structure implemented, core logic pending
 
 **Responsibilities**:
-- Searches method bodies for inline code sequences
-- Finds code that matches a target method's body
-- Identifies refactoring opportunities within methods
+- Find inline code sequences matching method bodies
+- Replace inline sequences with method calls
+- Use variable mapping for correct parameter mapping
 
-**Key Methods**:
-- `findInlineSequences()` - Searches for matching inline code
-- `searchInMethod()` - Examines individual methods for matches
-- `InlineSequenceMatch` - Result class with match details
+**Uses**:
+- `InlineCodeSequenceFinder` - Searches for matching sequences
+- `CodeSequenceMatcher` - Matches with variable normalization
+- `VariableMapping` - Tracks variable name mappings
 
-### 7. CodeSequenceMatcher (Sequence Matching)
+### 7. Helper Classes (lib package)
 
-**Location**: `org.sandbox.jdt.internal.corext.fix.helper.CodeSequenceMatcher`
+All located in `org.sandbox.jdt.internal.corext.fix.helper.lib`:
 
-**Responsibilities**:
-- AST subtree matching with variable normalization
-- Recognizes structurally equivalent code with different variable names
-- Creates variable mappings between target and candidate code
-
-**Key Methods**:
-- `matchSequence()` - Matches statement sequences
-- `matchStatement()` - Matches individual statements
-- `VariableMappingMatcher` - Custom ASTMatcher for variable tracking
-
-### 8. VariableMapping (Variable Tracking)
-
-**Location**: `org.sandbox.jdt.internal.corext.fix.helper.VariableMapping`
-
-**Responsibilities**:
-- Tracks variable name mappings
-- Ensures consistent bidirectional mappings
-- Validates mapping consistency
-
-**Key Methods**:
-- `addMapping()` - Adds or verifies a variable mapping
-- `getCandidateName()` - Looks up mapped name
-- `isValid()` - Checks if mapping is valid
-
-### 9. MethodCallReplacer (Code Generation)
-
-**Location**: `org.sandbox.jdt.internal.corext.fix.helper.MethodCallReplacer`
-
-**Responsibilities**:
-- Generates method invocation replacement code
-- Creates argument lists based on variable mapping
-- Applies AST rewrites to replace code sequences
-
-**Key Methods**:
-- `createMethodCall()` - Creates a method invocation node
-- `replaceWithMethodCall()` - Applies the replacement
-- `canCreateMethodCall()` - Validates replacement feasibility
-
-### 10. SideEffectAnalyzer (Safety Analysis)
-
-**Location**: `org.sandbox.jdt.internal.corext.fix.helper.SideEffectAnalyzer`
-
-**Responsibilities**:
-- Analyzes semantic safety of replacements
-- Detects field modifications and side effects
-- Checks for complex control flow
-
-**Key Methods**:
-- `isSafeToReplace()` - Determines if replacement is safe
-- `hasFieldModifications()` - Checks for field modifications
-- `hasUnsafeMethodCalls()` - Checks for potentially unsafe calls
+- **InlineCodeSequenceFinder**: Searches method bodies for matching code sequences
+- **CodeSequenceMatcher**: AST-based matching with variable normalization
+- **VariableMapping**: Bidirectional variable name mapping
+- **MethodSignatureAnalyzer**: Analyzes method signatures
+- **MethodCallReplacer**: Generates method invocation code
+- **CodePatternMatcher**: Pattern matching utilities
+- **SideEffectAnalyzer**: Safety analysis for transformations
 
 ## Configuration
 
 Cleanup options are defined in `MYCleanUpConstants`:
-- `METHOD_REUSE_CLEANUP` - Enable/disable the cleanup
-- `METHOD_REUSE_INLINE_SEQUENCES` - Enable inline code sequence detection
+- `METHOD_REUSE_CLEANUP` - Enable/disable general method reuse detection
+- `METHOD_REUSE_INLINE_SEQUENCES` - Enable/disable inline sequence detection
 
 ## Integration Points
 
@@ -221,7 +201,21 @@ Cleanup options are defined in `MYCleanUpConstants`:
 - `org.eclipse.jdt.core` - JDT core APIs
 - `org.eclipse.jdt.ui` - JDT UI integration
 - `org.eclipse.jdt.core.manipulation` - AST manipulation
-- `sandbox_common` - Shared utilities
+- `sandbox_common` - Shared utilities (ReferenceHolder)
+
+## Design Decisions
+
+### Why Enum Pattern?
+Following the `UseExplicitEncodingFixCore` pattern provides:
+- **Consistency**: Same pattern as other sandbox plugins
+- **Maintainability**: Clear separation between fix types
+- **Extensibility**: Easy to add new fix types
+- **Type Safety**: Compile-time checking
+
+### Why Separate lib Package?
+- **Reusability**: Helper classes can be used by multiple plugins
+- **Testability**: Easier to unit test in isolation
+- **Organization**: Clear distinction between plugins and utilities
 
 ## Future Enhancements
 
@@ -233,9 +227,21 @@ Cleanup options are defined in `MYCleanUpConstants`:
 
 ## Implementation Status
 
-This is a new plugin being developed to help developers identify code reuse opportunities. The initial implementation focuses on:
-- Basic method similarity detection
-- AST-based pattern matching
-- Integration with Eclipse cleanup framework
+### Completed (2025-01-01)
+- ✅ Enum-based architecture following UseExplicitEncodingFixCore pattern
+- ✅ AbstractMethodReuse base class in helper package
+- ✅ MethodReusePlugin placeholder
+- ✅ InlineSequencesPlugin structure
+- ✅ MethodReuseCleanUpCore using EnumSet pattern
+- ✅ Test infrastructure enabled
 
-See TODO.md for pending features and improvements.
+### In Progress
+- 🔄 InlineSequencesPlugin find() and rewrite() implementation
+- 🔄 Integration testing
+
+### Pending
+- ⏳ MethodReusePlugin implementation
+- ⏳ Performance optimization
+- ⏳ Advanced features
+
+See TODO.md for detailed pending items.
