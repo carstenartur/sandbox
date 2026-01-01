@@ -18,6 +18,7 @@ import java.util.Set;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.internal.core.manipulation.JavaManipulationPlugin;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
@@ -25,6 +26,7 @@ import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.helper.InlineSequencesPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.MethodReusePlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractMethodReuse;
 import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
@@ -37,6 +39,7 @@ import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
  */
 public enum MethodReuseCleanUpFixCore {
 
+	METHOD_REUSE(new MethodReusePlugin()),
 	INLINE_SEQUENCES(new InlineSequencesPlugin());
 
 	private final AbstractMethodReuse<?> tool;
@@ -59,7 +62,11 @@ public enum MethodReuseCleanUpFixCore {
 	 */
 	public void findOperations(final CompilationUnit compilationUnit,
 			final Set<CompilationUnitRewriteOperation> operations, final Set<ASTNode> nodesprocessed) {
-		tool.find(this, compilationUnit, operations, nodesprocessed);
+		try {
+			tool.find(this, compilationUnit, operations, nodesprocessed);
+		} catch (CoreException e) {
+			JavaManipulationPlugin.log(e);
+		}
 	}
 
 	/**
