@@ -86,6 +86,11 @@ public class CodeSequenceMatcher {
 				return false;
 			}
 			
+			// Defensive check: ensure fragment list is not empty before accessing index 0
+			if (varDecl.fragments().isEmpty()) {
+				return false;
+			}
+			
 			org.eclipse.jdt.core.dom.VariableDeclarationFragment fragment = 
 				(org.eclipse.jdt.core.dom.VariableDeclarationFragment) varDecl.fragments().get(0);
 			
@@ -141,6 +146,9 @@ public class CodeSequenceMatcher {
 				return true;
 			}
 			
+			// For all other ASTNode kinds (e.g., Statement, Type, etc.) we intentionally do not
+			// create a mapping and report "no match" to avoid binding a SimpleName placeholder
+			// to structurally larger constructs.
 			return false;
 		}
 	}

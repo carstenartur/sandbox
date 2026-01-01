@@ -59,6 +59,11 @@ public class VariableMapping {
 	 * Used when the candidate uses a complex expression (like a method call) 
 	 * where the target uses a simple variable
 	 * 
+	 * Note: This method does not perform bidirectional consistency checking like addMapping.
+	 * Callers are responsible for ensuring expression mappings don't conflict with existing
+	 * name mappings. If a simple name mapping already exists for the target name, it will
+	 * be overridden by the expression mapping.
+	 * 
 	 * @param targetName Variable name in target code
 	 * @param candidateExpr Expression in candidate code
 	 */

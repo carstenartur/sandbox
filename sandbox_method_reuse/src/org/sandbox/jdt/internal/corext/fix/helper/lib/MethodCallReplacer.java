@@ -83,6 +83,11 @@ public class MethodCallReplacer {
 					Expression argExpr = (Expression) org.eclipse.jdt.core.dom.ASTNode.copySubtree(ast, candidateExpr);
 					arguments.add(argExpr);
 					continue;
+				} else if (exprMappings != null && exprMappings.containsKey(paramName)) {
+					// An expression mapping exists but the mapped expression is null - treat as mapping error
+					SimpleName arg = ast.newSimpleName("/* mapping error */");
+					arguments.add(arg);
+					continue;
 				}
 			}
 			
