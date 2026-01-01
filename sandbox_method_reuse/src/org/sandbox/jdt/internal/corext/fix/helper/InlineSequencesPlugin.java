@@ -101,8 +101,9 @@ public class InlineSequencesPlugin extends AbstractMethodReuse<MethodDeclaration
 			return;
 		}
 		
+		// Important: Get the AST from cuRewrite's root, not from the original nodes
+		AST ast = cuRewrite.getRoot().getAST();
 		ASTRewrite rewrite = cuRewrite.getASTRewrite();
-		AST ast = rewrite.getAST();
 		
 		// Set up tight source range computer
 		TightSourceRangeComputer rangeComputer;
