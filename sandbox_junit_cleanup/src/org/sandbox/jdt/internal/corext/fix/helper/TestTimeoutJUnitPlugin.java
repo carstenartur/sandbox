@@ -172,11 +172,11 @@ public class TestTimeoutJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 			rewriter.remove(timeoutPair, group);
 		}
 		
-		// Add imports
+		// Add imports - order matters: remove old import first, then add new imports
+		importRewriter.removeImport(ORG_JUNIT_TEST);
 		importRewriter.addImport(ORG_JUNIT_JUPITER_TEST);
 		importRewriter.addImport(ORG_JUNIT_JUPITER_API_TIMEOUT);
 		importRewriter.addImport("java.util.concurrent.TimeUnit");
-		importRewriter.removeImport(ORG_JUNIT_TEST);
 	}
 
 	@Override
