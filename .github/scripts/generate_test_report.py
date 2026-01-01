@@ -90,11 +90,11 @@ class TestScanner:
             for j in range(max(0, i-10), i):
                 prev_line = lines[j].strip()
                 
-                if '@Test' in prev_line:
+                if re.search(r'@Test(?![a-zA-Z])', prev_line):
                     test_annotation = 'Test'
-                elif '@ParameterizedTest' in prev_line:
+                elif re.search(r'@ParameterizedTest\b', prev_line):
                     test_annotation = 'ParameterizedTest'
-                elif '@RepeatedTest' in prev_line:
+                elif re.search(r'@RepeatedTest\b', prev_line):
                     test_annotation = 'RepeatedTest'
                     
                 # Check for @Disabled
@@ -213,8 +213,8 @@ class TestScanner:
         lines.append(f"- **Total Test Modules:** {len(summaries)}")
         lines.append(f"- **Total Test Files:** {total_files}")
         lines.append(f"- **Total Tests:** {total_tests}")
-        lines.append(f"- **Enabled Tests:** {total_enabled} ({100*total_enabled//total_tests if total_tests > 0 else 0}%)")
-        lines.append(f"- **Disabled Tests:** {total_disabled} ({100*total_disabled//total_tests if total_tests > 0 else 0}%)\n")
+        lines.append(f"- **Enabled Tests:** {total_enabled} ({round(100*total_enabled/total_tests, 1) if total_tests > 0 else 0}%)")
+        lines.append(f"- **Disabled Tests:** {total_disabled} ({round(100*total_disabled/total_tests, 1) if total_tests > 0 else 0}%)\n")
         
         # Per-plugin summary table
         lines.append("## Test Summary by Plugin\n")
@@ -223,7 +223,7 @@ class TestScanner:
         
         for plugin_name in sorted(summaries.keys()):
             summary = summaries[plugin_name]
-            disabled_pct = (100 * summary.disabled_tests // summary.total_tests) if summary.total_tests > 0 else 0
+            disabled_pct = round(100 * summary.disabled_tests / summary.total_tests, 1) if summary.total_tests > 0 else 0
             lines.append(
                 f"| {summary.plugin_name} | {summary.test_files} | {summary.total_tests} | "
                 f"{summary.enabled_tests} | {summary.disabled_tests} | {disabled_pct}% |"
