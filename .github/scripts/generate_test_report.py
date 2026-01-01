@@ -99,19 +99,28 @@ class TestScanner:
                     
                 # Check for @Disabled
                 if '@Disabled' in prev_line:
-                    is_disabled = True
-                    # Extract reason if present
-                    reason_match = re.search(r'@Disabled\s*\(\s*["\']([^"\']+)["\']\s*\)', prev_line)
-                    if reason_match:
-                        disabled_reason = reason_match.group(1)
+                    # Distinguish between real and commented-out @Disabled annotations
+                    comment_pos = prev_line.find('//')
+                    disabled_pos = prev_line.find('@Disabled')
+                    if comment_pos != -1 and comment_pos < disabled_pos:
+                        # This is a commented-out disabled annotation; ensure the test is treated as enabled
+                        is_disabled = False
+                        disabled_reason = ""
                     else:
-                        disabled_reason = "No reason specified"
-                        
-                # Check for commented @Disabled
+                        is_disabled = True
+                        # Extract reason if present
+                        reason_match = re.search(r'@Disabled\s*\(\s*["\']([^"\']+)["\']\s*\)', prev_line)
+                        if reason_match:
+                            disabled_reason = reason_match.group(1)
+                        else:
+                            disabled_reason = "No reason specified"
+
+                # Check for commented @Disabled (already handled above, kept for clarity)
                 if '//' in prev_line and '@Disabled' in prev_line:
-                    # This is a commented-out disabled annotation
+                    # This is a commented-out disabled annotation; any previously set disabled flag has been cleared
                     # The test is actually enabled
-                    pass
+                    is_disabled = False
+                    disabled_reason = ""
             
             # Check if current line is a method declaration
             method_match = re.match(r'\s*(?:public|private|protected)?\s+(?:static\s+)?(?:void|\w+)\s+(\w+)\s*\(', line)
