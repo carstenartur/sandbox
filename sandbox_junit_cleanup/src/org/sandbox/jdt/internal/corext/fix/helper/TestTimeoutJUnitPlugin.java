@@ -148,9 +148,17 @@ public class TestTimeoutJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 		}
 		
 		// Remove the timeout parameter from @Test annotation
-		// Note: We simply remove the parameter value pair, which will effectively
-		// convert @Test(timeout=...) to @Test
-		rewriter.remove(timeoutPair, group);
+		// If the timeout is the only parameter, replace the NormalAnnotation with a MarkerAnnotation
+		// to avoid leaving an empty @Test() annotation.
+		@SuppressWarnings("unchecked")
+		List<MemberValuePair> testValues = testAnnotation.values();
+		if (testValues.size() == 1 && testValues.get(0) == timeoutPair) {
+			MarkerAnnotation markerTestAnnotation = ast.newMarkerAnnotation();
+			markerTestAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_TEST));
+			ASTNodes.replaceButKeepComment(rewriter, testAnnotation, markerTestAnnotation, group);
+		} else {
+			rewriter.remove(timeoutPair, group);
+		}
 		
 		// Add imports
 		importRewriter.addImport(ORG_JUNIT_JUPITER_TEST);
