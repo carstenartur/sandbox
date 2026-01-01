@@ -135,7 +135,6 @@ public class MethodReuseCleanUpTest {
 		}
 	}
 
-	@Disabled("Not yet fully implemented - core algorithm in place but integration pending")
 	@ParameterizedTest
 	@EnumSource(MethodReuseScenarios.class)
 	public void testMethodReuse(MethodReuseScenarios test) throws CoreException {

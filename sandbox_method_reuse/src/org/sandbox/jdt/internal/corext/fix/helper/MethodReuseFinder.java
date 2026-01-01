@@ -15,27 +15,24 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.List;
 
-import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
-import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractMethodReuse;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.InlineCodeSequenceFinder;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.InlineCodeSequenceFinder.InlineSequenceMatch;
 
 /**
- * Method Reuse Finder - Searches for similar methods in the codebase
+ * Method Reuse Finder - Utility class for finding method reuse opportunities
  * 
- * This class analyzes methods to find potential reuse opportunities
- * by comparing code structures, token sequences, and control flow.
+ * This class provides static helper methods for analyzing methods to find potential
+ * reuse opportunities by comparing code structures, token sequences, and control flow.
  * It also finds inline code sequences that match method bodies.
  */
-public class MethodReuseFinder extends AbstractMethodReuse<ClassInstanceCreation>{
+public class MethodReuseFinder {
 	
 	/**
 	 * Find similar methods in the project
 	 * 
 	 * @param method The method to analyze
-	 * @return List of similar methods found (placeholder)
 	 */
 	public static void findSimilarMethods(MethodDeclaration method) {
 		// TODO: Implement similarity search
@@ -91,13 +88,5 @@ public class MethodReuseFinder extends AbstractMethodReuse<ClassInstanceCreation
 		// - Trivial getters/setters
 		// - Already extracted utilities
 		return method != null && method.getBody() != null;
-	}
-	
-	@Override
-	public String getPreview(boolean afterRefactoring) {
-		if (afterRefactoring) {
-			return "IStatus status = Status.info(message);\n"; //$NON-NLS-1$
-		}
-		return "IStatus status = new Status(IStatus.INFO, UIPlugin.PLUGIN_ID, IStatus.OK, message, null));\n"; //$NON-NLS-1$
 	}
 }

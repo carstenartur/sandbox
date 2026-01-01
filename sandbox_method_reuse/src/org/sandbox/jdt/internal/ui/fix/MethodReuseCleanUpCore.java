@@ -17,15 +17,23 @@ import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.METHOD_REU
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.METHOD_REUSE_INLINE_SEQUENCES;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
+import org.sandbox.jdt.internal.corext.fix.MethodReuseCleanUpFixCore;
 
 /**
  * Method Reuse Cleanup Core - Core cleanup logic
@@ -57,23 +65,33 @@ public class MethodReuseCleanUpCore extends AbstractCleanUp {
 		if (compilationUnit == null) {
 			return null;
 		}
-		if (!isEnabled(METHOD_REUSE_CLEANUP) && !isEnabled(METHOD_REUSE_INLINE_SEQUENCES)) {
+		
+		EnumSet<MethodReuseCleanUpFixCore> fixSet = computeFixSet();
+		if (fixSet.isEmpty()) {
 			return null;
 		}
 		
-		// TODO: Implement method similarity detection
-		// This is a placeholder implementation
-		// Real implementation would:
-		// 1. Find all methods in the compilation unit
-		// 2. For each method, search for similar methods in the project
-		// 3. Create markers/warnings for detected duplicates
-		// 4. Optionally suggest refactoring
+		Set<CompilationUnitRewriteOperation> operations = new LinkedHashSet<>();
+		Set<ASTNode> nodesprocessed = new HashSet<>();
+		fixSet.forEach(fix -> fix.findOperations(compilationUnit, operations, nodesprocessed));
 		
-		// For inline sequences detection:
-		// This would be integrated with the MethodReuseFinder to detect
-		// inline code sequences that can be replaced with method calls
+		if (operations.isEmpty()) {
+			return null;
+		}
 		
-		return null;
+		return new CompilationUnitRewriteOperationsFixCore("Method Reuse Cleanup", compilationUnit,
+				operations.toArray(new CompilationUnitRewriteOperation[0]));
+	}
+	
+	private EnumSet<MethodReuseCleanUpFixCore> computeFixSet() {
+		EnumSet<MethodReuseCleanUpFixCore> fixSet = EnumSet.noneOf(MethodReuseCleanUpFixCore.class);
+		if (isEnabled(METHOD_REUSE_CLEANUP)) {
+			fixSet.add(MethodReuseCleanUpFixCore.METHOD_REUSE);
+		}
+		if (isEnabled(METHOD_REUSE_INLINE_SEQUENCES)) {
+			fixSet.add(MethodReuseCleanUpFixCore.INLINE_SEQUENCES);
+		}
+		return fixSet;
 	}
 
 	@Override
@@ -90,48 +108,9 @@ public class MethodReuseCleanUpCore extends AbstractCleanUp {
 
 	@Override
 	public String getPreview() {
-		if (isEnabled(METHOD_REUSE_CLEANUP)) {
-			return """
-				// Before:
-				void method1() {
-					int x = 0;
-					x++;
-					System.out.println(x);
-				}
-				
-				void method2() {
-					int y = 0;
-					y++;
-					System.out.println(y);
-				}
-				
-				// After: Method reuse opportunity detected
-				// (warning marker would appear)
-				""";
-		}
-		if (isEnabled(METHOD_REUSE_INLINE_SEQUENCES)) {
-			return """
-				// Before:
-				String formatName(String first, String last) {
-					return first.trim() + " " + last.trim();
-				}
-				
-				void printUser(String firstName, String lastName) {
-					String name = firstName.trim() + " " + lastName.trim();
-					System.out.println(name);
-				}
-				
-				// After:
-				String formatName(String first, String last) {
-					return first.trim() + " " + last.trim();
-				}
-				
-				void printUser(String firstName, String lastName) {
-					String name = formatName(firstName, lastName);
-					System.out.println(name);
-				}
-				""";
-		}
-		return "";
+		StringBuilder sb = new StringBuilder();
+		EnumSet<MethodReuseCleanUpFixCore> computeFixSet = computeFixSet();
+		EnumSet.allOf(MethodReuseCleanUpFixCore.class).forEach(e -> sb.append(e.getPreview(computeFixSet.contains(e))));
+		return sb.toString();
 	}
 }
