@@ -393,7 +393,12 @@ public final class ProspectiveOperation {
 
 		case FOREACH:
 			// For FOREACH: x -> { <stmt> } (no return)
-			if (originalStatement != null) {
+			// Check originalExpression first for single expression statements
+			if (originalExpression != null && originalStatement instanceof org.eclipse.jdt.core.dom.ExpressionStatement) {
+				// For FOREACH with a single expression (from ExpressionStatement):
+				// Use the expression directly as lambda body (without block)
+				lambda.setBody(ASTNode.copySubtree(ast, originalExpression));
+			} else if (originalStatement != null) {
 				if (originalStatement instanceof org.eclipse.jdt.core.dom.Block) {
 					lambda.setBody(ASTNode.copySubtree(ast, originalStatement));
 				} else {
