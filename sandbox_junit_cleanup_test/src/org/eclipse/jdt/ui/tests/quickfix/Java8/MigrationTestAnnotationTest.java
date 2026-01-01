@@ -292,6 +292,10 @@ public class MigrationTestAnnotationTest {
 
 	@Test
 	public void migrates_test_timeout_with_other_parameters() throws CoreException {
+		// This test verifies that the timeout parameter is removed while preserving other parameters.
+		// Note: The 'expected' parameter is not yet supported in JUnit 5 and will be handled by a
+		// separate migration plugin (see MigrationExceptionsTest). This test focuses on ensuring
+		// the timeout migration works correctly even when other parameters are present.
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
 				"""
