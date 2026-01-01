@@ -178,7 +178,7 @@
     2. Imports all Eclipse plugin projects with nested project detection
     3. Configures Java 21 as the JRE for compilation
     4. Sets up JDT preferences for resource leak detection
-    5. Configures editor preferences (whitespace visibility, encoding)
+    5. Configures editor preferences (whitespace visibility)
     6. Creates working sets to organize sandbox-related projects
     7. Builds all imported projects automatically
     
