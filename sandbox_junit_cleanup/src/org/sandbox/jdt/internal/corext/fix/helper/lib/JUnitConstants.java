@@ -52,6 +52,7 @@ public final class JUnitConstants {
 	public static final String METHOD_BEFORE_ALL = "beforeAll";
 	public static final String METHOD_AFTER = "after";
 	public static final String METHOD_BEFORE = "before";
+	public static final String METHOD_ASSERT_THROWS = "assertThrows";
 
 	// ===== Internal Class/Interface Names =====
 
