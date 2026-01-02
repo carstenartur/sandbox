@@ -201,7 +201,8 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 	 */
 	private ArgumentPattern analyzeArgumentPattern(Expression first, Expression third) {
 		ITypeBinding firstType = first.resolveTypeBinding();
-		boolean firstIsString = firstType != null && "java.lang.String".equals(firstType.getQualifiedName());
+		boolean firstIsStringLiteral = (first instanceof StringLiteral) || 
+				(firstType != null && "java.lang.String".equals(firstType.getQualifiedName()) && isConstantExpression(first));
 		
 		ITypeBinding thirdType = third.resolveTypeBinding();
 		boolean thirdIsString = thirdType != null && "java.lang.String".equals(thirdType.getQualifiedName());
@@ -209,7 +210,7 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 		boolean thirdIsNumeric = third instanceof NumberLiteral || 
 				(thirdType != null && (thirdType.isPrimitive() || isNumericWrapperType(thirdType)));
 		
-		if (firstIsString) {
+		if (firstIsStringLiteral) {
 			return ArgumentPattern.JUNIT4_WITH_MESSAGE;
 		} else if (thirdIsString) {
 			return ArgumentPattern.JUNIT5_WITH_MESSAGE;
