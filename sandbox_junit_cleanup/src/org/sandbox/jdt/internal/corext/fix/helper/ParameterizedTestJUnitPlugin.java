@@ -242,12 +242,11 @@ public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<I
 		importRewriter.removeImport(ORG_JUNIT_RUNNERS_PARAMETERIZED_PARAMETERS);
 		importRewriter.removeImport("java.util.Arrays");
 		importRewriter.removeImport("java.util.Collection");
-		// Add imports in reverse alphabetical order so Eclipse's sorting produces the expected result
-		// Expected order: org.junit.jupiter.params.ParameterizedTest, org.junit.jupiter.params.provider.MethodSource, java.util.stream.Stream
+		// Add imports for JUnit 5 parameterized tests
 		importRewriter.addImport("java.util.stream.Stream");
+		importRewriter.addImport(ORG_JUNIT_JUPITER_PARAMS_PROVIDER_ARGUMENTS);
 		importRewriter.addImport(ORG_JUNIT_JUPITER_PARAMS_PROVIDER_METHOD_SOURCE);
 		importRewriter.addImport(ORG_JUNIT_JUPITER_PARAMS_PARAMETERIZED_TEST);
-		// Note: Arguments is used with fully qualified name, not imported
 	}
 	
 	/**
@@ -273,10 +272,10 @@ public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<I
 			}
 		}
 		
-		// Change return type to Stream<org.junit.jupiter.params.provider.Arguments>
-		// Use fully qualified Arguments name to avoid import conflicts
+		// Change return type to Stream<Arguments>
+		// Use short name for Arguments with proper import
 		Type streamType = ast.newSimpleType(ast.newSimpleName("Stream"));
-		Type argumentsType = ast.newSimpleType(ast.newName(ORG_JUNIT_JUPITER_PARAMS_PROVIDER_ARGUMENTS));
+		Type argumentsType = ast.newSimpleType(ast.newSimpleName("Arguments"));
 		Type newReturnType = ast.newParameterizedType(streamType);
 		((org.eclipse.jdt.core.dom.ParameterizedType) newReturnType).typeArguments().add(argumentsType);
 		rewriter.set(method, MethodDeclaration.RETURN_TYPE2_PROPERTY, newReturnType, group);
@@ -297,9 +296,9 @@ public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<I
 					streamOf.setName(ast.newSimpleName("of"));
 					
 					for (Expression row : dataRows) {
-						// Create Arguments.of(...) for each row using fully qualified name
+						// Create Arguments.of(...) for each row using short name
 						MethodInvocation argumentsOf = ast.newMethodInvocation();
-						argumentsOf.setExpression(ast.newName(ORG_JUNIT_JUPITER_PARAMS_PROVIDER_ARGUMENTS));
+						argumentsOf.setExpression(ast.newSimpleName("Arguments"));
 						argumentsOf.setName(ast.newSimpleName("of"));
 						
 						// Extract values from the row

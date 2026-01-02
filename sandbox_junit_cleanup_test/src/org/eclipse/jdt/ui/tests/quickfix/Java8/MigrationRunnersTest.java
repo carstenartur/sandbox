@@ -124,9 +124,10 @@ public class MigrationRunnersTest {
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
 				"""
 				package test;
-				import org.junit.jupiter.params.ParameterizedTest;
-				import org.junit.jupiter.params.provider.MethodSource;
 				import java.util.stream.Stream;
+				import org.junit.jupiter.params.ParameterizedTest;
+				import org.junit.jupiter.params.provider.Arguments;
+				import org.junit.jupiter.params.provider.MethodSource;
 				
 				public class MyParameterizedTest {
 					@ParameterizedTest
@@ -135,11 +136,11 @@ public class MigrationRunnersTest {
 						assertEquals(expected, input * 2);
 					}
 					
-					static Stream<org.junit.jupiter.params.provider.Arguments> data() {
+					static Stream<Arguments> data() {
 						return Stream.of(
-							org.junit.jupiter.params.provider.Arguments.of(1, 2),
-							org.junit.jupiter.params.provider.Arguments.of(2, 4),
-							org.junit.jupiter.params.provider.Arguments.of(3, 6)
+							Arguments.of(1, 2),
+							Arguments.of(2, 4),
+							Arguments.of(3, 6)
 						);
 					}
 				}
