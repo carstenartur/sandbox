@@ -74,7 +74,7 @@ public enum JUnitCleanUpFixCore {
 	RULETEMPORARYFOLDER(new RuleTemporayFolderJUnitPlugin()),
 	RULEEXPECTEDEXCEPTION(new RuleExpectedExceptionJUnitPlugin()),
 	EXTERNALRESOURCE(new ExternalResourceJUnitPlugin()),
-	LOSTTESTS(new LostTestFinderJUnitPlugin());
+	LOSTTESTS(new LostTestFinderJUnitPlugin()),
 	PARAMETERIZED(new ParameterizedTestJUnitPlugin());
 
 	AbstractTool<ReferenceHolder<Integer, JunitHolder>> junitfound;
