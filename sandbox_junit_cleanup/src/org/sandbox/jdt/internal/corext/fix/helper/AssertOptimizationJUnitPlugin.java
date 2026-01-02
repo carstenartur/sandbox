@@ -20,13 +20,25 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ArrayCreation;
+import org.eclipse.jdt.core.dom.ArrayInitializer;
+import org.eclipse.jdt.core.dom.BooleanLiteral;
+import org.eclipse.jdt.core.dom.CharacterLiteral;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.NullLiteral;
+import org.eclipse.jdt.core.dom.NumberLiteral;
 import org.eclipse.jdt.core.dom.PrefixExpression;
+import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.TypeLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
@@ -40,32 +52,56 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 /**
- * Optimizes JUnit assertions by converting generic assertions to more specific ones.
+ * Optimizes JUnit assertions by converting generic assertions to more specific ones
+ * and correcting parameter order (expected/actual).
  * 
  * Examples:
  * - assertTrue(a == b) → assertEquals(a, b)
  * - assertTrue(obj == null) → assertNull(obj)
  * - assertTrue(!condition) → assertFalse(condition)
  * - assertTrue(a.equals(b)) → assertEquals(a, b)
+ * - assertEquals(getActual(), EXPECTED) → assertEquals(EXPECTED, getActual())
  */
 public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
+
+	/**
+	 * Assertion methods that have expected/actual parameter order.
+	 * First parameter should be expected (constant/literal), second should be actual (computed).
+	 */
+	private static final Set<String> METHODS_WITH_EXPECTED_ACTUAL = Set.of(
+		"assertEquals",
+		"assertNotEquals",
+		"assertArrayEquals",
+		"assertSame",
+		"assertNotSame",
+		"assertIterableEquals",  // JUnit 5 only
+		"assertLinesMatch"       // JUnit 5 only
+	);
 
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder = new ReferenceHolder<>();
 		
-		// Find assertTrue calls
+		// Find assertTrue calls for optimization
 		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSERT, "assertTrue", compilationUnit, dataHolder,
 				nodesprocessed, (visited, aholder) -> processAssertion(fixcore, operations, visited, aholder, true));
 		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_JUPITER_API_ASSERTIONS, "assertTrue", compilationUnit, dataHolder,
 				nodesprocessed, (visited, aholder) -> processAssertion(fixcore, operations, visited, aholder, true));
 		
-		// Find assertFalse calls
+		// Find assertFalse calls for optimization
 		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSERT, "assertFalse", compilationUnit, dataHolder,
 				nodesprocessed, (visited, aholder) -> processAssertion(fixcore, operations, visited, aholder, false));
 		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_JUPITER_API_ASSERTIONS, "assertFalse", compilationUnit, dataHolder,
 				nodesprocessed, (visited, aholder) -> processAssertion(fixcore, operations, visited, aholder, false));
+		
+		// Find assertion calls with expected/actual parameters for parameter order correction
+		METHODS_WITH_EXPECTED_ACTUAL.forEach(methodName -> {
+			HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSERT, methodName, compilationUnit, dataHolder,
+					nodesprocessed, (visited, aholder) -> processParameterOrder(fixcore, operations, visited, aholder));
+			HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_JUPITER_API_ASSERTIONS, methodName, compilationUnit, dataHolder,
+					nodesprocessed, (visited, aholder) -> processParameterOrder(fixcore, operations, visited, aholder));
+		});
 	}
 
 	private boolean processAssertion(JUnitCleanUpFixCore fixcore,
@@ -109,6 +145,145 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 		return addStandardRewriteOperation(fixcore, operations, node, dataHolder);
 	}
 
+	/**
+	 * Processes assertion method calls to check if parameters need to be swapped.
+	 * Swaps parameters if the second parameter is a constant but the first is not.
+	 */
+	private boolean processParameterOrder(JUnitCleanUpFixCore fixcore,
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, ASTNode node,
+			ReferenceHolder<Integer, JunitHolder> dataHolder) {
+		
+		if (!(node instanceof MethodInvocation)) {
+			return false;
+		}
+		
+		MethodInvocation mi = (MethodInvocation) node;
+		List<?> arguments = mi.arguments();
+		
+		// Need at least 2 arguments (expected, actual) or 3 with message
+		if (arguments.size() < 2) {
+			return false;
+		}
+		
+		// Get first two arguments (they might be expected/actual or message/expected depending on JUnit version)
+		Expression first = (Expression) arguments.get(0);
+		Expression second = (Expression) arguments.get(1);
+		
+		// Check if first argument is a String message (JUnit 4 style)
+		ITypeBinding firstType = first.resolveTypeBinding();
+		boolean firstIsMessage = firstType != null && "java.lang.String".equals(firstType.getQualifiedName());
+		
+		Expression expectedParam;
+		Expression actualParam;
+		
+		if (firstIsMessage && arguments.size() >= 3) {
+			// JUnit 4: message, expected, actual
+			expectedParam = (Expression) arguments.get(1);
+			actualParam = (Expression) arguments.get(2);
+		} else {
+			// JUnit 5: expected, actual [, message]
+			expectedParam = first;
+			actualParam = second;
+		}
+		
+		// If expected is not constant but actual is constant, we need to swap
+		if (!isConstantExpression(expectedParam) && isConstantExpression(actualParam)) {
+			return addStandardRewriteOperation(fixcore, operations, node, dataHolder);
+		}
+		
+		return false;
+	}
+
+	/**
+	 * Determines if an expression is a constant value.
+	 * Constants include literals, final fields, enums, class literals, array literals,
+	 * and collection factory methods with constant arguments.
+	 */
+	private boolean isConstantExpression(Expression expr) {
+		if (expr == null) {
+			return false;
+		}
+		
+		// Literals
+		if (expr instanceof NumberLiteral || expr instanceof StringLiteral || 
+			expr instanceof BooleanLiteral || expr instanceof CharacterLiteral ||
+			expr instanceof NullLiteral || expr instanceof TypeLiteral) {
+			return true;
+		}
+		
+		// Final fields and enum constants
+		if (expr instanceof SimpleName) {
+			SimpleName name = (SimpleName) expr;
+			IVariableBinding binding = (IVariableBinding) name.resolveBinding();
+			if (binding != null && binding.isField()) {
+				int modifiers = binding.getModifiers();
+				return Modifier.isFinal(modifiers) || Modifier.isStatic(modifiers) || binding.isEnumConstant();
+			}
+		}
+		
+		// Qualified names (e.g., MyClass.CONSTANT)
+		if (expr instanceof QualifiedName) {
+			QualifiedName qname = (QualifiedName) expr;
+			IVariableBinding binding = (IVariableBinding) qname.resolveBinding();
+			if (binding != null && binding.isField()) {
+				int modifiers = binding.getModifiers();
+				return Modifier.isFinal(modifiers) || Modifier.isStatic(modifiers) || binding.isEnumConstant();
+			}
+		}
+		
+		// Field access (e.g., Status.ACTIVE)
+		if (expr instanceof FieldAccess) {
+			FieldAccess fieldAccess = (FieldAccess) expr;
+			IVariableBinding binding = fieldAccess.resolveFieldBinding();
+			if (binding != null) {
+				int modifiers = binding.getModifiers();
+				return Modifier.isFinal(modifiers) || Modifier.isStatic(modifiers) || binding.isEnumConstant();
+			}
+		}
+		
+		// Array creation with initializer containing only constants
+		if (expr instanceof ArrayCreation) {
+			ArrayCreation arrayCreation = (ArrayCreation) expr;
+			ArrayInitializer initializer = arrayCreation.getInitializer();
+			if (initializer != null) {
+				List<?> expressions = initializer.expressions();
+				return expressions.stream().allMatch(e -> isConstantExpression((Expression) e));
+			}
+		}
+		
+		// Array initializer
+		if (expr instanceof ArrayInitializer) {
+			ArrayInitializer initializer = (ArrayInitializer) expr;
+			List<?> expressions = initializer.expressions();
+			return expressions.stream().allMatch(e -> isConstantExpression((Expression) e));
+		}
+		
+		// Collection factory methods: List.of(...), Set.of(...), Arrays.asList(...), Map.of(...)
+		if (expr instanceof MethodInvocation) {
+			MethodInvocation mi = (MethodInvocation) expr;
+			String methodName = mi.getName().getIdentifier();
+			Expression receiver = mi.getExpression();
+			
+			if (methodName.equals("of") || methodName.equals("asList")) {
+				if (receiver instanceof SimpleName) {
+					String receiverName = ((SimpleName) receiver).getIdentifier();
+					if (receiverName.equals("List") || receiverName.equals("Set") || 
+						receiverName.equals("Arrays") || receiverName.equals("Map")) {
+						List<?> arguments = mi.arguments();
+						return arguments.stream().allMatch(arg -> isConstantExpression((Expression) arg));
+					}
+				}
+			}
+			
+			// Method call on string literal: "test".getBytes()
+			if (receiver instanceof StringLiteral) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
+
 	private boolean canOptimize(Expression condition) {
 		// Check for prefix expression (!condition)
 		if (condition instanceof PrefixExpression) {
@@ -146,8 +321,15 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 			return;
 		}
 		
-		// Determine if this is assertTrue or assertFalse
 		String methodName = mi.getName().getIdentifier();
+		
+		// Check if this is a parameter order correction case
+		if (METHODS_WITH_EXPECTED_ACTUAL.contains(methodName)) {
+			swapParametersIfNeeded(mi, rewriter, group);
+			return;
+		}
+		
+		// Handle assertTrue/assertFalse optimization
 		boolean isTrue = "assertTrue".equals(methodName);
 		
 		// Get the condition and message
@@ -302,6 +484,53 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 					}
 				}
 			}
+		}
+	}
+
+	/**
+	 * Swaps expected/actual parameters if they are in the wrong order.
+	 * Expected (constant) should come first, actual (computed) should come second.
+	 */
+	private void swapParametersIfNeeded(MethodInvocation mi, ASTRewrite rewriter, TextEditGroup group) {
+		List<?> arguments = mi.arguments();
+		
+		if (arguments.size() < 2) {
+			return;
+		}
+		
+		Expression first = (Expression) arguments.get(0);
+		Expression second = (Expression) arguments.get(1);
+		
+		// Check if first argument is a String message (JUnit 4 style)
+		ITypeBinding firstType = first.resolveTypeBinding();
+		boolean firstIsMessage = firstType != null && "java.lang.String".equals(firstType.getQualifiedName());
+		
+		Expression expectedParam;
+		Expression actualParam;
+		int expectedIndex;
+		int actualIndex;
+		
+		if (firstIsMessage && arguments.size() >= 3) {
+			// JUnit 4: message, expected, actual
+			expectedParam = (Expression) arguments.get(1);
+			actualParam = (Expression) arguments.get(2);
+			expectedIndex = 1;
+			actualIndex = 2;
+		} else {
+			// JUnit 5: expected, actual [, message]
+			expectedParam = first;
+			actualParam = second;
+			expectedIndex = 0;
+			actualIndex = 1;
+		}
+		
+		// If expected is not constant but actual is constant, swap them
+		if (!isConstantExpression(expectedParam) && isConstantExpression(actualParam)) {
+			ListRewrite argsRewrite = rewriter.getListRewrite(mi, MethodInvocation.ARGUMENTS_PROPERTY);
+			Expression newExpected = (Expression) rewriter.createCopyTarget(actualParam);
+			Expression newActual = (Expression) rewriter.createCopyTarget(expectedParam);
+			argsRewrite.replace(arguments.get(expectedIndex), newExpected, group);
+			argsRewrite.replace(arguments.get(actualIndex), newActual, group);
 		}
 	}
 
