@@ -265,18 +265,28 @@ Each plugin class extends `AbstractTool` and specializes for a specific JUnit mi
 
 ### AssertOptimizationJUnitPlugin
 - Optimizes generic assertions to more specific ones
-- Converts `assertTrue(a == b)` to `assertEquals(a, b)`
+- Converts `assertTrue(a == b)` to `assertEquals(a, b)` (primitives) or `assertSame(a, b)` (objects)
 - Converts `assertTrue(obj == null)` to `assertNull(obj)`
 - Converts `assertTrue(!condition)` to `assertFalse(condition)`
+- Converts `assertTrue(a.equals(b))` to `assertEquals(b, a)`
 - **New**: Detects and corrects swapped assertEquals/assertNotEquals parameters
 - Swaps parameters when constant is in second position: `assertEquals(result, "expected")` → `assertEquals("expected", result)`
 - Detects constants: literals, static final fields, enum values
 - Preserves message parameters and delta parameters in 3/4-argument versions
+- Handles both JUnit 4 (Assert) and JUnit 5 (Assertions) classes
 
 ### AssumeJUnitPlugin
 - Migrates `org.junit.Assume` to `org.junit.jupiter.api.Assumptions`
 - Reorders assumption parameters
 - Uses `MULTI_PARAM_ASSUMPTIONS` constant set
+
+### AssumeOptimizationJUnitPlugin
+- Optimizes generic assumptions by removing unnecessary negations
+- Converts `assumeTrue(!condition)` to `assumeFalse(condition)`
+- Converts `assumeFalse(!condition)` to `assumeTrue(condition)`
+- Preserves message parameters (both String and Supplier variants)
+- Handles both JUnit 4 (Assume) and JUnit 5 (Assumptions) classes
+- Note: Does not optimize null checks as JUnit 5 Assumptions lacks assumeNull/assumeNotNull
 
 ### ExternalResourceJUnitPlugin
 - Orchestrates `ExternalResourceRefactorer` for field-level transformations

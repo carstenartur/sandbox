@@ -436,11 +436,7 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 				
 				// Replace condition with the operand (removing the !)
 				ListRewrite argsRewrite = rewriter.getListRewrite(mi, MethodInvocation.ARGUMENTS_PROPERTY);
-				if (message != null) {
-					argsRewrite.replace((ASTNode) condition, rewriter.createCopyTarget(prefix.getOperand()), group);
-				} else {
-					argsRewrite.replace((ASTNode) condition, rewriter.createCopyTarget(prefix.getOperand()), group);
-				}
+				argsRewrite.replace((ASTNode) condition, rewriter.createCopyTarget(prefix.getOperand()), group);
 			}
 			return;
 		}
@@ -453,8 +449,8 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 			Expression right = infix.getRightOperand();
 			
 			// Check for null comparisons
-			boolean leftIsNull = ASTNodes.isNullLiteral(left);
-			boolean rightIsNull = ASTNodes.isNullLiteral(right);
+			boolean leftIsNull = left instanceof NullLiteral;
+			boolean rightIsNull = right instanceof NullLiteral;
 			
 			if (leftIsNull || rightIsNull) {
 				Expression nonNullExpr = leftIsNull ? right : left;
