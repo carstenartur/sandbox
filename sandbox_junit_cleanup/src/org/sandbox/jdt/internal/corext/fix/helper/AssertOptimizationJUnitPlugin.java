@@ -510,14 +510,16 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 					ListRewrite argsRewrite = rewriter.getListRewrite(mi, MethodInvocation.ARGUMENTS_PROPERTY);
 					
 					// Replace condition with two separate arguments
+					// JUnit 5 parameter order: assertEquals(expected, actual)
+					// For "result == 42", right is expected (42), left is actual (result)
 					argsRewrite.remove((ASTNode) condition, group);
 					if (message != null) {
 						// Message comes last in JUnit 5
-						argsRewrite.insertBefore(rewriter.createCopyTarget(left), (ASTNode) message, group);
 						argsRewrite.insertBefore(rewriter.createCopyTarget(right), (ASTNode) message, group);
+						argsRewrite.insertBefore(rewriter.createCopyTarget(left), (ASTNode) message, group);
 					} else {
-						argsRewrite.insertFirst(rewriter.createCopyTarget(left), group);
-						argsRewrite.insertLast(rewriter.createCopyTarget(right), group);
+						argsRewrite.insertFirst(rewriter.createCopyTarget(right), group);
+						argsRewrite.insertLast(rewriter.createCopyTarget(left), group);
 					}
 				}
 			}

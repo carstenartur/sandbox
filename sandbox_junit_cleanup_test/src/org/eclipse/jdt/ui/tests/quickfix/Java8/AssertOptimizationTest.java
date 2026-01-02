@@ -76,7 +76,7 @@ public class AssertOptimizationTest {
 					@Test
 					public void testValue() {
 						int result = 42;
-						Assertions.assertEquals(result, 42);
+						Assertions.assertEquals(42, result);
 					}
 				}
 				"""
@@ -273,7 +273,7 @@ public class AssertOptimizationTest {
 					@Test
 					public void testNotEqual() {
 						int result = 42;
-						Assertions.assertNotEquals(result, 99);
+						Assertions.assertNotEquals(99, result);
 					}
 				}
 				"""
@@ -313,8 +313,8 @@ public class AssertOptimizationTest {
 					@Test
 					public void testWithMessage() {
 						int result = 42;
-						Assertions.assertEquals(result, 42, "Should be 42");
-						Assertions.assertNotEquals(result, 0, "Should not be zero");
+						Assertions.assertEquals(42, result, "Should be 42");
+						Assertions.assertNotEquals(0, result, "Should not be zero");
 					}
 				}
 				"""
@@ -355,7 +355,7 @@ public class AssertOptimizationTest {
 					public void testSameInstance() {
 						String str1 = "test";
 						String str2 = str1;
-						Assertions.assertSame(str1, str2);
+						Assertions.assertSame(str2, str1);
 					}
 				}
 				"""
