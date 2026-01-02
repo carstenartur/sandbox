@@ -256,7 +256,7 @@ public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<I
 	private void transformParametersMethod(MethodDeclaration method, ASTRewrite rewriter, AST ast,
 			TextEditGroup group, ImportRewrite importRewriter) {
 		
-		// Remove @Parameters annotation
+		// Remove @Parameters annotation and public modifier
 		ListRewrite modifiersRewrite = rewriter.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);
 		for (Object modifier : method.modifiers()) {
 			if (modifier instanceof Annotation) {
@@ -264,6 +264,11 @@ public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<I
 				String annotName = annot.getTypeName().getFullyQualifiedName();
 				if ("Parameters".equals(annotName) || ORG_JUNIT_RUNNERS_PARAMETERIZED_PARAMETERS.equals(annotName)) {
 					modifiersRewrite.remove((ASTNode) modifier, group);
+				}
+			} else if (modifier instanceof Modifier) {
+				Modifier mod = (Modifier) modifier;
+				if (mod.isPublic()) {
+					modifiersRewrite.remove(mod, group);
 				}
 			}
 		}
