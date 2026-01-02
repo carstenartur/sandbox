@@ -12,6 +12,7 @@ This file was missing from the sandbox_junit_cleanup plugin. It has been created
 - ✅ Comprehensive test coverage
 - ✅ Multiple plugin implementations for different migration scenarios
 - ✅ @Test(expected) parameter migration to assertThrows()
+- ✅ Parameter order correction for assertions (expected/actual swapping)
 
 ### In Progress
 - None currently
@@ -137,6 +138,35 @@ Migrate JUnit 4 categories to JUnit 5 tags:
 - Supports ArrayInitializer for multiple categories
 - Creates multiple @Tag annotations for multiple categories
 - Updates imports appropriately
+
+### Assertion Parameter Order Correction
+**Priority**: High  
+**Effort**: 8-10 hours  
+**Status**: ✅ **COMPLETED**
+
+Correct parameter order in assertion methods to follow JUnit best practices (expected, actual):
+- `assertEquals(actual, EXPECTED)` → `assertEquals(EXPECTED, actual)`
+- `assertArrayEquals(getArray(), new int[]{1,2,3})` → `assertArrayEquals(new int[]{1,2,3}, getArray())`
+- `assertSame(getInstance(), SINGLETON)` → `assertSame(SINGLETON, getInstance())`
+- `assertNotSame(getObject(), EXPECTED)` → `assertNotSame(EXPECTED, getObject())`
+- `assertIterableEquals(getList(), List.of(1,2,3))` → `assertIterableEquals(List.of(1,2,3), getList())`
+- `assertLinesMatch(getLines(), List.of("a","b"))` → `assertLinesMatch(List.of("a","b"), getLines())`
+
+**Implementation Notes**:
+- Implemented in AssertOptimizationJUnitPlugin
+- Detects when second parameter is constant but first is not
+- Supports literals, final fields, enum constants, array literals, and collection factory methods
+- Handles both JUnit 4 (message first) and JUnit 5 (message last) parameter orders
+- Methods supported: assertEquals, assertNotEquals, assertArrayEquals, assertSame, assertNotSame, assertIterableEquals, assertLinesMatch
+
+**Constant Detection**:
+- Number, String, Boolean, Character, Null literals
+- Type literals (e.g., MyClass.class)
+- Final fields and static fields
+- Enum constants
+- Array creation expressions with constant initializers
+- Collection factory methods: List.of(), Set.of(), Arrays.asList(), Map.of()
+- Method calls on literals: "test".getBytes()
 
 ## Testing Strategy
 

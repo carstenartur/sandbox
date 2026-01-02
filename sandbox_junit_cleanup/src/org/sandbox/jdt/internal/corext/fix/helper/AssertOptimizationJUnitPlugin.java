@@ -214,20 +214,24 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 		// Final fields and enum constants
 		if (expr instanceof SimpleName) {
 			SimpleName name = (SimpleName) expr;
-			IVariableBinding binding = (IVariableBinding) name.resolveBinding();
-			if (binding != null && binding.isField()) {
-				int modifiers = binding.getModifiers();
-				return Modifier.isFinal(modifiers) || Modifier.isStatic(modifiers) || binding.isEnumConstant();
+			if (name.resolveBinding() instanceof IVariableBinding) {
+				IVariableBinding binding = (IVariableBinding) name.resolveBinding();
+				if (binding.isField()) {
+					int modifiers = binding.getModifiers();
+					return Modifier.isFinal(modifiers) || Modifier.isStatic(modifiers) || binding.isEnumConstant();
+				}
 			}
 		}
 		
 		// Qualified names (e.g., MyClass.CONSTANT)
 		if (expr instanceof QualifiedName) {
 			QualifiedName qname = (QualifiedName) expr;
-			IVariableBinding binding = (IVariableBinding) qname.resolveBinding();
-			if (binding != null && binding.isField()) {
-				int modifiers = binding.getModifiers();
-				return Modifier.isFinal(modifiers) || Modifier.isStatic(modifiers) || binding.isEnumConstant();
+			if (qname.resolveBinding() instanceof IVariableBinding) {
+				IVariableBinding binding = (IVariableBinding) qname.resolveBinding();
+				if (binding.isField()) {
+					int modifiers = binding.getModifiers();
+					return Modifier.isFinal(modifiers) || Modifier.isStatic(modifiers) || binding.isEnumConstant();
+				}
 			}
 		}
 		
