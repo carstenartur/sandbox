@@ -263,6 +263,16 @@ Each plugin class extends `AbstractTool` and specializes for a specific JUnit mi
 - Reorders assertion parameters
 - Handles both instance and static imports
 
+### AssertOptimizationJUnitPlugin
+- Optimizes generic assertions to more specific ones
+- Converts `assertTrue(a == b)` to `assertEquals(a, b)`
+- Converts `assertTrue(obj == null)` to `assertNull(obj)`
+- Converts `assertTrue(!condition)` to `assertFalse(condition)`
+- **New**: Detects and corrects swapped assertEquals/assertNotEquals parameters
+- Swaps parameters when constant is in second position: `assertEquals(result, "expected")` → `assertEquals("expected", result)`
+- Detects constants: literals, static final fields, enum values
+- Preserves message parameters and delta parameters in 3/4-argument versions
+
 ### AssumeJUnitPlugin
 - Migrates `org.junit.Assume` to `org.junit.jupiter.api.Assumptions`
 - Reorders assumption parameters
