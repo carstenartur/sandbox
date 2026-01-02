@@ -12,6 +12,8 @@ This file was missing from the sandbox_junit_cleanup plugin. It has been created
 - ✅ Comprehensive test coverage
 - ✅ Multiple plugin implementations for different migration scenarios
 - ✅ @Test(expected) parameter migration to assertThrows()
+- ✅ Assert optimization: assertTrue/assertFalse to more specific assertions
+- ✅ assertEquals/assertNotEquals parameter swap detection and correction
 
 ### In Progress
 - None currently
