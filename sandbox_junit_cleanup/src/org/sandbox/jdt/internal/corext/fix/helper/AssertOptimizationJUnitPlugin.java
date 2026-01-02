@@ -15,18 +15,29 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
+import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.BooleanLiteral;
+import org.eclipse.jdt.core.dom.CharacterLiteral;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.NullLiteral;
+import org.eclipse.jdt.core.dom.NumberLiteral;
 import org.eclipse.jdt.core.dom.PrefixExpression;
+import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.TypeLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
@@ -40,13 +51,15 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 /**
- * Optimizes JUnit assertions by converting generic assertions to more specific ones.
+ * Optimizes JUnit assertions by converting generic assertions to more specific ones
+ * and correcting swapped parameters.
  * 
  * Examples:
  * - assertTrue(a == b) → assertEquals(a, b)
  * - assertTrue(obj == null) → assertNull(obj)
  * - assertTrue(!condition) → assertFalse(condition)
  * - assertTrue(a.equals(b)) → assertEquals(a, b)
+ * - assertEquals(actual, "expected") → assertEquals("expected", actual)  // parameter swap
  */
 public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
@@ -66,6 +79,18 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 				nodesprocessed, (visited, aholder) -> processAssertion(fixcore, operations, visited, aholder, false));
 		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_JUPITER_API_ASSERTIONS, "assertFalse", compilationUnit, dataHolder,
 				nodesprocessed, (visited, aholder) -> processAssertion(fixcore, operations, visited, aholder, false));
+		
+		// Find assertEquals calls with swapped parameters
+		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSERT, "assertEquals", compilationUnit, dataHolder,
+				nodesprocessed, (visited, aholder) -> processEqualsAssertion(fixcore, operations, visited, aholder));
+		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_JUPITER_API_ASSERTIONS, "assertEquals", compilationUnit, dataHolder,
+				nodesprocessed, (visited, aholder) -> processEqualsAssertion(fixcore, operations, visited, aholder));
+		
+		// Find assertNotEquals calls with swapped parameters
+		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSERT, "assertNotEquals", compilationUnit, dataHolder,
+				nodesprocessed, (visited, aholder) -> processEqualsAssertion(fixcore, operations, visited, aholder));
+		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_JUPITER_API_ASSERTIONS, "assertNotEquals", compilationUnit, dataHolder,
+				nodesprocessed, (visited, aholder) -> processEqualsAssertion(fixcore, operations, visited, aholder));
 	}
 
 	private boolean processAssertion(JUnitCleanUpFixCore fixcore,
@@ -109,6 +134,227 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 		return addStandardRewriteOperation(fixcore, operations, node, dataHolder);
 	}
 
+	private boolean processEqualsAssertion(JUnitCleanUpFixCore fixcore,
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, ASTNode node,
+			ReferenceHolder<Integer, JunitHolder> dataHolder) {
+		
+		if (!(node instanceof MethodInvocation)) {
+			return false;
+		}
+		
+		MethodInvocation mi = (MethodInvocation) node;
+		List<?> arguments = mi.arguments();
+		
+		if (arguments.size() < 2) {
+			return false;
+		}
+		
+		// Handle different argument patterns:
+		// 2 args: assertEquals(expected, actual) or assertEquals(expected, actual) [JUnit 5]
+		// 3 args: assertEquals(message, expected, actual) [JUnit 4] or assertEquals(expected, actual, message) [JUnit 5] or assertEquals(expected, actual, delta) [for doubles]
+		// 4 args: assertEquals(message, expected, actual, delta) [JUnit 4] or assertEquals(expected, actual, delta, message) [JUnit 5]
+		
+		Expression first = (Expression) arguments.get(0);
+		Expression second = (Expression) arguments.get(1);
+		
+		// For 2-argument version
+		if (arguments.size() == 2) {
+			// If second is constant but first is not → swap them
+			if (!isConstantExpression(first) && isConstantExpression(second)) {
+				return addStandardRewriteOperation(fixcore, operations, node, dataHolder);
+			}
+		}
+		
+		// For 3-argument version
+		if (arguments.size() == 3) {
+			Expression third = (Expression) arguments.get(2);
+			
+			// Check if first is message (String type)
+			ITypeBinding firstType = first.resolveTypeBinding();
+			boolean firstIsString = firstType != null && "java.lang.String".equals(firstType.getQualifiedName());
+			
+			// Check if third is message (String type)
+			ITypeBinding thirdType = third.resolveTypeBinding();
+			boolean thirdIsString = thirdType != null && "java.lang.String".equals(thirdType.getQualifiedName());
+			
+			// Check if third is numeric (delta parameter)
+			boolean thirdIsNumeric = third instanceof NumberLiteral || 
+					(thirdType != null && (thirdType.isPrimitive() || isNumericWrapperType(thirdType)));
+			
+			if (firstIsString) {
+				// JUnit 4 style: assertEquals(message, expected, actual)
+				// Check if actual (third) is constant but expected (second) is not
+				if (!isConstantExpression(second) && isConstantExpression(third)) {
+					return addStandardRewriteOperation(fixcore, operations, node, dataHolder);
+				}
+			} else if (thirdIsString) {
+				// JUnit 5 style: assertEquals(expected, actual, message)
+				// Check if actual (second) is constant but expected (first) is not
+				if (!isConstantExpression(first) && isConstantExpression(second)) {
+					return addStandardRewriteOperation(fixcore, operations, node, dataHolder);
+				}
+			} else if (thirdIsNumeric) {
+				// Delta parameter: assertEquals(expected, actual, delta)
+				// Check if actual (second) is constant but expected (first) is not
+				if (!isConstantExpression(first) && isConstantExpression(second)) {
+					return addStandardRewriteOperation(fixcore, operations, node, dataHolder);
+				}
+			}
+		}
+		
+		// For 4-argument version: assertEquals(expected, actual, delta, message)
+		// This is rare but theoretically possible
+		if (arguments.size() == 4) {
+			// Check if actual (second) is constant but expected (first) is not
+			if (!isConstantExpression(first) && isConstantExpression(second)) {
+				return addStandardRewriteOperation(fixcore, operations, node, dataHolder);
+			}
+		}
+		
+		return false;
+	}
+
+	/**
+	 * Checks if an expression is a constant value.
+	 * Constants include literals, static final fields, and enum constants.
+	 */
+	private boolean isConstantExpression(Expression expr) {
+		if (expr instanceof StringLiteral) {
+			return true;
+		}
+		if (expr instanceof NumberLiteral) {
+			return true;
+		}
+		if (expr instanceof CharacterLiteral) {
+			return true;
+		}
+		if (expr instanceof BooleanLiteral) {
+			return true;
+		}
+		if (expr instanceof NullLiteral) {
+			return true;
+		}
+		if (expr instanceof TypeLiteral) {
+			return true;  // SomeClass.class
+		}
+		
+		// Check for static final fields (constants)
+		if (expr instanceof QualifiedName || expr instanceof SimpleName) {
+			IBinding binding = ((Name) expr).resolveBinding();
+			if (binding instanceof IVariableBinding) {
+				IVariableBinding varBinding = (IVariableBinding) binding;
+				int modifiers = varBinding.getModifiers();
+				return Modifier.isStatic(modifiers) && Modifier.isFinal(modifiers);
+			}
+		}
+		
+		// Check for enum constants
+		if (expr instanceof QualifiedName) {
+			IBinding binding = ((QualifiedName) expr).resolveBinding();
+			if (binding instanceof IVariableBinding) {
+				return ((IVariableBinding) binding).isEnumConstant();
+			}
+		}
+		
+		return false;
+	}
+
+	private boolean isNumericWrapperType(ITypeBinding type) {
+		String qualifiedName = type.getQualifiedName();
+		return "java.lang.Integer".equals(qualifiedName) ||
+				"java.lang.Long".equals(qualifiedName) ||
+				"java.lang.Double".equals(qualifiedName) ||
+				"java.lang.Float".equals(qualifiedName) ||
+				"java.lang.Short".equals(qualifiedName) ||
+				"java.lang.Byte".equals(qualifiedName);
+	}
+
+	/**
+	 * Handles parameter swapping for assertEquals/assertNotEquals when parameters are in wrong order.
+	 * Swaps first and second parameters if second is a constant but first is not.
+	 */
+	private void handleEqualsAssertionSwap(MethodInvocation mi, List<?> arguments, ASTRewrite rewriter, TextEditGroup group) {
+		if (arguments.size() < 2) {
+			return;
+		}
+		
+		Expression first = (Expression) arguments.get(0);
+		Expression second = (Expression) arguments.get(1);
+		
+		// For 2-argument version: assertEquals(expected, actual)
+		if (arguments.size() == 2) {
+			if (!isConstantExpression(first) && isConstantExpression(second)) {
+				// Swap parameters
+				swapArguments(mi, rewriter, group, 0, 1);
+			}
+			return;
+		}
+		
+		// For 3-argument version
+		if (arguments.size() == 3) {
+			Expression third = (Expression) arguments.get(2);
+			
+			// Check if first is message (String type)
+			ITypeBinding firstType = first.resolveTypeBinding();
+			boolean firstIsString = firstType != null && "java.lang.String".equals(firstType.getQualifiedName());
+			
+			// Check if third is message (String type)
+			ITypeBinding thirdType = third.resolveTypeBinding();
+			boolean thirdIsString = thirdType != null && "java.lang.String".equals(thirdType.getQualifiedName());
+			
+			// Check if third is numeric (delta parameter)
+			boolean thirdIsNumeric = third instanceof NumberLiteral || 
+					(thirdType != null && (thirdType.isPrimitive() || isNumericWrapperType(thirdType)));
+			
+			if (firstIsString) {
+				// JUnit 4 style: assertEquals(message, expected, actual)
+				// Swap expected and actual if needed
+				if (!isConstantExpression(second) && isConstantExpression(third)) {
+					swapArguments(mi, rewriter, group, 1, 2);
+				}
+			} else if (thirdIsString) {
+				// JUnit 5 style: assertEquals(expected, actual, message)
+				// Swap expected and actual if needed
+				if (!isConstantExpression(first) && isConstantExpression(second)) {
+					swapArguments(mi, rewriter, group, 0, 1);
+				}
+			} else if (thirdIsNumeric) {
+				// Delta parameter: assertEquals(expected, actual, delta)
+				// Swap expected and actual if needed
+				if (!isConstantExpression(first) && isConstantExpression(second)) {
+					swapArguments(mi, rewriter, group, 0, 1);
+				}
+			}
+			return;
+		}
+		
+		// For 4-argument version: assertEquals(expected, actual, delta, message)
+		if (arguments.size() == 4) {
+			if (!isConstantExpression(first) && isConstantExpression(second)) {
+				swapArguments(mi, rewriter, group, 0, 1);
+			}
+		}
+	}
+
+	/**
+	 * Swaps two arguments in a method invocation.
+	 */
+	private void swapArguments(MethodInvocation mi, ASTRewrite rewriter, TextEditGroup group, int index1, int index2) {
+		ListRewrite argsRewrite = rewriter.getListRewrite(mi, MethodInvocation.ARGUMENTS_PROPERTY);
+		List<?> arguments = mi.arguments();
+		
+		Expression arg1 = (Expression) arguments.get(index1);
+		Expression arg2 = (Expression) arguments.get(index2);
+		
+		// Create copies of the arguments in swapped order
+		Expression newArg1 = (Expression) rewriter.createCopyTarget(arg2);
+		Expression newArg2 = (Expression) rewriter.createCopyTarget(arg1);
+		
+		// Replace arguments
+		argsRewrite.replace(arg1, newArg1, group);
+		argsRewrite.replace(arg2, newArg2, group);
+	}
+
 	private boolean canOptimize(Expression condition) {
 		// Check for prefix expression (!condition)
 		if (condition instanceof PrefixExpression) {
@@ -146,8 +392,15 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 			return;
 		}
 		
-		// Determine if this is assertTrue or assertFalse
 		String methodName = mi.getName().getIdentifier();
+		
+		// Handle assertEquals/assertNotEquals parameter swapping
+		if ("assertEquals".equals(methodName) || "assertNotEquals".equals(methodName)) {
+			handleEqualsAssertionSwap(mi, arguments, rewriter, group);
+			return;
+		}
+		
+		// Handle assertTrue/assertFalse optimization
 		boolean isTrue = "assertTrue".equals(methodName);
 		
 		// Get the condition and message
@@ -318,12 +571,14 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 					Assertions.assertEquals(5, result);
 					Assertions.assertNull(obj);
 					Assertions.assertFalse(condition);
+					Assertions.assertEquals("expected", actual);
 					"""; //$NON-NLS-1$
 		}
 		return """
 				Assertions.assertTrue(result == 5);
 				Assertions.assertTrue(obj == null);
 				Assertions.assertTrue(!condition);
+				Assertions.assertEquals(actual, "expected");
 				"""; //$NON-NLS-1$
 	}
 
