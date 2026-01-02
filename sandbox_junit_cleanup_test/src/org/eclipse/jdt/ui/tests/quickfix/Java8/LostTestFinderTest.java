@@ -38,7 +38,7 @@ public class LostTestFinderTest {
 
 	@BeforeEach
 	public void setup() throws CoreException {
-		fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+		fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT5_CONTAINER_PATH);
 	}
 
 	@Test
