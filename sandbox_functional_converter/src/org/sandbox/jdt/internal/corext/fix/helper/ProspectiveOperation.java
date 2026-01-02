@@ -26,6 +26,7 @@ import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.LambdaExpression;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.NumberLiteral;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.ReturnStatement;
@@ -111,6 +112,49 @@ public final class ProspectiveOperation {
 		expression.accept(new ASTVisitor() {
 			@Override
 			public boolean visit(SimpleName node) {
+				// Only collect SimpleName nodes that are actual variable references,
+				// not part of qualified names (e.g., System.out) or method/field names
+				ASTNode parent = node.getParent();
+				
+				// Skip if this is any part of a qualified name (e.g., "System" or "out" in "System.out")
+				if (parent instanceof org.eclipse.jdt.core.dom.QualifiedName) {
+					// Skip both qualifier and name parts of qualified names
+					return super.visit(node);
+				}
+				
+				// Skip if this is any part of a field access (e.g., explicit field accesses)
+				if (parent instanceof org.eclipse.jdt.core.dom.FieldAccess) {
+					// Skip both the expression (qualifier) and the name (field name)
+					return super.visit(node);
+				}
+				
+				// Skip if this is the name part of a method invocation (e.g., "println" in "out.println()")
+				if (parent instanceof MethodInvocation) {
+					MethodInvocation mi = (MethodInvocation) parent;
+					if (mi.getName() == node) {
+						return super.visit(node); // Skip method name
+					}
+				}
+				
+				// Skip if this is part of a type reference (e.g., class names)
+				if (parent instanceof org.eclipse.jdt.core.dom.Type) {
+					return super.visit(node);
+				}
+				
+				// Skip if this is the type name in a constructor invocation (e.g., "MyClass" in "new MyClass()")
+				if (parent instanceof org.eclipse.jdt.core.dom.ClassInstanceCreation) {
+					return super.visit(node);
+				}
+				
+				// Skip if this is the name of a type declaration (e.g., class or interface name)
+				if (parent instanceof org.eclipse.jdt.core.dom.TypeDeclaration) {
+					org.eclipse.jdt.core.dom.TypeDeclaration typeDecl = (org.eclipse.jdt.core.dom.TypeDeclaration) parent;
+					if (typeDecl.getName() == node) {
+						return super.visit(node);
+					}
+				}
+				
+				// Otherwise, this is a variable reference - collect it
 				neededVariables.add(node.getIdentifier());
 				return super.visit(node);
 			}
