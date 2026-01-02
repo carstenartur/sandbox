@@ -141,6 +141,19 @@ public final class ProspectiveOperation {
 					return super.visit(node);
 				}
 				
+				// Skip if this is the type name in a constructor invocation (e.g., "MyClass" in "new MyClass()")
+				if (parent instanceof org.eclipse.jdt.core.dom.ClassInstanceCreation) {
+					return super.visit(node);
+				}
+				
+				// Skip if this is the name of a type declaration (e.g., class or interface name)
+				if (parent instanceof org.eclipse.jdt.core.dom.TypeDeclaration) {
+					org.eclipse.jdt.core.dom.TypeDeclaration typeDecl = (org.eclipse.jdt.core.dom.TypeDeclaration) parent;
+					if (typeDecl.getName() == node) {
+						return super.visit(node);
+					}
+				}
+				
 				// Otherwise, this is a variable reference - collect it
 				neededVariables.add(node.getIdentifier());
 				return super.visit(node);
