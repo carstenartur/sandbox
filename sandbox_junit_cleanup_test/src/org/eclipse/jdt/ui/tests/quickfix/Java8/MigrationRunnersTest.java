@@ -122,25 +122,26 @@ public class MigrationRunnersTest {
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH);
 
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
-				"""
-				package test;
-				import java.util.stream.Stream;
-				import org.junit.jupiter.params.ParameterizedTest;
-				import org.junit.jupiter.params.provider.Arguments;
-				import org.junit.jupiter.params.provider.MethodSource;
-				
-				public class MyParameterizedTest {
-					@ParameterizedTest
-					@MethodSource("data")
-					public void testMultiply(int input, int expected) {
-						assertEquals(expected, input * 2);
-					}
-					
-					static Stream<Arguments> data() {
-						return Stream.of(Arguments.of(1, 2), Arguments.of(2, 4), Arguments.of(3, 6));
-					}
-				}
-				"""
+"""
+package test;
+import java.util.stream.Stream;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+public class MyParameterizedTest {
+	@ParameterizedTest
+	@MethodSource("data")
+	public void testMultiply(int input, int expected) {
+		assertEquals(expected, input * 2);
+	}
+
+	static Stream<Arguments> data() {
+		return Stream.of(Arguments.of(1, 2), Arguments.of(2, 4), Arguments.of(3, 6));
+	}
+}
+"""
 		}, null);
 	}
 
