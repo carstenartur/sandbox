@@ -157,6 +157,12 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_RULETIMEOUT, MYCleanUpConstants.JUNIT_CLEANUP_4_RULETIMEOUT,
 				FALSE_TRUE);
 		
+		// Add Lost Tests checkbox
+		intent(junitGroup);
+		final CheckboxPreference junit_lost_tests= createCheckboxPref(junitGroup, numColumns-1,
+				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_LOST_TESTS, MYCleanUpConstants.JUNIT_CLEANUP_4_LOST_TESTS,
+				FALSE_TRUE);
+		
 		registerSlavePreference(junitcb, new CheckboxPreference[] {
 				junit_assert,
 				junit_assume,
@@ -172,7 +178,8 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				junit_externalresource,
 				junit_ruletimeout,
 				junit_runwith,
-				junit_category});
+				junit_category,
+				junit_lost_tests});
 		
 		// Add nested dependencies for @Test parameters
 		registerSlavePreference(junit_test, new CheckboxPreference[] {

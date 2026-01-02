@@ -59,6 +59,9 @@ public class JunitHolder {
 	
 	/** Additional context information for complex transformations */
 	public Object additionalInfo;
+	
+	/** Type declaration context (if applicable) */
+	public TypeDeclaration typeDeclaration;
 
 	/**
 	 * Gets the node as an Annotation.

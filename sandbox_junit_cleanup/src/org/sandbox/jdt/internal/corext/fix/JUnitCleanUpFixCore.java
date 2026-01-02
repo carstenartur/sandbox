@@ -42,6 +42,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.BeforeJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.CategoryJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.ExternalResourceJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.IgnoreJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.LostTestFinderJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleExpectedExceptionJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleExternalResourceJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleTemporayFolderJUnitPlugin;
@@ -74,7 +75,8 @@ public enum JUnitCleanUpFixCore {
 	RULETESTNAME(new RuleTestnameJUnitPlugin()),
 	RULETEMPORARYFOLDER(new RuleTemporayFolderJUnitPlugin()),
 	RULEEXPECTEDEXCEPTION(new RuleExpectedExceptionJUnitPlugin()),
-	EXTERNALRESOURCE(new ExternalResourceJUnitPlugin());
+	EXTERNALRESOURCE(new ExternalResourceJUnitPlugin()),
+	LOSTTESTS(new LostTestFinderJUnitPlugin());
 
 	AbstractTool<ReferenceHolder<Integer, JunitHolder>> junitfound;
 

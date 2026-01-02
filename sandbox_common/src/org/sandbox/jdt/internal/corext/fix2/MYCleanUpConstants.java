@@ -181,6 +181,11 @@ public class MYCleanUpConstants {
 	 */
 	public static final String JUNIT_CLEANUP_4_RULETIMEOUT= "cleanup.junitcleanup_4_ruletimeout"; //$NON-NLS-1$
 	/**
+	 * Find and fix "lost" JUnit 3 tests that were not properly migrated
+	 * (methods starting with "test" but missing @Test annotation)
+	 */
+	public static final String JUNIT_CLEANUP_4_LOST_TESTS= "cleanup.junitcleanup_4_lost_tests"; //$NON-NLS-1$
+	/**
 	 *
 	 */
 	public static final String JFACE_CLEANUP= "cleanup.jfacecleanup"; //$NON-NLS-1$
