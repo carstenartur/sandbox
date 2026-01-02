@@ -40,7 +40,9 @@ public final class CleanUpMessages {
 	public static String JavaFeatureTabPage_GroupName_JUnit;
 	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP;
 	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_ASSERT;
+	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_ASSERT_OPTIMIZATION;
 	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_ASSUME;
+	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_ASSUME_OPTIMIZATION;
 	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_IGNORE;
 	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_TEST;
 	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_BEFORE;

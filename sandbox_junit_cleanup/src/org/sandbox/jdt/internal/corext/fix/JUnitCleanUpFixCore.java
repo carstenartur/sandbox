@@ -36,7 +36,9 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.helper.AfterClassJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.AfterJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.AssertJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.AssertOptimizationJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.AssumeJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.AssumeOptimizationJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.BeforeClassJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.BeforeJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.CategoryJUnitPlugin;
@@ -69,7 +71,9 @@ public enum JUnitCleanUpFixCore {
 	CATEGORY(new CategoryJUnitPlugin()),
 	RUNWITH(new RunWithJUnitPlugin()),
 	ASSERT(new AssertJUnitPlugin()),
+	ASSERT_OPTIMIZATION(new AssertOptimizationJUnitPlugin()),
 	ASSUME(new AssumeJUnitPlugin()),
+	ASSUME_OPTIMIZATION(new AssumeOptimizationJUnitPlugin()),
 	RULEEXTERNALRESOURCE(new RuleExternalResourceJUnitPlugin()),
 	RULETESTNAME(new RuleTestnameJUnitPlugin()),
 	RULETEMPORARYFOLDER(new RuleTemporayFolderJUnitPlugin()),
