@@ -26,6 +26,7 @@ import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.LambdaExpression;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.NumberLiteral;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.ReturnStatement;
@@ -111,6 +112,40 @@ public final class ProspectiveOperation {
 		expression.accept(new ASTVisitor() {
 			@Override
 			public boolean visit(SimpleName node) {
+				// Only collect SimpleName nodes that are actual variable references,
+				// not part of qualified names (e.g., System.out) or method/field names
+				ASTNode parent = node.getParent();
+				
+				// Skip if this is a qualifier in a qualified name (e.g., "System" in "System.out")
+				if (parent instanceof org.eclipse.jdt.core.dom.QualifiedName) {
+					org.eclipse.jdt.core.dom.QualifiedName qn = (org.eclipse.jdt.core.dom.QualifiedName) parent;
+					if (qn.getQualifier() == node) {
+						return super.visit(node); // Skip qualifier
+					}
+				}
+				
+				// Skip if this is the name part of a field access (e.g., "out" in "System.out")
+				if (parent instanceof org.eclipse.jdt.core.dom.FieldAccess) {
+					org.eclipse.jdt.core.dom.FieldAccess fa = (org.eclipse.jdt.core.dom.FieldAccess) parent;
+					if (fa.getName() == node) {
+						return super.visit(node); // Skip field name
+					}
+				}
+				
+				// Skip if this is the name part of a method invocation (e.g., "println" in "out.println()")
+				if (parent instanceof MethodInvocation) {
+					MethodInvocation mi = (MethodInvocation) parent;
+					if (mi.getName() == node) {
+						return super.visit(node); // Skip method name
+					}
+				}
+				
+				// Skip if this is part of a type reference (e.g., class names)
+				if (parent instanceof org.eclipse.jdt.core.dom.Type) {
+					return super.visit(node);
+				}
+				
+				// Otherwise, this is a variable reference - collect it
 				neededVariables.add(node.getIdentifier());
 				return super.visit(node);
 			}
