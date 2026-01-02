@@ -187,8 +187,10 @@ public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<I
 			// Move the data provider method to the end of the class body
 			// This ensures test methods appear before the data provider in the output
 			ListRewrite bodyRewrite = rewriter.getListRewrite(typeDecl, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);
+			// Create copy of method BEFORE removing it (cannot remove and re-insert the same AST node)
+			ASTNode methodCopy = ASTNode.copySubtree(rewriter.getAST(), parametersMethod);
 			bodyRewrite.remove(parametersMethod, group);
-			bodyRewrite.insertLast(parametersMethod, group);
+			bodyRewrite.insertLast(methodCopy, group);  // Insert copy, not original
 		}
 		
 		// Step 4: Remove constructor
