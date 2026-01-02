@@ -198,14 +198,8 @@ public class LostTestFinderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 				if (primitiveType.getPrimitiveTypeCode() != org.eclipse.jdt.core.dom.PrimitiveType.VOID) {
 					return false;
 				}
-			} else if (astReturnType.isSimpleType()) {
-				org.eclipse.jdt.core.dom.SimpleType simpleType = (org.eclipse.jdt.core.dom.SimpleType) astReturnType;
-				String simpleName = simpleType.getName().getFullyQualifiedName();
-				if (!"void".equals(simpleName)) {
-					return false;
-				}
 			} else {
-				// Any other kind of return type is not a lost test
+				// Only PrimitiveType with VOID is valid - any other return type is not a lost test
 				return false;
 			}
 		}
@@ -256,8 +250,9 @@ public class LostTestFinderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 			if (obj instanceof ImportDeclaration) {
 				ImportDeclaration imp = (ImportDeclaration) obj;
 				String importName = imp.getName().getFullyQualifiedName();
-				if (importName.startsWith("org.junit.jupiter.api")
-						|| (importName.equals("org.junit.jupiter.api") && imp.isOnDemand())) {
+				if (importName.startsWith("org.junit.jupiter.api")) {
+					hasJUnit5Import[0] = true;
+				} else if (importName.equals("org.junit.jupiter.api") && imp.isOnDemand()) {
 					hasJUnit5Import[0] = true;
 				} else if (importName.equals("org.junit.Test")
 						|| (importName.equals("org.junit") && imp.isOnDemand())) {
