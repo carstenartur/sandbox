@@ -305,7 +305,7 @@ Each plugin class extends `AbstractTool` and specializes for a specific JUnit mi
   - JUnit 5 (`org.junit.jupiter.api.Test`) if JUnit 5 imports detected or no JUnit imports
   - JUnit 4 (`org.junit.Test`) if JUnit 4 imports detected and no JUnit 5
   - Supports wildcard imports (`import org.junit.*;`)
-- **Conservative Approach**: Only operates on classes that have been migrated (contains @Test methods)
+- **Conservative Approach**: Only operates on classes that have already been partially migrated (contain `@Test` methods), avoiding false positives on classes with test-prefixed helper methods that were never intended as tests
 - **Disabled by Default**: As a heuristic feature, must be explicitly enabled by user
 - **Use Case**: Fixes test methods lost during manual regex-based JUnit 3 → 4/5 migrations
 

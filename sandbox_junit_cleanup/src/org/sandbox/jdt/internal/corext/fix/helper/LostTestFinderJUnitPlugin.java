@@ -175,13 +175,39 @@ public class LostTestFinderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 			return false;
 		}
 		
-		// Check for void return type more robustly
-		if (method.getReturnType2() == null || !method.getReturnType2().isPrimitiveType()) {
-			return false;
+		// Check for void return type using bindings when available, with a safe AST fallback
+		org.eclipse.jdt.core.dom.ITypeBinding returnBinding = null;
+		org.eclipse.jdt.core.dom.IMethodBinding methodBinding = method.resolveBinding();
+		if (methodBinding != null) {
+			returnBinding = methodBinding.getReturnType();
 		}
-		org.eclipse.jdt.core.dom.PrimitiveType returnType = (org.eclipse.jdt.core.dom.PrimitiveType) method.getReturnType2();
-		if (returnType.getPrimitiveTypeCode() != org.eclipse.jdt.core.dom.PrimitiveType.VOID) {
-			return false;
+
+		if (returnBinding != null) {
+			// Binding-based check: require primitive void
+			if (!returnBinding.isPrimitive() || !"void".equals(returnBinding.getName())) {
+				return false;
+			}
+		} else {
+			// Fallback: inspect the AST return type node defensively
+			org.eclipse.jdt.core.dom.Type astReturnType = method.getReturnType2();
+			if (astReturnType == null) {
+				return false;
+			}
+			if (astReturnType.isPrimitiveType()) {
+				org.eclipse.jdt.core.dom.PrimitiveType primitiveType = (org.eclipse.jdt.core.dom.PrimitiveType) astReturnType;
+				if (primitiveType.getPrimitiveTypeCode() != org.eclipse.jdt.core.dom.PrimitiveType.VOID) {
+					return false;
+				}
+			} else if (astReturnType.isSimpleType()) {
+				org.eclipse.jdt.core.dom.SimpleType simpleType = (org.eclipse.jdt.core.dom.SimpleType) astReturnType;
+				String simpleName = simpleType.getName().getFullyQualifiedName();
+				if (!"void".equals(simpleName)) {
+					return false;
+				}
+			} else {
+				// Any other kind of return type is not a lost test
+				return false;
+			}
 		}
 		
 		if (!method.parameters().isEmpty()) {
@@ -204,10 +230,12 @@ public class LostTestFinderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 			if (modifier instanceof Annotation) {
 				Annotation ann = (Annotation) modifier;
 				String name = ann.getTypeName().getFullyQualifiedName();
-				// Check simple name and fully qualified names
+				int lastDot = name.lastIndexOf('.');
+				String simpleName = lastDot == -1 ? name : name.substring(lastDot + 1);
+				// Check simple name and fully qualified JUnit names
 				if (LIFECYCLE_ANNOTATIONS.contains(name)
-						|| (name.startsWith("org.junit.") && LIFECYCLE_ANNOTATIONS.contains(name.substring(name.lastIndexOf('.') + 1)))
-						|| (name.startsWith("org.junit.jupiter.api.") && LIFECYCLE_ANNOTATIONS.contains(name.substring(name.lastIndexOf('.') + 1)))) {
+						|| ((name.startsWith("org.junit.") || name.startsWith("org.junit.jupiter.api."))
+								&& LIFECYCLE_ANNOTATIONS.contains(simpleName))) {
 					return true;
 				}
 			}
@@ -228,7 +256,8 @@ public class LostTestFinderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 			if (obj instanceof ImportDeclaration) {
 				ImportDeclaration imp = (ImportDeclaration) obj;
 				String importName = imp.getName().getFullyQualifiedName();
-				if (importName.startsWith("org.junit.jupiter.api")) {
+				if (importName.startsWith("org.junit.jupiter.api")
+						|| (importName.equals("org.junit.jupiter.api") && imp.isOnDemand())) {
 					hasJUnit5Import[0] = true;
 				} else if (importName.equals("org.junit.Test")
 						|| (importName.equals("org.junit") && imp.isOnDemand())) {
