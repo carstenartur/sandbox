@@ -12,6 +12,7 @@ This file was missing from the sandbox_junit_cleanup plugin. It has been created
 - ✅ Comprehensive test coverage
 - ✅ Multiple plugin implementations for different migration scenarios
 - ✅ @Test(expected) parameter migration to assertThrows()
+- ✅ Lost test finder for incomplete regex-based migrations
 
 ### In Progress
 - None currently
@@ -92,6 +93,35 @@ Provide detailed migration reports:
 - Highlight manual interventions needed
 - Show coverage of migration (% tests migrated)
 - Export report in HTML/Markdown format
+
+## Recently Completed Features
+
+### Lost Test Finder (2026-01)
+**Priority**: Medium  
+**Effort**: 8-10 hours  
+**Status**: ✅ **COMPLETED**
+
+Detects and fixes "lost" JUnit 3 tests that were missed during regex-based migrations to JUnit 4/5:
+- Identifies `public void test*()` methods missing `@Test` annotation
+- Only operates on classes that already contain `@Test` methods (conservative approach)
+- Checks class hierarchy including superclasses for `@Test` methods
+- Excludes lifecycle methods (`@Before*`, `@After*`, `@Ignore`, `@Disabled`)
+- Version-aware: adds JUnit 4 or JUnit 5 `@Test` annotation based on existing imports
+- Supports wildcard imports (`import org.junit.*;`)
+- Disabled by default as it's a heuristic feature
+
+**Implementation**: LostTestFinderJUnitPlugin with comprehensive test coverage including:
+- Basic detection and fixing
+- Class hierarchy checks
+- Lifecycle annotation exclusions
+- Non-public/non-void/parameterized method exclusions
+- JUnit version detection with wildcard import support
+- Multiple lost tests in one class
+
+**Benefits**:
+- Helps complete incomplete JUnit migrations
+- Reduces risk of lost test coverage during migration
+- Conservative detection minimizes false positives
 
 ## Known Issues
 

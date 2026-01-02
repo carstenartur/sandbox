@@ -514,4 +514,43 @@ public class LostTestFinderTest {
 				"""
 		}, null);
 	}
+
+	@Test
+	public void uses_junit4_test_annotation_when_wildcard_import_present() throws CoreException {
+		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
+				"""
+				package test;
+				import org.junit.*;
+				
+				public class MyTest {
+					@Test
+					public void testSomething() {
+					}
+					
+					public void testLost() {
+					}
+				}
+				""", false, null);
+
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_LOST_TESTS);
+
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+				"""
+				package test;
+				import org.junit.*;
+				
+				public class MyTest {
+					@Test
+					public void testSomething() {
+					}
+					
+					@Test
+					public void testLost() {
+					}
+				}
+				"""
+		}, null);
+	}
 }

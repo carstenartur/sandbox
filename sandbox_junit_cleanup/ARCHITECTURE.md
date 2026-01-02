@@ -281,6 +281,45 @@ Each plugin class extends `AbstractTool` and specializes for a specific JUnit mi
 - Orchestrates `TestNameRefactorer` for TestName rule migration
 - Manages method signature updates across test hierarchies
 
+### LostTestFinderJUnitPlugin
+- Detects "lost" JUnit 3 tests that were not properly migrated during regex-based migrations
+- Identifies `public void test*()` methods missing `@Test` annotation in classes already containing `@Test` methods
+- Checks class hierarchy (including superclasses) to determine if class is a test class
+- Excludes lifecycle methods (`@Before`, `@After`, `@BeforeEach`, `@AfterEach`, etc.)
+- Version-aware: adds `org.junit.Test` or `org.junit.jupiter.api.Test` based on existing imports
+- Supports wildcard imports (`import org.junit.*;`)
+- Conservative approach: only adds `@Test` to methods in confirmed test classes to avoid false positives
+
+**Detection Logic**:
+```java
+// Method is a "lost test" if ALL conditions are met:
+// 1. Class (or superclass) contains @Test methods
+// 2. Method name starts with "test"
+// 3. No @Test annotation present
+// 4. public void signature with no parameters
+// 5. Not annotated with lifecycle/skip annotations
+```
+
+**Transformation Example**:
+```java
+// Before
+public class CalculatorTest {
+    @Test
+    public void testAddition() { }
+    
+    public void testEdgeCase() { }  // Lost during migration
+}
+
+// After
+public class CalculatorTest {
+    @Test
+    public void testAddition() { }
+    
+    @Test  // Added by LostTestFinderJUnitPlugin
+    public void testEdgeCase() { }
+}
+```
+
 ## Data Flow
 
 ### Typical Transformation Flow

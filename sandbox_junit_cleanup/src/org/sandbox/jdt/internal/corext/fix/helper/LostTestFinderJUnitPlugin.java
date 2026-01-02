@@ -149,7 +149,6 @@ public class LostTestFinderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 				ReferenceHolder<Integer, JunitHolder> dataHolder = new ReferenceHolder<>();
 				JunitHolder mh = new JunitHolder();
 				mh.minv = method;
-				mh.typeDeclaration = typeDecl;
 				dataHolder.put(0, mh);
 				operations.add(fixcore.rewrite(dataHolder));
 			}
@@ -176,8 +175,12 @@ public class LostTestFinderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 			return false;
 		}
 		
-		if (method.getReturnType2() == null || !method.getReturnType2().isPrimitiveType() ||
-			!method.getReturnType2().toString().equals("void")) {
+		// Check for void return type more robustly
+		if (method.getReturnType2() == null || !method.getReturnType2().isPrimitiveType()) {
+			return false;
+		}
+		org.eclipse.jdt.core.dom.PrimitiveType returnType = (org.eclipse.jdt.core.dom.PrimitiveType) method.getReturnType2();
+		if (returnType.getPrimitiveTypeCode() != org.eclipse.jdt.core.dom.PrimitiveType.VOID) {
 			return false;
 		}
 		
@@ -202,9 +205,9 @@ public class LostTestFinderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 				Annotation ann = (Annotation) modifier;
 				String name = ann.getTypeName().getFullyQualifiedName();
 				// Check simple name and fully qualified names
-				if (LIFECYCLE_ANNOTATIONS.contains(name) ||
-					name.startsWith("org.junit.") && LIFECYCLE_ANNOTATIONS.contains(name.substring(name.lastIndexOf('.') + 1)) ||
-					name.startsWith("org.junit.jupiter.api.") && LIFECYCLE_ANNOTATIONS.contains(name.substring(name.lastIndexOf('.') + 1))) {
+				if (LIFECYCLE_ANNOTATIONS.contains(name)
+						|| (name.startsWith("org.junit.") && LIFECYCLE_ANNOTATIONS.contains(name.substring(name.lastIndexOf('.') + 1)))
+						|| (name.startsWith("org.junit.jupiter.api.") && LIFECYCLE_ANNOTATIONS.contains(name.substring(name.lastIndexOf('.') + 1)))) {
 					return true;
 				}
 			}
@@ -227,7 +230,8 @@ public class LostTestFinderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 				String importName = imp.getName().getFullyQualifiedName();
 				if (importName.startsWith("org.junit.jupiter.api")) {
 					hasJUnit5Import[0] = true;
-				} else if (importName.equals("org.junit.Test")) {
+				} else if (importName.equals("org.junit.Test")
+						|| (importName.equals("org.junit") && imp.isOnDemand())) {
 					hasJUnit4Import[0] = true;
 				}
 			}
