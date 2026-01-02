@@ -47,7 +47,9 @@ public class SaveActionCleanUpOptionsInitializer implements ICleanUpOptionsIniti
 		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTERCLASS, CleanUpOptions.FALSE);
 		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORECLASS, CleanUpOptions.FALSE);
 		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME, CleanUpOptions.FALSE);
+		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME_OPTIMIZATION, CleanUpOptions.FALSE);
 		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT, CleanUpOptions.FALSE);
+		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT_OPTIMIZATION, CleanUpOptions.FALSE);
 		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP_4_IGNORE, CleanUpOptions.FALSE);
 		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST, CleanUpOptions.FALSE);
 		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETESTNAME, CleanUpOptions.FALSE);
