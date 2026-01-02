@@ -252,8 +252,6 @@ public class LostTestFinderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 				String importName = imp.getName().getFullyQualifiedName();
 				if (importName.startsWith("org.junit.jupiter.api")) {
 					hasJUnit5Import[0] = true;
-				} else if (importName.equals("org.junit.jupiter.api") && imp.isOnDemand()) {
-					hasJUnit5Import[0] = true;
 				} else if (importName.equals("org.junit.Test")
 						|| (importName.equals("org.junit") && imp.isOnDemand())) {
 					hasJUnit4Import[0] = true;
