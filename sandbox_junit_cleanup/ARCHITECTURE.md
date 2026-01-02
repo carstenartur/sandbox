@@ -292,6 +292,23 @@ Each plugin class extends `AbstractTool` and specializes for a specific JUnit mi
 - Orchestrates `ExternalResourceRefactorer` for field-level transformations
 - Manages `@Rule` and `@ClassRule` to `@RegisterExtension` migration
 
+### LostTestFinderJUnitPlugin
+- Detects and fixes "lost" JUnit 3 tests that were not properly migrated to JUnit 4/5
+- Identifies methods starting with `test` that are missing `@Test` annotation
+- **Detection Criteria** (all must be met):
+  - Class or superclass contains existing `@Test` annotated methods
+  - Method name starts with "test"
+  - No `@Test` annotation present
+  - `public void` signature with no parameters
+  - Not annotated with lifecycle annotations (`@Before`, `@After`, `@BeforeEach`, `@AfterEach`, `@Ignore`, `@Disabled`, etc.)
+- **Version Awareness**: Determines correct `@Test` annotation based on existing imports
+  - JUnit 5 (`org.junit.jupiter.api.Test`) if JUnit 5 imports detected or no JUnit imports
+  - JUnit 4 (`org.junit.Test`) if JUnit 4 imports detected and no JUnit 5
+  - Supports wildcard imports (`import org.junit.*;`)
+- **Conservative Approach**: Only operates on classes that have already been partially migrated (contain `@Test` methods), avoiding false positives on classes with test-prefixed helper methods that were never intended as tests
+- **Disabled by Default**: As a heuristic feature, must be explicitly enabled by user
+- **Use Case**: Fixes test methods lost during manual regex-based JUnit 3 → 4/5 migrations
+
 ### TestJUnit3Plugin
 - Migrates JUnit 3 test cases (extending `TestCase`) to JUnit 5
 - Handles assertion parameter reordering

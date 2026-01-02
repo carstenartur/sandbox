@@ -15,6 +15,7 @@ This file was missing from the sandbox_junit_cleanup plugin. It has been created
 - ✅ Assert optimization: assertTrue/assertFalse to more specific assertions (assertEquals, assertNull, assertSame)
 - ✅ Assume optimization: assumeTrue/assumeFalse negation removal
 - ✅ assertEquals/assertNotEquals parameter swap detection and correction
+- ✅ Lost JUnit test finder: detects test methods missing @Test annotation after manual migration
 
 ### In Progress
 - None currently
@@ -141,6 +142,28 @@ Migrate JUnit 4 categories to JUnit 5 tags:
 - Supports ArrayInitializer for multiple categories
 - Creates multiple @Tag annotations for multiple categories
 - Updates imports appropriately
+
+### Lost JUnit Test Finder
+**Priority**: Medium  
+**Effort**: 8-10 hours  
+**Status**: ✅ **COMPLETED**
+
+Detects and fixes "lost" JUnit 3 tests after manual migration:
+- Finds methods starting with `test` that are missing `@Test` annotation
+- Only operates on classes that already have @Test methods (migrated classes)
+- Checks class hierarchy (inherited @Test methods)
+- Excludes lifecycle annotations (@Before, @After, @BeforeEach, etc.)
+- Version-aware: adds JUnit 4 or JUnit 5 @Test based on existing imports
+- Supports wildcard imports (import org.junit.*)
+
+**Implementation Notes**:
+- Implemented in LostTestFinderJUnitPlugin
+- Conservative detection to avoid false positives
+- Requires public void signature with no parameters
+- Disabled by default (heuristic feature)
+- Comprehensive test suite with 12 test cases
+
+**Use Case**: Fixes issues from regex-based JUnit 3 → 4/5 migrations where some test methods were overlooked
 
 ## Testing Strategy
 
