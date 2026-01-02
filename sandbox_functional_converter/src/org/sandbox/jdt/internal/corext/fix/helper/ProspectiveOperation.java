@@ -116,15 +116,13 @@ public final class ProspectiveOperation {
 				// not part of qualified names (e.g., System.out) or method/field names
 				ASTNode parent = node.getParent();
 				
-				// Skip if this is a qualifier in a qualified name (e.g., "System" in "System.out")
+				// Skip if this is any part of a qualified name (e.g., "System" or "out" in "System.out")
 				if (parent instanceof org.eclipse.jdt.core.dom.QualifiedName) {
-					org.eclipse.jdt.core.dom.QualifiedName qn = (org.eclipse.jdt.core.dom.QualifiedName) parent;
-					if (qn.getQualifier() == node) {
-						return super.visit(node); // Skip qualifier
-					}
+					// Skip both qualifier and name parts of qualified names
+					return super.visit(node);
 				}
 				
-				// Skip if this is any part of a field access (e.g., "System" or "out" in "System.out")
+				// Skip if this is any part of a field access (e.g., explicit field accesses)
 				if (parent instanceof org.eclipse.jdt.core.dom.FieldAccess) {
 					// Skip both the expression (qualifier) and the name (field name)
 					return super.visit(node);
