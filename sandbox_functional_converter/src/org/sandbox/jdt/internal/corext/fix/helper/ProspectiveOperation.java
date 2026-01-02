@@ -319,6 +319,9 @@ public final class ProspectiveOperation {
 		String effectiveParamName = (paramName != null && !paramName.isEmpty()) ? paramName : "item";
 		param.setName(ast.newSimpleName(effectiveParamName));
 		lambda.parameters().add(param);
+		
+		// For single parameter without type annotation, don't use parentheses
+		lambda.setParentheses(false);
 
 		// Create lambda body based on operation type
 		if (operationType == OperationType.MAP && originalExpression != null) {
@@ -411,6 +414,9 @@ public final class ProspectiveOperation {
 		SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
 		param.setName(ast.newSimpleName(loopVarName != null ? loopVarName : "x"));
 		lambda.parameters().add(param);
+		
+		// For single parameter without type annotation, don't use parentheses
+		lambda.setParentheses(false);
 
 		// Create lambda body based on operation type
 		switch (operationType) {
@@ -600,6 +606,10 @@ public final class ProspectiveOperation {
 		SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
 		param.setName(ast.newSimpleName("x"));
 		lambda.parameters().add(param);
+		
+		// For single parameter without type annotation, don't use parentheses
+		lambda.setParentheses(false);
+		
 		lambda.setBody(ASTNode.copySubtree(ast, originalExpression));
 		return lambda;
 	}
@@ -781,6 +791,10 @@ public final class ProspectiveOperation {
 		SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
 		param.setName(ast.newSimpleName("x"));
 		lambda.parameters().add(param);
+		
+		// For single parameter without type annotation, don't use parentheses
+		lambda.setParentheses(false);
+		
 		lambda.setBody(ASTNode.copySubtree(ast, originalExpression));
 		return lambda;
 	}
