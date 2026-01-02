@@ -26,6 +26,7 @@ import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.LambdaExpression;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.NumberLiteral;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.ReturnStatement;
@@ -111,6 +112,49 @@ public final class ProspectiveOperation {
 		expression.accept(new ASTVisitor() {
 			@Override
 			public boolean visit(SimpleName node) {
+				// Only collect SimpleName nodes that are actual variable references,
+				// not part of qualified names (e.g., System.out) or method/field names
+				ASTNode parent = node.getParent();
+				
+				// Skip if this is any part of a qualified name (e.g., "System" or "out" in "System.out")
+				if (parent instanceof org.eclipse.jdt.core.dom.QualifiedName) {
+					// Skip both qualifier and name parts of qualified names
+					return super.visit(node);
+				}
+				
+				// Skip if this is any part of a field access (e.g., explicit field accesses)
+				if (parent instanceof org.eclipse.jdt.core.dom.FieldAccess) {
+					// Skip both the expression (qualifier) and the name (field name)
+					return super.visit(node);
+				}
+				
+				// Skip if this is the name part of a method invocation (e.g., "println" in "out.println()")
+				if (parent instanceof MethodInvocation) {
+					MethodInvocation mi = (MethodInvocation) parent;
+					if (mi.getName() == node) {
+						return super.visit(node); // Skip method name
+					}
+				}
+				
+				// Skip if this is part of a type reference (e.g., class names)
+				if (parent instanceof org.eclipse.jdt.core.dom.Type) {
+					return super.visit(node);
+				}
+				
+				// Skip if this is the type name in a constructor invocation (e.g., "MyClass" in "new MyClass()")
+				if (parent instanceof org.eclipse.jdt.core.dom.ClassInstanceCreation) {
+					return super.visit(node);
+				}
+				
+				// Skip if this is the name of a type declaration (e.g., class or interface name)
+				if (parent instanceof org.eclipse.jdt.core.dom.TypeDeclaration) {
+					org.eclipse.jdt.core.dom.TypeDeclaration typeDecl = (org.eclipse.jdt.core.dom.TypeDeclaration) parent;
+					if (typeDecl.getName() == node) {
+						return super.visit(node);
+					}
+				}
+				
+				// Otherwise, this is a variable reference - collect it
 				neededVariables.add(node.getIdentifier());
 				return super.visit(node);
 			}
@@ -275,6 +319,9 @@ public final class ProspectiveOperation {
 		String effectiveParamName = (paramName != null && !paramName.isEmpty()) ? paramName : "item";
 		param.setName(ast.newSimpleName(effectiveParamName));
 		lambda.parameters().add(param);
+		
+		// For single parameter without type annotation, don't use parentheses
+		lambda.setParentheses(false);
 
 		// Create lambda body based on operation type
 		if (operationType == OperationType.MAP && originalExpression != null) {
@@ -299,8 +346,14 @@ public final class ProspectiveOperation {
 			ParenthesizedExpression parenExpr = ast.newParenthesizedExpression();
 			parenExpr.setExpression((Expression) ASTNode.copySubtree(ast, originalExpression));
 			lambda.setBody(parenExpr);
+		} else if (operationType == OperationType.FOREACH && originalExpression != null 
+				&& originalStatement instanceof org.eclipse.jdt.core.dom.ExpressionStatement) {
+			// For FOREACH with a single expression (from ExpressionStatement):
+			// Use the expression directly as lambda body (without block)
+			// This produces: l -> System.out.println(l) instead of l -> { System.out.println(l); }
+			lambda.setBody(ASTNode.copySubtree(ast, originalExpression));
 		} else if (operationType == OperationType.FOREACH && originalStatement != null) {
-			// For FOREACH: lambda body is the statement (as block)
+			// For FOREACH with other statement types: lambda body is the statement (as block)
 			if (originalStatement instanceof org.eclipse.jdt.core.dom.Block) {
 				lambda.setBody(ASTNode.copySubtree(ast, originalStatement));
 			} else {
@@ -361,6 +414,9 @@ public final class ProspectiveOperation {
 		SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
 		param.setName(ast.newSimpleName(loopVarName != null ? loopVarName : "x"));
 		lambda.parameters().add(param);
+		
+		// For single parameter without type annotation, don't use parentheses
+		lambda.setParentheses(false);
 
 		// Create lambda body based on operation type
 		switch (operationType) {
@@ -388,7 +444,12 @@ public final class ProspectiveOperation {
 
 		case FOREACH:
 			// For FOREACH: x -> { <stmt> } (no return)
-			if (originalStatement != null) {
+			// Check originalExpression first for single expression statements
+			if (originalExpression != null && originalStatement instanceof org.eclipse.jdt.core.dom.ExpressionStatement) {
+				// For FOREACH with a single expression (from ExpressionStatement):
+				// Use the expression directly as lambda body (without block)
+				lambda.setBody(ASTNode.copySubtree(ast, originalExpression));
+			} else if (originalStatement != null) {
 				if (originalStatement instanceof org.eclipse.jdt.core.dom.Block) {
 					lambda.setBody(ASTNode.copySubtree(ast, originalStatement));
 				} else {
@@ -545,6 +606,10 @@ public final class ProspectiveOperation {
 		SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
 		param.setName(ast.newSimpleName("x"));
 		lambda.parameters().add(param);
+		
+		// For single parameter without type annotation, don't use parentheses
+		lambda.setParentheses(false);
+		
 		lambda.setBody(ASTNode.copySubtree(ast, originalExpression));
 		return lambda;
 	}
@@ -726,6 +791,10 @@ public final class ProspectiveOperation {
 		SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
 		param.setName(ast.newSimpleName("x"));
 		lambda.parameters().add(param);
+		
+		// For single parameter without type annotation, don't use parentheses
+		lambda.setParentheses(false);
+		
 		lambda.setBody(ASTNode.copySubtree(ast, originalExpression));
 		return lambda;
 	}

@@ -1807,7 +1807,6 @@ public class Java22CleanUpTest {
 		}
 	}
 
-	@Disabled("Not all functional loop patterns are implemented yet - enable incrementally as features are added")
 	@ParameterizedTest
 	@EnumSource(value = UseFunctionalLoop.class, names = {
 		"SIMPLECONVERT"
