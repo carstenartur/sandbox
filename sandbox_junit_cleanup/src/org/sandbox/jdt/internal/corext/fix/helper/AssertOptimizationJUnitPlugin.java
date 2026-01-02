@@ -149,69 +149,85 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 			return false;
 		}
 		
-		// Handle different argument patterns:
-		// 2 args: assertEquals(expected, actual) or assertEquals(expected, actual) [JUnit 5]
-		// 3 args: assertEquals(message, expected, actual) [JUnit 4] or assertEquals(expected, actual, message) [JUnit 5] or assertEquals(expected, actual, delta) [for doubles]
-		// 4 args: assertEquals(message, expected, actual, delta) [JUnit 4] or assertEquals(expected, actual, delta, message) [JUnit 5]
+		// Check if parameters need swapping
+		if (shouldSwapParameters(arguments)) {
+			return addStandardRewriteOperation(fixcore, operations, node, dataHolder);
+		}
 		
+		return false;
+	}
+
+	/**
+	 * Determines if parameters should be swapped based on constant detection.
+	 * Returns true if the second parameter is constant but first is not.
+	 */
+	private boolean shouldSwapParameters(List<?> arguments) {
 		Expression first = (Expression) arguments.get(0);
 		Expression second = (Expression) arguments.get(1);
 		
 		// For 2-argument version
 		if (arguments.size() == 2) {
-			// If second is constant but first is not → swap them
-			if (!isConstantExpression(first) && isConstantExpression(second)) {
-				return addStandardRewriteOperation(fixcore, operations, node, dataHolder);
-			}
+			return !isConstantExpression(first) && isConstantExpression(second);
 		}
 		
 		// For 3-argument version
 		if (arguments.size() == 3) {
 			Expression third = (Expression) arguments.get(2);
+			ArgumentPattern pattern = analyzeArgumentPattern(first, third);
 			
-			// Check if first is message (String type)
-			ITypeBinding firstType = first.resolveTypeBinding();
-			boolean firstIsString = firstType != null && "java.lang.String".equals(firstType.getQualifiedName());
-			
-			// Check if third is message (String type)
-			ITypeBinding thirdType = third.resolveTypeBinding();
-			boolean thirdIsString = thirdType != null && "java.lang.String".equals(thirdType.getQualifiedName());
-			
-			// Check if third is numeric (delta parameter)
-			boolean thirdIsNumeric = third instanceof NumberLiteral || 
-					(thirdType != null && (thirdType.isPrimitive() || isNumericWrapperType(thirdType)));
-			
-			if (firstIsString) {
+			switch (pattern) {
+			case JUNIT4_WITH_MESSAGE:
 				// JUnit 4 style: assertEquals(message, expected, actual)
-				// Check if actual (third) is constant but expected (second) is not
-				if (!isConstantExpression(second) && isConstantExpression(third)) {
-					return addStandardRewriteOperation(fixcore, operations, node, dataHolder);
-				}
-			} else if (thirdIsString) {
-				// JUnit 5 style: assertEquals(expected, actual, message)
-				// Check if actual (second) is constant but expected (first) is not
-				if (!isConstantExpression(first) && isConstantExpression(second)) {
-					return addStandardRewriteOperation(fixcore, operations, node, dataHolder);
-				}
-			} else if (thirdIsNumeric) {
-				// Delta parameter: assertEquals(expected, actual, delta)
-				// Check if actual (second) is constant but expected (first) is not
-				if (!isConstantExpression(first) && isConstantExpression(second)) {
-					return addStandardRewriteOperation(fixcore, operations, node, dataHolder);
-				}
+				return !isConstantExpression(second) && isConstantExpression(third);
+			case JUNIT5_WITH_MESSAGE:
+			case WITH_DELTA:
+				// JUnit 5 style: assertEquals(expected, actual, message) or assertEquals(expected, actual, delta)
+				return !isConstantExpression(first) && isConstantExpression(second);
+			default:
+				return false;
 			}
 		}
 		
 		// For 4-argument version: assertEquals(expected, actual, delta, message)
-		// This is rare but theoretically possible
 		if (arguments.size() == 4) {
-			// Check if actual (second) is constant but expected (first) is not
-			if (!isConstantExpression(first) && isConstantExpression(second)) {
-				return addStandardRewriteOperation(fixcore, operations, node, dataHolder);
-			}
+			return !isConstantExpression(first) && isConstantExpression(second);
 		}
 		
 		return false;
+	}
+
+	/**
+	 * Analyzes the argument pattern to determine the parameter structure.
+	 */
+	private ArgumentPattern analyzeArgumentPattern(Expression first, Expression third) {
+		ITypeBinding firstType = first.resolveTypeBinding();
+		boolean firstIsString = firstType != null && "java.lang.String".equals(firstType.getQualifiedName());
+		
+		ITypeBinding thirdType = third.resolveTypeBinding();
+		boolean thirdIsString = thirdType != null && "java.lang.String".equals(thirdType.getQualifiedName());
+		
+		boolean thirdIsNumeric = third instanceof NumberLiteral || 
+				(thirdType != null && (thirdType.isPrimitive() || isNumericWrapperType(thirdType)));
+		
+		if (firstIsString) {
+			return ArgumentPattern.JUNIT4_WITH_MESSAGE;
+		} else if (thirdIsString) {
+			return ArgumentPattern.JUNIT5_WITH_MESSAGE;
+		} else if (thirdIsNumeric) {
+			return ArgumentPattern.WITH_DELTA;
+		}
+		
+		return ArgumentPattern.UNKNOWN;
+	}
+
+	/**
+	 * Enum representing different argument patterns for assertions.
+	 */
+	private enum ArgumentPattern {
+		JUNIT4_WITH_MESSAGE,  // (message, expected, actual)
+		JUNIT5_WITH_MESSAGE,  // (expected, actual, message)
+		WITH_DELTA,           // (expected, actual, delta)
+		UNKNOWN
 	}
 
 	/**
@@ -238,21 +254,20 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 			return true;  // SomeClass.class
 		}
 		
-		// Check for static final fields (constants)
+		// Check for static final fields (constants) and enum constants
 		if (expr instanceof QualifiedName || expr instanceof SimpleName) {
 			IBinding binding = ((Name) expr).resolveBinding();
 			if (binding instanceof IVariableBinding) {
 				IVariableBinding varBinding = (IVariableBinding) binding;
+				
+				// Check for enum constants
+				if (varBinding.isEnumConstant()) {
+					return true;
+				}
+				
+				// Check for static final fields
 				int modifiers = varBinding.getModifiers();
 				return Modifier.isStatic(modifiers) && Modifier.isFinal(modifiers);
-			}
-		}
-		
-		// Check for enum constants
-		if (expr instanceof QualifiedName) {
-			IBinding binding = ((QualifiedName) expr).resolveBinding();
-			if (binding instanceof IVariableBinding) {
-				return ((IVariableBinding) binding).isEnumConstant();
 			}
 		}
 		
@@ -284,7 +299,6 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 		// For 2-argument version: assertEquals(expected, actual)
 		if (arguments.size() == 2) {
 			if (!isConstantExpression(first) && isConstantExpression(second)) {
-				// Swap parameters
 				swapArguments(mi, rewriter, group, 0, 1);
 			}
 			return;
@@ -293,37 +307,24 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 		// For 3-argument version
 		if (arguments.size() == 3) {
 			Expression third = (Expression) arguments.get(2);
+			ArgumentPattern pattern = analyzeArgumentPattern(first, third);
 			
-			// Check if first is message (String type)
-			ITypeBinding firstType = first.resolveTypeBinding();
-			boolean firstIsString = firstType != null && "java.lang.String".equals(firstType.getQualifiedName());
-			
-			// Check if third is message (String type)
-			ITypeBinding thirdType = third.resolveTypeBinding();
-			boolean thirdIsString = thirdType != null && "java.lang.String".equals(thirdType.getQualifiedName());
-			
-			// Check if third is numeric (delta parameter)
-			boolean thirdIsNumeric = third instanceof NumberLiteral || 
-					(thirdType != null && (thirdType.isPrimitive() || isNumericWrapperType(thirdType)));
-			
-			if (firstIsString) {
+			switch (pattern) {
+			case JUNIT4_WITH_MESSAGE:
 				// JUnit 4 style: assertEquals(message, expected, actual)
-				// Swap expected and actual if needed
 				if (!isConstantExpression(second) && isConstantExpression(third)) {
 					swapArguments(mi, rewriter, group, 1, 2);
 				}
-			} else if (thirdIsString) {
-				// JUnit 5 style: assertEquals(expected, actual, message)
-				// Swap expected and actual if needed
+				break;
+			case JUNIT5_WITH_MESSAGE:
+			case WITH_DELTA:
+				// JUnit 5 style or delta: assertEquals(expected, actual, message/delta)
 				if (!isConstantExpression(first) && isConstantExpression(second)) {
 					swapArguments(mi, rewriter, group, 0, 1);
 				}
-			} else if (thirdIsNumeric) {
-				// Delta parameter: assertEquals(expected, actual, delta)
-				// Swap expected and actual if needed
-				if (!isConstantExpression(first) && isConstantExpression(second)) {
-					swapArguments(mi, rewriter, group, 0, 1);
-				}
+				break;
+			default:
+				break;
 			}
 			return;
 		}
