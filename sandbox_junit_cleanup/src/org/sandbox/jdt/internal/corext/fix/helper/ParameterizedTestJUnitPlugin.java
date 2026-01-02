@@ -181,16 +181,19 @@ public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<I
 			}
 		}
 		
-		// Step 3: Transform @Parameters method and move it to the end
+		// Step 3: Create new transformed @Parameters method and add it at the end
 		if (parametersMethod != null) {
-			transformParametersMethod(parametersMethod, rewriter, ast, group, importRewriter);
-			// Move the data provider method to the end of the class body
-			// This ensures test methods appear before the data provider in the output
+			// Create a completely new method with transformations applied
+			// This avoids AST rewrite conflicts from modifying and moving the same node
+			MethodDeclaration newMethod = createTransformedParametersMethod(parametersMethod, ast, rewriter, importRewriter);
+			
+			// Remove the original method
 			ListRewrite bodyRewrite = rewriter.getListRewrite(typeDecl, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);
-			// Create copy of method BEFORE removing it (cannot remove and re-insert the same AST node)
-			ASTNode methodCopy = ASTNode.copySubtree(rewriter.getAST(), parametersMethod);
 			bodyRewrite.remove(parametersMethod, group);
-			bodyRewrite.insertLast(methodCopy, group);  // Insert copy, not original
+			
+			// Insert the new transformed method at the end of the class
+			// This ensures test methods appear before the data provider in the output
+			bodyRewrite.insertLast(newMethod, group);
 		}
 		
 		// Step 4: Remove constructor
@@ -250,39 +253,45 @@ public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<I
 	}
 	
 	/**
-	 * Transform @Parameters method to return Stream<Arguments>
+	 * Create a new transformed @Parameters method that returns Stream<Arguments>.
+	 * This creates a completely new MethodDeclaration instead of modifying the existing one,
+	 * avoiding AST rewrite conflicts when the method needs to be moved.
+	 * 
+	 * @param originalMethod The original @Parameters method from JUnit 4
+	 * @param ast The AST for creating new nodes
+	 * @param rewriter The AST rewriter (used for copying expressions from original method)
+	 * @param importRewriter The import rewriter
+	 * @return A new MethodDeclaration with JUnit 5 signature and body
 	 */
-	private void transformParametersMethod(MethodDeclaration method, ASTRewrite rewriter, AST ast,
-			TextEditGroup group, ImportRewrite importRewriter) {
+	private MethodDeclaration createTransformedParametersMethod(MethodDeclaration originalMethod, 
+			AST ast, ASTRewrite rewriter, ImportRewrite importRewriter) {
 		
-		// Remove @Parameters annotation and public modifier
-		ListRewrite modifiersRewrite = rewriter.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);
-		for (Object modifier : method.modifiers()) {
-			if (modifier instanceof Annotation) {
-				Annotation annot = (Annotation) modifier;
-				String annotName = annot.getTypeName().getFullyQualifiedName();
-				if ("Parameters".equals(annotName) || ORG_JUNIT_RUNNERS_PARAMETERIZED_PARAMETERS.equals(annotName)) {
-					modifiersRewrite.remove((ASTNode) modifier, group);
-				}
-			} else if (modifier instanceof Modifier) {
+		// Create new method declaration
+		MethodDeclaration newMethod = ast.newMethodDeclaration();
+		
+		// Set method name (same as original)
+		newMethod.setName(ast.newSimpleName(originalMethod.getName().getIdentifier()));
+		
+		// Add 'static' modifier (remove public, keep static)
+		for (Object modifier : originalMethod.modifiers()) {
+			if (modifier instanceof Modifier) {
 				Modifier mod = (Modifier) modifier;
-				if (mod.isPublic()) {
-					modifiersRewrite.remove(mod, group);
+				if (mod.isStatic()) {
+					newMethod.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.STATIC_KEYWORD));
 				}
 			}
 		}
 		
-		// Change return type to Stream<Arguments>
-		// Use short name for Arguments with proper import
+		// Set return type to Stream<Arguments>
 		Type streamType = ast.newSimpleType(ast.newSimpleName("Stream"));
 		Type argumentsType = ast.newSimpleType(ast.newSimpleName("Arguments"));
 		Type newReturnType = ast.newParameterizedType(streamType);
 		((org.eclipse.jdt.core.dom.ParameterizedType) newReturnType).typeArguments().add(argumentsType);
-		rewriter.set(method, MethodDeclaration.RETURN_TYPE2_PROPERTY, newReturnType, group);
+		newMethod.setReturnType2(newReturnType);
 		
 		// Transform method body: Arrays.asList(new Object[][]...) -> Stream.of(Arguments.of(...), ...)
-		if (method.getBody() != null && !method.getBody().statements().isEmpty()) {
-			Statement returnStmt = (Statement) method.getBody().statements().get(0);
+		if (originalMethod.getBody() != null && !originalMethod.getBody().statements().isEmpty()) {
+			Statement returnStmt = (Statement) originalMethod.getBody().statements().get(0);
 			if (returnStmt instanceof org.eclipse.jdt.core.dom.ReturnStatement) {
 				org.eclipse.jdt.core.dom.ReturnStatement retStmt = (org.eclipse.jdt.core.dom.ReturnStatement) returnStmt;
 				Expression returnExpr = retStmt.getExpression();
@@ -305,13 +314,15 @@ public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<I
 						if (row instanceof ArrayInitializer) {
 							ArrayInitializer arrayInit = (ArrayInitializer) row;
 							for (Object expr : arrayInit.expressions()) {
-								argumentsOf.arguments().add(rewriter.createCopyTarget((Expression) expr));
+								// Copy expression from original method to new method
+								argumentsOf.arguments().add(ASTNode.copySubtree(ast, (Expression) expr));
 							}
 						} else if (row instanceof ArrayCreation) {
 							org.eclipse.jdt.core.dom.ArrayCreation arrayCreate = (org.eclipse.jdt.core.dom.ArrayCreation) row;
 							if (arrayCreate.getInitializer() != null) {
 								for (Object expr : arrayCreate.getInitializer().expressions()) {
-									argumentsOf.arguments().add(rewriter.createCopyTarget((Expression) expr));
+									// Copy expression from original method to new method
+									argumentsOf.arguments().add(ASTNode.copySubtree(ast, (Expression) expr));
 								}
 							}
 						}
@@ -319,12 +330,24 @@ public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<I
 						streamOf.arguments().add(argumentsOf);
 					}
 					
+					// Create new return statement
 					org.eclipse.jdt.core.dom.ReturnStatement newReturnStmt = ast.newReturnStatement();
 					newReturnStmt.setExpression(streamOf);
-					rewriter.replace(retStmt, newReturnStmt, group);
+					
+					// Create new method body with the return statement
+					org.eclipse.jdt.core.dom.Block newBody = ast.newBlock();
+					newBody.statements().add(newReturnStmt);
+					newMethod.setBody(newBody);
 				}
 			}
 		}
+		
+		// If we couldn't transform the body, just copy the original body
+		if (newMethod.getBody() == null && originalMethod.getBody() != null) {
+			newMethod.setBody((org.eclipse.jdt.core.dom.Block) ASTNode.copySubtree(ast, originalMethod.getBody()));
+		}
+		
+		return newMethod;
 	}
 	
 	/**
