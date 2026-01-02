@@ -137,11 +137,7 @@ public class MigrationRunnersTest {
 					}
 					
 					static Stream<Arguments> data() {
-						return Stream.of(
-							Arguments.of(1, 2),
-							Arguments.of(2, 4),
-							Arguments.of(3, 6)
-						);
+						return Stream.of(Arguments.of(1, 2), Arguments.of(2, 4), Arguments.of(3, 6));
 					}
 				}
 				"""
