@@ -68,8 +68,18 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_ASSERT, MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT,
 				FALSE_TRUE);
 		intent(junitGroup);
+		intent(junitGroup);
+		final CheckboxPreference junit_assert_optimization= createCheckboxPref(junitGroup, numColumns-2,
+				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_ASSERT_OPTIMIZATION, MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT_OPTIMIZATION,
+				FALSE_TRUE);
+		intent(junitGroup);
 		final CheckboxPreference junit_assume= createCheckboxPref(junitGroup, numColumns-1,
 				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_ASSUME, MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME,
+				FALSE_TRUE);
+		intent(junitGroup);
+		intent(junitGroup);
+		final CheckboxPreference junit_assume_optimization= createCheckboxPref(junitGroup, numColumns-2,
+				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_ASSUME_OPTIMIZATION, MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME_OPTIMIZATION,
 				FALSE_TRUE);
 		intent(junitGroup);
 		final CheckboxPreference junit_ignore= createCheckboxPref(junitGroup, numColumns-1,
@@ -178,6 +188,14 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 		registerSlavePreference(junit_test, new CheckboxPreference[] {
 				junit_test_timeout,
 				junit_test_expected
+		});
+		
+		// Add nested dependencies for assert/assume optimizations
+		registerSlavePreference(junit_assert, new CheckboxPreference[] {
+				junit_assert_optimization
+		});
+		registerSlavePreference(junit_assume, new CheckboxPreference[] {
+				junit_assume_optimization
 		});
 		
 		// Add nested dependencies for @RunWith variants

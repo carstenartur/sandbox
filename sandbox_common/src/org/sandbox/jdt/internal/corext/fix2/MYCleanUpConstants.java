@@ -105,9 +105,17 @@ public class MYCleanUpConstants {
 	 */
 	public static final String JUNIT_CLEANUP_4_ASSERT= "cleanup.junitcleanup_4_assert"; //$NON-NLS-1$
 	/**
+	 * Optimization of assertTrue/assertFalse to more specific assertions
+	 */
+	public static final String JUNIT_CLEANUP_4_ASSERT_OPTIMIZATION= "cleanup.junitcleanup_4_assert_optimization"; //$NON-NLS-1$
+	/**
 	 * 
 	 */
 	public static final String JUNIT_CLEANUP_4_ASSUME= "cleanup.junitcleanup_4_assume"; //$NON-NLS-1$
+	/**
+	 * Optimization of assumeTrue/assumeFalse to more specific assumptions
+	 */
+	public static final String JUNIT_CLEANUP_4_ASSUME_OPTIMIZATION= "cleanup.junitcleanup_4_assume_optimization"; //$NON-NLS-1$
 	/**
 	 * 
 	 */
