@@ -124,12 +124,10 @@ public final class ProspectiveOperation {
 					}
 				}
 				
-				// Skip if this is the name part of a field access (e.g., "out" in "System.out")
+				// Skip if this is any part of a field access (e.g., "System" or "out" in "System.out")
 				if (parent instanceof org.eclipse.jdt.core.dom.FieldAccess) {
-					org.eclipse.jdt.core.dom.FieldAccess fa = (org.eclipse.jdt.core.dom.FieldAccess) parent;
-					if (fa.getName() == node) {
-						return super.visit(node); // Skip field name
-					}
+					// Skip both the expression (qualifier) and the name (field name)
+					return super.visit(node);
 				}
 				
 				// Skip if this is the name part of a method invocation (e.g., "println" in "out.println()")
