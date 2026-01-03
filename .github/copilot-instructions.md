@@ -1,5 +1,32 @@
 # GitHub Copilot Instructions for Sandbox Project
 
+## Quick Reference - Common Issues
+
+⚠️ **Before doing ANYTHING**: Set Java 21
+```bash
+export JAVA_HOME=/usr/lib/jvm/temurin-21-jdk-amd64
+export PATH=$JAVA_HOME/bin:$PATH
+java -version  # Must show "21"
+```
+
+⚠️ **Test failures**: ALWAYS check CI logs first, never guess the expected output
+```bash
+# Download CI log (user will provide URL)
+curl -s "<log_url>" > /tmp/ci_log.txt
+grep -A 100 "expected:" /tmp/ci_log.txt
+```
+
+⚠️ **Running tests**: Must use xvfb-run and specify module
+```bash
+xvfb-run --auto-servernum mvn test -Dtest=TestClass -pl module_name_test
+```
+
+⚠️ **Class version errors**: You're using Java 17 instead of Java 21
+```
+UnsupportedClassVersionError: class file version 65.0
+→ Fix: Set JAVA_HOME to temurin-21-jdk-amd64
+```
+
 ## Repository Overview
 
 This is a sandbox repository for experimenting with Eclipse JDT cleanups, build strategies, and various Eclipse plugins. The project contains multiple Eclipse plugin modules focused on code quality improvements and automated refactoring.
@@ -29,6 +56,43 @@ This is a sandbox repository for experimenting with Eclipse JDT cleanups, build 
 
 ## Build, Test, and Lint Instructions
 
+### Java Version Requirements
+
+**CRITICAL**: This project requires **Java 21** to build and test.
+
+- **CI Environment**: Uses Java 21 (Temurin) as configured in `.github/workflows/maven.yml`
+- **Local Development**: Must use Java 21 to match CI environment
+- **Target Platform**: Eclipse 2025-09 requires Java 21
+
+#### Setting Java Version Locally
+
+If you have multiple Java versions installed (common in GitHub Actions runners):
+
+```bash
+# Check available Java versions
+ls /usr/lib/jvm/
+
+# Available versions typically include:
+# - temurin-8-jdk-amd64
+# - temurin-11-jdk-amd64  
+# - temurin-17-jdk-amd64 (often the default)
+# - temurin-21-jdk-amd64 (REQUIRED for this project)
+# - temurin-25-jdk-amd64
+
+# Set JAVA_HOME to Java 21
+export JAVA_HOME=/usr/lib/jvm/temurin-21-jdk-amd64
+export PATH=$JAVA_HOME/bin:$PATH
+
+# Verify Java version
+java -version  # Should show "openjdk version "21..."
+```
+
+#### Why Java 21 is Required
+
+- **Tycho 5.0.1** requires Java 21 (class file version 65.0)
+- **Eclipse 2025-09** target platform requires Java 21
+- Running with Java 17 will cause: `UnsupportedClassVersionError: ...class file version 65.0, this version only recognizes up to 61.0`
+
 ### Building the Project
 
 ```bash
@@ -48,12 +112,27 @@ mvn -Dinclude=web -Pjacoco verify
 Tests are Eclipse plugin tests that require X virtual framebuffer (Xvfb) on Linux:
 
 ```bash
+# IMPORTANT: Set Java 21 first!
+export JAVA_HOME=/usr/lib/jvm/temurin-21-jdk-amd64
+export PATH=$JAVA_HOME/bin:$PATH
+
 # Run tests with display server
 xvfb-run --auto-servernum mvn -Pjacoco verify
+
+# Run specific test class
+xvfb-run --auto-servernum mvn test -Dtest=Java22CleanUpTest -pl sandbox_functional_converter_test
+
+# Run specific test method
+xvfb-run --auto-servernum mvn test -Dtest=Java22CleanUpTest#testSimpleForEachConversion -pl sandbox_functional_converter_test
 
 # Tests are located in modules ending with `_test`
 # Test files use JUnit 5
 ```
+
+**Common Test Issues**:
+- **Java version mismatch**: Ensure Java 21 is active (`java -version` should show "21")
+- **Class version errors**: Usually means Java 17 or older is being used instead of Java 21
+- **Xvfb issues**: Tests need a display server; use `xvfb-run --auto-servernum`
 
 **When tests fail in CI**: Always check the CI logs to see the actual vs expected output. See [Accessing CI Logs](#accessing-ci-logs) section below.
 
@@ -362,6 +441,13 @@ All feature module directories (e.g., `sandbox_encoding_quickfix_feature`, `sand
 ## Common Commands
 
 ```bash
+# IMPORTANT: Always set Java 21 first!
+export JAVA_HOME=/usr/lib/jvm/temurin-21-jdk-amd64
+export PATH=$JAVA_HOME/bin:$PATH
+
+# Verify Java version (should show "21")
+java -version
+
 # Full build with coverage
 mvn clean verify -Pjacoco
 
@@ -369,7 +455,10 @@ mvn clean verify -Pjacoco
 mvn clean install -DskipTests
 
 # Run specific test
-mvn test -Dtest=ExplicitEncodingCleanUpTest
+xvfb-run --auto-servernum mvn test -Dtest=ExplicitEncodingCleanUpTest -pl sandbox_encoding_quickfix_test
+
+# Run specific test method
+xvfb-run --auto-servernum mvn test -Dtest=Java22CleanUpTest#testSimpleForEachConversion -pl sandbox_functional_converter_test
 
 # Update license headers (disabled by default)
 mvn license:update-file-header
@@ -385,6 +474,10 @@ mvn clean verify -Pjacoco
 
 - **Tycho Resolution Errors**: Check target platform in `sandbox_target/sandbox_target.target`
 - **SpotBugs Failures**: Check exclusion file or add suppressions
+- **Java Version Errors**: 
+  - **Error**: `UnsupportedClassVersionError: class file version 65.0, this version only recognizes up to 61.0`
+  - **Cause**: Using Java 17 instead of Java 21
+  - **Fix**: Set `JAVA_HOME=/usr/lib/jvm/temurin-21-jdk-amd64` and update PATH
 - **Test Failures**: Ensure Xvfb is running for UI tests
   - **If tests fail in CI but not locally**: Download and analyze the CI logs to see actual output
   - **Formatting mismatches**: Eclipse formatter may produce different whitespace, line breaks, or indentation than expected
@@ -406,6 +499,16 @@ mvn clean verify -Pjacoco
 ## Accessing CI Logs
 
 When debugging test failures or CI issues, **ALWAYS** access the actual CI logs rather than relying on assumptions:
+
+### Why CI Logs Are Critical
+
+**YOU CANNOT RUN TESTS LOCALLY IN THE SANDBOX ENVIRONMENT** due to:
+- Java version issues (sandbox may have Java 17, but project needs Java 21)
+- Missing Eclipse runtime dependencies
+- Tycho/P2 repository resolution issues
+- Limited execution time for long-running builds
+
+**Therefore**: When tests fail, you **MUST** access CI logs to see actual output. Do not try to run tests locally first.
 
 ### How to Access CI Logs
 
@@ -447,3 +550,5 @@ When debugging test failures or CI issues, **ALWAYS** access the actual CI logs 
 - Code must be compatible with Eclipse plugin classloading
 - When adding new cleanups, follow the existing pattern in other modules
 - **When test failures occur, ALWAYS access CI logs to see actual vs expected output before making changes**
+- **ALWAYS use Java 21**: Set `JAVA_HOME=/usr/lib/jvm/temurin-21-jdk-amd64` before running any Maven commands
+- **Class version errors = wrong Java version**: If you see `UnsupportedClassVersionError`, you're not using Java 21
