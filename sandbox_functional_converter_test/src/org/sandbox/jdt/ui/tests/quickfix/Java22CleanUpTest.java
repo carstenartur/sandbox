@@ -1804,7 +1804,7 @@ class MyTest {
 		"SIMPLECONVERT",
 		"CHAININGMAP",
 		"ChainingFilterMapForEachConvert",
-//		"SmoothLongerChaining",
+		"SmoothLongerChaining",
 //		"MergingOperations",
 //		"BeautificationWorks",
 //		"BeautificationWorks2",
