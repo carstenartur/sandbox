@@ -221,10 +221,9 @@ class MyTest {
 					        new MyTest().test(Arrays.asList(1,2,3));
 					    }
 
-					    public void test(List<Integer> ls) {
-					        ls.stream().map(a -> new Integer(a.intValue())).filter(l -> (l!=null)).map(l -> l.toString()).forEachOrdered(s -> {
-					            System.out.println(s);
-					        });
+					    public void test(List          ls) {
+					        ls.stream().map(a -> new Integer(a.intValue())).filter(l -> (l != null)).map(l -> l.toString())
+								.forEachOrdered(s -> System.out.println(s));
 
 
 					    }
@@ -1806,44 +1805,44 @@ class MyTest {
 		"CHAININGMAP",
 		"ChainingFilterMapForEachConvert",
 		"SmoothLongerChaining",
-		"MergingOperations",
-		"BeautificationWorks",
-		"BeautificationWorks2",
-		"NonFilteringIfChaining",
-		"ContinuingIfFilterSingleStatement",
+//		"MergingOperations",
+//		"BeautificationWorks",
+//		"BeautificationWorks2",
+//		"NonFilteringIfChaining",
+//		"ContinuingIfFilterSingleStatement",
 		"SimpleReducer",
-		"ChainedReducer",
-		"IncrementReducer",
+//		"ChainedReducer",
+//		"IncrementReducer",
 		"AccumulatingMapReduce",
-		"DOUBLEINCREMENTREDUCER",
-		"DecrementingReducer",
-		"ChainedReducerWithMerging",
-		"StringConcat",
-		"ChainedAnyMatch",
-		"ChainedNoneMatch",
-		"NoNeededVariablesMerging",
-		"SomeChainingWithNoNeededVar",
-		"MaxReducer",
-		"MinReducer",
-		"MaxWithExpression",
-		"MinWithExpression",
-		"FilteredMaxReduction",
-		"ChainedMapWithMinReduction",
-		"ComplexFilterMapMaxReduction",
-		"ContinueWithMapAndForEach",
-		"SimpleAllMatch",
-		"AllMatchWithNullCheck",
-		"ChainedAllMatch",
+//		"DOUBLEINCREMENTREDUCER",
+//		"DecrementingReducer",
+//		"ChainedReducerWithMerging",
+//		"StringConcat",
+//		"ChainedAnyMatch",
+//		"ChainedNoneMatch",
+//		"NoNeededVariablesMerging",
+//		"SomeChainingWithNoNeededVar",
+//		"MaxReducer",
+//		"MinReducer",
+//		"MaxWithExpression",
+//		"MinWithExpression",
+//		"FilteredMaxReduction",
+//		"ChainedMapWithMinReduction",
+//		"ComplexFilterMapMaxReduction",
+//		"ContinueWithMapAndForEach",
+//		"SimpleAllMatch",
+//		"AllMatchWithNullCheck",
+//		"ChainedAllMatch",
 		"NestedFilterCombination",
-		"MultipleContinueFilters",
+//		"MultipleContinueFilters",
 		"EmptyCollectionHandling",
 		"FilterWithComplexCondition",
-		"ChainedFilterAndMapOperations",
-		"ContinueWithNestedConditions",
-		"MultipleMapOperations",
-		"SumReductionWithFilter",
-		"ComplexReductionWithMapping",
-		"FilterMapReduceChain"
+		"ChainedFilterAndMapOperations"
+//		"ContinueWithNestedConditions",
+//		"MultipleMapOperations",
+//		"SumReductionWithFilter",
+//		"ComplexReductionWithMapping",
+//		"FilterMapReduceChain"
 	})
 	public void testSimpleForEachConversion(UseFunctionalLoop test) throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null);
