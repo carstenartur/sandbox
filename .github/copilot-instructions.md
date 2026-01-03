@@ -55,6 +55,8 @@ xvfb-run --auto-servernum mvn -Pjacoco verify
 # Test files use JUnit 5
 ```
 
+**When tests fail in CI**: Always check the CI logs to see the actual vs expected output. See [Accessing CI Logs](#accessing-ci-logs) section below.
+
 ### Linting and Code Quality
 
 ```bash
@@ -241,6 +243,7 @@ When creating new cleanups:
 - **Note**: Java 7 is no longer supported by Eclipse and should not be targeted
 - Use parameterized tests with `@EnumSource` or `@ValueSource`
 - Include disabled tests (`@Disabled`) for future features
+- **When test expectations don't match cleanup output**: Check CI logs to see what the cleanup actually produces - never guess the expected formatting. Eclipse's formatter may add spaces, line breaks, or indentation differently than expected.
 
 ### Version Compatibility
 
@@ -344,6 +347,8 @@ All feature module directories (e.g., `sandbox_encoding_quickfix_feature`, `sand
 1. **Commits**: Write clear commit messages explaining the change
 2. **Testing**: Always run tests before committing
 3. **CI**: All checks must pass (Maven build, SpotBugs, CodeQL, Codacy)
+   - **On CI failures**: Download and analyze CI logs to understand actual vs expected behavior
+   - **Never assume**: Always verify what the code actually produces in CI environment
 4. **Pull Requests**: 
    - **Keep PRs small and focused**: Each PR should address a single aspect or concern
    - **Avoid mixing changes**: Don't combine formatting changes with logic changes, or multiple unrelated features
@@ -352,6 +357,7 @@ All feature module directories (e.g., `sandbox_encoding_quickfix_feature`, `sand
    - Include description of changes and test results
    - For backporting features, PRs may need to target multiple branches (see Multi-Version Support above)
    - **Plugin changes**: Confirm that `architecture.md` and `todo.md` were reviewed and updated as needed
+   - **Test failures**: If tests fail, access CI logs before attempting fixes
 
 ## Common Commands
 
@@ -380,6 +386,8 @@ mvn clean verify -Pjacoco
 - **Tycho Resolution Errors**: Check target platform in `sandbox_target/sandbox_target.target`
 - **SpotBugs Failures**: Check exclusion file or add suppressions
 - **Test Failures**: Ensure Xvfb is running for UI tests
+  - **If tests fail in CI but not locally**: Download and analyze the CI logs to see actual output
+  - **Formatting mismatches**: Eclipse formatter may produce different whitespace, line breaks, or indentation than expected
 
 ### Common Pitfalls
 
@@ -395,6 +403,41 @@ mvn clean verify -Pjacoco
 - [SpotBugs](https://spotbugs.github.io/)
 - [JUnit 5](https://junit.org/junit5/)
 
+## Accessing CI Logs
+
+When debugging test failures or CI issues, **ALWAYS** access the actual CI logs rather than relying on assumptions:
+
+### How to Access CI Logs
+
+1. **From PR comments**: When a user provides a CI log URL, download and analyze it:
+   ```bash
+   curl -s "<log_url>" > /tmp/ci_log.txt
+   grep -A 100 "<test_name>" /tmp/ci_log.txt
+   ```
+
+2. **Using GitHub Actions API**: Access workflow run logs programmatically:
+   ```bash
+   # List workflow runs for a branch
+   gh api repos/carstenartur/sandbox/actions/workflows/maven.yml/runs?branch=<branch_name>
+   
+   # Get job logs
+   gh api repos/carstenartur/sandbox/actions/jobs/<job_id>/logs
+   ```
+
+3. **Finding test failures in logs**: Look for comparison patterns:
+   ```bash
+   # Find "expected:" vs "but was:" sections
+   grep -B 5 -A 50 "expected:" /tmp/ci_log.txt
+   ```
+
+### Why This Matters
+
+- **Formatting differences**: Eclipse's formatter may produce different output than expected (e.g., line breaks, indentation, spaces around operators)
+- **Actual vs assumed behavior**: The cleanup code may behave differently than anticipated
+- **Exact whitespace**: Tests may fail due to tabs vs spaces, extra newlines, or indentation levels
+
+**CRITICAL**: Never guess the expected formatting. Always check the CI log to see what the cleanup actually produces, then update test expectations to match.
+
 ## Notes for AI Assistants
 
 - This is an Eclipse plugin project, not a standard Java project
@@ -403,3 +446,4 @@ mvn clean verify -Pjacoco
 - Maven dependencies are resolved via P2, not Maven Central
 - Code must be compatible with Eclipse plugin classloading
 - When adding new cleanups, follow the existing pattern in other modules
+- **When test failures occur, ALWAYS access CI logs to see actual vs expected output before making changes**
