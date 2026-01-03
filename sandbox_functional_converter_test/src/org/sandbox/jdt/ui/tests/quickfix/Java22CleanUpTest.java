@@ -221,7 +221,7 @@ class MyTest {
 					        new MyTest().test(Arrays.asList(1,2,3));
 					    }
 
-					    public void test(List          ls) {
+					    public void test(List<Integer> ls) {
 					        ls.stream().map(a -> new Integer(a.intValue())).filter(l -> (l != null)).map(l -> l.toString())
 								.forEachOrdered(s -> System.out.println(s));
 
