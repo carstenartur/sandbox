@@ -209,24 +209,25 @@ class MyTest {
 			    }
 			}""",
 
-				"""
-					package test1;
+"""
+package test1;
 
-					import java.util.Arrays;
-					import java.util.List;
+import java.util.Arrays;
+import java.util.List;
 
-					class MyTest {
+class MyTest {
 
-					    public static void main(String[] args) {
-					        new MyTest().test(Arrays.asList(1,2,3));
-					    }
+    public static void main(String[] args) {
+        new MyTest().test(Arrays.asList(1,2,3));
+    }
 
-					    public void test(List<Integer> ls) {
-					        ls.stream().map(a -> new Integer(a.intValue())).filter(l -> (l != null)).map(l -> l.toString()).forEachOrdered(s -> System.out.println(s));
+    public void test(List<Integer> ls) {
+        ls.stream().map(a -> new Integer(a.intValue())).filter(l -> (l != null)).map(l -> l.toString())
+				.forEachOrdered(s -> System.out.println(s));
 
 
-					    }
-					}"""),
+    }
+}"""),
 		NonFilteringIfChaining("""
 			package test1;
 
@@ -305,25 +306,25 @@ class MyTest {
 
 			    }
 			}""",
+"""
+package test1;
 
-				"""
-					package test1;
+import java.util.Arrays;
+import java.util.List;
 
-					import java.util.Arrays;
-					import java.util.List;
+class MyTest {
 
-					class MyTest {
+    public static void main(String[] args) {
+        new MyTest().test(Arrays.asList(1, 2, 3));
+    }
 
-					    public static void main(String[] args) {
-					        new MyTest().test(Arrays.asList(1, 2, 3));
-					    }
-
-					    public void test(List<Integer> ls) {
-					        ls.stream().filter(l -> !(l == null)).map(l -> l.toString()).filter(s -> (s != null)).forEachOrdered(s -> System.out.println(s));
+    public void test(List<Integer> ls) {
+        ls.stream().filter(l -> !(l == null)).map(l -> l.toString()).filter(s -> (s != null))
+				.forEachOrdered(s -> System.out.println(s));
 
 
-					    }
-					}"""),
+    }
+}"""),
 		ChainedAnyMatch("""
 			package test1;
 
@@ -1880,7 +1881,7 @@ class MyTest {
 //		"MaxReducer",
 //		"MinReducer",
 //		"MaxWithExpression",  // TODO: RuntimeException - possibly no transformation needed
-		"MinWithExpression",
+//		"MinWithExpression",
 //		"FilteredMaxReduction",
 //		"ChainedMapWithMinReduction",
 //		"ComplexFilterMapMaxReduction",
