@@ -29,6 +29,7 @@ import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.NumberLiteral;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
+import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
@@ -348,10 +349,25 @@ public final class ProspectiveOperation {
 
 			lambda.setBody(block);
 		} else if (operationType == OperationType.FILTER && originalExpression != null) {
-			// For FILTER: wrap condition in parentheses
-			ParenthesizedExpression parenExpr = ast.newParenthesizedExpression();
-			parenExpr.setExpression((Expression) ASTNode.copySubtree(ast, originalExpression));
-			lambda.setBody(parenExpr);
+			// For FILTER: wrap condition in parentheses only if needed
+			// PrefixExpression with NOT already has proper precedence, no extra parens needed
+			if (originalExpression instanceof PrefixExpression) {
+				PrefixExpression prefix = (PrefixExpression) originalExpression;
+				if (prefix.getOperator() == PrefixExpression.Operator.NOT) {
+					// Negation already has proper precedence, use as-is
+					lambda.setBody((Expression) ASTNode.copySubtree(ast, originalExpression));
+				} else {
+					// Other prefix operators might need parentheses
+					ParenthesizedExpression parenExpr = ast.newParenthesizedExpression();
+					parenExpr.setExpression((Expression) ASTNode.copySubtree(ast, originalExpression));
+					lambda.setBody(parenExpr);
+				}
+			} else {
+				// For other expressions, wrap in parentheses
+				ParenthesizedExpression parenExpr = ast.newParenthesizedExpression();
+				parenExpr.setExpression((Expression) ASTNode.copySubtree(ast, originalExpression));
+				lambda.setBody(parenExpr);
+			}
 		} else if (operationType == OperationType.FOREACH && originalExpression != null 
 				&& originalStatement instanceof org.eclipse.jdt.core.dom.ExpressionStatement) {
 			// For FOREACH with a single expression (from ExpressionStatement):
