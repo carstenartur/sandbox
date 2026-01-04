@@ -455,9 +455,12 @@ public class StreamPipelineBuilder {
 			// For SUM/PRODUCT/STRING_CONCAT: extract RHS expression
 			Expression mapExpression = extractReduceExpression(stmt);
 			if (mapExpression != null) {
-				ProspectiveOperation mapOp = new ProspectiveOperation(mapExpression,
-						ProspectiveOperation.OperationType.MAP, currentVarName);
-				ops.add(mapOp);
+				// Skip identity mapping: if the expression is just the current variable, don't add MAP
+				if (!isIdentityMapping(mapExpression, currentVarName)) {
+					ProspectiveOperation mapOp = new ProspectiveOperation(mapExpression,
+							ProspectiveOperation.OperationType.MAP, currentVarName);
+					ops.add(mapOp);
+				}
 			}
 		} else if (isMinMaxReducer(reducerType)) {
 			// For MAX/MIN: extract non-accumulator argument
@@ -535,6 +538,22 @@ public class StreamPipelineBuilder {
 	 */
 	private boolean isMinMaxReducer(ProspectiveOperation.ReducerType type) {
 		return type == ProspectiveOperation.ReducerType.MAX || type == ProspectiveOperation.ReducerType.MIN;
+	}
+
+	/**
+	 * Checks if an expression represents an identity mapping (e.g., num -> num).
+	 * 
+	 * @param expression the expression to check
+	 * @param varName    the variable name to compare against
+	 * @return true if the expression is just a reference to varName (identity
+	 *         mapping), false otherwise
+	 */
+	private boolean isIdentityMapping(Expression expression, String varName) {
+		if (expression instanceof SimpleName && varName != null) {
+			SimpleName simpleName = (SimpleName) expression;
+			return simpleName.getIdentifier().equals(varName);
+		}
+		return false;
 	}
 
 	/**
