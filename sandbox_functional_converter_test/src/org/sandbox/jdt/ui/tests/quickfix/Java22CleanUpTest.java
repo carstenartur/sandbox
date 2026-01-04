@@ -1865,7 +1865,7 @@ class MyTest {
 //		"BeautificationWorks",
 //		"BeautificationWorks2",
 //		"NonFilteringIfChaining",
-//		"ContinuingIfFilterSingleStatement",
+		"ContinuingIfFilterSingleStatement",
 		"SimpleReducer",
 //		"ChainedReducer",
 //		"IncrementReducer",
