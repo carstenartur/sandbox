@@ -32,9 +32,14 @@ import org.eclipse.jdt.core.dom.PostfixExpression;
 import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.eclipse.jdt.core.dom.IAnnotationBinding;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
 
 /**
  * Builder class for constructing stream pipelines from enhanced for-loops.
@@ -605,7 +610,13 @@ public class StreamPipelineBuilder {
 					ProspectiveOperation.ReducerType reducerType;
 
 					if (assignment.getOperator() == Assignment.Operator.PLUS_ASSIGN) {
-						reducerType = ProspectiveOperation.ReducerType.SUM;
+						// Check if this is string concatenation
+						ITypeBinding varType = getTypeBinding(varName);
+						if (varType != null && "java.lang.String".equals(varType.getQualifiedName())) {
+							reducerType = ProspectiveOperation.ReducerType.STRING_CONCAT;
+						} else {
+							reducerType = ProspectiveOperation.ReducerType.SUM;
+						}
 					} else if (assignment.getOperator() == Assignment.Operator.TIMES_ASSIGN) {
 						reducerType = ProspectiveOperation.ReducerType.PRODUCT;
 					} else if (assignment.getOperator() == Assignment.Operator.MINUS_ASSIGN) {
@@ -617,7 +628,16 @@ public class StreamPipelineBuilder {
 
 					accumulatorVariable = varName;
 					accumulatorType = getVariableType(varName);
-					return new ProspectiveOperation(stmt, varName, reducerType);
+					
+					ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);
+					
+					// For STRING_CONCAT, check if the accumulator variable has @NotNull
+					if (reducerType == ProspectiveOperation.ReducerType.STRING_CONCAT) {
+						boolean isNullSafe = hasNotNullAnnotation(varName);
+						op.setNullSafe(isNullSafe);
+					}
+					
+					return op;
 				}
 
 				// Check for regular assignment with Math.max/Math.min pattern
@@ -1420,5 +1440,120 @@ public class StreamPipelineBuilder {
 
 		// Method calls and other expressions are generally safe
 		return true;
+	}
+
+	/**
+	 * Checks if a variable has a @NotNull or @NonNull annotation.
+	 * This is used to determine if String::concat can be safely used instead of
+	 * the null-safe lambda (a, b) -> a + b.
+	 * 
+	 * @param varName the variable name to check
+	 * @return true if the variable has a @NotNull or @NonNull annotation
+	 */
+	private boolean hasNotNullAnnotation(String varName) {
+		if (varName == null) {
+			return false;
+		}
+
+		// Try to find the variable declaration in the AST
+		// Start from the for loop and walk up to find variable declarations
+		ASTNode current = forLoop;
+		while (current != null) {
+			if (current instanceof Block) {
+				Block block = (Block) current;
+				for (Object stmtObj : block.statements()) {
+					if (stmtObj instanceof VariableDeclarationStatement) {
+						VariableDeclarationStatement varDecl = (VariableDeclarationStatement) stmtObj;
+						for (Object fragObj : varDecl.fragments()) {
+							if (fragObj instanceof VariableDeclarationFragment) {
+								VariableDeclarationFragment frag = (VariableDeclarationFragment) fragObj;
+								if (varName.equals(frag.getName().getIdentifier())) {
+									// Found the variable, check for @NotNull annotation
+									IVariableBinding binding = frag.resolveBinding();
+									if (binding != null) {
+										return hasNotNullAnnotationOnBinding(binding);
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			current = current.getParent();
+		}
+
+		return false;
+	}
+
+	/**
+	 * Gets the type binding for a variable name.
+	 * 
+	 * @param varName the variable name
+	 * @return the type binding, or null if not found
+	 */
+	private ITypeBinding getTypeBinding(String varName) {
+		if (varName == null) {
+			return null;
+		}
+
+		// Try to find the variable declaration in the AST
+		ASTNode current = forLoop;
+		while (current != null) {
+			if (current instanceof Block) {
+				Block block = (Block) current;
+				for (Object stmtObj : block.statements()) {
+					if (stmtObj instanceof VariableDeclarationStatement) {
+						VariableDeclarationStatement varDecl = (VariableDeclarationStatement) stmtObj;
+						for (Object fragObj : varDecl.fragments()) {
+							if (fragObj instanceof VariableDeclarationFragment) {
+								VariableDeclarationFragment frag = (VariableDeclarationFragment) fragObj;
+								if (varName.equals(frag.getName().getIdentifier())) {
+									IVariableBinding binding = frag.resolveBinding();
+									if (binding != null) {
+										return binding.getType();
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			current = current.getParent();
+		}
+
+		return null;
+	}
+
+	/**
+	 * Checks if a binding has @NotNull or @NonNull annotation.
+	 * 
+	 * @param binding the variable binding to check
+	 * @return true if the binding has a @NotNull or @NonNull annotation
+	 */
+	private boolean hasNotNullAnnotationOnBinding(IVariableBinding binding) {
+		if (binding == null) {
+			return false;
+		}
+
+		IAnnotationBinding[] annotations = binding.getAnnotations();
+		if (annotations != null) {
+			for (IAnnotationBinding annotation : annotations) {
+				String annotationName = annotation.getName();
+				if ("NotNull".equals(annotationName) || "NonNull".equals(annotationName)) {
+					return true;
+				}
+				// Also check for fully qualified names
+				ITypeBinding annotationType = annotation.getAnnotationType();
+				if (annotationType != null) {
+					String qualifiedName = annotationType.getQualifiedName();
+					if (qualifiedName != null && 
+						(qualifiedName.endsWith(".NotNull") || qualifiedName.endsWith(".NonNull"))) {
+						return true;
+					}
+				}
+			}
+		}
+
+		return false;
 	}
 }

@@ -100,6 +100,12 @@ public final class ProspectiveOperation {
 	private ReducerType reducerType;
 
 	/**
+	 * Indicates if this operation is null-safe (e.g., variables are annotated with @NotNull).
+	 * When true for STRING_CONCAT, String::concat method reference can be used safely.
+	 */
+	private boolean isNullSafe = false;
+
+	/**
 	 * Set of variables consumed by this operation. Used for tracking variable scope
 	 * and preventing leaks.
 	 */
@@ -583,6 +589,24 @@ public final class ProspectiveOperation {
 	}
 
 	/**
+	 * Checks if this operation is null-safe (e.g., variables have @NotNull annotations).
+	 * 
+	 * @return true if the operation is null-safe
+	 */
+	public boolean isNullSafe() {
+		return isNullSafe;
+	}
+
+	/**
+	 * Sets whether this operation is null-safe.
+	 * 
+	 * @param isNullSafe true if the operation is null-safe
+	 */
+	public void setNullSafe(boolean isNullSafe) {
+		this.isNullSafe = isNullSafe;
+	}
+
+	/**
 	 * Returns the set of variables consumed by this operation. This includes all
 	 * SimpleName references in the operation's expression.
 	 * 
@@ -663,8 +687,13 @@ public final class ProspectiveOperation {
 			// Use (accumulator, _item) -> accumulator * _item lambda
 			return createBinaryOperatorLambda(ast, InfixExpression.Operator.TIMES);
 		case STRING_CONCAT:
-			// Use (a, b) -> a + b lambda for string concatenation (null-safe)
-			return createBinaryOperatorLambda(ast, InfixExpression.Operator.PLUS);
+			// Use String::concat method reference when null-safe (variables have @NotNull),
+			// otherwise use (a, b) -> a + b lambda for null-safe concatenation
+			if (isNullSafe) {
+				return createMethodReference(ast, "String", "concat");
+			} else {
+				return createBinaryOperatorLambda(ast, InfixExpression.Operator.PLUS);
+			}
 		case MAX:
 			// Use Math::max method reference for max accumulation
 			return createMathMethodReference(ast, "max");
