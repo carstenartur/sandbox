@@ -178,10 +178,10 @@ public class HintRegistry {
 				
 				// Check for @Hint annotation
 				Hint hintAnnotation = method.getAnnotation(Hint.class);
-				String displayName = hintAnnotation != null ? hintAnnotation.displayName() : "";
-				String description = hintAnnotation != null ? hintAnnotation.description() : "";
+				String displayName = hintAnnotation != null ? hintAnnotation.displayName() : ""; //$NON-NLS-1$
+				String description = hintAnnotation != null ? hintAnnotation.description() : ""; //$NON-NLS-1$
 				boolean enabledByDefault = hintAnnotation == null || hintAnnotation.enabledByDefault();
-				String severity = hintAnnotation != null ? hintAnnotation.severity() : "info";
+				String severity = hintAnnotation != null ? hintAnnotation.severity() : "info"; //$NON-NLS-1$
 				
 				HintDescriptor descriptor = new HintDescriptor(
 					pattern, displayName, description, enabledByDefault, severity, providerClass, method
@@ -195,12 +195,12 @@ public class HintRegistry {
 	 * Loads a declaratively defined pattern hint.
 	 */
 	private void loadDeclarativePattern(IConfigurationElement element) throws Exception {
-		String id = element.getAttribute("id");
-		String value = element.getAttribute("value");
-		String kindStr = element.getAttribute("kind");
-		String displayName = element.getAttribute("displayName");
-		String className = element.getAttribute("class");
-		String methodName = element.getAttribute("method");
+		String id = element.getAttribute("id"); //$NON-NLS-1$
+		String value = element.getAttribute("value"); //$NON-NLS-1$
+		String kindStr = element.getAttribute("kind"); //$NON-NLS-1$
+		String displayName = element.getAttribute("displayName"); //$NON-NLS-1$
+		String className = element.getAttribute("class"); //$NON-NLS-1$
+		String methodName = element.getAttribute("method"); //$NON-NLS-1$
 		
 		if (value == null || kindStr == null || className == null || methodName == null) {
 			return;
@@ -220,7 +220,7 @@ public class HintRegistry {
 		validateHintMethod(method);
 		
 		HintDescriptor descriptor = new HintDescriptor(
-			pattern, displayName != null ? displayName : "", "", true, "info", providerClass, method
+			pattern, displayName != null ? displayName : "", "", true, "info", providerClass, method //$NON-NLS-1$ //$NON-NLS-2$
 		);
 		hints.add(descriptor);
 	}
@@ -230,15 +230,15 @@ public class HintRegistry {
 	 */
 	private void validateHintMethod(Method method) {
 		if (!Modifier.isPublic(method.getModifiers())) {
-			throw new IllegalArgumentException("Hint method must be public: " + method);
+			throw new IllegalArgumentException("Hint method must be public: " + method); //$NON-NLS-1$
 		}
 		if (!Modifier.isStatic(method.getModifiers())) {
-			throw new IllegalArgumentException("Hint method must be static: " + method);
+			throw new IllegalArgumentException("Hint method must be static: " + method); //$NON-NLS-1$
 		}
 		Class<?>[] paramTypes = method.getParameterTypes();
 		if (paramTypes.length != 1 || !HintContext.class.isAssignableFrom(paramTypes[0])) {
 			throw new IllegalArgumentException(
-				"Hint method must have exactly one parameter of type HintContext: " + method
+				"Hint method must have exactly one parameter of type HintContext: " + method //$NON-NLS-1$
 			);
 		}
 	}

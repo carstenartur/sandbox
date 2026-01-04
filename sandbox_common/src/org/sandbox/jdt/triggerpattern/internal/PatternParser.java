@@ -67,7 +67,7 @@ public class PatternParser {
 	 */
 	private Expression parseExpression(String expressionSnippet) {
 		// Wrap the expression in a minimal method context
-		String source = "class _Pattern { void _method() { _result = " + expressionSnippet + "; } }";
+		String source = "class _Pattern { void _method() { _result = " + expressionSnippet + "; } }"; //$NON-NLS-1$ //$NON-NLS-2$
 		
 		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
 		parser.setSource(source.toCharArray());
@@ -116,7 +116,7 @@ public class PatternParser {
 	 */
 	private Statement parseStatement(String statementSnippet) {
 		// Wrap the statement in a minimal method context
-		String source = "class _Pattern { void _method() { " + statementSnippet + " } }";
+		String source = "class _Pattern { void _method() { " + statementSnippet + " } }"; //$NON-NLS-1$ //$NON-NLS-2$
 		
 		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
 		parser.setSource(source.toCharArray());

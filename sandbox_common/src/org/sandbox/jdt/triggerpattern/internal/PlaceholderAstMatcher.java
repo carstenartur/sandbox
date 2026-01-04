@@ -71,7 +71,7 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 		String name = patternNode.getIdentifier();
 		
 		// Check if this is a placeholder (starts with $)
-		if (name != null && name.startsWith("$")) {
+		if (name != null && name.startsWith("$")) { //$NON-NLS-1$
 			ASTNode otherNode = (ASTNode) other;
 			
 			// Check if this placeholder has been bound before
