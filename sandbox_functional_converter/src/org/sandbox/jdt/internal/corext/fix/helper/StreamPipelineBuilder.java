@@ -1040,12 +1040,12 @@ public class StreamPipelineBuilder {
 	 * @return true if remaining non-terminal statements should be wrapped in a MAP
 	 */
 	private boolean shouldWrapRemainingInMap(List<Statement> statements, int currentIndex) {
-		// Need at least 2 more statements: a side-effect statement and a terminal statement
+		// Need at least 2 more statements: an IF statement and a terminal statement
 		if (currentIndex >= statements.size() - 2) {
 			return false;
 		}
 		
-		// Check if the next statement is an IF statement (potential side effect)
+		// Check if the next statement is an IF statement
 		Statement nextStmt = statements.get(currentIndex + 1);
 		if (!(nextStmt instanceof IfStatement)) {
 			return false;
@@ -1053,40 +1053,25 @@ public class StreamPipelineBuilder {
 		
 		IfStatement ifStmt = (IfStatement) nextStmt;
 		
-		// Check if this IF is a side-effect IF (no else, body doesn't contain variable declarations)
-		if (ifStmt.getElseStatement() != null) {
+		// Don't wrap if this is an early return IF (anyMatch/noneMatch pattern)
+		if (isEarlyReturnIf(ifStmt)) {
 			return false;
 		}
 		
-		// Check if the IF body only contains side effects (no variable declarations)
-		Statement thenStmt = ifStmt.getThenStatement();
-		if (!isSideEffectOnlyBlock(thenStmt)) {
+		// Don't wrap if this is a continue IF (will be handled as negated filter)
+		if (isIfWithContinue(ifStmt)) {
 			return false;
 		}
 		
-		return true;
-	}
-	
-	/**
-	 * Checks if a statement block contains only side effects (no variable declarations).
-	 * 
-	 * @param stmt the statement to check
-	 * @return true if the statement only contains side effects
-	 */
-	private boolean isSideEffectOnlyBlock(Statement stmt) {
-		if (stmt instanceof Block) {
-			Block block = (Block) stmt;
-			for (Object obj : block.statements()) {
-				if (obj instanceof VariableDeclarationStatement) {
-					return false;
-				}
-			}
+		// If this IF has no else clause and there are more statements after it,
+		// then all items must continue to those statements, so wrap the IF in a MAP
+		if (ifStmt.getElseStatement() == null) {
 			return true;
 		}
-		// Single statement (not a block) - if it's not a variable declaration, it's a side effect
-		return !(stmt instanceof VariableDeclarationStatement);
+		
+		return false;
 	}
-
+	
 	/**
 	 * Processes an IF statement as a filter operation with nested body parsing.
 	 * Adds a FILTER operation for the condition and recursively processes the body.
