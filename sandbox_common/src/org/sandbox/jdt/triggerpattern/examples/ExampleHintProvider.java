@@ -17,9 +17,7 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.InfixExpression;
-import org.eclipse.jdt.core.dom.NumberLiteral;
 import org.eclipse.jdt.core.dom.PrefixExpression;
-import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.ui.text.java.IJavaCompletionProposal;
 import org.eclipse.jdt.ui.text.java.correction.ASTRewriteCorrectionProposal;
 import org.eclipse.swt.graphics.Image;
@@ -55,7 +53,7 @@ return null;
 InfixExpression infixExpr = (InfixExpression) matchedNode;
 
 // Get the bound variable from placeholders
-ASTNode xNode = ctx.getMatch().getBindings().get("$x");
+ASTNode xNode = ctx.getMatch().getBindings().get("$x"); //$NON-NLS-1$
 if (xNode == null || !(xNode instanceof Expression)) {
 return null;
 }
@@ -72,7 +70,7 @@ prefixExpr.setOperand((Expression) ASTNode.copySubtree(ast, variable));
 ctx.getASTRewrite().replace(infixExpr, prefixExpr, null);
 
 // Create the proposal
-String label = "Replace '" + infixExpr + "' with '++' operator";
+String label = "Replace '" + infixExpr + "' with '++' operator"; //$NON-NLS-1$ //$NON-NLS-2$
 ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(
 label,
 ctx.getICompilationUnit(),
@@ -102,7 +100,7 @@ return null;
 InfixExpression infixExpr = (InfixExpression) matchedNode;
 
 // Get the bound variable
-ASTNode xNode = ctx.getMatch().getBindings().get("$x");
+ASTNode xNode = ctx.getMatch().getBindings().get("$x"); //$NON-NLS-1$
 if (xNode == null || !(xNode instanceof Expression)) {
 return null;
 }
@@ -119,7 +117,7 @@ prefixExpr.setOperand((Expression) ASTNode.copySubtree(ast, variable));
 ctx.getASTRewrite().replace(infixExpr, prefixExpr, null);
 
 // Create the proposal
-String label = "Replace '" + infixExpr + "' with '--' operator";
+String label = "Replace '" + infixExpr + "' with '--' operator"; //$NON-NLS-1$ //$NON-NLS-2$
 ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(
 label,
 ctx.getICompilationUnit(),

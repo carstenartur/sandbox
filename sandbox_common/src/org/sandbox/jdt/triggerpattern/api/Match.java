@@ -46,7 +46,7 @@ public final class Match {
 	 * @param length the character length of the match in the source
 	 */
 	public Match(ASTNode matchedNode, Map<String, ASTNode> bindings, int offset, int length) {
-		this.matchedNode = Objects.requireNonNull(matchedNode, "Matched node cannot be null");
+		this.matchedNode = Objects.requireNonNull(matchedNode, "Matched node cannot be null"); //$NON-NLS-1$
 		this.bindings = bindings != null ? Collections.unmodifiableMap(bindings) : Collections.emptyMap();
 		this.offset = offset;
 		this.length = length;
@@ -109,6 +109,6 @@ public final class Match {
 	
 	@Override
 	public String toString() {
-		return "Match[offset=" + offset + ", length=" + length + ", bindings=" + bindings.keySet() + "]";
+		return "Match[offset=" + offset + ", length=" + length + ", bindings=" + bindings.keySet() + "]"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 	}
 }

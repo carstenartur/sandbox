@@ -55,8 +55,8 @@ public final class Pattern {
 	 * @param displayName optional human-readable name for the pattern
 	 */
 	public Pattern(String value, PatternKind kind, String id, String displayName) {
-		this.value = Objects.requireNonNull(value, "Pattern value cannot be null");
-		this.kind = Objects.requireNonNull(kind, "Pattern kind cannot be null");
+		this.value = Objects.requireNonNull(value, "Pattern value cannot be null"); //$NON-NLS-1$
+		this.kind = Objects.requireNonNull(kind, "Pattern kind cannot be null"); //$NON-NLS-1$
 		this.id = id;
 		this.displayName = displayName;
 	}
@@ -118,6 +118,6 @@ public final class Pattern {
 	
 	@Override
 	public String toString() {
-		return "Pattern[kind=" + kind + ", value=" + value + ", id=" + id + "]";
+		return "Pattern[kind=" + kind + ", value=" + value + ", id=" + id + "]"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 	}
 }

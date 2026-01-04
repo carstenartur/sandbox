@@ -42,7 +42,7 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
  */
 public class HintRegistry {
 	
-	private static final String EXTENSION_POINT_ID = "org.sandbox.jdt.triggerpattern.hints";
+	private static final String EXTENSION_POINT_ID = "org.sandbox.jdt.triggerpattern.hints"; //$NON-NLS-1$
 	
 	private List<HintDescriptor> hints;
 	private boolean initialized = false;
@@ -59,6 +59,15 @@ public class HintRegistry {
 		private final Class<?> providerClass;
 		private final Method method;
 		
+		/**
+		 * @param pattern
+		 * @param displayName
+		 * @param description
+		 * @param enabledByDefault
+		 * @param severity
+		 * @param providerClass
+		 * @param method
+		 */
 		public HintDescriptor(Pattern pattern, String displayName, String description,
 				boolean enabledByDefault, String severity, Class<?> providerClass, Method method) {
 			this.pattern = pattern;
@@ -70,22 +79,37 @@ public class HintRegistry {
 			this.method = method;
 		}
 		
+		/**
+		 * @return
+		 */
 		public Pattern getPattern() {
 			return pattern;
 		}
 		
+		/**
+		 * @return
+		 */
 		public String getDisplayName() {
 			return displayName;
 		}
 		
+		/**
+		 * @return
+		 */
 		public String getDescription() {
 			return description;
 		}
 		
+		/**
+		 * @return
+		 */
 		public boolean isEnabledByDefault() {
 			return enabledByDefault;
 		}
 		
+		/**
+		 * @return
+		 */
 		public String getSeverity() {
 			return severity;
 		}
@@ -99,7 +123,7 @@ public class HintRegistry {
 		 */
 		public Object invoke(HintContext context) throws Exception {
 			if (!Modifier.isStatic(method.getModifiers())) {
-				throw new IllegalStateException("Hint method must be static: " + method);
+				throw new IllegalStateException("Hint method must be static: " + method); //$NON-NLS-1$
 			}
 			return method.invoke(null, context);
 		}
@@ -134,9 +158,9 @@ public class HintRegistry {
 		
 		for (IConfigurationElement element : elements) {
 			try {
-				if ("hintProvider".equals(element.getName())) {
+				if ("hintProvider".equals(element.getName())) { //$NON-NLS-1$
 					loadFromProvider(element);
-				} else if ("pattern".equals(element.getName())) {
+				} else if ("pattern".equals(element.getName())) { //$NON-NLS-1$
 					loadDeclarativePattern(element);
 				}
 			} catch (Exception e) {
@@ -150,7 +174,7 @@ public class HintRegistry {
 	 * Loads hints from a provider class that contains @TriggerPattern annotated methods.
 	 */
 	private void loadFromProvider(IConfigurationElement element) throws Exception {
-		String className = element.getAttribute("class");
+		String className = element.getAttribute("class"); //$NON-NLS-1$
 		if (className == null) {
 			return;
 		}
@@ -220,7 +244,7 @@ public class HintRegistry {
 		validateHintMethod(method);
 		
 		HintDescriptor descriptor = new HintDescriptor(
-			pattern, displayName != null ? displayName : "", "", true, "info", providerClass, method //$NON-NLS-1$ //$NON-NLS-2$
+			pattern, displayName != null ? displayName : "", "", true, "info", providerClass, method //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		);
 		hints.add(descriptor);
 	}
