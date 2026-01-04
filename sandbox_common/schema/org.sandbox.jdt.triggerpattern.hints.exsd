@@ -1,0 +1,170 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Schema file written by PDE -->
+<schema targetNamespace="sandbox_common" xmlns="http://www.w3.org/2001/XMLSchema">
+<annotation>
+      <appinfo>
+         <meta.schema plugin="sandbox_common" id="org.sandbox.jdt.triggerpattern.hints" name="Trigger Pattern Hints"/>
+      </appinfo>
+      <documentation>
+         Extension point for registering trigger pattern-based hints.
+Hints can provide code suggestions based on pattern matching.
+      </documentation>
+   </annotation>
+
+   <element name="extension">
+      <annotation>
+         <appinfo>
+            <meta.element />
+         </appinfo>
+      </annotation>
+      <complexType>
+         <choice minOccurs="1" maxOccurs="unbounded">
+            <element ref="hintProvider"/>
+            <element ref="pattern"/>
+         </choice>
+         <attribute name="point" type="string" use="required">
+            <annotation>
+               <documentation>
+                  
+               </documentation>
+            </annotation>
+         </attribute>
+         <attribute name="id" type="string">
+            <annotation>
+               <documentation>
+                  
+               </documentation>
+            </annotation>
+         </attribute>
+         <attribute name="name" type="string">
+            <annotation>
+               <documentation>
+                  
+               </documentation>
+               <appinfo>
+                  <meta.attribute translatable="true"/>
+               </appinfo>
+            </annotation>
+         </attribute>
+      </complexType>
+   </element>
+
+   <element name="hintProvider">
+      <annotation>
+         <documentation>
+            Registers a hint provider class that contains hint methods annotated with @TriggerPattern.
+         </documentation>
+      </annotation>
+      <complexType>
+         <attribute name="class" type="string" use="required">
+            <annotation>
+               <documentation>
+                  The fully qualified name of a class that contains public static methods annotated with @TriggerPattern.
+               </documentation>
+               <appinfo>
+                  <meta.attribute kind="java"/>
+               </appinfo>
+            </annotation>
+         </attribute>
+      </complexType>
+   </element>
+
+   <element name="pattern">
+      <annotation>
+         <documentation>
+            Declaratively defines a trigger pattern hint without using annotations.
+         </documentation>
+      </annotation>
+      <complexType>
+         <attribute name="id" type="string" use="required">
+            <annotation>
+               <documentation>
+                  Unique identifier for this pattern.
+               </documentation>
+            </annotation>
+         </attribute>
+         <attribute name="value" type="string" use="required">
+            <annotation>
+               <documentation>
+                  The pattern string with placeholders (e.g., "$x + 1").
+               </documentation>
+            </annotation>
+         </attribute>
+         <attribute name="kind" use="required">
+            <annotation>
+               <documentation>
+                  The kind of pattern (EXPRESSION or STATEMENT).
+               </documentation>
+            </annotation>
+            <simpleType>
+               <restriction base="string">
+                  <enumeration value="EXPRESSION">
+                  </enumeration>
+                  <enumeration value="STATEMENT">
+                  </enumeration>
+               </restriction>
+            </simpleType>
+         </attribute>
+         <attribute name="displayName" type="string">
+            <annotation>
+               <documentation>
+                  Human-readable name for the pattern (shown in UI).
+               </documentation>
+               <appinfo>
+                  <meta.attribute translatable="true"/>
+               </appinfo>
+            </annotation>
+         </attribute>
+         <attribute name="class" type="string" use="required">
+            <annotation>
+               <documentation>
+                  The fully qualified name of a class with a public static method that accepts HintContext and returns a completion proposal.
+               </documentation>
+               <appinfo>
+                  <meta.attribute kind="java"/>
+               </appinfo>
+            </annotation>
+         </attribute>
+         <attribute name="method" type="string" use="required">
+            <annotation>
+               <documentation>
+                  The name of the public static method to invoke.
+               </documentation>
+            </annotation>
+         </attribute>
+      </complexType>
+   </element>
+
+   <annotation>
+      <appinfo>
+         <meta.section type="since"/>
+      </appinfo>
+      <documentation>
+         1.2.2
+      </documentation>
+   </annotation>
+
+   <annotation>
+      <appinfo>
+         <meta.section type="examples"/>
+      </appinfo>
+      <documentation>
+         &lt;extension point="org.sandbox.jdt.triggerpattern.hints"&gt;
+   &lt;hintProvider class="com.example.MyHintProvider"/&gt;
+&lt;/extension&gt;
+
+&lt;extension point="org.sandbox.jdt.triggerpattern.hints"&gt;
+   &lt;pattern
+      id="simplify.increment"
+      value="$x + 1"
+      kind="EXPRESSION"
+      displayName="Simplify increment"
+      class="com.example.IncrementHint"
+      method="simplify"/&gt;
+&lt;/extension&gt;
+      </documentation>
+   </annotation>
+
+
+
+</schema>
