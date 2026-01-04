@@ -33,6 +33,7 @@ import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.TypeMethodReference;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -337,7 +338,16 @@ public final class ProspectiveOperation {
 		} else if (operationType == OperationType.MAP && originalStatement != null) {
 			// For MAP with statement: create block with statement and return
 			org.eclipse.jdt.core.dom.Block block = ast.newBlock();
-			block.statements().add(ASTNode.copySubtree(ast, originalStatement));
+			
+			// Handle Block statements specially - copy statements from the block
+			if (originalStatement instanceof org.eclipse.jdt.core.dom.Block) {
+				org.eclipse.jdt.core.dom.Block originalBlock = (org.eclipse.jdt.core.dom.Block) originalStatement;
+				for (Object stmt : originalBlock.statements()) {
+					block.statements().add(ASTNode.copySubtree(ast, (Statement) stmt));
+				}
+			} else {
+				block.statements().add(ASTNode.copySubtree(ast, originalStatement));
+			}
 
 			// Add return statement if we have a loop variable to return
 			if (loopVariableName != null || paramName != null) {

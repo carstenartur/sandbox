@@ -781,6 +781,26 @@ public class StreamPipelineBuilder {
 
 							// Update current var name for subsequent operations
 							currentVarName = newVarName;
+							
+							// Check if we need to wrap remaining non-terminal statements in a MAP
+							// This handles the case where after a variable declaration, we have
+							// side-effect statements (like IFs with side effects) followed by a terminal statement
+							if (shouldWrapRemainingInMap(statements, i)) {
+								// Collect all non-terminal statements (from i+1 to size-2)
+								Block mapBlock = ast.newBlock();
+								List<Statement> mapStatements = mapBlock.statements();
+								for (int j = i + 1; j < statements.size() - 1; j++) {
+									mapStatements.add((Statement) ASTNode.copySubtree(ast, statements.get(j)));
+								}
+								
+								// Create a MAP operation with the block + return statement
+								ProspectiveOperation sideEffectMapOp = new ProspectiveOperation(mapBlock,
+										ProspectiveOperation.OperationType.MAP, currentVarName);
+								ops.add(sideEffectMapOp);
+								
+								// Skip to the last statement
+								i = statements.size() - 2; // Will be incremented to size-1 in next iteration
+							}
 						}
 					}
 				} else if (stmt instanceof IfStatement && !isLast) {
@@ -1003,6 +1023,68 @@ public class StreamPipelineBuilder {
 		}
 		return operations.size() > 1
 				|| operations.get(0).getOperationType() != ProspectiveOperation.OperationType.FOREACH;
+	}
+
+	/**
+	 * Determines if remaining statements after a variable declaration should be
+	 * wrapped in a single MAP operation with a block body.
+	 * 
+	 * <p>
+	 * This handles the pattern where after a MAP (variable declaration), we have
+	 * side-effect statements (like IFs with side effects) followed by a terminal
+	 * statement. The side-effect statements should be wrapped in a MAP that returns
+	 * the current variable.
+	 * 
+	 * @param statements the list of all statements in the current block
+	 * @param currentIndex the index of the variable declaration statement
+	 * @return true if remaining non-terminal statements should be wrapped in a MAP
+	 */
+	private boolean shouldWrapRemainingInMap(List<Statement> statements, int currentIndex) {
+		// Need at least 2 more statements: a side-effect statement and a terminal statement
+		if (currentIndex >= statements.size() - 2) {
+			return false;
+		}
+		
+		// Check if the next statement is an IF statement (potential side effect)
+		Statement nextStmt = statements.get(currentIndex + 1);
+		if (!(nextStmt instanceof IfStatement)) {
+			return false;
+		}
+		
+		IfStatement ifStmt = (IfStatement) nextStmt;
+		
+		// Check if this IF is a side-effect IF (no else, body doesn't contain variable declarations)
+		if (ifStmt.getElseStatement() != null) {
+			return false;
+		}
+		
+		// Check if the IF body only contains side effects (no variable declarations)
+		Statement thenStmt = ifStmt.getThenStatement();
+		if (!isSideEffectOnlyBlock(thenStmt)) {
+			return false;
+		}
+		
+		return true;
+	}
+	
+	/**
+	 * Checks if a statement block contains only side effects (no variable declarations).
+	 * 
+	 * @param stmt the statement to check
+	 * @return true if the statement only contains side effects
+	 */
+	private boolean isSideEffectOnlyBlock(Statement stmt) {
+		if (stmt instanceof Block) {
+			Block block = (Block) stmt;
+			for (Object obj : block.statements()) {
+				if (obj instanceof VariableDeclarationStatement) {
+					return false;
+				}
+			}
+			return true;
+		}
+		// Single statement (not a block) - if it's not a variable declaration, it's a side effect
+		return !(stmt instanceof VariableDeclarationStatement);
 	}
 
 	/**

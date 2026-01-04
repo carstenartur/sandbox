@@ -1857,7 +1857,7 @@ class MyTest {
 //		"MergingOperations",
 //		"BeautificationWorks",
 //		"BeautificationWorks2",
-//		"NonFilteringIfChaining",
+		"NonFilteringIfChaining",
 		"ContinuingIfFilterSingleStatement",
 		"SimpleReducer",
 //		"ChainedReducer",
