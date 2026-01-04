@@ -794,31 +794,31 @@ class MyTest {
 				+ "}\n"
 				+ "",
 
-				"package test1;\r\n"
-				+ "\r\n"
-				+ "import java.util.ArrayList;\r\n"
-				+ "import java.util.List;\r\n"
-				+ "\r\n"
-				+ "/**\r\n"
-				+ " *\r\n"
-				+ " * @author alexandrugyori\r\n"
-				+ " */\r\n"
-				+ "class MyTest {\r\n"
-				+ "\r\n"
-				+ "    /**\r\n"
-				+ "     * @param args the command line arguments\r\n"
-				+ "     */\r\n"
-				+ "    public static void main( String[] args) {\r\n"
-				+ "        List<Integer> ls = new ArrayList<>();\r\n"
-				+ "        int i =0;\r\n"
-				+ "        i = ls.stream().map(l -> 1).reduce(i, Integer::sum);\r\n"
-				+ "\r\n"
-				+ "    }\r\n"
-				+ "\r\n"
-				+ "    private static void foo(Integer l) {\r\n"
-				+ "        throw new UnsupportedOperationException(\"Not supported yet.\"); //To change body of generated methods, choose Tools | Templates.\r\n"
-				+ "    }\r\n"
-				+ "}\r\n"
+				"package test1;\n"
+				+ "\n"
+				+ "import java.util.ArrayList;\n"
+				+ "import java.util.List;\n"
+				+ "\n"
+				+ "/**\n"
+				+ " *\n"
+				+ " * @author alexandrugyori\n"
+				+ " */\n"
+				+ "class MyTest {\n"
+				+ "\n"
+				+ "    /**\n"
+				+ "     * @param args the command line arguments\n"
+				+ "     */\n"
+				+ "    public static void main( String[] args) {\n"
+				+ "        List<Integer> ls = new ArrayList<>();\n"
+				+ "        int i =0;\n"
+				+ "        i = ls.stream().map(l -> 1).reduce(i, Integer::sum);\n"
+				+ "\n"
+				+ "    }\n"
+				+ "\n"
+				+ "    private static void foo(Integer l) {\n"
+				+ "        throw new UnsupportedOperationException(\"Not supported yet.\"); //To change body of generated methods, choose Tools | Templates.\n"
+				+ "    }\n"
+				+ "}\n"
 				+ ""),
 		AccumulatingMapReduce("package test1;\n"
 				+ "\n"
@@ -1449,19 +1449,17 @@ class MyTest {
 			        }
 			    }
 			}""",
+"""
+package test1;
 
-				"""
-					package test1;
+import java.util.List;
 
-					import java.util.List;
-
-					class MyTest {
-					    public void processPositiveSquares(List<Integer> numbers) {
-					        numbers.stream().filter(num -> !(num <= 0)).map(num -> num * num).forEachOrdered(squared -> {
-					            System.out.println(squared);
-					        });
-					    }
-					}"""),
+class MyTest {
+    public void processPositiveSquares(List<Integer> numbers) {
+        numbers.stream().filter(num -> !(num <= 0)).map(num -> num * num)
+				.forEachOrdered(squared -> System.out.println(squared));
+    }
+}"""),
 		SimpleAllMatch("""
 			package test1;
 
@@ -1712,19 +1710,17 @@ class MyTest {
 			        }
 			    }
 			}""",
+"""
+package test1;
 
-				"""
-					package test1;
+import java.util.List;
 
-					import java.util.List;
-
-					class MyTest {
-					    public void processWithNestedContinue(List<String> items) {
-					        items.stream().filter(item -> !(item == null || item.isEmpty())).map(item -> item.toUpperCase()).forEachOrdered(upper -> {
-					            System.out.println(upper);
-					        });
-					    }
-					}"""),
+class MyTest {
+    public void processWithNestedContinue(List<String> items) {
+        items.stream().filter(item -> !(item == null || item.isEmpty())).map(item -> item.toUpperCase())
+				.forEachOrdered(upper -> System.out.println(upper));
+    }
+}"""),
 		
 		MultipleMapOperations("""
 			package test1;
@@ -1859,7 +1855,7 @@ class MyTest {
 		"SIMPLECONVERT",
 		"CHAININGMAP",
 		"ChainingFilterMapForEachConvert",
-//		"SmoothLongerChaining",
+		"SmoothLongerChaining",
 //		"MergingOperations",
 //		"BeautificationWorks",
 //		"BeautificationWorks2",
@@ -1867,7 +1863,7 @@ class MyTest {
 		"ContinuingIfFilterSingleStatement",
 		"SimpleReducer",
 //		"ChainedReducer",
-//		"IncrementReducer",
+		"IncrementReducer",
 		"AccumulatingMapReduce",
 //		"DOUBLEINCREMENTREDUCER",
 //		"DecrementingReducer",
@@ -1885,7 +1881,7 @@ class MyTest {
 //		"FilteredMaxReduction",
 //		"ChainedMapWithMinReduction",
 //		"ComplexFilterMapMaxReduction",
-//		"ContinueWithMapAndForEach",
+		"ContinueWithMapAndForEach",
 //		"SimpleAllMatch",
 //		"AllMatchWithNullCheck",
 //		"ChainedAllMatch",
@@ -1893,8 +1889,8 @@ class MyTest {
 //		"MultipleContinueFilters",
 		"EmptyCollectionHandling",
 		"FilterWithComplexCondition",
-		"ChainedFilterAndMapOperations"
-//		"ContinueWithNestedConditions",
+		"ChainedFilterAndMapOperations",
+		"ContinueWithNestedConditions",
 //		"MultipleMapOperations",
 //		"SumReductionWithFilter",
 //		"ComplexReductionWithMapping",
