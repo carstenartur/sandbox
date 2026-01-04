@@ -1594,19 +1594,17 @@ class MyTest {
 			        }
 			    }
 			}""",
+"""
+package test1;
 
-				"""
-					package test1;
+import java.util.List;
 
-					import java.util.List;
-
-					class MyTest {
-					    public void processFiltered(List<Integer> numbers) {
-					        numbers.stream().filter(num -> !(num == null)).filter(num -> !(num <= 0)).forEachOrdered(num -> {
-					            System.out.println(num);
-					        });
-					    }
-					}"""),
+class MyTest {
+    public void processFiltered(List<Integer> numbers) {
+        numbers.stream().filter(num -> !(num == null)).filter(num -> !(num <= 0))
+				.forEachOrdered(num -> System.out.println(num));
+    }
+}"""),
 		
 		// New regression tests for edge cases and previously fixed behaviors
 		EmptyCollectionHandling("""
@@ -1886,15 +1884,15 @@ class MyTest {
 //		"AllMatchWithNullCheck",
 //		"ChainedAllMatch",
 		"NestedFilterCombination",
-//		"MultipleContinueFilters",
+		"MultipleContinueFilters",
 		"EmptyCollectionHandling",
 		"FilterWithComplexCondition",
 		"ChainedFilterAndMapOperations",
 		"ContinueWithNestedConditions",
 //		"MultipleMapOperations",
-//		"SumReductionWithFilter",
-//		"ComplexReductionWithMapping",
-//		"FilterMapReduceChain"
+		"SumReductionWithFilter",
+		"ComplexReductionWithMapping",
+		"FilterMapReduceChain"
 	})
 	public void testSimpleForEachConversion(UseFunctionalLoop test) throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null);
