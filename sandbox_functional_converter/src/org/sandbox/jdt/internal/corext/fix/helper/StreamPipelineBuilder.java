@@ -22,12 +22,20 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.ConditionalExpression;
 import org.eclipse.jdt.core.dom.ContinueStatement;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.IAnnotationBinding;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.IfStatement;
+import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.InstanceofExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.PostfixExpression;
 import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.ReturnStatement;
@@ -36,10 +44,6 @@ import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
-import org.eclipse.jdt.core.dom.IAnnotationBinding;
-import org.eclipse.jdt.core.dom.IBinding;
-import org.eclipse.jdt.core.dom.ITypeBinding;
-import org.eclipse.jdt.core.dom.IVariableBinding;
 
 /**
  * Builder class for constructing stream pipelines from enhanced for-loops.
@@ -1070,15 +1074,57 @@ public class StreamPipelineBuilder {
 	 * Creates a negated expression for filter operations. Used when converting "if
 	 * (condition) continue;" to ".filter(x -> !(condition))".
 	 * 
+	 * <p>
+	 * Wraps binary and complex expressions in parentheses to ensure correct precedence.
+	 * For example: {@code l == null} becomes {@code !(l == null)} not {@code !l == null}
+	 * </p>
+	 * 
 	 * @param ast       the AST to create nodes in
 	 * @param condition the condition to negate
-	 * @return a negated expression
+	 * @return a negated expression with proper parenthesization
 	 */
 	private Expression createNegatedExpression(AST ast, Expression condition) {
+		Expression operand = (Expression) ASTNode.copySubtree(ast, condition);
+		
+		// Wrap binary expressions and other complex expressions in parentheses
+		// to ensure correct operator precedence
+		if (needsParentheses(condition)) {
+			ParenthesizedExpression parenthesized = ast.newParenthesizedExpression();
+			parenthesized.setExpression(operand);
+			operand = parenthesized;
+		}
+		
 		PrefixExpression negation = ast.newPrefixExpression();
 		negation.setOperator(PrefixExpression.Operator.NOT);
-		negation.setOperand((Expression) ASTNode.copySubtree(ast, condition));
+		negation.setOperand(operand);
 		return negation;
+	}
+	
+	/**
+	 * Determines if an expression needs parentheses when negated.
+	 * 
+	 * @param expr the expression to check
+	 * @return true if parentheses are needed
+	 */
+	private boolean needsParentheses(Expression expr) {
+		// Binary expressions (==, !=, <, >, <=, >=, &&, ||, etc.) need parentheses
+		if (expr instanceof InfixExpression) {
+			return true;
+		}
+		// Conditional expressions (ternary operator) need parentheses
+		if (expr instanceof ConditionalExpression) {
+			return true;
+		}
+		// instanceof expressions need parentheses
+		if (expr instanceof InstanceofExpression) {
+			return true;
+		}
+		// Assignment expressions need parentheses
+		if (expr instanceof Assignment) {
+			return true;
+		}
+		// Simple names, literals, method calls, field access, etc. don't need parentheses
+		return false;
 	}
 
 	/**
