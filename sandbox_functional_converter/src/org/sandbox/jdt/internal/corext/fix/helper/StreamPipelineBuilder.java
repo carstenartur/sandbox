@@ -462,9 +462,12 @@ public class StreamPipelineBuilder {
 			// For SUM/PRODUCT/STRING_CONCAT: extract RHS expression
 			Expression mapExpression = extractReduceExpression(stmt);
 			if (mapExpression != null) {
-				ProspectiveOperation mapOp = new ProspectiveOperation(mapExpression,
-						ProspectiveOperation.OperationType.MAP, currentVarName);
-				ops.add(mapOp);
+				// Skip identity mapping: if the expression is just the current variable, don't add MAP
+				if (!isIdentityMapping(mapExpression, currentVarName)) {
+					ProspectiveOperation mapOp = new ProspectiveOperation(mapExpression,
+							ProspectiveOperation.OperationType.MAP, currentVarName);
+					ops.add(mapOp);
+				}
 			}
 		} else if (isMinMaxReducer(reducerType)) {
 			// For MAX/MIN: extract non-accumulator argument
@@ -542,6 +545,22 @@ public class StreamPipelineBuilder {
 	 */
 	private boolean isMinMaxReducer(ProspectiveOperation.ReducerType type) {
 		return type == ProspectiveOperation.ReducerType.MAX || type == ProspectiveOperation.ReducerType.MIN;
+	}
+
+	/**
+	 * Checks if an expression represents an identity mapping (e.g., num -> num).
+	 * 
+	 * @param expression the expression to check
+	 * @param varName    the variable name to compare against
+	 * @return true if the expression is just a reference to varName (identity
+	 *         mapping), false otherwise
+	 */
+	private boolean isIdentityMapping(Expression expression, String varName) {
+		if (expression instanceof SimpleName && varName != null) {
+			SimpleName simpleName = (SimpleName) expression;
+			return simpleName.getIdentifier().equals(varName);
+		}
+		return false;
 	}
 
 	/**
@@ -1335,6 +1354,9 @@ public class StreamPipelineBuilder {
 
 		Set<String> availableVars = new HashSet<>();
 		availableVars.add(loopVarName);
+		
+		// Track if we've moved past the loop variable to a mapped variable
+		boolean loopVarConsumed = false;
 
 		for (ProspectiveOperation op : operations) {
 			if (op == null) {
@@ -1344,8 +1366,20 @@ public class StreamPipelineBuilder {
 			// Check consumed variables are available
 			Set<String> consumed = op.getConsumedVariables();
 			for (String var : consumed) {
-				// Skip the loop variable and accumulator variables (they're in outer scope)
-				if (!var.equals(loopVarName) && !isAccumulatorVariable(var, operations)) {
+				// Accumulator variables are in outer scope, always available
+				if (isAccumulatorVariable(var, operations)) {
+					continue;
+				}
+				
+				// After a MAP produces a new variable, the loop variable should not be used
+				// unless it's the current operation that consumes it
+				if (var.equals(loopVarName)) {
+					if (loopVarConsumed && op.getProducedVariableName() != null) {
+						// Loop variable used after it's been replaced by a MAP - scope violation
+						return false;
+					}
+				} else {
+					// Non-loop, non-accumulator variable - must be in availableVars
 					if (!availableVars.contains(var)) {
 						// Variable used before it's defined - this is a scope violation
 						return false;
@@ -1353,10 +1387,17 @@ public class StreamPipelineBuilder {
 				}
 			}
 
-			// Add produced variables to available set
+			// Add produced variables to available set and mark loop var as consumed if applicable
 			String produced = op.getProducedVariableName();
 			if (produced != null && !produced.isEmpty()) {
 				availableVars.add(produced);
+				
+				// If this MAP operation consumed the loop variable, mark it as consumed
+				if (consumed.contains(loopVarName)) {
+					loopVarConsumed = true;
+					// Remove loop variable from available vars - it's now been replaced
+					availableVars.remove(loopVarName);
+				}
 			}
 		}
 
