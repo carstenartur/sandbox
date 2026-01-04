@@ -1271,6 +1271,9 @@ public class StreamPipelineBuilder {
 
 		Set<String> availableVars = new HashSet<>();
 		availableVars.add(loopVarName);
+		
+		// Track if we've moved past the loop variable to a mapped variable
+		boolean loopVarConsumed = false;
 
 		for (ProspectiveOperation op : operations) {
 			if (op == null) {
@@ -1280,8 +1283,20 @@ public class StreamPipelineBuilder {
 			// Check consumed variables are available
 			Set<String> consumed = op.getConsumedVariables();
 			for (String var : consumed) {
-				// Skip the loop variable and accumulator variables (they're in outer scope)
-				if (!var.equals(loopVarName) && !isAccumulatorVariable(var, operations)) {
+				// Accumulator variables are in outer scope, always available
+				if (isAccumulatorVariable(var, operations)) {
+					continue;
+				}
+				
+				// After a MAP produces a new variable, the loop variable should not be used
+				// unless it's the current operation that consumes it
+				if (var.equals(loopVarName)) {
+					if (loopVarConsumed && op.getProducedVariableName() != null) {
+						// Loop variable used after it's been replaced by a MAP - scope violation
+						return false;
+					}
+				} else {
+					// Non-loop, non-accumulator variable - must be in availableVars
 					if (!availableVars.contains(var)) {
 						// Variable used before it's defined - this is a scope violation
 						return false;
@@ -1289,10 +1304,17 @@ public class StreamPipelineBuilder {
 				}
 			}
 
-			// Add produced variables to available set
+			// Add produced variables to available set and mark loop var as consumed if applicable
 			String produced = op.getProducedVariableName();
 			if (produced != null && !produced.isEmpty()) {
 				availableVars.add(produced);
+				
+				// If this MAP operation consumed the loop variable, mark it as consumed
+				if (consumed.contains(loopVarName)) {
+					loopVarConsumed = true;
+					// Remove loop variable from available vars - it's now been replaced
+					availableVars.remove(loopVarName);
+				}
 			}
 		}
 
