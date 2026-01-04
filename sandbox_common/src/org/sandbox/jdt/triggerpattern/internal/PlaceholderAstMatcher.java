@@ -38,6 +38,7 @@ import org.eclipse.jdt.core.dom.SimpleName;
 public class PlaceholderAstMatcher extends ASTMatcher {
 	
 	private final Map<String, ASTNode> bindings = new HashMap<>();
+	private final ASTMatcher reusableMatcher = new ASTMatcher();
 	
 	/**
 	 * Creates a new placeholder matcher.
@@ -78,7 +79,7 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 			if (bindings.containsKey(name)) {
 				// Placeholder already bound - must match the previously bound node
 				ASTNode boundNode = bindings.get(name);
-				return boundNode.subtreeMatch(new ASTMatcher(), otherNode);
+				return boundNode.subtreeMatch(reusableMatcher, otherNode);
 			} else {
 				// First occurrence - bind the placeholder to this node
 				bindings.put(name, otherNode);

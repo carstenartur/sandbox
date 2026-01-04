@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jdt.core.ICompilationUnit;
-import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
@@ -81,9 +80,8 @@ public class TriggerPatternEngine {
 	 * @param icu the ICompilationUnit to search
 	 * @param pattern the pattern to match
 	 * @return a list of all matches (may be empty)
-	 * @throws JavaModelException if the compilation unit cannot be parsed
 	 */
-	public List<Match> findMatches(ICompilationUnit icu, Pattern pattern) throws JavaModelException {
+	public List<Match> findMatches(ICompilationUnit icu, Pattern pattern) {
 		if (icu == null || pattern == null) {
 			return List.of();
 		}

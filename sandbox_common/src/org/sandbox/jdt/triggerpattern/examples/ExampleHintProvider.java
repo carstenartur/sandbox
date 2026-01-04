@@ -44,42 +44,42 @@ public class ExampleHintProvider {
 @Hint(displayName = "Replace with increment operator", 
       description = "Replaces addition by 1 with the increment operator (++)")
 public static IJavaCompletionProposal simplifyIncrement(HintContext ctx) {
-ASTNode matchedNode = ctx.getMatch().getMatchedNode();
+	ASTNode matchedNode = ctx.getMatch().getMatchedNode();
 
-if (!(matchedNode instanceof InfixExpression)) {
-return null;
-}
+	if (!(matchedNode instanceof InfixExpression)) {
+	return null;
+	}
 
-InfixExpression infixExpr = (InfixExpression) matchedNode;
+	InfixExpression infixExpr = (InfixExpression) matchedNode;
 
-// Get the bound variable from placeholders
-ASTNode xNode = ctx.getMatch().getBindings().get("$x"); //$NON-NLS-1$
-if (xNode == null || !(xNode instanceof Expression)) {
-return null;
-}
+	// Get the bound variable from placeholders
+	ASTNode xNode = ctx.getMatch().getBindings().get("$x"); //$NON-NLS-1$
+	if (xNode == null || !(xNode instanceof Expression)) {
+	return null;
+	}
 
-Expression variable = (Expression) xNode;
+	Expression variable = (Expression) xNode;
 
-// Create the replacement: ++variable
-AST ast = ctx.getASTRewrite().getAST();
-PrefixExpression prefixExpr = ast.newPrefixExpression();
-prefixExpr.setOperator(PrefixExpression.Operator.INCREMENT);
-prefixExpr.setOperand((Expression) ASTNode.copySubtree(ast, variable));
+	// Create the replacement: ++variable
+	AST ast = ctx.getASTRewrite().getAST();
+	PrefixExpression prefixExpr = ast.newPrefixExpression();
+	prefixExpr.setOperator(PrefixExpression.Operator.INCREMENT);
+	prefixExpr.setOperand((Expression) ASTNode.copySubtree(ast, variable));
 
-// Apply the rewrite
-ctx.getASTRewrite().replace(infixExpr, prefixExpr, null);
+	// Apply the rewrite
+	ctx.getASTRewrite().replace(infixExpr, prefixExpr, null);
 
-// Create the proposal
-String label = "Replace '" + infixExpr + "' with '++' operator"; //$NON-NLS-1$ //$NON-NLS-2$
-ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(
-label,
-ctx.getICompilationUnit(),
-ctx.getASTRewrite(),
-10, // relevance
-(Image) null
-);
+	// Create the proposal
+	String label = "Replace '" + infixExpr + "' with '++' operator"; //$NON-NLS-1$ //$NON-NLS-2$
+	ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(
+	label,
+	ctx.getICompilationUnit(),
+	ctx.getASTRewrite(),
+	10, // relevance
+	(Image) null
+	);
 
-return proposal;
+	return proposal;
 }
 
 /**
@@ -91,41 +91,41 @@ return proposal;
 @Hint(displayName = "Replace with decrement operator",
       description = "Replaces subtraction by 1 with the decrement operator (--)")
 public static IJavaCompletionProposal simplifyDecrement(HintContext ctx) {
-ASTNode matchedNode = ctx.getMatch().getMatchedNode();
+	ASTNode matchedNode = ctx.getMatch().getMatchedNode();
 
-if (!(matchedNode instanceof InfixExpression)) {
-return null;
-}
+	if (!(matchedNode instanceof InfixExpression)) {
+	return null;
+	}
 
-InfixExpression infixExpr = (InfixExpression) matchedNode;
+	InfixExpression infixExpr = (InfixExpression) matchedNode;
 
-// Get the bound variable
-ASTNode xNode = ctx.getMatch().getBindings().get("$x"); //$NON-NLS-1$
-if (xNode == null || !(xNode instanceof Expression)) {
-return null;
-}
+	// Get the bound variable
+	ASTNode xNode = ctx.getMatch().getBindings().get("$x"); //$NON-NLS-1$
+	if (xNode == null || !(xNode instanceof Expression)) {
+	return null;
+	}
 
-Expression variable = (Expression) xNode;
+	Expression variable = (Expression) xNode;
 
-// Create the replacement: --variable
-AST ast = ctx.getASTRewrite().getAST();
-PrefixExpression prefixExpr = ast.newPrefixExpression();
-prefixExpr.setOperator(PrefixExpression.Operator.DECREMENT);
-prefixExpr.setOperand((Expression) ASTNode.copySubtree(ast, variable));
+	// Create the replacement: --variable
+	AST ast = ctx.getASTRewrite().getAST();
+	PrefixExpression prefixExpr = ast.newPrefixExpression();
+	prefixExpr.setOperator(PrefixExpression.Operator.DECREMENT);
+	prefixExpr.setOperand((Expression) ASTNode.copySubtree(ast, variable));
 
-// Apply the rewrite
-ctx.getASTRewrite().replace(infixExpr, prefixExpr, null);
+	// Apply the rewrite
+	ctx.getASTRewrite().replace(infixExpr, prefixExpr, null);
 
-// Create the proposal
-String label = "Replace '" + infixExpr + "' with '--' operator"; //$NON-NLS-1$ //$NON-NLS-2$
-ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(
-label,
-ctx.getICompilationUnit(),
-ctx.getASTRewrite(),
-10, // relevance
-(Image) null
-);
+	// Create the proposal
+	String label = "Replace '" + infixExpr + "' with '--' operator"; //$NON-NLS-1$ //$NON-NLS-2$
+	ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(
+	label,
+	ctx.getICompilationUnit(),
+	ctx.getASTRewrite(),
+	10, // relevance
+	(Image) null
+	);
 
-return proposal;
+	return proposal;
 }
 }

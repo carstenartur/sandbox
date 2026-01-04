@@ -20,7 +20,9 @@ import java.util.List;
 
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExtensionRegistry;
+import org.eclipse.core.runtime.ILog;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Status;
 import org.osgi.framework.Bundle;
 import org.sandbox.jdt.triggerpattern.api.Hint;
 import org.sandbox.jdt.triggerpattern.api.HintContext;
@@ -146,11 +148,12 @@ public class HintRegistry {
 	/**
 	 * Loads hints from extension points and annotations.
 	 */
-	private void loadHints() {
-		hints = new ArrayList<>();
+	private synchronized void loadHints() {
+		List<HintDescriptor> loadedHints = new ArrayList<>();
 		
 		IExtensionRegistry registry = Platform.getExtensionRegistry();
 		if (registry == null) {
+			hints = loadedHints;
 			return;
 		}
 		
@@ -159,21 +162,24 @@ public class HintRegistry {
 		for (IConfigurationElement element : elements) {
 			try {
 				if ("hintProvider".equals(element.getName())) { //$NON-NLS-1$
-					loadFromProvider(element);
+					loadFromProvider(element, loadedHints);
 				} else if ("pattern".equals(element.getName())) { //$NON-NLS-1$
-					loadDeclarativePattern(element);
+					loadDeclarativePattern(element, loadedHints);
 				}
 			} catch (Exception e) {
 				// Log error but continue with other hints
-				e.printStackTrace();
+				ILog log = Platform.getLog(HintRegistry.class);
+				log.log(Status.error("Error loading hint from extension point", e)); //$NON-NLS-1$
 			}
 		}
+		
+		hints = loadedHints;
 	}
 	
 	/**
 	 * Loads hints from a provider class that contains @TriggerPattern annotated methods.
 	 */
-	private void loadFromProvider(IConfigurationElement element) throws Exception {
+	private void loadFromProvider(IConfigurationElement element, List<HintDescriptor> loadedHints) throws Exception {
 		String className = element.getAttribute("class"); //$NON-NLS-1$
 		if (className == null) {
 			return;
@@ -210,7 +216,7 @@ public class HintRegistry {
 				HintDescriptor descriptor = new HintDescriptor(
 					pattern, displayName, description, enabledByDefault, severity, providerClass, method
 				);
-				hints.add(descriptor);
+				loadedHints.add(descriptor);
 			}
 		}
 	}
@@ -218,7 +224,7 @@ public class HintRegistry {
 	/**
 	 * Loads a declaratively defined pattern hint.
 	 */
-	private void loadDeclarativePattern(IConfigurationElement element) throws Exception {
+	private void loadDeclarativePattern(IConfigurationElement element, List<HintDescriptor> loadedHints) throws Exception {
 		String id = element.getAttribute("id"); //$NON-NLS-1$
 		String value = element.getAttribute("value"); //$NON-NLS-1$
 		String kindStr = element.getAttribute("kind"); //$NON-NLS-1$
@@ -246,7 +252,7 @@ public class HintRegistry {
 		HintDescriptor descriptor = new HintDescriptor(
 			pattern, displayName != null ? displayName : "", "", true, "info", providerClass, method //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		);
-		hints.add(descriptor);
+		loadedHints.add(descriptor);
 	}
 	
 	/**

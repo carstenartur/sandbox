@@ -119,9 +119,8 @@ public class TriggerPatternEngineTest {
 		String code = """
 			class Test {
 				void method() {
-					if (condition) {
+					if (condition)
 						doSomething();
-					}
 				}
 			}
 			""";
@@ -131,9 +130,14 @@ public class TriggerPatternEngineTest {
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
-		// Note: This might find 0 or 1 match depending on how the if statement with block is handled
-		// The pattern "if ($cond) $then;" expects a single statement, but the code has a block
-		assertTrue(matches.size() >= 0, "Should handle statement patterns");
+		// The pattern "if ($cond) $then;" matches if statements with a single statement (not a block)
+		assertEquals(1, matches.size(), "Should find one statement pattern match");
+		
+		Match match = matches.get(0);
+		assertNotNull(match.getMatchedNode());
+		assertEquals(2, match.getBindings().size(), "Should have bindings for $cond and $then");
+		assertTrue(match.getBindings().containsKey("$cond"));
+		assertTrue(match.getBindings().containsKey("$then"));
 	}
 	
 	@Test

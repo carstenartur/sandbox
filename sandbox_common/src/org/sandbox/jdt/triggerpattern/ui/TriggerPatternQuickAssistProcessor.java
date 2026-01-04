@@ -17,6 +17,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.ILog;
+import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -43,13 +46,13 @@ import org.sandbox.jdt.triggerpattern.internal.HintRegistry.HintDescriptor;
  */
 public class TriggerPatternQuickAssistProcessor implements IQuickAssistProcessor {
 	
-	private final HintRegistry registry = new HintRegistry();
+	private static final HintRegistry REGISTRY = new HintRegistry();
 	private final TriggerPatternEngine engine = new TriggerPatternEngine();
 	
 	@Override
 	public boolean hasAssists(IInvocationContext context) throws CoreException {
 		// Quick check - we could optimize this by caching patterns
-		return !registry.getHints().isEmpty();
+		return !REGISTRY.getHints().isEmpty();
 	}
 	
 	@Override
@@ -77,7 +80,7 @@ public class TriggerPatternQuickAssistProcessor implements IQuickAssistProcessor
 		List<IJavaCompletionProposal> proposals = new ArrayList<>();
 		
 		// Check each registered hint
-		for (HintDescriptor hint : registry.getHints()) {
+		for (HintDescriptor hint : REGISTRY.getHints()) {
 			if (!hint.isEnabledByDefault()) {
 				continue;
 			}
@@ -106,7 +109,8 @@ public class TriggerPatternQuickAssistProcessor implements IQuickAssistProcessor
 						}
 					} catch (Exception e) {
 						// Log error but continue with other hints
-						e.printStackTrace();
+						ILog log = Platform.getLog(TriggerPatternQuickAssistProcessor.class);
+						log.log(Status.error("Error invoking hint method", e)); //$NON-NLS-1$
 					}
 				}
 			}
