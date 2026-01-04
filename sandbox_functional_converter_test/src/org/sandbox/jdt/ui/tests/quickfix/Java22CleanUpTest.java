@@ -1875,7 +1875,7 @@ class MyTest {
 //		"ChainedReducerWithMerging",
 		"StringConcat",
 		"StringConcatWithNotNull",
-//		"ChainedAnyMatch",
+		"ChainedAnyMatch",
 //		"ChainedNoneMatch",
 //		"NoNeededVariablesMerging",
 //		"SomeChainingWithNoNeededVar",
