@@ -319,9 +319,7 @@ class MyTest {
 					    }
 
 					    public void test(List<Integer> ls) {
-					        ls.stream().filter(l -> !(l == null)).map(l -> l.toString()).filter(s -> (s != null)).forEachOrdered(s -> {
-					            System.out.println(s);
-					        });
+					        ls.stream().filter(l -> !(l == null)).map(l -> l.toString()).filter(s -> (s != null)).forEachOrdered(s -> System.out.println(s));
 
 
 					    }

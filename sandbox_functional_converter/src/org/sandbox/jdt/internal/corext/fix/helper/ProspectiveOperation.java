@@ -352,9 +352,14 @@ public final class ProspectiveOperation {
 			ParenthesizedExpression parenExpr = ast.newParenthesizedExpression();
 			parenExpr.setExpression((Expression) ASTNode.copySubtree(ast, originalExpression));
 			lambda.setBody(parenExpr);
+		} else if (operationType == OperationType.FOREACH && originalExpression != null 
+				&& originalStatement instanceof org.eclipse.jdt.core.dom.ExpressionStatement) {
+			// For FOREACH with a single expression (from ExpressionStatement):
+			// Use the expression directly as lambda body (without block) for cleaner code
+			// This produces: l -> System.out.println(l) instead of l -> { System.out.println(l); }
+			lambda.setBody(ASTNode.copySubtree(ast, originalExpression));
 		} else if (operationType == OperationType.FOREACH && originalStatement != null) {
-			// For FOREACH: always use block syntax for consistency
-			// This produces: l -> { System.out.println(l); } 
+			// For FOREACH with other statement types: lambda body is the statement (as block)
 			if (originalStatement instanceof org.eclipse.jdt.core.dom.Block) {
 				lambda.setBody(ASTNode.copySubtree(ast, originalStatement));
 			} else {
@@ -683,11 +688,11 @@ public final class ProspectiveOperation {
 			return createBinaryOperatorLambda(ast, InfixExpression.Operator.TIMES);
 		case STRING_CONCAT:
 			// Use String::concat method reference when null-safe (variables have @NotNull),
-			// otherwise use (a, b) -> a + b lambda for null-safe concatenation
+			// otherwise use (a, b) -> a + b simple lambda for null-safe concatenation
 			if (isNullSafe) {
 				return createMethodReference(ast, "String", "concat");
 			} else {
-				return createBinaryOperatorLambda(ast, InfixExpression.Operator.PLUS);
+				return createSimpleBinaryLambda(ast, InfixExpression.Operator.PLUS);
 			}
 		case MAX:
 			// Use Math::max method reference for max accumulation
@@ -725,6 +730,35 @@ public final class ProspectiveOperation {
 		methodRef.setType(ast.newSimpleType(ast.newSimpleName("Math")));
 		methodRef.setName(ast.newSimpleName(methodName));
 		return methodRef;
+	}
+
+	/**
+	 * Creates a simple binary operator lambda like (a, b) -> a + b without type annotations.
+	 * Used for simple operations like string concatenation where type inference works well.
+	 * 
+	 * @param ast      the AST to create nodes in
+	 * @param operator the infix operator to use (e.g., PLUS for +)
+	 * @return a LambdaExpression with simple parameters
+	 */
+	private LambdaExpression createSimpleBinaryLambda(AST ast, InfixExpression.Operator operator) {
+		LambdaExpression lambda = ast.newLambdaExpression();
+
+		// Parameters: (a, b) - using VariableDeclarationFragment for simple parameters
+		VariableDeclarationFragment param1 = ast.newVariableDeclarationFragment();
+		param1.setName(ast.newSimpleName("a"));
+		VariableDeclarationFragment param2 = ast.newVariableDeclarationFragment();
+		param2.setName(ast.newSimpleName("b"));
+		lambda.parameters().add(param1);
+		lambda.parameters().add(param2);
+
+		// Body: a + b (or other operator)
+		InfixExpression operationExpr = ast.newInfixExpression();
+		operationExpr.setLeftOperand(ast.newSimpleName("a"));
+		operationExpr.setRightOperand(ast.newSimpleName("b"));
+		operationExpr.setOperator(operator);
+		lambda.setBody(operationExpr);
+
+		return lambda;
 	}
 
 	/**
