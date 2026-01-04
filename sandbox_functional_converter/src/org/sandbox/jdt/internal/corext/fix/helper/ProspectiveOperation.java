@@ -663,8 +663,8 @@ public final class ProspectiveOperation {
 			// Use (accumulator, _item) -> accumulator * _item lambda
 			return createBinaryOperatorLambda(ast, InfixExpression.Operator.TIMES);
 		case STRING_CONCAT:
-			// Use (a, b) -> a + b lambda for string concatenation (null-safe)
-			return createBinaryOperatorLambda(ast, InfixExpression.Operator.PLUS);
+			// Use String::concat method reference for string concatenation
+			return createMethodReference(ast, "String", "concat");
 		case MAX:
 			// Use Math::max method reference for max accumulation
 			return createMathMethodReference(ast, "max");

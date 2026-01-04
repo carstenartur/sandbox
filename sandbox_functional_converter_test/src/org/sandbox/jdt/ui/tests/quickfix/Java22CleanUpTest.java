@@ -1816,7 +1816,7 @@ class MyTest {
 //		"DOUBLEINCREMENTREDUCER",
 //		"DecrementingReducer",
 //		"ChainedReducerWithMerging",
-//		"StringConcat",
+		"StringConcat",
 //		"ChainedAnyMatch",
 //		"ChainedNoneMatch",
 //		"NoNeededVariablesMerging",
