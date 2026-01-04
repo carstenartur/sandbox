@@ -209,25 +209,25 @@ class MyTest {
 			    }
 			}""",
 
-				"""
-					package test1;
+"""
+package test1;
 
-					import java.util.Arrays;
-					import java.util.List;
+import java.util.Arrays;
+import java.util.List;
 
-					class MyTest {
+class MyTest {
 
-					    public static void main(String[] args) {
-					        new MyTest().test(Arrays.asList(1,2,3));
-					    }
+    public static void main(String[] args) {
+        new MyTest().test(Arrays.asList(1,2,3));
+    }
 
-					    public void test(List<Integer> ls) {
-					        ls.stream().map(a -> new Integer(a.intValue())).filter(l -> (l != null)).map(l -> l.toString())
-							.forEachOrdered(s -> System.out.println(s));
+    public void test(List<Integer> ls) {
+        ls.stream().map(a -> new Integer(a.intValue())).filter(l -> (l != null)).map(l -> l.toString())
+				.forEachOrdered(s -> System.out.println(s));
 
 
-					    }
-					}"""),
+    }
+}"""),
 		NonFilteringIfChaining("""
 			package test1;
 
@@ -306,27 +306,25 @@ class MyTest {
 
 			    }
 			}""",
+"""
+package test1;
 
-				"""
-					package test1;
+import java.util.Arrays;
+import java.util.List;
 
-					import java.util.Arrays;
-					import java.util.List;
+class MyTest {
 
-					class MyTest {
+    public static void main(String[] args) {
+        new MyTest().test(Arrays.asList(1, 2, 3));
+    }
 
-					    public static void main(String[] args) {
-					        new MyTest().test(Arrays.asList(1, 2, 3));
-					    }
-
-					    public void test(List<Integer> ls) {
-					        ls.stream().filter(l -> !(l == null)).map(l -> l.toString()).filter(s -> (s != null)).forEachOrdered(s -> {
-					            System.out.println(s);
-					        });
+    public void test(List<Integer> ls) {
+        ls.stream().filter(l -> !(l == null)).map(l -> l.toString()).filter(s -> (s != null))
+				.forEachOrdered(s -> System.out.println(s));
 
 
-					    }
-					}"""),
+    }
+}"""),
 		ChainedAnyMatch("""
 			package test1;
 
@@ -923,12 +921,69 @@ class MyTest {
 						+ "    public static void main( String[] args) {\n"
 						+ "        List<Integer> ls = new ArrayList<>();\n"
 						+ "        String i =\"\";\n"
-						+ "        i = ls.stream().map(l -> foo(l)).reduce(i, String::concat);\n"
+						+ "        i = ls.stream().map(l -> foo(l)).reduce(i, (a, b) -> a + b);\n"
 						+ "\n"
 						+ "    }\n"
 						+ "\n"
 						+ "    private static String foo(Integer l) {\n"
 						+ "        throw new UnsupportedOperationException(\"Not supported yet.\"); //To change body of generated methods, choose Tools | Templates.\n"
+						+ "    }\n"
+						+ "}\n"
+						+ ""),
+		StringConcatWithNotNull("package test1;\n"
+				+ "\n"
+				+ "import java.util.ArrayList;\n"
+				+ "import java.util.List;\n"
+				+ "import org.eclipse.jdt.annotation.NotNull;\n"
+				+ "\n"
+				+ "/**\n"
+				+ " *\n"
+				+ " * @author alexandrugyori\n"
+				+ " */\n"
+				+ "class MyTest {\n"
+				+ "\n"
+				+ "    /**\n"
+				+ "     * @param args the command line arguments\n"
+				+ "     */\n"
+				+ "    public static void main( String[] args) {\n"
+				+ "        List<Integer> ls = new ArrayList<>();\n"
+				+ "        @NotNull String i =\"\";\n"
+				+ "        for ( Integer l : ls) {\n"
+				+ "            i+=foo(l);        \n"
+				+ "        }\n"
+				+ "\n"
+				+ "    }\n"
+				+ "\n"
+				+ "    private static @NotNull String foo(Integer l) {\n"
+				+ "        return \"\";\n"
+				+ "    }\n"
+				+ "}\n"
+				+ "",
+
+				"package test1;\n"
+						+ "\n"
+						+ "import java.util.ArrayList;\n"
+						+ "import java.util.List;\n"
+						+ "import org.eclipse.jdt.annotation.NotNull;\n"
+						+ "\n"
+						+ "/**\n"
+						+ " *\n"
+						+ " * @author alexandrugyori\n"
+						+ " */\n"
+						+ "class MyTest {\n"
+						+ "\n"
+						+ "    /**\n"
+						+ "     * @param args the command line arguments\n"
+						+ "     */\n"
+						+ "    public static void main( String[] args) {\n"
+						+ "        List<Integer> ls = new ArrayList<>();\n"
+						+ "        @NotNull String i =\"\";\n"
+						+ "        i = ls.stream().map(l -> foo(l)).reduce(i, String::concat);\n"
+						+ "\n"
+						+ "    }\n"
+						+ "\n"
+						+ "    private static @NotNull String foo(Integer l) {\n"
+						+ "        return \"\";\n"
 						+ "    }\n"
 						+ "}\n"
 						+ ""),
@@ -1809,7 +1864,7 @@ class MyTest {
 //		"BeautificationWorks",
 //		"BeautificationWorks2",
 //		"NonFilteringIfChaining",
-//		"ContinuingIfFilterSingleStatement",
+		"ContinuingIfFilterSingleStatement",
 		"SimpleReducer",
 //		"ChainedReducer",
 //		"IncrementReducer",
@@ -1817,14 +1872,15 @@ class MyTest {
 //		"DOUBLEINCREMENTREDUCER",
 //		"DecrementingReducer",
 //		"ChainedReducerWithMerging",
-//		"StringConcat",
-//		"ChainedAnyMatch",
+		"StringConcat",
+		"StringConcatWithNotNull",
+//		"ChainedAnyMatch",  // TODO: anyMatch pattern detection not working correctly - needs investigation
 //		"ChainedNoneMatch",
 //		"NoNeededVariablesMerging",
 //		"SomeChainingWithNoNeededVar",
 //		"MaxReducer",
 //		"MinReducer",
-//		"MaxWithExpression",
+//		"MaxWithExpression",  // TODO: RuntimeException - possibly no transformation needed
 //		"MinWithExpression",
 //		"FilteredMaxReduction",
 //		"ChainedMapWithMinReduction",

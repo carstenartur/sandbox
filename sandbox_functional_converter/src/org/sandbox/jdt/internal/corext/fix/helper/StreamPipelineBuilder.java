@@ -22,16 +22,25 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.ConditionalExpression;
 import org.eclipse.jdt.core.dom.ContinueStatement;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.IAnnotationBinding;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.IfStatement;
+import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.InstanceofExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.PostfixExpression;
 import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
@@ -605,7 +614,13 @@ public class StreamPipelineBuilder {
 					ProspectiveOperation.ReducerType reducerType;
 
 					if (assignment.getOperator() == Assignment.Operator.PLUS_ASSIGN) {
-						reducerType = ProspectiveOperation.ReducerType.SUM;
+						// Check if this is string concatenation
+						ITypeBinding varType = getTypeBinding(varName);
+						if (varType != null && "java.lang.String".equals(varType.getQualifiedName())) {
+							reducerType = ProspectiveOperation.ReducerType.STRING_CONCAT;
+						} else {
+							reducerType = ProspectiveOperation.ReducerType.SUM;
+						}
 					} else if (assignment.getOperator() == Assignment.Operator.TIMES_ASSIGN) {
 						reducerType = ProspectiveOperation.ReducerType.PRODUCT;
 					} else if (assignment.getOperator() == Assignment.Operator.MINUS_ASSIGN) {
@@ -617,7 +632,16 @@ public class StreamPipelineBuilder {
 
 					accumulatorVariable = varName;
 					accumulatorType = getVariableType(varName);
-					return new ProspectiveOperation(stmt, varName, reducerType);
+					
+					ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);
+					
+					// For STRING_CONCAT, check if the accumulator variable has @NotNull
+					if (reducerType == ProspectiveOperation.ReducerType.STRING_CONCAT) {
+						boolean isNullSafe = hasNotNullAnnotation(varName);
+						op.setNullSafe(isNullSafe);
+					}
+					
+					return op;
 				}
 
 				// Check for regular assignment with Math.max/Math.min pattern
@@ -1050,15 +1074,57 @@ public class StreamPipelineBuilder {
 	 * Creates a negated expression for filter operations. Used when converting "if
 	 * (condition) continue;" to ".filter(x -> !(condition))".
 	 * 
+	 * <p>
+	 * Wraps binary and complex expressions in parentheses to ensure correct precedence.
+	 * For example: {@code l == null} becomes {@code !(l == null)} not {@code !l == null}
+	 * </p>
+	 * 
 	 * @param ast       the AST to create nodes in
 	 * @param condition the condition to negate
-	 * @return a negated expression
+	 * @return a negated expression with proper parenthesization
 	 */
 	private Expression createNegatedExpression(AST ast, Expression condition) {
+		Expression operand = (Expression) ASTNode.copySubtree(ast, condition);
+		
+		// Wrap binary expressions and other complex expressions in parentheses
+		// to ensure correct operator precedence
+		if (needsParentheses(condition)) {
+			ParenthesizedExpression parenthesized = ast.newParenthesizedExpression();
+			parenthesized.setExpression(operand);
+			operand = parenthesized;
+		}
+		
 		PrefixExpression negation = ast.newPrefixExpression();
 		negation.setOperator(PrefixExpression.Operator.NOT);
-		negation.setOperand((Expression) ASTNode.copySubtree(ast, condition));
+		negation.setOperand(operand);
 		return negation;
+	}
+	
+	/**
+	 * Determines if an expression needs parentheses when negated.
+	 * 
+	 * @param expr the expression to check
+	 * @return true if parentheses are needed
+	 */
+	private boolean needsParentheses(Expression expr) {
+		// Binary expressions (==, !=, <, >, <=, >=, &&, ||, etc.) need parentheses
+		if (expr instanceof InfixExpression) {
+			return true;
+		}
+		// Conditional expressions (ternary operator) need parentheses
+		if (expr instanceof ConditionalExpression) {
+			return true;
+		}
+		// instanceof expressions need parentheses
+		if (expr instanceof InstanceofExpression) {
+			return true;
+		}
+		// Assignment expressions need parentheses
+		if (expr instanceof Assignment) {
+			return true;
+		}
+		// Simple names, literals, method calls, field access, etc. don't need parentheses
+		return false;
 	}
 
 	/**
@@ -1420,5 +1486,108 @@ public class StreamPipelineBuilder {
 
 		// Method calls and other expressions are generally safe
 		return true;
+	}
+
+	/**
+	 * Checks if a variable has a @NotNull or @NonNull annotation.
+	 * This is used to determine if String::concat can be safely used instead of
+	 * the null-safe lambda (a, b) -> a + b.
+	 * 
+	 * @param varName the variable name to check
+	 * @return true if the variable has a @NotNull or @NonNull annotation
+	 */
+	private boolean hasNotNullAnnotation(String varName) {
+		VariableDeclarationFragment frag = findVariableDeclaration(varName);
+		if (frag != null) {
+			IVariableBinding binding = frag.resolveBinding();
+			if (binding != null) {
+				return hasNotNullAnnotationOnBinding(binding);
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Gets the type binding for a variable name.
+	 * 
+	 * @param varName the variable name
+	 * @return the type binding, or null if not found
+	 */
+	private ITypeBinding getTypeBinding(String varName) {
+		VariableDeclarationFragment frag = findVariableDeclaration(varName);
+		if (frag != null) {
+			IVariableBinding binding = frag.resolveBinding();
+			if (binding != null) {
+				return binding.getType();
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Finds the variable declaration fragment for a given variable name.
+	 * Searches up the AST tree starting from the for loop.
+	 * 
+	 * @param varName the variable name to find
+	 * @return the VariableDeclarationFragment, or null if not found
+	 */
+	private VariableDeclarationFragment findVariableDeclaration(String varName) {
+		if (varName == null) {
+			return null;
+		}
+
+		// Try to find the variable declaration in the AST
+		// Start from the for loop and walk up to find variable declarations
+		ASTNode current = forLoop;
+		while (current != null) {
+			if (current instanceof Block) {
+				Block block = (Block) current;
+				for (Object stmtObj : block.statements()) {
+					if (stmtObj instanceof VariableDeclarationStatement) {
+						VariableDeclarationStatement varDecl = (VariableDeclarationStatement) stmtObj;
+						for (Object fragObj : varDecl.fragments()) {
+							if (fragObj instanceof VariableDeclarationFragment) {
+								VariableDeclarationFragment frag = (VariableDeclarationFragment) fragObj;
+								if (varName.equals(frag.getName().getIdentifier())) {
+									return frag;
+								}
+							}
+						}
+					}
+				}
+			}
+			current = current.getParent();
+		}
+
+		return null;
+	}
+
+	/**
+	 * Checks if a binding has @NotNull or @NonNull annotation.
+	 * 
+	 * @param binding the variable binding to check
+	 * @return true if the binding has a @NotNull or @NonNull annotation
+	 */
+	private boolean hasNotNullAnnotationOnBinding(IVariableBinding binding) {
+		if (binding == null) {
+			return false;
+		}
+
+		IAnnotationBinding[] annotations = binding.getAnnotations();
+		if (annotations != null) {
+			for (IAnnotationBinding annotation : annotations) {
+				// Check for qualified names (handles different null-safety annotation packages)
+				ITypeBinding annotationType = annotation.getAnnotationType();
+				if (annotationType != null) {
+					String qualifiedName = annotationType.getQualifiedName();
+					if (qualifiedName != null && 
+						(qualifiedName.endsWith(".NotNull") || qualifiedName.endsWith(".NonNull"))) {
+						return true;
+					}
+				}
+			}
+		}
+
+		return false;
 	}
 }

@@ -29,6 +29,7 @@ import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.NumberLiteral;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
+import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
@@ -98,6 +99,12 @@ public final class ProspectiveOperation {
 	 * The reducer type for REDUCE operations (INCREMENT, DECREMENT, SUM, etc.).
 	 */
 	private ReducerType reducerType;
+
+	/**
+	 * Indicates if this operation is null-safe (e.g., variables are annotated with @NotNull).
+	 * When true for STRING_CONCAT, String::concat method reference can be used safely.
+	 */
+	private boolean isNullSafe = false;
 
 	/**
 	 * Set of variables consumed by this operation. Used for tracking variable scope
@@ -342,14 +349,29 @@ public final class ProspectiveOperation {
 
 			lambda.setBody(block);
 		} else if (operationType == OperationType.FILTER && originalExpression != null) {
-			// For FILTER: wrap condition in parentheses
-			ParenthesizedExpression parenExpr = ast.newParenthesizedExpression();
-			parenExpr.setExpression((Expression) ASTNode.copySubtree(ast, originalExpression));
-			lambda.setBody(parenExpr);
+			// For FILTER: wrap condition in parentheses only if needed
+			// PrefixExpression with NOT already has proper precedence, no extra parens needed
+			if (originalExpression instanceof PrefixExpression) {
+				PrefixExpression prefix = (PrefixExpression) originalExpression;
+				if (prefix.getOperator() == PrefixExpression.Operator.NOT) {
+					// Negation already has proper precedence, use as-is
+					lambda.setBody((Expression) ASTNode.copySubtree(ast, originalExpression));
+				} else {
+					// Other prefix operators might need parentheses
+					ParenthesizedExpression parenExpr = ast.newParenthesizedExpression();
+					parenExpr.setExpression((Expression) ASTNode.copySubtree(ast, originalExpression));
+					lambda.setBody(parenExpr);
+				}
+			} else {
+				// For other expressions, wrap in parentheses
+				ParenthesizedExpression parenExpr = ast.newParenthesizedExpression();
+				parenExpr.setExpression((Expression) ASTNode.copySubtree(ast, originalExpression));
+				lambda.setBody(parenExpr);
+			}
 		} else if (operationType == OperationType.FOREACH && originalExpression != null 
 				&& originalStatement instanceof org.eclipse.jdt.core.dom.ExpressionStatement) {
 			// For FOREACH with a single expression (from ExpressionStatement):
-			// Use the expression directly as lambda body (without block)
+			// Use the expression directly as lambda body (without block) for cleaner code
 			// This produces: l -> System.out.println(l) instead of l -> { System.out.println(l); }
 			lambda.setBody(ASTNode.copySubtree(ast, originalExpression));
 		} else if (operationType == OperationType.FOREACH && originalStatement != null) {
@@ -583,6 +605,24 @@ public final class ProspectiveOperation {
 	}
 
 	/**
+	 * Checks if this operation is null-safe (e.g., variables have @NotNull annotations).
+	 * 
+	 * @return true if the operation is null-safe
+	 */
+	public boolean isNullSafe() {
+		return isNullSafe;
+	}
+
+	/**
+	 * Sets whether this operation is null-safe.
+	 * 
+	 * @param isNullSafe true if the operation is null-safe
+	 */
+	public void setNullSafe(boolean isNullSafe) {
+		this.isNullSafe = isNullSafe;
+	}
+
+	/**
 	 * Returns the set of variables consumed by this operation. This includes all
 	 * SimpleName references in the operation's expression.
 	 * 
@@ -663,8 +703,13 @@ public final class ProspectiveOperation {
 			// Use (accumulator, _item) -> accumulator * _item lambda
 			return createBinaryOperatorLambda(ast, InfixExpression.Operator.TIMES);
 		case STRING_CONCAT:
-			// Use (a, b) -> a + b lambda for string concatenation (null-safe)
-			return createBinaryOperatorLambda(ast, InfixExpression.Operator.PLUS);
+			// Use String::concat method reference when null-safe (variables have @NotNull),
+			// otherwise use (a, b) -> a + b simple lambda for null-safe concatenation
+			if (isNullSafe) {
+				return createMethodReference(ast, "String", "concat");
+			} else {
+				return createSimpleBinaryLambda(ast, InfixExpression.Operator.PLUS);
+			}
 		case MAX:
 			// Use Math::max method reference for max accumulation
 			return createMathMethodReference(ast, "max");
@@ -701,6 +746,35 @@ public final class ProspectiveOperation {
 		methodRef.setType(ast.newSimpleType(ast.newSimpleName("Math")));
 		methodRef.setName(ast.newSimpleName(methodName));
 		return methodRef;
+	}
+
+	/**
+	 * Creates a simple binary operator lambda like (a, b) -> a + b without type annotations.
+	 * Used for simple operations like string concatenation where type inference works well.
+	 * 
+	 * @param ast      the AST to create nodes in
+	 * @param operator the infix operator to use (e.g., PLUS for +)
+	 * @return a LambdaExpression with simple parameters
+	 */
+	private LambdaExpression createSimpleBinaryLambda(AST ast, InfixExpression.Operator operator) {
+		LambdaExpression lambda = ast.newLambdaExpression();
+
+		// Parameters: (a, b) - using VariableDeclarationFragment for simple parameters
+		VariableDeclarationFragment param1 = ast.newVariableDeclarationFragment();
+		param1.setName(ast.newSimpleName("a"));
+		VariableDeclarationFragment param2 = ast.newVariableDeclarationFragment();
+		param2.setName(ast.newSimpleName("b"));
+		lambda.parameters().add(param1);
+		lambda.parameters().add(param2);
+
+		// Body: a + b (or other operator)
+		InfixExpression operationExpr = ast.newInfixExpression();
+		operationExpr.setLeftOperand(ast.newSimpleName("a"));
+		operationExpr.setRightOperand(ast.newSimpleName("b"));
+		operationExpr.setOperator(operator);
+		lambda.setBody(operationExpr);
+
+		return lambda;
 	}
 
 	/**
