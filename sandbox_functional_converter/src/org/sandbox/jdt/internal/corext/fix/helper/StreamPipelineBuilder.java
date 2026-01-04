@@ -1451,8 +1451,43 @@ public class StreamPipelineBuilder {
 	 * @return true if the variable has a @NotNull or @NonNull annotation
 	 */
 	private boolean hasNotNullAnnotation(String varName) {
+		VariableDeclarationFragment frag = findVariableDeclaration(varName);
+		if (frag != null) {
+			IVariableBinding binding = frag.resolveBinding();
+			if (binding != null) {
+				return hasNotNullAnnotationOnBinding(binding);
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Gets the type binding for a variable name.
+	 * 
+	 * @param varName the variable name
+	 * @return the type binding, or null if not found
+	 */
+	private ITypeBinding getTypeBinding(String varName) {
+		VariableDeclarationFragment frag = findVariableDeclaration(varName);
+		if (frag != null) {
+			IVariableBinding binding = frag.resolveBinding();
+			if (binding != null) {
+				return binding.getType();
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Finds the variable declaration fragment for a given variable name.
+	 * Searches up the AST tree starting from the for loop.
+	 * 
+	 * @param varName the variable name to find
+	 * @return the VariableDeclarationFragment, or null if not found
+	 */
+	private VariableDeclarationFragment findVariableDeclaration(String varName) {
 		if (varName == null) {
-			return false;
+			return null;
 		}
 
 		// Try to find the variable declaration in the AST
@@ -1468,50 +1503,7 @@ public class StreamPipelineBuilder {
 							if (fragObj instanceof VariableDeclarationFragment) {
 								VariableDeclarationFragment frag = (VariableDeclarationFragment) fragObj;
 								if (varName.equals(frag.getName().getIdentifier())) {
-									// Found the variable, check for @NotNull annotation
-									IVariableBinding binding = frag.resolveBinding();
-									if (binding != null) {
-										return hasNotNullAnnotationOnBinding(binding);
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-			current = current.getParent();
-		}
-
-		return false;
-	}
-
-	/**
-	 * Gets the type binding for a variable name.
-	 * 
-	 * @param varName the variable name
-	 * @return the type binding, or null if not found
-	 */
-	private ITypeBinding getTypeBinding(String varName) {
-		if (varName == null) {
-			return null;
-		}
-
-		// Try to find the variable declaration in the AST
-		ASTNode current = forLoop;
-		while (current != null) {
-			if (current instanceof Block) {
-				Block block = (Block) current;
-				for (Object stmtObj : block.statements()) {
-					if (stmtObj instanceof VariableDeclarationStatement) {
-						VariableDeclarationStatement varDecl = (VariableDeclarationStatement) stmtObj;
-						for (Object fragObj : varDecl.fragments()) {
-							if (fragObj instanceof VariableDeclarationFragment) {
-								VariableDeclarationFragment frag = (VariableDeclarationFragment) fragObj;
-								if (varName.equals(frag.getName().getIdentifier())) {
-									IVariableBinding binding = frag.resolveBinding();
-									if (binding != null) {
-										return binding.getType();
-									}
+									return frag;
 								}
 							}
 						}
@@ -1538,11 +1530,7 @@ public class StreamPipelineBuilder {
 		IAnnotationBinding[] annotations = binding.getAnnotations();
 		if (annotations != null) {
 			for (IAnnotationBinding annotation : annotations) {
-				String annotationName = annotation.getName();
-				if ("NotNull".equals(annotationName) || "NonNull".equals(annotationName)) {
-					return true;
-				}
-				// Also check for fully qualified names
+				// Check for qualified names (handles different null-safety annotation packages)
 				ITypeBinding annotationType = annotation.getAnnotationType();
 				if (annotationType != null) {
 					String qualifiedName = annotationType.getQualifiedName();
