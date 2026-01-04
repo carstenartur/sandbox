@@ -154,3 +154,63 @@ Before contributing shared utilities to Eclipse JDT:
 ## Contact
 
 For questions about shared utilities or adding new common code, please open an issue or discussion in the repository.
+
+## TriggerPattern Hint Engine
+
+### Completed (v1.2.2)
+- [x] Core pattern parser for expressions and statements
+- [x] Placeholder matching with `$x` syntax
+- [x] Pattern matching engine with AST traversal
+- [x] HintContext for providing context to hints
+- [x] Annotation-based hint registration (`@TriggerPattern`, `@Hint`)
+- [x] Extension point for hint providers
+- [x] HintRegistry with lazy loading
+- [x] Quick Assist processor integration
+- [x] Example hint provider (increment/decrement simplification)
+- [x] Test module with parser, matcher, and engine tests
+
+### Planned Enhancements
+
+#### High Priority
+- [ ] Add comprehensive statement pattern tests
+- [ ] Performance optimization: index patterns by kind and root node type
+- [ ] Add integration tests for HintRegistry and extension point loading
+- [ ] Add UI tests for Quick Assist processor (requires PDE test setup)
+- [ ] Documentation: User guide for creating custom hints
+
+#### Medium Priority
+- [ ] Multi-placeholder support (`$x$` for lists)
+  - [ ] Match argument lists: `method($args$)`
+  - [ ] Match statement sequences: `{ $stmts$ }`
+  - [ ] Tests for multi-placeholder matching
+- [ ] Placeholder constraints/guards
+  - [ ] Type constraints: `$x:SimpleName`, `$y:NumberLiteral`
+  - [ ] Pattern-based constraints: `$x matches "get.*"`
+  - [ ] Tests for constraint validation
+- [ ] Cleanup integration
+  - [ ] CleanUp implementation using TriggerPattern engine
+  - [ ] Batch processing support
+  - [ ] Save Actions integration
+- [ ] Pattern composition
+  - [ ] Allow patterns to reference other patterns
+  - [ ] Pattern libraries/catalogs
+
+#### Low Priority
+- [ ] Pattern debugging tools
+  - [ ] Visualize pattern matches in AST
+  - [ ] Test harness for pattern development
+- [ ] Performance monitoring
+  - [ ] Track pattern matching performance
+  - [ ] Identify slow patterns
+- [ ] Advanced pattern features
+  - [ ] Negative patterns (must not match)
+  - [ ] Optional parts: `$x?.method()`
+  - [ ] Repetition: `$x+` (one or more)
+
+### Known Issues
+- None at this time
+
+### Technical Debt
+- Consider separating TriggerPattern into its own plugin for better modularity
+- Pattern parser could be made more robust with better error handling
+- HintRegistry needs thread-safety improvements for concurrent access
