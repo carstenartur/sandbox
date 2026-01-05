@@ -846,10 +846,10 @@ public final class ProspectiveOperation {
 	private LambdaExpression createBinaryOperatorLambda(AST ast, InfixExpression.Operator operator) {
 		LambdaExpression lambda = ast.newLambdaExpression();
 
-		// Parameters: (accumulator, _item)
-		SingleVariableDeclaration param1 = ast.newSingleVariableDeclaration();
+		// Parameters: (accumulator, _item) - use VariableDeclarationFragment to avoid type annotations
+		VariableDeclarationFragment param1 = ast.newVariableDeclarationFragment();
 		param1.setName(ast.newSimpleName("accumulator"));
-		SingleVariableDeclaration param2 = ast.newSingleVariableDeclaration();
+		VariableDeclarationFragment param2 = ast.newVariableDeclarationFragment();
 		param2.setName(ast.newSimpleName("_item"));
 		lambda.parameters().add(param1);
 		lambda.parameters().add(param2);
@@ -871,18 +871,18 @@ public final class ProspectiveOperation {
 	private LambdaExpression createCountingLambda(AST ast, InfixExpression.Operator operator) {
 		LambdaExpression lambda = ast.newLambdaExpression();
 
-		// Parameters: (accumulator, _item)
-		SingleVariableDeclaration param1 = ast.newSingleVariableDeclaration();
+		// Parameters: (accumulator, _item) - use VariableDeclarationFragment to avoid type annotations
+		VariableDeclarationFragment param1 = ast.newVariableDeclarationFragment();
 		param1.setName(ast.newSimpleName("accumulator"));
-		SingleVariableDeclaration param2 = ast.newSingleVariableDeclaration();
+		VariableDeclarationFragment param2 = ast.newVariableDeclarationFragment();
 		param2.setName(ast.newSimpleName("_item"));
 		lambda.parameters().add(param1);
 		lambda.parameters().add(param2);
 
-		// Body: accumulator - _item (where _item is mapped to 1)
+		// Body: accumulator + 1 (literal 1, not _item)
 		InfixExpression operationExpr = ast.newInfixExpression();
 		operationExpr.setLeftOperand(ast.newSimpleName("accumulator"));
-		operationExpr.setRightOperand(ast.newSimpleName("_item"));
+		operationExpr.setRightOperand(ast.newNumberLiteral("1"));
 		operationExpr.setOperator(operator);
 		lambda.setBody(operationExpr);
 
@@ -905,9 +905,10 @@ public final class ProspectiveOperation {
 	/** (7) Erstellt eine Akkumulator-Funktion für `reduce()` */
 	private LambdaExpression createAccumulatorLambda(AST ast) {
 		LambdaExpression lambda = ast.newLambdaExpression();
-		SingleVariableDeclaration paramA = ast.newSingleVariableDeclaration();
+		// Use VariableDeclarationFragment to avoid type annotations
+		VariableDeclarationFragment paramA = ast.newVariableDeclarationFragment();
 		paramA.setName(ast.newSimpleName("a"));
-		SingleVariableDeclaration paramB = ast.newSingleVariableDeclaration();
+		VariableDeclarationFragment paramB = ast.newVariableDeclarationFragment();
 		paramB.setName(ast.newSimpleName("b"));
 		lambda.parameters().add(paramA);
 		lambda.parameters().add(paramB);
