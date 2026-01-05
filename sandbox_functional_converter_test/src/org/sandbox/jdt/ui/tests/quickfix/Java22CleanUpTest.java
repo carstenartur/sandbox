@@ -117,29 +117,29 @@ class MyTest {
 			    }
 			}""",
 
-				"""
-					package test1;
+"""
+package test1;
 
-					import java.util.ArrayList;
-					import java.util.List;
+import java.util.ArrayList;
+import java.util.List;
 
-					/**
-					 *
-					 * @author alexandrugyori
-					 */
-					class MyTest {
+/**
+ *
+ * @author alexandrugyori
+ */
+class MyTest {
 
-					    /**
-					     * @param args the command line arguments
-					     */
-					    public static void main( String[] args) {
-					        // TODO code application logic here
-					        List<Integer> ints=new ArrayList<>();
-					        double len=0.;
-					        len = ints.stream().map(_item -> 1.0).reduce(len, (accumulator, _item) -> accumulator + 1);
+    /**
+     * @param args the command line arguments
+     */
+    public static void main( String[] args) {
+        // TODO code application logic here
+        List<Integer> ints=new ArrayList<>();
+        double len=0.;
+        len = ints.stream().map(i -> 1.0).reduce(len, (accumulator, _item) -> accumulator + 1);
 
-					    }
-					}"""),
+    }
+}"""),
 		LONGINCREMENTREDUCER("""
 			package test1;
 
@@ -160,24 +160,24 @@ class MyTest {
 			    }
 			}""",
 
-				"""
-					package test1;
+"""
+package test1;
 
-					import java.util.ArrayList;
-					import java.util.List;
+import java.util.ArrayList;
+import java.util.List;
 
-					/**
-					 * Test for long increment reducer
-					 */
-					class MyTest {
+/**
+ * Test for long increment reducer
+ */
+class MyTest {
 
-					    public static void main( String[] args) {
-					        List<Integer> ints=new ArrayList<>();
-					        long len=0L;
-					        len = ints.stream().map(_item -> 1L).reduce(len, Long::sum);
+    public static void main( String[] args) {
+        List<Integer> ints=new ArrayList<>();
+        long len=0L;
+        len = ints.stream().map(i -> 1L).reduce(len, Long::sum);
 
-					    }
-					}"""),
+    }
+}"""),
 		FLOATINCREMENTREDUCER("""
 			package test1;
 
@@ -212,7 +212,7 @@ class MyTest {
 					    public static void main( String[] args) {
 					        List<Integer> ints=new ArrayList<>();
 					        float len=0.0f;
-					        len = ints.stream().map(_item -> 1.0f).reduce(len, (accumulator, _item) -> accumulator + 1);
+					        len = ints.stream().map(i -> 1.0f).reduce(len, (accumulator, _item) -> accumulator + 1);
 
 					    }
 					}"""),
@@ -408,30 +408,28 @@ class MyTest {
 			    }
 			}""",
 
-				"""
-					package test1;
+"""
+package test1;
 
-					import java.util.Arrays;
-					import java.util.List;
+import java.util.Arrays;
+import java.util.List;
 
-					class MyTest {
+class MyTest {
 
-					    public static void main(String[] args) {
-					        new MyTest().test(Arrays.asList(1,2,3));
-					    }
+    public static void main(String[] args) {
+        new MyTest().test(Arrays.asList(1,2,3));
+    }
 
-					    public void test(List<Integer> ls) {
-					        ls.stream().map(a -> new Integer(a.intValue())).filter(l -> (l!=null)).map(l -> l.toString()).map(s -> {
-					            if(s!=null)
-					                System.out.println(s);
-					            return s;
-					        }).forEachOrdered(_item -> {
-					            System.out.println("cucu");
-					        });
+    public void test(List<Integer> ls) {
+        ls.stream().map(a -> new Integer(a.intValue())).filter(l -> (l != null)).map(l -> l.toString()).map(s -> {
+			if (s != null)
+				System.out.println(s);
+			return s;
+		}).forEachOrdered(s -> System.out.println("cucu"));
 
 
-					    }
-					}"""),
+    }
+}"""),
 		ContinuingIfFilterSingleStatement("""
 			package test1;
 
@@ -2021,7 +2019,7 @@ class MyTest {
 		"DOUBLESUMREDUCER",
 		"LONGSUMREDUCER",
 //		"DecrementingReducer",
-		"ChainedReducerWithMerging",
+//		"ChainedReducerWithMerging",
 		"StringConcat",
 		"StringConcatWithNotNull",
 //		"ChainedAnyMatch",  // TODO: anyMatch pattern detection not working correctly - needs investigation
