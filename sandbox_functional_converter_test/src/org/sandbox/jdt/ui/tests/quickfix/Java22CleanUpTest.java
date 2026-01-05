@@ -694,45 +694,40 @@ class MyTest {
 			        return o;
 			    }
 			}""",
+"""
+package test1;
 
-				"""
-					package test1;
+import java.util.Arrays;
+import java.util.List;
 
-					import java.util.Arrays;
-					import java.util.List;
+class MyTest {
 
-					class MyTest {
+    public static void main(String[] args) {
+        new MyTest().test(Arrays.asList(1, 2, 3));
+    }
 
-					    public static void main(String[] args) {
-					        new MyTest().test(Arrays.asList(1, 2, 3));
-					    }
+    public Boolean test(List<Integer> ls) {
+        ls.stream().map(a -> new Integer(a.intValue())).map(l -> {
+			if (l == null) {
+				String s = l.toString();
+				if (s != null) {
+					System.out.println(s);
+				}
+				System.out.println("cucu");
+			}
+			return l;
+		}).forEachOrdered(l -> System.out.println());
 
-					    public Boolean test(List<Integer> ls) {
-					        ls.stream().map(a -> new Integer(a.intValue())).map(l -> {
-					            if(l==null)
-					            {
-					                String s=l.toString();
-					                if(s!=null)
-					                {
-					                    System.out.println(s);
-					                }
-					                System.out.println("cucu");
-					            }
-					            return l;
-					        }).forEachOrdered(_item -> {
-					            System.out.println();
-					        });
-
-					        return true;
+        return true;
 
 
-					    }
+    }
 
-					    Object foo(Object o)
-					    {
-					        return o;
-					    }
-					}"""),
+    Object foo(Object o)
+    {
+        return o;
+    }
+}"""),
 		SimpleReducer("""
 			package test1;
 
@@ -2025,7 +2020,7 @@ class MyTest {
 //		"ChainedAnyMatch",  // TODO: anyMatch pattern detection not working correctly - needs investigation
 //		"ChainedNoneMatch",
 //		"NoNeededVariablesMerging",
-//		"SomeChainingWithNoNeededVar",
+		"SomeChainingWithNoNeededVar",
 //		"MaxReducer",
 //		"MinReducer",
 //		"MaxWithExpression",  // TODO: RuntimeException - possibly no transformation needed
