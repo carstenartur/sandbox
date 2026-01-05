@@ -836,12 +836,8 @@ public class StreamPipelineBuilder {
 
 							// For allMatch with negated condition, strip the negation
 							Expression condition = ifStmt.getExpression();
-							if (isAllMatchPattern && condition instanceof PrefixExpression) {
-								PrefixExpression prefixExpr = (PrefixExpression) condition;
-								if (prefixExpr.getOperator() == PrefixExpression.Operator.NOT) {
-									// Use the operand without negation for allMatch
-									condition = prefixExpr.getOperand();
-								}
+							if (isAllMatchPattern) {
+								condition = stripNegation(condition);
 							}
 
 							ProspectiveOperation matchOp = new ProspectiveOperation(condition, opType);
@@ -879,12 +875,8 @@ public class StreamPipelineBuilder {
 
 							// For allMatch with negated condition, strip the negation
 							Expression condition = ifStmt.getExpression();
-							if (isAllMatchPattern && condition instanceof PrefixExpression) {
-								PrefixExpression prefixExpr = (PrefixExpression) condition;
-								if (prefixExpr.getOperator() == PrefixExpression.Operator.NOT) {
-									// Use the operand without negation for allMatch
-									condition = prefixExpr.getOperand();
-								}
+							if (isAllMatchPattern) {
+								condition = stripNegation(condition);
 							}
 
 							ProspectiveOperation matchOp = new ProspectiveOperation(condition, opType);
@@ -1236,6 +1228,33 @@ public class StreamPipelineBuilder {
 		}
 		// Simple names, literals, method calls, field access, etc. don't need parentheses
 		return false;
+	}
+
+	/**
+	 * Strips the negation from a negated expression.
+	 * Handles ParenthesizedExpression wrapping.
+	 * 
+	 * @param expr the expression to strip negation from
+	 * @return the expression without the leading NOT operator, or the original expression if not negated
+	 */
+	private Expression stripNegation(Expression expr) {
+		// Unwrap parentheses
+		Expression unwrapped = expr;
+		while (unwrapped instanceof ParenthesizedExpression) {
+			unwrapped = ((ParenthesizedExpression) unwrapped).getExpression();
+		}
+		
+		// Check if it's a negated expression
+		if (unwrapped instanceof PrefixExpression) {
+			PrefixExpression prefixExpr = (PrefixExpression) unwrapped;
+			if (prefixExpr.getOperator() == PrefixExpression.Operator.NOT) {
+				// Return the operand without the NOT
+				return prefixExpr.getOperand();
+			}
+		}
+		
+		// Not a negated expression, return as-is
+		return expr;
 	}
 
 	/**

@@ -496,11 +496,17 @@ public final class PreconditionsChecker {
 
 	/**
 	 * Checks if an expression is a negated condition (starts with !).
+	 * Handles ParenthesizedExpression wrapping.
 	 * 
 	 * @param expr the expression to check
-	 * @return true if the expression is a PrefixExpression with NOT operator
+	 * @return true if the expression is a PrefixExpression with NOT operator (possibly wrapped in parentheses)
 	 */
 	private boolean isNegatedCondition(Expression expr) {
+		// Unwrap parentheses
+		while (expr instanceof ParenthesizedExpression) {
+			expr = ((ParenthesizedExpression) expr).getExpression();
+		}
+		
 		return expr instanceof PrefixExpression
 				&& ((PrefixExpression) expr).getOperator() == PrefixExpression.Operator.NOT;
 	}
