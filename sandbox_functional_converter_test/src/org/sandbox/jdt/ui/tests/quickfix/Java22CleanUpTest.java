@@ -2021,7 +2021,7 @@ class MyTest {
 		"DOUBLESUMREDUCER",
 		"LONGSUMREDUCER",
 //		"DecrementingReducer",
-//		"ChainedReducerWithMerging",
+		"ChainedReducerWithMerging",
 		"StringConcat",
 		"StringConcatWithNotNull",
 //		"ChainedAnyMatch",  // TODO: anyMatch pattern detection not working correctly - needs investigation

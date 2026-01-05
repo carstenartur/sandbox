@@ -1047,33 +1047,53 @@ public class StreamPipelineBuilder {
 	 * @return true if remaining non-terminal statements should be wrapped in a MAP
 	 */
 	private boolean shouldWrapRemainingInMap(List<Statement> statements, int currentIndex) {
-		// Need at least 2 more statements: an IF statement and a terminal statement
+		// Need at least 2 more statements after the variable declaration
 		if (currentIndex >= statements.size() - 2) {
 			return false;
 		}
 		
-		// Check if the next statement is an IF statement
-		Statement nextStmt = statements.get(currentIndex + 1);
-		if (!(nextStmt instanceof IfStatement)) {
-			return false;
+		// Look through remaining non-terminal statements to see if we should wrap
+		// We should wrap if:
+		// 1. There are multiple statements before the last one, AND
+		// 2. At least one is an IF (not early return, not continue), OR
+		// 3. There are side-effect statements that should be grouped together
+		
+		for (int j = currentIndex + 1; j < statements.size() - 1; j++) {
+			Statement stmt = statements.get(j);
+			
+			if (stmt instanceof IfStatement) {
+				IfStatement ifStmt = (IfStatement) stmt;
+				
+				// Don't wrap if this is an early return IF (anyMatch/noneMatch pattern)
+				if (isEarlyReturnIf(ifStmt)) {
+					return false;
+				}
+				
+				// Don't wrap if this is a continue IF (will be handled as negated filter)
+				if (isIfWithContinue(ifStmt)) {
+					return false;
+				}
+				
+				// If this IF has no else clause and there are more statements after it,
+				// then all items must continue to those statements, so wrap
+				if (ifStmt.getElseStatement() == null) {
+					return true;
+				}
+			}
 		}
 		
-		IfStatement ifStmt = (IfStatement) nextStmt;
-		
-		// Don't wrap if this is an early return IF (anyMatch/noneMatch pattern)
-		if (isEarlyReturnIf(ifStmt)) {
-			return false;
-		}
-		
-		// Don't wrap if this is a continue IF (will be handled as negated filter)
-		if (isIfWithContinue(ifStmt)) {
-			return false;
-		}
-		
-		// If this IF has no else clause and there are more statements after it,
-		// then all items must continue to those statements, so wrap the IF in a MAP
-		if (ifStmt.getElseStatement() == null) {
-			return true;
+		// Also wrap if there are multiple non-terminal side-effect statements
+		// (e.g., println, method calls) before the terminal statement
+		int nonTerminalCount = statements.size() - currentIndex - 2; // -2 for current and last
+		if (nonTerminalCount > 0) {
+			// Check if any of these are side-effect statements (not variable declarations)
+			for (int j = currentIndex + 1; j < statements.size() - 1; j++) {
+				Statement stmt = statements.get(j);
+				if (!(stmt instanceof VariableDeclarationStatement)) {
+					// Found at least one side-effect statement that's not a variable declaration
+					return true;
+				}
+			}
 		}
 		
 		return false;
