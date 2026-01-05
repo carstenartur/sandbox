@@ -386,6 +386,8 @@ public final class PreconditionsChecker {
 	 */
 	private void detectEarlyReturnPatterns() {
 		if (!containsReturn || !(loop instanceof EnhancedForStatement)) {
+			System.err.println("DEBUG PreconditionsChecker: Early exit - containsReturn=" + containsReturn + 
+					", isEnhancedFor=" + (loop instanceof EnhancedForStatement));
 			return;
 		}
 
@@ -401,10 +403,13 @@ public final class PreconditionsChecker {
 			public boolean visit(IfStatement node) {
 				if (hasReturnInThenBranch(node)) {
 					ifStatementsWithReturn.add(node);
+					System.err.println("DEBUG PreconditionsChecker: Found IF with return: " + node);
 				}
 				return true;
 			}
 		});
+
+		System.err.println("DEBUG PreconditionsChecker: Found " + ifStatementsWithReturn.size() + " IF statements with return");
 
 		// For anyMatch/noneMatch/allMatch, we expect exactly one IF with return
 		if (ifStatementsWithReturn.size() != 1) {
@@ -415,6 +420,8 @@ public final class PreconditionsChecker {
 
 		// Check if the IF returns a boolean literal
 		BooleanLiteral returnValue = getReturnValueFromIf(ifStmt);
+		System.err.println("DEBUG PreconditionsChecker: Return value = " + returnValue + 
+				(returnValue != null ? " (value=" + returnValue.booleanValue() + ")" : ""));
 		if (returnValue == null) {
 			return;
 		}
@@ -422,6 +429,7 @@ public final class PreconditionsChecker {
 		// Determine pattern based on return value
 		if (returnValue.booleanValue()) {
 			// if (condition) return true; → anyMatch
+			System.err.println("DEBUG PreconditionsChecker: Setting isAnyMatchPattern = true");
 			isAnyMatchPattern = true;
 			earlyReturnIf = ifStmt;
 		} else {
@@ -434,12 +442,18 @@ public final class PreconditionsChecker {
 
 			// Check if condition is a negated expression (PrefixExpression with NOT)
 			Expression condition = ifStmt.getExpression();
-			if (isNegatedCondition(condition)) {
+			boolean isNegated = isNegatedCondition(condition);
+			System.err.println("DEBUG PreconditionsChecker: Condition = " + condition + 
+					", isNegated = " + isNegated + 
+					", conditionClass = " + condition.getClass().getSimpleName());
+			if (isNegated) {
 				// if (!condition) return false; → allMatch
+				System.err.println("DEBUG PreconditionsChecker: Setting isAllMatchPattern = true");
 				isAllMatchPattern = true;
 				earlyReturnIf = ifStmt;
 			} else {
 				// if (condition) return false; → noneMatch
+				System.err.println("DEBUG PreconditionsChecker: Setting isNoneMatchPattern = true");
 				isNoneMatchPattern = true;
 				earlyReturnIf = ifStmt;
 			}
