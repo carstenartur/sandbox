@@ -2034,7 +2034,7 @@ class MyTest {
 //		"ChainedMapWithMinReduction",
 //		"ComplexFilterMapMaxReduction",
 		"ContinueWithMapAndForEach",
-//		"SimpleAllMatch",
+		"SimpleAllMatch",
 //		"AllMatchWithNullCheck",
 //		"ChainedAllMatch",
 		"NestedFilterCombination",
