@@ -102,6 +102,12 @@ public final class ProspectiveOperation {
 	private ReducerType reducerType;
 
 	/**
+	 * The type of the accumulator variable for REDUCE operations (e.g., "int", "double", "long").
+	 * Used to generate the correct method reference (Integer::sum vs Double::sum).
+	 */
+	private String accumulatorType;
+
+	/**
 	 * Indicates if this operation is null-safe (e.g., variables are annotated with @NotNull).
 	 * When true for STRING_CONCAT, String::concat method reference can be used safely.
 	 */
@@ -633,6 +639,16 @@ public final class ProspectiveOperation {
 	}
 
 	/**
+	 * Sets the accumulator type for REDUCE operations.
+	 * This is used to generate the correct method reference (e.g., Integer::sum vs Double::sum).
+	 * 
+	 * @param accumulatorType the type of the accumulator variable (e.g., "int", "double", "long")
+	 */
+	public void setAccumulatorType(String accumulatorType) {
+		this.accumulatorType = accumulatorType;
+	}
+
+	/**
 	 * Returns the set of variables consumed by this operation. This includes all
 	 * SimpleName references in the operation's expression.
 	 * 
@@ -688,7 +704,8 @@ public final class ProspectiveOperation {
 
 	/**
 	 * Creates the accumulator expression for REDUCE operations. Returns a method
-	 * reference (e.g., Integer::sum) when possible, or a lambda otherwise.
+	 * reference (e.g., Integer::sum, Long::sum, Double::sum) when possible, or a lambda otherwise.
+	 * The method reference type is determined by the accumulator variable type.
 	 */
 	private Expression createAccumulatorExpression(AST ast) {
 		if (reducerType == null) {
@@ -698,12 +715,47 @@ public final class ProspectiveOperation {
 
 		switch (reducerType) {
 		case INCREMENT:
-			// Use Integer::sum to sum the mapped 1's for counting
-			// Note: Assumes Integer type. For Double/Long, this may need enhancement.
-			return createMethodReference(ast, "Integer", "sum");
 		case SUM:
-			// Use Integer::sum method reference for sum += x
-			// Note: Assumes Integer type. For Double/Long, this may need enhancement.
+			// Use appropriate method reference based on accumulator type
+			// Only Integer, Long, and Double have ::sum method references in Java standard library
+			if (accumulatorType != null) {
+				// Handle primitive types
+				if ("double".equals(accumulatorType) || "java.lang.Double".equals(accumulatorType)) {
+					// For double, check if INCREMENT (use lambda) or SUM (can use Double::sum)
+					if (reducerType == ReducerType.INCREMENT) {
+						// For double++, use lambda: (accumulator, _item) -> accumulator + 1
+						return createCountingLambda(ast, InfixExpression.Operator.PLUS);
+					} else {
+						// For double += x, can use Double::sum if x is double-compatible
+						return createMethodReference(ast, "Double", "sum");
+					}
+				} else if ("float".equals(accumulatorType) || "java.lang.Float".equals(accumulatorType)) {
+					// Float doesn't have ::sum, always use lambda
+					if (reducerType == ReducerType.INCREMENT) {
+						return createCountingLambda(ast, InfixExpression.Operator.PLUS);
+					} else {
+						return createBinaryOperatorLambda(ast, InfixExpression.Operator.PLUS);
+					}
+				} else if ("long".equals(accumulatorType) || "java.lang.Long".equals(accumulatorType)) {
+					// Long::sum is available
+					return createMethodReference(ast, "Long", "sum");
+				} else if ("short".equals(accumulatorType) || "java.lang.Short".equals(accumulatorType)) {
+					// Short doesn't have ::sum, use lambda
+					if (reducerType == ReducerType.INCREMENT) {
+						return createCountingLambda(ast, InfixExpression.Operator.PLUS);
+					} else {
+						return createBinaryOperatorLambda(ast, InfixExpression.Operator.PLUS);
+					}
+				} else if ("byte".equals(accumulatorType) || "java.lang.Byte".equals(accumulatorType)) {
+					// Byte doesn't have ::sum, use lambda
+					if (reducerType == ReducerType.INCREMENT) {
+						return createCountingLambda(ast, InfixExpression.Operator.PLUS);
+					} else {
+						return createBinaryOperatorLambda(ast, InfixExpression.Operator.PLUS);
+					}
+				}
+			}
+			// Default to Integer::sum for int or unknown types
 			return createMethodReference(ast, "Integer", "sum");
 		case DECREMENT:
 			// For i--, we need a different approach since we subtract

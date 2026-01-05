@@ -595,7 +595,9 @@ public class StreamPipelineBuilder {
 
 				accumulatorVariable = varName;
 				accumulatorType = getVariableType(varName);
-				return new ProspectiveOperation(stmt, varName, reducerType);
+				ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);
+				op.setAccumulatorType(accumulatorType);
+				return op;
 			}
 		}
 
@@ -616,7 +618,9 @@ public class StreamPipelineBuilder {
 
 				accumulatorVariable = varName;
 				accumulatorType = getVariableType(varName);
-				return new ProspectiveOperation(stmt, varName, reducerType);
+				ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);
+				op.setAccumulatorType(accumulatorType);
+				return op;
 			}
 		}
 
@@ -651,6 +655,7 @@ public class StreamPipelineBuilder {
 					accumulatorType = getVariableType(varName);
 					
 					ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);
+					op.setAccumulatorType(accumulatorType);
 					
 					// For STRING_CONCAT, check if the accumulator variable has @NotNull
 					if (reducerType == ProspectiveOperation.ReducerType.STRING_CONCAT) {
@@ -669,7 +674,9 @@ public class StreamPipelineBuilder {
 					if (reducerType != null) {
 						accumulatorVariable = varName;
 						accumulatorType = getVariableType(varName);
-						return new ProspectiveOperation(stmt, varName, reducerType);
+						ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);
+						op.setAccumulatorType(accumulatorType);
+						return op;
 					}
 				}
 			}
