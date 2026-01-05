@@ -140,6 +140,158 @@ class MyTest {
 
 					    }
 					}"""),
+		LONGINCREMENTREDUCER("""
+			package test1;
+
+			import java.util.ArrayList;
+			import java.util.List;
+
+			/**
+			 * Test for long increment reducer
+			 */
+			class MyTest {
+
+			    public static void main( String[] args) {
+			        List<Integer> ints=new ArrayList<>();
+			        long len=0L;
+			        for(int i : ints)
+			            len++;
+
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.ArrayList;
+					import java.util.List;
+
+					/**
+					 * Test for long increment reducer
+					 */
+					class MyTest {
+
+					    public static void main( String[] args) {
+					        List<Integer> ints=new ArrayList<>();
+					        long len=0L;
+					        len = ints.stream().map(_item -> 1L).reduce(len, Long::sum);
+
+					    }
+					}"""),
+		FLOATINCREMENTREDUCER("""
+			package test1;
+
+			import java.util.ArrayList;
+			import java.util.List;
+
+			/**
+			 * Test for float increment reducer - must use lambda (no Float::sum)
+			 */
+			class MyTest {
+
+			    public static void main( String[] args) {
+			        List<Integer> ints=new ArrayList<>();
+			        float len=0.0f;
+			        for(int i : ints)
+			            len++;
+
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.ArrayList;
+					import java.util.List;
+
+					/**
+					 * Test for float increment reducer - must use lambda (no Float::sum)
+					 */
+					class MyTest {
+
+					    public static void main( String[] args) {
+					        List<Integer> ints=new ArrayList<>();
+					        float len=0.0f;
+					        len = ints.stream().map(_item -> 1.0f).reduce(len, (accumulator, _item) -> accumulator + 1);
+
+					    }
+					}"""),
+		DOUBLESUMREDUCER("""
+			package test1;
+
+			import java.util.ArrayList;
+			import java.util.List;
+
+			/**
+			 * Test for double sum reducer - should use Double::sum
+			 */
+			class MyTest {
+
+			    public static void main( String[] args) {
+			        List<Integer> ints=new ArrayList<>();
+			        double sum=0.0;
+			        for(Integer i : ints)
+			            sum += i.doubleValue();
+
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.ArrayList;
+					import java.util.List;
+
+					/**
+					 * Test for double sum reducer - should use Double::sum
+					 */
+					class MyTest {
+
+					    public static void main( String[] args) {
+					        List<Integer> ints=new ArrayList<>();
+					        double sum=0.0;
+					        sum = ints.stream().map(i -> i.doubleValue()).reduce(sum, Double::sum);
+
+					    }
+					}"""),
+		LONGSUMREDUCER("""
+			package test1;
+
+			import java.util.ArrayList;
+			import java.util.List;
+
+			/**
+			 * Test for long sum reducer - should use Long::sum
+			 */
+			class MyTest {
+
+			    public static void main( String[] args) {
+			        List<Integer> ints=new ArrayList<>();
+			        long sum=0L;
+			        for(Integer i : ints)
+			            sum += i.longValue();
+
+			    }
+			}""",
+
+				"""
+					package test1;
+
+					import java.util.ArrayList;
+					import java.util.List;
+
+					/**
+					 * Test for long sum reducer - should use Long::sum
+					 */
+					class MyTest {
+
+					    public static void main( String[] args) {
+					        List<Integer> ints=new ArrayList<>();
+					        long sum=0L;
+					        sum = ints.stream().map(i -> i.longValue()).reduce(sum, Long::sum);
+
+					    }
+					}"""),
 		ChainingFilterMapForEachConvert("""
 			package test1;
 
@@ -1863,7 +2015,11 @@ class MyTest {
 //		"ChainedReducer",
 		"IncrementReducer",
 		"AccumulatingMapReduce",
-//		"DOUBLEINCREMENTREDUCER",
+		"DOUBLEINCREMENTREDUCER",
+		"LONGINCREMENTREDUCER",
+		"FLOATINCREMENTREDUCER",
+		"DOUBLESUMREDUCER",
+		"LONGSUMREDUCER",
 //		"DecrementingReducer",
 //		"ChainedReducerWithMerging",
 		"StringConcat",
