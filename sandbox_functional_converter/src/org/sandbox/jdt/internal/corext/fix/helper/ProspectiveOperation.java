@@ -33,6 +33,7 @@ import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.TypeMethodReference;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -99,6 +100,12 @@ public final class ProspectiveOperation {
 	 * The reducer type for REDUCE operations (INCREMENT, DECREMENT, SUM, etc.).
 	 */
 	private ReducerType reducerType;
+
+	/**
+	 * The type of the accumulator variable for REDUCE operations (e.g., "int", "double", "long").
+	 * Used to generate the correct method reference (Integer::sum vs Double::sum).
+	 */
+	private String accumulatorType;
 
 	/**
 	 * Indicates if this operation is null-safe (e.g., variables are annotated with @NotNull).
@@ -337,7 +344,16 @@ public final class ProspectiveOperation {
 		} else if (operationType == OperationType.MAP && originalStatement != null) {
 			// For MAP with statement: create block with statement and return
 			org.eclipse.jdt.core.dom.Block block = ast.newBlock();
-			block.statements().add(ASTNode.copySubtree(ast, originalStatement));
+			
+			// Handle Block statements specially - copy statements from the block
+			if (originalStatement instanceof org.eclipse.jdt.core.dom.Block) {
+				org.eclipse.jdt.core.dom.Block originalBlock = (org.eclipse.jdt.core.dom.Block) originalStatement;
+				for (Object stmt : originalBlock.statements()) {
+					block.statements().add(ASTNode.copySubtree(ast, (Statement) stmt));
+				}
+			} else {
+				block.statements().add(ASTNode.copySubtree(ast, originalStatement));
+			}
 
 			// Add return statement if we have a loop variable to return
 			if (loopVariableName != null || paramName != null) {
@@ -623,6 +639,16 @@ public final class ProspectiveOperation {
 	}
 
 	/**
+	 * Sets the accumulator type for REDUCE operations.
+	 * This is used to generate the correct method reference (e.g., Integer::sum vs Double::sum).
+	 * 
+	 * @param accumulatorType the type of the accumulator variable (e.g., "int", "double", "long")
+	 */
+	public void setAccumulatorType(String accumulatorType) {
+		this.accumulatorType = accumulatorType;
+	}
+
+	/**
 	 * Returns the set of variables consumed by this operation. This includes all
 	 * SimpleName references in the operation's expression.
 	 * 
@@ -678,7 +704,8 @@ public final class ProspectiveOperation {
 
 	/**
 	 * Creates the accumulator expression for REDUCE operations. Returns a method
-	 * reference (e.g., Integer::sum) when possible, or a lambda otherwise.
+	 * reference (e.g., Integer::sum, Long::sum, Double::sum) when possible, or a lambda otherwise.
+	 * The method reference type is determined by the accumulator variable type.
 	 */
 	private Expression createAccumulatorExpression(AST ast) {
 		if (reducerType == null) {
@@ -688,12 +715,47 @@ public final class ProspectiveOperation {
 
 		switch (reducerType) {
 		case INCREMENT:
-			// Use Integer::sum to sum the mapped 1's for counting
-			// Note: Assumes Integer type. For Double/Long, this may need enhancement.
-			return createMethodReference(ast, "Integer", "sum");
 		case SUM:
-			// Use Integer::sum method reference for sum += x
-			// Note: Assumes Integer type. For Double/Long, this may need enhancement.
+			// Use appropriate method reference based on accumulator type
+			// Only Integer, Long, and Double have ::sum method references in Java standard library
+			if (accumulatorType != null) {
+				// Handle primitive types
+				if ("double".equals(accumulatorType) || "java.lang.Double".equals(accumulatorType)) {
+					// For double, check if INCREMENT (use lambda) or SUM (can use Double::sum)
+					if (reducerType == ReducerType.INCREMENT) {
+						// For double++, use lambda: (accumulator, _item) -> accumulator + 1
+						return createCountingLambda(ast, InfixExpression.Operator.PLUS);
+					} else {
+						// For double += x, can use Double::sum if x is double-compatible
+						return createMethodReference(ast, "Double", "sum");
+					}
+				} else if ("float".equals(accumulatorType) || "java.lang.Float".equals(accumulatorType)) {
+					// Float doesn't have ::sum, always use lambda
+					if (reducerType == ReducerType.INCREMENT) {
+						return createCountingLambda(ast, InfixExpression.Operator.PLUS);
+					} else {
+						return createBinaryOperatorLambda(ast, InfixExpression.Operator.PLUS);
+					}
+				} else if ("long".equals(accumulatorType) || "java.lang.Long".equals(accumulatorType)) {
+					// Long::sum is available
+					return createMethodReference(ast, "Long", "sum");
+				} else if ("short".equals(accumulatorType) || "java.lang.Short".equals(accumulatorType)) {
+					// Short doesn't have ::sum, use lambda
+					if (reducerType == ReducerType.INCREMENT) {
+						return createCountingLambda(ast, InfixExpression.Operator.PLUS);
+					} else {
+						return createBinaryOperatorLambda(ast, InfixExpression.Operator.PLUS);
+					}
+				} else if ("byte".equals(accumulatorType) || "java.lang.Byte".equals(accumulatorType)) {
+					// Byte doesn't have ::sum, use lambda
+					if (reducerType == ReducerType.INCREMENT) {
+						return createCountingLambda(ast, InfixExpression.Operator.PLUS);
+					} else {
+						return createBinaryOperatorLambda(ast, InfixExpression.Operator.PLUS);
+					}
+				}
+			}
+			// Default to Integer::sum for int or unknown types
 			return createMethodReference(ast, "Integer", "sum");
 		case DECREMENT:
 			// For i--, we need a different approach since we subtract
@@ -784,10 +846,10 @@ public final class ProspectiveOperation {
 	private LambdaExpression createBinaryOperatorLambda(AST ast, InfixExpression.Operator operator) {
 		LambdaExpression lambda = ast.newLambdaExpression();
 
-		// Parameters: (accumulator, _item)
-		SingleVariableDeclaration param1 = ast.newSingleVariableDeclaration();
+		// Parameters: (accumulator, _item) - use VariableDeclarationFragment to avoid type annotations
+		VariableDeclarationFragment param1 = ast.newVariableDeclarationFragment();
 		param1.setName(ast.newSimpleName("accumulator"));
-		SingleVariableDeclaration param2 = ast.newSingleVariableDeclaration();
+		VariableDeclarationFragment param2 = ast.newVariableDeclarationFragment();
 		param2.setName(ast.newSimpleName("_item"));
 		lambda.parameters().add(param1);
 		lambda.parameters().add(param2);
@@ -809,18 +871,18 @@ public final class ProspectiveOperation {
 	private LambdaExpression createCountingLambda(AST ast, InfixExpression.Operator operator) {
 		LambdaExpression lambda = ast.newLambdaExpression();
 
-		// Parameters: (accumulator, _item)
-		SingleVariableDeclaration param1 = ast.newSingleVariableDeclaration();
+		// Parameters: (accumulator, _item) - use VariableDeclarationFragment to avoid type annotations
+		VariableDeclarationFragment param1 = ast.newVariableDeclarationFragment();
 		param1.setName(ast.newSimpleName("accumulator"));
-		SingleVariableDeclaration param2 = ast.newSingleVariableDeclaration();
+		VariableDeclarationFragment param2 = ast.newVariableDeclarationFragment();
 		param2.setName(ast.newSimpleName("_item"));
 		lambda.parameters().add(param1);
 		lambda.parameters().add(param2);
 
-		// Body: accumulator - _item (where _item is mapped to 1)
+		// Body: accumulator + 1 (literal 1, not _item)
 		InfixExpression operationExpr = ast.newInfixExpression();
 		operationExpr.setLeftOperand(ast.newSimpleName("accumulator"));
-		operationExpr.setRightOperand(ast.newSimpleName("_item"));
+		operationExpr.setRightOperand(ast.newNumberLiteral("1"));
 		operationExpr.setOperator(operator);
 		lambda.setBody(operationExpr);
 
@@ -843,9 +905,10 @@ public final class ProspectiveOperation {
 	/** (7) Erstellt eine Akkumulator-Funktion für `reduce()` */
 	private LambdaExpression createAccumulatorLambda(AST ast) {
 		LambdaExpression lambda = ast.newLambdaExpression();
-		SingleVariableDeclaration paramA = ast.newSingleVariableDeclaration();
+		// Use VariableDeclarationFragment to avoid type annotations
+		VariableDeclarationFragment paramA = ast.newVariableDeclarationFragment();
 		paramA.setName(ast.newSimpleName("a"));
-		SingleVariableDeclaration paramB = ast.newSingleVariableDeclaration();
+		VariableDeclarationFragment paramB = ast.newVariableDeclarationFragment();
 		paramB.setName(ast.newSimpleName("b"));
 		lambda.parameters().add(paramA);
 		lambda.parameters().add(paramB);

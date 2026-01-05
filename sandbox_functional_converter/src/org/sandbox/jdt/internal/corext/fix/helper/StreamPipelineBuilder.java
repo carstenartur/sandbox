@@ -595,7 +595,9 @@ public class StreamPipelineBuilder {
 
 				accumulatorVariable = varName;
 				accumulatorType = getVariableType(varName);
-				return new ProspectiveOperation(stmt, varName, reducerType);
+				ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);
+				op.setAccumulatorType(accumulatorType);
+				return op;
 			}
 		}
 
@@ -616,7 +618,9 @@ public class StreamPipelineBuilder {
 
 				accumulatorVariable = varName;
 				accumulatorType = getVariableType(varName);
-				return new ProspectiveOperation(stmt, varName, reducerType);
+				ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);
+				op.setAccumulatorType(accumulatorType);
+				return op;
 			}
 		}
 
@@ -651,6 +655,7 @@ public class StreamPipelineBuilder {
 					accumulatorType = getVariableType(varName);
 					
 					ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);
+					op.setAccumulatorType(accumulatorType);
 					
 					// For STRING_CONCAT, check if the accumulator variable has @NotNull
 					if (reducerType == ProspectiveOperation.ReducerType.STRING_CONCAT) {
@@ -669,7 +674,9 @@ public class StreamPipelineBuilder {
 					if (reducerType != null) {
 						accumulatorVariable = varName;
 						accumulatorType = getVariableType(varName);
-						return new ProspectiveOperation(stmt, varName, reducerType);
+						ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);
+						op.setAccumulatorType(accumulatorType);
+						return op;
 					}
 				}
 			}
@@ -781,6 +788,26 @@ public class StreamPipelineBuilder {
 
 							// Update current var name for subsequent operations
 							currentVarName = newVarName;
+							
+							// Check if we need to wrap remaining non-terminal statements in a MAP
+							// This handles the case where after a variable declaration, we have
+							// side-effect statements (like IFs with side effects) followed by a terminal statement
+							if (shouldWrapRemainingInMap(statements, i)) {
+								// Collect all non-terminal statements (from i+1 to size-2)
+								Block mapBlock = ast.newBlock();
+								List<Statement> mapStatements = mapBlock.statements();
+								for (int j = i + 1; j < statements.size() - 1; j++) {
+									mapStatements.add((Statement) ASTNode.copySubtree(ast, statements.get(j)));
+								}
+								
+								// Create a MAP operation with the block + return statement
+								ProspectiveOperation sideEffectMapOp = new ProspectiveOperation(mapBlock,
+										ProspectiveOperation.OperationType.MAP, currentVarName);
+								ops.add(sideEffectMapOp);
+								
+								// Skip to the last statement
+								i = statements.size() - 2; // Will be incremented to size-1 in next iteration
+							}
 						}
 					}
 				} else if (stmt instanceof IfStatement && !isLast) {
@@ -1005,6 +1032,73 @@ public class StreamPipelineBuilder {
 				|| operations.get(0).getOperationType() != ProspectiveOperation.OperationType.FOREACH;
 	}
 
+	/**
+	 * Determines if remaining statements after a variable declaration should be
+	 * wrapped in a single MAP operation with a block body.
+	 * 
+	 * <p>
+	 * This handles the pattern where after a MAP (variable declaration), we have
+	 * side-effect statements (like IFs with side effects) followed by a terminal
+	 * statement. The side-effect statements should be wrapped in a MAP that returns
+	 * the current variable.
+	 * 
+	 * @param statements the list of all statements in the current block
+	 * @param currentIndex the index of the variable declaration statement
+	 * @return true if remaining non-terminal statements should be wrapped in a MAP
+	 */
+	private boolean shouldWrapRemainingInMap(List<Statement> statements, int currentIndex) {
+		// Need at least 2 more statements after the variable declaration
+		if (currentIndex >= statements.size() - 2) {
+			return false;
+		}
+		
+		// Look through remaining non-terminal statements to see if we should wrap
+		// We should wrap if:
+		// 1. There are multiple statements before the last one, AND
+		// 2. At least one is an IF (not early return, not continue), OR
+		// 3. There are side-effect statements that should be grouped together
+		
+		for (int j = currentIndex + 1; j < statements.size() - 1; j++) {
+			Statement stmt = statements.get(j);
+			
+			if (stmt instanceof IfStatement) {
+				IfStatement ifStmt = (IfStatement) stmt;
+				
+				// Don't wrap if this is an early return IF (anyMatch/noneMatch pattern)
+				if (isEarlyReturnIf(ifStmt)) {
+					return false;
+				}
+				
+				// Don't wrap if this is a continue IF (will be handled as negated filter)
+				if (isIfWithContinue(ifStmt)) {
+					return false;
+				}
+				
+				// If this IF has no else clause and there are more statements after it,
+				// then all items must continue to those statements, so wrap
+				if (ifStmt.getElseStatement() == null) {
+					return true;
+				}
+			}
+		}
+		
+		// Also wrap if there are multiple non-terminal side-effect statements
+		// (e.g., println, method calls) before the terminal statement
+		int nonTerminalCount = statements.size() - currentIndex - 2; // -2 for current and last
+		if (nonTerminalCount > 0) {
+			// Check if any of these are side-effect statements (not variable declarations)
+			for (int j = currentIndex + 1; j < statements.size() - 1; j++) {
+				Statement stmt = statements.get(j);
+				if (!(stmt instanceof VariableDeclarationStatement)) {
+					// Found at least one side-effect statement that's not a variable declaration
+					return true;
+				}
+			}
+		}
+		
+		return false;
+	}
+	
 	/**
 	 * Processes an IF statement as a filter operation with nested body parsing.
 	 * Adds a FILTER operation for the condition and recursively processes the body.
