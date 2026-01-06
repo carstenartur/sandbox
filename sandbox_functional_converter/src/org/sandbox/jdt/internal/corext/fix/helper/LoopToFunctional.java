@@ -51,6 +51,15 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 					// Loop cannot be safely refactored to functional style
 					return false;
 				}
+				
+				// Perform full analysis to ensure the loop can actually be converted
+				// Create a temporary StreamPipelineBuilder just for validation
+				StreamPipelineBuilder builder = new StreamPipelineBuilder(visited, pc);
+				if (!builder.analyze()) {
+					// Loop passed preconditions but cannot be converted to stream
+					return false;
+				}
+				
 				operations.add(fixcore.rewrite(visited));
 				nodesprocessed.add(visited);
 				return false;
