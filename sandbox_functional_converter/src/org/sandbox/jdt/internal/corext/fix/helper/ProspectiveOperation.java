@@ -552,10 +552,12 @@ public final class ProspectiveOperation {
 			}
 		case MAX:
 			// Use Math::max method reference for max accumulation
-			return createMathMethodReference(ast, "max");
+			// For primitive types, use wrapper class method references (Integer::max, Double::max, etc.)
+			return createMaxMinMethodReference(ast, "max");
 		case MIN:
 			// Use Math::min method reference for min accumulation
-			return createMathMethodReference(ast, "min");
+			// For primitive types, use wrapper class method references (Integer::min, Double::min, etc.)
+			return createMaxMinMethodReference(ast, "min");
 		case CUSTOM_AGGREGATE:
 			// For custom aggregation, use a generic accumulator lambda
 			return createAccumulatorLambda(ast);
@@ -584,6 +586,59 @@ public final class ProspectiveOperation {
 	private TypeMethodReference createMathMethodReference(AST ast, String methodName) {
 		TypeMethodReference methodRef = ast.newTypeMethodReference();
 		methodRef.setType(ast.newSimpleType(ast.newSimpleName("Math")));
+		methodRef.setName(ast.newSimpleName(methodName));
+		return methodRef;
+	}
+
+	/**
+	 * Creates a method reference for max/min operations based on the accumulator type.
+	 * Uses Integer::max, Double::max, Long::max, etc. instead of Math::max to avoid
+	 * overload ambiguity in reduce() operations.
+	 * 
+	 * @param ast        the AST to create nodes in
+	 * @param methodName the method name ("max" or "min")
+	 * @return a TypeMethodReference for the appropriate wrapper type's max/min method
+	 */
+	private TypeMethodReference createMaxMinMethodReference(AST ast, String methodName) {
+		String typeName;
+		
+		if (accumulatorType != null) {
+			// Map primitive types to their wrapper classes
+			switch (accumulatorType) {
+				case "int":
+					typeName = "Integer";
+					break;
+				case "long":
+					typeName = "Long";
+					break;
+				case "double":
+					typeName = "Double";
+					break;
+				case "float":
+					typeName = "Float";
+					break;
+				case "short":
+					typeName = "Short";
+					break;
+				case "byte":
+					typeName = "Byte";
+					break;
+				default:
+					// For wrapper types, use them directly
+					if (accumulatorType.startsWith("java.lang.")) {
+						typeName = accumulatorType.substring("java.lang.".length());
+					} else {
+						// Default to Integer for unknown types
+						typeName = "Integer";
+					}
+			}
+		} else {
+			// Default to Integer if type is unknown
+			typeName = "Integer";
+		}
+		
+		TypeMethodReference methodRef = ast.newTypeMethodReference();
+		methodRef.setType(ast.newSimpleType(ast.newSimpleName(typeName)));
 		methodRef.setName(ast.newSimpleName(methodName));
 		return methodRef;
 	}
