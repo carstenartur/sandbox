@@ -255,6 +255,7 @@ public final class PreconditionsChecker {
 			}
 			return true;
 		}).onReturnStatement((node, h) -> {
+			System.err.println("DEBUG PreconditionsChecker: ReturnStatement found! " + node);
 			containsReturn = true;
 			return true;
 		}).onThrowStatement((node, h) -> {
@@ -299,7 +300,14 @@ public final class PreconditionsChecker {
 			return true;
 		});
 
+		System.err.println("DEBUG PreconditionsChecker: About to build, loop = " + loop);
+		System.err.println("DEBUG PreconditionsChecker: Loop class = " + loop.getClass().getSimpleName());
+		if (loop instanceof EnhancedForStatement) {
+			EnhancedForStatement efl = (EnhancedForStatement) loop;
+			System.err.println("DEBUG PreconditionsChecker: Loop body = " + efl.getBody());
+		}
 		builder.build(loop);
+		System.err.println("DEBUG PreconditionsChecker: After build, containsReturn = " + containsReturn);
 
 		// Detect anyMatch/noneMatch patterns
 		detectEarlyReturnPatterns();
