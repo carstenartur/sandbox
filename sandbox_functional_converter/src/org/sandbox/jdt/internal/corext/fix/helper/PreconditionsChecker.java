@@ -306,7 +306,17 @@ public final class PreconditionsChecker {
 			EnhancedForStatement efl = (EnhancedForStatement) loop;
 			System.err.println("DEBUG PreconditionsChecker: Loop body = " + efl.getBody());
 		}
-		builder.build(loop);
+		
+		// Analyze the parent scope (Block or MethodDeclaration) instead of just the loop
+		// This allows us to detect return statements both INSIDE and AFTER the loop
+		// which is necessary for anyMatch/allMatch/noneMatch pattern detection
+		ASTNode scopeToAnalyze = ASTNodes.getFirstAncestorOrNull(loop, Block.class);
+		if (scopeToAnalyze == null) {
+			// Fallback to analyzing just the loop if no parent Block found
+			scopeToAnalyze = loop;
+		}
+		System.err.println("DEBUG PreconditionsChecker: Analyzing scope = " + scopeToAnalyze.getClass().getSimpleName());
+		builder.build(scopeToAnalyze);
 		System.err.println("DEBUG PreconditionsChecker: After build, containsReturn = " + containsReturn);
 
 		// Detect anyMatch/noneMatch patterns
