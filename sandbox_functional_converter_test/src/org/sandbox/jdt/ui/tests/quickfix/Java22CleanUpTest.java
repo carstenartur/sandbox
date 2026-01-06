@@ -2022,8 +2022,8 @@ class MyTest {
 //		"ChainedReducerWithMerging",
 		"StringConcat",
 		"StringConcatWithNotNull",
-//		"ChainedAnyMatch",  // TODO: anyMatch pattern detection not working correctly - needs investigation
-//		"ChainedNoneMatch",
+		"ChainedAnyMatch",  // Fixed by checking return after loop
+		"ChainedNoneMatch",  // Fixed by checking return after loop
 //		"NoNeededVariablesMerging",
 //		"SomeChainingWithNoNeededVar",
 //		"MaxReducer",
@@ -2035,8 +2035,8 @@ class MyTest {
 //		"ComplexFilterMapMaxReduction",
 		"ContinueWithMapAndForEach",
 		"SimpleAllMatch",
-//		"AllMatchWithNullCheck",
-//		"ChainedAllMatch",
+		"AllMatchWithNullCheck",  // Fixed by checking return after loop
+		"ChainedAllMatch",  // Fixed by checking return after loop
 		"NestedFilterCombination",
 		"MultipleContinueFilters",
 		"EmptyCollectionHandling",
