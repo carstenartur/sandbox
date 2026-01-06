@@ -2017,8 +2017,8 @@ class MyTest {
 //		"ChainedReducerWithMerging",
 //		"StringConcat",
 //		"StringConcatWithNotNull",
-//		"ChainedAnyMatch",  // Fixed by checking return after loop
-//		"ChainedNoneMatch",  // Fixed by checking return after loop
+		"ChainedAnyMatch",  // Fixed by checking return after loop
+		"ChainedNoneMatch",  // Fixed by checking return after loop
 //		"NoNeededVariablesMerging",
 		"SomeChainingWithNoNeededVar",
 //		"MaxReducer",
@@ -2029,9 +2029,9 @@ class MyTest {
 //		"ChainedMapWithMinReduction",
 //		"ComplexFilterMapMaxReduction",
 		"ContinueWithMapAndForEach",
-//		"SimpleAllMatch",
-//		"AllMatchWithNullCheck",  // Fixed by checking return after loop
-//		"ChainedAllMatch",  // Fixed by checking return after loop
+		"SimpleAllMatch",
+		"AllMatchWithNullCheck",  // Fixed by checking return after loop
+		"ChainedAllMatch",  // Fixed by checking return after loop
 		"NestedFilterCombination",
 		"MultipleContinueFilters",
 		"EmptyCollectionHandling",

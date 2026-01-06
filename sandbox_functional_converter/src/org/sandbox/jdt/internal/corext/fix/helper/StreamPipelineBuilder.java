@@ -121,10 +121,6 @@ public class StreamPipelineBuilder {
 		this.isAnyMatchPattern = preconditions.isAnyMatchPattern();
 		this.isNoneMatchPattern = preconditions.isNoneMatchPattern();
 		this.isAllMatchPattern = preconditions.isAllMatchPattern();
-		
-		System.err.println("DEBUG StreamPipelineBuilder: Constructor - isAnyMatchPattern=" + isAnyMatchPattern + 
-				", isNoneMatchPattern=" + isNoneMatchPattern + 
-				", isAllMatchPattern=" + isAllMatchPattern);
 	}
 
 	/**
@@ -1169,47 +1165,14 @@ public class StreamPipelineBuilder {
 	 */
 	private boolean isEarlyReturnIf(IfStatement ifStatement) {
 		if (!isAnyMatchPattern && !isNoneMatchPattern && !isAllMatchPattern) {
-			System.err.println("DEBUG StreamPipelineBuilder.isEarlyReturnIf: No pattern detected");
 			return false;
 		}
 
 		// Check if this IF statement is the early return IF from preconditions
 		IfStatement earlyReturnIf = preconditions.getEarlyReturnIf();
 		
-		// Try reference equality first (fastest)
-		if (earlyReturnIf != null && earlyReturnIf == ifStatement) {
-			System.err.println("DEBUG StreamPipelineBuilder.isEarlyReturnIf: Match by reference");
-			return true;
-		}
-		
-		// If reference equality fails, try structural comparison
-		// Check if they're at the same position in the same parent
-		if (earlyReturnIf != null && ifStatement != null) {
-			ASTNode earlyParent = earlyReturnIf.getParent();
-			ASTNode currentParent = ifStatement.getParent();
-			
-			// Both should be in the same parent (the loop body block)
-			if (earlyParent == currentParent && earlyParent instanceof Block) {
-				Block block = (Block) earlyParent;
-				List<?> statements = block.statements();
-				
-				// Find indices
-				int earlyIndex = statements.indexOf(earlyReturnIf);
-				int currentIndex = statements.indexOf(ifStatement);
-				
-				System.err.println("DEBUG StreamPipelineBuilder.isEarlyReturnIf: Structural comparison - " +
-						"earlyIndex=" + earlyIndex + ", currentIndex=" + currentIndex);
-				
-				if (earlyIndex == currentIndex && earlyIndex >= 0) {
-					System.err.println("DEBUG StreamPipelineBuilder.isEarlyReturnIf: Match by structure");
-					return true;
-				}
-			}
-		}
-		
-		System.err.println("DEBUG StreamPipelineBuilder.isEarlyReturnIf: No match - " +
-				"earlyReturnIf=" + earlyReturnIf + ", ifStatement=" + ifStatement);
-		return false;
+		// Use reference equality - the preconditions checker found the exact IF statement
+		return earlyReturnIf != null && earlyReturnIf == ifStatement;
 	}
 
 	/**
