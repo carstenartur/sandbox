@@ -255,7 +255,6 @@ public final class PreconditionsChecker {
 			}
 			return true;
 		}).onReturnStatement((node, h) -> {
-			System.err.println("DEBUG PreconditionsChecker: ReturnStatement found! " + node);
 			containsReturn = true;
 			return true;
 		}).onThrowStatement((node, h) -> {
@@ -300,24 +299,23 @@ public final class PreconditionsChecker {
 			return true;
 		});
 
-		System.err.println("DEBUG PreconditionsChecker: About to build, loop = " + loop);
-		System.err.println("DEBUG PreconditionsChecker: Loop class = " + loop.getClass().getSimpleName());
-		if (loop instanceof EnhancedForStatement) {
-			EnhancedForStatement efl = (EnhancedForStatement) loop;
-			System.err.println("DEBUG PreconditionsChecker: Loop body = " + efl.getBody());
+		// First, analyze just the loop itself
+		builder.build(loop);
+
+		// Then, if the loop is inside a Block, analyze only the immediately following
+		// statement (if any). This lets us detect patterns that depend on the statement
+		// right after the loop without pulling in unrelated statements.
+		ASTNode parent = loop.getParent();
+		if (parent instanceof Block) {
+			Block block = (Block) parent;
+			@SuppressWarnings("unchecked")
+			List<Statement> statements = block.statements();
+			int loopIndex = statements.indexOf(loop);
+			if (loopIndex != -1 && loopIndex + 1 < statements.size()) {
+				Statement followingStatement = statements.get(loopIndex + 1);
+				builder.build(followingStatement);
+			}
 		}
-		
-		// Analyze the parent scope (Block or MethodDeclaration) instead of just the loop
-		// This allows us to detect return statements both INSIDE and AFTER the loop
-		// which is necessary for anyMatch/allMatch/noneMatch pattern detection
-		ASTNode scopeToAnalyze = ASTNodes.getFirstAncestorOrNull(loop, Block.class);
-		if (scopeToAnalyze == null) {
-			// Fallback to analyzing just the loop if no parent Block found
-			scopeToAnalyze = loop;
-		}
-		System.err.println("DEBUG PreconditionsChecker: Analyzing scope = " + scopeToAnalyze.getClass().getSimpleName());
-		builder.build(scopeToAnalyze);
-		System.err.println("DEBUG PreconditionsChecker: After build, containsReturn = " + containsReturn);
 
 		// Detect anyMatch/noneMatch patterns
 		detectEarlyReturnPatterns();
@@ -404,8 +402,6 @@ public final class PreconditionsChecker {
 	 */
 	private void detectEarlyReturnPatterns() {
 		if (!containsReturn || !(loop instanceof EnhancedForStatement)) {
-			System.err.println("DEBUG PreconditionsChecker: Early exit - containsReturn=" + containsReturn + 
-					", isEnhancedFor=" + (loop instanceof EnhancedForStatement));
 			return;
 		}
 
@@ -421,13 +417,10 @@ public final class PreconditionsChecker {
 			public boolean visit(IfStatement node) {
 				if (hasReturnInThenBranch(node)) {
 					ifStatementsWithReturn.add(node);
-					System.err.println("DEBUG PreconditionsChecker: Found IF with return: " + node);
 				}
 				return true;
 			}
 		});
-
-		System.err.println("DEBUG PreconditionsChecker: Found " + ifStatementsWithReturn.size() + " IF statements with return");
 
 		// For anyMatch/noneMatch/allMatch, we expect exactly one IF with return
 		if (ifStatementsWithReturn.size() != 1) {
@@ -438,27 +431,20 @@ public final class PreconditionsChecker {
 
 		// Check if the IF returns a boolean literal
 		BooleanLiteral returnValue = getReturnValueFromIf(ifStmt);
-		System.err.println("DEBUG PreconditionsChecker: Return value = " + returnValue + 
-				(returnValue != null ? " (value=" + returnValue.booleanValue() + ")" : ""));
 		if (returnValue == null) {
 			return;
 		}
 
 		// Check what statement follows the loop
 		BooleanLiteral followingReturn = getReturnAfterLoop(forLoop);
-		System.err.println("DEBUG PreconditionsChecker: Return after loop = " + followingReturn + 
-				(followingReturn != null ? " (value=" + followingReturn.booleanValue() + ")" : "null"));
 
 		// Determine pattern based on return values
 		if (returnValue.booleanValue()) {
 			// if (condition) return true; → anyMatch
 			// Expected: return false; after loop
 			if (followingReturn != null && !followingReturn.booleanValue()) {
-				System.err.println("DEBUG PreconditionsChecker: Complete anyMatch pattern detected");
 				isAnyMatchPattern = true;
 				earlyReturnIf = ifStmt;
-			} else {
-				System.err.println("DEBUG PreconditionsChecker: Incomplete anyMatch pattern - no 'return false;' after loop");
 			}
 		} else {
 			// if (condition) return false; → could be noneMatch OR allMatch
@@ -469,25 +455,18 @@ public final class PreconditionsChecker {
 			// Check if condition is a negated expression (PrefixExpression with NOT)
 			Expression condition = ifStmt.getExpression();
 			boolean isNegated = isNegatedCondition(condition);
-			System.err.println("DEBUG PreconditionsChecker: Condition = " + condition + 
-					", isNegated = " + isNegated + 
-					", conditionClass = " + condition.getClass().getSimpleName());
 			
 			// Expected: return true; after loop for both allMatch and noneMatch
 			if (followingReturn != null && followingReturn.booleanValue()) {
 				if (isNegated) {
 					// if (!condition) return false; + return true; → allMatch
-					System.err.println("DEBUG PreconditionsChecker: Complete allMatch pattern detected");
 					isAllMatchPattern = true;
 					earlyReturnIf = ifStmt;
 				} else {
 					// if (condition) return false; + return true; → noneMatch
-					System.err.println("DEBUG PreconditionsChecker: Complete noneMatch pattern detected");
 					isNoneMatchPattern = true;
 					earlyReturnIf = ifStmt;
 				}
-			} else {
-				System.err.println("DEBUG PreconditionsChecker: Incomplete pattern - no 'return true;' after loop");
 			}
 		}
 	}
