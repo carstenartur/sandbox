@@ -2021,13 +2021,13 @@ class MyTest {
 //		"ChainedNoneMatch",  // Fixed by checking return after loop
 //		"NoNeededVariablesMerging",
 		"SomeChainingWithNoNeededVar",
-//		"MaxReducer",
-//		"MinReducer",
-//		"MaxWithExpression",  // TODO: RuntimeException - possibly no transformation needed
-//		"MinWithExpression",
-//		"FilteredMaxReduction",
-//		"ChainedMapWithMinReduction",
-//		"ComplexFilterMapMaxReduction",
+		"MaxReducer",
+		"MinReducer",
+		"MaxWithExpression",
+		"MinWithExpression",
+		"FilteredMaxReduction",
+		"ChainedMapWithMinReduction",
+		"ComplexFilterMapMaxReduction",
 		"ContinueWithMapAndForEach",
 //		"SimpleAllMatch",
 //		"AllMatchWithNullCheck",  // Fixed by checking return after loop
