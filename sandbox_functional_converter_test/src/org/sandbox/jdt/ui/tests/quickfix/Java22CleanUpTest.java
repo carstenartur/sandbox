@@ -694,7 +694,6 @@ class MyTest {
 			        return o;
 			    }
 			}""",
-
 """
 package test1;
 
