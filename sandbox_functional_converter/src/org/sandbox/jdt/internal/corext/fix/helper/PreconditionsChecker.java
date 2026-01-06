@@ -426,19 +426,27 @@ public final class PreconditionsChecker {
 			return;
 		}
 
-		// Determine pattern based on return value
+		// Check what statement follows the loop
+		BooleanLiteral followingReturn = getReturnAfterLoop(forLoop);
+		System.err.println("DEBUG PreconditionsChecker: Return after loop = " + followingReturn + 
+				(followingReturn != null ? " (value=" + followingReturn.booleanValue() + ")" : "null"));
+
+		// Determine pattern based on return values
 		if (returnValue.booleanValue()) {
 			// if (condition) return true; → anyMatch
-			System.err.println("DEBUG PreconditionsChecker: Setting isAnyMatchPattern = true");
-			isAnyMatchPattern = true;
-			earlyReturnIf = ifStmt;
+			// Expected: return false; after loop
+			if (followingReturn != null && !followingReturn.booleanValue()) {
+				System.err.println("DEBUG PreconditionsChecker: Complete anyMatch pattern detected");
+				isAnyMatchPattern = true;
+				earlyReturnIf = ifStmt;
+			} else {
+				System.err.println("DEBUG PreconditionsChecker: Incomplete anyMatch pattern - no 'return false;' after loop");
+			}
 		} else {
 			// if (condition) return false; → could be noneMatch OR allMatch
-			// Distinguish based on condition negation:
-			// - if (!condition) return false; → allMatch(condition) [check all elements
-			// meet condition]
-			// - if (condition) return false; → noneMatch(condition) [ensure no element
-			// meets condition]
+			// Distinguish based on condition negation AND following return:
+			// - if (!condition) return false; + return true; → allMatch(condition)
+			// - if (condition) return false; + return true; → noneMatch(condition)
 
 			// Check if condition is a negated expression (PrefixExpression with NOT)
 			Expression condition = ifStmt.getExpression();
@@ -446,16 +454,22 @@ public final class PreconditionsChecker {
 			System.err.println("DEBUG PreconditionsChecker: Condition = " + condition + 
 					", isNegated = " + isNegated + 
 					", conditionClass = " + condition.getClass().getSimpleName());
-			if (isNegated) {
-				// if (!condition) return false; → allMatch
-				System.err.println("DEBUG PreconditionsChecker: Setting isAllMatchPattern = true");
-				isAllMatchPattern = true;
-				earlyReturnIf = ifStmt;
+			
+			// Expected: return true; after loop for both allMatch and noneMatch
+			if (followingReturn != null && followingReturn.booleanValue()) {
+				if (isNegated) {
+					// if (!condition) return false; + return true; → allMatch
+					System.err.println("DEBUG PreconditionsChecker: Complete allMatch pattern detected");
+					isAllMatchPattern = true;
+					earlyReturnIf = ifStmt;
+				} else {
+					// if (condition) return false; + return true; → noneMatch
+					System.err.println("DEBUG PreconditionsChecker: Complete noneMatch pattern detected");
+					isNoneMatchPattern = true;
+					earlyReturnIf = ifStmt;
+				}
 			} else {
-				// if (condition) return false; → noneMatch
-				System.err.println("DEBUG PreconditionsChecker: Setting isNoneMatchPattern = true");
-				isNoneMatchPattern = true;
-				earlyReturnIf = ifStmt;
+				System.err.println("DEBUG PreconditionsChecker: Incomplete pattern - no 'return true;' after loop");
 			}
 		}
 	}
@@ -523,5 +537,50 @@ public final class PreconditionsChecker {
 		
 		return expr instanceof PrefixExpression
 				&& ((PrefixExpression) expr).getOperator() == PrefixExpression.Operator.NOT;
+	}
+
+	/**
+	 * Gets the boolean return value from the statement immediately following the loop.
+	 * 
+	 * <p>
+	 * For anyMatch/allMatch/noneMatch patterns, we expect a return statement with a
+	 * boolean literal immediately after the loop. This method finds the loop's parent
+	 * (usually a Block), locates the loop, and checks the next statement.
+	 * </p>
+	 * 
+	 * @param forLoop the EnhancedForStatement to check
+	 * @return the BooleanLiteral returned after the loop, or null if not found
+	 */
+	private BooleanLiteral getReturnAfterLoop(EnhancedForStatement forLoop) {
+		ASTNode parent = forLoop.getParent();
+		
+		// The loop must be in a Block (method body, if-then block, etc.)
+		if (!(parent instanceof Block)) {
+			return null;
+		}
+		
+		Block block = (Block) parent;
+		List<?> statements = block.statements();
+		
+		// Find the loop in the block's statements
+		int loopIndex = statements.indexOf(forLoop);
+		if (loopIndex == -1 || loopIndex >= statements.size() - 1) {
+			// Loop not found or is the last statement
+			return null;
+		}
+		
+		// Check the next statement
+		Statement nextStmt = (Statement) statements.get(loopIndex + 1);
+		
+		// We expect a return statement with a boolean literal
+		if (nextStmt instanceof ReturnStatement) {
+			ReturnStatement returnStmt = (ReturnStatement) nextStmt;
+			Expression expr = returnStmt.getExpression();
+			if (expr instanceof BooleanLiteral) {
+				return (BooleanLiteral) expr;
+			}
+		}
+		
+		return null;
 	}
 }
