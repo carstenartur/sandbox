@@ -552,12 +552,10 @@ public final class ProspectiveOperation {
 			}
 		case MAX:
 			// Use Math::max method reference for max accumulation
-			// For primitive types, use wrapper class method references (Integer::max, Double::max, etc.)
-			return createMaxMinMethodReference(ast, "max");
+			return createMathMethodReference(ast, "max");
 		case MIN:
 			// Use Math::min method reference for min accumulation
-			// For primitive types, use wrapper class method references (Integer::min, Double::min, etc.)
-			return createMaxMinMethodReference(ast, "min");
+			return createMathMethodReference(ast, "min");
 		case CUSTOM_AGGREGATE:
 			// For custom aggregation, use a generic accumulator lambda
 			return createAccumulatorLambda(ast);
