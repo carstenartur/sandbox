@@ -1171,8 +1171,37 @@ public class StreamPipelineBuilder {
 		// Check if this IF statement is the early return IF from preconditions
 		IfStatement earlyReturnIf = preconditions.getEarlyReturnIf();
 		
-		// Use reference equality - the preconditions checker found the exact IF statement
-		return earlyReturnIf != null && earlyReturnIf == ifStatement;
+		// Try reference equality first (fastest)
+		if (earlyReturnIf != null && earlyReturnIf == ifStatement) {
+			return true;
+		}
+		
+		// If reference equality fails, try structural comparison.
+		// This can happen when PreconditionsChecker is created multiple times
+		// (once in find(), once in rewrite()) and each instance finds the same
+		// IF statement node but gets different object references.
+		if (earlyReturnIf != null && ifStatement != null) {
+			ASTNode earlyParent = earlyReturnIf.getParent();
+			ASTNode currentParent = ifStatement.getParent();
+			
+			// Both should be in the same parent (the loop body block)
+			// If parents are different objects, nodes are from different ASTs - don't match
+			if (earlyParent == currentParent && earlyParent instanceof Block) {
+				Block block = (Block) earlyParent;
+				@SuppressWarnings("unchecked")
+				List<Statement> statements = block.statements();
+				
+				// Find indices - if both are at the same position, they're the same IF
+				int earlyIndex = statements.indexOf(earlyReturnIf);
+				int currentIndex = statements.indexOf(ifStatement);
+				
+				if (earlyIndex == currentIndex && earlyIndex >= 0) {
+					return true;
+				}
+			}
+		}
+		
+		return false;
 	}
 
 	/**
