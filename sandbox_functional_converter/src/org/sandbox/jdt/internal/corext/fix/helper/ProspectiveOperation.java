@@ -592,8 +592,17 @@ public final class ProspectiveOperation {
 
 	/**
 	 * Creates a method reference for max/min operations based on the accumulator type.
-	 * Uses Integer::max, Double::max, Long::max, etc. instead of Math::max to avoid
-	 * overload ambiguity in reduce() operations.
+	 * Uses {@code Integer::max}, {@code Double::max}, {@code Long::max}, etc. instead of
+	 * {@code Math::max} to avoid overload ambiguity in {@code reduce()} operations.
+	 * 
+	 * <p>
+	 * The specific wrapper type is derived from the accumulator variable's type:
+	 * {@code int} → {@code Integer}, {@code long} → {@code Long}, {@code double} → {@code Double},
+	 * {@code float} → {@code Float}, {@code short} → {@code Short}, {@code byte} → {@code Byte}.
+	 * For fully qualified {@code java.lang.*} wrapper types or simple wrapper class names,
+	 * the simple class name is used. For unknown or missing types, {@code Integer} is used
+	 * as a sensible default.
+	 * </p>
 	 * 
 	 * @param ast        the AST to create nodes in
 	 * @param methodName the method name ("max" or "min")
@@ -603,37 +612,44 @@ public final class ProspectiveOperation {
 		String typeName;
 		
 		if (accumulatorType != null) {
-			// Map primitive types to their wrapper classes
+			// Map primitive types and wrapper classes to their wrapper class names
 			switch (accumulatorType) {
 				case "int":
+				case "Integer":
 					typeName = "Integer";
 					break;
 				case "long":
+				case "Long":
 					typeName = "Long";
 					break;
 				case "double":
+				case "Double":
 					typeName = "Double";
 					break;
 				case "float":
+				case "Float":
 					typeName = "Float";
 					break;
 				case "short":
+				case "Short":
 					typeName = "Short";
 					break;
 				case "byte":
+				case "Byte":
 					typeName = "Byte";
 					break;
 				default:
-					// For wrapper types, use them directly
+					// For fully qualified wrapper types (java.lang.Integer, etc.), extract simple name
 					if (accumulatorType.startsWith("java.lang.")) {
 						typeName = accumulatorType.substring("java.lang.".length());
 					} else {
-						// Default to Integer for unknown types
+						// Unknown type - default to Integer as a sensible fallback
+						// This should rarely happen in practice as getVariableType() usually returns valid types
 						typeName = "Integer";
 					}
 			}
 		} else {
-			// Default to Integer if type is unknown
+			// Type is null - default to Integer as a sensible fallback
 			typeName = "Integer";
 		}
 		
