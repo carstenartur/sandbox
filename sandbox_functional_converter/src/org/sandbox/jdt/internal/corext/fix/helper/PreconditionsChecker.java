@@ -38,19 +38,15 @@ public final class PreconditionsChecker {
 //    private final CompilationUnit compilationUnit;
 	private final Set<VariableDeclarationFragment> innerVariables = new HashSet<>();
 	private boolean containsBreak = false;
-	private boolean containsContinue = false;
 	private boolean containsLabeledContinue = false;
 	private boolean containsReturn = false;
 	private boolean throwsException = false;
 	private boolean containsNEFs = false;
-	private boolean iteratesOverIterable = false;
 	private boolean hasReducer = false;
 	private Statement reducerStatement = null;
 	private boolean isAnyMatchPattern = false;
 	private boolean isNoneMatchPattern = false;
 	private boolean isAllMatchPattern = false;
-	private IfStatement earlyReturnIf = null;
-
 	/**
 	 * Constructor for PreconditionsChecker.
 	 * 
@@ -120,16 +116,6 @@ public final class PreconditionsChecker {
 		// Only labeled continues are rejected here
 		return !throwsException && !containsBreak && !containsLabeledContinue && (!containsReturn || allowedReturn)
 				&& !containsNEFs;
-	}
-
-	/** (7) Gibt die innerhalb der Schleife definierten Variablen zurück. */
-	public Set<VariableDeclarationFragment> getInnerVariables() {
-		return innerVariables;
-	}
-
-	/** (8) Überprüft, ob die Schleife über eine Iterable-Struktur iteriert. */
-	public boolean iteratesOverIterable() {
-		return iteratesOverIterable;
 	}
 
 	/**
@@ -210,16 +196,6 @@ public final class PreconditionsChecker {
 	}
 
 	/**
-	 * Returns the IF statement containing the early return for anyMatch/noneMatch
-	 * patterns.
-	 * 
-	 * @return the IF statement with early return, or null if no pattern detected
-	 */
-	public IfStatement getEarlyReturnIf() {
-		return earlyReturnIf;
-	}
-
-	/**
 	 * Analyzes the loop statement to identify relevant elements for refactoring.
 	 * 
 	 * <p>
@@ -248,7 +224,6 @@ public final class PreconditionsChecker {
 			containsBreak = true;
 			return true;
 		}).onContinueStatement((node, h) -> {
-			containsContinue = true;
 			// Check if continue has a label (labeled continue should prevent conversion)
 			if (node.getLabel() != null) {
 				containsLabeledContinue = true;
@@ -261,7 +236,6 @@ public final class PreconditionsChecker {
 			throwsException = true;
 			return true;
 		}).onEnhancedForStatement((node, h) -> {
-			iteratesOverIterable = true;
 			return true;
 		}).onAssignment((node, h) -> {
 			// Detect compound assignments: +=, -=, *=, /=, |=, &=, etc.
@@ -444,7 +418,6 @@ public final class PreconditionsChecker {
 			// Expected: return false; after loop
 			if (followingReturn != null && !followingReturn.booleanValue()) {
 				isAnyMatchPattern = true;
-				earlyReturnIf = ifStmt;
 			}
 		} else {
 			// if (condition) return false; → could be noneMatch OR allMatch
@@ -461,11 +434,9 @@ public final class PreconditionsChecker {
 				if (isNegated) {
 					// if (!condition) return false; + return true; → allMatch
 					isAllMatchPattern = true;
-					earlyReturnIf = ifStmt;
 				} else {
 					// if (condition) return false; + return true; → noneMatch
 					isNoneMatchPattern = true;
-					earlyReturnIf = ifStmt;
 				}
 			}
 		}

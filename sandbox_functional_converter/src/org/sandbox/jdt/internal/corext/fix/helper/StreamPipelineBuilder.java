@@ -22,6 +22,7 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.BooleanLiteral;
 import org.eclipse.jdt.core.dom.ConditionalExpression;
 import org.eclipse.jdt.core.dom.ContinueStatement;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
@@ -300,15 +301,6 @@ public class StreamPipelineBuilder {
 			ExpressionStatement exprStmt = ast.newExpressionStatement(pipeline);
 			return exprStmt;
 		}
-	}
-
-	/**
-	 * Returns the list of operations extracted from the loop body.
-	 * 
-	 * @return the list of prospective operations
-	 */
-	public List<ProspectiveOperation> getOperations() {
-		return operations;
 	}
 
 	/**
@@ -816,8 +808,6 @@ public class StreamPipelineBuilder {
 
 					// Check if this is a filtering IF (simple condition with block body)
 					if (ifStmt.getElseStatement() == null) {
-						Statement thenStmt = ifStmt.getThenStatement();
-
 						// Check if this is an early return pattern (anyMatch/noneMatch/allMatch)
 						if (isEarlyReturnIf(ifStmt)) {
 							// Create ANYMATCH, NONEMATCH, or ALLMATCH operation
@@ -923,17 +913,40 @@ public class StreamPipelineBuilder {
 				}
 			}
 		} else if (body instanceof IfStatement) {
-			// Single IF statement → process as filter with nested body
+			// Single IF statement → check for early return pattern or process as filter
 			IfStatement ifStmt = (IfStatement) body;
 			if (ifStmt.getElseStatement() == null) {
-				// Add FILTER operation
-				ProspectiveOperation filterOp = new ProspectiveOperation(ifStmt.getExpression(),
-						ProspectiveOperation.OperationType.FILTER);
-				ops.add(filterOp);
+				// Check if this is an early return pattern (anyMatch/noneMatch/allMatch)
+				if (isEarlyReturnIf(ifStmt)) {
+					// Create ANYMATCH, NONEMATCH, or ALLMATCH operation
+					ProspectiveOperation.OperationType opType;
+					if (isAnyMatchPattern) {
+						opType = ProspectiveOperation.OperationType.ANYMATCH;
+					} else if (isNoneMatchPattern) {
+						opType = ProspectiveOperation.OperationType.NONEMATCH;
+					} else {
+						// allMatchPattern
+						opType = ProspectiveOperation.OperationType.ALLMATCH;
+					}
 
-				// Process the then statement
-				List<ProspectiveOperation> nestedOps = parseLoopBody(ifStmt.getThenStatement(), currentVarName);
-				ops.addAll(nestedOps);
+					// For allMatch with negated condition, strip the negation
+					Expression condition = ifStmt.getExpression();
+					if (isAllMatchPattern) {
+						condition = stripNegation(condition);
+					}
+
+					ProspectiveOperation matchOp = new ProspectiveOperation(condition, opType);
+					ops.add(matchOp);
+				} else {
+					// Regular filter with nested body processing
+					ProspectiveOperation filterOp = new ProspectiveOperation(ifStmt.getExpression(),
+							ProspectiveOperation.OperationType.FILTER);
+					ops.add(filterOp);
+
+					// Process the then statement
+					List<ProspectiveOperation> nestedOps = parseLoopBody(ifStmt.getThenStatement(), currentVarName);
+					ops.addAll(nestedOps);
+				}
 			}
 		} else {
 			// Single statement → Check for REDUCE first, otherwise FOREACH
@@ -1168,39 +1181,43 @@ public class StreamPipelineBuilder {
 			return false;
 		}
 
-		// Check if this IF statement is the early return IF from preconditions
-		IfStatement earlyReturnIf = preconditions.getEarlyReturnIf();
-		
-		// Try reference equality first (fastest)
-		if (earlyReturnIf != null && earlyReturnIf == ifStatement) {
-			return true;
+		// Directly check if this IF statement matches the early return pattern
+		// by examining its structure rather than comparing object references
+		if (ifStatement == null || ifStatement.getElseStatement() != null) {
+			return false;
 		}
-		
-		// If reference equality fails, try structural comparison.
-		// This can happen when PreconditionsChecker is created multiple times
-		// (once in find(), once in rewrite()) and each instance finds the same
-		// IF statement node but gets different object references.
-		if (earlyReturnIf != null && ifStatement != null) {
-			ASTNode earlyParent = earlyReturnIf.getParent();
-			ASTNode currentParent = ifStatement.getParent();
-			
-			// Both should be in the same parent (the loop body block)
-			// If parents are different objects, nodes are from different ASTs - don't match
-			if (earlyParent == currentParent && earlyParent instanceof Block) {
-				Block block = (Block) earlyParent;
-				@SuppressWarnings("unchecked")
-				List<Statement> statements = block.statements();
-				
-				// Find indices - if both are at the same position, they're the same IF
-				int earlyIndex = statements.indexOf(earlyReturnIf);
-				int currentIndex = statements.indexOf(ifStatement);
-				
-				if (earlyIndex == currentIndex && earlyIndex >= 0) {
-					return true;
-				}
+
+		Statement thenStmt = ifStatement.getThenStatement();
+		ReturnStatement returnStmt = null;
+
+		// Check for direct return statement or block with single return
+		if (thenStmt instanceof ReturnStatement) {
+			returnStmt = (ReturnStatement) thenStmt;
+		} else if (thenStmt instanceof Block) {
+			Block block = (Block) thenStmt;
+			if (block.statements().size() == 1 && block.statements().get(0) instanceof ReturnStatement) {
+				returnStmt = (ReturnStatement) block.statements().get(0);
 			}
 		}
-		
+
+		if (returnStmt == null || !(returnStmt.getExpression() instanceof BooleanLiteral)) {
+			return false;
+		}
+
+		BooleanLiteral returnValue = (BooleanLiteral) returnStmt.getExpression();
+
+		// Match the pattern based on return value
+		if (isAnyMatchPattern && returnValue.booleanValue()) {
+			// anyMatch: if (condition) return true;
+			return true;
+		} else if (isNoneMatchPattern && !returnValue.booleanValue()) {
+			// noneMatch: if (condition) return false;
+			return true;
+		} else if (isAllMatchPattern && !returnValue.booleanValue()) {
+			// allMatch: if (!condition) return false;
+			return true;
+		}
+
 		return false;
 	}
 
