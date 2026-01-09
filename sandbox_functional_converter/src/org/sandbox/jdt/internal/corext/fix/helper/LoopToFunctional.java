@@ -51,8 +51,8 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 	private boolean processFoundNode(UseFunctionalCallFixCore fixcore,
 			Set<CompilationUnitRewriteOperation> operations, EnhancedForStatement visited,
 			ReferenceHolder<Integer, FunctionalHolder> dataHolder) {
-		FunctionalHolder mh= new FunctionalHolder();
-		mh.minv= visited;
+//		FunctionalHolder mh= new FunctionalHolder();
+//		mh.minv= visited;
 
 		PreconditionsChecker pc = new PreconditionsChecker(visited, (CompilationUnit) visited.getRoot());
 		if (!pc.isSafeToRefactor()) {
