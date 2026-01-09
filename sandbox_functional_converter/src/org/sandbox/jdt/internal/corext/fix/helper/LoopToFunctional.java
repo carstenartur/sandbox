@@ -19,16 +19,6 @@ import org.eclipse.core.runtime.CoreException;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
