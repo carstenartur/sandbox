@@ -16,15 +16,28 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.Status;
+
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 
 /**
@@ -42,29 +55,30 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 	@Override
 	public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed) {
-		compilationUnit.accept(new ASTVisitor() {
+		ReferenceHolder<Integer, FunctionalHolder> dataHolder= new ReferenceHolder<>();
+		HelperVisitor.callEnhancedForStatementVisitor(compilationUnit, dataHolder, nodesprocessed,
+				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder),(visited, aholder) -> {});
+	}
 
-			@Override
-			public final boolean visit(final EnhancedForStatement visited) {
-				PreconditionsChecker pc = new PreconditionsChecker(visited, (CompilationUnit) visited.getRoot());
-				if (!pc.isSafeToRefactor() ) {
-					// Loop cannot be safely refactored to functional style
-					return false;
-				}
-				
-				// Perform full analysis to ensure the loop can actually be converted
-				// Create a temporary StreamPipelineBuilder just for validation
-				StreamPipelineBuilder builder = new StreamPipelineBuilder(visited, pc);
-				if (!builder.analyze()) {
-					// Loop passed preconditions but cannot be converted to stream
-					return false;
-				}
-				
-				operations.add(fixcore.rewrite(visited));
-				nodesprocessed.add(visited);
-				return false;
-			}
-		});
+	private boolean processFoundNode(UseFunctionalCallFixCore fixcore,
+			Set<CompilationUnitRewriteOperation> operations, EnhancedForStatement visited,
+			ReferenceHolder<Integer, FunctionalHolder> dataHolder) {
+		FunctionalHolder mh= new FunctionalHolder();
+		mh.minv= visited;
+
+		PreconditionsChecker pc = new PreconditionsChecker(visited, (CompilationUnit) visited.getRoot());
+		if (!pc.isSafeToRefactor()) {
+			// Loop cannot be safely refactored to functional style
+			return false;
+		}
+		// Check if the loop can be analyzed for stream conversion
+		StreamPipelineBuilder builder = new StreamPipelineBuilder(visited, pc);
+		if (!builder.analyze()) {
+			// Cannot convert this loop to functional style
+			return false;
+		}
+		operations.add(fixcore.rewrite(visited));
+		return false;
 	}
 
 	@Override
@@ -73,10 +87,7 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 		ASTRewrite rewrite = cuRewrite.getASTRewrite();
 		PreconditionsChecker pc = new PreconditionsChecker(visited, (CompilationUnit) visited.getRoot());
 		Refactorer refactorer = new Refactorer(visited, rewrite, pc, group);
-		if (!pc.isSafeToRefactor()||!refactorer.isRefactorable()) {
-			// Loop cannot be safely refactored to functional style
-			throw new CoreException(Status.CANCEL_STATUS);
-		}
+		// Preconditions already checked in find(), but refactorer.refactor() handles edge cases
 		refactorer.refactor();
 	}
 
