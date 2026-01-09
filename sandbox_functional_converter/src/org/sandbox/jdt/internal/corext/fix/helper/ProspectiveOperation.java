@@ -551,11 +551,11 @@ public final class ProspectiveOperation {
 				return createSimpleBinaryLambda(ast, InfixExpression.Operator.PLUS);
 			}
 		case MAX:
-			// Use Math::max method reference for max accumulation
-			return createMathMethodReference(ast, "max");
+			// Use wrapper class method references (Integer::max, Double::max, etc.) to avoid overload ambiguity
+			return createMaxMinMethodReference(ast, "max");
 		case MIN:
-			// Use Math::min method reference for min accumulation
-			return createMathMethodReference(ast, "min");
+			// Use wrapper class method references (Integer::min, Double::min, etc.) to avoid overload ambiguity
+			return createMaxMinMethodReference(ast, "min");
 		case CUSTOM_AGGREGATE:
 			// For custom aggregation, use a generic accumulator lambda
 			return createAccumulatorLambda(ast);
