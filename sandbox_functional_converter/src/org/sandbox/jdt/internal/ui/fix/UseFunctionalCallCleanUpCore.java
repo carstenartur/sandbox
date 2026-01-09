@@ -63,7 +63,6 @@ public class UseFunctionalCallCleanUpCore extends AbstractCleanUp {
 		}
 		EnumSet<UseFunctionalCallFixCore> computeFixSet = computeFixSet();
 		if (!isEnabled(USEFUNCTIONALLOOP_CLEANUP) || computeFixSet.isEmpty()
-//				|| !JavaModelUtil.is1d8OrHigher(compilationUnit.getJavaElement().getJavaProject())
 				) {
 			return null;
 		}
