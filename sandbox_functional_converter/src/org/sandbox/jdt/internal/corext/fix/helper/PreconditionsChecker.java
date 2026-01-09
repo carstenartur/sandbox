@@ -244,6 +244,39 @@ public final class PreconditionsChecker {
 				if (reducerStatement == null) {
 					reducerStatement = ASTNodes.getFirstAncestorOrNull(node, Statement.class);
 				}
+			} else {
+				// Check for Math.max/Math.min patterns: max = Math.max(max, x)
+				Expression rhs = node.getRightHandSide();
+				if (rhs instanceof MethodInvocation) {
+					MethodInvocation methodInv = (MethodInvocation) rhs;
+					Expression methodExpr = methodInv.getExpression();
+					if (methodExpr instanceof SimpleName) {
+						SimpleName className = (SimpleName) methodExpr;
+						if ("Math".equals(className.getIdentifier())) {
+							String methodName = methodInv.getName().getIdentifier();
+							if ("max".equals(methodName) || "min".equals(methodName)) {
+								// Check if LHS variable appears in the arguments
+								if (node.getLeftHandSide() instanceof SimpleName) {
+									String varName = ((SimpleName) node.getLeftHandSide()).getIdentifier();
+									List<?> args = methodInv.arguments();
+									if (args.size() == 2) {
+										for (Object arg : args) {
+											if (arg instanceof SimpleName) {
+												if (varName.equals(((SimpleName) arg).getIdentifier())) {
+													hasReducer = true;
+													if (reducerStatement == null) {
+														reducerStatement = ASTNodes.getFirstAncestorOrNull(node, Statement.class);
+													}
+													break;
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
 			}
 			return true;
 		});

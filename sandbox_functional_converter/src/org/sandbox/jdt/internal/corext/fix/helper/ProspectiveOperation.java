@@ -551,11 +551,11 @@ public final class ProspectiveOperation {
 				return createSimpleBinaryLambda(ast, InfixExpression.Operator.PLUS);
 			}
 		case MAX:
-			// Use Math::max method reference for max accumulation
-			return createMathMethodReference(ast, "max");
+			// Use wrapper class method references (Integer::max, Double::max, etc.) to avoid overload ambiguity
+			return createMaxMinMethodReference(ast, "max");
 		case MIN:
-			// Use Math::min method reference for min accumulation
-			return createMathMethodReference(ast, "min");
+			// Use wrapper class method references (Integer::min, Double::min, etc.) to avoid overload ambiguity
+			return createMaxMinMethodReference(ast, "min");
 		case CUSTOM_AGGREGATE:
 			// For custom aggregation, use a generic accumulator lambda
 			return createAccumulatorLambda(ast);
@@ -584,6 +584,75 @@ public final class ProspectiveOperation {
 	private TypeMethodReference createMathMethodReference(AST ast, String methodName) {
 		TypeMethodReference methodRef = ast.newTypeMethodReference();
 		methodRef.setType(ast.newSimpleType(ast.newSimpleName("Math")));
+		methodRef.setName(ast.newSimpleName(methodName));
+		return methodRef;
+	}
+
+	/**
+	 * Creates a method reference for max/min operations based on the accumulator type.
+	 * Uses {@code Integer::max}, {@code Double::max}, {@code Long::max}, etc. instead of
+	 * {@code Math::max} to avoid overload ambiguity in {@code reduce()} operations.
+	 * 
+	 * <p>
+	 * The specific wrapper type is derived from the accumulator variable's type:
+	 * {@code int} → {@code Integer}, {@code long} → {@code Long}, {@code double} → {@code Double},
+	 * {@code float} → {@code Float}, {@code short} → {@code Short}, {@code byte} → {@code Byte}.
+	 * For fully qualified {@code java.lang.*} wrapper types or simple wrapper class names,
+	 * the simple class name is used. For unknown or missing types, {@code Integer} is used
+	 * as a sensible default.
+	 * </p>
+	 * 
+	 * @param ast        the AST to create nodes in
+	 * @param methodName the method name ("max" or "min")
+	 * @return a TypeMethodReference for the appropriate wrapper type's max/min method
+	 */
+	private TypeMethodReference createMaxMinMethodReference(AST ast, String methodName) {
+		String typeName;
+		
+		if (accumulatorType != null) {
+			// Map primitive types and wrapper classes to their wrapper class names
+			switch (accumulatorType) {
+				case "int":
+				case "Integer":
+					typeName = "Integer";
+					break;
+				case "long":
+				case "Long":
+					typeName = "Long";
+					break;
+				case "double":
+				case "Double":
+					typeName = "Double";
+					break;
+				case "float":
+				case "Float":
+					typeName = "Float";
+					break;
+				case "short":
+				case "Short":
+					typeName = "Short";
+					break;
+				case "byte":
+				case "Byte":
+					typeName = "Byte";
+					break;
+				default:
+					// For fully qualified wrapper types (java.lang.Integer, etc.), extract simple name
+					if (accumulatorType.startsWith("java.lang.")) {
+						typeName = accumulatorType.substring("java.lang.".length());
+					} else {
+						// Unknown type - default to Integer as a sensible fallback
+						// This should rarely happen in practice as getVariableType() usually returns valid types
+						typeName = "Integer";
+					}
+			}
+		} else {
+			// Type is null - default to Integer as a sensible fallback
+			typeName = "Integer";
+		}
+		
+		TypeMethodReference methodRef = ast.newTypeMethodReference();
+		methodRef.setType(ast.newSimpleType(ast.newSimpleName(typeName)));
 		methodRef.setName(ast.newSimpleName(methodName));
 		return methodRef;
 	}

@@ -29,6 +29,7 @@ import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.IAnnotationBinding;
+import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.IfStatement;
@@ -38,6 +39,7 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.PostfixExpression;
 import org.eclipse.jdt.core.dom.PrefixExpression;
+import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Statement;
@@ -691,39 +693,90 @@ public class StreamPipelineBuilder {
 		}
 
 		MethodInvocation methodInv = (MethodInvocation) expr;
+		
+		// Get method name first
+		String methodName = methodInv.getName().getIdentifier();
+		if (!"max".equals(methodName) && !"min".equals(methodName)) {
+			return null;
+		}
 
 		// Check if it's a Math.max or Math.min call
-		if (methodInv.getExpression() instanceof SimpleName) {
-			SimpleName className = (SimpleName) methodInv.getExpression();
-			if (!"Math".equals(className.getIdentifier())) {
-				return null;
-			}
-
-			String methodName = methodInv.getName().getIdentifier();
-			if (!"max".equals(methodName) && !"min".equals(methodName)) {
-				return null;
-			}
-
-			// Check if one of the arguments is the accumulator variable
-			List<?> args = methodInv.arguments();
-			if (args.size() != 2) {
-				return null;
-			}
-
-			boolean hasAccumulatorArg = false;
-			for (Object argObj : args) {
-				if (argObj instanceof SimpleName) {
-					SimpleName argName = (SimpleName) argObj;
-					if (varName.equals(argName.getIdentifier())) {
-						hasAccumulatorArg = true;
-						break;
+		// Try binding resolution first (more robust)
+		IMethodBinding binding = methodInv.resolveMethodBinding();
+		if (binding != null) {
+			ITypeBinding declaringClass = binding.getDeclaringClass();
+			if (declaringClass != null && "java.lang.Math".equals(declaringClass.getQualifiedName())) {
+				// Confirmed it's Math.max or Math.min via binding
+				// Check if one of the arguments is the accumulator variable
+				List<?> args = methodInv.arguments();
+				if (args.size() == 2) {
+					boolean hasAccumulatorArg = false;
+					for (Object argObj : args) {
+						if (argObj instanceof SimpleName) {
+							SimpleName argName = (SimpleName) argObj;
+							if (varName.equals(argName.getIdentifier())) {
+								hasAccumulatorArg = true;
+								break;
+							}
+						}
+					}
+					
+					if (hasAccumulatorArg) {
+						return "max".equals(methodName) ? ProspectiveOperation.ReducerType.MAX
+								: ProspectiveOperation.ReducerType.MIN;
 					}
 				}
 			}
-
-			if (hasAccumulatorArg) {
-				return "max".equals(methodName) ? ProspectiveOperation.ReducerType.MAX
-						: ProspectiveOperation.ReducerType.MIN;
+		}
+		
+		// Fallback: Check syntactically if binding resolution failed
+		Expression receiverExpr = methodInv.getExpression();
+		if (receiverExpr instanceof SimpleName) {
+			SimpleName className = (SimpleName) receiverExpr;
+			if ("Math".equals(className.getIdentifier())) {
+				// Check if one of the arguments is the accumulator variable
+				List<?> args = methodInv.arguments();
+				if (args.size() == 2) {
+					boolean hasAccumulatorArg = false;
+					for (Object argObj : args) {
+						if (argObj instanceof SimpleName) {
+							SimpleName argName = (SimpleName) argObj;
+							if (varName.equals(argName.getIdentifier())) {
+								hasAccumulatorArg = true;
+								break;
+							}
+						}
+					}
+					
+					if (hasAccumulatorArg) {
+						return "max".equals(methodName) ? ProspectiveOperation.ReducerType.MAX
+								: ProspectiveOperation.ReducerType.MIN;
+					}
+				}
+			}
+		} else if (receiverExpr instanceof QualifiedName) {
+			// Handle fully qualified: java.lang.Math.max()
+			QualifiedName qualName = (QualifiedName) receiverExpr;
+			if ("Math".equals(qualName.getName().getIdentifier())) {
+				// Check if one of the arguments is the accumulator variable
+				List<?> args = methodInv.arguments();
+				if (args.size() == 2) {
+					boolean hasAccumulatorArg = false;
+					for (Object argObj : args) {
+						if (argObj instanceof SimpleName) {
+							SimpleName argName = (SimpleName) argObj;
+							if (varName.equals(argName.getIdentifier())) {
+								hasAccumulatorArg = true;
+								break;
+							}
+						}
+					}
+					
+					if (hasAccumulatorArg) {
+						return "max".equals(methodName) ? ProspectiveOperation.ReducerType.MAX
+								: ProspectiveOperation.ReducerType.MIN;
+					}
+				}
 			}
 		}
 

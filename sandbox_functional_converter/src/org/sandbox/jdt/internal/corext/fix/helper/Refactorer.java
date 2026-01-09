@@ -37,9 +37,12 @@ public class Refactorer {
 
 	/** Checks if the loop can be refactored to a stream operation. */
 	public boolean isRefactorable() {
-		return preconditions.isSafeToRefactor() 
-//				&& preconditions.iteratesOverIterable()
-				;
+		if (!preconditions.isSafeToRefactor()) {
+			return false;
+		}
+		// Also verify that the StreamPipelineBuilder can analyze and build the pipeline
+		StreamPipelineBuilder builder = new StreamPipelineBuilder(forLoop, preconditions);
+		return builder.analyze() && builder.buildPipeline() != null;
 	}
 
 	/**

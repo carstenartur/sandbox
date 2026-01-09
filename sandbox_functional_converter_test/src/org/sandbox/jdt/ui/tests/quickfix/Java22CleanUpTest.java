@@ -1396,7 +1396,7 @@ class MyTest {
 					class MyTest {
 					    public int findMax(List<Integer> numbers) {
 					        int max = Integer.MIN_VALUE;
-					        max = numbers.stream().reduce(max, Math::max);
+					        max = numbers.stream().reduce(max, Integer::max);
 					        return max;
 					    }
 					}"""),
@@ -1425,7 +1425,7 @@ class MyTest {
 					class MyTest {
 					    public int findMin(List<Integer> numbers) {
 					        int min = Integer.MAX_VALUE;
-					        min = numbers.stream().reduce(min, Math::min);
+					        min = numbers.stream().reduce(min, Integer::min);
 					        return min;
 					    }
 					}"""),
@@ -1454,7 +1454,7 @@ class MyTest {
 					class MyTest {
 					    public int findMaxLength(List<String> strings) {
 					        int maxLen = 0;
-					        maxLen = strings.stream().map(str -> str.length()).reduce(maxLen, Math::max);
+					        maxLen = strings.stream().map(str -> str.length()).reduce(maxLen, Integer::max);
 					        return maxLen;
 					    }
 					}"""),
@@ -1483,7 +1483,7 @@ class MyTest {
 					class MyTest {
 					    public double findMinValue(List<Double> values) {
 					        double minVal = Double.MAX_VALUE;
-					        minVal = values.stream().map(val -> val * 2.0).reduce(minVal, Math::min);
+					        minVal = values.stream().map(val -> val * 2.0).reduce(minVal, Double::min);
 					        return minVal;
 					    }
 					}"""),
@@ -1514,7 +1514,7 @@ class MyTest {
 					class MyTest {
 					    public int findMaxEvenNumber(List<Integer> numbers) {
 					        int max = 0;
-					        max = numbers.stream().filter(num -> (num % 2 == 0)).reduce(max, Math::max);
+					        max = numbers.stream().filter(num -> (num % 2 == 0)).reduce(max, Integer::max);
 					        return max;
 					    }
 					}"""),
@@ -1544,7 +1544,7 @@ class MyTest {
 					class MyTest {
 					    public int findMinSquaredValue(List<Integer> numbers) {
 					        int min = Integer.MAX_VALUE;
-					        min = numbers.stream().map(num -> num * num).reduce(min, Math::min);
+					        min = numbers.stream().map(num -> num * num).reduce(min, Integer::min);
 					        return min;
 					    }
 					}"""),
@@ -1574,7 +1574,7 @@ class MyTest {
 					class MyTest {
 					    public int findMaxPositiveSquare(List<Integer> numbers) {
 					        int max = 0;
-					        max = numbers.stream().filter(num -> (num > 0)).map(num -> num * num).reduce(max, Math::max);
+					        max = numbers.stream().filter(num -> (num > 0)).map(num -> num * num).reduce(max, Integer::max);
 					        return max;
 					    }
 					}"""),
@@ -2023,7 +2023,7 @@ class MyTest {
 		"SomeChainingWithNoNeededVar",
 //		"MaxReducer",
 //		"MinReducer",
-//		"MaxWithExpression",  // TODO: RuntimeException - possibly no transformation needed
+//		"MaxWithExpression",
 //		"MinWithExpression",
 //		"FilteredMaxReduction",
 //		"ChainedMapWithMinReduction",
