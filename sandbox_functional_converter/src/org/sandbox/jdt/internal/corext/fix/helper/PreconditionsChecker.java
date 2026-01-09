@@ -38,19 +38,15 @@ public final class PreconditionsChecker {
 //    private final CompilationUnit compilationUnit;
 	private final Set<VariableDeclarationFragment> innerVariables = new HashSet<>();
 	private boolean containsBreak = false;
-	private boolean containsContinue = false;
 	private boolean containsLabeledContinue = false;
 	private boolean containsReturn = false;
 	private boolean throwsException = false;
 	private boolean containsNEFs = false;
-	private boolean iteratesOverIterable = false;
 	private boolean hasReducer = false;
 	private Statement reducerStatement = null;
 	private boolean isAnyMatchPattern = false;
 	private boolean isNoneMatchPattern = false;
 	private boolean isAllMatchPattern = false;
-	private IfStatement earlyReturnIf = null;
-
 	/**
 	 * Constructor for PreconditionsChecker.
 	 * 
@@ -120,16 +116,6 @@ public final class PreconditionsChecker {
 		// Only labeled continues are rejected here
 		return !throwsException && !containsBreak && !containsLabeledContinue && (!containsReturn || allowedReturn)
 				&& !containsNEFs;
-	}
-
-	/** (7) Gibt die innerhalb der Schleife definierten Variablen zurück. */
-	public Set<VariableDeclarationFragment> getInnerVariables() {
-		return innerVariables;
-	}
-
-	/** (8) Überprüft, ob die Schleife über eine Iterable-Struktur iteriert. */
-	public boolean iteratesOverIterable() {
-		return iteratesOverIterable;
 	}
 
 	/**
@@ -210,16 +196,6 @@ public final class PreconditionsChecker {
 	}
 
 	/**
-	 * Returns the IF statement containing the early return for anyMatch/noneMatch
-	 * patterns.
-	 * 
-	 * @return the IF statement with early return, or null if no pattern detected
-	 */
-	public IfStatement getEarlyReturnIf() {
-		return earlyReturnIf;
-	}
-
-	/**
 	 * Analyzes the loop statement to identify relevant elements for refactoring.
 	 * 
 	 * <p>
@@ -248,7 +224,6 @@ public final class PreconditionsChecker {
 			containsBreak = true;
 			return true;
 		}).onContinueStatement((node, h) -> {
-			containsContinue = true;
 			// Check if continue has a label (labeled continue should prevent conversion)
 			if (node.getLabel() != null) {
 				containsLabeledContinue = true;
@@ -261,7 +236,6 @@ public final class PreconditionsChecker {
 			throwsException = true;
 			return true;
 		}).onEnhancedForStatement((node, h) -> {
-			iteratesOverIterable = true;
 			return true;
 		}).onAssignment((node, h) -> {
 			// Detect compound assignments: +=, -=, *=, /=, |=, &=, etc.
@@ -299,10 +273,39 @@ public final class PreconditionsChecker {
 			return true;
 		});
 
+		// First, analyze just the loop itself
 		builder.build(loop);
 
+		// Save the containsReturn flag state after analyzing only the loop body
+		// This is important because we want to distinguish between:
+		// 1. Returns INSIDE the loop (which may prevent conversion, except for match patterns)
+		// 2. Returns AFTER the loop (which are just part of the method and shouldn't prevent conversion)
+		boolean containsReturnInsideLoop = containsReturn;
+
+		// Then, if the loop is inside a Block, analyze only the immediately following
+		// statement (if any). This lets us detect patterns that depend on the statement
+		// right after the loop without pulling in unrelated statements.
+		ASTNode parent = loop.getParent();
+		if (parent instanceof Block) {
+			Block block = (Block) parent;
+			@SuppressWarnings("unchecked")
+			List<Statement> statements = block.statements();
+			int loopIndex = statements.indexOf(loop);
+			if (loopIndex != -1 && loopIndex + 1 < statements.size()) {
+				Statement followingStatement = statements.get(loopIndex + 1);
+				builder.build(followingStatement);
+			}
+		}
+
 		// Detect anyMatch/noneMatch patterns
+		// This needs to see if there's a return statement after the loop,
+		// so containsReturn may be true from analyzing the following statement
 		detectEarlyReturnPatterns();
+
+		// Restore the containsReturn flag to only reflect returns INSIDE the loop
+		// This ensures that isSafeToRefactor() only rejects loops with returns inside,
+		// not loops followed by return statements (like reducers)
+		containsReturn = containsReturnInsideLoop;
 
 		analyzeEffectivelyFinalVariables();
 	}
@@ -419,29 +422,35 @@ public final class PreconditionsChecker {
 			return;
 		}
 
-		// Determine pattern based on return value
+		// Check what statement follows the loop
+		BooleanLiteral followingReturn = getReturnAfterLoop(forLoop);
+
+		// Determine pattern based on return values
 		if (returnValue.booleanValue()) {
 			// if (condition) return true; → anyMatch
-			isAnyMatchPattern = true;
-			earlyReturnIf = ifStmt;
+			// Expected: return false; after loop
+			if (followingReturn != null && !followingReturn.booleanValue()) {
+				isAnyMatchPattern = true;
+			}
 		} else {
 			// if (condition) return false; → could be noneMatch OR allMatch
-			// Distinguish based on condition negation:
-			// - if (!condition) return false; → allMatch(condition) [check all elements
-			// meet condition]
-			// - if (condition) return false; → noneMatch(condition) [ensure no element
-			// meets condition]
+			// Distinguish based on condition negation AND following return:
+			// - if (!condition) return false; + return true; → allMatch(condition)
+			// - if (condition) return false; + return true; → noneMatch(condition)
 
 			// Check if condition is a negated expression (PrefixExpression with NOT)
 			Expression condition = ifStmt.getExpression();
-			if (isNegatedCondition(condition)) {
-				// if (!condition) return false; → allMatch
-				isAllMatchPattern = true;
-				earlyReturnIf = ifStmt;
-			} else {
-				// if (condition) return false; → noneMatch
-				isNoneMatchPattern = true;
-				earlyReturnIf = ifStmt;
+			boolean isNegated = isNegatedCondition(condition);
+			
+			// Expected: return true; after loop for both allMatch and noneMatch
+			if (followingReturn != null && followingReturn.booleanValue()) {
+				if (isNegated) {
+					// if (!condition) return false; + return true; → allMatch
+					isAllMatchPattern = true;
+				} else {
+					// if (condition) return false; + return true; → noneMatch
+					isNoneMatchPattern = true;
+				}
 			}
 		}
 	}
@@ -496,12 +505,63 @@ public final class PreconditionsChecker {
 
 	/**
 	 * Checks if an expression is a negated condition (starts with !).
+	 * Handles ParenthesizedExpression wrapping.
 	 * 
 	 * @param expr the expression to check
-	 * @return true if the expression is a PrefixExpression with NOT operator
+	 * @return true if the expression is a PrefixExpression with NOT operator (possibly wrapped in parentheses)
 	 */
 	private boolean isNegatedCondition(Expression expr) {
+		// Unwrap parentheses
+		while (expr instanceof ParenthesizedExpression) {
+			expr = ((ParenthesizedExpression) expr).getExpression();
+		}
+		
 		return expr instanceof PrefixExpression
 				&& ((PrefixExpression) expr).getOperator() == PrefixExpression.Operator.NOT;
+	}
+
+	/**
+	 * Gets the boolean return value from the statement immediately following the loop.
+	 * 
+	 * <p>
+	 * For anyMatch/allMatch/noneMatch patterns, we expect a return statement with a
+	 * boolean literal immediately after the loop. This method finds the loop's parent
+	 * (usually a Block), locates the loop, and checks the next statement.
+	 * </p>
+	 * 
+	 * @param forLoop the EnhancedForStatement to check
+	 * @return the BooleanLiteral returned after the loop, or null if not found
+	 */
+	private BooleanLiteral getReturnAfterLoop(EnhancedForStatement forLoop) {
+		ASTNode parent = forLoop.getParent();
+		
+		// The loop must be in a Block (method body, if-then block, etc.)
+		if (!(parent instanceof Block)) {
+			return null;
+		}
+		
+		Block block = (Block) parent;
+		List<?> statements = block.statements();
+		
+		// Find the loop in the block's statements
+		int loopIndex = statements.indexOf(forLoop);
+		if (loopIndex == -1 || loopIndex >= statements.size() - 1) {
+			// Loop not found or is the last statement
+			return null;
+		}
+		
+		// Check the next statement
+		Statement nextStmt = (Statement) statements.get(loopIndex + 1);
+		
+		// We expect a return statement with a boolean literal
+		if (nextStmt instanceof ReturnStatement) {
+			ReturnStatement returnStmt = (ReturnStatement) nextStmt;
+			Expression expr = returnStmt.getExpression();
+			if (expr instanceof BooleanLiteral) {
+				return (BooleanLiteral) expr;
+			}
+		}
+		
+		return null;
 	}
 }

@@ -22,6 +22,7 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.BooleanLiteral;
 import org.eclipse.jdt.core.dom.ConditionalExpression;
 import org.eclipse.jdt.core.dom.ContinueStatement;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
@@ -300,15 +301,6 @@ public class StreamPipelineBuilder {
 			ExpressionStatement exprStmt = ast.newExpressionStatement(pipeline);
 			return exprStmt;
 		}
-	}
-
-	/**
-	 * Returns the list of operations extracted from the loop body.
-	 * 
-	 * @return the list of prospective operations
-	 */
-	public List<ProspectiveOperation> getOperations() {
-		return operations;
 	}
 
 	/**
@@ -816,8 +808,6 @@ public class StreamPipelineBuilder {
 
 					// Check if this is a filtering IF (simple condition with block body)
 					if (ifStmt.getElseStatement() == null) {
-						Statement thenStmt = ifStmt.getThenStatement();
-
 						// Check if this is an early return pattern (anyMatch/noneMatch/allMatch)
 						if (isEarlyReturnIf(ifStmt)) {
 							// Create ANYMATCH, NONEMATCH, or ALLMATCH operation
@@ -836,12 +826,8 @@ public class StreamPipelineBuilder {
 
 							// For allMatch with negated condition, strip the negation
 							Expression condition = ifStmt.getExpression();
-							if (isAllMatchPattern && condition instanceof PrefixExpression) {
-								PrefixExpression prefixExpr = (PrefixExpression) condition;
-								if (prefixExpr.getOperator() == PrefixExpression.Operator.NOT) {
-									// Use the operand without negation for allMatch
-									condition = prefixExpr.getOperand();
-								}
+							if (isAllMatchPattern) {
+								condition = stripNegation(condition);
 							}
 
 							ProspectiveOperation matchOp = new ProspectiveOperation(condition, opType);
@@ -879,12 +865,8 @@ public class StreamPipelineBuilder {
 
 							// For allMatch with negated condition, strip the negation
 							Expression condition = ifStmt.getExpression();
-							if (isAllMatchPattern && condition instanceof PrefixExpression) {
-								PrefixExpression prefixExpr = (PrefixExpression) condition;
-								if (prefixExpr.getOperator() == PrefixExpression.Operator.NOT) {
-									// Use the operand without negation for allMatch
-									condition = prefixExpr.getOperand();
-								}
+							if (isAllMatchPattern) {
+								condition = stripNegation(condition);
 							}
 
 							ProspectiveOperation matchOp = new ProspectiveOperation(condition, opType);
@@ -931,17 +913,40 @@ public class StreamPipelineBuilder {
 				}
 			}
 		} else if (body instanceof IfStatement) {
-			// Single IF statement → process as filter with nested body
+			// Single IF statement → check for early return pattern or process as filter
 			IfStatement ifStmt = (IfStatement) body;
 			if (ifStmt.getElseStatement() == null) {
-				// Add FILTER operation
-				ProspectiveOperation filterOp = new ProspectiveOperation(ifStmt.getExpression(),
-						ProspectiveOperation.OperationType.FILTER);
-				ops.add(filterOp);
+				// Check if this is an early return pattern (anyMatch/noneMatch/allMatch)
+				if (isEarlyReturnIf(ifStmt)) {
+					// Create ANYMATCH, NONEMATCH, or ALLMATCH operation
+					ProspectiveOperation.OperationType opType;
+					if (isAnyMatchPattern) {
+						opType = ProspectiveOperation.OperationType.ANYMATCH;
+					} else if (isNoneMatchPattern) {
+						opType = ProspectiveOperation.OperationType.NONEMATCH;
+					} else {
+						// allMatchPattern
+						opType = ProspectiveOperation.OperationType.ALLMATCH;
+					}
 
-				// Process the then statement
-				List<ProspectiveOperation> nestedOps = parseLoopBody(ifStmt.getThenStatement(), currentVarName);
-				ops.addAll(nestedOps);
+					// For allMatch with negated condition, strip the negation
+					Expression condition = ifStmt.getExpression();
+					if (isAllMatchPattern) {
+						condition = stripNegation(condition);
+					}
+
+					ProspectiveOperation matchOp = new ProspectiveOperation(condition, opType);
+					ops.add(matchOp);
+				} else {
+					// Regular filter with nested body processing
+					ProspectiveOperation filterOp = new ProspectiveOperation(ifStmt.getExpression(),
+							ProspectiveOperation.OperationType.FILTER);
+					ops.add(filterOp);
+
+					// Process the then statement
+					List<ProspectiveOperation> nestedOps = parseLoopBody(ifStmt.getThenStatement(), currentVarName);
+					ops.addAll(nestedOps);
+				}
 			}
 		} else {
 			// Single statement → Check for REDUCE first, otherwise FOREACH
@@ -1176,9 +1181,44 @@ public class StreamPipelineBuilder {
 			return false;
 		}
 
-		// Check if this IF statement is the early return IF from preconditions
-		IfStatement earlyReturnIf = preconditions.getEarlyReturnIf();
-		return earlyReturnIf != null && earlyReturnIf == ifStatement;
+		// Directly check if this IF statement matches the early return pattern
+		// by examining its structure rather than comparing object references
+		if (ifStatement == null || ifStatement.getElseStatement() != null) {
+			return false;
+		}
+
+		Statement thenStmt = ifStatement.getThenStatement();
+		ReturnStatement returnStmt = null;
+
+		// Check for direct return statement or block with single return
+		if (thenStmt instanceof ReturnStatement) {
+			returnStmt = (ReturnStatement) thenStmt;
+		} else if (thenStmt instanceof Block) {
+			Block block = (Block) thenStmt;
+			if (block.statements().size() == 1 && block.statements().get(0) instanceof ReturnStatement) {
+				returnStmt = (ReturnStatement) block.statements().get(0);
+			}
+		}
+
+		if (returnStmt == null || !(returnStmt.getExpression() instanceof BooleanLiteral)) {
+			return false;
+		}
+
+		BooleanLiteral returnValue = (BooleanLiteral) returnStmt.getExpression();
+
+		// Match the pattern based on return value
+		if (isAnyMatchPattern && returnValue.booleanValue()) {
+			// anyMatch: if (condition) return true;
+			return true;
+		} else if (isNoneMatchPattern && !returnValue.booleanValue()) {
+			// noneMatch: if (condition) return false;
+			return true;
+		} else if (isAllMatchPattern && !returnValue.booleanValue()) {
+			// allMatch: if (!condition) return false;
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
@@ -1236,6 +1276,33 @@ public class StreamPipelineBuilder {
 		}
 		// Simple names, literals, method calls, field access, etc. don't need parentheses
 		return false;
+	}
+
+	/**
+	 * Strips the negation from a negated expression.
+	 * Handles ParenthesizedExpression wrapping.
+	 * 
+	 * @param expr the expression to strip negation from
+	 * @return the expression without the leading NOT operator, or the original expression if not negated
+	 */
+	private Expression stripNegation(Expression expr) {
+		// Unwrap parentheses
+		Expression unwrapped = expr;
+		while (unwrapped instanceof ParenthesizedExpression) {
+			unwrapped = ((ParenthesizedExpression) unwrapped).getExpression();
+		}
+		
+		// Check if it's a negated expression
+		if (unwrapped instanceof PrefixExpression) {
+			PrefixExpression prefixExpr = (PrefixExpression) unwrapped;
+			if (prefixExpr.getOperator() == PrefixExpression.Operator.NOT) {
+				// Return the operand without the NOT
+				return prefixExpr.getOperand();
+			}
+		}
+		
+		// Not a negated expression, return as-is
+		return expr;
 	}
 
 	/**
