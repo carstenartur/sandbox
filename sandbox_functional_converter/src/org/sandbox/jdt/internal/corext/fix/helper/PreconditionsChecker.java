@@ -276,6 +276,12 @@ public final class PreconditionsChecker {
 		// First, analyze just the loop itself
 		builder.build(loop);
 
+		// Save the containsReturn flag state after analyzing only the loop body
+		// This is important because we want to distinguish between:
+		// 1. Returns INSIDE the loop (which may prevent conversion, except for match patterns)
+		// 2. Returns AFTER the loop (which are just part of the method and shouldn't prevent conversion)
+		boolean containsReturnInsideLoop = containsReturn;
+
 		// Then, if the loop is inside a Block, analyze only the immediately following
 		// statement (if any). This lets us detect patterns that depend on the statement
 		// right after the loop without pulling in unrelated statements.
@@ -292,7 +298,14 @@ public final class PreconditionsChecker {
 		}
 
 		// Detect anyMatch/noneMatch patterns
+		// This needs to see if there's a return statement after the loop,
+		// so containsReturn may be true from analyzing the following statement
 		detectEarlyReturnPatterns();
+
+		// Restore the containsReturn flag to only reflect returns INSIDE the loop
+		// This ensures that isSafeToRefactor() only rejects loops with returns inside,
+		// not loops followed by return statements (like reducers)
+		containsReturn = containsReturnInsideLoop;
 
 		analyzeEffectivelyFinalVariables();
 	}

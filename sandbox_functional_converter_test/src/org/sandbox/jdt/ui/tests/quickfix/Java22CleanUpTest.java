@@ -2006,17 +2006,17 @@ class MyTest {
 		"ContinuingIfFilterSingleStatement",
 		"SimpleReducer",
 //		"ChainedReducer",
-//		"IncrementReducer",
-//		"AccumulatingMapReduce",
+		"IncrementReducer",
+		"AccumulatingMapReduce",
 		"DOUBLEINCREMENTREDUCER",
 		"LONGINCREMENTREDUCER",
 		"FLOATINCREMENTREDUCER",
-//		"DOUBLESUMREDUCER",
-//		"LONGSUMREDUCER",
+		"DOUBLESUMREDUCER",
+		"LONGSUMREDUCER",
 //		"DecrementingReducer",
 //		"ChainedReducerWithMerging",
-//		"StringConcat",
-//		"StringConcatWithNotNull",
+		"StringConcat",
+		"StringConcatWithNotNull",
 //		"ChainedAnyMatch",  // Fixed by checking return after loop
 //		"ChainedNoneMatch",  // Fixed by checking return after loop
 //		"NoNeededVariablesMerging",
@@ -2039,9 +2039,9 @@ class MyTest {
 		"ChainedFilterAndMapOperations",
 		"ContinueWithNestedConditions",
 //		"MultipleMapOperations",
-//		"SumReductionWithFilter",
-//		"ComplexReductionWithMapping",
-//		"FilterMapReduceChain"
+		"SumReductionWithFilter",
+		"ComplexReductionWithMapping",
+		"FilterMapReduceChain"
 	})
 	public void testSimpleForEachConversion(UseFunctionalLoop test) throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null);
