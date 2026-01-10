@@ -43,6 +43,7 @@ import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.ThrowStatement;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
@@ -1095,9 +1096,12 @@ public class StreamPipelineBuilder {
 						// Add MAP operation before REDUCE based on reducer type
 						addMapBeforeReduce(ops, reduceOp, stmt, currentVarName);
 						ops.add(reduceOp);
-					} else if (stmt instanceof ReturnStatement || stmt instanceof ContinueStatement) {
-						// Return or continue statements that aren't part of patterns cannot be converted
+					} else if (stmt instanceof ReturnStatement || stmt instanceof ContinueStatement || stmt instanceof ThrowStatement) {
+						// Return, continue, or throw statements that aren't part of patterns cannot be converted
 						// Return empty list to signal conversion should be rejected
+						return new ArrayList<>();
+					} else if (!isSafeSideEffect(stmt, currentVarName, ops)) {
+						// Unsafe side-effect (e.g., external variable modification) - reject conversion
 						return new ArrayList<>();
 					} else {
 						// Regular FOREACH operation
@@ -1150,9 +1154,12 @@ public class StreamPipelineBuilder {
 				// Add MAP operation before REDUCE based on reducer type
 				addMapBeforeReduce(ops, reduceOp, body, currentVarName);
 				ops.add(reduceOp);
-			} else if (body instanceof ReturnStatement || body instanceof ContinueStatement) {
-				// Return or continue statements that aren't part of patterns cannot be converted
+			} else if (body instanceof ReturnStatement || body instanceof ContinueStatement || body instanceof ThrowStatement) {
+				// Return, continue, or throw statements that aren't part of patterns cannot be converted
 				// Return empty list to signal conversion should be rejected
+				return new ArrayList<>();
+			} else if (!isSafeSideEffect(body, currentVarName, ops)) {
+				// Unsafe side-effect (e.g., external variable modification) - reject conversion
 				return new ArrayList<>();
 			} else {
 				// Regular FOREACH operation
