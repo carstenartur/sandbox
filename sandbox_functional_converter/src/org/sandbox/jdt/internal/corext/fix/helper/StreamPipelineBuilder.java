@@ -14,6 +14,7 @@
 package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -24,6 +25,7 @@ import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.BooleanLiteral;
 import org.eclipse.jdt.core.dom.BreakStatement;
+import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.ContinueStatement;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
@@ -43,6 +45,7 @@ import org.eclipse.jdt.core.dom.ThrowStatement;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 
 /**
  * Builder class for constructing stream pipelines from enhanced for-loops.
@@ -307,6 +310,9 @@ public class StreamPipelineBuilder {
 			return null;
 		}
 
+		// Collect used variable names to avoid clashes when generating lambda parameters
+		Collection<String> usedNames = getUsedVariableNames(forLoop);
+
 		// Check if we need .stream() or can use direct .forEach()
 		boolean needsStream = requiresStreamPrefix();
 
@@ -320,6 +326,9 @@ public class StreamPipelineBuilder {
 			// Chain each operation
 			for (int i = 0; i < operations.size(); i++) {
 				ProspectiveOperation op = operations.get(i);
+				// Set used variable names to avoid name clashes in lambda parameters
+				op.setUsedVariableNames(usedNames);
+				
 				MethodInvocation next = ast.newMethodInvocation();
 				next.setExpression(pipeline);
 				next.setName(ast.newSimpleName(op.getSuitableMethod()));
@@ -337,6 +346,9 @@ public class StreamPipelineBuilder {
 		} else {
 			// Simple forEach without stream()
 			ProspectiveOperation op = operations.get(0);
+			// Set used variable names to avoid name clashes in lambda parameters
+			op.setUsedVariableNames(usedNames);
+			
 			pipeline = ast.newMethodInvocation();
 			pipeline.setExpression((Expression) ASTNode.copySubtree(ast, forLoop.getExpression()));
 			pipeline.setName(ast.newSimpleName(FOR_EACH_METHOD));
@@ -1919,5 +1931,18 @@ public class StreamPipelineBuilder {
 		}
 
 		return new ProspectiveOperation(condition, opType);
+	}
+
+	/**
+	 * Gets all variable names used in the scope of the given AST node.
+	 * This is used to generate unique lambda parameter names that don't clash
+	 * with existing variables in scope.
+	 * 
+	 * @param node the AST node to analyze
+	 * @return collection of variable names used in the node's scope
+	 */
+	private static Collection<String> getUsedVariableNames(ASTNode node) {
+		CompilationUnit root = (CompilationUnit) node.getRoot();
+		return new ScopeAnalyzer(root).getUsedVariableNames(node.getStartPosition(), node.getLength());
 	}
 }
