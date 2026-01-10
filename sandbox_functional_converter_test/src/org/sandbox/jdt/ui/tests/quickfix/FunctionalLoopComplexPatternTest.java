@@ -147,11 +147,10 @@ public class FunctionalLoopComplexPatternTest {
 	 * 
 	 * <p>
 	 * <b>Conversion Rule:</b> Side effects without variable dependencies are
-	 * converted to map operations that return {@code _item}, with the side effects
+	 * converted to map operations that return the loop variable, with the side effects
 	 * executed in the lambda body.
 	 * </p>
 	 */
-	@Disabled("Not yet working - merging logic needs improvement")
 	@Test
 	void test_NoNeededVariablesMerging() throws CoreException {
 		String input = """
@@ -201,10 +200,10 @@ public class FunctionalLoopComplexPatternTest {
 
 				public Boolean test(List<Integer> ls) throws Exception {
 					Integer i=0;
-					ls.stream().map(_item -> {
+					ls.stream().map(l -> {
 						System.out.println();
-						return _item;
-					}).forEachOrdered(_item -> {
+						return l;
+					}).forEachOrdered(l -> {
 						System.out.println("");
 					});
 					System.out.println(i);
@@ -228,12 +227,11 @@ public class FunctionalLoopComplexPatternTest {
 	 * Tests complex operation merging.
 	 * 
 	 * <p>
-	 * <b>Conversion Rule:</b> When loop body has conditional logic that doesn't
-	 * guard all remaining statements, it's wrapped in a map operation to preserve
-	 * execution order.
+	 * <b>Conversion Rule:</b> When loop body has local variable declarations and
+	 * conditional logic that doesn't guard all remaining statements, the entire
+	 * block is treated as a single forEach operation.
 	 * </p>
 	 */
-	@Disabled("Not yet working - merging logic needs improvement")
 	@Test
 	void test_MergingOperations() throws CoreException {
 		String input = """

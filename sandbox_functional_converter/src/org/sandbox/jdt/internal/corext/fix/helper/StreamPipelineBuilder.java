@@ -996,6 +996,17 @@ public class StreamPipelineBuilder {
 		if (body instanceof Block) {
 			Block block = (Block) body;
 			List<Statement> statements = block.statements();
+			
+			// Check if the entire block should be treated as a single forEach
+			// This happens when variable declarations are only used locally within the loop
+			// and there are no operations that need to propagate variables to the pipeline
+			if (shouldTreatAsSimpleForEach(statements, loopVarName)) {
+				// Treat the entire block as a forEach operation
+				ProspectiveOperation forEachOp = new ProspectiveOperation(body,
+						ProspectiveOperation.OperationType.FOREACH, loopVarName);
+				ops.add(forEachOp);
+				return ops;
+			}
 
 			for (int i = 0; i < statements.size(); i++) {
 				Statement stmt = statements.get(i);
@@ -1347,6 +1358,59 @@ public class StreamPipelineBuilder {
 		}
 		
 		return false;
+	}
+	
+	/**
+	 * Determines if a loop body should be treated as a single forEach operation
+	 * rather than being decomposed into separate MAP/FILTER operations.
+	 * 
+	 * <p>This happens when the loop body contains local variable declarations
+	 * that are only used within the loop (not propagated to subsequent pipeline
+	 * operations) and side-effect statements that don't require separate operations.</p>
+	 * 
+	 * <p>Pattern detected: Variable declarations followed by conditional/side-effect
+	 * logic where variables are local to the loop iteration.</p>
+	 * 
+	 * @param statements the statements in the loop body
+	 * @param loopVarName the loop variable name
+	 * @return true if the entire body should be a single forEach
+	 */
+	private boolean shouldTreatAsSimpleForEach(List<Statement> statements, String loopVarName) {
+		if (statements.isEmpty()) {
+			return false;
+		}
+		
+		// Check for patterns that require decomposition
+		boolean hasVariableDeclarations = false;
+		boolean hasConditionalLogic = false;
+		
+		for (Statement stmt : statements) {
+			if (stmt instanceof VariableDeclarationStatement) {
+				hasVariableDeclarations = true;
+			} else if (stmt instanceof IfStatement) {
+				IfStatement ifStmt = (IfStatement) stmt;
+				// If it's an early return or continue pattern, needs decomposition
+				if (isEarlyReturnIf(ifStmt) || isIfWithContinue(ifStmt)) {
+					return false;
+				}
+				hasConditionalLogic = true;
+			} else if (stmt instanceof ReturnStatement || stmt instanceof ContinueStatement || stmt instanceof BreakStatement) {
+				// Early returns, continues, breaks need decomposition
+				return false;
+			}
+			
+			// Check for REDUCE patterns
+			ProspectiveOperation reduceOp = detectReduceOperation(stmt);
+			if (reduceOp != null) {
+				// REDUCE operations need decomposition
+				return false;
+			}
+		}
+		
+		// If we have variable declarations AND conditional logic with side effects,
+		// and no patterns requiring decomposition, treat as simple forEach
+		// This handles the test_MergingOperations pattern
+		return hasVariableDeclarations && hasConditionalLogic;
 	}
 	
 	/**
