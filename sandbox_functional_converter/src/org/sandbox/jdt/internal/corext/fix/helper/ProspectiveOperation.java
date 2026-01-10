@@ -204,10 +204,15 @@ public final class ProspectiveOperation {
 				}
 				
 				// Skip if this is the name part of a method invocation (e.g., "println" in "out.println()")
+				// or if this is the expression part representing a class name (e.g., "Math" in "Math.max()")
 				if (parent instanceof MethodInvocation) {
 					MethodInvocation mi = (MethodInvocation) parent;
 					if (mi.getName() == node) {
 						return super.visit(node); // Skip method name
+					}
+					// Skip class names used as method invocation receivers (e.g., "Math" in "Math.max()")
+					if (mi.getExpression() == node) {
+						return super.visit(node); // Skip class name
 					}
 				}
 				

@@ -16,7 +16,7 @@ package org.sandbox.jdt.ui.tests.quickfix;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
-import org.junit.jupiter.api.Disabled;
+//import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
@@ -276,7 +276,7 @@ context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new Str
 		 * {@code stream().reduce(max, Integer::max)}.
 		 * </p>
  */
-	@Disabled("Not yet working - min/max reducer logic needs improvement")
+//	@Disabled("Not yet working - min/max reducer logic needs improvement")
 @Test
 void test_MaxReducer() throws CoreException {
 String input = """
@@ -307,7 +307,7 @@ String expected = """
 					max = numbers.stream().reduce(max, Integer::max);
 					return max;
 				}
-						}""";
+				}""";
 
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -323,7 +323,7 @@ context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new Str
 		 * {@code stream().reduce(min, Integer::min)}.
 		 * </p>
  */
-	@Disabled("Not yet working - min/max reducer logic needs improvement")
+//	@Disabled("Not yet working - min/max reducer logic needs improvement")
 @Test
 void test_MinReducer() throws CoreException {
 String input = """
@@ -354,7 +354,7 @@ String expected = """
 					min = numbers.stream().reduce(min, Integer::min);
 					return min;
 				}
-						}""";
+				}""";
 
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
