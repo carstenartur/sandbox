@@ -96,66 +96,64 @@ public class FunctionalLoopMatchPatternTest {
 @Test
 void test_ChainedAnyMatch() throws CoreException {
 String input = """
-package test1;
+			package test1;
 
-import java.util.Arrays;
-import java.util.List;
+			import java.util.Arrays;
+			import java.util.List;
 
-class MyTest {
+			class MyTest {
 
-	public static void main(String[] args) {
-		new MyTest().test(Arrays.asList(1, 2, 3));
-	}
+				public static void main(String[] args) {
+					new MyTest().test(Arrays.asList(1, 2, 3));
+				}
 
-	public Boolean test(List<Integer> ls) {
-		for(Integer l:ls)
-		{
-			String s = l.toString();
-			Object o = foo(s);
-			if(o==null)
-			return true;
-		}
+				public Boolean test(List<Integer> ls) {
+					for(Integer l:ls)
+					{
+						String s = l.toString();
+						Object o = foo(s);
+						if(o==null)
+							return true;
+					}
 
-		return false;
+					return false;
 
 
-	}
+				}
 
-	Object foo(Object o)
-	{
-		return o;
-	}
-}
-""";
+				Object foo(Object o)
+				{
+					return o;
+				}
+				}""";
 
 String expected = """
-package test1;
+			package test1;
 
-import java.util.Arrays;
-import java.util.List;
+			import java.util.Arrays;
+			import java.util.List;
 
-class MyTest {
+			class MyTest {
 
-	public static void main(String[] args) {
-		new MyTest().test(Arrays.asList(1, 2, 3));
-	}
+				public static void main(String[] args) {
+					new MyTest().test(Arrays.asList(1, 2, 3));
+				}
 
-	public Boolean test(List<Integer> ls) {
-		if (ls.stream().map(l -> l.toString()).map(s -> foo(s)).anyMatch(o -> (o==null))) {
-			return true;
-		}
+				public Boolean test(List<Integer> ls) {
+					if (ls.stream().map(l -> l.toString()).map(s -> foo(s)).anyMatch(o -> (o==null))) {
+						return true;
+					}
 
-		return false;
+					return false;
 
 
-	}
+				}
 
-	Object foo(Object o)
-	{
-		return o;
-	}
-}
-""";
+				Object foo(Object o)
+				{
+					return o;
+				}
+						}""";
 
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -175,66 +173,64 @@ context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new Str
 @Test
 void test_ChainedNoneMatch() throws CoreException {
 String input = """
-package test1;
+			package test1;
 
-import java.util.Arrays;
-import java.util.List;
+			import java.util.Arrays;
+			import java.util.List;
 
-class MyTest {
+			class MyTest {
 
-	public static void main(String[] args) {
-		new MyTest().test(Arrays.asList(1, 2, 3));
-	}
+				public static void main(String[] args) {
+					new MyTest().test(Arrays.asList(1, 2, 3));
+				}
 
-	public Boolean test(List<Integer> ls) {
-		for(Integer l:ls)
-		{
-			String s = l.toString();
-			Object o = foo(s);
-			if(o==null)
-			return false;
-		}
+				public Boolean test(List<Integer> ls) {
+					for(Integer l:ls)
+					{
+						String s = l.toString();
+						Object o = foo(s);
+						if(o==null)
+							return false;
+					}
 
-		return true;
+					return true;
 
 
-	}
+				}
 
-	Object foo(Object o)
-	{
-		return o;
-	}
-}
-""";
+				Object foo(Object o)
+				{
+					return o;
+				}
+				}""";
 
 String expected = """
-package test1;
+			package test1;
 
-import java.util.Arrays;
-import java.util.List;
+			import java.util.Arrays;
+			import java.util.List;
 
-class MyTest {
+			class MyTest {
 
-	public static void main(String[] args) {
-		new MyTest().test(Arrays.asList(1, 2, 3));
-	}
+				public static void main(String[] args) {
+					new MyTest().test(Arrays.asList(1, 2, 3));
+				}
 
-	public Boolean test(List<Integer> ls) {
-		if (!ls.stream().map(l -> l.toString()).map(s -> foo(s)).noneMatch(o -> (o==null))) {
-			return false;
-		}
+				public Boolean test(List<Integer> ls) {
+					if (!ls.stream().map(l -> l.toString()).map(s -> foo(s)).noneMatch(o -> (o==null))) {
+						return false;
+					}
 
-		return true;
+					return true;
 
 
-	}
+				}
 
-	Object foo(Object o)
-	{
-		return o;
-	}
-}
-""";
+				Object foo(Object o)
+				{
+					return o;
+				}
+						}""";
 
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -254,36 +250,34 @@ context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new Str
 @Test
 void test_SimpleAllMatch() throws CoreException {
 String input = """
-package test1;
+			package test1;
 
-import java.util.List;
+			import java.util.List;
 
-class MyTest {
-	public boolean allValid(List<String> items) {
-		for (String item : items) {
-			if (!item.startsWith("valid")) {
-				return false;
-			}
-		}
-		return true;
-	}
-}
-""";
+			class MyTest {
+				public boolean allValid(List<String> items) {
+					for (String item : items) {
+						if (!item.startsWith("valid")) {
+							return false;
+						}
+					}
+					return true;
+				}
+				}""";
 
 String expected = """
-package test1;
+			package test1;
 
-import java.util.List;
+			import java.util.List;
 
-class MyTest {
-	public boolean allValid(List<String> items) {
-		if (!items.stream().allMatch(item -> item.startsWith("valid"))) {
-			return false;
-		}
-		return true;
-	}
-}
-""";
+			class MyTest {
+				public boolean allValid(List<String> items) {
+					if (!items.stream().allMatch(item -> item.startsWith("valid"))) {
+						return false;
+					}
+					return true;
+				}
+						}""";
 
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -303,36 +297,34 @@ context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new Str
 @Test
 void test_AllMatchWithNullCheck() throws CoreException {
 String input = """
-package test1;
+			package test1;
 
-import java.util.List;
+			import java.util.List;
 
-class MyTest {
-	public boolean allNonNull(List<Object> items) {
-		for (Object item : items) {
-			if (!(item != null)) {
-				return false;
-			}
-		}
-		return true;
-	}
-}
-""";
+			class MyTest {
+				public boolean allNonNull(List<Object> items) {
+					for (Object item : items) {
+						if (!(item != null)) {
+							return false;
+						}
+					}
+					return true;
+				}
+				}""";
 
 String expected = """
-package test1;
+			package test1;
 
-import java.util.List;
+			import java.util.List;
 
-class MyTest {
-	public boolean allNonNull(List<Object> items) {
-		if (!items.stream().allMatch(item -> (item != null))) {
-			return false;
-		}
-		return true;
-	}
-}
-""";
+			class MyTest {
+				public boolean allNonNull(List<Object> items) {
+					if (!items.stream().allMatch(item -> (item != null))) {
+						return false;
+					}
+					return true;
+				}
+						}""";
 
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -352,37 +344,35 @@ context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new Str
 @Test
 void test_ChainedAllMatch() throws CoreException {
 String input = """
-package test1;
+			package test1;
 
-import java.util.List;
+			import java.util.List;
 
-class MyTest {
-	public boolean allLongEnough(List<String> items) {
-		for (String item : items) {
-			int len = item.length();
-			if (!(len > 5)) {
-				return false;
-			}
-		}
-		return true;
-	}
-}
-""";
+			class MyTest {
+				public boolean allLongEnough(List<String> items) {
+					for (String item : items) {
+						int len = item.length();
+						if (!(len > 5)) {
+							return false;
+						}
+					}
+					return true;
+				}
+				}""";
 
 String expected = """
-package test1;
+			package test1;
 
-import java.util.List;
+			import java.util.List;
 
-class MyTest {
-	public boolean allLongEnough(List<String> items) {
-		if (!items.stream().map(item -> item.length()).allMatch(len -> (len > 5))) {
-			return false;
-		}
-		return true;
-	}
-}
-""";
+			class MyTest {
+				public boolean allLongEnough(List<String> items) {
+					if (!items.stream().map(item -> item.length()).allMatch(len -> (len > 5))) {
+						return false;
+					}
+					return true;
+				}
+						}""";
 
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
