@@ -14,6 +14,7 @@
 package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -23,29 +24,28 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.BooleanLiteral;
-import org.eclipse.jdt.core.dom.ConditionalExpression;
+import org.eclipse.jdt.core.dom.BreakStatement;
+import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.ContinueStatement;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
-import org.eclipse.jdt.core.dom.IAnnotationBinding;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.IfStatement;
-import org.eclipse.jdt.core.dom.InfixExpression;
-import org.eclipse.jdt.core.dom.InstanceofExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
-import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.PostfixExpression;
 import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.ThrowStatement;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 
 /**
  * Builder class for constructing stream pipelines from enhanced for-loops.
@@ -310,6 +310,9 @@ public class StreamPipelineBuilder {
 			return null;
 		}
 
+		// Collect used variable names to avoid clashes when generating lambda parameters
+		Collection<String> usedNames = getUsedVariableNames(forLoop);
+
 		// Check if we need .stream() or can use direct .forEach()
 		boolean needsStream = requiresStreamPrefix();
 
@@ -323,6 +326,9 @@ public class StreamPipelineBuilder {
 			// Chain each operation
 			for (int i = 0; i < operations.size(); i++) {
 				ProspectiveOperation op = operations.get(i);
+				// Set used variable names to avoid name clashes in lambda parameters
+				op.setUsedVariableNames(usedNames);
+				
 				MethodInvocation next = ast.newMethodInvocation();
 				next.setExpression(pipeline);
 				next.setName(ast.newSimpleName(op.getSuitableMethod()));
@@ -340,6 +346,9 @@ public class StreamPipelineBuilder {
 		} else {
 			// Simple forEach without stream()
 			ProspectiveOperation op = operations.get(0);
+			// Set used variable names to avoid name clashes in lambda parameters
+			op.setUsedVariableNames(usedNames);
+			
 			pipeline = ast.newMethodInvocation();
 			pipeline.setExpression((Expression) ASTNode.copySubtree(ast, forLoop.getExpression()));
 			pipeline.setName(ast.newSimpleName(FOR_EACH_METHOD));
@@ -1034,8 +1043,17 @@ public class StreamPipelineBuilder {
 
 					// Check if this is a filtering IF (simple condition with block body)
 					if (ifStmt.getElseStatement() == null) {
-						// Check if this is an early return pattern (anyMatch/noneMatch/allMatch)
-						if (isEarlyReturnIf(ifStmt)) {
+						// Check for labeled continue first - these cannot be converted
+						if (isIfWithLabeledContinue(ifStmt)) {
+							// Labeled continue cannot be converted to stream operations
+							// Return empty list to signal conversion should be rejected
+							return new ArrayList<>();
+						} else if (isIfWithBreak(ifStmt)) {
+							// Break statement cannot be converted to stream operations
+							// Return empty list to signal conversion should be rejected
+							return new ArrayList<>();
+						} else if (isEarlyReturnIf(ifStmt)) {
+							// Check if this is an early return pattern (anyMatch/noneMatch/allMatch)
 							// Create ANYMATCH, NONEMATCH, or ALLMATCH operation using helper
 							ProspectiveOperation matchOp = createMatchOperation(ifStmt);
 							ops.add(matchOp);
@@ -1057,8 +1075,17 @@ public class StreamPipelineBuilder {
 					// nested body
 					IfStatement ifStmt = (IfStatement) stmt;
 					if (ifStmt.getElseStatement() == null) {
-						// Check if this is an early return pattern (anyMatch/noneMatch/allMatch)
-						if (isEarlyReturnIf(ifStmt)) {
+						// Check for labeled continue first - these cannot be converted
+						if (isIfWithLabeledContinue(ifStmt)) {
+							// Labeled continue cannot be converted to stream operations
+							// Return empty list to signal conversion should be rejected
+							return new ArrayList<>();
+						} else if (isIfWithBreak(ifStmt)) {
+							// Break statement cannot be converted to stream operations
+							// Return empty list to signal conversion should be rejected
+							return new ArrayList<>();
+						} else if (isEarlyReturnIf(ifStmt)) {
+							// Check if this is an early return pattern (anyMatch/noneMatch/allMatch)
 							// Create ANYMATCH, NONEMATCH, or ALLMATCH operation using helper
 							ProspectiveOperation matchOp = createMatchOperation(ifStmt);
 							ops.add(matchOp);
@@ -1095,6 +1122,13 @@ public class StreamPipelineBuilder {
 						// Add MAP operation before REDUCE based on reducer type
 						addMapBeforeReduce(ops, reduceOp, stmt, currentVarName);
 						ops.add(reduceOp);
+					} else if (stmt instanceof ReturnStatement || stmt instanceof ContinueStatement || stmt instanceof ThrowStatement) {
+						// Return, continue, or throw statements that aren't part of patterns cannot be converted
+						// Return empty list to signal conversion should be rejected
+						return new ArrayList<>();
+					} else if (!isSafeSideEffect(stmt, currentVarName, ops)) {
+						// Unsafe side-effect (e.g., external variable modification) - reject conversion
+						return new ArrayList<>();
 					} else {
 						// Regular FOREACH operation
 						ProspectiveOperation forEachOp = new ProspectiveOperation(stmt,
@@ -1107,8 +1141,17 @@ public class StreamPipelineBuilder {
 			// Single IF statement → check for early return pattern or process as filter
 			IfStatement ifStmt = (IfStatement) body;
 			if (ifStmt.getElseStatement() == null) {
-				// Check if this is an early return pattern (anyMatch/noneMatch/allMatch)
-				if (isEarlyReturnIf(ifStmt)) {
+				// Check for labeled continue first - these cannot be converted
+				if (isIfWithLabeledContinue(ifStmt)) {
+					// Labeled continue cannot be converted to stream operations
+					// Return empty list to signal conversion should be rejected
+					return new ArrayList<>();
+				} else if (isIfWithBreak(ifStmt)) {
+					// Break statement cannot be converted to stream operations
+					// Return empty list to signal conversion should be rejected
+					return new ArrayList<>();
+				} else if (isEarlyReturnIf(ifStmt)) {
+					// Check if this is an early return pattern (anyMatch/noneMatch/allMatch)
 					// Create ANYMATCH, NONEMATCH, or ALLMATCH operation
 					ProspectiveOperation.OperationType opType;
 					if (isAnyMatchPattern) {
@@ -1146,6 +1189,13 @@ public class StreamPipelineBuilder {
 				// Add MAP operation before REDUCE based on reducer type
 				addMapBeforeReduce(ops, reduceOp, body, currentVarName);
 				ops.add(reduceOp);
+			} else if (body instanceof ReturnStatement || body instanceof ContinueStatement || body instanceof ThrowStatement) {
+				// Return, continue, or throw statements that aren't part of patterns cannot be converted
+				// Return empty list to signal conversion should be rejected
+				return new ArrayList<>();
+			} else if (!isSafeSideEffect(body, currentVarName, ops)) {
+				// Unsafe side-effect (e.g., external variable modification) - reject conversion
+				return new ArrayList<>();
 			} else {
 				// Regular FOREACH operation
 				ProspectiveOperation forEachOp = new ProspectiveOperation(body,
@@ -1358,6 +1408,52 @@ public class StreamPipelineBuilder {
 				ContinueStatement continueStmt = (ContinueStatement) block.statements().get(0);
 				// Only allow unlabeled continues
 				return continueStmt.getLabel() == null;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Checks if the IF statement contains a labeled continue statement.
+	 * Labeled continues cannot be converted to stream operations.
+	 * 
+	 * @param ifStatement the IF statement to check
+	 * @return true if the IF contains a labeled continue statement
+	 */
+	private boolean isIfWithLabeledContinue(IfStatement ifStatement) {
+		Statement thenStatement = ifStatement.getThenStatement();
+		if (thenStatement instanceof ContinueStatement) {
+			ContinueStatement continueStmt = (ContinueStatement) thenStatement;
+			// Check if continue has a label
+			return continueStmt.getLabel() != null;
+		}
+		if (thenStatement instanceof Block) {
+			Block block = (Block) thenStatement;
+			if (block.statements().size() == 1 && block.statements().get(0) instanceof ContinueStatement) {
+				ContinueStatement continueStmt = (ContinueStatement) block.statements().get(0);
+				// Check if continue has a label
+				return continueStmt.getLabel() != null;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Checks if the IF statement contains a break statement.
+	 * Break statements cannot be converted to stream operations.
+	 * 
+	 * @param ifStatement the IF statement to check
+	 * @return true if the IF contains a break statement
+	 */
+	private boolean isIfWithBreak(IfStatement ifStatement) {
+		Statement thenStatement = ifStatement.getThenStatement();
+		if (thenStatement instanceof BreakStatement) {
+			return true;
+		}
+		if (thenStatement instanceof Block) {
+			Block block = (Block) thenStatement;
+			if (block.statements().size() == 1 && block.statements().get(0) instanceof BreakStatement) {
+				return true;
 			}
 		}
 		return false;
@@ -1835,5 +1931,18 @@ public class StreamPipelineBuilder {
 		}
 
 		return new ProspectiveOperation(condition, opType);
+	}
+
+	/**
+	 * Gets all variable names used in the scope of the given AST node.
+	 * This is used to generate unique lambda parameter names that don't clash
+	 * with existing variables in scope.
+	 * 
+	 * @param node the AST node to analyze
+	 * @return collection of variable names used in the node's scope
+	 */
+	private static Collection<String> getUsedVariableNames(ASTNode node) {
+		CompilationUnit root = (CompilationUnit) node.getRoot();
+		return new ScopeAnalyzer(root).getUsedVariableNames(node.getStartPosition(), node.getLength());
 	}
 }

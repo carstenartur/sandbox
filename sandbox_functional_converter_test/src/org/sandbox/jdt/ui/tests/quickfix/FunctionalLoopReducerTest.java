@@ -87,51 +87,51 @@ public class FunctionalLoopReducerTest {
 @Test
 void test_SimpleReducer() throws CoreException {
 String input = """
-				package test1;
+			package test1;
 
-				import java.util.Arrays;
-				import java.util.List;
+			import java.util.Arrays;
+			import java.util.List;
 
-				class MyTest {
+			class MyTest {
 
-				    public static void main(String[] args) {
-				        new MyTest().test(Arrays.asList(1, 2, 3,7));
-				    }
-
-
-				    public Boolean test(List<Integer> ls) {
-				        Integer i=0;
-				        for(Integer l : ls)
-				            i++;
-				        System.out.println(i);
-				        return true;
+				public static void main(String[] args) {
+					new MyTest().test(Arrays.asList(1, 2, 3,7));
+				}
 
 
-				    }
+				public Boolean test(List<Integer> ls) {
+					Integer i=0;
+					for(Integer l : ls)
+						i++;
+					System.out.println(i);
+					return true;
+
+
+				}
 				}""";
 
 String expected = """
-						package test1;
+			package test1;
 
-						import java.util.Arrays;
-						import java.util.List;
+			import java.util.Arrays;
+			import java.util.List;
 
-						class MyTest {
+			class MyTest {
 
-						    public static void main(String[] args) {
-						        new MyTest().test(Arrays.asList(1, 2, 3,7));
-						    }
-
-
-						    public Boolean test(List<Integer> ls) {
-						        Integer i=0;
-						        i = ls.stream().map(l -> 1).reduce(i, Integer::sum);
-						        System.out.println(i);
-						        return true;
+				public static void main(String[] args) {
+					new MyTest().test(Arrays.asList(1, 2, 3,7));
+				}
 
 
-						    }
-						}""";
+				public Boolean test(List<Integer> ls) {
+					Integer i=0;
+					i = ls.stream().map(l -> 1).reduce(i, Integer::sum);
+					System.out.println(i);
+					return true;
+
+
+				}
+				}""";
 
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -150,61 +150,61 @@ context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new Str
 @Test
 void test_IncrementReducer() throws CoreException {
 String input = """
-						package test1;
+			package test1;
 
-						import java.util.ArrayList;
-						import java.util.List;
+			import java.util.ArrayList;
+			import java.util.List;
 
-						/**
-						 *
-						 * @author alexandrugyori
-						 */
-						class MyTest {
+			/**
+			*
+			* @author alexandrugyori
+			*/
+			class MyTest {
 
-						    /**
-						     * @param args the command line arguments
-						     */
-						    public static void main( String[] args) {
-						        List<Integer> ls = new ArrayList<>();
-						        int i =0;
-						        for ( Integer l : ls) {
-						            i+=1;
-						        }
+				/**
+				* @param args the command line arguments
+				*/
+				public static void main( String[] args) {
+					List<Integer> ls = new ArrayList<>();
+					int i =0;
+					for ( Integer l : ls) {
+						i+=1;
+					}
 
-						    }
+				}
 
-						    private static void foo(Integer l) {
-						        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-						    }
-						}
+				private static void foo(Integer l) {
+					throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+				}
+			}
 						""";
 
 String expected = """
-						package test1;
+			package test1;
 
-						import java.util.ArrayList;
-						import java.util.List;
+			import java.util.ArrayList;
+			import java.util.List;
 
-						/**
-						 *
-						 * @author alexandrugyori
-						 */
-						class MyTest {
+			/**
+			*
+			* @author alexandrugyori
+			*/
+			class MyTest {
 
-						    /**
-						     * @param args the command line arguments
-						     */
-						    public static void main( String[] args) {
-						        List<Integer> ls = new ArrayList<>();
-						        int i =0;
-						        i = ls.stream().map(l -> 1).reduce(i, Integer::sum);
+				/**
+				* @param args the command line arguments
+				*/
+				public static void main( String[] args) {
+					List<Integer> ls = new ArrayList<>();
+					int i =0;
+					i = ls.stream().map(l -> 1).reduce(i, Integer::sum);
 
-						    }
+				}
 
-						    private static void foo(Integer l) {
-						        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-						    }
-						}
+				private static void foo(Integer l) {
+					throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+				}
+			}
 						""";
 
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
@@ -224,43 +224,43 @@ context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new Str
 @Test
 void test_LongIncrementReducer() throws CoreException {
 String input = """
-				package test1;
+			package test1;
 
-				import java.util.ArrayList;
-				import java.util.List;
+			import java.util.ArrayList;
+			import java.util.List;
 
-				/**
-				 * Test for long increment reducer
-				 */
-				class MyTest {
+			/**
+			* Test for long increment reducer
+			*/
+			class MyTest {
 
-				    public static void main( String[] args) {
-				        List<Integer> ints=new ArrayList<>();
-				        long len=0L;
-				        for(int i : ints)
-				            len++;
+				public static void main( String[] args) {
+					List<Integer> ints=new ArrayList<>();
+					long len=0L;
+					for(int i : ints)
+						len++;
 
-				    }
+				}
 				}""";
 
 String expected = """
-						package test1;
+			package test1;
 
-						import java.util.ArrayList;
-						import java.util.List;
+			import java.util.ArrayList;
+			import java.util.List;
 
-						/**
-						 * Test for long increment reducer
-						 */
-						class MyTest {
+			/**
+			* Test for long increment reducer
+			*/
+			class MyTest {
 
-						    public static void main( String[] args) {
-						        List<Integer> ints=new ArrayList<>();
-						        long len=0L;
-						        len = ints.stream().map(i -> 1L).reduce(len, Long::sum);
+				public static void main( String[] args) {
+					List<Integer> ints=new ArrayList<>();
+					long len=0L;
+					len = ints.stream().map(i -> 1L).reduce(len, Long::sum);
 
-						    }
-						}""";
+				}
+				}""";
 
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -280,33 +280,33 @@ context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new Str
 @Test
 void test_MaxReducer() throws CoreException {
 String input = """
-				package test1;
+			package test1;
 
-				import java.util.ArrayList;
-				import java.util.List;
+			import java.util.ArrayList;
+			import java.util.List;
 
-				class MyTest {
-				    public int findMax(List<Integer> numbers) {
-				        int max = Integer.MIN_VALUE;
-				        for (Integer num : numbers) {
-				            max = Math.max(max, num);
-				        }
-				        return max;
-				    }
+			class MyTest {
+				public int findMax(List<Integer> numbers) {
+					int max = Integer.MIN_VALUE;
+					for (Integer num : numbers) {
+						max = Math.max(max, num);
+					}
+					return max;
+				}
 				}""";
 
 String expected = """
-						package test1;
+			package test1;
 
-						import java.util.ArrayList;
-						import java.util.List;
+			import java.util.ArrayList;
+			import java.util.List;
 
-						class MyTest {
-						    public int findMax(List<Integer> numbers) {
-						        int max = Integer.MIN_VALUE;
-						        max = numbers.stream().reduce(max, Integer::max);
-						        return max;
-						    }
+			class MyTest {
+				public int findMax(List<Integer> numbers) {
+					int max = Integer.MIN_VALUE;
+					max = numbers.stream().reduce(max, Integer::max);
+					return max;
+				}
 						}""";
 
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
@@ -327,33 +327,33 @@ context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new Str
 @Test
 void test_MinReducer() throws CoreException {
 String input = """
-				package test1;
+			package test1;
 
-				import java.util.ArrayList;
-				import java.util.List;
+			import java.util.ArrayList;
+			import java.util.List;
 
-				class MyTest {
-				    public int findMin(List<Integer> numbers) {
-				        int min = Integer.MAX_VALUE;
-				        for (Integer num : numbers) {
-				            min = Math.min(min, num);
-				        }
-				        return min;
-				    }
+			class MyTest {
+				public int findMin(List<Integer> numbers) {
+					int min = Integer.MAX_VALUE;
+					for (Integer num : numbers) {
+						min = Math.min(min, num);
+					}
+					return min;
+				}
 				}""";
 
 String expected = """
-						package test1;
+			package test1;
 
-						import java.util.ArrayList;
-						import java.util.List;
+			import java.util.ArrayList;
+			import java.util.List;
 
-						class MyTest {
-						    public int findMin(List<Integer> numbers) {
-						        int min = Integer.MAX_VALUE;
-						        min = numbers.stream().reduce(min, Integer::min);
-						        return min;
-						    }
+			class MyTest {
+				public int findMin(List<Integer> numbers) {
+					int min = Integer.MAX_VALUE;
+					min = numbers.stream().reduce(min, Integer::min);
+					return min;
+				}
 						}""";
 
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
@@ -373,34 +373,34 @@ context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new Str
 @Test
 void test_SumReductionWithFilter() throws CoreException {
 String input = """
-				package test1;
+			package test1;
 
-				import java.util.List;
+			import java.util.List;
 
-				class MyTest {
-				    public int sumPositiveNumbers(List<Integer> numbers) {
-				        int sum = 0;
-				        for (Integer num : numbers) {
-				            if (num > 0) {
-				                sum += num;
-				            }
-				        }
-				        return sum;
-				    }
+			class MyTest {
+				public int sumPositiveNumbers(List<Integer> numbers) {
+					int sum = 0;
+					for (Integer num : numbers) {
+						if (num > 0) {
+							sum += num;
+						}
+					}
+					return sum;
+				}
 				}""";
 
 String expected = """
-						package test1;
+			package test1;
 
-						import java.util.List;
+			import java.util.List;
 
-						class MyTest {
-						    public int sumPositiveNumbers(List<Integer> numbers) {
-						        int sum = 0;
-						        sum = numbers.stream().filter(num -> (num > 0)).reduce(sum, Integer::sum);
-						        return sum;
-						    }
-						}""";
+			class MyTest {
+				public int sumPositiveNumbers(List<Integer> numbers) {
+					int sum = 0;
+					sum = numbers.stream().filter(num -> (num > 0)).reduce(sum, Integer::sum);
+					return sum;
+				}
+				}""";
 
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -419,33 +419,33 @@ context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new Str
 @Test
 void test_ComplexReductionWithMapping() throws CoreException {
 String input = """
-				package test1;
+			package test1;
 
-				import java.util.List;
+			import java.util.List;
 
-				class MyTest {
-				    public int sumOfSquares(List<Integer> numbers) {
-				        int sum = 0;
-				        for (Integer num : numbers) {
-				            int squared = num * num;
-				            sum += squared;
-				        }
-				        return sum;
-				    }
+			class MyTest {
+				public int sumOfSquares(List<Integer> numbers) {
+					int sum = 0;
+					for (Integer num : numbers) {
+						int squared = num * num;
+						sum += squared;
+					}
+					return sum;
+				}
 				}""";
 
 String expected = """
-						package test1;
+			package test1;
 
-						import java.util.List;
+			import java.util.List;
 
-						class MyTest {
-						    public int sumOfSquares(List<Integer> numbers) {
-						        int sum = 0;
-						        sum = numbers.stream().map(num -> num * num).reduce(sum, Integer::sum);
-						        return sum;
-						    }
-						}""";
+			class MyTest {
+				public int sumOfSquares(List<Integer> numbers) {
+					int sum = 0;
+					sum = numbers.stream().map(num -> num * num).reduce(sum, Integer::sum);
+					return sum;
+				}
+				}""";
 
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -464,35 +464,35 @@ context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new Str
 @Test
 void test_FilterMapReduceChain() throws CoreException {
 String input = """
-				package test1;
+			package test1;
 
-				import java.util.List;
+			import java.util.List;
 
-				class MyTest {
-				    public int sumOfPositiveSquares(List<Integer> numbers) {
-				        int total = 0;
-				        for (Integer num : numbers) {
-				            if (num > 0) {
-				                int squared = num * num;
-				                total += squared;
-				            }
-				        }
-				        return total;
-				    }
+			class MyTest {
+				public int sumOfPositiveSquares(List<Integer> numbers) {
+					int total = 0;
+					for (Integer num : numbers) {
+						if (num > 0) {
+							int squared = num * num;
+							total += squared;
+						}
+					}
+					return total;
+				}
 				}""";
 
 String expected = """
-						package test1;
+			package test1;
 
-						import java.util.List;
+			import java.util.List;
 
-						class MyTest {
-						    public int sumOfPositiveSquares(List<Integer> numbers) {
-						        int total = 0;
-						        total = numbers.stream().filter(num -> (num > 0)).map(num -> num * num).reduce(total, Integer::sum);
-						        return total;
-						    }
-						}""";
+			class MyTest {
+				public int sumOfPositiveSquares(List<Integer> numbers) {
+					int total = 0;
+					total = numbers.stream().filter(num -> (num > 0)).map(num -> num * num).reduce(total, Integer::sum);
+					return total;
+				}
+				}""";
 
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);

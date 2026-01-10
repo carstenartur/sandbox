@@ -14,6 +14,7 @@
 package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -172,6 +173,12 @@ public final class ProspectiveOperation {
 	 * and preventing leaks.
 	 */
 	private Set<String> consumedVariables = new HashSet<>();
+
+	/**
+	 * Collection of variable names already in use in the scope. Used to generate
+	 * unique lambda parameter names that don't clash with existing variables.
+	 */
+	private Collection<String> usedVariableNames = new HashSet<>();
 
 	// Sammelt alle verwendeten Variablen
 	private void collectNeededVariables(Expression expression) {
@@ -377,8 +384,15 @@ public final class ProspectiveOperation {
 		LambdaExpression lambda = ast.newLambdaExpression();
 
 		// Create parameter with defensive null check
+		// Use the provided paramName, or generate a unique default name
 		VariableDeclarationFragment param = ast.newVariableDeclarationFragment();
-		String effectiveParamName = (paramName != null && !paramName.isEmpty()) ? paramName : "item";
+		String effectiveParamName;
+		if (paramName != null && !paramName.isEmpty()) {
+			effectiveParamName = paramName;
+		} else {
+			// Generate a unique default name to avoid clashes
+			effectiveParamName = generateUniqueVariableName("item");
+		}
 		param.setName(ast.newSimpleName(effectiveParamName));
 		lambda.parameters().add(param);
 		
@@ -504,6 +518,49 @@ public final class ProspectiveOperation {
 	 */
 	public void setAccumulatorType(String accumulatorType) {
 		this.accumulatorType = accumulatorType;
+	}
+
+	/**
+	 * Sets the collection of variable names already in use in the current scope.
+	 * This is used to generate unique lambda parameter names that don't clash
+	 * with existing variables.
+	 * 
+	 * @param usedNames the collection of variable names in use (may be null)
+	 */
+	public void setUsedVariableNames(Collection<String> usedNames) {
+		if (usedNames != null) {
+			this.usedVariableNames = usedNames;
+		}
+	}
+
+	/**
+	 * Generates a unique variable name that doesn't collide with existing variables in scope.
+	 * 
+	 * <p>This method ensures the generated lambda parameter name doesn't conflict with other
+	 * variables visible at the transformation point. If the base name is already in use,
+	 * a numeric suffix is appended (e.g., "a2", "a3", etc.).</p>
+	 * 
+	 * @param baseName the base name to use (e.g., "a", "_item", "accumulator")
+	 * @return a unique variable name that doesn't exist in the current scope
+	 */
+	private String generateUniqueVariableName(String baseName) {
+		// Combine neededVariables (from expression analysis) with usedVariableNames (from scope)
+		Set<String> allUsedNames = new HashSet<>(neededVariables);
+		allUsedNames.addAll(usedVariableNames);
+		
+		// If base name is not used, return it
+		if (!allUsedNames.contains(baseName)) {
+			return baseName;
+		}
+		
+		// Otherwise, append a number until we find an unused name
+		int counter = 2;
+		String candidate = baseName + counter;
+		while (allUsedNames.contains(candidate)) {
+			counter++;
+			candidate = baseName + counter;
+		}
+		return candidate;
 	}
 
 	/**
@@ -734,18 +791,22 @@ public final class ProspectiveOperation {
 	private LambdaExpression createSimpleBinaryLambda(AST ast, InfixExpression.Operator operator) {
 		LambdaExpression lambda = ast.newLambdaExpression();
 
+		// Generate unique parameter names to avoid clashes with existing variables
+		String param1Name = generateUniqueVariableName("a");
+		String param2Name = generateUniqueVariableName("b");
+
 		// Parameters: (a, b) - using VariableDeclarationFragment for simple parameters
 		VariableDeclarationFragment param1 = ast.newVariableDeclarationFragment();
-		param1.setName(ast.newSimpleName("a"));
+		param1.setName(ast.newSimpleName(param1Name));
 		VariableDeclarationFragment param2 = ast.newVariableDeclarationFragment();
-		param2.setName(ast.newSimpleName("b"));
+		param2.setName(ast.newSimpleName(param2Name));
 		lambda.parameters().add(param1);
 		lambda.parameters().add(param2);
 
 		// Body: a + b (or other operator)
 		InfixExpression operationExpr = ast.newInfixExpression();
-		operationExpr.setLeftOperand(ast.newSimpleName("a"));
-		operationExpr.setRightOperand(ast.newSimpleName("b"));
+		operationExpr.setLeftOperand(ast.newSimpleName(param1Name));
+		operationExpr.setRightOperand(ast.newSimpleName(param2Name));
 		operationExpr.setOperator(operator);
 		lambda.setBody(operationExpr);
 
@@ -759,18 +820,22 @@ public final class ProspectiveOperation {
 	private LambdaExpression createBinaryOperatorLambda(AST ast, InfixExpression.Operator operator) {
 		LambdaExpression lambda = ast.newLambdaExpression();
 
+		// Generate unique parameter names to avoid clashes with existing variables
+		String param1Name = generateUniqueVariableName("accumulator");
+		String param2Name = generateUniqueVariableName("_item");
+
 		// Parameters: (accumulator, _item) - use VariableDeclarationFragment to avoid type annotations
 		VariableDeclarationFragment param1 = ast.newVariableDeclarationFragment();
-		param1.setName(ast.newSimpleName("accumulator"));
+		param1.setName(ast.newSimpleName(param1Name));
 		VariableDeclarationFragment param2 = ast.newVariableDeclarationFragment();
-		param2.setName(ast.newSimpleName("_item"));
+		param2.setName(ast.newSimpleName(param2Name));
 		lambda.parameters().add(param1);
 		lambda.parameters().add(param2);
 
 		// Body: accumulator + _item (or other operator)
 		InfixExpression operationExpr = ast.newInfixExpression();
-		operationExpr.setLeftOperand(ast.newSimpleName("accumulator"));
-		operationExpr.setRightOperand(ast.newSimpleName("_item"));
+		operationExpr.setLeftOperand(ast.newSimpleName(param1Name));
+		operationExpr.setRightOperand(ast.newSimpleName(param2Name));
 		operationExpr.setOperator(operator);
 		lambda.setBody(operationExpr);
 
@@ -784,17 +849,22 @@ public final class ProspectiveOperation {
 	private LambdaExpression createCountingLambda(AST ast, InfixExpression.Operator operator) {
 		LambdaExpression lambda = ast.newLambdaExpression();
 
+		// Generate unique parameter name for accumulator to avoid clashes
+		// Note: _item is unused in body but still needs unique name to avoid shadowing
+		String param1Name = generateUniqueVariableName("accumulator");
+		String param2Name = generateUniqueVariableName("_item");
+
 		// Parameters: (accumulator, _item) - use VariableDeclarationFragment to avoid type annotations
 		VariableDeclarationFragment param1 = ast.newVariableDeclarationFragment();
-		param1.setName(ast.newSimpleName("accumulator"));
+		param1.setName(ast.newSimpleName(param1Name));
 		VariableDeclarationFragment param2 = ast.newVariableDeclarationFragment();
-		param2.setName(ast.newSimpleName("_item"));
+		param2.setName(ast.newSimpleName(param2Name));
 		lambda.parameters().add(param1);
 		lambda.parameters().add(param2);
 
 		// Body: accumulator + 1 (literal 1, not _item)
 		InfixExpression operationExpr = ast.newInfixExpression();
-		operationExpr.setLeftOperand(ast.newSimpleName("accumulator"));
+		operationExpr.setLeftOperand(ast.newSimpleName(param1Name));
 		operationExpr.setRightOperand(ast.newNumberLiteral("1"));
 		operationExpr.setOperator(operator);
 		lambda.setBody(operationExpr);
@@ -818,17 +888,22 @@ public final class ProspectiveOperation {
 	/** (7) Erstellt eine Akkumulator-Funktion für `reduce()` */
 	private LambdaExpression createAccumulatorLambda(AST ast) {
 		LambdaExpression lambda = ast.newLambdaExpression();
+
+		// Generate unique parameter names to avoid clashes with existing variables
+		String param1Name = generateUniqueVariableName("a");
+		String param2Name = generateUniqueVariableName("b");
+
 		// Use VariableDeclarationFragment to avoid type annotations
 		VariableDeclarationFragment paramA = ast.newVariableDeclarationFragment();
-		paramA.setName(ast.newSimpleName("a"));
+		paramA.setName(ast.newSimpleName(param1Name));
 		VariableDeclarationFragment paramB = ast.newVariableDeclarationFragment();
-		paramB.setName(ast.newSimpleName("b"));
+		paramB.setName(ast.newSimpleName(param2Name));
 		lambda.parameters().add(paramA);
 		lambda.parameters().add(paramB);
 
 		InfixExpression operationExpr = ast.newInfixExpression();
-		operationExpr.setLeftOperand(ast.newSimpleName("a"));
-		operationExpr.setRightOperand(ast.newSimpleName("b"));
+		operationExpr.setLeftOperand(ast.newSimpleName(param1Name));
+		operationExpr.setRightOperand(ast.newSimpleName(param2Name));
 		operationExpr.setOperator(InfixExpression.Operator.PLUS);
 		lambda.setBody(operationExpr);
 
