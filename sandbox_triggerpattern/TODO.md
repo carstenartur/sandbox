@@ -2,7 +2,7 @@
 
 ## Status Summary
 
-**Current State**: Initial implementation demonstrating TriggerPattern usage
+**Current State**: Full cleanup and save action support implemented
 
 ### Completed
 - ✅ Plugin structure created
@@ -10,6 +10,10 @@
 - ✅ Pattern registration via extension point
 - ✅ Integration with TriggerPattern engine
 - ✅ Documentation (ARCHITECTURE.md)
+- ✅ Quick Assist integration (Ctrl+1)
+- ✅ Cleanup integration (Save Actions and Source → Clean Up)
+- ✅ UI preferences for cleanup configuration
+- ✅ Batch apply to entire project support
 
 ### In Progress
 - [ ] Test module implementation (in progress)
@@ -120,15 +124,24 @@ Should check expression type before suggesting.
 ## Future Enhancements
 
 ### Integration with Save Actions
-**Priority**: Medium  
-**Effort**: Depends on TriggerPattern engine enhancements
+**Priority**: Medium → **COMPLETED**  
+**Effort**: Depends on TriggerPattern engine enhancements → **Completed in v1.2.2**
 
-Once the TriggerPattern engine supports cleanup integration, enable:
-- Apply patterns as save actions
-- Batch apply to entire project
-- Configure which patterns to enable
+**Status**: ✅ Completed  
+The string simplification patterns are now integrated with Eclipse's cleanup infrastructure:
+- Apply patterns as save actions via "Save Actions" configuration
+- Batch apply to entire project via "Source → Clean Up"
+- Configure which patterns to enable in cleanup preferences
+- Full integration with Eclipse's cleanup UI
 
-This would require changes to `sandbox_common` but would benefit all TriggerPattern-based plugins.
+The implementation provides:
+- `StringSimplificationCleanUp` - Main cleanup class
+- `StringSimplificationCleanUpCore` - Core cleanup logic
+- `StringSimplificationFixCore` - TriggerPattern-based operations
+- UI preferences for configuration (DefaultCleanUpOptionsInitializer, SaveActionCleanUpOptionsInitializer, SandboxCodeTabPage)
+- Cleanup constant `STRING_SIMPLIFICATION_CLEANUP` in MYCleanUpConstants
+
+This feature is now available alongside the existing Quick Assist (Ctrl+1) functionality.
 
 ### Pattern Library
 **Priority**: Low  

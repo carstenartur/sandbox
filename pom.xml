@@ -43,9 +43,9 @@
 		<module>sandbox_tools</module>
 		<module>sandbox_tools_feature</module>
 		<module>sandbox_tools_test</module>
-		<module>sandbox_triggerpattern_string</module>
-		<module>sandbox_triggerpattern_string_feature</module>
-		<module>sandbox_triggerpattern_string_test</module>
+		<module>sandbox_triggerpattern</module>
+		<module>sandbox_triggerpattern_feature</module>
+		<module>sandbox_triggerpattern_test</module>
 		<module>sandbox_xml_cleanup</module>
 		<module>sandbox_xml_cleanup_feature</module>
 		<module>sandbox_xml_cleanup_test</module>

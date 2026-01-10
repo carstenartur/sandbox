@@ -104,10 +104,30 @@ This registers all methods annotated with `@TriggerPattern` in the provider clas
 
 ```
 org.sandbox.jdt.triggerpattern.string
-└── StringSimplificationHintProvider.java
+├── StringSimplificationHintProvider.java  (Quick Assist hints)
+
+org.sandbox.jdt.internal.corext.fix
+└── StringSimplificationFixCore.java  (Cleanup operations)
+
+org.sandbox.jdt.internal.ui.fix
+├── StringSimplificationCleanUp.java      (Cleanup wrapper)
+├── StringSimplificationCleanUpCore.java  (Cleanup core)
+├── MultiFixMessages.java                 (Localization)
+└── MultiFixMessages.properties
+
+org.sandbox.jdt.internal.ui.preferences.cleanup
+├── DefaultCleanUpOptionsInitializer.java
+├── SaveActionCleanUpOptionsInitializer.java
+├── SandboxCodeTabPage.java              (UI preferences)
+├── CleanUpMessages.java
+└── CleanUpMessages.properties
 ```
 
-**Note**: Unlike traditional plugins with separate `corext` and `ui` packages, TriggerPattern-based plugins can be much simpler. The pattern matching and UI integration is handled by the TriggerPattern engine in `sandbox_common`.
+**Note**: This plugin demonstrates a hybrid approach:
+- **Quick Assist**: Uses simple TriggerPattern hint provider
+- **Cleanup**: Uses traditional Eclipse cleanup infrastructure with TriggerPattern-based operations
+
+This provides both interactive quick fixes (Ctrl+1) and automated batch cleanup capabilities.
 
 ## Design Patterns
 
@@ -144,15 +164,38 @@ The TriggerPattern engine automatically integrates with Eclipse's Quick Assist (
 3. Hint methods are invoked to create proposals
 4. Proposals appear in Quick Assist menu
 
-No additional UI code is required.
+No additional UI code is required for Quick Assist functionality.
 
-### Future: Cleanup Integration
-Future enhancements may allow TriggerPattern-based hints to also work as:
-- Save Actions
-- Batch cleanups via Source → Clean Up
-- Refactoring suggestions
+### Cleanup Integration
+**Status**: ✅ Implemented in v1.2.2
 
-This would require extending the TriggerPattern engine but would apply to all pattern-based hints automatically.
+The string simplification patterns are now fully integrated with Eclipse's cleanup infrastructure:
+
+#### Save Actions
+- Configured via "Java → Editor → Save Actions" preferences
+- Automatically applies patterns when saving Java files
+- Enables consistent code style across the project
+
+#### Source → Clean Up
+- Available via "Source → Clean Up..." menu
+- Batch applies patterns to selected files, packages, or entire projects
+- Provides preview of changes before applying
+
+#### UI Components
+- **`StringSimplificationCleanUp`** - Wrapper cleanup class
+- **`StringSimplificationCleanUpCore`** - Core cleanup implementation
+- **`StringSimplificationFixCore`** - TriggerPattern-based rewrite operations
+- **`SandboxCodeTabPage`** - Preference page for cleanup configuration
+- **`DefaultCleanUpOptionsInitializer`** - Default cleanup options
+- **`SaveActionCleanUpOptionsInitializer`** - Save action default options
+
+#### Configuration
+Users can enable/disable string simplification via:
+- Eclipse Preferences → Java → Code Style → Clean Up
+- Project-specific settings → Java Code Style → Clean Up
+- Save Actions preferences
+
+This implementation demonstrates how TriggerPattern-based hints can be integrated into Eclipse's cleanup framework, providing both quick fixes (Ctrl+1) and automated refactoring capabilities.
 
 ## Advantages Over Traditional Cleanups
 

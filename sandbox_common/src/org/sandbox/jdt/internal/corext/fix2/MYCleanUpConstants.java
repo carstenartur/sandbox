@@ -218,4 +218,18 @@ public class MYCleanUpConstants {
 	 * @see CleanUpOptionsCore#FALSE
 	 */
 	public static final String METHOD_REUSE_INLINE_SEQUENCES= "cleanup.method_reuse_inline_sequences"; //$NON-NLS-1$
+
+	/**
+	 * Enable string simplification cleanup using TriggerPattern hints.
+	 * <p>
+	 * Simplifies patterns like {@code "" + x} and {@code x + ""} to {@code String.valueOf(x)}.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 * <p>
+	 *
+	 * @see CleanUpOptionsCore#TRUE
+	 * @see CleanUpOptionsCore#FALSE
+	 * @since 1.2.2
+	 */
+	public static final String STRING_SIMPLIFICATION_CLEANUP= "cleanup.string_simplification"; //$NON-NLS-1$
 }

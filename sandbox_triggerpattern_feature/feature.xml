@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feature
-      id="sandbox_triggerpattern_string_feature"
-      label="Sandbox TriggerPattern String Simplification Feature"
+      id="sandbox_triggerpattern_feature"
+      label="Sandbox TriggerPattern Cleanups Feature"
       version="1.2.2.qualifier"
       provider-name="sandbox"
-      plugin="sandbox_triggerpattern_string">
+      plugin="sandbox_triggerpattern">
 
    <description>
       %description
@@ -25,7 +25,7 @@
    </requires>
 
    <plugin
-         id="sandbox_triggerpattern_string"
+         id="sandbox_triggerpattern"
          download-size="0"
          install-size="0"
          version="0.0.0"
