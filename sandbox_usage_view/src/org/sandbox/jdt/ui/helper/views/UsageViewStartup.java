@@ -30,7 +30,13 @@ public class UsageViewStartup implements IStartup {
 	public void earlyStartup() {
 		// Run in UI thread
 		PlatformUI.getWorkbench().getDisplay().asyncExec(() -> {
-			IPreferenceStore store = UsageViewPlugin.getDefault().getPreferenceStore();
+			// Check if plugin is properly activated
+			UsageViewPlugin plugin = UsageViewPlugin.getDefault();
+			if (plugin == null) {
+				return;
+			}
+			
+			IPreferenceStore store = plugin.getPreferenceStore();
 			boolean showAtStartup = store.getBoolean(UsageViewPreferenceConstants.SHOW_VIEW_AT_STARTUP);
 			
 			if (showAtStartup) {
@@ -42,7 +48,7 @@ public class UsageViewStartup implements IStartup {
 							page.showView("org.eclipse.jdt.ui.helper.views.JavaHelperView");
 						} catch (PartInitException e) {
 							// Log error but don't fail startup
-							UsageViewPlugin.getDefault().getLog().error("Failed to show JavaHelper View at startup", e);
+							plugin.getLog().error("Failed to show JavaHelper View at startup", e);
 						}
 					}
 				}

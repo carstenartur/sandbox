@@ -542,12 +542,18 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 	 * refresh the view with the active editor's content.
 	 */
 	private void addPartListener() {
+		// Check if listener is already registered to prevent duplicates
+		if (partListener != null) {
+			return;
+		}
+		
 		partListener = new IPartListener2() {
 			@Override
 			public void partActivated(IWorkbenchPartReference partRef) {
 				if (partRef.getPart(false) instanceof IEditorPart) {
 					// Update the view when an editor is activated
-					updateViewFromActiveEditor();
+					// Ensure UI updates happen on the UI thread
+					getSite().getShell().getDisplay().asyncExec(() -> updateViewFromActiveEditor());
 				}
 			}
 
@@ -570,7 +576,8 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 			public void partOpened(IWorkbenchPartReference partRef) {
 				if (partRef.getPart(false) instanceof IEditorPart) {
 					// Update the view when an editor is opened
-					updateViewFromActiveEditor();
+					// Ensure UI updates happen on the UI thread
+					getSite().getShell().getDisplay().asyncExec(() -> updateViewFromActiveEditor());
 				}
 			}
 
@@ -588,7 +595,8 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 			public void partInputChanged(IWorkbenchPartReference partRef) {
 				if (partRef.getPart(false) instanceof IEditorPart) {
 					// Update the view when editor input changes
-					updateViewFromActiveEditor();
+					// Ensure UI updates happen on the UI thread
+					getSite().getShell().getDisplay().asyncExec(() -> updateViewFromActiveEditor());
 				}
 			}
 		};
@@ -623,7 +631,15 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 	public void dispose() {
 		// Remove part listener when view is disposed
 		if (partListener != null) {
-			getSite().getPage().removePartListener(partListener);
+			// Check if page is still available to prevent errors during workbench shutdown
+			try {
+				IWorkbenchPage page = getSite().getPage();
+				if (page != null) {
+					page.removePartListener(partListener);
+				}
+			} catch (Exception e) {
+				// Ignore errors during shutdown
+			}
 			partListener = null;
 		}
 		super.dispose();
