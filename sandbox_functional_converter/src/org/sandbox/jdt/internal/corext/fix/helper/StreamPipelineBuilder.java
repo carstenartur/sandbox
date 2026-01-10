@@ -83,6 +83,22 @@ import org.eclipse.jdt.internal.corext.dom.ASTNodes;
  * @see PreconditionsChecker
  */
 public class StreamPipelineBuilder {
+	/**
+	 * Marker variable name used when the loop variable is not directly used
+	 * in the lambda body.
+	 */
+	private static final String UNUSED_ITEM_NAME = "_item";
+
+	/**
+	 * Method name for creating a stream from a collection.
+	 */
+	private static final String STREAM_METHOD = "stream";
+
+	/**
+	 * Method name for terminal forEach operation.
+	 */
+	private static final String FOR_EACH_METHOD = "forEach";
+
 	private final EnhancedForStatement forLoop;
 	private final PreconditionsChecker preconditions;
 	private final AST ast;
@@ -198,7 +214,7 @@ public class StreamPipelineBuilder {
 			// Start with .stream()
 			pipeline = ast.newMethodInvocation();
 			pipeline.setExpression((Expression) ASTNode.copySubtree(ast, forLoop.getExpression()));
-			pipeline.setName(ast.newSimpleName("stream"));
+			pipeline.setName(ast.newSimpleName(STREAM_METHOD));
 
 			// Chain each operation
 			for (int i = 0; i < operations.size(); i++) {
@@ -222,7 +238,7 @@ public class StreamPipelineBuilder {
 			ProspectiveOperation op = operations.get(0);
 			pipeline = ast.newMethodInvocation();
 			pipeline.setExpression((Expression) ASTNode.copySubtree(ast, forLoop.getExpression()));
-			pipeline.setName(ast.newSimpleName("forEach"));
+			pipeline.setName(ast.newSimpleName(FOR_EACH_METHOD));
 			List<Expression> args = op.getArguments(ast, loopVariableName);
 			for (Expression arg : args) {
 				pipeline.arguments().add(arg);
@@ -480,7 +496,7 @@ public class StreamPipelineBuilder {
 			// Create a MAP operation that maps each item to 1 (type-aware)
 			Expression mapExpr = createTypedLiteralOne();
 			ProspectiveOperation mapOp = new ProspectiveOperation(mapExpr, ProspectiveOperation.OperationType.MAP,
-					"_item");
+					UNUSED_ITEM_NAME);
 			ops.add(mapOp);
 		} else if (isArithmeticReducer(reducerType)) {
 			// For SUM/PRODUCT/STRING_CONCAT: extract RHS expression
