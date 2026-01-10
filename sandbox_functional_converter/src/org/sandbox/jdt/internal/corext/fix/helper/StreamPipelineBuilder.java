@@ -1035,8 +1035,13 @@ public class StreamPipelineBuilder {
 
 					// Check if this is a filtering IF (simple condition with block body)
 					if (ifStmt.getElseStatement() == null) {
-						// Check if this is an early return pattern (anyMatch/noneMatch/allMatch)
-						if (isEarlyReturnIf(ifStmt)) {
+						// Check for labeled continue first - these cannot be converted
+						if (isIfWithLabeledContinue(ifStmt)) {
+							// Labeled continue cannot be converted to stream operations
+							// Return empty list to signal conversion should be rejected
+							return new ArrayList<>();
+						} else if (isEarlyReturnIf(ifStmt)) {
+							// Check if this is an early return pattern (anyMatch/noneMatch/allMatch)
 							// Create ANYMATCH, NONEMATCH, or ALLMATCH operation using helper
 							ProspectiveOperation matchOp = createMatchOperation(ifStmt);
 							ops.add(matchOp);
@@ -1058,8 +1063,13 @@ public class StreamPipelineBuilder {
 					// nested body
 					IfStatement ifStmt = (IfStatement) stmt;
 					if (ifStmt.getElseStatement() == null) {
-						// Check if this is an early return pattern (anyMatch/noneMatch/allMatch)
-						if (isEarlyReturnIf(ifStmt)) {
+						// Check for labeled continue first - these cannot be converted
+						if (isIfWithLabeledContinue(ifStmt)) {
+							// Labeled continue cannot be converted to stream operations
+							// Return empty list to signal conversion should be rejected
+							return new ArrayList<>();
+						} else if (isEarlyReturnIf(ifStmt)) {
+							// Check if this is an early return pattern (anyMatch/noneMatch/allMatch)
 							// Create ANYMATCH, NONEMATCH, or ALLMATCH operation using helper
 							ProspectiveOperation matchOp = createMatchOperation(ifStmt);
 							ops.add(matchOp);
@@ -1115,8 +1125,13 @@ public class StreamPipelineBuilder {
 			// Single IF statement → check for early return pattern or process as filter
 			IfStatement ifStmt = (IfStatement) body;
 			if (ifStmt.getElseStatement() == null) {
-				// Check if this is an early return pattern (anyMatch/noneMatch/allMatch)
-				if (isEarlyReturnIf(ifStmt)) {
+				// Check for labeled continue first - these cannot be converted
+				if (isIfWithLabeledContinue(ifStmt)) {
+					// Labeled continue cannot be converted to stream operations
+					// Return empty list to signal conversion should be rejected
+					return new ArrayList<>();
+				} else if (isEarlyReturnIf(ifStmt)) {
+					// Check if this is an early return pattern (anyMatch/noneMatch/allMatch)
 					// Create ANYMATCH, NONEMATCH, or ALLMATCH operation
 					ProspectiveOperation.OperationType opType;
 					if (isAnyMatchPattern) {
@@ -1373,6 +1388,31 @@ public class StreamPipelineBuilder {
 				ContinueStatement continueStmt = (ContinueStatement) block.statements().get(0);
 				// Only allow unlabeled continues
 				return continueStmt.getLabel() == null;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Checks if the IF statement contains a labeled continue statement.
+	 * Labeled continues cannot be converted to stream operations.
+	 * 
+	 * @param ifStatement the IF statement to check
+	 * @return true if the IF contains a labeled continue statement
+	 */
+	private boolean isIfWithLabeledContinue(IfStatement ifStatement) {
+		Statement thenStatement = ifStatement.getThenStatement();
+		if (thenStatement instanceof ContinueStatement) {
+			ContinueStatement continueStmt = (ContinueStatement) thenStatement;
+			// Check if continue has a label
+			return continueStmt.getLabel() != null;
+		}
+		if (thenStatement instanceof Block) {
+			Block block = (Block) thenStatement;
+			if (block.statements().size() == 1 && block.statements().get(0) instanceof ContinueStatement) {
+				ContinueStatement continueStmt = (ContinueStatement) block.statements().get(0);
+				// Check if continue has a label
+				return continueStmt.getLabel() != null;
 			}
 		}
 		return false;
