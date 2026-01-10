@@ -67,6 +67,8 @@ import org.eclipse.ui.IWorkbenchActionConstants;
 import org.eclipse.ui.IWorkbenchCommandConstants;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPartSite;
+import org.eclipse.ui.IPartListener2;
+import org.eclipse.ui.IWorkbenchPartReference;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
@@ -98,6 +100,8 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 
 	private Action fCodeSelectAction;
 
+	private IPartListener2 partListener;
+
 	@Override
 	public void createPartControl(Composite parent) {
 		parent.setLayout(new GridLayout(1, false));
@@ -128,6 +132,9 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 		// event.getSelection().isEmpty()));
 		// tableViewer.addSelectionChangedListener(event -> fCopyAction.setEnabled(!
 		// event.getSelection().isEmpty()));
+		
+		// Add part listener to track editor changes
+		addPartListener();
 	}
 
 	private void contributeToActionBars() {
@@ -528,6 +535,98 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 		// return (T) getPropertySheetPage();
 		// }
 		return super.getAdapter(adapter);
+	}
+
+	/**
+	 * Adds a part listener to track when editors are activated and automatically
+	 * refresh the view with the active editor's content.
+	 */
+	private void addPartListener() {
+		partListener = new IPartListener2() {
+			@Override
+			public void partActivated(IWorkbenchPartReference partRef) {
+				if (partRef.getPart(false) instanceof IEditorPart) {
+					// Update the view when an editor is activated
+					updateViewFromActiveEditor();
+				}
+			}
+
+			@Override
+			public void partBroughtToTop(IWorkbenchPartReference partRef) {
+				// Not needed
+			}
+
+			@Override
+			public void partClosed(IWorkbenchPartReference partRef) {
+				// Not needed
+			}
+
+			@Override
+			public void partDeactivated(IWorkbenchPartReference partRef) {
+				// Not needed
+			}
+
+			@Override
+			public void partOpened(IWorkbenchPartReference partRef) {
+				if (partRef.getPart(false) instanceof IEditorPart) {
+					// Update the view when an editor is opened
+					updateViewFromActiveEditor();
+				}
+			}
+
+			@Override
+			public void partHidden(IWorkbenchPartReference partRef) {
+				// Not needed
+			}
+
+			@Override
+			public void partVisible(IWorkbenchPartReference partRef) {
+				// Not needed
+			}
+
+			@Override
+			public void partInputChanged(IWorkbenchPartReference partRef) {
+				if (partRef.getPart(false) instanceof IEditorPart) {
+					// Update the view when editor input changes
+					updateViewFromActiveEditor();
+				}
+			}
+		};
+
+		getSite().getPage().addPartListener(partListener);
+	}
+
+	/**
+	 * Updates the view content based on the currently active editor.
+	 */
+	private void updateViewFromActiveEditor() {
+		IEditorPart editor = getSite().getPage().getActiveEditor();
+		if (editor == null) {
+			return;
+		}
+		
+		IEditorInput input = editor.getEditorInput();
+		if (input == null) {
+			return;
+		}
+
+		IJavaElement javaElement = input.getAdapter(IJavaElement.class);
+		if (javaElement != null) {
+			IResource correspondingResource = javaElement.getResource();
+			if (correspondingResource != null) {
+				setSingleInput(correspondingResource);
+			}
+		}
+	}
+
+	@Override
+	public void dispose() {
+		// Remove part listener when view is disposed
+		if (partListener != null) {
+			getSite().getPage().removePartListener(partListener);
+			partListener = null;
+		}
+		super.dispose();
 	}
 
 }
