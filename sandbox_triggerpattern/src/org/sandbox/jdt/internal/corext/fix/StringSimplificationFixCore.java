@@ -23,6 +23,7 @@ import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.triggerpattern.api.Match;
@@ -80,7 +81,7 @@ public class StringSimplificationFixCore {
 		}
 		
 		@Override
-		public void rewriteAST(CompilationUnitRewrite cuRewrite, org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore linkedModel) {
+		public void rewriteAST(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) {
 			ASTRewrite rewrite = cuRewrite.getASTRewrite();
 			AST ast = cuRewrite.getRoot().getAST();
 			TextEditGroup group = createTextEditGroup(description, cuRewrite);
