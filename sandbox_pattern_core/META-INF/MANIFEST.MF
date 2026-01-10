@@ -1,0 +1,15 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Automatic-Module-Name: sandbox.pattern.core
+Bundle-Name: Pattern Core
+Bundle-SymbolicName: sandbox_pattern_core;singleton:=true
+Bundle-Vendor: sandbox
+Bundle-Version: 1.2.2.qualifier
+Bundle-RequiredExecutionEnvironment: JavaSE-21
+Require-Bundle: org.eclipse.core.runtime,
+ org.eclipse.jdt.core,
+ org.eclipse.jdt.core.manipulation,
+ org.eclipse.text,
+ org.eclipse.ltk.core.refactoring
+Bundle-ActivationPolicy: lazy
+Export-Package: org.sandbox.jdt.pattern.api
