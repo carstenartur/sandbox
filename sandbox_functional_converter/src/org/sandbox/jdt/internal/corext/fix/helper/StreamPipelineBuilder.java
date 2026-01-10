@@ -83,46 +83,64 @@ import org.eclipse.jdt.internal.corext.dom.ASTNodes;
  * @see PreconditionsChecker
  */
 public class StreamPipelineBuilder {
+	// Note: Constants have been moved to StreamConstants class
+	// Keeping local references for backwards compatibility
 	/**
 	 * Marker variable name used when the loop variable is not directly used
 	 * in the lambda body.
+	 * @deprecated Use {@link StreamConstants#UNUSED_PARAMETER_NAME} instead
 	 */
-	private static final String UNUSED_ITEM_NAME = "_item";
+	@Deprecated
+	private static final String UNUSED_ITEM_NAME = StreamConstants.UNUSED_PARAMETER_NAME;
 
 	/**
 	 * Method name for creating a stream from a collection.
+	 * @deprecated Use {@link StreamConstants#STREAM_METHOD} instead
 	 */
-	private static final String STREAM_METHOD = "stream";
+	@Deprecated
+	private static final String STREAM_METHOD = StreamConstants.STREAM_METHOD;
 
 	/**
 	 * Method name for terminal forEach operation.
+	 * @deprecated Use {@link StreamConstants#FOR_EACH_METHOD} instead
 	 */
-	private static final String FOR_EACH_METHOD = "forEach";
+	@Deprecated
+	private static final String FOR_EACH_METHOD = StreamConstants.FOR_EACH_METHOD;
 
 	/**
 	 * Class name for Math utility class.
+	 * @deprecated Use {@link StreamConstants#MATH_CLASS_NAME} instead
 	 */
-	private static final String MATH_CLASS_NAME = "Math";
+	@Deprecated
+	private static final String MATH_CLASS_NAME = StreamConstants.MATH_CLASS_NAME;
 
 	/**
 	 * Method name for Math.max operation.
+	 * @deprecated Use {@link StreamConstants#MAX_METHOD_NAME} instead
 	 */
-	private static final String MAX_METHOD_NAME = "max";
+	@Deprecated
+	private static final String MAX_METHOD_NAME = StreamConstants.MAX_METHOD_NAME;
 
 	/**
 	 * Method name for Math.min operation.
+	 * @deprecated Use {@link StreamConstants#MIN_METHOD_NAME} instead
 	 */
-	private static final String MIN_METHOD_NAME = "min";
+	@Deprecated
+	private static final String MIN_METHOD_NAME = StreamConstants.MIN_METHOD_NAME;
 
 	/**
 	 * Fully qualified name of java.lang.Math class.
+	 * @deprecated Use {@link StreamConstants#JAVA_LANG_MATH} instead
 	 */
-	private static final String JAVA_LANG_MATH = "java.lang.Math";
+	@Deprecated
+	private static final String JAVA_LANG_MATH = StreamConstants.JAVA_LANG_MATH;
 
 	/**
 	 * Fully qualified name of java.lang.String class.
+	 * @deprecated Use {@link StreamConstants#JAVA_LANG_STRING} instead
 	 */
-	private static final String JAVA_LANG_STRING = "java.lang.String";
+	@Deprecated
+	private static final String JAVA_LANG_STRING = StreamConstants.JAVA_LANG_STRING;
 
 	private final EnhancedForStatement forLoop;
 	private final PreconditionsChecker preconditions;

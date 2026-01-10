@@ -264,23 +264,28 @@ public final class ProspectiveOperation {
 		return this.operationType;
 	}
 
-	/** Returns the suitable stream method name for this operation type */
+	/** 
+	 * Returns the suitable stream method name for this operation type.
+	 * 
+	 * @return the method name (e.g., "map", "filter", "forEach")
+	 * @see StreamConstants
+	 */
 	public String getSuitableMethod() {
 		switch (operationType) {
 		case MAP:
-			return "map";
+			return StreamConstants.MAP_METHOD;
 		case FILTER:
-			return "filter";
+			return StreamConstants.FILTER_METHOD;
 		case FOREACH:
-			return "forEachOrdered";
+			return StreamConstants.FOR_EACH_ORDERED_METHOD;
 		case REDUCE:
-			return "reduce";
+			return StreamConstants.REDUCE_METHOD;
 		case ANYMATCH:
-			return "anyMatch";
+			return StreamConstants.ANY_MATCH_METHOD;
 		case NONEMATCH:
-			return "noneMatch";
+			return StreamConstants.NONE_MATCH_METHOD;
 		case ALLMATCH:
-			return "allMatch";
+			return StreamConstants.ALL_MATCH_METHOD;
 		default:
 			return "unknown";
 		}
