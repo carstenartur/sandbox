@@ -10,6 +10,8 @@ The usage view plugin provides a table view for detecting inconsistent naming pa
 - Display naming violations in table view
 - Help maintain consistent naming conventions
 - Support code quality and maintainability
+- **Automatically show view at startup** based on user preference
+- **Auto-update view** when editor selection changes
 
 ## Use Cases
 
@@ -27,12 +29,14 @@ The plugin can identify patterns such as:
 - Group by violation type
 - Navigate to code location from table
 - Filter and search capabilities
+- **Automatic view updates** when navigating between files
+- **Preference-based auto-show** at Eclipse startup
 
 ## Core Components
 
-### UsageView
+### JavaHelperView (UsageView)
 
-**Location**: `org.sandbox.jdt.internal.ui.views.UsageView`
+**Location**: `org.sandbox.jdt.ui.helper.views.JavaHelperView`
 
 **Purpose**: Main view component displaying naming inconsistencies
 
@@ -41,6 +45,41 @@ The plugin can identify patterns such as:
 - Sort and filter capabilities
 - Jump to code location
 - Violation categorization
+- **Automatic content updates** via IPartListener2
+- **Responds to editor activation** events
+
+### UsageViewPlugin
+
+**Location**: `org.sandbox.jdt.ui.helper.views.UsageViewPlugin`
+
+**Purpose**: Plugin activator managing lifecycle and preferences
+
+**Key Features**:
+- Manages preference store
+- Initializes default preference values
+- Provides access to plugin instance
+
+### UsageViewStartup
+
+**Location**: `org.sandbox.jdt.ui.helper.views.UsageViewStartup`
+
+**Purpose**: Handles automatic view display at Eclipse startup
+
+**Key Features**:
+- Implements IStartup for early activation
+- Checks user preference before showing view
+- Shows view asynchronously to avoid blocking startup
+
+### UsageViewPreferencePage
+
+**Location**: `org.sandbox.jdt.ui.helper.views.preferences.UsageViewPreferencePage`
+
+**Purpose**: Preference page for configuring view behavior
+
+**Key Features**:
+- Boolean preference for auto-show at startup
+- Integrated into Eclipse preferences under Java category
+- User-friendly configuration interface
 
 ### NamingAnalyzer
 
@@ -54,8 +93,9 @@ The plugin can identify patterns such as:
 
 ## Package Structure
 
-- `org.sandbox.jdt.internal.ui.views.*` - View components
-- `org.sandbox.jdt.internal.core.naming.*` - Naming analysis logic
+- `org.sandbox.jdt.ui.helper.views` - View components and plugin activator
+- `org.sandbox.jdt.ui.helper.views.preferences` - Preference page and constants
+- `org.sandbox.jdt.ui.helper.views.colum` - Table column implementations
 
 **Eclipse JDT Correspondence**:
 - Could integrate with Eclipse's code analysis framework
@@ -70,15 +110,22 @@ Separates display (view) from analysis (model):
 - Clean separation for testability
 
 ### Observer Pattern
-View updates when analysis completes:
+View updates when analysis completes or editor changes:
 - Asynchronous analysis
 - Progress reporting
 - Result streaming
+- **IPartListener2** for editor event monitoring
+
+### Preference-Based Initialization
+Startup behavior controlled by user preference:
+- Check preference at startup
+- Conditionally show view
+- Non-blocking initialization
 
 ## Eclipse JDT Integration
 
 ### Current State
-Standalone view for naming analysis. Could integrate with Eclipse's problem framework.
+Standalone view for naming analysis with preference support and automatic updates. Could integrate with Eclipse's problem framework.
 
 ### Integration Opportunities
 - Use Eclipse markers for naming issues
@@ -90,17 +137,25 @@ Standalone view for naming analysis. Could integrate with Eclipse's problem fram
 
 - **Module Type**: Eclipse Plugin (OSGi bundle)
 - **Packaging**: `eclipse-plugin`
+- **Bundle Activator**: `org.sandbox.jdt.ui.helper.views.UsageViewPlugin`
 - **Dependencies**: 
   - Eclipse JDT Core
   - Eclipse UI framework
+  - Eclipse JFace (preferences)
   - `sandbox_common` for utilities
+- **Extension Points Used**:
+  - `org.eclipse.ui.views` - View registration
+  - `org.eclipse.ui.preferencePages` - Preference page
+  - `org.eclipse.ui.startup` - Early startup hook
 
 ## Testing
 
-Testing focuses on naming analysis accuracy and view functionality:
+Testing focuses on naming analysis accuracy, view functionality, and preference behavior:
 - Unit tests for naming pattern detection
 - Integration tests with sample code
 - UI tests for table view
+- **Preference tests** for auto-show behavior
+- **Update tests** for editor activation response
 
 ## Known Limitations
 
@@ -117,6 +172,8 @@ Testing focuses on naming analysis accuracy and view functionality:
 - Batch renaming capabilities
 - Export reports of naming issues
 - IDE-wide naming consistency checks
+- **Enhanced auto-update triggers** (e.g., on file save, on build)
+- **Multiple view instances** with different filters
 
 ## Documentation Requirements
 
