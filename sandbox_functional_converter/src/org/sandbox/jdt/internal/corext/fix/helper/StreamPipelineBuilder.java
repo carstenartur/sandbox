@@ -99,6 +99,31 @@ public class StreamPipelineBuilder {
 	 */
 	private static final String FOR_EACH_METHOD = "forEach";
 
+	/**
+	 * Class name for Math utility class.
+	 */
+	private static final String MATH_CLASS_NAME = "Math";
+
+	/**
+	 * Method name for Math.max operation.
+	 */
+	private static final String MAX_METHOD_NAME = "max";
+
+	/**
+	 * Method name for Math.min operation.
+	 */
+	private static final String MIN_METHOD_NAME = "min";
+
+	/**
+	 * Fully qualified name of java.lang.Math class.
+	 */
+	private static final String JAVA_LANG_MATH = "java.lang.Math";
+
+	/**
+	 * Fully qualified name of java.lang.String class.
+	 */
+	private static final String JAVA_LANG_STRING = "java.lang.String";
+
 	private final EnhancedForStatement forLoop;
 	private final PreconditionsChecker preconditions;
 	private final AST ast;
@@ -715,7 +740,7 @@ public class StreamPipelineBuilder {
 					if (assignment.getOperator() == Assignment.Operator.PLUS_ASSIGN) {
 						// Check if this is string concatenation
 						ITypeBinding varType = getTypeBinding(varName);
-						if (varType != null && "java.lang.String".equals(varType.getQualifiedName())) {
+						if (varType != null && JAVA_LANG_STRING.equals(varType.getQualifiedName())) {
 							reducerType = ProspectiveOperation.ReducerType.STRING_CONCAT;
 						} else {
 							reducerType = ProspectiveOperation.ReducerType.SUM;
@@ -780,7 +805,7 @@ public class StreamPipelineBuilder {
 		
 		// Get method name first
 		String methodName = methodInv.getName().getIdentifier();
-		if (!"max".equals(methodName) && !"min".equals(methodName)) {
+		if (!MAX_METHOD_NAME.equals(methodName) && !MIN_METHOD_NAME.equals(methodName)) {
 			return null;
 		}
 
@@ -789,7 +814,7 @@ public class StreamPipelineBuilder {
 		IMethodBinding binding = methodInv.resolveMethodBinding();
 		if (binding != null) {
 			ITypeBinding declaringClass = binding.getDeclaringClass();
-			if (declaringClass != null && "java.lang.Math".equals(declaringClass.getQualifiedName())) {
+			if (declaringClass != null && JAVA_LANG_MATH.equals(declaringClass.getQualifiedName())) {
 				// Confirmed it's Math.max or Math.min via binding
 				// Check if one of the arguments is the accumulator variable
 				List<?> args = methodInv.arguments();
@@ -806,7 +831,7 @@ public class StreamPipelineBuilder {
 					}
 					
 					if (hasAccumulatorArg) {
-						return "max".equals(methodName) ? ProspectiveOperation.ReducerType.MAX
+						return MAX_METHOD_NAME.equals(methodName) ? ProspectiveOperation.ReducerType.MAX
 								: ProspectiveOperation.ReducerType.MIN;
 					}
 				}
@@ -817,7 +842,7 @@ public class StreamPipelineBuilder {
 		Expression receiverExpr = methodInv.getExpression();
 		if (receiverExpr instanceof SimpleName) {
 			SimpleName className = (SimpleName) receiverExpr;
-			if ("Math".equals(className.getIdentifier())) {
+			if (MATH_CLASS_NAME.equals(className.getIdentifier())) {
 				// Check if one of the arguments is the accumulator variable
 				List<?> args = methodInv.arguments();
 				if (args.size() == 2) {
@@ -833,7 +858,7 @@ public class StreamPipelineBuilder {
 					}
 					
 					if (hasAccumulatorArg) {
-						return "max".equals(methodName) ? ProspectiveOperation.ReducerType.MAX
+						return MAX_METHOD_NAME.equals(methodName) ? ProspectiveOperation.ReducerType.MAX
 								: ProspectiveOperation.ReducerType.MIN;
 					}
 				}
@@ -841,7 +866,7 @@ public class StreamPipelineBuilder {
 		} else if (receiverExpr instanceof QualifiedName) {
 			// Handle fully qualified: java.lang.Math.max()
 			QualifiedName qualName = (QualifiedName) receiverExpr;
-			if ("Math".equals(qualName.getName().getIdentifier())) {
+			if (MATH_CLASS_NAME.equals(qualName.getName().getIdentifier())) {
 				// Check if one of the arguments is the accumulator variable
 				List<?> args = methodInv.arguments();
 				if (args.size() == 2) {
@@ -857,7 +882,7 @@ public class StreamPipelineBuilder {
 					}
 					
 					if (hasAccumulatorArg) {
-						return "max".equals(methodName) ? ProspectiveOperation.ReducerType.MAX
+						return MAX_METHOD_NAME.equals(methodName) ? ProspectiveOperation.ReducerType.MAX
 								: ProspectiveOperation.ReducerType.MIN;
 					}
 				}
