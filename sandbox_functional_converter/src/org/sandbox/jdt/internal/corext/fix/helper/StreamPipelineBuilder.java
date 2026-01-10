@@ -193,13 +193,35 @@ public class StreamPipelineBuilder {
 	/**
 	 * Builds the stream pipeline from the analyzed operations.
 	 * 
-	 * <p>
-	 * This method should be called after {@link #analyze()} returns true. It
-	 * constructs a {@link MethodInvocation} representing the complete stream
-	 * pipeline.
+	 * <p>This method constructs a chain of method invocations representing
+	 * the complete stream pipeline. It automatically determines whether to
+	 * use {@code .stream()} prefix or direct collection methods like
+	 * {@code .forEach()}.</p>
 	 * 
-	 * @return a MethodInvocation representing the stream pipeline, or null if the
-	 *         loop cannot be converted
+	 * <p><b>Examples:</b></p>
+	 * <pre>{@code
+	 * // Simple forEach (no .stream() needed)
+	 * list.forEach(item -> System.out.println(item))
+	 * 
+	 * // Complex pipeline (needs .stream())
+	 * list.stream()
+	 *     .filter(item -> item != null)
+	 *     .map(item -> item.toString())
+	 *     .reduce("", String::concat)
+	 * }</pre>
+	 * 
+	 * <p><b>Prerequisites:</b></p>
+	 * <ul>
+	 * <li>{@link #analyze()} must have been called and returned {@code true}</li>
+	 * <li>The operations list must not be empty</li>
+	 * </ul>
+	 * 
+	 * @return a MethodInvocation representing the stream pipeline, or null if
+	 *         the loop cannot be converted
+	 * @throws IllegalStateException if called before {@link #analyze()}
+	 * @see #analyze()
+	 * @see #wrapPipeline(MethodInvocation)
+	 * @see #requiresStreamPrefix()
 	 */
 	public MethodInvocation buildPipeline() {
 		if (!analyzed || !convertible) {
@@ -604,11 +626,29 @@ public class StreamPipelineBuilder {
 	}
 
 	/**
-	 * Detects if a statement contains a REDUCE pattern (i++, sum += x, etc.). Also
-	 * detects MAX/MIN patterns like: max = Math.max(max, x)
+	 * Detects if a statement contains a REDUCE pattern.
+	 * 
+	 * <p><b>Supported Patterns:</b></p>
+	 * <ul>
+	 * <li>Postfix/Prefix increment: {@code i++}, {@code ++i}, {@code i--}, {@code --i}</li>
+	 * <li>Compound assignments: {@code sum += x}, {@code product *= y}</li>
+	 * <li>Math operations: {@code max = Math.max(max, x)}</li>
+	 * </ul>
+	 * 
+	 * <p><b>Examples:</b></p>
+	 * <pre>{@code
+	 * // INCREMENT pattern
+	 * count++;  // → .map(_item -> 1).reduce(count, Integer::sum)
+	 * 
+	 * // SUM pattern
+	 * sum += value;  // → .map(value).reduce(sum, Integer::sum)
+	 * 
+	 * // MAX pattern
+	 * max = Math.max(max, num);  // → .map(num).reduce(max, Math::max)
+	 * }</pre>
 	 * 
 	 * @param stmt the statement to check
-	 * @return a ProspectiveOperation for REDUCE if detected, null otherwise
+	 * @return a REDUCE operation if detected, null otherwise
 	 */
 	private ProspectiveOperation detectReduceOperation(Statement stmt) {
 		if (!(stmt instanceof ExpressionStatement)) {
@@ -834,24 +874,31 @@ public class StreamPipelineBuilder {
 	 * {@link ProspectiveOperation} objects representing the operations that can be
 	 * mapped to stream operations.
 	 * 
-	 * <p>
-	 * This method inspects the statements within the loop body to identify possible
-	 * stream operations such as {@code map} (for variable declarations with
-	 * initializers), {@code filter} (for IF statements), and {@code forEach} (for
-	 * the final or sole statement). For block bodies, it processes each statement
-	 * in order, treating: - IF statements with single block body as FILTER
-	 * operations - Variable declarations with initializers as MAP operations - The
-	 * last statement as a FOREACH operation
-	 *
-	 * @param body        the {@link Statement} representing the loop body; may be a
-	 *                    {@link Block} or a single statement
-	 * @param loopVarName the name of the loop variable currently in scope; may be
-	 *                    updated if a map operation is found
-	 * @return a list of {@link ProspectiveOperation} objects, in the order they
-	 *         should be applied, representing the sequence of stream operations
-	 *         inferred from the loop body; returns an empty list if body is null or
-	 *         cannot be converted
-	 * @see ProspectiveOperation
+	 * <p><b>Example Patterns:</b></p>
+	 * <pre>{@code
+	 * // MAP: Variable declaration with initializer
+	 * for (Integer num : numbers) {
+	 *     int squared = num * num;  // → .map(num -> num * num)
+	 *     System.out.println(squared);
+	 * }
+	 * 
+	 * // FILTER: IF statement
+	 * for (String item : items) {
+	 *     if (item != null) {  // → .filter(item -> item != null)
+	 *         System.out.println(item);
+	 *     }
+	 * }
+	 * 
+	 * // REDUCE: Accumulator pattern
+	 * int sum = 0;
+	 * for (Integer num : numbers) {
+	 *     sum += num;  // → .reduce(sum, Integer::sum)
+	 * }
+	 * }</pre>
+	 * 
+	 * @param body the {@link Statement} representing the loop body
+	 * @param loopVarName the name of the loop variable
+	 * @return a list of {@link ProspectiveOperation} objects
 	 */
 	private List<ProspectiveOperation> parseLoopBody(Statement body, String loopVarName) {
 		List<ProspectiveOperation> ops = new ArrayList<>();
