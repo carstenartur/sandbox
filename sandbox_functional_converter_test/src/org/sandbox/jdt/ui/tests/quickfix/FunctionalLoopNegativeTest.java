@@ -17,10 +17,8 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
@@ -55,11 +53,17 @@ public class FunctionalLoopNegativeTest {
 	@RegisterExtension
 	AbstractEclipseJava context = new EclipseJava22();
 
-	@Disabled("Disabled until functional loop cleanup is stable")
-	@ParameterizedTest
-	@ValueSource(strings = {
-// Test case: Break statement (should NOT convert)
-			"""
+/**
+ * Tests that loops with Break statement (should NOT convert) are not converted.
+ * 
+ * <p>
+ * Verifies the cleanup correctly identifies patterns that cannot be safely converted.
+ * </p>
+ */
+@Disabled("Disabled until functional loop cleanup is stable")
+@Test
+void test_Break_statement_should_NOT_convert() throws CoreException {
+String sourceCode = """
 					package test1;
 
 					import java.util.Arrays;
@@ -91,10 +95,25 @@ public class FunctionalLoopNegativeTest {
 					    {
 
 					    }
-					}""",
+					}""";
 
-// Test case: Throw statement (should NOT convert)
-			"""
+IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+ICompilationUnit cu = pack.createCompilationUnit("Test.java", sourceCode, true, null);
+context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+}
+
+/**
+ * Tests that loops with Throw statement (should NOT convert) are not converted.
+ * 
+ * <p>
+ * Verifies the cleanup correctly identifies patterns that cannot be safely converted.
+ * </p>
+ */
+@Disabled("Disabled until functional loop cleanup is stable")
+@Test
+void test_Throw_statement_should_NOT_convert() throws CoreException {
+String sourceCode = """
 					package test1;
 
 					import java.util.Arrays;
@@ -124,10 +143,25 @@ public class FunctionalLoopNegativeTest {
 					    {
 
 					    }
-					}""",
+					}""";
 
-// Test case: Labeled continue (should NOT convert)
-			"""
+IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+ICompilationUnit cu = pack.createCompilationUnit("Test.java", sourceCode, true, null);
+context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+}
+
+/**
+ * Tests that loops with Labeled continue (should NOT convert) are not converted.
+ * 
+ * <p>
+ * Verifies the cleanup correctly identifies patterns that cannot be safely converted.
+ * </p>
+ */
+@Disabled("Disabled until functional loop cleanup is stable")
+@Test
+void test_Labeled_continue_should_NOT_convert() throws CoreException {
+String sourceCode = """
 					package test1;
 
 					import java.util.Arrays;
@@ -162,10 +196,25 @@ public class FunctionalLoopNegativeTest {
 					    {
 
 					    }
-					}""",
+					}""";
 
-// Test case: External variable modification (should NOT convert)
-			"""
+IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+ICompilationUnit cu = pack.createCompilationUnit("Test.java", sourceCode, true, null);
+context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+}
+
+/**
+ * Tests that loops with External variable modification (should NOT convert) are not converted.
+ * 
+ * <p>
+ * Verifies the cleanup correctly identifies patterns that cannot be safely converted.
+ * </p>
+ */
+@Disabled("Disabled until functional loop cleanup is stable")
+@Test
+void test_External_variable_modification_should_NOT_convert() throws CoreException {
+String sourceCode = """
 					package test1;
 
 					import java.util.List;
@@ -179,10 +228,25 @@ public class FunctionalLoopNegativeTest {
 					        }
 					        System.out.println(count);
 					    }
-					}""",
+					}""";
 
-// Test case: Early return with side effects (should NOT convert)
-			"""
+IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+ICompilationUnit cu = pack.createCompilationUnit("Test.java", sourceCode, true, null);
+context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+}
+
+/**
+ * Tests that loops with Early return with side effects (should NOT convert) are not converted.
+ * 
+ * <p>
+ * Verifies the cleanup correctly identifies patterns that cannot be safely converted.
+ * </p>
+ */
+@Disabled("Disabled until functional loop cleanup is stable")
+@Test
+void test_Early_return_with_side_effects_should_NOT_convert() throws CoreException {
+String sourceCode = """
 					package test1;
 					import java.util.List;
 					class MyTest {
@@ -191,13 +255,12 @@ public class FunctionalLoopNegativeTest {
 					            return ;
 					        }
 					    }
-					}""" })
-	@DisplayName("Test that loops with unsafe patterns are not converted")
-	void testNoConversion(String sourceCode) throws CoreException {
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
-		ICompilationUnit cu = pack.createCompilationUnit("Test.java", sourceCode, true, null);
+					}""";
 
-		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
-		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
-	}
+IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+ICompilationUnit cu = pack.createCompilationUnit("Test.java", sourceCode, true, null);
+context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+}
+
 }

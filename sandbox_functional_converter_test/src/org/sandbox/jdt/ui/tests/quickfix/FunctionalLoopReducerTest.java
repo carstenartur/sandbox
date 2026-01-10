@@ -16,10 +16,9 @@ package org.sandbox.jdt.ui.tests.quickfix;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
-import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
@@ -55,17 +54,8 @@ public class FunctionalLoopReducerTest {
 	@RegisterExtension
 	AbstractEclipseJava context = new EclipseJava22();
 
-	/**
-	 * Test data enum with input/expected output pairs.
-	 * 
-	 * <p>
-	 * Each test case demonstrates a specific reduction pattern and how it is
-	 * converted to a functional stream operation.
-	 * </p>
-	 */
-	enum TestCase {
-		/**
-		 * Tests simple increment reducer.
+/**
+* Tests simple increment reducer.
 		 * 
 		 * <p>
 		 * <b>Conversion Rule:</b> Loop with {@code i++} is converted to
@@ -93,8 +83,10 @@ public class FunctionalLoopReducerTest {
 		 * i = ls.stream().map(l -> 1).reduce(i, Integer::sum);
 		 * }
 		 * </pre>
-		 */
-		SimpleReducer("""
+ */
+@Test
+void test_SimpleReducer() throws CoreException {
+String input = """
 				package test1;
 
 				import java.util.Arrays;
@@ -116,9 +108,9 @@ public class FunctionalLoopReducerTest {
 
 
 				    }
-				}""",
+				}""";
 
-				"""
+String expected = """
 						package test1;
 
 						import java.util.Arrays;
@@ -139,18 +131,25 @@ public class FunctionalLoopReducerTest {
 
 
 						    }
-						}"""),
+						}""";
 
-		/**
-		 * Tests increment reducer with i+=1 pattern.
+IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
+context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+}
+
+/**
+* Tests increment reducer with i+=1 pattern.
 		 * 
 		 * <p>
 		 * <b>Conversion Rule:</b> {@code i+=1} is functionally equivalent to
 		 * {@code i++} and converts the same way.
 		 * </p>
-		 */
-		IncrementReducer(
-				"""
+ */
+@Test
+void test_IncrementReducer() throws CoreException {
+String input = """
 						package test1;
 
 						import java.util.ArrayList;
@@ -178,9 +177,9 @@ public class FunctionalLoopReducerTest {
 						        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
 						    }
 						}
-						""",
+						""";
 
-				"""
+String expected = """
 						package test1;
 
 						import java.util.ArrayList;
@@ -206,17 +205,25 @@ public class FunctionalLoopReducerTest {
 						        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
 						    }
 						}
-						"""),
+						""";
 
-		/**
-		 * Tests Long increment reducer.
+IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
+context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+}
+
+/**
+* Tests Long increment reducer.
 		 * 
 		 * <p>
 		 * <b>Conversion Rule:</b> For {@code long} types, uses {@code Long::sum} method
 		 * reference in the reduce operation.
 		 * </p>
-		 */
-		LONGINCREMENTREDUCER("""
+ */
+@Test
+void test_LongIncrementReducer() throws CoreException {
+String input = """
 				package test1;
 
 				import java.util.ArrayList;
@@ -234,9 +241,9 @@ public class FunctionalLoopReducerTest {
 				            len++;
 
 				    }
-				}""",
+				}""";
 
-				"""
+String expected = """
 						package test1;
 
 						import java.util.ArrayList;
@@ -253,17 +260,26 @@ public class FunctionalLoopReducerTest {
 						        len = ints.stream().map(i -> 1L).reduce(len, Long::sum);
 
 						    }
-						}"""),
+						}""";
 
-		/**
-		 * Tests Math.max reducer pattern.
+IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
+context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+}
+
+/**
+* Tests Math.max reducer pattern.
 		 * 
 		 * <p>
 		 * <b>Conversion Rule:</b> {@code max = Math.max(max, value)} is converted to
 		 * {@code stream().reduce(max, Integer::max)}.
 		 * </p>
-		 */
-		MaxReducer("""
+ */
+	@Disabled("Not yet working - min/max reducer logic needs improvement")
+@Test
+void test_MaxReducer() throws CoreException {
+String input = """
 				package test1;
 
 				import java.util.ArrayList;
@@ -277,9 +293,9 @@ public class FunctionalLoopReducerTest {
 				        }
 				        return max;
 				    }
-				}""",
+				}""";
 
-				"""
+String expected = """
 						package test1;
 
 						import java.util.ArrayList;
@@ -291,17 +307,26 @@ public class FunctionalLoopReducerTest {
 						        max = numbers.stream().reduce(max, Integer::max);
 						        return max;
 						    }
-						}"""),
+						}""";
 
-		/**
-		 * Tests Math.min reducer pattern.
+IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
+context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+}
+
+/**
+* Tests Math.min reducer pattern.
 		 * 
 		 * <p>
 		 * <b>Conversion Rule:</b> {@code min = Math.min(min, value)} is converted to
 		 * {@code stream().reduce(min, Integer::min)}.
 		 * </p>
-		 */
-		MinReducer("""
+ */
+	@Disabled("Not yet working - min/max reducer logic needs improvement")
+@Test
+void test_MinReducer() throws CoreException {
+String input = """
 				package test1;
 
 				import java.util.ArrayList;
@@ -315,9 +340,9 @@ public class FunctionalLoopReducerTest {
 				        }
 				        return min;
 				    }
-				}""",
+				}""";
 
-				"""
+String expected = """
 						package test1;
 
 						import java.util.ArrayList;
@@ -329,17 +354,25 @@ public class FunctionalLoopReducerTest {
 						        min = numbers.stream().reduce(min, Integer::min);
 						        return min;
 						    }
-						}"""),
+						}""";
 
-		/**
-		 * Tests sum reduction with filter.
+IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
+context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+}
+
+/**
+* Tests sum reduction with filter.
 		 * 
 		 * <p>
 		 * <b>Conversion Rule:</b> Filtered sum operations combine {@code filter()} and
 		 * {@code reduce()} operations.
 		 * </p>
-		 */
-		SumReductionWithFilter("""
+ */
+@Test
+void test_SumReductionWithFilter() throws CoreException {
+String input = """
 				package test1;
 
 				import java.util.List;
@@ -354,9 +387,9 @@ public class FunctionalLoopReducerTest {
 				        }
 				        return sum;
 				    }
-				}""",
+				}""";
 
-				"""
+String expected = """
 						package test1;
 
 						import java.util.List;
@@ -367,17 +400,25 @@ public class FunctionalLoopReducerTest {
 						        sum = numbers.stream().filter(num -> (num > 0)).reduce(sum, Integer::sum);
 						        return sum;
 						    }
-						}"""),
+						}""";
 
-		/**
-		 * Tests complex reduction with mapping.
+IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
+context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+}
+
+/**
+* Tests complex reduction with mapping.
 		 * 
 		 * <p>
 		 * <b>Conversion Rule:</b> Transformation before accumulation uses {@code map()}
 		 * before {@code reduce()}.
 		 * </p>
-		 */
-		ComplexReductionWithMapping("""
+ */
+@Test
+void test_ComplexReductionWithMapping() throws CoreException {
+String input = """
 				package test1;
 
 				import java.util.List;
@@ -391,9 +432,9 @@ public class FunctionalLoopReducerTest {
 				        }
 				        return sum;
 				    }
-				}""",
+				}""";
 
-				"""
+String expected = """
 						package test1;
 
 						import java.util.List;
@@ -404,17 +445,25 @@ public class FunctionalLoopReducerTest {
 						        sum = numbers.stream().map(num -> num * num).reduce(sum, Integer::sum);
 						        return sum;
 						    }
-						}"""),
+						}""";
 
-		/**
-		 * Tests full filter+map+reduce chain.
+IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
+context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+}
+
+/**
+* Tests full filter+map+reduce chain.
 		 * 
 		 * <p>
 		 * <b>Conversion Rule:</b> Complete pipeline with filtering, mapping, and
 		 * reduction in sequence.
 		 * </p>
-		 */
-		FilterMapReduceChain("""
+ */
+@Test
+void test_FilterMapReduceChain() throws CoreException {
+String input = """
 				package test1;
 
 				import java.util.List;
@@ -430,9 +479,9 @@ public class FunctionalLoopReducerTest {
 				        }
 				        return total;
 				    }
-				}""",
+				}""";
 
-				"""
+String expected = """
 						package test1;
 
 						import java.util.List;
@@ -443,29 +492,12 @@ public class FunctionalLoopReducerTest {
 						        total = numbers.stream().filter(num -> (num > 0)).map(num -> num * num).reduce(total, Integer::sum);
 						        return total;
 						    }
-						}""");
+						}""";
 
-		final String input;
-		final String expected;
+IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
+context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+}
 
-		TestCase(String input, String expected) {
-			this.input = input;
-			this.expected = expected;
-		}
-	}
-
-	@ParameterizedTest
-	@EnumSource(value = TestCase.class, names = { "SimpleReducer", "IncrementReducer", "LONGINCREMENTREDUCER",
-//"MinReducer",
-//"MaxReducer",
-			"SumReductionWithFilter", "ComplexReductionWithMapping", "FilterMapReduceChain", })
-	@DisplayName("Test reduction operation conversion")
-	void testConversion(TestCase testCase) throws CoreException {
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
-		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", testCase.input, false, null);
-		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
-
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { testCase.expected },
-				null);
-	}
 }
