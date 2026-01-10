@@ -22,19 +22,30 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.BooleanLiteral;
+import org.eclipse.jdt.core.dom.ConditionalExpression;
 import org.eclipse.jdt.core.dom.ContinueStatement;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.IAnnotationBinding;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.IfStatement;
+import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.InstanceofExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.PostfixExpression;
 import org.eclipse.jdt.core.dom.PrefixExpression;
+import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 
 /**
  * Builder class for constructing stream pipelines from enhanced for-loops.
@@ -48,7 +59,46 @@ import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
  * <li>FILTER operations (IF statements)</li>
  * <li>REDUCE operations (accumulator patterns including SUM, PRODUCT,
  * INCREMENT, MAX, MIN)</li>
- * <li>ANYMATCH/NONEMATCH operations (early returns)</li>
+ * <li>ANYMATCH/NONEMATCH/ALLMATCH operations (early returns)</li>
+ * </ul>
+ * 
+ * <p><b>Architecture Overview:</b></p>
+ * <p>The conversion process involves three phases:</p>
+ * 
+ * <ol>
+ * <li><b>Analysis Phase</b> ({@link #analyze()}):
+ *     <ul>
+ *     <li>Validates preconditions via {@link PreconditionsChecker}</li>
+ *     <li>Parses loop body into {@link ProspectiveOperation}s</li>
+ *     <li>Validates variable scoping</li>
+ *     <li>Returns true if conversion is possible</li>
+ *     </ul>
+ * </li>
+ * <li><b>Construction Phase</b> ({@link #buildPipeline()}):
+ *     <ul>
+ *     <li>Determines if .stream() prefix is needed</li>
+ *     <li>Chains operations into MethodInvocation</li>
+ *     <li>Generates lambda parameters and arguments</li>
+ *     <li>Returns the complete pipeline expression</li>
+ *     </ul>
+ * </li>
+ * <li><b>Wrapping Phase</b> ({@link #wrapPipeline(MethodInvocation)}):
+ *     <ul>
+ *     <li>Wraps in appropriate Statement type</li>
+ *     <li>Handles reducers (assignment to accumulator)</li>
+ *     <li>Handles anyMatch/noneMatch/allMatch (IF with early return)</li>
+ *     <li>Returns the final Statement to replace the for-loop</li>
+ *     </ul>
+ * </li>
+ * </ol>
+ * 
+ * <p><b>Supported Patterns:</b></p>
+ * <ul>
+ * <li><b>FOREACH:</b> {@code for (x : xs) { action(x); }} → {@code xs.forEach(x -> action(x))}</li>
+ * <li><b>MAP:</b> {@code for (x : xs) { T y = f(x); ... }} → {@code xs.stream().map(x -> f(x))...}</li>
+ * <li><b>FILTER:</b> {@code for (x : xs) { if (p(x)) { ... } }} → {@code xs.stream().filter(x -> p(x))...}</li>
+ * <li><b>REDUCE:</b> {@code for (x : xs) { sum += x; }} → {@code sum = xs.stream().reduce(sum, Integer::sum)}</li>
+ * <li><b>ANYMATCH:</b> {@code for (x : xs) { if (p(x)) return true; } return false;} → {@code if (xs.stream().anyMatch(x -> p(x))) return true;}</li>
  * </ul>
  * 
  * <p>
@@ -64,14 +114,74 @@ import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
  * <li>CUSTOM_AGGREGATE: Custom aggregation patterns</li>
  * </ul>
  * 
+ * <p><b>Thread Safety:</b> This class is not thread-safe. Create a new instance
+ * for each loop to be analyzed.</p>
+ * 
+ * <p><b>Usage Example:</b></p>
+ * <pre>{@code
+ * PreconditionsChecker preconditions = new PreconditionsChecker(forLoop, ...);
+ * StreamPipelineBuilder builder = new StreamPipelineBuilder(forLoop, preconditions);
+ * 
+ * if (builder.analyze()) {
+ *     MethodInvocation pipeline = builder.buildPipeline();
+ *     Statement replacement = builder.wrapPipeline(pipeline);
+ *     // Replace forLoop with replacement
+ * }
+ * }</pre>
+ * 
  * <p>
  * Based on the NetBeans mapreduce hints implementation:
  * https://github.com/apache/netbeans/tree/master/java/java.hints/src/org/netbeans/modules/java/hints/jdk/mapreduce
  * 
  * @see ProspectiveOperation
  * @see PreconditionsChecker
+ * @see TypeResolver
+ * @see ExpressionUtils
+ * @see Refactorer
  */
 public class StreamPipelineBuilder {
+	// Note: Constants have been moved to StreamConstants class
+	/**
+	 * Marker variable name used when the loop variable is not directly used
+	 * in the lambda body.
+	 */
+	private static final String UNUSED_ITEM_NAME = StreamConstants.UNUSED_PARAMETER_NAME;
+
+	/**
+	 * Method name for creating a stream from a collection.
+	 */
+	private static final String STREAM_METHOD = StreamConstants.STREAM_METHOD;
+
+	/**
+	 * Method name for terminal forEach operation.
+	 */
+	private static final String FOR_EACH_METHOD = StreamConstants.FOR_EACH_METHOD;
+
+	/**
+	 * Class name for Math utility class.
+	 */
+	private static final String MATH_CLASS_NAME = StreamConstants.MATH_CLASS_NAME;
+
+	/**
+	 * Method name for Math.max operation.
+	 */
+	private static final String MAX_METHOD_NAME = StreamConstants.MAX_METHOD_NAME;
+
+	/**
+	 * Method name for Math.min operation.
+	 */
+	private static final String MIN_METHOD_NAME = StreamConstants.MIN_METHOD_NAME;
+
+	/**
+	 * Fully qualified name of java.lang.Math class.
+	 */
+	private static final String JAVA_LANG_MATH = StreamConstants.JAVA_LANG_MATH;
+
+	/**
+	 * Fully qualified name of java.lang.String class.
+	 */
+	private static final String JAVA_LANG_STRING = StreamConstants.JAVA_LANG_STRING;
+
 	private final EnhancedForStatement forLoop;
 	private final PreconditionsChecker preconditions;
 	private final AST ast;
@@ -166,13 +276,34 @@ public class StreamPipelineBuilder {
 	/**
 	 * Builds the stream pipeline from the analyzed operations.
 	 * 
-	 * <p>
-	 * This method should be called after {@link #analyze()} returns true. It
-	 * constructs a {@link MethodInvocation} representing the complete stream
-	 * pipeline.
+	 * <p>This method constructs a chain of method invocations representing
+	 * the complete stream pipeline. It automatically determines whether to
+	 * use {@code .stream()} prefix or direct collection methods like
+	 * {@code .forEach()}.</p>
 	 * 
-	 * @return a MethodInvocation representing the stream pipeline, or null if the
-	 *         loop cannot be converted
+	 * <p><b>Examples:</b></p>
+	 * <pre>{@code
+	 * // Simple forEach (no .stream() needed)
+	 * list.forEach(item -> System.out.println(item))
+	 * 
+	 * // Complex pipeline (needs .stream())
+	 * list.stream()
+	 *     .filter(item -> item != null)
+	 *     .map(item -> item.toString())
+	 *     .reduce("", String::concat)
+	 * }</pre>
+	 * 
+	 * <p><b>Prerequisites:</b></p>
+	 * <ul>
+	 * <li>{@link #analyze()} must have been called and returned {@code true}</li>
+	 * <li>The operations list must not be empty</li>
+	 * </ul>
+	 * 
+	 * @return a MethodInvocation representing the stream pipeline, or null if
+	 *         the loop cannot be converted
+	 * @see #analyze()
+	 * @see #wrapPipeline(MethodInvocation)
+	 * @see #requiresStreamPrefix()
 	 */
 	public MethodInvocation buildPipeline() {
 		if (!analyzed || !convertible) {
@@ -187,7 +318,7 @@ public class StreamPipelineBuilder {
 			// Start with .stream()
 			pipeline = ast.newMethodInvocation();
 			pipeline.setExpression((Expression) ASTNode.copySubtree(ast, forLoop.getExpression()));
-			pipeline.setName(ast.newSimpleName("stream"));
+			pipeline.setName(ast.newSimpleName(STREAM_METHOD));
 
 			// Chain each operation
 			for (int i = 0; i < operations.size(); i++) {
@@ -211,7 +342,7 @@ public class StreamPipelineBuilder {
 			ProspectiveOperation op = operations.get(0);
 			pipeline = ast.newMethodInvocation();
 			pipeline.setExpression((Expression) ASTNode.copySubtree(ast, forLoop.getExpression()));
-			pipeline.setName(ast.newSimpleName("forEach"));
+			pipeline.setName(ast.newSimpleName(FOR_EACH_METHOD));
 			List<Expression> args = op.getArguments(ast, loopVariableName);
 			for (Expression arg : args) {
 				pipeline.arguments().add(arg);
@@ -241,6 +372,35 @@ public class StreamPipelineBuilder {
 	 * 
 	 * @param pipeline the pipeline method invocation
 	 * @return a Statement wrapping the pipeline
+	 */
+	/**
+	 * Wraps the stream pipeline in an appropriate statement type based on the terminal operation.
+	 * 
+	 * <p>
+	 * The wrapping strategy depends on the type of terminal operation:
+	 * <ul>
+	 * <li><b>ANYMATCH</b>: Wraps in {@code if (stream.anyMatch(...)) { return true; }}</li>
+	 * <li><b>NONEMATCH</b>: Wraps in {@code if (!stream.noneMatch(...)) { return false; }}</li>
+	 * <li><b>ALLMATCH</b>: Wraps in {@code if (!stream.allMatch(...)) { return false; }}</li>
+	 * <li><b>REDUCE</b>: Wraps in assignment {@code accumulatorVariable = stream.reduce(...)}</li>
+	 * <li><b>FOREACH</b> (and others): Wraps in {@link org.eclipse.jdt.core.dom.ExpressionStatement}</li>
+	 * </ul>
+	 * 
+	 * <p><b>Example - AnyMatch Pattern:</b></p>
+	 * <pre>{@code
+	 * // Input pipeline: stream.map(...).anyMatch(x -> x > 0)
+	 * // Output: if (stream.map(...).anyMatch(x -> x > 0)) { return true; }
+	 * }</pre>
+	 * 
+	 * <p><b>Example - Reduce Pattern:</b></p>
+	 * <pre>{@code
+	 * // Input pipeline: stream.map(...).reduce(0, Integer::sum)
+	 * // Output: sum = stream.map(...).reduce(0, Integer::sum);
+	 * }</pre>
+	 * 
+	 * @param pipeline the stream pipeline to wrap (must not be null)
+	 * @return a Statement wrapping the pipeline, or null if pipeline is null
+	 * @see ProspectiveOperation.OperationType
 	 */
 	public Statement wrapPipeline(MethodInvocation pipeline) {
 		if (pipeline == null) {
@@ -293,15 +453,6 @@ public class StreamPipelineBuilder {
 			ExpressionStatement exprStmt = ast.newExpressionStatement(pipeline);
 			return exprStmt;
 		}
-	}
-
-	/**
-	 * Returns the list of operations extracted from the loop body.
-	 * 
-	 * @return the list of prospective operations
-	 */
-	public List<ProspectiveOperation> getOperations() {
-		return operations;
 	}
 
 	/**
@@ -449,15 +600,18 @@ public class StreamPipelineBuilder {
 			// Create a MAP operation that maps each item to 1 (type-aware)
 			Expression mapExpr = createTypedLiteralOne();
 			ProspectiveOperation mapOp = new ProspectiveOperation(mapExpr, ProspectiveOperation.OperationType.MAP,
-					"_item");
+					UNUSED_ITEM_NAME);
 			ops.add(mapOp);
 		} else if (isArithmeticReducer(reducerType)) {
 			// For SUM/PRODUCT/STRING_CONCAT: extract RHS expression
 			Expression mapExpression = extractReduceExpression(stmt);
 			if (mapExpression != null) {
-				ProspectiveOperation mapOp = new ProspectiveOperation(mapExpression,
-						ProspectiveOperation.OperationType.MAP, currentVarName);
-				ops.add(mapOp);
+				// Skip identity mapping: if the expression is just the current variable, don't add MAP
+				if (!isIdentityMapping(mapExpression, currentVarName)) {
+					ProspectiveOperation mapOp = new ProspectiveOperation(mapExpression,
+							ProspectiveOperation.OperationType.MAP, currentVarName);
+					ops.add(mapOp);
+				}
 			}
 		} else if (isMinMaxReducer(reducerType)) {
 			// For MAX/MIN: extract non-accumulator argument
@@ -538,11 +692,43 @@ public class StreamPipelineBuilder {
 	}
 
 	/**
-	 * Detects if a statement contains a REDUCE pattern (i++, sum += x, etc.). Also
-	 * detects MAX/MIN patterns like: max = Math.max(max, x)
+	 * Checks if an expression represents an identity mapping (e.g., num -> num).
+	 * 
+	 * @param expression the expression to check
+	 * @param varName    the variable name to compare against
+	 * @return true if the expression is just a reference to varName (identity
+	 *         mapping), false otherwise
+	 * @deprecated Use {@link ExpressionUtils#isIdentityMapping(Expression, String)} instead
+	 */
+	@Deprecated
+	private boolean isIdentityMapping(Expression expression, String varName) {
+		return ExpressionUtils.isIdentityMapping(expression, varName);
+	}
+
+	/**
+	 * Detects if a statement contains a REDUCE pattern.
+	 * 
+	 * <p><b>Supported Patterns:</b></p>
+	 * <ul>
+	 * <li>Postfix/Prefix increment: {@code i++}, {@code ++i}, {@code i--}, {@code --i}</li>
+	 * <li>Compound assignments: {@code sum += x}, {@code product *= y}</li>
+	 * <li>Math operations: {@code max = Math.max(max, x)}</li>
+	 * </ul>
+	 * 
+	 * <p><b>Examples:</b></p>
+	 * <pre>{@code
+	 * // INCREMENT pattern
+	 * count++;  // → .map(_item -> 1).reduce(count, Integer::sum)
+	 * 
+	 * // SUM pattern
+	 * sum += value;  // → .map(value).reduce(sum, Integer::sum)
+	 * 
+	 * // MAX pattern
+	 * max = Math.max(max, num);  // → .map(num).reduce(max, Math::max)
+	 * }</pre>
 	 * 
 	 * @param stmt the statement to check
-	 * @return a ProspectiveOperation for REDUCE if detected, null otherwise
+	 * @return a REDUCE operation if detected, null otherwise
 	 */
 	private ProspectiveOperation detectReduceOperation(Statement stmt) {
 		if (!(stmt instanceof ExpressionStatement)) {
@@ -569,7 +755,9 @@ public class StreamPipelineBuilder {
 
 				accumulatorVariable = varName;
 				accumulatorType = getVariableType(varName);
-				return new ProspectiveOperation(stmt, varName, reducerType);
+				ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);
+				op.setAccumulatorType(accumulatorType);
+				return op;
 			}
 		}
 
@@ -590,7 +778,9 @@ public class StreamPipelineBuilder {
 
 				accumulatorVariable = varName;
 				accumulatorType = getVariableType(varName);
-				return new ProspectiveOperation(stmt, varName, reducerType);
+				ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);
+				op.setAccumulatorType(accumulatorType);
+				return op;
 			}
 		}
 
@@ -605,7 +795,13 @@ public class StreamPipelineBuilder {
 					ProspectiveOperation.ReducerType reducerType;
 
 					if (assignment.getOperator() == Assignment.Operator.PLUS_ASSIGN) {
-						reducerType = ProspectiveOperation.ReducerType.SUM;
+						// Check if this is string concatenation
+						ITypeBinding varType = getTypeBinding(varName);
+						if (varType != null && JAVA_LANG_STRING.equals(varType.getQualifiedName())) {
+							reducerType = ProspectiveOperation.ReducerType.STRING_CONCAT;
+						} else {
+							reducerType = ProspectiveOperation.ReducerType.SUM;
+						}
 					} else if (assignment.getOperator() == Assignment.Operator.TIMES_ASSIGN) {
 						reducerType = ProspectiveOperation.ReducerType.PRODUCT;
 					} else if (assignment.getOperator() == Assignment.Operator.MINUS_ASSIGN) {
@@ -617,7 +813,17 @@ public class StreamPipelineBuilder {
 
 					accumulatorVariable = varName;
 					accumulatorType = getVariableType(varName);
-					return new ProspectiveOperation(stmt, varName, reducerType);
+					
+					ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);
+					op.setAccumulatorType(accumulatorType);
+					
+					// For STRING_CONCAT, check if the accumulator variable has @NotNull
+					if (reducerType == ProspectiveOperation.ReducerType.STRING_CONCAT) {
+						boolean isNullSafe = hasNotNullAnnotation(varName);
+						op.setNullSafe(isNullSafe);
+					}
+					
+					return op;
 				}
 
 				// Check for regular assignment with Math.max/Math.min pattern
@@ -628,7 +834,9 @@ public class StreamPipelineBuilder {
 					if (reducerType != null) {
 						accumulatorVariable = varName;
 						accumulatorType = getVariableType(varName);
-						return new ProspectiveOperation(stmt, varName, reducerType);
+						ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);
+						op.setAccumulatorType(accumulatorType);
+						return op;
 					}
 				}
 			}
@@ -651,39 +859,90 @@ public class StreamPipelineBuilder {
 		}
 
 		MethodInvocation methodInv = (MethodInvocation) expr;
+		
+		// Get method name first
+		String methodName = methodInv.getName().getIdentifier();
+		if (!MAX_METHOD_NAME.equals(methodName) && !MIN_METHOD_NAME.equals(methodName)) {
+			return null;
+		}
 
 		// Check if it's a Math.max or Math.min call
-		if (methodInv.getExpression() instanceof SimpleName) {
-			SimpleName className = (SimpleName) methodInv.getExpression();
-			if (!"Math".equals(className.getIdentifier())) {
-				return null;
-			}
-
-			String methodName = methodInv.getName().getIdentifier();
-			if (!"max".equals(methodName) && !"min".equals(methodName)) {
-				return null;
-			}
-
-			// Check if one of the arguments is the accumulator variable
-			List<?> args = methodInv.arguments();
-			if (args.size() != 2) {
-				return null;
-			}
-
-			boolean hasAccumulatorArg = false;
-			for (Object argObj : args) {
-				if (argObj instanceof SimpleName) {
-					SimpleName argName = (SimpleName) argObj;
-					if (varName.equals(argName.getIdentifier())) {
-						hasAccumulatorArg = true;
-						break;
+		// Try binding resolution first (more robust)
+		IMethodBinding binding = methodInv.resolveMethodBinding();
+		if (binding != null) {
+			ITypeBinding declaringClass = binding.getDeclaringClass();
+			if (declaringClass != null && JAVA_LANG_MATH.equals(declaringClass.getQualifiedName())) {
+				// Confirmed it's Math.max or Math.min via binding
+				// Check if one of the arguments is the accumulator variable
+				List<?> args = methodInv.arguments();
+				if (args.size() == 2) {
+					boolean hasAccumulatorArg = false;
+					for (Object argObj : args) {
+						if (argObj instanceof SimpleName) {
+							SimpleName argName = (SimpleName) argObj;
+							if (varName.equals(argName.getIdentifier())) {
+								hasAccumulatorArg = true;
+								break;
+							}
+						}
+					}
+					
+					if (hasAccumulatorArg) {
+						return MAX_METHOD_NAME.equals(methodName) ? ProspectiveOperation.ReducerType.MAX
+								: ProspectiveOperation.ReducerType.MIN;
 					}
 				}
 			}
-
-			if (hasAccumulatorArg) {
-				return "max".equals(methodName) ? ProspectiveOperation.ReducerType.MAX
-						: ProspectiveOperation.ReducerType.MIN;
+		}
+		
+		// Fallback: Check syntactically if binding resolution failed
+		Expression receiverExpr = methodInv.getExpression();
+		if (receiverExpr instanceof SimpleName) {
+			SimpleName className = (SimpleName) receiverExpr;
+			if (MATH_CLASS_NAME.equals(className.getIdentifier())) {
+				// Check if one of the arguments is the accumulator variable
+				List<?> args = methodInv.arguments();
+				if (args.size() == 2) {
+					boolean hasAccumulatorArg = false;
+					for (Object argObj : args) {
+						if (argObj instanceof SimpleName) {
+							SimpleName argName = (SimpleName) argObj;
+							if (varName.equals(argName.getIdentifier())) {
+								hasAccumulatorArg = true;
+								break;
+							}
+						}
+					}
+					
+					if (hasAccumulatorArg) {
+						return MAX_METHOD_NAME.equals(methodName) ? ProspectiveOperation.ReducerType.MAX
+								: ProspectiveOperation.ReducerType.MIN;
+					}
+				}
+			}
+		} else if (receiverExpr instanceof QualifiedName) {
+			// Handle fully qualified: java.lang.Math.max()
+			QualifiedName qualName = (QualifiedName) receiverExpr;
+			if (MATH_CLASS_NAME.equals(qualName.getName().getIdentifier())) {
+				// Check if one of the arguments is the accumulator variable
+				List<?> args = methodInv.arguments();
+				if (args.size() == 2) {
+					boolean hasAccumulatorArg = false;
+					for (Object argObj : args) {
+						if (argObj instanceof SimpleName) {
+							SimpleName argName = (SimpleName) argObj;
+							if (varName.equals(argName.getIdentifier())) {
+								hasAccumulatorArg = true;
+								break;
+							}
+						}
+					}
+					
+					if (hasAccumulatorArg) {
+						return MAX_METHOD_NAME.equals(methodName) ? ProspectiveOperation.ReducerType.MAX
+								: ProspectiveOperation.ReducerType.MIN;
+					}
+				}
 			}
 		}
 
@@ -695,24 +954,31 @@ public class StreamPipelineBuilder {
 	 * {@link ProspectiveOperation} objects representing the operations that can be
 	 * mapped to stream operations.
 	 * 
-	 * <p>
-	 * This method inspects the statements within the loop body to identify possible
-	 * stream operations such as {@code map} (for variable declarations with
-	 * initializers), {@code filter} (for IF statements), and {@code forEach} (for
-	 * the final or sole statement). For block bodies, it processes each statement
-	 * in order, treating: - IF statements with single block body as FILTER
-	 * operations - Variable declarations with initializers as MAP operations - The
-	 * last statement as a FOREACH operation
-	 *
-	 * @param body        the {@link Statement} representing the loop body; may be a
-	 *                    {@link Block} or a single statement
-	 * @param loopVarName the name of the loop variable currently in scope; may be
-	 *                    updated if a map operation is found
-	 * @return a list of {@link ProspectiveOperation} objects, in the order they
-	 *         should be applied, representing the sequence of stream operations
-	 *         inferred from the loop body; returns an empty list if body is null or
-	 *         cannot be converted
-	 * @see ProspectiveOperation
+	 * <p><b>Example Patterns:</b></p>
+	 * <pre>{@code
+	 * // MAP: Variable declaration with initializer
+	 * for (Integer num : numbers) {
+	 *     int squared = num * num;  // → .map(num -> num * num)
+	 *     System.out.println(squared);
+	 * }
+	 * 
+	 * // FILTER: IF statement
+	 * for (String item : items) {
+	 *     if (item != null) {  // → .filter(item -> item != null)
+	 *         System.out.println(item);
+	 *     }
+	 * }
+	 * 
+	 * // REDUCE: Accumulator pattern
+	 * int sum = 0;
+	 * for (Integer num : numbers) {
+	 *     sum += num;  // → .reduce(sum, Integer::sum)
+	 * }
+	 * }</pre>
+	 * 
+	 * @param body the {@link Statement} representing the loop body
+	 * @param loopVarName the name of the loop variable
+	 * @return a list of {@link ProspectiveOperation} objects
 	 */
 	private List<ProspectiveOperation> parseLoopBody(Statement body, String loopVarName) {
 		List<ProspectiveOperation> ops = new ArrayList<>();
@@ -740,6 +1006,26 @@ public class StreamPipelineBuilder {
 
 							// Update current var name for subsequent operations
 							currentVarName = newVarName;
+							
+							// Check if we need to wrap remaining non-terminal statements in a MAP
+							// This handles the case where after a variable declaration, we have
+							// side-effect statements (like IFs with side effects) followed by a terminal statement
+							if (shouldWrapRemainingInMap(statements, i)) {
+								// Collect all non-terminal statements (from i+1 to size-2)
+								Block mapBlock = ast.newBlock();
+								List<Statement> mapStatements = mapBlock.statements();
+								for (int j = i + 1; j < statements.size() - 1; j++) {
+									mapStatements.add((Statement) ASTNode.copySubtree(ast, statements.get(j)));
+								}
+								
+								// Create a MAP operation with the block + return statement
+								ProspectiveOperation sideEffectMapOp = new ProspectiveOperation(mapBlock,
+										ProspectiveOperation.OperationType.MAP, currentVarName);
+								ops.add(sideEffectMapOp);
+								
+								// Skip to the last statement
+								i = statements.size() - 2; // Will be incremented to size-1 in next iteration
+							}
 						}
 					}
 				} else if (stmt instanceof IfStatement && !isLast) {
@@ -748,35 +1034,10 @@ public class StreamPipelineBuilder {
 
 					// Check if this is a filtering IF (simple condition with block body)
 					if (ifStmt.getElseStatement() == null) {
-						Statement thenStmt = ifStmt.getThenStatement();
-
 						// Check if this is an early return pattern (anyMatch/noneMatch/allMatch)
 						if (isEarlyReturnIf(ifStmt)) {
-							// Create ANYMATCH, NONEMATCH, or ALLMATCH operation
-							ProspectiveOperation.OperationType opType;
-							if (isAnyMatchPattern) {
-								opType = ProspectiveOperation.OperationType.ANYMATCH;
-							} else if (isNoneMatchPattern) {
-								opType = ProspectiveOperation.OperationType.NONEMATCH;
-							} else {
-								// allMatchPattern
-								// For allMatch, we need to negate the condition since
-								// the pattern is "if (!condition) return false"
-								// We want "allMatch(condition)" not "allMatch(!condition)"
-								opType = ProspectiveOperation.OperationType.ALLMATCH;
-							}
-
-							// For allMatch with negated condition, strip the negation
-							Expression condition = ifStmt.getExpression();
-							if (isAllMatchPattern && condition instanceof PrefixExpression) {
-								PrefixExpression prefixExpr = (PrefixExpression) condition;
-								if (prefixExpr.getOperator() == PrefixExpression.Operator.NOT) {
-									// Use the operand without negation for allMatch
-									condition = prefixExpr.getOperand();
-								}
-							}
-
-							ProspectiveOperation matchOp = new ProspectiveOperation(condition, opType);
+							// Create ANYMATCH, NONEMATCH, or ALLMATCH operation using helper
+							ProspectiveOperation matchOp = createMatchOperation(ifStmt);
 							ops.add(matchOp);
 							// Don't process the body since it's just a return statement
 						} else if (isIfWithContinue(ifStmt)) {
@@ -798,28 +1059,8 @@ public class StreamPipelineBuilder {
 					if (ifStmt.getElseStatement() == null) {
 						// Check if this is an early return pattern (anyMatch/noneMatch/allMatch)
 						if (isEarlyReturnIf(ifStmt)) {
-							// Create ANYMATCH, NONEMATCH, or ALLMATCH operation
-							ProspectiveOperation.OperationType opType;
-							if (isAnyMatchPattern) {
-								opType = ProspectiveOperation.OperationType.ANYMATCH;
-							} else if (isNoneMatchPattern) {
-								opType = ProspectiveOperation.OperationType.NONEMATCH;
-							} else {
-								// allMatchPattern
-								opType = ProspectiveOperation.OperationType.ALLMATCH;
-							}
-
-							// For allMatch with negated condition, strip the negation
-							Expression condition = ifStmt.getExpression();
-							if (isAllMatchPattern && condition instanceof PrefixExpression) {
-								PrefixExpression prefixExpr = (PrefixExpression) condition;
-								if (prefixExpr.getOperator() == PrefixExpression.Operator.NOT) {
-									// Use the operand without negation for allMatch
-									condition = prefixExpr.getOperand();
-								}
-							}
-
-							ProspectiveOperation matchOp = new ProspectiveOperation(condition, opType);
+							// Create ANYMATCH, NONEMATCH, or ALLMATCH operation using helper
+							ProspectiveOperation matchOp = createMatchOperation(ifStmt);
 							ops.add(matchOp);
 						} else {
 							processIfAsFilter(ops, ifStmt, currentVarName, false);
@@ -863,17 +1104,40 @@ public class StreamPipelineBuilder {
 				}
 			}
 		} else if (body instanceof IfStatement) {
-			// Single IF statement → process as filter with nested body
+			// Single IF statement → check for early return pattern or process as filter
 			IfStatement ifStmt = (IfStatement) body;
 			if (ifStmt.getElseStatement() == null) {
-				// Add FILTER operation
-				ProspectiveOperation filterOp = new ProspectiveOperation(ifStmt.getExpression(),
-						ProspectiveOperation.OperationType.FILTER);
-				ops.add(filterOp);
+				// Check if this is an early return pattern (anyMatch/noneMatch/allMatch)
+				if (isEarlyReturnIf(ifStmt)) {
+					// Create ANYMATCH, NONEMATCH, or ALLMATCH operation
+					ProspectiveOperation.OperationType opType;
+					if (isAnyMatchPattern) {
+						opType = ProspectiveOperation.OperationType.ANYMATCH;
+					} else if (isNoneMatchPattern) {
+						opType = ProspectiveOperation.OperationType.NONEMATCH;
+					} else {
+						// allMatchPattern
+						opType = ProspectiveOperation.OperationType.ALLMATCH;
+					}
 
-				// Process the then statement
-				List<ProspectiveOperation> nestedOps = parseLoopBody(ifStmt.getThenStatement(), currentVarName);
-				ops.addAll(nestedOps);
+					// For allMatch with negated condition, strip the negation
+					Expression condition = ifStmt.getExpression();
+					if (isAllMatchPattern) {
+						condition = stripNegation(condition);
+					}
+
+					ProspectiveOperation matchOp = new ProspectiveOperation(condition, opType);
+					ops.add(matchOp);
+				} else {
+					// Regular filter with nested body processing
+					ProspectiveOperation filterOp = new ProspectiveOperation(ifStmt.getExpression(),
+							ProspectiveOperation.OperationType.FILTER);
+					ops.add(filterOp);
+
+					// Process the then statement
+					List<ProspectiveOperation> nestedOps = parseLoopBody(ifStmt.getThenStatement(), currentVarName);
+					ops.addAll(nestedOps);
+				}
 			}
 		} else {
 			// Single statement → Check for REDUCE first, otherwise FOREACH
@@ -931,8 +1195,12 @@ public class StreamPipelineBuilder {
 		if (operations == null) {
 			throw new IllegalArgumentException("operations cannot be null");
 		}
-		if (loopVarName == null) {
-			throw new IllegalArgumentException("loopVarName cannot be null");
+		if (loopVarName == null || loopVarName.isEmpty()) {
+			throw new IllegalArgumentException("loopVarName cannot be null or empty");
+		}
+		if (currentIndex < 0 || currentIndex > operations.size()) {
+			throw new IllegalArgumentException(
+					"currentIndex out of bounds: " + currentIndex + " (size: " + operations.size() + ")");
 		}
 
 		// Look back to find the most recent operation that produces a variable
@@ -964,6 +1232,73 @@ public class StreamPipelineBuilder {
 				|| operations.get(0).getOperationType() != ProspectiveOperation.OperationType.FOREACH;
 	}
 
+	/**
+	 * Determines if remaining statements after a variable declaration should be
+	 * wrapped in a single MAP operation with a block body.
+	 * 
+	 * <p>
+	 * This handles the pattern where after a MAP (variable declaration), we have
+	 * side-effect statements (like IFs with side effects) followed by a terminal
+	 * statement. The side-effect statements should be wrapped in a MAP that returns
+	 * the current variable.
+	 * 
+	 * @param statements the list of all statements in the current block
+	 * @param currentIndex the index of the variable declaration statement
+	 * @return true if remaining non-terminal statements should be wrapped in a MAP
+	 */
+	private boolean shouldWrapRemainingInMap(List<Statement> statements, int currentIndex) {
+		// Need at least 2 more statements after the variable declaration
+		if (currentIndex >= statements.size() - 2) {
+			return false;
+		}
+		
+		// Look through remaining non-terminal statements to see if we should wrap
+		// We should wrap if:
+		// 1. There are multiple statements before the last one, AND
+		// 2. At least one is an IF (not early return, not continue), OR
+		// 3. There are side-effect statements that should be grouped together
+		
+		for (int j = currentIndex + 1; j < statements.size() - 1; j++) {
+			Statement stmt = statements.get(j);
+			
+			if (stmt instanceof IfStatement) {
+				IfStatement ifStmt = (IfStatement) stmt;
+				
+				// Don't wrap if this is an early return IF (anyMatch/noneMatch pattern)
+				if (isEarlyReturnIf(ifStmt)) {
+					return false;
+				}
+				
+				// Don't wrap if this is a continue IF (will be handled as negated filter)
+				if (isIfWithContinue(ifStmt)) {
+					return false;
+				}
+				
+				// If this IF has no else clause and there are more statements after it,
+				// then all items must continue to those statements, so wrap
+				if (ifStmt.getElseStatement() == null) {
+					return true;
+				}
+			}
+		}
+		
+		// Also wrap if there are multiple non-terminal side-effect statements
+		// (e.g., println, method calls) before the terminal statement
+		int nonTerminalCount = statements.size() - currentIndex - 2; // -2 for current and last
+		if (nonTerminalCount > 0) {
+			// Check if any of these are side-effect statements (not variable declarations)
+			for (int j = currentIndex + 1; j < statements.size() - 1; j++) {
+				Statement stmt = statements.get(j);
+				if (!(stmt instanceof VariableDeclarationStatement)) {
+					// Found at least one side-effect statement that's not a variable declaration
+					return true;
+				}
+			}
+		}
+		
+		return false;
+	}
+	
 	/**
 	 * Processes an IF statement as a filter operation with nested body parsing.
 	 * Adds a FILTER operation for the condition and recursively processes the body.
@@ -1041,24 +1376,88 @@ public class StreamPipelineBuilder {
 			return false;
 		}
 
-		// Check if this IF statement is the early return IF from preconditions
-		IfStatement earlyReturnIf = preconditions.getEarlyReturnIf();
-		return earlyReturnIf != null && earlyReturnIf == ifStatement;
+		// Directly check if this IF statement matches the early return pattern
+		// by examining its structure rather than comparing object references
+		if (ifStatement == null || ifStatement.getElseStatement() != null) {
+			return false;
+		}
+
+		Statement thenStmt = ifStatement.getThenStatement();
+		ReturnStatement returnStmt = null;
+
+		// Check for direct return statement or block with single return
+		if (thenStmt instanceof ReturnStatement) {
+			returnStmt = (ReturnStatement) thenStmt;
+		} else if (thenStmt instanceof Block) {
+			Block block = (Block) thenStmt;
+			if (block.statements().size() == 1 && block.statements().get(0) instanceof ReturnStatement) {
+				returnStmt = (ReturnStatement) block.statements().get(0);
+			}
+		}
+
+		if (returnStmt == null || !(returnStmt.getExpression() instanceof BooleanLiteral)) {
+			return false;
+		}
+
+		BooleanLiteral returnValue = (BooleanLiteral) returnStmt.getExpression();
+
+		// Match the pattern based on return value
+		if (isAnyMatchPattern && returnValue.booleanValue()) {
+			// anyMatch: if (condition) return true;
+			return true;
+		} else if (isNoneMatchPattern && !returnValue.booleanValue()) {
+			// noneMatch: if (condition) return false;
+			return true;
+		} else if (isAllMatchPattern && !returnValue.booleanValue()) {
+			// allMatch: if (!condition) return false;
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
 	 * Creates a negated expression for filter operations. Used when converting "if
 	 * (condition) continue;" to ".filter(x -> !(condition))".
 	 * 
+	 * <p>
+	 * Wraps binary and complex expressions in parentheses to ensure correct precedence.
+	 * For example: {@code l == null} becomes {@code !(l == null)} not {@code !l == null}
+	 * </p>
+	 * 
 	 * @param ast       the AST to create nodes in
 	 * @param condition the condition to negate
-	 * @return a negated expression
+	 * @return a negated expression with proper parenthesization
+	 * @deprecated Use {@link ExpressionUtils#createNegatedExpression(AST, Expression)} instead
 	 */
+	@Deprecated
 	private Expression createNegatedExpression(AST ast, Expression condition) {
-		PrefixExpression negation = ast.newPrefixExpression();
-		negation.setOperator(PrefixExpression.Operator.NOT);
-		negation.setOperand((Expression) ASTNode.copySubtree(ast, condition));
-		return negation;
+		return ExpressionUtils.createNegatedExpression(ast, condition);
+	}
+	
+	/**
+	 * Determines if an expression needs parentheses when negated.
+	 * 
+	 * @param expr the expression to check
+	 * @return true if parentheses are needed
+	 * @deprecated Use {@link ExpressionUtils#needsParentheses(Expression)} instead
+	 */
+	@Deprecated
+	private boolean needsParentheses(Expression expr) {
+		return ExpressionUtils.needsParentheses(expr);
+	}
+
+	/**
+	 * Strips the negation from a negated expression.
+	 * Handles ParenthesizedExpression wrapping using JDT's {@link ASTNodes#getUnparenthesedExpression}.
+	 * 
+	 * @param expr the expression to strip negation from
+	 * @return the expression without the leading NOT operator, or the original expression if not negated
+	 * @deprecated Use {@link ExpressionUtils#stripNegation(Expression)} instead
+	 */
+	@Deprecated
+	private Expression stripNegation(Expression expr) {
+		return ExpressionUtils.stripNegation(expr);
 	}
 
 	/**
@@ -1067,57 +1466,11 @@ public class StreamPipelineBuilder {
 	 * 
 	 * @param varName the variable name to look up
 	 * @return the simple type name (e.g., "double", "int") or null if not found
+	 * @deprecated Use {@link TypeResolver#getVariableType(ASTNode, String)} instead
 	 */
+	@Deprecated
 	private String getVariableType(String varName) {
-		// Walk up the AST tree searching for the variable in each scope
-		ASTNode currentNode = forLoop.getParent();
-
-		while (currentNode != null) {
-			// Search in blocks
-			if (currentNode instanceof org.eclipse.jdt.core.dom.Block) {
-				org.eclipse.jdt.core.dom.Block block = (org.eclipse.jdt.core.dom.Block) currentNode;
-				String type = searchBlockForVariableType(block, varName);
-				if (type != null) {
-					return type;
-				}
-			}
-			// Search in method bodies
-			else if (currentNode instanceof org.eclipse.jdt.core.dom.MethodDeclaration) {
-				org.eclipse.jdt.core.dom.MethodDeclaration method = (org.eclipse.jdt.core.dom.MethodDeclaration) currentNode;
-				if (method.getBody() != null) {
-					String type = searchBlockForVariableType(method.getBody(), varName);
-					if (type != null) {
-						return type;
-					}
-				}
-			}
-			// Search in initializer blocks (instance or static)
-			else if (currentNode instanceof org.eclipse.jdt.core.dom.Initializer) {
-				org.eclipse.jdt.core.dom.Initializer initializer = (org.eclipse.jdt.core.dom.Initializer) currentNode;
-				if (initializer.getBody() != null) {
-					String type = searchBlockForVariableType(initializer.getBody(), varName);
-					if (type != null) {
-						return type;
-					}
-				}
-			}
-			// Search in lambda expressions
-			else if (currentNode instanceof org.eclipse.jdt.core.dom.LambdaExpression) {
-				org.eclipse.jdt.core.dom.LambdaExpression lambda = (org.eclipse.jdt.core.dom.LambdaExpression) currentNode;
-				if (lambda.getBody() instanceof org.eclipse.jdt.core.dom.Block) {
-					String type = searchBlockForVariableType((org.eclipse.jdt.core.dom.Block) lambda.getBody(),
-							varName);
-					if (type != null) {
-						return type;
-					}
-				}
-			}
-
-			// Move up to parent scope
-			currentNode = currentNode.getParent();
-		}
-
-		return null;
+		return TypeResolver.getVariableType(forLoop, varName);
 	}
 
 	/**
@@ -1126,66 +1479,11 @@ public class StreamPipelineBuilder {
 	 * @param block   the block to search
 	 * @param varName the variable name to find
 	 * @return the simple type name or null if not found
+	 * @deprecated Use {@link TypeResolver#searchBlockForVariableType(Block, String)} instead
 	 */
+	@Deprecated
 	private String searchBlockForVariableType(org.eclipse.jdt.core.dom.Block block, String varName) {
-		if (block == null) {
-			return null;
-		}
-
-		for (Object stmtObj : block.statements()) {
-			if (stmtObj instanceof VariableDeclarationStatement) {
-				VariableDeclarationStatement varDecl = (VariableDeclarationStatement) stmtObj;
-				for (Object fragObj : varDecl.fragments()) {
-					if (fragObj instanceof VariableDeclarationFragment) {
-						VariableDeclarationFragment frag = (VariableDeclarationFragment) fragObj;
-						if (frag.getName().getIdentifier().equals(varName)) {
-							org.eclipse.jdt.core.dom.Type type = varDecl.getType();
-							// Robustly extract the simple type name
-							if (type.isPrimitiveType()) {
-								// For primitive types: int, double, etc.
-								return ((org.eclipse.jdt.core.dom.PrimitiveType) type).getPrimitiveTypeCode()
-										.toString();
-							} else if (type.isSimpleType()) {
-								// For reference types: get the simple name
-								org.eclipse.jdt.core.dom.SimpleType simpleType = (org.eclipse.jdt.core.dom.SimpleType) type;
-								// Try to use binding if available
-								org.eclipse.jdt.core.dom.ITypeBinding binding = simpleType.resolveBinding();
-								if (binding != null) {
-									return binding.getName();
-								} else {
-									return simpleType.getName().getFullyQualifiedName();
-								}
-							} else if (type.isArrayType()) {
-								// For array types, get the element type recursively and append "[]"
-								org.eclipse.jdt.core.dom.ArrayType arrayType = (org.eclipse.jdt.core.dom.ArrayType) type;
-								org.eclipse.jdt.core.dom.Type elementType = arrayType.getElementType();
-								String elementTypeName;
-								if (elementType.isPrimitiveType()) {
-									elementTypeName = ((org.eclipse.jdt.core.dom.PrimitiveType) elementType)
-											.getPrimitiveTypeCode().toString();
-								} else if (elementType.isSimpleType()) {
-									org.eclipse.jdt.core.dom.SimpleType simpleType = (org.eclipse.jdt.core.dom.SimpleType) elementType;
-									org.eclipse.jdt.core.dom.ITypeBinding binding = simpleType.resolveBinding();
-									if (binding != null) {
-										elementTypeName = binding.getName();
-									} else {
-										elementTypeName = simpleType.getName().getFullyQualifiedName();
-									}
-								} else {
-									// Fallback for other types
-									elementTypeName = elementType.toString();
-								}
-								return elementTypeName + "[]";
-							} else {
-								// Fallback for other types (e.g., parameterized, qualified, etc.)
-								return type.toString();
-							}
-						}
-					}
-				}
-			}
-		}
-		return null;
+		return TypeResolver.searchBlockForVariableType(block, varName);
 	}
 
 	/**
@@ -1271,6 +1569,9 @@ public class StreamPipelineBuilder {
 
 		Set<String> availableVars = new HashSet<>();
 		availableVars.add(loopVarName);
+		
+		// Track if we've moved past the loop variable to a mapped variable
+		boolean loopVarConsumed = false;
 
 		for (ProspectiveOperation op : operations) {
 			if (op == null) {
@@ -1280,8 +1581,20 @@ public class StreamPipelineBuilder {
 			// Check consumed variables are available
 			Set<String> consumed = op.getConsumedVariables();
 			for (String var : consumed) {
-				// Skip the loop variable and accumulator variables (they're in outer scope)
-				if (!var.equals(loopVarName) && !isAccumulatorVariable(var, operations)) {
+				// Accumulator variables are in outer scope, always available
+				if (isAccumulatorVariable(var, operations)) {
+					continue;
+				}
+				
+				// After a MAP produces a new variable, the loop variable should not be used
+				// unless it's the current operation that consumes it
+				if (var.equals(loopVarName)) {
+					if (loopVarConsumed && op.getProducedVariableName() != null) {
+						// Loop variable used after it's been replaced by a MAP - scope violation
+						return false;
+					}
+				} else {
+					// Non-loop, non-accumulator variable - must be in availableVars
 					if (!availableVars.contains(var)) {
 						// Variable used before it's defined - this is a scope violation
 						return false;
@@ -1289,10 +1602,17 @@ public class StreamPipelineBuilder {
 				}
 			}
 
-			// Add produced variables to available set
+			// Add produced variables to available set and mark loop var as consumed if applicable
 			String produced = op.getProducedVariableName();
 			if (produced != null && !produced.isEmpty()) {
 				availableVars.add(produced);
+				
+				// If this MAP operation consumed the loop variable, mark it as consumed
+				if (consumed.contains(loopVarName)) {
+					loopVarConsumed = true;
+					// Remove loop variable from available vars - it's now been replaced
+					availableVars.remove(loopVarName);
+				}
 			}
 		}
 
@@ -1420,5 +1740,100 @@ public class StreamPipelineBuilder {
 
 		// Method calls and other expressions are generally safe
 		return true;
+	}
+
+	/**
+	 * Checks if a variable has a @NotNull or @NonNull annotation.
+	 * This is used to determine if String::concat can be safely used instead of
+	 * the null-safe lambda (a, b) -> a + b.
+	 * 
+	 * @param varName the variable name to check
+	 * @return true if the variable has a @NotNull or @NonNull annotation
+	 * @deprecated Use {@link TypeResolver#hasNotNullAnnotation(ASTNode, String)} instead
+	 */
+	@Deprecated
+	private boolean hasNotNullAnnotation(String varName) {
+		return TypeResolver.hasNotNullAnnotation(forLoop, varName);
+	}
+
+	/**
+	 * Gets the type binding for a variable name.
+	 * 
+	 * @param varName the variable name
+	 * @return the type binding, or null if not found
+	 * @deprecated Use {@link TypeResolver#getTypeBinding(ASTNode, String)} instead
+	 */
+	@Deprecated
+	private ITypeBinding getTypeBinding(String varName) {
+		return TypeResolver.getTypeBinding(forLoop, varName);
+	}
+
+	/**
+	 * Finds the variable declaration fragment for a given variable name.
+	 * Searches up the AST tree starting from the for loop.
+	 * 
+	 * @param varName the variable name to find
+	 * @return the VariableDeclarationFragment, or null if not found
+	 * @deprecated Use {@link TypeResolver#findVariableDeclaration(ASTNode, String)} instead
+	 */
+	@Deprecated
+	private VariableDeclarationFragment findVariableDeclaration(String varName) {
+		return TypeResolver.findVariableDeclaration(forLoop, varName);
+	}
+
+	/**
+	 * Checks if a binding has @NotNull or @NonNull annotation.
+	 * 
+	 * @param binding the variable binding to check
+	 * @return true if the binding has a @NotNull or @NonNull annotation
+	 * @deprecated Use {@link TypeResolver#hasNotNullAnnotationOnBinding(IVariableBinding)} instead
+	 */
+	@Deprecated
+	private boolean hasNotNullAnnotationOnBinding(IVariableBinding binding) {
+		return TypeResolver.hasNotNullAnnotationOnBinding(binding);
+	}
+
+	/**
+	 * Creates a match operation (ANYMATCH, NONEMATCH, or ALLMATCH) from an IF statement
+	 * containing an early return pattern.
+	 * 
+	 * <p>
+	 * This method handles the common pattern of creating match operations from IF statements
+	 * that contain early returns. It determines the appropriate operation type based on
+	 * the pattern flags set in the constructor, and handles condition negation for ALLMATCH.
+	 * </p>
+	 * 
+	 * <p><b>Patterns recognized:</b></p>
+	 * <ul>
+	 * <li><b>ANYMATCH</b>: {@code if (condition) return true;}</li>
+	 * <li><b>NONEMATCH</b>: {@code if (condition) return false;}</li>
+	 * <li><b>ALLMATCH</b>: {@code if (!condition) return false;} (condition is un-negated)</li>
+	 * </ul>
+	 * 
+	 * @param ifStmt the IF statement containing the early return pattern (must not be null)
+	 * @return a ProspectiveOperation representing the match operation
+	 */
+	private ProspectiveOperation createMatchOperation(IfStatement ifStmt) {
+		// Determine operation type based on pattern flags
+		ProspectiveOperation.OperationType opType;
+		if (isAnyMatchPattern) {
+			opType = ProspectiveOperation.OperationType.ANYMATCH;
+		} else if (isNoneMatchPattern) {
+			opType = ProspectiveOperation.OperationType.NONEMATCH;
+		} else {
+			// allMatchPattern
+			// For allMatch, we need to negate the condition since
+			// the pattern is "if (!condition) return false"
+			// We want "allMatch(condition)" not "allMatch(!condition)"
+			opType = ProspectiveOperation.OperationType.ALLMATCH;
+		}
+
+		// For allMatch with negated condition, strip the negation
+		Expression condition = ifStmt.getExpression();
+		if (isAllMatchPattern) {
+			condition = ExpressionUtils.stripNegation(condition);
+		}
+
+		return new ProspectiveOperation(condition, opType);
 	}
 }

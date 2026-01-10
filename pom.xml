@@ -27,6 +27,7 @@
 		<module>sandbox_cleanup_application_feature</module>
 		<module>sandbox_cleanup_application_test</module>
 		<module>sandbox_common</module>
+		<module>sandbox_common_test</module>
 		<module>sandbox_test_commons</module>
 		<module>sandbox_encoding_quickfix</module>
 		<module>sandbox_encoding_quickfix_feature</module>
@@ -107,7 +108,7 @@
 		<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>license-maven-plugin</artifactId>
-				<version>2.7.0</version>
+				<version>2.7.1</version>
 				<configuration>
 					<licenseName>epl_v2</licenseName>
 					<organizationName>hammer</organizationName>
@@ -334,6 +335,11 @@ See README.md for more information.
 			<dependency>
 				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_common</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_common_test</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>

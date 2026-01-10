@@ -12,7 +12,10 @@ This file was missing from the sandbox_junit_cleanup plugin. It has been created
 - ✅ Comprehensive test coverage
 - ✅ Multiple plugin implementations for different migration scenarios
 - ✅ @Test(expected) parameter migration to assertThrows()
-- ✅ Parameter order correction for assertions (expected/actual swapping)
+- ✅ Assert optimization: assertTrue/assertFalse to more specific assertions (assertEquals, assertNull, assertSame)
+- ✅ Assume optimization: assumeTrue/assumeFalse negation removal
+- ✅ assertEquals/assertNotEquals parameter swap detection and correction
+- ✅ Lost JUnit test finder: detects test methods missing @Test annotation after manual migration
 
 ### In Progress
 - None currently
@@ -27,6 +30,7 @@ This file was missing from the sandbox_junit_cleanup plugin. It has been created
 ### 1. Parameterized Test Migration
 **Priority**: Medium  
 **Effort**: 10-12 hours
+**Status**: ✅ **COMPLETED**
 
 Add support for migrating JUnit 4 parameterized tests to JUnit 5 `@ParameterizedTest`:
 - Detect JUnit 4 `@RunWith(Parameterized.class)` tests
@@ -139,34 +143,27 @@ Migrate JUnit 4 categories to JUnit 5 tags:
 - Creates multiple @Tag annotations for multiple categories
 - Updates imports appropriately
 
-### Assertion Parameter Order Correction
-**Priority**: High  
+### Lost JUnit Test Finder
+**Priority**: Medium  
 **Effort**: 8-10 hours  
 **Status**: ✅ **COMPLETED**
 
-Correct parameter order in assertion methods to follow JUnit best practices (expected, actual):
-- `assertEquals(actual, EXPECTED)` → `assertEquals(EXPECTED, actual)`
-- `assertArrayEquals(getArray(), new int[]{1,2,3})` → `assertArrayEquals(new int[]{1,2,3}, getArray())`
-- `assertSame(getInstance(), SINGLETON)` → `assertSame(SINGLETON, getInstance())`
-- `assertNotSame(getObject(), EXPECTED)` → `assertNotSame(EXPECTED, getObject())`
-- `assertIterableEquals(getList(), List.of(1,2,3))` → `assertIterableEquals(List.of(1,2,3), getList())`
-- `assertLinesMatch(getLines(), List.of("a","b"))` → `assertLinesMatch(List.of("a","b"), getLines())`
+Detects and fixes "lost" JUnit 3 tests after manual migration:
+- Finds methods starting with `test` that are missing `@Test` annotation
+- Only operates on classes that already have @Test methods (migrated classes)
+- Checks class hierarchy (inherited @Test methods)
+- Excludes lifecycle annotations (@Before, @After, @BeforeEach, etc.)
+- Version-aware: adds JUnit 4 or JUnit 5 @Test based on existing imports
+- Supports wildcard imports (import org.junit.*)
 
 **Implementation Notes**:
-- Implemented in AssertOptimizationJUnitPlugin
-- Detects when second parameter is constant but first is not
-- Supports literals, final fields, enum constants, array literals, and collection factory methods
-- Handles both JUnit 4 (message first) and JUnit 5 (message last) parameter orders
-- Methods supported: assertEquals, assertNotEquals, assertArrayEquals, assertSame, assertNotSame, assertIterableEquals, assertLinesMatch
+- Implemented in LostTestFinderJUnitPlugin
+- Conservative detection to avoid false positives
+- Requires public void signature with no parameters
+- Disabled by default (heuristic feature)
+- Comprehensive test suite with 12 test cases
 
-**Constant Detection**:
-- Number, String, Boolean, Character, Null literals
-- Type literals (e.g., MyClass.class)
-- Final fields and static fields
-- Enum constants
-- Array creation expressions with constant initializers
-- Collection factory methods: List.of(), Set.of(), Arrays.asList(), Map.of()
-- Method calls on literals: "test".getBytes()
+**Use Case**: Fixes issues from regex-based JUnit 3 → 4/5 migrations where some test methods were overlooked
 
 ## Testing Strategy
 

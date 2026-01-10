@@ -91,6 +91,8 @@ public final class JUnitConstants {
 	public static final String ORG_MOCKITO_RUNNERS_MOCKITO_JUNIT_RUNNER = "org.mockito.runners.MockitoJUnitRunner";
 	public static final String ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER = "org.springframework.test.context.junit4.SpringRunner";
 	public static final String ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_JUNIT4_CLASS_RUNNER = "org.springframework.test.context.junit4.SpringJUnit4ClassRunner";
+	public static final String ORG_JUNIT_RUNNERS_PARAMETERIZED = "org.junit.runners.Parameterized";
+	public static final String ORG_JUNIT_RUNNERS_PARAMETERIZED_PARAMETERS = "org.junit.runners.Parameterized.Parameters";
 
 	// ===== JUnit 5 / Jupiter Fully Qualified References =====
 
@@ -113,6 +115,14 @@ public final class JUnitConstants {
 	public static final String ORG_JUNIT_JUPITER_API_TIMEOUT = "org.junit.jupiter.api.Timeout";
 	public static final String ORG_JUNIT_JUPITER_API_ASSUMPTIONS = "org.junit.jupiter.api.Assumptions";
 	public static final String ORG_JUNIT_JUPITER_API_TAG = "org.junit.jupiter.api.Tag";
+	
+	// ===== JUnit 5 Parameterized Fully Qualified References =====
+	
+	public static final String ORG_JUNIT_JUPITER_PARAMS_PARAMETERIZED_TEST = "org.junit.jupiter.params.ParameterizedTest";
+	public static final String ORG_JUNIT_JUPITER_PARAMS_PROVIDER_METHOD_SOURCE = "org.junit.jupiter.params.provider.MethodSource";
+	public static final String ORG_JUNIT_JUPITER_PARAMS_PROVIDER_ARGUMENTS = "org.junit.jupiter.params.provider.Arguments";
+	public static final String ANNOTATION_PARAMETERIZED_TEST = "ParameterizedTest";
+	public static final String ANNOTATION_METHOD_SOURCE = "MethodSource";
 
 	// ===== JUnit 5 Extension Fully Qualified References =====
 

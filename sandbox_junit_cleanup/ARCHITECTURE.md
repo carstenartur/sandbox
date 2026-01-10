@@ -263,14 +263,51 @@ Each plugin class extends `AbstractTool` and specializes for a specific JUnit mi
 - Reorders assertion parameters
 - Handles both instance and static imports
 
+### AssertOptimizationJUnitPlugin
+- Optimizes generic assertions to more specific ones
+- Converts `assertTrue(a == b)` to `assertEquals(a, b)` (primitives) or `assertSame(a, b)` (objects)
+- Converts `assertTrue(obj == null)` to `assertNull(obj)`
+- Converts `assertTrue(!condition)` to `assertFalse(condition)`
+- Converts `assertTrue(a.equals(b))` to `assertEquals(b, a)`
+- **New**: Detects and corrects swapped assertEquals/assertNotEquals parameters
+- Swaps parameters when constant is in second position: `assertEquals(result, "expected")` → `assertEquals("expected", result)`
+- Detects constants: literals, static final fields, enum values
+- Preserves message parameters and delta parameters in 3/4-argument versions
+- Handles both JUnit 4 (Assert) and JUnit 5 (Assertions) classes
+
 ### AssumeJUnitPlugin
 - Migrates `org.junit.Assume` to `org.junit.jupiter.api.Assumptions`
 - Reorders assumption parameters
 - Uses `MULTI_PARAM_ASSUMPTIONS` constant set
 
+### AssumeOptimizationJUnitPlugin
+- Optimizes generic assumptions by removing unnecessary negations
+- Converts `assumeTrue(!condition)` to `assumeFalse(condition)`
+- Converts `assumeFalse(!condition)` to `assumeTrue(condition)`
+- Preserves message parameters (both String and Supplier variants)
+- Handles both JUnit 4 (Assume) and JUnit 5 (Assumptions) classes
+- Note: Does not optimize null checks as JUnit 5 Assumptions lacks assumeNull/assumeNotNull
+
 ### ExternalResourceJUnitPlugin
 - Orchestrates `ExternalResourceRefactorer` for field-level transformations
 - Manages `@Rule` and `@ClassRule` to `@RegisterExtension` migration
+
+### LostTestFinderJUnitPlugin
+- Detects and fixes "lost" JUnit 3 tests that were not properly migrated to JUnit 4/5
+- Identifies methods starting with `test` that are missing `@Test` annotation
+- **Detection Criteria** (all must be met):
+  - Class or superclass contains existing `@Test` annotated methods
+  - Method name starts with "test"
+  - No `@Test` annotation present
+  - `public void` signature with no parameters
+  - Not annotated with lifecycle annotations (`@Before`, `@After`, `@BeforeEach`, `@AfterEach`, `@Ignore`, `@Disabled`, etc.)
+- **Version Awareness**: Determines correct `@Test` annotation based on existing imports
+  - JUnit 5 (`org.junit.jupiter.api.Test`) if JUnit 5 imports detected or no JUnit imports
+  - JUnit 4 (`org.junit.Test`) if JUnit 4 imports detected and no JUnit 5
+  - Supports wildcard imports (`import org.junit.*;`)
+- **Conservative Approach**: Only operates on classes that have already been partially migrated (contain `@Test` methods), avoiding false positives on classes with test-prefixed helper methods that were never intended as tests
+- **Disabled by Default**: As a heuristic feature, must be explicitly enabled by user
+- **Use Case**: Fixes test methods lost during manual regex-based JUnit 3 → 4/5 migrations
 
 ### TestJUnit3Plugin
 - Migrates JUnit 3 test cases (extending `TestCase`) to JUnit 5

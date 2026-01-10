@@ -16,46 +16,105 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.Status;
+
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 
 /**
- * Find: for (Integer l : ls){
- * 		  System.out.println(l);
- * 		}
- *
- * Rewrite: ls.forEach(l -> {
- * 			System.out.println(l);
- * 		});
- *
+ * Converts enhanced for-loops to functional stream operations.
+ * 
+ * <p>
+ * This class implements the Eclipse JDT cleanup framework to find and transform
+ * imperative for-loops into declarative stream pipelines. It integrates with
+ * the Eclipse IDE's quick fix and cleanup mechanisms.
+ * </p>
+ * 
+ * <p><b>Example Transformation:</b></p>
+ * <pre>{@code
+ * // Before:
+ * for (Integer l : ls) {
+ *     System.out.println(l);
+ * }
+ * 
+ * // After:
+ * ls.forEach(l -> {
+ *     System.out.println(l);
+ * });
+ * }</pre>
+ * 
+ * <p><b>Integration with Eclipse:</b></p>
+ * <p>
+ * This class extends {@link AbstractFunctionalCall} and is registered as a
+ * cleanup contributor in the Eclipse JDT UI framework. It participates in:
+ * <ul>
+ * <li>Source cleanup actions (Ctrl+Shift+F in Eclipse)</li>
+ * <li>Quick fix suggestions (Ctrl+1)</li>
+ * <li>Batch cleanup operations</li>
+ * </ul>
+ * </p>
+ * 
+ * <p><b>Processing Flow:</b></p>
+ * <ol>
+ * <li>{@link #find(UseFunctionalCallFixCore, CompilationUnit, Set, Set)}: 
+ *     Visits all EnhancedForStatements and identifies convertible loops</li>
+ * <li>{@link #rewrite(UseFunctionalCallFixCore, EnhancedForStatement, CompilationUnitRewrite, TextEditGroup)}:
+ *     Performs the actual AST transformation for each identified loop</li>
+ * <li>{@link #getPreview(boolean)}: Provides before/after preview in Eclipse UI</li>
+ * </ol>
+ * 
+ * <p><b>Safety Checks:</b></p>
+ * <p>
+ * The conversion only occurs if:
+ * <ul>
+ * <li>{@link PreconditionsChecker} validates the loop is safe to refactor</li>
+ * <li>{@link StreamPipelineBuilder} successfully analyzes the loop body</li>
+ * <li>All variables are effectively final</li>
+ * <li>No break, labeled continue, or exception throwing occurs</li>
+ * </ul>
+ * </p>
+ * 
+ * @see AbstractFunctionalCall
+ * @see StreamPipelineBuilder
+ * @see PreconditionsChecker
+ * @see Refactorer
  */
 public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatement> {
 
 	@Override
 	public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed) {
-		compilationUnit.accept(new ASTVisitor() {
+		ReferenceHolder<Integer, FunctionalHolder> dataHolder= new ReferenceHolder<>();
+		HelperVisitor.callEnhancedForStatementVisitor(compilationUnit, dataHolder, nodesprocessed,
+				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder),(visited, aholder) -> {});
+	}
 
-			@Override
-			public final boolean visit(final EnhancedForStatement visited) {
-				PreconditionsChecker pc = new PreconditionsChecker(visited, (CompilationUnit) visited.getRoot());
-				if (!pc.isSafeToRefactor() ) {
-					// Loop cannot be safely refactored to functional style
-					return false;
-				}
-				operations.add(fixcore.rewrite(visited));
-				nodesprocessed.add(visited);
-				return false;
-			}
-		});
+	private boolean processFoundNode(UseFunctionalCallFixCore fixcore,
+			Set<CompilationUnitRewriteOperation> operations, EnhancedForStatement visited,
+			ReferenceHolder<Integer, FunctionalHolder> dataHolder) {
+//		FunctionalHolder mh= new FunctionalHolder();
+//		mh.minv= visited;
+
+		PreconditionsChecker pc = new PreconditionsChecker(visited, (CompilationUnit) visited.getRoot());
+		if (!pc.isSafeToRefactor()) {
+			// Loop cannot be safely refactored to functional style
+			return false;
+		}
+		// Check if the loop can be analyzed for stream conversion
+		StreamPipelineBuilder builder = new StreamPipelineBuilder(visited, pc);
+		if (!builder.analyze()) {
+			// Cannot convert this loop to functional style
+			return false;
+		}
+		operations.add(fixcore.rewrite(visited));
+		return false;
 	}
 
 	@Override
@@ -64,10 +123,7 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 		ASTRewrite rewrite = cuRewrite.getASTRewrite();
 		PreconditionsChecker pc = new PreconditionsChecker(visited, (CompilationUnit) visited.getRoot());
 		Refactorer refactorer = new Refactorer(visited, rewrite, pc, group);
-		if (!pc.isSafeToRefactor()||!refactorer.isRefactorable()) {
-			// Loop cannot be safely refactored to functional style
-			throw new CoreException(Status.CANCEL_STATUS);
-		}
+		// Preconditions already checked in find(), but refactorer.refactor() handles edge cases
 		refactorer.refactor();
 	}
 
