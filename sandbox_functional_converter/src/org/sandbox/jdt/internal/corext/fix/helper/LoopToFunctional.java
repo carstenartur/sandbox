@@ -29,14 +29,62 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 
 /**
- * Find: for (Integer l : ls){
- * 		  System.out.println(l);
- * 		}
- *
- * Rewrite: ls.forEach(l -> {
- * 			System.out.println(l);
- * 		});
- *
+ * Converts enhanced for-loops to functional stream operations.
+ * 
+ * <p>
+ * This class implements the Eclipse JDT cleanup framework to find and transform
+ * imperative for-loops into declarative stream pipelines. It integrates with
+ * the Eclipse IDE's quick fix and cleanup mechanisms.
+ * </p>
+ * 
+ * <p><b>Example Transformation:</b></p>
+ * <pre>{@code
+ * // Before:
+ * for (Integer l : ls) {
+ *     System.out.println(l);
+ * }
+ * 
+ * // After:
+ * ls.forEach(l -> {
+ *     System.out.println(l);
+ * });
+ * }</pre>
+ * 
+ * <p><b>Integration with Eclipse:</b></p>
+ * <p>
+ * This class extends {@link AbstractFunctionalCall} and is registered as a
+ * cleanup contributor in the Eclipse JDT UI framework. It participates in:
+ * <ul>
+ * <li>Source cleanup actions (Ctrl+Shift+F in Eclipse)</li>
+ * <li>Quick fix suggestions (Ctrl+1)</li>
+ * <li>Batch cleanup operations</li>
+ * </ul>
+ * </p>
+ * 
+ * <p><b>Processing Flow:</b></p>
+ * <ol>
+ * <li>{@link #find(UseFunctionalCallFixCore, CompilationUnit, Set, Set)}: 
+ *     Visits all EnhancedForStatements and identifies convertible loops</li>
+ * <li>{@link #rewrite(UseFunctionalCallFixCore, EnhancedForStatement, CompilationUnitRewrite, TextEditGroup)}:
+ *     Performs the actual AST transformation for each identified loop</li>
+ * <li>{@link #getPreview(boolean)}: Provides before/after preview in Eclipse UI</li>
+ * </ol>
+ * 
+ * <p><b>Safety Checks:</b></p>
+ * <p>
+ * The conversion only occurs if:
+ * <ul>
+ * <li>{@link PreconditionsChecker} validates the loop is safe to refactor</li>
+ * <li>{@link StreamPipelineBuilder} successfully analyzes the loop body</li>
+ * <li>All variables are effectively final</li>
+ * <li>No break, labeled continue, or exception throwing occurs</li>
+ * </ul>
+ * </p>
+ * 
+ * @see AbstractFunctionalCall
+ * @see StreamPipelineBuilder
+ * @see PreconditionsChecker
+ * @see Refactorer
  */
 public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatement> {
 

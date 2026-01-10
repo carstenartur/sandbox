@@ -20,6 +20,49 @@ import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.text.edits.TextEditGroup;
 
+/**
+ * Orchestrates the refactoring of enhanced for-loops into functional stream pipelines.
+ * 
+ * <p>
+ * This class serves as the main entry point for converting imperative for-loops
+ * into declarative stream operations. It coordinates the analysis, validation,
+ * and transformation phases using {@link PreconditionsChecker} and
+ * {@link StreamPipelineBuilder}.
+ * </p>
+ * 
+ * <p><b>Refactoring Process:</b></p>
+ * <ol>
+ * <li><b>Precondition Check</b>: Validates loop is safe to refactor (no breaks,
+ *     returns, exceptions, etc.)</li>
+ * <li><b>Analysis</b>: Parses loop body into stream operations</li>
+ * <li><b>Pipeline Construction</b>: Builds method invocation chain</li>
+ * <li><b>AST Replacement</b>: Replaces for-loop with stream pipeline in AST</li>
+ * </ol>
+ * 
+ * <p><b>Usage Example:</b></p>
+ * <pre>{@code
+ * PreconditionsChecker preconditions = new PreconditionsChecker(forLoop, cu);
+ * Refactorer refactorer = new Refactorer(forLoop, rewrite, preconditions, group);
+ * 
+ * if (refactorer.isRefactorable()) {
+ *     refactorer.refactor(); // Performs the transformation
+ * }
+ * }</pre>
+ * 
+ * <p><b>AST Modification:</b></p>
+ * <p>
+ * This class uses Eclipse JDT's {@link ASTRewrite} mechanism to modify the AST.
+ * All changes are tracked in a {@link TextEditGroup} for editor integration.
+ * Comments on the original for-loop are preserved when possible.
+ * </p>
+ * 
+ * <p><b>Thread Safety:</b> This class is not thread-safe. Create a new instance
+ * for each refactoring operation.</p>
+ * 
+ * @see StreamPipelineBuilder
+ * @see PreconditionsChecker
+ * @see ASTRewrite
+ */
 public class Refactorer {
 	private final EnhancedForStatement forLoop;
 	private final ASTRewrite rewrite;

@@ -38,10 +38,71 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
  * Represents a prospective stream operation extracted from a loop body.
  * 
  * <p>
+ * This class encapsulates a single operation in a stream pipeline being
+ * constructed from an enhanced for-loop. Each operation corresponds to a
+ * stream method (filter, map, forEach, reduce, etc.) and maintains information
+ * about the expression to transform, variables consumed/produced, and any
+ * special handling required.
+ * </p>
+ * 
+ * <p><b>Operation Types:</b></p>
+ * <ul>
+ * <li><b>FILTER</b>: Conditional filtering ({@code .filter(predicate)})</li>
+ * <li><b>MAP</b>: Transformation ({@code .map(function)})</li>
+ * <li><b>FOREACH</b>: Terminal action ({@code .forEach(consumer)})</li>
+ * <li><b>REDUCE</b>: Aggregation ({@code .reduce(identity, accumulator)})</li>
+ * <li><b>ANYMATCH</b>: Short-circuit match ({@code .anyMatch(predicate)})</li>
+ * <li><b>NONEMATCH</b>: Short-circuit non-match ({@code .noneMatch(predicate)})</li>
+ * <li><b>ALLMATCH</b>: Short-circuit all-match ({@code .allMatch(predicate)})</li>
+ * </ul>
+ * 
+ * <p><b>Variable Tracking:</b></p>
+ * <p>
+ * The class tracks three types of variables:
+ * <ul>
+ * <li><b>Consumed variables</b>: Variables read by this operation</li>
+ * <li><b>Produced variable</b>: Variable created by MAP operations (e.g., {@code int x = ...})</li>
+ * <li><b>Accumulator variable</b>: Variable modified by REDUCE operations (e.g., {@code sum += ...})</li>
+ * </ul>
+ * This tracking enables proper scoping and validation in the stream pipeline.
+ * </p>
+ * 
+ * <p><b>Reducer Patterns:</b></p>
+ * <p>
+ * For REDUCE operations, this class supports various reducer types:
+ * <ul>
+ * <li>INCREMENT/DECREMENT: {@code i++}, {@code i--}</li>
+ * <li>SUM: {@code sum += x} → {@code .reduce(sum, Integer::sum)}</li>
+ * <li>PRODUCT: {@code product *= x} → {@code .reduce(product, (a,b) -> a*b)}</li>
+ * <li>MAX/MIN: {@code max = Math.max(max, x)} → {@code .reduce(max, Integer::max)}</li>
+ * <li>STRING_CONCAT: {@code str += s} → {@code .reduce(str, String::concat)} (when null-safe)</li>
+ * </ul>
+ * </p>
+ * 
+ * <p><b>Lambda Generation:</b></p>
+ * <p>
+ * The {@link #getArguments(AST, String)} method generates lambda expressions
+ * or method references appropriate for each operation type. It handles:
+ * <ul>
+ * <li>Parameter naming based on variable tracking</li>
+ * <li>Identity element generation for reducers</li>
+ * <li>Method reference optimization (e.g., Integer::sum vs explicit lambda)</li>
+ * <li>Expression copying and AST node creation</li>
+ * </ul>
+ * </p>
+ * 
+ * <p><b>Thread Safety:</b> This class is not thread-safe.</p>
+ * 
+ * <p>
  * This class is final to prevent subclassing and potential finalizer attacks,
  * since constructors call analysis methods that could potentially throw
  * exceptions.
  * </p>
+ * 
+ * @see StreamPipelineBuilder
+ * @see OperationType
+ * @see ReducerType
+ * @see StreamConstants
  */
 public final class ProspectiveOperation {
 	/**
