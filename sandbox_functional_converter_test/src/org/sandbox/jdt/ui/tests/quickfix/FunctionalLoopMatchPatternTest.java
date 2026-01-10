@@ -17,10 +17,8 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
@@ -57,12 +55,8 @@ public class FunctionalLoopMatchPatternTest {
 	@RegisterExtension
 	AbstractEclipseJava context = new EclipseJava22();
 
-	/**
-	 * Test data enum with input/expected output pairs.
-	 */
-	enum TestCase {
-		/**
-		 * Tests anyMatch with chained map operations.
+/**
+* Tests anyMatch with chained map operations.
 		 * 
 		 * <p>
 		 * <b>Conversion Rule:</b> Loop with early return true on condition match is
@@ -97,8 +91,11 @@ public class FunctionalLoopMatchPatternTest {
 		 * return false;
 		 * }
 		 * </pre>
-		 */
-		ChainedAnyMatch("""
+ */
+@Disabled("Not yet working - match pattern conversion needs improvement")
+@Test
+void test_ChainedAnyMatch() throws CoreException {
+String input = """
 				package test1;
 
 				import java.util.Arrays;
@@ -128,9 +125,9 @@ public class FunctionalLoopMatchPatternTest {
 				    {
 				        return o;
 				    }
-				}""",
+				}""";
 
-				"""
+String expected = """
 						package test1;
 
 						import java.util.Arrays;
@@ -156,17 +153,26 @@ public class FunctionalLoopMatchPatternTest {
 						    {
 						        return o;
 						    }
-						}"""),
+						}""";
 
-		/**
-		 * Tests noneMatch with chained map operations.
+IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
+context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+}
+
+/**
+* Tests noneMatch with chained map operations.
 		 * 
 		 * <p>
 		 * <b>Conversion Rule:</b> Loop with early return false on condition match is
 		 * converted to {@code stream().map(...).noneMatch(...)}.
 		 * </p>
-		 */
-		ChainedNoneMatch("""
+ */
+@Disabled("Not yet working - match pattern conversion needs improvement")
+@Test
+void test_ChainedNoneMatch() throws CoreException {
+String input = """
 				package test1;
 
 				import java.util.Arrays;
@@ -196,9 +202,9 @@ public class FunctionalLoopMatchPatternTest {
 				    {
 				        return o;
 				    }
-				}""",
+				}""";
 
-				"""
+String expected = """
 						package test1;
 
 						import java.util.Arrays;
@@ -224,17 +230,26 @@ public class FunctionalLoopMatchPatternTest {
 						    {
 						        return o;
 						    }
-						}"""),
+						}""";
 
-		/**
-		 * Tests simple allMatch pattern.
+IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
+context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+}
+
+/**
+* Tests simple allMatch pattern.
 		 * 
 		 * <p>
 		 * <b>Conversion Rule:</b> Loop that returns false if any element doesn't match
 		 * condition is converted to {@code stream().allMatch(...)}.
 		 * </p>
-		 */
-		SimpleAllMatch("""
+ */
+@Disabled("Not yet working - match pattern conversion needs improvement")
+@Test
+void test_SimpleAllMatch() throws CoreException {
+String input = """
 				package test1;
 
 				import java.util.List;
@@ -248,9 +263,9 @@ public class FunctionalLoopMatchPatternTest {
 				        }
 				        return true;
 				    }
-				}""",
+				}""";
 
-				"""
+String expected = """
 						package test1;
 
 						import java.util.List;
@@ -262,17 +277,26 @@ public class FunctionalLoopMatchPatternTest {
 						        }
 						        return true;
 						    }
-						}"""),
+						}""";
 
-		/**
-		 * Tests allMatch with null checking.
+IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
+context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+}
+
+/**
+* Tests allMatch with null checking.
 		 * 
 		 * <p>
 		 * <b>Conversion Rule:</b> Null checks in loops are converted to
 		 * {@code allMatch()} predicates.
 		 * </p>
-		 */
-		AllMatchWithNullCheck("""
+ */
+@Disabled("Not yet working - match pattern conversion needs improvement")
+@Test
+void test_AllMatchWithNullCheck() throws CoreException {
+String input = """
 				package test1;
 
 				import java.util.List;
@@ -286,9 +310,9 @@ public class FunctionalLoopMatchPatternTest {
 				        }
 				        return true;
 				    }
-				}""",
+				}""";
 
-				"""
+String expected = """
 						package test1;
 
 						import java.util.List;
@@ -300,17 +324,26 @@ public class FunctionalLoopMatchPatternTest {
 						        }
 						        return true;
 						    }
-						}"""),
+						}""";
 
-		/**
-		 * Tests allMatch with chained map operation.
+IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
+context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+}
+
+/**
+* Tests allMatch with chained map operation.
 		 * 
 		 * <p>
 		 * <b>Conversion Rule:</b> Transformation before condition check uses
 		 * {@code map()} before {@code allMatch()}.
 		 * </p>
-		 */
-		ChainedAllMatch("""
+ */
+@Disabled("Not yet working - match pattern conversion needs improvement")
+@Test
+void test_ChainedAllMatch() throws CoreException {
+String input = """
 				package test1;
 
 				import java.util.List;
@@ -325,9 +358,9 @@ public class FunctionalLoopMatchPatternTest {
 				        }
 				        return true;
 				    }
-				}""",
+				}""";
 
-				"""
+String expected = """
 						package test1;
 
 						import java.util.List;
@@ -339,27 +372,12 @@ public class FunctionalLoopMatchPatternTest {
 						        }
 						        return true;
 						    }
-						}""");
+						}""";
 
-		final String input;
-		final String expected;
+IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
+context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+}
 
-		TestCase(String input, String expected) {
-			this.input = input;
-			this.expected = expected;
-		}
-	}
-
-	@Disabled("Disabled until functional loop cleanup is stable")
-	@ParameterizedTest
-	@EnumSource(TestCase.class)
-	@DisplayName("Test match pattern conversion")
-	void testConversion(TestCase testCase) throws CoreException {
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
-		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", testCase.input, false, null);
-		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
-
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { testCase.expected },
-				null);
-	}
 }
