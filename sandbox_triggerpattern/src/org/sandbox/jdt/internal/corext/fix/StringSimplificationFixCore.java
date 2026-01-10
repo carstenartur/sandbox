@@ -53,14 +53,14 @@ public class StringSimplificationFixCore {
 			java.util.Set<CompilationUnitRewriteOperation> operations) {
 		
 		// Pattern 1: "" + $x
-		Pattern emptyPrefixPattern = new Pattern("\"\" + $x", PatternKind.EXPRESSION); //$NON-NLS-1$ //$NON-NLS-2$
+		Pattern emptyPrefixPattern = new Pattern("\"\" + $x", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> emptyPrefixMatches = ENGINE.findMatches(compilationUnit, emptyPrefixPattern);
 		for (Match match : emptyPrefixMatches) {
 			operations.add(new StringSimplificationOperation(match, "Empty string prefix")); //$NON-NLS-1$
 		}
 		
 		// Pattern 2: $x + ""
-		Pattern emptySuffixPattern = new Pattern("$x + \"\"", PatternKind.EXPRESSION); //$NON-NLS-1$ //$NON-NLS-2$
+		Pattern emptySuffixPattern = new Pattern("$x + \"\"", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> emptySuffixMatches = ENGINE.findMatches(compilationUnit, emptySuffixPattern);
 		for (Match match : emptySuffixMatches) {
 			operations.add(new StringSimplificationOperation(match, "Empty string suffix")); //$NON-NLS-1$
