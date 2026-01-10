@@ -14,7 +14,6 @@
 package org.sandbox.jdt.ui.tests.quickfix;
 
 import java.util.Collection;
-import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;

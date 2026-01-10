@@ -15,11 +15,8 @@ package org.sandbox.jdt.ui.tests.quickfix;
 
 import java.util.EnumSet;
 import java.util.Map;
-import java.util.Set;
-
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.junit.jupiter.api.BeforeAll;
