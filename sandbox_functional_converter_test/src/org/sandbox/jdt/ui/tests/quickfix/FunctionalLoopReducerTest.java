@@ -131,7 +131,7 @@ String expected = """
 
 
 				}
-						}""";
+				}""";
 
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -260,7 +260,7 @@ String expected = """
 					len = ints.stream().map(i -> 1L).reduce(len, Long::sum);
 
 				}
-						}""";
+				}""";
 
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -400,7 +400,7 @@ String expected = """
 					sum = numbers.stream().filter(num -> (num > 0)).reduce(sum, Integer::sum);
 					return sum;
 				}
-						}""";
+				}""";
 
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -445,7 +445,7 @@ String expected = """
 					sum = numbers.stream().map(num -> num * num).reduce(sum, Integer::sum);
 					return sum;
 				}
-						}""";
+				}""";
 
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -492,7 +492,7 @@ String expected = """
 					total = numbers.stream().filter(num -> (num > 0)).map(num -> num * num).reduce(total, Integer::sum);
 					return total;
 				}
-						}""";
+				}""";
 
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);

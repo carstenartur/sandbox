@@ -114,7 +114,7 @@ public class FunctionalLoopFilterMapTest {
 				public void test(List<Integer> ls) {
 					ls.stream().map(l -> l.toString()).forEachOrdered(s -> System.out.println(s));
 				}
-						}""";
+				}""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -199,7 +199,7 @@ public class FunctionalLoopFilterMapTest {
 
 
 				}
-						}""";
+				}""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -257,11 +257,11 @@ public class FunctionalLoopFilterMapTest {
 
 				public void test(List<Integer> ls) {
 					ls.stream().map(a -> new Integer(a.intValue())).filter(l -> (l != null)).map(l -> l.toString())
-			.forEachOrdered(s -> System.out.println(s));
+							.forEachOrdered(s -> System.out.println(s));
 
 
 				}
-						}""";
+				}""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -303,8 +303,6 @@ public class FunctionalLoopFilterMapTest {
 							System.out.println("cucu");
 						}
 					}
-
-
 				}
 				}""";
 
@@ -322,14 +320,12 @@ public class FunctionalLoopFilterMapTest {
 
 				public void test(List<Integer> ls) {
 					ls.stream().map(a -> new Integer(a.intValue())).filter(l -> (l != null)).map(l -> l.toString()).map(s -> {
-			if (s != null)
-			System.out.println(s);
-			return s;
-			}).forEachOrdered(s -> System.out.println("cucu"));
-
-
+						if (s != null)
+							System.out.println(s);
+						return s;
+					}).forEachOrdered(s -> System.out.println("cucu"));
 				}
-						}""";
+				}""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -394,8 +390,6 @@ public class FunctionalLoopFilterMapTest {
 							System.out.println(s);
 						}
 					}
-
-
 				}
 				}""";
 
@@ -413,9 +407,7 @@ public class FunctionalLoopFilterMapTest {
 
 				public void test(List<Integer> ls) {
 					ls.stream().filter(l -> !(l == null)).map(l -> l.toString()).filter(s -> (s != null))
-			.forEachOrdered(s -> System.out.println(s));
-
-
+							.forEachOrdered(s -> System.out.println(s));
 				}
 				}""";
 
@@ -460,7 +452,7 @@ public class FunctionalLoopFilterMapTest {
 			class MyTest {
 				public void processValidItems(List<String> items) {
 					items.stream().filter(item -> (item != null)).filter(item -> (item.length() > 5))
-			.forEachOrdered(item -> System.out.println(item));
+							.forEachOrdered(item -> System.out.println(item));
 				}
 				}""";
 
@@ -507,7 +499,7 @@ public class FunctionalLoopFilterMapTest {
 			class MyTest {
 				public void processFiltered(List<Integer> numbers) {
 					numbers.stream().filter(num -> !(num == null)).filter(num -> !(num <= 0))
-			.forEachOrdered(num -> System.out.println(num));
+							.forEachOrdered(num -> System.out.println(num));
 				}
 				}""";
 
@@ -550,9 +542,9 @@ public class FunctionalLoopFilterMapTest {
 			class MyTest {
 				public void processWithComplexFilter(List<String> items) {
 					items.stream().filter(item -> (item != null && item.length() > 5 && item.startsWith("test")))
-			.forEachOrdered(item -> System.out.println(item));
+							.forEachOrdered(item -> System.out.println(item));
 				}
-						}""";
+				}""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -596,9 +588,9 @@ public class FunctionalLoopFilterMapTest {
 			class MyTest {
 				public void processChained(List<Integer> numbers) {
 					numbers.stream().filter(num -> (num != null && num > 0)).map(num -> num * num)
-			.filter(squared -> (squared < 100)).forEachOrdered(squared -> System.out.println(squared));
+							.filter(squared -> (squared < 100)).forEachOrdered(squared -> System.out.println(squared));
 				}
-						}""";
+				}""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -641,7 +633,7 @@ public class FunctionalLoopFilterMapTest {
 			class MyTest {
 				public void processWithNestedContinue(List<String> items) {
 					items.stream().filter(item -> !(item == null || item.isEmpty())).map(item -> item.toUpperCase())
-			.forEachOrdered(upper -> System.out.println(upper));
+							.forEachOrdered(upper -> System.out.println(upper));
 				}
 				}""";
 
@@ -687,7 +679,7 @@ public class FunctionalLoopFilterMapTest {
 			class MyTest {
 				public void processPositiveSquares(List<Integer> numbers) {
 					numbers.stream().filter(num -> !(num <= 0)).map(num -> num * num)
-			.forEachOrdered(squared -> System.out.println(squared));
+							.forEachOrdered(squared -> System.out.println(squared));
 				}
 				}""";
 
