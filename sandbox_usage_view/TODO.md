@@ -2,12 +2,15 @@
 
 ## Status Summary
 
-**Current State**: Functional view for detecting naming inconsistencies
+**Current State**: Functional view for detecting naming inconsistencies with preference support and auto-update
 
 ### Completed
 - ✅ Basic table view UI
 - ✅ Naming pattern detection
 - ✅ Navigation to code
+- ✅ **Preference page for auto-show at startup**
+- ✅ **Automatic view updates when editor changes**
+- ✅ **IPartListener2 integration for editor event tracking**
 
 ### In Progress
 - None currently
