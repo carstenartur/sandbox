@@ -99,6 +99,31 @@ public class StreamPipelineBuilder {
 	 */
 	private static final String FOR_EACH_METHOD = "forEach";
 
+	/**
+	 * Class name for Math utility class.
+	 */
+	private static final String MATH_CLASS_NAME = "Math";
+
+	/**
+	 * Method name for Math.max operation.
+	 */
+	private static final String MAX_METHOD_NAME = "max";
+
+	/**
+	 * Method name for Math.min operation.
+	 */
+	private static final String MIN_METHOD_NAME = "min";
+
+	/**
+	 * Fully qualified name of java.lang.Math class.
+	 */
+	private static final String JAVA_LANG_MATH = "java.lang.Math";
+
+	/**
+	 * Fully qualified name of java.lang.String class.
+	 */
+	private static final String JAVA_LANG_STRING = "java.lang.String";
+
 	private final EnhancedForStatement forLoop;
 	private final PreconditionsChecker preconditions;
 	private final AST ast;
@@ -616,13 +641,11 @@ public class StreamPipelineBuilder {
 	 * @param varName    the variable name to compare against
 	 * @return true if the expression is just a reference to varName (identity
 	 *         mapping), false otherwise
+	 * @deprecated Use {@link ExpressionUtils#isIdentityMapping(Expression, String)} instead
 	 */
+	@Deprecated
 	private boolean isIdentityMapping(Expression expression, String varName) {
-		if (expression instanceof SimpleName && varName != null) {
-			SimpleName simpleName = (SimpleName) expression;
-			return simpleName.getIdentifier().equals(varName);
-		}
-		return false;
+		return ExpressionUtils.isIdentityMapping(expression, varName);
 	}
 
 	/**
@@ -717,7 +740,7 @@ public class StreamPipelineBuilder {
 					if (assignment.getOperator() == Assignment.Operator.PLUS_ASSIGN) {
 						// Check if this is string concatenation
 						ITypeBinding varType = getTypeBinding(varName);
-						if (varType != null && "java.lang.String".equals(varType.getQualifiedName())) {
+						if (varType != null && JAVA_LANG_STRING.equals(varType.getQualifiedName())) {
 							reducerType = ProspectiveOperation.ReducerType.STRING_CONCAT;
 						} else {
 							reducerType = ProspectiveOperation.ReducerType.SUM;
@@ -782,7 +805,7 @@ public class StreamPipelineBuilder {
 		
 		// Get method name first
 		String methodName = methodInv.getName().getIdentifier();
-		if (!"max".equals(methodName) && !"min".equals(methodName)) {
+		if (!MAX_METHOD_NAME.equals(methodName) && !MIN_METHOD_NAME.equals(methodName)) {
 			return null;
 		}
 
@@ -791,7 +814,7 @@ public class StreamPipelineBuilder {
 		IMethodBinding binding = methodInv.resolveMethodBinding();
 		if (binding != null) {
 			ITypeBinding declaringClass = binding.getDeclaringClass();
-			if (declaringClass != null && "java.lang.Math".equals(declaringClass.getQualifiedName())) {
+			if (declaringClass != null && JAVA_LANG_MATH.equals(declaringClass.getQualifiedName())) {
 				// Confirmed it's Math.max or Math.min via binding
 				// Check if one of the arguments is the accumulator variable
 				List<?> args = methodInv.arguments();
@@ -808,7 +831,7 @@ public class StreamPipelineBuilder {
 					}
 					
 					if (hasAccumulatorArg) {
-						return "max".equals(methodName) ? ProspectiveOperation.ReducerType.MAX
+						return MAX_METHOD_NAME.equals(methodName) ? ProspectiveOperation.ReducerType.MAX
 								: ProspectiveOperation.ReducerType.MIN;
 					}
 				}
@@ -819,7 +842,7 @@ public class StreamPipelineBuilder {
 		Expression receiverExpr = methodInv.getExpression();
 		if (receiverExpr instanceof SimpleName) {
 			SimpleName className = (SimpleName) receiverExpr;
-			if ("Math".equals(className.getIdentifier())) {
+			if (MATH_CLASS_NAME.equals(className.getIdentifier())) {
 				// Check if one of the arguments is the accumulator variable
 				List<?> args = methodInv.arguments();
 				if (args.size() == 2) {
@@ -835,7 +858,7 @@ public class StreamPipelineBuilder {
 					}
 					
 					if (hasAccumulatorArg) {
-						return "max".equals(methodName) ? ProspectiveOperation.ReducerType.MAX
+						return MAX_METHOD_NAME.equals(methodName) ? ProspectiveOperation.ReducerType.MAX
 								: ProspectiveOperation.ReducerType.MIN;
 					}
 				}
@@ -843,7 +866,7 @@ public class StreamPipelineBuilder {
 		} else if (receiverExpr instanceof QualifiedName) {
 			// Handle fully qualified: java.lang.Math.max()
 			QualifiedName qualName = (QualifiedName) receiverExpr;
-			if ("Math".equals(qualName.getName().getIdentifier())) {
+			if (MATH_CLASS_NAME.equals(qualName.getName().getIdentifier())) {
 				// Check if one of the arguments is the accumulator variable
 				List<?> args = methodInv.arguments();
 				if (args.size() == 2) {
@@ -859,7 +882,7 @@ public class StreamPipelineBuilder {
 					}
 					
 					if (hasAccumulatorArg) {
-						return "max".equals(methodName) ? ProspectiveOperation.ReducerType.MAX
+						return MAX_METHOD_NAME.equals(methodName) ? ProspectiveOperation.ReducerType.MAX
 								: ProspectiveOperation.ReducerType.MIN;
 					}
 				}
@@ -1344,22 +1367,11 @@ public class StreamPipelineBuilder {
 	 * @param ast       the AST to create nodes in
 	 * @param condition the condition to negate
 	 * @return a negated expression with proper parenthesization
+	 * @deprecated Use {@link ExpressionUtils#createNegatedExpression(AST, Expression)} instead
 	 */
+	@Deprecated
 	private Expression createNegatedExpression(AST ast, Expression condition) {
-		Expression operand = (Expression) ASTNode.copySubtree(ast, condition);
-		
-		// Wrap binary expressions and other complex expressions in parentheses
-		// to ensure correct operator precedence
-		if (needsParentheses(condition)) {
-			ParenthesizedExpression parenthesized = ast.newParenthesizedExpression();
-			parenthesized.setExpression(operand);
-			operand = parenthesized;
-		}
-		
-		PrefixExpression negation = ast.newPrefixExpression();
-		negation.setOperator(PrefixExpression.Operator.NOT);
-		negation.setOperand(operand);
-		return negation;
+		return ExpressionUtils.createNegatedExpression(ast, condition);
 	}
 	
 	/**
@@ -1367,26 +1379,11 @@ public class StreamPipelineBuilder {
 	 * 
 	 * @param expr the expression to check
 	 * @return true if parentheses are needed
+	 * @deprecated Use {@link ExpressionUtils#needsParentheses(Expression)} instead
 	 */
+	@Deprecated
 	private boolean needsParentheses(Expression expr) {
-		// Binary expressions (==, !=, <, >, <=, >=, &&, ||, etc.) need parentheses
-		if (expr instanceof InfixExpression) {
-			return true;
-		}
-		// Conditional expressions (ternary operator) need parentheses
-		if (expr instanceof ConditionalExpression) {
-			return true;
-		}
-		// instanceof expressions need parentheses
-		if (expr instanceof InstanceofExpression) {
-			return true;
-		}
-		// Assignment expressions need parentheses
-		if (expr instanceof Assignment) {
-			return true;
-		}
-		// Simple names, literals, method calls, field access, etc. don't need parentheses
-		return false;
+		return ExpressionUtils.needsParentheses(expr);
 	}
 
 	/**
@@ -1395,22 +1392,11 @@ public class StreamPipelineBuilder {
 	 * 
 	 * @param expr the expression to strip negation from
 	 * @return the expression without the leading NOT operator, or the original expression if not negated
+	 * @deprecated Use {@link ExpressionUtils#stripNegation(Expression)} instead
 	 */
+	@Deprecated
 	private Expression stripNegation(Expression expr) {
-		// Use JDT utility to unwrap parentheses
-		Expression unwrapped = ASTNodes.getUnparenthesedExpression(expr);
-		
-		// Check if it's a negated expression
-		if (unwrapped instanceof PrefixExpression) {
-			PrefixExpression prefixExpr = (PrefixExpression) unwrapped;
-			if (prefixExpr.getOperator() == PrefixExpression.Operator.NOT) {
-				// Return the operand without the NOT
-				return prefixExpr.getOperand();
-			}
-		}
-		
-		// Not a negated expression, return as-is
-		return expr;
+		return ExpressionUtils.stripNegation(expr);
 	}
 
 	/**
@@ -1419,57 +1405,11 @@ public class StreamPipelineBuilder {
 	 * 
 	 * @param varName the variable name to look up
 	 * @return the simple type name (e.g., "double", "int") or null if not found
+	 * @deprecated Use {@link TypeResolver#getVariableType(ASTNode, String)} instead
 	 */
+	@Deprecated
 	private String getVariableType(String varName) {
-		// Walk up the AST tree searching for the variable in each scope
-		ASTNode currentNode = forLoop.getParent();
-
-		while (currentNode != null) {
-			// Search in blocks
-			if (currentNode instanceof org.eclipse.jdt.core.dom.Block) {
-				org.eclipse.jdt.core.dom.Block block = (org.eclipse.jdt.core.dom.Block) currentNode;
-				String type = searchBlockForVariableType(block, varName);
-				if (type != null) {
-					return type;
-				}
-			}
-			// Search in method bodies
-			else if (currentNode instanceof org.eclipse.jdt.core.dom.MethodDeclaration) {
-				org.eclipse.jdt.core.dom.MethodDeclaration method = (org.eclipse.jdt.core.dom.MethodDeclaration) currentNode;
-				if (method.getBody() != null) {
-					String type = searchBlockForVariableType(method.getBody(), varName);
-					if (type != null) {
-						return type;
-					}
-				}
-			}
-			// Search in initializer blocks (instance or static)
-			else if (currentNode instanceof org.eclipse.jdt.core.dom.Initializer) {
-				org.eclipse.jdt.core.dom.Initializer initializer = (org.eclipse.jdt.core.dom.Initializer) currentNode;
-				if (initializer.getBody() != null) {
-					String type = searchBlockForVariableType(initializer.getBody(), varName);
-					if (type != null) {
-						return type;
-					}
-				}
-			}
-			// Search in lambda expressions
-			else if (currentNode instanceof org.eclipse.jdt.core.dom.LambdaExpression) {
-				org.eclipse.jdt.core.dom.LambdaExpression lambda = (org.eclipse.jdt.core.dom.LambdaExpression) currentNode;
-				if (lambda.getBody() instanceof org.eclipse.jdt.core.dom.Block) {
-					String type = searchBlockForVariableType((org.eclipse.jdt.core.dom.Block) lambda.getBody(),
-							varName);
-					if (type != null) {
-						return type;
-					}
-				}
-			}
-
-			// Move up to parent scope
-			currentNode = currentNode.getParent();
-		}
-
-		return null;
+		return TypeResolver.getVariableType(forLoop, varName);
 	}
 
 	/**
@@ -1478,66 +1418,11 @@ public class StreamPipelineBuilder {
 	 * @param block   the block to search
 	 * @param varName the variable name to find
 	 * @return the simple type name or null if not found
+	 * @deprecated Use {@link TypeResolver#searchBlockForVariableType(Block, String)} instead
 	 */
+	@Deprecated
 	private String searchBlockForVariableType(org.eclipse.jdt.core.dom.Block block, String varName) {
-		if (block == null) {
-			return null;
-		}
-
-		for (Object stmtObj : block.statements()) {
-			if (stmtObj instanceof VariableDeclarationStatement) {
-				VariableDeclarationStatement varDecl = (VariableDeclarationStatement) stmtObj;
-				for (Object fragObj : varDecl.fragments()) {
-					if (fragObj instanceof VariableDeclarationFragment) {
-						VariableDeclarationFragment frag = (VariableDeclarationFragment) fragObj;
-						if (frag.getName().getIdentifier().equals(varName)) {
-							org.eclipse.jdt.core.dom.Type type = varDecl.getType();
-							// Robustly extract the simple type name
-							if (type.isPrimitiveType()) {
-								// For primitive types: int, double, etc.
-								return ((org.eclipse.jdt.core.dom.PrimitiveType) type).getPrimitiveTypeCode()
-										.toString();
-							} else if (type.isSimpleType()) {
-								// For reference types: get the simple name
-								org.eclipse.jdt.core.dom.SimpleType simpleType = (org.eclipse.jdt.core.dom.SimpleType) type;
-								// Try to use binding if available
-								org.eclipse.jdt.core.dom.ITypeBinding binding = simpleType.resolveBinding();
-								if (binding != null) {
-									return binding.getName();
-								} else {
-									return simpleType.getName().getFullyQualifiedName();
-								}
-							} else if (type.isArrayType()) {
-								// For array types, get the element type recursively and append "[]"
-								org.eclipse.jdt.core.dom.ArrayType arrayType = (org.eclipse.jdt.core.dom.ArrayType) type;
-								org.eclipse.jdt.core.dom.Type elementType = arrayType.getElementType();
-								String elementTypeName;
-								if (elementType.isPrimitiveType()) {
-									elementTypeName = ((org.eclipse.jdt.core.dom.PrimitiveType) elementType)
-											.getPrimitiveTypeCode().toString();
-								} else if (elementType.isSimpleType()) {
-									org.eclipse.jdt.core.dom.SimpleType simpleType = (org.eclipse.jdt.core.dom.SimpleType) elementType;
-									org.eclipse.jdt.core.dom.ITypeBinding binding = simpleType.resolveBinding();
-									if (binding != null) {
-										elementTypeName = binding.getName();
-									} else {
-										elementTypeName = simpleType.getName().getFullyQualifiedName();
-									}
-								} else {
-									// Fallback for other types
-									elementTypeName = elementType.toString();
-								}
-								return elementTypeName + "[]";
-							} else {
-								// Fallback for other types (e.g., parameterized, qualified, etc.)
-								return type.toString();
-							}
-						}
-					}
-				}
-			}
-		}
-		return null;
+		return TypeResolver.searchBlockForVariableType(block, varName);
 	}
 
 	/**
@@ -1803,16 +1688,11 @@ public class StreamPipelineBuilder {
 	 * 
 	 * @param varName the variable name to check
 	 * @return true if the variable has a @NotNull or @NonNull annotation
+	 * @deprecated Use {@link TypeResolver#hasNotNullAnnotation(ASTNode, String)} instead
 	 */
+	@Deprecated
 	private boolean hasNotNullAnnotation(String varName) {
-		VariableDeclarationFragment frag = findVariableDeclaration(varName);
-		if (frag != null) {
-			IVariableBinding binding = frag.resolveBinding();
-			if (binding != null) {
-				return hasNotNullAnnotationOnBinding(binding);
-			}
-		}
-		return false;
+		return TypeResolver.hasNotNullAnnotation(forLoop, varName);
 	}
 
 	/**
@@ -1820,16 +1700,11 @@ public class StreamPipelineBuilder {
 	 * 
 	 * @param varName the variable name
 	 * @return the type binding, or null if not found
+	 * @deprecated Use {@link TypeResolver#getTypeBinding(ASTNode, String)} instead
 	 */
+	@Deprecated
 	private ITypeBinding getTypeBinding(String varName) {
-		VariableDeclarationFragment frag = findVariableDeclaration(varName);
-		if (frag != null) {
-			IVariableBinding binding = frag.resolveBinding();
-			if (binding != null) {
-				return binding.getType();
-			}
-		}
-		return null;
+		return TypeResolver.getTypeBinding(forLoop, varName);
 	}
 
 	/**
@@ -1838,36 +1713,23 @@ public class StreamPipelineBuilder {
 	 * 
 	 * @param varName the variable name to find
 	 * @return the VariableDeclarationFragment, or null if not found
+	 * @deprecated Use {@link TypeResolver#findVariableDeclaration(ASTNode, String)} instead
 	 */
+	@Deprecated
 	private VariableDeclarationFragment findVariableDeclaration(String varName) {
-		if (varName == null) {
-			return null;
-		}
+		return TypeResolver.findVariableDeclaration(forLoop, varName);
+	}
 
-		// Try to find the variable declaration in the AST
-		// Start from the for loop and walk up to find variable declarations
-		ASTNode current = forLoop;
-		while (current != null) {
-			if (current instanceof Block) {
-				Block block = (Block) current;
-				for (Object stmtObj : block.statements()) {
-					if (stmtObj instanceof VariableDeclarationStatement) {
-						VariableDeclarationStatement varDecl = (VariableDeclarationStatement) stmtObj;
-						for (Object fragObj : varDecl.fragments()) {
-							if (fragObj instanceof VariableDeclarationFragment) {
-								VariableDeclarationFragment frag = (VariableDeclarationFragment) fragObj;
-								if (varName.equals(frag.getName().getIdentifier())) {
-									return frag;
-								}
-							}
-						}
-					}
-				}
-			}
-			current = current.getParent();
-		}
-
-		return null;
+	/**
+	 * Checks if a binding has @NotNull or @NonNull annotation.
+	 * 
+	 * @param binding the variable binding to check
+	 * @return true if the binding has a @NotNull or @NonNull annotation
+	 * @deprecated Use {@link TypeResolver#hasNotNullAnnotationOnBinding(IVariableBinding)} instead
+	 */
+	@Deprecated
+	private boolean hasNotNullAnnotationOnBinding(IVariableBinding binding) {
+		return TypeResolver.hasNotNullAnnotationOnBinding(binding);
 	}
 
 	/**
@@ -1908,38 +1770,9 @@ public class StreamPipelineBuilder {
 		// For allMatch with negated condition, strip the negation
 		Expression condition = ifStmt.getExpression();
 		if (isAllMatchPattern) {
-			condition = stripNegation(condition);
+			condition = ExpressionUtils.stripNegation(condition);
 		}
 
 		return new ProspectiveOperation(condition, opType);
-	}
-
-	/**
-	 * Checks if a binding has @NotNull or @NonNull annotation.
-	 * 
-	 * @param binding the variable binding to check
-	 * @return true if the binding has a @NotNull or @NonNull annotation
-	 */
-	private boolean hasNotNullAnnotationOnBinding(IVariableBinding binding) {
-		if (binding == null) {
-			return false;
-		}
-
-		IAnnotationBinding[] annotations = binding.getAnnotations();
-		if (annotations != null) {
-			for (IAnnotationBinding annotation : annotations) {
-				// Check for qualified names (handles different null-safety annotation packages)
-				ITypeBinding annotationType = annotation.getAnnotationType();
-				if (annotationType != null) {
-					String qualifiedName = annotationType.getQualifiedName();
-					if (qualifiedName != null && 
-						(qualifiedName.endsWith(".NotNull") || qualifiedName.endsWith(".NonNull"))) {
-						return true;
-					}
-				}
-			}
-		}
-
-		return false;
 	}
 }
