@@ -88,33 +88,35 @@ public class FunctionalLoopFilterMapTest {
 	@Test
 	void test_ChainingMap() throws CoreException {
 		String input = """
-				package test1;
-				import java.util.Arrays;
-				import java.util.List;
-				class MyTest {
-				    public static void main(String[] args) {
-				        new MyTest().test(Arrays.asList(1, 2, 3));
-				    }
-				    public void test(List<Integer> ls) {
-				        for (Integer l : ls) {
-				            String s = l.toString();
-				            System.out.println(s);
-				        }
-				    }
-				}""";
+package test1;
+import java.util.Arrays;
+import java.util.List;
+class MyTest {
+	public static void main(String[] args) {
+		new MyTest().test(Arrays.asList(1, 2, 3));
+	}
+	public void test(List<Integer> ls) {
+		for (Integer l : ls) {
+			String s = l.toString();
+			System.out.println(s);
+		}
+	}
+}
+""";
 
 		String expected = """
-						package test1;
-						import java.util.Arrays;
-						import java.util.List;
-						class MyTest {
-						    public static void main(String[] args) {
-						        new MyTest().test(Arrays.asList(1, 2, 3));
-						    }
-						    public void test(List<Integer> ls) {
-						        ls.stream().map(l -> l.toString()).forEachOrdered(s -> System.out.println(s));
-						    }
-						}""";
+package test1;
+import java.util.Arrays;
+import java.util.List;
+class MyTest {
+	public static void main(String[] args) {
+		new MyTest().test(Arrays.asList(1, 2, 3));
+	}
+	public void test(List<Integer> ls) {
+		ls.stream().map(l -> l.toString()).forEachOrdered(s -> System.out.println(s));
+	}
+}
+""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -158,48 +160,50 @@ public class FunctionalLoopFilterMapTest {
 	@Test
 	void test_ChainingFilterMapForEachConvert() throws CoreException {
 		String input = """
-				package test1;
+package test1;
 
-				import java.util.Arrays;
-				import java.util.List;
+import java.util.Arrays;
+import java.util.List;
 
-				class MyTest {
+class MyTest {
 
-				    public static void main(String[] args) {
-				        new MyTest().test(Arrays.asList(1, 2, 3));
-				    }
+	public static void main(String[] args) {
+		new MyTest().test(Arrays.asList(1, 2, 3));
+	}
 
-				    public void test(List<Integer> ls) {
-				        for (Integer l : ls) {
-				            if(l!=null)
-				            {
-				                String s = l.toString();
-				                System.out.println(s);
-				            }
-				        }
+	public void test(List<Integer> ls) {
+		for (Integer l : ls) {
+			if(l!=null)
+			{
+				String s = l.toString();
+				System.out.println(s);
+			}
+		}
 
 
-				    }
-				}""";
+	}
+}
+""";
 
 		String expected = """
-						package test1;
+package test1;
 
-						import java.util.Arrays;
-						import java.util.List;
+import java.util.Arrays;
+import java.util.List;
 
-						class MyTest {
+class MyTest {
 
-						    public static void main(String[] args) {
-						        new MyTest().test(Arrays.asList(1, 2, 3));
-						    }
+	public static void main(String[] args) {
+		new MyTest().test(Arrays.asList(1, 2, 3));
+	}
 
-						    public void test(List<Integer> ls) {
-						        ls.stream().filter(l -> (l != null)).map(l -> l.toString()).forEachOrdered(s -> System.out.println(s));
+	public void test(List<Integer> ls) {
+		ls.stream().filter(l -> (l != null)).map(l -> l.toString()).forEachOrdered(s -> System.out.println(s));
 
 
-						    }
-						}""";
+	}
+}
+""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -218,50 +222,52 @@ public class FunctionalLoopFilterMapTest {
 	@Test
 	void test_SmoothLongerChaining() throws CoreException {
 		String input = """
-				package test1;
+package test1;
 
-				import java.util.Arrays;
-				import java.util.List;
+import java.util.Arrays;
+import java.util.List;
 
-				class MyTest {
+class MyTest {
 
-				    public static void main(String[] args) {
-				        new MyTest().test(Arrays.asList(1,2,3));
-				    }
+	public static void main(String[] args) {
+		new MyTest().test(Arrays.asList(1,2,3));
+	}
 
-				    public void test(List<Integer> ls) {
-				        for (Integer a : ls) {
-				            Integer l = new Integer(a.intValue());
-				            if(l!=null)
-				            {
-				                String s = l.toString();
-				                System.out.println(s);
-				            }
-				        }
+	public void test(List<Integer> ls) {
+		for (Integer a : ls) {
+			Integer l = new Integer(a.intValue());
+			if(l!=null)
+			{
+				String s = l.toString();
+				System.out.println(s);
+			}
+		}
 
 
-				    }
-				}""";
+	}
+}
+""";
 
 		String expected = """
-						package test1;
+package test1;
 
-						import java.util.Arrays;
-						import java.util.List;
+import java.util.Arrays;
+import java.util.List;
 
-						class MyTest {
+class MyTest {
 
-						    public static void main(String[] args) {
-						        new MyTest().test(Arrays.asList(1,2,3));
-						    }
+	public static void main(String[] args) {
+		new MyTest().test(Arrays.asList(1,2,3));
+	}
 
-						    public void test(List<Integer> ls) {
-						        ls.stream().map(a -> new Integer(a.intValue())).filter(l -> (l != null)).map(l -> l.toString())
-										.forEachOrdered(s -> System.out.println(s));
+	public void test(List<Integer> ls) {
+		ls.stream().map(a -> new Integer(a.intValue())).filter(l -> (l != null)).map(l -> l.toString())
+		.forEachOrdered(s -> System.out.println(s));
 
 
-						    }
-						}""";
+	}
+}
+""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -281,55 +287,57 @@ public class FunctionalLoopFilterMapTest {
 	@Test
 	void test_NonFilteringIfChaining() throws CoreException {
 		String input = """
-				package test1;
+package test1;
 
-				import java.util.Arrays;
-				import java.util.List;
+import java.util.Arrays;
+import java.util.List;
 
-				class MyTest {
+class MyTest {
 
-				    public static void main(String[] args) {
-				        new MyTest().test(Arrays.asList(1,2,3));
-				    }
+	public static void main(String[] args) {
+		new MyTest().test(Arrays.asList(1,2,3));
+	}
 
-				    public void test(List<Integer> ls) {
-				        for (Integer a : ls) {
-				            Integer l = new Integer(a.intValue());
-				            if(l!=null)
-				            {
-				                String s = l.toString();
-				                if(s!=null)
-				                    System.out.println(s);
-				                System.out.println("cucu");
-				            }
-				        }
+	public void test(List<Integer> ls) {
+		for (Integer a : ls) {
+			Integer l = new Integer(a.intValue());
+			if(l!=null)
+			{
+				String s = l.toString();
+				if(s!=null)
+				System.out.println(s);
+				System.out.println("cucu");
+			}
+		}
 
 
-				    }
-				}""";
+	}
+}
+""";
 
 		String expected = """
-						package test1;
+package test1;
 
-						import java.util.Arrays;
-						import java.util.List;
+import java.util.Arrays;
+import java.util.List;
 
-						class MyTest {
+class MyTest {
 
-						    public static void main(String[] args) {
-						        new MyTest().test(Arrays.asList(1,2,3));
-						    }
+	public static void main(String[] args) {
+		new MyTest().test(Arrays.asList(1,2,3));
+	}
 
-						    public void test(List<Integer> ls) {
-						        ls.stream().map(a -> new Integer(a.intValue())).filter(l -> (l != null)).map(l -> l.toString()).map(s -> {
-									if (s != null)
-										System.out.println(s);
-									return s;
-								}).forEachOrdered(s -> System.out.println("cucu"));
+	public void test(List<Integer> ls) {
+		ls.stream().map(a -> new Integer(a.intValue())).filter(l -> (l != null)).map(l -> l.toString()).map(s -> {
+			if (s != null)
+			System.out.println(s);
+			return s;
+		}).forEachOrdered(s -> System.out.println("cucu"));
 
 
-						    }
-						}""";
+	}
+}
+""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -373,51 +381,53 @@ public class FunctionalLoopFilterMapTest {
 	@Test
 	void test_ContinuingIfFilterSingleStatement() throws CoreException {
 		String input = """
-				package test1;
+package test1;
 
-				import java.util.Arrays;
-				import java.util.List;
+import java.util.Arrays;
+import java.util.List;
 
-				class MyTest {
+class MyTest {
 
-				    public static void main(String[] args) {
-				        new MyTest().test(Arrays.asList(1, 2, 3));
-				    }
+	public static void main(String[] args) {
+		new MyTest().test(Arrays.asList(1, 2, 3));
+	}
 
-				    public void test(List<Integer> ls) {
-				        for (Integer l : ls) {
-				            if (l == null) {
-				                continue;
-				            }
-				            String s = l.toString();
-				            if (s != null) {
-				                System.out.println(s);
-				            }
-				        }
+	public void test(List<Integer> ls) {
+		for (Integer l : ls) {
+			if (l == null) {
+				continue;
+			}
+			String s = l.toString();
+			if (s != null) {
+				System.out.println(s);
+			}
+		}
 
 
-				    }
-				}""";
+	}
+}
+""";
 
 		String expected = """
-				package test1;
+package test1;
 
-				import java.util.Arrays;
-				import java.util.List;
+import java.util.Arrays;
+import java.util.List;
 
-				class MyTest {
+class MyTest {
 
-				    public static void main(String[] args) {
-				        new MyTest().test(Arrays.asList(1, 2, 3));
-				    }
+	public static void main(String[] args) {
+		new MyTest().test(Arrays.asList(1, 2, 3));
+	}
 
-				    public void test(List<Integer> ls) {
-				        ls.stream().filter(l -> !(l == null)).map(l -> l.toString()).filter(s -> (s != null))
-								.forEachOrdered(s -> System.out.println(s));
+	public void test(List<Integer> ls) {
+		ls.stream().filter(l -> !(l == null)).map(l -> l.toString()).filter(s -> (s != null))
+		.forEachOrdered(s -> System.out.println(s));
 
 
-				    }
-				}""";
+	}
+}
+""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -436,33 +446,35 @@ public class FunctionalLoopFilterMapTest {
 	@Test
 	void test_NestedFilterCombination() throws CoreException {
 		String input = """
-				package test1;
+package test1;
 
-				import java.util.List;
+import java.util.List;
 
-				class MyTest {
-				    public void processValidItems(List<String> items) {
-				        for (String item : items) {
-				            if (item != null) {
-				                if (item.length() > 5) {
-				                    System.out.println(item);
-				                }
-				            }
-				        }
-				    }
-				}""";
+class MyTest {
+	public void processValidItems(List<String> items) {
+		for (String item : items) {
+			if (item != null) {
+				if (item.length() > 5) {
+					System.out.println(item);
+				}
+			}
+		}
+	}
+}
+""";
 
 		String expected = """
-				package test1;
+package test1;
 
-				import java.util.List;
+import java.util.List;
 
-				class MyTest {
-				    public void processValidItems(List<String> items) {
-				        items.stream().filter(item -> (item != null)).filter(item -> (item.length() > 5))
-								.forEachOrdered(item -> System.out.println(item));
-				    }
-				}""";
+class MyTest {
+	public void processValidItems(List<String> items) {
+		items.stream().filter(item -> (item != null)).filter(item -> (item.length() > 5))
+		.forEachOrdered(item -> System.out.println(item));
+	}
+}
+""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -481,35 +493,37 @@ public class FunctionalLoopFilterMapTest {
 	@Test
 	void test_MultipleContinueFilters() throws CoreException {
 		String input = """
-				package test1;
+package test1;
 
-				import java.util.List;
+import java.util.List;
 
-				class MyTest {
-				    public void processFiltered(List<Integer> numbers) {
-				        for (Integer num : numbers) {
-				            if (num == null) {
-				                continue;
-				            }
-				            if (num <= 0) {
-				                continue;
-				            }
-				            System.out.println(num);
-				        }
-				    }
-				}""";
+class MyTest {
+	public void processFiltered(List<Integer> numbers) {
+		for (Integer num : numbers) {
+			if (num == null) {
+				continue;
+			}
+			if (num <= 0) {
+				continue;
+			}
+			System.out.println(num);
+		}
+	}
+}
+""";
 
 		String expected = """
-				package test1;
+package test1;
 
-				import java.util.List;
+import java.util.List;
 
-				class MyTest {
-				    public void processFiltered(List<Integer> numbers) {
-				        numbers.stream().filter(num -> !(num == null)).filter(num -> !(num <= 0))
-								.forEachOrdered(num -> System.out.println(num));
-				    }
-				}""";
+class MyTest {
+	public void processFiltered(List<Integer> numbers) {
+		numbers.stream().filter(num -> !(num == null)).filter(num -> !(num <= 0))
+		.forEachOrdered(num -> System.out.println(num));
+	}
+}
+""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -528,31 +542,33 @@ public class FunctionalLoopFilterMapTest {
 	@Test
 	void test_FilterWithComplexCondition() throws CoreException {
 		String input = """
-				package test1;
+package test1;
 
-				import java.util.List;
+import java.util.List;
 
-				class MyTest {
-				    public void processWithComplexFilter(List<String> items) {
-				        for (String item : items) {
-				            if (item != null && item.length() > 5 && item.startsWith("test")) {
-				                System.out.println(item);
-				            }
-				        }
-				    }
-				}""";
+class MyTest {
+	public void processWithComplexFilter(List<String> items) {
+		for (String item : items) {
+			if (item != null && item.length() > 5 && item.startsWith("test")) {
+				System.out.println(item);
+			}
+		}
+	}
+}
+""";
 
 		String expected = """
-						package test1;
+package test1;
 
-						import java.util.List;
+import java.util.List;
 
-						class MyTest {
-						    public void processWithComplexFilter(List<String> items) {
-						        items.stream().filter(item -> (item != null && item.length() > 5 && item.startsWith("test")))
-										.forEachOrdered(item -> System.out.println(item));
-						    }
-						}""";
+class MyTest {
+	public void processWithComplexFilter(List<String> items) {
+		items.stream().filter(item -> (item != null && item.length() > 5 && item.startsWith("test")))
+		.forEachOrdered(item -> System.out.println(item));
+	}
+}
+""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -571,34 +587,36 @@ public class FunctionalLoopFilterMapTest {
 	@Test
 	void test_ChainedFilterAndMapOperations() throws CoreException {
 		String input = """
-				package test1;
+package test1;
 
-				import java.util.List;
+import java.util.List;
 
-				class MyTest {
-				    public void processChained(List<Integer> numbers) {
-				        for (Integer num : numbers) {
-				            if (num != null && num > 0) {
-				                int squared = num * num;
-				                if (squared < 100) {
-				                    System.out.println(squared);
-				                }
-				            }
-				        }
-				    }
-				}""";
+class MyTest {
+	public void processChained(List<Integer> numbers) {
+		for (Integer num : numbers) {
+			if (num != null && num > 0) {
+				int squared = num * num;
+				if (squared < 100) {
+					System.out.println(squared);
+				}
+			}
+		}
+	}
+}
+""";
 
 		String expected = """
-						package test1;
+package test1;
 
-						import java.util.List;
+import java.util.List;
 
-						class MyTest {
-						    public void processChained(List<Integer> numbers) {
-						        numbers.stream().filter(num -> (num != null && num > 0)).map(num -> num * num)
-										.filter(squared -> (squared < 100)).forEachOrdered(squared -> System.out.println(squared));
-						    }
-						}""";
+class MyTest {
+	public void processChained(List<Integer> numbers) {
+		numbers.stream().filter(num -> (num != null && num > 0)).map(num -> num * num)
+		.filter(squared -> (squared < 100)).forEachOrdered(squared -> System.out.println(squared));
+	}
+}
+""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -617,33 +635,35 @@ public class FunctionalLoopFilterMapTest {
 	@Test
 	void test_ContinueWithNestedConditions() throws CoreException {
 		String input = """
-				package test1;
+package test1;
 
-				import java.util.List;
+import java.util.List;
 
-				class MyTest {
-				    public void processWithNestedContinue(List<String> items) {
-				        for (String item : items) {
-				            if (item == null || item.isEmpty()) {
-				                continue;
-				            }
-				            String upper = item.toUpperCase();
-				            System.out.println(upper);
-				        }
-				    }
-				}""";
+class MyTest {
+	public void processWithNestedContinue(List<String> items) {
+		for (String item : items) {
+			if (item == null || item.isEmpty()) {
+				continue;
+			}
+			String upper = item.toUpperCase();
+			System.out.println(upper);
+		}
+	}
+}
+""";
 
 		String expected = """
-				package test1;
+package test1;
 
-				import java.util.List;
+import java.util.List;
 
-				class MyTest {
-				    public void processWithNestedContinue(List<String> items) {
-				        items.stream().filter(item -> !(item == null || item.isEmpty())).map(item -> item.toUpperCase())
-								.forEachOrdered(upper -> System.out.println(upper));
-				    }
-				}""";
+class MyTest {
+	public void processWithNestedContinue(List<String> items) {
+		items.stream().filter(item -> !(item == null || item.isEmpty())).map(item -> item.toUpperCase())
+		.forEachOrdered(upper -> System.out.println(upper));
+	}
+}
+""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -663,33 +683,35 @@ public class FunctionalLoopFilterMapTest {
 	@Test
 	void test_ContinueWithMapAndForEach() throws CoreException {
 		String input = """
-				package test1;
+package test1;
 
-				import java.util.List;
+import java.util.List;
 
-				class MyTest {
-				    public void processPositiveSquares(List<Integer> numbers) {
-				        for (Integer num : numbers) {
-				            if (num <= 0) {
-				                continue;
-				            }
-				            int squared = num * num;
-				            System.out.println(squared);
-				        }
-				    }
-				}""";
+class MyTest {
+	public void processPositiveSquares(List<Integer> numbers) {
+		for (Integer num : numbers) {
+			if (num <= 0) {
+				continue;
+			}
+			int squared = num * num;
+			System.out.println(squared);
+		}
+	}
+}
+""";
 
 		String expected = """
-				package test1;
+package test1;
 
-				import java.util.List;
+import java.util.List;
 
-				class MyTest {
-				    public void processPositiveSquares(List<Integer> numbers) {
-				        numbers.stream().filter(num -> !(num <= 0)).map(num -> num * num)
-								.forEachOrdered(squared -> System.out.println(squared));
-				    }
-				}""";
+class MyTest {
+	public void processPositiveSquares(List<Integer> numbers) {
+		numbers.stream().filter(num -> !(num <= 0)).map(num -> num * num)
+		.forEachOrdered(squared -> System.out.println(squared));
+	}
+}
+""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);

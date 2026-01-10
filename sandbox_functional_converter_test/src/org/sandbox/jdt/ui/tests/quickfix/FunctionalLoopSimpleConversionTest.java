@@ -81,31 +81,33 @@ public class FunctionalLoopSimpleConversionTest {
 	@Test
 	void test_SimpleForEachConversion() throws CoreException {
 		String input = """
-			package test1;
-			import java.util.Arrays;
-			import java.util.List;
-			class MyTest {
-				public static void main(String[] args) {
-					new MyTest().test(Arrays.asList(1, 2, 3));
-				}
-				public void test(List<Integer> ls) {
-					for (Integer l : ls)
-						System.out.println(l);
-				}
-			}""";
+package test1;
+import java.util.Arrays;
+import java.util.List;
+class MyTest {
+	public static void main(String[] args) {
+		new MyTest().test(Arrays.asList(1, 2, 3));
+	}
+	public void test(List<Integer> ls) {
+		for (Integer l : ls)
+		System.out.println(l);
+	}
+}
+""";
 
 		String expected = """
-			package test1;
-			import java.util.Arrays;
-			import java.util.List;
-			class MyTest {
-				public static void main(String[] args) {
-					new MyTest().test(Arrays.asList(1, 2, 3));
-				}
-				public void test(List<Integer> ls) {
-					ls.forEach(l -> System.out.println(l));
-				}
-			}""";
+package test1;
+import java.util.Arrays;
+import java.util.List;
+class MyTest {
+	public static void main(String[] args) {
+		new MyTest().test(Arrays.asList(1, 2, 3));
+	}
+	public void test(List<Integer> ls) {
+		ls.forEach(l -> System.out.println(l));
+	}
+}
+""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -153,32 +155,34 @@ public class FunctionalLoopSimpleConversionTest {
 	@Test
 	void test_EmptyCollectionHandling() throws CoreException {
 		String input = """
-			package test1;
+package test1;
 
-			import java.util.List;
-			import java.util.ArrayList;
+import java.util.List;
+import java.util.ArrayList;
 
-			class MyTest {
-				public void processEmpty() {
-					List<String> items = new ArrayList<>();
-					for (String item : items) {
-						System.out.println(item);
-					}
-				}
-			}""";
+class MyTest {
+	public void processEmpty() {
+		List<String> items = new ArrayList<>();
+		for (String item : items) {
+			System.out.println(item);
+		}
+	}
+}
+""";
 
 		String expected = """
-			package test1;
+package test1;
 
-			import java.util.List;
-			import java.util.ArrayList;
+import java.util.List;
+import java.util.ArrayList;
 
-			class MyTest {
-				public void processEmpty() {
-					List<String> items = new ArrayList<>();
-					items.forEach(item -> System.out.println(item));
-				}
-			}""";
+class MyTest {
+	public void processEmpty() {
+		List<String> items = new ArrayList<>();
+		items.forEach(item -> System.out.println(item));
+	}
+}
+""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -232,64 +236,66 @@ public class FunctionalLoopSimpleConversionTest {
 	@Test
 	void test_BeautificationWorks() throws CoreException {
 		String input = """
-			package test1;
+package test1;
 
-			import java.util.ArrayList;
-			import java.util.List;
+import java.util.ArrayList;
+import java.util.List;
 
-			/**
-			 *
-			 * @author alexandrugyori
-			 */
-			class JavaApplication1 {
+/**
+*
+* @author alexandrugyori
+*/
+class JavaApplication1 {
 
-				/**
-				 * @param args the command line arguments
-				 */
-				public boolean b() {
-					// TODO code application logic here
-					List<String> strs = new ArrayList<String>();
-					int i = 0;
-					int j = 0;
-					for(String str: strs)
-					{
-						String s = "foo";
-						s=s.toString();
-						System.out.println(s);
+	/**
+	* @param args the command line arguments
+	*/
+	public boolean b() {
+		// TODO code application logic here
+		List<String> strs = new ArrayList<String>();
+		int i = 0;
+		int j = 0;
+		for(String str: strs)
+		{
+			String s = "foo";
+			s=s.toString();
+			System.out.println(s);
 
-					}
-					return false;
+		}
+		return false;
 
-				}
-			}""";
+	}
+}
+""";
 
 		String expected = """
-			package test1;
+package test1;
 
-			import java.util.ArrayList;
-			import java.util.List;
+import java.util.ArrayList;
+import java.util.List;
 
-			/**
-			 *
-			 * @author alexandrugyori
-			 */
-			class JavaApplication1 {
+/**
+*
+* @author alexandrugyori
+*/
+class JavaApplication1 {
 
-				/**
-				 * @param args the command line arguments
-				 */
-				public boolean b() {
-					// TODO code application logic here
-					List<String> strs = new ArrayList<String>();
-					int i = 0;
-					int j = 0;
-					strs.stream().map(_item -> "foo").map(s -> s.toString()).forEachOrdered(s -> {
-						System.out.println(s);
-					});
-					return false;
+	/**
+	* @param args the command line arguments
+	*/
+	public boolean b() {
+		// TODO code application logic here
+		List<String> strs = new ArrayList<String>();
+		int i = 0;
+		int j = 0;
+		strs.stream().map(_item -> "foo").map(s -> s.toString()).forEachOrdered(s -> {
+			System.out.println(s);
+		});
+		return false;
 
-				}
-			}""";
+	}
+}
+""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("JavaApplication1.java", input, false, null);
@@ -341,64 +347,66 @@ public class FunctionalLoopSimpleConversionTest {
 	@Test
 	void test_BeautificationWorks2() throws CoreException {
 		String input = """
-			package test1;
+package test1;
 
-			import java.util.ArrayList;
-			import java.util.List;
+import java.util.ArrayList;
+import java.util.List;
 
-			/**
-			 *
-			 * @author alexandrugyori
-			 */
-			class JavaApplication1 {
+/**
+*
+* @author alexandrugyori
+*/
+class JavaApplication1 {
 
-				/**
-				 * @param args the command line arguments
-				 */
-				public boolean b() {
-					// TODO code application logic here
-					List<String> strs = new ArrayList<String>();
-					int i = 0;
-					int j = 0;
-					for(String str: strs)
-					{
-						String s = "foo";
-						s=s.toString();
-						System.out.println();
+	/**
+	* @param args the command line arguments
+	*/
+	public boolean b() {
+		// TODO code application logic here
+		List<String> strs = new ArrayList<String>();
+		int i = 0;
+		int j = 0;
+		for(String str: strs)
+		{
+			String s = "foo";
+			s=s.toString();
+			System.out.println();
 
-					}
-					return false;
+		}
+		return false;
 
-				}
-			}""";
+	}
+}
+""";
 
 		String expected = """
-			package test1;
+package test1;
 
-			import java.util.ArrayList;
-			import java.util.List;
+import java.util.ArrayList;
+import java.util.List;
 
-			/**
-			 *
-			 * @author alexandrugyori
-			 */
-			class JavaApplication1 {
+/**
+*
+* @author alexandrugyori
+*/
+class JavaApplication1 {
 
-				/**
-				 * @param args the command line arguments
-				 */
-				public boolean b() {
-					// TODO code application logic here
-					List<String> strs = new ArrayList<String>();
-					int i = 0;
-					int j = 0;
-					strs.stream().map(_item -> "foo").map(s -> s.toString()).forEachOrdered(_item -> {
-						System.out.println();
-					});
-					return false;
+	/**
+	* @param args the command line arguments
+	*/
+	public boolean b() {
+		// TODO code application logic here
+		List<String> strs = new ArrayList<String>();
+		int i = 0;
+		int j = 0;
+		strs.stream().map(_item -> "foo").map(s -> s.toString()).forEachOrdered(_item -> {
+			System.out.println();
+		});
+		return false;
 
-				}
-			}""";
+	}
+}
+""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("JavaApplication1.java", input, false, null);
