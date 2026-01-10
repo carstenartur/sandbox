@@ -252,6 +252,35 @@ public class StreamPipelineBuilder {
 	 * @param pipeline the pipeline method invocation
 	 * @return a Statement wrapping the pipeline
 	 */
+	/**
+	 * Wraps the stream pipeline in an appropriate statement type based on the terminal operation.
+	 * 
+	 * <p>
+	 * The wrapping strategy depends on the type of terminal operation:
+	 * <ul>
+	 * <li><b>ANYMATCH</b>: Wraps in {@code if (stream.anyMatch(...)) { return true; }}</li>
+	 * <li><b>NONEMATCH</b>: Wraps in {@code if (!stream.noneMatch(...)) { return false; }}</li>
+	 * <li><b>ALLMATCH</b>: Wraps in {@code if (!stream.allMatch(...)) { return false; }}</li>
+	 * <li><b>REDUCE</b>: Wraps in assignment {@code accumulatorVariable = stream.reduce(...)}</li>
+	 * <li><b>FOREACH</b> (and others): Wraps in {@link org.eclipse.jdt.core.dom.ExpressionStatement}</li>
+	 * </ul>
+	 * 
+	 * <p><b>Example - AnyMatch Pattern:</b></p>
+	 * <pre>{@code
+	 * // Input pipeline: stream.map(...).anyMatch(x -> x > 0)
+	 * // Output: if (stream.map(...).anyMatch(x -> x > 0)) { return true; }
+	 * }</pre>
+	 * 
+	 * <p><b>Example - Reduce Pattern:</b></p>
+	 * <pre>{@code
+	 * // Input pipeline: stream.map(...).reduce(0, Integer::sum)
+	 * // Output: sum = stream.map(...).reduce(0, Integer::sum);
+	 * }</pre>
+	 * 
+	 * @param pipeline the stream pipeline to wrap (must not be null)
+	 * @return a Statement wrapping the pipeline, or null if pipeline is null
+	 * @see ProspectiveOperation.OperationType
+	 */
 	public Statement wrapPipeline(MethodInvocation pipeline) {
 		if (pipeline == null) {
 			return null;
@@ -863,27 +892,8 @@ public class StreamPipelineBuilder {
 					if (ifStmt.getElseStatement() == null) {
 						// Check if this is an early return pattern (anyMatch/noneMatch/allMatch)
 						if (isEarlyReturnIf(ifStmt)) {
-							// Create ANYMATCH, NONEMATCH, or ALLMATCH operation
-							ProspectiveOperation.OperationType opType;
-							if (isAnyMatchPattern) {
-								opType = ProspectiveOperation.OperationType.ANYMATCH;
-							} else if (isNoneMatchPattern) {
-								opType = ProspectiveOperation.OperationType.NONEMATCH;
-							} else {
-								// allMatchPattern
-								// For allMatch, we need to negate the condition since
-								// the pattern is "if (!condition) return false"
-								// We want "allMatch(condition)" not "allMatch(!condition)"
-								opType = ProspectiveOperation.OperationType.ALLMATCH;
-							}
-
-							// For allMatch with negated condition, strip the negation
-							Expression condition = ifStmt.getExpression();
-							if (isAllMatchPattern) {
-								condition = stripNegation(condition);
-							}
-
-							ProspectiveOperation matchOp = new ProspectiveOperation(condition, opType);
+							// Create ANYMATCH, NONEMATCH, or ALLMATCH operation using helper
+							ProspectiveOperation matchOp = createMatchOperation(ifStmt);
 							ops.add(matchOp);
 							// Don't process the body since it's just a return statement
 						} else if (isIfWithContinue(ifStmt)) {
@@ -905,24 +915,8 @@ public class StreamPipelineBuilder {
 					if (ifStmt.getElseStatement() == null) {
 						// Check if this is an early return pattern (anyMatch/noneMatch/allMatch)
 						if (isEarlyReturnIf(ifStmt)) {
-							// Create ANYMATCH, NONEMATCH, or ALLMATCH operation
-							ProspectiveOperation.OperationType opType;
-							if (isAnyMatchPattern) {
-								opType = ProspectiveOperation.OperationType.ANYMATCH;
-							} else if (isNoneMatchPattern) {
-								opType = ProspectiveOperation.OperationType.NONEMATCH;
-							} else {
-								// allMatchPattern
-								opType = ProspectiveOperation.OperationType.ALLMATCH;
-							}
-
-							// For allMatch with negated condition, strip the negation
-							Expression condition = ifStmt.getExpression();
-							if (isAllMatchPattern) {
-								condition = stripNegation(condition);
-							}
-
-							ProspectiveOperation matchOp = new ProspectiveOperation(condition, opType);
+							// Create ANYMATCH, NONEMATCH, or ALLMATCH operation using helper
+							ProspectiveOperation matchOp = createMatchOperation(ifStmt);
 							ops.add(matchOp);
 						} else {
 							processIfAsFilter(ops, ifStmt, currentVarName, false);
@@ -1813,6 +1807,50 @@ public class StreamPipelineBuilder {
 		}
 
 		return null;
+	}
+
+	/**
+	 * Creates a match operation (ANYMATCH, NONEMATCH, or ALLMATCH) from an IF statement
+	 * containing an early return pattern.
+	 * 
+	 * <p>
+	 * This method handles the common pattern of creating match operations from IF statements
+	 * that contain early returns. It determines the appropriate operation type based on
+	 * the pattern flags set in the constructor, and handles condition negation for ALLMATCH.
+	 * </p>
+	 * 
+	 * <p><b>Patterns recognized:</b></p>
+	 * <ul>
+	 * <li><b>ANYMATCH</b>: {@code if (condition) return true;}</li>
+	 * <li><b>NONEMATCH</b>: {@code if (condition) return false;}</li>
+	 * <li><b>ALLMATCH</b>: {@code if (!condition) return false;} (condition is un-negated)</li>
+	 * </ul>
+	 * 
+	 * @param ifStmt the IF statement containing the early return pattern (must not be null)
+	 * @return a ProspectiveOperation representing the match operation
+	 */
+	private ProspectiveOperation createMatchOperation(IfStatement ifStmt) {
+		// Determine operation type based on pattern flags
+		ProspectiveOperation.OperationType opType;
+		if (isAnyMatchPattern) {
+			opType = ProspectiveOperation.OperationType.ANYMATCH;
+		} else if (isNoneMatchPattern) {
+			opType = ProspectiveOperation.OperationType.NONEMATCH;
+		} else {
+			// allMatchPattern
+			// For allMatch, we need to negate the condition since
+			// the pattern is "if (!condition) return false"
+			// We want "allMatch(condition)" not "allMatch(!condition)"
+			opType = ProspectiveOperation.OperationType.ALLMATCH;
+		}
+
+		// For allMatch with negated condition, strip the negation
+		Expression condition = ifStmt.getExpression();
+		if (isAllMatchPattern) {
+			condition = stripNegation(condition);
+		}
+
+		return new ProspectiveOperation(condition, opType);
 	}
 
 	/**

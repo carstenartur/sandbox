@@ -775,10 +775,64 @@ public final class ProspectiveOperation {
 				+ ", neededVariables=" + neededVariables + '}';
 	}
 
+	/**
+	 * Types of stream operations that can be extracted from loop bodies.
+	 * 
+	 * <p>Each operation type corresponds to a specific stream method:
+	 * <ul>
+	 * <li><b>MAP</b>: Transforms elements ({@code .map(x -> f(x))}). 
+	 *     Example: {@code String s = item.toString();} → {@code .map(item -> item.toString())}</li>
+	 * <li><b>FILTER</b>: Selects elements based on a predicate ({@code .filter(x -> condition)}). 
+	 *     Example: {@code if (item != null)} → {@code .filter(item -> item != null)}</li>
+	 * <li><b>FOREACH</b>: Terminal operation performing an action on each element ({@code .forEachOrdered(x -> action(x))}). 
+	 *     Example: {@code System.out.println(item);} → {@code .forEachOrdered(item -> System.out.println(item))}</li>
+	 * <li><b>REDUCE</b>: Terminal accumulation operation ({@code .reduce(identity, accumulator)}). 
+	 *     Example: {@code sum += item;} → {@code .reduce(sum, Integer::sum)}</li>
+	 * <li><b>ANYMATCH</b>: Terminal predicate returning true if any element matches ({@code .anyMatch(x -> condition)}). 
+	 *     Example: {@code if (condition) return true;} → {@code if (stream.anyMatch(x -> condition)) return true;}</li>
+	 * <li><b>NONEMATCH</b>: Terminal predicate returning true if no elements match ({@code .noneMatch(x -> condition)}). 
+	 *     Example: {@code if (condition) return false;} → {@code if (!stream.noneMatch(x -> condition)) return false;}</li>
+	 * <li><b>ALLMATCH</b>: Terminal predicate returning true if all elements match ({@code .allMatch(x -> condition)}). 
+	 *     Example: {@code if (!condition) return false;} → {@code if (!stream.allMatch(x -> condition)) return false;}</li>
+	 * </ul>
+	 * 
+	 * @see #getSuitableMethod()
+	 */
 	public enum OperationType {
 		MAP, FOREACH, FILTER, REDUCE, ANYMATCH, NONEMATCH, ALLMATCH
 	}
 
+	/**
+	 * Types of reduction operations supported for REDUCE operations.
+	 * 
+	 * <p>Each reducer type represents a specific accumulation pattern:
+	 * <ul>
+	 * <li><b>INCREMENT</b>: Counts elements by incrementing an accumulator. 
+	 *     Pattern: {@code i++}, {@code ++i}. 
+	 *     Maps to: {@code .map(_item -> 1).reduce(i, Integer::sum)}</li>
+	 * <li><b>DECREMENT</b>: Decrements an accumulator for each element. 
+	 *     Pattern: {@code i--}, {@code --i}, {@code i -= 1}. 
+	 *     Maps to: {@code .map(_item -> -1).reduce(i, Integer::sum)}</li>
+	 * <li><b>SUM</b>: Sums values from the stream. 
+	 *     Pattern: {@code sum += value}. 
+	 *     Maps to: {@code .reduce(sum, Integer::sum)} or {@code .map(x -> value).reduce(sum, Integer::sum)}</li>
+	 * <li><b>PRODUCT</b>: Multiplies values from the stream. 
+	 *     Pattern: {@code product *= value}. 
+	 *     Maps to: {@code .reduce(product, (acc, x) -> acc * x)}</li>
+	 * <li><b>STRING_CONCAT</b>: Concatenates strings. 
+	 *     Pattern: {@code str += substring}. 
+	 *     Maps to: {@code .reduce(str, String::concat)} (when null-safe)</li>
+	 * <li><b>MAX</b>: Finds the maximum value. 
+	 *     Pattern: {@code max = Math.max(max, value)}. 
+	 *     Maps to: {@code .reduce(max, Math::max)} or {@code .reduce(max, Integer::max)}</li>
+	 * <li><b>MIN</b>: Finds the minimum value. 
+	 *     Pattern: {@code min = Math.min(min, value)}. 
+	 *     Maps to: {@code .reduce(min, Math::min)} or {@code .reduce(min, Integer::min)}</li>
+	 * <li><b>CUSTOM_AGGREGATE</b>: User-defined aggregation patterns not covered by standard types.</li>
+	 * </ul>
+	 * 
+	 * @see ProspectiveOperation#getArgumentsForReducer(AST)
+	 */
 	public enum ReducerType {
 		INCREMENT, // i++, ++i
 		DECREMENT, // i--, --i, i -= 1
