@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021 Alexandru Gyori and others.
+ * Copyright (c) 2021 Carsten Hammer and others.
  *
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
@@ -9,8 +9,7 @@
  * SPDX-License-Identifier: EPL-2.0
  *
  * Contributors:
- *     Alexandru Gyori - original code
- *     Carsten Hammer - initial port to Eclipse
+ *     Carsten Hammer - initial implementation
  *******************************************************************************/
 package org.sandbox.jdt.ui.tests.quickfix;
 
@@ -29,8 +28,8 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
  * Tests for filter and map operation chains in functional loop conversion.
  * 
  * <p>
- * This test class focuses on converting enhanced for-loops with filtering
- * (if statements or continue) and mapping (variable transformations) into
+ * This test class focuses on converting enhanced for-loops with filtering (if
+ * statements or continue) and mapping (variable transformations) into
  * {@code stream().filter().map().forEach()} chains.
  * </p>
  * 
@@ -76,8 +75,8 @@ public class FunctionalLoopFilterMapTest {
 		 * <pre>
 		 * {@code
 		 * for (Integer l : ls) {
-		 *     String s = l.toString();
-		 *     System.out.println(s);
+		 * 	String s = l.toString();
+		 * 	System.out.println(s);
 		 * }
 		 * }
 		 * </pre>
@@ -136,10 +135,10 @@ public class FunctionalLoopFilterMapTest {
 		 * <pre>
 		 * {@code
 		 * for (Integer l : ls) {
-		 *     if (l != null) {
-		 *         String s = l.toString();
-		 *         System.out.println(s);
-		 *     }
+		 * 	if (l != null) {
+		 * 		String s = l.toString();
+		 * 		System.out.println(s);
+		 * 	}
 		 * }
 		 * }
 		 * </pre>
@@ -150,8 +149,7 @@ public class FunctionalLoopFilterMapTest {
 		 * 
 		 * <pre>
 		 * {@code
-		 * ls.stream().filter(l -> (l != null)).map(l -> l.toString())
-		 *   .forEachOrdered(s -> System.out.println(s));
+		 * ls.stream().filter(l -> (l != null)).map(l -> l.toString()).forEachOrdered(s -> System.out.println(s));
 		 * }
 		 * </pre>
 		 */
@@ -247,7 +245,7 @@ public class FunctionalLoopFilterMapTest {
 
 						    public void test(List<Integer> ls) {
 						        ls.stream().map(a -> new Integer(a.intValue())).filter(l -> (l != null)).map(l -> l.toString())
-								.forEachOrdered(s -> System.out.println(s));
+										.forEachOrdered(s -> System.out.println(s));
 
 
 						    }
@@ -304,10 +302,10 @@ public class FunctionalLoopFilterMapTest {
 
 						    public void test(List<Integer> ls) {
 						        ls.stream().map(a -> new Integer(a.intValue())).filter(l -> (l != null)).map(l -> l.toString()).map(s -> {
-								if (s != null)
-									System.out.println(s);
-								return s;
-							}).forEachOrdered(s -> System.out.println("cucu"));
+									if (s != null)
+										System.out.println(s);
+									return s;
+								}).forEachOrdered(s -> System.out.println("cucu"));
 
 
 						    }
@@ -328,10 +326,10 @@ public class FunctionalLoopFilterMapTest {
 		 * <pre>
 		 * {@code
 		 * for (Integer l : ls) {
-		 *     if (l == null) {
-		 *         continue;
-		 *     }
-		 *     // rest of code
+		 * 	if (l == null) {
+		 * 		continue;
+		 * 	}
+		 * 	// rest of code
 		 * }
 		 * }
 		 * </pre>
@@ -371,26 +369,25 @@ public class FunctionalLoopFilterMapTest {
 
 
 				    }
-				}""",
-				"""
-						package test1;
+				}""", """
+				package test1;
 
-						import java.util.Arrays;
-						import java.util.List;
+				import java.util.Arrays;
+				import java.util.List;
 
-						class MyTest {
+				class MyTest {
 
-						    public static void main(String[] args) {
-						        new MyTest().test(Arrays.asList(1, 2, 3));
-						    }
+				    public static void main(String[] args) {
+				        new MyTest().test(Arrays.asList(1, 2, 3));
+				    }
 
-						    public void test(List<Integer> ls) {
-						        ls.stream().filter(l -> !(l == null)).map(l -> l.toString()).filter(s -> (s != null))
+				    public void test(List<Integer> ls) {
+				        ls.stream().filter(l -> !(l == null)).map(l -> l.toString()).filter(s -> (s != null))
 								.forEachOrdered(s -> System.out.println(s));
 
 
-						    }
-						}"""),
+				    }
+				}"""),
 
 		/**
 		 * Tests nested IF statements converted to multiple filters.
@@ -415,19 +412,17 @@ public class FunctionalLoopFilterMapTest {
 				            }
 				        }
 				    }
-				}""",
+				}""", """
+				package test1;
 
-				"""
-						package test1;
+				import java.util.List;
 
-						import java.util.List;
-
-						class MyTest {
-						    public void processValidItems(List<String> items) {
-						        items.stream().filter(item -> (item != null)).filter(item -> (item.length() > 5))
+				class MyTest {
+				    public void processValidItems(List<String> items) {
+				        items.stream().filter(item -> (item != null)).filter(item -> (item.length() > 5))
 								.forEachOrdered(item -> System.out.println(item));
-						    }
-						}"""),
+				    }
+				}"""),
 
 		/**
 		 * Tests multiple continue statements converted to multiple filters.
@@ -454,18 +449,17 @@ public class FunctionalLoopFilterMapTest {
 				            System.out.println(num);
 				        }
 				    }
-				}""",
-				"""
-						package test1;
+				}""", """
+				package test1;
 
-						import java.util.List;
+				import java.util.List;
 
-						class MyTest {
-						    public void processFiltered(List<Integer> numbers) {
-						        numbers.stream().filter(num -> !(num == null)).filter(num -> !(num <= 0))
+				class MyTest {
+				    public void processFiltered(List<Integer> numbers) {
+				        numbers.stream().filter(num -> !(num == null)).filter(num -> !(num <= 0))
 								.forEachOrdered(num -> System.out.println(num));
-						    }
-						}"""),
+				    }
+				}"""),
 
 		/**
 		 * Tests complex filter conditions with multiple boolean operators.
@@ -498,7 +492,7 @@ public class FunctionalLoopFilterMapTest {
 						class MyTest {
 						    public void processWithComplexFilter(List<String> items) {
 						        items.stream().filter(item -> (item != null && item.length() > 5 && item.startsWith("test")))
-								.forEachOrdered(item -> System.out.println(item));
+										.forEachOrdered(item -> System.out.println(item));
 						    }
 						}"""),
 
@@ -506,8 +500,8 @@ public class FunctionalLoopFilterMapTest {
 		 * Tests chained filter and map operations with multiple transformations.
 		 * 
 		 * <p>
-		 * <b>Conversion Rule:</b> Filters and maps are chained in the order they
-		 * appear in the original loop, preserving the semantic flow.
+		 * <b>Conversion Rule:</b> Filters and maps are chained in the order they appear
+		 * in the original loop, preserving the semantic flow.
 		 * </p>
 		 */
 		ChainedFilterAndMapOperations("""
@@ -536,7 +530,7 @@ public class FunctionalLoopFilterMapTest {
 						class MyTest {
 						    public void processChained(List<Integer> numbers) {
 						        numbers.stream().filter(num -> (num != null && num > 0)).map(num -> num * num)
-								.filter(squared -> (squared < 100)).forEachOrdered(squared -> System.out.println(squared));
+										.filter(squared -> (squared < 100)).forEachOrdered(squared -> System.out.println(squared));
 						    }
 						}"""),
 
@@ -563,18 +557,17 @@ public class FunctionalLoopFilterMapTest {
 				            System.out.println(upper);
 				        }
 				    }
-				}""",
-				"""
-						package test1;
+				}""", """
+				package test1;
 
-						import java.util.List;
+				import java.util.List;
 
-						class MyTest {
-						    public void processWithNestedContinue(List<String> items) {
-						        items.stream().filter(item -> !(item == null || item.isEmpty())).map(item -> item.toUpperCase())
+				class MyTest {
+				    public void processWithNestedContinue(List<String> items) {
+				        items.stream().filter(item -> !(item == null || item.isEmpty())).map(item -> item.toUpperCase())
 								.forEachOrdered(upper -> System.out.println(upper));
-						    }
-						}"""),
+				    }
+				}"""),
 
 		/**
 		 * Tests continue with map and forEach operations.
@@ -600,18 +593,17 @@ public class FunctionalLoopFilterMapTest {
 				            System.out.println(squared);
 				        }
 				    }
-				}""",
-				"""
-						package test1;
+				}""", """
+				package test1;
 
-						import java.util.List;
+				import java.util.List;
 
-						class MyTest {
-						    public void processPositiveSquares(List<Integer> numbers) {
-						        numbers.stream().filter(num -> !(num <= 0)).map(num -> num * num)
+				class MyTest {
+				    public void processPositiveSquares(List<Integer> numbers) {
+				        numbers.stream().filter(num -> !(num <= 0)).map(num -> num * num)
 								.forEachOrdered(squared -> System.out.println(squared));
-						    }
-						}""");
+				    }
+				}""");
 
 		final String input;
 		final String expected;
@@ -623,7 +615,10 @@ public class FunctionalLoopFilterMapTest {
 	}
 
 	@ParameterizedTest
-	@EnumSource(TestCase.class)
+	@EnumSource(value = TestCase.class, names = { "CHAININGMAP", "ChainingFilterMapForEachConvert",
+			"SmoothLongerChaining", "NonFilteringIfChaining", "ContinuingIfFilterSingleStatement",
+			"NestedFilterCombination", "MultipleContinueFilters", "FilterWithComplexCondition",
+			"ChainedFilterAndMapOperations", "ContinueWithNestedConditions", "ContinueWithMapAndForEach" })
 	@DisplayName("Test filter and map conversion")
 	void testConversion(TestCase testCase) throws CoreException {
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);

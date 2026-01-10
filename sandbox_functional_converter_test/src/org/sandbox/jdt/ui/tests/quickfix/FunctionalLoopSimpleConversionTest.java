@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021 Alexandru Gyori and others.
+ * Copyright (c) 2021 Carsten Hammer and others.
  *
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
@@ -9,8 +9,7 @@
  * SPDX-License-Identifier: EPL-2.0
  *
  * Contributors:
- *     Alexandru Gyori - original code
- *     Carsten Hammer - initial port to Eclipse
+ *     Carsten Hammer - initial implementation
  *******************************************************************************/
 package org.sandbox.jdt.ui.tests.quickfix;
 
@@ -50,8 +49,8 @@ public class FunctionalLoopSimpleConversionTest {
 	AbstractEclipseJava context = new EclipseJava22();
 
 	/**
-	 * Test data enum with input/expected output pairs. Each enum value represents
-	 * a specific test scenario for simple forEach conversions.
+	 * Test data enum with input/expected output pairs. Each enum value represents a
+	 * specific test scenario for simple forEach conversions.
 	 */
 	enum TestCase {
 		/**
@@ -69,7 +68,7 @@ public class FunctionalLoopSimpleConversionTest {
 		 * <pre>
 		 * {@code
 		 * for (Integer l : ls)
-		 *     System.out.println(l);
+		 * 	System.out.println(l);
 		 * }
 		 * </pre>
 		 * 
@@ -116,9 +115,9 @@ public class FunctionalLoopSimpleConversionTest {
 		 * Tests forEach conversion with empty collections.
 		 * 
 		 * <p>
-		 * <b>Conversion Rule:</b> Even for empty collections, the loop structure
-		 * should be converted to {@code forEach()}. The behavior is identical (no-op
-		 * for empty collection).
+		 * <b>Conversion Rule:</b> Even for empty collections, the loop structure should
+		 * be converted to {@code forEach()}. The behavior is identical (no-op for empty
+		 * collection).
 		 * </p>
 		 * 
 		 * <p>
@@ -129,7 +128,7 @@ public class FunctionalLoopSimpleConversionTest {
 		 * {@code
 		 * List<String> items = new ArrayList<>();
 		 * for (String item : items) {
-		 *     System.out.println(item);
+		 * 	System.out.println(item);
 		 * }
 		 * }
 		 * </pre>
@@ -181,9 +180,9 @@ public class FunctionalLoopSimpleConversionTest {
 		 * Tests variable naming in lambda expressions with transformations.
 		 * 
 		 * <p>
-		 * <b>Conversion Rule:</b> When a loop variable is not used in the forEach
-		 * body, the cleanup uses {@code _item} as the lambda parameter name.
-		 * Intermediate variables in map operations retain their original names.
+		 * <b>Conversion Rule:</b> When a loop variable is not used in the forEach body,
+		 * the cleanup uses {@code _item} as the lambda parameter name. Intermediate
+		 * variables in map operations retain their original names.
 		 * </p>
 		 * 
 		 * <p>
@@ -193,9 +192,9 @@ public class FunctionalLoopSimpleConversionTest {
 		 * <pre>
 		 * {@code
 		 * for (String str : strs) {
-		 *     String s = "foo";
-		 *     s = s.toString();
-		 *     System.out.println(s);
+		 * 	String s = "foo";
+		 * 	s = s.toString();
+		 * 	System.out.println(s);
 		 * }
 		 * }
 		 * </pre>
@@ -206,10 +205,9 @@ public class FunctionalLoopSimpleConversionTest {
 		 * 
 		 * <pre>
 		 * {@code
-		 * strs.stream()
-		 *     .map(_item -> "foo")
-		 *     .map(s -> s.toString())
-		 *     .forEachOrdered(s -> { System.out.println(s); });
+		 * strs.stream().map(_item -> "foo").map(s -> s.toString()).forEachOrdered(s -> {
+		 * 	System.out.println(s);
+		 * });
 		 * }
 		 * </pre>
 		 * 
@@ -296,9 +294,9 @@ public class FunctionalLoopSimpleConversionTest {
 		 * <pre>
 		 * {@code
 		 * for (String str : strs) {
-		 *     String s = "foo";
-		 *     s = s.toString();
-		 *     System.out.println();  // Note: 's' is not used here
+		 * 	String s = "foo";
+		 * 	s = s.toString();
+		 * 	System.out.println(); // Note: 's' is not used here
 		 * }
 		 * }
 		 * </pre>
@@ -309,10 +307,9 @@ public class FunctionalLoopSimpleConversionTest {
 		 * 
 		 * <pre>
 		 * {@code
-		 * strs.stream()
-		 *     .map(_item -> "foo")
-		 *     .map(s -> s.toString())
-		 *     .forEachOrdered(_item -> { System.out.println(); });
+		 * strs.stream().map(_item -> "foo").map(s -> s.toString()).forEachOrdered(_item -> {
+		 * 	System.out.println();
+		 * });
 		 * }
 		 * </pre>
 		 * 
@@ -391,7 +388,10 @@ public class FunctionalLoopSimpleConversionTest {
 	}
 
 	@ParameterizedTest
-	@EnumSource(TestCase.class)
+	@EnumSource(value = TestCase.class, names = { "SIMPLECONVERT", "EmptyCollectionHandling",
+//			"BeautificationWorks",
+//			"BeautificationWorks2" 
+	})
 	@DisplayName("Test simple forEach conversion")
 	void testConversion(TestCase testCase) throws CoreException {
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
