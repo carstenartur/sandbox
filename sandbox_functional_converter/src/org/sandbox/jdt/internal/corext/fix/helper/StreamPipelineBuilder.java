@@ -141,62 +141,45 @@ import org.eclipse.jdt.internal.corext.dom.ASTNodes;
  */
 public class StreamPipelineBuilder {
 	// Note: Constants have been moved to StreamConstants class
-	// Keeping local references for backwards compatibility
 	/**
 	 * Marker variable name used when the loop variable is not directly used
 	 * in the lambda body.
-	 * @deprecated Use {@link StreamConstants#UNUSED_PARAMETER_NAME} instead
 	 */
-	@Deprecated
 	private static final String UNUSED_ITEM_NAME = StreamConstants.UNUSED_PARAMETER_NAME;
 
 	/**
 	 * Method name for creating a stream from a collection.
-	 * @deprecated Use {@link StreamConstants#STREAM_METHOD} instead
 	 */
-	@Deprecated
 	private static final String STREAM_METHOD = StreamConstants.STREAM_METHOD;
 
 	/**
 	 * Method name for terminal forEach operation.
-	 * @deprecated Use {@link StreamConstants#FOR_EACH_METHOD} instead
 	 */
-	@Deprecated
 	private static final String FOR_EACH_METHOD = StreamConstants.FOR_EACH_METHOD;
 
 	/**
 	 * Class name for Math utility class.
-	 * @deprecated Use {@link StreamConstants#MATH_CLASS_NAME} instead
 	 */
-	@Deprecated
 	private static final String MATH_CLASS_NAME = StreamConstants.MATH_CLASS_NAME;
 
 	/**
 	 * Method name for Math.max operation.
-	 * @deprecated Use {@link StreamConstants#MAX_METHOD_NAME} instead
 	 */
-	@Deprecated
 	private static final String MAX_METHOD_NAME = StreamConstants.MAX_METHOD_NAME;
 
 	/**
 	 * Method name for Math.min operation.
-	 * @deprecated Use {@link StreamConstants#MIN_METHOD_NAME} instead
 	 */
-	@Deprecated
 	private static final String MIN_METHOD_NAME = StreamConstants.MIN_METHOD_NAME;
 
 	/**
 	 * Fully qualified name of java.lang.Math class.
-	 * @deprecated Use {@link StreamConstants#JAVA_LANG_MATH} instead
 	 */
-	@Deprecated
 	private static final String JAVA_LANG_MATH = StreamConstants.JAVA_LANG_MATH;
 
 	/**
 	 * Fully qualified name of java.lang.String class.
-	 * @deprecated Use {@link StreamConstants#JAVA_LANG_STRING} instead
 	 */
-	@Deprecated
 	private static final String JAVA_LANG_STRING = StreamConstants.JAVA_LANG_STRING;
 
 	private final EnhancedForStatement forLoop;
@@ -318,20 +301,13 @@ public class StreamPipelineBuilder {
 	 * 
 	 * @return a MethodInvocation representing the stream pipeline, or null if
 	 *         the loop cannot be converted
-	 * @throws IllegalStateException if called before {@link #analyze()}
 	 * @see #analyze()
 	 * @see #wrapPipeline(MethodInvocation)
 	 * @see #requiresStreamPrefix()
 	 */
 	public MethodInvocation buildPipeline() {
-		if (!analyzed) {
-			throw new IllegalStateException("analyze() must be called before buildPipeline()");
-		}
-		if (!convertible) {
-			throw new IllegalStateException("Loop is not convertible to stream (analyze() returned false)");
-		}
-		if (operations == null || operations.isEmpty()) {
-			throw new IllegalStateException("No operations to build pipeline from");
+		if (!analyzed || !convertible) {
+			return null;
 		}
 
 		// Check if we need .stream() or can use direct .forEach()

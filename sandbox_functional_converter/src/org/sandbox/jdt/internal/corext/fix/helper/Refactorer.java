@@ -107,10 +107,6 @@ public class Refactorer {
 		}
 
 		MethodInvocation pipeline = builder.buildPipeline();
-		if (pipeline == null) {
-			return; // Failed to build pipeline
-		}
-
 		Statement replacement = builder.wrapPipeline(pipeline);
 		if (replacement != null) {
 			ASTNodes.replaceButKeepComment(rewrite, forLoop, replacement, group);
