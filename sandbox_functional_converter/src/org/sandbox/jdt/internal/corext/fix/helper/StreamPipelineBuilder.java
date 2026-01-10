@@ -45,6 +45,7 @@ import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 
 /**
  * Builder class for constructing stream pipelines from enhanced for-loops.
@@ -1327,17 +1328,14 @@ public class StreamPipelineBuilder {
 
 	/**
 	 * Strips the negation from a negated expression.
-	 * Handles ParenthesizedExpression wrapping.
+	 * Handles ParenthesizedExpression wrapping using JDT's {@link ASTNodes#getUnparenthesedExpression}.
 	 * 
 	 * @param expr the expression to strip negation from
 	 * @return the expression without the leading NOT operator, or the original expression if not negated
 	 */
 	private Expression stripNegation(Expression expr) {
-		// Unwrap parentheses
-		Expression unwrapped = expr;
-		while (unwrapped instanceof ParenthesizedExpression) {
-			unwrapped = ((ParenthesizedExpression) unwrapped).getExpression();
-		}
+		// Use JDT utility to unwrap parentheses
+		Expression unwrapped = ASTNodes.getUnparenthesedExpression(expr);
 		
 		// Check if it's a negated expression
 		if (unwrapped instanceof PrefixExpression) {
