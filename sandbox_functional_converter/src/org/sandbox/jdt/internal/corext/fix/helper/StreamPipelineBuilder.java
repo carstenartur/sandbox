@@ -59,7 +59,46 @@ import org.eclipse.jdt.internal.corext.dom.ASTNodes;
  * <li>FILTER operations (IF statements)</li>
  * <li>REDUCE operations (accumulator patterns including SUM, PRODUCT,
  * INCREMENT, MAX, MIN)</li>
- * <li>ANYMATCH/NONEMATCH operations (early returns)</li>
+ * <li>ANYMATCH/NONEMATCH/ALLMATCH operations (early returns)</li>
+ * </ul>
+ * 
+ * <p><b>Architecture Overview:</b></p>
+ * <p>The conversion process involves three phases:</p>
+ * 
+ * <ol>
+ * <li><b>Analysis Phase</b> ({@link #analyze()}):
+ *     <ul>
+ *     <li>Validates preconditions via {@link PreconditionsChecker}</li>
+ *     <li>Parses loop body into {@link ProspectiveOperation}s</li>
+ *     <li>Validates variable scoping</li>
+ *     <li>Returns true if conversion is possible</li>
+ *     </ul>
+ * </li>
+ * <li><b>Construction Phase</b> ({@link #buildPipeline()}):
+ *     <ul>
+ *     <li>Determines if .stream() prefix is needed</li>
+ *     <li>Chains operations into MethodInvocation</li>
+ *     <li>Generates lambda parameters and arguments</li>
+ *     <li>Returns the complete pipeline expression</li>
+ *     </ul>
+ * </li>
+ * <li><b>Wrapping Phase</b> ({@link #wrapPipeline(MethodInvocation)}):
+ *     <ul>
+ *     <li>Wraps in appropriate Statement type</li>
+ *     <li>Handles reducers (assignment to accumulator)</li>
+ *     <li>Handles anyMatch/noneMatch/allMatch (IF with early return)</li>
+ *     <li>Returns the final Statement to replace the for-loop</li>
+ *     </ul>
+ * </li>
+ * </ol>
+ * 
+ * <p><b>Supported Patterns:</b></p>
+ * <ul>
+ * <li><b>FOREACH:</b> {@code for (x : xs) { action(x); }} → {@code xs.forEach(x -> action(x))}</li>
+ * <li><b>MAP:</b> {@code for (x : xs) { T y = f(x); ... }} → {@code xs.stream().map(x -> f(x))...}</li>
+ * <li><b>FILTER:</b> {@code for (x : xs) { if (p(x)) { ... } }} → {@code xs.stream().filter(x -> p(x))...}</li>
+ * <li><b>REDUCE:</b> {@code for (x : xs) { sum += x; }} → {@code sum = xs.stream().reduce(sum, Integer::sum)}</li>
+ * <li><b>ANYMATCH:</b> {@code for (x : xs) { if (p(x)) return true; } return false;} → {@code if (xs.stream().anyMatch(x -> p(x))) return true;}</li>
  * </ul>
  * 
  * <p>
@@ -75,12 +114,30 @@ import org.eclipse.jdt.internal.corext.dom.ASTNodes;
  * <li>CUSTOM_AGGREGATE: Custom aggregation patterns</li>
  * </ul>
  * 
+ * <p><b>Thread Safety:</b> This class is not thread-safe. Create a new instance
+ * for each loop to be analyzed.</p>
+ * 
+ * <p><b>Usage Example:</b></p>
+ * <pre>{@code
+ * PreconditionsChecker preconditions = new PreconditionsChecker(forLoop, ...);
+ * StreamPipelineBuilder builder = new StreamPipelineBuilder(forLoop, preconditions);
+ * 
+ * if (builder.analyze()) {
+ *     MethodInvocation pipeline = builder.buildPipeline();
+ *     Statement replacement = builder.wrapPipeline(pipeline);
+ *     // Replace forLoop with replacement
+ * }
+ * }</pre>
+ * 
  * <p>
  * Based on the NetBeans mapreduce hints implementation:
  * https://github.com/apache/netbeans/tree/master/java/java.hints/src/org/netbeans/modules/java/hints/jdk/mapreduce
  * 
  * @see ProspectiveOperation
  * @see PreconditionsChecker
+ * @see TypeResolver
+ * @see ExpressionUtils
+ * @see Refactorer
  */
 public class StreamPipelineBuilder {
 	// Note: Constants have been moved to StreamConstants class
@@ -267,8 +324,14 @@ public class StreamPipelineBuilder {
 	 * @see #requiresStreamPrefix()
 	 */
 	public MethodInvocation buildPipeline() {
-		if (!analyzed || !convertible) {
-			return null;
+		if (!analyzed) {
+			throw new IllegalStateException("analyze() must be called before buildPipeline()");
+		}
+		if (!convertible) {
+			throw new IllegalStateException("Loop is not convertible to stream (analyze() returned false)");
+		}
+		if (operations == null || operations.isEmpty()) {
+			throw new IllegalStateException("No operations to build pipeline from");
 		}
 
 		// Check if we need .stream() or can use direct .forEach()
@@ -1156,8 +1219,12 @@ public class StreamPipelineBuilder {
 		if (operations == null) {
 			throw new IllegalArgumentException("operations cannot be null");
 		}
-		if (loopVarName == null) {
-			throw new IllegalArgumentException("loopVarName cannot be null");
+		if (loopVarName == null || loopVarName.isEmpty()) {
+			throw new IllegalArgumentException("loopVarName cannot be null or empty");
+		}
+		if (currentIndex < 0 || currentIndex > operations.size()) {
+			throw new IllegalArgumentException(
+					"currentIndex out of bounds: " + currentIndex + " (size: " + operations.size() + ")");
 		}
 
 		// Look back to find the most recent operation that produces a variable
