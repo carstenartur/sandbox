@@ -30,6 +30,54 @@ import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 
+/**
+ * Legacy test class for functional loop conversion - DEPRECATED.
+ * 
+ * <p>
+ * <b>⚠️ DEPRECATED:</b> This test class has been refactored into multiple
+ * focused test classes for better organization and maintainability.
+ * </p>
+ * 
+ * <h2>Migration Guide</h2>
+ * 
+ * <p>
+ * The tests in this file have been split into the following new test classes:
+ * </p>
+ * <ul>
+ * <li>{@link FunctionalLoopSimpleConversionTest} - Basic forEach conversions (4 tests)</li>
+ * <li>{@link FunctionalLoopFilterMapTest} - Filter and map operations (11 tests)</li>
+ * <li>{@link FunctionalLoopReducerTest} - Reduction operations (9 representative tests)</li>
+ * <li>{@link FunctionalLoopMatchPatternTest} - anyMatch/noneMatch/allMatch patterns (5 tests)</li>
+ * <li>{@link FunctionalLoopComplexPatternTest} - Complex patterns and edge cases (3 tests)</li>
+ * <li>{@link FunctionalLoopNegativeTest} - Tests for patterns that should NOT be converted (5 tests)</li>
+ * </ul>
+ * 
+ * <p>
+ * Use {@link FunctionalLoopTestHelper} for common test utilities.
+ * </p>
+ * 
+ * <p>
+ * <b>Benefits of the new structure:</b>
+ * </p>
+ * <ul>
+ * <li>✅ Faster test execution (parallel execution capability)</li>
+ * <li>✅ Better test failure reporting</li>
+ * <li>✅ Easier to add new test cases</li>
+ * <li>✅ Better IDE test navigation</li>
+ * <li>✅ Comprehensive Javadoc for each test pattern</li>
+ * </ul>
+ * 
+ * @deprecated Use the new focused test classes instead. This class will be
+ *             removed in a future release.
+ * @see FunctionalLoopSimpleConversionTest
+ * @see FunctionalLoopFilterMapTest
+ * @see FunctionalLoopReducerTest
+ * @see FunctionalLoopMatchPatternTest
+ * @see FunctionalLoopComplexPatternTest
+ * @see FunctionalLoopNegativeTest
+ * @see FunctionalLoopTestHelper
+ */
+@Deprecated(since = "2026-01", forRemoval = true)
 public class Java22CleanUpTest {
 
 	@RegisterExtension
