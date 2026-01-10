@@ -1463,15 +1463,14 @@ public class StreamPipelineBuilder {
 	 * Checks if the IF statement contains an early return (for
 	 * anyMatch/noneMatch/allMatch patterns).
 	 * 
+	 * <p>This method performs its own pattern detection in addition to checking
+	 * the precomputed flags from PreconditionsChecker. This ensures that even if
+	 * the flags weren't set correctly, the pattern can still be detected.</p>
+	 * 
 	 * @param ifStatement the IF statement to check
-	 * @return true if the IF contains a return statement matching the detected
-	 *         pattern
+	 * @return true if the IF contains a return statement matching an early return pattern
 	 */
 	private boolean isEarlyReturnIf(IfStatement ifStatement) {
-		if (!isAnyMatchPattern && !isNoneMatchPattern && !isAllMatchPattern) {
-			return false;
-		}
-
 		// Directly check if this IF statement matches the early return pattern
 		// by examining its structure rather than comparing object references
 		if (ifStatement == null || ifStatement.getElseStatement() != null) {
@@ -1497,7 +1496,7 @@ public class StreamPipelineBuilder {
 
 		BooleanLiteral returnValue = (BooleanLiteral) returnStmt.getExpression();
 
-		// Match the pattern based on return value
+		// First check if precomputed flags match
 		if (isAnyMatchPattern && returnValue.booleanValue()) {
 			// anyMatch: if (condition) return true;
 			return true;
@@ -1508,8 +1507,73 @@ public class StreamPipelineBuilder {
 			// allMatch: if (!condition) return false;
 			return true;
 		}
+		
+		// If flags weren't set, detect the pattern directly by checking if there's
+		// a return statement after the loop that completes the pattern
+		if (!isAnyMatchPattern && !isNoneMatchPattern && !isAllMatchPattern) {
+			// Check for return after the loop to determine pattern type
+			BooleanLiteral followingReturn = getReturnAfterLoop();
+			if (followingReturn != null) {
+				if (returnValue.booleanValue() && !followingReturn.booleanValue()) {
+					// if (condition) return true; ... return false; → anyMatch
+					// Update the flag so createMatchOperation can use it
+					isAnyMatchPattern = true;
+					return true;
+				} else if (!returnValue.booleanValue() && followingReturn.booleanValue()) {
+					// if (condition) return false; ... return true; → noneMatch or allMatch
+					// Check if condition is negated to distinguish
+					Expression condition = ifStatement.getExpression();
+					if (ExpressionUtils.isNegatedExpression(condition)) {
+						// if (!condition) return false; ... return true; → allMatch
+						isAllMatchPattern = true;
+					} else {
+						// if (condition) return false; ... return true; → noneMatch
+						isNoneMatchPattern = true;
+					}
+					return true;
+				}
+			}
+		}
 
 		return false;
+	}
+	
+	/**
+	 * Gets the boolean return value from the statement immediately following the loop.
+	 * 
+	 * @return the BooleanLiteral returned after the loop, or null if not found
+	 */
+	private BooleanLiteral getReturnAfterLoop() {
+		ASTNode parent = forLoop.getParent();
+		
+		// The loop must be in a Block (method body, if-then block, etc.)
+		if (!(parent instanceof Block)) {
+			return null;
+		}
+		
+		Block block = (Block) parent;
+		List<?> statements = block.statements();
+		
+		// Find the loop in the block's statements
+		int loopIndex = statements.indexOf(forLoop);
+		if (loopIndex == -1 || loopIndex >= statements.size() - 1) {
+			// Loop not found or is the last statement
+			return null;
+		}
+		
+		// Check the next statement
+		Statement nextStmt = (Statement) statements.get(loopIndex + 1);
+		
+		// We expect a return statement with a boolean literal
+		if (nextStmt instanceof ReturnStatement) {
+			ReturnStatement returnStmt = (ReturnStatement) nextStmt;
+			Expression expr = returnStmt.getExpression();
+			if (expr instanceof BooleanLiteral) {
+				return (BooleanLiteral) expr;
+			}
+		}
+		
+		return null;
 	}
 
 	/**

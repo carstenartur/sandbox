@@ -246,6 +246,59 @@ public final class ExpressionUtils {
 	}
 
 	/**
+	 * Checks if an expression is a negated expression (starts with !).
+	 * 
+	 * <p>
+	 * This method handles {@link ParenthesizedExpression} wrapping using JDT's
+	 * {@link ASTNodes#getUnparenthesedExpression(Expression)} to properly detect
+	 * negation in complex nested expressions.
+	 * </p>
+	 * 
+	 * <p><b>Examples returning true:</b></p>
+	 * <pre>{@code
+	 * // Simple negation
+	 * !condition  →  true
+	 * 
+	 * // Parenthesized negation
+	 * ((!condition))  →  true
+	 * 
+	 * // Negated comparison
+	 * !(a == b)  →  true
+	 * }</pre>
+	 * 
+	 * <p><b>Examples returning false:</b></p>
+	 * <pre>{@code
+	 * // Not negated
+	 * condition  →  false
+	 * 
+	 * // Other prefix operator
+	 * -value  →  false
+	 * }</pre>
+	 * 
+	 * @param expr the expression to check (must not be null)
+	 * @return true if the expression is a negation (has a leading NOT operator),
+	 *         false otherwise
+	 * @throws IllegalArgumentException if expr is null
+	 * @see ASTNodes#getUnparenthesedExpression(Expression)
+	 */
+	public static boolean isNegatedExpression(Expression expr) {
+		if (expr == null) {
+			throw new IllegalArgumentException("expr cannot be null");
+		}
+
+		// Use JDT utility to unwrap parentheses
+		Expression unwrapped = ASTNodes.getUnparenthesedExpression(expr);
+
+		// Check if it's a negated expression
+		if (unwrapped instanceof PrefixExpression) {
+			PrefixExpression prefixExpr = (PrefixExpression) unwrapped;
+			return prefixExpr.getOperator() == PrefixExpression.Operator.NOT;
+		}
+
+		return false;
+	}
+
+	/**
 	 * Gets the unparenthesized form of an expression using JDT utilities.
 	 * 
 	 * <p>

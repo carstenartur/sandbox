@@ -449,6 +449,11 @@ public final class PreconditionsChecker {
 
 		IfStatement ifStmt = ifStatementsWithReturn.get(0);
 
+		// The IF must not have an else branch for these patterns
+		if (ifStmt.getElseStatement() != null) {
+			return;
+		}
+
 		// Check if the IF returns a boolean literal
 		BooleanLiteral returnValue = getReturnValueFromIf(ifStmt);
 		if (returnValue == null) {

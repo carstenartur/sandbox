@@ -429,23 +429,12 @@ public final class ProspectiveOperation {
 		} else if (operationType == OperationType.FILTER && originalExpression != null) {
 			// For FILTER: wrap condition in parentheses only if needed
 			// PrefixExpression with NOT already has proper precedence, no extra parens needed
-			if (originalExpression instanceof PrefixExpression) {
-				PrefixExpression prefix = (PrefixExpression) originalExpression;
-				if (prefix.getOperator() == PrefixExpression.Operator.NOT) {
-					// Negation already has proper precedence, use as-is
-					lambda.setBody((Expression) ASTNode.copySubtree(ast, originalExpression));
-				} else {
-					// Other prefix operators might need parentheses
-					ParenthesizedExpression parenExpr = ast.newParenthesizedExpression();
-					parenExpr.setExpression((Expression) ASTNode.copySubtree(ast, originalExpression));
-					lambda.setBody(parenExpr);
-				}
-			} else {
-				// For other expressions, wrap in parentheses
-				ParenthesizedExpression parenExpr = ast.newParenthesizedExpression();
-				parenExpr.setExpression((Expression) ASTNode.copySubtree(ast, originalExpression));
-				lambda.setBody(parenExpr);
-			}
+			lambda.setBody(createPredicateLambdaBody(ast, originalExpression));
+		} else if ((operationType == OperationType.ANYMATCH 
+				|| operationType == OperationType.NONEMATCH 
+				|| operationType == OperationType.ALLMATCH) && originalExpression != null) {
+			// For ANYMATCH/NONEMATCH/ALLMATCH: same handling as FILTER (predicates)
+			lambda.setBody(createPredicateLambdaBody(ast, originalExpression));
 		} else if (operationType == OperationType.FOREACH && originalExpression != null 
 				&& originalStatement instanceof org.eclipse.jdt.core.dom.ExpressionStatement) {
 			// For FOREACH with a single expression (from ExpressionStatement):
@@ -983,5 +972,55 @@ public final class ProspectiveOperation {
 		MAX, // max = Math.max(max, x)
 		MIN, // min = Math.min(min, x)
 		CUSTOM_AGGREGATE // Custom aggregation patterns
+	}
+
+	/**
+	 * Creates a lambda body for predicate expressions (used by FILTER, ANYMATCH, NONEMATCH, ALLMATCH).
+	 * 
+	 * <p>
+	 * Wraps the expression in parentheses only for InfixExpressions (==, !=, >, <, etc.)
+	 * for clarity. Does NOT wrap:
+	 * <ul>
+	 * <li>PrefixExpression with NOT operator (already has proper precedence)</li>
+	 * <li>MethodInvocation (e.g., item.startsWith("valid"))</li>
+	 * <li>SimpleName (no need for parentheses)</li>
+	 * <li>BooleanLiteral (no need for parentheses)</li>
+	 * </ul>
+	 * 
+	 * <p>
+	 * If the expression is already parenthesized, the method checks if the inner expression
+	 * actually needs parentheses. If not (e.g., a MethodInvocation), the parentheses are removed.
+	 * </p>
+	 * 
+	 * @param ast the AST to create nodes in (must not be null)
+	 * @param expression the predicate expression (must not be null)
+	 * @return the lambda body expression, possibly wrapped in parentheses
+	 */
+	private Expression createPredicateLambdaBody(AST ast, Expression expression) {
+		// Unwrap parentheses to check the actual expression type
+		Expression unwrapped = expression;
+		while (unwrapped instanceof ParenthesizedExpression) {
+			unwrapped = ((ParenthesizedExpression) unwrapped).getExpression();
+		}
+		
+		// Don't wrap PrefixExpression with NOT - already has proper precedence
+		if (unwrapped instanceof PrefixExpression) {
+			PrefixExpression prefix = (PrefixExpression) unwrapped;
+			if (prefix.getOperator() == PrefixExpression.Operator.NOT) {
+				return (Expression) ASTNode.copySubtree(ast, unwrapped);
+			}
+		}
+		
+		// Only wrap InfixExpressions (==, !=, >, <, >=, <=, &&, ||, etc.)
+		// These benefit from parentheses for readability in lambda bodies
+		if (unwrapped instanceof InfixExpression) {
+			ParenthesizedExpression parenExpr = ast.newParenthesizedExpression();
+			parenExpr.setExpression((Expression) ASTNode.copySubtree(ast, unwrapped));
+			return parenExpr;
+		}
+		
+		// For all other expressions (MethodInvocation, SimpleName, BooleanLiteral, etc.)
+		// no parentheses needed - use the unwrapped expression
+		return (Expression) ASTNode.copySubtree(ast, unwrapped);
 	}
 }

@@ -16,7 +16,7 @@ package org.sandbox.jdt.ui.tests.quickfix;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
-import org.junit.jupiter.api.Disabled;
+//import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
@@ -92,7 +92,7 @@ public class FunctionalLoopMatchPatternTest {
 		 * }
 		 * </pre>
  */
-@Disabled("Not yet working - match pattern conversion needs improvement")
+//@Disabled("Not yet working - match pattern conversion needs improvement")
 @Test
 void test_ChainedAnyMatch() throws CoreException {
 String input = """
@@ -140,7 +140,7 @@ String expected = """
 				}
 
 				public Boolean test(List<Integer> ls) {
-					if (ls.stream().map(l -> l.toString()).map(s -> foo(s)).anyMatch(o -> (o==null))) {
+					if (ls.stream().map(l -> l.toString()).map(s -> foo(s)).anyMatch(o -> (o == null))) {
 						return true;
 					}
 
@@ -153,7 +153,7 @@ String expected = """
 				{
 					return o;
 				}
-						}""";
+				}""";
 
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -169,7 +169,7 @@ context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new Str
 		 * converted to {@code stream().map(...).noneMatch(...)}.
 		 * </p>
  */
-@Disabled("Not yet working - match pattern conversion needs improvement")
+//@Disabled("Not yet working - match pattern conversion needs improvement")
 @Test
 void test_ChainedNoneMatch() throws CoreException {
 String input = """
@@ -217,7 +217,7 @@ String expected = """
 				}
 
 				public Boolean test(List<Integer> ls) {
-					if (!ls.stream().map(l -> l.toString()).map(s -> foo(s)).noneMatch(o -> (o==null))) {
+					if (!ls.stream().map(l -> l.toString()).map(s -> foo(s)).noneMatch(o -> (o == null))) {
 						return false;
 					}
 
@@ -230,7 +230,7 @@ String expected = """
 				{
 					return o;
 				}
-						}""";
+				}""";
 
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -246,7 +246,7 @@ context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new Str
 		 * condition is converted to {@code stream().allMatch(...)}.
 		 * </p>
  */
-@Disabled("Not yet working - match pattern conversion needs improvement")
+//@Disabled("Not yet working - match pattern conversion needs improvement")
 @Test
 void test_SimpleAllMatch() throws CoreException {
 String input = """
@@ -277,7 +277,7 @@ String expected = """
 					}
 					return true;
 				}
-						}""";
+				}""";
 
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -293,7 +293,7 @@ context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new Str
 		 * {@code allMatch()} predicates.
 		 * </p>
  */
-@Disabled("Not yet working - match pattern conversion needs improvement")
+//@Disabled("Not yet working - match pattern conversion needs improvement")
 @Test
 void test_AllMatchWithNullCheck() throws CoreException {
 String input = """
@@ -324,7 +324,7 @@ String expected = """
 					}
 					return true;
 				}
-						}""";
+				}""";
 
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -340,7 +340,7 @@ context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new Str
 		 * {@code map()} before {@code allMatch()}.
 		 * </p>
  */
-@Disabled("Not yet working - match pattern conversion needs improvement")
+//@Disabled("Not yet working - match pattern conversion needs improvement")
 @Test
 void test_ChainedAllMatch() throws CoreException {
 String input = """
@@ -372,7 +372,7 @@ String expected = """
 					}
 					return true;
 				}
-						}""";
+				}""";
 
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
