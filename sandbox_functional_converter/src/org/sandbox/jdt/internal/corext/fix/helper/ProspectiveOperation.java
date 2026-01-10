@@ -400,11 +400,11 @@ public final class ProspectiveOperation {
 		lambda.setParentheses(false);
 
 		// Create lambda body based on operation type
-		if (operationType == OperationType.MAP && originalExpression != null) {
-			// For MAP: lambda body is the expression
-			lambda.setBody(ASTNode.copySubtree(ast, originalExpression));
-		} else if (operationType == OperationType.MAP && originalStatement != null) {
-			// For MAP with statement: create block with statement and return
+		// Check for side-effect MAP operations FIRST (originalStatement != null with loopVariableName)
+		// These need a block body with return statement
+		if (operationType == OperationType.MAP && originalStatement != null && loopVariableName != null) {
+			// For MAP with side-effect statement: create block with statement and return
+			// This handles cases like: System.out.println() that need to return the loop variable
 			org.eclipse.jdt.core.dom.Block block = ast.newBlock();
 			
 			// Handle Block statements specially - copy statements from the block
@@ -417,15 +417,16 @@ public final class ProspectiveOperation {
 				block.statements().add(ASTNode.copySubtree(ast, originalStatement));
 			}
 
-			// Add return statement if we have a loop variable to return
-			if (loopVariableName != null || paramName != null) {
-				ReturnStatement returnStmt = ast.newReturnStatement();
-				String varToReturn = (loopVariableName != null) ? loopVariableName : effectiveParamName;
-				returnStmt.setExpression(ast.newSimpleName(varToReturn));
-				block.statements().add(returnStmt);
-			}
+			// Add return statement to return the current pipeline variable
+			ReturnStatement returnStmt = ast.newReturnStatement();
+			returnStmt.setExpression(ast.newSimpleName(loopVariableName));
+			block.statements().add(returnStmt);
 
 			lambda.setBody(block);
+		} else if (operationType == OperationType.MAP && originalExpression != null) {
+			// For MAP with expression only: lambda body is just the expression
+			// This handles variable declarations like: int squared = num * num
+			lambda.setBody(ASTNode.copySubtree(ast, originalExpression));
 		} else if (operationType == OperationType.FILTER && originalExpression != null) {
 			// For FILTER: wrap condition in parentheses only if needed
 			// PrefixExpression with NOT already has proper precedence, no extra parens needed

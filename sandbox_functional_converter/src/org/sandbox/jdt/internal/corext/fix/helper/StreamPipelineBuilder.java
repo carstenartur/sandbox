@@ -1380,26 +1380,42 @@ public class StreamPipelineBuilder {
 			return false;
 		}
 		
-		// Check for patterns that require decomposition
-		boolean hasVariableDeclarations = false;
-		boolean hasConditionalLogic = false;
+		// IMPORTANT: If the first statement is an IF statement that guards all remaining
+		// statements, we should NOT treat this as a simple forEach - it should be decomposed
+		// into filter/map operations.
+		if (statements.size() >= 1 && statements.get(0) instanceof IfStatement) {
+			// First statement is an IF - this can be decomposed to filter
+			return false;
+		}
+		
+		// Collect all variable names declared at the top level of this block
+		Set<String> declaredVariables = new HashSet<>();
+		IfStatement ifStatementAfterVarDecls = null;
 		
 		for (Statement stmt : statements) {
 			if (stmt instanceof VariableDeclarationStatement) {
-				hasVariableDeclarations = true;
+				VariableDeclarationStatement varDecl = (VariableDeclarationStatement) stmt;
+				for (Object frag : varDecl.fragments()) {
+					if (frag instanceof VariableDeclarationFragment) {
+						declaredVariables.add(((VariableDeclarationFragment) frag).getName().getIdentifier());
+					}
+				}
 			} else if (stmt instanceof IfStatement) {
 				IfStatement ifStmt = (IfStatement) stmt;
 				// If it's an early return or continue pattern, needs decomposition
 				if (isEarlyReturnIf(ifStmt) || isIfWithContinue(ifStmt)) {
 					return false;
 				}
-				hasConditionalLogic = true;
+				// Found an IF after variable declarations
+				if (!declaredVariables.isEmpty()) {
+					ifStatementAfterVarDecls = ifStmt;
+				}
 			} else if (stmt instanceof ReturnStatement || stmt instanceof ContinueStatement || stmt instanceof BreakStatement) {
 				// Early returns, continues, breaks need decomposition
 				return false;
 			}
 			
-			// Check for REDUCE patterns
+			// Check for REDUCE patterns at top level
 			ProspectiveOperation reduceOp = detectReduceOperation(stmt);
 			if (reduceOp != null) {
 				// REDUCE operations need decomposition
@@ -1407,10 +1423,101 @@ public class StreamPipelineBuilder {
 			}
 		}
 		
-		// If we have variable declarations AND conditional logic with side effects,
-		// and no patterns requiring decomposition, treat as simple forEach
-		// This handles the test_MergingOperations pattern
-		return hasVariableDeclarations && hasConditionalLogic;
+		// If we found an IF statement after variable declarations, check if it modifies
+		// any of those variables. If so, treat as simple forEach. If not, decompose.
+		if (ifStatementAfterVarDecls != null && !declaredVariables.isEmpty()) {
+			// Check if the IF body modifies any of the declared variables
+			if (ifModifiesDeclaredVariables(ifStatementAfterVarDecls, declaredVariables)) {
+				// The IF modifies variables from outside - can't decompose cleanly
+				return true;
+			}
+			// The IF doesn't modify the declared variables - can be decomposed into filter/map
+			return false;
+		}
+		
+		return false;
+	}
+	
+	/**
+	 * Checks if an IF statement's body modifies any of the given declared variables.
+	 * Modifications include assignments, increments, decrements, etc.
+	 * 
+	 * @param ifStmt the IF statement to check
+	 * @param declaredVariables the set of variable names declared before the IF
+	 * @return true if the IF body modifies any declared variable
+	 */
+	private boolean ifModifiesDeclaredVariables(IfStatement ifStmt, Set<String> declaredVariables) {
+		Statement thenStmt = ifStmt.getThenStatement();
+		return statementModifiesVariables(thenStmt, declaredVariables);
+	}
+	
+	/**
+	 * Recursively checks if a statement or any nested statement modifies any of the given variables.
+	 */
+	private boolean statementModifiesVariables(Statement stmt, Set<String> variables) {
+		if (stmt == null || variables.isEmpty()) {
+			return false;
+		}
+		
+		if (stmt instanceof Block) {
+			Block block = (Block) stmt;
+			for (Object s : block.statements()) {
+				if (statementModifiesVariables((Statement) s, variables)) {
+					return true;
+				}
+			}
+		} else if (stmt instanceof ExpressionStatement) {
+			ExpressionStatement exprStmt = (ExpressionStatement) stmt;
+			return expressionModifiesVariables(exprStmt.getExpression(), variables);
+		} else if (stmt instanceof IfStatement) {
+			IfStatement ifStmt = (IfStatement) stmt;
+			if (statementModifiesVariables(ifStmt.getThenStatement(), variables)) {
+				return true;
+			}
+			if (ifStmt.getElseStatement() != null && statementModifiesVariables(ifStmt.getElseStatement(), variables)) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
+	/**
+	 * Checks if an expression modifies any of the given variables.
+	 */
+	private boolean expressionModifiesVariables(Expression expr, Set<String> variables) {
+		if (expr == null) {
+			return false;
+		}
+		
+		// Check for assignments: x = ..., x += ..., etc.
+		if (expr instanceof Assignment) {
+			Assignment assignment = (Assignment) expr;
+			Expression lhs = assignment.getLeftHandSide();
+			if (lhs instanceof SimpleName) {
+				return variables.contains(((SimpleName) lhs).getIdentifier());
+			}
+		}
+		
+		// Check for increments/decrements: x++, x--, ++x, --x
+		if (expr instanceof PostfixExpression) {
+			PostfixExpression postfix = (PostfixExpression) expr;
+			if (postfix.getOperand() instanceof SimpleName) {
+				return variables.contains(((SimpleName) postfix.getOperand()).getIdentifier());
+			}
+		}
+		
+		if (expr instanceof PrefixExpression) {
+			PrefixExpression prefix = (PrefixExpression) expr;
+			PrefixExpression.Operator op = prefix.getOperator();
+			if (op == PrefixExpression.Operator.INCREMENT || op == PrefixExpression.Operator.DECREMENT) {
+				if (prefix.getOperand() instanceof SimpleName) {
+					return variables.contains(((SimpleName) prefix.getOperand()).getIdentifier());
+				}
+			}
+		}
+		
+		return false;
 	}
 	
 	/**

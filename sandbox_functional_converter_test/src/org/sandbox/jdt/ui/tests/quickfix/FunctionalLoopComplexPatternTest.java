@@ -186,36 +186,34 @@ public class FunctionalLoopComplexPatternTest {
 			}""";
 
 		String expected = """
-			package test1;
+package test1;
 
-			import java.util.Arrays;
-			import java.util.List;
+import java.util.Arrays;
+import java.util.List;
 
-			class MyTest {
+class MyTest {
 
-				public static void main(String[] args) throws Exception {
-					new MyTest().test(Arrays.asList(1, 2, 3,7));
-				}
-
-
-				public Boolean test(List<Integer> ls) throws Exception {
-					Integer i=0;
-					ls.stream().map(l -> {
-						System.out.println();
-						return l;
-					}).forEachOrdered(l -> {
-						System.out.println("");
-					});
-					System.out.println(i);
-					return false;
+	public static void main(String[] args) throws Exception {
+		new MyTest().test(Arrays.asList(1, 2, 3,7));
+	}
 
 
-				}
-				private void foo(Object o, int i) throws Exception
-				{
+	public Boolean test(List<Integer> ls) throws Exception {
+		Integer i=0;
+		ls.stream().map(l -> {
+			System.out.println();
+			return l;
+		}).forEachOrdered(l -> System.out.println(""));
+		System.out.println(i);
+		return false;
 
-				}
-			}""";
+
+	}
+	private void foo(Object o, int i) throws Exception
+	{
+
+	}
+}""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -271,38 +269,38 @@ public class FunctionalLoopComplexPatternTest {
 			}""";
 
 		String expected = """
-			package test1;
+package test1;
 
-			import java.util.ArrayList;
-			import java.util.List;
+import java.util.ArrayList;
+import java.util.List;
 
-			/**
-			 *
-			 * @author alexandrugyori
-			 */
-			class JavaApplication1 {
+/**
+ *
+ * @author alexandrugyori
+ */
+class JavaApplication1 {
 
-				/**
-				 * @param args the command line arguments
-				 */
-				public boolean b() {
-					// TODO code application logic here
-					List<String> strs = new ArrayList<String>();
-					int i = 0;
-					int j = 0;
-					strs.forEach(str -> {
-						int len1=str.length();
-						int len2 = str.length();
-						if (len1%2==0) {
-							len2++;
-							System.out.println(len2);
-							System.out.println();
-						}
-					});
-					return false;
+	/**
+	 * @param args the command line arguments
+	 */
+	public boolean b() {
+		// TODO code application logic here
+		List<String> strs = new ArrayList<String>();
+		int i = 0;
+		int j = 0;
+		strs.forEach(str -> {
+			int len1 = str.length();
+			int len2 = str.length();
+			if (len1 % 2 == 0) {
+				len2++;
+				System.out.println(len2);
+				System.out.println();
+			}
+		});
+		return false;
 
-				}
-			}""";
+	}
+}""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("JavaApplication1.java", input, false, null);
