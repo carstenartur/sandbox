@@ -15,7 +15,7 @@
             name="SandboxCode" />
       <cleanUpConfigurationUI 
             class="org.sandbox.jdt.internal.ui.preferences.cleanup.SandboxCodeTabPage" 
-            name="SandboxCode" 
+            name="SandboxCode (Save Actions)" 
             cleanUpKind="saveAction" />
       <cleanUpOptionsInitializer 
             class="org.sandbox.jdt.internal.ui.preferences.cleanup.DefaultCleanUpOptionsInitializer" 
