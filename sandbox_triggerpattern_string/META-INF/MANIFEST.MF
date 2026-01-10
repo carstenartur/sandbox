@@ -10,8 +10,16 @@ Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.jdt.core,
  org.eclipse.jdt.ui,
  org.eclipse.jdt.core.manipulation,
+ org.eclipse.text,
+ org.eclipse.swt,
  sandbox_common
 Bundle-ActivationPolicy: lazy
 Eclipse-BuddyPolicy: global
-Import-Package: org.sandbox.jdt.triggerpattern.api,
+Import-Package: org.eclipse.jdt.internal.corext.fix,
+ org.eclipse.jdt.internal.corext.refactoring.structure,
+ org.eclipse.jdt.internal.ui.fix,
+ org.eclipse.jdt.internal.ui.preferences.cleanup,
+ org.sandbox.jdt.internal.corext.fix2,
+ org.sandbox.jdt.triggerpattern.api,
  org.sandbox.jdt.triggerpattern.internal
+
