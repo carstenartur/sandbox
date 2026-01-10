@@ -23,6 +23,7 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.BooleanLiteral;
+import org.eclipse.jdt.core.dom.BreakStatement;
 import org.eclipse.jdt.core.dom.ConditionalExpression;
 import org.eclipse.jdt.core.dom.ContinueStatement;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
@@ -1040,6 +1041,10 @@ public class StreamPipelineBuilder {
 							// Labeled continue cannot be converted to stream operations
 							// Return empty list to signal conversion should be rejected
 							return new ArrayList<>();
+						} else if (isIfWithBreak(ifStmt)) {
+							// Break statement cannot be converted to stream operations
+							// Return empty list to signal conversion should be rejected
+							return new ArrayList<>();
 						} else if (isEarlyReturnIf(ifStmt)) {
 							// Check if this is an early return pattern (anyMatch/noneMatch/allMatch)
 							// Create ANYMATCH, NONEMATCH, or ALLMATCH operation using helper
@@ -1066,6 +1071,10 @@ public class StreamPipelineBuilder {
 						// Check for labeled continue first - these cannot be converted
 						if (isIfWithLabeledContinue(ifStmt)) {
 							// Labeled continue cannot be converted to stream operations
+							// Return empty list to signal conversion should be rejected
+							return new ArrayList<>();
+						} else if (isIfWithBreak(ifStmt)) {
+							// Break statement cannot be converted to stream operations
 							// Return empty list to signal conversion should be rejected
 							return new ArrayList<>();
 						} else if (isEarlyReturnIf(ifStmt)) {
@@ -1128,6 +1137,10 @@ public class StreamPipelineBuilder {
 				// Check for labeled continue first - these cannot be converted
 				if (isIfWithLabeledContinue(ifStmt)) {
 					// Labeled continue cannot be converted to stream operations
+					// Return empty list to signal conversion should be rejected
+					return new ArrayList<>();
+				} else if (isIfWithBreak(ifStmt)) {
+					// Break statement cannot be converted to stream operations
 					// Return empty list to signal conversion should be rejected
 					return new ArrayList<>();
 				} else if (isEarlyReturnIf(ifStmt)) {
@@ -1413,6 +1426,27 @@ public class StreamPipelineBuilder {
 				ContinueStatement continueStmt = (ContinueStatement) block.statements().get(0);
 				// Check if continue has a label
 				return continueStmt.getLabel() != null;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Checks if the IF statement contains a break statement.
+	 * Break statements cannot be converted to stream operations.
+	 * 
+	 * @param ifStatement the IF statement to check
+	 * @return true if the IF contains a break statement
+	 */
+	private boolean isIfWithBreak(IfStatement ifStatement) {
+		Statement thenStatement = ifStatement.getThenStatement();
+		if (thenStatement instanceof BreakStatement) {
+			return true;
+		}
+		if (thenStatement instanceof Block) {
+			Block block = (Block) thenStatement;
+			if (block.statements().size() == 1 && block.statements().get(0) instanceof BreakStatement) {
+				return true;
 			}
 		}
 		return false;
