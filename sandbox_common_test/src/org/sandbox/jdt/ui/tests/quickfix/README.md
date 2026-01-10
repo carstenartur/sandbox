@@ -241,9 +241,9 @@ When adding new tests:
 
 ## Related Documentation
 
-- [sandbox_common/ARCHITECTURE.md](../../sandbox_common/ARCHITECTURE.md) - Architecture overview
-- [sandbox_common/TODO.md](../../sandbox_common/TODO.md) - Future enhancements
-- [sandbox_common/TRIGGERPATTERN.md](../../sandbox_common/TRIGGERPATTERN.md) - Pattern matching engine
+- [sandbox_common/ARCHITECTURE.md](../../../../../../../sandbox_common/ARCHITECTURE.md) - Architecture overview
+- [sandbox_common/TODO.md](../../../../../../../sandbox_common/TODO.md) - Future enhancements
+- [sandbox_common/TRIGGERPATTERN.md](../../../../../../../sandbox_common/TRIGGERPATTERN.md) - Pattern matching engine
 
 ## Additional Resources
 

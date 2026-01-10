@@ -462,36 +462,4 @@ public class VisitorTest {
 		CompilationUnit root= (CompilationUnit) node.getRoot();
 		return new ScopeAnalyzer(root).getUsedVariableNames(node.getStartPosition(), node.getLength());
 	}
-
-	private static String computeNextVarname(WhileStatement whilestatement) {
-		String name = null;
-		Expression exp = whilestatement.getExpression();
-		if (exp instanceof MethodInvocation mi) {
-			Expression expression = mi.getExpression();
-			if (mi.getName().getIdentifier().equals("hasNext")) { //$NON-NLS-1$
-				SimpleName variable= ASTNodes.as(expression, SimpleName.class);
-				if (variable != null) {
-					IBinding resolveBinding = variable.resolveBinding();
-					name = resolveBinding.getName();
-				}
-			}
-		}
-		return name;
-	}
-
-	private static List<String> computeVarName(VariableDeclarationStatement node_a) {
-		List<String> name = new ArrayList<>();
-		VariableDeclarationFragment bli = (VariableDeclarationFragment) node_a.fragments().get(0);
-		name.add(bli.getName().getIdentifier());
-		Expression exp = bli.getInitializer();
-		if (exp instanceof MethodInvocation mi) {
-			Expression element = mi.getExpression();
-			if (element instanceof SimpleName sn) {
-				if ("iterator".equals(mi.getName().toString())) { //$NON-NLS-1$
-					name.add(sn.getIdentifier());
-				}
-			}
-		}
-		return name;
-	}
 }

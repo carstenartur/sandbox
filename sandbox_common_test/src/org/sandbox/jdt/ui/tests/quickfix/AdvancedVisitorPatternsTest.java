@@ -319,7 +319,13 @@ public class AdvancedVisitorPatternsTest {
 			nodes.remove(node);
 			Collection<String> usedVarNames = getUsedVariableNames(node.getBody());
 			System.out.println("Phase 3: Used variables in while: " + usedVarNames);
-			System.out.println("Phase 3: Collected variable names: " + names.size());
+			System.out.println("Phase 3: Collected " + names.size() + " variable names");
+			// Check if any collected names are used in the while body
+			for (SimpleName name : names) {
+				if (usedVarNames.contains(name.getIdentifier())) {
+					System.out.println("Phase 3: Variable '" + name.getIdentifier() + "' is used in while body");
+				}
+			}
 		});
 		
 		hv.build(cunit2);
