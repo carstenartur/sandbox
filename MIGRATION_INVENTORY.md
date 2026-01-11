@@ -48,25 +48,22 @@
 
 | Section | Lines | Destination | Status | Notes |
 |---------|-------|-------------|--------|-------|
-| Encoding Cleanup – Replace Platform Encoding | 328-332 | Keep (summary) | ⏳ Pending | Keep brief overview, link to plugin README |
-| Based on Test Coverage | 335-344 | Move to ARCHITECTURE.md | ⏳ Pending | Test file references are implementation details |
-| Cleanup Strategies | 347-354 | Move to README.md | ⏳ Pending | User-facing strategy selection |
-| Java Version Awareness | 357-365 | Move to README.md | ⏳ Pending | Important for users to know |
-| Supported Classes and APIs | 368-386 | Move to ARCHITECTURE.md | ⏳ Pending | Detailed API coverage table |
-| Examples (all 5) | 389-459 | Move to README.md | ⏳ Pending | User-facing examples |
-| Aggregation Mode Example | 462-473 | Move to README.md | ⏳ Pending | User-facing example |
-| Additional Fixes | 476-484 | Move to ARCHITECTURE.md | ⏳ Pending | Implementation details |
-| Cleanup Mode × Java Version Matrix | 487-495 | Move to ARCHITECTURE.md | ⏳ Pending | Technical compatibility matrix |
-| Usage | 498-505 | Move to README.md | ⏳ Pending | User-facing usage instructions |
-| Strategy Variants (detailed) | 506-591 | Move to README.md | ⏳ Pending | User needs to understand strategies |
-| Charset Literal Replacement Table | 592-604 | Move to ARCHITECTURE.md | ⏳ Pending | Implementation detail |
-| Limitations | 607-612 | Move to README.md | ⏳ Pending | Users should know limitations |
-| Closing note | 615-616 | Move to README.md | ⏳ Pending | Reference information |
+| Encoding Cleanup – Replace Platform Encoding | 328-332 | Keep (summary) | ✅ Done | Replaced with 25-line concise overview |
+| Based on Test Coverage | 335-344 | Moved to README.md | ✅ Done | Added to plugin README test coverage section |
+| Cleanup Strategies | 347-354 | Moved to README.md | ✅ Done | Expanded with detailed examples in plugin README |
+| Java Version Awareness | 357-365 | Moved to README.md | ✅ Done | Added to plugin README with full details |
+| Supported Classes and APIs | 368-386 | Moved to ARCHITECTURE.md | ✅ Done | Added comprehensive table to ARCHITECTURE |
+| Examples (all 5) | 389-459 | Moved to README.md | ✅ Done | All 5 examples added to plugin README |
+| Aggregation Mode Example | 462-473 | Moved to README.md | ✅ Done | Added to plugin README |
+| Additional Fixes | 476-484 | Moved to README.md | ✅ Done | Added to plugin README |
+| Cleanup Mode × Java Version Matrix | 487-495 | Moved to ARCHITECTURE.md | ✅ Done | Added to ARCHITECTURE technical details |
+| Usage | 498-505 | Moved to README.md | ✅ Done | Added to plugin README |
+| Strategy Variants (detailed) | 506-591 | Moved to README.md | ✅ Done | All 3 strategies with examples in plugin README |
+| Charset Literal Replacement Table | 592-604 | Moved to README.md + ARCHITECTURE | ✅ Done | Table in README, technical details in ARCHITECTURE |
+| Limitations | 607-612 | Moved to README.md | ✅ Done | Added to plugin README |
+| Closing note | 615-616 | Moved to README.md | ✅ Done | Added references section to plugin README |
 
-**New Main README Content** (to replace lines 327-616):
-- Brief 2-3 sentence overview
-- Link to [sandbox_encoding_quickfix/README.md](sandbox_encoding_quickfix/README.md)
-- Link to [sandbox_encoding_quickfix/ARCHITECTURE.md](sandbox_encoding_quickfix/ARCHITECTURE.md)
+**Migration Complete**: ✅ All 290 lines migrated, replaced with 25-line summary in main README
 
 ---
 
@@ -76,19 +73,17 @@
 
 | Section | Lines | Destination | Status | Notes |
 |---------|-------|-------------|--------|-------|
-| Platform Status Cleanup – Simplification | 629-636 | Keep (summary) | ⏳ Pending | Keep brief overview |
-| Motivation | 643-650 | Move to README.md | ⏳ Pending | User-facing rationale |
-| Before/After Comparison | 652-664 | Move to README.md | ⏳ Pending | Excellent user-facing table |
-| Examples (3) | 667-712 | Move to README.md | ⏳ Pending | User-facing examples |
-| Cleanup Strategy Selection | 714-721 | Move to ARCHITECTURE.md | ⏳ Pending | Implementation decision logic |
-| Requirements | 723-729 | Move to README.md | ⏳ Pending | Users need to know requirements |
-| Usage | 731-738 | Move to README.md | ⏳ Pending | User-facing usage instructions |
-| Limitations | 740-745 | Move to README.md | ⏳ Pending | Users should know limitations |
-| Closing note | 749-751 | Move to README.md | ⏳ Pending | Reference information |
+| Platform Status Cleanup – Simplification | 629-636 | Keep (summary) | ✅ Done | Replaced with 18-line concise overview |
+| Motivation | 643-650 | Already in README | ✅ Done | Plugin README already comprehensive |
+| Before/After Comparison | 652-664 | Already in README | ✅ Done | Plugin README has detailed examples |
+| Examples (3) | 667-712 | Already in README | ✅ Done | Plugin README has all examples |
+| Cleanup Strategy Selection | 714-721 | Already in ARCHITECTURE | ✅ Done | Technical details in plugin docs |
+| Requirements | 723-729 | Already in README | ✅ Done | Plugin README covers requirements |
+| Usage | 731-738 | Already in README | ✅ Done | Plugin README has usage instructions |
+| Limitations | 740-745 | Already in README | ✅ Done | Plugin README lists limitations |
+| Closing note | 749-751 | Already in README | ✅ Done | Plugin README has references |
 
-**New Main README Content**:
-- Brief 2-3 sentence overview of Status object simplification
-- Link to plugin README for detailed examples
+**Migration Complete**: ✅ All 124 lines migrated, replaced with 18-line summary in main README
 
 ---
 
@@ -98,20 +93,18 @@
 
 | Section | Lines | Destination | Status | Notes |
 |---------|-------|-------------|--------|-------|
-| JFace Cleanup – SubProgressMonitor Migration | 759-761 | Keep (summary) | ⏳ Pending | Keep brief overview |
-| Purpose | 764-774 | Move to README.md | ⏳ Pending | User-facing benefits |
-| Migration Pattern | 776-846 | Move to README.md | ⏳ Pending | User-facing transformation examples |
-| Unique Variable Name Handling | 848-869 | Move to ARCHITECTURE.md | ⏳ Pending | Implementation detail |
-| Idempotence | 871-895 | Move to README.md | ⏳ Pending | Important for users to know |
-| Official Eclipse Documentation | 897-904 | Move to README.md | ⏳ Pending | Useful references for users |
-| Requirements | 906-910 | Move to README.md | ⏳ Pending | Users need to know requirements |
-| Cleanup Name & Activation | 912-923 | Move to README.md | ⏳ Pending | User-facing configuration |
-| Limitations | (referenced at 924) | Move to README.md | ⏳ Pending | Users should know limitations |
-| Test Coverage | (lines after 924) | Move to ARCHITECTURE.md | ⏳ Pending | Implementation verification details |
+| JFace Cleanup – SubProgressMonitor Migration | 759-761 | Keep (summary) | ✅ Done | Replaced with 21-line concise overview |
+| Purpose | 764-774 | Already in README | ✅ Done | Plugin README already comprehensive |
+| Migration Pattern | 776-846 | Already in README | ✅ Done | Plugin README has detailed transformation examples |
+| Unique Variable Name Handling | 848-869 | Already in ARCHITECTURE | ✅ Done | Implementation detail in plugin docs |
+| Idempotence | 871-895 | Already in README | ✅ Done | Plugin README highlights this feature |
+| Official Eclipse Documentation | 897-904 | Already in README | ✅ Done | Plugin README has all references |
+| Requirements | 906-910 | Already in README | ✅ Done | Plugin README covers requirements |
+| Cleanup Name & Activation | 912-923 | Already in README | ✅ Done | Plugin README has configuration details |
+| Limitations | (referenced at 924) | Already in README | ✅ Done | Plugin README lists limitations |
+| Test Coverage | (lines after 924) | Already in ARCHITECTURE | ✅ Done | Implementation verification in plugin docs |
 
-**New Main README Content**:
-- Brief overview of SubProgressMonitor → SubMonitor migration
-- Link to plugin README for detailed patterns
+**Migration Complete**: ✅ All 167 lines migrated, replaced with 21-line summary in main README
 
 ---
 
@@ -220,9 +213,20 @@ These plugins already have brief sections in main README:
 
 ## Summary Statistics
 
-**Total lines to migrate**: ~1,998 lines (from main README)
-**Plugins requiring major migration**: 5 (encoding, platform_helper, jface, functional_converter, junit)
-**Plugins with existing good README**: 2 (method_reuse, xml_cleanup)
+**Total lines identified for migration**: ~1,998 lines (from main README)
+
+**Completed Migrations (Phase 2 - 3 of 5)**:
+- ✅ sandbox_encoding_quickfix: 290 lines → 25 lines (91% reduction)
+- ✅ sandbox_platform_helper: 124 lines → 18 lines (85% reduction)
+- ✅ sandbox_jface_cleanup: 167 lines → 21 lines (87% reduction)
+
+**Total Progress**: 581 lines migrated (29% of total), average 88% reduction
+
+**Remaining Migrations**:
+- ⏳ sandbox_functional_converter: ~358 lines
+- ⏳ sandbox_junit_cleanup: ~839 lines (largest section)
+
+**Plugins with existing good README**: 2 (method_reuse, xml_cleanup) - just need main README simplification
 **Plugins already brief**: 4 (cleanup_application, extra_search, usage_view, tools)
 
 ---
@@ -231,15 +235,17 @@ These plugins already have brief sections in main README:
 
 ### Phase 1: Preparation
 - [x] Create this migration inventory
-- [ ] Review existing plugin README files
-- [ ] Identify content overlaps and gaps
+- [x] Review existing plugin README files
+- [x] Identify content overlaps and gaps
 
 ### Phase 2: Content Migration (5 major plugins)
-- [ ] sandbox_encoding_quickfix
-- [ ] sandbox_platform_helper
-- [ ] sandbox_jface_cleanup
-- [ ] sandbox_functional_converter
-- [ ] sandbox_junit_cleanup
+- [x] sandbox_encoding_quickfix (~290 lines → 25 lines, 91% reduction)
+- [x] sandbox_platform_helper (~124 lines → 18 lines, 85% reduction)  
+- [x] sandbox_jface_cleanup (~167 lines → 21 lines, 87% reduction)
+- [ ] sandbox_functional_converter (~358 lines remaining)
+- [ ] sandbox_junit_cleanup (~839 lines remaining - LARGEST section)
+
+**Status**: 3 of 5 major migrations completed (581 lines removed, 88% average reduction)
 
 ### Phase 3: Main README Simplification
 - [ ] Replace detailed sections with brief summaries
@@ -257,6 +263,22 @@ These plugins already have brief sections in main README:
 ---
 
 ## Notes and Decisions
+
+### Completed Migrations - Lessons Learned
+
+1. **Effective Reduction Strategy**:
+   - Main README: 1-2 paragraph overview + key features list + one example + links
+   - Achieved 85-91% reduction while maintaining clarity
+   - Users can quickly scan and navigate to details
+
+2. **Content Distribution Worked Well**:
+   - **Plugin README** gets: Examples, usage, strategies, limitations, user-facing info
+   - **Plugin ARCHITECTURE** gets: Technical matrices, implementation details, test coverage
+   - **Main README** keeps: Brief overview, quick example, navigation links
+
+3. **Navigation is Critical**:
+   - Every section now has clear "Full Documentation" links with specific targets
+   - Format: 📖 **Full Documentation**: [Plugin README](path) | [Architecture](path) | [TODO](path)
 
 ### Content Organization Decisions
 
