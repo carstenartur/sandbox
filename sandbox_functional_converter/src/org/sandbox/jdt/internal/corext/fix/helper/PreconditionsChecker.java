@@ -42,6 +42,7 @@ public final class PreconditionsChecker {
 	private boolean containsReturn = false;
 	private boolean throwsException = false;
 	private boolean containsNEFs = false;
+	private boolean containsNestedLoop = false;
 	private boolean hasReducer = false;
 	private Statement reducerStatement = null;
 	private boolean isAnyMatchPattern = false;
@@ -115,7 +116,7 @@ public final class PreconditionsChecker {
 		// StreamPipelineBuilder
 		// Only labeled continues are rejected here
 		return !throwsException && !containsBreak && !containsLabeledContinue && (!containsReturn || allowedReturn)
-				&& !containsNEFs;
+				&& !containsNEFs && !containsNestedLoop;
 	}
 
 	/**
@@ -234,6 +235,37 @@ public final class PreconditionsChecker {
 			throwsException = true;
 			return true;
 		}).onEnhancedForStatement((node, h) -> {
+			// If we encounter another EnhancedForStatement inside the loop body,
+			// it's a nested loop - mark as not convertible
+			// We check that this is NOT the same node as the outer loop
+			if (node != loop) {
+				containsNestedLoop = true;
+			}
+			return true;
+		}).onForStatement((node, h) -> {
+			// Traditional for loops inside the enhanced-for also prevent conversion
+			containsNestedLoop = true;
+			return true;
+		}).onWhileStatement((node, h) -> {
+			// While loops inside the enhanced-for also prevent conversion
+			containsNestedLoop = true;
+			return true;
+		}).onDoStatement((node, h) -> {
+			// Do-while loops inside the enhanced-for also prevent conversion
+			containsNestedLoop = true;
+			return true;
+		}).onTryStatement((node, h) -> {
+			// Try-catch blocks inside the loop prevent conversion
+			// (exception handling in lambdas is complex)
+			containsNEFs = true;
+			return true;
+		}).onSwitchStatement((node, h) -> {
+			// Switch statements inside the loop prevent conversion
+			containsNEFs = true;
+			return true;
+		}).onSynchronizedStatement((node, h) -> {
+			// Synchronized blocks inside the loop prevent conversion
+			containsNEFs = true;
 			return true;
 		}).onCompoundAssignment((node, h) -> {
 			// Compound assignments: +=, -=, *=, /=, |=, &=, etc.

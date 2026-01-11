@@ -2,9 +2,9 @@
 
 > **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#functional_converter) | [Architecture](ARCHITECTURE.md)
 
-## Status Summary (December 2025 - Updated)
+## Status Summary (January 2026 - Updated)
 
-**Current Milestone**: Full StreamPipelineBuilder Implementation + Code Cleanup + Enhanced Tests ✅ **COMPLETE**
+**Current Milestone**: Full StreamPipelineBuilder Implementation + Code Cleanup + Enhanced Tests + Nested Loop Detection ✅ **COMPLETE**
 
 ### Key Accomplishments
 - ✅ **StreamPipelineBuilder** - Fully implemented (849 lines) with complete stream operation analysis and pipeline construction
@@ -14,20 +14,30 @@
 - ✅ **Code Cleanup** - Removed dead code (TreeUtilities.java, legacy Refactorer methods) - 78% code reduction in Refactorer.java
 - ✅ **Math.max/Math.min Support** - Full support for MAX/MIN reduction patterns with Math::max and Math::min method references
 - ✅ **New Test Cases** - Added ComplexFilterMapMaxReduction and ContinueWithMapAndForEach for comprehensive edge case coverage
+- ✅ **Nested Loop Detection** - Prevents conversion of loops containing nested loops (enhanced-for, traditional for, while, do-while)
+- ✅ **Complex Pattern Detection** - Prevents conversion of loops containing try-catch, switch, or synchronized blocks
 
-### Code Quality Improvements (December 2025)
-**Dead Code Removal**:
+### Code Quality Improvements (January 2026)
+**Nested Loop and Complex Pattern Detection**:
+- Added `containsNestedLoop` flag in PreconditionsChecker
+- Detection for nested enhanced-for loops, traditional for loops, while loops, do-while loops
+- Detection for try-catch blocks, switch statements, synchronized blocks
+- All these patterns now correctly prevent conversion (as they cannot be safely represented in streams)
+
+**New Test File**: `FunctionalLoopNestedAndEdgeCaseTest.java`
+- **Nested Loop Tests**: Enhanced-for with nested enhanced-for, traditional for, while, do-while
+- **Complex Condition Tests**: AND/OR conditions, instanceof checks, negated complex conditions
+- **Lambda Capture Tests**: Method parameters, final variables, instance fields, effectively final variables
+- **Edge Case Tests**: Empty loop body, this keyword, generic types, variable shadowing
+- **Negative Complex Pattern Tests**: Try-catch, synchronized blocks, switch statements, multiple returns
+
+**Dead Code Removal (December 2025)**:
 - Removed `TreeUtilities.java` - completely unused utility class
 - Refactored `Refactorer.java` from 417 lines to 93 lines (78% reduction)
   - Removed legacy implementation methods: `isOneStatementBlock()`, `isReturningIf()`, `getListRepresentation()`, `isIfWithContinue()`, `refactorContinuingIf()`, `createReduceLambdaExpression()`, `createMapLambdaExpression()`, `createForEachLambdaExpression()`
   - Removed legacy `parseLoopBody()` and `getVariableNameFromPreviousOp()` methods (now in StreamPipelineBuilder)
 - All functionality consolidated in `StreamPipelineBuilder` class
 - Cleaner, more maintainable codebase
-
-**Test Enhancements**:
-- Added `ComplexFilterMapMaxReduction`: Tests filter + map + Math.max reduction pipeline
-- Added `ContinueWithMapAndForEach`: Tests continue statement with map and forEach chaining
-- These tests validate complex interaction patterns and ensure robustness
 
 ### StreamPipelineBuilder Capabilities
 The `StreamPipelineBuilder` class provides comprehensive loop-to-stream conversion:
@@ -39,12 +49,13 @@ The `StreamPipelineBuilder` class provides comprehensive loop-to-stream conversi
 - **Type-Aware Mapping** - Handles different numeric types (int, long, double, float) for increment operations
 
 ### Next Steps (Priority Order)
-1. **Test Validation** - Run full test suite to verify all 21 enabled tests pass
+1. **Test Validation** - Run full test suite to verify all tests pass
 2. **Edge Case Refinement** - Address any test failures or edge cases discovered
 3. **Null Safety Enhancement** - See [Null Safety Improvements](#null-safety-improvements) section below
-4. **Performance Optimization** - Consider operation merging (consecutive filters, maps)
-5. **Code Quality** - Run CodeQL security scanning and address any findings
-6. **Documentation** - Update user-facing documentation with examples and limitations
+4. **FlatMap Support** - Consider supporting nested loop conversion to flatMap (future enhancement)
+5. **Performance Optimization** - Consider operation merging (consecutive filters, maps)
+6. **Code Quality** - Run CodeQL security scanning and address any findings
+7. **Documentation** - Update user-facing documentation with examples and limitations
 
 ---
 
