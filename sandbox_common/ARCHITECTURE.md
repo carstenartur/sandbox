@@ -350,135 +350,144 @@ Future improvements:
 - Consider creating a dedicated test module if shared utilities grow significantly
 - Keep AST utilities synchronized with Eclipse JDT AST evolution
 
-## References
+## New Pattern Matching Utilities (January 2026)
 
-- [Eclipse JDT Core API](https://help.eclipse.org/latest/topic/org.eclipse.jdt.doc.isv/reference/api/org/eclipse/jdt/core/package-summary.html)
-- [Eclipse AST](https://help.eclipse.org/latest/topic/org.eclipse.jdt.doc.isv/reference/api/org/eclipse/jdt/core/dom/package-summary.html)
-- [Eclipse CleanUpConstants](https://github.com/eclipse-jdt/eclipse.jdt.ui/blob/master/org.eclipse.jdt.core.manipulation/core%20extension/org/eclipse/jdt/internal/corext/fix/CleanUpConstants.java)
-- [OSGi Bundle Development](https://help.eclipse.org/latest/topic/org.eclipse.platform.doc.isv/guide/osgi_bundles.htm)
+The module now includes new utilities for more readable AST processing:
 
-## TriggerPattern Hint Engine
+### NodeMatcher
 
-### Overview
+**Location**: `org.sandbox.jdt.internal.common.NodeMatcher`
 
-The `sandbox_common` module now includes a TriggerPattern-like hint engine that enables pattern-based code matching and transformation hints for Eclipse JDT. This feature allows developers to define code patterns with placeholders and automatically suggest refactorings when those patterns are matched.
+**Purpose**: Fluent type-safe wrapper for AST nodes enabling pattern matching style processing without deep instanceof chains.
 
-### Architecture
-
-The TriggerPattern hint engine is organized into the following packages:
-
-#### API Package (`org.sandbox.jdt.triggerpattern.api`)
-
-Public API classes that consuming plugins use to define and work with hints:
-
-- **`PatternKind`** - Enum defining pattern types (EXPRESSION, STATEMENT)
-- **`Pattern`** - Represents a pattern with placeholders (e.g., `"$x + 1"`)
-- **`Match`** - Result of a successful pattern match, includes matched node, bindings, and position
-- **`TriggerPatternEngine`** - Main engine for finding pattern matches in compilation units
-- **`HintContext`** - Context provided to hint implementations (CompilationUnit, ICompilationUnit, Match, ASTRewrite, ImportRewrite)
-- **`@TriggerPattern`** - Annotation for marking hint methods
-- **`@Hint`** - Annotation for hint metadata (displayName, description, severity)
-
-#### Internal Package (`org.sandbox.jdt.triggerpattern.internal`)
-
-Implementation details not exposed to consuming plugins:
-
-- **`PatternParser`** - Parses pattern strings into AST nodes, handles both expressions and statements
-- **`PlaceholderAstMatcher`** - Extends `ASTMatcher` to support placeholder matching (`$x`, `$y`, etc.)
-- **`HintRegistry`** - Discovers and manages hint providers from extension points and annotations
-
-#### UI Package (`org.sandbox.jdt.triggerpattern.ui`)
-
-Eclipse UI integration:
-
-- **`TriggerPatternQuickAssistProcessor`** - Implements `IQuickAssistProcessor` to provide quick fixes based on pattern matches
-
-#### Examples Package (`org.sandbox.jdt.triggerpattern.examples`)
-
-Example hint providers demonstrating usage:
-
-- **`ExampleHintProvider`** - Shows how to create hints using annotations (e.g., simplify increment/decrement)
-
-### How It Works
-
-1. **Pattern Definition**: Developers define patterns using the `@TriggerPattern` annotation on public static methods
-2. **Registration**: Hint providers are registered via the `org.sandbox.jdt.triggerpattern.hints` extension point
-3. **Discovery**: The `HintRegistry` lazily discovers and loads hint providers on first use
-4. **Matching**: The `TriggerPatternEngine` traverses the AST and finds nodes matching registered patterns
-5. **Placeholder Binding**: The `PlaceholderAstMatcher` binds placeholders (e.g., `$x`) to actual AST nodes
-6. **Invocation**: When a match is found at the cursor position, the hint method is invoked with a `HintContext`
-7. **Proposals**: The hint method returns completion proposals that Eclipse presents to the user
-
-### Pattern Syntax
-
-Patterns use Java syntax with placeholders identified by a `$` prefix:
-
-- **Expression patterns**: `"$x + 1"`, `"$obj.toString()"`, `"$a + $b"`
-- **Statement patterns**: `"if ($cond) $then;"`, `"return $x;"`
-- **Placeholder binding**: First occurrence binds, subsequent occurrences must match the same node
-
-### Creating a Hint
-
-Example hint method:
-
+**Before (nested if-instanceof)**:
 ```java
-@TriggerPattern(value = "$x + 1", kind = PatternKind.EXPRESSION)
-@Hint(displayName = "Replace with increment operator")
-public static IJavaCompletionProposal simplifyIncrement(HintContext ctx) {
-    ASTNode matchedNode = ctx.getMatch().getMatchedNode();
-    ASTNode xNode = ctx.getMatch().getBindings().get("$x");
-    
-    // Create replacement using ASTRewrite
-    AST ast = ctx.getASTRewrite().getAST();
-    PrefixExpression prefixExpr = ast.newPrefixExpression();
-    prefixExpr.setOperator(PrefixExpression.Operator.INCREMENT);
-    prefixExpr.setOperand((Expression) ASTNode.copySubtree(ast, xNode));
-    
-    ctx.getASTRewrite().replace(matchedNode, prefixExpr, null);
-    
-    return new ASTRewriteCorrectionProposal("Replace with ++", 
-        ctx.getICompilationUnit(), ctx.getASTRewrite(), 10, null);
+if (stmt instanceof VariableDeclarationStatement) {
+    VariableDeclarationStatement varDecl = (VariableDeclarationStatement) stmt;
+    // handle variable declaration
+} else if (stmt instanceof IfStatement) {
+    IfStatement ifStmt = (IfStatement) stmt;
+    if (ifStmt.getElseStatement() == null) {
+        // handle if without else
+    }
+} else if (stmt instanceof ExpressionStatement) {
+    // handle expression
 }
 ```
 
-### Extension Point Usage
-
-Consuming plugins can register hint providers in their `plugin.xml`:
-
-```xml
-<extension point="org.sandbox.jdt.triggerpattern.hints">
-   <hintProvider class="com.example.MyHintProvider"/>
-</extension>
+**After (fluent API)**:
+```java
+NodeMatcher.on(stmt)
+    .ifVariableDeclaration(varDecl -> {
+        // handle variable declaration
+    })
+    .ifIfStatementWithoutElse(ifStmt -> {
+        // handle if without else
+    })
+    .ifExpressionStatement(exprStmt -> {
+        // handle expression
+    })
+    .orElse(node -> {
+        // handle other cases
+    });
 ```
 
-Or register patterns declaratively:
+### StatementContext
 
-```xml
-<extension point="org.sandbox.jdt.triggerpattern.hints">
-   <pattern
-      id="simplify.increment"
-      value="$x + 1"
-      kind="EXPRESSION"
-      displayName="Simplify increment"
-      class="com.example.IncrementHint"
-      method="simplify"/>
-</extension>
+**Location**: `org.sandbox.jdt.internal.common.StatementContext`
+
+**Purpose**: Provides contextual information about a statement's position within a block, eliminating repetitive index tracking.
+
+**Before**:
+```java
+List<Statement> statements = block.statements();
+for (int i = 0; i < statements.size(); i++) {
+    Statement stmt = statements.get(i);
+    boolean isLast = (i == statements.size() - 1);
+    boolean isFirst = (i == 0);
+    
+    if (stmt instanceof IfStatement && !isLast) {
+        // handle non-last IF
+    }
+}
 ```
 
-### Benefits
+**After**:
+```java
+StatementContext.forEachInBlock(block, (stmt, ctx) -> {
+    NodeMatcher.on(stmt)
+        .ifIfStatementMatching(
+            ifStmt -> !ctx.isLast(),
+            ifStmt -> handleNonLastIf(ifStmt, ctx)
+        );
+});
+```
 
-- **Declarative Pattern Matching**: Define patterns using familiar Java syntax
-- **Reusable Infrastructure**: Common pattern matching engine shared across plugins
-- **Eclipse Integration**: Automatic integration with Quick Assist UI
-- **Extensible**: Other plugins can contribute their own hints via extension points
-- **Type-safe Binding**: Placeholders bind to actual AST nodes for safe manipulation
+**Key Methods**:
+- `isFirst()`, `isLast()`, `isOnly()`, `isMiddle()` - Position queries
+- `hasNext()`, `hasPrevious()` - Navigation queries
+- `getNextStatement()`, `getPreviousStatement()` - Navigation
+- `getRemainingStatements()` - Get statements after current
+- `matcher()` - Create NodeMatcher for the statement
 
-### Future Enhancements
+### StatementDispatcher
 
-Potential improvements to the TriggerPattern engine:
+**Location**: `org.sandbox.jdt.internal.common.StatementDispatcher`
 
-- **Multi-placeholders**: Support for `$x$` syntax to match lists (e.g., argument lists, statement sequences)
-- **Constraints/Guards**: Type checking for placeholders (e.g., `$x:SimpleName`)
-- **Performance Optimization**: Index patterns by kind and root node type for faster matching
-- **Cleanup Integration**: Support using patterns in Save Actions and batch cleanups
-- **Pattern Composition**: Allow patterns to reference other patterns
+**Purpose**: Registry-based dispatcher for handling different statement types with conditions.
+
+**Example**:
+```java
+StatementDispatcher<StatementContext, List<Operation>> dispatcher = 
+    StatementDispatcher.<StatementContext, List<Operation>>create()
+        .when(VariableDeclarationStatement.class)
+            .and(ctx -> !ctx.isLast())
+            .thenReturn((stmt, ctx) -> handleVarDecl(stmt, ctx))
+        .when(IfStatement.class)
+            .and(ctx -> ctx.isLast())
+            .thenReturn((stmt, ctx) -> handleLastIf(stmt, ctx))
+        .otherwise((stmt, ctx) -> handleDefault(stmt, ctx));
+
+Optional<List<Operation>> result = dispatcher.dispatch(stmt, context);
+```
+
+### AstProcessorBuilder Convenience Methods
+
+New convenience methods added to `AstProcessorBuilder`:
+
+- `onIfStatementWithoutElse()` - IF statements without else branch
+- `onIfStatementWithElse()` - IF statements with else branch
+- `onCompoundAssignment()` - Compound assignments (+=, -=, *=, etc.)
+- `onAssignmentWithOperator(operator)` - Specific assignment operator
+- `onPostfixIncrementOrDecrement()` - i++, i--
+- `onPrefixIncrementOrDecrement()` - ++i, --i
+- `onUnlabeledContinue()` - Continue without label
+- `onLabeledContinue()` - Continue with label
+- `onReturnBoolean()` - Return statements with boolean literals
+- `onStaticMethodInvocation(className, methodName)` - Static method calls like Math.max
+
+**Example**:
+```java
+AstProcessorBuilder.with(holder)
+    .onCompoundAssignment((assignment, h) -> {
+        // Handle +=, -=, *=, etc.
+        return true;
+    })
+    .onPostfixIncrementOrDecrement((postfix, h) -> {
+        // Handle i++, i--
+        return true;
+    })
+    .onStaticMethodInvocation("Math", "max", (mi, h) -> {
+        // Handle Math.max() calls
+        return true;
+    })
+    .build(node);
+```
+
+### Benefits of New Utilities
+
+1. **Improved Readability**: Replace nested if-instanceof chains with fluent API
+2. **Type Safety**: Type-safe handlers without explicit casts
+3. **Reduced Boilerplate**: Common patterns extracted into reusable methods
+4. **Better Maintainability**: Easier to add/modify handlers
+5. **Self-Documenting**: Method names describe what they match

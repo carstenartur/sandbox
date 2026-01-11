@@ -5,12 +5,27 @@
 ## Overview
 The functional loop converter transforms imperative enhanced for-loops into functional Java 8 Stream pipelines. This document describes the architecture and implementation details of the `StreamPipelineBuilder` approach.
 
+## Class Overview
+
+The functional converter is organized into focused, single-responsibility classes:
+
+| Class | Lines | Responsibility |
+|-------|-------|----------------|
+| `StreamPipelineBuilder` | ~1340 | Main orchestrator - analyzes loops, builds pipelines |
+| `ProspectiveOperation` | ~760 | Represents individual stream operations |
+| `PreconditionsChecker` | ~605 | Validates loop can be converted |
+| `ReducePatternDetector` | ~583 | Detects REDUCE patterns (increment, sum, max/min) |
+| `TypeResolver` | ~422 | Type resolution utilities |
+| `LambdaGenerator` | ~418 | Creates lambdas and method references |
+| `IfStatementAnalyzer` | ~362 | Analyzes IF statements for match patterns |
+| `ExpressionUtils` | ~332 | Expression manipulation utilities |
+| `StreamConstants` | ~236 | Constants for stream method names |
+
 ## Core Components
 
 ### 1. StreamPipelineBuilder
 **Location**: `org.sandbox.jdt.internal.corext.fix.helper.StreamPipelineBuilder`
-**Lines of Code**: 849
-**Purpose**: Analyzes loop bodies and constructs stream pipelines
+**Purpose**: Main orchestrator that analyzes loop bodies and constructs stream pipelines
 
 #### Key Methods
 
@@ -164,6 +179,80 @@ private boolean useStreamPipelineBuilder() {
 - `isReducer()` - Checks for reducer patterns
 - `isAnyMatchPattern()` - Checks for early return with true
 - `isNoneMatchPattern()` - Checks for early return with false
+
+### 5. ReducePatternDetector
+**Location**: `org.sandbox.jdt.internal.corext.fix.helper.ReducePatternDetector`
+**Purpose**: Detects and handles REDUCE patterns in loop statements
+
+#### Key Responsibilities
+- Detects postfix/prefix increment: `i++`, `++i`
+- Detects compound assignments: `sum += x`, `product *= x`
+- Detects Math.max/min patterns: `max = Math.max(max, value)`
+- Tracks accumulator variable and type
+- Adds MAP operations before REDUCE operations
+
+#### Key Methods
+- `detectReduceOperation(Statement)` - Main entry point for pattern detection
+- `addMapBeforeReduce()` - Adds appropriate MAP before REDUCE based on reducer type
+- `getAccumulatorVariable()` - Returns the accumulator variable name
+- `getAccumulatorType()` - Returns the accumulator type (int, double, etc.)
+
+### 6. IfStatementAnalyzer
+**Location**: `org.sandbox.jdt.internal.corext.fix.helper.IfStatementAnalyzer`
+**Purpose**: Analyzes IF statements for patterns convertible to stream operations
+
+#### Detected Patterns
+- `isIfWithContinue()` - `if (condition) continue;` → negated filter
+- `isIfWithBreak()` - Break statements (prevents conversion)
+- `isIfWithLabeledContinue()` - Labeled continues (prevents conversion)
+- `isEarlyReturnIf()` - Early return patterns for anyMatch/noneMatch/allMatch
+
+#### Match Pattern Types
+```java
+enum MatchPatternType {
+    ANY_MATCH,   // if (condition) return true; ... return false;
+    NONE_MATCH,  // if (condition) return false; ... return true;
+    ALL_MATCH,   // if (!condition) return false; ... return true;
+    NONE         // No match pattern detected
+}
+```
+
+### 7. LambdaGenerator
+**Location**: `org.sandbox.jdt.internal.corext.fix.helper.LambdaGenerator`
+**Purpose**: Creates lambda expressions and method references for stream operations
+
+#### Key Methods
+- `createMethodReference(typeName, methodName)` - Creates `TypeName::methodName`
+- `createMaxMinMethodReference(accumulatorType, methodName)` - Type-aware max/min references
+- `createBinaryOperatorLambda(operator)` - Creates `(acc, item) -> acc op item`
+- `createCountingLambda(operator)` - Creates `(acc, _item) -> acc + 1`
+- `createAccumulatorExpression(reducerType, accumulatorType, isNullSafe)` - Main entry point
+
+#### Type-Aware Method References
+Maps accumulator types to appropriate wrapper classes:
+- `int` → `Integer::sum`, `Integer::max`
+- `long` → `Long::sum`, `Long::max`
+- `double` → `Double::sum`, `Double::max`
+
+### 8. TypeResolver
+**Location**: `org.sandbox.jdt.internal.corext.fix.helper.TypeResolver`
+**Purpose**: Resolves variable types and annotations
+
+#### Key Methods
+- `getVariableType(node, varName)` - Gets the type of a variable
+- `getTypeBinding(node, varName)` - Gets the type binding
+- `hasNotNullAnnotation(node, varName)` - Checks for @NotNull/@NonNull annotations
+- `findVariableDeclaration(node, varName)` - Finds variable declaration
+
+### 9. ExpressionUtils
+**Location**: `org.sandbox.jdt.internal.corext.fix.helper.ExpressionUtils`
+**Purpose**: Expression manipulation utilities
+
+#### Key Methods
+- `createNegatedExpression(ast, condition)` - Creates `!(condition)` with proper parenthesization
+- `stripNegation(expr)` - Removes leading `!` from expression
+- `isNegatedExpression(expr)` - Checks if expression starts with `!`
+- `isIdentityMapping(expr, varName)` - Checks if expression is just the variable (no transformation)
 
 ## Conversion Patterns
 

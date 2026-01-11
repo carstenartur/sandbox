@@ -29,8 +29,6 @@ import org.eclipse.jdt.core.dom.ContinueStatement;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
-import org.eclipse.jdt.core.dom.ITypeBinding;
-import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.IfStatement;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.PostfixExpression;
@@ -1323,57 +1321,6 @@ public class StreamPipelineBuilder {
 
 		// Method calls and other expressions are generally safe
 		return true;
-	}
-
-	/**
-	 * Checks if a variable has a @NotNull or @NonNull annotation.
-	 * This is used to determine if String::concat can be safely used instead of
-	 * the null-safe lambda (a, b) -> a + b.
-	 * 
-	 * @param varName the variable name to check
-	 * @return true if the variable has a @NotNull or @NonNull annotation
-	 * @deprecated Use {@link TypeResolver#hasNotNullAnnotation(ASTNode, String)} instead
-	 */
-	@Deprecated
-	private boolean hasNotNullAnnotation(String varName) {
-		return TypeResolver.hasNotNullAnnotation(forLoop, varName);
-	}
-
-	/**
-	 * Gets the type binding for a variable name.
-	 * 
-	 * @param varName the variable name
-	 * @return the type binding, or null if not found
-	 * @deprecated Use {@link TypeResolver#getTypeBinding(ASTNode, String)} instead
-	 */
-	@Deprecated
-	private ITypeBinding getTypeBinding(String varName) {
-		return TypeResolver.getTypeBinding(forLoop, varName);
-	}
-
-	/**
-	 * Finds the variable declaration fragment for a given variable name.
-	 * Searches up the AST tree starting from the for loop.
-	 * 
-	 * @param varName the variable name to find
-	 * @return the VariableDeclarationFragment, or null if not found
-	 * @deprecated Use {@link TypeResolver#findVariableDeclaration(ASTNode, String)} instead
-	 */
-	@Deprecated
-	private VariableDeclarationFragment findVariableDeclaration(String varName) {
-		return TypeResolver.findVariableDeclaration(forLoop, varName);
-	}
-
-	/**
-	 * Checks if a binding has @NotNull or @NonNull annotation.
-	 * 
-	 * @param binding the variable binding to check
-	 * @return true if the binding has a @NotNull or @NonNull annotation
-	 * @deprecated Use {@link TypeResolver#hasNotNullAnnotationOnBinding(IVariableBinding)} instead
-	 */
-	@Deprecated
-	private boolean hasNotNullAnnotationOnBinding(IVariableBinding binding) {
-		return TypeResolver.hasNotNullAnnotationOnBinding(binding);
 	}
 
 	/**
