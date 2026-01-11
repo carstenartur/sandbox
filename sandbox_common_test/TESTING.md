@@ -39,7 +39,14 @@ For developers new to the HelperVisitor API, we recommend exploring the tests in
    - Ancestor navigation
    - Finding patterns across AST levels
 
-5. **[AdvancedVisitorPatternsTest](src/org/sandbox/jdt/ui/tests/quickfix/AdvancedVisitorPatternsTest.java)** - Advanced techniques
+5. **[AstProcessorBuilderTest](src/org/sandbox/jdt/ui/tests/quickfix/AstProcessorBuilderTest.java)** - Builder API patterns
+   - Factory methods: `with()` for creating builder instances
+   - Fluent API: Method chaining for visitor registration
+   - Typed visitors: Type-safe access to specific AST node types
+   - Node filtering: Method name and class type filtering
+   - Data collection: Using ReferenceHolder for gathering results
+
+6. **[AdvancedVisitorPatternsTest](src/org/sandbox/jdt/ui/tests/quickfix/AdvancedVisitorPatternsTest.java)** - Advanced techniques
    - Combining visitors with logical operators (AND, OR, NOT)
    - Dynamic visitor modification
    - Multi-phase processing
@@ -97,6 +104,28 @@ For developers new to the HelperVisitor API, we recommend exploring the tests in
 - Iterator pattern analysis (real-world example)
 
 **Use this when**: You need to find patterns across multiple AST levels or build complex search logic.
+
+#### AstProcessorBuilderTest
+**Purpose**: Tests for the fluent builder API that wraps ASTProcessor
+**Contains**:
+- Factory method tests (`with()`)
+- Fluent API chaining verification
+- Typed visitor registration (no casting needed)
+- Method name and class type filtering
+- Data collection patterns with ReferenceHolder
+- Access to underlying processor via `processor()`
+
+**Use this when**: You want to use a simplified, type-safe API for AST processing.
+
+#### LibStandardNamesTest
+**Purpose**: Tests for centralized standard method and type name constants
+**Contains**:
+- Stream API method names (stream, filter, map, reduce, forEach, etc.)
+- Math method names (max, min, sum)
+- Fully qualified type names (java.lang.Math, java.lang.String, etc.)
+- Common method names (getProperty, toString, etc.)
+
+**Use this when**: You need consistent string constants for method/type name comparisons.
 
 #### AdvancedVisitorPatternsTest
 **Purpose**: Sophisticated patterns and dynamic behavior

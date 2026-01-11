@@ -588,7 +588,22 @@ As part of the December 2025 improvements, significant dead code was removed:
 
 ## Testing
 
-### Test Coverage
+### Unit Tests (No Plugin Environment Required)
+
+The following tests can run without an Eclipse plugin environment using JDT's `ASTParser`:
+
+| Test Class | Tests |
+|------------|-------|
+| `ExpressionUtilsTest` | Expression manipulation utilities |
+| `LambdaGeneratorTest` | Lambda and method reference generation |
+| `SideEffectCheckerTest` | Side-effect safety validation |
+| `ProspectiveOperationTest` | Stream operation representation |
+| `StreamConstantsTest` | Constant values and delegation |
+| `ParseResultTest` | Loop body parsing results |
+| `StatementParsingContextTest` | Handler chain context object |
+
+### Integration Tests (Plugin Environment Required)
+
 All 26 test cases from `UseFunctionalLoop` enum are enabled:
 - Simple conversions (SIMPLECONVERT, CHAININGMAP)
 - Filter chains (ChainingFilterMapForEachConvert, NonFilteringIfChaining)

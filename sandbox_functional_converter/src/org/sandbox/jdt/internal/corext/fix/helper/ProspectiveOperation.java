@@ -519,6 +519,15 @@ public final class ProspectiveOperation {
 	}
 
 	/**
+	 * Returns whether this operation is null-safe.
+	 * 
+	 * @return true if the operation is null-safe
+	 */
+	public boolean isNullSafe() {
+		return isNullSafe;
+	}
+
+	/**
 	 * Sets the accumulator type for REDUCE operations.
 	 * This is used to generate the correct method reference (e.g., Integer::sum vs Double::sum).
 	 * 
@@ -526,6 +535,15 @@ public final class ProspectiveOperation {
 	 */
 	public void setAccumulatorType(String accumulatorType) {
 		this.accumulatorType = accumulatorType;
+	}
+
+	/**
+	 * Returns the accumulator type for REDUCE operations.
+	 * 
+	 * @return the accumulator type (e.g., "int", "double", "long"), or null if not set
+	 */
+	public String getAccumulatorType() {
+		return accumulatorType;
 	}
 
 	/**
