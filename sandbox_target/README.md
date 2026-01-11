@@ -21,7 +21,7 @@ The **Target Platform** module defines the Eclipse target platform used for buil
 The target platform is automatically used during Maven builds:
 
 ```bash
-cd /home/runner/work/sandbox/sandbox
+cd /path/to/sandbox
 mvn clean verify
 ```
 
