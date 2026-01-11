@@ -1,4 +1,4 @@
-# Manual Code Cleanup Workflow
+# Manual Code Cleanup Workflow using Sandbox Cleanup Application
 # This workflow can be manually triggered to apply cleanup to any branch
 # Useful for running cleanup on-demand or on specific branches
 
@@ -20,9 +20,19 @@ on:
           - minimal
           - standard
           - aggressive
+      source_dir:
+        description: 'Directory to clean (relative to repo root, default: .)'
+        required: false
+        type: string
+        default: '.'
       commit_changes:
         description: 'Commit and push changes'
         required: true
+        type: boolean
+        default: true
+      verbose:
+        description: 'Enable verbose output'
+        required: false
         type: boolean
         default: true
 
@@ -40,59 +50,12 @@ jobs:
         ref: ${{ inputs.branch || github.ref }}
         fetch-depth: 0
         
-    - name: Set cleanup options (minimal)
-      if: inputs.cleanup_profile == 'minimal'
-      run: |
-        echo "CLEANUP_FORMAT=true" >> $GITHUB_ENV
-        echo "CLEANUP_ORGANIZE_IMPORTS=true" >> $GITHUB_ENV
-        echo "CLEANUP_REMOVE_UNUSED_IMPORTS=true" >> $GITHUB_ENV
-        echo "CLEANUP_USE_BLOCKS=false" >> $GITHUB_ENV
-        echo "CLEANUP_USE_LAMBDA=false" >> $GITHUB_ENV
-        
-    - name: Set cleanup options (standard)
-      if: inputs.cleanup_profile == 'standard'
-      run: |
-        echo "CLEANUP_FORMAT=true" >> $GITHUB_ENV
-        echo "CLEANUP_ORGANIZE_IMPORTS=true" >> $GITHUB_ENV
-        echo "CLEANUP_REMOVE_UNUSED_IMPORTS=true" >> $GITHUB_ENV
-        echo "CLEANUP_USE_BLOCKS=true" >> $GITHUB_ENV
-        echo "CLEANUP_REMOVE_CASTS=true" >> $GITHUB_ENV
-        echo "CLEANUP_ADD_OVERRIDE=true" >> $GITHUB_ENV
-        echo "CLEANUP_USE_LAMBDA=true" >> $GITHUB_ENV
-        
-    - name: Set cleanup options (aggressive)
-      if: inputs.cleanup_profile == 'aggressive'
-      run: |
-        echo "CLEANUP_FORMAT=true" >> $GITHUB_ENV
-        echo "CLEANUP_ORGANIZE_IMPORTS=true" >> $GITHUB_ENV
-        echo "CLEANUP_REMOVE_UNUSED_IMPORTS=true" >> $GITHUB_ENV
-        echo "CLEANUP_USE_BLOCKS=true" >> $GITHUB_ENV
-        echo "CLEANUP_REMOVE_CASTS=true" >> $GITHUB_ENV
-        echo "CLEANUP_REMOVE_UNUSED_MEMBERS=true" >> $GITHUB_ENV
-        echo "CLEANUP_REMOVE_UNUSED_VARIABLES=true" >> $GITHUB_ENV
-        echo "CLEANUP_ADD_OVERRIDE=true" >> $GITHUB_ENV
-        echo "CLEANUP_ADD_DEPRECATED=true" >> $GITHUB_ENV
-        echo "CLEANUP_USE_LAMBDA=true" >> $GITHUB_ENV
-        echo "CLEANUP_CONVERT_FUNCTIONAL=true" >> $GITHUB_ENV
-        echo "CLEANUP_SIMPLIFY_BOOLEAN=true" >> $GITHUB_ENV
-        
-    - name: Run Eclipse JDT Cleanup
-      uses: nbauma109/refactoring-cleanup-action@v2
+    - name: Run Sandbox Cleanup
+      uses: ./.github/actions/cleanup-action
       with:
-        project_root: '.'
-        source_level: '21'
-        cleanup_format_source_code: ${{ env.CLEANUP_FORMAT }}
-        cleanup_organize_imports: ${{ env.CLEANUP_ORGANIZE_IMPORTS }}
-        cleanup_remove_unused_imports: ${{ env.CLEANUP_REMOVE_UNUSED_IMPORTS }}
-        cleanup_use_blocks: ${{ env.CLEANUP_USE_BLOCKS }}
-        cleanup_remove_unnecessary_casts: ${{ env.CLEANUP_REMOVE_CASTS }}
-        cleanup_remove_unused_private_members: ${{ env.CLEANUP_REMOVE_UNUSED_MEMBERS }}
-        cleanup_remove_unused_local_variables: ${{ env.CLEANUP_REMOVE_UNUSED_VARIABLES }}
-        cleanup_add_missing_override_annotations: ${{ env.CLEANUP_ADD_OVERRIDE }}
-        cleanup_add_missing_deprecated_annotations: ${{ env.CLEANUP_ADD_DEPRECATED }}
-        cleanup_use_lambda: ${{ env.CLEANUP_USE_LAMBDA }}
-        cleanup_convert_functional_interfaces: ${{ env.CLEANUP_CONVERT_FUNCTIONAL }}
-        cleanup_simplify_boolean_return: ${{ env.CLEANUP_SIMPLIFY_BOOLEAN }}
+        config-file: '.github/cleanup-profiles/${{ inputs.cleanup_profile }}.properties'
+        source-dir: '${{ inputs.source_dir }}'
+        verbose: '${{ inputs.verbose }}'
         
     - name: Show changes
       run: |
@@ -100,7 +63,10 @@ jobs:
         git status
         echo ""
         echo "=== Changed Files ==="
-        git diff --name-only
+        git diff --name-only || echo "No changes"
+        echo ""
+        echo "=== Diff Summary ==="
+        git diff --stat || echo "No changes"
         
     - name: Commit and push changes
       if: inputs.commit_changes
@@ -109,9 +75,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .
-          git commit -m "🔧 Apply ${{ inputs.cleanup_profile }} cleanup profile
+          git commit -m "🔧 Apply ${{ inputs.cleanup_profile }} cleanup profile (Sandbox)
 
           Cleanup profile: ${{ inputs.cleanup_profile }}
+          Source directory: ${{ inputs.source_dir }}
           Manually triggered by: @${{ github.actor }}"
           git push
           echo "✅ Changes committed and pushed"
@@ -125,5 +92,12 @@ jobs:
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "- **Profile:** ${{ inputs.cleanup_profile }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Branch:** ${{ inputs.branch || github.ref }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Source Directory:** ${{ inputs.source_dir }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Commit changes:** ${{ inputs.commit_changes }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Triggered by:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "**Status:** ✅ Cleanup applied successfully" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "**Status:** ℹ️ No changes needed" >> $GITHUB_STEP_SUMMARY
+        fi
