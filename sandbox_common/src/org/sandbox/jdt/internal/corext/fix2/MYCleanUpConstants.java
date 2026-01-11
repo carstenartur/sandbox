@@ -231,5 +231,5 @@ public class MYCleanUpConstants {
 	 * @see CleanUpOptionsCore#FALSE
 	 * @since 1.2.2
 	 */
-	public static final String STRING_SIMPLIFICATION_CLEANUP= "cleanup.string_simplification"; //$NON-NLS-1$
+	public static final String TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP= "cleanup.string_simplification"; //$NON-NLS-1$
 }

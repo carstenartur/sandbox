@@ -51,6 +51,6 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 	protected void doCreatePreferences(Composite composite, int numColumns) {
 		Group stringGroup = createGroup(numColumns, composite, CleanUpMessages.StringSimplificationTabPage_GroupName);
 		createCheckboxPref(stringGroup, numColumns, CleanUpMessages.StringSimplificationTabPage_CheckboxName_StringSimplification, 
-				MYCleanUpConstants.STRING_SIMPLIFICATION_CLEANUP, FALSE_TRUE);
+				MYCleanUpConstants.TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP, FALSE_TRUE);
 	}
 }

@@ -13,7 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.fix;
 
-import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.STRING_SIMPLIFICATION_CLEANUP;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -57,7 +57,7 @@ public class StringSimplificationCleanUpCore extends AbstractCleanUp {
 	}
 	
 	public boolean requireAST() {
-		return isEnabled(STRING_SIMPLIFICATION_CLEANUP);
+		return isEnabled(TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP);
 	}
 	
 	@Override
@@ -67,7 +67,7 @@ public class StringSimplificationCleanUpCore extends AbstractCleanUp {
 			return null;
 		}
 		
-		if (!isEnabled(STRING_SIMPLIFICATION_CLEANUP)) {
+		if (!isEnabled(TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP)) {
 			return null;
 		}
 		
@@ -89,7 +89,7 @@ public class StringSimplificationCleanUpCore extends AbstractCleanUp {
 	@Override
 	public String[] getStepDescriptions() {
 		List<String> result = new ArrayList<>();
-		if (isEnabled(STRING_SIMPLIFICATION_CLEANUP)) {
+		if (isEnabled(TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP)) {
 			result.add("Simplifies string concatenation with empty strings to String.valueOf()"); //$NON-NLS-1$
 		}
 		return result.toArray(new String[0]);
@@ -97,7 +97,7 @@ public class StringSimplificationCleanUpCore extends AbstractCleanUp {
 	
 	@Override
 	public String getPreview() {
-		if (isEnabled(STRING_SIMPLIFICATION_CLEANUP)) {
+		if (isEnabled(TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP)) {
 			return """
 				String result = String.valueOf(value);
 				String message = String.valueOf(count);

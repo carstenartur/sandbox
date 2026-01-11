@@ -2,11 +2,11 @@
 <launchConfiguration type="org.eclipse.pde.ui.RuntimeWorkbench">
     <setAttribute key="additional_plugins">
         <setEntry value="org.apache.felix.scr:2.2.12:default:true:2:true"/>
-        <setEntry value="org.eclipse.core.runtime:3.31.100.v20240524-2010:default:true:default:true"/>
-        <setEntry value="org.eclipse.equinox.common:3.19.100.v20240524-2011:default:true:2:true"/>
-        <setEntry value="org.eclipse.equinox.event:1.7.100.v20240321-1445:default:true:2:true"/>
-        <setEntry value="org.eclipse.equinox.p2.reconciler.dropins:1.5.400.v20240321-1450:default:true:default:true"/>
-        <setEntry value="org.eclipse.equinox.simpleconfigurator:1.5.300.v20240424-1301:default:true:1:true"/>
+        <setEntry value="org.eclipse.core.runtime:3.34.0.v20250711-1249:default:true:default:true"/>
+        <setEntry value="org.eclipse.equinox.common:3.20.200.v20250628-0509:default:true:2:true"/>
+        <setEntry value="org.eclipse.equinox.event:1.7.300.v20250518-0609:default:true:2:true"/>
+        <setEntry value="org.eclipse.equinox.p2.reconciler.dropins:1.5.700.v20250623-0536:default:true:default:true"/>
+        <setEntry value="org.eclipse.equinox.simpleconfigurator:1.5.600.v20250606-0550:default:true:1:true"/>
     </setAttribute>
     <booleanAttribute key="append.args" value="true"/>
     <stringAttribute key="application" value="org.eclipse.pde.build.Build"/>
@@ -48,8 +48,6 @@
     </setAttribute>
     <setAttribute key="selected_features">
         <setEntry value="org.eclipse.e4.rcp:default"/>
-        <setEntry value="org.eclipse.emf.common:default"/>
-        <setEntry value="org.eclipse.emf.ecore:default"/>
         <setEntry value="org.eclipse.equinox.p2.core.feature:default"/>
         <setEntry value="org.eclipse.equinox.p2.extras.feature:default"/>
         <setEntry value="org.eclipse.equinox.p2.rcp.feature:default"/>
@@ -61,10 +59,13 @@
         <setEntry value="org.eclipse.rcp:default"/>
         <setEntry value="sandbox_encoding_quickfix_feature:default"/>
         <setEntry value="sandbox_extra_search_feature:default"/>
+        <setEntry value="sandbox_functional_converter_feature:default"/>
         <setEntry value="sandbox_jface_cleanup_feature:default"/>
         <setEntry value="sandbox_junit_cleanup_feature:default"/>
+        <setEntry value="sandbox_method_reuse_feature:default"/>
         <setEntry value="sandbox_platform_helper_feature:default"/>
         <setEntry value="sandbox_tools_feature:default"/>
+        <setEntry value="sandbox_triggerpattern_feature:default"/>
         <setEntry value="sandbox_usage_view_feature:default"/>
         <setEntry value="sandbox_xml_cleanup_feature:default"/>
     </setAttribute>
