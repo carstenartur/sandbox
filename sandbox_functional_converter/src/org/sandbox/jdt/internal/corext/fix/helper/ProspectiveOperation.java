@@ -24,6 +24,8 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
@@ -204,15 +206,20 @@ public final class ProspectiveOperation {
 				}
 				
 				// Skip if this is the name part of a method invocation (e.g., "println" in "out.println()")
-				// or if this is the expression part representing a class name (e.g., "Math" in "Math.max()")
 				if (parent instanceof MethodInvocation) {
 					MethodInvocation mi = (MethodInvocation) parent;
 					if (mi.getName() == node) {
 						return super.visit(node); // Skip method name
 					}
 					// Skip class names used as method invocation receivers (e.g., "Math" in "Math.max()")
+					// but NOT variable references (e.g., "list" in "list.forEach()")
 					if (mi.getExpression() == node) {
-						return super.visit(node); // Skip class name
+						IBinding binding = node.resolveBinding();
+						// If it's a type binding (class name), skip it
+						// If it's a variable binding, we want to collect it
+						if (!(binding instanceof IVariableBinding)) {
+							return super.visit(node); // Skip class name
+						}
 					}
 				}
 				
