@@ -30,14 +30,12 @@ import org.eclipse.jdt.core.dom.ContinueStatement;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
-import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.IfStatement;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.PostfixExpression;
 import org.eclipse.jdt.core.dom.PrefixExpression;
-import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Statement;
@@ -157,41 +155,15 @@ public class StreamPipelineBuilder {
 	 */
 	private static final String FOR_EACH_METHOD = StreamConstants.FOR_EACH_METHOD;
 
-	/**
-	 * Class name for Math utility class.
-	 */
-	private static final String MATH_CLASS_NAME = StreamConstants.MATH_CLASS_NAME;
-
-	/**
-	 * Method name for Math.max operation.
-	 */
-	private static final String MAX_METHOD_NAME = StreamConstants.MAX_METHOD_NAME;
-
-	/**
-	 * Method name for Math.min operation.
-	 */
-	private static final String MIN_METHOD_NAME = StreamConstants.MIN_METHOD_NAME;
-
-	/**
-	 * Fully qualified name of java.lang.Math class.
-	 */
-	private static final String JAVA_LANG_MATH = StreamConstants.JAVA_LANG_MATH;
-
-	/**
-	 * Fully qualified name of java.lang.String class.
-	 */
-	private static final String JAVA_LANG_STRING = StreamConstants.JAVA_LANG_STRING;
-
 	private final EnhancedForStatement forLoop;
 	private final PreconditionsChecker preconditions;
 	private final AST ast;
+	private final ReducePatternDetector reduceDetector;
 
 	private List<ProspectiveOperation> operations;
 	private String loopVariableName;
 	private boolean analyzed = false;
 	private boolean convertible = false;
-	private String accumulatorVariable = null;
-	private String accumulatorType = null;
 	private boolean isAnyMatchPattern = false;
 	private boolean isNoneMatchPattern = false;
 	private boolean isAllMatchPattern = false;
@@ -214,6 +186,7 @@ public class StreamPipelineBuilder {
 		this.forLoop = forLoop;
 		this.preconditions = preconditions;
 		this.ast = forLoop.getAST();
+		this.reduceDetector = new ReducePatternDetector(forLoop);
 
 		// Internal invariant: EnhancedForStatement must have a parameter with a name
 		assert forLoop.getParameter() != null && forLoop.getParameter().getName() != null
@@ -448,6 +421,7 @@ public class StreamPipelineBuilder {
 		boolean hasReduce = operations.stream()
 				.anyMatch(op -> op.getOperationType() == ProspectiveOperation.OperationType.REDUCE);
 
+		String accumulatorVariable = reduceDetector.getAccumulatorVariable();
 		if (hasReduce && accumulatorVariable != null) {
 			// Wrap in assignment: variable = pipeline
 			Assignment assignment = ast.newAssignment();
@@ -462,95 +436,6 @@ public class StreamPipelineBuilder {
 			ExpressionStatement exprStmt = ast.newExpressionStatement(pipeline);
 			return exprStmt;
 		}
-	}
-
-	/**
-	 * Extracts the expression from a REDUCE operation's right-hand side. For
-	 * example, in "i += foo(l)", extracts "foo(l)".
-	 * 
-	 * @param stmt the statement containing the reduce operation
-	 * @return the expression to be mapped, or null if none
-	 */
-	private Expression extractReduceExpression(Statement stmt) {
-		if (!(stmt instanceof ExpressionStatement)) {
-			return null;
-		}
-
-		ExpressionStatement exprStmt = (ExpressionStatement) stmt;
-		Expression expr = exprStmt.getExpression();
-
-		if (expr instanceof Assignment) {
-			Assignment assignment = (Assignment) expr;
-			// Return the right-hand side expression for compound assignments
-			if (assignment.getOperator() != Assignment.Operator.ASSIGN) {
-				return assignment.getRightHandSide();
-			}
-		}
-
-		return null;
-	}
-
-	/**
-	 * Extracts the non-accumulator argument from Math.max/min call. For example, in
-	 * "max = Math.max(max, foo(l))", extracts "foo(l)". Returns null if the
-	 * non-accumulator argument is just the loop variable (identity mapping).
-	 * 
-	 * @param stmt           the statement containing the Math.max/min operation
-	 * @param accumulatorVar the accumulator variable name
-	 * @param currentVarName the current variable name in the pipeline (loop
-	 *                       variable or mapped variable)
-	 * @return the expression to be mapped, or null if it's an identity mapping or
-	 *         no mapping needed
-	 */
-	private Expression extractMathMaxMinArgument(Statement stmt, String accumulatorVar, String currentVarName) {
-		if (!(stmt instanceof ExpressionStatement)) {
-			return null;
-		}
-
-		ExpressionStatement exprStmt = (ExpressionStatement) stmt;
-		Expression expr = exprStmt.getExpression();
-
-		if (!(expr instanceof Assignment)) {
-			return null;
-		}
-
-		Assignment assignment = (Assignment) expr;
-		if (assignment.getOperator() != Assignment.Operator.ASSIGN) {
-			return null;
-		}
-
-		Expression rhs = assignment.getRightHandSide();
-		if (!(rhs instanceof MethodInvocation)) {
-			return null;
-		}
-
-		MethodInvocation methodInv = (MethodInvocation) rhs;
-		List<?> args = methodInv.arguments();
-		if (args.size() != 2) {
-			return null;
-		}
-
-		// Find the argument that is NOT the accumulator variable
-		for (Object argObj : args) {
-			if (argObj instanceof Expression) {
-				Expression arg = (Expression) argObj;
-				// Skip if this argument is just the accumulator variable
-				if (arg instanceof SimpleName) {
-					SimpleName name = (SimpleName) arg;
-					if (accumulatorVar.equals(name.getIdentifier())) {
-						continue; // This is the accumulator, skip it
-					}
-					// Check if this is just the current loop/pipeline variable (identity mapping)
-					if (currentVarName.equals(name.getIdentifier())) {
-						return null; // Skip identity mapping
-					}
-				}
-				// Return the non-accumulator argument
-				return arg;
-			}
-		}
-
-		return null;
 	}
 
 	/**
@@ -582,136 +467,7 @@ public class StreamPipelineBuilder {
 	 */
 	private void addMapBeforeReduce(List<ProspectiveOperation> ops, ProspectiveOperation reduceOp, Statement stmt,
 			String currentVarName) {
-		// Defensive null checks
-		if (ops == null) {
-			throw new IllegalArgumentException("ops list cannot be null");
-		}
-		if (reduceOp == null) {
-			throw new IllegalArgumentException("reduceOp cannot be null");
-		}
-		if (stmt == null) {
-			throw new IllegalArgumentException("stmt cannot be null");
-		}
-		if (currentVarName == null) {
-			throw new IllegalArgumentException("currentVarName cannot be null");
-		}
-		if (reduceOp.getOperationType() != ProspectiveOperation.OperationType.REDUCE) {
-			throw new IllegalArgumentException("reduceOp must be a REDUCE operation");
-		}
-
-		ProspectiveOperation.ReducerType reducerType = reduceOp.getReducerType();
-		if (reducerType == null) {
-			throw new IllegalArgumentException("reduceOp must have a non-null reducerType for REDUCE operations");
-		}
-
-		if (reducerType == ProspectiveOperation.ReducerType.INCREMENT
-				|| reducerType == ProspectiveOperation.ReducerType.DECREMENT) {
-			// Create a MAP operation that maps each item to 1 (type-aware)
-			Expression mapExpr = createTypedLiteralOne();
-			ProspectiveOperation mapOp = new ProspectiveOperation(mapExpr, ProspectiveOperation.OperationType.MAP,
-					UNUSED_ITEM_NAME);
-			ops.add(mapOp);
-		} else if (isArithmeticReducer(reducerType)) {
-			// For SUM/PRODUCT/STRING_CONCAT: extract RHS expression
-			Expression mapExpression = extractReduceExpression(stmt);
-			if (mapExpression != null) {
-				// Skip identity mapping: if the expression is just the current variable, don't add MAP
-				if (!isIdentityMapping(mapExpression, currentVarName)) {
-					ProspectiveOperation mapOp = new ProspectiveOperation(mapExpression,
-							ProspectiveOperation.OperationType.MAP, currentVarName);
-					ops.add(mapOp);
-				}
-			}
-		} else if (isMinMaxReducer(reducerType)) {
-			// For MAX/MIN: extract non-accumulator argument
-			// Skip creating map if it's just an identity mapping (e.g., num -> num)
-			Expression mapExpression = extractMathMaxMinArgument(stmt, accumulatorVariable, currentVarName);
-			if (mapExpression != null) {
-				ProspectiveOperation mapOp = new ProspectiveOperation(mapExpression,
-						ProspectiveOperation.OperationType.MAP, currentVarName);
-				ops.add(mapOp);
-			}
-		}
-	}
-
-	/**
-	 * Creates a typed literal "1" appropriate for the accumulator type. Handles
-	 * int, long, float, double, byte, short, char types.
-	 * 
-	 * @return an Expression representing the typed literal 1 (never null)
-	 */
-	private Expression createTypedLiteralOne() {
-		if (accumulatorType == null) {
-			return ast.newNumberLiteral("1");
-		}
-
-		switch (accumulatorType) {
-		case "double":
-			return ast.newNumberLiteral("1.0");
-		case "float":
-			return ast.newNumberLiteral("1.0f");
-		case "long":
-			return ast.newNumberLiteral("1L");
-		case "byte":
-			return createCastExpression(org.eclipse.jdt.core.dom.PrimitiveType.BYTE, "1");
-		case "short":
-			return createCastExpression(org.eclipse.jdt.core.dom.PrimitiveType.SHORT, "1");
-		case "char":
-			return createCastExpression(org.eclipse.jdt.core.dom.PrimitiveType.CHAR, "1");
-		default:
-			return ast.newNumberLiteral("1");
-		}
-	}
-
-	/**
-	 * Creates a cast expression for the given primitive type. Example: (byte) 1,
-	 * (short) 1
-	 * 
-	 * @param typeCode the primitive type code
-	 * @param literal  the literal value to cast
-	 * @return a CastExpression
-	 */
-	private org.eclipse.jdt.core.dom.CastExpression createCastExpression(
-			org.eclipse.jdt.core.dom.PrimitiveType.Code typeCode, String literal) {
-		org.eclipse.jdt.core.dom.CastExpression cast = ast.newCastExpression();
-		cast.setType(ast.newPrimitiveType(typeCode));
-		cast.setExpression(ast.newNumberLiteral(literal));
-		return cast;
-	}
-
-	/**
-	 * Checks if the reducer type is an arithmetic reducer.
-	 * 
-	 * @param type the reducer type to check
-	 * @return true if it's SUM, PRODUCT, or STRING_CONCAT
-	 */
-	private boolean isArithmeticReducer(ProspectiveOperation.ReducerType type) {
-		return type == ProspectiveOperation.ReducerType.SUM || type == ProspectiveOperation.ReducerType.PRODUCT
-				|| type == ProspectiveOperation.ReducerType.STRING_CONCAT;
-	}
-
-	/**
-	 * Checks if the reducer type is a min/max reducer.
-	 * 
-	 * @param type the reducer type to check
-	 * @return true if it's MAX or MIN
-	 */
-	private boolean isMinMaxReducer(ProspectiveOperation.ReducerType type) {
-		return type == ProspectiveOperation.ReducerType.MAX || type == ProspectiveOperation.ReducerType.MIN;
-	}
-
-	/**
-	 * Checks if an expression represents an identity mapping (e.g., num -> num).
-	 * 
-	 * @param expression the expression to check
-	 * @param varName    the variable name to compare against
-	 * @return true if the expression is just a reference to varName (identity
-	 *         mapping), false otherwise
-	 * @deprecated Use {@link ExpressionUtils#isIdentityMapping(Expression, String)} instead
-	 */
-	@Deprecated
-	private boolean isIdentityMapping(Expression expression, String varName) {
-		return ExpressionUtils.isIdentityMapping(expression, varName);
+		reduceDetector.addMapBeforeReduce(ops, reduceOp, stmt, currentVarName, ast);
 	}
 
 	/**
@@ -724,238 +480,12 @@ public class StreamPipelineBuilder {
 	 * <li>Math operations: {@code max = Math.max(max, x)}</li>
 	 * </ul>
 	 * 
-	 * <p><b>Examples:</b></p>
-	 * <pre>{@code
-	 * // INCREMENT pattern
-	 * count++;  // → .map(_item -> 1).reduce(count, Integer::sum)
-	 * 
-	 * // SUM pattern
-	 * sum += value;  // → .map(value).reduce(sum, Integer::sum)
-	 * 
-	 * // MAX pattern
-	 * max = Math.max(max, num);  // → .map(num).reduce(max, Math::max)
-	 * }</pre>
-	 * 
 	 * @param stmt the statement to check
 	 * @return a REDUCE operation if detected, null otherwise
+	 * @see ReducePatternDetector#detectReduceOperation(Statement)
 	 */
 	private ProspectiveOperation detectReduceOperation(Statement stmt) {
-		if (!(stmt instanceof ExpressionStatement)) {
-			return null;
-		}
-
-		ExpressionStatement exprStmt = (ExpressionStatement) stmt;
-		Expression expr = exprStmt.getExpression();
-
-		// Check for postfix increment/decrement: i++, i--
-		if (expr instanceof PostfixExpression) {
-			PostfixExpression postfix = (PostfixExpression) expr;
-			if (postfix.getOperand() instanceof SimpleName) {
-				String varName = ((SimpleName) postfix.getOperand()).getIdentifier();
-				ProspectiveOperation.ReducerType reducerType;
-
-				if (postfix.getOperator() == PostfixExpression.Operator.INCREMENT) {
-					reducerType = ProspectiveOperation.ReducerType.INCREMENT;
-				} else if (postfix.getOperator() == PostfixExpression.Operator.DECREMENT) {
-					reducerType = ProspectiveOperation.ReducerType.DECREMENT;
-				} else {
-					return null;
-				}
-
-				accumulatorVariable = varName;
-				accumulatorType = getVariableType(varName);
-				ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);
-				op.setAccumulatorType(accumulatorType);
-				return op;
-			}
-		}
-
-		// Check for prefix increment/decrement: ++i, --i
-		if (expr instanceof PrefixExpression) {
-			PrefixExpression prefix = (PrefixExpression) expr;
-			if (prefix.getOperand() instanceof SimpleName) {
-				String varName = ((SimpleName) prefix.getOperand()).getIdentifier();
-				ProspectiveOperation.ReducerType reducerType;
-
-				if (prefix.getOperator() == PrefixExpression.Operator.INCREMENT) {
-					reducerType = ProspectiveOperation.ReducerType.INCREMENT;
-				} else if (prefix.getOperator() == PrefixExpression.Operator.DECREMENT) {
-					reducerType = ProspectiveOperation.ReducerType.DECREMENT;
-				} else {
-					return null;
-				}
-
-				accumulatorVariable = varName;
-				accumulatorType = getVariableType(varName);
-				ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);
-				op.setAccumulatorType(accumulatorType);
-				return op;
-			}
-		}
-
-		// Check for compound assignments: +=, -=, *=, etc.
-		if (expr instanceof Assignment) {
-			Assignment assignment = (Assignment) expr;
-			if (assignment.getLeftHandSide() instanceof SimpleName) {
-				String varName = ((SimpleName) assignment.getLeftHandSide()).getIdentifier();
-
-				// Check for simple assignment operators first
-				if (assignment.getOperator() != Assignment.Operator.ASSIGN) {
-					ProspectiveOperation.ReducerType reducerType;
-
-					if (assignment.getOperator() == Assignment.Operator.PLUS_ASSIGN) {
-						// Check if this is string concatenation
-						ITypeBinding varType = getTypeBinding(varName);
-						if (varType != null && JAVA_LANG_STRING.equals(varType.getQualifiedName())) {
-							reducerType = ProspectiveOperation.ReducerType.STRING_CONCAT;
-						} else {
-							reducerType = ProspectiveOperation.ReducerType.SUM;
-						}
-					} else if (assignment.getOperator() == Assignment.Operator.TIMES_ASSIGN) {
-						reducerType = ProspectiveOperation.ReducerType.PRODUCT;
-					} else if (assignment.getOperator() == Assignment.Operator.MINUS_ASSIGN) {
-						reducerType = ProspectiveOperation.ReducerType.DECREMENT;
-					} else {
-						// Other assignment operators not yet supported
-						return null;
-					}
-
-					accumulatorVariable = varName;
-					accumulatorType = getVariableType(varName);
-					
-					ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);
-					op.setAccumulatorType(accumulatorType);
-					
-					// For STRING_CONCAT, check if the accumulator variable has @NotNull
-					if (reducerType == ProspectiveOperation.ReducerType.STRING_CONCAT) {
-						boolean isNullSafe = hasNotNullAnnotation(varName);
-						op.setNullSafe(isNullSafe);
-					}
-					
-					return op;
-				}
-
-				// Check for regular assignment with Math.max/Math.min pattern
-				// Pattern: max = Math.max(max, x) or min = Math.min(min, x)
-				if (assignment.getOperator() == Assignment.Operator.ASSIGN) {
-					Expression rhs = assignment.getRightHandSide();
-					ProspectiveOperation.ReducerType reducerType = detectMathMaxMinPattern(varName, rhs);
-					if (reducerType != null) {
-						accumulatorVariable = varName;
-						accumulatorType = getVariableType(varName);
-						ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);
-						op.setAccumulatorType(accumulatorType);
-						return op;
-					}
-				}
-			}
-		}
-
-		return null;
-	}
-
-	/**
-	 * Detects Math.max/Math.min patterns in an expression. Patterns: max =
-	 * Math.max(max, x) or min = Math.min(min, x)
-	 * 
-	 * @param varName the accumulator variable name
-	 * @param expr    the right-hand side expression to check
-	 * @return MAX or MIN if pattern detected, null otherwise
-	 */
-	private ProspectiveOperation.ReducerType detectMathMaxMinPattern(String varName, Expression expr) {
-		if (!(expr instanceof MethodInvocation)) {
-			return null;
-		}
-
-		MethodInvocation methodInv = (MethodInvocation) expr;
-		
-		// Get method name first
-		String methodName = methodInv.getName().getIdentifier();
-		if (!MAX_METHOD_NAME.equals(methodName) && !MIN_METHOD_NAME.equals(methodName)) {
-			return null;
-		}
-
-		// Check if it's a Math.max or Math.min call
-		// Try binding resolution first (more robust)
-		IMethodBinding binding = methodInv.resolveMethodBinding();
-		if (binding != null) {
-			ITypeBinding declaringClass = binding.getDeclaringClass();
-			if (declaringClass != null && JAVA_LANG_MATH.equals(declaringClass.getQualifiedName())) {
-				// Confirmed it's Math.max or Math.min via binding
-				// Check if one of the arguments is the accumulator variable
-				List<?> args = methodInv.arguments();
-				if (args.size() == 2) {
-					boolean hasAccumulatorArg = false;
-					for (Object argObj : args) {
-						if (argObj instanceof SimpleName) {
-							SimpleName argName = (SimpleName) argObj;
-							if (varName.equals(argName.getIdentifier())) {
-								hasAccumulatorArg = true;
-								break;
-							}
-						}
-					}
-					
-					if (hasAccumulatorArg) {
-						return MAX_METHOD_NAME.equals(methodName) ? ProspectiveOperation.ReducerType.MAX
-								: ProspectiveOperation.ReducerType.MIN;
-					}
-				}
-			}
-		}
-		
-		// Fallback: Check syntactically if binding resolution failed
-		Expression receiverExpr = methodInv.getExpression();
-		if (receiverExpr instanceof SimpleName) {
-			SimpleName className = (SimpleName) receiverExpr;
-			if (MATH_CLASS_NAME.equals(className.getIdentifier())) {
-				// Check if one of the arguments is the accumulator variable
-				List<?> args = methodInv.arguments();
-				if (args.size() == 2) {
-					boolean hasAccumulatorArg = false;
-					for (Object argObj : args) {
-						if (argObj instanceof SimpleName) {
-							SimpleName argName = (SimpleName) argObj;
-							if (varName.equals(argName.getIdentifier())) {
-								hasAccumulatorArg = true;
-								break;
-							}
-						}
-					}
-					
-					if (hasAccumulatorArg) {
-						return MAX_METHOD_NAME.equals(methodName) ? ProspectiveOperation.ReducerType.MAX
-								: ProspectiveOperation.ReducerType.MIN;
-					}
-				}
-			}
-		} else if (receiverExpr instanceof QualifiedName) {
-			// Handle fully qualified: java.lang.Math.max()
-			QualifiedName qualName = (QualifiedName) receiverExpr;
-			if (MATH_CLASS_NAME.equals(qualName.getName().getIdentifier())) {
-				// Check if one of the arguments is the accumulator variable
-				List<?> args = methodInv.arguments();
-				if (args.size() == 2) {
-					boolean hasAccumulatorArg = false;
-					for (Object argObj : args) {
-						if (argObj instanceof SimpleName) {
-							SimpleName argName = (SimpleName) argObj;
-							if (varName.equals(argName.getIdentifier())) {
-								hasAccumulatorArg = true;
-								break;
-							}
-						}
-					}
-					
-					if (hasAccumulatorArg) {
-						return MAX_METHOD_NAME.equals(methodName) ? ProspectiveOperation.ReducerType.MAX
-								: ProspectiveOperation.ReducerType.MIN;
-					}
-				}
-			}
-		}
-
-		return null;
+		return reduceDetector.detectReduceOperation(stmt);
 	}
 
 	/**
