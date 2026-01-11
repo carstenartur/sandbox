@@ -121,6 +121,12 @@ public class VariableDeclarationHandler implements StatementHandler {
 					return true;
 				}
 			}
+			
+			// Don't wrap if the statement is an assignment to a variable that will be 
+			// handled by AssignmentMapHandler (assignment to current pipeline variable)
+			if (isAssignmentToProducedVariable(stmt, context)) {
+				return false;
+			}
 		}
 
 		// Also wrap if there are multiple non-terminal side-effect statements
@@ -129,11 +135,59 @@ public class VariableDeclarationHandler implements StatementHandler {
 			for (int j = currentIndex + 1; j < statements.size() - 1; j++) {
 				Statement stmt = statements.get(j);
 				if (!(stmt instanceof VariableDeclarationStatement)) {
-					return true;
+					// Check if it's an assignment that will be handled by AssignmentMapHandler
+					if (!isAssignmentToProducedVariable(stmt, context)) {
+						return true;
+					}
 				}
 			}
 		}
 
+		return false;
+	}
+	
+	/**
+	 * Checks if a statement is an assignment to a variable that was declared 
+	 * in the current context (will be produced by this MAP operation).
+	 */
+	private boolean isAssignmentToProducedVariable(Statement stmt, StatementParsingContext context) {
+		if (!(stmt instanceof org.eclipse.jdt.core.dom.ExpressionStatement)) {
+			return false;
+		}
+		
+		org.eclipse.jdt.core.dom.Expression expr = 
+				((org.eclipse.jdt.core.dom.ExpressionStatement) stmt).getExpression();
+		if (!(expr instanceof org.eclipse.jdt.core.dom.Assignment)) {
+			return false;
+		}
+		
+		org.eclipse.jdt.core.dom.Assignment assignment = (org.eclipse.jdt.core.dom.Assignment) expr;
+		org.eclipse.jdt.core.dom.Expression lhs = assignment.getLeftHandSide();
+		
+		if (!(lhs instanceof org.eclipse.jdt.core.dom.SimpleName)) {
+			return false;
+		}
+		
+		// Get the variable name being assigned to
+		String varName = ((org.eclipse.jdt.core.dom.SimpleName) lhs).getIdentifier();
+		
+		// Get the variable name that will be produced by the current variable declaration
+		// (This is the name of the variable being declared in this handler)
+		List<Statement> statements = context.getAllStatements();
+		int currentIndex = context.getCurrentIndex();
+		if (statements != null && currentIndex < statements.size()) {
+			Statement currentStmt = statements.get(currentIndex);
+			if (currentStmt instanceof VariableDeclarationStatement) {
+				VariableDeclarationStatement varDecl = (VariableDeclarationStatement) currentStmt;
+				List<?> fragments = varDecl.fragments();
+				if (!fragments.isEmpty()) {
+					VariableDeclarationFragment frag = (VariableDeclarationFragment) fragments.get(0);
+					String producedVarName = frag.getName().getIdentifier();
+					return varName.equals(producedVarName);
+				}
+			}
+		}
+		
 		return false;
 	}
 

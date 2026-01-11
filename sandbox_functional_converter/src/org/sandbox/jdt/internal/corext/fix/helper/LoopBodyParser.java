@@ -114,6 +114,7 @@ public class LoopBodyParser {
 	private List<StatementHandler> createHandlers() {
 		return Arrays.asList(
 			new VariableDeclarationHandler(this),
+			new AssignmentMapHandler(),
 			new IfStatementHandler(this),
 			new NonTerminalStatementHandler(sideEffectChecker),
 			new TerminalStatementHandler(sideEffectChecker)

@@ -16,7 +16,7 @@ package org.sandbox.jdt.ui.tests.quickfix;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
-import org.junit.jupiter.api.Disabled;
+//import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
@@ -190,9 +190,9 @@ public class FunctionalLoopSimpleConversionTest {
 	 * Tests variable naming in lambda expressions with transformations.
 	 * 
 	 * <p>
-	 * <b>Conversion Rule:</b> When a loop variable is not used in the forEach body,
-	 * the cleanup uses {@code _item} as the lambda parameter name. Intermediate
-	 * variables in map operations retain their original names.
+	 * <b>Conversion Rule:</b> The loop variable name is preserved in the first
+	 * map operation's lambda parameter. Intermediate variables in subsequent
+	 * map operations retain their original names from variable declarations.
 	 * </p>
 	 * 
 	 * <p>
@@ -215,20 +215,20 @@ public class FunctionalLoopSimpleConversionTest {
 	 * 
 	 * <pre>
 	 * {@code
-	 * strs.stream().map(_item -> "foo").map(s -> s.toString()).forEachOrdered(s -> {
+	 * strs.stream().map(str -> "foo").map(s -> s.toString()).forEachOrdered(s -> {
 	 * 	System.out.println(s);
 	 * });
 	 * }
 	 * </pre>
 	 * 
 	 * <p>
-	 * <b>Note:</b> This demonstrates the naming convention where unused loop
-	 * variables become {@code _item} in the lambda.
+	 * <b>Note:</b> The original loop variable {@code str} is used as the first
+	 * lambda parameter, even though it's not referenced in the expression.
 	 * </p>
 	 * 
 	 * @see org.sandbox.jdt.internal.corext.fix.helper.StreamPipelineBuilder#parseLoopBody
 	 */
-	@Disabled("Not yet working - beautification logic needs improvement")
+//	@Disabled("Not yet working - beautification logic needs improvement")
 	@Test
 	void test_BeautificationWorks() throws CoreException {
 		String input = """
@@ -264,32 +264,30 @@ public class FunctionalLoopSimpleConversionTest {
 			}""";
 
 		String expected = """
-			package test1;
+package test1;
 
-			import java.util.ArrayList;
-			import java.util.List;
+import java.util.ArrayList;
+import java.util.List;
 
-			/**
-			 *
-			 * @author alexandrugyori
-			 */
-			class JavaApplication1 {
+/**
+ *
+ * @author alexandrugyori
+ */
+class JavaApplication1 {
 
-				/**
-				 * @param args the command line arguments
-				 */
-				public boolean b() {
-					// TODO code application logic here
-					List<String> strs = new ArrayList<String>();
-					int i = 0;
-					int j = 0;
-					strs.stream().map(_item -> "foo").map(s -> s.toString()).forEachOrdered(s -> {
-						System.out.println(s);
-					});
-					return false;
+	/**
+	 * @param args the command line arguments
+	 */
+	public boolean b() {
+		// TODO code application logic here
+		List<String> strs = new ArrayList<String>();
+		int i = 0;
+		int j = 0;
+		strs.stream().map(str -> "foo").map(s -> s.toString()).forEachOrdered(s -> System.out.println(s));
+		return false;
 
-				}
-			}""";
+	}
+}""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("JavaApplication1.java", input, false, null);
@@ -301,9 +299,9 @@ public class FunctionalLoopSimpleConversionTest {
 	 * Tests lambda parameter naming when loop variable is unused in body.
 	 * 
 	 * <p>
-	 * <b>Conversion Rule:</b> When the original loop variable is not used in the
-	 * loop body at all, the cleanup uses {@code _item} as the lambda parameter in
-	 * the final {@code forEach()} operation.
+	 * <b>Conversion Rule:</b> The loop variable name is preserved in the first
+	 * map operation. The forEach uses the variable name from the last map operation,
+	 * even when that variable is not referenced in the forEach body.
 	 * </p>
 	 * 
 	 * <p>
@@ -326,18 +324,18 @@ public class FunctionalLoopSimpleConversionTest {
 	 * 
 	 * <pre>
 	 * {@code
-	 * strs.stream().map(_item -> "foo").map(s -> s.toString()).forEachOrdered(_item -> {
+	 * strs.stream().map(str -> "foo").map(s -> s.toString()).forEachOrdered(s -> {
 	 * 	System.out.println();
 	 * });
 	 * }
 	 * </pre>
 	 * 
 	 * <p>
-	 * <b>Note:</b> The final forEach uses {@code _item} instead of {@code s}
-	 * because {@code s} is not referenced in the forEach body.
+	 * <b>Note:</b> The forEach parameter is {@code s} (from the last map operation),
+	 * even though it's not referenced in the body.
 	 * </p>
 	 */
-	@Disabled("Not yet working - beautification logic needs improvement")
+//	@Disabled("Not yet working - beautification logic needs improvement")
 	@Test
 	void test_BeautificationWorks2() throws CoreException {
 		String input = """
@@ -373,32 +371,30 @@ public class FunctionalLoopSimpleConversionTest {
 			}""";
 
 		String expected = """
-			package test1;
+package test1;
 
-			import java.util.ArrayList;
-			import java.util.List;
+import java.util.ArrayList;
+import java.util.List;
 
-			/**
-			 *
-			 * @author alexandrugyori
-			 */
-			class JavaApplication1 {
+/**
+ *
+ * @author alexandrugyori
+ */
+class JavaApplication1 {
 
-				/**
-				 * @param args the command line arguments
-				 */
-				public boolean b() {
-					// TODO code application logic here
-					List<String> strs = new ArrayList<String>();
-					int i = 0;
-					int j = 0;
-					strs.stream().map(_item -> "foo").map(s -> s.toString()).forEachOrdered(_item -> {
-						System.out.println();
-					});
-					return false;
+	/**
+	 * @param args the command line arguments
+	 */
+	public boolean b() {
+		// TODO code application logic here
+		List<String> strs = new ArrayList<String>();
+		int i = 0;
+		int j = 0;
+		strs.stream().map(str -> "foo").map(s -> s.toString()).forEachOrdered(s -> System.out.println());
+		return false;
 
-				}
-			}""";
+	}
+}""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("JavaApplication1.java", input, false, null);

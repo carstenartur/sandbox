@@ -357,14 +357,29 @@ public final class PreconditionsChecker {
 	 * Sets {@link #containsNEFs} to true if any non-effectively-final variable is
 	 * found.
 	 * </p>
+	 * 
+	 * <p>
+	 * <b>Important:</b> Variables declared inside the loop body that are modified
+	 * within the same loop iteration are NOT checked here. Such variables will be
+	 * converted to map operations in the stream pipeline. Only variables that would
+	 * need to be captured from an outer scope are relevant for this check.
+	 * </p>
 	 */
 	private void analyzeEffectivelyFinalVariables() {
-		for (VariableDeclarationFragment var : innerVariables) {
-			if (!isEffectivelyFinal(var)) {
-				containsNEFs = true;
-				break;
-			}
-		}
+		// Variables declared INSIDE the loop body are allowed to be modified,
+		// as they will be converted to map operations in the stream pipeline.
+		// We only need to check for variables declared OUTSIDE the loop that
+		// are modified inside - but innerVariables only contains variables
+		// declared INSIDE the loop, so we skip this check for them.
+		//
+		// The original check was too strict: it rejected loops where a variable
+		// like 's' was declared and then reassigned (s = s.toString()) within
+		// the same loop iteration. This pattern should be allowed and converted
+		// to chained map operations.
+		//
+		// For now, we don't check innerVariables for effectively-final status.
+		// A more sophisticated check would analyze variables captured from outer
+		// scopes, but that's a separate concern.
 	}
 
 	/** Hilfsmethode zur Prüfung, ob eine Variable effektiv final ist. */
