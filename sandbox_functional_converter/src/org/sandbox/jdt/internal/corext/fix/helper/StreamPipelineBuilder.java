@@ -23,7 +23,6 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Block;
-import org.eclipse.jdt.core.dom.BooleanLiteral;
 import org.eclipse.jdt.core.dom.BreakStatement;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.ContinueStatement;
@@ -42,7 +41,6 @@ import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.ThrowStatement;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
-import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 
 /**
@@ -159,6 +157,7 @@ public class StreamPipelineBuilder {
 	private final PreconditionsChecker preconditions;
 	private final AST ast;
 	private final ReducePatternDetector reduceDetector;
+	private final IfStatementAnalyzer ifAnalyzer;
 
 	private List<ProspectiveOperation> operations;
 	private String loopVariableName;
@@ -187,6 +186,7 @@ public class StreamPipelineBuilder {
 		this.preconditions = preconditions;
 		this.ast = forLoop.getAST();
 		this.reduceDetector = new ReducePatternDetector(forLoop);
+		this.ifAnalyzer = new IfStatementAnalyzer(forLoop);
 
 		// Internal invariant: EnhancedForStatement must have a parameter with a name
 		assert forLoop.getParameter() != null && forLoop.getParameter().getName() != null
@@ -585,23 +585,23 @@ public class StreamPipelineBuilder {
 					// Check if this is a filtering IF (simple condition with block body)
 					if (ifStmt.getElseStatement() == null) {
 						// Check for labeled continue first - these cannot be converted
-						if (isIfWithLabeledContinue(ifStmt)) {
+						if (ifAnalyzer.isIfWithLabeledContinue(ifStmt)) {
 							// Labeled continue cannot be converted to stream operations
 							// Return empty list to signal conversion should be rejected
 							return new ArrayList<>();
-						} else if (isIfWithBreak(ifStmt)) {
+						} else if (ifAnalyzer.isIfWithBreak(ifStmt)) {
 							// Break statement cannot be converted to stream operations
 							// Return empty list to signal conversion should be rejected
 							return new ArrayList<>();
-						} else if (isEarlyReturnIf(ifStmt)) {
+						} else if (ifAnalyzer.isEarlyReturnIf(ifStmt, isAnyMatchPattern, isNoneMatchPattern, isAllMatchPattern)) {
 							// Check if this is an early return pattern (anyMatch/noneMatch/allMatch)
 							// Create ANYMATCH, NONEMATCH, or ALLMATCH operation using helper
-							ProspectiveOperation matchOp = createMatchOperation(ifStmt);
+							ProspectiveOperation matchOp = ifAnalyzer.createMatchOperation(ifStmt);
 							ops.add(matchOp);
 							// Don't process the body since it's just a return statement
-						} else if (isIfWithContinue(ifStmt)) {
+						} else if (ifAnalyzer.isIfWithContinue(ifStmt)) {
 							// Convert "if (condition) continue;" to ".filter(x -> !(condition))"
-							Expression negatedCondition = createNegatedExpression(ast, ifStmt.getExpression());
+							Expression negatedCondition = ExpressionUtils.createNegatedExpression(ast, ifStmt.getExpression());
 							ProspectiveOperation filterOp = new ProspectiveOperation(negatedCondition,
 									ProspectiveOperation.OperationType.FILTER);
 							ops.add(filterOp);
@@ -617,18 +617,18 @@ public class StreamPipelineBuilder {
 					IfStatement ifStmt = (IfStatement) stmt;
 					if (ifStmt.getElseStatement() == null) {
 						// Check for labeled continue first - these cannot be converted
-						if (isIfWithLabeledContinue(ifStmt)) {
+						if (ifAnalyzer.isIfWithLabeledContinue(ifStmt)) {
 							// Labeled continue cannot be converted to stream operations
 							// Return empty list to signal conversion should be rejected
 							return new ArrayList<>();
-						} else if (isIfWithBreak(ifStmt)) {
+						} else if (ifAnalyzer.isIfWithBreak(ifStmt)) {
 							// Break statement cannot be converted to stream operations
 							// Return empty list to signal conversion should be rejected
 							return new ArrayList<>();
-						} else if (isEarlyReturnIf(ifStmt)) {
+						} else if (ifAnalyzer.isEarlyReturnIf(ifStmt, isAnyMatchPattern, isNoneMatchPattern, isAllMatchPattern)) {
 							// Check if this is an early return pattern (anyMatch/noneMatch/allMatch)
 							// Create ANYMATCH, NONEMATCH, or ALLMATCH operation using helper
-							ProspectiveOperation matchOp = createMatchOperation(ifStmt);
+							ProspectiveOperation matchOp = ifAnalyzer.createMatchOperation(ifStmt);
 							ops.add(matchOp);
 						} else {
 							processIfAsFilter(ops, ifStmt, currentVarName, false);
@@ -683,34 +683,18 @@ public class StreamPipelineBuilder {
 			IfStatement ifStmt = (IfStatement) body;
 			if (ifStmt.getElseStatement() == null) {
 				// Check for labeled continue first - these cannot be converted
-				if (isIfWithLabeledContinue(ifStmt)) {
+				if (ifAnalyzer.isIfWithLabeledContinue(ifStmt)) {
 					// Labeled continue cannot be converted to stream operations
 					// Return empty list to signal conversion should be rejected
 					return new ArrayList<>();
-				} else if (isIfWithBreak(ifStmt)) {
+				} else if (ifAnalyzer.isIfWithBreak(ifStmt)) {
 					// Break statement cannot be converted to stream operations
 					// Return empty list to signal conversion should be rejected
 					return new ArrayList<>();
-				} else if (isEarlyReturnIf(ifStmt)) {
+				} else if (ifAnalyzer.isEarlyReturnIf(ifStmt, isAnyMatchPattern, isNoneMatchPattern, isAllMatchPattern)) {
 					// Check if this is an early return pattern (anyMatch/noneMatch/allMatch)
 					// Create ANYMATCH, NONEMATCH, or ALLMATCH operation
-					ProspectiveOperation.OperationType opType;
-					if (isAnyMatchPattern) {
-						opType = ProspectiveOperation.OperationType.ANYMATCH;
-					} else if (isNoneMatchPattern) {
-						opType = ProspectiveOperation.OperationType.NONEMATCH;
-					} else {
-						// allMatchPattern
-						opType = ProspectiveOperation.OperationType.ALLMATCH;
-					}
-
-					// For allMatch with negated condition, strip the negation
-					Expression condition = ifStmt.getExpression();
-					if (isAllMatchPattern) {
-						condition = stripNegation(condition);
-					}
-
-					ProspectiveOperation matchOp = new ProspectiveOperation(condition, opType);
+					ProspectiveOperation matchOp = ifAnalyzer.createMatchOperation(ifStmt);
 					ops.add(matchOp);
 				} else {
 					// Regular filter with nested body processing
@@ -856,12 +840,12 @@ public class StreamPipelineBuilder {
 				IfStatement ifStmt = (IfStatement) stmt;
 				
 				// Don't wrap if this is an early return IF (anyMatch/noneMatch pattern)
-				if (isEarlyReturnIf(ifStmt)) {
+				if (ifAnalyzer.isEarlyReturnIf(ifStmt, isAnyMatchPattern, isNoneMatchPattern, isAllMatchPattern)) {
 					return false;
 				}
 				
 				// Don't wrap if this is a continue IF (will be handled as negated filter)
-				if (isIfWithContinue(ifStmt)) {
+				if (ifAnalyzer.isIfWithContinue(ifStmt)) {
 					return false;
 				}
 				
@@ -933,7 +917,8 @@ public class StreamPipelineBuilder {
 			} else if (stmt instanceof IfStatement) {
 				IfStatement ifStmt = (IfStatement) stmt;
 				// If it's an early return or continue pattern, needs decomposition
-				if (isEarlyReturnIf(ifStmt) || isIfWithContinue(ifStmt)) {
+				if (ifAnalyzer.isEarlyReturnIf(ifStmt, isAnyMatchPattern, isNoneMatchPattern, isAllMatchPattern) 
+						|| ifAnalyzer.isIfWithContinue(ifStmt)) {
 					return false;
 				}
 				// Found an IF after variable declarations
@@ -1082,269 +1067,6 @@ public class StreamPipelineBuilder {
 		}
 
 		return currentVarName;
-	}
-
-	/**
-	 * Checks if an IF statement contains a continue statement. This pattern should
-	 * be converted to a negated filter.
-	 * 
-	 * <p>
-	 * This method identifies whether an IF statement contains a continue that can
-	 * be converted to a filter operation. The actual rejection of labeled continues
-	 * happens earlier in {@link PreconditionsChecker#isSafeToRefactor()}.
-	 * 
-	 * @param ifStatement the IF statement to check
-	 * @return true if the then branch contains an unlabeled continue statement
-	 */
-	private boolean isIfWithContinue(IfStatement ifStatement) {
-		Statement thenStatement = ifStatement.getThenStatement();
-		if (thenStatement instanceof ContinueStatement) {
-			ContinueStatement continueStmt = (ContinueStatement) thenStatement;
-			// Only allow unlabeled continues
-			return continueStmt.getLabel() == null;
-		}
-		if (thenStatement instanceof Block) {
-			Block block = (Block) thenStatement;
-			if (block.statements().size() == 1 && block.statements().get(0) instanceof ContinueStatement) {
-				ContinueStatement continueStmt = (ContinueStatement) block.statements().get(0);
-				// Only allow unlabeled continues
-				return continueStmt.getLabel() == null;
-			}
-		}
-		return false;
-	}
-
-	/**
-	 * Checks if the IF statement contains a labeled continue statement.
-	 * Labeled continues cannot be converted to stream operations.
-	 * 
-	 * @param ifStatement the IF statement to check
-	 * @return true if the IF contains a labeled continue statement
-	 */
-	private boolean isIfWithLabeledContinue(IfStatement ifStatement) {
-		Statement thenStatement = ifStatement.getThenStatement();
-		if (thenStatement instanceof ContinueStatement) {
-			ContinueStatement continueStmt = (ContinueStatement) thenStatement;
-			// Check if continue has a label
-			return continueStmt.getLabel() != null;
-		}
-		if (thenStatement instanceof Block) {
-			Block block = (Block) thenStatement;
-			if (block.statements().size() == 1 && block.statements().get(0) instanceof ContinueStatement) {
-				ContinueStatement continueStmt = (ContinueStatement) block.statements().get(0);
-				// Check if continue has a label
-				return continueStmt.getLabel() != null;
-			}
-		}
-		return false;
-	}
-
-	/**
-	 * Checks if the IF statement contains a break statement.
-	 * Break statements cannot be converted to stream operations.
-	 * 
-	 * @param ifStatement the IF statement to check
-	 * @return true if the IF contains a break statement
-	 */
-	private boolean isIfWithBreak(IfStatement ifStatement) {
-		Statement thenStatement = ifStatement.getThenStatement();
-		if (thenStatement instanceof BreakStatement) {
-			return true;
-		}
-		if (thenStatement instanceof Block) {
-			Block block = (Block) thenStatement;
-			if (block.statements().size() == 1 && block.statements().get(0) instanceof BreakStatement) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	/**
-	 * Checks if the IF statement contains an early return (for
-	 * anyMatch/noneMatch/allMatch patterns).
-	 * 
-	 * <p>This method performs its own pattern detection in addition to checking
-	 * the precomputed flags from PreconditionsChecker. This ensures that even if
-	 * the flags weren't set correctly, the pattern can still be detected.</p>
-	 * 
-	 * @param ifStatement the IF statement to check
-	 * @return true if the IF contains a return statement matching an early return pattern
-	 */
-	private boolean isEarlyReturnIf(IfStatement ifStatement) {
-		// Directly check if this IF statement matches the early return pattern
-		// by examining its structure rather than comparing object references
-		if (ifStatement == null || ifStatement.getElseStatement() != null) {
-			return false;
-		}
-
-		Statement thenStmt = ifStatement.getThenStatement();
-		ReturnStatement returnStmt = null;
-
-		// Check for direct return statement or block with single return
-		if (thenStmt instanceof ReturnStatement) {
-			returnStmt = (ReturnStatement) thenStmt;
-		} else if (thenStmt instanceof Block) {
-			Block block = (Block) thenStmt;
-			if (block.statements().size() == 1 && block.statements().get(0) instanceof ReturnStatement) {
-				returnStmt = (ReturnStatement) block.statements().get(0);
-			}
-		}
-
-		if (returnStmt == null || !(returnStmt.getExpression() instanceof BooleanLiteral)) {
-			return false;
-		}
-
-		BooleanLiteral returnValue = (BooleanLiteral) returnStmt.getExpression();
-
-		// First check if precomputed flags match
-		if (isAnyMatchPattern && returnValue.booleanValue()) {
-			// anyMatch: if (condition) return true;
-			return true;
-		} else if (isNoneMatchPattern && !returnValue.booleanValue()) {
-			// noneMatch: if (condition) return false;
-			return true;
-		} else if (isAllMatchPattern && !returnValue.booleanValue()) {
-			// allMatch: if (!condition) return false;
-			return true;
-		}
-		
-		// If flags weren't set, detect the pattern directly by checking if there's
-		// a return statement after the loop that completes the pattern
-		if (!isAnyMatchPattern && !isNoneMatchPattern && !isAllMatchPattern) {
-			// Check for return after the loop to determine pattern type
-			BooleanLiteral followingReturn = getReturnAfterLoop();
-			if (followingReturn != null) {
-				if (returnValue.booleanValue() && !followingReturn.booleanValue()) {
-					// if (condition) return true; ... return false; → anyMatch
-					// Update the flag so createMatchOperation can use it
-					isAnyMatchPattern = true;
-					return true;
-				} else if (!returnValue.booleanValue() && followingReturn.booleanValue()) {
-					// if (condition) return false; ... return true; → noneMatch or allMatch
-					// Check if condition is negated to distinguish
-					Expression condition = ifStatement.getExpression();
-					if (ExpressionUtils.isNegatedExpression(condition)) {
-						// if (!condition) return false; ... return true; → allMatch
-						isAllMatchPattern = true;
-					} else {
-						// if (condition) return false; ... return true; → noneMatch
-						isNoneMatchPattern = true;
-					}
-					return true;
-				}
-			}
-		}
-
-		return false;
-	}
-	
-	/**
-	 * Gets the boolean return value from the statement immediately following the loop.
-	 * 
-	 * @return the BooleanLiteral returned after the loop, or null if not found
-	 */
-	private BooleanLiteral getReturnAfterLoop() {
-		ASTNode parent = forLoop.getParent();
-		
-		// The loop must be in a Block (method body, if-then block, etc.)
-		if (!(parent instanceof Block)) {
-			return null;
-		}
-		
-		Block block = (Block) parent;
-		List<?> statements = block.statements();
-		
-		// Find the loop in the block's statements
-		int loopIndex = statements.indexOf(forLoop);
-		if (loopIndex == -1 || loopIndex >= statements.size() - 1) {
-			// Loop not found or is the last statement
-			return null;
-		}
-		
-		// Check the next statement
-		Statement nextStmt = (Statement) statements.get(loopIndex + 1);
-		
-		// We expect a return statement with a boolean literal
-		if (nextStmt instanceof ReturnStatement) {
-			ReturnStatement returnStmt = (ReturnStatement) nextStmt;
-			Expression expr = returnStmt.getExpression();
-			if (expr instanceof BooleanLiteral) {
-				return (BooleanLiteral) expr;
-			}
-		}
-		
-		return null;
-	}
-
-	/**
-	 * Creates a negated expression for filter operations. Used when converting "if
-	 * (condition) continue;" to ".filter(x -> !(condition))".
-	 * 
-	 * <p>
-	 * Wraps binary and complex expressions in parentheses to ensure correct precedence.
-	 * For example: {@code l == null} becomes {@code !(l == null)} not {@code !l == null}
-	 * </p>
-	 * 
-	 * @param ast       the AST to create nodes in
-	 * @param condition the condition to negate
-	 * @return a negated expression with proper parenthesization
-	 * @deprecated Use {@link ExpressionUtils#createNegatedExpression(AST, Expression)} instead
-	 */
-	@Deprecated
-	private Expression createNegatedExpression(AST ast, Expression condition) {
-		return ExpressionUtils.createNegatedExpression(ast, condition);
-	}
-	
-	/**
-	 * Determines if an expression needs parentheses when negated.
-	 * 
-	 * @param expr the expression to check
-	 * @return true if parentheses are needed
-	 * @deprecated Use {@link ExpressionUtils#needsParentheses(Expression)} instead
-	 */
-	@Deprecated
-	private boolean needsParentheses(Expression expr) {
-		return ExpressionUtils.needsParentheses(expr);
-	}
-
-	/**
-	 * Strips the negation from a negated expression.
-	 * Handles ParenthesizedExpression wrapping using JDT's {@link ASTNodes#getUnparenthesedExpression}.
-	 * 
-	 * @param expr the expression to strip negation from
-	 * @return the expression without the leading NOT operator, or the original expression if not negated
-	 * @deprecated Use {@link ExpressionUtils#stripNegation(Expression)} instead
-	 */
-	@Deprecated
-	private Expression stripNegation(Expression expr) {
-		return ExpressionUtils.stripNegation(expr);
-	}
-
-	/**
-	 * Attempts to determine the type name of a variable by searching for its
-	 * declaration in the method containing the for-loop and parent scopes.
-	 * 
-	 * @param varName the variable name to look up
-	 * @return the simple type name (e.g., "double", "int") or null if not found
-	 * @deprecated Use {@link TypeResolver#getVariableType(ASTNode, String)} instead
-	 */
-	@Deprecated
-	private String getVariableType(String varName) {
-		return TypeResolver.getVariableType(forLoop, varName);
-	}
-
-	/**
-	 * Searches a block for a variable declaration and returns its type.
-	 * 
-	 * @param block   the block to search
-	 * @param varName the variable name to find
-	 * @return the simple type name or null if not found
-	 * @deprecated Use {@link TypeResolver#searchBlockForVariableType(Block, String)} instead
-	 */
-	@Deprecated
-	private String searchBlockForVariableType(org.eclipse.jdt.core.dom.Block block, String varName) {
-		return TypeResolver.searchBlockForVariableType(block, varName);
 	}
 
 	/**
@@ -1652,50 +1374,6 @@ public class StreamPipelineBuilder {
 	@Deprecated
 	private boolean hasNotNullAnnotationOnBinding(IVariableBinding binding) {
 		return TypeResolver.hasNotNullAnnotationOnBinding(binding);
-	}
-
-	/**
-	 * Creates a match operation (ANYMATCH, NONEMATCH, or ALLMATCH) from an IF statement
-	 * containing an early return pattern.
-	 * 
-	 * <p>
-	 * This method handles the common pattern of creating match operations from IF statements
-	 * that contain early returns. It determines the appropriate operation type based on
-	 * the pattern flags set in the constructor, and handles condition negation for ALLMATCH.
-	 * </p>
-	 * 
-	 * <p><b>Patterns recognized:</b></p>
-	 * <ul>
-	 * <li><b>ANYMATCH</b>: {@code if (condition) return true;}</li>
-	 * <li><b>NONEMATCH</b>: {@code if (condition) return false;}</li>
-	 * <li><b>ALLMATCH</b>: {@code if (!condition) return false;} (condition is un-negated)</li>
-	 * </ul>
-	 * 
-	 * @param ifStmt the IF statement containing the early return pattern (must not be null)
-	 * @return a ProspectiveOperation representing the match operation
-	 */
-	private ProspectiveOperation createMatchOperation(IfStatement ifStmt) {
-		// Determine operation type based on pattern flags
-		ProspectiveOperation.OperationType opType;
-		if (isAnyMatchPattern) {
-			opType = ProspectiveOperation.OperationType.ANYMATCH;
-		} else if (isNoneMatchPattern) {
-			opType = ProspectiveOperation.OperationType.NONEMATCH;
-		} else {
-			// allMatchPattern
-			// For allMatch, we need to negate the condition since
-			// the pattern is "if (!condition) return false"
-			// We want "allMatch(condition)" not "allMatch(!condition)"
-			opType = ProspectiveOperation.OperationType.ALLMATCH;
-		}
-
-		// For allMatch with negated condition, strip the negation
-		Expression condition = ifStmt.getExpression();
-		if (isAllMatchPattern) {
-			condition = ExpressionUtils.stripNegation(condition);
-		}
-
-		return new ProspectiveOperation(condition, opType);
 	}
 
 	/**
