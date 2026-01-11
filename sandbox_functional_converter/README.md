@@ -27,6 +27,28 @@ This Eclipse cleanup plugin automatically converts imperative enhanced for-loops
   - Improved side-effect statement validation
   - Better tracking of produced/consumed variables across pipeline stages
 
+## Supported Transformations
+
+The cleanup currently supports the following patterns:
+
+| Pattern                                 | Transformed To                                      |
+|----------------------------------------|-----------------------------------------------------|
+| Simple enhanced for-loops              | `list.forEach(...)` or `list.stream().forEach(...)` |
+| Mapping inside loops                   | `.stream().map(...)`                                |
+| Filtering via `if` or `continue`       | `.stream().filter(...)`                             |
+| Null safety checks                     | `.filter(l -> l != null).map(...)`                  |
+| Reductions (sum/counter)               | `.stream().map(...).reduce(...)`                    |
+| MAX/MIN reductions                     | `.reduce(init, Math::max)` or `.reduce(init, Math::min)` |
+| `String` concatenation in loops        | `.reduce(..., String::concat)`                      |
+| Conditional early `return true`        | `.anyMatch(...)`                                    |
+| Conditional early `return false`       | `.noneMatch(...)`                                   |
+| Conditional check all valid            | `.allMatch(...)`                                    |
+| Method calls inside mapping/filtering  | `map(x -> method(x))`, `filter(...)`                |
+| Combined `filter`, `map`, `forEach`    | Chained stream transformations                      |
+| Nested conditionals                    | Multiple `.filter(...)` operations                  |
+| Increment/decrement reducers           | `.map(_item -> 1).reduce(0, Integer::sum)`          |
+| Compound assignment reducers           | `.map(expr).reduce(init, operator)`                 |
+
 ## Examples
 
 ### Basic forEach
@@ -97,6 +119,153 @@ max = numbers.stream()
            .map(num -> num * num)
            .reduce(max, Math::max);
 ```
+
+### Additional Examples
+
+#### Null Safety with Continue
+**Before:**
+```java
+for (Integer l : list) {
+    if (l == null) {
+        continue;
+    }
+    String s = l.toString();
+    System.out.println(s);
+}
+```
+
+**After:**
+```java
+list.stream()
+    .filter(l -> !(l == null))
+    .map(l -> l.toString())
+    .forEachOrdered(s -> {
+        System.out.println(s);
+    });
+```
+
+#### AnyMatch Pattern (Early Return)
+**Before:**
+```java
+for (Integer l : list) {
+    String s = l.toString();
+    Object o = foo(s);
+    if (o == null)
+        return true;
+}
+return false;
+```
+
+**After:**
+```java
+if (list.stream()
+        .map(l -> l.toString())
+        .map(s -> foo(s))
+        .anyMatch(o -> (o == null))) {
+    return true;
+}
+return false;
+```
+
+#### AllMatch Pattern (Check All Valid)
+**Before:**
+```java
+for (String item : items) {
+    if (!item.startsWith("valid")) {
+        return false;
+    }
+}
+return true;
+```
+
+**After:**
+```java
+if (!items.stream().allMatch(item -> item.startsWith("valid"))) {
+    return false;
+}
+return true;
+```
+
+#### Nested Conditional Filters
+**Before:**
+```java
+for (String item : items) {
+    if (item != null) {
+        if (item.length() > 5) {
+            System.out.println(item);
+        }
+    }
+}
+```
+
+**After:**
+```java
+items.stream()
+    .filter(item -> (item != null))
+    .filter(item -> (item.length() > 5))
+    .forEachOrdered(item -> {
+        System.out.println(item);
+    });
+```
+
+#### Increment Counter
+**Before:**
+```java
+int count = 0;
+for (String s : list) {
+    count += 1;
+}
+```
+
+**After:**
+```java
+int count = list.stream()
+    .map(_item -> 1)
+    .reduce(0, Integer::sum);
+```
+
+#### Mapped Reduction
+**Before:**
+```java
+int sum = 0;
+for (Integer l : list) {
+    sum += foo(l);
+}
+```
+
+**After:**
+```java
+int sum = list.stream()
+    .map(l -> foo(l))
+    .reduce(0, Integer::sum);
+```
+
+## Not Yet Supported
+
+The following patterns are currently **not supported** and are marked `@Disabled` in the test suite:
+
+| Pattern Description                                 | Reason / Required Feature                          |
+|-----------------------------------------------------|-----------------------------------------------------|
+| `Map.put(...)` inside loop                          | Needs `Collectors.toMap(...)` support               |
+| Early `break` inside loop body                      | Requires stream short-circuit modeling (`findFirst()`) |
+| Labeled `continue` or `break` (`label:`)            | Not expressible via Stream API                     |
+| Complex `if-else-return` branches                   | Requires flow graph and branching preservation      |
+| `throw` inside loop                                 | Non-convertible – not compatible with Stream flow  |
+| Multiple accumulators in one loop                   | State mutation not easily transferable              |
+
+These patterns are intentionally **excluded from transformation** to maintain semantic correctness and safety.
+
+## Java Version Compatibility
+
+| API Used                      | Requires Java |
+|-------------------------------|---------------|
+| `Stream`, `map`, `filter`     | Java 8+       |
+| `forEach`, `forEachOrdered`   | Java 8+       |
+| `anyMatch`, `noneMatch`, `allMatch` | Java 8+ |
+| `reduce`                      | Java 8+       |
+| `Collectors.toList()`         | Java 8+       |
+
+This cleanup is designed for **Java 8+** projects and uses only APIs available since Java 8.
 
 ## Architecture
 
