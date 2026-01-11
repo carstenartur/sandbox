@@ -1,5 +1,7 @@
 # Sandbox Common Module - TODO
 
+> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#common) | [Architecture](ARCHITECTURE.md)
+
 ## Status Summary
 
 **Current State**: Stable foundation module with improved documentation

@@ -1,5 +1,7 @@
 # Platform Helper Plugin - TODO
 
+> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#platform_helper) | [Architecture](ARCHITECTURE.md)
+
 ## Status Summary
 
 **Current State**: Stable implementation for Status object simplification

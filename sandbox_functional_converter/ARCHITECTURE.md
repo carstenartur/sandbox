@@ -1,5 +1,7 @@
 # Functional Loop Converter - Architecture
 
+> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#functional_converter) | [TODO](TODO.md)
+
 ## Overview
 The functional loop converter transforms imperative enhanced for-loops into functional Java 8 Stream pipelines. This document describes the architecture and implementation details of the `StreamPipelineBuilder` approach.
 

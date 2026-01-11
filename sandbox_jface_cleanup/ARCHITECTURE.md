@@ -1,5 +1,7 @@
 # JFace Cleanup Plugin - Architecture
 
+> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#jface_cleanup) | [TODO](TODO.md)
+
 ## Overview
 
 The JFace cleanup plugin provides automated refactorings and modernizations for Eclipse JFace code. JFace is Eclipse's UI toolkit built on top of SWT (Standard Widget Toolkit).

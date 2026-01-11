@@ -1,5 +1,7 @@
 # XML Cleanup Plugin - TODO
 
+> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#xml_cleanup) | [Architecture](ARCHITECTURE.md)
+
 ## Status Summary
 
 **Current State**: Functional PDE XML cleanup implementation with size optimization focus

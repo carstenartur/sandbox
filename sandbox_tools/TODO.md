@@ -1,5 +1,7 @@
 # Sandbox Tools Plugin - TODO
 
+> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#tools) | [Architecture](ARCHITECTURE.md)
+
 ## Status Summary
 
 **Current State**: Reference implementation - feature merged into Eclipse JDT

@@ -1,5 +1,7 @@
 # Usage View Plugin - Architecture
 
+> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#usage_view) | [TODO](TODO.md)
+
 ## Overview
 
 The usage view plugin provides a table view for detecting inconsistent naming patterns in code. This tool helps developers identify naming inconsistencies that could lead to bugs or confusion.

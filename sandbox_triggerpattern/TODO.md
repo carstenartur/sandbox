@@ -1,5 +1,7 @@
 # TriggerPattern String Simplification Plugin - TODO
 
+> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#triggerpattern) | [Architecture](ARCHITECTURE.md)
+
 ## Status Summary
 
 **Current State**: Full cleanup and save action support implemented

@@ -1,5 +1,7 @@
 # JUnit Cleanup Plugin Architecture
 
+> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#junit_cleanup) | [TODO](TODO.md)
+
 ## Overview
 
 The JUnit cleanup plugin provides automated migration from JUnit 3/4 to JUnit 5 (Jupiter). This document describes the architecture after the refactoring that extracted helper classes from the monolithic `AbstractTool` class.

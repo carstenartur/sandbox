@@ -1,5 +1,7 @@
 # JUnit Cleanup Plugin - TODO (Missing File Created)
 
+> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#junit_cleanup) | [Architecture](ARCHITECTURE.md)
+
 This file was missing from the sandbox_junit_cleanup plugin. It has been created to satisfy the repository documentation requirements.
 
 ## Status Summary
