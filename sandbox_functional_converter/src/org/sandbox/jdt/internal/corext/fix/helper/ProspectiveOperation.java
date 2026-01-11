@@ -29,9 +29,7 @@ import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
-import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
-import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 
 /**
@@ -367,11 +365,12 @@ public final class ProspectiveOperation {
 
 		List<Expression> args = new ArrayList<>();
 
-		if (operationType == OperationType.REDUCE) {
+		// REDUCE has special argument handling
+		if (operationType.hasSpecialArgumentHandling()) {
 			return getArgumentsForReducer(ast);
 		}
 
-		// Create lambda expression for MAP, FILTER, FOREACH, ANYMATCH, NONEMATCH
+		// Create lambda expression for MAP, FILTER, FOREACH, ANYMATCH, NONEMATCH, ALLMATCH
 		LambdaExpression lambda = ast.newLambdaExpression();
 
 		// Create parameter with defensive null check
@@ -390,60 +389,15 @@ public final class ProspectiveOperation {
 		// For single parameter without type annotation, don't use parentheses
 		lambda.setParentheses(false);
 
-		// Create lambda body based on operation type
-		// Check for side-effect MAP operations FIRST (originalStatement != null with loopVariableName)
-		// These need a block body with return statement
-		if (operationType == OperationType.MAP && originalStatement != null && loopVariableName != null) {
-			// For MAP with side-effect statement: create block with statement and return
-			// This handles cases like: System.out.println() that need to return the loop variable
-			org.eclipse.jdt.core.dom.Block block = ast.newBlock();
-			
-			// Handle Block statements specially - copy statements from the block
-			if (originalStatement instanceof org.eclipse.jdt.core.dom.Block) {
-				org.eclipse.jdt.core.dom.Block originalBlock = (org.eclipse.jdt.core.dom.Block) originalStatement;
-				for (Object stmt : originalBlock.statements()) {
-					block.statements().add(ASTNode.copySubtree(ast, (Statement) stmt));
-				}
-			} else {
-				block.statements().add(ASTNode.copySubtree(ast, originalStatement));
-			}
-
-			// Add return statement to return the current pipeline variable
-			ReturnStatement returnStmt = ast.newReturnStatement();
-			returnStmt.setExpression(ast.newSimpleName(loopVariableName));
-			block.statements().add(returnStmt);
-
-			lambda.setBody(block);
-		} else if (operationType == OperationType.MAP && originalExpression != null) {
-			// For MAP with expression only: lambda body is just the expression
-			// This handles variable declarations like: int squared = num * num
-			lambda.setBody(ASTNode.copySubtree(ast, originalExpression));
-		} else if (operationType == OperationType.FILTER && originalExpression != null) {
-			// For FILTER: wrap condition in parentheses only if needed
-			// PrefixExpression with NOT already has proper precedence, no extra parens needed
-			lambda.setBody(createPredicateLambdaBody(ast, originalExpression));
-		} else if ((operationType == OperationType.ANYMATCH 
-				|| operationType == OperationType.NONEMATCH 
-				|| operationType == OperationType.ALLMATCH) && originalExpression != null) {
-			// For ANYMATCH/NONEMATCH/ALLMATCH: same handling as FILTER (predicates)
-			lambda.setBody(createPredicateLambdaBody(ast, originalExpression));
-		} else if (operationType == OperationType.FOREACH && originalExpression != null 
-				&& originalStatement instanceof org.eclipse.jdt.core.dom.ExpressionStatement) {
-			// For FOREACH with a single expression (from ExpressionStatement):
-			// Use the expression directly as lambda body (without block) for cleaner code
-			// This produces: l -> System.out.println(l) instead of l -> { System.out.println(l); }
-			lambda.setBody(ASTNode.copySubtree(ast, originalExpression));
-		} else if (operationType == OperationType.FOREACH && originalStatement != null) {
-			// For FOREACH with other statement types: lambda body is the statement (as block)
-			if (originalStatement instanceof org.eclipse.jdt.core.dom.Block) {
-				lambda.setBody(ASTNode.copySubtree(ast, originalStatement));
-			} else {
-				org.eclipse.jdt.core.dom.Block block = ast.newBlock();
-				block.statements().add(ASTNode.copySubtree(ast, originalStatement));
-				lambda.setBody(block);
-			}
+		// Create lambda body using OperationType delegation
+		OperationType.LambdaBodyContext context = new OperationType.LambdaBodyContext(
+				originalExpression, originalStatement, loopVariableName);
+		ASTNode lambdaBody = operationType.createLambdaBody(ast, context);
+		
+		if (lambdaBody != null) {
+			lambda.setBody(lambdaBody);
 		} else if (originalExpression != null) {
-			// Default: use expression as body
+			// Fallback: use expression as body
 			lambda.setBody(ASTNode.copySubtree(ast, originalExpression));
 		} else {
 			// Defensive: neither originalExpression nor originalStatement is available
@@ -656,76 +610,5 @@ public final class ProspectiveOperation {
 	public String toString() {
 		return "ProspectiveOperation{" + "expression=" + originalExpression + ", operationType=" + operationType
 				+ ", neededVariables=" + neededVariables + '}';
-	}
-
-	/**
-	 * Types of stream operations that can be extracted from loop bodies.
-	 * 
-	 * <p>Each operation type corresponds to a specific stream method:
-	 * <ul>
-	 * <li><b>MAP</b>: Transforms elements ({@code .map(x -> f(x))}). 
-	 *     Example: {@code String s = item.toString();} → {@code .map(item -> item.toString())}</li>
-	 * <li><b>FILTER</b>: Selects elements based on a predicate ({@code .filter(x -> condition)}). 
-	 *     Example: {@code if (item != null)} → {@code .filter(item -> item != null)}</li>
-	 * <li><b>FOREACH</b>: Terminal operation performing an action on each element ({@code .forEachOrdered(x -> action(x))}). 
-	 *     Example: {@code System.out.println(item);} → {@code .forEachOrdered(item -> System.out.println(item))}</li>
-	 * <li><b>REDUCE</b>: Terminal accumulation operation ({@code .reduce(identity, accumulator)}). 
-	 *     Example: {@code sum += item;} → {@code .reduce(sum, Integer::sum)}</li>
-	 * <li><b>ANYMATCH</b>: Terminal predicate returning true if any element matches ({@code .anyMatch(x -> condition)}). 
-	 *     Example: {@code if (condition) return true;} → {@code if (stream.anyMatch(x -> condition)) return true;}</li>
-	 * <li><b>NONEMATCH</b>: Terminal predicate returning true if no elements match ({@code .noneMatch(x -> condition)}). 
-	 *     Example: {@code if (condition) return false;} → {@code if (!stream.noneMatch(x -> condition)) return false;}</li>
-	 * <li><b>ALLMATCH</b>: Terminal predicate returning true if all elements match ({@code .allMatch(x -> condition)}). 
-	 *     Example: {@code if (!condition) return false;} → {@code if (!stream.allMatch(x -> condition)) return false;}</li>
-	 * </ul>
-	 * 
-	 * @see #getMethodName()
-	 * @see StreamConstants
-	 */
-	public enum OperationType {
-		MAP(StreamConstants.MAP_METHOD),
-		FOREACH(StreamConstants.FOR_EACH_ORDERED_METHOD),
-		FILTER(StreamConstants.FILTER_METHOD),
-		REDUCE(StreamConstants.REDUCE_METHOD),
-		ANYMATCH(StreamConstants.ANY_MATCH_METHOD),
-		NONEMATCH(StreamConstants.NONE_MATCH_METHOD),
-		ALLMATCH(StreamConstants.ALL_MATCH_METHOD);
-
-		private final String methodName;
-
-		OperationType(String methodName) {
-			this.methodName = methodName;
-		}
-
-		/**
-		 * Returns the stream method name for this operation type.
-		 * 
-		 * @return the method name (e.g., "map", "filter", "forEachOrdered", "reduce")
-		 */
-		public String getMethodName() {
-			return methodName;
-		}
-	}
-
-	/**
-	 * Creates a lambda body for predicate expressions (used by FILTER, ANYMATCH, NONEMATCH, ALLMATCH).
-	 * 
-	 * <p>
-	 * Wraps the expression in parentheses only for InfixExpressions (==, !=, >, <, etc.)
-	 * for clarity. Does NOT wrap:
-	 * <ul>
-	 * <li>PrefixExpression with NOT operator (already has proper precedence)</li>
-	 * <li>MethodInvocation (e.g., item.startsWith("valid"))</li>
-	 * <li>SimpleName (no need for parentheses)</li>
-	 * <li>BooleanLiteral (no need for parentheses)</li>
-	 * </ul>
-	 * 
-	 * @param ast the AST to create nodes in (must not be null)
-	 * @param expression the predicate expression (must not be null)
-	 * @return the lambda body expression, possibly wrapped in parentheses
-	 */
-	private Expression createPredicateLambdaBody(AST ast, Expression expression) {
-		LambdaGenerator generator = new LambdaGenerator(ast);
-		return generator.createPredicateLambdaBody(expression);
 	}
 }

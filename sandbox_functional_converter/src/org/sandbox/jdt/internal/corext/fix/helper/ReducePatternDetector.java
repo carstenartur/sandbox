@@ -479,7 +479,7 @@ public final class ReducePatternDetector {
 		if (ast == null) {
 			throw new IllegalArgumentException("ast cannot be null");
 		}
-		if (reduceOp.getOperationType() != ProspectiveOperation.OperationType.REDUCE) {
+		if (reduceOp.getOperationType() != OperationType.REDUCE) {
 			throw new IllegalArgumentException("reduceOp must be a REDUCE operation");
 		}
 
@@ -492,7 +492,7 @@ public final class ReducePatternDetector {
 				|| reducerType == ReducerType.DECREMENT) {
 			// Create a MAP operation that maps each item to 1 (type-aware)
 			Expression mapExpr = createTypedLiteralOne(ast);
-			ProspectiveOperation mapOp = new ProspectiveOperation(mapExpr, ProspectiveOperation.OperationType.MAP,
+			ProspectiveOperation mapOp = new ProspectiveOperation(mapExpr, OperationType.MAP,
 					UNUSED_ITEM_NAME);
 			ops.add(mapOp);
 		} else if (isArithmeticReducer(reducerType)) {
@@ -502,7 +502,7 @@ public final class ReducePatternDetector {
 				// Skip identity mapping: if the expression is just the current variable, don't add MAP
 				if (!ExpressionUtils.isIdentityMapping(mapExpression, currentVarName)) {
 					ProspectiveOperation mapOp = new ProspectiveOperation(mapExpression,
-							ProspectiveOperation.OperationType.MAP, currentVarName);
+							OperationType.MAP, currentVarName);
 					ops.add(mapOp);
 				}
 			}
@@ -512,7 +512,7 @@ public final class ReducePatternDetector {
 			Expression mapExpression = extractMathMaxMinArgument(stmt, accumulatorVariable, currentVarName);
 			if (mapExpression != null) {
 				ProspectiveOperation mapOp = new ProspectiveOperation(mapExpression,
-						ProspectiveOperation.OperationType.MAP, currentVarName);
+						OperationType.MAP, currentVarName);
 				ops.add(mapOp);
 			}
 		}

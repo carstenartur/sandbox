@@ -301,7 +301,7 @@ public class StreamPipelineBuilder {
 	 * 
 	 * @param pipeline the stream pipeline to wrap (must not be null)
 	 * @return a Statement wrapping the pipeline, or null if pipeline is null
-	 * @see ProspectiveOperation.OperationType
+	 * @see OperationType
 	 * @see PipelineAssembler
 	 */
 	public Statement wrapPipeline(MethodInvocation pipeline) {
@@ -521,7 +521,7 @@ public class StreamPipelineBuilder {
 	 */
 	private boolean isAccumulatorVariable(String varName, List<ProspectiveOperation> operations) {
 		for (ProspectiveOperation op : operations) {
-			if (op.getOperationType() == ProspectiveOperation.OperationType.REDUCE) {
+					if (op.getOperationType() == OperationType.REDUCE) {
 				if (varName.equals(op.getAccumulatorVariableName())) {
 					return true;
 				}

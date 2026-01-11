@@ -79,7 +79,7 @@ public class TerminalStatementHandler implements StatementHandler {
 
 		// Regular FOREACH operation
 		ProspectiveOperation forEachOp = new ProspectiveOperation(stmt,
-				ProspectiveOperation.OperationType.FOREACH, currentVarName);
+				OperationType.FOREACH, currentVarName);
 		ops.add(forEachOp);
 		
 		return new LoopBodyParser.ParseResult(currentVarName);

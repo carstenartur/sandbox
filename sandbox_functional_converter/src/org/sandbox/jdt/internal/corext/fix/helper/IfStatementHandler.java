@@ -141,7 +141,7 @@ public class IfStatementHandler implements StatementHandler {
 			Expression negatedCondition = ExpressionUtils.createNegatedExpression(
 					context.getAst(), ifStmt.getExpression());
 			ProspectiveOperation filterOp = new ProspectiveOperation(negatedCondition,
-					ProspectiveOperation.OperationType.FILTER);
+					OperationType.FILTER);
 			ops.add(filterOp);
 			return true;
 		}
@@ -159,7 +159,7 @@ public class IfStatementHandler implements StatementHandler {
 
 		// Add FILTER operation for the condition
 		ProspectiveOperation filterOp = new ProspectiveOperation(ifStmt.getExpression(),
-				ProspectiveOperation.OperationType.FILTER);
+				OperationType.FILTER);
 		ops.add(filterOp);
 
 		// Process the body of the IF statement recursively

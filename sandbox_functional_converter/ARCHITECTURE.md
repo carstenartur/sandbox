@@ -145,17 +145,57 @@ public Statement wrapPipeline(MethodInvocation pipeline)
 **Location**: `org.sandbox.jdt.internal.corext.fix.helper.ProspectiveOperation`
 **Purpose**: Represents a single stream operation in the pipeline
 
-#### Operation Types
+Uses the standalone `OperationType` and `ReducerType` enums to define operation behavior.
+
+#### Key Methods
+- `getArguments(AST, paramName)` - Returns lambda expression/method reference for the operation
+- `getReducerType()` - Returns accumulator variable for REDUCE operations
+- `getProducedVariableName()` - Returns the variable name produced by MAP operations
+
+### 5. OperationType (Standalone Enum)
+**Location**: `org.sandbox.jdt.internal.corext.fix.helper.OperationType`
+**Purpose**: Types of stream operations with built-in lambda body creation
+
+Each enum value encapsulates its own logic for creating the appropriate lambda body
+for the stream operation. The enum uses a `LambdaBodyContext` record to receive
+necessary context information.
+
 ```java
-enum OperationType {
-    MAP,        // Transform: x -> f(x)
-    FILTER,     // Predicate: x -> condition
-    FOREACH,    // Terminal action: x -> action(x)
-    REDUCE,     // Terminal accumulation: (acc, x) -> acc op x
-    ANYMATCH,   // Terminal match: x -> condition (returns true if any match)
-    NONEMATCH   // Terminal match: x -> condition (returns true if none match)
+public enum OperationType {
+    MAP(StreamConstants.MAP_METHOD) {
+        @Override
+        public ASTNode createLambdaBody(AST ast, LambdaBodyContext context) {
+            // Handle side-effect MAP and expression MAP
+        }
+    },
+    FOREACH(StreamConstants.FOR_EACH_ORDERED_METHOD),
+    FILTER(StreamConstants.FILTER_METHOD),
+    REDUCE(StreamConstants.REDUCE_METHOD),  // Has special argument handling
+    ANYMATCH(StreamConstants.ANY_MATCH_METHOD),
+    NONEMATCH(StreamConstants.NONE_MATCH_METHOD),
+    ALLMATCH(StreamConstants.ALL_MATCH_METHOD);
+    
+    // Each type implements:
+    public abstract ASTNode createLambdaBody(AST ast, LambdaBodyContext context);
+    public String getMethodName();
+    public boolean hasSpecialArgumentHandling();
+    public boolean isPredicate();
+    public boolean isTerminal();
+    
+    // Context record for lambda body creation:
+    public record LambdaBodyContext(
+        Expression originalExpression,
+        Statement originalStatement,
+        String loopVariableName
+    ) { }
 }
 ```
+
+#### Benefits of Standalone OperationType
+- **Full Encapsulation**: Each operation type contains logic to create its lambda body
+- **Minimal Dependencies**: Only requires `AST` and context information
+- **Open/Closed Principle**: New operation types can be added without modifying `ProspectiveOperation`
+- **Helper Methods**: `isPredicate()`, `isTerminal()`, `hasSpecialArgumentHandling()` for type checking
 
 ### 5. ReducerType (Standalone Enum)
 **Location**: `org.sandbox.jdt.internal.corext.fix.helper.ReducerType`

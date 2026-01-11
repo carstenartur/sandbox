@@ -77,7 +77,7 @@ public class NonTerminalStatementHandler implements StatementHandler {
 
 		// Create a MAP operation with side effect that returns the current variable
 		ProspectiveOperation mapOp = new ProspectiveOperation(stmt,
-				ProspectiveOperation.OperationType.MAP, currentVarName);
+				OperationType.MAP, currentVarName);
 		ops.add(mapOp);
 
 		return new LoopBodyParser.ParseResult(currentVarName);

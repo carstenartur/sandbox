@@ -118,7 +118,7 @@ public class SideEffectChecker {
 	 */
 	private boolean isAccumulatorVariable(String varName, List<ProspectiveOperation> operations) {
 		for (ProspectiveOperation op : operations) {
-			if (op.getOperationType() == ProspectiveOperation.OperationType.REDUCE) {
+				if (op.getOperationType() == OperationType.REDUCE) {
 				if (varName.equals(op.getAccumulatorVariableName())) {
 					return true;
 				}

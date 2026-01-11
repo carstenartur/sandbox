@@ -76,7 +76,7 @@ public class VariableDeclarationHandler implements StatementHandler {
 		
 		// Create MAP operation for the variable declaration
 		ProspectiveOperation mapOp = new ProspectiveOperation(frag.getInitializer(),
-				ProspectiveOperation.OperationType.MAP, newVarName);
+				OperationType.MAP, newVarName);
 		ops.add(mapOp);
 
 		// Check if we need to wrap remaining non-terminal statements in a MAP
@@ -208,7 +208,7 @@ public class VariableDeclarationHandler implements StatementHandler {
 		}
 
 		ProspectiveOperation sideEffectMapOp = new ProspectiveOperation(mapBlock,
-				ProspectiveOperation.OperationType.MAP, newVarName);
+				OperationType.MAP, newVarName);
 		ops.add(sideEffectMapOp);
 
 		return new LoopBodyParser.ParseResult(newVarName, statements.size() - 2);

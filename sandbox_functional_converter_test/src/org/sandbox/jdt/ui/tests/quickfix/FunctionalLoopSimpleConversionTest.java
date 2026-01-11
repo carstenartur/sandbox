@@ -76,7 +76,7 @@ public class FunctionalLoopSimpleConversionTest {
 	 * }
 	 * </pre>
 	 * 
-	 * @see org.sandbox.jdt.internal.corext.fix.helper.ProspectiveOperation.OperationType#FOREACH
+	 * @see org.sandbox.jdt.internal.corext.fix.helper.OperationType#FOREACH
 	 */
 	@Test
 	void test_SimpleForEachConversion() throws CoreException {

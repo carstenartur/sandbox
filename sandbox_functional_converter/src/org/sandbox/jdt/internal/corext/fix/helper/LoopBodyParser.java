@@ -151,7 +151,7 @@ public class LoopBodyParser {
 		// Check if the entire block should be treated as a single forEach
 		if (shouldTreatAsSimpleForEach(statements, loopVarName)) {
 			ProspectiveOperation forEachOp = new ProspectiveOperation(block,
-					ProspectiveOperation.OperationType.FOREACH, loopVarName);
+					OperationType.FOREACH, loopVarName);
 			ops.add(forEachOp);
 			return ops;
 		}
@@ -227,7 +227,7 @@ public class LoopBodyParser {
 			ops.add(matchOp);
 		} else {
 			ProspectiveOperation filterOp = new ProspectiveOperation(ifStmt.getExpression(),
-					ProspectiveOperation.OperationType.FILTER);
+					OperationType.FILTER);
 			ops.add(filterOp);
 
 			List<ProspectiveOperation> nestedOps = parse(ifStmt.getThenStatement(), currentVarName);
@@ -253,7 +253,7 @@ public class LoopBodyParser {
 			return new ArrayList<>();
 		} else {
 			ProspectiveOperation forEachOp = new ProspectiveOperation(body,
-					ProspectiveOperation.OperationType.FOREACH, currentVarName);
+					OperationType.FOREACH, currentVarName);
 			ops.add(forEachOp);
 		}
 		return ops;
@@ -266,7 +266,7 @@ public class LoopBodyParser {
 			String currentVarName, boolean updateVarName, String loopVarName) {
 		
 		ProspectiveOperation filterOp = new ProspectiveOperation(ifStmt.getExpression(),
-				ProspectiveOperation.OperationType.FILTER);
+				OperationType.FILTER);
 		ops.add(filterOp);
 
 		List<ProspectiveOperation> nestedOps = parse(ifStmt.getThenStatement(), currentVarName);

@@ -111,7 +111,7 @@ public class AssignmentMapHandler implements StatementHandler {
 		Expression rhs = assignment.getRightHandSide();
 		
 		ProspectiveOperation mapOp = new ProspectiveOperation(rhs,
-				ProspectiveOperation.OperationType.MAP, varName);
+				OperationType.MAP, varName);
 		ops.add(mapOp);
 		
 		// Return the same variable name since the assignment doesn't change the variable name

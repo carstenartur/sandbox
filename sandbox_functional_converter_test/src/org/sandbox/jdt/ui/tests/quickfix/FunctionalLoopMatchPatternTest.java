@@ -46,9 +46,9 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
  * 
  * @see org.sandbox.jdt.internal.ui.fix.UseFunctionalLoopCleanUp
  * @see org.sandbox.jdt.internal.corext.fix.helper.StreamPipelineBuilder
- * @see org.sandbox.jdt.internal.corext.fix.helper.ProspectiveOperation.OperationType#ANYMATCH
- * @see org.sandbox.jdt.internal.corext.fix.helper.ProspectiveOperation.OperationType#NONEMATCH
- * @see org.sandbox.jdt.internal.corext.fix.helper.ProspectiveOperation.OperationType#ALLMATCH
+ * @see org.sandbox.jdt.internal.corext.fix.helper.OperationType#ANYMATCH
+ * @see org.sandbox.jdt.internal.corext.fix.helper.OperationType#NONEMATCH
+ * @see org.sandbox.jdt.internal.corext.fix.helper.OperationType#ALLMATCH
  */
 public class FunctionalLoopMatchPatternTest {
 

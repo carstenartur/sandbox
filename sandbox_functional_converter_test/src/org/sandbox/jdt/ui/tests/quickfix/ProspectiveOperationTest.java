@@ -26,8 +26,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.sandbox.jdt.internal.corext.fix.helper.OperationType;
 import org.sandbox.jdt.internal.corext.fix.helper.ProspectiveOperation;
-import org.sandbox.jdt.internal.corext.fix.helper.ProspectiveOperation.OperationType;
 import org.sandbox.jdt.internal.corext.fix.helper.ReducerType;
 import org.sandbox.jdt.internal.corext.fix.helper.StreamConstants;
 

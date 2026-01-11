@@ -47,7 +47,7 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
  * 
  * @see org.sandbox.jdt.internal.ui.fix.UseFunctionalLoopCleanUp
  * @see org.sandbox.jdt.internal.corext.fix.helper.StreamPipelineBuilder
- * @see org.sandbox.jdt.internal.corext.fix.helper.ProspectiveOperation.OperationType#REDUCE
+ * @see org.sandbox.jdt.internal.corext.fix.helper.OperationType#REDUCE
  */
 public class FunctionalLoopReducerTest {
 

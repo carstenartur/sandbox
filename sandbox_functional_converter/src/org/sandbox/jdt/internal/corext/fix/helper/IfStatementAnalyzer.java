@@ -54,7 +54,7 @@ import org.eclipse.jdt.core.dom.Statement;
  * }</pre>
  * 
  * @see StreamPipelineBuilder
- * @see ProspectiveOperation.OperationType
+ * @see OperationType
  */
 public final class IfStatementAnalyzer {
 
@@ -391,16 +391,16 @@ public final class IfStatementAnalyzer {
 			return null;
 		}
 
-		ProspectiveOperation.OperationType opType;
+		OperationType opType;
 		switch (detectedPattern) {
 		case ANY_MATCH:
-			opType = ProspectiveOperation.OperationType.ANYMATCH;
+			opType = OperationType.ANYMATCH;
 			break;
 		case NONE_MATCH:
-			opType = ProspectiveOperation.OperationType.NONEMATCH;
+			opType = OperationType.NONEMATCH;
 			break;
 		case ALL_MATCH:
-			opType = ProspectiveOperation.OperationType.ALLMATCH;
+			opType = OperationType.ALLMATCH;
 			break;
 		default:
 			return null;

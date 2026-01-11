@@ -46,8 +46,8 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
  * 
  * @see org.sandbox.jdt.internal.ui.fix.UseFunctionalLoopCleanUp
  * @see org.sandbox.jdt.internal.corext.fix.helper.StreamPipelineBuilder
- * @see org.sandbox.jdt.internal.corext.fix.helper.ProspectiveOperation.OperationType#FILTER
- * @see org.sandbox.jdt.internal.corext.fix.helper.ProspectiveOperation.OperationType#MAP
+ * @see org.sandbox.jdt.internal.corext.fix.helper.OperationType#FILTER
+ * @see org.sandbox.jdt.internal.corext.fix.helper.OperationType#MAP
  */
 public class FunctionalLoopFilterMapTest {
 

@@ -186,18 +186,18 @@ public class PipelineAssembler {
 		}
 
 		// Check for match operations
-		if (hasOperationType(ProspectiveOperation.OperationType.ANYMATCH)) {
+		if (hasOperationType(OperationType.ANYMATCH)) {
 			return wrapAnyMatch(pipeline);
 		}
-		if (hasOperationType(ProspectiveOperation.OperationType.NONEMATCH)) {
+		if (hasOperationType(OperationType.NONEMATCH)) {
 			return wrapNegatedMatch(pipeline, false);
 		}
-		if (hasOperationType(ProspectiveOperation.OperationType.ALLMATCH)) {
+		if (hasOperationType(OperationType.ALLMATCH)) {
 			return wrapNegatedMatch(pipeline, false);
 		}
 
 		// Check for REDUCE operation
-		if (hasOperationType(ProspectiveOperation.OperationType.REDUCE)) {
+		if (hasOperationType(OperationType.REDUCE)) {
 			return wrapReduce(pipeline);
 		}
 
@@ -266,7 +266,7 @@ public class PipelineAssembler {
 			return true;
 		}
 		return operations.size() > 1
-				|| operations.get(0).getOperationType() != ProspectiveOperation.OperationType.FOREACH;
+				|| operations.get(0).getOperationType() != OperationType.FOREACH;
 	}
 
 	/**
@@ -285,7 +285,7 @@ public class PipelineAssembler {
 	/**
 	 * Checks if any operation has the given type.
 	 */
-	private boolean hasOperationType(ProspectiveOperation.OperationType type) {
+	private boolean hasOperationType(OperationType type) {
 		return operations.stream()
 				.anyMatch(op -> op.getOperationType() == type);
 	}
