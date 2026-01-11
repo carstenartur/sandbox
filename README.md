@@ -2375,24 +2375,30 @@ This repository contains extensive documentation organized at multiple levels to
 
 Each plugin has dedicated documentation in its module directory:
 
-| Plugin | Architecture | TODO | Test Docs |
-|--------|--------------|------|-----------|
-| [Cleanup Application](sandbox_cleanup_application) | [ARCHITECTURE.md](sandbox_cleanup_application/ARCHITECTURE.md) | [TODO.md](sandbox_cleanup_application/TODO.md) | - |
-| [Common Infrastructure](sandbox_common) | [ARCHITECTURE.md](sandbox_common/ARCHITECTURE.md) | [TODO.md](sandbox_common/TODO.md) | [TESTING.md](sandbox_common_test/TESTING.md) |
-| [Encoding Quickfix](sandbox_encoding_quickfix) | [ARCHITECTURE.md](sandbox_encoding_quickfix/ARCHITECTURE.md) | [TODO.md](sandbox_encoding_quickfix/TODO.md) | - |
-| [Extra Search](sandbox_extra_search) | [ARCHITECTURE.md](sandbox_extra_search/ARCHITECTURE.md) | [TODO.md](sandbox_extra_search/TODO.md) | - |
-| [Functional Converter](sandbox_functional_converter) | [ARCHITECTURE.md](sandbox_functional_converter/ARCHITECTURE.md) | [TODO.md](sandbox_functional_converter/TODO.md) | - |
-| [JFace Cleanup](sandbox_jface_cleanup) | [ARCHITECTURE.md](sandbox_jface_cleanup/ARCHITECTURE.md) | [TODO.md](sandbox_jface_cleanup/TODO.md) | - |
-| [JUnit Cleanup](sandbox_junit_cleanup) | [ARCHITECTURE.md](sandbox_junit_cleanup/ARCHITECTURE.md) | [TODO.md](sandbox_junit_cleanup/TODO.md) | [TESTING.md](sandbox_junit_cleanup_test/TESTING.md) |
-| [Method Reuse](sandbox_method_reuse) | [ARCHITECTURE.md](sandbox_method_reuse/ARCHITECTURE.md) | [TODO.md](sandbox_method_reuse/TODO.md) | - |
-| [Oomph Setup](sandbox_oomph) | [ARCHITECTURE.md](sandbox_oomph/ARCHITECTURE.md) | [TODO.md](sandbox_oomph/TODO.md) | - |
-| [Platform Helper](sandbox_platform_helper) | [ARCHITECTURE.md](sandbox_platform_helper/ARCHITECTURE.md) | [TODO.md](sandbox_platform_helper/TODO.md) | - |
-| [Tools](sandbox_tools) | [ARCHITECTURE.md](sandbox_tools/ARCHITECTURE.md) | [TODO.md](sandbox_tools/TODO.md) | - |
-| [Trigger Pattern](sandbox_triggerpattern) | [ARCHITECTURE.md](sandbox_triggerpattern/ARCHITECTURE.md) | [TODO.md](sandbox_triggerpattern/TODO.md) | - |
-| [Usage View](sandbox_usage_view) | [ARCHITECTURE.md](sandbox_usage_view/ARCHITECTURE.md) | [TODO.md](sandbox_usage_view/TODO.md) | - |
-| [XML Cleanup](sandbox_xml_cleanup) | [ARCHITECTURE.md](sandbox_xml_cleanup/ARCHITECTURE.md) | [TODO.md](sandbox_xml_cleanup/TODO.md) | - |
+| Plugin | README | Architecture | TODO | Test Docs |
+|--------|--------|--------------|------|-----------|
+| [Cleanup Application](sandbox_cleanup_application) | [README.md](sandbox_cleanup_application/README.md) | [ARCHITECTURE.md](sandbox_cleanup_application/ARCHITECTURE.md) | [TODO.md](sandbox_cleanup_application/TODO.md) | - |
+| [Common Infrastructure](sandbox_common) | [README.md](sandbox_common/README.md) | [ARCHITECTURE.md](sandbox_common/ARCHITECTURE.md) | [TODO.md](sandbox_common/TODO.md) | [TESTING.md](sandbox_common_test/TESTING.md) |
+| [Coverage](sandbox_coverage) | [README.md](sandbox_coverage/README.md) | [ARCHITECTURE.md](sandbox_coverage/ARCHITECTURE.md) | [TODO.md](sandbox_coverage/TODO.md) | - |
+| [Encoding Quickfix](sandbox_encoding_quickfix) | [README.md](sandbox_encoding_quickfix/README.md) | [ARCHITECTURE.md](sandbox_encoding_quickfix/ARCHITECTURE.md) | [TODO.md](sandbox_encoding_quickfix/TODO.md) | - |
+| [Extra Search](sandbox_extra_search) | [README.md](sandbox_extra_search/README.md) | [ARCHITECTURE.md](sandbox_extra_search/ARCHITECTURE.md) | [TODO.md](sandbox_extra_search/TODO.md) | - |
+| [Functional Converter](sandbox_functional_converter) | [README.md](sandbox_functional_converter/README.md) | [ARCHITECTURE.md](sandbox_functional_converter/ARCHITECTURE.md) | [TODO.md](sandbox_functional_converter/TODO.md) | - |
+| [JFace Cleanup](sandbox_jface_cleanup) | [README.md](sandbox_jface_cleanup/README.md) | [ARCHITECTURE.md](sandbox_jface_cleanup/ARCHITECTURE.md) | [TODO.md](sandbox_jface_cleanup/TODO.md) | - |
+| [JUnit Cleanup](sandbox_junit_cleanup) | [README.md](sandbox_junit_cleanup/README.md) | [ARCHITECTURE.md](sandbox_junit_cleanup/ARCHITECTURE.md) | [TODO.md](sandbox_junit_cleanup/TODO.md) | [TESTING.md](sandbox_junit_cleanup_test/TESTING.md) |
+| [Method Reuse](sandbox_method_reuse) | [README.md](sandbox_method_reuse/README.md) | [ARCHITECTURE.md](sandbox_method_reuse/ARCHITECTURE.md) | [TODO.md](sandbox_method_reuse/TODO.md) | - |
+| [Oomph Setup](sandbox_oomph) | [README.md](sandbox_oomph/README.md) | [ARCHITECTURE.md](sandbox_oomph/ARCHITECTURE.md) | [TODO.md](sandbox_oomph/TODO.md) | - |
+| [Platform Helper](sandbox_platform_helper) | [README.md](sandbox_platform_helper/README.md) | [ARCHITECTURE.md](sandbox_platform_helper/ARCHITECTURE.md) | [TODO.md](sandbox_platform_helper/TODO.md) | - |
+| [Product](sandbox_product) | [README.md](sandbox_product/README.md) | [ARCHITECTURE.md](sandbox_product/ARCHITECTURE.md) | [TODO.md](sandbox_product/TODO.md) | - |
+| [Target Platform](sandbox_target) | [README.md](sandbox_target/README.md) | [ARCHITECTURE.md](sandbox_target/ARCHITECTURE.md) | [TODO.md](sandbox_target/TODO.md) | - |
+| [Test Commons](sandbox_test_commons) | [README.md](sandbox_test_commons/README.md) | [ARCHITECTURE.md](sandbox_test_commons/ARCHITECTURE.md) | [TODO.md](sandbox_test_commons/TODO.md) | - |
+| [Tools](sandbox_tools) | [README.md](sandbox_tools/README.md) | [ARCHITECTURE.md](sandbox_tools/ARCHITECTURE.md) | [TODO.md](sandbox_tools/TODO.md) | - |
+| [Trigger Pattern](sandbox_triggerpattern) | [README.md](sandbox_triggerpattern/README.md) | [ARCHITECTURE.md](sandbox_triggerpattern/ARCHITECTURE.md) | [TODO.md](sandbox_triggerpattern/TODO.md) | - |
+| [Usage View](sandbox_usage_view) | [README.md](sandbox_usage_view/README.md) | [ARCHITECTURE.md](sandbox_usage_view/ARCHITECTURE.md) | [TODO.md](sandbox_usage_view/TODO.md) | - |
+| [Web (P2 Update Site)](sandbox_web) | [README.md](sandbox_web/README.md) | [ARCHITECTURE.md](sandbox_web/ARCHITECTURE.md) | [TODO.md](sandbox_web/TODO.md) | - |
+| [XML Cleanup](sandbox_xml_cleanup) | [README.md](sandbox_xml_cleanup/README.md) | [ARCHITECTURE.md](sandbox_xml_cleanup/ARCHITECTURE.md) | [TODO.md](sandbox_xml_cleanup/TODO.md) | - |
 
 **Documentation Structure per Plugin:**
+- **README.md** - Quick start guide, features overview, and usage examples
 - **ARCHITECTURE.md** - Design overview, implementation details, patterns used
 - **TODO.md** - Pending features, known issues, future enhancements
 - **TESTING.md** (where applicable) - Test organization, coverage, and running instructions
@@ -2418,16 +2424,18 @@ Each plugin has dedicated documentation in its module directory:
 
 When contributing to this project, please maintain documentation quality:
 
-1. **Plugin Requirements**: All plugin directories MUST contain:
+1. **Plugin Requirements**: All plugin directories SHOULD contain:
+   - `README.md` - Quick start guide with features and usage examples
    - `ARCHITECTURE.md` - Design and implementation overview
    - `TODO.md` - Open tasks and future work
    
 2. **Navigation Headers**: All plugin documentation files include navigation headers linking to:
-   - Main README
-   - Plugin section in main README
-   - Sibling documentation files (ARCHITECTURE ↔ TODO)
+   - Main README (this file)
+   - Plugin's own README (for ARCHITECTURE and TODO files)
+   - Sibling documentation files (README ↔ ARCHITECTURE ↔ TODO)
 
 3. **Update Documentation**: When making code changes:
+   - Update `README.md` if features or usage changes
    - Update `ARCHITECTURE.md` if design changes
    - Update `TODO.md` when completing tasks or identifying new ones
    - Update main README if adding/removing plugins
