@@ -98,6 +98,163 @@ Experimental JFace cleanup implementations. May benefit from community feedback 
 - Integration with Eclipse Platform cleanups
 - JFace databinding modernization
 
+## Integration Points
+
+### Eclipse JFace API Integration
+
+The plugin integrates with Eclipse JFace framework:
+
+1. **IProgressMonitor API**: Works with progress monitoring infrastructure
+   - `SubProgressMonitor` (deprecated) → `SubMonitor` (modern)
+   - Integrates with Eclipse jobs framework
+   - Respects cancellation requests
+
+2. **JFace Dialogs and Wizards**: Cleanup applies to:
+   - Dialog creation code
+   - Wizard page progress tracking
+   - Long-running operations in UI context
+
+3. **SWT/JFace Integration**: Understanding of:
+   - Display thread requirements
+   - AsyncExec and SyncExec patterns
+   - Resource disposal patterns
+
+### Eclipse JDT AST Integration
+
+The cleanup uses Eclipse JDT's AST (Abstract Syntax Tree) framework:
+
+1. **AST Visitor Pattern**: Traverses compilation units to find `SubProgressMonitor` usage
+   - Visits `ClassInstanceCreation` nodes
+   - Identifies `new SubProgressMonitor(...)` patterns
+   - Checks binding types for exact match
+
+2. **AST Rewrite**: Transforms code while preserving formatting
+   - Replaces `beginTask()` + `SubProgressMonitor` with `SubMonitor.convert()` + `split()`
+   - Updates variable types (`IProgressMonitor` → `SubMonitor`)
+   - Adds `SubMonitor` imports automatically
+
+3. **Type Binding**: Resolves types accurately
+   - Distinguishes `SubProgressMonitor` from other classes
+   - Handles fully qualified names vs. simple names
+   - Verifies inheritance hierarchy
+
+### Cleanup Framework Integration
+
+Registered as Eclipse JDT cleanup:
+
+1. **Extension Point**: `org.eclipse.jdt.ui.cleanUps`
+   - Cleanup ID: Defined in `MYCleanUpConstants`
+   - Appears in Eclipse cleanup preferences UI
+   - Can be enabled in Save Actions
+
+2. **CompilationUnitRewriteOperation**: Uses standard cleanup API
+   - Integrates with Eclipse's refactoring framework
+   - Supports undo/redo
+   - Batch processing across multiple files
+
+## Algorithms and Design Decisions
+
+### Idempotent Transformation Design
+
+**Decision**: Ensure cleanup can run multiple times safely
+
+**Rationale**:
+- Users may run cleanup multiple times
+- Save Actions trigger on every save
+- Should not break already-migrated code
+
+**Implementation**:
+```
+1. Check if code already uses SubMonitor → skip
+2. Check if beginTask() call exists → only then convert
+3. Verify SubProgressMonitor pattern → don't change unrelated code
+```
+
+**Test**: Run cleanup twice, second run changes nothing
+
+### Variable Name Conflict Resolution
+
+**Decision**: Generate unique variable names when conflicts exist
+
+**Algorithm**:
+```
+1. Preferred name: "subMonitor"
+2. If "subMonitor" exists:
+   - Try "subMonitor2", "subMonitor3", etc.
+   - Or use descriptor-based name if available
+3. Update all references to use new name
+```
+
+**Example**:
+```java
+// Original - conflicts with existing subMonitor
+SubMonitor subMonitor = ...; // existing code
+monitor.beginTask("Task", 100);
+IProgressMonitor sub = new SubProgressMonitor(monitor, 60);
+
+// After cleanup - generates subMonitor2
+SubMonitor subMonitor = ...; // existing code preserved
+SubMonitor subMonitor2 = SubMonitor.convert(monitor, "Task", 100);
+IProgressMonitor sub = subMonitor2.split(60);
+```
+
+**Rationale**: Avoids compilation errors while maintaining readable names
+
+### Style Flag Preservation
+
+**Decision**: Preserve `SubProgressMonitor` style flags in `split()` call
+
+**Rationale**:
+- `SubProgressMonitor` accepts style flags (SUPPRESS_SUBTASK_LABEL, etc.)
+- `SubMonitor.split()` accepts same flags
+- Semantics should be preserved
+
+**Transformation**:
+```java
+// Before
+new SubProgressMonitor(monitor, 60, SubProgressMonitor.SUPPRESS_SUBTASK_LABEL)
+
+// After
+subMonitor.split(60, SubMonitor.SUPPRESS_SUBTASK_LABEL)
+```
+
+### Why Convert beginTask() → SubMonitor.convert()?
+
+**Decision**: Replace `beginTask()` call with `SubMonitor.convert()`
+
+**Rationale**:
+- `SubMonitor.convert()` returns `SubMonitor` instance
+- Original `beginTask()` returns void (less useful)
+- `SubMonitor` provides better API (split, setWorkRemaining, etc.)
+- Consistent pattern: one conversion point, multiple split calls
+
+**Alternative Considered**: Keep `beginTask()`, only change `SubProgressMonitor`
+- **Rejected**: Would create mixed API usage (old + new)
+- **Rejected**: Misses opportunity to modernize progress tracking
+
+## Cross-References
+
+### Root README Sections
+
+This architecture document relates to:
+
+- [7. `sandbox_jface_cleanup`](../README.md#7-sandbox_jface_cleanup) - User-facing documentation
+- [Build Instructions](../README.md#build-instructions) - How to build and test
+- [Eclipse Version Configuration](../README.md#eclipse-version-configuration) - JFace APIs from Eclipse 2025-09
+
+### Related Modules
+
+- **sandbox_common** - Uses `MYCleanUpConstants` for cleanup IDs
+- **Eclipse JFace** - Target API being modernized
+- **sandbox_jface_cleanup_test** - Comprehensive test cases for transformations
+
+## References
+
+- [SubMonitor API Documentation](https://help.eclipse.org/latest/topic/org.eclipse.platform.doc.isv/reference/api/org/eclipse/core/runtime/SubMonitor.html)
+- [SubProgressMonitor (Deprecated)](https://help.eclipse.org/latest/topic/org.eclipse.platform.doc.isv/reference/api/org/eclipse/core/runtime/SubProgressMonitor.html)
+- [Eclipse Progress Reporting Guide](https://help.eclipse.org/latest/topic/org.eclipse.platform.doc.isv/guide/runtime_progress.htm)
+- [JDT Cleanup Framework](https://help.eclipse.org/latest/topic/org.eclipse.jdt.doc.isv/guide/jdt_api_cleanup.htm)
+
 ## Documentation Requirements
 
 ### Feature Properties

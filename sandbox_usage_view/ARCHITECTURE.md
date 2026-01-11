@@ -111,18 +111,227 @@ Separates display (view) from analysis (model):
 - Model performs naming analysis
 - Clean separation for testability
 
-### Observer Pattern
-View updates when analysis completes or editor changes:
-- Asynchronous analysis
-- Progress reporting
-- Result streaming
+### Observer Pattern (IPartListener2)
+The view implements `IPartListener2` to respond to editor changes:
+- Listens for editor activation events
+- Updates view content when editor selection changes
+- Automatically refreshes when switching files
+- Provides real-time feedback as developer navigates code
 - **IPartListener2** for editor event monitoring
 
-### Preference-Based Initialization
-Startup behavior controlled by user preference:
-- Check preference at startup
-- Conditionally show view
-- Non-blocking initialization
+### Lazy Initialization Pattern (IStartup)
+The startup component uses lazy initialization:
+- Implements IStartup for controlled early activation
+- Only shows view if user preference is enabled
+- Uses Display.asyncExec to avoid blocking Eclipse startup
+- Minimizes impact on startup time
+
+### Preference Store Pattern
+Configuration management follows Eclipse preference patterns:
+- `PreferenceConstants` class defines preference keys
+- `PreferenceInitializer` sets defaults
+- `UsageViewPreferencePage` provides UI for configuration
+- Changes persist across Eclipse sessions
+
+## Integration Points
+
+### Eclipse Workbench Integration
+
+The usage view integrates with Eclipse's workbench framework:
+
+1. **ViewPart Extension**: Extends `org.eclipse.ui.part.ViewPart`
+   - Registered in plugin.xml as `org.eclipse.ui.views` extension
+   - Appears in Window → Show View → Other → Java category
+   - Supports perspective-based visibility
+   - Can be docked, minimized, or detached
+
+2. **IPartListener2**: Tracks editor lifecycle events
+   - `partActivated()` - Triggered when editor gains focus
+   - `partBroughtToTop()` - Triggered when editor tab selected
+   - `partClosed()` - Cleans up when editor closed
+   - Enables automatic view content updates
+
+3. **IStartup Extension**: Early plugin activation
+   - Registered in plugin.xml as `org.eclipse.ui.startup` extension
+   - Runs after workbench fully initialized
+   - Checks preferences before showing view
+   - Asynchronous execution prevents blocking startup
+
+### Eclipse JDT Integration
+
+Integrates with Eclipse JDT for code analysis:
+
+1. **IJavaElement API**: Navigates Java model
+   - Analyzes types, methods, fields from Java model
+   - Resolves bindings for accurate naming analysis
+   - Respects project structure and dependencies
+
+2. **ICompilationUnit**: Accesses source code
+   - Reads Java files for naming analysis
+   - Works with both saved and unsaved editors
+   - Handles AST parsing for detailed analysis
+
+3. **Editor Integration**: Synchronizes with Java editor
+   - Responds to editor activation via IPartListener2
+   - Detects current file and cursor position
+   - Updates view based on active Java file
+
+### Eclipse Preferences Integration
+
+Uses Eclipse's preference framework:
+
+1. **IPreferenceStore**: Stores configuration
+   - Plugin-scoped preferences (workspace-level)
+   - Persisted in `.metadata/.plugins/.../prefs`
+   - Accessed via `UsageViewPlugin.getDefault().getPreferenceStore()`
+
+2. **PreferencePage Extension**: Provides UI
+   - Registered under Java preferences category
+   - Standard Eclipse preference page styling
+   - Immediate feedback (no restart required)
+
+3. **PreferenceInitializer**: Sets defaults
+   - Runs on first plugin activation
+   - Provides sensible default values
+   - Used when preferences not yet saved
+
+## Algorithms and Design Decisions
+
+### Auto-Show at Startup Strategy
+
+**Decision**: Conditionally show view at startup based on user preference
+
+**Algorithm**:
+```
+1. Eclipse calls IStartup.earlyStartup()
+2. Check preference: PREF_AUTO_SHOW_ON_STARTUP
+3. If true:
+   - Use Display.asyncExec for non-blocking execution
+   - Call workbench.getActiveWorkbenchWindow().getActivePage()
+   - Call showView(VIEW_ID)
+4. If false: Do nothing
+```
+
+**Rationale**:
+- Users who rely on view want it always visible
+- Users who don't use it shouldn't see it unexpectedly
+- Preference provides control without code changes
+
+**Trade-offs**:
+- **Pro**: User choice (opt-in or opt-out)
+- **Pro**: No performance impact if disabled
+- **Con**: Requires user to know preference exists
+- **Con**: Adds startup code even when disabled (minimal impact)
+
+### Automatic View Update Strategy
+
+**Decision**: Update view content when editor activates
+
+**Algorithm**:
+```
+1. User switches to different Java file
+2. IPartListener2.partActivated() called
+3. Extract ICompilationUnit from editor
+4. Analyze naming patterns in new file
+5. Update table viewer with new results
+6. Maintain scroll position if possible
+```
+
+**Rationale**:
+- Context-sensitive feedback (shows issues for current file)
+- Developer sees relevant information immediately
+- Reduces manual refresh actions
+
+**Trade-offs**:
+- **Pro**: Always up-to-date with current file
+- **Pro**: Less cognitive load (automatic)
+- **Con**: Analysis may take time for large files
+- **Con**: Could be distracting if switching files frequently
+
+**Optimization**: Cache results per file to avoid re-analysis
+
+### Naming Pattern Detection Algorithm
+
+**Decision**: Use heuristic-based pattern matching
+
+**Patterns Detected**:
+```
+1. Inconsistent Case:
+   - userId vs userID
+   - XML vs xml
+   - HTTP vs Http
+
+2. Abbreviation Inconsistencies:
+   - id vs identifier
+   - num vs number
+   - temp vs temporary
+
+3. Prefix/Suffix Mismatches:
+   - m_field vs field
+   - _field vs field
+   - fieldName vs name_field
+```
+
+**Algorithm**:
+```
+1. Collect all identifiers (variables, methods, fields)
+2. Group by semantic similarity (e.g., edit distance or other heuristics)
+3. Within each group, check casing consistency
+4. Flag items that deviate from group pattern
+5. Rank violations by severity
+```
+
+**Note**: The algorithm description above is conceptual. The actual implementation may use different similarity metrics and should be verified in the source code.
+
+**Rationale**:
+- Catches common naming mistakes
+- Helps enforce team coding standards
+- Identifies potential confusion sources
+
+### Why Table View Instead of Markers?
+
+**Decision**: Display results in custom table view instead of Eclipse markers
+
+**Alternative Considered**: Use Eclipse problem markers (like compiler errors)
+
+**Chosen Approach - Table View**:
+- **Pro**: Can show custom columns (pattern, suggestion, etc.)
+- **Pro**: Can sort/filter/group dynamically
+- **Pro**: Doesn't clutter Problems view with style issues
+- **Pro**: User can close when not needed
+
+**Alternative - Markers**:
+- **Pro**: Integrated with Eclipse's problem navigation
+- **Pro**: Appears in Problems view automatically
+- **Con**: Mixes style issues with real errors/warnings
+- **Con**: Limited customization of display format
+- **Con**: Can't easily group or categorize
+
+**Decision**: Table view provides better UX for naming analysis
+
+## Cross-References
+
+### Root README Sections
+
+This architecture document relates to:
+
+- [4. `sandbox_usage_view`](../README.md#4-sandbox_usage_view) - User-facing description
+- [Eclipse Version Configuration](../README.md#eclipse-version-configuration) - Uses Eclipse 2025-09 APIs
+- [Build Instructions](../README.md#build-instructions) - How to build and test
+
+### Related Modules
+
+- **sandbox_common** - Could share naming analysis utilities
+- **sandbox_extra_search** - Similar view-based plugin architecture
+- **Eclipse JDT UI** - Editor integration APIs
+- **Eclipse Workbench** - ViewPart and IStartup frameworks
+
+## References
+
+- [Eclipse ViewPart Guide](https://help.eclipse.org/latest/topic/org.eclipse.platform.doc.isv/guide/workbench_basicext_views.htm)
+- [IPartListener2 API](https://help.eclipse.org/latest/topic/org.eclipse.platform.doc.isv/reference/api/org/eclipse/ui/IPartListener2.html)
+- [IStartup Extension](https://help.eclipse.org/latest/topic/org.eclipse.platform.doc.isv/reference/extension-points/org_eclipse_ui_startup.html)
+- [Eclipse Preferences Guide](https://help.eclipse.org/latest/topic/org.eclipse.platform.doc.isv/guide/preferences.htm)
 
 ## Eclipse JDT Integration
 
