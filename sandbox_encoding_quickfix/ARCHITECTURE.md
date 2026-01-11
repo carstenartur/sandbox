@@ -52,22 +52,44 @@ List<String> lines = Files.readAllLines(path, StandardCharsets.UTF_8);
 - `rewrite()` - Applies transformations to add explicit charset parameters
 - `createRewriteOperations()` - Generates AST rewrite operations
 
-### Supported APIs
+## Supported APIs - Technical Details
 
-The plugin supports explicit encoding for:
+The plugin supports explicit encoding for a comprehensive set of Java APIs:
 
-1. **FileReader/FileWriter Constructors** (Java 11+)
-2. **Files.readAllLines()** methods
-3. **Files.readString()** methods (Java 11+)
-4. **Files.writeString()** methods (Java 11+)
-5. **Scanner** constructors
-6. **PrintWriter** constructors
-7. **InputStreamReader/OutputStreamWriter** constructors
+| Class / API | Encoding Behavior | Cleanup Action |
+|-------------|------------------|----------------|
+| `OutputStreamWriter` | Requires explicit encoding | Replace `"UTF-8"` or add missing `StandardCharsets.UTF_8` |
+| `InputStreamReader` | Same | Add `StandardCharsets.UTF_8` where missing |
+| `FileReader` / `FileWriter` | Implicit platform encoding | Replace with stream + `InputStreamReader` + charset |
+| `Scanner(InputStream)` | Platform encoding | Add charset constructor if available (Java 10+) |
+| `PrintWriter(OutputStream)` | Platform encoding | Use new constructor with charset if possible |
+| `Files.newBufferedReader(Path)` | Platform encoding by default | Use overload with charset |
+| `Files.newBufferedWriter(Path)` | Same | Use overload with charset |
+| `Files.readAllLines(Path)` | Platform encoding | Use `readAllLines(path, charset)` if available |
+| `Files.readString(Path)` | Available since Java 11 / 21+ | Use with charset overload |
+| `Charset.forName("UTF-8")` | Literal resolution | Replace with `StandardCharsets.UTF_8` |
+| `Channels.newReader(...)` | Charset overload available since Java 11 | Use it when applicable |
+| `InputSource.setEncoding(String)` | Not a stream – SAX API | Replace string literal `"UTF-8"` with constant if possible |
 
 ### Version Compatibility
 
-- **Java 11+**: Full support for all transformations
-- **Java 7**: No longer supported (Eclipse no longer supports Java 7)
+The cleanup implements Java version-aware transformations:
+
+| Java Version | Supported Transformations |
+|--------------|---------------------------|
+| **Java < 7** | Cleanup is **disabled** – `StandardCharsets` not available |
+| **Java 7–10** | Basic replacements using `StandardCharsets.UTF_8`, stream wrapping, and exception removal |
+| **Java 11+** | Adds support for `Files.newBufferedReader(path, charset)` and `Channels.newReader(...)` |
+| **Java 21+** | Enables usage of `Files.readString(...)` and `Files.writeString(...)` with charset |
+
+### Cleanup Mode × Java Version Matrix
+
+| Java Version | Prefer UTF-8 | Keep Behavior | Aggregate UTF-8 | Files.readString / Channels |
+|--------------|--------------|---------------|-----------------|----------------------------|
+| Java 7       | ✅            | ✅             | ✅               | ❌                          |
+| Java 10      | ✅            | ✅             | ✅               | ❌                          |
+| Java 11–20   | ✅            | ✅             | ✅               | ✅                          |
+| Java 21+     | ✅            | ✅             | Optional        | ✅ (modern API encouraged)  |
 
 The cleanup checks the project's Java version and only applies transformations available in that version.
 
@@ -81,6 +103,29 @@ The cleanup checks the project's Java version and only applies transformations a
 - Can be ported by replacing `sandbox` with `eclipse` in package paths
 
 ## Design Patterns
+
+### Cleanup Strategy Implementation
+
+The plugin implements three strategies for handling encoding transformations:
+
+#### Strategy Pattern
+Each cleanup strategy is implemented as a separate configuration:
+- **PREFER_UTF8**: Aggressively replaces all platform-default and explicit UTF-8 references
+- **KEEP**: Conservative approach, only replaces explicit `"UTF-8"` string literals
+- **AGGREGATE**: Creates a class-level constant and redirects all references to it
+
+#### Charset Literal Recognition
+
+The cleanup recognizes these standard charset string literals:
+
+| String Literal | Replacement Constant |
+|----------------|---------------------|
+| `"UTF-8"` | `StandardCharsets.UTF_8` |
+| `"US-ASCII"` | `StandardCharsets.US_ASCII` |
+| `"ISO-8859-1"` | `StandardCharsets.ISO_8859_1` |
+| `"UTF-16"` | `StandardCharsets.UTF_16` |
+| `"UTF-16BE"` | `StandardCharsets.UTF_16BE` |
+| `"UTF-16LE"` | `StandardCharsets.UTF_16LE` |
 
 ### AST Visitor Pattern
 Uses Eclipse JDT's AST visitor to identify encoding-related API calls:
@@ -143,12 +188,20 @@ public void testFileReaderTransformation() {
 }
 ```
 
+### Test Files Referenced
+- `Java22/ExplicitEncodingPatterns.java`
+- `Java10/ExplicitEncodingPatternsPreferUTF8.java`
+- `Java10/ExplicitEncodingPatternsKeepBehavior.java`
+- `Java10/ExplicitEncodingPatternsAggregateUTF8.java`
+- `Java10/ExplicitEncodingCleanUpTest.java`
+
 ## Known Limitations
 
-1. **Only UTF-8**: Currently only adds `StandardCharsets.UTF_8`, not other charsets
-2. **Java 11+ Only**: No support for Java 7/8 (aligned with current Eclipse support)
-3. **No Custom Encoding Detection**: Doesn't detect when custom encoding is already specified
-4. **No Charset Configuration**: Users cannot choose which charset to apply
+1. **Dynamic Encodings**: Encodings read from configuration files or variables are left untouched
+2. **Aggregation Field Conflicts**: Aggregation introduces class-level fields (may require conflict checks)
+3. **Non-I/O Encoding Usage**: Cleanup logic avoids modifying non-I/O encoding usages
+4. **Only Standard Charsets**: Currently only handles charsets available in `StandardCharsets`
+5. **No Custom Encoding Detection**: Doesn't detect when custom encoding is already properly specified
 
 ## Future Enhancements
 
