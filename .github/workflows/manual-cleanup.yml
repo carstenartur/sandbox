@@ -1,0 +1,129 @@
+# Manual Code Cleanup Workflow
+# This workflow can be manually triggered to apply cleanup to any branch
+# Useful for running cleanup on-demand or on specific branches
+
+name: Manual Cleanup
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to apply cleanup to (leave empty for current branch)'
+        required: false
+        type: string
+      cleanup_profile:
+        description: 'Cleanup profile to use'
+        required: true
+        type: choice
+        default: 'standard'
+        options:
+          - minimal
+          - standard
+          - aggressive
+      commit_changes:
+        description: 'Commit and push changes'
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v6
+      with:
+        ref: ${{ inputs.branch || github.ref }}
+        fetch-depth: 0
+        
+    - name: Set cleanup options (minimal)
+      if: inputs.cleanup_profile == 'minimal'
+      run: |
+        echo "CLEANUP_FORMAT=true" >> $GITHUB_ENV
+        echo "CLEANUP_ORGANIZE_IMPORTS=true" >> $GITHUB_ENV
+        echo "CLEANUP_REMOVE_UNUSED_IMPORTS=true" >> $GITHUB_ENV
+        echo "CLEANUP_USE_BLOCKS=false" >> $GITHUB_ENV
+        echo "CLEANUP_USE_LAMBDA=false" >> $GITHUB_ENV
+        
+    - name: Set cleanup options (standard)
+      if: inputs.cleanup_profile == 'standard'
+      run: |
+        echo "CLEANUP_FORMAT=true" >> $GITHUB_ENV
+        echo "CLEANUP_ORGANIZE_IMPORTS=true" >> $GITHUB_ENV
+        echo "CLEANUP_REMOVE_UNUSED_IMPORTS=true" >> $GITHUB_ENV
+        echo "CLEANUP_USE_BLOCKS=true" >> $GITHUB_ENV
+        echo "CLEANUP_REMOVE_CASTS=true" >> $GITHUB_ENV
+        echo "CLEANUP_ADD_OVERRIDE=true" >> $GITHUB_ENV
+        echo "CLEANUP_USE_LAMBDA=true" >> $GITHUB_ENV
+        
+    - name: Set cleanup options (aggressive)
+      if: inputs.cleanup_profile == 'aggressive'
+      run: |
+        echo "CLEANUP_FORMAT=true" >> $GITHUB_ENV
+        echo "CLEANUP_ORGANIZE_IMPORTS=true" >> $GITHUB_ENV
+        echo "CLEANUP_REMOVE_UNUSED_IMPORTS=true" >> $GITHUB_ENV
+        echo "CLEANUP_USE_BLOCKS=true" >> $GITHUB_ENV
+        echo "CLEANUP_REMOVE_CASTS=true" >> $GITHUB_ENV
+        echo "CLEANUP_REMOVE_UNUSED_MEMBERS=true" >> $GITHUB_ENV
+        echo "CLEANUP_REMOVE_UNUSED_VARIABLES=true" >> $GITHUB_ENV
+        echo "CLEANUP_ADD_OVERRIDE=true" >> $GITHUB_ENV
+        echo "CLEANUP_ADD_DEPRECATED=true" >> $GITHUB_ENV
+        echo "CLEANUP_USE_LAMBDA=true" >> $GITHUB_ENV
+        echo "CLEANUP_CONVERT_FUNCTIONAL=true" >> $GITHUB_ENV
+        echo "CLEANUP_SIMPLIFY_BOOLEAN=true" >> $GITHUB_ENV
+        
+    - name: Run Eclipse JDT Cleanup
+      uses: nbauma109/refactoring-cleanup-action@v2
+      with:
+        project_root: '.'
+        source_level: '21'
+        cleanup_format_source_code: ${{ env.CLEANUP_FORMAT }}
+        cleanup_organize_imports: ${{ env.CLEANUP_ORGANIZE_IMPORTS }}
+        cleanup_remove_unused_imports: ${{ env.CLEANUP_REMOVE_UNUSED_IMPORTS }}
+        cleanup_use_blocks: ${{ env.CLEANUP_USE_BLOCKS }}
+        cleanup_remove_unnecessary_casts: ${{ env.CLEANUP_REMOVE_CASTS }}
+        cleanup_remove_unused_private_members: ${{ env.CLEANUP_REMOVE_UNUSED_MEMBERS }}
+        cleanup_remove_unused_local_variables: ${{ env.CLEANUP_REMOVE_UNUSED_VARIABLES }}
+        cleanup_add_missing_override_annotations: ${{ env.CLEANUP_ADD_OVERRIDE }}
+        cleanup_add_missing_deprecated_annotations: ${{ env.CLEANUP_ADD_DEPRECATED }}
+        cleanup_use_lambda: ${{ env.CLEANUP_USE_LAMBDA }}
+        cleanup_convert_functional_interfaces: ${{ env.CLEANUP_CONVERT_FUNCTIONAL }}
+        cleanup_simplify_boolean_return: ${{ env.CLEANUP_SIMPLIFY_BOOLEAN }}
+        
+    - name: Show changes
+      run: |
+        echo "=== Git Status ==="
+        git status
+        echo ""
+        echo "=== Changed Files ==="
+        git diff --name-only
+        
+    - name: Commit and push changes
+      if: inputs.commit_changes
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "🔧 Apply ${{ inputs.cleanup_profile }} cleanup profile
+
+          Cleanup profile: ${{ inputs.cleanup_profile }}
+          Manually triggered by: @${{ github.actor }}"
+          git push
+          echo "✅ Changes committed and pushed"
+        else
+          echo "ℹ️ No changes to commit"
+        fi
+        
+    - name: Summary
+      run: |
+        echo "### Cleanup Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- **Profile:** ${{ inputs.cleanup_profile }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Branch:** ${{ inputs.branch || github.ref }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Commit changes:** ${{ inputs.commit_changes }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Triggered by:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,104 @@
+# Automatic PR Code Cleanup using Eclipse JDT
+# This workflow automatically applies Eclipse JDT cleanup transformations to pull requests
+# Uses the headless Eclipse JDT cleanup action for efficient processing
+
+name: Auto PR Cleanup
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    branches: [main]
+    paths:
+      - '**.java'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout PR branch
+      uses: actions/checkout@v6
+      with:
+        ref: ${{ github.event.pull_request.head.ref }}
+        repository: ${{ github.event.pull_request.head.repo.full_name }}
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+        
+    - name: Run Eclipse JDT Cleanup
+      uses: nbauma109/refactoring-cleanup-action@v2
+      with:
+        # Project configuration
+        project_root: '.'
+        source_level: '21'
+        
+        # Formatting
+        cleanup_format_source_code: true
+        cleanup_organize_imports: true
+        cleanup_remove_unused_imports: true
+        
+        # Code Style
+        cleanup_use_blocks: true
+        cleanup_always_use_blocks: true
+        
+        # Unnecessary Code
+        cleanup_remove_unnecessary_casts: true
+        cleanup_remove_unused_private_members: true
+        cleanup_remove_unused_local_variables: true
+        
+        # Missing Code
+        cleanup_add_missing_override_annotations: true
+        cleanup_add_missing_deprecated_annotations: true
+        
+        # Modernization
+        cleanup_use_lambda: true
+        cleanup_convert_functional_interfaces: true
+        cleanup_simplify_boolean_return: true
+        
+    - name: Check for changes
+      id: check_changes
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "has_changes=true" >> $GITHUB_OUTPUT
+          git status --short
+        else
+          echo "has_changes=false" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Commit and push changes
+      if: steps.check_changes.outputs.has_changes == 'true'
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add .
+        git commit -m "🤖 Apply Eclipse JDT cleanup transformations
+
+        Automated cleanup applied:
+        - Code formatting and import organization
+        - Adding missing @Override and @Deprecated annotations
+        - Removing unnecessary code (casts, unused variables)
+        - Modernizing code (lambdas, functional interfaces)
+        - Code style improvements"
+        git push
+        
+    - name: Comment on PR
+      if: steps.check_changes.outputs.has_changes == 'true'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '🤖 **Eclipse JDT Cleanup Applied**\n\n' +
+                  'Automated code cleanup has been applied to this PR:\n\n' +
+                  '- ✨ Code formatting and import organization\n' +
+                  '- 📝 Added missing annotations (@Override, @Deprecated)\n' +
+                  '- 🧹 Removed unnecessary code (casts, unused variables)\n' +
+                  '- 🚀 Modernized code (lambdas, functional interfaces)\n' +
+                  '- 💎 Code style improvements\n\n' +
+                  'Please review the changes.'
+          })
