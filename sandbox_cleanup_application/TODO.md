@@ -1,5 +1,7 @@
 # Cleanup Application - TODO
 
+> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#cleanup_application) | [Architecture](ARCHITECTURE.md)
+
 ## Status Summary
 
 **Current State**: Functional prototype with basic command-line interface

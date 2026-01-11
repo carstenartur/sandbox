@@ -1,5 +1,7 @@
 # Sandbox Common Module - Architecture
 
+> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#common) | [TODO](TODO.md)
+
 ## Overview
 
 The `sandbox_common` module provides shared utilities, constants, and base classes used across all sandbox cleanup plugins. This module serves as the foundation for the entire sandbox ecosystem.

@@ -1,5 +1,7 @@
 # Encoding Quickfix Plugin - Architecture
 
+> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#2-sandbox_encoding_quickfix) | [TODO](TODO.md) | [Test Documentation](../sandbox_encoding_quickfix_test/README.md)
+
 ## Overview
 
 The encoding quickfix plugin automatically replaces platform-dependent default encoding with explicit `StandardCharsets.UTF_8` encoding. This cleanup improves code portability and prevents encoding-related bugs across different platforms and locales.

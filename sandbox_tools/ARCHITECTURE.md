@@ -1,5 +1,7 @@
 # Sandbox Tools Plugin - Architecture
 
+> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#tools) | [TODO](TODO.md)
+
 ## Overview
 
 The sandbox tools plugin contains the While-to-For loop converter cleanup. This implementation was successfully contributed to and merged into the Eclipse JDT project. The module remains in the sandbox repository for reference and testing purposes.

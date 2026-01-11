@@ -1,15 +1,10 @@
 # JUnit Migration Test Suite Organization
 
-> **📍 This documentation has been moved!**  
-> Please see:
-> - [TESTING.md](../../../../../TESTING.md) in the module root for test organization
-> - [TODO_TESTING.md](../../../../../TODO_TESTING.md) for implementation tracking
->
-> These files are kept for backward compatibility and will be removed in a future version.
-
----
+> **Navigation**: [Main README](../README.md) | [sandbox_junit_cleanup Architecture](../sandbox_junit_cleanup/ARCHITECTURE.md) | [sandbox_junit_cleanup TODO](../sandbox_junit_cleanup/TODO.md) | [Testing TODO](TODO_TESTING.md)
 
 This directory contains tests for the JUnit 4→5 migration cleanup feature. The test suite has been reorganized into focused, aspect-based test classes for better clarity and maintainability.
+
+**Original Location**: This documentation was moved from `src/org/eclipse/jdt/ui/tests/quickfix/Java8/README.md` to improve discoverability.
 
 ## Test Class Organization
 
@@ -18,6 +13,8 @@ This directory contains tests for the JUnit 4→5 migration cleanup feature. The
 Each test class focuses on a specific aspect of JUnit migration:
 
 #### `MigrationAssertionsTest.java`
+**Location**: `src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationAssertionsTest.java`
+
 Tests for assertion migrations from JUnit 4 to JUnit 5.
 - **Coverage**: `Assert.*` → `Assertions.*` transformations
 - **Key scenarios**:
@@ -31,6 +28,8 @@ Tests for assertion migrations from JUnit 4 to JUnit 5.
   - Static imports (wildcard `.*` and explicit imports)
 
 #### `MigrationAssumptionsTest.java`
+**Location**: `src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationAssumptionsTest.java`
+
 Tests for assumption migrations.
 - **Coverage**: `Assume.*` → `Assumptions.*` transformations
 - **Key scenarios**:
@@ -40,6 +39,8 @@ Tests for assumption migrations.
   - Combined assumptions in single test
 
 #### `MigrationLifecycleTest.java`
+**Location**: `src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationLifecycleTest.java`
+
 Tests for test lifecycle annotation migrations.
 - **Coverage**: 
   - `@Before` → `@BeforeEach`
@@ -51,6 +52,8 @@ Tests for test lifecycle annotation migrations.
   - All lifecycle methods together in one class
 
 #### `MigrationIgnoreTest.java`
+**Location**: `src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationIgnoreTest.java`
+
 Tests for ignored test migrations.
 - **Coverage**: `@Ignore` → `@Disabled`
 - **Key scenarios**:
@@ -59,6 +62,8 @@ Tests for ignored test migrations.
   - Multiple ignored tests in same class
 
 #### `MigrationRulesToExtensionsTest.java`
+**Location**: `src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationRulesToExtensionsTest.java`
+
 Tests for JUnit 4 Rules → JUnit 5 Extensions migrations.
 - **Coverage**:
   - `TemporaryFolder` → `@TempDir` with `Path`
@@ -73,6 +78,8 @@ Tests for JUnit 4 Rules → JUnit 5 Extensions migrations.
 - **Note**: Anonymous ExternalResource migrations are covered by `JUnitCleanupCases.RuleAnonymousExternalResource` and `RuleNestedExternalResource` parameterized tests
 
 #### `MigrationRunnersTest.java`
+**Location**: `src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationRunnersTest.java`
+
 Tests for `@RunWith` migrations.
 - **Coverage**:
   - `@RunWith(Suite.class)` → `@Suite` with `@SelectClasses`
@@ -85,6 +92,8 @@ Tests for `@RunWith` migrations.
 - **Note**: Parameterized migration is complex and pending implementation
 
 #### `MigrationExceptionsTest.java`
+**Location**: `src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationExceptionsTest.java`
+
 Tests for exception handling migrations.
 - **Coverage** (all currently disabled):
   - `@Test(expected=Exception.class)` → `assertThrows()`
@@ -93,12 +102,16 @@ Tests for exception handling migrations.
 - **Note**: All tests disabled pending production code implementation
 
 #### `MigrationTestAnnotationTest.java`
+**Location**: `src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationTestAnnotationTest.java`
+
 Tests for `@Test` annotation migrations.
 - **Coverage**:
   - Basic `@Test` import change
   - *(Disabled)* `@Test(timeout=...)` → `@Timeout` annotation
 
 #### `MigrationCombinationsTest.java`
+**Location**: `src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationCombinationsTest.java`
+
 Tests for complex scenarios combining multiple migration features.
 - **Coverage**:
   - Full test class with all lifecycle methods, assertions, and `@Ignore`
@@ -109,12 +122,16 @@ Tests for complex scenarios combining multiple migration features.
 ## Legacy Test Files
 
 ### `JUnitMigrationCleanUpTest.java`
+**Location**: `src/org/eclipse/jdt/ui/tests/quickfix/Java8/JUnitMigrationCleanUpTest.java`
+
 The original test orchestrator that uses parameterized tests with enum-based test cases.
 - Contains integration tests with multiple cleanups enabled
 - Tests multi-file scenarios (ExternalResource transformations across files)
 - Tests edge cases like nested ExternalResource classes
 
 ### `JUnitCleanupCases.java`
+**Location**: `src/org/eclipse/jdt/ui/tests/quickfix/Java8/JUnitCleanupCases.java`
+
 Enum containing JUnit 4→5 migration test cases with given/expected pairs.
 - **Cases**:
   - `PositiveCase`: Comprehensive migration with all features
@@ -126,6 +143,8 @@ Enum containing JUnit 4→5 migration test cases with given/expected pairs.
   - `TestnameRule`: Combined TemporaryFolder + TestName
 
 ### `JUnit3CleanupCases.java`
+**Location**: `src/org/eclipse/jdt/ui/tests/quickfix/Java8/JUnit3CleanupCases.java`
+
 Enum containing JUnit 3→5 migration test cases (currently disabled).
 
 ## Test Naming Conventions

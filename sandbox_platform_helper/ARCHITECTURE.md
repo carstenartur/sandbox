@@ -1,5 +1,7 @@
 # Platform Helper Plugin - Architecture
 
+> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#platform_helper) | [TODO](TODO.md)
+
 ## Overview
 
 The platform helper plugin simplifies Eclipse Platform API usage, specifically focusing on Status object creation. It replaces verbose `new Status(...)` calls with cleaner factory methods available in Java 11+.

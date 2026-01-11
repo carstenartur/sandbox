@@ -125,6 +125,7 @@ All plugins are work-in-progress and intended for experimentation and learning.
   - [sandbox_method_reuse](#10-sandbox_method_reuse)
   - [sandbox_xml_cleanup](#11-sandbox_xml_cleanup)
 - [Installation](#installation)
+- [Documentation](#documentation)
 - [Contributing](#contributing)
 - [Release Process](#release-process)
 - [License](#license)
@@ -2356,6 +2357,99 @@ https://github.com/carstenartur/sandbox/raw/main
 > **Warning:**  
 > Use only with a fresh Eclipse installation that can be discarded after testing.  
 > It may break your setup. Don’t say you weren’t warned...
+---
+
+## Documentation
+
+This repository contains extensive documentation organized at multiple levels to help you understand, use, and contribute to the project.
+
+### 📚 Documentation Index
+
+#### Getting Started
+- **[README.md](README.md)** (this file) - Project overview, build instructions, and plugin descriptions
+- **[Build Instructions](#build-instructions)** - How to build the project with Maven/Tycho
+- **[Quickstart](#quickstart)** - Quick introduction to using the plugins
+- **[Installation](#installation)** - How to install plugins in Eclipse
+
+#### Plugin-Specific Documentation
+
+Each plugin has dedicated documentation in its module directory:
+
+| Plugin | Architecture | TODO | Test Docs |
+|--------|--------------|------|-----------|
+| [Cleanup Application](sandbox_cleanup_application) | [ARCHITECTURE.md](sandbox_cleanup_application/ARCHITECTURE.md) | [TODO.md](sandbox_cleanup_application/TODO.md) | - |
+| [Common Infrastructure](sandbox_common) | [ARCHITECTURE.md](sandbox_common/ARCHITECTURE.md) | [TODO.md](sandbox_common/TODO.md) | [TESTING.md](sandbox_common_test/TESTING.md) |
+| [Encoding Quickfix](sandbox_encoding_quickfix) | [ARCHITECTURE.md](sandbox_encoding_quickfix/ARCHITECTURE.md) | [TODO.md](sandbox_encoding_quickfix/TODO.md) | - |
+| [Extra Search](sandbox_extra_search) | [ARCHITECTURE.md](sandbox_extra_search/ARCHITECTURE.md) | [TODO.md](sandbox_extra_search/TODO.md) | - |
+| [Functional Converter](sandbox_functional_converter) | [ARCHITECTURE.md](sandbox_functional_converter/ARCHITECTURE.md) | [TODO.md](sandbox_functional_converter/TODO.md) | - |
+| [JFace Cleanup](sandbox_jface_cleanup) | [ARCHITECTURE.md](sandbox_jface_cleanup/ARCHITECTURE.md) | [TODO.md](sandbox_jface_cleanup/TODO.md) | - |
+| [JUnit Cleanup](sandbox_junit_cleanup) | [ARCHITECTURE.md](sandbox_junit_cleanup/ARCHITECTURE.md) | [TODO.md](sandbox_junit_cleanup/TODO.md) | [TESTING.md](sandbox_junit_cleanup_test/TESTING.md) |
+| [Method Reuse](sandbox_method_reuse) | [ARCHITECTURE.md](sandbox_method_reuse/ARCHITECTURE.md) | [TODO.md](sandbox_method_reuse/TODO.md) | - |
+| [Oomph Setup](sandbox_oomph) | [ARCHITECTURE.md](sandbox_oomph/ARCHITECTURE.md) | [TODO.md](sandbox_oomph/TODO.md) | - |
+| [Platform Helper](sandbox_platform_helper) | [ARCHITECTURE.md](sandbox_platform_helper/ARCHITECTURE.md) | [TODO.md](sandbox_platform_helper/TODO.md) | - |
+| [Tools](sandbox_tools) | [ARCHITECTURE.md](sandbox_tools/ARCHITECTURE.md) | [TODO.md](sandbox_tools/TODO.md) | - |
+| [Trigger Pattern](sandbox_triggerpattern) | [ARCHITECTURE.md](sandbox_triggerpattern/ARCHITECTURE.md) | [TODO.md](sandbox_triggerpattern/TODO.md) | - |
+| [Usage View](sandbox_usage_view) | [ARCHITECTURE.md](sandbox_usage_view/ARCHITECTURE.md) | [TODO.md](sandbox_usage_view/TODO.md) | - |
+| [XML Cleanup](sandbox_xml_cleanup) | [ARCHITECTURE.md](sandbox_xml_cleanup/ARCHITECTURE.md) | [TODO.md](sandbox_xml_cleanup/TODO.md) | - |
+
+**Documentation Structure per Plugin:**
+- **ARCHITECTURE.md** - Design overview, implementation details, patterns used
+- **TODO.md** - Pending features, known issues, future enhancements
+- **TESTING.md** (where applicable) - Test organization, coverage, and running instructions
+
+#### Test Infrastructure Documentation
+
+- **[HelperVisitor API Test Suite](sandbox_common_test/TESTING.md)** - Comprehensive guide to testing with HelperVisitor API
+- **[JUnit Migration Test Suite](sandbox_junit_cleanup_test/TESTING.md)** - Test organization for JUnit 4→5 migration
+- **[JUnit Migration Implementation Tracking](sandbox_junit_cleanup_test/TODO_TESTING.md)** - Missing features and bugs in migration cleanup
+
+#### Project Governance
+- **[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)** - Community guidelines
+- **[SECURITY.md](SECURITY.md)** - Security policy and vulnerability reporting
+- **[CONTRIBUTING.md](#contributing)** - How to contribute to this project
+- **[LICENSE.txt](LICENSE.txt)** - Eclipse Public License 2.0
+
+#### Additional Resources
+- **[TRIGGERPATTERN.md](sandbox_common/TRIGGERPATTERN.md)** - Pattern matching engine documentation
+- **[Eclipse Version Configuration](#eclipse-version-configuration)** - How to update Eclipse versions
+- **[Release Process](#release-process)** - How to create releases
+
+### 📖 Documentation Guidelines for Contributors
+
+When contributing to this project, please maintain documentation quality:
+
+1. **Plugin Requirements**: All plugin directories MUST contain:
+   - `ARCHITECTURE.md` - Design and implementation overview
+   - `TODO.md` - Open tasks and future work
+   
+2. **Navigation Headers**: All plugin documentation files include navigation headers linking to:
+   - Main README
+   - Plugin section in main README
+   - Sibling documentation files (ARCHITECTURE ↔ TODO)
+
+3. **Update Documentation**: When making code changes:
+   - Update `ARCHITECTURE.md` if design changes
+   - Update `TODO.md` when completing tasks or identifying new ones
+   - Update main README if adding/removing plugins
+
+4. **Test Documentation**: Test modules with substantial test organization should include:
+   - `TESTING.md` - Test structure and organization
+   - `TODO_TESTING.md` (if applicable) - Implementation tracking for features being tested
+
+### 🔍 Finding Documentation
+
+**By Topic:**
+- **Building & Setup**: [Build Instructions](#build-instructions), [Eclipse Version Configuration](#eclipse-version-configuration)
+- **Plugin Usage**: See [Projects](#projects) section for detailed descriptions of each plugin
+- **Architecture**: Check `ARCHITECTURE.md` in each plugin directory
+- **Testing**: [HelperVisitor API](sandbox_common_test/TESTING.md), [JUnit Migration](sandbox_junit_cleanup_test/TESTING.md)
+- **Contributing**: [Contributing](#contributing), [Release Process](#release-process)
+
+**By File Location:**
+- **Root level**: Project-wide documentation (this README, CODE_OF_CONDUCT, SECURITY)
+- **Plugin directories** (`sandbox_*/`): Plugin-specific ARCHITECTURE.md and TODO.md
+- **Test directories** (`sandbox_*_test/`): Test-specific TESTING.md and TODO_TESTING.md
+
 ---
 
 ## Contributing

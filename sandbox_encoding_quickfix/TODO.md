@@ -1,5 +1,7 @@
 # Encoding Quickfix Plugin - TODO
 
+> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#2-sandbox_encoding_quickfix) | [Architecture](ARCHITECTURE.md) | [Test Documentation](../sandbox_encoding_quickfix_test/README.md)
+
 ## Status Summary
 
 **Current State**: Stable implementation with comprehensive test coverage

@@ -1,5 +1,7 @@
 # JFace Cleanup Plugin - TODO
 
+> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#jface_cleanup) | [Architecture](ARCHITECTURE.md)
+
 ## Status Summary
 
 **Current State**: Experimental implementation for JFace code modernization

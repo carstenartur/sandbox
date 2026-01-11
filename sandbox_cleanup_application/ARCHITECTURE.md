@@ -1,5 +1,7 @@
 # Cleanup Application - Architecture
 
+> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#cleanup_application) | [TODO](TODO.md)
+
 ## Overview
 
 The **Cleanup Application** provides a command-line interface for running Eclipse JDT code cleanups on Java source files without launching the full Eclipse IDE. It's implemented as an Equinox application that leverages the Eclipse JDT cleanup framework to process Java files in batch mode.

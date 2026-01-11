@@ -1,5 +1,7 @@
 # Method Reusability Finder - Architecture
 
+> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#method_reuse) | [TODO](TODO.md)
+
 ## Overview
 
 The Method Reusability Finder is an Eclipse JDT cleanup plugin that analyzes selected methods to identify potentially reusable code patterns across the codebase. This helps developers discover duplicate or similar code that could be refactored to improve code quality and maintainability.

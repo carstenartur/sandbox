@@ -1,5 +1,7 @@
 # Oomph Setup - Architecture
 
+> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#oomph) | [TODO](TODO.md)
+
 ## Overview
 
 The **Oomph Module** (`sandbox_oomph`) contains Eclipse Oomph setup files that automate the configuration of a development environment for the sandbox project. Oomph is Eclipse's automated installation and configuration system.

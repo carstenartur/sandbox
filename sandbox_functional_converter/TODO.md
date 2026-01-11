@@ -1,5 +1,7 @@
 # Functional Loop Conversion - Implementation TODO
 
+> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#functional_converter) | [Architecture](ARCHITECTURE.md)
+
 ## Status Summary (December 2025 - Updated)
 
 **Current Milestone**: Full StreamPipelineBuilder Implementation + Code Cleanup + Enhanced Tests ✅ **COMPLETE**

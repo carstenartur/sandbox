@@ -1,5 +1,7 @@
 # TriggerPattern String Simplification Plugin - Architecture
 
+> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#triggerpattern) | [TODO](TODO.md)
+
 ## Overview
 
 This plugin demonstrates using the TriggerPattern hint engine to provide string simplification suggestions. Unlike traditional Eclipse cleanups that require substantial boilerplate code, this plugin uses declarative pattern matching to identify and suggest string-related improvements.

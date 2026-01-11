@@ -1,13 +1,10 @@
 # JUnit Migration Test Suite - Implementation Tracking
 
-> **📍 This documentation has been moved!**  
-> Please see [TODO_TESTING.md](../../../../../TODO_TESTING.md) in the module root for the current documentation.
->
-> This file is kept for backward compatibility and will be removed in a future version.
-
----
+> **Navigation**: [Main README](../README.md) | [Testing Guide](TESTING.md) | [sandbox_junit_cleanup Architecture](../sandbox_junit_cleanup/ARCHITECTURE.md) | [sandbox_junit_cleanup TODO](../sandbox_junit_cleanup/TODO.md)
 
 This document tracks missing features and bugs in the JUnit migration cleanup implementation that were discovered during test suite refactoring.
+
+**Original Location**: This documentation was moved from `src/org/eclipse/jdt/ui/tests/quickfix/Java8/TODO.md` to improve discoverability.
 
 ## 📋 Quick Summary (as of 2025-12-16)
 

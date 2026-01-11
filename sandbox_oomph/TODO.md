@@ -1,5 +1,7 @@
 # Oomph Setup - TODO
 
+> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#oomph) | [Architecture](ARCHITECTURE.md)
+
 ## Status Summary
 
 **Current State**: Basic Oomph setup available

@@ -1,13 +1,10 @@
 # HelperVisitor API Test Suite
 
-> **📍 This documentation has been moved!**  
-> Please see [TESTING.md](../../../../../TESTING.md) in the module root for the current documentation.
->
-> This file is kept for backward compatibility and will be removed in a future version.
-
----
+> **Navigation**: [Main README](../README.md) | [sandbox_common Architecture](../sandbox_common/ARCHITECTURE.md) | [sandbox_common TODO](../sandbox_common/TODO.md)
 
 This directory contains comprehensive tests for the HelperVisitor API, organized by functionality and use case. The test suite serves dual purposes: validating the API functionality and documenting its usage patterns.
+
+**Original Location**: This documentation was moved from `src/org/sandbox/jdt/ui/tests/quickfix/README.md` to improve discoverability.
 
 ## Test Organization
 
@@ -15,41 +12,41 @@ This directory contains comprehensive tests for the HelperVisitor API, organized
 
 For developers new to the HelperVisitor API, we recommend exploring the tests in this order:
 
-1. **[VisitorApiDocumentationTest](VisitorApiDocumentationTest.java)** - Start here!
+1. **[VisitorApiDocumentationTest](src/org/sandbox/jdt/ui/tests/quickfix/VisitorApiDocumentationTest.java)** - Start here!
    - Complete API overview with executable examples
    - Covers all major patterns and use cases
    - Includes comparison tables with traditional ASTVisitor
    - Best as a reference guide
 
-2. **[BasicVisitorUsageTest](BasicVisitorUsageTest.java)** - Essential patterns
+2. **[BasicVisitorUsageTest](src/org/sandbox/jdt/ui/tests/quickfix/BasicVisitorUsageTest.java)** - Essential patterns
    - Basic visitor registration and usage
    - Method references vs lambda expressions
    - Filtering by method name
    - Visit and visitEnd callbacks
    - Traditional vs modern approach comparison
 
-3. **[ReferenceHolderTest](ReferenceHolderTest.java)** - Data collection patterns
+3. **[ReferenceHolderTest](src/org/sandbox/jdt/ui/tests/quickfix/ReferenceHolderTest.java)** - Data collection patterns
    - Counting nodes
    - Collecting node information
    - Complex data structures per node
    - Shared data between callbacks
    - Thread-safe data sharing
 
-4. **[ASTProcessorTest](ASTProcessorTest.java)** - Fluent API patterns
+4. **[ASTProcessorTest](src/org/sandbox/jdt/ui/tests/quickfix/ASTProcessorTest.java)** - Fluent API patterns
    - Method chaining
    - Hierarchical navigation
    - Filtering by receiver type
    - Ancestor navigation
    - Finding patterns across AST levels
 
-5. **[AdvancedVisitorPatternsTest](AdvancedVisitorPatternsTest.java)** - Advanced techniques
+5. **[AdvancedVisitorPatternsTest](src/org/sandbox/jdt/ui/tests/quickfix/AdvancedVisitorPatternsTest.java)** - Advanced techniques
    - Combining visitors with logical operators (AND, OR, NOT)
    - Dynamic visitor modification
    - Multi-phase processing
    - Stateful visitors
    - Performance optimization patterns
 
-6. **[VisitorTest](VisitorTest.java)** - Integration tests
+6. **[VisitorTest](src/org/sandbox/jdt/ui/tests/quickfix/VisitorTest.java)** - Integration tests
    - Complex real-world scenarios
    - Multi-component interactions
    - End-to-end patterns
@@ -248,9 +245,9 @@ When adding new tests:
 
 ## Related Documentation
 
-- [sandbox_common/ARCHITECTURE.md](../../../../../../../sandbox_common/ARCHITECTURE.md) - Architecture overview
-- [sandbox_common/TODO.md](../../../../../../../sandbox_common/TODO.md) - Future enhancements
-- [sandbox_common/TRIGGERPATTERN.md](../../../../../../../sandbox_common/TRIGGERPATTERN.md) - Pattern matching engine
+- [sandbox_common/ARCHITECTURE.md](../sandbox_common/ARCHITECTURE.md) - Architecture overview
+- [sandbox_common/TODO.md](../sandbox_common/TODO.md) - Future enhancements
+- [sandbox_common/TRIGGERPATTERN.md](../sandbox_common/TRIGGERPATTERN.md) - Pattern matching engine
 
 ## Additional Resources
 

@@ -1,5 +1,7 @@
 # Extra Search Plugin - TODO
 
+> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#extra_search) | [Architecture](ARCHITECTURE.md)
+
 ## Status Summary
 
 **Current State**: Functional search view for class/API lookup with improved robustness and error handling

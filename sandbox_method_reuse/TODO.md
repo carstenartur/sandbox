@@ -1,5 +1,7 @@
 # Method Reusability Finder - TODO
 
+> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#method_reuse) | [Architecture](ARCHITECTURE.md)
+
 ## Pending Implementation
 
 ### Core Features

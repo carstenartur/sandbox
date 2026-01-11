@@ -1,5 +1,7 @@
 # Usage View Plugin - TODO
 
+> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#usage_view) | [Architecture](ARCHITECTURE.md)
+
 ## Status Summary
 
 **Current State**: Functional view for detecting naming inconsistencies with preference support and auto-update

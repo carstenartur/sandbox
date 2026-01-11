@@ -1,5 +1,7 @@
 # Extra Search Plugin - Architecture
 
+> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#extra_search) | [TODO](TODO.md)
+
 ## Overview
 
 The extra search plugin provides advanced search capabilities for critical classes during Eclipse and Java version upgrades. This tool helps developers identify deprecated APIs, problematic patterns, and migration opportunities when upgrading Eclipse or Java versions.

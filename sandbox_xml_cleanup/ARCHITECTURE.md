@@ -1,5 +1,7 @@
 # XML Cleanup Plugin - Architecture
 
+> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#xml_cleanup) | [TODO](TODO.md)
+
 ## Overview
 
 The XML cleanup plugin provides automated refactoring and optimization for PDE-relevant XML files in Eclipse projects. It focuses on reducing file size while maintaining semantic integrity through XSLT transformation, whitespace normalization, and optional indentation.
