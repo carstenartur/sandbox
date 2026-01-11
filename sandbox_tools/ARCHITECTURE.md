@@ -263,14 +263,14 @@ for (int i = 0; i < 10; i++) {
 
 This architecture document relates to:
 
-- [Projects → sandbox_tools](../README.md#6-sandbox_tools) - User-facing description
+- [6. `sandbox_tools`](../README.md#6-sandbox_tools) - User-facing description
 - [Contributing](../README.md#contributing) - Contribution workflow demonstrated here
 - [Build Instructions](../README.md#build-instructions) - Original build/test process
 
 ### Eclipse JDT Repository
 
 - **Merged Code**: Now in `org.eclipse.jdt.internal.corext.fix.*` in Eclipse JDT
-- **Issue/PR**: [Link to Eclipse Gerrit review if available]
+- **Issue/PR**: See Eclipse Gerrit or the Eclipse JDT Git history for review and merge details
 - **Documentation**: Part of Eclipse JDT cleanup documentation
 
 ### Related Modules

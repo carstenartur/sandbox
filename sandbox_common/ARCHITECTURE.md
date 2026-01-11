@@ -284,8 +284,7 @@ HelperVisitor.callMethodInvocationVisitor(
 This architecture document relates to:
 
 - [Build Instructions](../README.md#build-instructions) - sandbox_common is foundational dependency
-- [Package Structure](../README.md#package-structure) - Explains org.sandbox.jdt structure
-- [Eclipse JDT Integration](../README.md#eclipse-jdt-integration) - MYCleanUpConstants → CleanUpConstants porting
+- [What's Included](../README.md#whats-included) - Lists sandbox_common as foundational module
 
 ### Related Modules
 

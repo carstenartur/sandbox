@@ -275,11 +275,13 @@ Uses Eclipse's preference framework:
 **Algorithm**:
 ```
 1. Collect all identifiers (variables, methods, fields)
-2. Group by semantic similarity (Levenshtein distance)
+2. Group by semantic similarity (e.g., edit distance or other heuristics)
 3. Within each group, check casing consistency
 4. Flag items that deviate from group pattern
 5. Rank violations by severity
 ```
+
+**Note**: The algorithm description above is conceptual. The actual implementation may use different similarity metrics and should be verified in the source code.
 
 **Rationale**:
 - Catches common naming mistakes
@@ -313,7 +315,7 @@ Uses Eclipse's preference framework:
 
 This architecture document relates to:
 
-- [Projects → sandbox_usage_view](../README.md#4-sandbox_usage_view) - User-facing description
+- [4. `sandbox_usage_view`](../README.md#4-sandbox_usage_view) - User-facing description
 - [Eclipse Version Configuration](../README.md#eclipse-version-configuration) - Uses Eclipse 2025-09 APIs
 - [Build Instructions](../README.md#build-instructions) - How to build and test
 

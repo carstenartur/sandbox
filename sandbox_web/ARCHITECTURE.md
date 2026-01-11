@@ -127,7 +127,7 @@ The module leverages Maven plugins for packaging:
 2. maven-dependency-plugin unpacks features
 3. maven-war-plugin packages:
    - Copy plugins/ directory
-   - Copy features/ directory  
+   - Copy features/ directory
    - Include P2 metadata (artifacts.jar, content.jar)
    - Include category.xml
 4. Output: sandbox-updates.war (deployable archive)

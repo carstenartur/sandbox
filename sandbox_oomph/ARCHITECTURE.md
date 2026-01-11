@@ -267,4 +267,4 @@ The Oomph module provides automated development environment setup:
 - Ensures consistent developer configuration (same Eclipse version, preferences, target platform)
 - Reduces manual setup errors (eliminates common misconfigurations)
 - Improves contributor experience (productive in minutes, not hours)
-- Aligns with Root README requirements (Java 21, Eclipse 2025-09, main branch)
+- Aligns with requirements in Root README (Java 21, Eclipse 2025-09, main branch)

@@ -258,7 +258,7 @@ new Status(IStatus.ERROR, pluginId, "msg", ex)  → Status.error("msg", ex)
 new Status(IStatus.ERROR, pluginId, "msg")     → Status.error("msg", null)
 ```
 
-**Rationale**: Factory methods require exception parameter (even if null)
+**Rationale**: This cleanup consistently uses factory method overloads that accept an exception parameter and passes `null` when the original code had no exception, for consistency across all transformations.
 
 ## Cross-References
 
@@ -266,7 +266,7 @@ new Status(IStatus.ERROR, pluginId, "msg")     → Status.error("msg", null)
 
 This architecture document relates to:
 
-- [Projects → sandbox_platform_helper](../README.md#5-sandbox_platform_helper) - User-facing documentation
+- [5. `sandbox_platform_helper`](../README.md#5-sandbox_platform_helper) - User-facing documentation
 - [Build Instructions](../README.md#build-instructions) - Java 11+ requirement
 - [Eclipse Version Configuration](../README.md#eclipse-version-configuration) - Platform APIs from Eclipse 2025-09
 

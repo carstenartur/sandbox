@@ -187,7 +187,7 @@ Registered as Eclipse JDT cleanup:
 
 **Example**:
 ```java
-// Original - conflict with existing subMonitor
+// Original - conflicts with existing subMonitor
 SubMonitor subMonitor = ...; // existing code
 monitor.beginTask("Task", 100);
 IProgressMonitor sub = new SubProgressMonitor(monitor, 60);
@@ -238,7 +238,7 @@ subMonitor.split(60, SubMonitor.SUPPRESS_SUBTASK_LABEL)
 
 This architecture document relates to:
 
-- [Projects → sandbox_jface_cleanup](../README.md#7-sandbox_jface_cleanup) - User-facing documentation
+- [7. `sandbox_jface_cleanup`](../README.md#7-sandbox_jface_cleanup) - User-facing documentation
 - [Build Instructions](../README.md#build-instructions) - How to build and test
 - [Eclipse Version Configuration](../README.md#eclipse-version-configuration) - JFace APIs from Eclipse 2025-09
 

@@ -275,7 +275,7 @@ This architecture document relates to:
 
 - [Eclipse Version Configuration](../README.md#eclipse-version-configuration) - Search uses Eclipse 2025-09 APIs
 - [What's Included](../README.md#whats-included) - Listed as sandbox_extra_search
-- [Projects](../README.md#3-sandbox_extra_search) - User-facing description
+- [3. `sandbox_extra_search`](../README.md#3-sandbox_extra_search) - User-facing description
 
 ### Related Modules
 
