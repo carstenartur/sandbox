@@ -1,0 +1,262 @@
+# GitHub Action to automatically apply Eclipse JDT cleanup transformations to pull request code
+# This action uses the sandbox cleanup application to apply configurable code cleanups
+# Similar to the command-line cleanup application but integrated as a GitHub Action
+
+name: PR Code Cleanup
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to apply cleanups to'
+        required: false
+        type: number
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    env:
+      DISPLAY: :0
+      MAVEN_OPTS: -Djava.awt.headless=true
+      
+    steps:
+    - name: Checkout PR branch
+      uses: actions/checkout@v6
+      with:
+        ref: ${{ github.event.pull_request.head.ref || github.ref }}
+        repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+        
+    - name: Set up JDK 21
+      uses: actions/setup-java@v5
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y xvfb xauth \
+          libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 libxrandr2 libxfixes3 \
+          libasound2t64 libnss3 libgbm1
+        sudo /usr/bin/Xvfb $DISPLAY -screen 0 1280x1024x24 &
+        
+    - name: Cache Maven dependencies
+      uses: actions/cache@v5
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-maven-
+        
+    - name: Set up Maven
+      uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1 # v5
+      with:
+        maven-version: 3.9.9
+        
+    - name: Build sandbox cleanup application
+      run: |
+        echo "Building the sandbox cleanup application and product..."
+        xvfb-run --auto-servernum mvn -e -V --batch-mode \
+          -Dtycho.localArtifacts=ignore \
+          clean install -DskipTests
+          
+    - name: Extract Eclipse product
+      run: |
+        echo "Extracting Eclipse product from build..."
+        PRODUCT_DIR="sandbox_product/target/products"
+        if [ -d "$PRODUCT_DIR" ]; then
+          echo "Product directory found: $PRODUCT_DIR"
+          ls -la "$PRODUCT_DIR"
+          
+          # Find the Eclipse installation directory
+          ECLIPSE_ZIP=$(find "$PRODUCT_DIR" -name "*.zip" -o -name "*.tar.gz" | head -1)
+          if [ -n "$ECLIPSE_ZIP" ]; then
+            echo "Found Eclipse archive: $ECLIPSE_ZIP"
+            mkdir -p eclipse-install
+            if [[ "$ECLIPSE_ZIP" == *.zip ]]; then
+              unzip -q "$ECLIPSE_ZIP" -d eclipse-install
+            else
+              tar -xzf "$ECLIPSE_ZIP" -C eclipse-install
+            fi
+          else
+            # Try to find already extracted directory
+            ECLIPSE_DIR=$(find "$PRODUCT_DIR" -type d -name "eclipse" | head -1)
+            if [ -n "$ECLIPSE_DIR" ]; then
+              echo "Found Eclipse directory: $ECLIPSE_DIR"
+              cp -r "$ECLIPSE_DIR" eclipse-install/
+            else
+              echo "ERROR: Could not find Eclipse installation"
+              exit 1
+            fi
+          fi
+        else
+          echo "ERROR: Product directory not found"
+          exit 1
+        fi
+        
+    - name: Configure cleanup settings
+      run: |
+        echo "Creating cleanup configuration..."
+        cat > cleanup-config.properties << 'EOF'
+        # Eclipse JDT Cleanup Configuration for GitHub Action
+        # This configuration applies various code quality improvements and modernizations
+        
+        # Source Code Formatting
+        cleanup.format_source_code=true
+        cleanup.format_source_code_changes_only=false
+        
+        # Import Organization
+        cleanup.organize_imports=true
+        cleanup.remove_unused_imports=true
+        
+        # Code Style - Use blocks in control statements
+        cleanup.use_blocks=true
+        cleanup.use_blocks_only_for_return_and_throw=false
+        cleanup.always_use_blocks=true
+        
+        # Member Accesses - Qualify with declaring class
+        cleanup.qualify_static_field_accesses_with_declaring_class=true
+        cleanup.qualify_static_method_accesses_with_declaring_class=true
+        cleanup.qualify_static_member_accesses_through_subtypes_with_declaring_class=true
+        
+        # Unnecessary Code Removal
+        cleanup.remove_unnecessary_casts=true
+        cleanup.remove_unused_private_members=true
+        cleanup.remove_unused_local_variables=true
+        cleanup.remove_redundant_type_arguments=true
+        
+        # Missing Code - Add annotations
+        cleanup.add_missing_override_annotations=true
+        cleanup.add_missing_override_annotations_interface_methods=true
+        cleanup.add_missing_deprecated_annotations=true
+        
+        # String Operations
+        cleanup.use_string_is_blank=true
+        cleanup.simplify_boolean_return=true
+        
+        # Java Feature Modernization
+        cleanup.use_lambda=true
+        cleanup.use_anonymous_class_creation=false
+        cleanup.convert_functional_interfaces=true
+        
+        # Sandbox-specific cleanups (if available)
+        # These will only apply if the corresponding sandbox plugins are installed
+        REMOVE_UNNECESSARY_ARRAY_CREATION=true
+        USE_STRINGBUILDER=true
+        USEFUNCTIONALLOOP_CLEANUP=true
+        EOF
+        
+    - name: Find Java source files in workspace
+      id: find-sources
+      run: |
+        echo "Finding Java source files in repository..."
+        # Find Java files but exclude target directories and other build artifacts
+        JAVA_FILES=$(find . -type f -name "*.java" \
+          -not -path "*/target/*" \
+          -not -path "*/.git/*" \
+          -not -path "*/bin/*" \
+          -not -path "*/build/*" | head -100)
+        
+        if [ -z "$JAVA_FILES" ]; then
+          echo "No Java files found to clean up"
+          echo "has_files=false" >> $GITHUB_OUTPUT
+        else
+          echo "Found Java files to process"
+          echo "has_files=true" >> $GITHUB_OUTPUT
+          echo "$JAVA_FILES" > /tmp/java_files.txt
+        fi
+        
+    - name: Run cleanup on PR code
+      if: steps.find-sources.outputs.has_files == 'true'
+      run: |
+        echo "Running Eclipse JDT cleanup on Java source files..."
+        
+        # Find eclipse executable
+        ECLIPSE_EXEC=$(find eclipse-install -name "eclipse" -type f -executable | head -1)
+        if [ -z "$ECLIPSE_EXEC" ]; then
+          echo "ERROR: Eclipse executable not found"
+          exit 1
+        fi
+        echo "Using Eclipse: $ECLIPSE_EXEC"
+        
+        # Create workspace directory
+        WORKSPACE="${GITHUB_WORKSPACE}/cleanup-workspace"
+        mkdir -p "$WORKSPACE"
+        
+        # Run the cleanup application
+        # Note: Files must be inside the workspace for Eclipse to process them
+        # We're using GITHUB_WORKSPACE which contains all source files
+        xvfb-run --auto-servernum "$ECLIPSE_EXEC" -nosplash \
+          -application org.sandbox.jdt.core.JavaCleanup \
+          -data "$WORKSPACE" \
+          -config cleanup-config.properties \
+          -verbose \
+          "${GITHUB_WORKSPACE}" || {
+            echo "Cleanup completed with warnings (some files may have been skipped)"
+            echo "This is normal if files are outside the workspace or have compilation errors"
+          }
+        
+    - name: Check for changes
+      id: check-changes
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "Changes detected after cleanup"
+          echo "has_changes=true" >> $GITHUB_OUTPUT
+          git status
+        else
+          echo "No changes after cleanup"
+          echo "has_changes=false" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Commit and push changes
+      if: steps.check-changes.outputs.has_changes == 'true'
+      run: |
+        echo "Committing cleanup changes..."
+        git add .
+        git commit -m "Apply automated Eclipse JDT cleanup transformations
+
+        This commit applies the following cleanup operations:
+        - Code formatting and import organization
+        - Adding missing @Override and @Deprecated annotations
+        - Removing unnecessary code (casts, unused variables, etc.)
+        - Modernizing code (lambda expressions, functional interfaces)
+        - Applying code style improvements (blocks in control statements)
+        
+        Cleanup applied by GitHub Action using sandbox cleanup application."
+        
+        git push
+        
+    - name: Add comment to PR
+      if: steps.check-changes.outputs.has_changes == 'true' && github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '🤖 **Automated Code Cleanup Applied**\n\n' +
+                  'The Eclipse JDT cleanup transformations have been automatically applied to this PR. ' +
+                  'The cleanup includes:\n' +
+                  '- ✨ Code formatting and import organization\n' +
+                  '- 📝 Adding missing annotations (@Override, @Deprecated)\n' +
+                  '- 🧹 Removing unnecessary code (casts, unused variables)\n' +
+                  '- 🚀 Modernizing code (lambdas, functional interfaces)\n' +
+                  '- 💎 Code style improvements\n\n' +
+                  'Please review the changes and ensure they meet your expectations.'
+          })
+          
+    - name: Cleanup xvfb
+      if: always()
+      uses: bcomnes/cleanup-xvfb@v1
