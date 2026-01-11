@@ -29,12 +29,9 @@ import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
-import org.eclipse.jdt.core.dom.ParenthesizedExpression;
-import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Statement;
-import org.eclipse.jdt.core.dom.TypeMethodReference;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 
 /**
@@ -217,8 +214,17 @@ public final class ProspectiveOperation {
 						IBinding binding = node.resolveBinding();
 						// If it's a type binding (class name), skip it
 						// If it's a variable binding, we want to collect it
-						if (!(binding instanceof IVariableBinding)) {
+						if (binding != null && !(binding instanceof IVariableBinding)) {
 							return super.visit(node); // Skip class name
+						}
+						// Fallback: If binding resolution failed, check if the name starts with uppercase
+						// (convention for class names in Java) and has no local variable conflict
+						if (binding == null) {
+							String name = node.getIdentifier();
+							if (name.length() > 0 && Character.isUpperCase(name.charAt(0))) {
+								// Likely a class name like Math, System, Integer, etc.
+								return super.visit(node);
+							}
 						}
 					}
 				}
@@ -611,267 +617,10 @@ public final class ProspectiveOperation {
 	 * The method reference type is determined by the accumulator variable type.
 	 */
 	private Expression createAccumulatorExpression(AST ast) {
-		if (reducerType == null) {
-			// Fallback to legacy behavior
-			return createAccumulatorLambda(ast);
-		}
-
-		switch (reducerType) {
-		case INCREMENT:
-		case SUM:
-			// Use appropriate method reference based on accumulator type
-			// Only Integer, Long, and Double have ::sum method references in Java standard library
-			if (accumulatorType != null) {
-				// Handle primitive types
-				if ("double".equals(accumulatorType) || "java.lang.Double".equals(accumulatorType)) {
-					// For double, check if INCREMENT (use lambda) or SUM (can use Double::sum)
-					if (reducerType == ReducerType.INCREMENT) {
-						// For double++, use lambda: (accumulator, _item) -> accumulator + 1
-						return createCountingLambda(ast, InfixExpression.Operator.PLUS);
-					} else {
-						// For double += x, can use Double::sum if x is double-compatible
-						return createMethodReference(ast, "Double", "sum");
-					}
-				} else if ("float".equals(accumulatorType) || "java.lang.Float".equals(accumulatorType)) {
-					// Float doesn't have ::sum, always use lambda
-					if (reducerType == ReducerType.INCREMENT) {
-						return createCountingLambda(ast, InfixExpression.Operator.PLUS);
-					} else {
-						return createBinaryOperatorLambda(ast, InfixExpression.Operator.PLUS);
-					}
-				} else if ("long".equals(accumulatorType) || "java.lang.Long".equals(accumulatorType)) {
-					// Long::sum is available
-					return createMethodReference(ast, "Long", "sum");
-				} else if ("short".equals(accumulatorType) || "java.lang.Short".equals(accumulatorType)) {
-					// Short doesn't have ::sum, use lambda
-					if (reducerType == ReducerType.INCREMENT) {
-						return createCountingLambda(ast, InfixExpression.Operator.PLUS);
-					} else {
-						return createBinaryOperatorLambda(ast, InfixExpression.Operator.PLUS);
-					}
-				} else if ("byte".equals(accumulatorType) || "java.lang.Byte".equals(accumulatorType)) {
-					// Byte doesn't have ::sum, use lambda
-					if (reducerType == ReducerType.INCREMENT) {
-						return createCountingLambda(ast, InfixExpression.Operator.PLUS);
-					} else {
-						return createBinaryOperatorLambda(ast, InfixExpression.Operator.PLUS);
-					}
-				}
-			}
-			// Default to Integer::sum for int or unknown types
-			return createMethodReference(ast, "Integer", "sum");
-		case DECREMENT:
-			// For i--, we need a different approach since we subtract
-			// We can't use a simple method reference for subtraction
-			return createCountingLambda(ast, InfixExpression.Operator.MINUS);
-		case PRODUCT:
-			// Use (accumulator, _item) -> accumulator * _item lambda
-			return createBinaryOperatorLambda(ast, InfixExpression.Operator.TIMES);
-		case STRING_CONCAT:
-			// Use String::concat method reference when null-safe (variables have @NotNull),
-			// otherwise use (a, b) -> a + b simple lambda for null-safe concatenation
-			if (isNullSafe) {
-				return createMethodReference(ast, "String", "concat");
-			} else {
-				return createSimpleBinaryLambda(ast, InfixExpression.Operator.PLUS);
-			}
-		case MAX:
-			// Use wrapper class method references (Integer::max, Double::max, etc.) to avoid overload ambiguity
-			return createMaxMinMethodReference(ast, "max");
-		case MIN:
-			// Use wrapper class method references (Integer::min, Double::min, etc.) to avoid overload ambiguity
-			return createMaxMinMethodReference(ast, "min");
-		case CUSTOM_AGGREGATE:
-			// For custom aggregation, use a generic accumulator lambda
-			return createAccumulatorLambda(ast);
-		default:
-			return createAccumulatorLambda(ast);
-		}
-	}
-
-	/**
-	 * Creates a method reference like Integer::sum.
-	 */
-	private TypeMethodReference createMethodReference(AST ast, String typeName, String methodName) {
-		TypeMethodReference methodRef = ast.newTypeMethodReference();
-		methodRef.setType(ast.newSimpleType(ast.newSimpleName(typeName)));
-		methodRef.setName(ast.newSimpleName(methodName));
-		return methodRef;
-	}
-
-	/**
-	 * Creates a method reference like Math::max or Math::min.
-	 * 
-	 * @param ast        the AST to create nodes in
-	 * @param methodName the method name ("max" or "min")
-	 * @return a TypeMethodReference for Math::methodName
-	 */
-	private TypeMethodReference createMathMethodReference(AST ast, String methodName) {
-		TypeMethodReference methodRef = ast.newTypeMethodReference();
-		methodRef.setType(ast.newSimpleType(ast.newSimpleName("Math")));
-		methodRef.setName(ast.newSimpleName(methodName));
-		return methodRef;
-	}
-
-	/**
-	 * Creates a method reference for max/min operations based on the accumulator type.
-	 * Uses {@code Integer::max}, {@code Double::max}, {@code Long::max}, etc. instead of
-	 * {@code Math::max} to avoid overload ambiguity in {@code reduce()} operations.
-	 * 
-	 * <p>
-	 * The specific wrapper type is derived from the accumulator variable's type:
-	 * {@code int} → {@code Integer}, {@code long} → {@code Long}, {@code double} → {@code Double},
-	 * {@code float} → {@code Float}, {@code short} → {@code Short}, {@code byte} → {@code Byte}.
-	 * For fully qualified {@code java.lang.*} wrapper types or simple wrapper class names,
-	 * the simple class name is used. For unknown or missing types, {@code Integer} is used
-	 * as a sensible default.
-	 * </p>
-	 * 
-	 * @param ast        the AST to create nodes in
-	 * @param methodName the method name ("max" or "min")
-	 * @return a TypeMethodReference for the appropriate wrapper type's max/min method
-	 */
-	private TypeMethodReference createMaxMinMethodReference(AST ast, String methodName) {
-		String typeName;
-		
-		if (accumulatorType != null) {
-			// Map primitive types and wrapper classes to their wrapper class names
-			switch (accumulatorType) {
-				case "int":
-				case "Integer":
-					typeName = "Integer";
-					break;
-				case "long":
-				case "Long":
-					typeName = "Long";
-					break;
-				case "double":
-				case "Double":
-					typeName = "Double";
-					break;
-				case "float":
-				case "Float":
-					typeName = "Float";
-					break;
-				case "short":
-				case "Short":
-					typeName = "Short";
-					break;
-				case "byte":
-				case "Byte":
-					typeName = "Byte";
-					break;
-				default:
-					// For fully qualified wrapper types (java.lang.Integer, etc.), extract simple name
-					if (accumulatorType.startsWith("java.lang.")) {
-						typeName = accumulatorType.substring("java.lang.".length());
-					} else {
-						// Unknown type - default to Integer as a sensible fallback
-						// This should rarely happen in practice as getVariableType() usually returns valid types
-						typeName = "Integer";
-					}
-			}
-		} else {
-			// Type is null - default to Integer as a sensible fallback
-			typeName = "Integer";
-		}
-		
-		TypeMethodReference methodRef = ast.newTypeMethodReference();
-		methodRef.setType(ast.newSimpleType(ast.newSimpleName(typeName)));
-		methodRef.setName(ast.newSimpleName(methodName));
-		return methodRef;
-	}
-
-	/**
-	 * Creates a simple binary operator lambda like (a, b) -> a + b without type annotations.
-	 * Used for simple operations like string concatenation where type inference works well.
-	 * 
-	 * @param ast      the AST to create nodes in
-	 * @param operator the infix operator to use (e.g., PLUS for +)
-	 * @return a LambdaExpression with simple parameters
-	 */
-	private LambdaExpression createSimpleBinaryLambda(AST ast, InfixExpression.Operator operator) {
-		LambdaExpression lambda = ast.newLambdaExpression();
-
-		// Generate unique parameter names to avoid clashes with existing variables
-		String param1Name = generateUniqueVariableName("a");
-		String param2Name = generateUniqueVariableName("b");
-
-		// Parameters: (a, b) - using VariableDeclarationFragment for simple parameters
-		VariableDeclarationFragment param1 = ast.newVariableDeclarationFragment();
-		param1.setName(ast.newSimpleName(param1Name));
-		VariableDeclarationFragment param2 = ast.newVariableDeclarationFragment();
-		param2.setName(ast.newSimpleName(param2Name));
-		lambda.parameters().add(param1);
-		lambda.parameters().add(param2);
-
-		// Body: a + b (or other operator)
-		InfixExpression operationExpr = ast.newInfixExpression();
-		operationExpr.setLeftOperand(ast.newSimpleName(param1Name));
-		operationExpr.setRightOperand(ast.newSimpleName(param2Name));
-		operationExpr.setOperator(operator);
-		lambda.setBody(operationExpr);
-
-		return lambda;
-	}
-
-	/**
-	 * Creates a binary operator lambda like (accumulator, _item) -> accumulator +
-	 * _item.
-	 */
-	private LambdaExpression createBinaryOperatorLambda(AST ast, InfixExpression.Operator operator) {
-		LambdaExpression lambda = ast.newLambdaExpression();
-
-		// Generate unique parameter names to avoid clashes with existing variables
-		String param1Name = generateUniqueVariableName("accumulator");
-		String param2Name = generateUniqueVariableName("_item");
-
-		// Parameters: (accumulator, _item) - use VariableDeclarationFragment to avoid type annotations
-		VariableDeclarationFragment param1 = ast.newVariableDeclarationFragment();
-		param1.setName(ast.newSimpleName(param1Name));
-		VariableDeclarationFragment param2 = ast.newVariableDeclarationFragment();
-		param2.setName(ast.newSimpleName(param2Name));
-		lambda.parameters().add(param1);
-		lambda.parameters().add(param2);
-
-		// Body: accumulator + _item (or other operator)
-		InfixExpression operationExpr = ast.newInfixExpression();
-		operationExpr.setLeftOperand(ast.newSimpleName(param1Name));
-		operationExpr.setRightOperand(ast.newSimpleName(param2Name));
-		operationExpr.setOperator(operator);
-		lambda.setBody(operationExpr);
-
-		return lambda;
-	}
-
-	/**
-	 * Creates a lambda like (accumulator, _item) -> accumulator - _item. Used only
-	 * for DECREMENT (i--, i -= 1) operations.
-	 */
-	private LambdaExpression createCountingLambda(AST ast, InfixExpression.Operator operator) {
-		LambdaExpression lambda = ast.newLambdaExpression();
-
-		// Generate unique parameter name for accumulator to avoid clashes
-		// Note: _item is unused in body but still needs unique name to avoid shadowing
-		String param1Name = generateUniqueVariableName("accumulator");
-		String param2Name = generateUniqueVariableName("_item");
-
-		// Parameters: (accumulator, _item) - use VariableDeclarationFragment to avoid type annotations
-		VariableDeclarationFragment param1 = ast.newVariableDeclarationFragment();
-		param1.setName(ast.newSimpleName(param1Name));
-		VariableDeclarationFragment param2 = ast.newVariableDeclarationFragment();
-		param2.setName(ast.newSimpleName(param2Name));
-		lambda.parameters().add(param1);
-		lambda.parameters().add(param2);
-
-		// Body: accumulator + 1 (literal 1, not _item)
-		InfixExpression operationExpr = ast.newInfixExpression();
-		operationExpr.setLeftOperand(ast.newSimpleName(param1Name));
-		operationExpr.setRightOperand(ast.newNumberLiteral("1"));
-		operationExpr.setOperator(operator);
-		lambda.setBody(operationExpr);
-
-		return lambda;
+		LambdaGenerator generator = new LambdaGenerator(ast);
+		generator.setNeededVariables(neededVariables);
+		generator.setUsedVariableNames(usedVariableNames);
+		return generator.createAccumulatorExpression(reducerType, accumulatorType, isNullSafe);
 	}
 
 	/** (6) Ermittelt das Identitätselement (`0`, `1`) für `reduce()` */
@@ -1000,40 +749,12 @@ public final class ProspectiveOperation {
 	 * <li>BooleanLiteral (no need for parentheses)</li>
 	 * </ul>
 	 * 
-	 * <p>
-	 * If the expression is already parenthesized, the method checks if the inner expression
-	 * actually needs parentheses. If not (e.g., a MethodInvocation), the parentheses are removed.
-	 * </p>
-	 * 
 	 * @param ast the AST to create nodes in (must not be null)
 	 * @param expression the predicate expression (must not be null)
 	 * @return the lambda body expression, possibly wrapped in parentheses
 	 */
 	private Expression createPredicateLambdaBody(AST ast, Expression expression) {
-		// Unwrap parentheses to check the actual expression type
-		Expression unwrapped = expression;
-		while (unwrapped instanceof ParenthesizedExpression) {
-			unwrapped = ((ParenthesizedExpression) unwrapped).getExpression();
-		}
-		
-		// Don't wrap PrefixExpression with NOT - already has proper precedence
-		if (unwrapped instanceof PrefixExpression) {
-			PrefixExpression prefix = (PrefixExpression) unwrapped;
-			if (prefix.getOperator() == PrefixExpression.Operator.NOT) {
-				return (Expression) ASTNode.copySubtree(ast, unwrapped);
-			}
-		}
-		
-		// Only wrap InfixExpressions (==, !=, >, <, >=, <=, &&, ||, etc.)
-		// These benefit from parentheses for readability in lambda bodies
-		if (unwrapped instanceof InfixExpression) {
-			ParenthesizedExpression parenExpr = ast.newParenthesizedExpression();
-			parenExpr.setExpression((Expression) ASTNode.copySubtree(ast, unwrapped));
-			return parenExpr;
-		}
-		
-		// For all other expressions (MethodInvocation, SimpleName, BooleanLiteral, etc.)
-		// no parentheses needed - use the unwrapped expression
-		return (Expression) ASTNode.copySubtree(ast, unwrapped);
+		LambdaGenerator generator = new LambdaGenerator(ast);
+		return generator.createPredicateLambdaBody(expression);
 	}
 }
