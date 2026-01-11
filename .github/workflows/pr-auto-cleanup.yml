@@ -47,19 +47,22 @@ jobs:
         
     - name: Commit and push changes
       if: steps.check_changes.outputs.has_changes == 'true'
+      env:
+        CLEANUP_COMMIT_MESSAGE: |
+          🤖 Apply Sandbox Eclipse JDT cleanup transformations
+
+          Automated cleanup applied using sandbox cleanup application:
+          - Code formatting and import organization
+          - Adding missing @Override and @Deprecated annotations
+          - Removing unnecessary code (casts, unused variables)
+          - Modernizing code (lambdas, functional interfaces)
+          - Applying sandbox-specific cleanups
+          - Code style improvements
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
         git add .
-        git commit -m "🤖 Apply Sandbox Eclipse JDT cleanup transformations
-
-        Automated cleanup applied using sandbox cleanup application:
-        - Code formatting and import organization
-        - Adding missing @Override and @Deprecated annotations
-        - Removing unnecessary code (casts, unused variables)
-        - Modernizing code (lambdas, functional interfaces)
-        - Applying sandbox-specific cleanups
-        - Code style improvements"
+        git commit -m "$CLEANUP_COMMIT_MESSAGE"
         git push
         
     - name: Comment on PR

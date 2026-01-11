@@ -227,6 +227,17 @@ jobs:
 
 **Solution**: Consider pre-building and publishing the Docker image to GitHub Container Registry (see action README).
 
+### Q: Does this work with PRs from forks?
+
+**A**: **No, automatic cleanup does not work for PRs from external forks.** This is a GitHub Actions security limitation. The `GITHUB_TOKEN` provided to workflows triggered by fork PRs has read-only access and cannot push commits back to the fork.
+
+**Workarounds**:
+- Contributors can run the Manual Cleanup workflow on their fork before creating the PR
+- Maintainers can manually check out the PR branch and run cleanup locally
+- The workflow could be modified to post cleanup suggestions as a PR comment instead of auto-committing (future enhancement)
+
+**Note**: PRs from branches within the same repository work fine.
+
 ### Q: Can I use this action in external repositories?
 
 **A**: Not directly - this action is specific to the sandbox repository because it builds the sandbox plugins. For external repos, you can:

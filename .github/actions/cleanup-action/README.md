@@ -55,7 +55,7 @@ Three pre-configured cleanup profiles are provided in `.github/cleanup-profiles/
 
 **Use when**: You want balanced code quality improvements (recommended).
 
-####3. Aggressive (`aggressive.properties`)
+#### 3. Aggressive (`aggressive.properties`)
 - Everything in Standard, plus:
 - Qualify static member accesses
 - Remove trailing whitespace
@@ -197,6 +197,31 @@ Sandbox options:
 - Use GitHub's Docker layer caching (automatic)
 - Consider pre-building and publishing the Docker image to GitHub Container Registry
 - Run cleanup less frequently (e.g., only on specific PR labels)
+
+## Limitations
+
+### Fork Pull Requests
+
+**The auto-cleanup workflow does not work for PRs from external forks.** This is a GitHub Actions security limitation:
+
+- GitHub provides a read-only `GITHUB_TOKEN` to workflows triggered by fork PRs
+- The workflow cannot push commits back to the fork repository
+- This is by design to prevent malicious code execution in fork PRs
+
+**Workarounds**:
+1. Contributors can run the Manual Cleanup workflow on their fork before creating the PR
+2. Maintainers can manually check out the PR branch and run cleanup locally
+3. Modify the workflow to post cleanup suggestions as a PR comment instead of auto-committing
+
+**Note**: PRs from branches within the same repository work fine.
+
+### Workspace Boundaries
+
+Files must be within the GitHub Actions workspace to be processed. The action validates paths to prevent access to files outside the workspace.
+
+### Build Time
+
+The first Docker build takes 10-15 minutes as it compiles the entire sandbox project. Consider pre-building the Docker image for production use.
 
 ## Advanced Usage
 
