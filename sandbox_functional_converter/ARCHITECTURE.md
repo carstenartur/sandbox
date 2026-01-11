@@ -9,19 +9,61 @@ The functional loop converter transforms imperative enhanced for-loops into func
 
 The functional converter is organized into focused, single-responsibility classes:
 
+### Core Pipeline Classes
 | Class | Lines | Responsibility |
 |-------|-------|----------------|
 | `StreamPipelineBuilder` | ~640 | Main orchestrator - coordinates analysis and pipeline construction |
-| `LoopBodyParser` | ~450 | Parses loop bodies into operations |
+| `LoopBodyParser` | ~450 | Parses loop bodies into operations using handler chain |
 | `PipelineAssembler` | ~280 | Assembles method invocation chains |
 | `ProspectiveOperation` | ~760 | Represents individual stream operations |
+
+### Statement Handlers (Strategy Pattern)
+| Class | Lines | Responsibility |
+|-------|-------|----------------|
+| `StatementHandler` | ~70 | Interface for statement processing strategies |
+| `IfStatementHandler` | ~160 | Handles IF statements (filter, match patterns) |
+| `VariableDeclarationHandler` | ~140 | Handles variable declarations (MAP operations) |
+| `TerminalStatementHandler` | ~90 | Handles last statements (REDUCE, FOREACH) |
+| `NonTerminalStatementHandler` | ~80 | Handles non-terminal side-effect statements |
+| `SideEffectChecker` | ~120 | Validates safe side-effects in streams |
+| `StatementParsingContext` | ~140 | Context object for handler chain |
+
+### Analysis & Detection
+| Class | Lines | Responsibility |
+|-------|-------|----------------|
 | `PreconditionsChecker` | ~605 | Validates loop can be converted |
 | `ReducePatternDetector` | ~583 | Detects REDUCE patterns (increment, sum, max/min) |
-| `TypeResolver` | ~422 | Type resolution utilities |
-| `LambdaGenerator` | ~418 | Creates lambdas and method references |
 | `IfStatementAnalyzer` | ~362 | Analyzes IF statements for match patterns |
+| `TypeResolver` | ~422 | Type resolution utilities |
+
+### Utilities
+| Class | Lines | Responsibility |
+|-------|-------|----------------|
+| `LambdaGenerator` | ~418 | Creates lambdas and method references |
 | `ExpressionUtils` | ~332 | Expression manipulation utilities |
 | `StreamConstants` | ~200 | Constants for stream method names (delegates to LibStandardNames) |
+
+## Architecture Patterns
+
+### Strategy Pattern for Statement Handling
+
+The `LoopBodyParser` uses the Strategy Pattern to process different statement types.
+This eliminates deep if-else-if chains and makes the code more maintainable:
+
+```
+LoopBodyParser
+    └── handlers: List<StatementHandler>
+            ├── VariableDeclarationHandler  → MAP operations
+            ├── IfStatementHandler          → FILTER, match patterns
+            ├── NonTerminalStatementHandler → Side-effect MAPs
+            └── TerminalStatementHandler    → REDUCE, FOREACH
+```
+
+**Benefits:**
+- Each handler is focused on one statement type (Single Responsibility)
+- Easy to add new statement types without modifying existing code (Open/Closed)
+- Improved testability - each handler can be tested in isolation
+- Cleaner code - no nested if-else-if chains
 
 ## Core Components
 

@@ -14,12 +14,12 @@
 package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.BreakStatement;
@@ -44,12 +44,17 @@ import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
  * for-loop and extracting a list of {@link ProspectiveOperation}s that can be
  * transformed into a stream pipeline.</p>
  * 
+ * <p><b>Architecture:</b></p>
+ * <p>This class uses the Strategy Pattern via {@link StatementHandler} implementations
+ * to process different statement types. This eliminates deep if-else-if chains and
+ * makes the code more maintainable and extensible.</p>
+ * 
  * <p><b>Supported Patterns:</b></p>
  * <ul>
- * <li><b>Variable declarations</b> → MAP operations</li>
- * <li><b>IF statements</b> → FILTER operations or match patterns</li>
+ * <li><b>Variable declarations</b> → MAP operations (via {@link VariableDeclarationHandler})</li>
+ * <li><b>IF statements</b> → FILTER operations or match patterns (via {@link IfStatementHandler})</li>
  * <li><b>Continue statements</b> → Negated FILTER operations</li>
- * <li><b>Accumulator patterns</b> → REDUCE operations</li>
+ * <li><b>Accumulator patterns</b> → REDUCE operations (via {@link TerminalStatementHandler})</li>
  * <li><b>Side-effect statements</b> → FOREACH operations</li>
  * </ul>
  * 
@@ -57,6 +62,7 @@ import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
  * 
  * @see StreamPipelineBuilder
  * @see ProspectiveOperation
+ * @see StatementHandler
  */
 public class LoopBodyParser {
 
@@ -67,6 +73,10 @@ public class LoopBodyParser {
 	private final boolean isAnyMatchPattern;
 	private final boolean isNoneMatchPattern;
 	private final boolean isAllMatchPattern;
+	
+	// Handler chain for processing statements
+	private final List<StatementHandler> handlers;
+	private final SideEffectChecker sideEffectChecker;
 
 	/**
 	 * Creates a new LoopBodyParser for the given for-loop.
@@ -91,6 +101,23 @@ public class LoopBodyParser {
 		this.isAnyMatchPattern = isAnyMatchPattern;
 		this.isNoneMatchPattern = isNoneMatchPattern;
 		this.isAllMatchPattern = isAllMatchPattern;
+		
+		// Initialize handlers
+		this.sideEffectChecker = new SideEffectChecker();
+		this.handlers = createHandlers();
+	}
+	
+	/**
+	 * Creates the chain of statement handlers.
+	 * Order matters: more specific handlers should come first.
+	 */
+	private List<StatementHandler> createHandlers() {
+		return Arrays.asList(
+			new VariableDeclarationHandler(this),
+			new IfStatementHandler(this),
+			new NonTerminalStatementHandler(sideEffectChecker),
+			new TerminalStatementHandler(sideEffectChecker)
+		);
 	}
 
 	/**
@@ -149,138 +176,34 @@ public class LoopBodyParser {
 
 	/**
 	 * Parses a single statement and returns the result.
+	 * Uses the handler chain to process different statement types.
 	 */
 	private ParseResult parseStatement(Statement stmt, String currentVarName, 
 			List<ProspectiveOperation> ops, boolean isLast, 
 			List<Statement> statements, int currentIndex, String loopVarName) {
 		
-		if (stmt instanceof VariableDeclarationStatement) {
-			return parseVariableDeclaration((VariableDeclarationStatement) stmt, 
-					currentVarName, ops, statements, currentIndex);
-		} else if (stmt instanceof IfStatement) {
-			return parseIfInBlock((IfStatement) stmt, currentVarName, ops, isLast, loopVarName);
-		} else if (!isLast) {
-			return parseNonLastStatement(stmt, currentVarName, ops);
-		} else {
-			return parseLastStatement(stmt, currentVarName, ops, loopVarName);
-		}
-	}
-
-	/**
-	 * Parses a variable declaration statement.
-	 */
-	private ParseResult parseVariableDeclaration(VariableDeclarationStatement varDecl,
-			String currentVarName, List<ProspectiveOperation> ops,
-			List<Statement> statements, int currentIndex) {
+		// Create parsing context
+		StatementParsingContext context = new StatementParsingContext(
+				loopVarName,
+				currentVarName,
+				isLast,
+				currentIndex,
+				statements,
+				ast,
+				ifAnalyzer,
+				reduceDetector,
+				isAnyMatchPattern,
+				isNoneMatchPattern,
+				isAllMatchPattern);
 		
-		List<VariableDeclarationFragment> fragments = varDecl.fragments();
-		if (!fragments.isEmpty()) {
-			VariableDeclarationFragment frag = fragments.get(0);
-			if (frag.getInitializer() != null) {
-				String newVarName = frag.getName().getIdentifier();
-				ProspectiveOperation mapOp = new ProspectiveOperation(frag.getInitializer(),
-						ProspectiveOperation.OperationType.MAP, newVarName);
-				ops.add(mapOp);
-
-				// Check if we need to wrap remaining non-terminal statements in a MAP
-				if (shouldWrapRemainingInMap(statements, currentIndex)) {
-					Block mapBlock = ast.newBlock();
-					List<Statement> mapStatements = mapBlock.statements();
-					for (int j = currentIndex + 1; j < statements.size() - 1; j++) {
-						mapStatements.add((Statement) ASTNode.copySubtree(ast, statements.get(j)));
-					}
-
-					ProspectiveOperation sideEffectMapOp = new ProspectiveOperation(mapBlock,
-							ProspectiveOperation.OperationType.MAP, newVarName);
-					ops.add(sideEffectMapOp);
-
-					return new ParseResult(newVarName, statements.size() - 2);
-				}
-				return new ParseResult(newVarName);
+		// Find and execute the appropriate handler
+		for (StatementHandler handler : handlers) {
+			if (handler.canHandle(stmt, context)) {
+				return handler.handle(stmt, context, ops);
 			}
 		}
-		return new ParseResult(currentVarName);
-	}
-
-	/**
-	 * Parses an IF statement within a block.
-	 */
-	private ParseResult parseIfInBlock(IfStatement ifStmt, String currentVarName,
-			List<ProspectiveOperation> ops, boolean isLast, String loopVarName) {
 		
-		if (ifStmt.getElseStatement() != null) {
-			return new ParseResult(currentVarName);
-		}
-
-		// Check for unconvertible patterns first
-		if (ifAnalyzer.isIfWithLabeledContinue(ifStmt) || ifAnalyzer.isIfWithBreak(ifStmt)) {
-			return ParseResult.abort();
-		}
-
-		// Check for early return pattern
-		if (ifAnalyzer.isEarlyReturnIf(ifStmt, isAnyMatchPattern, isNoneMatchPattern, isAllMatchPattern)) {
-			ProspectiveOperation matchOp = ifAnalyzer.createMatchOperation(ifStmt);
-			ops.add(matchOp);
-			return new ParseResult(currentVarName);
-		}
-
-		// Check for continue pattern
-		if (ifAnalyzer.isIfWithContinue(ifStmt)) {
-			Expression negatedCondition = ExpressionUtils.createNegatedExpression(ast, ifStmt.getExpression());
-			ProspectiveOperation filterOp = new ProspectiveOperation(negatedCondition,
-					ProspectiveOperation.OperationType.FILTER);
-			ops.add(filterOp);
-			return new ParseResult(currentVarName);
-		}
-
-		// Regular filter with nested processing (for non-last statements)
-		if (!isLast) {
-			return processIfAsFilter(ops, ifStmt, currentVarName, true, loopVarName);
-		} else {
-			processIfAsFilter(ops, ifStmt, currentVarName, false, loopVarName);
-			return new ParseResult(currentVarName);
-		}
-	}
-
-	/**
-	 * Parses a non-last statement (not variable declaration or IF).
-	 */
-	private ParseResult parseNonLastStatement(Statement stmt, String currentVarName,
-			List<ProspectiveOperation> ops) {
-		
-		ProspectiveOperation reduceCheck = reduceDetector.detectReduceOperation(stmt);
-		if (reduceCheck == null) {
-			if (!isSafeSideEffect(stmt, currentVarName, ops)) {
-				return ParseResult.abort();
-			}
-
-			ProspectiveOperation mapOp = new ProspectiveOperation(stmt,
-					ProspectiveOperation.OperationType.MAP, currentVarName);
-			ops.add(mapOp);
-		}
-		return new ParseResult(currentVarName);
-	}
-
-	/**
-	 * Parses the last statement in a block.
-	 */
-	private ParseResult parseLastStatement(Statement stmt, String currentVarName,
-			List<ProspectiveOperation> ops, String loopVarName) {
-		
-		ProspectiveOperation reduceOp = reduceDetector.detectReduceOperation(stmt);
-		if (reduceOp != null) {
-			reduceDetector.addMapBeforeReduce(ops, reduceOp, stmt, currentVarName, ast);
-			ops.add(reduceOp);
-		} else if (stmt instanceof ReturnStatement || stmt instanceof ContinueStatement 
-				|| stmt instanceof ThrowStatement) {
-			return ParseResult.abort();
-		} else if (!isSafeSideEffect(stmt, currentVarName, ops)) {
-			return ParseResult.abort();
-		} else {
-			ProspectiveOperation forEachOp = new ProspectiveOperation(stmt,
-					ProspectiveOperation.OperationType.FOREACH, currentVarName);
-			ops.add(forEachOp);
-		}
+		// Fallback: no handler found - should not happen with proper handlers
 		return new ParseResult(currentVarName);
 	}
 
@@ -325,7 +248,7 @@ public class LoopBodyParser {
 		} else if (body instanceof ReturnStatement || body instanceof ContinueStatement 
 				|| body instanceof ThrowStatement) {
 			return new ArrayList<>();
-		} else if (!isSafeSideEffect(body, currentVarName, ops)) {
+		} else if (!sideEffectChecker.isSafeSideEffect(body, currentVarName, ops)) {
 			return new ArrayList<>();
 		} else {
 			ProspectiveOperation forEachOp = new ProspectiveOperation(body,
@@ -525,62 +448,6 @@ public class LoopBodyParser {
 			}
 		}
 
-		return false;
-	}
-
-	/**
-	 * Checks if a statement is a safe side-effect.
-	 */
-	private boolean isSafeSideEffect(Statement stmt, String currentVarName, 
-			List<ProspectiveOperation> operations) {
-		if (stmt == null) {
-			return false;
-		}
-
-		if (!(stmt instanceof ExpressionStatement)) {
-			return false;
-		}
-
-		ExpressionStatement exprStmt = (ExpressionStatement) stmt;
-		Expression expr = exprStmt.getExpression();
-
-		if (expr == null) {
-			return false;
-		}
-
-		if (expr instanceof Assignment) {
-			Assignment assignment = (Assignment) expr;
-			Expression lhs = assignment.getLeftHandSide();
-
-			if (lhs instanceof SimpleName) {
-				String varName = ((SimpleName) lhs).getIdentifier();
-
-				if (varName.equals(currentVarName)) {
-					return false;
-				}
-
-				if (isAccumulatorVariable(varName, operations)) {
-					return false;
-				}
-
-				return false;
-			}
-		}
-
-		return true;
-	}
-
-	/**
-	 * Checks if a variable is an accumulator variable.
-	 */
-	private boolean isAccumulatorVariable(String varName, List<ProspectiveOperation> operations) {
-		for (ProspectiveOperation op : operations) {
-			if (op.getOperationType() == ProspectiveOperation.OperationType.REDUCE) {
-				if (varName.equals(op.getAccumulatorVariableName())) {
-					return true;
-				}
-			}
-		}
 		return false;
 	}
 
