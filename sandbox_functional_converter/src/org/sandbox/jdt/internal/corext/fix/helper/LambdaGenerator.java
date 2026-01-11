@@ -24,7 +24,6 @@ import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.PrefixExpression;
-import org.eclipse.jdt.core.dom.TypeMethodReference;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 
 /**
@@ -34,10 +33,9 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
  * references used in stream pipeline operations. It handles:</p>
  * 
  * <ul>
- * <li>Binary operator lambdas: {@code (a, b) -> a + b}</li>
- * <li>Counting lambdas: {@code (accumulator, _item) -> accumulator + 1}</li>
- * <li>Method references: {@code Integer::sum}, {@code String::concat}</li>
+ * <li>Accumulator lambdas: {@code (a, b) -> a + b}</li>
  * <li>Predicate lambda bodies for filter/match operations</li>
+ * <li>Unique variable name generation to avoid scope conflicts</li>
  * </ul>
  * 
  * <p><b>Variable Name Generation:</b></p>
@@ -49,15 +47,16 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
  * LambdaGenerator generator = new LambdaGenerator(ast);
  * generator.setUsedVariableNames(scopeVariables);
  * 
- * // Create a sum lambda
- * LambdaExpression sumLambda = generator.createBinaryOperatorLambda(InfixExpression.Operator.PLUS);
+ * // Create an accumulator expression for REDUCE operations
+ * Expression accExpr = generator.createAccumulatorExpression(ReducerType.SUM, "int", false);
  * 
- * // Create a method reference
- * TypeMethodReference sumRef = generator.createMethodReference("Integer", "sum");
+ * // Create a predicate lambda body for FILTER operations
+ * Expression predicateBody = generator.createPredicateLambdaBody(condition);
  * }</pre>
  * 
  * @see ProspectiveOperation
  * @see StreamPipelineBuilder
+ * @see ReducerType
  */
 public final class LambdaGenerator {
 
@@ -123,157 +122,6 @@ public final class LambdaGenerator {
 			candidate = baseName + counter;
 		}
 		return candidate;
-	}
-
-	/**
-	 * Creates a method reference like Integer::sum or String::concat.
-	 * 
-	 * @param typeName   the type name (e.g., "Integer", "String")
-	 * @param methodName the method name (e.g., "sum", "concat")
-	 * @return a TypeMethodReference node
-	 */
-	public TypeMethodReference createMethodReference(String typeName, String methodName) {
-		TypeMethodReference methodRef = ast.newTypeMethodReference();
-		methodRef.setType(ast.newSimpleType(ast.newSimpleName(typeName)));
-		methodRef.setName(ast.newSimpleName(methodName));
-		return methodRef;
-	}
-
-	/**
-	 * Creates a method reference for max/min operations based on the accumulator type.
-	 * Uses wrapper class method references to avoid overload ambiguity.
-	 * 
-	 * @param accumulatorType the type of the accumulator variable (e.g., "int", "double")
-	 * @param methodName      the method name ("max" or "min")
-	 * @return a TypeMethodReference for the appropriate wrapper type
-	 */
-	public TypeMethodReference createMaxMinMethodReference(String accumulatorType, String methodName) {
-		String typeName = mapToWrapperType(accumulatorType);
-		return createMethodReference(typeName, methodName);
-	}
-
-	/**
-	 * Maps a primitive type or wrapper class name to the wrapper class simple name.
-	 * 
-	 * @param type the type to map (e.g., "int", "java.lang.Integer", "Integer")
-	 * @return the wrapper class simple name (e.g., "Integer")
-	 */
-	private String mapToWrapperType(String type) {
-		if (type == null) {
-			return "Integer"; // Default fallback
-		}
-
-		switch (type) {
-		case "int":
-		case "Integer":
-			return "Integer";
-		case "long":
-		case "Long":
-			return "Long";
-		case "double":
-		case "Double":
-			return "Double";
-		case "float":
-		case "Float":
-			return "Float";
-		case "short":
-		case "Short":
-			return "Short";
-		case "byte":
-		case "Byte":
-			return "Byte";
-		default:
-			if (type.startsWith("java.lang.")) {
-				return type.substring("java.lang.".length());
-			}
-			return "Integer"; // Default fallback
-		}
-	}
-
-	/**
-	 * Creates a simple binary operator lambda like (a, b) -> a + b.
-	 * Used for simple operations like string concatenation.
-	 * 
-	 * @param operator the infix operator to use
-	 * @return a LambdaExpression with simple parameters
-	 */
-	public LambdaExpression createSimpleBinaryLambda(InfixExpression.Operator operator) {
-		LambdaExpression lambda = ast.newLambdaExpression();
-
-		String param1Name = generateUniqueVariableName("a");
-		String param2Name = generateUniqueVariableName("b");
-
-		VariableDeclarationFragment param1 = ast.newVariableDeclarationFragment();
-		param1.setName(ast.newSimpleName(param1Name));
-		VariableDeclarationFragment param2 = ast.newVariableDeclarationFragment();
-		param2.setName(ast.newSimpleName(param2Name));
-		lambda.parameters().add(param1);
-		lambda.parameters().add(param2);
-
-		InfixExpression operationExpr = ast.newInfixExpression();
-		operationExpr.setLeftOperand(ast.newSimpleName(param1Name));
-		operationExpr.setRightOperand(ast.newSimpleName(param2Name));
-		operationExpr.setOperator(operator);
-		lambda.setBody(operationExpr);
-
-		return lambda;
-	}
-
-	/**
-	 * Creates a binary operator lambda like (accumulator, _item) -> accumulator + _item.
-	 * 
-	 * @param operator the infix operator to use
-	 * @return a LambdaExpression with accumulator-style parameters
-	 */
-	public LambdaExpression createBinaryOperatorLambda(InfixExpression.Operator operator) {
-		LambdaExpression lambda = ast.newLambdaExpression();
-
-		String param1Name = generateUniqueVariableName("accumulator");
-		String param2Name = generateUniqueVariableName("_item");
-
-		VariableDeclarationFragment param1 = ast.newVariableDeclarationFragment();
-		param1.setName(ast.newSimpleName(param1Name));
-		VariableDeclarationFragment param2 = ast.newVariableDeclarationFragment();
-		param2.setName(ast.newSimpleName(param2Name));
-		lambda.parameters().add(param1);
-		lambda.parameters().add(param2);
-
-		InfixExpression operationExpr = ast.newInfixExpression();
-		operationExpr.setLeftOperand(ast.newSimpleName(param1Name));
-		operationExpr.setRightOperand(ast.newSimpleName(param2Name));
-		operationExpr.setOperator(operator);
-		lambda.setBody(operationExpr);
-
-		return lambda;
-	}
-
-	/**
-	 * Creates a counting lambda like (accumulator, _item) -> accumulator + 1.
-	 * Used for INCREMENT/DECREMENT operations.
-	 * 
-	 * @param operator the infix operator (PLUS for increment, MINUS for decrement)
-	 * @return a LambdaExpression that adds/subtracts 1 from the accumulator
-	 */
-	public LambdaExpression createCountingLambda(InfixExpression.Operator operator) {
-		LambdaExpression lambda = ast.newLambdaExpression();
-
-		String param1Name = generateUniqueVariableName("accumulator");
-		String param2Name = generateUniqueVariableName("_item");
-
-		VariableDeclarationFragment param1 = ast.newVariableDeclarationFragment();
-		param1.setName(ast.newSimpleName(param1Name));
-		VariableDeclarationFragment param2 = ast.newVariableDeclarationFragment();
-		param2.setName(ast.newSimpleName(param2Name));
-		lambda.parameters().add(param1);
-		lambda.parameters().add(param2);
-
-		InfixExpression operationExpr = ast.newInfixExpression();
-		operationExpr.setLeftOperand(ast.newSimpleName(param1Name));
-		operationExpr.setRightOperand(ast.newNumberLiteral("1"));
-		operationExpr.setOperator(operator);
-		lambda.setBody(operationExpr);
-
-		return lambda;
 	}
 
 	/**

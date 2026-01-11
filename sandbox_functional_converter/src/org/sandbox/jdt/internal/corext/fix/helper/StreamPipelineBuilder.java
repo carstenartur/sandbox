@@ -21,13 +21,9 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
-import org.eclipse.jdt.core.dom.Expression;
-import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.MethodInvocation;
-import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 
@@ -124,22 +120,6 @@ import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
  * @see Refactorer
  */
 public class StreamPipelineBuilder {
-	// Note: Constants have been moved to StreamConstants class
-	/**
-	 * Marker variable name used when the loop variable is not directly used
-	 * in the lambda body.
-	 */
-	private static final String UNUSED_ITEM_NAME = StreamConstants.UNUSED_PARAMETER_NAME;
-
-	/**
-	 * Method name for creating a stream from a collection.
-	 */
-	private static final String STREAM_METHOD = StreamConstants.STREAM_METHOD;
-
-	/**
-	 * Method name for terminal forEach operation.
-	 */
-	private static final String FOR_EACH_METHOD = StreamConstants.FOR_EACH_METHOD;
 
 	private final EnhancedForStatement forLoop;
 	private final PreconditionsChecker preconditions;
@@ -312,56 +292,6 @@ public class StreamPipelineBuilder {
 	}
 
 	/**
-	 * Adds a MAP operation before a REDUCE operation based on the reducer type.
-	 * 
-	 * <p>
-	 * Mapping strategy by reducer type:
-	 * <ul>
-	 * <li><b>INCREMENT/DECREMENT:</b> Maps to 1 (or 1.0 for double types)</li>
-	 * <li><b>SUM/PRODUCT/STRING_CONCAT:</b> Extracts and maps the RHS
-	 * expression</li>
-	 * <li><b>MAX/MIN:</b> Extracts and maps the non-accumulator argument from
-	 * Math.max/min</li>
-	 * </ul>
-	 * 
-	 * <p>
-	 * This method ensures that the stream pipeline properly transforms elements
-	 * before applying the reduction operation.
-	 * 
-	 * @param ops            the list to add the MAP operation to (must not be null)
-	 * @param reduceOp       the REDUCE operation (must not be null and must be a
-	 *                       REDUCE type)
-	 * @param stmt           the statement containing the reduce operation (must not
-	 *                       be null)
-	 * @param currentVarName the current variable name in the pipeline (must not be
-	 *                       null)
-	 * @throws IllegalArgumentException if any parameter is null or reduceOp is not
-	 *                                  a REDUCE operation
-	 */
-	private void addMapBeforeReduce(List<ProspectiveOperation> ops, ProspectiveOperation reduceOp, Statement stmt,
-			String currentVarName) {
-		reduceDetector.addMapBeforeReduce(ops, reduceOp, stmt, currentVarName, ast);
-	}
-
-	/**
-	 * Detects if a statement contains a REDUCE pattern.
-	 * 
-	 * <p><b>Supported Patterns:</b></p>
-	 * <ul>
-	 * <li>Postfix/Prefix increment: {@code i++}, {@code ++i}, {@code i--}, {@code --i}</li>
-	 * <li>Compound assignments: {@code sum += x}, {@code product *= y}</li>
-	 * <li>Math operations: {@code max = Math.max(max, x)}</li>
-	 * </ul>
-	 * 
-	 * @param stmt the statement to check
-	 * @return a REDUCE operation if detected, null otherwise
-	 * @see ReducePatternDetector#detectReduceOperation(Statement)
-	 */
-	private ProspectiveOperation detectReduceOperation(Statement stmt) {
-		return reduceDetector.detectReduceOperation(stmt);
-	}
-
-	/**
 	 * Analyzes the body of an enhanced for-loop and extracts a list of
 	 * {@link ProspectiveOperation} objects representing the operations that can be
 	 * mapped to stream operations.
@@ -528,111 +458,6 @@ public class StreamPipelineBuilder {
 			}
 		}
 		return false;
-	}
-
-	/**
-	 * Checks if a statement is safe to convert as a side-effect in a stream
-	 * pipeline. Side-effects are statements that don't directly produce a value but
-	 * perform actions.
-	 * 
-	 * <p>
-	 * Safe side-effects include:
-	 * <ul>
-	 * <li>Method calls that don't modify loop variables or accumulators</li>
-	 * <li>System.out.println and similar logging</li>
-	 * <li>Statements that don't contain assignments to variables outside the lambda
-	 * scope</li>
-	 * </ul>
-	 * 
-	 * <p>
-	 * Unsafe side-effects that should prevent conversion:
-	 * <ul>
-	 * <li>Assignments to variables declared outside the loop (except accumulators
-	 * in last statement)</li>
-	 * <li>Modifications to shared mutable state via simple variable
-	 * assignments</li>
-	 * </ul>
-	 * 
-	 * <p>
-	 * <b>Design Decision - Limited Scope:</b>
-	 * </p>
-	 * <p>
-	 * This method only validates simple variable assignments (SimpleName on LHS).
-	 * Array element assignments, field assignments, and method calls are
-	 * conservatively allowed, as they may be part of valid stream pipeline
-	 * patterns. This design choice prioritizes not rejecting valid patterns over
-	 * catching all potential issues.
-	 * 
-	 * <p>
-	 * <b>Relationship with {@link #validateVariableScope}:</b>
-	 * </p>
-	 * <p>
-	 * While {@code isSafeSideEffect} performs early detection of obvious assignment
-	 * issues during pipeline construction, {@link #validateVariableScope} performs
-	 * comprehensive scope checking across the entire pipeline to catch variable
-	 * availability issues. Both methods work together to ensure safe conversions.
-	 * 
-	 * @param stmt           the statement to check
-	 * @param currentVarName the current variable name in the pipeline (may differ
-	 *                       from loop variable if mapped)
-	 * @param operations     the list of operations (to check for accumulators)
-	 * @return true if the statement is safe to include in a stream pipeline, false
-	 *         otherwise
-	 */
-	private boolean isSafeSideEffect(Statement stmt, String currentVarName, List<ProspectiveOperation> operations) {
-		if (stmt == null) {
-			return false;
-		}
-
-		if (!(stmt instanceof ExpressionStatement)) {
-			// Only expression statements can be safe side-effects
-			// Other statement types (if, while, for, etc.) should be handled differently
-			return false;
-		}
-
-		ExpressionStatement exprStmt = (ExpressionStatement) stmt;
-		Expression expr = exprStmt.getExpression();
-
-		// Defensive null check: a null expression indicates a malformed or incomplete
-		// AST.
-		// In that case we conservatively abort stream conversion by returning false.
-		if (expr == null) {
-			return false;
-		}
-
-		// Check for assignments - these are potentially unsafe if they modify external
-		// variables
-		if (expr instanceof Assignment) {
-			Assignment assignment = (Assignment) expr;
-			Expression lhs = assignment.getLeftHandSide();
-
-			// Only validate SimpleName assignments (simple variables)
-			// Array access and field access are conservatively allowed
-			if (lhs instanceof SimpleName) {
-				String varName = ((SimpleName) lhs).getIdentifier();
-
-				// Assignment to current pipeline variable is unsafe (would modify loop/mapped
-				// var)
-				if (varName.equals(currentVarName)) {
-					return false;
-				}
-
-				// Assignment to accumulator variables is handled by REDUCE, not side-effects
-				if (isAccumulatorVariable(varName, operations)) {
-					return false;
-				}
-
-				// Other assignments to external variables are unsafe for conversion
-				// This is a conservative approach - we could refine this further if needed
-				return false;
-			}
-
-			// Non-SimpleName assignments (array access, field access) are allowed
-			// This is a deliberate design choice - see method documentation
-		}
-
-		// Method calls and other expressions are generally safe
-		return true;
 	}
 
 	/**

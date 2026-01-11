@@ -66,7 +66,6 @@ import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
  */
 public class LoopBodyParser {
 
-	private final EnhancedForStatement forLoop;
 	private final AST ast;
 	private final ReducePatternDetector reduceDetector;
 	private final IfStatementAnalyzer ifAnalyzer;
@@ -94,7 +93,6 @@ public class LoopBodyParser {
 			boolean isAnyMatchPattern, 
 			boolean isNoneMatchPattern, 
 			boolean isAllMatchPattern) {
-		this.forLoop = forLoop;
 		this.ast = forLoop.getAST();
 		this.reduceDetector = reduceDetector;
 		this.ifAnalyzer = ifAnalyzer;
@@ -257,70 +255,6 @@ public class LoopBodyParser {
 			ops.add(forEachOp);
 		}
 		return ops;
-	}
-
-	/**
-	 * Processes an IF statement as a filter operation.
-	 */
-	private ParseResult processIfAsFilter(List<ProspectiveOperation> ops, IfStatement ifStmt,
-			String currentVarName, boolean updateVarName, String loopVarName) {
-		
-		ProspectiveOperation filterOp = new ProspectiveOperation(ifStmt.getExpression(),
-				OperationType.FILTER);
-		ops.add(filterOp);
-
-		List<ProspectiveOperation> nestedOps = parse(ifStmt.getThenStatement(), currentVarName);
-		ops.addAll(nestedOps);
-
-		if (updateVarName && !nestedOps.isEmpty()) {
-			ProspectiveOperation lastNested = nestedOps.get(nestedOps.size() - 1);
-			if (lastNested.getProducedVariableName() != null) {
-				return new ParseResult(lastNested.getProducedVariableName());
-			}
-		}
-
-		return new ParseResult(currentVarName);
-	}
-
-	/**
-	 * Determines if remaining statements should be wrapped in a MAP.
-	 */
-	private boolean shouldWrapRemainingInMap(List<Statement> statements, int currentIndex) {
-		if (currentIndex >= statements.size() - 2) {
-			return false;
-		}
-
-		for (int j = currentIndex + 1; j < statements.size() - 1; j++) {
-			Statement stmt = statements.get(j);
-
-			if (stmt instanceof IfStatement) {
-				IfStatement ifStmt = (IfStatement) stmt;
-
-				if (ifAnalyzer.isEarlyReturnIf(ifStmt, isAnyMatchPattern, isNoneMatchPattern, isAllMatchPattern)) {
-					return false;
-				}
-
-				if (ifAnalyzer.isIfWithContinue(ifStmt)) {
-					return false;
-				}
-
-				if (ifStmt.getElseStatement() == null) {
-					return true;
-				}
-			}
-		}
-
-		int nonTerminalCount = statements.size() - currentIndex - 2;
-		if (nonTerminalCount > 0) {
-			for (int j = currentIndex + 1; j < statements.size() - 1; j++) {
-				Statement stmt = statements.get(j);
-				if (!(stmt instanceof VariableDeclarationStatement)) {
-					return true;
-				}
-			}
-		}
-
-		return false;
 	}
 
 	/**

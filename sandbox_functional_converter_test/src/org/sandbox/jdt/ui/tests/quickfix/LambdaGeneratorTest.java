@@ -76,99 +76,6 @@ public class LambdaGeneratorTest {
 	}
 
 	@Nested
-	@DisplayName("createMethodReference()")
-	class CreateMethodReferenceTests {
-
-		@Test
-		@DisplayName("Creates Integer::sum reference")
-		void createsIntegerSumReference() {
-			LambdaGenerator generator = new LambdaGenerator(ast);
-			
-			TypeMethodReference ref = generator.createMethodReference("Integer", "sum");
-			
-			assertNotNull(ref);
-			assertEquals("sum", ref.getName().getIdentifier());
-		}
-
-		@Test
-		@DisplayName("Creates String::concat reference")
-		void createsStringConcatReference() {
-			LambdaGenerator generator = new LambdaGenerator(ast);
-			
-			TypeMethodReference ref = generator.createMethodReference("String", "concat");
-			
-			assertNotNull(ref);
-			assertEquals("concat", ref.getName().getIdentifier());
-		}
-	}
-
-	@Nested
-	@DisplayName("createBinaryOperatorLambda()")
-	class CreateBinaryOperatorLambdaTests {
-
-		@Test
-		@DisplayName("Creates lambda with PLUS operator")
-		void createsLambdaWithPlusOperator() {
-			LambdaGenerator generator = new LambdaGenerator(ast);
-			
-			LambdaExpression lambda = generator.createBinaryOperatorLambda(InfixExpression.Operator.PLUS);
-			
-			assertNotNull(lambda);
-			assertEquals(2, lambda.parameters().size());
-			assertTrue(lambda.getBody() instanceof InfixExpression);
-			
-			InfixExpression body = (InfixExpression) lambda.getBody();
-			assertEquals(InfixExpression.Operator.PLUS, body.getOperator());
-		}
-
-		@Test
-		@DisplayName("Creates lambda with TIMES operator")
-		void createsLambdaWithTimesOperator() {
-			LambdaGenerator generator = new LambdaGenerator(ast);
-			
-			LambdaExpression lambda = generator.createBinaryOperatorLambda(InfixExpression.Operator.TIMES);
-			
-			assertNotNull(lambda);
-			InfixExpression body = (InfixExpression) lambda.getBody();
-			assertEquals(InfixExpression.Operator.TIMES, body.getOperator());
-		}
-	}
-
-	@Nested
-	@DisplayName("createCountingLambda()")
-	class CreateCountingLambdaTests {
-
-		@Test
-		@DisplayName("Creates increment counting lambda")
-		void createsIncrementCountingLambda() {
-			LambdaGenerator generator = new LambdaGenerator(ast);
-			
-			LambdaExpression lambda = generator.createCountingLambda(InfixExpression.Operator.PLUS);
-			
-			assertNotNull(lambda);
-			assertEquals(2, lambda.parameters().size());
-			assertTrue(lambda.getBody() instanceof InfixExpression);
-			
-			InfixExpression body = (InfixExpression) lambda.getBody();
-			assertEquals(InfixExpression.Operator.PLUS, body.getOperator());
-			// Right operand should be literal "1"
-			assertEquals("1", body.getRightOperand().toString());
-		}
-
-		@Test
-		@DisplayName("Creates decrement counting lambda")
-		void createsDecrementCountingLambda() {
-			LambdaGenerator generator = new LambdaGenerator(ast);
-			
-			LambdaExpression lambda = generator.createCountingLambda(InfixExpression.Operator.MINUS);
-			
-			assertNotNull(lambda);
-			InfixExpression body = (InfixExpression) lambda.getBody();
-			assertEquals(InfixExpression.Operator.MINUS, body.getOperator());
-		}
-	}
-
-	@Nested
 	@DisplayName("generateUniqueVariableName()")
 	class GenerateUniqueVariableNameTests {
 
@@ -287,33 +194,6 @@ public class LambdaGeneratorTest {
 			
 			assertNotNull(expr);
 			assertTrue(expr instanceof LambdaExpression);
-		}
-	}
-
-	@Nested
-	@DisplayName("createMaxMinMethodReference()")
-	class CreateMaxMinMethodReferenceTests {
-
-		@Test
-		@DisplayName("Creates Integer::max for int type")
-		void createsIntegerMaxForIntType() {
-			LambdaGenerator generator = new LambdaGenerator(ast);
-			
-			TypeMethodReference ref = generator.createMaxMinMethodReference("int", "max");
-			
-			assertNotNull(ref);
-			assertEquals("max", ref.getName().getIdentifier());
-		}
-
-		@Test
-		@DisplayName("Creates Double::min for double type")
-		void createsDoubleMinForDoubleType() {
-			LambdaGenerator generator = new LambdaGenerator(ast);
-			
-			TypeMethodReference ref = generator.createMaxMinMethodReference("double", "min");
-			
-			assertNotNull(ref);
-			assertEquals("min", ref.getName().getIdentifier());
 		}
 	}
 }
