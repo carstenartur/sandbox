@@ -1,0 +1,161 @@
+# JFace Cleanup Plugin
+
+> **Navigation**: [Main README](../README.md) | [Architecture](ARCHITECTURE.md) | [TODO](TODO.md)
+
+## Overview
+
+The **JFace Cleanup** plugin modernizes Eclipse JFace code by migrating deprecated `SubProgressMonitor` usage to the recommended `SubMonitor` API. This improves code maintainability and follows Eclipse Platform best practices.
+
+## Key Features
+
+- 🔄 **SubProgressMonitor → SubMonitor** - Automatic migration to modern progress API
+- 🎯 **Style Flag Handling** - Properly converts `PREPEND_MAIN_LABEL_TO_SUBTASK` flag
+- 📦 **Variable Name Management** - Generates unique variable names to avoid conflicts
+- ♻️ **Idempotent** - Running cleanup multiple times produces the same result
+- 🔌 **Eclipse Integration** - Works seamlessly with Eclipse RCP/JFace code
+
+## Quick Start
+
+### Enable in Eclipse
+
+1. Open **Source** → **Clean Up...**
+2. Navigate to the **JFace** category
+3. Enable **Migrate SubProgressMonitor to SubMonitor**
+
+### Example Transformations
+
+**Basic Transformation:**
+```java
+// Before
+SubProgressMonitor subMonitor = new SubProgressMonitor(monitor, 100);
+
+// After
+SubMonitor subMonitor = SubMonitor.convert(monitor, 100);
+```
+
+**With Style Flags:**
+```java
+// Before
+SubProgressMonitor sub = new SubProgressMonitor(
+    monitor, 50, SubProgressMonitor.PREPEND_MAIN_LABEL_TO_SUBTASK);
+
+// After
+SubMonitor sub = SubMonitor.convert(monitor, 50)
+    .setWorkRemaining(50);
+```
+
+**Unique Variable Names:**
+```java
+// Before
+SubProgressMonitor sub = new SubProgressMonitor(monitor, 100);
+// ... later in code ...
+SubProgressMonitor sub = new SubProgressMonitor(otherMonitor, 50);
+
+// After
+SubMonitor sub = SubMonitor.convert(monitor, 100);
+// ... later in code ...
+SubMonitor sub2 = SubMonitor.convert(otherMonitor, 50);  // Unique name generated
+```
+
+## Migration Pattern
+
+The cleanup transforms:
+
+```
+new SubProgressMonitor(monitor, ticks)
+    ↓
+SubMonitor.convert(monitor, ticks)
+```
+
+With style flag `PREPEND_MAIN_LABEL_TO_SUBTASK`:
+
+```
+new SubProgressMonitor(monitor, ticks, SubProgressMonitor.PREPEND_MAIN_LABEL_TO_SUBTASK)
+    ↓
+SubMonitor.convert(monitor, ticks).setWorkRemaining(ticks)
+```
+
+## Why Migrate?
+
+### Benefits of SubMonitor
+
+- **More Flexible** - Better handling of progress allocation
+- **Recommended API** - Eclipse Platform's preferred progress monitoring approach
+- **Better Nesting** - Simplified handling of nested progress monitors
+- **Modern Pattern** - Fluent API design with method chaining
+
+### SubProgressMonitor Issues
+
+- **Deprecated** - No longer recommended by Eclipse Platform
+- **Less Flexible** - Limited options for progress subdivision
+- **Verbose** - Requires more boilerplate code
+
+## Features
+
+### Unique Variable Name Handling
+
+The cleanup ensures variable names don't conflict:
+- Detects existing variable names in scope
+- Generates unique names (e.g., `subMonitor2`, `subMonitor3`)
+- Maintains code correctness during transformation
+
+### Idempotence
+
+Running the cleanup multiple times produces identical results:
+- Already converted code is not modified again
+- Transformation is deterministic and stable
+
+### Official Eclipse Documentation
+
+This cleanup aligns with Eclipse Platform guidelines:
+- [SubMonitor JavaDoc](https://help.eclipse.org/latest/topic/org.eclipse.platform.doc.isv/reference/api/org/eclipse/core/runtime/SubMonitor.html)
+- [Progress Monitoring Best Practices](https://help.eclipse.org/latest/topic/org.eclipse.platform.doc.isv/guide/runtime_progress.htm)
+
+## Requirements
+
+- **Eclipse Platform 3.8+** - SubMonitor is available since Eclipse 3.8
+- **Java 8+** - Compatible with Java 8 and later
+
+## Documentation
+
+- **[Architecture](ARCHITECTURE.md)** - Implementation details and AST visitor patterns
+- **[TODO](TODO.md)** - Future enhancements
+- **[Main README](../README.md#7-sandbox_jface_cleanup)** - Detailed examples
+
+## Testing
+
+Comprehensive tests in `sandbox_jface_cleanup_test`:
+- Basic transformation tests
+- Style flag handling tests
+- Variable name uniqueness tests
+- Idempotence verification
+
+Run tests:
+```bash
+xvfb-run --auto-servernum mvn test -pl sandbox_jface_cleanup_test
+```
+
+## Limitations
+
+- Does not handle complex style flag combinations (only `PREPEND_MAIN_LABEL_TO_SUBTASK`)
+- Custom SubProgressMonitor subclasses require manual review
+- Some rare edge cases may need manual adjustment
+
+See [TODO.md](TODO.md) for planned improvements.
+
+## Contributing to Eclipse JDT
+
+This plugin is designed for easy integration into Eclipse JDT:
+1. Replace `org.sandbox` with `org.eclipse` in package names
+2. Move classes to `org.eclipse.jdt.internal.corext.fix`
+3. Update cleanup registration
+
+See [Architecture](ARCHITECTURE.md) for implementation patterns.
+
+## License
+
+Eclipse Public License 2.0 (EPL-2.0)
+
+---
+
+> **Related Plugins**: [Platform Helper](../sandbox_platform_helper/), [JUnit Cleanup](../sandbox_junit_cleanup/)
