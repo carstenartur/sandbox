@@ -350,33 +350,6 @@ public final class ProspectiveOperation {
 		return this.operationType;
 	}
 
-	/** 
-	 * Returns the suitable stream method name for this operation type.
-	 * 
-	 * @return the method name (e.g., "map", "filter", "forEach")
-	 * @see StreamConstants
-	 */
-	public String getSuitableMethod() {
-		switch (operationType) {
-		case MAP:
-			return StreamConstants.MAP_METHOD;
-		case FILTER:
-			return StreamConstants.FILTER_METHOD;
-		case FOREACH:
-			return StreamConstants.FOR_EACH_ORDERED_METHOD;
-		case REDUCE:
-			return StreamConstants.REDUCE_METHOD;
-		case ANYMATCH:
-			return StreamConstants.ANY_MATCH_METHOD;
-		case NONEMATCH:
-			return StreamConstants.NONE_MATCH_METHOD;
-		case ALLMATCH:
-			return StreamConstants.ALL_MATCH_METHOD;
-		default:
-			return "unknown";
-		}
-	}
-
 	/**
 	 * Generate the lambda arguments for this operation Based on NetBeans
 	 * ProspectiveOperation.getArguments()
@@ -706,10 +679,32 @@ public final class ProspectiveOperation {
 	 *     Example: {@code if (!condition) return false;} → {@code if (!stream.allMatch(x -> condition)) return false;}</li>
 	 * </ul>
 	 * 
-	 * @see #getSuitableMethod()
+	 * @see #getMethodName()
+	 * @see StreamConstants
 	 */
 	public enum OperationType {
-		MAP, FOREACH, FILTER, REDUCE, ANYMATCH, NONEMATCH, ALLMATCH
+		MAP(StreamConstants.MAP_METHOD),
+		FOREACH(StreamConstants.FOR_EACH_ORDERED_METHOD),
+		FILTER(StreamConstants.FILTER_METHOD),
+		REDUCE(StreamConstants.REDUCE_METHOD),
+		ANYMATCH(StreamConstants.ANY_MATCH_METHOD),
+		NONEMATCH(StreamConstants.NONE_MATCH_METHOD),
+		ALLMATCH(StreamConstants.ALL_MATCH_METHOD);
+
+		private final String methodName;
+
+		OperationType(String methodName) {
+			this.methodName = methodName;
+		}
+
+		/**
+		 * Returns the stream method name for this operation type.
+		 * 
+		 * @return the method name (e.g., "map", "filter", "forEachOrdered", "reduce")
+		 */
+		public String getMethodName() {
+			return methodName;
+		}
 	}
 
 	/**

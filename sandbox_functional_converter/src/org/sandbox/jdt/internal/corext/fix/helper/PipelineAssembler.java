@@ -138,7 +138,7 @@ public class PipelineAssembler {
 
 			MethodInvocation next = ast.newMethodInvocation();
 			next.setExpression(pipeline);
-			next.setName(ast.newSimpleName(op.getSuitableMethod()));
+			next.setName(ast.newSimpleName(op.getOperationType().getMethodName()));
 
 			String paramName = getVariableNameFromPreviousOp(i);
 			List<Expression> args = op.getArguments(ast, paramName);

@@ -130,8 +130,8 @@ public class ProspectiveOperationTest {
 	}
 
 	@Nested
-	@DisplayName("getSuitableMethod()")
-	class GetSuitableMethodTests {
+	@DisplayName("OperationType.getMethodName()")
+	class GetMethodNameTests {
 
 		@Test
 		@DisplayName("Returns 'map' for MAP operation")
@@ -139,8 +139,8 @@ public class ProspectiveOperationTest {
 			SimpleName expr = ast.newSimpleName("value");
 			ProspectiveOperation op = new ProspectiveOperation(expr, OperationType.MAP);
 			
-			assertEquals(StreamConstants.MAP_METHOD, op.getSuitableMethod());
-			assertEquals("map", op.getSuitableMethod());
+			assertEquals(StreamConstants.MAP_METHOD, op.getOperationType().getMethodName());
+			assertEquals("map", op.getOperationType().getMethodName());
 		}
 
 		@Test
@@ -149,8 +149,8 @@ public class ProspectiveOperationTest {
 			SimpleName expr = ast.newSimpleName("condition");
 			ProspectiveOperation op = new ProspectiveOperation(expr, OperationType.FILTER);
 			
-			assertEquals(StreamConstants.FILTER_METHOD, op.getSuitableMethod());
-			assertEquals("filter", op.getSuitableMethod());
+			assertEquals(StreamConstants.FILTER_METHOD, op.getOperationType().getMethodName());
+			assertEquals("filter", op.getOperationType().getMethodName());
 		}
 
 		@Test
@@ -159,8 +159,8 @@ public class ProspectiveOperationTest {
 			SimpleName expr = ast.newSimpleName("action");
 			ProspectiveOperation op = new ProspectiveOperation(expr, OperationType.FOREACH);
 			
-			assertEquals(StreamConstants.FOR_EACH_ORDERED_METHOD, op.getSuitableMethod());
-			assertEquals("forEachOrdered", op.getSuitableMethod());
+			assertEquals(StreamConstants.FOR_EACH_ORDERED_METHOD, op.getOperationType().getMethodName());
+			assertEquals("forEachOrdered", op.getOperationType().getMethodName());
 		}
 
 		@Test
@@ -169,8 +169,8 @@ public class ProspectiveOperationTest {
 			SimpleName expr = ast.newSimpleName("value");
 			ProspectiveOperation op = new ProspectiveOperation(expr, OperationType.REDUCE);
 			
-			assertEquals(StreamConstants.REDUCE_METHOD, op.getSuitableMethod());
-			assertEquals("reduce", op.getSuitableMethod());
+			assertEquals(StreamConstants.REDUCE_METHOD, op.getOperationType().getMethodName());
+			assertEquals("reduce", op.getOperationType().getMethodName());
 		}
 
 		@Test
@@ -179,8 +179,8 @@ public class ProspectiveOperationTest {
 			SimpleName expr = ast.newSimpleName("condition");
 			ProspectiveOperation op = new ProspectiveOperation(expr, OperationType.ANYMATCH);
 			
-			assertEquals(StreamConstants.ANY_MATCH_METHOD, op.getSuitableMethod());
-			assertEquals("anyMatch", op.getSuitableMethod());
+			assertEquals(StreamConstants.ANY_MATCH_METHOD, op.getOperationType().getMethodName());
+			assertEquals("anyMatch", op.getOperationType().getMethodName());
 		}
 
 		@Test
@@ -189,8 +189,8 @@ public class ProspectiveOperationTest {
 			SimpleName expr = ast.newSimpleName("condition");
 			ProspectiveOperation op = new ProspectiveOperation(expr, OperationType.NONEMATCH);
 			
-			assertEquals(StreamConstants.NONE_MATCH_METHOD, op.getSuitableMethod());
-			assertEquals("noneMatch", op.getSuitableMethod());
+			assertEquals(StreamConstants.NONE_MATCH_METHOD, op.getOperationType().getMethodName());
+			assertEquals("noneMatch", op.getOperationType().getMethodName());
 		}
 
 		@Test
@@ -199,8 +199,8 @@ public class ProspectiveOperationTest {
 			SimpleName expr = ast.newSimpleName("condition");
 			ProspectiveOperation op = new ProspectiveOperation(expr, OperationType.ALLMATCH);
 			
-			assertEquals(StreamConstants.ALL_MATCH_METHOD, op.getSuitableMethod());
-			assertEquals("allMatch", op.getSuitableMethod());
+			assertEquals(StreamConstants.ALL_MATCH_METHOD, op.getOperationType().getMethodName());
+			assertEquals("allMatch", op.getOperationType().getMethodName());
 		}
 	}
 
