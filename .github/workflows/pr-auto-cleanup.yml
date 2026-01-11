@@ -1,0 +1,87 @@
+# Automatic PR Code Cleanup using Sandbox Cleanup Application
+# This workflow automatically applies Eclipse JDT cleanup transformations to pull requests
+# Uses the Docker-based action that wraps the sandbox cleanup application
+
+name: Auto PR Cleanup
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    branches: [main]
+    paths:
+      - '**.java'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout PR branch
+      uses: actions/checkout@v6
+      with:
+        ref: ${{ github.event.pull_request.head.ref }}
+        repository: ${{ github.event.pull_request.head.repo.full_name }}
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+        
+    - name: Run Sandbox Cleanup
+      uses: ./.github/actions/cleanup-action
+      with:
+        config-file: '.github/cleanup-profiles/standard.properties'
+        source-dir: '.'
+        verbose: 'true'
+        
+    - name: Check for changes
+      id: check_changes
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "has_changes=true" >> $GITHUB_OUTPUT
+          git status --short
+        else
+          echo "has_changes=false" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Commit and push changes
+      if: steps.check_changes.outputs.has_changes == 'true'
+      env:
+        CLEANUP_COMMIT_MESSAGE: |
+          🤖 Apply Sandbox Eclipse JDT cleanup transformations
+
+          Automated cleanup applied using sandbox cleanup application:
+          - Code formatting and import organization
+          - Adding missing @Override and @Deprecated annotations
+          - Removing unnecessary code (casts, unused variables)
+          - Modernizing code (lambdas, functional interfaces)
+          - Applying sandbox-specific cleanups
+          - Code style improvements
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add .
+        git commit -m "$CLEANUP_COMMIT_MESSAGE"
+        git push
+        
+    - name: Comment on PR
+      if: steps.check_changes.outputs.has_changes == 'true'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '🤖 **Sandbox Cleanup Applied**\n\n' +
+                  'The sandbox Eclipse JDT cleanup application has automatically processed this PR:\n\n' +
+                  '- ✨ Code formatting and import organization\n' +
+                  '- 📝 Added missing annotations (@Override, @Deprecated)\n' +
+                  '- 🧹 Removed unnecessary code (casts, unused variables)\n' +
+                  '- 🚀 Modernized code (lambdas, functional interfaces)\n' +
+                  '- 🔧 Applied sandbox-specific cleanups (encoding, platform helper, etc.)\n' +
+                  '- 💎 Code style improvements\n\n' +
+                  'Profile used: **standard**\n\n' +
+                  'Please review the changes.'
+          })

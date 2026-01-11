@@ -14,12 +14,14 @@ This project provides:
 - **Eclipse Product Build**: A complete Eclipse product with bundled features
 - **P2 Update Site**: Installable plugins via Eclipse update mechanism
 - **Test Infrastructure**: JUnit 5-based tests for all cleanup implementations
+- **GitHub Actions Integration**: Automated code cleanup for pull requests ([See GITHUB_ACTIONS.md](GITHUB_ACTIONS.md))
 
 All plugins are work-in-progress and intended for experimentation and learning.
 
 ## Table of Contents
 
 - [Overview](#overview)
+- [GitHub Actions Integration](#github-actions-integration)
 - [Build Instructions](#build-instructions)
 - [Eclipse Version Configuration](#eclipse-version-configuration)
 - [Quickstart](#quickstart)
@@ -129,6 +131,26 @@ All plugins are work-in-progress and intended for experimentation and learning.
 - [Contributing](#contributing)
 - [Release Process](#release-process)
 - [License](#license)
+
+## GitHub Actions Integration
+
+This repository includes a **Docker-based GitHub Action** for automated code cleanup on pull requests. The action uses the sandbox cleanup application to apply Eclipse JDT cleanups directly in your GitHub workflows.
+
+### Quick Start
+
+- **Automatic PR Cleanup**: Already configured! Opens/updates to PRs with Java files trigger cleanup automatically
+- **Manual Cleanup**: Go to Actions → Manual Cleanup → Run workflow
+- **Custom Integration**: Use `./.github/actions/cleanup-action` in your workflows
+
+### Features
+
+✅ Automated cleanup on pull requests  
+✅ Configurable profiles (minimal/standard/aggressive)  
+✅ All sandbox + Eclipse JDT cleanups included  
+✅ Auto-commit changes to PR branch  
+✅ Manual trigger with customizable options  
+
+**[📖 Full Documentation](GITHUB_ACTIONS.md)** | **[Workflows Guide](.github/workflows/README.md)** | **[Action Details](.github/actions/cleanup-action/README.md)**
 
 ## Build Instructions
 

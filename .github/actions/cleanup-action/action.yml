@@ -1,0 +1,33 @@
+name: 'Sandbox Eclipse JDT Cleanup'
+description: 'Apply Eclipse JDT cleanup transformations using the sandbox cleanup application'
+author: 'Sandbox Project'
+
+branding:
+  icon: 'code'
+  color: 'blue'
+
+inputs:
+  config-file:
+    description: 'Path to cleanup configuration properties file'
+    required: true
+  source-dir:
+    description: 'Directory containing Java source files to clean (relative to repository root)'
+    required: false
+    default: '.'
+  verbose:
+    description: 'Enable verbose output'
+    required: false
+    default: 'false'
+  quiet:
+    description: 'Suppress all output except errors'
+    required: false
+    default: 'false'
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  env:
+    INPUT_CONFIG_FILE: ${{ inputs.config-file }}
+    INPUT_SOURCE_DIR: ${{ inputs.source-dir }}
+    INPUT_VERBOSE: ${{ inputs.verbose }}
+    INPUT_QUIET: ${{ inputs.quiet }}
