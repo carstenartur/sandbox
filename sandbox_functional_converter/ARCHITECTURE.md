@@ -155,18 +155,52 @@ enum OperationType {
     ANYMATCH,   // Terminal match: x -> condition (returns true if any match)
     NONEMATCH   // Terminal match: x -> condition (returns true if none match)
 }
+```
 
-enum ReducerType {
-    INCREMENT,       // i++, ++i
-    DECREMENT,       // i--, --i, i -= 1
-    SUM,             // sum += x
-    PRODUCT,         // product *= x
-    STRING_CONCAT,   // s += string
-    MAX,             // max = Math.max(max, x)
-    MIN,             // min = Math.min(min, x)
+### 5. ReducerType (Standalone Enum)
+**Location**: `org.sandbox.jdt.internal.corext.fix.helper.ReducerType`
+**Purpose**: Types of reduction operations with built-in accumulator expression creation
+
+Each enum value encapsulates its own logic for creating the appropriate accumulator expression
+(method reference or lambda) for the `reduce()` operation. The enum is fully self-contained and
+only requires an `AST` instance to create expressions.
+
+```java
+public enum ReducerType {
+    INCREMENT {
+        @Override
+        public Expression createAccumulatorExpression(AST ast, 
+                String accumulatorType, boolean isNullSafe) {
+            return createSumExpression(ast, accumulatorType, true);
+        }
+    },
+    DECREMENT,      // i--, --i, i -= 1
+    SUM,            // sum += x
+    PRODUCT,        // product *= x
+    STRING_CONCAT,  // s += string
+    MAX,            // max = Math.max(max, x)
+    MIN,            // min = Math.min(min, x)
     CUSTOM_AGGREGATE // Custom aggregation patterns
+    
+    // Each type implements:
+    public abstract Expression createAccumulatorExpression(
+        AST ast, String accumulatorType, boolean isNullSafe);
+    
+    // Private helper methods for expression creation:
+    // - createMethodReference(ast, typeName, methodName)
+    // - createBinaryOperatorLambda(ast, operator)
+    // - createCountingLambda(ast, operator)
+    // - createMaxMinMethodReference(ast, accumulatorType, methodName)
+    // - mapToWrapperType(type)
 }
 ```
+
+#### Benefits of Standalone ReducerType
+- **Full Encapsulation**: Each reducer type contains all logic needed to create its expression
+- **Minimal Dependencies**: Only requires `AST` - no dependency on `LambdaGenerator`
+- **Open/Closed Principle**: New reducer types can be added without modifying other classes
+- **Single Responsibility**: Each reducer type handles its own expression creation
+- **Testability**: Each reducer type's behavior can be tested independently
 
 #### Key Methods
 - `getSuitableMethod()` - Returns stream method name ("map", "filter", "forEach", etc.)

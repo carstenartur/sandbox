@@ -28,7 +28,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.internal.corext.fix.helper.LambdaGenerator;
-import org.sandbox.jdt.internal.corext.fix.helper.ProspectiveOperation;
+import org.sandbox.jdt.internal.corext.fix.helper.ReducerType;
 
 /**
  * Unit tests for {@link LambdaGenerator}.
@@ -215,7 +215,7 @@ public class LambdaGeneratorTest {
 			LambdaGenerator generator = new LambdaGenerator(ast);
 			
 			var expr = generator.createAccumulatorExpression(
-					ProspectiveOperation.ReducerType.SUM, "int", false);
+					ReducerType.SUM, "int", false);
 			
 			assertNotNull(expr);
 			assertTrue(expr instanceof TypeMethodReference);
@@ -227,7 +227,7 @@ public class LambdaGeneratorTest {
 			LambdaGenerator generator = new LambdaGenerator(ast);
 			
 			var expr = generator.createAccumulatorExpression(
-					ProspectiveOperation.ReducerType.SUM, "double", false);
+					ReducerType.SUM, "double", false);
 			
 			assertNotNull(expr);
 			assertTrue(expr instanceof TypeMethodReference);
@@ -241,7 +241,7 @@ public class LambdaGeneratorTest {
 			LambdaGenerator generator = new LambdaGenerator(ast);
 			
 			var expr = generator.createAccumulatorExpression(
-					ProspectiveOperation.ReducerType.INCREMENT, "int", false);
+					ReducerType.INCREMENT, "int", false);
 			
 			assertNotNull(expr);
 			// INCREMENT with int should use counting lambda, not method reference
@@ -254,7 +254,7 @@ public class LambdaGeneratorTest {
 			LambdaGenerator generator = new LambdaGenerator(ast);
 			
 			var expr = generator.createAccumulatorExpression(
-					ProspectiveOperation.ReducerType.PRODUCT, "int", false);
+					ReducerType.PRODUCT, "int", false);
 			
 			assertNotNull(expr);
 			assertTrue(expr instanceof LambdaExpression);
@@ -269,7 +269,7 @@ public class LambdaGeneratorTest {
 			LambdaGenerator generator = new LambdaGenerator(ast);
 			
 			var expr = generator.createAccumulatorExpression(
-					ProspectiveOperation.ReducerType.STRING_CONCAT, "String", true);
+					ReducerType.STRING_CONCAT, "String", true);
 			
 			assertNotNull(expr);
 			assertTrue(expr instanceof TypeMethodReference);
@@ -283,7 +283,7 @@ public class LambdaGeneratorTest {
 			LambdaGenerator generator = new LambdaGenerator(ast);
 			
 			var expr = generator.createAccumulatorExpression(
-					ProspectiveOperation.ReducerType.STRING_CONCAT, "String", false);
+					ReducerType.STRING_CONCAT, "String", false);
 			
 			assertNotNull(expr);
 			assertTrue(expr instanceof LambdaExpression);

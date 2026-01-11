@@ -708,48 +708,6 @@ public final class ProspectiveOperation {
 	}
 
 	/**
-	 * Types of reduction operations supported for REDUCE operations.
-	 * 
-	 * <p>Each reducer type represents a specific accumulation pattern:
-	 * <ul>
-	 * <li><b>INCREMENT</b>: Counts elements by incrementing an accumulator. 
-	 *     Pattern: {@code i++}, {@code ++i}. 
-	 *     Maps to: {@code .map(_item -> 1).reduce(i, Integer::sum)}</li>
-	 * <li><b>DECREMENT</b>: Decrements an accumulator for each element. 
-	 *     Pattern: {@code i--}, {@code --i}, {@code i -= 1}. 
-	 *     Maps to: {@code .map(_item -> -1).reduce(i, Integer::sum)}</li>
-	 * <li><b>SUM</b>: Sums values from the stream. 
-	 *     Pattern: {@code sum += value}. 
-	 *     Maps to: {@code .reduce(sum, Integer::sum)} or {@code .map(x -> value).reduce(sum, Integer::sum)}</li>
-	 * <li><b>PRODUCT</b>: Multiplies values from the stream. 
-	 *     Pattern: {@code product *= value}. 
-	 *     Maps to: {@code .reduce(product, (acc, x) -> acc * x)}</li>
-	 * <li><b>STRING_CONCAT</b>: Concatenates strings. 
-	 *     Pattern: {@code str += substring}. 
-	 *     Maps to: {@code .reduce(str, String::concat)} (when null-safe)</li>
-	 * <li><b>MAX</b>: Finds the maximum value. 
-	 *     Pattern: {@code max = Math.max(max, value)}. 
-	 *     Maps to: {@code .reduce(max, Math::max)} or {@code .reduce(max, Integer::max)}</li>
-	 * <li><b>MIN</b>: Finds the minimum value. 
-	 *     Pattern: {@code min = Math.min(min, value)}. 
-	 *     Maps to: {@code .reduce(min, Math::min)} or {@code .reduce(min, Integer::min)}</li>
-	 * <li><b>CUSTOM_AGGREGATE</b>: User-defined aggregation patterns not covered by standard types.</li>
-	 * </ul>
-	 * 
-	 * @see ProspectiveOperation#getArgumentsForReducer(AST)
-	 */
-	public enum ReducerType {
-		INCREMENT, // i++, ++i
-		DECREMENT, // i--, --i, i -= 1
-		SUM, // sum += x
-		PRODUCT, // product *= x
-		STRING_CONCAT, // s += string
-		MAX, // max = Math.max(max, x)
-		MIN, // min = Math.min(min, x)
-		CUSTOM_AGGREGATE // Custom aggregation patterns
-	}
-
-	/**
 	 * Creates a lambda body for predicate expressions (used by FILTER, ANYMATCH, NONEMATCH, ALLMATCH).
 	 * 
 	 * <p>

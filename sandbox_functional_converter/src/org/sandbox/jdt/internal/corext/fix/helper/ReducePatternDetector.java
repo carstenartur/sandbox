@@ -57,7 +57,7 @@ import org.eclipse.jdt.core.dom.Statement;
  * }</pre>
  * 
  * @see ProspectiveOperation
- * @see ProspectiveOperation.ReducerType
+ * @see ReducerType
  * @see StreamPipelineBuilder
  */
 public final class ReducePatternDetector {
@@ -166,12 +166,12 @@ public final class ReducePatternDetector {
 		}
 
 		String varName = ((SimpleName) postfix.getOperand()).getIdentifier();
-		ProspectiveOperation.ReducerType reducerType;
+		ReducerType reducerType;
 
 		if (postfix.getOperator() == PostfixExpression.Operator.INCREMENT) {
-			reducerType = ProspectiveOperation.ReducerType.INCREMENT;
+			reducerType = ReducerType.INCREMENT;
 		} else if (postfix.getOperator() == PostfixExpression.Operator.DECREMENT) {
-			reducerType = ProspectiveOperation.ReducerType.DECREMENT;
+			reducerType = ReducerType.DECREMENT;
 		} else {
 			return null;
 		}
@@ -192,12 +192,12 @@ public final class ReducePatternDetector {
 		}
 
 		String varName = ((SimpleName) prefix.getOperand()).getIdentifier();
-		ProspectiveOperation.ReducerType reducerType;
+		ReducerType reducerType;
 
 		if (prefix.getOperator() == PrefixExpression.Operator.INCREMENT) {
-			reducerType = ProspectiveOperation.ReducerType.INCREMENT;
+			reducerType = ReducerType.INCREMENT;
 		} else if (prefix.getOperator() == PrefixExpression.Operator.DECREMENT) {
-			reducerType = ProspectiveOperation.ReducerType.DECREMENT;
+			reducerType = ReducerType.DECREMENT;
 		} else {
 			return null;
 		}
@@ -227,7 +227,7 @@ public final class ReducePatternDetector {
 		// Check for regular assignment with Math.max/Math.min pattern
 		// Pattern: max = Math.max(max, x) or min = Math.min(min, x)
 		Expression rhs = assignment.getRightHandSide();
-		ProspectiveOperation.ReducerType reducerType = detectMathMaxMinPattern(varName, rhs);
+		ReducerType reducerType = detectMathMaxMinPattern(varName, rhs);
 		if (reducerType != null) {
 			accumulatorVariable = varName;
 			accumulatorType = TypeResolver.getVariableType(contextNode, varName);
@@ -243,20 +243,20 @@ public final class ReducePatternDetector {
 	 * Detects compound assignment patterns: +=, -=, *=
 	 */
 	private ProspectiveOperation detectCompoundAssignmentPattern(Assignment assignment, Statement stmt, String varName) {
-		ProspectiveOperation.ReducerType reducerType;
+		ReducerType reducerType;
 
 		if (assignment.getOperator() == Assignment.Operator.PLUS_ASSIGN) {
 			// Check if this is string concatenation
 			ITypeBinding varType = TypeResolver.getTypeBinding(contextNode, varName);
 			if (varType != null && JAVA_LANG_STRING.equals(varType.getQualifiedName())) {
-				reducerType = ProspectiveOperation.ReducerType.STRING_CONCAT;
+				reducerType = ReducerType.STRING_CONCAT;
 			} else {
-				reducerType = ProspectiveOperation.ReducerType.SUM;
+				reducerType = ReducerType.SUM;
 			}
 		} else if (assignment.getOperator() == Assignment.Operator.TIMES_ASSIGN) {
-			reducerType = ProspectiveOperation.ReducerType.PRODUCT;
+			reducerType = ReducerType.PRODUCT;
 		} else if (assignment.getOperator() == Assignment.Operator.MINUS_ASSIGN) {
-			reducerType = ProspectiveOperation.ReducerType.DECREMENT;
+			reducerType = ReducerType.DECREMENT;
 		} else {
 			// Other assignment operators not yet supported
 			return null;
@@ -269,7 +269,7 @@ public final class ReducePatternDetector {
 		op.setAccumulatorType(accumulatorType);
 
 		// For STRING_CONCAT, check if the accumulator variable has @NotNull
-		if (reducerType == ProspectiveOperation.ReducerType.STRING_CONCAT) {
+		if (reducerType == ReducerType.STRING_CONCAT) {
 			boolean isNullSafe = TypeResolver.hasNotNullAnnotation(contextNode, varName);
 			op.setNullSafe(isNullSafe);
 		}
@@ -285,7 +285,7 @@ public final class ReducePatternDetector {
 	 * @param expr    the right-hand side expression to check
 	 * @return MAX or MIN if pattern detected, null otherwise
 	 */
-	ProspectiveOperation.ReducerType detectMathMaxMinPattern(String varName, Expression expr) {
+	ReducerType detectMathMaxMinPattern(String varName, Expression expr) {
 		if (!(expr instanceof MethodInvocation)) {
 			return null;
 		}
@@ -306,8 +306,8 @@ public final class ReducePatternDetector {
 			if (declaringClass != null && JAVA_LANG_MATH.equals(declaringClass.getQualifiedName())) {
 				// Confirmed it's Math.max or Math.min via binding
 				if (hasAccumulatorArgument(methodInv, varName)) {
-					return MAX_METHOD_NAME.equals(methodName) ? ProspectiveOperation.ReducerType.MAX
-							: ProspectiveOperation.ReducerType.MIN;
+					return MAX_METHOD_NAME.equals(methodName) ? ReducerType.MAX
+							: ReducerType.MIN;
 				}
 			}
 		}
@@ -318,8 +318,8 @@ public final class ReducePatternDetector {
 			SimpleName className = (SimpleName) receiverExpr;
 			if (MATH_CLASS_NAME.equals(className.getIdentifier())) {
 				if (hasAccumulatorArgument(methodInv, varName)) {
-					return MAX_METHOD_NAME.equals(methodName) ? ProspectiveOperation.ReducerType.MAX
-							: ProspectiveOperation.ReducerType.MIN;
+					return MAX_METHOD_NAME.equals(methodName) ? ReducerType.MAX
+							: ReducerType.MIN;
 				}
 			}
 		} else if (receiverExpr instanceof QualifiedName) {
@@ -327,8 +327,8 @@ public final class ReducePatternDetector {
 			QualifiedName qualName = (QualifiedName) receiverExpr;
 			if (MATH_CLASS_NAME.equals(qualName.getName().getIdentifier())) {
 				if (hasAccumulatorArgument(methodInv, varName)) {
-					return MAX_METHOD_NAME.equals(methodName) ? ProspectiveOperation.ReducerType.MAX
-							: ProspectiveOperation.ReducerType.MIN;
+					return MAX_METHOD_NAME.equals(methodName) ? ReducerType.MAX
+							: ReducerType.MIN;
 				}
 			}
 		}
@@ -483,13 +483,13 @@ public final class ReducePatternDetector {
 			throw new IllegalArgumentException("reduceOp must be a REDUCE operation");
 		}
 
-		ProspectiveOperation.ReducerType reducerType = reduceOp.getReducerType();
+		ReducerType reducerType = reduceOp.getReducerType();
 		if (reducerType == null) {
 			throw new IllegalArgumentException("reduceOp must have a non-null reducerType for REDUCE operations");
 		}
 
-		if (reducerType == ProspectiveOperation.ReducerType.INCREMENT
-				|| reducerType == ProspectiveOperation.ReducerType.DECREMENT) {
+		if (reducerType == ReducerType.INCREMENT
+				|| reducerType == ReducerType.DECREMENT) {
 			// Create a MAP operation that maps each item to 1 (type-aware)
 			Expression mapExpr = createTypedLiteralOne(ast);
 			ProspectiveOperation mapOp = new ProspectiveOperation(mapExpr, ProspectiveOperation.OperationType.MAP,
@@ -566,9 +566,9 @@ public final class ReducePatternDetector {
 	 * @param type the reducer type to check
 	 * @return true if it's SUM, PRODUCT, or STRING_CONCAT
 	 */
-	public static boolean isArithmeticReducer(ProspectiveOperation.ReducerType type) {
-		return type == ProspectiveOperation.ReducerType.SUM || type == ProspectiveOperation.ReducerType.PRODUCT
-				|| type == ProspectiveOperation.ReducerType.STRING_CONCAT;
+	public static boolean isArithmeticReducer(ReducerType type) {
+		return type == ReducerType.SUM || type == ReducerType.PRODUCT
+				|| type == ReducerType.STRING_CONCAT;
 	}
 
 	/**
@@ -577,7 +577,7 @@ public final class ReducePatternDetector {
 	 * @param type the reducer type to check
 	 * @return true if it's MAX or MIN
 	 */
-	public static boolean isMinMaxReducer(ProspectiveOperation.ReducerType type) {
-		return type == ProspectiveOperation.ReducerType.MAX || type == ProspectiveOperation.ReducerType.MIN;
+	public static boolean isMinMaxReducer(ReducerType type) {
+		return type == ReducerType.MAX || type == ReducerType.MIN;
 	}
 }

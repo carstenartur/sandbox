@@ -341,78 +341,18 @@ public final class LambdaGenerator {
 
 	/**
 	 * Creates the accumulator expression for a REDUCE operation.
-	 * Returns method references when possible, or lambdas otherwise.
+	 * Delegates to the ReducerType enum which encapsulates the logic for each reducer type.
 	 * 
 	 * @param reducerType     the type of reducer
 	 * @param accumulatorType the type of the accumulator variable
 	 * @param isNullSafe      whether the operation is null-safe
 	 * @return an Expression suitable for the second argument of reduce()
 	 */
-	public Expression createAccumulatorExpression(ProspectiveOperation.ReducerType reducerType,
+	public Expression createAccumulatorExpression(ReducerType reducerType,
 			String accumulatorType, boolean isNullSafe) {
 		if (reducerType == null) {
 			return createAccumulatorLambda();
 		}
-
-		switch (reducerType) {
-		case INCREMENT:
-		case SUM:
-			return createSumExpression(reducerType, accumulatorType);
-		case DECREMENT:
-			return createCountingLambda(InfixExpression.Operator.MINUS);
-		case PRODUCT:
-			return createBinaryOperatorLambda(InfixExpression.Operator.TIMES);
-		case STRING_CONCAT:
-			if (isNullSafe) {
-				return createMethodReference("String", "concat");
-			} else {
-				return createSimpleBinaryLambda(InfixExpression.Operator.PLUS);
-			}
-		case MAX:
-			return createMaxMinMethodReference(accumulatorType, "max");
-		case MIN:
-			return createMaxMinMethodReference(accumulatorType, "min");
-		case CUSTOM_AGGREGATE:
-		default:
-			return createAccumulatorLambda();
-		}
-	}
-
-	/**
-	 * Creates the appropriate sum expression based on the accumulator type.
-	 * Uses method references for Integer, Long, Double; lambdas for others.
-	 */
-	private Expression createSumExpression(ProspectiveOperation.ReducerType reducerType, String accumulatorType) {
-		if (accumulatorType == null) {
-			return createMethodReference("Integer", "sum");
-		}
-
-		switch (accumulatorType) {
-		case "double":
-		case "java.lang.Double":
-			if (reducerType == ProspectiveOperation.ReducerType.INCREMENT) {
-				return createCountingLambda(InfixExpression.Operator.PLUS);
-			}
-			return createMethodReference("Double", "sum");
-		case "float":
-		case "java.lang.Float":
-			if (reducerType == ProspectiveOperation.ReducerType.INCREMENT) {
-				return createCountingLambda(InfixExpression.Operator.PLUS);
-			}
-			return createBinaryOperatorLambda(InfixExpression.Operator.PLUS);
-		case "long":
-		case "java.lang.Long":
-			return createMethodReference("Long", "sum");
-		case "short":
-		case "java.lang.Short":
-		case "byte":
-		case "java.lang.Byte":
-			if (reducerType == ProspectiveOperation.ReducerType.INCREMENT) {
-				return createCountingLambda(InfixExpression.Operator.PLUS);
-			}
-			return createBinaryOperatorLambda(InfixExpression.Operator.PLUS);
-		default:
-			return createMethodReference("Integer", "sum");
-		}
+		return reducerType.createAccumulatorExpression(ast, accumulatorType, isNullSafe);
 	}
 }
