@@ -1,0 +1,625 @@
+/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Assignment;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.BreakStatement;
+import org.eclipse.jdt.core.dom.ContinueStatement;
+import org.eclipse.jdt.core.dom.EnhancedForStatement;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.IfStatement;
+import org.eclipse.jdt.core.dom.PostfixExpression;
+import org.eclipse.jdt.core.dom.PrefixExpression;
+import org.eclipse.jdt.core.dom.ReturnStatement;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.ThrowStatement;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+
+/**
+ * Parses enhanced for-loop bodies and extracts stream operations.
+ * 
+ * <p>This class is responsible for analyzing the statements within an enhanced
+ * for-loop and extracting a list of {@link ProspectiveOperation}s that can be
+ * transformed into a stream pipeline.</p>
+ * 
+ * <p><b>Supported Patterns:</b></p>
+ * <ul>
+ * <li><b>Variable declarations</b> → MAP operations</li>
+ * <li><b>IF statements</b> → FILTER operations or match patterns</li>
+ * <li><b>Continue statements</b> → Negated FILTER operations</li>
+ * <li><b>Accumulator patterns</b> → REDUCE operations</li>
+ * <li><b>Side-effect statements</b> → FOREACH operations</li>
+ * </ul>
+ * 
+ * <p><b>Thread Safety:</b> This class is not thread-safe.</p>
+ * 
+ * @see StreamPipelineBuilder
+ * @see ProspectiveOperation
+ */
+public class LoopBodyParser {
+
+	private final EnhancedForStatement forLoop;
+	private final AST ast;
+	private final ReducePatternDetector reduceDetector;
+	private final IfStatementAnalyzer ifAnalyzer;
+	private final boolean isAnyMatchPattern;
+	private final boolean isNoneMatchPattern;
+	private final boolean isAllMatchPattern;
+
+	/**
+	 * Creates a new LoopBodyParser for the given for-loop.
+	 * 
+	 * @param forLoop           the enhanced for-loop to parse
+	 * @param reduceDetector    detector for reduce patterns
+	 * @param ifAnalyzer        analyzer for if statements
+	 * @param isAnyMatchPattern whether anyMatch pattern is detected
+	 * @param isNoneMatchPattern whether noneMatch pattern is detected
+	 * @param isAllMatchPattern whether allMatch pattern is detected
+	 */
+	public LoopBodyParser(EnhancedForStatement forLoop, 
+			ReducePatternDetector reduceDetector,
+			IfStatementAnalyzer ifAnalyzer,
+			boolean isAnyMatchPattern, 
+			boolean isNoneMatchPattern, 
+			boolean isAllMatchPattern) {
+		this.forLoop = forLoop;
+		this.ast = forLoop.getAST();
+		this.reduceDetector = reduceDetector;
+		this.ifAnalyzer = ifAnalyzer;
+		this.isAnyMatchPattern = isAnyMatchPattern;
+		this.isNoneMatchPattern = isNoneMatchPattern;
+		this.isAllMatchPattern = isAllMatchPattern;
+	}
+
+	/**
+	 * Parses the loop body and extracts stream operations.
+	 * 
+	 * @param body        the loop body statement
+	 * @param loopVarName the loop variable name
+	 * @return list of prospective operations, empty if parsing fails
+	 */
+	public List<ProspectiveOperation> parse(Statement body, String loopVarName) {
+		List<ProspectiveOperation> ops = new ArrayList<>();
+		String currentVarName = loopVarName;
+
+		if (body instanceof Block) {
+			return parseBlock((Block) body, loopVarName, currentVarName, ops);
+		} else if (body instanceof IfStatement) {
+			return parseIfStatement((IfStatement) body, loopVarName, currentVarName, ops);
+		} else {
+			return parseSingleStatement(body, loopVarName, currentVarName, ops);
+		}
+	}
+
+	/**
+	 * Parses a block of statements.
+	 */
+	private List<ProspectiveOperation> parseBlock(Block block, String loopVarName, 
+			String currentVarName, List<ProspectiveOperation> ops) {
+		List<Statement> statements = block.statements();
+
+		// Check if the entire block should be treated as a single forEach
+		if (shouldTreatAsSimpleForEach(statements, loopVarName)) {
+			ProspectiveOperation forEachOp = new ProspectiveOperation(block,
+					ProspectiveOperation.OperationType.FOREACH, loopVarName);
+			ops.add(forEachOp);
+			return ops;
+		}
+
+		for (int i = 0; i < statements.size(); i++) {
+			Statement stmt = statements.get(i);
+			boolean isLast = (i == statements.size() - 1);
+
+			ParseResult result = parseStatement(stmt, currentVarName, ops, isLast, statements, i, loopVarName);
+			if (result.shouldAbort()) {
+				return new ArrayList<>();
+			}
+			currentVarName = result.getCurrentVarName();
+			
+			// Handle skip index for wrapped statements
+			if (result.getSkipToIndex() >= 0) {
+				i = result.getSkipToIndex();
+			}
+		}
+
+		return ops;
+	}
+
+	/**
+	 * Parses a single statement and returns the result.
+	 */
+	private ParseResult parseStatement(Statement stmt, String currentVarName, 
+			List<ProspectiveOperation> ops, boolean isLast, 
+			List<Statement> statements, int currentIndex, String loopVarName) {
+		
+		if (stmt instanceof VariableDeclarationStatement) {
+			return parseVariableDeclaration((VariableDeclarationStatement) stmt, 
+					currentVarName, ops, statements, currentIndex);
+		} else if (stmt instanceof IfStatement) {
+			return parseIfInBlock((IfStatement) stmt, currentVarName, ops, isLast, loopVarName);
+		} else if (!isLast) {
+			return parseNonLastStatement(stmt, currentVarName, ops);
+		} else {
+			return parseLastStatement(stmt, currentVarName, ops, loopVarName);
+		}
+	}
+
+	/**
+	 * Parses a variable declaration statement.
+	 */
+	private ParseResult parseVariableDeclaration(VariableDeclarationStatement varDecl,
+			String currentVarName, List<ProspectiveOperation> ops,
+			List<Statement> statements, int currentIndex) {
+		
+		List<VariableDeclarationFragment> fragments = varDecl.fragments();
+		if (!fragments.isEmpty()) {
+			VariableDeclarationFragment frag = fragments.get(0);
+			if (frag.getInitializer() != null) {
+				String newVarName = frag.getName().getIdentifier();
+				ProspectiveOperation mapOp = new ProspectiveOperation(frag.getInitializer(),
+						ProspectiveOperation.OperationType.MAP, newVarName);
+				ops.add(mapOp);
+
+				// Check if we need to wrap remaining non-terminal statements in a MAP
+				if (shouldWrapRemainingInMap(statements, currentIndex)) {
+					Block mapBlock = ast.newBlock();
+					List<Statement> mapStatements = mapBlock.statements();
+					for (int j = currentIndex + 1; j < statements.size() - 1; j++) {
+						mapStatements.add((Statement) ASTNode.copySubtree(ast, statements.get(j)));
+					}
+
+					ProspectiveOperation sideEffectMapOp = new ProspectiveOperation(mapBlock,
+							ProspectiveOperation.OperationType.MAP, newVarName);
+					ops.add(sideEffectMapOp);
+
+					return new ParseResult(newVarName, statements.size() - 2);
+				}
+				return new ParseResult(newVarName);
+			}
+		}
+		return new ParseResult(currentVarName);
+	}
+
+	/**
+	 * Parses an IF statement within a block.
+	 */
+	private ParseResult parseIfInBlock(IfStatement ifStmt, String currentVarName,
+			List<ProspectiveOperation> ops, boolean isLast, String loopVarName) {
+		
+		if (ifStmt.getElseStatement() != null) {
+			return new ParseResult(currentVarName);
+		}
+
+		// Check for unconvertible patterns first
+		if (ifAnalyzer.isIfWithLabeledContinue(ifStmt) || ifAnalyzer.isIfWithBreak(ifStmt)) {
+			return ParseResult.abort();
+		}
+
+		// Check for early return pattern
+		if (ifAnalyzer.isEarlyReturnIf(ifStmt, isAnyMatchPattern, isNoneMatchPattern, isAllMatchPattern)) {
+			ProspectiveOperation matchOp = ifAnalyzer.createMatchOperation(ifStmt);
+			ops.add(matchOp);
+			return new ParseResult(currentVarName);
+		}
+
+		// Check for continue pattern
+		if (ifAnalyzer.isIfWithContinue(ifStmt)) {
+			Expression negatedCondition = ExpressionUtils.createNegatedExpression(ast, ifStmt.getExpression());
+			ProspectiveOperation filterOp = new ProspectiveOperation(negatedCondition,
+					ProspectiveOperation.OperationType.FILTER);
+			ops.add(filterOp);
+			return new ParseResult(currentVarName);
+		}
+
+		// Regular filter with nested processing (for non-last statements)
+		if (!isLast) {
+			return processIfAsFilter(ops, ifStmt, currentVarName, true, loopVarName);
+		} else {
+			processIfAsFilter(ops, ifStmt, currentVarName, false, loopVarName);
+			return new ParseResult(currentVarName);
+		}
+	}
+
+	/**
+	 * Parses a non-last statement (not variable declaration or IF).
+	 */
+	private ParseResult parseNonLastStatement(Statement stmt, String currentVarName,
+			List<ProspectiveOperation> ops) {
+		
+		ProspectiveOperation reduceCheck = reduceDetector.detectReduceOperation(stmt);
+		if (reduceCheck == null) {
+			if (!isSafeSideEffect(stmt, currentVarName, ops)) {
+				return ParseResult.abort();
+			}
+
+			ProspectiveOperation mapOp = new ProspectiveOperation(stmt,
+					ProspectiveOperation.OperationType.MAP, currentVarName);
+			ops.add(mapOp);
+		}
+		return new ParseResult(currentVarName);
+	}
+
+	/**
+	 * Parses the last statement in a block.
+	 */
+	private ParseResult parseLastStatement(Statement stmt, String currentVarName,
+			List<ProspectiveOperation> ops, String loopVarName) {
+		
+		ProspectiveOperation reduceOp = reduceDetector.detectReduceOperation(stmt);
+		if (reduceOp != null) {
+			reduceDetector.addMapBeforeReduce(ops, reduceOp, stmt, currentVarName, ast);
+			ops.add(reduceOp);
+		} else if (stmt instanceof ReturnStatement || stmt instanceof ContinueStatement 
+				|| stmt instanceof ThrowStatement) {
+			return ParseResult.abort();
+		} else if (!isSafeSideEffect(stmt, currentVarName, ops)) {
+			return ParseResult.abort();
+		} else {
+			ProspectiveOperation forEachOp = new ProspectiveOperation(stmt,
+					ProspectiveOperation.OperationType.FOREACH, currentVarName);
+			ops.add(forEachOp);
+		}
+		return new ParseResult(currentVarName);
+	}
+
+	/**
+	 * Parses a standalone IF statement (not in a block).
+	 */
+	private List<ProspectiveOperation> parseIfStatement(IfStatement ifStmt, String loopVarName,
+			String currentVarName, List<ProspectiveOperation> ops) {
+		
+		if (ifStmt.getElseStatement() != null) {
+			return ops;
+		}
+
+		if (ifAnalyzer.isIfWithLabeledContinue(ifStmt) || ifAnalyzer.isIfWithBreak(ifStmt)) {
+			return new ArrayList<>();
+		}
+
+		if (ifAnalyzer.isEarlyReturnIf(ifStmt, isAnyMatchPattern, isNoneMatchPattern, isAllMatchPattern)) {
+			ProspectiveOperation matchOp = ifAnalyzer.createMatchOperation(ifStmt);
+			ops.add(matchOp);
+		} else {
+			ProspectiveOperation filterOp = new ProspectiveOperation(ifStmt.getExpression(),
+					ProspectiveOperation.OperationType.FILTER);
+			ops.add(filterOp);
+
+			List<ProspectiveOperation> nestedOps = parse(ifStmt.getThenStatement(), currentVarName);
+			ops.addAll(nestedOps);
+		}
+		return ops;
+	}
+
+	/**
+	 * Parses a single statement that is not a block or IF.
+	 */
+	private List<ProspectiveOperation> parseSingleStatement(Statement body, String loopVarName,
+			String currentVarName, List<ProspectiveOperation> ops) {
+		
+		ProspectiveOperation reduceOp = reduceDetector.detectReduceOperation(body);
+		if (reduceOp != null) {
+			reduceDetector.addMapBeforeReduce(ops, reduceOp, body, currentVarName, ast);
+			ops.add(reduceOp);
+		} else if (body instanceof ReturnStatement || body instanceof ContinueStatement 
+				|| body instanceof ThrowStatement) {
+			return new ArrayList<>();
+		} else if (!isSafeSideEffect(body, currentVarName, ops)) {
+			return new ArrayList<>();
+		} else {
+			ProspectiveOperation forEachOp = new ProspectiveOperation(body,
+					ProspectiveOperation.OperationType.FOREACH, currentVarName);
+			ops.add(forEachOp);
+		}
+		return ops;
+	}
+
+	/**
+	 * Processes an IF statement as a filter operation.
+	 */
+	private ParseResult processIfAsFilter(List<ProspectiveOperation> ops, IfStatement ifStmt,
+			String currentVarName, boolean updateVarName, String loopVarName) {
+		
+		ProspectiveOperation filterOp = new ProspectiveOperation(ifStmt.getExpression(),
+				ProspectiveOperation.OperationType.FILTER);
+		ops.add(filterOp);
+
+		List<ProspectiveOperation> nestedOps = parse(ifStmt.getThenStatement(), currentVarName);
+		ops.addAll(nestedOps);
+
+		if (updateVarName && !nestedOps.isEmpty()) {
+			ProspectiveOperation lastNested = nestedOps.get(nestedOps.size() - 1);
+			if (lastNested.getProducedVariableName() != null) {
+				return new ParseResult(lastNested.getProducedVariableName());
+			}
+		}
+
+		return new ParseResult(currentVarName);
+	}
+
+	/**
+	 * Determines if remaining statements should be wrapped in a MAP.
+	 */
+	private boolean shouldWrapRemainingInMap(List<Statement> statements, int currentIndex) {
+		if (currentIndex >= statements.size() - 2) {
+			return false;
+		}
+
+		for (int j = currentIndex + 1; j < statements.size() - 1; j++) {
+			Statement stmt = statements.get(j);
+
+			if (stmt instanceof IfStatement) {
+				IfStatement ifStmt = (IfStatement) stmt;
+
+				if (ifAnalyzer.isEarlyReturnIf(ifStmt, isAnyMatchPattern, isNoneMatchPattern, isAllMatchPattern)) {
+					return false;
+				}
+
+				if (ifAnalyzer.isIfWithContinue(ifStmt)) {
+					return false;
+				}
+
+				if (ifStmt.getElseStatement() == null) {
+					return true;
+				}
+			}
+		}
+
+		int nonTerminalCount = statements.size() - currentIndex - 2;
+		if (nonTerminalCount > 0) {
+			for (int j = currentIndex + 1; j < statements.size() - 1; j++) {
+				Statement stmt = statements.get(j);
+				if (!(stmt instanceof VariableDeclarationStatement)) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Determines if the loop body should be treated as a single forEach.
+	 */
+	private boolean shouldTreatAsSimpleForEach(List<Statement> statements, String loopVarName) {
+		if (statements.isEmpty()) {
+			return false;
+		}
+
+		if (statements.size() >= 1 && statements.get(0) instanceof IfStatement) {
+			return false;
+		}
+
+		Set<String> declaredVariables = new HashSet<>();
+		IfStatement ifStatementAfterVarDecls = null;
+
+		for (Statement stmt : statements) {
+			if (stmt instanceof VariableDeclarationStatement) {
+				VariableDeclarationStatement varDecl = (VariableDeclarationStatement) stmt;
+				for (Object frag : varDecl.fragments()) {
+					if (frag instanceof VariableDeclarationFragment) {
+						declaredVariables.add(((VariableDeclarationFragment) frag).getName().getIdentifier());
+					}
+				}
+			} else if (stmt instanceof IfStatement) {
+				IfStatement ifStmt = (IfStatement) stmt;
+				if (ifAnalyzer.isEarlyReturnIf(ifStmt, isAnyMatchPattern, isNoneMatchPattern, isAllMatchPattern)
+						|| ifAnalyzer.isIfWithContinue(ifStmt)) {
+					return false;
+				}
+				if (!declaredVariables.isEmpty()) {
+					ifStatementAfterVarDecls = ifStmt;
+				}
+			} else if (stmt instanceof ReturnStatement || stmt instanceof ContinueStatement 
+					|| stmt instanceof BreakStatement) {
+				return false;
+			}
+
+			ProspectiveOperation reduceOp = reduceDetector.detectReduceOperation(stmt);
+			if (reduceOp != null) {
+				return false;
+			}
+		}
+
+		if (ifStatementAfterVarDecls != null && !declaredVariables.isEmpty()) {
+			if (ifModifiesDeclaredVariables(ifStatementAfterVarDecls, declaredVariables)) {
+				return true;
+			}
+			return false;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Checks if an IF statement modifies any declared variables.
+	 */
+	private boolean ifModifiesDeclaredVariables(IfStatement ifStmt, Set<String> declaredVariables) {
+		Statement thenStmt = ifStmt.getThenStatement();
+		return statementModifiesVariables(thenStmt, declaredVariables);
+	}
+
+	/**
+	 * Recursively checks if a statement modifies any variables.
+	 */
+	private boolean statementModifiesVariables(Statement stmt, Set<String> variables) {
+		if (stmt == null || variables.isEmpty()) {
+			return false;
+		}
+
+		if (stmt instanceof Block) {
+			Block block = (Block) stmt;
+			for (Object s : block.statements()) {
+				if (statementModifiesVariables((Statement) s, variables)) {
+					return true;
+				}
+			}
+		} else if (stmt instanceof ExpressionStatement) {
+			ExpressionStatement exprStmt = (ExpressionStatement) stmt;
+			return expressionModifiesVariables(exprStmt.getExpression(), variables);
+		} else if (stmt instanceof IfStatement) {
+			IfStatement ifStmt = (IfStatement) stmt;
+			if (statementModifiesVariables(ifStmt.getThenStatement(), variables)) {
+				return true;
+			}
+			if (ifStmt.getElseStatement() != null 
+					&& statementModifiesVariables(ifStmt.getElseStatement(), variables)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Checks if an expression modifies any variables.
+	 */
+	private boolean expressionModifiesVariables(Expression expr, Set<String> variables) {
+		if (expr == null) {
+			return false;
+		}
+
+		if (expr instanceof Assignment) {
+			Assignment assignment = (Assignment) expr;
+			Expression lhs = assignment.getLeftHandSide();
+			if (lhs instanceof SimpleName) {
+				return variables.contains(((SimpleName) lhs).getIdentifier());
+			}
+		}
+
+		if (expr instanceof PostfixExpression) {
+			PostfixExpression postfix = (PostfixExpression) expr;
+			if (postfix.getOperand() instanceof SimpleName) {
+				return variables.contains(((SimpleName) postfix.getOperand()).getIdentifier());
+			}
+		}
+
+		if (expr instanceof PrefixExpression) {
+			PrefixExpression prefix = (PrefixExpression) expr;
+			PrefixExpression.Operator op = prefix.getOperator();
+			if (op == PrefixExpression.Operator.INCREMENT || op == PrefixExpression.Operator.DECREMENT) {
+				if (prefix.getOperand() instanceof SimpleName) {
+					return variables.contains(((SimpleName) prefix.getOperand()).getIdentifier());
+				}
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Checks if a statement is a safe side-effect.
+	 */
+	private boolean isSafeSideEffect(Statement stmt, String currentVarName, 
+			List<ProspectiveOperation> operations) {
+		if (stmt == null) {
+			return false;
+		}
+
+		if (!(stmt instanceof ExpressionStatement)) {
+			return false;
+		}
+
+		ExpressionStatement exprStmt = (ExpressionStatement) stmt;
+		Expression expr = exprStmt.getExpression();
+
+		if (expr == null) {
+			return false;
+		}
+
+		if (expr instanceof Assignment) {
+			Assignment assignment = (Assignment) expr;
+			Expression lhs = assignment.getLeftHandSide();
+
+			if (lhs instanceof SimpleName) {
+				String varName = ((SimpleName) lhs).getIdentifier();
+
+				if (varName.equals(currentVarName)) {
+					return false;
+				}
+
+				if (isAccumulatorVariable(varName, operations)) {
+					return false;
+				}
+
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Checks if a variable is an accumulator variable.
+	 */
+	private boolean isAccumulatorVariable(String varName, List<ProspectiveOperation> operations) {
+		for (ProspectiveOperation op : operations) {
+			if (op.getOperationType() == ProspectiveOperation.OperationType.REDUCE) {
+				if (varName.equals(op.getAccumulatorVariableName())) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Result of parsing a single statement.
+	 */
+	public static class ParseResult {
+		private final String currentVarName;
+		private final boolean abort;
+		private final int skipToIndex;
+
+		public ParseResult(String currentVarName) {
+			this(currentVarName, false, -1);
+		}
+
+		public ParseResult(String currentVarName, int skipToIndex) {
+			this(currentVarName, false, skipToIndex);
+		}
+
+		private ParseResult(String currentVarName, boolean abort, int skipToIndex) {
+			this.currentVarName = currentVarName;
+			this.abort = abort;
+			this.skipToIndex = skipToIndex;
+		}
+
+		public static ParseResult abort() {
+			return new ParseResult(null, true, -1);
+		}
+
+		public String getCurrentVarName() {
+			return currentVarName;
+		}
+
+		public boolean shouldAbort() {
+			return abort;
+		}
+
+		public int getSkipToIndex() {
+			return skipToIndex;
+		}
+	}
+}
