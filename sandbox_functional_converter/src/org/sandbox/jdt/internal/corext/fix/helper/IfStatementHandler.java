@@ -66,6 +66,7 @@ public class IfStatementHandler implements StatementHandler {
 		IfStatement ifStmt = (IfStatement) stmt;
 		IfStatementAnalyzer ifAnalyzer = context.getIfAnalyzer();
 		String currentVarName = context.getCurrentVariableName();
+		String loopVarName = context.getLoopVariableName();
 
 		// IF with else cannot be converted
 		if (ifStmt.getElseStatement() != null) {
@@ -77,6 +78,14 @@ public class IfStatementHandler implements StatementHandler {
 			return LoopBodyParser.ParseResult.abort();
 		}
 		if (ifAnalyzer.isIfWithBreak(ifStmt)) {
+			return LoopBodyParser.ParseResult.abort();
+		}
+		// NEW: Check for return statements that can't be converted (return null, return someValue)
+		if (ifAnalyzer.isIfWithUnconvertibleReturn(ifStmt)) {
+			return LoopBodyParser.ParseResult.abort();
+		}
+		// NEW: Check for assignments to external variables inside the IF body
+		if (ifAnalyzer.isIfWithExternalAssignment(ifStmt, loopVarName)) {
 			return LoopBodyParser.ParseResult.abort();
 		}
 

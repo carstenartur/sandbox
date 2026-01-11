@@ -453,6 +453,11 @@ public class StreamPipelineBuilder {
 		Set<String> availableVars = new HashSet<>();
 		availableVars.add(loopVarName);
 		
+		// Add all variables from outer scope (method parameters, fields, etc.)
+		// These are always available in lambdas
+		Collection<String> outerScopeVars = getUsedVariableNames(forLoop);
+		availableVars.addAll(outerScopeVars);
+		
 		// Track if we've moved past the loop variable to a mapped variable
 		boolean loopVarConsumed = false;
 
@@ -469,6 +474,11 @@ public class StreamPipelineBuilder {
 					continue;
 				}
 				
+				// Variables from outer scope (method parameters, fields, etc.) are always available
+				if (outerScopeVars.contains(var)) {
+					continue;
+				}
+				
 				// After a MAP produces a new variable, the loop variable should not be used
 				// unless it's the current operation that consumes it
 				if (var.equals(loopVarName)) {
@@ -477,7 +487,7 @@ public class StreamPipelineBuilder {
 						return false;
 					}
 				} else {
-					// Non-loop, non-accumulator variable - must be in availableVars
+					// Non-loop, non-accumulator, non-outer-scope variable - must be in availableVars
 					if (!availableVars.contains(var)) {
 						// Variable used before it's defined - this is a scope violation
 						return false;

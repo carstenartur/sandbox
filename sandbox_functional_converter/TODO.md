@@ -41,9 +41,117 @@ The `StreamPipelineBuilder` class provides comprehensive loop-to-stream conversi
 ### Next Steps (Priority Order)
 1. **Test Validation** - Run full test suite to verify all 21 enabled tests pass
 2. **Edge Case Refinement** - Address any test failures or edge cases discovered
-3. **Performance Optimization** - Consider operation merging (consecutive filters, maps)
-4. **Code Quality** - Run CodeQL security scanning and address any findings
-5. **Documentation** - Update user-facing documentation with examples and limitations
+3. **Null Safety Enhancement** - See [Null Safety Improvements](#null-safety-improvements) section below
+4. **Performance Optimization** - Consider operation merging (consecutive filters, maps)
+5. **Code Quality** - Run CodeQL security scanning and address any findings
+6. **Documentation** - Update user-facing documentation with examples and limitations
+
+---
+
+## Null Safety Improvements
+
+**Status**: 🆕 NEW - January 2026
+
+### Background
+The functional loop conversion can produce code that has different null-safety behavior than the original loop in some edge cases. This section tracks improvements needed to better handle `@NotNull`/`@NonNull` annotations and potentially add warning comments for risky transformations.
+
+### Current Capabilities
+- ✅ `TypeResolver.hasNotNullAnnotation()` - Can detect `@NotNull`/`@NonNull` annotations on variables
+- ✅ `ProspectiveOperation.isNullSafe` flag - Tracks whether an operation is null-safe
+- ✅ `LambdaGenerator` - Uses `String::concat` when null-safe, `(a, b) -> a + b` otherwise
+
+### New Test File
+- ✅ `FunctionalLoopNullSafetyTest.java` - Comprehensive tests for null safety scenarios
+
+### Identified Scenarios Requiring Attention
+
+#### 1. String Concatenation with Reduce
+**Problem**: `String::concat` throws NPE if the argument is null, but `a + b` handles nulls (converts to "null").
+
+**Current Behavior**:
+- Uses `(a, b) -> a + b` by default (safe)
+- Uses `String::concat` only when `isNullSafe=true`
+
+**Improvement Needed**:
+- [ ] Detect when collection can contain null elements
+- [ ] Only use `String::concat` when both accumulator AND elements are guaranteed non-null
+- [ ] Consider adding a warning comment when transformation might change null behavior
+
+#### 2. Method Calls on Loop Variable
+**Problem**: `item.method()` will NPE if item is null - same in loop and stream.
+
+**Current Behavior**: Transforms to `.map(item -> item.method())` - same NPE behavior.
+
+**Improvement Needed**:
+- [ ] Consider adding comment warning when transforming method calls on elements from collections that might contain nulls
+- [ ] Optional: Detect patterns like `if (item != null) item.method()` and convert to `.filter(Objects::nonNull).map(...)`
+
+#### 3. Unboxing in Numeric Reduce
+**Problem**: `List<Integer>` with null elements will NPE during unboxing in both loop and stream.
+
+**Current Behavior**: Same NPE behavior preserved.
+
+**Improvement Needed**:
+- [ ] Consider warning comment for collections of boxed types
+- [ ] Optional: Add `.filter(Objects::nonNull)` before reduce on boxed types
+
+#### 4. AllMatch/NoneMatch/AnyMatch with Method Calls
+**Problem**: Conditions like `item.isEmpty()` will NPE on null elements.
+
+**Current Behavior**: Same NPE behavior preserved.
+
+**Improvement Needed**:
+- [ ] Document that behavior is preserved (not a bug, but users should be aware)
+
+### Proposed Warning Comment Feature
+
+**Option A: Always add comment for potentially risky transformations**
+```java
+// NOTE: This transformation preserves null behavior from the original loop.
+// If the collection can contain null elements, NullPointerException may occur.
+items.stream().map(item -> item.toUpperCase()).forEachOrdered(System.out::println);
+```
+
+**Option B: Add comment only when @NotNull is missing**
+```java
+// CAUTION: Elements may be null. Consider adding null check if collection can contain nulls.
+items.stream().reduce("", (a, b) -> a + b);  // Uses null-safe lambda
+```
+
+**Option C: User preference setting**
+- Add cleanup option: "Add warning comments for null-safety edge cases"
+- Default: off (to match current behavior)
+
+### Implementation Tasks
+
+- [ ] **Phase 1: Documentation** (Low effort)
+  - [x] Create `FunctionalLoopNullSafetyTest.java` with edge case tests
+  - [ ] Document null-safety considerations in README.md
+  - [ ] Add examples of safe vs risky transformations
+
+- [ ] **Phase 2: Detection** (Medium effort)
+  - [ ] Enhance `TypeResolver` to check parameter types for `@NotNull`
+  - [ ] Add collection element type null-safety analysis
+  - [ ] Track null-safety through pipeline (filter removes nulls, map doesn't)
+
+- [ ] **Phase 3: Warning Comments** (Medium effort)
+  - [ ] Add option to generate warning comments
+  - [ ] Implement comment generation in `StreamPipelineBuilder`
+  - [ ] Add preference setting for warning comment generation
+
+- [ ] **Phase 4: Smart Null Handling** (High effort)
+  - [ ] Auto-insert `.filter(Objects::nonNull)` when appropriate
+  - [ ] Detect existing null checks in loop and preserve them
+  - [ ] Consider Optional-based transformations for find patterns
+
+### Test Cases Added
+See `FunctionalLoopNullSafetyTest.java`:
+- `StringConcatReducerTests` - @NotNull vs non-annotated accumulators
+- `MethodInvocationNullSafetyTests` - Method calls on potentially null elements
+- `MatchPatternNullSafetyTests` - anyMatch/noneMatch with null comparisons
+- `ReduceNullSafetyTests` - Numeric reduce with boxed types
+- `EdgeCasesTests` - Chained calls, Optional handling
+- `NegativeNullSafetyTests` - Cases that should NOT convert
 
 ### Tests Enabled (29/29) ✅ ALL COMPLETE + NEW TESTS
 SIMPLECONVERT, CHAININGMAP, ChainingFilterMapForEachConvert, SmoothLongerChaining, 

@@ -177,6 +177,111 @@ public final class IfStatementAnalyzer {
 	}
 
 	/**
+	 * Checks if the IF statement contains a return statement that cannot be converted.
+	 * Returns that are not boolean literals (like return null, return someValue) 
+	 * cannot be converted to stream operations because they would lose the return semantics.
+	 * 
+	 * @param ifStatement the IF statement to check
+	 * @return true if the IF contains a non-convertible return statement
+	 */
+	public boolean isIfWithUnconvertibleReturn(IfStatement ifStatement) {
+		if (ifStatement == null) {
+			return false;
+		}
+		Statement thenStatement = ifStatement.getThenStatement();
+		ReturnStatement returnStmt = extractReturnStatement(thenStatement);
+		
+		if (returnStmt == null) {
+			return false;
+		}
+		
+		// Check if it's a boolean literal - those can be converted to anyMatch/noneMatch/allMatch
+		Expression returnExpr = returnStmt.getExpression();
+		if (returnExpr instanceof BooleanLiteral) {
+			// This could be part of a match pattern - let other methods handle it
+			return false;
+		}
+		
+		// Any other return (null, variable, method call, etc.) cannot be converted
+		return true;
+	}
+
+	/**
+	 * Checks if the IF statement body contains an assignment to an external variable.
+	 * Such assignments cannot be safely converted to stream operations because
+	 * they would either be lost or would break stream semantics.
+	 * 
+	 * <p><b>Note:</b> Compound assignments (+=, -=, *=, etc.) are allowed because they
+	 * represent accumulator/reducer patterns that CAN be converted to reduce() operations.</p>
+	 * 
+	 * @param ifStatement the IF statement to check
+	 * @param loopVarName the loop variable name (assignments to this are internal)
+	 * @return true if the IF body contains a simple assignment to an external variable
+	 */
+	public boolean isIfWithExternalAssignment(IfStatement ifStatement, String loopVarName) {
+		if (ifStatement == null) {
+			return false;
+		}
+		Statement thenStatement = ifStatement.getThenStatement();
+		return containsExternalSimpleAssignment(thenStatement, loopVarName);
+	}
+
+	/**
+	 * Recursively checks if a statement contains a simple assignment (=) to an external variable.
+	 * Compound assignments (+=, -=, *=, etc.) are NOT flagged because they are accumulator patterns.
+	 */
+	private boolean containsExternalSimpleAssignment(Statement stmt, String loopVarName) {
+		if (stmt == null) {
+			return false;
+		}
+		
+		if (stmt instanceof org.eclipse.jdt.core.dom.ExpressionStatement) {
+			org.eclipse.jdt.core.dom.ExpressionStatement exprStmt = (org.eclipse.jdt.core.dom.ExpressionStatement) stmt;
+			Expression expr = exprStmt.getExpression();
+			if (expr instanceof org.eclipse.jdt.core.dom.Assignment) {
+				org.eclipse.jdt.core.dom.Assignment assignment = (org.eclipse.jdt.core.dom.Assignment) expr;
+				
+				// Compound assignments (+=, -=, *=, etc.) are accumulator patterns - allow them
+				if (assignment.getOperator() != org.eclipse.jdt.core.dom.Assignment.Operator.ASSIGN) {
+					return false; // Not a simple assignment, it's an accumulator pattern - this single statement is OK
+				}
+				
+				// Simple assignment (=) to something other than the loop variable
+				Expression lhs = assignment.getLeftHandSide();
+				if (lhs instanceof org.eclipse.jdt.core.dom.SimpleName) {
+					String varName = ((org.eclipse.jdt.core.dom.SimpleName) lhs).getIdentifier();
+					// If simple-assigning to something other than the loop variable, it's problematic
+					if (!varName.equals(loopVarName)) {
+						return true;
+					}
+				}
+			}
+			// Other expression statements (method calls, etc.) are OK
+			return false;
+		} else if (stmt instanceof Block) {
+			Block block = (Block) stmt;
+			for (Object obj : block.statements()) {
+				if (containsExternalSimpleAssignment((Statement) obj, loopVarName)) {
+					return true;
+				}
+			}
+			return false;
+		} else if (stmt instanceof IfStatement) {
+			IfStatement nested = (IfStatement) stmt;
+			if (containsExternalSimpleAssignment(nested.getThenStatement(), loopVarName)) {
+				return true;
+			}
+			if (nested.getElseStatement() != null && containsExternalSimpleAssignment(nested.getElseStatement(), loopVarName)) {
+				return true;
+			}
+			return false;
+		}
+		
+		// Other statement types (variable declarations, etc.) are OK
+		return false;
+	}
+
+	/**
 	 * Checks if the IF statement contains an early return pattern that can be
 	 * converted to anyMatch/noneMatch/allMatch.
 	 * 
