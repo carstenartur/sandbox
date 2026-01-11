@@ -22,15 +22,11 @@ import java.util.Set;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Assignment;
-import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
-import org.eclipse.jdt.core.dom.IfStatement;
 import org.eclipse.jdt.core.dom.MethodInvocation;
-import org.eclipse.jdt.core.dom.PrefixExpression;
-import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
@@ -159,6 +155,9 @@ public class StreamPipelineBuilder {
 	private boolean isAnyMatchPattern = false;
 	private boolean isNoneMatchPattern = false;
 	private boolean isAllMatchPattern = false;
+	
+	/** Assembler for building the final pipeline (initialized after analysis). */
+	private PipelineAssembler pipelineAssembler;
 
 	/**
 	 * Creates a new StreamPipelineBuilder for the given for-loop.
@@ -239,6 +238,11 @@ public class StreamPipelineBuilder {
 			return false;
 		}
 
+		// Initialize the pipeline assembler for building the final pipeline
+		pipelineAssembler = new PipelineAssembler(forLoop, operations, loopVariableName);
+		pipelineAssembler.setUsedVariableNames(getUsedVariableNames(forLoop));
+		pipelineAssembler.setReduceDetector(reduceDetector);
+
 		convertible = true;
 		return true;
 	}
@@ -273,85 +277,15 @@ public class StreamPipelineBuilder {
 	 *         the loop cannot be converted
 	 * @see #analyze()
 	 * @see #wrapPipeline(MethodInvocation)
-	 * @see #requiresStreamPrefix()
+	 * @see PipelineAssembler
 	 */
 	public MethodInvocation buildPipeline() {
-		if (!analyzed || !convertible) {
+		if (!analyzed || !convertible || pipelineAssembler == null) {
 			return null;
 		}
-
-		// Collect used variable names to avoid clashes when generating lambda parameters
-		Collection<String> usedNames = getUsedVariableNames(forLoop);
-
-		// Check if we need .stream() or can use direct .forEach()
-		boolean needsStream = requiresStreamPrefix();
-
-		MethodInvocation pipeline;
-		if (needsStream) {
-			// Start with .stream()
-			pipeline = ast.newMethodInvocation();
-			pipeline.setExpression((Expression) ASTNode.copySubtree(ast, forLoop.getExpression()));
-			pipeline.setName(ast.newSimpleName(STREAM_METHOD));
-
-			// Chain each operation
-			for (int i = 0; i < operations.size(); i++) {
-				ProspectiveOperation op = operations.get(i);
-				// Set used variable names to avoid name clashes in lambda parameters
-				op.setUsedVariableNames(usedNames);
-				
-				MethodInvocation next = ast.newMethodInvocation();
-				next.setExpression(pipeline);
-				next.setName(ast.newSimpleName(op.getSuitableMethod()));
-
-				// Get the current parameter name for this operation
-				String paramName = getVariableNameFromPreviousOp(operations, i, loopVariableName);
-
-				// Use the current paramName for this operation
-				List<Expression> args = op.getArguments(ast, paramName);
-				for (Expression arg : args) {
-					next.arguments().add(arg);
-				}
-				pipeline = next;
-			}
-		} else {
-			// Simple forEach without stream()
-			ProspectiveOperation op = operations.get(0);
-			// Set used variable names to avoid name clashes in lambda parameters
-			op.setUsedVariableNames(usedNames);
-			
-			pipeline = ast.newMethodInvocation();
-			pipeline.setExpression((Expression) ASTNode.copySubtree(ast, forLoop.getExpression()));
-			pipeline.setName(ast.newSimpleName(FOR_EACH_METHOD));
-			List<Expression> args = op.getArguments(ast, loopVariableName);
-			for (Expression arg : args) {
-				pipeline.arguments().add(arg);
-			}
-		}
-
-		return pipeline;
+		return pipelineAssembler.buildPipeline();
 	}
 
-	/**
-	 * Wraps the pipeline in an appropriate statement.
-	 * 
-	 * <p>
-	 * Wraps the method invocation in an ExpressionStatement. For REDUCE operations
-	 * with a tracked accumulator variable, wraps the pipeline in an assignment
-	 * statement (e.g., "i = stream.reduce(...)") instead of a plain expression
-	 * statement.
-	 * 
-	 * <p>
-	 * For ANYMATCH, NONEMATCH, and ALLMATCH operations, wraps the pipeline in an IF
-	 * statement:
-	 * <ul>
-	 * <li>ANYMATCH: {@code if (stream.anyMatch(...)) { return true; }}</li>
-	 * <li>NONEMATCH: {@code if (!stream.noneMatch(...)) { return false; }}</li>
-	 * <li>ALLMATCH: {@code if (!stream.allMatch(...)) { return false; }}</li>
-	 * </ul>
-	 * 
-	 * @param pipeline the pipeline method invocation
-	 * @return a Statement wrapping the pipeline
-	 */
 	/**
 	 * Wraps the stream pipeline in an appropriate statement type based on the terminal operation.
 	 * 
@@ -365,74 +299,16 @@ public class StreamPipelineBuilder {
 	 * <li><b>FOREACH</b> (and others): Wraps in {@link org.eclipse.jdt.core.dom.ExpressionStatement}</li>
 	 * </ul>
 	 * 
-	 * <p><b>Example - AnyMatch Pattern:</b></p>
-	 * <pre>{@code
-	 * // Input pipeline: stream.map(...).anyMatch(x -> x > 0)
-	 * // Output: if (stream.map(...).anyMatch(x -> x > 0)) { return true; }
-	 * }</pre>
-	 * 
-	 * <p><b>Example - Reduce Pattern:</b></p>
-	 * <pre>{@code
-	 * // Input pipeline: stream.map(...).reduce(0, Integer::sum)
-	 * // Output: sum = stream.map(...).reduce(0, Integer::sum);
-	 * }</pre>
-	 * 
 	 * @param pipeline the stream pipeline to wrap (must not be null)
 	 * @return a Statement wrapping the pipeline, or null if pipeline is null
 	 * @see ProspectiveOperation.OperationType
+	 * @see PipelineAssembler
 	 */
 	public Statement wrapPipeline(MethodInvocation pipeline) {
-		if (pipeline == null) {
+		if (pipelineAssembler == null) {
 			return null;
 		}
-
-		// Check for ANYMATCH, NONEMATCH, or ALLMATCH operations
-		boolean hasAnyMatch = operations.stream()
-				.anyMatch(op -> op.getOperationType() == ProspectiveOperation.OperationType.ANYMATCH);
-		boolean hasNoneMatch = operations.stream()
-				.anyMatch(op -> op.getOperationType() == ProspectiveOperation.OperationType.NONEMATCH);
-		boolean hasAllMatch = operations.stream()
-				.anyMatch(op -> op.getOperationType() == ProspectiveOperation.OperationType.ALLMATCH);
-
-		if (hasAnyMatch) {
-			// Wrap in: if (stream.anyMatch(...)) { return true; }
-			IfStatement ifStmt = ast.newIfStatement();
-			ifStmt.setExpression(pipeline);
-
-			Block thenBlock = ast.newBlock();
-			ReturnStatement returnStmt = ast.newReturnStatement();
-			returnStmt.setExpression(ast.newBooleanLiteral(true));
-			thenBlock.statements().add(returnStmt);
-			ifStmt.setThenStatement(thenBlock);
-
-			return ifStmt;
-		} else if (hasNoneMatch) {
-			// Wrap in: if (!stream.noneMatch(...)) { return false; }
-			return createNegatedEarlyReturnIf(pipeline, false);
-		} else if (hasAllMatch) {
-			// Wrap in: if (!stream.allMatch(...)) { return false; }
-			return createNegatedEarlyReturnIf(pipeline, false);
-		}
-
-		// Check if we have a REDUCE operation
-		boolean hasReduce = operations.stream()
-				.anyMatch(op -> op.getOperationType() == ProspectiveOperation.OperationType.REDUCE);
-
-		String accumulatorVariable = reduceDetector.getAccumulatorVariable();
-		if (hasReduce && accumulatorVariable != null) {
-			// Wrap in assignment: variable = pipeline
-			Assignment assignment = ast.newAssignment();
-			assignment.setLeftHandSide(ast.newSimpleName(accumulatorVariable));
-			assignment.setOperator(Assignment.Operator.ASSIGN);
-			assignment.setRightHandSide(pipeline);
-
-			ExpressionStatement exprStmt = ast.newExpressionStatement(assignment);
-			return exprStmt;
-		} else {
-			// Wrap in an ExpressionStatement for FOREACH and other operations
-			ExpressionStatement exprStmt = ast.newExpressionStatement(pipeline);
-			return exprStmt;
-		}
+		return pipelineAssembler.wrapPipeline(pipeline);
 	}
 
 	/**
@@ -518,108 +394,6 @@ public class StreamPipelineBuilder {
 	 */
 	private List<ProspectiveOperation> parseLoopBody(Statement body, String loopVarName) {
 		return loopBodyParser.parse(body, loopVarName);
-	}
-
-	/**
-	 * Determines the variable name to use for the current operation in a chain of
-	 * stream operations.
-	 * 
-	 * <p>
-	 * This method inspects the list of {@link ProspectiveOperation}s up to
-	 * {@code currentIndex - 1} to find if a previous MAP operation exists. If so,
-	 * it returns the produced variable name from that MAP operation. Otherwise, it
-	 * returns the loop variable name.
-	 * </p>
-	 *
-	 * <p>
-	 * <b>Example:</b>
-	 * </p>
-	 * 
-	 * <pre>
-	 * for (Integer num : numbers) {
-	 * 	int squared = num * num; // MAP: num -> squared
-	 * 	if (squared > 100) { // FILTER uses 'squared', not 'num'
-	 * 		System.out.println(squared);
-	 * 	}
-	 * }
-	 * </pre>
-	 *
-	 * @param operations   the list of prospective operations representing the loop
-	 *                     body transformation (must not be null)
-	 * @param currentIndex the index of the current operation in the list;
-	 *                     operations before this index are considered
-	 * @param loopVarName  the original loop variable name (must not be null)
-	 * @return the variable name produced by the most recent MAP operation, or the
-	 *         loop variable name if none found
-	 * @throws IllegalArgumentException if operations or loopVarName is null
-	 */
-	private String getVariableNameFromPreviousOp(List<ProspectiveOperation> operations, int currentIndex,
-			String loopVarName) {
-		if (operations == null) {
-			throw new IllegalArgumentException("operations cannot be null");
-		}
-		if (loopVarName == null || loopVarName.isEmpty()) {
-			throw new IllegalArgumentException("loopVarName cannot be null or empty");
-		}
-		if (currentIndex < 0 || currentIndex > operations.size()) {
-			throw new IllegalArgumentException(
-					"currentIndex out of bounds: " + currentIndex + " (size: " + operations.size() + ")");
-		}
-
-		// Look back to find the most recent operation that produces a variable
-		for (int i = currentIndex - 1; i >= 0; i--) {
-			ProspectiveOperation op = operations.get(i);
-			if (op != null && op.getProducedVariableName() != null) {
-				return op.getProducedVariableName();
-			}
-		}
-		return loopVarName;
-	}
-
-	/**
-	 * Determines whether the stream pipeline requires an explicit .stream() prefix.
-	 * 
-	 * <p>
-	 * Returns false if the pipeline consists of a single FOREACH operation, which
-	 * can be called directly on the collection. Returns true for all other cases,
-	 * including multiple operations or non-FOREACH terminal operations.
-	 * 
-	 * @return true if .stream() is required, false if direct collection method can
-	 *         be used
-	 */
-	private boolean requiresStreamPrefix() {
-		if (operations.isEmpty()) {
-			return true;
-		}
-		return operations.size() > 1
-				|| operations.get(0).getOperationType() != ProspectiveOperation.OperationType.FOREACH;
-	}
-
-	/**
-	 * Creates an IF statement that wraps a negated pipeline expression with an
-	 * early return. Used for noneMatch and allMatch patterns.
-	 * 
-	 * @param pipeline    the stream pipeline expression
-	 * @param returnValue the boolean value to return (true or false)
-	 * @return an IF statement: if (!pipeline) { return returnValue; }
-	 */
-	private IfStatement createNegatedEarlyReturnIf(MethodInvocation pipeline, boolean returnValue) {
-		IfStatement ifStmt = ast.newIfStatement();
-
-		// Create negated expression: !pipeline
-		PrefixExpression negation = ast.newPrefixExpression();
-		negation.setOperator(PrefixExpression.Operator.NOT);
-		negation.setOperand(pipeline);
-		ifStmt.setExpression(negation);
-
-		// Create then block with return statement
-		Block thenBlock = ast.newBlock();
-		ReturnStatement returnStmt = ast.newReturnStatement();
-		returnStmt.setExpression(ast.newBooleanLiteral(returnValue));
-		thenBlock.statements().add(returnStmt);
-		ifStmt.setThenStatement(thenBlock);
-
-		return ifStmt;
 	}
 
 	/**

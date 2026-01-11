@@ -11,7 +11,9 @@ The functional converter is organized into focused, single-responsibility classe
 
 | Class | Lines | Responsibility |
 |-------|-------|----------------|
-| `StreamPipelineBuilder` | ~1340 | Main orchestrator - analyzes loops, builds pipelines |
+| `StreamPipelineBuilder` | ~640 | Main orchestrator - coordinates analysis and pipeline construction |
+| `LoopBodyParser` | ~450 | Parses loop bodies into operations |
+| `PipelineAssembler` | ~280 | Assembles method invocation chains |
 | `ProspectiveOperation` | ~760 | Represents individual stream operations |
 | `PreconditionsChecker` | ~605 | Validates loop can be converted |
 | `ReducePatternDetector` | ~583 | Detects REDUCE patterns (increment, sum, max/min) |
@@ -19,13 +21,15 @@ The functional converter is organized into focused, single-responsibility classe
 | `LambdaGenerator` | ~418 | Creates lambdas and method references |
 | `IfStatementAnalyzer` | ~362 | Analyzes IF statements for match patterns |
 | `ExpressionUtils` | ~332 | Expression manipulation utilities |
-| `StreamConstants` | ~236 | Constants for stream method names |
+| `StreamConstants` | ~200 | Constants for stream method names (delegates to LibStandardNames) |
 
 ## Core Components
 
 ### 1. StreamPipelineBuilder
 **Location**: `org.sandbox.jdt.internal.corext.fix.helper.StreamPipelineBuilder`
-**Purpose**: Main orchestrator that analyzes loop bodies and constructs stream pipelines
+**Purpose**: Main orchestrator that coordinates analysis and pipeline construction
+
+The `StreamPipelineBuilder` delegates parsing to `LoopBodyParser` and assembly to `PipelineAssembler`.
 
 #### Key Methods
 
@@ -36,21 +40,57 @@ public boolean analyze()
 ```
 - Returns `true` if loop can be converted to streams
 - Checks preconditions via `PreconditionsChecker`
-- Calls `parseLoopBody()` to extract operations
-- Sets internal `convertible` flag
+- Delegates to `LoopBodyParser` to extract operations
+- Initializes `PipelineAssembler` for pipeline construction
+- Validates variable scoping
 
 ##### `buildPipeline()` - Pipeline Construction  
 Builds the complete stream pipeline as a chained `MethodInvocation`.
 ```java
 public MethodInvocation buildPipeline()
 ```
-- Determines if `.stream()` prefix is needed via `requiresStreamPrefix()`
-- Chains operations in sequence (filter → map → forEach/reduce)
-- Tracks variable names through pipeline via `getVariableNameFromPreviousOp()`
-- Returns null if conversion fails
+- Delegates to `PipelineAssembler.buildPipeline()`
+- Returns null if analysis was not successful
 
 ##### `wrapPipeline()` - Statement Wrapping
 Wraps the pipeline in an appropriate statement type.
+```java
+public Statement wrapPipeline(MethodInvocation pipeline)
+```
+- Delegates to `PipelineAssembler.wrapPipeline()`
+
+### 2. LoopBodyParser (NEW)
+**Location**: `org.sandbox.jdt.internal.corext.fix.helper.LoopBodyParser`
+**Purpose**: Parses enhanced for-loop bodies and extracts stream operations
+
+#### Key Methods
+
+##### `parse()` - Main Entry Point
+```java
+public List<ProspectiveOperation> parse(Statement body, String loopVarName)
+```
+- Handles `Block` statements with multiple statements
+- Processes variable declarations → MAP operations
+- Processes IF statements → FILTER operations (recursive for nested IFs)
+- Processes continue statements → negated FILTER operations
+- Detects REDUCE operations via `ReducePatternDetector`
+- Detects early return patterns for ANYMATCH/NONEMATCH
+
+### 3. PipelineAssembler (NEW)
+**Location**: `org.sandbox.jdt.internal.corext.fix.helper.PipelineAssembler`
+**Purpose**: Assembles stream pipeline method invocations from operations
+
+#### Key Methods
+
+##### `buildPipeline()` - Build Method Chain
+```java
+public MethodInvocation buildPipeline()
+```
+- Determines if `.stream()` prefix is needed
+- Chains operations in sequence (filter → map → forEach/reduce)
+- Tracks variable names through pipeline
+
+##### `wrapPipeline()` - Wrap in Statement
 ```java
 public Statement wrapPipeline(MethodInvocation pipeline)
 ```
@@ -59,51 +99,7 @@ public Statement wrapPipeline(MethodInvocation pipeline)
 - **NONEMATCH operations**: Wraps in IF with return (`if (!stream.noneMatch(...)) return false;`)
 - **Other operations**: Wraps in ExpressionStatement
 
-##### `parseLoopBody()` - Recursive Analysis
-Recursively analyzes loop body statements and extracts operations.
-```java
-private List<ProspectiveOperation> parseLoopBody(Statement body, String loopVarName)
-```
-- Handles `Block` statements with multiple statements
-- Processes variable declarations → MAP operations
-- Processes IF statements → FILTER operations (recursive for nested IFs)
-- Processes continue statements → negated FILTER operations
-- Processes side-effect statements → MAP with return statement
-- Detects REDUCE operations via `detectReduceOperation()`
-- Detects early return patterns for ANYMATCH/NONEMATCH
-
-##### `detectReduceOperation()` - Reducer Detection
-Identifies reducer patterns in statements.
-```java
-private ProspectiveOperation detectReduceOperation(Statement stmt)
-```
-- Detects postfix/prefix increment: `i++`, `++i` → `.map(_item -> 1).reduce(i, Integer::sum)`
-- Detects compound assignment: `i += expr` → `.map(expr).reduce(i, Integer::sum)`
-- Detects Math.max pattern: `max = Math.max(max, value)` → `.map(value).reduce(max, Math::max)`
-- Detects Math.min pattern: `min = Math.min(min, value)` → `.map(value).reduce(min, Math::min)`
-- Supports multiple operator types: `+=`, `-=`, `*=`, string concat
-- Type-aware: generates appropriate literals (1.0 for double, 1L for long, etc.)
-- Extracts map expressions from compound assignments via `extractReduceExpression()`
-- Extracts non-accumulator arguments from Math.max/min via `extractMathMaxMinArgument()`
-
-##### `getVariableNameFromPreviousOp()` - Variable Tracking
-Tracks variable names through the pipeline.
-```java
-private String getVariableNameFromPreviousOp(List<ProspectiveOperation> operations, int currentIndex, String loopVarName)
-```
-- MAP operations introduce new variable names
-- Subsequent operations use the new variable name
-- Returns loop variable name if no prior MAP operation
-
-##### `requiresStreamPrefix()` - Stream Decision
-Determines if `.stream()` is needed or if direct collection methods suffice.
-```java
-private boolean requiresStreamPrefix()
-```
-- Returns `false` for single FOREACH operation → use `.forEach()` directly
-- Returns `true` for multiple operations or non-FOREACH terminal → use `.stream()...`
-
-### 2. ProspectiveOperation
+### 4. ProspectiveOperation
 **Location**: `org.sandbox.jdt.internal.corext.fix.helper.ProspectiveOperation`
 **Purpose**: Represents a single stream operation in the pipeline
 
