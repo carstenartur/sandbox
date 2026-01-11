@@ -223,11 +223,9 @@ public final class PreconditionsChecker {
 		}).onBreakStatement((node, h) -> {
 			containsBreak = true;
 			return true;
-		}).onContinueStatement((node, h) -> {
-			// Check if continue has a label (labeled continue should prevent conversion)
-			if (node.getLabel() != null) {
-				containsLabeledContinue = true;
-			}
+		}).onLabeledContinue((node, h) -> {
+			// Labeled continue should prevent conversion (unlabeled continues are allowed)
+			containsLabeledContinue = true;
 			return true;
 		}).onReturnStatement((node, h) -> {
 			containsReturn = true;
@@ -237,72 +235,23 @@ public final class PreconditionsChecker {
 			return true;
 		}).onEnhancedForStatement((node, h) -> {
 			return true;
+		}).onCompoundAssignment((node, h) -> {
+			// Compound assignments: +=, -=, *=, /=, |=, &=, etc.
+			markAsReducer(node);
+			return true;
 		}).onAssignment((node, h) -> {
-			// Detect compound assignments: +=, -=, *=, /=, |=, &=, etc.
-			if (node.getOperator() != Assignment.Operator.ASSIGN) {
-				hasReducer = true;
-				if (reducerStatement == null) {
-					reducerStatement = ASTNodes.getFirstAncestorOrNull(node, Statement.class);
-				}
-			} else {
-				// Check for Math.max/Math.min patterns: max = Math.max(max, x)
-				Expression rhs = node.getRightHandSide();
-				if (rhs instanceof MethodInvocation) {
-					MethodInvocation methodInv = (MethodInvocation) rhs;
-					Expression methodExpr = methodInv.getExpression();
-					if (methodExpr instanceof SimpleName) {
-						SimpleName className = (SimpleName) methodExpr;
-						if ("Math".equals(className.getIdentifier())) {
-							String methodName = methodInv.getName().getIdentifier();
-							if ("max".equals(methodName) || "min".equals(methodName)) {
-								// Check if LHS variable appears in the arguments
-								if (node.getLeftHandSide() instanceof SimpleName) {
-									String varName = ((SimpleName) node.getLeftHandSide()).getIdentifier();
-									List<?> args = methodInv.arguments();
-									if (args.size() == 2) {
-										for (Object arg : args) {
-											if (arg instanceof SimpleName) {
-												if (varName.equals(((SimpleName) arg).getIdentifier())) {
-													hasReducer = true;
-													if (reducerStatement == null) {
-														reducerStatement = ASTNodes.getFirstAncestorOrNull(node, Statement.class);
-													}
-													break;
-												}
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
+			// Check for Math.max/Math.min patterns: max = Math.max(max, x)
+			if (node.getOperator() == Assignment.Operator.ASSIGN && isMathMinMaxReducerPattern(node)) {
+				markAsReducer(node);
 			}
 			return true;
-		});
-
-		// Use processor() to access PostfixExpression and PrefixExpression visitors
-		builder.processor().callPostfixExpressionVisitor((node, h) -> {
-			PostfixExpression postfix = (PostfixExpression) node;
+		}).onPostfixIncrementOrDecrement((node, h) -> {
 			// Detect i++, i--
-			if (postfix.getOperator() == PostfixExpression.Operator.INCREMENT
-					|| postfix.getOperator() == PostfixExpression.Operator.DECREMENT) {
-				hasReducer = true;
-				if (reducerStatement == null) {
-					reducerStatement = ASTNodes.getFirstAncestorOrNull(node, Statement.class);
-				}
-			}
+			markAsReducer(node);
 			return true;
-		}).callPrefixExpressionVisitor((node, h) -> {
-			PrefixExpression prefix = (PrefixExpression) node;
+		}).onPrefixIncrementOrDecrement((node, h) -> {
 			// Detect ++i, --i
-			if (prefix.getOperator() == PrefixExpression.Operator.INCREMENT
-					|| prefix.getOperator() == PrefixExpression.Operator.DECREMENT) {
-				hasReducer = true;
-				if (reducerStatement == null) {
-					reducerStatement = ASTNodes.getFirstAncestorOrNull(node, Statement.class);
-				}
-			}
+			markAsReducer(node);
 			return true;
 		});
 
@@ -410,6 +359,75 @@ public final class PreconditionsChecker {
 	}
 
 	/**
+	 * Marks an AST node as a reducer pattern and records its statement.
+	 * 
+	 * @param node the AST node that represents a reducer operation
+	 */
+	private void markAsReducer(ASTNode node) {
+		hasReducer = true;
+		if (reducerStatement == null) {
+			reducerStatement = ASTNodes.getFirstAncestorOrNull(node, Statement.class);
+		}
+	}
+
+	/**
+	 * Checks if an assignment represents a Math.max or Math.min reducer pattern.
+	 * 
+	 * <p>Pattern: {@code max = Math.max(max, x)} or {@code min = Math.min(min, x)}</p>
+	 * 
+	 * @param assignment the assignment to check
+	 * @return true if this is a Math.max/Math.min reducer pattern
+	 */
+	private boolean isMathMinMaxReducerPattern(Assignment assignment) {
+		Expression rhs = assignment.getRightHandSide();
+		if (!(rhs instanceof MethodInvocation methodInv)) {
+			return false;
+		}
+		
+		if (!isMathMinMaxInvocation(methodInv)) {
+			return false;
+		}
+		
+		return isLhsVariableInArguments(assignment.getLeftHandSide(), methodInv.arguments());
+	}
+
+	/**
+	 * Checks if a method invocation is Math.max or Math.min.
+	 */
+	private boolean isMathMinMaxInvocation(MethodInvocation methodInv) {
+		Expression methodExpr = methodInv.getExpression();
+		if (!(methodExpr instanceof SimpleName className)) {
+			return false;
+		}
+		
+		if (!"Math".equals(className.getIdentifier())) {
+			return false;
+		}
+		
+		String methodName = methodInv.getName().getIdentifier();
+		return "max".equals(methodName) || "min".equals(methodName);
+	}
+
+	/**
+	 * Checks if the LHS variable name appears in the method arguments.
+	 */
+	private boolean isLhsVariableInArguments(Expression lhs, List<?> arguments) {
+		if (!(lhs instanceof SimpleName lhsName)) {
+			return false;
+		}
+		
+		if (arguments.size() != 2) {
+			return false;
+		}
+		
+		String varName = lhsName.getIdentifier();
+		return arguments.stream()
+				.filter(SimpleName.class::isInstance)
+				.map(SimpleName.class::cast)
+				.anyMatch(arg -> varName.equals(arg.getIdentifier()));
+	}
+
+	/**
 	 * Detects anyMatch, noneMatch, and allMatch patterns in the loop.
 	 * 
 	 * <p>
@@ -477,33 +495,35 @@ public final class PreconditionsChecker {
 
 		// Check what statement follows the loop
 		BooleanLiteral followingReturn = getReturnAfterLoop(forLoop);
+		if (followingReturn == null) {
+			return;
+		}
 
 		// Determine pattern based on return values
-		if (returnValue.booleanValue()) {
-			// if (condition) return true; → anyMatch
-			// Expected: return false; after loop
-			if (followingReturn != null && !followingReturn.booleanValue()) {
-				isAnyMatchPattern = true;
-			}
-		} else {
-			// if (condition) return false; → could be noneMatch OR allMatch
-			// Distinguish based on condition negation AND following return:
+		determineMatchPattern(returnValue.booleanValue(), followingReturn.booleanValue(), ifStmt.getExpression());
+	}
+
+	/**
+	 * Determines which match pattern (anyMatch, noneMatch, allMatch) applies based on
+	 * the return values and condition.
+	 * 
+	 * @param returnValueInLoop the boolean value returned inside the loop
+	 * @param returnValueAfterLoop the boolean value returned after the loop
+	 * @param condition the condition expression in the if statement
+	 */
+	private void determineMatchPattern(boolean returnValueInLoop, boolean returnValueAfterLoop, Expression condition) {
+		if (returnValueInLoop && !returnValueAfterLoop) {
+			// if (condition) return true; + return false; → anyMatch
+			isAnyMatchPattern = true;
+		} else if (!returnValueInLoop && returnValueAfterLoop) {
+			// if (condition) return false; + return true; → could be noneMatch OR allMatch
+			// Distinguish based on condition negation:
 			// - if (!condition) return false; + return true; → allMatch(condition)
 			// - if (condition) return false; + return true; → noneMatch(condition)
-
-			// Check if condition is a negated expression (PrefixExpression with NOT)
-			Expression condition = ifStmt.getExpression();
-			boolean isNegated = isNegatedCondition(condition);
-			
-			// Expected: return true; after loop for both allMatch and noneMatch
-			if (followingReturn != null && followingReturn.booleanValue()) {
-				if (isNegated) {
-					// if (!condition) return false; + return true; → allMatch
-					isAllMatchPattern = true;
-				} else {
-					// if (condition) return false; + return true; → noneMatch
-					isNoneMatchPattern = true;
-				}
+			if (isNegatedCondition(condition)) {
+				isAllMatchPattern = true;
+			} else {
+				isNoneMatchPattern = true;
 			}
 		}
 	}
@@ -512,22 +532,31 @@ public final class PreconditionsChecker {
 	 * Checks if the IF statement has a return in its then branch.
 	 */
 	private boolean hasReturnInThenBranch(IfStatement ifStmt) {
+		return getReturnStatementFromThenBranch(ifStmt).isPresent();
+	}
+
+	/**
+	 * Extracts the return statement from the then branch of an if statement.
+	 * Handles both direct return statements and blocks with a single return statement.
+	 * 
+	 * @param ifStmt the if statement to check
+	 * @return Optional containing the ReturnStatement, or empty if not found
+	 */
+	private Optional<ReturnStatement> getReturnStatementFromThenBranch(IfStatement ifStmt) {
 		Statement thenStmt = ifStmt.getThenStatement();
 
-		// Direct return statement
-		if (thenStmt instanceof ReturnStatement) {
-			return true;
+		if (thenStmt instanceof ReturnStatement returnStmt) {
+			return Optional.of(returnStmt);
 		}
 
-		// Block with single return statement
-		if (thenStmt instanceof Block) {
-			Block block = (Block) thenStmt;
-			if (block.statements().size() == 1 && block.statements().get(0) instanceof ReturnStatement) {
-				return true;
+		if (thenStmt instanceof Block block) {
+			List<?> stmts = block.statements();
+			if (stmts.size() == 1 && stmts.get(0) instanceof ReturnStatement returnStmt) {
+				return Optional.of(returnStmt);
 			}
 		}
 
-		return false;
+		return Optional.empty();
 	}
 
 	/**
@@ -537,23 +566,11 @@ public final class PreconditionsChecker {
 	 *         otherwise
 	 */
 	private BooleanLiteral getReturnValueFromIf(IfStatement ifStmt) {
-		Statement thenStmt = ifStmt.getThenStatement();
-		ReturnStatement returnStmt = null;
-
-		if (thenStmt instanceof ReturnStatement) {
-			returnStmt = (ReturnStatement) thenStmt;
-		} else if (thenStmt instanceof Block) {
-			Block block = (Block) thenStmt;
-			if (block.statements().size() == 1 && block.statements().get(0) instanceof ReturnStatement) {
-				returnStmt = (ReturnStatement) block.statements().get(0);
-			}
-		}
-
-		if (returnStmt != null && returnStmt.getExpression() instanceof BooleanLiteral) {
-			return (BooleanLiteral) returnStmt.getExpression();
-		}
-
-		return null;
+		return getReturnStatementFromThenBranch(ifStmt)
+				.map(ReturnStatement::getExpression)
+				.filter(BooleanLiteral.class::isInstance)
+				.map(BooleanLiteral.class::cast)
+				.orElse(null);
 	}
 
 	/**
