@@ -230,29 +230,35 @@ public static String toCamelCase(String input) {
 
 **Decision**: Simplicity and thread-safety outweigh flexibility needs
 
-### AST Visitor Design: HelperVisitor vs. ASTVisitor
+### AST Visitor Design: HelperVisitor Utility
 
-**Decision**: Provide `HelperVisitor` base class wrapping `ASTVisitor`
+**Decision**: Provide `HelperVisitor` utility class with static helper methods
 
 **Rationale**:
-- Reduces boilerplate in plugin cleanup code
-- Provides common patterns (e.g., "visit all method invocations")
-- Can add utility methods accessible in all plugins
-- Maintains compatibility with Eclipse's AST visitor pattern
+- Reduces boilerplate when searching for specific AST patterns
+- Allows lambda-based visitor construction instead of full visitor classes
+- Provides common patterns (e.g., "visit all method invocations of specific type")
+- Simplifies cleanup code that needs to find and process specific nodes
 
 **Usage Pattern**:
 ```java
-// Plugin cleanup code
-class EncodingCleanup extends HelperVisitor {
-    @Override
-    public boolean visit(MethodInvocation node) {
-        // Use helper methods from HelperVisitor
-        if (isMethodCall(node, "Files", "readAllLines")) {
-            // Transform...
-        }
+// Plugin cleanup code using HelperVisitor utility
+ReferenceHolder<ASTNode, Object> datah = new ReferenceHolder<>();
+HelperVisitor.callMethodInvocationVisitor(
+    Channels.class, 
+    "newReader", 
+    compilationUnit, 
+    datah, 
+    nodesprocessed,
+    (visited, holder) -> {
+        // Process found method invocation
+        // Transform...
+        return true;
     }
-}
+);
 ```
+
+**Note**: `HelperVisitor` is NOT a base class to extend. It's a utility class providing static methods for building AST visitors using lambda expressions.
 
 ### Why Separate Utility Classes?
 
