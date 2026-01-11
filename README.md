@@ -356,129 +356,24 @@ Provides a table view of code objects, sorted by name, to detect inconsistent na
 
 ### 5. `sandbox_platform_helper`
 
-#### Platform Status Cleanup – Simplification of `new Status(...)` Calls
+Simplifies Eclipse Platform `Status` object creation by replacing verbose `new Status(...)` constructor calls with cleaner factory methods (Java 11+ / Eclipse 4.20+) or StatusHelper pattern (Java 8).
 
-This cleanup modernizes the usage of `org.eclipse.core.runtime.Status` in Eclipse-based projects by replacing verbose constructor calls with cleaner alternatives.  
-It supports two strategies, depending on the Java and Eclipse platform version:
+**Key Features:**
+- Java version-aware transformations
+- Reduces boilerplate in Status object creation
+- Automatic selection between StatusHelper or factory methods
+- Cleaner, more readable code
 
-- **Java 8 / Eclipse < 4.20**: Use a project-specific `StatusHelper` class.
-- **Java 11+ / Eclipse ≥ 4.20**: Use the static factory methods `Status.error(...)`, `Status.warning(...)`, `Status.info(...)`, etc.
-
-The cleanup logic is based on:
-
-- [`Java8CleanUpTest.java`](../sandbox_platform_helper_test/src/org/sandbox/jdt/ui/tests/quickfix/Java8CleanUpTest.java)
-- [`Java9CleanUpTest.java`](../sandbox_platform_helper_test/src/org/sandbox/jdt/ui/tests/quickfix/Java9CleanUpTest.java)
-
----
-
-#### Motivation
-
-Constructing `IStatus` instances via `new Status(...)` is verbose and error-prone. This cleanup provides more readable alternatives by:
-
-- Reducing boilerplate code
-- Unifying the way status objects are created
-- Encouraging use of centralized helpers or platform-provided factories
-
----
-
-#### Before/After Comparison
-
-| Case Type               | Legacy Code                                             | Cleanup Result (Java 8)                      | Cleanup Result (Java 11 / Eclipse ≥ 4.20)   |
-|-------------------------|---------------------------------------------------------|----------------------------------------------|---------------------------------------------|
-| Basic warning           | `new Status(IStatus.WARNING, id, msg)`                 | *(unchanged – concise)*                      | *(unchanged – concise)*                     |
-| With 4 arguments        | `new Status(IStatus.WARNING, id, msg, null)`           | `StatusHelper.warning(id, msg)`             | `Status.warning(msg)`                       |
-| With exception          | `new Status(IStatus.ERROR, id, msg, e)`                | `StatusHelper.error(id, msg, e)`            | `Status.error(msg, e)`                      |
-| INFO with 4 args        | `new Status(IStatus.INFO, id, code, msg, null)`        | `StatusHelper.info(id, msg)`                | `Status.info(msg)`                          |
-| OK status               | `new Status(IStatus.OK, id, "done")`                   | *(unchanged – already minimal)*             | *(unchanged – already minimal)*             |
-
----
-
-#### Examples
-
-##### Java 8: With `StatusHelper`
-
-**Before:**
+**Quick Example:**
 ```java
-IStatus status = new Status(IStatus.WARNING, "plugin.id", "Something happened", null);
+// Before
+IStatus status = new Status(IStatus.ERROR, "plugin.id", "Error message", exception);
+
+// After (Java 11+ / Eclipse 4.20+)
+IStatus status = Status.error("Error message", exception);
 ```
 
-**After:**
-```java
-IStatus status = StatusHelper.warning("plugin.id", "Something happened");
-```
-
----
-
-##### Java 11+: With `Status.warning(...)`
-
-**Before:**
-```java
-IStatus status = new Status(IStatus.WARNING, "plugin.id", IStatus.OK, "Something happened", null);
-```
-
-**After:**
-```java
-IStatus status = Status.warning("Something happened");
-```
-
----
-
-##### With Exception
-
-**Before:**
-```java
-IStatus status = new Status(IStatus.ERROR, "plugin.id", "Something bad happened", exception);
-```
-
-**After (Java 8):**
-```java
-IStatus status = StatusHelper.error("plugin.id", "Something bad happened", exception);
-```
-
-**After (Java 11+):**
-```java
-IStatus status = Status.error("Something bad happened", exception);
-```
-
----
-
-#### Cleanup Strategy Selection
-
-| Target Platform        | Strategy Used        |
-|------------------------|----------------------|
-| Eclipse < 4.20         | Insert `StatusHelper` method calls |
-| Eclipse 4.20 or newer  | Replace with `Status.error(...)`, `Status.warning(...)`, etc. |
-
----
-
-#### Requirements
-
-- For **Status factory methods**: Eclipse Platform 4.20+ and Java 11+
-- For **StatusHelper**: Either implement your own helper, or use a generated version
-- Static import of `org.eclipse.core.runtime.Status` is recommended
-
----
-
-#### Usage
-
-This cleanup is available as part of the JDT Clean Up framework. It can be run via:
-
-- **Eclipse UI** → Source → Clean Up
-- **Automated build tools** using Eclipse JDT APIs or Maven plugins
-
----
-
-#### Limitations
-
-- Only applies to direct calls to the `Status` constructor
-- Plugin ID handling is simplified – if it must be retained dynamically, manual changes may be needed
-- Custom `IStatus` subclasses or complex logic are not handled
-
----
-
-This documentation is based on the cleanup logic and test cases in `Java8CleanUpTest.java` and `Java9CleanUpTest.java`. Manual review is advised for edge cases or plugin-specific conventions.
-
-> **Reference**: [Eclipse 4.20 Platform ISV – Simpler Status Creation](https://www.eclipse.org/eclipse/news/4.20/platform_isv.php#simpler-status-creation) – PoC for a QuickFix to migrate code based on new platform features.
+📖 **Full Documentation**: [Plugin README](sandbox_platform_helper/README.md) | [Architecture](sandbox_platform_helper/ARCHITECTURE.md) | [TODO](sandbox_platform_helper/TODO.md)
 
 ### 6. `sandbox_tools`
 
@@ -486,173 +381,26 @@ This documentation is based on the cleanup logic and test cases in `Java8CleanUp
 
 ### 7. `sandbox_jface_cleanup`
 
-#### JFace Cleanup – SubProgressMonitor to SubMonitor Migration
+Automates migration from deprecated `SubProgressMonitor` to modern `SubMonitor` API. The cleanup is idempotent and handles variable name collisions.
 
-The **JFace Cleanup** automates the migration from the deprecated `SubProgressMonitor` API to the modern `SubMonitor` API introduced in Eclipse 3.4.
+**Key Features:**
+- Transforms `beginTask()` + `SubProgressMonitor` to `SubMonitor.convert()` + `split()`
+- Handles style flags and multiple monitor instances
+- Idempotent - safe to run multiple times
+- Automatic variable name conflict resolution
 
----
-
-#### Purpose
-
-`SubProgressMonitor` has been deprecated in favor of `SubMonitor`, which provides:
-- **Simpler API**: Fluent interface with method chaining
-- **Better null safety**: Built-in null handling for progress monitors
-- **Improved work allocation**: More intuitive split() semantics
-- **Idempotent transformations**: The cleanup can be run multiple times safely
-- **Forward compatibility**: SubMonitor is the recommended API since Eclipse 3.4+
-
-This cleanup is designed to be **idempotent** – already migrated code will not be transformed again, ensuring safe repeated application.
-
----
-
-#### Migration Pattern
-
-The cleanup transforms the classic `beginTask()` + `SubProgressMonitor` pattern into the modern `SubMonitor.convert()` + `split()` pattern.
-
-##### Basic Transformation
-
-**Before:**
+**Quick Example:**
 ```java
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubProgressMonitor;
+// Before
+monitor.beginTask("Task", 100);
+IProgressMonitor sub = new SubProgressMonitor(monitor, 60);
 
-public void doWork(IProgressMonitor monitor) {
-    monitor.beginTask("Main Task", 100);
-    IProgressMonitor sub1 = new SubProgressMonitor(monitor, 60);
-    IProgressMonitor sub2 = new SubProgressMonitor(monitor, 40);
-}
-```
-
-**After:**
-```java
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubMonitor;
-
-public void doWork(IProgressMonitor monitor) {
-    SubMonitor subMonitor = SubMonitor.convert(monitor, "Main Task", 100);
-    IProgressMonitor sub1 = subMonitor.split(60);
-    IProgressMonitor sub2 = subMonitor.split(40);
-}
-```
-
-##### With Style Flags
-
-The cleanup also handles `SubProgressMonitor` constructor calls with style flags:
-
-**Before:**
-```java
-IProgressMonitor sub = new SubProgressMonitor(monitor, 50, SubProgressMonitor.PREPEND_MAIN_LABEL_TO_SUBTASK);
-```
-
-**After:**
-```java
+// After
 SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
-IProgressMonitor sub = subMonitor.split(50, SubMonitor.PREPEND_MAIN_LABEL_TO_SUBTASK);
+IProgressMonitor sub = subMonitor.split(60);
 ```
 
----
-
-#### Unique Variable Name Handling
-
-If the scope already contains a variable named `subMonitor`, the cleanup generates a unique name:
-
-**Before:**
-```java
-public void doWork(IProgressMonitor monitor) {
-    String subMonitor = "test";  // Name collision
-    monitor.beginTask("Task", 100);
-    IProgressMonitor sub = new SubProgressMonitor(monitor, 50);
-}
-```
-
-**After:**
-```java
-public void doWork(IProgressMonitor monitor) {
-    String subMonitor = "test";
-    SubMonitor subMonitor2 = SubMonitor.convert(monitor, "Task", 100);
-    IProgressMonitor sub = subMonitor2.split(50);
-}
-```
-
----
-
-#### Idempotence
-
-The cleanup is **idempotent** – code that has already been migrated to `SubMonitor` will not be modified:
-
-**Input (Already Migrated):**
-```java
-public void doWork(IProgressMonitor monitor) {
-    SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
-    IProgressMonitor sub = subMonitor.split(50);
-    IProgressMonitor sub2 = subMonitor.split(30);
-}
-```
-
-**Output:**
-```java
-// No changes - code is already using SubMonitor pattern
-public void doWork(IProgressMonitor monitor) {
-    SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
-    IProgressMonitor sub = subMonitor.split(50);
-    IProgressMonitor sub2 = subMonitor.split(30);
-}
-```
-
----
-
-#### Official Eclipse Documentation
-
-- **SubMonitor API**: [SubMonitor JavaDoc](https://help.eclipse.org/latest/topic/org.eclipse.platform.doc.isv/reference/api/org/eclipse/core/runtime/SubMonitor.html)
-- **SubProgressMonitor (Deprecated)**: [SubProgressMonitor JavaDoc](https://help.eclipse.org/latest/topic/org.eclipse.platform.doc.isv/reference/api/org/eclipse/core/runtime/SubProgressMonitor.html)
-- **Eclipse 3.4 Migration Guide**: SubMonitor was introduced in Eclipse 3.4 as the preferred way to handle progress monitors
-
----
-
-#### Requirements
-
-- **Eclipse Version**: 3.4+ (for `SubMonitor` API availability)
-- **Java Version**: Compatible with Java 8+
-
----
-
-#### Cleanup Name & Activation
-
-| Eclipse Cleanup ID                   | Value                       |
-|--------------------------------------|-----------------------------|
-| `MYCleanUpConstants.JFACE_CLEANUP`   | `true` (enable this feature)|
-
-**Usage:**
-- Via **Eclipse Clean Up...** under the JFace category
-- Via **Save Actions** in Eclipse preferences
-- Via **JDT Batch tooling**
-
----
-
-#### Limitations
-
-- Only transforms code that follows the standard pattern of `monitor.beginTask()` followed by `new SubProgressMonitor()`
-- Does not handle cases where monitors are passed through multiple layers without the beginTask call
-- Name collision resolution uses simple numeric suffixes (subMonitor2, subMonitor3, etc.)
-
----
-
-#### Test Coverage
-
-The cleanup is thoroughly tested in:
-- `sandbox_jface_cleanup_test/src/org/sandbox/jdt/ui/tests/quickfix/Java8CleanUpTest.java`
-
-Test cases cover:
-- Basic transformation patterns
-- Multiple SubProgressMonitor instances per method
-- Style flags (2-arg and 3-arg constructors)
-- Variable name collisions
-- Idempotence verification
-- Mixed scenarios (some methods converted, others not)
-- Nested classes and inner classes
-- Import handling when SubProgressMonitor and SubMonitor imports coexist
-
----
+📖 **Full Documentation**: [Plugin README](sandbox_jface_cleanup/README.md) | [Architecture](sandbox_jface_cleanup/ARCHITECTURE.md) | [TODO](sandbox_jface_cleanup/TODO.md)
 
 ### 8. `sandbox_functional_converter`
 
