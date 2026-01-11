@@ -135,6 +135,155 @@ Added more legacy/deprecated JDK classes for comprehensive migration support:
 - Deprecated RMI classes: `LogStream`
 - Deprecated security classes: `javax.security.auth.Policy`, `java.security.acl.*` package
 
+## References
+
+- [Eclipse JDT Search API](https://help.eclipse.org/latest/topic/org.eclipse.jdt.doc.isv/reference/api/org/eclipse/jdt/core/search/package-summary.html)
+- [SearchEngine Documentation](https://help.eclipse.org/latest/topic/org.eclipse.jdt.doc.isv/reference/api/org/eclipse/jdt/core/search/SearchEngine.html)
+- [Eclipse ViewPart Guide](https://help.eclipse.org/latest/topic/org.eclipse.platform.doc.isv/guide/workbench_basicext_views.htm)
+
+## Integration Points
+
+### Eclipse JDT Search Engine Integration
+
+The plugin integrates deeply with Eclipse's search infrastructure:
+
+1. **SearchEngine API**: Uses `org.eclipse.jdt.core.search.SearchEngine`
+   - Searches for type references, method references
+   - Supports scope filtering (workspace, project, package)
+   - Returns `SearchMatch` objects with precise locations
+
+2. **IJavaElement Integration**: Results are linked to Java model elements
+   - Jump-to-definition works seamlessly
+   - Hover tooltips show element information
+   - Refactoring operations preserve search context
+
+3. **Search Scope API**: Uses `SearchScope` for filtering
+   - `SearchEngine.createWorkspaceScope()` for workspace-wide searches
+   - `SearchEngine.createJavaSearchScope()` for project-specific searches
+   - Honors user-defined working sets
+
+### Eclipse UI Integration
+
+The search view integrates with Eclipse's UI framework:
+
+1. **ViewPart Extension**: Extends `org.eclipse.ui.part.ViewPart`
+   - Registered in plugin.xml as `org.eclipse.ui.views` extension
+   - Appears in Window → Show View menu
+   - Supports perspective-based visibility
+
+2. **TableViewer**: Uses JFace `TableViewer` for results display
+   - Data binding to search result model
+   - Sorting by file, line number, or match type
+   - Content provider for efficient rendering
+
+3. **Double-click Navigation**: Implements `IDoubleClickListener`
+   - Opens editor at match location
+   - Highlights matched line
+   - Integrates with Eclipse navigation history
+
+### Workspace Resource Integration
+
+The plugin reads configuration from workspace:
+
+1. **Bundle Resources**: Loads `classlist.properties` from plugin bundle
+   - Uses `Platform.getBundle().getEntry()` for resource access
+   - Defensive handling if file missing
+
+2. **Dialog Settings**: Persists search history
+   - Uses `IDialogSettings` API
+   - Saves last search queries
+   - Remembers view state between sessions
+
+## Algorithms and Design Decisions
+
+### Class List Management Algorithm
+
+**Decision**: Pre-populate search with known deprecated classes from properties file
+
+**Rationale**:
+- Users often don't know which classes are deprecated
+- Reduces cognitive load (common cases pre-listed)
+- Faster workflow (select from dropdown vs. type full class name)
+
+**Implementation**:
+```
+1. Load classlist.properties from bundle
+2. Parse line-by-line (format: fully.qualified.ClassName)
+3. Populate dropdown/combobox
+4. User can select or type custom class name
+5. Trigger search on selection/enter
+```
+
+**Trade-offs**:
+- **Pro**: User-friendly for common cases
+- **Pro**: Educational (shows examples of deprecated APIs)
+- **Con**: List can become outdated (requires maintenance)
+- **Con**: Not comprehensive (can't list all possible deprecated classes)
+
+### Search Result Filtering Strategy
+
+**Decision**: Search entire workspace, display all matches
+
+**Alternative Considered**: Add filtering by project/package
+
+**Current Approach**:
+- Simple: No filter UI complexity
+- Complete: Shows all usages
+- Fast: Search engine handles large workspaces efficiently
+
+**Future Enhancement**: Add filtering UI (see TODO.md)
+
+### Error Handling Strategy
+
+**Decision**: Graceful degradation with user feedback
+
+**Key Decisions**:
+1. **Missing classlist.properties**: Log warning, continue with empty list (user can still type)
+2. **Null workspace**: Show error dialog, disable search
+3. **Search failure**: Log error, show user-friendly message
+
+**Rationale**:
+- Plugin should never crash Eclipse
+- User should understand what went wrong
+- Partial functionality better than complete failure
+
+### Asynchronous Search Design
+
+**Decision**: Run searches in background job
+
+**Rationale**:
+- Searches can take seconds on large workspaces
+- UI must remain responsive
+- Progress reporting improves user experience
+
+**Implementation**:
+```java
+Job searchJob = new Job("Searching for class references") {
+    protected IStatus run(IProgressMonitor monitor) {
+        // Perform search
+        // Update UI on success (Display.asyncExec)
+    }
+};
+searchJob.schedule();
+```
+
+## Cross-References
+
+### Root README Sections
+
+This architecture document relates to:
+
+- [Eclipse Version Configuration](../README.md#eclipse-version-configuration) - Search uses Eclipse 2025-09 APIs
+- [What's Included](../README.md#whats-included) - Listed as sandbox_extra_search
+- [Projects](../README.md#3-sandbox_extra_search) - User-facing description
+
+### Related Modules
+
+- **sandbox_common** - Uses shared utilities for Eclipse API access
+- **sandbox_usage_view** - Similar view-based plugin architecture
+- **Eclipse JDT Core** - Search engine dependency
+- **Eclipse JDT UI** - Java element navigation
+
 ## Future Enhancements
 
 - Integration with Eclipse's deprecation warnings
