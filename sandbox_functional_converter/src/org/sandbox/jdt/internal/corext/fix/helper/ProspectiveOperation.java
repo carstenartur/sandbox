@@ -26,7 +26,6 @@ import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
-import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.SimpleName;
@@ -177,7 +176,7 @@ public final class ProspectiveOperation {
 	 */
 	private Collection<String> usedVariableNames = new HashSet<>();
 
-	// Sammelt alle verwendeten Variablen
+	// Collects all used/referenced variables
 	private void collectNeededVariables(Expression expression) {
 		if (expression == null)
 			return;
@@ -343,7 +342,7 @@ public final class ProspectiveOperation {
 		updateConsumedVariables();
 	}
 
-	/** (2) Gibt den Typ der Operation zurück */
+	/** Returns the operation type. */
 	public OperationType getOperationType() {
 		return this.operationType;
 	}
@@ -534,7 +533,7 @@ public final class ProspectiveOperation {
 		consumedVariables.addAll(neededVariables);
 	}
 
-	/** (5) Ermittelt die Argumente für `reduce()` */
+	/** Determines the arguments for reduce() operation. */
 	private List<Expression> getArgumentsForReducer(AST ast) {
 		List<Expression> arguments = new ArrayList<>();
 		if (operationType == OperationType.REDUCE) {
@@ -568,7 +567,7 @@ public final class ProspectiveOperation {
 		return generator.createAccumulatorExpression(reducerType, accumulatorType, isNullSafe);
 	}
 
-	/** (6) Ermittelt das Identitätselement (`0`, `1`) für `reduce()` */
+	/** Determines the identity element (0, 1) for reduce() operation. */
 	private Expression getIdentityElement(AST ast) {
 		if (operationType == OperationType.REDUCE && originalExpression instanceof Assignment) {
 			Assignment assignment = (Assignment) originalExpression;
@@ -579,31 +578,6 @@ public final class ProspectiveOperation {
 			}
 		}
 		return null;
-	}
-
-	/** (7) Erstellt eine Akkumulator-Funktion für `reduce()` */
-	private LambdaExpression createAccumulatorLambda(AST ast) {
-		LambdaExpression lambda = ast.newLambdaExpression();
-
-		// Generate unique parameter names to avoid clashes with existing variables
-		String param1Name = generateUniqueVariableName("a");
-		String param2Name = generateUniqueVariableName("b");
-
-		// Use VariableDeclarationFragment to avoid type annotations
-		VariableDeclarationFragment paramA = ast.newVariableDeclarationFragment();
-		paramA.setName(ast.newSimpleName(param1Name));
-		VariableDeclarationFragment paramB = ast.newVariableDeclarationFragment();
-		paramB.setName(ast.newSimpleName(param2Name));
-		lambda.parameters().add(paramA);
-		lambda.parameters().add(paramB);
-
-		InfixExpression operationExpr = ast.newInfixExpression();
-		operationExpr.setLeftOperand(ast.newSimpleName(param1Name));
-		operationExpr.setRightOperand(ast.newSimpleName(param2Name));
-		operationExpr.setOperator(InfixExpression.Operator.PLUS);
-		lambda.setBody(operationExpr);
-
-		return lambda;
 	}
 
 	@Override

@@ -53,7 +53,7 @@ public enum OperationType {
 	 * Transforms elements using a mapping function.
 	 * Stream method: {@code .map(x -> f(x))}
 	 */
-	MAP(StreamConstants.MAP_METHOD) {
+	MAP(StreamConstants.MAP_METHOD, false, false) {
 		@Override
 		public ASTNode createLambdaBody(AST ast, LambdaBodyContext context) {
 			// Check for side-effect MAP operations FIRST (originalStatement != null with loopVariableName)
@@ -90,7 +90,7 @@ public enum OperationType {
 	 * Terminal operation performing an action on each element.
 	 * Stream method: {@code .forEachOrdered(x -> action(x))}
 	 */
-	FOREACH(StreamConstants.FOR_EACH_ORDERED_METHOD) {
+	FOREACH(StreamConstants.FOR_EACH_ORDERED_METHOD, false, true) {
 		@Override
 		public ASTNode createLambdaBody(AST ast, LambdaBodyContext context) {
 			if (context.originalExpression() != null 
@@ -116,7 +116,7 @@ public enum OperationType {
 	 * Selects elements based on a predicate.
 	 * Stream method: {@code .filter(x -> condition)}
 	 */
-	FILTER(StreamConstants.FILTER_METHOD) {
+	FILTER(StreamConstants.FILTER_METHOD, true, false) {
 		@Override
 		public ASTNode createLambdaBody(AST ast, LambdaBodyContext context) {
 			if (context.originalExpression() != null) {
@@ -130,7 +130,7 @@ public enum OperationType {
 	 * Terminal accumulation operation.
 	 * Stream method: {@code .reduce(identity, accumulator)}
 	 */
-	REDUCE(StreamConstants.REDUCE_METHOD) {
+	REDUCE(StreamConstants.REDUCE_METHOD, false, true) {
 		@Override
 		public ASTNode createLambdaBody(AST ast, LambdaBodyContext context) {
 			// REDUCE has special handling via getArgumentsForReducer()
@@ -148,7 +148,7 @@ public enum OperationType {
 	 * Terminal predicate returning true if any element matches.
 	 * Stream method: {@code .anyMatch(x -> condition)}
 	 */
-	ANYMATCH(StreamConstants.ANY_MATCH_METHOD) {
+	ANYMATCH(StreamConstants.ANY_MATCH_METHOD, true, true) {
 		@Override
 		public ASTNode createLambdaBody(AST ast, LambdaBodyContext context) {
 			if (context.originalExpression() != null) {
@@ -162,7 +162,7 @@ public enum OperationType {
 	 * Terminal predicate returning true if no elements match.
 	 * Stream method: {@code .noneMatch(x -> condition)}
 	 */
-	NONEMATCH(StreamConstants.NONE_MATCH_METHOD) {
+	NONEMATCH(StreamConstants.NONE_MATCH_METHOD, true, true) {
 		@Override
 		public ASTNode createLambdaBody(AST ast, LambdaBodyContext context) {
 			if (context.originalExpression() != null) {
@@ -176,7 +176,7 @@ public enum OperationType {
 	 * Terminal predicate returning true if all elements match.
 	 * Stream method: {@code .allMatch(x -> condition)}
 	 */
-	ALLMATCH(StreamConstants.ALL_MATCH_METHOD) {
+	ALLMATCH(StreamConstants.ALL_MATCH_METHOD, true, true) {
 		@Override
 		public ASTNode createLambdaBody(AST ast, LambdaBodyContext context) {
 			if (context.originalExpression() != null) {
@@ -187,9 +187,13 @@ public enum OperationType {
 	};
 
 	private final String methodName;
+	private final boolean predicate;
+	private final boolean terminal;
 
-	OperationType(String methodName) {
+	OperationType(String methodName, boolean isPredicate, boolean isTerminal) {
 		this.methodName = methodName;
+		this.predicate = isPredicate;
+		this.terminal = isTerminal;
 	}
 
 	/**
@@ -226,7 +230,7 @@ public enum OperationType {
 	 * @return true if this is a predicate-based operation (FILTER, ANYMATCH, NONEMATCH, ALLMATCH)
 	 */
 	public boolean isPredicate() {
-		return this == FILTER || this == ANYMATCH || this == NONEMATCH || this == ALLMATCH;
+		return predicate;
 	}
 	
 	/**
@@ -235,7 +239,7 @@ public enum OperationType {
 	 * @return true if this is a terminal operation (FOREACH, REDUCE, ANYMATCH, NONEMATCH, ALLMATCH)
 	 */
 	public boolean isTerminal() {
-		return this == FOREACH || this == REDUCE || this == ANYMATCH || this == NONEMATCH || this == ALLMATCH;
+		return terminal;
 	}
 	
 	// ==================== Helper Methods ====================

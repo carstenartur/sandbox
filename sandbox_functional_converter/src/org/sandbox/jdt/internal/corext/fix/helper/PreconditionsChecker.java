@@ -363,33 +363,6 @@ public final class PreconditionsChecker {
 		// scopes, but that's a separate concern.
 	}
 
-	/** Hilfsmethode zur Prüfung, ob eine Variable effektiv final ist. */
-	private boolean isEffectivelyFinal(VariableDeclarationFragment var) {
-		final boolean[] modified = { false };
-		ASTNode methodBody = getEnclosingMethodBody(var);
-		if (methodBody != null) {
-			String varName = var.getName().getIdentifier();
-
-			AstProcessorBuilder.with(new ReferenceHolder<String, Object>()).onAssignment((node, h) -> {
-				if (node.getLeftHandSide() instanceof SimpleName name) {
-					if (name.getIdentifier().equals(varName)) {
-						modified[0] = true;
-					}
-				}
-				return true;
-			}).build(methodBody);
-		}
-		return !modified[0];
-	}
-
-	/**
-	 * Hilfsmethode: Findet den umgebenden Methodenrumpf einer Variablendeklaration.
-	 */
-	private ASTNode getEnclosingMethodBody(ASTNode node) {
-		MethodDeclaration method = ASTNodes.getFirstAncestorOrNull(node, MethodDeclaration.class);
-		return (method != null) ? method.getBody() : null;
-	}
-
 	/**
 	 * Marks an AST node as a reducer pattern and records its statement.
 	 * 

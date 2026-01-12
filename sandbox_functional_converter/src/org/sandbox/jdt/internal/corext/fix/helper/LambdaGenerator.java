@@ -163,10 +163,7 @@ public final class LambdaGenerator {
 	 */
 	public Expression createPredicateLambdaBody(Expression expression) {
 		// Unwrap parentheses to check the actual expression type
-		Expression unwrapped = expression;
-		while (unwrapped instanceof ParenthesizedExpression) {
-			unwrapped = ((ParenthesizedExpression) unwrapped).getExpression();
-		}
+		Expression unwrapped = ExpressionUtils.getUnparenthesized(expression);
 
 		// Don't wrap PrefixExpression with NOT - already has proper precedence
 		if (unwrapped instanceof PrefixExpression) {
