@@ -82,10 +82,17 @@ The functional loop conversion can produce code that has different null-safety b
 **Current Behavior**:
 - Uses `(a, b) -> a + b` by default (safe)
 - Uses `String::concat` only when `isNullSafe=true`
+- ✅ **FIXED (Jan 2026)**: Now detects both compound assignment (`result += item`) and regular assignment with infix expression (`result = result + item`) patterns
 
-**Improvement Needed**:
-- [ ] Detect when collection can contain null elements
-- [ ] Only use `String::concat` when both accumulator AND elements are guaranteed non-null
+**Implementation Details**:
+- ✅ Added `detectInfixReducePattern()` method in ReducePatternDetector
+- ✅ Handles `result = result + item`, `product = product * value`, etc.
+- ✅ Correctly identifies string concatenation vs numeric operations based on type
+- ✅ Checks for `@NotNull` annotations on accumulator variable for STRING_CONCAT
+- ✅ Updated `extractReduceExpression()` to extract right operand from infix expressions
+
+**Remaining Work**:
+- [ ] Detect when collection can contain null elements (not just accumulator)
 - [ ] Consider adding a warning comment when transformation might change null behavior
 
 #### 2. Method Calls on Loop Variable

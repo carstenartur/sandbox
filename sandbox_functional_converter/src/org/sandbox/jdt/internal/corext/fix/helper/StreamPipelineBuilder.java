@@ -482,4 +482,34 @@ public class StreamPipelineBuilder {
 		CompilationUnit root = (CompilationUnit) node.getRoot();
 		return new ScopeAnalyzer(root).getUsedVariableNames(node.getStartPosition(), node.getLength());
 	}
+	
+	/**
+	 * Checks if the analyzed operations include a REDUCE operation.
+	 * 
+	 * @return true if there is a REDUCE operation, false otherwise
+	 */
+	public boolean hasReduceOperation() {
+		if (!analyzed || !convertible) {
+			return false;
+		}
+		return operations.stream()
+				.anyMatch(op -> op.getOperationType() == OperationType.REDUCE);
+	}
+	
+	/**
+	 * Gets the accumulator variable name for REDUCE operations.
+	 * 
+	 * @return the accumulator variable name, or null if no REDUCE operation exists
+	 */
+	public String getAccumulatorVariableName() {
+		if (!analyzed || !convertible) {
+			return null;
+		}
+		for (ProspectiveOperation op : operations) {
+			if (op.getOperationType() == OperationType.REDUCE) {
+				return op.getAccumulatorVariableName();
+			}
+		}
+		return null;
+	}
 }

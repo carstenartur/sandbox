@@ -148,7 +148,14 @@ public class LoopBodyParser {
 
 		// Check if the entire block should be treated as a single forEach
 		if (shouldTreatAsSimpleForEach(statements, loopVarName)) {
-			ProspectiveOperation forEachOp = new ProspectiveOperation(block,
+			// For single-statement blocks, unwrap to allow expression lambda
+			Statement forEachStatement;
+			if (statements.size() == 1) {
+				forEachStatement = statements.get(0);
+			} else {
+				forEachStatement = block;
+			}
+			ProspectiveOperation forEachOp = new ProspectiveOperation(forEachStatement,
 					OperationType.FOREACH, loopVarName);
 			ops.add(forEachOp);
 			return ops;
@@ -271,6 +278,7 @@ public class LoopBodyParser {
 
 		Set<String> declaredVariables = new HashSet<>();
 		IfStatement ifStatementAfterVarDecls = null;
+		boolean allSafeSideEffects = true;
 
 		for (Statement stmt : statements) {
 			if (stmt instanceof VariableDeclarationStatement) {
@@ -280,6 +288,8 @@ public class LoopBodyParser {
 						declaredVariables.add(((VariableDeclarationFragment) frag).getName().getIdentifier());
 					}
 				}
+				// Variable declarations are not simple side-effects
+				allSafeSideEffects = false;
 			} else if (stmt instanceof IfStatement) {
 				IfStatement ifStmt = (IfStatement) stmt;
 				if (ifAnalyzer.isEarlyReturnIf(ifStmt, isAnyMatchPattern, isNoneMatchPattern, isAllMatchPattern)
@@ -289,9 +299,27 @@ public class LoopBodyParser {
 				if (!declaredVariables.isEmpty()) {
 					ifStatementAfterVarDecls = ifStmt;
 				}
+				// IF statements are not simple side-effects
+				allSafeSideEffects = false;
 			} else if (stmt instanceof ReturnStatement || stmt instanceof ContinueStatement 
 					|| stmt instanceof BreakStatement) {
 				return false;
+			} else if (stmt instanceof ExpressionStatement) {
+				// Check if this is a method call or other safe side-effect
+				ExpressionStatement exprStmt = (ExpressionStatement) stmt;
+				Expression expr = exprStmt.getExpression();
+				// Method invocations are safe side-effects
+				if (!(expr instanceof org.eclipse.jdt.core.dom.MethodInvocation)) {
+					// Non-method-call expressions might be reduce operations or assignments
+					ProspectiveOperation reduceOp = reduceDetector.detectReduceOperation(stmt);
+					if (reduceOp != null) {
+						return false;
+					}
+					allSafeSideEffects = false;
+				}
+			} else {
+				// Other statement types are not simple side-effects
+				allSafeSideEffects = false;
 			}
 
 			ProspectiveOperation reduceOp = reduceDetector.detectReduceOperation(stmt);
@@ -307,7 +335,8 @@ public class LoopBodyParser {
 			return false;
 		}
 
-		return false;
+		// If all statements are safe side-effects (method calls), treat as simple forEach
+		return allSafeSideEffects;
 	}
 
 	/**

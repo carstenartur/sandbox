@@ -17,17 +17,22 @@ import java.util.List;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Assignment;
+import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.PostfixExpression;
 import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
 import org.sandbox.jdt.internal.corext.util.VariableResolver;
 
@@ -238,6 +243,13 @@ public final class ReducePatternDetector {
 			return op;
 		}
 
+		// Check for regular assignment with infix expression pattern
+		// Pattern: result = result + item, product = product * value, etc.
+		ProspectiveOperation infixOp = detectInfixReducePattern(assignment, stmt, varName);
+		if (infixOp != null) {
+			return infixOp;
+		}
+
 		return null;
 	}
 
@@ -277,6 +289,122 @@ public final class ReducePatternDetector {
 		}
 
 		return op;
+	}
+
+	/**
+	 * Detects infix expression reduction patterns in regular assignments.
+	 * Patterns: result = result + item, product = product * value, etc.
+	 * 
+	 * <p>IMPORTANT: This method does NOT check if the accumulator variable is declared
+	 * inside the loop. External variable modification (variable declared outside and used
+	 * after the loop) should be rejected by the caller.</p>
+	 * 
+	 * @param assignment the assignment to check
+	 * @param stmt       the statement containing the assignment
+	 * @param varName    the accumulator variable name
+	 * @return a REDUCE operation if pattern detected, null otherwise
+	 */
+	private ProspectiveOperation detectInfixReducePattern(Assignment assignment, Statement stmt, String varName) {
+		Expression rhs = assignment.getRightHandSide();
+		
+		// Check if RHS is an infix expression
+		if (!(rhs instanceof InfixExpression)) {
+			return null;
+		}
+		
+		InfixExpression infixExpr = (InfixExpression) rhs;
+		
+		// Check if left operand is the accumulator variable
+		Expression leftOperand = infixExpr.getLeftOperand();
+		if (!(leftOperand instanceof SimpleName)) {
+			return null;
+		}
+		
+		SimpleName leftName = (SimpleName) leftOperand;
+		if (!varName.equals(leftName.getIdentifier())) {
+			return null;
+		}
+		
+		// Note: We intentionally do NOT check isExternalVariableModification here.
+		// REDUCE operations are specifically designed for external accumulator patterns
+		// like: String result = ""; for (s : items) result = result + s;
+		// The accumulator is expected to be declared outside the loop.
+		
+		// Determine reducer type based on operator
+		ReducerType reducerType;
+		InfixExpression.Operator operator = infixExpr.getOperator();
+		
+		if (operator == InfixExpression.Operator.PLUS) {
+			// Check if this is string concatenation
+			ITypeBinding varType = VariableResolver.getTypeBinding(contextNode, varName);
+			if (varType != null && JAVA_LANG_STRING.equals(varType.getQualifiedName())) {
+				reducerType = ReducerType.STRING_CONCAT;
+			} else {
+				reducerType = ReducerType.SUM;
+			}
+		} else if (operator == InfixExpression.Operator.TIMES) {
+			reducerType = ReducerType.PRODUCT;
+		} else if (operator == InfixExpression.Operator.MINUS) {
+			reducerType = ReducerType.DECREMENT;
+		} else {
+			// Other operators not yet supported
+			return null;
+		}
+		
+		accumulatorVariable = varName;
+		accumulatorType = VariableResolver.getVariableType(contextNode, varName);
+		
+		ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);
+		op.setAccumulatorType(accumulatorType);
+		
+		// For STRING_CONCAT, check if the accumulator variable has @NotNull
+		if (reducerType == ReducerType.STRING_CONCAT) {
+			boolean isNullSafe = VariableResolver.hasNotNullAnnotation(contextNode, varName);
+			op.setNullSafe(isNullSafe);
+		}
+		
+		return op;
+	}
+
+	/**
+	 * Checks if a variable assignment represents external variable modification.
+	 * 
+	 * <p>A variable modification is considered "external" if the variable is NOT declared
+	 * within the loop body. This typically means it was declared before the loop and may
+	 * be used after the loop, which makes the loop unsafe to convert.</p>
+	 * 
+	 * @param varName the name of the variable being modified
+	 * @param stmt the statement containing the modification
+	 * @return true if this is external variable modification
+	 */
+	private boolean isExternalVariableModification(String varName, Statement stmt) {
+		// Find the enclosing loop (EnhancedForStatement)
+		EnhancedForStatement enclosingLoop = ASTNodes.getFirstAncestorOrNull(stmt, EnhancedForStatement.class);
+		if (enclosingLoop == null) {
+			// Can't determine - assume external to be safe
+			return true;
+		}
+		
+		// Check if the variable is declared inside the loop body
+		Statement loopBody = enclosingLoop.getBody();
+		if (loopBody == null) {
+			return true;
+		}
+		
+		// Use a visitor to find if variable is declared in loop body
+		final boolean[] foundDeclaration = {false};
+		loopBody.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(VariableDeclarationFragment node) {
+				if (varName.equals(node.getName().getIdentifier())) {
+					foundDeclaration[0] = true;
+				}
+				return !foundDeclaration[0]; // Stop if found
+			}
+		});
+		
+		// If not found in loop body, it's external
+		return !foundDeclaration[0];
 	}
 
 	/**
@@ -361,6 +489,7 @@ public final class ReducePatternDetector {
 	/**
 	 * Extracts the expression from a REDUCE operation's right-hand side.
 	 * For example, in "i += foo(l)", extracts "foo(l)".
+	 * For "result = result + item", extracts "item".
 	 * 
 	 * @param stmt the statement containing the reduce operation
 	 * @return the expression to be mapped, or null if none
@@ -378,6 +507,15 @@ public final class ReducePatternDetector {
 			// Return the right-hand side expression for compound assignments
 			if (assignment.getOperator() != Assignment.Operator.ASSIGN) {
 				return assignment.getRightHandSide();
+			}
+			
+			// For regular assignment with infix expression (e.g., result = result + item)
+			// Extract the right operand of the infix expression
+			Expression rhs = assignment.getRightHandSide();
+			if (rhs instanceof InfixExpression) {
+				InfixExpression infixExpr = (InfixExpression) rhs;
+				// Return the right operand (the item being accumulated)
+				return infixExpr.getRightOperand();
 			}
 		}
 

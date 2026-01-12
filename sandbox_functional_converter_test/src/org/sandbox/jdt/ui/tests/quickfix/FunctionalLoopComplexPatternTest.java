@@ -200,10 +200,10 @@ class MyTest {
 
 	public Boolean test(List<Integer> ls) throws Exception {
 		Integer i=0;
-		ls.stream().map(l -> {
+		ls.forEach(l -> {
 			System.out.println();
-			return l;
-		}).forEachOrdered(l -> System.out.println(""));
+			System.out.println("");
+		});
 		System.out.println(i);
 		return false;
 

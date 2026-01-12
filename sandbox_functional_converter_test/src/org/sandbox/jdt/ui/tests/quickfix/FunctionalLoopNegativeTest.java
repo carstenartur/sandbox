@@ -201,15 +201,17 @@ context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 }
 
 /**
- * Tests that loops with External variable modification (should NOT convert) are not converted.
+ * Tests that loops with external variable modification AND side-effects ARE converted.
  * 
  * <p>
- * Verifies the cleanup correctly identifies patterns that cannot be safely converted.
+ * When a loop has both side-effects (like println) and a reducer pattern (like count++),
+ * the conversion preserves both behaviors by using map operations for side-effects
+ * followed by the reduce operation.
  * </p>
  */
 @Test
-void test_External_variable_modification_should_NOT_convert() throws CoreException {
-String sourceCode = """
+void test_External_variable_modification_with_side_effects_converts() throws CoreException {
+String input = """
 			package test1;
 
 			import java.util.List;
@@ -225,10 +227,26 @@ String sourceCode = """
 				}
 					}""";
 
+String expected = """
+			package test1;
+
+			import java.util.List;
+
+			class MyTest {
+				public void processWithExternalModification(List<String> items) {
+					int count = 0;
+					count = items.stream().map(item -> {
+						System.out.println(item);
+						return item;
+					}).map(item -> 1).reduce(count, Integer::sum);
+					System.out.println(count);
+				}
+					}""";
+
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
-ICompilationUnit cu = pack.createCompilationUnit("Test.java", sourceCode, true, null);
+ICompilationUnit cu = pack.createCompilationUnit("Test.java", input, true, null);
 context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
-context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 }
 
 /**

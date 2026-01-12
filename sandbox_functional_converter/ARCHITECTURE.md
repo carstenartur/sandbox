@@ -299,6 +299,23 @@ private boolean useStreamPipelineBuilder() {
 #### Key Responsibilities
 - Detects postfix/prefix increment: `i++`, `++i`
 - Detects compound assignments: `sum += x`, `product *= x`
+- Detects regular assignments with infix expressions: `result = result + item`
+- Detects Math.max/Math.min patterns: `max = Math.max(max, x)`
+- Extracts expressions for MAP operations before REDUCE
+- Handles null-safety checks for STRING_CONCAT operations
+
+#### Pattern Detection Methods
+- `detectPostfixReducePattern()` - Handles `i++`, `i--`
+- `detectPrefixReducePattern()` - Handles `++i`, `--i`
+- `detectCompoundAssignmentPattern()` - Handles `+=`, `-=`, `*=`
+- `detectInfixReducePattern()` - Handles `result = result + item` (NEW in Jan 2026)
+- `detectMathMaxMinPattern()` - Handles `max = Math.max(max, x)`
+
+#### Expression Extraction
+- `extractReduceExpression()` - Extracts RHS for MAP operations
+  - For compound assignments: returns entire RHS
+  - For infix expressions: returns right operand only
+- `extractMathMaxMinArgument()` - Extracts non-accumulator argument from Math.max/min
 - Detects Math.max/min patterns: `max = Math.max(max, value)`
 - Tracks accumulator variable and type
 - Adds MAP operations before REDUCE operations

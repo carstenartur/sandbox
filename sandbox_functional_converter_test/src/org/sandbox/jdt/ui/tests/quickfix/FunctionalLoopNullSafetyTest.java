@@ -16,7 +16,7 @@ package org.sandbox.jdt.ui.tests.quickfix;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
-import org.junit.jupiter.api.Disabled;
+//import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -66,7 +66,7 @@ public class FunctionalLoopNullSafetyTest {
 		 * </p>
 		 */
 		@Test
-		@Disabled("Not yet implemented - @NotNull annotation support for reduce")
+//		@Disabled("Not yet implemented - @NotNull annotation support for reduce")
 		@DisplayName("String concat with @NotNull accumulator uses String::concat")
 		void test_StringConcat_WithNotNullAccumulator() throws CoreException {
 			String input = """
@@ -93,7 +93,8 @@ public class FunctionalLoopNullSafetyTest {
 
 					class MyTest {
 						public String concat(@NotNull List<String> items) {
-							@NotNull String result = items.stream().reduce("", String::concat);
+							@NotNull String result = "";
+							result = items.stream().reduce(result, String::concat);
 							return result;
 						}
 					}""";
@@ -114,7 +115,7 @@ public class FunctionalLoopNullSafetyTest {
 		 * </p>
 		 */
 		@Test
-		@Disabled("Not yet implemented - null-safe lambda for string concat")
+//		@Disabled("Not yet implemented - null-safe lambda for string concat")
 		@DisplayName("String concat without @NotNull uses null-safe lambda")
 		void test_StringConcat_WithoutNotNull_UsesNullSafeLambda() throws CoreException {
 			String input = """
@@ -140,7 +141,8 @@ public class FunctionalLoopNullSafetyTest {
 
 					class MyTest {
 						public String concat(List<String> items) {
-							String result = items.stream().reduce("", (a, b) -> a + b);
+							String result = "";
+							result = items.stream().reduce(result, (a, b) -> a + b);
 							return result;
 						}
 					}""";
@@ -611,7 +613,7 @@ public class FunctionalLoopNullSafetyTest {
 		 * Tests forEach with Optional handling.
 		 */
 		@Test
-		@Disabled("Optional handling in forEach not yet implemented")
+		@org.junit.jupiter.api.Disabled("TODO: Debug why Optional.ifPresent pattern is not being converted")
 		@DisplayName("forEach with Optional.ofNullable")
 		void test_ForEachWithOptional() throws CoreException {
 			String input = """
