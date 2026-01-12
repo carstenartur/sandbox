@@ -18,6 +18,7 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
 
 /**
@@ -64,18 +65,46 @@ import org.eclipse.text.edits.TextEditGroup;
  * @see ASTRewrite
  */
 public class Refactorer {
+	
+	private static final String JAVA_UTIL_ARRAYS = "java.util.Arrays"; //$NON-NLS-1$
+	
 	private final EnhancedForStatement forLoop;
 	private final ASTRewrite rewrite;
 	private final PreconditionsChecker preconditions;
 	private final TextEditGroup group;
+	private final CompilationUnitRewrite cuRewrite;
 
+	/**
+	 * Creates a new Refactorer.
+	 * 
+	 * @param forLoop       the enhanced for-loop to refactor
+	 * @param rewrite       the AST rewrite to use
+	 * @param preconditions the preconditions checker
+	 * @param group         the text edit group for tracking changes
+	 * @deprecated Use {@link #Refactorer(EnhancedForStatement, ASTRewrite, PreconditionsChecker, TextEditGroup, CompilationUnitRewrite)} instead
+	 */
+	@Deprecated
 	public Refactorer(EnhancedForStatement forLoop, ASTRewrite rewrite, PreconditionsChecker preconditions,
 			TextEditGroup group) {
+		this(forLoop, rewrite, preconditions, group, null);
+	}
+	
+	/**
+	 * Creates a new Refactorer with CompilationUnitRewrite for import management.
+	 * 
+	 * @param forLoop       the enhanced for-loop to refactor
+	 * @param rewrite       the AST rewrite to use
+	 * @param preconditions the preconditions checker
+	 * @param group         the text edit group for tracking changes
+	 * @param cuRewrite     the compilation unit rewrite for import management (may be null)
+	 */
+	public Refactorer(EnhancedForStatement forLoop, ASTRewrite rewrite, PreconditionsChecker preconditions,
+			TextEditGroup group, CompilationUnitRewrite cuRewrite) {
 		this.forLoop = forLoop;
 		this.rewrite = rewrite;
 		this.preconditions = preconditions;
-		//forLoop.getAST();
 		this.group = group;
+		this.cuRewrite = cuRewrite;
 	}
 
 	/** Checks if the loop can be refactored to a stream operation. */
@@ -109,6 +138,10 @@ public class Refactorer {
 		MethodInvocation pipeline = builder.buildPipeline();
 		Statement replacement = builder.wrapPipeline(pipeline);
 		if (replacement != null) {
+			// Add Arrays import if needed (for array iteration)
+			if (builder.needsArraysImport() && cuRewrite != null) {
+				cuRewrite.getImportRewrite().addImport(JAVA_UTIL_ARRAYS);
+			}
 			ASTNodes.replaceButKeepComment(rewrite, forLoop, replacement, group);
 		}
 	}

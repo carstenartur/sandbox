@@ -210,10 +210,11 @@ public enum ReducerType {
 	
 	/**
 	 * Creates a method reference for max/min operations based on the accumulator type.
+	 * Always uses Math::max and Math::min since these patterns are detected from Math.max/min calls.
 	 */
 	private static TypeMethodReference createMaxMinMethodReference(AST ast, String accumulatorType, String methodName) {
-		String typeName = mapToWrapperType(accumulatorType);
-		return createMethodReference(ast, typeName, methodName);
+		// Always use Math for max/min operations since they're detected from Math.max/min patterns
+		return createMethodReference(ast, "Math", methodName);
 	}
 	
 	/**

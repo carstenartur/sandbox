@@ -304,7 +304,7 @@ String expected = """
 			class MyTest {
 				public int findMax(List<Integer> numbers) {
 					int max = Integer.MIN_VALUE;
-					max = numbers.stream().reduce(max, Integer::max);
+					max = numbers.stream().reduce(max, Math::max);
 					return max;
 				}
 				}""";
@@ -351,7 +351,7 @@ String expected = """
 			class MyTest {
 				public int findMin(List<Integer> numbers) {
 					int min = Integer.MAX_VALUE;
-					min = numbers.stream().reduce(min, Integer::min);
+					min = numbers.stream().reduce(min, Math::min);
 					return min;
 				}
 				}""";

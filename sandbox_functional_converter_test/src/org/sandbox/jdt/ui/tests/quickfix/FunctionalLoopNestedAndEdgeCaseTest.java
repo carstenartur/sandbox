@@ -686,7 +686,7 @@ public class FunctionalLoopNestedAndEdgeCaseTest {
 		 * Tests loop iterating over array (not collection).
 		 */
 		@Test
-		@Disabled("Array iteration to stream not yet supported")
+//		@Disabled("Array iteration to stream not yet supported")
 		@DisplayName("Loop over array - should convert to Arrays.stream()")
 		void test_LoopOverArray() throws CoreException {
 			String input = """

@@ -22,6 +22,7 @@ import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IfStatement;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.PrefixExpression;
@@ -65,6 +66,7 @@ public class PipelineAssembler {
 	
 	private Collection<String> usedVariableNames;
 	private ReducePatternDetector reduceDetector;
+	private boolean needsArraysImport = false;
 
 	/**
 	 * Creates a new PipelineAssembler.
@@ -89,6 +91,16 @@ public class PipelineAssembler {
 	 */
 	public void setUsedVariableNames(Collection<String> usedNames) {
 		this.usedVariableNames = usedNames;
+	}
+	
+	/**
+	 * Returns whether the pipeline needs the java.util.Arrays import.
+	 * This is true when iterating over an array.
+	 * 
+	 * @return true if Arrays import is needed
+	 */
+	public boolean needsArraysImport() {
+		return needsArraysImport;
 	}
 
 	/**
@@ -120,13 +132,11 @@ public class PipelineAssembler {
 	}
 
 	/**
-	 * Builds a pipeline starting with .stream().
+	 * Builds a pipeline starting with .stream() or Arrays.stream() for arrays.
 	 */
 	private MethodInvocation buildStreamPipeline() {
-		// Start with .stream()
-		MethodInvocation pipeline = ast.newMethodInvocation();
-		pipeline.setExpression((Expression) ASTNode.copySubtree(ast, forLoop.getExpression()));
-		pipeline.setName(ast.newSimpleName(StreamConstants.STREAM_METHOD));
+		// Start with .stream() or Arrays.stream() for arrays
+		MethodInvocation pipeline = createStreamSource();
 
 		// Chain each operation
 		for (int i = 0; i < operations.size(); i++) {
@@ -153,7 +163,8 @@ public class PipelineAssembler {
 	}
 
 	/**
-	 * Builds a direct forEach without .stream().
+	 * Builds a direct forEach without .stream() for collections, 
+	 * or Arrays.stream().forEach() for arrays.
 	 */
 	private MethodInvocation buildDirectForEach() {
 		ProspectiveOperation op = operations.get(0);
@@ -162,9 +173,21 @@ public class PipelineAssembler {
 			op.setUsedVariableNames(usedVariableNames);
 		}
 
-		MethodInvocation pipeline = ast.newMethodInvocation();
-		pipeline.setExpression((Expression) ASTNode.copySubtree(ast, forLoop.getExpression()));
-		pipeline.setName(ast.newSimpleName(StreamConstants.FOR_EACH_METHOD));
+		MethodInvocation pipeline;
+		
+		// Arrays need Arrays.stream(items).forEach() since arrays don't have forEach
+		if (isArrayIteration()) {
+			// Create Arrays.stream(items).forEach(...)
+			MethodInvocation streamSource = createStreamSource();
+			pipeline = ast.newMethodInvocation();
+			pipeline.setExpression(streamSource);
+			pipeline.setName(ast.newSimpleName(StreamConstants.FOR_EACH_METHOD));
+		} else {
+			// Create collection.forEach(...)
+			pipeline = ast.newMethodInvocation();
+			pipeline.setExpression((Expression) ASTNode.copySubtree(ast, forLoop.getExpression()));
+			pipeline.setName(ast.newSimpleName(StreamConstants.FOR_EACH_METHOD));
+		}
 		
 		List<Expression> args = op.getArguments(ast, loopVariableName);
 		for (Expression arg : args) {
@@ -172,6 +195,47 @@ public class PipelineAssembler {
 		}
 
 		return pipeline;
+	}
+	
+	/**
+	 * Creates the stream source expression.
+	 * For collections: {@code collection.stream()}
+	 * For arrays: {@code Arrays.stream(array)}
+	 * 
+	 * @return the stream source MethodInvocation
+	 */
+	private MethodInvocation createStreamSource() {
+		MethodInvocation streamSource = ast.newMethodInvocation();
+		
+		if (isArrayIteration()) {
+			// Arrays.stream(items)
+			needsArraysImport = true;
+			streamSource.setExpression(ast.newSimpleName(StreamConstants.ARRAYS_CLASS_NAME));
+			streamSource.setName(ast.newSimpleName(StreamConstants.STREAM_METHOD));
+			streamSource.arguments().add(ASTNode.copySubtree(ast, forLoop.getExpression()));
+		} else {
+			// collection.stream()
+			streamSource.setExpression((Expression) ASTNode.copySubtree(ast, forLoop.getExpression()));
+			streamSource.setName(ast.newSimpleName(StreamConstants.STREAM_METHOD));
+		}
+		
+		return streamSource;
+	}
+	
+	/**
+	 * Checks if the for-loop iterates over an array.
+	 * 
+	 * @return true if the loop expression is an array type
+	 */
+	private boolean isArrayIteration() {
+		Expression expr = forLoop.getExpression();
+		if (expr != null) {
+			ITypeBinding typeBinding = expr.resolveTypeBinding();
+			if (typeBinding != null) {
+				return typeBinding.isArray();
+			}
+		}
+		return false;
 	}
 
 	/**

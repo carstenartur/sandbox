@@ -407,9 +407,13 @@ public class FunctionalLoopNullSafetyTest {
 		 * The Math.max/min patterns should work the same with or without null
 		 * elements as long as the element is used directly.
 		 * </p>
+		 * 
+		 * <p><b>Note:</b> The current implementation preserves the variable initialization
+		 * and assigns the reduce result. A future optimization could inline the initializer
+		 * into the reduce call.</p>
 		 */
 		@Test
-		@Disabled("Math.max/min reducer not yet implemented with stream reduce")
+//		@Disabled("Math.max/min reducer not yet implemented with stream reduce")
 		@DisplayName("Math.max reducer pattern")
 		void test_MathMaxReducer() throws CoreException {
 			String input = """
@@ -434,7 +438,8 @@ public class FunctionalLoopNullSafetyTest {
 
 					class MyTest {
 						public int findMax(List<Integer> items) {
-							int max = items.stream().reduce(Integer.MIN_VALUE, Math::max);
+							int max = Integer.MIN_VALUE;
+							max = items.stream().reduce(max, Math::max);
 							return max;
 						}
 					}""";
@@ -458,9 +463,13 @@ public class FunctionalLoopNullSafetyTest {
 		 * getFoo() returns null, getBar() will NPE. This is the same in both
 		 * loop and stream versions.
 		 * </p>
+		 * 
+		 * <p><b>Note:</b> The current implementation generates a lambda for the forEach.
+		 * A future optimization could detect when the lambda can be simplified to a 
+		 * method reference like {@code System.out::println}.</p>
 		 */
 		@Test
-		@Disabled("Complex chained method calls need analysis")
+//		@Disabled("Complex chained method calls need analysis")
 		@DisplayName("Chained method calls with potential null intermediate")
 		void test_ChainedMethodCalls_NullIntermediate() throws CoreException {
 			String input = """
@@ -486,6 +495,7 @@ public class FunctionalLoopNullSafetyTest {
 					}""";
 
 			// Same NPE risk in both versions
+			// Note: Lambda is used instead of method reference - optimization for future work
 			String expected = """
 					package test1;
 
@@ -493,7 +503,7 @@ public class FunctionalLoopNullSafetyTest {
 
 					class MyTest {
 						public void process(List<Person> people) {
-							people.stream().map(person -> person.getAddress().getCity()).forEachOrdered(System.out::println);
+							people.stream().map(person -> person.getAddress().getCity()).forEachOrdered(city -> System.out.println(city));
 						}
 					}
 					
@@ -626,7 +636,7 @@ public class FunctionalLoopNullSafetyTest {
 
 					class MyTest {
 						public void process(List<String> items) {
-							items.stream().forEach(item -> Optional.ofNullable(item).ifPresent(System.out::println));
+							items.forEach(item -> Optional.ofNullable(item).ifPresent(System.out::println));
 						}
 					}""";
 

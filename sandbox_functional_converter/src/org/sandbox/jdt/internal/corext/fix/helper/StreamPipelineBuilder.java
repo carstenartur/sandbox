@@ -262,6 +262,19 @@ public class StreamPipelineBuilder {
 		}
 		return pipelineAssembler.buildPipeline();
 	}
+	
+	/**
+	 * Returns whether the pipeline needs the java.util.Arrays import.
+	 * This is true when iterating over an array.
+	 * 
+	 * <p>This method should be called after {@link #buildPipeline()} to determine
+	 * if an import needs to be added.</p>
+	 * 
+	 * @return true if Arrays import is needed
+	 */
+	public boolean needsArraysImport() {
+		return pipelineAssembler != null && pipelineAssembler.needsArraysImport();
+	}
 
 	/**
 	 * Wraps the stream pipeline in an appropriate statement type based on the terminal operation.

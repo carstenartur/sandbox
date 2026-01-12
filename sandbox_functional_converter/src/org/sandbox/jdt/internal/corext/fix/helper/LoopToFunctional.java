@@ -122,7 +122,7 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group) throws CoreException {
 		ASTRewrite rewrite = cuRewrite.getASTRewrite();
 		PreconditionsChecker pc = new PreconditionsChecker(visited, (CompilationUnit) visited.getRoot());
-		Refactorer refactorer = new Refactorer(visited, rewrite, pc, group);
+		Refactorer refactorer = new Refactorer(visited, rewrite, pc, group, cuRewrite);
 		// Preconditions already checked in find(), but refactorer.refactor() handles edge cases
 		refactorer.refactor();
 	}

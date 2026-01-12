@@ -115,6 +115,13 @@ public final class StreamConstants {
 	 */
 	public static final String UNUSED_PARAMETER_NAME = "_item"; //$NON-NLS-1$
 
+	/**
+	 * Simple class name for Arrays utility class.
+	 * <p>
+	 * Used for creating streams from arrays: {@code Arrays.stream(array)}
+	 */
+	public static final String ARRAYS_CLASS_NAME = "Arrays"; //$NON-NLS-1$
+
 	// ========== Math Class Constants (delegating to LibStandardNames) ==========
 
 	/**
