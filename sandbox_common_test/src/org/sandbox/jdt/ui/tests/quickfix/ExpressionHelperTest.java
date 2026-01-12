@@ -28,18 +28,18 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.sandbox.jdt.internal.corext.fix.helper.ExpressionUtils;
+import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
 
 /**
- * Unit tests for {@link ExpressionUtils}.
+ * Unit tests for {@link ExpressionHelper}.
  * 
  * <p>These tests verify the expression manipulation utilities used in the
  * functional loop converter. They run without an Eclipse plugin environment.</p>
  * 
- * @see ExpressionUtils
+ * @see ExpressionHelper
  */
-@DisplayName("ExpressionUtils Tests")
-public class ExpressionUtilsTest {
+@DisplayName("ExpressionHelper Tests")
+public class ExpressionHelperTest {
 
 	private static AST ast;
 
@@ -68,7 +68,7 @@ public class ExpressionUtilsTest {
 			infix.setRightOperand(ast.newSimpleName("b"));
 			infix.setOperator(InfixExpression.Operator.EQUALS);
 
-			assertTrue(ExpressionUtils.needsParentheses(infix),
+			assertTrue(ExpressionHelper.needsParentheses(infix),
 					"InfixExpression (a == b) should need parentheses when negated");
 		}
 
@@ -77,7 +77,7 @@ public class ExpressionUtilsTest {
 		void simpleNameDoesNotNeedParentheses() {
 			SimpleName name = ast.newSimpleName("flag");
 
-			assertFalse(ExpressionUtils.needsParentheses(name),
+			assertFalse(ExpressionHelper.needsParentheses(name),
 					"SimpleName should not need parentheses when negated");
 		}
 
@@ -85,7 +85,7 @@ public class ExpressionUtilsTest {
 		@DisplayName("null input throws exception")
 		void nullInputThrowsException() {
 			assertThrows(IllegalArgumentException.class, 
-					() -> ExpressionUtils.needsParentheses(null));
+					() -> ExpressionHelper.needsParentheses(null));
 		}
 	}
 
@@ -98,7 +98,7 @@ public class ExpressionUtilsTest {
 		void negatesSimpleNameWithoutParentheses() {
 			SimpleName name = ast.newSimpleName("flag");
 			
-			Expression negated = ExpressionUtils.createNegatedExpression(ast, name);
+			Expression negated = ExpressionHelper.createNegatedExpression(ast, name);
 			
 			assertNotNull(negated);
 			assertTrue(negated instanceof PrefixExpression);
@@ -116,7 +116,7 @@ public class ExpressionUtilsTest {
 			infix.setRightOperand(ast.newSimpleName("b"));
 			infix.setOperator(InfixExpression.Operator.EQUALS);
 			
-			Expression negated = ExpressionUtils.createNegatedExpression(ast, infix);
+			Expression negated = ExpressionHelper.createNegatedExpression(ast, infix);
 			
 			assertNotNull(negated);
 			assertTrue(negated instanceof PrefixExpression);
@@ -130,14 +130,14 @@ public class ExpressionUtilsTest {
 		void nullAstThrowsException() {
 			SimpleName name = ast.newSimpleName("flag");
 			assertThrows(IllegalArgumentException.class, 
-					() -> ExpressionUtils.createNegatedExpression(null, name));
+					() -> ExpressionHelper.createNegatedExpression(null, name));
 		}
 
 		@Test
 		@DisplayName("null condition throws exception")
 		void nullConditionThrowsException() {
 			assertThrows(IllegalArgumentException.class, 
-					() -> ExpressionUtils.createNegatedExpression(ast, null));
+					() -> ExpressionHelper.createNegatedExpression(ast, null));
 		}
 	}
 
@@ -150,7 +150,7 @@ public class ExpressionUtilsTest {
 		void simpleNameMatchingVarNameIsIdentity() {
 			SimpleName name = ast.newSimpleName("item");
 			
-			assertTrue(ExpressionUtils.isIdentityMapping(name, "item"));
+			assertTrue(ExpressionHelper.isIdentityMapping(name, "item"));
 		}
 
 		@Test
@@ -158,7 +158,7 @@ public class ExpressionUtilsTest {
 		void simpleNameNotMatchingVarNameIsNotIdentity() {
 			SimpleName name = ast.newSimpleName("other");
 			
-			assertFalse(ExpressionUtils.isIdentityMapping(name, "item"));
+			assertFalse(ExpressionHelper.isIdentityMapping(name, "item"));
 		}
 
 		@Test
@@ -169,7 +169,7 @@ public class ExpressionUtilsTest {
 			infix.setRightOperand(ast.newNumberLiteral("2"));
 			infix.setOperator(InfixExpression.Operator.TIMES);
 			
-			assertFalse(ExpressionUtils.isIdentityMapping(infix, "item"));
+			assertFalse(ExpressionHelper.isIdentityMapping(infix, "item"));
 		}
 
 		@Test
@@ -177,7 +177,7 @@ public class ExpressionUtilsTest {
 		void nullVarNameReturnsFalse() {
 			SimpleName name = ast.newSimpleName("item");
 			
-			assertFalse(ExpressionUtils.isIdentityMapping(name, null));
+			assertFalse(ExpressionHelper.isIdentityMapping(name, null));
 		}
 	}
 
@@ -192,7 +192,7 @@ public class ExpressionUtilsTest {
 			prefix.setOperator(PrefixExpression.Operator.NOT);
 			prefix.setOperand(ast.newSimpleName("flag"));
 			
-			assertTrue(ExpressionUtils.isNegatedExpression(prefix));
+			assertTrue(ExpressionHelper.isNegatedExpression(prefix));
 		}
 
 		@Test
@@ -202,7 +202,7 @@ public class ExpressionUtilsTest {
 			prefix.setOperator(PrefixExpression.Operator.MINUS);
 			prefix.setOperand(ast.newNumberLiteral("1"));
 			
-			assertFalse(ExpressionUtils.isNegatedExpression(prefix));
+			assertFalse(ExpressionHelper.isNegatedExpression(prefix));
 		}
 
 		@Test
@@ -210,7 +210,7 @@ public class ExpressionUtilsTest {
 		void simpleNameIsNotNegated() {
 			SimpleName name = ast.newSimpleName("flag");
 			
-			assertFalse(ExpressionUtils.isNegatedExpression(name));
+			assertFalse(ExpressionHelper.isNegatedExpression(name));
 		}
 	}
 
@@ -226,7 +226,7 @@ public class ExpressionUtilsTest {
 			SimpleName operand = ast.newSimpleName("flag");
 			prefix.setOperand(operand);
 			
-			Expression result = ExpressionUtils.stripNegation(prefix);
+			Expression result = ExpressionHelper.stripNegation(prefix);
 			
 			assertSame(operand, result);
 		}
@@ -236,7 +236,7 @@ public class ExpressionUtilsTest {
 		void returnsOriginalIfNotNegated() {
 			SimpleName name = ast.newSimpleName("flag");
 			
-			Expression result = ExpressionUtils.stripNegation(name);
+			Expression result = ExpressionHelper.stripNegation(name);
 			
 			assertSame(name, result);
 		}

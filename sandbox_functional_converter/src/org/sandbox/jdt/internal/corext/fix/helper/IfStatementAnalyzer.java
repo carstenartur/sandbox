@@ -25,6 +25,7 @@ import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.IfStatement;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.Statement;
+import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
 
 /**
  * Analyzes IF statements to detect patterns that can be converted to stream operations.
@@ -327,7 +328,7 @@ public final class IfStatementAnalyzer {
 		} else if (!returnValue.booleanValue() && followingReturn.booleanValue()) {
 			// if (condition) return false; ... return true; → noneMatch or allMatch
 			Expression condition = ifStatement.getExpression();
-			if (ExpressionUtils.isNegatedExpression(condition)) {
+			if (ExpressionHelper.isNegatedExpression(condition)) {
 				// if (!condition) return false; ... return true; → allMatch
 				detectedPattern = MatchPatternType.ALL_MATCH;
 			} else {
@@ -409,7 +410,7 @@ public final class IfStatementAnalyzer {
 		Expression condition = ifStmt.getExpression();
 		// For allMatch, strip the negation since the pattern is "if (!condition) return false"
 		if (detectedPattern == MatchPatternType.ALL_MATCH) {
-			condition = ExpressionUtils.stripNegation(condition);
+			condition = ExpressionHelper.stripNegation(condition);
 		}
 
 		return new ProspectiveOperation(condition, opType);

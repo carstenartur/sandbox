@@ -28,6 +28,8 @@ import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Statement;
+import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
+import org.sandbox.jdt.internal.corext.util.VariableResolver;
 
 /**
  * Detects and handles REDUCE patterns in loop statements.
@@ -177,7 +179,7 @@ public final class ReducePatternDetector {
 		}
 
 		accumulatorVariable = varName;
-		accumulatorType = TypeResolver.getVariableType(contextNode, varName);
+		accumulatorType = VariableResolver.getVariableType(contextNode, varName);
 		ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);
 		op.setAccumulatorType(accumulatorType);
 		return op;
@@ -203,7 +205,7 @@ public final class ReducePatternDetector {
 		}
 
 		accumulatorVariable = varName;
-		accumulatorType = TypeResolver.getVariableType(contextNode, varName);
+		accumulatorType = VariableResolver.getVariableType(contextNode, varName);
 		ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);
 		op.setAccumulatorType(accumulatorType);
 		return op;
@@ -230,7 +232,7 @@ public final class ReducePatternDetector {
 		ReducerType reducerType = detectMathMaxMinPattern(varName, rhs);
 		if (reducerType != null) {
 			accumulatorVariable = varName;
-			accumulatorType = TypeResolver.getVariableType(contextNode, varName);
+			accumulatorType = VariableResolver.getVariableType(contextNode, varName);
 			ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);
 			op.setAccumulatorType(accumulatorType);
 			return op;
@@ -247,7 +249,7 @@ public final class ReducePatternDetector {
 
 		if (assignment.getOperator() == Assignment.Operator.PLUS_ASSIGN) {
 			// Check if this is string concatenation
-			ITypeBinding varType = TypeResolver.getTypeBinding(contextNode, varName);
+			ITypeBinding varType = VariableResolver.getTypeBinding(contextNode, varName);
 			if (varType != null && JAVA_LANG_STRING.equals(varType.getQualifiedName())) {
 				reducerType = ReducerType.STRING_CONCAT;
 			} else {
@@ -263,14 +265,14 @@ public final class ReducePatternDetector {
 		}
 
 		accumulatorVariable = varName;
-		accumulatorType = TypeResolver.getVariableType(contextNode, varName);
+		accumulatorType = VariableResolver.getVariableType(contextNode, varName);
 
 		ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);
 		op.setAccumulatorType(accumulatorType);
 
 		// For STRING_CONCAT, check if the accumulator variable has @NotNull
 		if (reducerType == ReducerType.STRING_CONCAT) {
-			boolean isNullSafe = TypeResolver.hasNotNullAnnotation(contextNode, varName);
+			boolean isNullSafe = VariableResolver.hasNotNullAnnotation(contextNode, varName);
 			op.setNullSafe(isNullSafe);
 		}
 
@@ -500,7 +502,7 @@ public final class ReducePatternDetector {
 			Expression mapExpression = extractReduceExpression(stmt);
 			if (mapExpression != null) {
 				// Skip identity mapping: if the expression is just the current variable, don't add MAP
-				if (!ExpressionUtils.isIdentityMapping(mapExpression, currentVarName)) {
+				if (!ExpressionHelper.isIdentityMapping(mapExpression, currentVarName)) {
 					ProspectiveOperation mapOp = new ProspectiveOperation(mapExpression,
 							OperationType.MAP, currentVarName);
 					ops.add(mapOp);

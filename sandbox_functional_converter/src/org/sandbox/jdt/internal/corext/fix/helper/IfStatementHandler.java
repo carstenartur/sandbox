@@ -18,6 +18,7 @@ import java.util.List;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.IfStatement;
 import org.eclipse.jdt.core.dom.Statement;
+import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
 
 /**
  * Handles IF statements during loop body parsing.
@@ -138,7 +139,7 @@ public class IfStatementHandler implements StatementHandler {
 		IfStatementAnalyzer ifAnalyzer = context.getIfAnalyzer();
 		
 		if (ifAnalyzer.isIfWithContinue(ifStmt)) {
-			Expression negatedCondition = ExpressionUtils.createNegatedExpression(
+			Expression negatedCondition = ExpressionHelper.createNegatedExpression(
 					context.getAst(), ifStmt.getExpression());
 			ProspectiveOperation filterOp = new ProspectiveOperation(negatedCondition,
 					OperationType.FILTER);

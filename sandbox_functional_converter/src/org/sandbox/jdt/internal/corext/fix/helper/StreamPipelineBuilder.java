@@ -19,7 +19,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
@@ -115,15 +114,14 @@ import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
  * 
  * @see ProspectiveOperation
  * @see PreconditionsChecker
- * @see TypeResolver
- * @see ExpressionUtils
+ * @see org.sandbox.jdt.internal.corext.util.VariableResolver
+ * @see org.sandbox.jdt.internal.corext.util.ExpressionHelper
  * @see Refactorer
  */
 public class StreamPipelineBuilder {
 
 	private final EnhancedForStatement forLoop;
 	private final PreconditionsChecker preconditions;
-	private final AST ast;
 	private final ReducePatternDetector reduceDetector;
 	private final IfStatementAnalyzer ifAnalyzer;
 	private final LoopBodyParser loopBodyParser;
@@ -156,7 +154,6 @@ public class StreamPipelineBuilder {
 
 		this.forLoop = forLoop;
 		this.preconditions = preconditions;
-		this.ast = forLoop.getAST();
 		this.reduceDetector = new ReducePatternDetector(forLoop);
 		this.ifAnalyzer = new IfStatementAnalyzer(forLoop);
 

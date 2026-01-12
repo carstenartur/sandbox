@@ -25,6 +25,7 @@ import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
 
 /**
  * Generates lambda expressions and method references for stream operations.
@@ -163,7 +164,7 @@ public final class LambdaGenerator {
 	 */
 	public Expression createPredicateLambdaBody(Expression expression) {
 		// Unwrap parentheses to check the actual expression type
-		Expression unwrapped = ExpressionUtils.getUnparenthesized(expression);
+		Expression unwrapped = ExpressionHelper.getUnparenthesized(expression);
 
 		// Don't wrap PrefixExpression with NOT - already has proper precedence
 		if (unwrapped instanceof PrefixExpression) {
