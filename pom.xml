@@ -62,6 +62,7 @@
 		<module>sandbox_usage_view_feature</module>
 		<module>sandbox_usage_view_test</module>
 		<module>sandbox_product</module>
+		<module>sandbox_updatesite</module>
 	</modules>
 	<repositories>
 		<!-- 1. Eclipse SimRel Release Repository - upgraded to 2025-09 to resolve Bouncy Castle import conflicts -->
@@ -422,6 +423,21 @@ See README.md for more information.
 			</dependency>
 			<dependency>
 				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_triggerpattern</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_triggerpattern_feature</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_triggerpattern_test</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_xml_cleanup</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -498,6 +514,11 @@ See README.md for more information.
 			<dependency>
 				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_product</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_updatesite</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>

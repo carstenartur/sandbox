@@ -18,9 +18,64 @@ This project provides:
 
 All plugins are work-in-progress and intended for experimentation and learning.
 
+## 🚀 Installation
+
+### Update Site URLs
+
+Add one of the following update sites to your Eclipse installation:
+
+#### Stable Releases (Recommended)
+```
+https://carstenartur.github.io/sandbox/releases/
+```
+Use this for stable, tested versions suitable for production use.
+
+#### Latest Snapshot (Development)
+```
+https://carstenartur.github.io/sandbox/snapshots/latest/
+```
+Use this to test the latest features. Updated automatically on every commit to `main`. May be unstable.
+
+### Installation Steps
+
+1. Open Eclipse IDE
+2. Go to **Help** → **Install New Software...**
+3. Click **Add...** button
+4. Enter:
+   - **Name**: `Sandbox` (or any name you prefer)
+   - **Location**: One of the update site URLs above
+5. Select the features you want to install from the available list
+6. Click **Next** and follow the installation wizard
+7. Restart Eclipse when prompted
+
+> **⚠️ Warning**: These plugins are experimental. Test them in a development environment before using in production.
+
+### Eclipse Marketplace
+
+The Sandbox plugins are also available on the [Eclipse Marketplace](https://marketplace.eclipse.org/content/sandbox).
+
+## 📦 Release Process
+
+Creating a new release is simple:
+
+1. Update version in `pom.xml` files (if needed)
+2. Create and push a version tag:
+   ```bash
+   git tag v1.2.3
+   git push origin v1.2.3
+   ```
+3. GitHub Actions automatically builds and deploys the release to the update site
+
+The new release will be available at `https://carstenartur.github.io/sandbox/releases/` within a few minutes.
+
 ## Table of Contents
 
 - [Overview](#overview)
+- [🚀 Installation](#-installation)
+  - [Update Site URLs](#update-site-urls)
+  - [Installation Steps](#installation-steps)
+  - [Eclipse Marketplace](#eclipse-marketplace)
+- [📦 Release Process](#-release-process)
 - [GitHub Actions Integration](#github-actions-integration)
   - [Quick Start](#quick-start)
   - [Features](#features)
@@ -275,14 +330,15 @@ eclipse -nosplash -consolelog -debug \
 
 ### Installing as Eclipse Plugins
 
-You can install the cleanup plugins into your existing Eclipse installation using the P2 update site:
+You can install the cleanup plugins into your existing Eclipse installation using the P2 update site.
 
-1. In Eclipse, go to **Help** → **Install New Software...**
-2. Click **Add...** and enter the update site URL (see [Installation](#installation) section)
-3. Select the desired cleanup features
-4. Follow the installation wizard
+**See the [Installation](#-installation) section above for detailed instructions and update site URLs.**
 
-> **Warning**: Use only with a test Eclipse installation. These plugins are experimental and may affect your IDE stability.
+The update sites provide:
+- **Stable Releases**: `https://carstenartur.github.io/sandbox/releases/` - Tested, stable versions
+- **Latest Snapshots**: `https://carstenartur.github.io/sandbox/snapshots/latest/` - Latest development builds
+
+> **⚠️ Warning**: These plugins are experimental. Test them in a development environment before using in production.
 
 ---
 

@@ -1,0 +1,117 @@
+name: Deploy Release to GitHub Pages
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger on version tags like v1.2.3
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., 1.2.2)'
+        required: true
+
+permissions:
+  contents: write  # Required to push to gh-pages branch
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0  # Required for jgit timestamp provider
+
+    - name: Extract version from tag or input
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          VERSION="${{ github.event.inputs.version }}"
+        else
+          VERSION="${GITHUB_REF#refs/tags/v}"
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Publishing release version: $VERSION"
+
+    - name: Set up JDK 21
+      uses: actions/setup-java@v5
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+
+    - name: Cache Maven dependencies
+      uses: actions/cache@v5
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-maven-
+
+    - name: Build Update Site
+      run: mvn clean verify -pl sandbox_updatesite -am -DskipTests
+
+    - name: Checkout gh-pages branch
+      uses: actions/checkout@v6
+      with:
+        ref: gh-pages
+        path: gh-pages-repo
+
+    - name: Prepare release directory
+      run: |
+        mkdir -p gh-pages-repo/releases/${{ steps.version.outputs.version }}
+        cp -r sandbox_updatesite/target/repository/* gh-pages-repo/releases/${{ steps.version.outputs.version }}/
+
+    - name: Update composite metadata
+      run: |
+        cd gh-pages-repo/releases
+        
+        # Get list of all release versions
+        VERSIONS=$(find . -maxdepth 1 -type d ! -name '.' ! -name '..' -exec basename {} \; | sort -V)
+        VERSION_COUNT=$(echo "$VERSIONS" | wc -l)
+        
+        # Generate children elements for composite metadata
+        CHILDREN_XML=""
+        for ver in $VERSIONS; do
+          CHILDREN_XML="$CHILDREN_XML    <child location='$ver'/>\n"
+        done
+        
+        # Create compositeContent.xml
+        cat > compositeContent.xml << EOF
+        <?xml version='1.0' encoding='UTF-8'?>
+        <?compositeMetadataRepository version='1.0.0'?>
+        <repository name='Sandbox Releases'
+                    type='org.eclipse.equinox.internal.p2.metadata.repository.CompositeMetadataRepository'
+                    version='1.0.0'>
+          <properties size='1'>
+            <property name='p2.timestamp' value='$(date +%s)000'/>
+          </properties>
+          <children size='$VERSION_COUNT'>
+        $(echo -e "$CHILDREN_XML")  </children>
+        </repository>
+        EOF
+        
+        # Create compositeArtifacts.xml
+        cat > compositeArtifacts.xml << EOF
+        <?xml version='1.0' encoding='UTF-8'?>
+        <?compositeArtifactRepository version='1.0.0'?>
+        <repository name='Sandbox Releases'
+                    type='org.eclipse.equinox.internal.p2.artifact.repository.CompositeArtifactRepository'
+                    version='1.0.0'>
+          <properties size='1'>
+            <property name='p2.timestamp' value='$(date +%s)000'/>
+          </properties>
+          <children size='$VERSION_COUNT'>
+        $(echo -e "$CHILDREN_XML")  </children>
+        </repository>
+        EOF
+        
+        echo "Created composite metadata for $VERSION_COUNT versions"
+        cat compositeContent.xml
+
+    - name: Commit and push to gh-pages
+      run: |
+        cd gh-pages-repo
+        git config user.name 'github-actions[bot]'
+        git config user.email 'github-actions[bot]@users.noreply.github.com'
+        git add .
+        git commit -m "Deploy release ${{ steps.version.outputs.version }}"
+        git push origin gh-pages
