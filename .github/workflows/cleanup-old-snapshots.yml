@@ -39,13 +39,14 @@ jobs:
       run: |
         echo "Cleaning up old snapshot artifacts..."
         
-        # Remove snapshots directory and recreate it
-        if [ -d "snapshots/latest" ]; then
-          echo "Keeping only the latest snapshot"
-          # Repository size is managed by only keeping "latest", no additional cleanup needed
+        # Remove all snapshot directories except "latest"
+        if [ -d "snapshots" ]; then
+          echo "Removing old snapshots (keeping only 'latest')..."
+          find snapshots -mindepth 1 -maxdepth 1 ! -name 'latest' ! -name '*.xml' -type d -exec rm -rf {} +
+          echo "Cleanup of old snapshot directories complete"
+        else
+          echo "No snapshots directory found; nothing to clean"
         fi
-        
-        echo "Cleanup complete"
 
     - name: Commit changes
       if: steps.size.outputs.cleanup_needed == 'true'

@@ -28,7 +28,7 @@ jobs:
       with:
         path: ~/.m2/repository
         key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-        restore-keys: ${{ runner.os}}-maven-
+        restore-keys: ${{ runner.os }}-maven-
 
     - name: Build Update Site
       run: mvn clean verify -pl sandbox_updatesite -am -DskipTests
@@ -42,15 +42,21 @@ jobs:
       run: |
         cd gh-pages-content/snapshots
         
+        # Use current timestamp as fallback for manual triggers
+        TIMESTAMP="${{ github.event.head_commit.timestamp }}"
+        if [ -z "$TIMESTAMP" ]; then
+          TIMESTAMP="$(date +%s)000"
+        fi
+        
         # Create compositeContent.xml
-        cat > compositeContent.xml << 'EOF'
+        cat > compositeContent.xml << EOF
         <?xml version='1.0' encoding='UTF-8'?>
         <?compositeMetadataRepository version='1.0.0'?>
         <repository name='Sandbox Snapshots'
                     type='org.eclipse.equinox.internal.p2.metadata.repository.CompositeMetadataRepository'
                     version='1.0.0'>
           <properties size='1'>
-            <property name='p2.timestamp' value='${{ github.event.head_commit.timestamp }}'/>
+            <property name='p2.timestamp' value='$TIMESTAMP'/>
           </properties>
           <children size='1'>
             <child location='latest'/>
@@ -59,14 +65,14 @@ jobs:
         EOF
         
         # Create compositeArtifacts.xml
-        cat > compositeArtifacts.xml << 'EOF'
+        cat > compositeArtifacts.xml << EOF
         <?xml version='1.0' encoding='UTF-8'?>
         <?compositeArtifactRepository version='1.0.0'?>
         <repository name='Sandbox Snapshots'
                     type='org.eclipse.equinox.internal.p2.artifact.repository.CompositeArtifactRepository'
                     version='1.0.0'>
           <properties size='1'>
-            <property name='p2.timestamp' value='${{ github.event.head_commit.timestamp }}'/>
+            <property name='p2.timestamp' value='$TIMESTAMP'/>
           </properties>
           <children size='1'>
             <child location='latest'/>
