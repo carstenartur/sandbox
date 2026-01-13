@@ -47,7 +47,7 @@ jobs:
         restore-keys: ${{ runner.os }}-maven-
 
     - name: Build Update Site
-      run: mvn clean verify -pl sandbox_updatesite -am -DskipTests
+      run: mvn clean verify -DskipTests
 
     - name: Checkout gh-pages branch
       uses: actions/checkout@v6
