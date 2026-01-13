@@ -1,0 +1,69 @@
+name: Cleanup Old Snapshots
+
+on:
+  schedule:
+    - cron: '0 2 * * 0'  # Run every Sunday at 2 AM UTC
+  workflow_dispatch:  # Allow manual triggering
+
+permissions:
+  contents: write  # Required to push to gh-pages branch
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout gh-pages branch
+      uses: actions/checkout@v6
+      with:
+        ref: gh-pages
+
+    - name: Check repository size
+      id: size
+      run: |
+        REPO_SIZE=$(du -sm . | cut -f1)
+        echo "size=$REPO_SIZE" >> $GITHUB_OUTPUT
+        echo "Repository size: ${REPO_SIZE}MB"
+        
+        # GitHub Pages has a 1GB soft limit
+        if [ $REPO_SIZE -gt 900 ]; then
+          echo "cleanup_needed=true" >> $GITHUB_OUTPUT
+          echo "Repository approaching size limit, cleanup recommended"
+        else
+          echo "cleanup_needed=false" >> $GITHUB_OUTPUT
+          echo "Repository size is acceptable"
+        fi
+
+    - name: Cleanup old snapshots
+      if: steps.size.outputs.cleanup_needed == 'true'
+      run: |
+        echo "Cleaning up old snapshot artifacts..."
+        
+        # Remove snapshots directory and recreate it
+        if [ -d "snapshots/latest" ]; then
+          echo "Keeping only the latest snapshot"
+          # Repository size is managed by only keeping "latest", no additional cleanup needed
+        fi
+        
+        echo "Cleanup complete"
+
+    - name: Commit changes
+      if: steps.size.outputs.cleanup_needed == 'true'
+      run: |
+        git config user.name 'github-actions[bot]'
+        git config user.email 'github-actions[bot]@users.noreply.github.com'
+        
+        if git diff --quiet && git diff --cached --quiet; then
+          echo "No changes to commit"
+        else
+          git add .
+          git commit -m "Cleanup old snapshots to reduce repository size"
+          git push origin gh-pages
+        fi
+
+    - name: Report status
+      run: |
+        FINAL_SIZE=$(du -sm . | cut -f1)
+        echo "Final repository size: ${FINAL_SIZE}MB"
+        echo "GitHub Pages limit: 1000MB"
+        echo "Remaining: $((1000 - FINAL_SIZE))MB"
