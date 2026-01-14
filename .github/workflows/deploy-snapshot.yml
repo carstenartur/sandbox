@@ -24,7 +24,7 @@ jobs:
 
     - name: Download Update Site Artifact
       if: github.event_name == 'workflow_run'
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v7
       with:
         name: update-site-repository
         path: sandbox_updatesite/target/repository/
