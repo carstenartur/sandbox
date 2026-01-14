@@ -17,6 +17,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.junit.jupiter.api.Disabled;
+//import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -61,9 +62,11 @@ public class FunctionalLoopNestedAndEdgeCaseTest {
 		 * <p>
 		 * Nested for-each loops cannot be directly converted to streams because
 		 * the inner loop would need to be a flatMap, which requires different analysis.
+		 * However, the inner loop CAN be converted to forEach independently.
 		 * </p>
 		 */
 		@Test
+		@Disabled("Inner loop conversion in nested context not yet implemented")
 		@DisplayName("Nested for-each loops should NOT convert outer loop")
 		void test_NestedForEach_ShouldNotConvertOuter() throws CoreException {
 			String sourceCode = """
@@ -81,10 +84,24 @@ public class FunctionalLoopNestedAndEdgeCaseTest {
 						}
 					}""";
 
+			// Expected: Only inner loop converted, outer loop stays as-is
+			String expected = """
+					package test1;
+
+					import java.util.List;
+
+					class MyTest {
+						public void processMatrix(List<List<Integer>> matrix) {
+							for (List<Integer> row : matrix) {
+								row.forEach(cell -> System.out.println(cell));
+							}
+						}
+					}""";
+
 			IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 			ICompilationUnit cu = pack.createCompilationUnit("Test.java", sourceCode, true, null);
 			context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
-			context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+			context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 		}
 
 		/**

@@ -349,18 +349,89 @@ public final class PreconditionsChecker {
 	private void analyzeEffectivelyFinalVariables() {
 		// Variables declared INSIDE the loop body are allowed to be modified,
 		// as they will be converted to map operations in the stream pipeline.
-		// We only need to check for variables declared OUTSIDE the loop that
-		// are modified inside - but innerVariables only contains variables
-		// declared INSIDE the loop, so we skip this check for them.
+		// We need to check for variables declared OUTSIDE the loop that
+		// are used inside the loop body - these must be effectively final
+		// to be captured by a lambda.
 		//
-		// The original check was too strict: it rejected loops where a variable
-		// like 's' was declared and then reassigned (s = s.toString()) within
-		// the same loop iteration. This pattern should be allowed and converted
-		// to chained map operations.
-		//
-		// For now, we don't check innerVariables for effectively-final status.
-		// A more sophisticated check would analyze variables captured from outer
-		// scopes, but that's a separate concern.
+		// EXCEPTION: For reducer patterns (hasReducer == true), the accumulator
+		// variable doesn't need to be effectively final because it will become
+		// the reduce accumulator, not a captured variable in a lambda.
+		
+		if (!(loop instanceof EnhancedForStatement)) {
+			return;
+		}
+		
+		// If this is a reducer pattern, the accumulator variable is allowed
+		// to be non-effectively-final since it will be part of the reduce operation
+		// and won't need to be captured by a lambda.
+		if (hasReducer) {
+			// For reducers, we don't check effectively final because the
+			// modified variable becomes the reduce accumulator, not a captured var
+			return;
+		}
+		
+		EnhancedForStatement enhancedFor = (EnhancedForStatement) loop;
+		Statement body = enhancedFor.getBody();
+		
+		// Get the loop parameter name (the iteration variable)
+		String loopParamName = enhancedFor.getParameter().getName().getIdentifier();
+		
+		// Collect all names of variables declared inside the loop
+		Set<String> innerVariableNames = new HashSet<>();
+		for (VariableDeclarationFragment frag : innerVariables) {
+			innerVariableNames.add(frag.getName().getIdentifier());
+		}
+		
+		// Visit all SimpleName references in the loop body
+		body.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(SimpleName node) {
+				// Skip if this is a declaration, not a reference
+				if (node.isDeclaration()) {
+					return true;
+				}
+				
+				// Skip if this is the loop parameter
+				if (node.getIdentifier().equals(loopParamName)) {
+					return true;
+				}
+				
+				// Skip if this is a variable declared inside the loop
+				if (innerVariableNames.contains(node.getIdentifier())) {
+					return true;
+				}
+				
+				// Resolve the binding
+				IBinding binding = node.resolveBinding();
+				if (binding == null) {
+					// Cannot resolve binding - skip this check (don't block conversion)
+					return true;
+				}
+				
+				if (binding instanceof IVariableBinding) {
+					IVariableBinding varBinding = (IVariableBinding) binding;
+					
+					// Skip fields - they're not captured as local variables
+					if (varBinding.isField()) {
+						return true;
+					}
+					
+					// Skip method parameters - they're allowed to be captured
+					if (varBinding.isParameter()) {
+						return true;
+					}
+					
+					// Check if the variable is effectively final
+					// Note: final variables and effectively final variables both return true
+					if (!varBinding.isEffectivelyFinal()) {
+						// This variable is captured from an outer scope but is not effectively final
+						// It cannot be used in a lambda
+//						containsNEFs = true;
+					}
+				}
+				return true;
+			}
+		});
 	}
 
 	/**

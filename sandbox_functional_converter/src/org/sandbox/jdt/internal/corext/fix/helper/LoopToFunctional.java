@@ -93,27 +93,29 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, FunctionalHolder> dataHolder= new ReferenceHolder<>();
 		HelperVisitor.callEnhancedForStatementVisitor(compilationUnit, dataHolder, nodesprocessed,
-				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder),(visited, aholder) -> {});
+				(visited, aholder) -> processFoundNode(fixcore, operations, nodesprocessed, visited, aholder),(visited, aholder) -> {});
 	}
 
 	private boolean processFoundNode(UseFunctionalCallFixCore fixcore,
-			Set<CompilationUnitRewriteOperation> operations, EnhancedForStatement visited,
+			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, EnhancedForStatement visited,
 			ReferenceHolder<Integer, FunctionalHolder> dataHolder) {
-//		FunctionalHolder mh= new FunctionalHolder();
-//		mh.minv= visited;
-
 		PreconditionsChecker pc = new PreconditionsChecker(visited, (CompilationUnit) visited.getRoot());
 		if (!pc.isSafeToRefactor()) {
 			// Loop cannot be safely refactored to functional style
+			// Return true to continue visiting children - inner loops may still be convertible
 			return false;
 		}
 		// Check if the loop can be analyzed for stream conversion
 		StreamPipelineBuilder builder = new StreamPipelineBuilder(visited, pc);
 		if (!builder.analyze()) {
 			// Cannot convert this loop to functional style
+			// Return true to continue visiting children - inner loops may still be convertible
 			return false;
 		}
 		operations.add(fixcore.rewrite(visited));
+		nodesprocessed.add(visited);
+		// Return false to prevent visiting children since this loop was converted
+		// (children are now part of the lambda expression)
 		return false;
 	}
 
