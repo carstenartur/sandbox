@@ -64,6 +64,16 @@ public enum ReducerType {
 		public Expression createAccumulatorExpression(AST ast, String accumulatorType, boolean isNullSafe) {
 			return createSumExpression(ast, accumulatorType, true);
 		}
+		
+		@Override
+		public Expression createMapExpression(MapExpressionContext context) {
+			return createTypedLiteralOne(context.ast(), context.accumulatorType());
+		}
+		
+		@Override
+		public String getMapVariableName() {
+			return UNUSED_PARAMETER_NAME;
+		}
 	},
 	
 	/**
@@ -74,6 +84,16 @@ public enum ReducerType {
 		@Override
 		public Expression createAccumulatorExpression(AST ast, String accumulatorType, boolean isNullSafe) {
 			return createCountingLambda(ast, InfixExpression.Operator.MINUS);
+		}
+		
+		@Override
+		public Expression createMapExpression(MapExpressionContext context) {
+			return createTypedLiteralOne(context.ast(), context.accumulatorType());
+		}
+		
+		@Override
+		public String getMapVariableName() {
+			return UNUSED_PARAMETER_NAME;
 		}
 	},
 	
@@ -86,6 +106,11 @@ public enum ReducerType {
 		public Expression createAccumulatorExpression(AST ast, String accumulatorType, boolean isNullSafe) {
 			return createSumExpression(ast, accumulatorType, false);
 		}
+		
+		@Override
+		public Expression createMapExpression(MapExpressionContext context) {
+			return context.rhsExpression();
+		}
 	},
 	
 	/**
@@ -96,6 +121,11 @@ public enum ReducerType {
 		@Override
 		public Expression createAccumulatorExpression(AST ast, String accumulatorType, boolean isNullSafe) {
 			return createBinaryOperatorLambda(ast, InfixExpression.Operator.TIMES);
+		}
+		
+		@Override
+		public Expression createMapExpression(MapExpressionContext context) {
+			return context.rhsExpression();
 		}
 	},
 	
@@ -112,6 +142,11 @@ public enum ReducerType {
 				return createBinaryOperatorLambda(ast, InfixExpression.Operator.PLUS);
 			}
 		}
+		
+		@Override
+		public Expression createMapExpression(MapExpressionContext context) {
+			return context.rhsExpression();
+		}
 	},
 	
 	/**
@@ -122,6 +157,11 @@ public enum ReducerType {
 		@Override
 		public Expression createAccumulatorExpression(AST ast, String accumulatorType, boolean isNullSafe) {
 			return createMaxMinMethodReference(ast, accumulatorType, "max");
+		}
+		
+		@Override
+		public Expression createMapExpression(MapExpressionContext context) {
+			return context.mathArgExpression();
 		}
 	},
 	
@@ -134,6 +174,11 @@ public enum ReducerType {
 		public Expression createAccumulatorExpression(AST ast, String accumulatorType, boolean isNullSafe) {
 			return createMaxMinMethodReference(ast, accumulatorType, "min");
 		}
+		
+		@Override
+		public Expression createMapExpression(MapExpressionContext context) {
+			return context.mathArgExpression();
+		}
 	},
 	
 	/**
@@ -144,7 +189,14 @@ public enum ReducerType {
 		public Expression createAccumulatorExpression(AST ast, String accumulatorType, boolean isNullSafe) {
 			return createAccumulatorLambda(ast);
 		}
+		
+		@Override
+		public Expression createMapExpression(MapExpressionContext context) {
+			return null; // No MAP needed for custom aggregate
+		}
 	};
+	
+	private static final String UNUSED_PARAMETER_NAME = StreamConstants.UNUSED_PARAMETER_NAME;
 	
 	/**
 	 * Creates the accumulator expression for the reduce() operation.
@@ -158,7 +210,144 @@ public enum ReducerType {
 	public abstract Expression createAccumulatorExpression(AST ast, 
 			String accumulatorType, boolean isNullSafe);
 	
+	/**
+	 * Creates the MAP expression to use before the REDUCE operation.
+	 * 
+	 * <p>Each reducer type knows what expression to map to:</p>
+	 * <ul>
+	 * <li><b>Counting reducers</b>: Map each element to 1 (typed appropriately)</li>
+	 * <li><b>Arithmetic reducers</b>: Use the RHS expression from the assignment</li>
+	 * <li><b>Min/max reducers</b>: Use the non-accumulator argument from Math.max/min</li>
+	 * </ul>
+	 * 
+	 * @param context the context containing all necessary data for expression creation
+	 * @return the expression to use in the MAP operation, or null if no MAP is needed
+	 */
+	public abstract Expression createMapExpression(MapExpressionContext context);
+	
+	/**
+	 * Returns the variable name to use for the MAP operation parameter.
+	 * 
+	 * <p>For counting reducers (INCREMENT, DECREMENT), this returns an unused parameter name
+	 * like "_item" since the element is not used. For other reducers, returns null to use
+	 * the current variable name.</p>
+	 * 
+	 * @return the parameter name for the MAP lambda, or null to use the default
+	 */
+	public String getMapVariableName() {
+		return null; // Default: use current variable name
+	}
+	
+	/**
+	 * Context record containing all data needed to create a MAP expression for a REDUCE operation.
+	 * 
+	 * @param ast              the AST to create nodes in
+	 * @param accumulatorType  the type of the accumulator variable
+	 * @param currentVarName   the current variable name in the pipeline
+	 * @param rhsExpression    the right-hand side expression (for arithmetic reducers)
+	 * @param mathArgExpression the non-accumulator argument (for min/max reducers)
+	 */
+	public record MapExpressionContext(
+			AST ast,
+			String accumulatorType,
+			String currentVarName,
+			Expression rhsExpression,
+			Expression mathArgExpression
+	) {}
+	
+	/**
+	 * Returns whether this reducer type is an arithmetic reducer (SUM, PRODUCT, STRING_CONCAT).
+	 * 
+	 * <p>Arithmetic reducers accumulate values using binary operations on the stream elements.</p>
+	 * 
+	 * @return true if this is SUM, PRODUCT, or STRING_CONCAT
+	 */
+	public boolean isArithmetic() {
+		return this == SUM || this == PRODUCT || this == STRING_CONCAT;
+	}
+	
+	/**
+	 * Returns whether this reducer type is a min/max reducer (MAX, MIN).
+	 * 
+	 * <p>Min/max reducers find the extreme value using Math.max or Math.min.</p>
+	 * 
+	 * @return true if this is MAX or MIN
+	 */
+	public boolean isMinMax() {
+		return this == MAX || this == MIN;
+	}
+	
+	/**
+	 * Returns whether this reducer type is a counting reducer (INCREMENT, DECREMENT).
+	 * 
+	 * <p>Counting reducers count elements by incrementing or decrementing an accumulator.</p>
+	 * 
+	 * @return true if this is INCREMENT or DECREMENT
+	 */
+	public boolean isCounting() {
+		return this == INCREMENT || this == DECREMENT;
+	}
+	
+	/**
+	 * Returns whether this reducer type requires a MAP operation before the REDUCE.
+	 * 
+	 * <p>Some reducers need a preceding MAP to transform elements before reduction:</p>
+	 * <ul>
+	 * <li><b>Counting reducers</b>: Map each element to 1 before summing</li>
+	 * <li><b>Arithmetic reducers</b>: May need to extract the RHS expression</li>
+	 * <li><b>Min/max reducers</b>: May need to extract the non-accumulator argument</li>
+	 * </ul>
+	 * 
+	 * @return true if this reducer type may need a MAP operation before REDUCE
+	 */
+	public boolean mayNeedMapBeforeReduce() {
+		return this != CUSTOM_AGGREGATE;
+	}
+	
 	// ==================== Helper Methods ====================
+	
+	/**
+	 * Creates a typed literal "1" appropriate for the accumulator type.
+	 * Handles int, long, float, double, byte, short, char types.
+	 * 
+	 * @param ast             the AST to create nodes in
+	 * @param accumulatorType the accumulator type name
+	 * @return an Expression representing the typed literal 1 (never null)
+	 */
+	private static Expression createTypedLiteralOne(AST ast, String accumulatorType) {
+		if (accumulatorType == null) {
+			return ast.newNumberLiteral("1");
+		}
+
+		switch (accumulatorType) {
+		case "double":
+			return ast.newNumberLiteral("1.0");
+		case "float":
+			return ast.newNumberLiteral("1.0f");
+		case "long":
+			return ast.newNumberLiteral("1L");
+		case "byte":
+			return createCastExpression(ast, org.eclipse.jdt.core.dom.PrimitiveType.BYTE, "1");
+		case "short":
+			return createCastExpression(ast, org.eclipse.jdt.core.dom.PrimitiveType.SHORT, "1");
+		case "char":
+			return createCastExpression(ast, org.eclipse.jdt.core.dom.PrimitiveType.CHAR, "1");
+		default:
+			return ast.newNumberLiteral("1");
+		}
+	}
+	
+	/**
+	 * Creates a cast expression for the given primitive type.
+	 * Example: (byte) 1, (short) 1
+	 */
+	private static org.eclipse.jdt.core.dom.CastExpression createCastExpression(AST ast,
+			org.eclipse.jdt.core.dom.PrimitiveType.Code typeCode, String literal) {
+		org.eclipse.jdt.core.dom.CastExpression cast = ast.newCastExpression();
+		cast.setType(ast.newPrimitiveType(typeCode));
+		cast.setExpression(ast.newNumberLiteral(literal));
+		return cast;
+	}
 	
 	/**
 	 * Creates the appropriate sum expression based on the accumulator type.
@@ -268,40 +457,5 @@ public enum ReducerType {
 	 */
 	private static LambdaExpression createAccumulatorLambda(AST ast) {
 		return createBinaryOperatorLambda(ast, InfixExpression.Operator.PLUS);
-	}
-	
-	/**
-	 * Maps a primitive type or wrapper class name to the wrapper class simple name.
-	 */
-	private static String mapToWrapperType(String type) {
-		if (type == null) {
-			return "Integer";
-		}
-
-		switch (type) {
-		case "int":
-		case "Integer":
-			return "Integer";
-		case "long":
-		case "Long":
-			return "Long";
-		case "double":
-		case "Double":
-			return "Double";
-		case "float":
-		case "Float":
-			return "Float";
-		case "short":
-		case "Short":
-			return "Short";
-		case "byte":
-		case "Byte":
-			return "Byte";
-		default:
-			if (type.startsWith("java.lang.")) {
-				return type.substring("java.lang.".length());
-			}
-			return "Integer";
-		}
 	}
 }

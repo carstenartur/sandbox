@@ -17,9 +17,7 @@ import java.util.List;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Assignment;
-import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.IMethodBinding;
@@ -31,8 +29,6 @@ import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Statement;
-import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
-import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
 import org.sandbox.jdt.internal.corext.util.VariableResolver;
 
@@ -74,7 +70,6 @@ public final class ReducePatternDetector {
 	private static final String MIN_METHOD_NAME = StreamConstants.MIN_METHOD_NAME;
 	private static final String JAVA_LANG_MATH = StreamConstants.JAVA_LANG_MATH;
 	private static final String JAVA_LANG_STRING = StreamConstants.JAVA_LANG_STRING;
-	private static final String UNUSED_ITEM_NAME = StreamConstants.UNUSED_PARAMETER_NAME;
 
 	private final ASTNode contextNode;
 	private String accumulatorVariable = null;
@@ -367,47 +362,6 @@ public final class ReducePatternDetector {
 	}
 
 	/**
-	 * Checks if a variable assignment represents external variable modification.
-	 * 
-	 * <p>A variable modification is considered "external" if the variable is NOT declared
-	 * within the loop body. This typically means it was declared before the loop and may
-	 * be used after the loop, which makes the loop unsafe to convert.</p>
-	 * 
-	 * @param varName the name of the variable being modified
-	 * @param stmt the statement containing the modification
-	 * @return true if this is external variable modification
-	 */
-	private boolean isExternalVariableModification(String varName, Statement stmt) {
-		// Find the enclosing loop (EnhancedForStatement)
-		EnhancedForStatement enclosingLoop = ASTNodes.getFirstAncestorOrNull(stmt, EnhancedForStatement.class);
-		if (enclosingLoop == null) {
-			// Can't determine - assume external to be safe
-			return true;
-		}
-		
-		// Check if the variable is declared inside the loop body
-		Statement loopBody = enclosingLoop.getBody();
-		if (loopBody == null) {
-			return true;
-		}
-		
-		// Use a visitor to find if variable is declared in loop body
-		final boolean[] foundDeclaration = {false};
-		loopBody.accept(new ASTVisitor() {
-			@Override
-			public boolean visit(VariableDeclarationFragment node) {
-				if (varName.equals(node.getName().getIdentifier())) {
-					foundDeclaration[0] = true;
-				}
-				return !foundDeclaration[0]; // Stop if found
-			}
-		});
-		
-		// If not found in loop body, it's external
-		return !foundDeclaration[0];
-	}
-
-	/**
 	 * Detects Math.max/Math.min patterns in an expression.
 	 * Patterns: max = Math.max(max, x) or min = Math.min(min, x)
 	 * 
@@ -587,11 +541,11 @@ public final class ReducePatternDetector {
 	 * Adds a MAP operation before a REDUCE operation based on the reducer type.
 	 * 
 	 * <p>
-	 * Mapping strategy by reducer type:
+	 * The reducer type itself determines what MAP expression is needed:
 	 * <ul>
 	 * <li><b>INCREMENT/DECREMENT:</b> Maps to 1 (or 1.0 for double types)</li>
-	 * <li><b>SUM/PRODUCT/STRING_CONCAT:</b> Extracts and maps the RHS expression</li>
-	 * <li><b>MAX/MIN:</b> Extracts and maps the non-accumulator argument from Math.max/min</li>
+	 * <li><b>SUM/PRODUCT/STRING_CONCAT:</b> Uses the RHS expression</li>
+	 * <li><b>MAX/MIN:</b> Uses the non-accumulator argument from Math.max/min</li>
 	 * </ul>
 	 * 
 	 * @param ops            the list to add the MAP operation to (must not be null)
@@ -628,96 +582,32 @@ public final class ReducePatternDetector {
 			throw new IllegalArgumentException("reduceOp must have a non-null reducerType for REDUCE operations");
 		}
 
-		if (reducerType == ReducerType.INCREMENT
-				|| reducerType == ReducerType.DECREMENT) {
-			// Create a MAP operation that maps each item to 1 (type-aware)
-			Expression mapExpr = createTypedLiteralOne(ast);
-			ProspectiveOperation mapOp = new ProspectiveOperation(mapExpr, OperationType.MAP,
-					UNUSED_ITEM_NAME);
+		// Create context with all data needed for MAP expression creation
+		ReducerType.MapExpressionContext context = new ReducerType.MapExpressionContext(
+				ast,
+				accumulatorType,
+				currentVarName,
+				extractReduceExpression(stmt),
+				extractMathMaxMinArgument(stmt, accumulatorVariable, currentVarName)
+		);
+		
+		// Let the reducer type create the appropriate MAP expression
+		Expression mapExpression = reducerType.createMapExpression(context);
+		
+		if (mapExpression != null) {
+			// Skip identity mapping for non-counting reducers
+			if (!reducerType.isCounting() && ExpressionHelper.isIdentityMapping(mapExpression, currentVarName)) {
+				return;
+			}
+			
+			// Determine the variable name for the MAP operation
+			String mapVarName = reducerType.getMapVariableName();
+			if (mapVarName == null) {
+				mapVarName = currentVarName;
+			}
+			
+			ProspectiveOperation mapOp = new ProspectiveOperation(mapExpression, OperationType.MAP, mapVarName);
 			ops.add(mapOp);
-		} else if (isArithmeticReducer(reducerType)) {
-			// For SUM/PRODUCT/STRING_CONCAT: extract RHS expression
-			Expression mapExpression = extractReduceExpression(stmt);
-			if (mapExpression != null) {
-				// Skip identity mapping: if the expression is just the current variable, don't add MAP
-				if (!ExpressionHelper.isIdentityMapping(mapExpression, currentVarName)) {
-					ProspectiveOperation mapOp = new ProspectiveOperation(mapExpression,
-							OperationType.MAP, currentVarName);
-					ops.add(mapOp);
-				}
-			}
-		} else if (isMinMaxReducer(reducerType)) {
-			// For MAX/MIN: extract non-accumulator argument
-			// Skip creating map if it's just an identity mapping (e.g., num -> num)
-			Expression mapExpression = extractMathMaxMinArgument(stmt, accumulatorVariable, currentVarName);
-			if (mapExpression != null) {
-				ProspectiveOperation mapOp = new ProspectiveOperation(mapExpression,
-						OperationType.MAP, currentVarName);
-				ops.add(mapOp);
-			}
 		}
-	}
-
-	/**
-	 * Creates a typed literal "1" appropriate for the accumulator type.
-	 * Handles int, long, float, double, byte, short, char types.
-	 * 
-	 * @param ast the AST to create nodes in
-	 * @return an Expression representing the typed literal 1 (never null)
-	 */
-	Expression createTypedLiteralOne(AST ast) {
-		if (accumulatorType == null) {
-			return ast.newNumberLiteral("1");
-		}
-
-		switch (accumulatorType) {
-		case "double":
-			return ast.newNumberLiteral("1.0");
-		case "float":
-			return ast.newNumberLiteral("1.0f");
-		case "long":
-			return ast.newNumberLiteral("1L");
-		case "byte":
-			return createCastExpression(ast, org.eclipse.jdt.core.dom.PrimitiveType.BYTE, "1");
-		case "short":
-			return createCastExpression(ast, org.eclipse.jdt.core.dom.PrimitiveType.SHORT, "1");
-		case "char":
-			return createCastExpression(ast, org.eclipse.jdt.core.dom.PrimitiveType.CHAR, "1");
-		default:
-			return ast.newNumberLiteral("1");
-		}
-	}
-
-	/**
-	 * Creates a cast expression for the given primitive type.
-	 * Example: (byte) 1, (short) 1
-	 */
-	private org.eclipse.jdt.core.dom.CastExpression createCastExpression(AST ast,
-			org.eclipse.jdt.core.dom.PrimitiveType.Code typeCode, String literal) {
-		org.eclipse.jdt.core.dom.CastExpression cast = ast.newCastExpression();
-		cast.setType(ast.newPrimitiveType(typeCode));
-		cast.setExpression(ast.newNumberLiteral(literal));
-		return cast;
-	}
-
-	/**
-	 * Checks if the reducer type is an arithmetic reducer.
-	 * 
-	 * @param type the reducer type to check
-	 * @return true if it's SUM, PRODUCT, or STRING_CONCAT
-	 */
-	public static boolean isArithmeticReducer(ReducerType type) {
-		return type == ReducerType.SUM || type == ReducerType.PRODUCT
-				|| type == ReducerType.STRING_CONCAT;
-	}
-
-	/**
-	 * Checks if the reducer type is a min/max reducer.
-	 * 
-	 * @param type the reducer type to check
-	 * @return true if it's MAX or MIN
-	 */
-	public static boolean isMinMaxReducer(ReducerType type) {
-		return type == ReducerType.MAX || type == ReducerType.MIN;
 	}
 }
