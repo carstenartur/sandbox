@@ -14,7 +14,6 @@
 package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -51,10 +50,10 @@ import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
  * 
  * <p><b>Supported Patterns:</b></p>
  * <ul>
- * <li><b>Variable declarations</b> → MAP operations (via {@link VariableDeclarationHandler})</li>
- * <li><b>IF statements</b> → FILTER operations or match patterns (via {@link IfStatementHandler})</li>
+ * <li><b>Variable declarations</b> → MAP operations (via {@link StatementHandlerType#VARIABLE_DECLARATION})</li>
+ * <li><b>IF statements</b> → FILTER operations or match patterns (via {@link StatementHandlerType#IF_STATEMENT})</li>
  * <li><b>Continue statements</b> → Negated FILTER operations</li>
- * <li><b>Accumulator patterns</b> → REDUCE operations (via {@link TerminalStatementHandler})</li>
+ * <li><b>Accumulator patterns</b> → REDUCE operations (via {@link StatementHandlerType#TERMINAL})</li>
  * <li><b>Side-effect statements</b> → FOREACH operations</li>
  * </ul>
  * 
@@ -62,7 +61,7 @@ import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
  * 
  * @see StreamPipelineBuilder
  * @see ProspectiveOperation
- * @see StatementHandler
+ * @see StatementHandlerType
  */
 public class LoopBodyParser {
 
@@ -73,8 +72,8 @@ public class LoopBodyParser {
 	private final boolean isNoneMatchPattern;
 	private final boolean isAllMatchPattern;
 	
-	// Handler chain for processing statements
-	private final List<StatementHandler> handlers;
+	// Handler context for processing statements
+	private final StatementHandlerContext handlerContext;
 	private final SideEffectChecker sideEffectChecker;
 
 	/**
@@ -100,23 +99,9 @@ public class LoopBodyParser {
 		this.isNoneMatchPattern = isNoneMatchPattern;
 		this.isAllMatchPattern = isAllMatchPattern;
 		
-		// Initialize handlers
+		// Initialize handler context
 		this.sideEffectChecker = new SideEffectChecker();
-		this.handlers = createHandlers();
-	}
-	
-	/**
-	 * Creates the chain of statement handlers.
-	 * Order matters: more specific handlers should come first.
-	 */
-	private List<StatementHandler> createHandlers() {
-		return Arrays.asList(
-			new VariableDeclarationHandler(this),
-			new AssignmentMapHandler(),
-			new IfStatementHandler(this),
-			new NonTerminalStatementHandler(sideEffectChecker),
-			new TerminalStatementHandler(sideEffectChecker)
-		);
+		this.handlerContext = new StatementHandlerContext(this, sideEffectChecker);
 	}
 
 	/**
@@ -202,11 +187,10 @@ public class LoopBodyParser {
 				isNoneMatchPattern,
 				isAllMatchPattern);
 		
-		// Find and execute the appropriate handler
-		for (StatementHandler handler : handlers) {
-			if (handler.canHandle(stmt, context)) {
-				return handler.handle(stmt, context, ops);
-			}
+		// Find and execute the appropriate handler using the enum
+		StatementHandlerType handler = StatementHandlerType.findHandler(stmt, context);
+		if (handler != null) {
+			return handler.handle(stmt, context, ops, handlerContext);
 		}
 		
 		// Fallback: no handler found - should not happen with proper handlers

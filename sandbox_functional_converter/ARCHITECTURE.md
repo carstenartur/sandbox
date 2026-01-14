@@ -17,16 +17,13 @@ The functional converter is organized into focused, single-responsibility classe
 | `PipelineAssembler` | ~280 | Assembles method invocation chains |
 | `ProspectiveOperation` | ~760 | Represents individual stream operations |
 
-### Statement Handlers (Strategy Pattern)
+### Statement Handlers (Strategy Pattern via Enum)
 | Class | Lines | Responsibility |
 |-------|-------|----------------|
-| `StatementHandler` | ~70 | Interface for statement processing strategies |
-| `IfStatementHandler` | ~160 | Handles IF statements (filter, match patterns) |
-| `VariableDeclarationHandler` | ~140 | Handles variable declarations (MAP operations) |
-| `TerminalStatementHandler` | ~90 | Handles last statements (REDUCE, FOREACH) |
-| `NonTerminalStatementHandler` | ~80 | Handles non-terminal side-effect statements |
+| `StatementHandlerType` | ~580 | Enum with handler strategies for each statement type |
+| `StatementHandlerContext` | ~60 | Context holding handler dependencies |
 | `SideEffectChecker` | ~120 | Validates safe side-effects in streams |
-| `StatementParsingContext` | ~140 | Context object for handler chain |
+| `StatementParsingContext` | ~140 | Context object for parsing state |
 
 ### Analysis & Detection
 | Class | Lines | Responsibility |
@@ -45,24 +42,36 @@ The functional converter is organized into focused, single-responsibility classe
 
 ## Architecture Patterns
 
-### Strategy Pattern for Statement Handling
+### Strategy Pattern for Statement Handling (Enum-Based)
 
-The `LoopBodyParser` uses the Strategy Pattern to process different statement types.
-This eliminates deep if-else-if chains and makes the code more maintainable:
+The `LoopBodyParser` uses the Strategy Pattern implemented via the `StatementHandlerType` enum
+to process different statement types. This approach is similar to `ReducerType` and `OperationType`,
+providing a concise and type-safe way to handle different statement types:
 
 ```
 LoopBodyParser
-    └── handlers: List<StatementHandler>
-            ├── VariableDeclarationHandler  → MAP operations
-            ├── IfStatementHandler          → FILTER, match patterns
-            ├── NonTerminalStatementHandler → Side-effect MAPs
-            └── TerminalStatementHandler    → REDUCE, FOREACH
+    └── StatementHandlerType (enum)
+            ├── VARIABLE_DECLARATION  → MAP operations
+            ├── ASSIGNMENT_MAP        → Variable transformation MAPs
+            ├── IF_STATEMENT          → FILTER, match patterns
+            ├── NON_TERMINAL          → Side-effect MAPs
+            └── TERMINAL              → REDUCE, FOREACH
+```
+
+**Usage:**
+```java
+StatementHandlerType handler = StatementHandlerType.findHandler(stmt, context);
+if (handler != null) {
+    return handler.handle(stmt, context, ops, handlerContext);
+}
 ```
 
 **Benefits:**
-- Each handler is focused on one statement type (Single Responsibility)
-- Easy to add new statement types without modifying existing code (Open/Closed)
-- Improved testability - each handler can be tested in isolation
+- Each handler is an enum constant with its own `canHandle()` and `handle()` methods
+- Consistent with `ReducerType` and `OperationType` enums in the codebase
+- No need for separate class files per handler
+- Easy to add new statement types by adding new enum constants
+- Improved testability - each handler can be tested via its enum constant
 - Cleaner code - no nested if-else-if chains
 
 ## Core Components
@@ -240,6 +249,55 @@ public enum ReducerType {
 - **Minimal Dependencies**: Only requires `AST` - no dependency on `LambdaGenerator`
 - **Open/Closed Principle**: New reducer types can be added without modifying other classes
 - **Single Responsibility**: Each reducer type handles its own expression creation
+
+### 6. StatementHandlerType (Standalone Enum)
+**Location**: `org.sandbox.jdt.internal.corext.fix.helper.StatementHandlerType`
+**Purpose**: Types of statement handlers for processing loop body statements
+
+Each enum value encapsulates its own logic for checking if it can handle a statement
+and for actually processing that statement. This is the same pattern used by
+`ReducerType` and `OperationType`.
+
+```java
+public enum StatementHandlerType {
+    VARIABLE_DECLARATION {
+        @Override
+        public boolean canHandle(Statement stmt, StatementParsingContext context) {
+            return stmt instanceof VariableDeclarationStatement;
+        }
+        
+        @Override
+        public ParseResult handle(Statement stmt, StatementParsingContext context,
+                List<ProspectiveOperation> ops, StatementHandlerContext handlerContext) {
+            // Convert variable declaration to MAP operation
+        }
+    },
+    ASSIGNMENT_MAP,      // s = s.toString() → .map(s -> s.toString())
+    IF_STATEMENT,        // if (condition) → .filter(condition) or match patterns
+    NON_TERMINAL,        // Side-effect statements in middle of block
+    TERMINAL;            // Last statement → FOREACH or REDUCE
+    
+    // Each type implements:
+    public abstract boolean canHandle(Statement stmt, StatementParsingContext context);
+    public abstract ParseResult handle(Statement stmt, StatementParsingContext context,
+            List<ProspectiveOperation> ops, StatementHandlerContext handlerContext);
+    
+    // Static helper:
+    public static StatementHandlerType findHandler(Statement stmt, StatementParsingContext context);
+}
+```
+
+#### StatementHandlerContext
+A context object holding dependencies needed by handlers:
+- `LoopBodyParser parser` - For recursive parsing of nested statements
+- `SideEffectChecker sideEffectChecker` - For checking safe side effects
+
+#### Benefits of StatementHandlerType Enum
+- **Consistency**: Same pattern as `ReducerType` and `OperationType` enums
+- **Single File**: All handler logic in one file instead of 5+ separate class files
+- **Type Safety**: Enum constants guarantee all handlers are properly defined
+- **Easy Extension**: New handler types can be added as new enum constants
+- **Clear Precedence**: Enum order defines handler priority
 - **Testability**: Each reducer type's behavior can be tested independently
 
 #### Key Methods

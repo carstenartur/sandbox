@@ -16,8 +16,16 @@
 - ✅ **New Test Cases** - Added ComplexFilterMapMaxReduction and ContinueWithMapAndForEach for comprehensive edge case coverage
 - ✅ **Nested Loop Detection** - Prevents conversion of loops containing nested loops (enhanced-for, traditional for, while, do-while)
 - ✅ **Complex Pattern Detection** - Prevents conversion of loops containing try-catch, switch, or synchronized blocks
+- ✅ **StatementHandlerType Enum** - Refactored StatementHandler interface and 5 handler classes into a single enum (consistent with ReducerType and OperationType patterns)
 
 ### Code Quality Improvements (January 2026)
+**StatementHandlerType Refactoring**:
+- Consolidated `StatementHandler` interface and 5 handler classes into `StatementHandlerType` enum
+- Added `StatementHandlerContext` for dependency injection to handlers
+- Removed old handler classes (`StatementHandler`, `AssignmentMapHandler`, `IfStatementHandler`, `NonTerminalStatementHandler`, `TerminalStatementHandler`, `VariableDeclarationHandler`)
+- Consistent pattern with `ReducerType` and `OperationType` enums
+- Cleaner codebase with all handler logic in one file
+
 **Nested Loop and Complex Pattern Detection**:
 - Added `containsNestedLoop` flag in PreconditionsChecker
 - Detection for nested enhanced-for loops, traditional for loops, while loops, do-while loops
