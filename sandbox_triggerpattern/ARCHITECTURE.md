@@ -187,7 +187,7 @@ The string simplification patterns are now fully integrated with Eclipse's clean
 - **`StringSimplificationCleanUp`** - Wrapper cleanup class
 - **`StringSimplificationCleanUpCore`** - Core cleanup implementation
 - **`StringSimplificationFixCore`** - TriggerPattern-based rewrite operations
-- **`SandboxCodeTabPage`** - Preference page for cleanup configuration
+- **`SandboxCodeTabPage`** - Preference page for cleanup configuration (fixed in v1.2.2 to properly register checkbox)
 - **`DefaultCleanUpOptionsInitializer`** - Default cleanup options
 - **`SaveActionCleanUpOptionsInitializer`** - Save action default options
 
