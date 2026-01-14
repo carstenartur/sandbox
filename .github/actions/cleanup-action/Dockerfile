@@ -2,7 +2,7 @@
 # This creates a containerized version of the sandbox cleanup application
 # that can be used in GitHub Actions workflows
 
-FROM eclipse/eclipse-temurin:21-jdk
+FROM eclipse-temurin:21-jdk
 
 LABEL maintainer="Sandbox Project"
 LABEL description="Eclipse JDT Cleanup Application for automated code cleanup"
