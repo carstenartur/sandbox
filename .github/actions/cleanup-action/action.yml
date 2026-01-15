@@ -95,7 +95,8 @@ runs:
           exit 1
         fi
         
-        Xvfb :99 -screen 0 1280x1024x24 &
+        Xvfb :99 -screen 0 1280x1024x24 & XVFB_PID=$!
+        trap 'if [ -n "${XVFB_PID:-}" ]; then kill "${XVFB_PID}" 2>/dev/null || true; fi' EXIT
         export DISPLAY=:99
         sleep 2
         
