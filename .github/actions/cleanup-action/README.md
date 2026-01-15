@@ -2,15 +2,17 @@
 
 ## Overview
 
-This directory contains a Docker-based GitHub Action that wraps the **sandbox cleanup application** to enable automated Eclipse JDT code cleanup in GitHub Actions workflows.
+This directory contains a **composite GitHub Action** that wraps the **sandbox cleanup application** to enable automated Eclipse JDT code cleanup in GitHub Actions workflows.
 
 ## What This Action Does
 
 The action:
-1. Builds the sandbox cleanup application with all custom cleanup plugins
-2. Extracts the Eclipse product
-3. Runs the cleanup application on your Java source code
-4. Applies all configured Eclipse JDT cleanups plus sandbox-specific cleanups
+1. Sets up Java 21 with Maven caching
+2. Caches the built Eclipse product for faster subsequent runs
+3. Builds the sandbox cleanup application (only on cache miss)
+4. Extracts the Eclipse product (only on cache miss)
+5. Runs the cleanup application on your Java source code
+6. Applies all configured Eclipse JDT cleanups plus sandbox-specific cleanups
 
 ## Action Inputs
 
@@ -84,20 +86,44 @@ This workflow can be manually triggered with customizable options:
 
 ## How It Works
 
-### Docker Build Process
+### Composite Action Architecture
 
-1. **Base Image**: Uses `eclipse/eclipse-temurin:21-jdk` with Java 21
-2. **Install Dependencies**: Installs Xvfb, Maven, and required libraries
-3. **Build Sandbox**: Compiles the entire sandbox project with all plugins
-4. **Extract Product**: Extracts the Eclipse product from `sandbox_product/target/products`
-5. **Configure**: Sets up environment variables and entrypoint script
+This is a **composite action** that runs directly in the GitHub Actions runner (no Docker build required).
 
-### Runtime Process
+**Step 1: Java Setup**
+- Sets up Java 21 (Temurin distribution)
+- Configures Maven caching for dependency resolution
 
-1. **Start Xvfb**: Starts virtual display server for headless Eclipse
-2. **Prepare Workspace**: Creates Eclipse workspace directory
-3. **Run Cleanup**: Executes Eclipse cleanup application with configured options
-4. **Process Files**: Applies cleanups to all Java files in specified directory
+**Step 2: Eclipse Product Caching**
+- Checks cache for built Eclipse product at `/tmp/eclipse`
+- Cache key based on `**/pom.xml` hashes
+- Restores from cache if available (saves 10-15 minutes)
+
+**Step 3: Install Dependencies**
+- Installs Xvfb and GTK libraries for headless Eclipse
+- Required for Eclipse UI components in headless mode
+
+**Step 4: Build (Cache Miss Only)**
+- Only runs if Eclipse product not in cache
+- Compiles entire sandbox project with all plugins
+- Uses `xvfb-run` for headless build
+- Takes ~10-15 minutes on first run
+
+**Step 5: Extract Product (Cache Miss Only)**
+- Only runs if Eclipse product not in cache
+- Extracts Eclipse product from `sandbox_product/target/products`
+- Places product at `/tmp/eclipse`
+
+**Step 6: Run Cleanup**
+- Starts Xvfb virtual display server
+- Creates Eclipse workspace directory
+- Executes Eclipse cleanup application with configured options
+- Processes all Java files in specified directory
+
+### Performance
+
+- **First run (cache miss)**: ~10-15 minutes (full Maven build)
+- **Cached runs**: ~2-3 minutes (no build needed, only cleanup execution)
 
 ## Cleanup Configuration
 
@@ -144,32 +170,40 @@ Sandbox options:
 
 ### Build Time
 
-- **First run**: ~10-15 minutes (builds entire sandbox project)
-- **Subsequent runs**: Uses Docker layer caching, but still requires building
+- **First run (cache miss)**: ~10-15 minutes (builds entire sandbox project)
+- **Cached runs**: ~2-3 minutes (Eclipse product already built)
 
 ### Optimization Strategies
 
-1. **Cache Docker layers**: GitHub Actions automatically caches Docker layers between runs
-2. **Process specific directories**: Use `source-dir` input to limit scope
-3. **Use minimal profile**: Choose appropriate cleanup profile for your needs
-4. **Conditional execution**: Only run on PRs that modify Java files
+1. **Eclipse product caching**: Action automatically caches the built Eclipse product
+2. **Maven caching**: Maven dependencies are cached via `actions/setup-java`
+3. **Process specific directories**: Use `source-dir` input to limit scope
+4. **Use minimal profile**: Choose appropriate cleanup profile for your needs
+5. **Conditional execution**: Only run on PRs that modify Java files
+
+### Cache Invalidation
+
+The Eclipse product cache is invalidated when:
+- Any `pom.xml` file changes
+- Manual cache clearing via GitHub Actions UI
 
 ### Resource Usage
 
-- **Memory**: Requires ~2GB RAM for Eclipse
-- **Disk**: ~1GB for Docker image
-- **CPU**: Scales with number of files
+- **Memory**: Requires ~2GB RAM for Eclipse and Maven build
+- **Disk**: ~500MB for Eclipse product cache
+- **CPU**: Scales with number of files to process
 
 ## Troubleshooting
 
 ### Action Fails to Build
 
-**Symptom**: Docker build fails during Maven compilation
+**Symptom**: Maven build fails during action execution
 
 **Solutions**:
 - Check Java version (must be Java 21)
 - Verify all dependencies are available in Maven Central/Eclipse repositories
-- Check sandbox_product builds successfully locally
+- Check that sandbox_product builds successfully locally: `mvn clean install -DskipTests`
+- Clear GitHub Actions cache if stale: Settings → Actions → Caches
 
 ### Files Not Processed
 
@@ -191,12 +225,14 @@ Sandbox options:
 - Check action logs for specific error messages
 - Verify configuration file path is correct
 
-### Docker Build Takes Too Long
+### Build Takes Too Long
 
 **Solutions**:
-- Use GitHub's Docker layer caching (automatic)
-- Consider pre-building and publishing the Docker image to GitHub Container Registry
+- Build time is only slow on first run or cache miss
+- Eclipse product caching automatically speeds up subsequent runs
+- Check cache status in GitHub Actions workflow logs
 - Run cleanup less frequently (e.g., only on specific PR labels)
+- Use more specific `source-dir` to limit files processed
 
 ## Limitations
 
@@ -221,38 +257,30 @@ Files must be within the GitHub Actions workspace to be processed. The action va
 
 ### Build Time
 
-The first Docker build takes 10-15 minutes as it compiles the entire sandbox project. Consider pre-building the Docker image for production use.
+The first build takes 10-15 minutes as it compiles the entire sandbox project. The Eclipse product is automatically cached for subsequent runs, reducing runtime to 2-3 minutes.
 
 ## Advanced Usage
 
-### Pre-built Docker Image
-
-To speed up workflow execution, you can pre-build and publish the Docker image:
-
-1. Build and tag the image:
-```bash
-docker build -t ghcr.io/your-org/sandbox-cleanup:latest .github/actions/cleanup-action
-```
-
-2. Push to GitHub Container Registry:
-```bash
-docker push ghcr.io/your-org/sandbox-cleanup:latest
-```
-
-3. Update `action.yml` to use the published image:
-```yaml
-runs:
-  using: 'docker'
-  image: 'docker://ghcr.io/your-org/sandbox-cleanup:latest'
-```
-
 ### Custom Eclipse Configuration
 
-To customize the Eclipse configuration:
+To customize the Eclipse configuration, you can:
 
-1. Modify `Dockerfile` to copy custom configuration files
-2. Set environment variables for Eclipse preferences
-3. Mount configuration from workflow using Docker volumes (advanced)
+1. Add environment variables in the cleanup step
+2. Mount custom configuration files from the repository
+3. Pass additional Eclipse command-line arguments
+
+### Cache Management
+
+To clear the Eclipse product cache:
+
+1. Go to repository Settings → Actions → Caches
+2. Find caches starting with `eclipse-product-`
+3. Delete the cache to force a rebuild on next run
+
+This is useful when:
+- Testing changes to the build process
+- Resolving build issues
+- Major dependency updates
 
 ### Integrate with Other Tools
 
@@ -273,10 +301,9 @@ Combine with other actions for comprehensive code quality:
 
 ## Files in This Directory
 
-- `Dockerfile` - Docker image definition
-- `entrypoint.sh` - Container entrypoint script
-- `action.yml` - GitHub Action metadata and inputs
-- `README.md` - This file
+- `action.yml` - Composite action definition with all steps
+- `README.md` - This file (usage documentation)
+- `TODO.md` - Status tracking and future enhancements
 
 ## Related Documentation
 
@@ -288,10 +315,14 @@ Combine with other actions for comprehensive code quality:
 
 To improve this action:
 
-1. **Optimize build time**: Reduce Docker image size, cache more effectively
+1. **Optimize build time**: Improve caching strategies, reduce build scope
 2. **Add features**: Support incremental cleanup, dry-run mode, change reports
 3. **Improve documentation**: Add more examples, troubleshooting tips
 4. **Test thoroughly**: Test with different configurations and edge cases
+
+### Architecture History
+
+This action was originally implemented as a Docker action but was converted to a composite action to resolve build context limitations. See `TODO.md` for the full migration rationale.
 
 ## License
 
