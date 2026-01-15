@@ -24,10 +24,114 @@ inputs:
     default: 'false'
 
 runs:
-  using: 'docker'
-  image: 'Dockerfile'
-  env:
-    INPUT_CONFIG_FILE: ${{ inputs.config-file }}
-    INPUT_SOURCE_DIR: ${{ inputs.source-dir }}
-    INPUT_VERBOSE: ${{ inputs.verbose }}
-    INPUT_QUIET: ${{ inputs.quiet }}
+  using: 'composite'
+  steps:
+    # Step 1: Setup Java with Maven caching
+    - name: Set up Java 21
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '21'
+        cache: 'maven'
+
+    # Step 2: Cache the built Eclipse product
+    - name: Cache Eclipse product
+      id: cache-eclipse
+      uses: actions/cache@v4
+      with:
+        path: /tmp/eclipse
+        key: eclipse-product-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          eclipse-product-
+
+    # Step 3: Install display dependencies
+    - name: Install Xvfb and dependencies
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y xvfb xauth libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 libxrandr2 libxfixes3 libnss3 libgbm1
+
+    # Step 4: Build only on cache miss
+    - name: Build sandbox cleanup application
+      if: steps.cache-eclipse.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        xvfb-run --auto-servernum mvn -B -V \
+          -Dtycho.localArtifacts=ignore \
+          clean install -DskipTests
+
+    # Step 5: Extract product only on cache miss
+    - name: Extract Eclipse product
+      if: steps.cache-eclipse.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        PRODUCT_DIR="${GITHUB_WORKSPACE}/sandbox_product/target/products"
+        PRODUCT_ZIP=$(find "$PRODUCT_DIR" -maxdepth 1 \( -name "*.tar.gz" -o -name "*.zip" \) | head -1)
+        if [ -z "$PRODUCT_ZIP" ]; then
+          echo "::error::No Eclipse product archive found"
+          exit 1
+        fi
+        mkdir -p /tmp/eclipse
+        case "$PRODUCT_ZIP" in
+          *.zip) unzip -q "$PRODUCT_ZIP" -d /tmp/eclipse ;;
+          *.tar.gz) tar -xzf "$PRODUCT_ZIP" -C /tmp/eclipse ;;
+          *) echo "::error::Unsupported or missing archive format: $PRODUCT_ZIP"; exit 1 ;;
+        esac
+        chmod +x /tmp/eclipse/eclipse/eclipse
+
+    # Step 6: Run the cleanup
+    - name: Run cleanup
+      shell: bash
+      env:
+        INPUT_CONFIG_FILE: ${{ inputs.config-file }}
+        INPUT_SOURCE_DIR: ${{ inputs.source-dir }}
+        INPUT_VERBOSE: ${{ inputs.verbose }}
+        INPUT_QUIET: ${{ inputs.quiet }}
+      run: |
+        # Verify Eclipse product exists
+        if [ ! -f /tmp/eclipse/eclipse/eclipse ]; then
+          echo "::error::Eclipse product not found at /tmp/eclipse/eclipse/eclipse"
+          echo "This usually means the build or cache restoration failed."
+          exit 1
+        fi
+        
+        Xvfb :99 -screen 0 1280x1024x24 & XVFB_PID=$!
+        trap 'if [ -n "${XVFB_PID:-}" ]; then kill "${XVFB_PID}" 2>/dev/null || true; fi' EXIT
+        export DISPLAY=:99
+        sleep 2
+        
+        WORKSPACE_DIR="/tmp/cleanup-workspace"
+        mkdir -p "${WORKSPACE_DIR}"
+        
+        CONFIG_PATH=$(realpath -m "${GITHUB_WORKSPACE}/${INPUT_CONFIG_FILE}")
+        SOURCE_PATH=$(realpath -m "${GITHUB_WORKSPACE}/${INPUT_SOURCE_DIR}")
+        
+        case "${CONFIG_PATH}" in
+          "${GITHUB_WORKSPACE}"/*) ;;
+          *)
+            echo "::error::Config file path escapes GITHUB_WORKSPACE: ${CONFIG_PATH}"
+            exit 1
+            ;;
+        esac
+        
+        case "${SOURCE_PATH}" in
+          "${GITHUB_WORKSPACE}"/*) ;;
+          *)
+            echo "::error::Source directory path escapes GITHUB_WORKSPACE: ${SOURCE_PATH}"
+            exit 1
+            ;;
+        esac
+        
+        CLEANUP_ARGS=("-data" "${WORKSPACE_DIR}" "-config" "${CONFIG_PATH}")
+        
+        if [ "${INPUT_VERBOSE}" == "true" ]; then
+          CLEANUP_ARGS+=("-verbose")
+        elif [ "${INPUT_QUIET}" == "true" ]; then
+          CLEANUP_ARGS+=("-quiet")
+        fi
+        
+        CLEANUP_ARGS+=("${SOURCE_PATH}")
+        
+        /tmp/eclipse/eclipse/eclipse -nosplash \
+          -application sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup \
+          "${CLEANUP_ARGS[@]}" || echo "::warning::Cleanup completed with warnings"

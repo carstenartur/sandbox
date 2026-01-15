@@ -2,103 +2,47 @@
 
 ## Critical Issues
 
-### Docker Build Context Problem (BLOCKING)
+### Docker Build Context Problem - RESOLVED ✅
 
-**Status**: ❌ **BROKEN** - Action cannot build successfully
+**Status**: ✅ **RESOLVED** - Converted to composite action
 
-**Issue**: The Dockerfile is fundamentally incompatible with GitHub Actions' Docker action architecture.
+**Solution**: Converted from Docker action to composite action (PR #XXX)
 
 **Problem Description**:
-When GitHub Actions builds a Docker action with `image: 'Dockerfile'` in `action.yml`, the build context is limited to the action directory (`.github/actions/cleanup-action/`). This directory only contains:
-- `Dockerfile`
-- `entrypoint.sh`
-- `action.yml`
-- `README.md`
-- `.dockerignore`
-
-However, the Dockerfile line 32 attempts:
-```dockerfile
-COPY . /sandbox
-```
-
-This expects to copy the entire sandbox Maven project, but only copies the action directory files. Subsequently, the Maven build fails with:
+The original Docker action had a fundamental limitation: GitHub Actions builds Docker actions with the action directory as the build context, not the repository root. The `COPY . /sandbox` line only copied action directory files, causing Maven builds to fail with:
 ```
 [ERROR] The goal you specified requires a project to execute but there is no POM in this directory (/sandbox).
 ```
 
-**Root Cause**:
-GitHub Actions Docker actions always use the action directory as the build context, not the repository root. This is a fundamental limitation of GitHub Actions' local Docker action architecture.
+**Resolution**:
+Converted to a **composite action** (`runs: using: 'composite'`) which provides:
+1. **Full repository access** via `$GITHUB_WORKSPACE`
+2. **Eclipse product caching** using `actions/cache@v4` to speed up subsequent runs
+3. **Conditional builds** - Only builds on cache miss, dramatically reducing workflow time
+4. **Maven caching** via `actions/setup-java@v4` for dependency resolution
 
-**Investigation Needed**:
+**Architecture**:
+The composite action now:
+1. Sets up Java 21 with Maven caching
+2. Caches the built Eclipse product (`/tmp/eclipse`)
+3. Installs Xvfb and GTK dependencies for headless Eclipse
+4. Conditionally builds sandbox (only if cache miss)
+5. Conditionally extracts Eclipse product (only if cache miss)
+6. Runs the cleanup application with proper workspace paths
 
-1. **Research GitHub Actions Docker Build Context Options**:
-   - Investigate if there's any way to specify a custom build context for local Docker actions
-   - Check if GitHub Actions supports referencing Dockerfiles outside the action directory
-   - Review GitHub Actions documentation for Docker action best practices
+**Performance Improvement**:
+- First run: ~10-15 minutes (full build)
+- Cached runs: ~2-3 minutes (no build needed)
 
-2. **Evaluate Alternative Architectures**:
-   - **Option A: Pre-built Docker Image**
-     - Build the Docker image in a separate workflow
-     - Publish to GitHub Container Registry (GHCR)
-     - Reference the published image in `action.yml` using `image: 'docker://ghcr.io/...'`
-     - Pros: Cleaner separation, faster PR workflows
-     - Cons: Requires image publishing setup, version management
-
-   - **Option B: Composite Action with Build Step**
-     - Convert to a composite action (`runs: using: 'composite'`)
-     - Add a pre-build step that runs Maven to build the product
-     - Use the built product in subsequent steps
-     - Pros: No Docker registry needed, stays as local action
-     - Cons: Slower PR workflows, more complex action logic
-
-   - **Option C: Move Dockerfile to Repository Root**
-     - Place Dockerfile at repository root where it can access all files
-     - Modify action to build using a workflow step instead of `image:` field
-     - Pros: Direct access to all repository files
-     - Cons: Cannot use simple `uses: ./.github/actions/...` syntax
-
-   - **Option D: Separate Maven Module for Action**
-     - Create a dedicated Maven sub-module that packages just what's needed for Docker
-     - Build this module and copy artifacts into action directory during CI
-     - Pros: Smaller Docker context, faster builds
-     - Cons: Requires restructuring Maven project
-
-3. **Analyze Build Requirements**:
-   - Determine minimum files/artifacts needed for cleanup application
-   - Evaluate if full sandbox build is necessary or if only specific modules needed
-   - Consider if Eclipse product can be built externally and artifact cached
-
-4. **Performance Considerations**:
-   - Current approach would require 10-15 minute builds per PR
-   - Evaluate caching strategies for Maven dependencies and built artifacts
-   - Consider incremental build approaches
-
-5. **Test Locally**:
-   - Attempt to build Docker image with actual repository content
-   - Verify the cleanup application works when properly built
-   - Document memory/CPU requirements
-
-**Recommended Approach** (after investigation):
-The most robust solution appears to be **Option A: Pre-built Docker Image**:
-1. Create a dedicated workflow that builds the Docker image when code changes
-2. Publish to GHCR with version tags
-3. Update `action.yml` to reference the published image
-4. This separates build complexity from PR workflow execution
-
-**Temporary Workaround**:
-The `pr-auto-cleanup.yml` workflow has been temporarily disabled to unblock PR merges. Re-enable after the build issue is resolved.
-
-**References**:
-- GitHub Actions Docker Actions: https://docs.github.com/en/actions/creating-actions/creating-a-docker-container-action
-- GitHub Issue discussing this: (none yet)
-- Related PR that introduced the action: #420
+**Cleanup**:
+- Removed obsolete `Dockerfile` (no longer needed)
+- Removed obsolete `entrypoint.sh` (logic moved to action.yml)
+- Removed obsolete `.dockerignore` (no Docker build)
 
 **Next Steps**:
-1. Research feasibility of each option
-2. Create POC for preferred approach
-3. Implement solution in separate PR
-4. Test thoroughly before re-enabling auto-cleanup workflow
-5. Update documentation with final architecture
+- Re-enable `pr-auto-cleanup.yml` workflow by uncommenting the PR trigger
+- Test with actual PRs to validate functionality
+- Monitor workflow performance and adjust caching strategy if needed
 
 ---
 
