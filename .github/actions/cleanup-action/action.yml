@@ -75,6 +75,7 @@ runs:
         case "$PRODUCT_ZIP" in
           *.zip) unzip -q "$PRODUCT_ZIP" -d /tmp/eclipse ;;
           *.tar.gz) tar -xzf "$PRODUCT_ZIP" -C /tmp/eclipse ;;
+          *) echo "::error::Unsupported or missing archive format: $PRODUCT_ZIP"; exit 1 ;;
         esac
         chmod +x /tmp/eclipse/eclipse/eclipse
 
