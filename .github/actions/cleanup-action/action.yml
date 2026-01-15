@@ -103,8 +103,24 @@ runs:
         WORKSPACE_DIR="/tmp/cleanup-workspace"
         mkdir -p "${WORKSPACE_DIR}"
         
-        CONFIG_PATH="${GITHUB_WORKSPACE}/${INPUT_CONFIG_FILE}"
-        SOURCE_PATH="${GITHUB_WORKSPACE}/${INPUT_SOURCE_DIR}"
+        CONFIG_PATH=$(realpath -m "${GITHUB_WORKSPACE}/${INPUT_CONFIG_FILE}")
+        SOURCE_PATH=$(realpath -m "${GITHUB_WORKSPACE}/${INPUT_SOURCE_DIR}")
+        
+        case "${CONFIG_PATH}" in
+          "${GITHUB_WORKSPACE}"/*) ;;
+          *)
+            echo "::error::Config file path escapes GITHUB_WORKSPACE: ${CONFIG_PATH}"
+            exit 1
+            ;;
+        esac
+        
+        case "${SOURCE_PATH}" in
+          "${GITHUB_WORKSPACE}"/*) ;;
+          *)
+            echo "::error::Source directory path escapes GITHUB_WORKSPACE: ${SOURCE_PATH}"
+            exit 1
+            ;;
+        esac
         
         CLEANUP_ARGS=("-data" "${WORKSPACE_DIR}" "-config" "${CONFIG_PATH}")
         
