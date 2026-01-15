@@ -67,6 +67,10 @@ runs:
       run: |
         PRODUCT_DIR="${GITHUB_WORKSPACE}/sandbox_product/target/products"
         PRODUCT_ZIP=$(find "$PRODUCT_DIR" -maxdepth 1 \( -name "*.tar.gz" -o -name "*.zip" \) | head -1)
+        if [ -z "$PRODUCT_ZIP" ]; then
+          echo "::error::No Eclipse product archive found"
+          exit 1
+        fi
         mkdir -p /tmp/eclipse
         case "$PRODUCT_ZIP" in
           *.zip) unzip -q "$PRODUCT_ZIP" -d /tmp/eclipse ;;
