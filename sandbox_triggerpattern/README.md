@@ -101,38 +101,149 @@ public interface HintContext {
 
 ## Example Hints
 
-### Simplify Boolean Return
+The TriggerPattern plugin includes both **simple** and **complex** cleanup examples to showcase its versatility.
+
+### Simple Patterns
+
+#### Empty String Concatenation
 
 ```java
-@Hint("Simplify boolean return")
-@TriggerPattern("if ($cond) { return true; } else { return false; }")
-public void simplifyBooleanReturn(HintContext ctx) {
-    Expression condition = ctx.getPlaceholder("$cond");
-    ctx.replace(ctx.createReturn(condition));
+@Hint(displayName = "Replace with String.valueOf()")
+@TriggerPattern(value = "\"\" + $x", kind = PatternKind.EXPRESSION)
+public static IJavaCompletionProposal replaceEmptyStringConcatenation(HintContext ctx) {
+    // Transforms: "" + value  →  String.valueOf(value)
 }
 ```
 
-### Use String.isEmpty()
+#### Use String.isEmpty()
 
 ```java
-@Hint("Use String.isEmpty()")
-@TriggerPattern("$str.length() == 0")
-public void useIsEmpty(HintContext ctx) {
-    Expression str = ctx.getPlaceholder("$str");
-    ctx.replace(ctx.createMethodCall(str, "isEmpty"));
+@Hint(displayName = "Use isEmpty()")
+@TriggerPattern(value = "$str.length() == 0", kind = PatternKind.EXPRESSION)
+public static IJavaCompletionProposal replaceStringLengthCheck(HintContext ctx) {
+    // Transforms: str.length() == 0  →  str.isEmpty()
 }
 ```
 
-### Replace null check with Objects.requireNonNull
+#### Simplify Boolean Comparison
 
 ```java
-@Hint("Use Objects.requireNonNull")
-@TriggerPattern("if ($x == null) { throw new NullPointerException(); }")
-public void useRequireNonNull(HintContext ctx) {
-    Expression var = ctx.getPlaceholder("$x");
-    ctx.replace(ctx.createMethodCall("Objects", "requireNonNull", var));
+@Hint(displayName = "Simplify boolean comparison")
+@TriggerPattern(value = "$x == true", kind = PatternKind.EXPRESSION)
+public static IJavaCompletionProposal simplifyBooleanComparisonTrue(HintContext ctx) {
+    // Transforms: flag == true  →  flag
 }
 ```
+
+#### Simplify Ternary Boolean
+
+```java
+@Hint(displayName = "Simplify ternary boolean")
+@TriggerPattern(value = "$cond ? true : false", kind = PatternKind.EXPRESSION)
+public static IJavaCompletionProposal simplifyTernaryBooleanTrueFalse(HintContext ctx) {
+    // Transforms: isValid() ? true : false  →  isValid()
+}
+```
+
+### Complex Patterns
+
+These examples demonstrate TriggerPattern's power for sophisticated transformations:
+
+#### Collection Size Check
+
+```java
+@Hint(displayName = "Use isEmpty() for collections")
+@TriggerPattern(value = "$list.size() == 0", kind = PatternKind.EXPRESSION)
+public static IJavaCompletionProposal replaceCollectionSizeCheck(HintContext ctx) {
+    // Transforms: list.size() == 0  →  list.isEmpty()
+    // Works for any Collection type (List, Set, Map, etc.)
+}
+```
+
+**Why this matters**: Traditional Eclipse cleanups require type checking to determine if the expression is a Collection. TriggerPattern's placeholder matching handles this automatically.
+
+#### StringBuilder Single Append (Anti-pattern Detection)
+
+```java
+@Hint(displayName = "Simplify StringBuilder single append")
+@TriggerPattern(value = "new StringBuilder().append($x).toString()", kind = PatternKind.EXPRESSION)
+public static IJavaCompletionProposal simplifyStringBuilderSingleAppend(HintContext ctx) {
+    // Transforms: new StringBuilder().append(value).toString()  →  String.valueOf(value)
+    // Detects unnecessary StringBuilder usage for single value conversion
+}
+```
+
+**Complexity**: Matches a **chained method call pattern** across three method invocations (constructor, append, toString). Traditional approach would need complex AST visitor traversal.
+
+#### String.format Simplification
+
+```java
+@Hint(displayName = "Simplify String.format")
+@TriggerPattern(value = "String.format(\"%s\", $x)", kind = PatternKind.EXPRESSION)
+public static IJavaCompletionProposal simplifyStringFormat(HintContext ctx) {
+    // Transforms: String.format("%s", obj)  →  String.valueOf(obj)
+    // Identifies performance improvement opportunity
+}
+```
+
+**Complexity**: Matches **method with specific literal argument** plus placeholder. Shows how TriggerPattern can mix literals and placeholders.
+
+#### Objects.equals for Null Safety
+
+```java
+@Hint(displayName = "Use Objects.equals for null safety")
+@TriggerPattern(value = "$x.toString().equals($y)", kind = PatternKind.EXPRESSION)
+public static IJavaCompletionProposal useObjectsEquals(HintContext ctx) {
+    // Transforms: obj.toString().equals(str)  →  Objects.equals(obj.toString(), str)
+    // Prevents NullPointerException by using null-safe utility method
+    // Automatically adds import for java.util.Objects
+}
+```
+
+**Complexity**: 
+- Matches **nested method calls** (toString() within equals())
+- **Two placeholders** bound to different expressions
+- **Import management** - adds `java.util.Objects` import automatically
+- **Null-safety** - transforms potentially unsafe code to safe API
+
+#### Objects.requireNonNullElse (Java 9+ API)
+
+```java
+@Hint(displayName = "Use Objects.requireNonNullElse")
+@TriggerPattern(value = "$x != null ? $x : $default", kind = PatternKind.EXPRESSION)
+public static IJavaCompletionProposal useRequireNonNullElse(HintContext ctx) {
+    // Transforms: value != null ? value : "default"  →  Objects.requireNonNullElse(value, "default")
+    // Modernizes code to use Java 9+ API
+    // Placeholder $x appears TWICE in pattern and must match same expression
+}
+```
+
+**Complexity**:
+- **Conditional expression** matching with placeholder reuse
+- **Same placeholder used multiple times** - TriggerPattern ensures both $x references match
+- **Modern API suggestion** - demonstrates how patterns can guide towards newer, better APIs
+- **Import management** - adds required import
+
+### Pattern Comparison: Traditional vs TriggerPattern
+
+| Aspect | Traditional Cleanup | TriggerPattern |
+|--------|-------------------|----------------|
+| **Lines of Code** | 100-300 per pattern | 30-50 per pattern |
+| **AST Traversal** | Manual visitor implementation | Automatic |
+| **Type Checking** | Manual ITypeBinding checks | Automatic via placeholders |
+| **Pattern Definition** | Scattered across visitor methods | Single declarative string |
+| **Placeholder Binding** | Manual AST node extraction | Automatic via $x syntax |
+| **Chained Calls** | Complex recursive traversal | Natural pattern syntax |
+| **Import Management** | Manual ImportRewrite | Built into HintContext |
+
+### Why Complex Examples Matter
+
+These complex patterns demonstrate that TriggerPattern excels at scenarios that are **tedious with traditional approaches**:
+
+1. **Chained Method Calls**: `new StringBuilder().append($x).toString()` would require traversing multiple AST nodes and verifying the call chain structure
+2. **Multiple Placeholders**: `$x.toString().equals($y)` requires binding two different sub-expressions
+3. **Placeholder Reuse**: `$x != null ? $x : $default` ensures the same expression appears in both condition and then-branch
+4. **Import Management**: Automatically handles adding imports like `java.util.Objects`
 
 ## Architecture
 
