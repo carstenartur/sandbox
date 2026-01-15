@@ -83,6 +83,13 @@ runs:
         INPUT_VERBOSE: ${{ inputs.verbose }}
         INPUT_QUIET: ${{ inputs.quiet }}
       run: |
+        # Verify Eclipse product exists
+        if [ ! -f /tmp/eclipse/eclipse/eclipse ]; then
+          echo "::error::Eclipse product not found at /tmp/eclipse/eclipse/eclipse"
+          echo "This usually means the build or cache restoration failed."
+          exit 1
+        fi
+        
         Xvfb :99 -screen 0 1280x1024x24 &
         export DISPLAY=:99
         sleep 2
