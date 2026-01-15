@@ -80,7 +80,7 @@ RUN set -e; \
     echo "Eclipse product extracted successfully"
 
 # Copy entrypoint script
-COPY .github/actions/cleanup-action/entrypoint.sh /entrypoint.sh
+COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 # Set environment variables

@@ -16,6 +16,7 @@
 - ✅ Cleanup integration (Save Actions and Source → Clean Up)
 - ✅ UI preferences for cleanup configuration
 - ✅ Batch apply to entire project support
+- ✅ Fixed preference registration (v1.2.2) - Added missing `registerPreference()` call to properly count checkbox in cleanup UI
 
 ### In Progress
 - [ ] Test module implementation (in progress)
