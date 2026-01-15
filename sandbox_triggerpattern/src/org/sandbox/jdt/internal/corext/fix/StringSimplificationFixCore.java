@@ -18,9 +18,11 @@ import java.util.List;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.ConditionalExpression;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
@@ -56,26 +58,68 @@ public class StringSimplificationFixCore {
 		Pattern emptyPrefixPattern = new Pattern("\"\" + $x", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> emptyPrefixMatches = ENGINE.findMatches(compilationUnit, emptyPrefixPattern);
 		for (Match match : emptyPrefixMatches) {
-			operations.add(new StringSimplificationOperation(match, "Empty string prefix")); //$NON-NLS-1$
+			operations.add(new StringValueOfOperation(match, "Empty string prefix")); //$NON-NLS-1$
 		}
 		
 		// Pattern 2: $x + ""
 		Pattern emptySuffixPattern = new Pattern("$x + \"\"", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> emptySuffixMatches = ENGINE.findMatches(compilationUnit, emptySuffixPattern);
 		for (Match match : emptySuffixMatches) {
-			operations.add(new StringSimplificationOperation(match, "Empty string suffix")); //$NON-NLS-1$
+			operations.add(new StringValueOfOperation(match, "Empty string suffix")); //$NON-NLS-1$
+		}
+		
+		// Pattern 3: $str.length() == 0
+		Pattern lengthCheckPattern = new Pattern("$str.length() == 0", PatternKind.EXPRESSION); //$NON-NLS-1$
+		List<Match> lengthCheckMatches = ENGINE.findMatches(compilationUnit, lengthCheckPattern);
+		for (Match match : lengthCheckMatches) {
+			operations.add(new IsEmptyOperation(match, "String length check")); //$NON-NLS-1$
+		}
+		
+		// Pattern 4: $str.equals("")
+		Pattern equalsEmptyPattern = new Pattern("$str.equals(\"\")", PatternKind.EXPRESSION); //$NON-NLS-1$
+		List<Match> equalsEmptyMatches = ENGINE.findMatches(compilationUnit, equalsEmptyPattern);
+		for (Match match : equalsEmptyMatches) {
+			operations.add(new IsEmptyOperation(match, "String equals empty")); //$NON-NLS-1$
+		}
+		
+		// Pattern 5: $x == true
+		Pattern boolTruePattern = new Pattern("$x == true", PatternKind.EXPRESSION); //$NON-NLS-1$
+		List<Match> boolTrueMatches = ENGINE.findMatches(compilationUnit, boolTruePattern);
+		for (Match match : boolTrueMatches) {
+			operations.add(new SimplifyBooleanOperation(match, "Boolean == true", false)); //$NON-NLS-1$
+		}
+		
+		// Pattern 6: $x == false
+		Pattern boolFalsePattern = new Pattern("$x == false", PatternKind.EXPRESSION); //$NON-NLS-1$
+		List<Match> boolFalseMatches = ENGINE.findMatches(compilationUnit, boolFalsePattern);
+		for (Match match : boolFalseMatches) {
+			operations.add(new SimplifyBooleanOperation(match, "Boolean == false", true)); //$NON-NLS-1$
+		}
+		
+		// Pattern 7: $cond ? true : false
+		Pattern ternaryTrueFalsePattern = new Pattern("$cond ? true : false", PatternKind.EXPRESSION); //$NON-NLS-1$
+		List<Match> ternaryTrueFalseMatches = ENGINE.findMatches(compilationUnit, ternaryTrueFalsePattern);
+		for (Match match : ternaryTrueFalseMatches) {
+			operations.add(new SimplifyTernaryOperation(match, "Ternary true:false", false)); //$NON-NLS-1$
+		}
+		
+		// Pattern 8: $cond ? false : true
+		Pattern ternaryFalseTruePattern = new Pattern("$cond ? false : true", PatternKind.EXPRESSION); //$NON-NLS-1$
+		List<Match> ternaryFalseTrueMatches = ENGINE.findMatches(compilationUnit, ternaryFalseTruePattern);
+		for (Match match : ternaryFalseTrueMatches) {
+			operations.add(new SimplifyTernaryOperation(match, "Ternary false:true", true)); //$NON-NLS-1$
 		}
 	}
 	
 	/**
-	 * Rewrite operation for string simplification.
+	 * Rewrite operation for String.valueOf() simplification.
 	 */
-	private static class StringSimplificationOperation extends CompilationUnitRewriteOperation {
+	private static class StringValueOfOperation extends CompilationUnitRewriteOperation {
 		
 		private final Match match;
 		private final String description;
 		
-		public StringSimplificationOperation(Match match, String description) {
+		public StringValueOfOperation(Match match, String description) {
 			this.match = match;
 			this.description = description;
 		}
@@ -109,6 +153,151 @@ public class StringSimplificationFixCore {
 			
 			// Apply the rewrite
 			rewrite.replace(infixExpr, methodInvocation, group);
+		}
+	}
+	
+	/**
+	 * Rewrite operation for isEmpty() simplification.
+	 */
+	private static class IsEmptyOperation extends CompilationUnitRewriteOperation {
+		
+		private final Match match;
+		private final String description;
+		
+		public IsEmptyOperation(Match match, String description) {
+			this.match = match;
+			this.description = description;
+		}
+		
+		@Override
+		public void rewriteAST(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) {
+			ASTRewrite rewrite = cuRewrite.getASTRewrite();
+			AST ast = cuRewrite.getRoot().getAST();
+			TextEditGroup group = createTextEditGroup(description, cuRewrite);
+			
+			ASTNode matchedNode = match.getMatchedNode();
+			
+			// Get the bound variable from placeholders
+			ASTNode strNode = match.getBindings().get("$str"); //$NON-NLS-1$
+			if (strNode == null || !(strNode instanceof Expression)) {
+				return;
+			}
+			
+			Expression strExpression = (Expression) strNode;
+			
+			// Create the replacement: strExpression.isEmpty()
+			MethodInvocation isEmptyCall = ast.newMethodInvocation();
+			isEmptyCall.setExpression((Expression) ASTNode.copySubtree(ast, strExpression));
+			isEmptyCall.setName(ast.newSimpleName("isEmpty")); //$NON-NLS-1$
+			
+			// Apply the rewrite
+			rewrite.replace(matchedNode, isEmptyCall, group);
+		}
+	}
+	
+	/**
+	 * Rewrite operation for boolean simplification.
+	 */
+	private static class SimplifyBooleanOperation extends CompilationUnitRewriteOperation {
+		
+		private final Match match;
+		private final String description;
+		private final boolean negate;
+		
+		public SimplifyBooleanOperation(Match match, String description, boolean negate) {
+			this.match = match;
+			this.description = description;
+			this.negate = negate;
+		}
+		
+		@Override
+		public void rewriteAST(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) {
+			ASTRewrite rewrite = cuRewrite.getASTRewrite();
+			AST ast = cuRewrite.getRoot().getAST();
+			TextEditGroup group = createTextEditGroup(description, cuRewrite);
+			
+			ASTNode matchedNode = match.getMatchedNode();
+			if (!(matchedNode instanceof InfixExpression)) {
+				return;
+			}
+			
+			InfixExpression infixExpr = (InfixExpression) matchedNode;
+			
+			// Get the boolean variable
+			ASTNode xNode = match.getBindings().get("$x"); //$NON-NLS-1$
+			if (xNode == null || !(xNode instanceof Expression)) {
+				return;
+			}
+			
+			Expression boolExpression = (Expression) xNode;
+			
+			Expression replacement;
+			if (negate) {
+				// Create: !boolExpression
+				PrefixExpression negation = ast.newPrefixExpression();
+				negation.setOperator(PrefixExpression.Operator.NOT);
+				negation.setOperand((Expression) ASTNode.copySubtree(ast, boolExpression));
+				replacement = negation;
+			} else {
+				// Just use the boolean expression as-is
+				replacement = (Expression) ASTNode.copySubtree(ast, boolExpression);
+			}
+			
+			// Apply the rewrite
+			rewrite.replace(infixExpr, replacement, group);
+		}
+	}
+	
+	/**
+	 * Rewrite operation for ternary boolean simplification.
+	 */
+	private static class SimplifyTernaryOperation extends CompilationUnitRewriteOperation {
+		
+		private final Match match;
+		private final String description;
+		private final boolean negate;
+		
+		public SimplifyTernaryOperation(Match match, String description, boolean negate) {
+			this.match = match;
+			this.description = description;
+			this.negate = negate;
+		}
+		
+		@Override
+		public void rewriteAST(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) {
+			ASTRewrite rewrite = cuRewrite.getASTRewrite();
+			AST ast = cuRewrite.getRoot().getAST();
+			TextEditGroup group = createTextEditGroup(description, cuRewrite);
+			
+			ASTNode matchedNode = match.getMatchedNode();
+			if (!(matchedNode instanceof ConditionalExpression)) {
+				return;
+			}
+			
+			ConditionalExpression ternary = (ConditionalExpression) matchedNode;
+			
+			// Get the condition
+			ASTNode condNode = match.getBindings().get("$cond"); //$NON-NLS-1$
+			if (condNode == null || !(condNode instanceof Expression)) {
+				return;
+			}
+			
+			Expression condition = (Expression) condNode;
+			
+			Expression replacement;
+			if (negate) {
+				// Create: !condition
+				PrefixExpression negation = ast.newPrefixExpression();
+				negation.setOperator(PrefixExpression.Operator.NOT);
+				negation.setOperand((Expression) ASTNode.copySubtree(ast, condition));
+				replacement = negation;
+			} else {
+				// Just use the condition as-is
+				replacement = (Expression) ASTNode.copySubtree(ast, condition);
+			}
+			
+			// Apply the rewrite
+			rewrite.replace(ternary, replacement, group);
 		}
 	}
 }
