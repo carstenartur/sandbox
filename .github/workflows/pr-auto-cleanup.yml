@@ -176,14 +176,14 @@ jobs:
             issue_number: context.issue.number,
             owner: context.repo.owner,
             repo: context.repo.repo,
-            body: `## 🧹 Cleanup-Vorschläge Verfügbar\n\n` +
-                  `Der automatische Cleanup-Prozess hat **${changedCount} Dateien** analysiert und Verbesserungen gefunden.\n\n` +
-                  `### 📋 Cleanup-PR: #${cleanupPrNumber}\n` +
+            body: `## 🧹 Cleanup suggestions available\n\n` +
+                  `The automatic cleanup process analyzed **${changedCount} files** and found improvements.\n\n` +
+                  `### 📋 Cleanup PR: #${cleanupPrNumber}\n` +
                   `🔗 ${cleanupPrUrl}\n\n` +
-                  `### Ihre Optionen:\n` +
-                  `1. ✅ **Alle Änderungen akzeptieren**: Mergen Sie PR #${cleanupPrNumber}\n` +
-                  `2. ✏️ **Änderungen anpassen**: Bearbeiten Sie die Dateien in PR #${cleanupPrNumber} und mergen Sie dann\n` +
-                  `3. ❌ **Änderungen ablehnen**: Schließen Sie PR #${cleanupPrNumber} und fahren Sie mit Ihrem ursprünglichen PR fort\n\n` +
-                  `Der Cleanup-PR enthält detaillierte Informationen über alle vorgeschlagenen Änderungen.`
+                  `### Your options:\n` +
+                  `1. ✅ **Accept all changes**: Merge PR #${cleanupPrNumber}\n` +
+                  `2. ✏️ **Adjust the changes**: Edit the files in PR #${cleanupPrNumber} and then merge\n` +
+                  `3. ❌ **Reject the changes**: Close PR #${cleanupPrNumber} and continue with your original PR\n\n` +
+                  `The cleanup PR contains detailed information about all proposed changes.`
           })
 
