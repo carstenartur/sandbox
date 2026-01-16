@@ -7,10 +7,11 @@
 # This workflow will be re-enabled once the Docker build architecture is fixed.
 #
 # LIMITATIONS:
-# - This workflow does NOT support pull requests from forked repositories.
+# - This workflow has limited support for pull requests from forked repositories.
 #   The default GITHUB_TOKEN does not have write permissions to push branches or create PRs in forks.
-#   For forked PRs, the cleanup will run but the cleanup PR cannot be created automatically.
-#   Users can still manually access the cleanup branch if needed.
+# - For PRs from the main repository: Full functionality (cleanup PR created automatically)
+# - For PRs from forked repositories: Fallback mode (review comments + diff in PR comment)
+#   The workflow will post review comments and provide a full diff for manual review.
 
 name: Auto PR Cleanup
 
@@ -179,6 +180,89 @@ jobs:
             return null;
           }
         
+    - name: Create review comments for fork fallback
+      id: create_review
+      if: steps.check_changes.outputs.has_changes == 'true' && steps.create_pr.outputs.pr_created != 'true'
+      uses: actions/github-script@v8
+      with:
+        script: |
+          const changedList = ${{ toJSON(steps.changes.outputs.changed_list) }};
+          const diffPreview = ${{ toJSON(steps.changes.outputs.diff_preview) }};
+          
+          // Get the list of files that were changed
+          const changedFiles = changedList.split('\n').filter(f => f.trim());
+          
+          // Parse diff to extract file changes and create review comments
+          const diffLines = diffPreview.split('\n');
+          const comments = [];
+          let currentFile = null;
+          let currentHunk = null;
+          let lineNumber = 0;
+          
+          for (const line of diffLines) {
+            // Match file headers like "diff --git a/file b/file"
+            const fileMatch = line.match(/^diff --git a\/(.*) b\/(.*)/);
+            if (fileMatch) {
+              currentFile = fileMatch[2];
+              continue;
+            }
+            
+            // Match hunk headers like "@@ -1,2 +3,4 @@"
+            const hunkMatch = line.match(/^@@ -(\d+),?\d* \+(\d+),?\d* @@/);
+            if (hunkMatch && currentFile) {
+              lineNumber = parseInt(hunkMatch[2]);
+              continue;
+            }
+            
+            // Track line numbers for additions (lines starting with +)
+            if (line.startsWith('+') && !line.startsWith('+++') && currentFile && lineNumber > 0) {
+              // Limit to first 10 files and 3 comments per file to avoid spam
+              const fileComments = comments.filter(c => c.path === currentFile);
+              if (comments.length < 10 && fileComments.length < 3) {
+                comments.push({
+                  path: currentFile,
+                  line: lineNumber,
+                  body: `🧹 Cleanup suggestion: This line was modified by the automatic cleanup process.`
+                });
+              }
+            }
+            
+            // Increment line number for context and additions
+            if (!line.startsWith('-') || line.startsWith('---')) {
+              lineNumber++;
+            }
+          }
+          
+          // Create a review with comments if we have any
+          if (comments.length > 0) {
+            try {
+              const review = await github.rest.pulls.createReview({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.issue.number,
+                event: 'COMMENT',
+                body: '🧹 **Automatic cleanup suggestions**\n\n' +
+                      'The cleanup process identified improvements to your code. ' +
+                      'Since this is from a forked repository, I cannot create a cleanup PR, ' +
+                      'but I\'ve added review comments showing the suggested changes.\n\n' +
+                      '**Note**: Due to diff preview limitations, only a sample of changes are shown. ' +
+                      'For the complete diff, see the comment below.',
+                comments: comments
+              });
+              core.setOutput('review_created', 'true');
+              core.setOutput('review_id', review.data.id);
+              return review.data.id;
+            } catch (error) {
+              core.warning(`Failed to create review: ${error.message}`);
+              core.setOutput('review_created', 'false');
+              return null;
+            }
+          } else {
+            core.info('No suitable locations found for review comments');
+            core.setOutput('review_created', 'false');
+            return null;
+          }
+    
     - name: Comment on original PR
       if: steps.check_changes.outputs.has_changes == 'true'
       uses: actions/github-script@v8
@@ -190,6 +274,10 @@ jobs:
           const changedCount = '${{ steps.changes.outputs.changed_count }}';
           const errorMessage = '${{ steps.create_pr.outputs.error_message }}';
           const cleanupBranch = '${{ steps.create_branch.outputs.cleanup_branch }}';
+          const reviewCreated = '${{ steps.create_review.outputs.review_created }}';
+          const diffStat = ${{ toJSON(steps.changes.outputs.diff_stat) }};
+          const changedList = ${{ toJSON(steps.changes.outputs.changed_list) }};
+          const diffPreview = ${{ toJSON(steps.changes.outputs.diff_preview) }};
           
           let commentBody;
           
@@ -206,17 +294,41 @@ jobs:
                           `The cleanup PR contains detailed information about all proposed changes.`;
           } else {
             // Failure case: PR creation failed (likely due to fork permissions)
+            const changedFiles = changedList.split('\n')
+              .filter(f => f.trim())
+              .map(f => `- \`${f}\``)
+              .join('\n');
+            
             commentBody = `## 🧹 Cleanup suggestions available\n\n` +
                           `The automatic cleanup process analyzed **${changedCount} files** and found improvements.\n\n` +
                           `⚠️ **Note**: A cleanup PR could not be automatically created. This typically occurs when:\n` +
                           `- The original PR is from a forked repository (GITHUB_TOKEN lacks write permissions to forks)\n` +
-                          `- There are API permission or rate limit issues\n\n` +
-                          `### Manual review option:\n` +
-                          `The cleanup changes are available in branch: \`${cleanupBranch}\`\n\n` +
-                          `You can manually review the changes by:\n` +
-                          `1. Checking out the branch: \`git fetch origin ${cleanupBranch} && git checkout ${cleanupBranch}\`\n` +
-                          `2. Reviewing the diff between your branch and the cleanup branch\n` +
-                          `3. Cherry-picking or merging the changes if desired\n\n` +
+                          `- There are API permission or rate limit issues\n\n`;
+            
+            if (reviewCreated === 'true') {
+              commentBody += `### ✅ Review comments created\n` +
+                            `I've added review comments showing suggested changes on specific lines. ` +
+                            `Check the "Files changed" tab to see the suggestions.\n\n`;
+            }
+            
+            commentBody += `### Summary\n` +
+                          `- **Changed files:** ${changedCount}\n` +
+                          `- **Diff stats:** ${diffStat}\n\n` +
+                          `### Changed files\n` +
+                          changedFiles + '\n\n' +
+                          `### Diff preview\n` +
+                          `<details>\n` +
+                          `<summary>Click to show diff</summary>\n\n` +
+                          `\`\`\`diff\n` +
+                          diffPreview + `\n` +
+                          `\`\`\`\n` +
+                          `</details>\n\n` +
+                          `### Manual review options:\n` +
+                          `1. **Review the diff above** and manually apply changes you want\n` +
+                          `2. **Check the cleanup branch**: \`${cleanupBranch}\`\n` +
+                          `   - Fetch: \`git fetch origin ${cleanupBranch}\`\n` +
+                          `   - Compare: \`git diff ${cleanupBranch}\`\n` +
+                          `   - Cherry-pick specific changes if desired\n\n` +
                           `**Error details**: ${errorMessage || 'Unknown error'}`;
           }
           

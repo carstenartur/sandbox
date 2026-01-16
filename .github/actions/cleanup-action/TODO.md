@@ -50,7 +50,7 @@ The composite action now:
 
 ### Forked Repository Support
 
-**Issue**: The cleanup workflow does not support pull requests from forked repositories.
+**Issue**: The cleanup workflow has limited support for pull requests from forked repositories.
 
 **Root Cause**: The default `GITHUB_TOKEN` provided to workflows does not have write permissions to forked repositories. This prevents:
 1. Pushing cleanup branches to the fork
@@ -58,17 +58,23 @@ The composite action now:
 
 **Impact**: 
 - For PRs from the main repository: ✅ Full functionality (cleanup PR created automatically)
-- For PRs from forked repositories: ⚠️ Limited functionality (cleanup runs but PR creation fails)
+- For PRs from forked repositories: ⚠️ Fallback mode (review comments + full diff)
 
-**Workarounds for Forked PRs**:
+**Current Fallback for Forked PRs** (as of latest update):
+1. **Review comments**: The workflow posts review comments on changed lines showing cleanup suggestions
+2. **Full diff in PR comment**: Complete diff is provided in a collapsible section for manual review
+3. **File list and statistics**: Summary of all changes with file counts
+4. **Manual application**: Contributors can review the diff and manually apply desired changes
+
+**Additional Workarounds**:
 1. **Manual approach**: Contributors can run the cleanup locally using the sandbox cleanup application
 2. **Branch access**: The cleanup branch is created but no PR is automatically opened; reviewers with repo access could manually create the PR
 3. **Personal Access Token**: Repository admins could potentially use a PAT with broader permissions (not recommended for security reasons)
 
-**Future Enhancement**: Consider implementing a different workflow pattern for forked PRs, such as:
-- Posting cleanup suggestions as review comments instead of creating PRs
-- Using a bot account with explicit fork permissions
-- Providing cleanup as a downloadable patch file
+**Future Enhancement**: Consider additional improvements for forked PRs, such as:
+- More intelligent review comment placement based on semantic changes
+- Downloadable patch file generation
+- Integration with GitHub's suggested changes feature
 
 ---
 
@@ -83,6 +89,7 @@ The composite action now:
 - [ ] Add dry-run mode that shows what would be cleaned without modifying files
 - [x] Generate cleanup change reports as PR comments
 - [x] Create separate cleanup PRs targeting original PRs (allows accept/reject/modify workflow)
+- [x] Add review comments fallback for forked repository PRs
 - [ ] Support custom Eclipse preferences
 - [ ] Add option to fail PR if cleanup produces changes (enforce clean code)
 - [ ] Add fine-grained control: separate commits by cleanup category (formatting vs refactoring)
