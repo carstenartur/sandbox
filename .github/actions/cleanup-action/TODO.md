@@ -56,8 +56,10 @@ The composite action now:
 ### Features
 - [ ] Add dry-run mode that shows what would be cleaned without modifying files
 - [x] Generate cleanup change reports as PR comments
+- [x] Create separate cleanup PRs targeting original PRs (allows accept/reject/modify workflow)
 - [ ] Support custom Eclipse preferences
 - [ ] Add option to fail PR if cleanup produces changes (enforce clean code)
+- [ ] Add fine-grained control: separate commits by cleanup category (formatting vs refactoring)
 
 ### Testing
 - [ ] Add integration tests for Docker action

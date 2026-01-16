@@ -78,22 +78,37 @@ jobs:
         echo "$DIFF_PREVIEW" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
         
-    - name: Commit and push changes
+    - name: Create cleanup branch and commit changes
+      id: create_branch
       if: steps.check_changes.outputs.has_changes == 'true'
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
+        
+        # Create a unique cleanup branch name
+        CLEANUP_BRANCH="cleanup/${{ github.event.pull_request.head.ref }}-${{ github.run_number }}"
+        echo "cleanup_branch=$CLEANUP_BRANCH" >> $GITHUB_OUTPUT
+        
+        # Create and switch to cleanup branch
+        git checkout -b "$CLEANUP_BRANCH"
+        
+        # Commit changes
         git add -A
         git commit -m "🧹 Cleanup: Apply Eclipse JDT transformations (${{ steps.changes.outputs.changed_count }} files)" \
           -m "Geänderte Dateien:" \
           -m "${{ steps.changes.outputs.changed_list }}"
-        git push
         
-    - name: Comment on PR
+        # Push to remote
+        git push origin "$CLEANUP_BRANCH"
+        
+    - name: Create cleanup PR
+      id: create_pr
       if: steps.check_changes.outputs.has_changes == 'true'
       uses: actions/github-script@v8
       with:
         script: |
+          const cleanupBranch = '${{ steps.create_branch.outputs.cleanup_branch }}';
+          const baseBranch = '${{ github.event.pull_request.head.ref }}';
           const changedCount = '${{ steps.changes.outputs.changed_count }}';
           const diffStat = '${{ steps.changes.outputs.diff_stat }}';
           const changedList = `${{ steps.changes.outputs.changed_list }}`;
@@ -104,29 +119,67 @@ jobs:
             .map(f => `- \`${f}\``)
             .join('\n');
           
+          // Create PR
+          const prBody = '## 🧹 Sandbox Cleanup Vorschlag\n\n' +
+                         '**Dies ist ein automatisch generierter Cleanup-PR.** Sie können diese Änderungen:\n' +
+                         '- ✅ **Akzeptieren**: Mergen Sie diesen PR\n' +
+                         '- ❌ **Ablehnen**: Schließen Sie diesen PR ohne zu mergen\n' +
+                         '- ✏️ **Anpassen**: Bearbeiten Sie die Dateien in diesem PR vor dem Merge\n\n' +
+                         '### Zusammenfassung\n' +
+                         `- **Geänderte Dateien:** ${changedCount}\n` +
+                         `- **Statistik:** ${diffStat}\n\n` +
+                         '### Geänderte Dateien\n' +
+                         changedFiles + '\n\n' +
+                         '### Angewendete Transformationen\n' +
+                         '- ✨ Code-Formatierung und Import-Organisation\n' +
+                         '- 📝 Fehlende Annotations hinzugefügt (@Override, @Deprecated)\n' +
+                         '- 🧹 Unnötigen Code entfernt (Casts, unbenutzte Variablen)\n' +
+                         '- 🚀 Code modernisiert (Lambdas, funktionale Interfaces)\n' +
+                         '- 🔧 Sandbox-spezifische Cleanups angewendet\n\n' +
+                         '### Diff-Vorschau\n' +
+                         '<details>\n' +
+                         '<summary>Klicken um Diff anzuzeigen</summary>\n\n' +
+                         '```diff\n' +
+                         diffPreview + '\n' +
+                         '```\n' +
+                         '</details>\n\n' +
+                         '**Profil:** standard\n\n' +
+                         `**Ziel-PR:** #${{ github.event.pull_request.number }}`;
+          
+          const { data: newPR } = await github.rest.pulls.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: `🧹 Cleanup für PR #${{ github.event.pull_request.number }}: ${changedCount} Dateien`,
+            head: cleanupBranch,
+            base: baseBranch,
+            body: prBody
+          });
+          
+          core.setOutput('pr_number', newPR.number);
+          core.setOutput('pr_url', newPR.html_url);
+          return newPR.number;
+        
+    - name: Comment on original PR
+      if: steps.check_changes.outputs.has_changes == 'true'
+      uses: actions/github-script@v8
+      with:
+        script: |
+          const cleanupPrNumber = '${{ steps.create_pr.outputs.pr_number }}';
+          const cleanupPrUrl = '${{ steps.create_pr.outputs.pr_url }}';
+          const changedCount = '${{ steps.changes.outputs.changed_count }}';
+          
           github.rest.issues.createComment({
             issue_number: context.issue.number,
             owner: context.repo.owner,
             repo: context.repo.repo,
-            body: '## 🧹 Sandbox Cleanup Angewendet\n\n' +
-                  '### Zusammenfassung\n' +
-                  `- **Geänderte Dateien:** ${changedCount}\n` +
-                  `- **Statistik:** ${diffStat}\n\n` +
-                  '### Geänderte Dateien\n' +
-                  changedFiles + '\n\n' +
-                  '### Angewendete Transformationen\n' +
-                  '- ✨ Code-Formatierung und Import-Organisation\n' +
-                  '- 📝 Fehlende Annotations hinzugefügt (@Override, @Deprecated)\n' +
-                  '- 🧹 Unnötigen Code entfernt (Casts, unbenutzte Variablen)\n' +
-                  '- 🚀 Code modernisiert (Lambdas, funktionale Interfaces)\n' +
-                  '- 🔧 Sandbox-spezifische Cleanups angewendet\n\n' +
-                  '### Diff-Vorschau\n' +
-                  '<details>\n' +
-                  '<summary>Klicken um Diff anzuzeigen</summary>\n\n' +
-                  '```diff\n' +
-                  diffPreview + '\n' +
-                  '```\n' +
-                  '</details>\n\n' +
-                  '**Profil:** standard\n\n' +
-                  'Bitte die Änderungen überprüfen.'
+            body: `## 🧹 Cleanup-Vorschläge Verfügbar\n\n` +
+                  `Der automatische Cleanup-Prozess hat **${changedCount} Dateien** analysiert und Verbesserungen gefunden.\n\n` +
+                  `### 📋 Cleanup-PR: #${cleanupPrNumber}\n` +
+                  `🔗 ${cleanupPrUrl}\n\n` +
+                  `### Ihre Optionen:\n` +
+                  `1. ✅ **Alle Änderungen akzeptieren**: Mergen Sie PR #${cleanupPrNumber}\n` +
+                  `2. ✏️ **Änderungen anpassen**: Bearbeiten Sie die Dateien in PR #${cleanupPrNumber} und mergen Sie dann\n` +
+                  `3. ❌ **Änderungen ablehnen**: Schließen Sie PR #${cleanupPrNumber} und fahren Sie mit Ihrem ursprünglichen PR fort\n\n` +
+                  `Der Cleanup-PR enthält detaillierte Informationen über alle vorgeschlagenen Änderungen.`
           })
+
