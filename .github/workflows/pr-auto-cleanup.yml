@@ -85,8 +85,10 @@ jobs:
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
         
-        # Create a unique cleanup branch name
-        CLEANUP_BRANCH="cleanup/${{ github.event.pull_request.head.ref }}-${{ github.run_number }}"
+        # Create a unique cleanup branch name, sanitizing slashes in the base branch
+        BASE_BRANCH="${{ github.event.pull_request.head.ref }}"
+        SANITIZED_BASE_BRANCH="${BASE_BRANCH//\//-}"
+        CLEANUP_BRANCH="cleanup/${SANITIZED_BASE_BRANCH}-${{ github.run_number }}"
         echo "cleanup_branch=$CLEANUP_BRANCH" >> $GITHUB_OUTPUT
         
         # Create and switch to cleanup branch
