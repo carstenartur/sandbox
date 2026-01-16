@@ -1,10 +1,6 @@
 # Automatic PR Code Cleanup using Sandbox Cleanup Application
 # This workflow automatically applies Eclipse JDT cleanup transformations to pull requests
-# Uses the Docker-based action that wraps the sandbox cleanup application
-#
-# TEMPORARILY DISABLED: The Docker action has a build context issue that prevents it from working.
-# See .github/actions/cleanup-action/TODO.md for details on the problem and investigation needed.
-# This workflow will be re-enabled once the Docker build architecture is fixed.
+# Uses the composite action that wraps the sandbox cleanup application
 #
 # LIMITATIONS:
 # - This workflow has limited support for pull requests from forked repositories.
@@ -15,16 +11,13 @@
 
 name: Auto PR Cleanup
 
-# Temporarily disabled - uncomment 'on:' section to re-enable
-# on:
-#   pull_request:
-#     types: [opened, synchronize]
-#     branches: [main]
-#     paths:
-#       - '**.java'
-
 on:
-  workflow_dispatch:  # Only allow manual triggering for now
+  pull_request:
+    types: [opened, synchronize]
+    branches: [main]
+    paths:
+      - '**.java'
+  workflow_dispatch:  # Keep manual triggering as fallback
 
 permissions:
   contents: write
