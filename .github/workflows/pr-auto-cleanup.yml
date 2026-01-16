@@ -124,36 +124,36 @@ jobs:
             .join('\n');
           
           // Create PR
-          const prBody = '## 🧹 Sandbox Cleanup Vorschlag\n\n' +
-                         '**Dies ist ein automatisch generierter Cleanup-PR.** Sie können diese Änderungen:\n' +
-                         '- ✅ **Akzeptieren**: Mergen Sie diesen PR\n' +
-                         '- ❌ **Ablehnen**: Schließen Sie diesen PR ohne zu mergen\n' +
-                         '- ✏️ **Anpassen**: Bearbeiten Sie die Dateien in diesem PR vor dem Merge\n\n' +
-                         '### Zusammenfassung\n' +
-                         `- **Geänderte Dateien:** ${changedCount}\n` +
-                         `- **Statistik:** ${diffStat}\n\n` +
-                         '### Geänderte Dateien\n' +
+          const prBody = '## 🧹 Sandbox Cleanup Proposal\n\n' +
+                         '**This is an automatically generated cleanup pull request.** You can:\n' +
+                         '- ✅ **Accept**: Merge this pull request\n' +
+                         '- ❌ **Decline**: Close this pull request without merging\n' +
+                         '- ✏️ **Modify**: Edit the files in this pull request before merging\n\n' +
+                         '### Summary\n' +
+                         `- **Changed files:** ${changedCount}\n` +
+                         `- **Diff stats:** ${diffStat}\n\n` +
+                         '### Changed files\n' +
                          changedFiles + '\n\n' +
-                         '### Angewendete Transformationen\n' +
-                         '- ✨ Code-Formatierung und Import-Organisation\n' +
-                         '- 📝 Fehlende Annotations hinzugefügt (@Override, @Deprecated)\n' +
-                         '- 🧹 Unnötigen Code entfernt (Casts, unbenutzte Variablen)\n' +
-                         '- 🚀 Code modernisiert (Lambdas, funktionale Interfaces)\n' +
-                         '- 🔧 Sandbox-spezifische Cleanups angewendet\n\n' +
-                         '### Diff-Vorschau\n' +
+                         '### Applied transformations\n' +
+                         '- ✨ Code formatting and import organization\n' +
+                         '- 📝 Added missing annotations (@Override, @Deprecated)\n' +
+                         '- 🧹 Removed unnecessary code (casts, unused variables)\n' +
+                         '- 🚀 Modernized code (lambdas, functional interfaces)\n' +
+                         '- 🔧 Applied sandbox-specific cleanups\n\n' +
+                         '### Diff preview\n' +
                          '<details>\n' +
-                         '<summary>Klicken um Diff anzuzeigen</summary>\n\n' +
+                         '<summary>Click to show diff</summary>\n\n' +
                          '```diff\n' +
                          diffPreview + '\n' +
                          '```\n' +
                          '</details>\n\n' +
-                         '**Profil:** standard\n\n' +
-                         `**Ziel-PR:** #${{ github.event.pull_request.number }}`;
+                         '**Profile:** standard\n\n' +
+                         `**Target PR:** #${{ github.event.pull_request.number }}`;
           
           const { data: newPR } = await github.rest.pulls.create({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            title: `🧹 Cleanup für PR #${{ github.event.pull_request.number }}: ${changedCount} Dateien`,
+            title: `🧹 Cleanup for PR #${{ github.event.pull_request.number }}: ${changedCount} files`,
             head: cleanupBranch,
             base: baseBranch,
             body: prBody
