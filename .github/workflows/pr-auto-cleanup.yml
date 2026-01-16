@@ -52,25 +52,41 @@ jobs:
         else
           echo "has_changes=false" >> $GITHUB_OUTPUT
         fi
+
+    - name: Collect change details
+      id: changes
+      if: steps.check_changes.outputs.has_changes == 'true'
+      run: |
+        # Anzahl geänderter Dateien
+        CHANGED_FILES=$(git status --porcelain | wc -l)
+        echo "changed_count=$CHANGED_FILES" >> $GITHUB_OUTPUT
+        
+        # Liste der geänderten Dateien (erste 20)
+        CHANGED_LIST=$(git status --porcelain | awk '{print $2}' | head -20)
+        echo "changed_list<<EOF" >> $GITHUB_OUTPUT
+        echo "$CHANGED_LIST" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+        
+        # Diff-Statistik
+        git add -A
+        DIFF_STAT=$(git diff --cached --stat | tail -1)
+        echo "diff_stat=$DIFF_STAT" >> $GITHUB_OUTPUT
+        
+        # Kurze Diff-Vorschau (erste 100 Zeilen)
+        DIFF_PREVIEW=$(git diff --cached --no-color | head -100)
+        echo "diff_preview<<EOF" >> $GITHUB_OUTPUT
+        echo "$DIFF_PREVIEW" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
         
     - name: Commit and push changes
       if: steps.check_changes.outputs.has_changes == 'true'
-      env:
-        CLEANUP_COMMIT_MESSAGE: |
-          🤖 Apply Sandbox Eclipse JDT cleanup transformations
-
-          Automated cleanup applied using sandbox cleanup application:
-          - Code formatting and import organization
-          - Adding missing @Override and @Deprecated annotations
-          - Removing unnecessary code (casts, unused variables)
-          - Modernizing code (lambdas, functional interfaces)
-          - Applying sandbox-specific cleanups
-          - Code style improvements
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
-        git add .
-        git commit -m "$CLEANUP_COMMIT_MESSAGE"
+        git add -A
+        git commit -m "🧹 Cleanup: Apply Eclipse JDT transformations (${{ steps.changes.outputs.changed_count }} files)" \
+          -m "Geänderte Dateien:" \
+          -m "${{ steps.changes.outputs.changed_list }}"
         git push
         
     - name: Comment on PR
@@ -78,18 +94,39 @@ jobs:
       uses: actions/github-script@v8
       with:
         script: |
+          const changedCount = '${{ steps.changes.outputs.changed_count }}';
+          const diffStat = '${{ steps.changes.outputs.diff_stat }}';
+          const changedList = `${{ steps.changes.outputs.changed_list }}`;
+          const diffPreview = `${{ steps.changes.outputs.diff_preview }}`;
+          
+          const changedFiles = changedList.split('\n')
+            .filter(f => f.trim())
+            .map(f => `- \`${f}\``)
+            .join('\n');
+          
           github.rest.issues.createComment({
             issue_number: context.issue.number,
             owner: context.repo.owner,
             repo: context.repo.repo,
-            body: '🤖 **Sandbox Cleanup Applied**\n\n' +
-                  'The sandbox Eclipse JDT cleanup application has automatically processed this PR:\n\n' +
-                  '- ✨ Code formatting and import organization\n' +
-                  '- 📝 Added missing annotations (@Override, @Deprecated)\n' +
-                  '- 🧹 Removed unnecessary code (casts, unused variables)\n' +
-                  '- 🚀 Modernized code (lambdas, functional interfaces)\n' +
-                  '- 🔧 Applied sandbox-specific cleanups (encoding, platform helper, etc.)\n' +
-                  '- 💎 Code style improvements\n\n' +
-                  'Profile used: **standard**\n\n' +
-                  'Please review the changes.'
+            body: '## 🧹 Sandbox Cleanup Angewendet\n\n' +
+                  '### Zusammenfassung\n' +
+                  `- **Geänderte Dateien:** ${changedCount}\n` +
+                  `- **Statistik:** ${diffStat}\n\n` +
+                  '### Geänderte Dateien\n' +
+                  changedFiles + '\n\n' +
+                  '### Angewendete Transformationen\n' +
+                  '- ✨ Code-Formatierung und Import-Organisation\n' +
+                  '- 📝 Fehlende Annotations hinzugefügt (@Override, @Deprecated)\n' +
+                  '- 🧹 Unnötigen Code entfernt (Casts, unbenutzte Variablen)\n' +
+                  '- 🚀 Code modernisiert (Lambdas, funktionale Interfaces)\n' +
+                  '- 🔧 Sandbox-spezifische Cleanups angewendet\n\n' +
+                  '### Diff-Vorschau\n' +
+                  '<details>\n' +
+                  '<summary>Klicken um Diff anzuzeigen</summary>\n\n' +
+                  '```diff\n' +
+                  diffPreview + '\n' +
+                  '```\n' +
+                  '</details>\n\n' +
+                  '**Profil:** standard\n\n' +
+                  'Bitte die Änderungen überprüfen.'
           })

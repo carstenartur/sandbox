@@ -55,7 +55,7 @@ The composite action now:
 
 ### Features
 - [ ] Add dry-run mode that shows what would be cleaned without modifying files
-- [ ] Generate cleanup change reports as PR comments
+- [x] Generate cleanup change reports as PR comments
 - [ ] Support custom Eclipse preferences
 - [ ] Add option to fail PR if cleanup produces changes (enforce clean code)
 
