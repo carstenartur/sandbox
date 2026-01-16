@@ -99,7 +99,7 @@ jobs:
         # Commit changes
         git add -A
         git commit -m "🧹 Cleanup: Apply Eclipse JDT transformations (${{ steps.changes.outputs.changed_count }} files)" \
-          -m "Geänderte Dateien:" \
+          -m "Changed files:" \
           -m "${{ steps.changes.outputs.changed_list }}"
         
         # Push to remote
