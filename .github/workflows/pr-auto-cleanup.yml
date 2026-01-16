@@ -69,8 +69,10 @@ jobs:
         
         # Diff-Statistik
         git add -A
-        DIFF_STAT=$(git diff --cached --stat | tail -1)
-        echo "diff_stat=$DIFF_STAT" >> $GITHUB_OUTPUT
+        DIFF_STAT=$(git diff --cached --stat)
+        echo "diff_stat<<EOF" >> $GITHUB_OUTPUT
+        echo "$DIFF_STAT" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
         
         # Kurze Diff-Vorschau (erste 100 Zeilen)
         DIFF_PREVIEW=$(git diff --cached --no-color | head -100)
