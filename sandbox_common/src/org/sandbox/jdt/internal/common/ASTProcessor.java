@@ -304,6 +304,38 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	}
 
 	/**
+	 * Filters Assignment nodes by operator (e.g., PLUS_ASSIGN for +=).
+	 *
+	 * @param operator the operator to filter for (e.g., Assignment.Operator.PLUS_ASSIGN)
+	 * @param bs the predicate to test each matching node
+	 * @return a reference to this object.
+	 */
+	public ASTProcessor<E, V, T> callAssignmentVisitor(org.eclipse.jdt.core.dom.Assignment.Operator operator, BiPredicate<ASTNode, E> bs) {
+		Map<String, Object> map = Map.ofEntries(
+				new AbstractMap.SimpleEntry<>(HelperVisitor.OPERATOR, operator)
+				);
+		nodetypelist.put(VisitorEnum.Assignment, new NodeHolder(bs, null, map));
+		return this;
+	}
+
+	/**
+	 * Filters Assignment nodes by operator and allows navigation.
+	 *
+	 * @param operator the operator to filter for (e.g., Assignment.Operator.PLUS_ASSIGN)
+	 * @param bs the predicate to test each matching node
+	 * @param navigate optional function to navigate to a different node before the next visitor in the chain
+	 * @return a reference to this object.
+	 */
+	public ASTProcessor<E, V, T> callAssignmentVisitor(org.eclipse.jdt.core.dom.Assignment.Operator operator, BiPredicate<ASTNode, E> bs,
+			Function<ASTNode, ASTNode> navigate) {
+		Map<String, Object> map = Map.ofEntries(
+				new AbstractMap.SimpleEntry<>(HelperVisitor.OPERATOR, operator)
+				);
+		nodetypelist.put(VisitorEnum.Assignment, new NodeHolder(bs, navigate, map));
+		return this;
+	}
+
+	/**
 	 *
 	 * @param bs
 	 * @return a reference to this object.
@@ -439,6 +471,38 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	}
 
 	/**
+	 * Filters CatchClause nodes by exception type.
+	 *
+	 * @param exceptionType the type of exception to filter for
+	 * @param bs the predicate to test each matching node
+	 * @return a reference to this object.
+	 */
+	public ASTProcessor<E, V, T> callCatchClauseVisitor(Class<?> exceptionType, BiPredicate<ASTNode, E> bs) {
+		Map<String, Object> map = Map.ofEntries(
+				new AbstractMap.SimpleEntry<>(HelperVisitor.EXCEPTIONTYPE, exceptionType)
+				);
+		nodetypelist.put(VisitorEnum.CatchClause, new NodeHolder(bs, null, map));
+		return this;
+	}
+
+	/**
+	 * Filters CatchClause nodes by exception type and allows navigation.
+	 *
+	 * @param exceptionType the type of exception to filter for
+	 * @param bs the predicate to test each matching node
+	 * @param navigate optional function to navigate to a different node before the next visitor in the chain
+	 * @return a reference to this object.
+	 */
+	public ASTProcessor<E, V, T> callCatchClauseVisitor(Class<?> exceptionType, BiPredicate<ASTNode, E> bs,
+			Function<ASTNode, ASTNode> navigate) {
+		Map<String, Object> map = Map.ofEntries(
+				new AbstractMap.SimpleEntry<>(HelperVisitor.EXCEPTIONTYPE, exceptionType)
+				);
+		nodetypelist.put(VisitorEnum.CatchClause, new NodeHolder(bs, navigate, map));
+		return this;
+	}
+
+	/**
 	 *
 	 * @param bs
 	 * @return a reference to this object.
@@ -491,6 +555,23 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	public ASTProcessor<E, V, T> callClassInstanceCreationVisitor(BiPredicate<ClassInstanceCreation, E> bs,
 			Function<ASTNode, ASTNode> navigate) {
 		nodetypelist.put(VisitorEnum.ClassInstanceCreation, new NodeHolder(bs, navigate));
+		return this;
+	}
+
+	/**
+	 * Filters ClassInstanceCreation nodes by the type being instantiated and allows navigation.
+	 *
+	 * @param typeof the class type to filter for
+	 * @param bs the predicate to test each matching node
+	 * @param navigate optional function to navigate to a different node before the next visitor in the chain
+	 * @return a reference to this object.
+	 */
+	public ASTProcessor<E, V, T> callClassInstanceCreationVisitor(Class<?> typeof, BiPredicate<ClassInstanceCreation, E> bs,
+			Function<ASTNode, ASTNode> navigate) {
+		Map<String, Object> map = Map.ofEntries(
+				new AbstractMap.SimpleEntry<>(HelperVisitor.TYPEOF, typeof)
+				);
+		nodetypelist.put(VisitorEnum.ClassInstanceCreation, new NodeHolder(bs, navigate, map));
 		return this;
 	}
 
@@ -830,6 +911,38 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	}
 
 	/**
+	 * Filters FieldDeclaration nodes by field type.
+	 *
+	 * @param typeof the type of the field to filter for
+	 * @param bs the predicate to test each matching node
+	 * @return a reference to this object.
+	 */
+	public ASTProcessor<E, V, T> callFieldDeclarationVisitor(Class<?> typeof, BiPredicate<ASTNode, E> bs) {
+		Map<String, Object> map = Map.ofEntries(
+				new AbstractMap.SimpleEntry<>(HelperVisitor.TYPEOF, typeof)
+				);
+		nodetypelist.put(VisitorEnum.FieldDeclaration, new NodeHolder(bs, null, map));
+		return this;
+	}
+
+	/**
+	 * Filters FieldDeclaration nodes by field type and allows navigation.
+	 *
+	 * @param typeof the type of the field to filter for
+	 * @param bs the predicate to test each matching node
+	 * @param navigate optional function to navigate to a different node before the next visitor in the chain
+	 * @return a reference to this object.
+	 */
+	public ASTProcessor<E, V, T> callFieldDeclarationVisitor(Class<?> typeof, BiPredicate<ASTNode, E> bs,
+			Function<ASTNode, ASTNode> navigate) {
+		Map<String, Object> map = Map.ofEntries(
+				new AbstractMap.SimpleEntry<>(HelperVisitor.TYPEOF, typeof)
+				);
+		nodetypelist.put(VisitorEnum.FieldDeclaration, new NodeHolder(bs, navigate, map));
+		return this;
+	}
+
+	/**
 	 *
 	 * @param bs
 	 * @return a reference to this object.
@@ -847,6 +960,38 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	public ASTProcessor<E, V, T> callForStatementVisitor(BiPredicate<ASTNode, E> bs,
 			Function<ASTNode, ASTNode> navigate) {
 		nodetypelist.put(VisitorEnum.ForStatement, new NodeHolder(bs, navigate));
+		return this;
+	}
+
+	/**
+	 * Filters ForStatement nodes by the type of loop variable (useful for Iterator patterns).
+	 *
+	 * @param typeof the type of the loop variable to filter for
+	 * @param bs the predicate to test each matching node
+	 * @return a reference to this object.
+	 */
+	public ASTProcessor<E, V, T> callForStatementVisitor(Class<?> typeof, BiPredicate<ASTNode, E> bs) {
+		Map<String, Object> map = Map.ofEntries(
+				new AbstractMap.SimpleEntry<>(HelperVisitor.TYPEOF, typeof)
+				);
+		nodetypelist.put(VisitorEnum.ForStatement, new NodeHolder(bs, null, map));
+		return this;
+	}
+
+	/**
+	 * Filters ForStatement nodes by the type of loop variable and allows navigation.
+	 *
+	 * @param typeof the type of the loop variable to filter for
+	 * @param bs the predicate to test each matching node
+	 * @param navigate optional function to navigate to a different node before the next visitor in the chain
+	 * @return a reference to this object.
+	 */
+	public ASTProcessor<E, V, T> callForStatementVisitor(Class<?> typeof, BiPredicate<ASTNode, E> bs,
+			Function<ASTNode, ASTNode> navigate) {
+		Map<String, Object> map = Map.ofEntries(
+				new AbstractMap.SimpleEntry<>(HelperVisitor.TYPEOF, typeof)
+				);
+		nodetypelist.put(VisitorEnum.ForStatement, new NodeHolder(bs, navigate, map));
 		return this;
 	}
 
@@ -910,6 +1055,38 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	public ASTProcessor<E, V, T> callInfixExpressionVisitor(BiPredicate<ASTNode, E> bs,
 			Function<ASTNode, ASTNode> navigate) {
 		nodetypelist.put(VisitorEnum.InfixExpression, new NodeHolder(bs, navigate));
+		return this;
+	}
+
+	/**
+	 * Filters InfixExpression nodes by operator (e.g., PLUS for string concatenation).
+	 *
+	 * @param operator the operator to filter for (e.g., InfixExpression.Operator.PLUS)
+	 * @param bs the predicate to test each matching node
+	 * @return a reference to this object.
+	 */
+	public ASTProcessor<E, V, T> callInfixExpressionVisitor(org.eclipse.jdt.core.dom.InfixExpression.Operator operator, BiPredicate<ASTNode, E> bs) {
+		Map<String, Object> map = Map.ofEntries(
+				new AbstractMap.SimpleEntry<>(HelperVisitor.OPERATOR, operator)
+				);
+		nodetypelist.put(VisitorEnum.InfixExpression, new NodeHolder(bs, null, map));
+		return this;
+	}
+
+	/**
+	 * Filters InfixExpression nodes by operator and allows navigation.
+	 *
+	 * @param operator the operator to filter for (e.g., InfixExpression.Operator.PLUS)
+	 * @param bs the predicate to test each matching node
+	 * @param navigate optional function to navigate to a different node before the next visitor in the chain
+	 * @return a reference to this object.
+	 */
+	public ASTProcessor<E, V, T> callInfixExpressionVisitor(org.eclipse.jdt.core.dom.InfixExpression.Operator operator, BiPredicate<ASTNode, E> bs,
+			Function<ASTNode, ASTNode> navigate) {
+		Map<String, Object> map = Map.ofEntries(
+				new AbstractMap.SimpleEntry<>(HelperVisitor.OPERATOR, operator)
+				);
+		nodetypelist.put(VisitorEnum.InfixExpression, new NodeHolder(bs, navigate, map));
 		return this;
 	}
 
@@ -1180,6 +1357,38 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	public ASTProcessor<E, V, T> callMethodDeclarationVisitor(BiPredicate<ASTNode, E> bs,
 			Function<ASTNode, ASTNode> navigate) {
 		nodetypelist.put(VisitorEnum.MethodDeclaration, new NodeHolder(bs, navigate));
+		return this;
+	}
+
+	/**
+	 * Filters MethodDeclaration nodes by method name.
+	 *
+	 * @param methodName the name of the method to filter for
+	 * @param bs the predicate to test each matching node
+	 * @return a reference to this object.
+	 */
+	public ASTProcessor<E, V, T> callMethodDeclarationVisitor(String methodName, BiPredicate<ASTNode, E> bs) {
+		Map<String, Object> map = Map.ofEntries(
+				new AbstractMap.SimpleEntry<>(HelperVisitor.METHODNAME, methodName)
+				);
+		nodetypelist.put(VisitorEnum.MethodDeclaration, new NodeHolder(bs, null, map));
+		return this;
+	}
+
+	/**
+	 * Filters MethodDeclaration nodes by method name and allows navigation.
+	 *
+	 * @param methodName the name of the method to filter for
+	 * @param bs the predicate to test each matching node
+	 * @param navigate optional function to navigate to a different node before the next visitor in the chain
+	 * @return a reference to this object.
+	 */
+	public ASTProcessor<E, V, T> callMethodDeclarationVisitor(String methodName, BiPredicate<ASTNode, E> bs,
+			Function<ASTNode, ASTNode> navigate) {
+		Map<String, Object> map = Map.ofEntries(
+				new AbstractMap.SimpleEntry<>(HelperVisitor.METHODNAME, methodName)
+				);
+		nodetypelist.put(VisitorEnum.MethodDeclaration, new NodeHolder(bs, navigate, map));
 		return this;
 	}
 
@@ -1901,6 +2110,38 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	}
 
 	/**
+	 * Filters SuperMethodInvocation nodes by method name (consistent with MethodInvocationVisitor).
+	 *
+	 * @param methodName the name of the super method to filter for
+	 * @param bs the predicate to test each matching node
+	 * @return a reference to this object.
+	 */
+	public ASTProcessor<E, V, T> callSuperMethodInvocationVisitor(String methodName, BiPredicate<ASTNode, E> bs) {
+		Map<String, Object> map = Map.ofEntries(
+				new AbstractMap.SimpleEntry<>(HelperVisitor.METHODNAME, methodName)
+				);
+		nodetypelist.put(VisitorEnum.SuperMethodInvocation, new NodeHolder(bs, null, map));
+		return this;
+	}
+
+	/**
+	 * Filters SuperMethodInvocation nodes by method name and allows navigation.
+	 *
+	 * @param methodName the name of the super method to filter for
+	 * @param bs the predicate to test each matching node
+	 * @param navigate optional function to navigate to a different node before the next visitor in the chain
+	 * @return a reference to this object.
+	 */
+	public ASTProcessor<E, V, T> callSuperMethodInvocationVisitor(String methodName, BiPredicate<ASTNode, E> bs,
+			Function<ASTNode, ASTNode> navigate) {
+		Map<String, Object> map = Map.ofEntries(
+				new AbstractMap.SimpleEntry<>(HelperVisitor.METHODNAME, methodName)
+				);
+		nodetypelist.put(VisitorEnum.SuperMethodInvocation, new NodeHolder(bs, navigate, map));
+		return this;
+	}
+
+	/**
 	 *
 	 * @param bs
 	 * @return a reference to this object.
@@ -2148,6 +2389,38 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	public ASTProcessor<E, V, T> callTypeDeclarationVisitor(BiPredicate<ASTNode, E> bs,
 			Function<ASTNode, ASTNode> navigate) {
 		nodetypelist.put(VisitorEnum.TypeDeclaration, new NodeHolder(bs, navigate));
+		return this;
+	}
+
+	/**
+	 * Filters TypeDeclaration nodes by type name (class or interface name).
+	 *
+	 * @param typeName the name of the type to filter for
+	 * @param bs the predicate to test each matching node
+	 * @return a reference to this object.
+	 */
+	public ASTProcessor<E, V, T> callTypeDeclarationVisitor(String typeName, BiPredicate<ASTNode, E> bs) {
+		Map<String, Object> map = Map.ofEntries(
+				new AbstractMap.SimpleEntry<>(HelperVisitor.TYPENAME, typeName)
+				);
+		nodetypelist.put(VisitorEnum.TypeDeclaration, new NodeHolder(bs, null, map));
+		return this;
+	}
+
+	/**
+	 * Filters TypeDeclaration nodes by type name and allows navigation.
+	 *
+	 * @param typeName the name of the type to filter for
+	 * @param bs the predicate to test each matching node
+	 * @param navigate optional function to navigate to a different node before the next visitor in the chain
+	 * @return a reference to this object.
+	 */
+	public ASTProcessor<E, V, T> callTypeDeclarationVisitor(String typeName, BiPredicate<ASTNode, E> bs,
+			Function<ASTNode, ASTNode> navigate) {
+		Map<String, Object> map = Map.ofEntries(
+				new AbstractMap.SimpleEntry<>(HelperVisitor.TYPENAME, typeName)
+				);
+		nodetypelist.put(VisitorEnum.TypeDeclaration, new NodeHolder(bs, navigate, map));
 		return this;
 	}
 
