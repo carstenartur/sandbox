@@ -5,6 +5,12 @@
 # TEMPORARILY DISABLED: The Docker action has a build context issue that prevents it from working.
 # See .github/actions/cleanup-action/TODO.md for details on the problem and investigation needed.
 # This workflow will be re-enabled once the Docker build architecture is fixed.
+#
+# LIMITATIONS:
+# - This workflow does NOT support pull requests from forked repositories.
+#   The default GITHUB_TOKEN does not have write permissions to push branches or create PRs in forks.
+#   For forked PRs, the cleanup will run but the cleanup PR cannot be created automatically.
+#   Users can still manually access the cleanup branch if needed.
 
 name: Auto PR Cleanup
 
@@ -150,40 +156,74 @@ jobs:
                          '**Profile:** standard\n\n' +
                          `**Target PR:** #${{ github.event.pull_request.number }}`;
           
-          const { data: newPR } = await github.rest.pulls.create({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            title: `🧹 Cleanup for PR #${{ github.event.pull_request.number }}: ${changedCount} files`,
-            head: cleanupBranch,
-            base: baseBranch,
-            body: prBody
-          });
-          
-          core.setOutput('pr_number', newPR.number);
-          core.setOutput('pr_url', newPR.html_url);
-          return newPR.number;
+          try {
+            const { data: newPR } = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🧹 Cleanup for PR #${{ github.event.pull_request.number }}: ${changedCount} files`,
+              head: cleanupBranch,
+              base: baseBranch,
+              body: prBody
+            });
+            
+            core.setOutput('pr_number', newPR.number);
+            core.setOutput('pr_url', newPR.html_url);
+            core.setOutput('pr_created', 'true');
+            return newPR.number;
+          } catch (error) {
+            core.setOutput('pr_created', 'false');
+            core.setOutput('error_message', error.message);
+            core.warning(`Failed to create cleanup PR: ${error.message}`);
+            // Note: This workflow does not support forked repositories due to GITHUB_TOKEN permissions.
+            // For forked PRs, the cleanup changes are available in the branch but no PR can be created.
+            return null;
+          }
         
     - name: Comment on original PR
       if: steps.check_changes.outputs.has_changes == 'true'
       uses: actions/github-script@v8
       with:
         script: |
+          const prCreated = '${{ steps.create_pr.outputs.pr_created }}';
           const cleanupPrNumber = '${{ steps.create_pr.outputs.pr_number }}';
           const cleanupPrUrl = '${{ steps.create_pr.outputs.pr_url }}';
           const changedCount = '${{ steps.changes.outputs.changed_count }}';
+          const errorMessage = '${{ steps.create_pr.outputs.error_message }}';
+          const cleanupBranch = '${{ steps.create_branch.outputs.cleanup_branch }}';
+          
+          let commentBody;
+          
+          if (prCreated === 'true' && cleanupPrNumber) {
+            // Success case: PR was created
+            commentBody = `## 🧹 Cleanup suggestions available\n\n` +
+                          `The automatic cleanup process analyzed **${changedCount} files** and found improvements.\n\n` +
+                          `### 📋 Cleanup PR: #${cleanupPrNumber}\n` +
+                          `🔗 ${cleanupPrUrl}\n\n` +
+                          `### Your options:\n` +
+                          `1. ✅ **Accept all changes**: Merge PR #${cleanupPrNumber}\n` +
+                          `2. ✏️ **Adjust the changes**: Edit the files in PR #${cleanupPrNumber} and then merge\n` +
+                          `3. ❌ **Reject the changes**: Close PR #${cleanupPrNumber} and continue with your original PR\n\n` +
+                          `The cleanup PR contains detailed information about all proposed changes.`;
+          } else {
+            // Failure case: PR creation failed (likely due to fork permissions)
+            commentBody = `## 🧹 Cleanup suggestions available\n\n` +
+                          `The automatic cleanup process analyzed **${changedCount} files** and found improvements.\n\n` +
+                          `⚠️ **Note**: A cleanup PR could not be automatically created. This typically occurs when:\n` +
+                          `- The original PR is from a forked repository (GITHUB_TOKEN lacks write permissions to forks)\n` +
+                          `- There are API permission or rate limit issues\n\n` +
+                          `### Manual review option:\n` +
+                          `The cleanup changes are available in branch: \`${cleanupBranch}\`\n\n` +
+                          `You can manually review the changes by:\n` +
+                          `1. Checking out the branch: \`git fetch origin ${cleanupBranch} && git checkout ${cleanupBranch}\`\n` +
+                          `2. Reviewing the diff between your branch and the cleanup branch\n` +
+                          `3. Cherry-picking or merging the changes if desired\n\n` +
+                          `**Error details**: ${errorMessage || 'Unknown error'}`;
+          }
           
           github.rest.issues.createComment({
             issue_number: context.issue.number,
             owner: context.repo.owner,
             repo: context.repo.repo,
-            body: `## 🧹 Cleanup suggestions available\n\n` +
-                  `The automatic cleanup process analyzed **${changedCount} files** and found improvements.\n\n` +
-                  `### 📋 Cleanup PR: #${cleanupPrNumber}\n` +
-                  `🔗 ${cleanupPrUrl}\n\n` +
-                  `### Your options:\n` +
-                  `1. ✅ **Accept all changes**: Merge PR #${cleanupPrNumber}\n` +
-                  `2. ✏️ **Adjust the changes**: Edit the files in PR #${cleanupPrNumber} and then merge\n` +
-                  `3. ❌ **Reject the changes**: Close PR #${cleanupPrNumber} and continue with your original PR\n\n` +
-                  `The cleanup PR contains detailed information about all proposed changes.`
-          })
+            body: commentBody
+          });
 

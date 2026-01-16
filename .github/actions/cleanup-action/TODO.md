@@ -46,6 +46,32 @@ The composite action now:
 
 ---
 
+## Known Limitations
+
+### Forked Repository Support
+
+**Issue**: The cleanup workflow does not support pull requests from forked repositories.
+
+**Root Cause**: The default `GITHUB_TOKEN` provided to workflows does not have write permissions to forked repositories. This prevents:
+1. Pushing cleanup branches to the fork
+2. Creating pull requests within the fork
+
+**Impact**: 
+- For PRs from the main repository: ✅ Full functionality (cleanup PR created automatically)
+- For PRs from forked repositories: ⚠️ Limited functionality (cleanup runs but PR creation fails)
+
+**Workarounds for Forked PRs**:
+1. **Manual approach**: Contributors can run the cleanup locally using the sandbox cleanup application
+2. **Branch access**: The cleanup branch is created but no PR is automatically opened; reviewers with repo access could manually create the PR
+3. **Personal Access Token**: Repository admins could potentially use a PAT with broader permissions (not recommended for security reasons)
+
+**Future Enhancement**: Consider implementing a different workflow pattern for forked PRs, such as:
+- Posting cleanup suggestions as review comments instead of creating PRs
+- Using a bot account with explicit fork permissions
+- Providing cleanup as a downloadable patch file
+
+---
+
 ## Future Enhancements
 
 ### Performance Optimizations
