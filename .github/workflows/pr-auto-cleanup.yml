@@ -111,12 +111,12 @@ jobs:
       uses: actions/github-script@v8
       with:
         script: |
-          const cleanupBranch = '${{ steps.create_branch.outputs.cleanup_branch }}';
-          const baseBranch = '${{ github.event.pull_request.head.ref }}';
-          const changedCount = '${{ steps.changes.outputs.changed_count }}';
-          const diffStat = '${{ steps.changes.outputs.diff_stat }}';
-          const changedList = `${{ steps.changes.outputs.changed_list }}`;
-          const diffPreview = `${{ steps.changes.outputs.diff_preview }}`;
+          const cleanupBranch = ${{ toJSON(steps.create_branch.outputs.cleanup_branch) }};
+          const baseBranch = ${{ toJSON(github.event.pull_request.head.ref) }};
+          const changedCount = ${{ toJSON(steps.changes.outputs.changed_count) }};
+          const diffStat = ${{ toJSON(steps.changes.outputs.diff_stat) }};
+          const changedList = ${{ toJSON(steps.changes.outputs.changed_list) }};
+          const diffPreview = ${{ toJSON(steps.changes.outputs.diff_preview) }};
           
           const changedFiles = changedList.split('\n')
             .filter(f => f.trim())
