@@ -70,6 +70,18 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	 *
 	 */
 	public static final String PARAMTYPENAMES = "paramtypenames"; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String OPERATOR = "operator"; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String TYPENAME = "typename"; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String EXCEPTIONTYPE = "exceptiontype"; //$NON-NLS-1$
 
 	ASTVisitor astvisitor;
 
