@@ -536,7 +536,7 @@ public class ASTProcessorTest {
 		}).build(cu);
 
 		// Assert that PLUS expressions were found (string concatenations and arithmetic)
-		Assertions.assertTrue(dataholder.getOrDefault("count", 0) >= 2, //$NON-NLS-1$
+		Assertions.assertTrue((Integer) dataholder.getOrDefault("count", 0) >= 2, //$NON-NLS-1$
 				"Should find at least 2 PLUS expressions (string concatenation and arithmetic)");
 	}
 
