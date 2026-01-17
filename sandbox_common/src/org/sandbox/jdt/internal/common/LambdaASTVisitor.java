@@ -199,8 +199,18 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 				Class<?> exceptionType=(Class<?>) map.get(HelperVisitor.EXCEPTIONTYPE);
 				if(exceptionType != null) {
 					ITypeBinding binding= node.getException().getType().resolveBinding();
-					if(binding == null || !isTypeMatching(binding, exceptionType.getCanonicalName())) {
-						return true;
+					if(binding != null) {
+						if(!isTypeMatching(binding, exceptionType.getCanonicalName())) {
+							return true;
+						}
+					} else {
+						// Fallback to simple name matching when binding is null (e.g., in stub environments)
+						String typeName = node.getException().getType().toString();
+						String expectedSimpleName = exceptionType.getSimpleName();
+						String expectedFullName = exceptionType.getCanonicalName();
+						if(!typeName.equals(expectedSimpleName) && !typeName.equals(expectedFullName)) {
+							return true;
+						}
 					}
 				}
 			}
