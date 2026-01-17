@@ -135,10 +135,14 @@ public class ASTProcessorTest {
 			import org.eclipse.core.runtime.SubProgressMonitor;
 			import org.eclipse.jdt.internal.ui.wizards.NewWizardMessages;
 			public class Test extends ArrayList<String> {
-			    public void createPackageFragmentRoot(IProgressMonitor monitor) throws CoreException, InterruptedException {
-					monitor.beginTask(NewWizardMessages.NewSourceFolderWizardPage_operation, 3);
-					IProgressMonitor subProgressMonitor= new SubProgressMonitor(monitor, 1);
-					IProgressMonitor subProgressMonitor2= new SubProgressMonitor(monitor, 2);
+			    public void createPackageFragmentRoot(IProgressMonitor monitor) {
+					try {
+						monitor.beginTask(NewWizardMessages.NewSourceFolderWizardPage_operation, 3);
+						IProgressMonitor subProgressMonitor= new SubProgressMonitor(monitor, 1);
+						IProgressMonitor subProgressMonitor2= new SubProgressMonitor(monitor, 2);
+					} catch (CoreException e) {
+						// Handle CoreException
+					}
 				}
 			}
 			""", "Test"); //$NON-NLS-1$ //$NON-NLS-2$
