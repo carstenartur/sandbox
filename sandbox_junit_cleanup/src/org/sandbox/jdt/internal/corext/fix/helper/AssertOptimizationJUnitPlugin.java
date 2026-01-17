@@ -22,10 +22,13 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ArrayCreation;
+import org.eclipse.jdt.core.dom.ArrayInitializer;
 import org.eclipse.jdt.core.dom.BooleanLiteral;
 import org.eclipse.jdt.core.dom.CharacterLiteral;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
@@ -90,6 +93,32 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSERT, "assertNotEquals", compilationUnit, dataHolder,
 				nodesprocessed, (visited, aholder) -> processEqualsAssertion(fixcore, operations, visited, aholder));
 		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_JUPITER_API_ASSERTIONS, "assertNotEquals", compilationUnit, dataHolder,
+				nodesprocessed, (visited, aholder) -> processEqualsAssertion(fixcore, operations, visited, aholder));
+		
+		// Find assertArrayEquals calls with swapped parameters
+		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSERT, "assertArrayEquals", compilationUnit, dataHolder,
+				nodesprocessed, (visited, aholder) -> processEqualsAssertion(fixcore, operations, visited, aholder));
+		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_JUPITER_API_ASSERTIONS, "assertArrayEquals", compilationUnit, dataHolder,
+				nodesprocessed, (visited, aholder) -> processEqualsAssertion(fixcore, operations, visited, aholder));
+		
+		// Find assertSame calls with swapped parameters
+		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSERT, "assertSame", compilationUnit, dataHolder,
+				nodesprocessed, (visited, aholder) -> processEqualsAssertion(fixcore, operations, visited, aholder));
+		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_JUPITER_API_ASSERTIONS, "assertSame", compilationUnit, dataHolder,
+				nodesprocessed, (visited, aholder) -> processEqualsAssertion(fixcore, operations, visited, aholder));
+		
+		// Find assertNotSame calls with swapped parameters
+		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSERT, "assertNotSame", compilationUnit, dataHolder,
+				nodesprocessed, (visited, aholder) -> processEqualsAssertion(fixcore, operations, visited, aholder));
+		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_JUPITER_API_ASSERTIONS, "assertNotSame", compilationUnit, dataHolder,
+				nodesprocessed, (visited, aholder) -> processEqualsAssertion(fixcore, operations, visited, aholder));
+		
+		// Find assertIterableEquals calls with swapped parameters (JUnit 5 only)
+		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_JUPITER_API_ASSERTIONS, "assertIterableEquals", compilationUnit, dataHolder,
+				nodesprocessed, (visited, aholder) -> processEqualsAssertion(fixcore, operations, visited, aholder));
+		
+		// Find assertLinesMatch calls with swapped parameters (JUnit 5 only)
+		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_JUPITER_API_ASSERTIONS, "assertLinesMatch", compilationUnit, dataHolder,
 				nodesprocessed, (visited, aholder) -> processEqualsAssertion(fixcore, operations, visited, aholder));
 	}
 
@@ -233,7 +262,9 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 
 	/**
 	 * Checks if an expression is a constant value.
-	 * Constants include literals, static final fields, and enum constants.
+	 * Constants include literals, static final fields, enum constants,
+	 * array creation with constant initializers, collection factory methods,
+	 * and method calls on literals.
 	 */
 	private boolean isConstantExpression(Expression expr) {
 		if (expr instanceof StringLiteral) {
@@ -269,6 +300,52 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 				// Check for static final fields
 				int modifiers = varBinding.getModifiers();
 				return Modifier.isStatic(modifiers) && Modifier.isFinal(modifiers);
+			}
+		}
+		
+		// Check for field access (e.g., Status.ACTIVE)
+		if (expr instanceof FieldAccess) {
+			FieldAccess fieldAccess = (FieldAccess) expr;
+			IVariableBinding varBinding = fieldAccess.resolveFieldBinding();
+			if (varBinding != null) {
+				if (varBinding.isEnumConstant()) {
+					return true;
+				}
+				int modifiers = varBinding.getModifiers();
+				return Modifier.isStatic(modifiers) && Modifier.isFinal(modifiers);
+			}
+		}
+		
+		// Array creation with initializer containing only constants
+		if (expr instanceof ArrayCreation) {
+			ArrayCreation arrayCreation = (ArrayCreation) expr;
+			ArrayInitializer initializer = arrayCreation.getInitializer();
+			if (initializer != null) {
+				return initializer.expressions().stream()
+					.allMatch(e -> isConstantExpression((Expression) e));
+			}
+		}
+		
+		// Collection factory methods: List.of(...), Set.of(...), Arrays.asList(...), Map.of(...)
+		if (expr instanceof MethodInvocation) {
+			MethodInvocation mi = (MethodInvocation) expr;
+			String name = mi.getName().getIdentifier();
+			Expression receiver = mi.getExpression();
+			
+			if (name.equals("of") || name.equals("asList")) {
+				if (receiver instanceof SimpleName) {
+					String receiverName = ((SimpleName) receiver).getIdentifier();
+					if (receiverName.equals("List") || receiverName.equals("Set") || 
+						receiverName.equals("Arrays") || receiverName.equals("Map")) {
+						return mi.arguments().stream()
+							.allMatch(arg -> isConstantExpression((Expression) arg));
+					}
+				}
+			}
+			
+			// Method call on string literal: "test".getBytes()
+			if (receiver instanceof StringLiteral) {
+				return true;
 			}
 		}
 		
@@ -396,8 +473,11 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 		
 		String methodName = mi.getName().getIdentifier();
 		
-		// Handle assertEquals/assertNotEquals parameter swapping
-		if ("assertEquals".equals(methodName) || "assertNotEquals".equals(methodName)) {
+		// Handle parameter swapping for methods with expected/actual parameters
+		if ("assertEquals".equals(methodName) || "assertNotEquals".equals(methodName) ||
+			"assertArrayEquals".equals(methodName) || "assertSame".equals(methodName) ||
+			"assertNotSame".equals(methodName) || "assertIterableEquals".equals(methodName) ||
+			"assertLinesMatch".equals(methodName)) {
 			handleEqualsAssertionSwap(mi, arguments, rewriter, group);
 			return;
 		}

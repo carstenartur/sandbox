@@ -713,4 +713,349 @@ public class AssertOptimizationTest {
 				"""
 		}, null);
 	}
+
+	@Test
+	public void swaps_assertArrayEquals_parameters() throws CoreException {
+		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
+				"""
+				package test;
+				import org.junit.jupiter.api.Assertions;
+				import org.junit.jupiter.api.Test;
+				
+				public class MyTest {
+					@Test
+					public void testArray() {
+						int[] result = getArray();
+						Assertions.assertArrayEquals(result, new int[]{1, 2, 3});
+					}
+					
+					private int[] getArray() {
+						return new int[]{1, 2, 3};
+					}
+				}
+				""", false, null);
+
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT_OPTIMIZATION);
+
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+				"""
+				package test;
+				import org.junit.jupiter.api.Assertions;
+				import org.junit.jupiter.api.Test;
+				
+				public class MyTest {
+					@Test
+					public void testArray() {
+						int[] result = getArray();
+						Assertions.assertArrayEquals(new int[]{1, 2, 3}, result);
+					}
+					
+					private int[] getArray() {
+						return new int[]{1, 2, 3};
+					}
+				}
+				"""
+		}, null);
+	}
+
+	@Test
+	public void swaps_assertSame_parameters() throws CoreException {
+		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
+				"""
+				package test;
+				import org.junit.jupiter.api.Assertions;
+				import org.junit.jupiter.api.Test;
+				
+				public class MyTest {
+					private static final String SINGLETON = "singleton";
+					
+					@Test
+					public void testSame() {
+						String result = getInstance();
+						Assertions.assertSame(result, SINGLETON);
+					}
+					
+					private String getInstance() {
+						return SINGLETON;
+					}
+				}
+				""", false, null);
+
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT_OPTIMIZATION);
+
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+				"""
+				package test;
+				import org.junit.jupiter.api.Assertions;
+				import org.junit.jupiter.api.Test;
+				
+				public class MyTest {
+					private static final String SINGLETON = "singleton";
+					
+					@Test
+					public void testSame() {
+						String result = getInstance();
+						Assertions.assertSame(SINGLETON, result);
+					}
+					
+					private String getInstance() {
+						return SINGLETON;
+					}
+				}
+				"""
+		}, null);
+	}
+
+	@Test
+	public void swaps_assertNotSame_parameters() throws CoreException {
+		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
+				"""
+				package test;
+				import org.junit.jupiter.api.Assertions;
+				import org.junit.jupiter.api.Test;
+				
+				public class MyTest {
+					private static final String EXPECTED = "expected";
+					
+					@Test
+					public void testNotSame() {
+						String result = getObject();
+						Assertions.assertNotSame(result, EXPECTED);
+					}
+					
+					private String getObject() {
+						return new String("different");
+					}
+				}
+				""", false, null);
+
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT_OPTIMIZATION);
+
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+				"""
+				package test;
+				import org.junit.jupiter.api.Assertions;
+				import org.junit.jupiter.api.Test;
+				
+				public class MyTest {
+					private static final String EXPECTED = "expected";
+					
+					@Test
+					public void testNotSame() {
+						String result = getObject();
+						Assertions.assertNotSame(EXPECTED, result);
+					}
+					
+					private String getObject() {
+						return new String("different");
+					}
+				}
+				"""
+		}, null);
+	}
+
+	@Test
+	public void swaps_assertIterableEquals_parameters() throws CoreException {
+		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
+				"""
+				package test;
+				import java.util.List;
+				import org.junit.jupiter.api.Assertions;
+				import org.junit.jupiter.api.Test;
+				
+				public class MyTest {
+					@Test
+					public void testIterable() {
+						List<Integer> result = getList();
+						Assertions.assertIterableEquals(result, List.of(1, 2, 3));
+					}
+					
+					private List<Integer> getList() {
+						return List.of(1, 2, 3);
+					}
+				}
+				""", false, null);
+
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT_OPTIMIZATION);
+
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+				"""
+				package test;
+				import java.util.List;
+				import org.junit.jupiter.api.Assertions;
+				import org.junit.jupiter.api.Test;
+				
+				public class MyTest {
+					@Test
+					public void testIterable() {
+						List<Integer> result = getList();
+						Assertions.assertIterableEquals(List.of(1, 2, 3), result);
+					}
+					
+					private List<Integer> getList() {
+						return List.of(1, 2, 3);
+					}
+				}
+				"""
+		}, null);
+	}
+
+	@Test
+	public void swaps_assertLinesMatch_parameters() throws CoreException {
+		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
+				"""
+				package test;
+				import java.util.List;
+				import org.junit.jupiter.api.Assertions;
+				import org.junit.jupiter.api.Test;
+				
+				public class MyTest {
+					@Test
+					public void testLines() {
+						List<String> result = getLines();
+						Assertions.assertLinesMatch(result, List.of("line1", "line2"));
+					}
+					
+					private List<String> getLines() {
+						return List.of("line1", "line2");
+					}
+				}
+				""", false, null);
+
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT_OPTIMIZATION);
+
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+				"""
+				package test;
+				import java.util.List;
+				import org.junit.jupiter.api.Assertions;
+				import org.junit.jupiter.api.Test;
+				
+				public class MyTest {
+					@Test
+					public void testLines() {
+						List<String> result = getLines();
+						Assertions.assertLinesMatch(List.of("line1", "line2"), result);
+					}
+					
+					private List<String> getLines() {
+						return List.of("line1", "line2");
+					}
+				}
+				"""
+		}, null);
+	}
+
+	@Test
+	public void swaps_assertEquals_with_constant_field() throws CoreException {
+		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
+				"""
+				package test;
+				import org.junit.jupiter.api.Assertions;
+				import org.junit.jupiter.api.Test;
+				
+				public class MyTest {
+					private static final String EXPECTED_VALUE = "expected";
+					
+					@Test
+					public void testValue() {
+						String result = getResult();
+						Assertions.assertEquals(result, EXPECTED_VALUE);
+					}
+					
+					private String getResult() {
+						return "expected";
+					}
+				}
+				""", false, null);
+
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT_OPTIMIZATION);
+
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+				"""
+				package test;
+				import org.junit.jupiter.api.Assertions;
+				import org.junit.jupiter.api.Test;
+				
+				public class MyTest {
+					private static final String EXPECTED_VALUE = "expected";
+					
+					@Test
+					public void testValue() {
+						String result = getResult();
+						Assertions.assertEquals(EXPECTED_VALUE, result);
+					}
+					
+					private String getResult() {
+						return "expected";
+					}
+				}
+				"""
+		}, null);
+	}
+
+	@Test
+	public void swaps_assertArrayEquals_with_getBytes() throws CoreException {
+		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
+				"""
+				package test;
+				import org.junit.jupiter.api.Assertions;
+				import org.junit.jupiter.api.Test;
+				
+				public class MyTest {
+					@Test
+					public void testBytes() {
+						byte[] result = getBytes();
+						Assertions.assertArrayEquals(result, "test".getBytes());
+					}
+					
+					private byte[] getBytes() {
+						return "test".getBytes();
+					}
+				}
+				""", false, null);
+
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT_OPTIMIZATION);
+
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+				"""
+				package test;
+				import org.junit.jupiter.api.Assertions;
+				import org.junit.jupiter.api.Test;
+				
+				public class MyTest {
+					@Test
+					public void testBytes() {
+						byte[] result = getBytes();
+						Assertions.assertArrayEquals("test".getBytes(), result);
+					}
+					
+					private byte[] getBytes() {
+						return "test".getBytes();
+					}
+				}
+				"""
+		}, null);
+	}
 }
