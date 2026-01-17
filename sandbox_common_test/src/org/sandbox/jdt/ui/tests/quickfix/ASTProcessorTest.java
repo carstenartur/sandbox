@@ -490,19 +490,35 @@ public class ASTProcessorTest {
 	 */
 	@Test
 	public void testCatchClauseByExceptionType() {
-		// Use cunit3 which has catch clauses
+		// Create test code with IOException catch clause (standard Java class always in classpath)
+		ASTParser parser= ASTParser.newParser(AST.JLS_Latest);
+		CompilationUnit cu = createunit(parser,"""
+			package test;
+			import java.io.*;
+			public class Test {
+			    public void readFile() {
+					try {
+						FileReader fr = new FileReader("test.txt");
+						fr.read();
+					} catch (IOException e) {
+						// Handle IOException
+					}
+				}
+			}
+			""", "Test"); //$NON-NLS-1$ //$NON-NLS-2$
+
 		ReferenceHolder<String, Object> dataholder = new ReferenceHolder<>();
 		ASTProcessor<ReferenceHolder<String, Object>, String, Object> astp = 
 			new ASTProcessor<>(dataholder, null);
 		
-		astp.callCatchClauseVisitor(org.eclipse.core.runtime.CoreException.class, (node, holder) -> {
+		astp.callCatchClauseVisitor(java.io.IOException.class, (node, holder) -> {
 			holder.merge("count", 1, (a, b) -> (Integer) a + (Integer) b); //$NON-NLS-1$
 			return true;
-		}).build(cunit3);
+		}).build(cu);
 
-		// Assert that CoreException catch clauses were found
+		// Assert that IOException catch clauses were found
 		Assertions.assertEquals(1, dataholder.getOrDefault("count", 0), //$NON-NLS-1$
-				"Should find 1 catch clause for CoreException");
+				"Should find 1 catch clause for IOException");
 	}
 
 	/**
