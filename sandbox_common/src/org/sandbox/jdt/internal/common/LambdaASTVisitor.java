@@ -724,13 +724,15 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 		if (typeBinding == null || qualifiedName == null) {
 			return false;
 		}
+		// For generic types, use erasure to get the raw type
+		ITypeBinding erasedType = typeBinding.getErasure();
 		// Check for exact match or simple name match
-		if (qualifiedName.equals(typeBinding.getQualifiedName()) || 
-		    qualifiedName.equals(typeBinding.getName())) {
+		if (qualifiedName.equals(erasedType.getQualifiedName()) || 
+		    qualifiedName.equals(erasedType.getName())) {
 			return true;
 		}
 		// Check superclasses and interfaces
-		return isExternalResource(typeBinding, qualifiedName);
+		return isExternalResource(erasedType, qualifiedName);
 	}
 
 	@Override
