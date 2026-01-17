@@ -77,7 +77,19 @@ runs:
           *.tar.gz) tar -xzf "$PRODUCT_ZIP" -C /tmp/eclipse ;;
           *) echo "::error::Unsupported or missing archive format: $PRODUCT_ZIP"; exit 1 ;;
         esac
-        chmod +x /tmp/eclipse/eclipse/eclipse
+        
+        # The product is configured with includeLaunchers="false" and rootFolder="client"
+        # So we need to use the Equinox launcher JAR instead of a native executable
+        LAUNCHER_JAR=$(find /tmp/eclipse/client -name "org.eclipse.equinox.launcher_*.jar" | head -1)
+        if [ -z "$LAUNCHER_JAR" ]; then
+          echo "::error::Equinox launcher JAR not found in extracted product"
+          echo "Directory structure:"
+          ls -R /tmp/eclipse
+          exit 1
+        fi
+        
+        echo "Found launcher: $LAUNCHER_JAR"
+        echo "LAUNCHER_JAR=$LAUNCHER_JAR" >> $GITHUB_ENV
 
     # Step 6: Run the cleanup
     - name: Run cleanup
@@ -88,12 +100,21 @@ runs:
         INPUT_VERBOSE: ${{ inputs.verbose }}
         INPUT_QUIET: ${{ inputs.quiet }}
       run: |
-        # Verify Eclipse product exists
-        if [ ! -f /tmp/eclipse/eclipse/eclipse ]; then
-          echo "::error::Eclipse product not found at /tmp/eclipse/eclipse/eclipse"
-          echo "This usually means the build or cache restoration failed."
+        # Find launcher JAR (either from cache or freshly extracted)
+        if [ -z "$LAUNCHER_JAR" ]; then
+          LAUNCHER_JAR=$(find /tmp/eclipse/client -name "org.eclipse.equinox.launcher_*.jar" | head -1)
+        fi
+        
+        # Verify launcher exists
+        if [ ! -f "$LAUNCHER_JAR" ]; then
+          echo "::error::Equinox launcher JAR not found"
+          echo "Searched in /tmp/eclipse/client"
+          echo "Directory contents:"
+          ls -R /tmp/eclipse
           exit 1
         fi
+        
+        echo "Using launcher: $LAUNCHER_JAR"
         
         Xvfb :99 -screen 0 1280x1024x24 & XVFB_PID=$!
         trap 'if [ -n "${XVFB_PID:-}" ]; then kill "${XVFB_PID}" 2>/dev/null || true; fi' EXIT
@@ -132,6 +153,7 @@ runs:
         
         CLEANUP_ARGS+=("${SOURCE_PATH}")
         
-        /tmp/eclipse/eclipse/eclipse -nosplash \
+        # Use java to run the Equinox launcher JAR since includeLaunchers="false"
+        java -jar "$LAUNCHER_JAR" -nosplash \
           -application sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup \
           "${CLEANUP_ARGS[@]}" || echo "::warning::Cleanup completed with warnings"

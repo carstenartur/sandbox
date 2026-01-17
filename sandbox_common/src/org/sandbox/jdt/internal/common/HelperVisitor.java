@@ -70,6 +70,22 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	 *
 	 */
 	public static final String PARAMTYPENAMES = "paramtypenames"; //$NON-NLS-1$
+	/**
+	 * Key used for matching the operator of expressions (for example,
+	 * {@link Assignment} and {@link InfixExpression}) when filtering nodes by
+	 * operator type.
+	 */
+	public static final String OPERATOR = "operator"; //$NON-NLS-1$
+	/**
+	 * Key used for matching the (fully qualified) name of a type associated with
+	 * a node when building or evaluating visitor predicates.
+	 */
+	public static final String TYPENAME = "typename"; //$NON-NLS-1$
+	/**
+	 * Key used for matching the type of an exception in constructs such as
+	 * {@code throws} declarations or {@link CatchClause} nodes.
+	 */
+	public static final String EXCEPTIONTYPE = "exceptiontype"; //$NON-NLS-1$
 
 	ASTVisitor astvisitor;
 

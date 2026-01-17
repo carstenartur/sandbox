@@ -33,6 +33,7 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.WhileStatement;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.internal.common.ASTProcessor;
@@ -134,10 +135,14 @@ public class ASTProcessorTest {
 			import org.eclipse.core.runtime.SubProgressMonitor;
 			import org.eclipse.jdt.internal.ui.wizards.NewWizardMessages;
 			public class Test extends ArrayList<String> {
-			    public void createPackageFragmentRoot(IProgressMonitor monitor) throws CoreException, InterruptedException {
-					monitor.beginTask(NewWizardMessages.NewSourceFolderWizardPage_operation, 3);
-					IProgressMonitor subProgressMonitor= new SubProgressMonitor(monitor, 1);
-					IProgressMonitor subProgressMonitor2= new SubProgressMonitor(monitor, 2);
+			    public void createPackageFragmentRoot(IProgressMonitor monitor) {
+					try {
+						monitor.beginTask(NewWizardMessages.NewSourceFolderWizardPage_operation, 3);
+						IProgressMonitor subProgressMonitor= new SubProgressMonitor(monitor, 1);
+						IProgressMonitor subProgressMonitor2= new SubProgressMonitor(monitor, 2);
+					} catch (CoreException e) {
+						// Handle CoreException
+					}
 				}
 			}
 			""", "Test"); //$NON-NLS-1$ //$NON-NLS-2$
@@ -348,6 +353,314 @@ public class ASTProcessorTest {
 		}).build(cunit2);
 
 		System.out.println("Total found: " + dataholder.getOrDefault("count", 0)); //$NON-NLS-1$
+	}
+
+	/**
+	 * Tests ClassInstanceCreation visitor with type filter and navigation.
+	 * 
+	 * <p>This test demonstrates using the type filter for class instance creation
+	 * combined with navigation to find related nodes in the AST.</p>
+	 */
+	@Test
+	public void testClassInstanceCreationWithTypeAndNavigate() {
+		ReferenceHolder<String, Object> dataholder = new ReferenceHolder<>();
+		ASTProcessor<ReferenceHolder<String, Object>, String, Object> astp = 
+			new ASTProcessor<>(dataholder, null);
+		
+		astp.callClassInstanceCreationVisitor(org.eclipse.core.runtime.SubProgressMonitor.class, 
+			(node, holder) -> {
+				holder.merge("count", 1, (a, b) -> (Integer) a + (Integer) b); //$NON-NLS-1$
+				return true;
+			}, 
+			ASTNode::getParent  // Navigate to parent
+		).build(cunit3);
+
+		// Assert that exactly 2 SubProgressMonitor instances were found in cunit3
+		Assertions.assertEquals(2, dataholder.getOrDefault("count", 0), //$NON-NLS-1$
+				"Should find 2 SubProgressMonitor instances in the test code");
+	}
+
+	/**
+	 * Tests MethodDeclaration visitor with method name filter.
+	 * 
+	 * <p>This test shows how to find method declarations by name, which is useful
+	 * for analyzing or refactoring specific methods.</p>
+	 */
+	@Test
+	public void testMethodDeclarationByName() {
+		ReferenceHolder<String, Object> dataholder = new ReferenceHolder<>();
+		ASTProcessor<ReferenceHolder<String, Object>, String, Object> astp = 
+			new ASTProcessor<>(dataholder, null);
+		
+		astp.callMethodDeclarationVisitor("createPackageFragmentRoot", (node, holder) -> { //$NON-NLS-1$
+			holder.put("method", node); //$NON-NLS-1$
+			return true;
+		}).build(cunit3);
+
+		// Assert that the method was found
+		Assertions.assertTrue(dataholder.containsKey("method"), //$NON-NLS-1$
+				"Should find the createPackageFragmentRoot method declaration");
+	}
+
+	/**
+	 * Tests ForStatement visitor with type filter for loop variables.
+	 * 
+	 * <p>This test demonstrates filtering for-loops by the type of their loop variable,
+	 * which is particularly useful for finding Iterator-based loops that can be
+	 * converted to enhanced for-loops.</p>
+	 */
+	@Test
+	public void testForStatementWithTypeFilter() {
+		// Create a test case with a for loop using Iterator
+		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
+		parser.setKind(ASTParser.K_COMPILATION_UNIT);
+		Map<String, String> options = JavaCore.getOptions();
+		JavaCore.setComplianceOptions(JavaCore.VERSION_17, options);
+		parser.setCompilerOptions(options);
+		
+		CompilationUnit cu = createunit(parser, """
+			package test;
+			import java.util.*;
+			public class Test {
+			    void m(List<String> list) {
+			        for (Iterator it = list.iterator(); it.hasNext(); ) {
+			            String s = (String) it.next();
+			        }
+			    }
+			}
+			""", "Test"); //$NON-NLS-1$ //$NON-NLS-2$
+
+		ReferenceHolder<String, Object> dataholder = new ReferenceHolder<>();
+		ASTProcessor<ReferenceHolder<String, Object>, String, Object> astp = 
+			new ASTProcessor<>(dataholder, null);
+		
+		astp.callForStatementVisitor(Iterator.class, (node, holder) -> {
+			holder.merge("count", 1, (a, b) -> (Integer) a + (Integer) b); //$NON-NLS-1$
+			return true;
+		}).build(cu);
+
+		// Assert that the Iterator for-loop was found
+		Assertions.assertEquals(1, dataholder.getOrDefault("count", 0), //$NON-NLS-1$
+				"Should find 1 for-loop with Iterator type");
+	}
+
+	/**
+	 * Tests FieldDeclaration visitor with type filter.
+	 * 
+	 * <p>This test demonstrates finding field declarations of a specific type,
+	 * useful for analyzing class structure or finding deprecated field types.</p>
+	 */
+	@Test
+	public void testFieldDeclarationByType() {
+		// Create a test case with field declarations
+		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
+		parser.setKind(ASTParser.K_COMPILATION_UNIT);
+		Map<String, String> options = JavaCore.getOptions();
+		JavaCore.setComplianceOptions(JavaCore.VERSION_17, options);
+		parser.setCompilerOptions(options);
+		
+		CompilationUnit cu = createunit(parser, """
+			package test;
+			import java.util.*;
+			public class Test {
+			    private List<String> items = new ArrayList<>();
+			    private String name;
+			}
+			""", "Test"); //$NON-NLS-1$ //$NON-NLS-2$
+
+		ReferenceHolder<String, Object> dataholder = new ReferenceHolder<>();
+		ASTProcessor<ReferenceHolder<String, Object>, String, Object> astp = 
+			new ASTProcessor<>(dataholder, null);
+		
+		astp.callFieldDeclarationVisitor(List.class, (node, holder) -> {
+			holder.merge("count", 1, (a, b) -> (Integer) a + (Integer) b); //$NON-NLS-1$
+			return true;
+		}).build(cu);
+
+		// Assert that the List field was found
+		Assertions.assertEquals(1, dataholder.getOrDefault("count", 0), //$NON-NLS-1$
+				"Should find 1 field declaration of type List");
+	}
+
+	/**
+	 * Tests CatchClause visitor with exception type filter.
+	 * 
+	 * <p>This test demonstrates finding catch clauses for specific exception types,
+	 * useful for analyzing error handling patterns.</p>
+	 */
+	@Test
+	public void testCatchClauseByExceptionType() {
+		// Create test code with IOException catch clause (standard Java class always in classpath)
+		ASTParser parser= ASTParser.newParser(AST.JLS_Latest);
+		CompilationUnit cu = createunit(parser,"""
+			package test;
+			import java.io.*;
+			public class Test {
+			    public void readFile() {
+					try {
+						FileReader fr = new FileReader("test.txt");
+						fr.read();
+					} catch (IOException e) {
+						// Handle IOException
+					}
+				}
+			}
+			""", "Test"); //$NON-NLS-1$ //$NON-NLS-2$
+
+		ReferenceHolder<String, Object> dataholder = new ReferenceHolder<>();
+		ASTProcessor<ReferenceHolder<String, Object>, String, Object> astp = 
+			new ASTProcessor<>(dataholder, null);
+		
+		astp.callCatchClauseVisitor(java.io.IOException.class, (node, holder) -> {
+			holder.merge("count", 1, (a, b) -> (Integer) a + (Integer) b); //$NON-NLS-1$
+			return true;
+		}).build(cu);
+
+		// Assert that IOException catch clauses were found
+		Assertions.assertEquals(1, dataholder.getOrDefault("count", 0), //$NON-NLS-1$
+				"Should find 1 catch clause for IOException");
+	}
+
+	/**
+	 * Tests InfixExpression visitor with operator filter.
+	 * 
+	 * <p>This test demonstrates finding infix expressions with specific operators,
+	 * such as string concatenation with the PLUS operator.</p>
+	 */
+	@Test
+	public void testInfixExpressionByOperator() {
+		// Create a test case with string concatenation
+		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
+		parser.setKind(ASTParser.K_COMPILATION_UNIT);
+		Map<String, String> options = JavaCore.getOptions();
+		JavaCore.setComplianceOptions(JavaCore.VERSION_17, options);
+		parser.setCompilerOptions(options);
+		
+		CompilationUnit cu = createunit(parser, """
+			package test;
+			public class Test {
+			    void m() {
+			        String s = "Hello" + " " + "World";
+			        int x = 1 + 2;
+			    }
+			}
+			""", "Test"); //$NON-NLS-1$ //$NON-NLS-2$
+
+		ReferenceHolder<String, Object> dataholder = new ReferenceHolder<>();
+		ASTProcessor<ReferenceHolder<String, Object>, String, Object> astp = 
+			new ASTProcessor<>(dataholder, null);
+		
+		astp.callInfixExpressionVisitor(org.eclipse.jdt.core.dom.InfixExpression.Operator.PLUS, (node, holder) -> {
+			holder.merge("count", 1, (a, b) -> (Integer) a + (Integer) b); //$NON-NLS-1$
+			return true;
+		}).build(cu);
+
+		// Assert that PLUS expressions were found (string concatenations and arithmetic)
+		Assertions.assertTrue((Integer) dataholder.getOrDefault("count", 0) >= 2, //$NON-NLS-1$
+				"Should find at least 2 PLUS expressions (string concatenation and arithmetic)");
+	}
+
+	/**
+	 * Tests Assignment visitor with operator filter.
+	 * 
+	 * <p>This test demonstrates finding assignments with compound operators
+	 * like +=, -=, etc.</p>
+	 */
+	@Test
+	public void testAssignmentByOperator() {
+		// Create a test case with compound assignments
+		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
+		parser.setKind(ASTParser.K_COMPILATION_UNIT);
+		Map<String, String> options = JavaCore.getOptions();
+		JavaCore.setComplianceOptions(JavaCore.VERSION_17, options);
+		parser.setCompilerOptions(options);
+		
+		CompilationUnit cu = createunit(parser, """
+			package test;
+			public class Test {
+			    void m() {
+			        int x = 5;
+			        x += 10;
+			        x -= 3;
+			    }
+			}
+			""", "Test"); //$NON-NLS-1$ //$NON-NLS-2$
+
+		ReferenceHolder<String, Object> dataholder = new ReferenceHolder<>();
+		ASTProcessor<ReferenceHolder<String, Object>, String, Object> astp = 
+			new ASTProcessor<>(dataholder, null);
+		
+		astp.callAssignmentVisitor(org.eclipse.jdt.core.dom.Assignment.Operator.PLUS_ASSIGN, (node, holder) -> {
+			holder.merge("count", 1, (a, b) -> (Integer) a + (Integer) b); //$NON-NLS-1$
+			return true;
+		}).build(cu);
+
+		// Assert that the += assignment was found
+		Assertions.assertEquals(1, dataholder.getOrDefault("count", 0), //$NON-NLS-1$
+				"Should find 1 += assignment");
+	}
+
+	/**
+	 * Tests TypeDeclaration visitor with type name filter.
+	 * 
+	 * <p>This test demonstrates finding type declarations (classes/interfaces) by name,
+	 * useful for analyzing specific types in a codebase.</p>
+	 */
+	@Test
+	public void testTypeDeclarationByName() {
+		ReferenceHolder<String, Object> dataholder = new ReferenceHolder<>();
+		ASTProcessor<ReferenceHolder<String, Object>, String, Object> astp = 
+			new ASTProcessor<>(dataholder, null);
+		
+		astp.callTypeDeclarationVisitor("Test", (node, holder) -> { //$NON-NLS-1$
+			holder.put("type", node); //$NON-NLS-1$
+			return true;
+		}).build(cunit2);
+
+		// Assert that the Test class was found
+		Assertions.assertTrue(dataholder.containsKey("type"), //$NON-NLS-1$
+				"Should find the Test class declaration");
+	}
+
+	/**
+	 * Tests SuperMethodInvocation visitor with method name filter.
+	 * 
+	 * <p>This test demonstrates finding super.methodName() calls, which is
+	 * consistent with the MethodInvocationVisitor API.</p>
+	 */
+	@Test
+	public void testSuperMethodInvocationByName() {
+		// Create a test case with super method calls
+		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
+		parser.setKind(ASTParser.K_COMPILATION_UNIT);
+		Map<String, String> options = JavaCore.getOptions();
+		JavaCore.setComplianceOptions(JavaCore.VERSION_17, options);
+		parser.setCompilerOptions(options);
+		
+		CompilationUnit cu = createunit(parser, """
+			package test;
+			public class Test extends BaseClass {
+			    void m() {
+			        super.toString();
+			        super.hashCode();
+			    }
+			}
+			class BaseClass {
+			}
+			""", "Test"); //$NON-NLS-1$ //$NON-NLS-2$
+
+		ReferenceHolder<String, Object> dataholder = new ReferenceHolder<>();
+		ASTProcessor<ReferenceHolder<String, Object>, String, Object> astp = 
+			new ASTProcessor<>(dataholder, null);
+		
+		astp.callSuperMethodInvocationVisitor("toString", (node, holder) -> { //$NON-NLS-1$
+			holder.merge("count", 1, (a, b) -> (Integer) a + (Integer) b); //$NON-NLS-1$
+			return true;
+		}).build(cu);
+
+		// Assert that the super.toString() call was found
+		Assertions.assertEquals(1, dataholder.getOrDefault("count", 0), //$NON-NLS-1$
+				"Should find 1 super.toString() call");
 	}
 
 	// Helper methods for analyzing Iterator patterns
