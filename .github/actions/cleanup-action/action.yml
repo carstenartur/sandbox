@@ -107,7 +107,7 @@ runs:
         SOURCE_PATH=$(realpath -m "${GITHUB_WORKSPACE}/${INPUT_SOURCE_DIR}")
         
         case "${CONFIG_PATH}" in
-          "${GITHUB_WORKSPACE}"/*) ;;
+          "${GITHUB_WORKSPACE}"|"${GITHUB_WORKSPACE}"/*) ;;
           *)
             echo "::error::Config file path escapes GITHUB_WORKSPACE: ${CONFIG_PATH}"
             exit 1
@@ -115,7 +115,7 @@ runs:
         esac
         
         case "${SOURCE_PATH}" in
-          "${GITHUB_WORKSPACE}"/*) ;;
+          "${GITHUB_WORKSPACE}"|"${GITHUB_WORKSPACE}"/*) ;;
           *)
             echo "::error::Source directory path escapes GITHUB_WORKSPACE: ${SOURCE_PATH}"
             exit 1
