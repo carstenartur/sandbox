@@ -133,6 +133,13 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	@Override
 	public boolean visit(Assignment node) {
 		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.Assignment)) {
+			Map<String, Object> map=(Map<String, Object>) this.helperVisitor.getSupplierData().get(VisitorEnum.Assignment);
+			if(map != null) {
+				Assignment.Operator operator=(Assignment.Operator) map.get(HelperVisitor.OPERATOR);
+				if(operator != null && !node.getOperator().equals(operator)) {
+					return true;
+				}
+			}
 			return ((BiPredicate<Assignment, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.Assignment)))
 					.test(node, this.helperVisitor.dataholder);
 		}
@@ -187,6 +194,16 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	@Override
 	public boolean visit(CatchClause node) {
 		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.CatchClause)) {
+			Map<String, Object> map=(Map<String, Object>) this.helperVisitor.getSupplierData().get(VisitorEnum.CatchClause);
+			if(map != null) {
+				Class<?> exceptionType=(Class<?>) map.get(HelperVisitor.EXCEPTIONTYPE);
+				if(exceptionType != null) {
+					ITypeBinding binding= node.getException().getType().resolveTypeBinding();
+					if(binding == null || !isTypeMatching(binding, exceptionType.getCanonicalName())) {
+						return true;
+					}
+				}
+			}
 			return ((BiPredicate<CatchClause, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.CatchClause)))
 					.test(node, this.helperVisitor.dataholder);
 		}
@@ -361,6 +378,13 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.FieldDeclaration)) {
 			Map<String, Object> map=(Map<String, Object>) this.helperVisitor.getSupplierData().get(VisitorEnum.FieldDeclaration);
 			if(map != null) {
+				Class<?> typeof=(Class<?>) map.get(HelperVisitor.TYPEOF);
+				if(typeof != null) {
+					ITypeBinding binding= node.getType().resolveBinding();
+					if(binding == null || !isTypeMatching(binding, typeof.getCanonicalName())) {
+						return true;
+					}
+				}
 				String superclassname=(String) map.get(HelperVisitor.SUPERCLASSNAME);
 				String annotationclass=(String) map.get(HelperVisitor.ANNOTATIONNAME);
 				if(superclassname != null && annotationclass != null) {
@@ -403,6 +427,26 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	@Override
 	public boolean visit(ForStatement node) {
 		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ForStatement)) {
+			Map<String, Object> map=(Map<String, Object>) this.helperVisitor.getSupplierData().get(VisitorEnum.ForStatement);
+			if(map != null) {
+				Class<?> typeof=(Class<?>) map.get(HelperVisitor.TYPEOF);
+				if(typeof != null) {
+					// Check if any initializer declares a variable of the specified type
+					boolean typeMatches = false;
+					for(Object init : node.initializers()) {
+						if(init instanceof VariableDeclarationExpression vde) {
+							ITypeBinding binding= vde.getType().resolveBinding();
+							if(binding != null && isTypeMatching(binding, typeof.getCanonicalName())) {
+								typeMatches = true;
+								break;
+							}
+						}
+					}
+					if(!typeMatches) {
+						return true;
+					}
+				}
+			}
 			return ((BiPredicate<ForStatement, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ForStatement)))
 					.test(node, this.helperVisitor.dataholder);
 		}
@@ -437,6 +481,13 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	@Override
 	public boolean visit(InfixExpression node) {
 		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.InfixExpression)) {
+			Map<String, Object> map=(Map<String, Object>) this.helperVisitor.getSupplierData().get(VisitorEnum.InfixExpression);
+			if(map != null) {
+				InfixExpression.Operator operator=(InfixExpression.Operator) map.get(HelperVisitor.OPERATOR);
+				if(operator != null && !node.getOperator().equals(operator)) {
+					return true;
+				}
+			}
 			return ((BiPredicate<InfixExpression, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.InfixExpression)))
 					.test(node, this.helperVisitor.dataholder);
 		}
@@ -567,6 +618,13 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	@Override
 	public boolean visit(MethodDeclaration node) {
 		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.MethodDeclaration)) {
+			Map<String, Object> map=(Map<String, Object>) this.helperVisitor.getSupplierData().get(VisitorEnum.MethodDeclaration);
+			if(map != null) {
+				String methodName=(String) map.get(HelperVisitor.METHODNAME);
+				if(methodName != null && !node.getName().getIdentifier().equals(methodName)) {
+					return true;
+				}
+			}
 			return ((BiPredicate<MethodDeclaration, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.MethodDeclaration)))
 					.test(node, this.helperVisitor.dataholder);
 		}
@@ -652,6 +710,27 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * Checks if the given type binding matches the specified qualified name.
+	 * Handles both exact matches and inheritance checks.
+	 *
+	 * @param typeBinding the type binding to check
+	 * @param qualifiedName the fully qualified name to match against
+	 * @return true if the type matches, false otherwise
+	 */
+	private static boolean isTypeMatching(ITypeBinding typeBinding, String qualifiedName) {
+		if (typeBinding == null || qualifiedName == null) {
+			return false;
+		}
+		// Check for exact match or simple name match
+		if (qualifiedName.equals(typeBinding.getQualifiedName()) || 
+		    qualifiedName.equals(typeBinding.getName())) {
+			return true;
+		}
+		// Check superclasses and interfaces
+		return isExternalResource(typeBinding, qualifiedName);
 	}
 
 	@Override
@@ -944,6 +1023,13 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	@Override
 	public boolean visit(SuperMethodInvocation node) {
 		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SuperMethodInvocation)) {
+			Map<String, Object> map=(Map<String, Object>) this.helperVisitor.getSupplierData().get(VisitorEnum.SuperMethodInvocation);
+			if(map != null) {
+				String methodName=(String) map.get(HelperVisitor.METHODNAME);
+				if(methodName != null && !node.getName().getIdentifier().equals(methodName)) {
+					return true;
+				}
+			}
 			return ((BiPredicate<SuperMethodInvocation, E>) (this.helperVisitor.predicatemap
 					.get(VisitorEnum.SuperMethodInvocation))).test(node, this.helperVisitor.dataholder);
 		}
@@ -1054,6 +1140,10 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.TypeDeclaration)) {
 			Map<String, Object> map=(Map<String, Object>) this.helperVisitor.getSupplierData().get(VisitorEnum.TypeDeclaration);
 			if(map != null) {
+				String typeName=(String) map.get(HelperVisitor.TYPENAME);
+				if(typeName != null && !node.getName().getIdentifier().equals(typeName)) {
+					return true;
+				}
 				String superclassname=(String) map.get(HelperVisitor.SUPERCLASSNAME);
 				if(superclassname != null) {
 					boolean bothmatch=false;

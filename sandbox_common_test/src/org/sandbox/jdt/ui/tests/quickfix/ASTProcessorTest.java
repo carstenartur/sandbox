@@ -33,6 +33,7 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.WhileStatement;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.internal.common.ASTProcessor;
@@ -364,14 +365,15 @@ public class ASTProcessorTest {
 		
 		astp.callClassInstanceCreationVisitor(org.eclipse.core.runtime.SubProgressMonitor.class, 
 			(node, holder) -> {
-				System.out.println("Found SubProgressMonitor creation: " + node);
 				holder.merge("count", 1, (a, b) -> (Integer) a + (Integer) b); //$NON-NLS-1$
 				return true;
 			}, 
 			ASTNode::getParent  // Navigate to parent
 		).build(cunit3);
 
-		System.out.println("Total SubProgressMonitor instances: " + dataholder.getOrDefault("count", 0)); //$NON-NLS-1$
+		// Assert that exactly 2 SubProgressMonitor instances were found in cunit3
+		Assertions.assertEquals(2, dataholder.getOrDefault("count", 0), //$NON-NLS-1$
+				"Should find 2 SubProgressMonitor instances in the test code");
 	}
 
 	/**
@@ -387,12 +389,13 @@ public class ASTProcessorTest {
 			new ASTProcessor<>(dataholder, null);
 		
 		astp.callMethodDeclarationVisitor("createPackageFragmentRoot", (node, holder) -> { //$NON-NLS-1$
-			System.out.println("Found method declaration: " + node);
 			holder.put("method", node); //$NON-NLS-1$
 			return true;
 		}).build(cunit3);
 
-		System.out.println("Found method: " + dataholder.containsKey("method")); //$NON-NLS-1$
+		// Assert that the method was found
+		Assertions.assertTrue(dataholder.containsKey("method"), //$NON-NLS-1$
+				"Should find the createPackageFragmentRoot method declaration");
 	}
 
 	/**
@@ -428,12 +431,13 @@ public class ASTProcessorTest {
 			new ASTProcessor<>(dataholder, null);
 		
 		astp.callForStatementVisitor(Iterator.class, (node, holder) -> {
-			System.out.println("Found for loop with Iterator: " + node);
 			holder.merge("count", 1, (a, b) -> (Integer) a + (Integer) b); //$NON-NLS-1$
 			return true;
 		}).build(cu);
 
-		System.out.println("Total Iterator for-loops: " + dataholder.getOrDefault("count", 0)); //$NON-NLS-1$
+		// Assert that the Iterator for-loop was found
+		Assertions.assertEquals(1, dataholder.getOrDefault("count", 0), //$NON-NLS-1$
+				"Should find 1 for-loop with Iterator type");
 	}
 
 	/**
@@ -465,12 +469,13 @@ public class ASTProcessorTest {
 			new ASTProcessor<>(dataholder, null);
 		
 		astp.callFieldDeclarationVisitor(List.class, (node, holder) -> {
-			System.out.println("Found List field: " + node);
 			holder.merge("count", 1, (a, b) -> (Integer) a + (Integer) b); //$NON-NLS-1$
 			return true;
 		}).build(cu);
 
-		System.out.println("Total List fields: " + dataholder.getOrDefault("count", 0)); //$NON-NLS-1$
+		// Assert that the List field was found
+		Assertions.assertEquals(1, dataholder.getOrDefault("count", 0), //$NON-NLS-1$
+				"Should find 1 field declaration of type List");
 	}
 
 	/**
@@ -487,12 +492,13 @@ public class ASTProcessorTest {
 			new ASTProcessor<>(dataholder, null);
 		
 		astp.callCatchClauseVisitor(org.eclipse.core.runtime.CoreException.class, (node, holder) -> {
-			System.out.println("Found CoreException catch clause: " + node);
 			holder.merge("count", 1, (a, b) -> (Integer) a + (Integer) b); //$NON-NLS-1$
 			return true;
 		}).build(cunit3);
 
-		System.out.println("Total CoreException catches: " + dataholder.getOrDefault("count", 0)); //$NON-NLS-1$
+		// Assert that CoreException catch clauses were found
+		Assertions.assertEquals(1, dataholder.getOrDefault("count", 0), //$NON-NLS-1$
+				"Should find 1 catch clause for CoreException");
 	}
 
 	/**
@@ -525,12 +531,13 @@ public class ASTProcessorTest {
 			new ASTProcessor<>(dataholder, null);
 		
 		astp.callInfixExpressionVisitor(org.eclipse.jdt.core.dom.InfixExpression.Operator.PLUS, (node, holder) -> {
-			System.out.println("Found PLUS expression: " + node);
 			holder.merge("count", 1, (a, b) -> (Integer) a + (Integer) b); //$NON-NLS-1$
 			return true;
 		}).build(cu);
 
-		System.out.println("Total PLUS expressions: " + dataholder.getOrDefault("count", 0)); //$NON-NLS-1$
+		// Assert that PLUS expressions were found (string concatenations and arithmetic)
+		Assertions.assertTrue(dataholder.getOrDefault("count", 0) >= 2, //$NON-NLS-1$
+				"Should find at least 2 PLUS expressions (string concatenation and arithmetic)");
 	}
 
 	/**
@@ -564,12 +571,13 @@ public class ASTProcessorTest {
 			new ASTProcessor<>(dataholder, null);
 		
 		astp.callAssignmentVisitor(org.eclipse.jdt.core.dom.Assignment.Operator.PLUS_ASSIGN, (node, holder) -> {
-			System.out.println("Found += assignment: " + node);
 			holder.merge("count", 1, (a, b) -> (Integer) a + (Integer) b); //$NON-NLS-1$
 			return true;
 		}).build(cu);
 
-		System.out.println("Total += assignments: " + dataholder.getOrDefault("count", 0)); //$NON-NLS-1$
+		// Assert that the += assignment was found
+		Assertions.assertEquals(1, dataholder.getOrDefault("count", 0), //$NON-NLS-1$
+				"Should find 1 += assignment");
 	}
 
 	/**
@@ -585,12 +593,13 @@ public class ASTProcessorTest {
 			new ASTProcessor<>(dataholder, null);
 		
 		astp.callTypeDeclarationVisitor("Test", (node, holder) -> { //$NON-NLS-1$
-			System.out.println("Found Test class: " + node);
 			holder.put("type", node); //$NON-NLS-1$
 			return true;
 		}).build(cunit2);
 
-		System.out.println("Found Test class: " + dataholder.containsKey("type")); //$NON-NLS-1$
+		// Assert that the Test class was found
+		Assertions.assertTrue(dataholder.containsKey("type"), //$NON-NLS-1$
+				"Should find the Test class declaration");
 	}
 
 	/**
@@ -625,12 +634,13 @@ public class ASTProcessorTest {
 			new ASTProcessor<>(dataholder, null);
 		
 		astp.callSuperMethodInvocationVisitor("toString", (node, holder) -> { //$NON-NLS-1$
-			System.out.println("Found super.toString() call: " + node);
 			holder.merge("count", 1, (a, b) -> (Integer) a + (Integer) b); //$NON-NLS-1$
 			return true;
 		}).build(cu);
 
-		System.out.println("Total super.toString() calls: " + dataholder.getOrDefault("count", 0)); //$NON-NLS-1$
+		// Assert that the super.toString() call was found
+		Assertions.assertEquals(1, dataholder.getOrDefault("count", 0), //$NON-NLS-1$
+				"Should find 1 super.toString() call");
 	}
 
 	// Helper methods for analyzing Iterator patterns
