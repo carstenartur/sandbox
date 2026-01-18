@@ -533,4 +533,16 @@ public class StreamPipelineBuilder {
 		}
 		return null;
 	}
+	
+	/**
+	 * Gets the target collection variable name for COLLECT operations.
+	 * 
+	 * @return the target variable name, or null if no COLLECT operation exists
+	 */
+	public String getCollectTargetVariable() {
+		if (!analyzed || !convertible || collectDetector == null) {
+			return null;
+		}
+		return collectDetector.getTargetVariable();
+	}
 }
