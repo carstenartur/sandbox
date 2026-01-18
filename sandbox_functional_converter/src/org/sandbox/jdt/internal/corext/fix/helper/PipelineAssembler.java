@@ -66,6 +66,7 @@ public class PipelineAssembler {
 	
 	private Collection<String> usedVariableNames;
 	private ReducePatternDetector reduceDetector;
+	private CollectPatternDetector collectDetector;
 	private boolean needsArraysImport = false;
 
 	/**
@@ -110,6 +111,15 @@ public class PipelineAssembler {
 	 */
 	public void setReduceDetector(ReducePatternDetector detector) {
 		this.reduceDetector = detector;
+	}
+
+	/**
+	 * Sets the collect pattern detector (for target variable access).
+	 * 
+	 * @param detector the collect pattern detector
+	 */
+	public void setCollectDetector(CollectPatternDetector detector) {
+		this.collectDetector = detector;
 	}
 
 	/**
@@ -265,6 +275,11 @@ public class PipelineAssembler {
 			return wrapReduce(pipeline);
 		}
 
+		// Check for COLLECT operation
+		if (hasOperationType(OperationType.COLLECT)) {
+			return wrapCollect(pipeline);
+		}
+
 		// Default: wrap in ExpressionStatement
 		return ast.newExpressionStatement(pipeline);
 	}
@@ -314,6 +329,24 @@ public class PipelineAssembler {
 		if (accumulatorVariable != null) {
 			Assignment assignment = ast.newAssignment();
 			assignment.setLeftHandSide(ast.newSimpleName(accumulatorVariable));
+			assignment.setOperator(Assignment.Operator.ASSIGN);
+			assignment.setRightHandSide(pipeline);
+			return ast.newExpressionStatement(assignment);
+		}
+		
+		return ast.newExpressionStatement(pipeline);
+	}
+
+	/**
+	 * Wraps a COLLECT pipeline in an assignment statement.
+	 * Example: result = stream.collect(Collectors.toList());
+	 */
+	private Statement wrapCollect(MethodInvocation pipeline) {
+		String targetVariable = collectDetector != null ? collectDetector.getTargetVariable() : null;
+		
+		if (targetVariable != null) {
+			Assignment assignment = ast.newAssignment();
+			assignment.setLeftHandSide(ast.newSimpleName(targetVariable));
 			assignment.setOperator(Assignment.Operator.ASSIGN);
 			assignment.setRightHandSide(pipeline);
 			return ast.newExpressionStatement(assignment);
