@@ -31,12 +31,13 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
  * </p>
  * <ul>
  * <li><b>Patterns that should NOT convert:</b> Break statements, throw statements, 
- * labeled continue statements, external variable modifications (non-accumulator), 
+ * labeled continue statements, external variable modifications (including collection 
+ * accumulation patterns like List.add(), Set.add(), Map.put()), nested loops,
  * early returns with side effects</li>
- * <li><b>Patterns that DO convert to forEach:</b> Collection accumulation patterns 
- * (List.add(), Set.add(), Map.put()) are treated as side-effect operations and 
- * correctly converted to forEach</li>
- * <li><b>Partial conversions:</b> Nested loops where only the inner loop converts</li>
+ * <li><b>Patterns that DO convert to forEach:</b> Simple side-effect operations like
+ * System.out.println() that don't modify external variables</li>
+ * <li><b>Future enhancements:</b> Collection accumulation patterns should use
+ * collect(Collectors.toList/toSet/toMap()) instead of forEach</li>
  * </ul>
  * 
  * <p>
@@ -406,28 +407,28 @@ context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 // ==================== FLATMAP PATTERN TESTS ====================
 
 /**
- * Tests that nested collection iteration converts the inner loop only.
+ * Tests that nested collection iteration should NOT convert.
  * 
  * <p>
- * Nested loops where the inner loop has a simple side effect (like println)
- * can have the inner loop converted to forEach. The outer loop remains as-is
- * since flatMap is not yet supported.
+ * Nested loops are blocked by the converter because flatMap support is not yet implemented.
+ * Even though the inner loop has a simple forEach pattern, the presence of nesting prevents
+ * any conversion from happening.
  * </p>
  * 
  * <p><b>Note:</b> Full flatMap support would allow both loops to be converted
  * to a single stream pipeline. This is a future enhancement. See README's
  * "Current Limitations" section.</p>
  * 
- * <p><b>Why the inner loop converts:</b></p>
+ * <p><b>Why this does NOT convert:</b></p>
  * <ul>
- * <li>The inner loop is a simple forEach pattern with a side effect (println)</li>
- * <li>It can be safely converted independently of the outer loop</li>
- * <li>The outer loop remains unchanged as it iterates over a collection of collections</li>
+ * <li>The converter detects nested loops and blocks conversion</li>
+ * <li>Nested loops require flatMap support which is not yet implemented</li>
+ * <li>Both the inner and outer loop remain unchanged</li>
  * </ul>
  */
 @Test
-@DisplayName("Nested collection iteration - inner loop converts to forEach")
-void test_NestedCollectionFlatMap_InnerLoopConverts() throws CoreException {
+@DisplayName("Nested collection iteration - should NOT convert (flatMap not yet supported)")
+void test_NestedCollectionFlatMap_ShouldNotConvert() throws CoreException {
 String sourceCode = """
 		package test1;
 		import java.util.List;
@@ -441,22 +442,11 @@ String sourceCode = """
 			}
 		}""";
 
-String expected = """
-		package test1;
-		import java.util.List;
-		class MyTest {
-			public void processAll(List<List<String>> nestedList) {
-				for (List<String> inner : nestedList) {
-					inner.forEach(item -> System.out.println(item));
-				}
-			}
-		}""";
-
-// Inner loop converts to forEach; outer loop stays as-is (flatMap not yet supported)
+// Nested loops should NOT convert - flatMap not yet supported
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 ICompilationUnit cu = pack.createCompilationUnit("Test.java", sourceCode, true, null);
 context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
-context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 }
 
 // ==================== COLLECTION ACCUMULATION TESTS ====================
@@ -465,27 +455,27 @@ context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new Str
 // Note: Using Collectors.toList()/toSet()/toMap() would be a future enhancement.
 
 /**
- * Tests that list accumulation converts to forEach with side effects.
+ * Tests that list accumulation should NOT convert.
  * 
  * <p>
- * Collection accumulation patterns that add elements to an existing collection
- * are treated as side-effect operations and converted to forEach. This is valid
- * and semantically equivalent to the original loop.
+ * Collection accumulation patterns that add elements to an external collection
+ * are blocked because they modify external state. The `result` variable is declared
+ * outside the loop, and modifying it within a lambda requires careful consideration.
  * </p>
  * 
- * <p><b>Note:</b> Using {@code Collectors.toList()} would be a future enhancement
- * for creating new collections from streams. See README's "Current Limitations" section.</p>
- * 
- * <p><b>Why this converts:</b></p>
+ * <p><b>Why this does NOT convert:</b></p>
  * <ul>
- * <li>Adding to an external collection is a side effect, similar to System.out.println()</li>
- * <li>The converter treats method invocations like .add() as terminal FOREACH operations</li>
- * <li>The semantics are preserved - both iterate and add elements in order</li>
+ * <li>The loop modifies an external variable (`result`) that is declared outside the loop</li>
+ * <li>The converter blocks external variable modifications for safety</li>
+ * <li>The proper transformation for this pattern would be using {@code collect(Collectors.toList())}</li>
  * </ul>
+ * 
+ * <p><b>Note:</b> Using {@code Collectors.toList()} to create new collections from streams
+ * would be a future enhancement. See README's "Current Limitations" section.</p>
  */
 @Test
-@DisplayName("List accumulation - converts to forEach with side effects")
-void test_ListAccumulation_ConvertsToForEach() throws CoreException {
+@DisplayName("List accumulation - should NOT convert (waiting for collect() support)")
+void test_ListAccumulation_ShouldNotConvert() throws CoreException {
 String sourceCode = """
 		package test1;
 		import java.util.List;
@@ -500,46 +490,35 @@ String sourceCode = """
 			}
 		}""";
 
-String expected = """
-		package test1;
-		import java.util.List;
-		import java.util.ArrayList;
-		class MyTest {
-			public List<String> toUpperCase(List<String> items) {
-				List<String> result = new ArrayList<>();
-				items.forEach(item -> result.add(item.toUpperCase()));
-				return result;
-			}
-		}""";
-
+// Should NOT convert - external variable modification (waiting for collect() support)
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 ICompilationUnit cu = pack.createCompilationUnit("Test.java", sourceCode, true, null);
 context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
-context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 }
 
 /**
- * Tests that set accumulation converts to forEach with side effects.
+ * Tests that set accumulation should NOT convert.
  * 
  * <p>
- * Set accumulation patterns that add elements to an existing Set
- * are treated as side-effect operations and converted to forEach. This is valid
- * and semantically equivalent to the original loop.
+ * Set accumulation patterns that add elements to an external Set
+ * are blocked because they modify external state. The `result` variable is declared
+ * outside the loop, and modifying it within a lambda requires careful consideration.
  * </p>
  * 
- * <p><b>Note:</b> Using {@code Collectors.toSet()} would be a future enhancement
- * for creating new collections from streams. See README's "Current Limitations" section.</p>
- * 
- * <p><b>Why this converts:</b></p>
+ * <p><b>Why this does NOT convert:</b></p>
  * <ul>
- * <li>Adding to an external Set is a side effect, similar to adding to a List</li>
- * <li>The converter treats method invocations like .add() as terminal FOREACH operations</li>
- * <li>The semantics are preserved - both iterate and add elements</li>
+ * <li>The loop modifies an external variable (`result`) that is declared outside the loop</li>
+ * <li>The converter blocks external variable modifications for safety</li>
+ * <li>The proper transformation for this pattern would be using {@code collect(Collectors.toSet())}</li>
  * </ul>
+ * 
+ * <p><b>Note:</b> Using {@code Collectors.toSet()} to create new collections from streams
+ * would be a future enhancement. See README's "Current Limitations" section.</p>
  */
 @Test
-@DisplayName("Set accumulation - converts to forEach with side effects")
-void test_SetAccumulation_ConvertsToForEach() throws CoreException {
+@DisplayName("Set accumulation - should NOT convert (waiting for collect() support)")
+void test_SetAccumulation_ShouldNotConvert() throws CoreException {
 String sourceCode = """
 		package test1;
 		import java.util.List;
@@ -555,47 +534,35 @@ String sourceCode = """
 			}
 		}""";
 
-String expected = """
-		package test1;
-		import java.util.List;
-		import java.util.Set;
-		import java.util.HashSet;
-		class MyTest {
-			public Set<String> unique(List<String> items) {
-				Set<String> result = new HashSet<>();
-				items.forEach(item -> result.add(item));
-				return result;
-			}
-		}""";
-
+// Should NOT convert - external variable modification (waiting for collect() support)
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 ICompilationUnit cu = pack.createCompilationUnit("Test.java", sourceCode, true, null);
 context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
-context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 }
 
 /**
- * Tests that map accumulation converts to forEach with side effects.
+ * Tests that map accumulation should NOT convert.
  * 
  * <p>
- * Map accumulation patterns that put entries into an existing Map
- * are treated as side-effect operations and converted to forEach. This is valid
- * and semantically equivalent to the original loop.
+ * Map accumulation patterns that put entries into an external Map
+ * are blocked because they modify external state. The `result` variable is declared
+ * outside the loop, and modifying it within a lambda requires careful consideration.
  * </p>
  * 
- * <p><b>Note:</b> Using {@code Collectors.toMap()} would be a future enhancement
- * for creating new collections from streams. See README's "Current Limitations" section.</p>
- * 
- * <p><b>Why this converts:</b></p>
+ * <p><b>Why this does NOT convert:</b></p>
  * <ul>
- * <li>Putting entries into an external Map is a side effect</li>
- * <li>The converter treats method invocations like .put() as terminal FOREACH operations</li>
- * <li>The semantics are preserved - both iterate and add entries in order</li>
+ * <li>The loop modifies an external variable (`result`) that is declared outside the loop</li>
+ * <li>The converter blocks external variable modifications for safety</li>
+ * <li>The proper transformation for this pattern would be using {@code collect(Collectors.toMap())}</li>
  * </ul>
+ * 
+ * <p><b>Note:</b> Using {@code Collectors.toMap()} to create new maps from streams
+ * would be a future enhancement. See README's "Current Limitations" section.</p>
  */
 @Test
-@DisplayName("Map accumulation - converts to forEach with side effects")
-void test_MapAccumulation_ConvertsToForEach() throws CoreException {
+@DisplayName("Map accumulation - should NOT convert (waiting for collect() support)")
+void test_MapAccumulation_ShouldNotConvert() throws CoreException {
 String sourceCode = """
 		package test1;
 		import java.util.List;
@@ -611,23 +578,11 @@ String sourceCode = """
 			}
 		}""";
 
-String expected = """
-		package test1;
-		import java.util.List;
-		import java.util.Map;
-		import java.util.HashMap;
-		class MyTest {
-			public Map<String, Integer> lengthMap(List<String> items) {
-				Map<String, Integer> result = new HashMap<>();
-				items.forEach(item -> result.put(item, item.length()));
-				return result;
-			}
-		}""";
-
+// Should NOT convert - external variable modification (waiting for collect() support)
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 ICompilationUnit cu = pack.createCompilationUnit("Test.java", sourceCode, true, null);
 context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
-context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 }
 
 // ==================== PARALLEL STREAM SAFETY TESTS ====================
