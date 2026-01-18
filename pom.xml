@@ -63,6 +63,7 @@
 		<module>sandbox_usage_view</module>
 		<module>sandbox_usage_view_feature</module>
 		<module>sandbox_usage_view_test</module>
+		<module>sandbox_functional_converter_fast_test</module>
 		<module>sandbox_product</module>
 		<module>sandbox_updatesite</module>
 	</modules>
