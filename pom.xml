@@ -28,6 +28,7 @@
 		<module>sandbox_cleanup_application_test</module>
 		<module>sandbox_common</module>
 		<module>sandbox_common_test</module>
+		<module>sandbox_common_fast_test</module>
 		<module>sandbox_test_commons</module>
 		<module>sandbox_encoding_quickfix</module>
 		<module>sandbox_encoding_quickfix_feature</module>
@@ -344,6 +345,11 @@ See README.md for more information.
 			<dependency>
 				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_common_test</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_common_fast_test</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
