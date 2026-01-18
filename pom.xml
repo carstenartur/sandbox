@@ -35,6 +35,7 @@
 		<module>sandbox_encoding_quickfix_test</module>
 		<module>sandbox_extra_search</module>
 		<module>sandbox_extra_search_feature</module>
+		<module>sandbox_functional_converter_core</module>
 		<module>sandbox_functional_converter</module>
 		<module>sandbox_functional_converter_feature</module>
 		<module>sandbox_functional_converter_test</module>
