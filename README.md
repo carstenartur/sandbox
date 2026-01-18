@@ -255,6 +255,91 @@ This usually indicates a Java version mismatch. Check that:
 
 ---
 
+## Testing
+
+The sandbox project uses two complementary testing approaches:
+
+### 1. Traditional Eclipse/OSGi Integration Tests
+
+Located in modules ending with `_test` (e.g., `sandbox_common_test`, `sandbox_encoding_quickfix_test`):
+- **Packaging**: `eclipse-test-plugin`
+- **Test Runner**: Tycho with OSGi runtime
+- **Requirements**: Xvfb (on Linux), full Eclipse target platform
+- **Execution Time**: Several minutes (includes target resolution and OSGi startup)
+- **Use Cases**: 
+  - Tests requiring Eclipse workspace (`IWorkspace`, `IProject`)
+  - Tests using Eclipse UI components
+  - Full end-to-end cleanup workflow tests
+  - OSGi service interactions
+
+**Running integration tests:**
+```bash
+# IMPORTANT: Set Java 21 first
+export JAVA_HOME=/usr/lib/jvm/temurin-21-jdk-amd64
+export PATH=$JAVA_HOME/bin:$PATH
+
+# Run with Xvfb (required on Linux)
+xvfb-run --auto-servernum mvn test -Dtest=TestClassName -pl module_name_test
+```
+
+### 2. Fast Maven Unit Tests (NEW)
+
+Located in modules ending with `_fast_test` (e.g., `sandbox_common_fast_test`):
+- **Packaging**: Standard Maven `jar`
+- **Test Runner**: Maven Surefire (no OSGi runtime)
+- **Requirements**: None (no Xvfb, no target platform resolution)
+- **Execution Time**: Seconds (e.g., ~8-10 seconds for `sandbox_common_fast_test`)
+- **Use Cases**:
+  - Tests using only JDT Core AST APIs
+  - AST parsing and manipulation tests
+  - Pattern matchers and visitors
+  - Utility classes without Eclipse services
+  
+**Running fast tests:**
+```bash
+# No special setup required - standard Maven
+cd sandbox_common_fast_test
+mvn test
+
+# Or from root
+mvn test -pl sandbox_common_fast_test
+
+# Run specific test
+mvn test -Dtest=SimpleASTParsingTest#testBasicASTCreation -pl sandbox_common_fast_test
+```
+
+### Benefits of the Fast Test Approach
+
+1. **Speed**: 10-30x faster than Tycho tests
+2. **CI-Friendly**: No complex setup, no Xvfb requirement
+3. **Copilot-Compatible**: Automated agents can execute these easily
+4. **Developer Experience**: Instant feedback during development
+
+### When to Use Which Approach
+
+**Use Fast Tests (`_fast_test` modules) when your test:**
+- Only uses `ASTParser`, `CompilationUnit`, AST visitors
+- Tests pattern matching or AST manipulation utilities
+- Doesn't require Eclipse workspace or UI components
+- Can run with just JDT Core from Maven Central
+
+**Use Integration Tests (`_test` modules) when your test:**
+- Requires Eclipse workspace operations
+- Uses Eclipse UI components or preferences
+- Tests full cleanup workflows with Eclipse services
+- Needs OSGi bundles or Eclipse plugin lifecycle
+
+### Example: Fast Test Module Setup
+
+See `sandbox_common_fast_test/README.md` for detailed documentation on:
+- Module architecture
+- Dependency configuration (Maven Central vs P2)
+- Test examples
+- Guidelines for porting tests
+- Extending this approach to other modules
+
+---
+
 ## Eclipse Version Configuration
 
 The Eclipse version (SimRel release) used by this project is **not centrally configured**. When updating to a new Eclipse release, you must update the version reference in **multiple files** throughout the repository.
