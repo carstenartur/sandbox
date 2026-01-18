@@ -103,6 +103,41 @@ public final class StreamConstants {
 	 */
 	public static final String ALL_MATCH_METHOD = LibStandardNames.METHOD_ALL_MATCH;
 
+	/**
+	 * Method name for terminal collect operation.
+	 * <p>
+	 * Used in: {@code stream.collect(Collectors.toList())}
+	 */
+	public static final String COLLECT_METHOD = "collect"; //$NON-NLS-1$
+
+	// ========== Collectors Class Constants ==========
+
+	/**
+	 * Fully qualified name of java.util.stream.Collectors class.
+	 * <p>
+	 * Used for collector factory methods like {@code Collectors.toList()}
+	 */
+	public static final String COLLECTORS_CLASS = "java.util.stream.Collectors"; //$NON-NLS-1$
+
+	/**
+	 * Simple class name for Collectors utility class.
+	 */
+	public static final String COLLECTORS_CLASS_NAME = "Collectors"; //$NON-NLS-1$
+
+	/**
+	 * Method name for Collectors.toList() factory method.
+	 * <p>
+	 * Used in: {@code stream.collect(Collectors.toList())}
+	 */
+	public static final String TO_LIST_METHOD = "toList"; //$NON-NLS-1$
+
+	/**
+	 * Method name for Collectors.toSet() factory method.
+	 * <p>
+	 * Used in: {@code stream.collect(Collectors.toSet())}
+	 */
+	public static final String TO_SET_METHOD = "toSet"; //$NON-NLS-1$
+
 	// ========== Converter-Specific Constants ==========
 
 	/**

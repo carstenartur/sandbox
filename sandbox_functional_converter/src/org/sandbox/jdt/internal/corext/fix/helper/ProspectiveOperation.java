@@ -165,6 +165,16 @@ public final class ProspectiveOperation {
 	private boolean isNullSafe = false;
 
 	/**
+	 * The collector type for COLLECT operations (TO_LIST, TO_SET, etc.).
+	 */
+	private CollectorType collectorType;
+
+	/**
+	 * The name of the target collection variable for COLLECT operations (e.g., "result" in "result.add(item)").
+	 */
+	private String targetVariable;
+
+	/**
 	 * Set of variables consumed by this operation. Used for tracking variable scope
 	 * and preventing leaks.
 	 */
@@ -364,9 +374,13 @@ public final class ProspectiveOperation {
 
 		List<Expression> args = new ArrayList<>();
 
-		// REDUCE has special argument handling
+		// REDUCE and COLLECT have special argument handling
 		if (operationType.hasSpecialArgumentHandling()) {
-			return getArgumentsForReducer(ast);
+			if (operationType == OperationType.REDUCE) {
+				return getArgumentsForReducer(ast);
+			} else if (operationType == OperationType.COLLECT) {
+				return getArgumentsForCollector(ast);
+			}
 		}
 
 		// Create lambda expression for MAP, FILTER, FOREACH, ANYMATCH, NONEMATCH, ALLMATCH
@@ -451,6 +465,42 @@ public final class ProspectiveOperation {
 	 */
 	public boolean isNullSafe() {
 		return isNullSafe;
+	}
+
+	/**
+	 * Sets the collector type for COLLECT operations.
+	 * 
+	 * @param collectorType the collector type (TO_LIST, TO_SET, etc.)
+	 */
+	public void setCollectorType(CollectorType collectorType) {
+		this.collectorType = collectorType;
+	}
+
+	/**
+	 * Returns the collector type for COLLECT operations.
+	 * 
+	 * @return the collector type, or null if not a COLLECT operation
+	 */
+	public CollectorType getCollectorType() {
+		return collectorType;
+	}
+
+	/**
+	 * Sets the target collection variable for COLLECT operations.
+	 * 
+	 * @param targetVariable the target variable name (e.g., "result")
+	 */
+	public void setTargetVariable(String targetVariable) {
+		this.targetVariable = targetVariable;
+	}
+
+	/**
+	 * Returns the target collection variable for COLLECT operations.
+	 * 
+	 * @return the target variable name, or null if not a COLLECT operation
+	 */
+	public String getTargetVariable() {
+		return targetVariable;
 	}
 
 	/**
@@ -551,6 +601,20 @@ public final class ProspectiveOperation {
 			Expression accumulator = createAccumulatorExpression(ast);
 			if (accumulator != null)
 				arguments.add(accumulator);
+		}
+		return arguments;
+	}
+
+	/**
+	 * Determines the arguments for collect() operation.
+	 * Returns a single argument: the Collectors method invocation (e.g., Collectors.toList()).
+	 */
+	private List<Expression> getArgumentsForCollector(AST ast) {
+		List<Expression> arguments = new ArrayList<>();
+		if (operationType == OperationType.COLLECT && collectorType != null) {
+			// Single argument: Collectors.toList() or Collectors.toSet()
+			Expression collector = collectorType.createCollectorExpression(ast);
+			arguments.add(collector);
 		}
 		return arguments;
 	}
