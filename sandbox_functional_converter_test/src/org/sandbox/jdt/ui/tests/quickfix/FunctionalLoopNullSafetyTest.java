@@ -66,7 +66,6 @@ public class FunctionalLoopNullSafetyTest {
 		 * </p>
 		 */
 		@Test
-//		@Disabled("Not yet implemented - @NotNull annotation support for reduce")
 		@DisplayName("String concat with @NotNull accumulator uses String::concat")
 		void test_StringConcat_WithNotNullAccumulator() throws CoreException {
 			String input = """
@@ -115,7 +114,6 @@ public class FunctionalLoopNullSafetyTest {
 		 * </p>
 		 */
 		@Test
-//		@Disabled("Not yet implemented - null-safe lambda for string concat")
 		@DisplayName("String concat without @NotNull uses null-safe lambda")
 		void test_StringConcat_WithoutNotNull_UsesNullSafeLambda() throws CoreException {
 			String input = """
@@ -415,7 +413,6 @@ public class FunctionalLoopNullSafetyTest {
 		 * into the reduce call.</p>
 		 */
 		@Test
-//		@Disabled("Math.max/min reducer not yet implemented with stream reduce")
 		@DisplayName("Math.max reducer pattern")
 		void test_MathMaxReducer() throws CoreException {
 			String input = """
@@ -471,7 +468,6 @@ public class FunctionalLoopNullSafetyTest {
 		 * method reference like {@code System.out::println}.</p>
 		 */
 		@Test
-//		@Disabled("Complex chained method calls need analysis")
 		@DisplayName("Chained method calls with potential null intermediate")
 		void test_ChainedMethodCalls_NullIntermediate() throws CoreException {
 			String input = """

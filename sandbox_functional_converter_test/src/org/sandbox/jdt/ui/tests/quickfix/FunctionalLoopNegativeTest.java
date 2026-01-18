@@ -16,6 +16,7 @@ package org.sandbox.jdt.ui.tests.quickfix;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
@@ -238,6 +239,107 @@ String sourceCode = """
 					}
 				}
 					}""";
+
+IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+ICompilationUnit cu = pack.createCompilationUnit("Test.java", sourceCode, true, null);
+context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+}
+
+/**
+ * Tests that loops with multiple different return values should NOT convert.
+ * 
+ * <p>
+ * When different branches return different values (not just the loop variable),
+ * the pattern cannot be safely converted to a stream operation because the
+ * transformations differ between branches.
+ * </p>
+ */
+@Test
+@DisplayName("Loop returning different values in different branches - should NOT convert")
+void test_MultipleDifferentReturnValues_ShouldNotConvert() throws CoreException {
+String sourceCode = """
+			package test1;
+			import java.util.List;
+			class MyTest {
+				public String find(List<String> items) {
+					for (String item : items) {
+						if (item.startsWith("A")) {
+							return item;
+						}
+						if (item.startsWith("B")) {
+							return item.toUpperCase();
+						}
+					}
+					return null;
+				}
+			}""";
+
+IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+ICompilationUnit cu = pack.createCompilationUnit("Test.java", sourceCode, true, null);
+context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+}
+
+/**
+ * Tests that loops modifying external variable (not accumulator pattern) should NOT convert.
+ * 
+ * <p>
+ * When a loop assigns to an external variable without using the previous value
+ * (not an accumulator pattern like count++), this is a side effect that changes
+ * semantic behavior and should not be converted.
+ * </p>
+ */
+@Test
+@DisplayName("Loop modifying external variable (not accumulator pattern) - should NOT convert")
+void test_ExternalVariableModification_ShouldNotConvert() throws CoreException {
+String sourceCode = """
+			package test1;
+			import java.util.List;
+			class MyTest {
+				public void process(List<String> items) {
+					String lastItem = null;
+					for (String item : items) {
+						lastItem = item;  // Assignment, not accumulation
+						System.out.println(item);
+					}
+					System.out.println("Last: " + lastItem);
+				}
+			}""";
+
+IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+ICompilationUnit cu = pack.createCompilationUnit("Test.java", sourceCode, true, null);
+context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+}
+
+/**
+ * Tests that loops with both break and continue should NOT convert.
+ * 
+ * <p>
+ * When a loop contains both break and continue statements, the control flow
+ * is complex and cannot be safely converted to stream operations.
+ * </p>
+ */
+@Test
+@DisplayName("Loop with both break and continue - should NOT convert")
+void test_BreakAndContinue_ShouldNotConvert() throws CoreException {
+String sourceCode = """
+			package test1;
+			import java.util.List;
+			class MyTest {
+				public void process(List<String> items) {
+					for (String item : items) {
+						if (item == null) {
+							continue;
+						}
+						if (item.isEmpty()) {
+							break;
+						}
+						System.out.println(item);
+					}
+				}
+			}""";
 
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 ICompilationUnit cu = pack.createCompilationUnit("Test.java", sourceCode, true, null);
