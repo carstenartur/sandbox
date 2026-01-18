@@ -123,6 +123,7 @@ public class StreamPipelineBuilder {
 	private final EnhancedForStatement forLoop;
 	private final PreconditionsChecker preconditions;
 	private final ReducePatternDetector reduceDetector;
+	private final CollectPatternDetector collectDetector;
 	private final IfStatementAnalyzer ifAnalyzer;
 	private final LoopBodyParser loopBodyParser;
 
@@ -155,6 +156,7 @@ public class StreamPipelineBuilder {
 		this.forLoop = forLoop;
 		this.preconditions = preconditions;
 		this.reduceDetector = new ReducePatternDetector(forLoop);
+		this.collectDetector = new CollectPatternDetector(forLoop);
 		this.ifAnalyzer = new IfStatementAnalyzer(forLoop);
 
 		// Internal invariant: EnhancedForStatement must have a parameter with a name
@@ -168,7 +170,7 @@ public class StreamPipelineBuilder {
 		this.isAllMatchPattern = preconditions.isAllMatchPattern();
 		
 		// Initialize LoopBodyParser with all required dependencies
-		this.loopBodyParser = new LoopBodyParser(forLoop, reduceDetector, ifAnalyzer, 
+		this.loopBodyParser = new LoopBodyParser(forLoop, reduceDetector, collectDetector, ifAnalyzer, 
 				isAnyMatchPattern, isNoneMatchPattern, isAllMatchPattern);
 	}
 
@@ -219,6 +221,7 @@ public class StreamPipelineBuilder {
 		pipelineAssembler = new PipelineAssembler(forLoop, operations, loopVariableName);
 		pipelineAssembler.setUsedVariableNames(getUsedVariableNames(forLoop));
 		pipelineAssembler.setReduceDetector(reduceDetector);
+		pipelineAssembler.setCollectDetector(collectDetector);
 
 		convertible = true;
 		return true;
