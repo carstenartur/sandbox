@@ -48,6 +48,9 @@ public final class PreconditionsChecker {
 	private boolean isAnyMatchPattern = false;
 	private boolean isNoneMatchPattern = false;
 	private boolean isAllMatchPattern = false;
+	private boolean hasCollectPattern = false;
+	private Statement collectStatement = null;
+	private String collectTargetVariable = null;
 	/**
 	 * Constructor for PreconditionsChecker.
 	 * 
@@ -197,6 +200,52 @@ public final class PreconditionsChecker {
 	}
 
 	/**
+	 * Checks if the loop contains a collect pattern.
+	 * 
+	 * <p>
+	 * Scans loop body for collection accumulation patterns such as:
+	 * <ul>
+	 * <li>result.add(item)</li>
+	 * <li>set.add(value)</li>
+	 * </ul>
+	 * 
+	 * @return true if a collect pattern is detected, false otherwise
+	 * 
+	 * @see #getCollectStatement()
+	 * @see #getCollectTarget()
+	 */
+	public boolean isCollectPattern() {
+		return hasCollectPattern;
+	}
+
+	/**
+	 * Returns the statement containing the collect pattern.
+	 * 
+	 * <p>
+	 * If multiple collect statements exist in the loop, this returns only the first one
+	 * encountered.
+	 * </p>
+	 * 
+	 * @return the statement containing the collect operation, or null if no collect was detected
+	 * 
+	 * @see #isCollectPattern()
+	 */
+	public Statement getCollectStatement() {
+		return collectStatement;
+	}
+
+	/**
+	 * Returns the target collection variable name for the collect pattern.
+	 * 
+	 * @return the target variable name (e.g., "result"), or null if no collect was detected
+	 * 
+	 * @see #isCollectPattern()
+	 */
+	public String getCollectTarget() {
+		return collectTargetVariable;
+	}
+
+	/**
 	 * Analyzes the loop statement to identify relevant elements for refactoring.
 	 * 
 	 * <p>
@@ -284,6 +333,12 @@ public final class PreconditionsChecker {
 		}).onPrefixIncrementOrDecrement((node, h) -> {
 			// Detect ++i, --i
 			markAsReducer(node);
+			return true;
+		}).onMethodInvocation((node, h) -> {
+			// Detect collection.add() patterns for collect operation
+			if (isCollectPattern(node)) {
+				markAsCollectPattern(node);
+			}
 			return true;
 		});
 
@@ -444,6 +499,56 @@ public final class PreconditionsChecker {
 		if (reducerStatement == null) {
 			reducerStatement = ASTNodes.getFirstAncestorOrNull(node, Statement.class);
 		}
+	}
+
+	/**
+	 * Marks an AST node as a collect pattern and records its statement.
+	 * 
+	 * @param node the AST node that represents a collect operation (MethodInvocation)
+	 */
+	private void markAsCollectPattern(ASTNode node) {
+		hasCollectPattern = true;
+		if (collectStatement == null) {
+			collectStatement = ASTNodes.getFirstAncestorOrNull(node, Statement.class);
+		}
+		// Extract target variable from the MethodInvocation
+		if (node instanceof MethodInvocation methodInv && collectTargetVariable == null) {
+			Expression receiver = methodInv.getExpression();
+			if (receiver instanceof SimpleName) {
+				collectTargetVariable = ((SimpleName) receiver).getIdentifier();
+			}
+		}
+	}
+
+	/**
+	 * Checks if a method invocation represents a collect pattern.
+	 * 
+	 * <p>Pattern: {@code result.add(item)} or {@code set.add(value)}</p>
+	 * 
+	 * @param methodInv the method invocation to check
+	 * @return true if this is a collect pattern
+	 */
+	private boolean isCollectPattern(MethodInvocation methodInv) {
+		// Check if method name is "add"
+		if (!"add".equals(methodInv.getName().getIdentifier())) {
+			return false;
+		}
+		
+		// Check if invoked on a SimpleName (collection variable)
+		Expression receiver = methodInv.getExpression();
+		if (!(receiver instanceof SimpleName)) {
+			return false;
+		}
+		
+		// Check if add() has one argument
+		if (methodInv.arguments().size() != 1) {
+			return false;
+		}
+		
+		// Additional validation: check if the receiver is a collection type
+		// This is done in CollectPatternDetector, but for preconditions checking
+		// we'll allow it here and let the detector do the full validation
+		return true;
 	}
 
 	/**
