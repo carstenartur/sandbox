@@ -837,6 +837,7 @@ The Functional Converter Cleanup:
 - **Implementation Details**: [ARCHITECTURE.md](sandbox_functional_converter/ARCHITECTURE.md) – In-depth architecture documentation
 - **Test Coverage**: `Java8CleanUpTest.java` in the `sandbox_functional_converter_test` module
 - **Wiki**: [Functional Converter](https://github.com/carstenartur/sandbox/wiki/Functional-Converter) – Converts `Iterator` loops to functional loops
+- **Fast Testing**: See [OSGi-Free Core Modules](#osgi-free-core-modules) for fast unit testing without Tycho
 
 ### 9. `sandbox_junit`
 
@@ -1112,6 +1113,86 @@ https://github.com/carstenartur/sandbox/raw/main
 > **Warning:**  
 > Use only with a fresh Eclipse installation that can be discarded after testing.  
 > It may break your setup. Don’t say you weren’t warned...
+---
+
+## OSGi-Free Core Modules
+
+The project includes OSGi-free JAR modules that extract pure analysis logic for fast unit testing without Tycho or Eclipse runtime.
+
+### Motivation
+
+Testing Eclipse plugins with Tycho is slow (minutes) and requires:
+- Full Eclipse platform initialization
+- P2 repository resolution
+- Xvfb for UI tests
+- Complex Maven configuration
+
+OSGi-free modules enable:
+- ✅ **Fast testing** - Seconds instead of minutes
+- ✅ **Standard JUnit 5** - No Tycho quirks
+- ✅ **Easy debugging** - Standard IDE integration
+- ✅ **Cleaner architecture** - Separation of concerns
+
+### Available Modules
+
+#### `sandbox_common_core`
+
+OSGi-free utility classes replacing Eclipse internal APIs:
+
+- **ASTNodeUtils** - Replacement for `org.eclipse.jdt.internal.corext.dom.ASTNodes`
+- **ScopeAnalyzerUtils** - Replacement for `org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer`
+- **ReferenceHolder** - Thread-safe map for AST traversal
+- **AstProcessorBuilder** - Fluent AST processing
+
+📖 [Full Documentation](sandbox_common_core/README.md)
+
+#### `sandbox_functional_converter_core`
+
+Pure analysis logic extracted from `sandbox_functional_converter`:
+
+- Stream pipeline analysis and construction
+- Precondition checking for safe transformations
+- Loop body parsing and pattern detection
+- Reducer pattern detection (sum, product, max, min, etc.)
+- Lambda expression generation
+
+Contains 14 analysis classes with Eclipse internal API calls replaced.
+
+📖 [Full Documentation](sandbox_functional_converter_core/README.md)
+
+#### `sandbox_functional_converter_fast_test`
+
+JUnit 5 tests running without Tycho:
+
+```bash
+# Run fast tests (seconds, no Tycho)
+mvn test -pl sandbox_functional_converter_fast_test
+
+# Compare with full tests (minutes, requires Tycho+Xvfb)
+xvfb-run --auto-servernum mvn test -pl sandbox_functional_converter_test
+```
+
+Test coverage:
+- Simple forEach patterns
+- Break/continue handling
+- Reducer detection
+- Nested loop prevention
+
+📖 [Full Documentation](sandbox_functional_converter_fast_test/README.md)
+
+### Implementation Guide
+
+For detailed implementation notes, architecture decisions, and migration paths, see:
+
+📖 **[FUNCTIONAL_CONVERTER_EXTRACTION.md](FUNCTIONAL_CONVERTER_EXTRACTION.md)** - Comprehensive extraction guide
+
+### Future Work
+
+Additional modules planned:
+- Extract more analysis logic from other plugins
+- Expand fast test coverage
+- Create OSGi-free API for reuse in other projects
+
 ---
 
 ## Documentation
