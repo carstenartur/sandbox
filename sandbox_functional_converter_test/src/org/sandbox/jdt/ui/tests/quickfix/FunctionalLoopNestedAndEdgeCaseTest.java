@@ -56,19 +56,37 @@ public class FunctionalLoopNestedAndEdgeCaseTest {
 	class NestedLoopTests {
 
 		/**
-		 * Tests that nested loops are NOT converted (outer loop should not be converted
-		 * when it contains another loop).
+		 * Tests that inner loops within nested contexts can be independently converted.
 		 * 
-		 * <p>
-		 * Nested for-each loops cannot be directly converted to streams because
-		 * the inner loop would need to be a flatMap, which requires different analysis.
-		 * However, the inner loop CAN be converted to forEach independently.
+		 * <p><b>Pattern:</b> Nested enhanced-for loops where inner loop is simple forEach</p>
+		 * 
+		 * <p><b>Expected Behavior:</b> The inner loop should be converted to {@code forEach()},
+		 * while the outer loop remains as an enhanced-for loop. This requires the cleanup
+		 * to identify and convert inner loops independently without being blocked by the
+		 * outer loop's nested structure.</p>
+		 * 
+		 * <p><b>Why not yet implemented:</b> The current implementation in
+		 * {@link org.sandbox.jdt.internal.corext.fix.helper.PreconditionsChecker} detects
+		 * nested loops and marks the outer loop as non-convertible (sets
+		 * {@code containsNestedLoop = true}). This prevents ANY conversion in the nested
+		 * context. To support this pattern, the implementation would need to:
+		 * <ul>
+		 * <li>Run multiple passes - first converting inner loops, then outer loops</li>
+		 * <li>Allow conversion of inner loops even when they're nested</li>
+		 * <li>Track which loop is being analyzed (inner vs outer) to apply different rules</li>
+		 * </ul>
 		 * </p>
+		 * 
+		 * <p><b>Semantic equivalence:</b> Converting only the inner loop preserves the
+		 * exact semantics - the outer loop still iterates over the matrix, but the inner
+		 * iteration uses a functional style.</p>
+		 * 
+		 * <p><b>Future enhancement:</b> See TODO.md for nested loop conversion roadmap.</p>
 		 */
 		@Test
-		@Disabled("Inner loop conversion in nested context not yet implemented")
-		@DisplayName("Nested for-each loops should NOT convert outer loop")
-		void test_NestedForEach_ShouldNotConvertOuter() throws CoreException {
+		@Disabled("Inner loop conversion in nested context not yet implemented - requires multi-pass cleanup execution")
+		@DisplayName("Nested for-each loops should convert inner loop only")
+		void test_NestedForEach_ShouldConvertInnerOnly() throws CoreException {
 			String sourceCode = """
 					package test1;
 

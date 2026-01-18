@@ -54,14 +54,32 @@ public class FunctionalLoopNegativeTest {
 	AbstractEclipseJava context = new EclipseJava22();
 
 /**
- * Tests that loops with Break statement (should NOT convert) are not converted.
+ * Tests that loops with break statements are NOT converted.
  * 
- * <p>
- * Verifies the cleanup correctly identifies patterns that cannot be safely converted.
- * </p>
+ * <p><b>Pattern:</b> Enhanced for-loop with conditional break statement</p>
+ * 
+ * <p><b>Why not convertible:</b> Break statements have no direct equivalent in
+ * the Stream API. While {@code findFirst()} or {@code anyMatch()} can short-circuit
+ * stream processing, they cannot replicate the exact semantics of a break statement
+ * that occurs after side effects. Converting this pattern could change behavior if
+ * there are side effects before the break.</p>
+ * 
+ * <p><b>Example that shows the problem:</b></p>
+ * <pre>{@code
+ * for (Integer item : list) {
+ *     System.out.println(item);  // Side effect
+ *     if (item > 5) break;       // Break after side effect
+ * }
+ * }</pre>
+ * <p>Cannot be safely converted because the side effect (println) happens before
+ * the break condition is checked. Stream operations like {@code takeWhile()} or
+ * {@code findFirst()} cannot replicate this order.</p>
+ * 
+ * <p><b>Semantic equivalence:</b> N/A - no conversion should occur. The loop
+ * remains unchanged to preserve its exact control flow semantics.</p>
  */
 @Test
-void test_Break_statement_should_NOT_convert() throws CoreException {
+void test_Break_Statement_ShouldNotConvert() throws CoreException {
 String sourceCode = """
 			package test1;
 
@@ -93,14 +111,32 @@ context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 }
 
 /**
- * Tests that loops with Throw statement (should NOT convert) are not converted.
+ * Tests that loops with throw statements are NOT converted.
  * 
- * <p>
- * Verifies the cleanup correctly identifies patterns that cannot be safely converted.
- * </p>
+ * <p><b>Pattern:</b> Enhanced for-loop that unconditionally throws an exception</p>
+ * 
+ * <p><b>Why not convertible:</b> While lambda expressions can throw checked and
+ * unchecked exceptions, converting a loop that throws an exception to a stream
+ * would change the exception handling context. Additionally, {@code forEach()}
+ * and other terminal operations don't declare throws clauses, so checked exceptions
+ * would need to be wrapped. This changes the exception semantics and makes the
+ * code less readable.</p>
+ * 
+ * <p><b>Example:</b></p>
+ * <pre>{@code
+ * for (Integer item : list) {
+ *     throw new Exception();  // Unconditional throw
+ * }
+ * }</pre>
+ * <p>Converting this to {@code list.forEach(item -> throw new Exception())} is
+ * invalid syntax, and wrapping it in a try-catch changes the exception handling
+ * semantics.</p>
+ * 
+ * <p><b>Semantic equivalence:</b> N/A - no conversion should occur. Exception
+ * handling semantics must be preserved exactly as written.</p>
  */
 @Test
-void test_Throw_statement_should_NOT_convert() throws CoreException {
+void test_Throw_Statement_ShouldNotConvert() throws CoreException {
 String sourceCode = """
 			package test1;
 
@@ -129,14 +165,35 @@ context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 }
 
 /**
- * Tests that loops with Labeled continue (should NOT convert) are not converted.
+ * Tests that loops with labeled continue statements are NOT converted.
  * 
- * <p>
- * Verifies the cleanup correctly identifies patterns that cannot be safely converted.
- * </p>
+ * <p><b>Pattern:</b> Enhanced for-loop with a labeled continue statement that
+ * references an outer label</p>
+ * 
+ * <p><b>Why not convertible:</b> Labeled continue statements allow control flow
+ * to jump to an outer loop iteration, which has no equivalent in the Stream API.
+ * The Stream API is designed for simple, linear transformations and cannot
+ * replicate complex control flow patterns involving multiple loop levels.</p>
+ * 
+ * <p><b>Example:</b></p>
+ * <pre>{@code
+ * label:
+ * for (Integer item : list) {
+ *     if (item == null) {
+ *         continue label;  // Jump to next iteration of labeled loop
+ *     }
+ *     // ... more processing
+ * }
+ * }</pre>
+ * <p>This control flow pattern cannot be expressed using stream operations. While
+ * a simple {@code continue} can be converted to a filter condition, labeled continues
+ * that affect outer loop control flow have no stream equivalent.</p>
+ * 
+ * <p><b>Semantic equivalence:</b> N/A - no conversion should occur. Labeled control
+ * flow must be preserved exactly as written.</p>
  */
 @Test
-void test_Labeled_continue_should_NOT_convert() throws CoreException {
+void test_Labeled_Continue_ShouldNotConvert() throws CoreException {
 String sourceCode = """
 			package test1;
 
@@ -221,14 +278,14 @@ context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new Str
 }
 
 /**
- * Tests that loops with Early return with side effects (should NOT convert) are not converted.
+ * Tests that loops with early return statements that have side effects are not converted.
  * 
  * <p>
  * Verifies the cleanup correctly identifies patterns that cannot be safely converted.
  * </p>
  */
 @Test
-void test_Early_return_with_side_effects_should_NOT_convert() throws CoreException {
+void test_EarlyReturn_WithSideEffects_ShouldNotConvert() throws CoreException {
 String sourceCode = """
 			package test1;
 			import java.util.List;
