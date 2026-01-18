@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.sandbox</groupId>
+		<artifactId>central</artifactId>
+		<version>1.2.2-SNAPSHOT</version>
+	</parent>
+	<artifactId>sandbox_common_core</artifactId>
+	<name>Sandbox Common Core (OSGi-free)</name>
+	<packaging>pom</packaging>
+	
+	<!-- This module is currently not built as part of the regular build.
+	     It requires JDT classes at compile time which are not available from Maven Central.
+	     To build this module, use a separate build with JDT jars on the classpath.
+	     See README.md for details. -->
+	
+	<build>
+		<sourceDirectory>src</sourceDirectory>
+	</build>
+</project>
