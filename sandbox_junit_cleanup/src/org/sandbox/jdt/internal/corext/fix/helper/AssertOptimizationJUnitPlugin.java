@@ -381,8 +381,8 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 			Expression right = infix.getRightOperand();
 			
 			// Check for null comparisons
-			boolean leftIsNull = ASTNodes.isNullLiteral(left);
-			boolean rightIsNull = ASTNodes.isNullLiteral(right);
+			boolean leftIsNull = left instanceof NullLiteral;
+			boolean rightIsNull = right instanceof NullLiteral;
 			
 			if (leftIsNull || rightIsNull) {
 				Expression nonNullExpr = leftIsNull ? right : left;
@@ -529,8 +529,8 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 			ListRewrite argsRewrite = rewriter.getListRewrite(mi, MethodInvocation.ARGUMENTS_PROPERTY);
 			Expression newExpected = (Expression) rewriter.createCopyTarget(actualParam);
 			Expression newActual = (Expression) rewriter.createCopyTarget(expectedParam);
-			argsRewrite.replace(arguments.get(expectedIndex), newExpected, group);
-			argsRewrite.replace(arguments.get(actualIndex), newActual, group);
+			argsRewrite.replace((ASTNode) arguments.get(expectedIndex), newExpected, group);
+			argsRewrite.replace((ASTNode) arguments.get(actualIndex), newActual, group);
 		}
 	}
 
