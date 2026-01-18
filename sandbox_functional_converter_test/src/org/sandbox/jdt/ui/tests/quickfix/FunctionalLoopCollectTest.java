@@ -93,10 +93,10 @@ public class FunctionalLoopCollectTest {
 				}
 			}""";
 
-		IPackageFragment pack = context.getfSourceFolder().createPackageFragment("test1", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
 
-		context.enable(MYCleanUpConstants.USE_FUNCTIONAL_LOOP);
+		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 	}
@@ -155,10 +155,10 @@ public class FunctionalLoopCollectTest {
 				}
 			}""";
 
-		IPackageFragment pack = context.getfSourceFolder().createPackageFragment("test1", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
 
-		context.enable(MYCleanUpConstants.USE_FUNCTIONAL_LOOP);
+		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 	}
