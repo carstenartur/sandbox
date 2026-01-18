@@ -105,8 +105,6 @@ String input = """
 						i++;
 					System.out.println(i);
 					return true;
-
-
 				}
 				}""";
 
@@ -128,8 +126,6 @@ String expected = """
 					i = ls.stream().map(l -> 1).reduce(i, Integer::sum);
 					System.out.println(i);
 					return true;
-
-
 				}
 				}""";
 
