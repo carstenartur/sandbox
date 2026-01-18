@@ -91,8 +91,6 @@ public class FunctionalLoopComplexPatternTest {
 					}
 
 					return true;
-
-
 				}
 
 				Object foo(Object o)
@@ -126,8 +124,6 @@ public class FunctionalLoopComplexPatternTest {
 					}).forEachOrdered(l -> System.out.println());
 
 					return true;
-
-
 				}
 
 				Object foo(Object o)
@@ -176,8 +172,6 @@ public class FunctionalLoopComplexPatternTest {
 					}
 					System.out.println(i);
 					return false;
-
-
 				}
 				private void foo(Object o, int i) throws Exception
 				{
@@ -206,8 +200,6 @@ class MyTest {
 		});
 		System.out.println(i);
 		return false;
-
-
 	}
 	private void foo(Object o, int i) throws Exception
 	{

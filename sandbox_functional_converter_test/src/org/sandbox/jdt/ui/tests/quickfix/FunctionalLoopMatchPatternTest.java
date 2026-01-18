@@ -117,8 +117,6 @@ String input = """
 					}
 
 					return false;
-
-
 				}
 
 				Object foo(Object o)
@@ -145,8 +143,6 @@ String expected = """
 					}
 
 					return false;
-
-
 				}
 
 				Object foo(Object o)
@@ -194,8 +190,6 @@ String input = """
 					}
 
 					return true;
-
-
 				}
 
 				Object foo(Object o)
@@ -222,8 +216,6 @@ String expected = """
 					}
 
 					return true;
-
-
 				}
 
 				Object foo(Object o)
