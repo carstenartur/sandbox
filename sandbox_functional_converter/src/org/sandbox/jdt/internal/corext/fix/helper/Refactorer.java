@@ -67,6 +67,7 @@ import org.eclipse.text.edits.TextEditGroup;
 public class Refactorer {
 	
 	private static final String JAVA_UTIL_ARRAYS = "java.util.Arrays"; //$NON-NLS-1$
+	private static final String JAVA_UTIL_STREAM_COLLECTORS = StreamConstants.COLLECTORS_CLASS; //$NON-NLS-1$
 	
 	private final EnhancedForStatement forLoop;
 	private final ASTRewrite rewrite;
@@ -141,6 +142,10 @@ public class Refactorer {
 			// Add Arrays import if needed (for array iteration)
 			if (builder.needsArraysImport() && cuRewrite != null) {
 				cuRewrite.getImportRewrite().addImport(JAVA_UTIL_ARRAYS);
+			}
+			// Add Collectors import if needed (for collect operations)
+			if (builder.needsCollectorsImport() && cuRewrite != null) {
+				cuRewrite.getImportRewrite().addImport(JAVA_UTIL_STREAM_COLLECTORS);
 			}
 			ASTNodes.replaceButKeepComment(rewrite, forLoop, replacement, group);
 		}

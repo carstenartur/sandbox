@@ -280,6 +280,24 @@ public class StreamPipelineBuilder {
 	}
 
 	/**
+	 * Returns whether the pipeline needs the java.util.stream.Collectors import.
+	 * This is true when using collect operations (toList, toSet, etc.).
+	 * 
+	 * <p>This method should be called after {@link #buildPipeline()} to determine
+	 * if an import needs to be added.</p>
+	 * 
+	 * @return true if Collectors import is needed
+	 */
+	public boolean needsCollectorsImport() {
+		// Check if any operation is a COLLECT operation
+		if (operations == null) {
+			return false;
+		}
+		return operations.stream()
+				.anyMatch(op -> op.getOperationType() == OperationType.COLLECT);
+	}
+
+	/**
 	 * Wraps the stream pipeline in an appropriate statement type based on the terminal operation.
 	 * 
 	 * <p>
