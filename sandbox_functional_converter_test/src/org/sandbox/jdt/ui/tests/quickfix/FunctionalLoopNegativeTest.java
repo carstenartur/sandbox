@@ -23,7 +23,6 @@ import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 
-
 /**
  * Negative tests for functional loop conversion.
  * 
