@@ -31,12 +31,13 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
  * </p>
  * <ul>
  * <li><b>Patterns that should NOT convert:</b> Break statements, throw statements, 
- * labeled continue statements, external variable modifications (non-accumulator), 
+ * labeled continue statements, external variable modifications (including collection 
+ * accumulation patterns like List.add(), Set.add(), Map.put()), nested loops,
  * early returns with side effects</li>
- * <li><b>Patterns that DO convert to forEach:</b> Collection accumulation patterns 
- * (List.add(), Set.add(), Map.put()) are treated as side-effect operations and 
- * correctly converted to forEach</li>
- * <li><b>Partial conversions:</b> Nested loops where only the inner loop converts</li>
+ * <li><b>Patterns that DO convert to forEach:</b> Simple side-effect operations like
+ * System.out.println() that don't modify external variables</li>
+ * <li><b>Future enhancements:</b> Collection accumulation patterns should use
+ * collect(Collectors.toList/toSet/toMap()) instead of forEach</li>
  * </ul>
  * 
  * <p>
