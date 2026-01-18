@@ -7,6 +7,8 @@ Bundle-Version: 1.2.2.qualifier
 Bundle-RequiredExecutionEnvironment: JavaSE-21
 Bundle-ActivationPolicy: lazy
 Eclipse-BuddyPolicy: global
+Bundle-ClassPath: .,
+ sandbox_common_core-1.2.2-SNAPSHOT.jar
 Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.core.filebuffers,
  org.eclipse.core.filesystem,
