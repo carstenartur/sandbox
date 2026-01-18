@@ -1113,11 +1113,15 @@ https://github.com/carstenartur/sandbox/raw/main
 > **Warning:**  
 > Use only with a fresh Eclipse installation that can be discarded after testing.  
 > It may break your setup. Don’t say you weren’t warned...
----
+## OSGi-Free Core Modules (Proof of Concept)
 
-## OSGi-Free Core Modules
+The project includes proof-of-concept OSGi-free JAR modules demonstrating how analysis logic could be extracted for fast unit testing without Tycho or Eclipse runtime.
 
-The project includes OSGi-free JAR modules that extract pure analysis logic for fast unit testing without Tycho or Eclipse runtime.
+### ⚠️ Current Status
+
+**These modules are not compiled in the regular build** due to dependency resolution constraints. Eclipse JDT artifacts are not available from Maven Central, and the build infrastructure doesn't yet support mixing JAR modules with Tycho's P2 repositories.
+
+The modules serve as **reference implementations** showing the architecture for future infrastructure improvements. The actual working implementations remain in their respective Eclipse plugin modules.
 
 ### Motivation
 
@@ -1127,28 +1131,28 @@ Testing Eclipse plugins with Tycho is slow (minutes) and requires:
 - Xvfb for UI tests
 - Complex Maven configuration
 
-OSGi-free modules enable:
+OSGi-free modules would enable (when build infrastructure supports them):
 - ✅ **Fast testing** - Seconds instead of minutes
 - ✅ **Standard JUnit 5** - No Tycho quirks
 - ✅ **Easy debugging** - Standard IDE integration
 - ✅ **Cleaner architecture** - Separation of concerns
 
-### Available Modules
+### Reference Modules
 
-#### `sandbox_common_core`
+#### `sandbox_common_core` (Not Built)
 
-OSGi-free utility classes replacing Eclipse internal APIs:
+Demonstrates OSGi-free utility classes that would replace Eclipse internal APIs:
 
-- **ASTNodeUtils** - Replacement for `org.eclipse.jdt.internal.corext.dom.ASTNodes`
-- **ScopeAnalyzerUtils** - Replacement for `org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer`
+- **ASTNodeUtils** - Would replace `org.eclipse.jdt.internal.corext.dom.ASTNodes`
+- **ScopeAnalyzerUtils** - Would replace `org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer`
 - **ReferenceHolder** - Thread-safe map for AST traversal
 - **AstProcessorBuilder** - Fluent AST processing
 
 📖 [Full Documentation](sandbox_common_core/README.md)
 
-#### `sandbox_functional_converter_core`
+#### `sandbox_functional_converter_core` (Not Built)
 
-Pure analysis logic extracted from `sandbox_functional_converter`:
+Demonstrates how analysis logic could be extracted from `sandbox_functional_converter`:
 
 - Stream pipeline analysis and construction
 - Precondition checking for safe transformations
@@ -1156,23 +1160,23 @@ Pure analysis logic extracted from `sandbox_functional_converter`:
 - Reducer pattern detection (sum, product, max, min, etc.)
 - Lambda expression generation
 
-Contains 14 analysis classes with Eclipse internal API calls replaced.
+Contains 14 copied analysis classes showing how Eclipse internal API calls could be replaced.
 
 📖 [Full Documentation](sandbox_functional_converter_core/README.md)
 
-#### `sandbox_functional_converter_fast_test`
+#### `sandbox_functional_converter_fast_test` (Not Built)
 
-JUnit 5 tests running without Tycho:
+Demonstrates how tests could be structured for fast execution:
 
 ```bash
-# Run fast tests (seconds, no Tycho)
-mvn test -pl sandbox_functional_converter_fast_test
+# These modules are skipped in regular builds
+mvn test  # Skips these proof-of-concept modules
 
-# Compare with full tests (minutes, requires Tycho+Xvfb)
+# Actual tests work normally with Tycho
 xvfb-run --auto-servernum mvn test -pl sandbox_functional_converter_test
 ```
 
-Test coverage:
+Example test cases (reference only):
 - Simple forEach patterns
 - Break/continue handling
 - Reducer detection
@@ -1180,18 +1184,20 @@ Test coverage:
 
 📖 [Full Documentation](sandbox_functional_converter_fast_test/README.md)
 
-### Implementation Guide
+### Implementation Notes
 
-For detailed implementation notes, architecture decisions, and migration paths, see:
+For detailed implementation notes and the challenges encountered, see:
 
-📖 **[FUNCTIONAL_CONVERTER_EXTRACTION.md](FUNCTIONAL_CONVERTER_EXTRACTION.md)** - Comprehensive extraction guide
+📖 **[FUNCTIONAL_CONVERTER_EXTRACTION.md](FUNCTIONAL_CONVERTER_EXTRACTION.md)** - Implementation documentation
 
 ### Future Work
 
-Additional modules planned:
-- Extract more analysis logic from other plugins
-- Expand fast test coverage
-- Create OSGi-free API for reuse in other projects
+To make these modules functional, the build infrastructure would need:
+- Support for mixing JAR modules with Tycho's P2 dependency resolution
+- Alternative approach using Maven dependencies from a JDT JAR distribution
+- Separate build profile that doesn't include these modules in the reactor
+
+Until then, these modules remain as architectural reference and the actual implementations in the Eclipse plugin modules continue to work as designed.
 
 ---
 

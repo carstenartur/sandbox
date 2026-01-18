@@ -10,29 +10,14 @@
 	</parent>
 	<artifactId>sandbox_common_core</artifactId>
 	<name>Sandbox Common Core (OSGi-free)</name>
-	<packaging>jar</packaging>
+	<packaging>pom</packaging>
 	
-	<dependencies>
-		<!-- Using provided scope to avoid resolution issues during initial setup -->
-		<dependency>
-			<groupId>org.eclipse.platform</groupId>
-			<artifactId>org.eclipse.jdt.core</artifactId>
-			<version>3.38.0</version>
-			<scope>provided</scope>
-		</dependency>
-	</dependencies>
+	<!-- This module is currently not built as part of the regular build.
+	     It requires JDT classes at compile time which are not available from Maven Central.
+	     To build this module, use a separate build with JDT jars on the classpath.
+	     See README.md for details. -->
 	
 	<build>
 		<sourceDirectory>src</sourceDirectory>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.13.0</version>
-				<configuration>
-					<release>${java-version}</release>
-				</configuration>
-			</plugin>
-		</plugins>
 	</build>
 </project>

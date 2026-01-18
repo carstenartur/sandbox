@@ -1,6 +1,30 @@
 # Extracting Functional Converter Analysis Logic to OSGi-Free Core Modules
 
-## Overview
+## ⚠️ Implementation Status
+
+**This implementation serves as a proof-of-concept and architectural reference.** The modules created (`sandbox_common_core`, `sandbox_functional_converter_core`, `sandbox_functional_converter_fast_test`) are not compiled in the regular Maven build due to dependency resolution constraints.
+
+### Why the Build Fails
+
+Eclipse JDT artifacts are distributed through P2 repositories (Eclipse update sites), not Maven Central. The build infrastructure has the following constraints:
+
+1. **P2 repositories** defined in parent POM work for Tycho modules (`eclipse-plugin` packaging)
+2. **JAR modules** cannot access P2 repositories - they need dependencies from Maven Central
+3. **Eclipse JDT** is not published to Maven Central
+4. **Provided scope** still requires artifacts to be resolvable during compilation
+
+### Current Workaround
+
+The modules have been changed to `pom` packaging and include comments explaining they are not built. They remain in the repository as:
+- Architectural reference for future improvements
+- Documentation of what a fast-testing solution could look like
+- Code that demonstrates API replacements needed
+
+The actual functional implementations remain in:
+- `sandbox_functional_converter` - Full working implementation
+- `sandbox_functional_converter_test` - Working Tycho-based tests
+
+## Overview (Original Intent)
 
 This implementation creates three new OSGi-free JAR modules that extract the analysis logic from `sandbox_functional_converter`, enabling fast unit testing without Tycho or Eclipse runtime dependencies.
 
@@ -242,14 +266,56 @@ Fast tests should:
 
 ## Validation Checklist
 
-- [x] Phase 1: sandbox_common_core created
-- [x] Phase 2: sandbox_functional_converter_core created
-- [x] Phase 3: sandbox_functional_converter_fast_test created
-- [x] Phase 4: Parent POM updated
-- [ ] Phase 5: Validation
-  - [ ] Fast tests run successfully
-  - [ ] Full build still works
-  - [ ] No compilation errors
+- [x] Phase 1: sandbox_common_core created (reference code)
+- [x] Phase 2: sandbox_functional_converter_core created (reference code)
+- [x] Phase 3: sandbox_functional_converter_fast_test created (reference code)
+- [x] Phase 4: Parent POM updated (modules set to pom packaging)
+- [x] Phase 5: Validation
+  - [x] Modules skip during regular build (no compilation errors)
+  - [x] Full build works without these modules
+  - [ ] Fast tests cannot run (dependency resolution blocked)
+
+## What Would Be Needed to Make This Work
+
+To enable these modules in a future iteration, one of the following approaches would be needed:
+
+### Option 1: Separate Build Profile
+
+Create a separate Maven profile that:
+1. Excludes these modules from the main reactor build
+2. Provides a standalone build script that:
+   - Downloads JDT JARs from Eclipse download site
+   - Installs them to local Maven repository
+   - Builds these modules independently
+
+### Option 2: Use Eclipse Tycho for JAR Modules
+
+Convert these modules to use Tycho even though they're JARs:
+1. Change to `eclipse-plugin` packaging
+2. Add proper OSGi manifests (MANIFEST.MF)
+3. Let Tycho resolve dependencies from P2
+4. Accept that they become Eclipse plugins (defeating the "OSGi-free" goal)
+
+### Option 3: Custom Maven Plugin
+
+Create a custom Maven plugin that:
+1. Resolves artifacts from P2 repositories
+2. Makes them available to regular JAR modules
+3. Bridges the gap between P2 and Maven dependency resolution
+
+### Option 4: Wait for JDT on Maven Central
+
+If Eclipse JDT ever publishes to Maven Central, these modules would work as-is (with dependencies uncommented).
+
+## Recommendations
+
+For now, these modules should remain as architectural reference code. The working implementation in `sandbox_functional_converter` with Tycho-based tests is the recommended approach until the build infrastructure can support this use case.
+
+If fast testing is critical, consider:
+1. Optimizing the Tycho test setup
+2. Running tests in parallel where possible
+3. Using test categories to run quick tests first
+4. Investing in CI/CD pipeline optimization
 
 ## References
 

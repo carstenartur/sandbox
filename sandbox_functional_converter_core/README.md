@@ -2,9 +2,21 @@
 
 OSGi-free analysis logic module for the functional converter, extracted from `sandbox_functional_converter`.
 
+## ⚠️ Build Status
+
+**This module is currently not compiled during the regular Maven build.**
+
+The module requires Eclipse JDT classes at compile time, which are not available from Maven Central. The P2 repositories used by Tycho cannot be accessed by regular JAR modules in the Maven reactor build.
+
+### Why This Limitation Exists
+
+Eclipse JDT artifacts are distributed through P2 repositories (Eclipse update sites), not Maven Central. While Tycho can access these P2 repositories for `eclipse-plugin` packaged modules, regular `jar` packaged modules cannot.
+
+For now, this module serves as **reference code** showing how the analysis logic could be extracted. The actual implementation remains in the `sandbox_functional_converter` module and is fully functional.
+
 ## Purpose
 
-This module contains the core analysis logic for detecting and analyzing loop-to-stream conversion patterns, without requiring Eclipse OSGi infrastructure. This enables:
+This module demonstrates how analysis logic could be extracted to enable:
 - Fast unit testing without Tycho
 - Standalone analysis tools
 - Easier debugging and development
@@ -37,17 +49,19 @@ The following Eclipse internal APIs were replaced with OSGi-free alternatives:
 
 ## Dependencies
 
-- `sandbox_common_core` - For OSGi-free utilities
-- `org.eclipse.jdt.core` (provided scope) - For AST classes only
+- `sandbox_common_core` - For OSGi-free utilities (not resolved in regular build)
+- `org.eclipse.jdt.core` - For AST classes only (not resolved in regular build)
 
 ## Usage
 
-Used by:
-- `sandbox_functional_converter` - The main OSGi plugin (should depend on this core module)
-- `sandbox_functional_converter_fast_test` - Fast unit tests
+**Note:** This module is not currently used due to build constraints. The analysis logic in `sandbox_functional_converter` is the active implementation.
 
 ## Building
 
 ```bash
-mvn clean install -pl sandbox_functional_converter_core
+# This module is skipped in regular builds
+mvn clean install  # Will skip this module
+
+# The actual functional converter plugin builds normally:
+mvn clean install -pl sandbox_functional_converter
 ```
