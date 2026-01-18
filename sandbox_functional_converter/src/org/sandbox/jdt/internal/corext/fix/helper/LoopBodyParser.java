@@ -27,6 +27,7 @@ import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.IfStatement;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.PostfixExpression;
 import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.ReturnStatement;
@@ -322,19 +323,9 @@ public class LoopBodyParser {
 				// Check if this is a method call or other safe side-effect
 				ExpressionStatement exprStmt = (ExpressionStatement) stmt;
 				Expression expr = exprStmt.getExpression();
-				// Method invocations are safe side-effects
-				if (!(expr instanceof org.eclipse.jdt.core.dom.MethodInvocation)) {
-					// Non-method-call expressions might be reduce operations or assignments
-					ProspectiveOperation reduceOp = reduceDetector.detectReduceOperation(stmt);
-					if (reduceOp != null) {
-						return false;
-					}
-					allSafeSideEffects = false;
-				} else {
-					// Check if this method invocation is actually a COLLECT pattern
-					org.eclipse.jdt.core.dom.MethodInvocation methodInv = 
-						(org.eclipse.jdt.core.dom.MethodInvocation) expr;
-					
+				
+				if (expr instanceof MethodInvocation) {
+					MethodInvocation methodInv = (MethodInvocation) expr;
 					// Check if this is a COLLECT pattern (collection.add())
 					// If so, don't treat as simple forEach - let COLLECT handling take over
 					if ("add".equals(methodInv.getName().getIdentifier())) {
@@ -343,6 +334,14 @@ public class LoopBodyParser {
 							return false;  // NOT a simple forEach - it's a COLLECT pattern
 						}
 					}
+					// Other method invocations are safe side-effects
+				} else {
+					// Non-method-call expressions might be reduce operations or assignments
+					ProspectiveOperation reduceOp = reduceDetector.detectReduceOperation(stmt);
+					if (reduceOp != null) {
+						return false;
+					}
+					allSafeSideEffects = false;
 				}
 			} else {
 				// Other statement types are not simple side-effects
