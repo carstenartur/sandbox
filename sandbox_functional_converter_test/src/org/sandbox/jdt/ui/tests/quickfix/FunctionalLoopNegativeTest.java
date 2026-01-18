@@ -404,4 +404,247 @@ context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 }
 
+// ==================== FLATMAP PATTERN TESTS ====================
+
+/**
+ * Tests that nested collection iteration (would need flatMap) should NOT convert.
+ * 
+ * <p>
+ * Nested loops that iterate over collections within collections require flatMap
+ * to flatten the structure. This is not yet supported by the converter.
+ * </p>
+ */
+@Test
+@DisplayName("Nested collection iteration (would need flatMap) - should NOT convert")
+void test_NestedCollectionFlatMap_ShouldNotConvert() throws CoreException {
+String sourceCode = """
+		package test1;
+		import java.util.List;
+		class MyTest {
+			public void processAll(List<List<String>> nestedList) {
+				for (List<String> inner : nestedList) {
+					for (String item : inner) {
+						System.out.println(item);
+					}
+				}
+			}
+		}""";
+
+// Both loops should stay as-is - flatMap not yet supported
+IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+ICompilationUnit cu = pack.createCompilationUnit("Test.java", sourceCode, true, null);
+context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+}
+
+// ==================== COLLECT PATTERN TESTS ====================
+
+/**
+ * Tests that list accumulation (would need collect toList) should NOT convert.
+ * 
+ * <p>
+ * Collection accumulation patterns that build up a result list by adding elements
+ * would require Collectors.toList(), which is not yet safely supported.
+ * </p>
+ */
+@Test
+@DisplayName("List accumulation (would need collect toList) - should NOT convert")
+void test_ListAccumulation_ShouldNotConvert() throws CoreException {
+String sourceCode = """
+		package test1;
+		import java.util.List;
+		import java.util.ArrayList;
+		class MyTest {
+			public List<String> toUpperCase(List<String> items) {
+				List<String> result = new ArrayList<>();
+				for (String item : items) {
+					result.add(item.toUpperCase());
+				}
+				return result;
+			}
+		}""";
+
+// Should NOT convert - collect() not yet safely supported
+IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+ICompilationUnit cu = pack.createCompilationUnit("Test.java", sourceCode, true, null);
+context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+}
+
+/**
+ * Tests that set accumulation (would need collect toSet) should NOT convert.
+ * 
+ * <p>
+ * Building up a Set through iteration would require Collectors.toSet(),
+ * which is not yet supported.
+ * </p>
+ */
+@Test
+@DisplayName("Set accumulation (would need collect toSet) - should NOT convert")
+void test_SetAccumulation_ShouldNotConvert() throws CoreException {
+String sourceCode = """
+		package test1;
+		import java.util.List;
+		import java.util.Set;
+		import java.util.HashSet;
+		class MyTest {
+			public Set<String> unique(List<String> items) {
+				Set<String> result = new HashSet<>();
+				for (String item : items) {
+					result.add(item);
+				}
+				return result;
+			}
+		}""";
+
+IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+ICompilationUnit cu = pack.createCompilationUnit("Test.java", sourceCode, true, null);
+context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+}
+
+/**
+ * Tests that map accumulation (would need collect toMap) should NOT convert.
+ * 
+ * <p>
+ * Building up a Map through iteration would require Collectors.toMap(),
+ * which is not yet supported.
+ * </p>
+ */
+@Test
+@DisplayName("Map accumulation (would need collect toMap) - should NOT convert")
+void test_MapAccumulation_ShouldNotConvert() throws CoreException {
+String sourceCode = """
+		package test1;
+		import java.util.List;
+		import java.util.Map;
+		import java.util.HashMap;
+		class MyTest {
+			public Map<String, Integer> lengthMap(List<String> items) {
+				Map<String, Integer> result = new HashMap<>();
+				for (String item : items) {
+					result.put(item, item.length());
+				}
+				return result;
+			}
+		}""";
+
+IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+ICompilationUnit cu = pack.createCompilationUnit("Test.java", sourceCode, true, null);
+context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+}
+
+// ==================== PARALLEL STREAM SAFETY TESTS ====================
+
+/**
+ * Tests that ordering-dependent println should use forEach (not parallel).
+ * 
+ * <p>
+ * This is a documentation test - we verify the output uses forEach or forEachOrdered.
+ * The converter should NEVER produce parallel streams.
+ * </p>
+ */
+@Test
+@DisplayName("Loop with ordering-dependent println - should use forEachOrdered not parallel")
+void test_OrderingDependentSideEffects_ShouldNotParallelize() throws CoreException {
+// This is a documentation test - we verify the output uses forEachOrdered
+// The converter should NEVER produce parallel streams
+String input = """
+		package test1;
+		import java.util.List;
+		class MyTest {
+			public void printInOrder(List<String> items) {
+				for (String item : items) {
+					System.out.println(item);
+				}
+			}
+		}""";
+
+// Expected: uses forEach (or forEachOrdered), NEVER parallelStream()
+String expected = """
+		package test1;
+		import java.util.List;
+		class MyTest {
+			public void printInOrder(List<String> items) {
+				items.forEach(item -> System.out.println(item));
+			}
+		}""";
+
+IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
+context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+}
+
+/**
+ * Tests that loops with shared mutable state should NOT convert to parallel.
+ * 
+ * <p>
+ * When a loop modifies shared mutable fields, it cannot be safely parallelized.
+ * This test ensures the converter doesn't produce parallel streams in such cases.
+ * </p>
+ */
+@Test
+@DisplayName("Loop with shared mutable state - should NOT convert to parallel")
+void test_SharedMutableState_ShouldNotConvert() throws CoreException {
+String sourceCode = """
+		package test1;
+		import java.util.List;
+		class MyTest {
+			private int counter = 0;
+			public void countItems(List<String> items) {
+				for (String item : items) {
+					counter++;  // Shared mutable state
+					System.out.println(counter + ": " + item);
+				}
+			}
+		}""";
+
+// Should NOT convert - modifies shared mutable field
+IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+ICompilationUnit cu = pack.createCompilationUnit("Test.java", sourceCode, true, null);
+context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+}
+
+// ==================== VARARGS ARRAY PATTERN TESTS ====================
+
+/**
+ * Tests that loops over varargs arrays should use Arrays.stream.
+ * 
+ * <p>
+ * When iterating over a varargs parameter (which is an array), the converter
+ * should use Arrays.stream() instead of Stream.of().
+ * </p>
+ */
+@Test
+@DisplayName("Loop over varargs array - should use Arrays.stream")
+void test_VarargsArray_UsesArraysStream() throws CoreException {
+String input = """
+		package test1;
+		import java.util.Arrays;
+		class MyTest {
+			public void process(String... items) {
+				for (String item : items) {
+					System.out.println(item);
+				}
+			}
+		}""";
+
+String expected = """
+		package test1;
+		import java.util.Arrays;
+		class MyTest {
+			public void process(String... items) {
+				Arrays.stream(items).forEach(item -> System.out.println(item));
+			}
+		}""";
+
+IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
+context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+}
+
 }
