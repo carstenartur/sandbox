@@ -24,25 +24,24 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 
 /**
- * Negative tests for functional loop conversion.
+ * Negative and edge case tests for functional loop conversion.
  * 
  * <p>
- * This test class contains test cases that should NOT be converted to
- * functional streams. These tests verify that the cleanup correctly identifies
- * patterns that cannot be safely converted due to:
+ * This test class contains test cases for patterns that require special handling:
  * </p>
  * <ul>
- * <li>Break statements</li>
- * <li>Throw statements</li>
- * <li>Labeled continue statements</li>
- * <li>External variable modifications</li>
- * <li>Early returns with side effects (non-pattern)</li>
- * <li>Other unsafe transformations</li>
+ * <li><b>Patterns that should NOT convert:</b> Break statements, throw statements, 
+ * labeled continue statements, external variable modifications (non-accumulator), 
+ * early returns with side effects</li>
+ * <li><b>Patterns that DO convert to forEach:</b> Collection accumulation patterns 
+ * (List.add(), Set.add(), Map.put()) are treated as side-effect operations and 
+ * correctly converted to forEach</li>
+ * <li><b>Partial conversions:</b> Nested loops where only the inner loop converts</li>
  * </ul>
  * 
  * <p>
- * Each test verifies that the source code remains unchanged after applying the
- * cleanup.
+ * Tests verify either that source code remains unchanged (for truly non-convertible patterns)
+ * or that the correct transformation is applied (for patterns that do convert).
  * </p>
  * 
  * @see org.sandbox.jdt.internal.ui.fix.UseFunctionalLoopCleanUp
@@ -460,7 +459,10 @@ context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 }
 
-// ==================== COLLECT PATTERN TESTS ====================
+// ==================== COLLECTION ACCUMULATION TESTS ====================
+// These tests verify that collection accumulation patterns (List.add(), Set.add(), Map.put())
+// DO convert to forEach with side effects. This is valid and semantically equivalent.
+// Note: Using Collectors.toList()/toSet()/toMap() would be a future enhancement.
 
 /**
  * Tests that list accumulation converts to forEach with side effects.
