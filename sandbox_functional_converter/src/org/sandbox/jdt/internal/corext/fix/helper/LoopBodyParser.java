@@ -330,6 +330,19 @@ public class LoopBodyParser {
 						return false;
 					}
 					allSafeSideEffects = false;
+				} else {
+					// Check if this method invocation is actually a COLLECT pattern
+					org.eclipse.jdt.core.dom.MethodInvocation methodInv = 
+						(org.eclipse.jdt.core.dom.MethodInvocation) expr;
+					
+					// Check if this is a COLLECT pattern (collection.add())
+					// If so, don't treat as simple forEach - let COLLECT handling take over
+					if ("add".equals(methodInv.getName().getIdentifier())) {
+						ProspectiveOperation collectOp = collectDetector.detectCollectOperation(stmt);
+						if (collectOp != null) {
+							return false;  // NOT a simple forEach - it's a COLLECT pattern
+						}
+					}
 				}
 			} else {
 				// Other statement types are not simple side-effects
