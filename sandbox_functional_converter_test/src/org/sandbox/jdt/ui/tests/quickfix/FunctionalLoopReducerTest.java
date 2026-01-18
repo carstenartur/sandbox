@@ -55,34 +55,50 @@ public class FunctionalLoopReducerTest {
 	AbstractEclipseJava context = new EclipseJava22();
 
 /**
-* Tests simple increment reducer.
-		 * 
-		 * <p>
-		 * <b>Conversion Rule:</b> Loop with {@code i++} is converted to
-		 * {@code stream().map(item -> 1).reduce(i, Integer::sum)}.
-		 * </p>
-		 * 
-		 * <p>
-		 * <b>Input Pattern:</b>
-		 * </p>
-		 * 
-		 * <pre>
-		 * {@code
-		 * Integer i = 0;
-		 * for (Integer l : ls)
-		 * 	i++;
-		 * }
-		 * </pre>
-		 * 
-		 * <p>
-		 * <b>Output Pattern:</b>
-		 * </p>
-		 * 
-		 * <pre>
-		 * {@code
-		 * i = ls.stream().map(l -> 1).reduce(i, Integer::sum);
-		 * }
-		 * </pre>
+* Tests simple increment reducer pattern.
+ * 
+ * <p><b>Pattern:</b> Enhanced for-loop that counts elements by incrementing
+ * an accumulator variable</p>
+ * 
+ * <p><b>Why convertible:</b> This is a classic reduction pattern where each
+ * iteration contributes a value (1) to an accumulator. The increment operation
+ * {@code i++} can be decomposed into: (1) map each element to the value 1,
+ * then (2) reduce by summing. This is safe because increment is a pure operation
+ * with no side effects.</p>
+ * 
+ * <p><b>Input Pattern:</b></p>
+ * <pre>{@code
+ * Integer i = 0;
+ * for (Integer l : ls)
+ *     i++;
+ * }</pre>
+ * 
+ * <p><b>Output Pattern:</b></p>
+ * <pre>{@code
+ * Integer i = 0;
+ * i = ls.stream().map(l -> 1).reduce(i, Integer::sum);
+ * }</pre>
+ * 
+ * <p><b>Semantic equivalence:</b> Both versions count the number of elements
+ * in the collection. The stream version:
+ * <ul>
+ * <li>Maps each element to 1 (ignoring the actual element value)</li>
+ * <li>Reduces by summing, starting from the initial value of {@code i}</li>
+ * <li>Uses {@code Integer::sum} method reference for efficient summation</li>
+ * </ul>
+ * The final value of {@code i} is identical in both cases.</p>
+ * 
+ * <p><b>Note:</b> The lambda parameter is {@code l} (matching the loop variable
+ * name) even though it's not used in the mapping expression {@code -> 1}. This
+ * preserves the original variable naming from the source code.</p>
+ * 
+ * <p><b>Implementation:</b> This conversion is handled by
+ * {@link org.sandbox.jdt.internal.corext.fix.helper.ReducePatternDetector}
+ * which detects the increment pattern and generates appropriate MAP and REDUCE
+ * operations.</p>
+ * 
+ * @see org.sandbox.jdt.internal.corext.fix.helper.ReducerType#INCREMENT
+ * @see org.sandbox.jdt.internal.corext.fix.helper.OperationType#REDUCE
  */
 @Test
 void test_SimpleReducer() throws CoreException {

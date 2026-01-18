@@ -50,31 +50,36 @@ public class FunctionalLoopSimpleConversionTest {
 	/**
 	 * Tests simple forEach conversion without transformations.
 	 * 
-	 * <p>
-	 * <b>Conversion Rule:</b> A simple enhanced for-loop with a single statement
-	 * body is converted to {@code collection.forEach(item -> statement)}.
-	 * </p>
+	 * <p><b>Pattern:</b> Basic enhanced for-loop with a single statement body that
+	 * performs a side effect (e.g., printing to console)</p>
 	 * 
-	 * <p>
-	 * <b>Input Pattern:</b>
-	 * </p>
+	 * <p><b>Why convertible:</b> This is the simplest case for stream conversion.
+	 * The loop iterates over a collection and executes a single action for each
+	 * element without any transformation, filtering, or accumulation. This maps
+	 * directly to the {@code forEach()} terminal operation.</p>
 	 * 
-	 * <pre>
-	 * {@code
+	 * <p><b>Input Pattern:</b></p>
+	 * <pre>{@code
 	 * for (Integer l : ls)
-	 * 	System.out.println(l);
-	 * }
-	 * </pre>
+	 *     System.out.println(l);
+	 * }</pre>
 	 * 
-	 * <p>
-	 * <b>Output Pattern:</b>
-	 * </p>
-	 * 
-	 * <pre>
-	 * {@code
+	 * <p><b>Output Pattern:</b></p>
+	 * <pre>{@code
 	 * ls.forEach(l -> System.out.println(l));
-	 * }
-	 * </pre>
+	 * }</pre>
+	 * 
+	 * <p><b>Semantic equivalence:</b> The conversion preserves exact semantics.
+	 * Both versions iterate over the collection in order and execute the same
+	 * action for each element. The functional version is more concise and follows
+	 * modern Java idioms. Note that {@code forEach()} (not {@code forEachOrdered()})
+	 * is used here because the collection's {@code forEach()} method is called
+	 * directly, which preserves encounter order for ordered collections.</p>
+	 * 
+	 * <p><b>Implementation:</b> This conversion is handled by
+	 * {@link org.sandbox.jdt.internal.corext.fix.helper.StreamPipelineBuilder}
+	 * which detects that no stream operations (filter, map) are needed and generates
+	 * a direct {@code collection.forEach()} call.</p>
 	 * 
 	 * @see org.sandbox.jdt.internal.corext.fix.helper.OperationType#FOREACH
 	 */
