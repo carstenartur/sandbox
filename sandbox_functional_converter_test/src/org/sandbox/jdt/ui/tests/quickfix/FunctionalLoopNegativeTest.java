@@ -74,25 +74,15 @@ String sourceCode = """
 				}
 
 
-				public Boolean test(List<Integer> ls) {
-					Integer i=0;
-					for(Integer l : ls)
-					{
-						if(l!=null)
+					public void test(List<Integer> ls) {
+						for(Integer l : ls)
 						{
-							break;
+							if(l!=null)
+							{
+								break;
+							}
 						}
-
 					}
-					System.out.println(i);
-					return true;
-
-
-				}
-				private void foo(Object o, int i)
-				{
-
-				}
 					}""";
 
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
@@ -123,23 +113,12 @@ String sourceCode = """
 				}
 
 
-				public Boolean test(List<Integer> ls) throws Exception {
-					Integer i=0;
-
-					for(Integer l : ls)
-					{
-						throw new Exception();
-
+					public void test(List<Integer> ls) throws Exception {
+						for(Integer l : ls)
+						{
+							throw new Exception();
+						}
 					}
-					System.out.println(i);
-					return false;
-
-
-				}
-				private void foo(Object o, int i) throws Exception
-				{
-
-				}
 					}""";
 
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
@@ -170,28 +149,19 @@ String sourceCode = """
 				}
 
 
-				public Boolean test(List<Integer> ls) {
-					Integer i=0;
-					label:
-					for(Integer l : ls)
-					{
-						if(l==null)
+					public Boolean test(List<Integer> ls) {
+						label:
+						for(Integer l : ls)
 						{
-							continue label;
+							if(l==null)
+							{
+								continue label;
+							}
+							if(l.toString()==null)
+								return true;
 						}
-						if(l.toString()==null)
-							return true;
-
+						return false;
 					}
-					System.out.println(i);
-					return false;
-
-
-				}
-				private void foo(Object o, int i)
-				{
-
-				}
 					}""";
 
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
