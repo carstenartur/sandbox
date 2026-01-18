@@ -73,6 +73,7 @@ public class StatementParsingContextTest {
 					ast,              // ast
 					null,             // ifAnalyzer
 					null,             // reduceDetector
+					null,             // collectDetector
 					false,            // isAnyMatchPattern
 					false,            // isNoneMatchPattern
 					false             // isAllMatchPattern
@@ -98,7 +99,7 @@ public class StatementParsingContextTest {
 		@DisplayName("setCurrentVariableName updates the variable name")
 		void setCurrentVariableNameUpdatesValue() {
 			StatementParsingContext context = new StatementParsingContext(
-					"item", "item", true, 0, null, ast, null, null, false, false, false);
+					"item", "item", true, 0, null, ast, null, null, null, false, false, false);
 			
 			assertEquals("item", context.getCurrentVariableName());
 			
@@ -111,19 +112,19 @@ public class StatementParsingContextTest {
 		@DisplayName("Match patterns are correctly returned")
 		void matchPatternsAreCorrectlyReturned() {
 			StatementParsingContext anyMatchContext = new StatementParsingContext(
-					"item", "item", true, 0, null, ast, null, null, true, false, false);
+					"item", "item", true, 0, null, ast, null, null, null, true, false, false);
 			assertTrue(anyMatchContext.isAnyMatchPattern());
 			assertFalse(anyMatchContext.isNoneMatchPattern());
 			assertFalse(anyMatchContext.isAllMatchPattern());
 			
 			StatementParsingContext noneMatchContext = new StatementParsingContext(
-					"item", "item", true, 0, null, ast, null, null, false, true, false);
+					"item", "item", true, 0, null, ast, null, null, null, false, true, false);
 			assertFalse(noneMatchContext.isAnyMatchPattern());
 			assertTrue(noneMatchContext.isNoneMatchPattern());
 			assertFalse(noneMatchContext.isAllMatchPattern());
 			
 			StatementParsingContext allMatchContext = new StatementParsingContext(
-					"item", "item", true, 0, null, ast, null, null, false, false, true);
+					"item", "item", true, 0, null, ast, null, null, null, false, false, true);
 			assertFalse(allMatchContext.isAnyMatchPattern());
 			assertFalse(allMatchContext.isNoneMatchPattern());
 			assertTrue(allMatchContext.isAllMatchPattern());
@@ -138,7 +139,7 @@ public class StatementParsingContextTest {
 		@DisplayName("Creates context for single statement")
 		void createsContextForSingleStatement() {
 			StatementParsingContext context = StatementParsingContext.forSingleStatement(
-					"item", ast, null, null, false, false, false);
+					"item", ast, null, null, null, false, false, false);
 			
 			assertEquals("item", context.getLoopVariableName());
 			assertEquals("item", context.getCurrentVariableName());
@@ -151,7 +152,7 @@ public class StatementParsingContextTest {
 		@DisplayName("Creates context with match patterns")
 		void createsContextWithMatchPatterns() {
 			StatementParsingContext context = StatementParsingContext.forSingleStatement(
-					"item", ast, null, null, true, true, true);
+					"item", ast, null, null, null, true, true, true);
 			
 			assertTrue(context.isAnyMatchPattern());
 			assertTrue(context.isNoneMatchPattern());
