@@ -67,6 +67,7 @@ public class LoopBodyParser {
 
 	private final AST ast;
 	private final ReducePatternDetector reduceDetector;
+	private final CollectPatternDetector collectDetector;
 	private final IfStatementAnalyzer ifAnalyzer;
 	private final boolean isAnyMatchPattern;
 	private final boolean isNoneMatchPattern;
@@ -81,6 +82,7 @@ public class LoopBodyParser {
 	 * 
 	 * @param forLoop           the enhanced for-loop to parse
 	 * @param reduceDetector    detector for reduce patterns
+	 * @param collectDetector   detector for collect patterns
 	 * @param ifAnalyzer        analyzer for if statements
 	 * @param isAnyMatchPattern whether anyMatch pattern is detected
 	 * @param isNoneMatchPattern whether noneMatch pattern is detected
@@ -88,12 +90,14 @@ public class LoopBodyParser {
 	 */
 	public LoopBodyParser(EnhancedForStatement forLoop, 
 			ReducePatternDetector reduceDetector,
+			CollectPatternDetector collectDetector,
 			IfStatementAnalyzer ifAnalyzer,
 			boolean isAnyMatchPattern, 
 			boolean isNoneMatchPattern, 
 			boolean isAllMatchPattern) {
 		this.ast = forLoop.getAST();
 		this.reduceDetector = reduceDetector;
+		this.collectDetector = collectDetector;
 		this.ifAnalyzer = ifAnalyzer;
 		this.isAnyMatchPattern = isAnyMatchPattern;
 		this.isNoneMatchPattern = isNoneMatchPattern;
@@ -183,6 +187,7 @@ public class LoopBodyParser {
 				ast,
 				ifAnalyzer,
 				reduceDetector,
+				collectDetector,
 				isAnyMatchPattern,
 				isNoneMatchPattern,
 				isAllMatchPattern);
@@ -231,6 +236,21 @@ public class LoopBodyParser {
 	private List<ProspectiveOperation> parseSingleStatement(Statement body, String loopVarName,
 			String currentVarName, List<ProspectiveOperation> ops) {
 		
+		// Check for COLLECT pattern first
+		ProspectiveOperation collectOp = collectDetector.detectCollectOperation(body);
+		if (collectOp != null) {
+			// For COLLECT, we might need a MAP operation before it if the added expression is not identity
+			Expression addedExpr = collectDetector.extractCollectExpression(body);
+			if (addedExpr != null && !isIdentityMapping(addedExpr, currentVarName)) {
+				// Create a MAP operation for the transformation
+				ProspectiveOperation mapOp = new ProspectiveOperation(addedExpr, OperationType.MAP, currentVarName);
+				ops.add(mapOp);
+			}
+			ops.add(collectOp);
+			return ops;
+		}
+		
+		// Check for REDUCE pattern
 		ProspectiveOperation reduceOp = reduceDetector.detectReduceOperation(body);
 		if (reduceOp != null) {
 			reduceDetector.addMapBeforeReduce(ops, reduceOp, body, currentVarName, ast);
@@ -246,6 +266,16 @@ public class LoopBodyParser {
 			ops.add(forEachOp);
 		}
 		return ops;
+	}
+	
+	/**
+	 * Checks if an expression is an identity mapping (just returns the variable unchanged).
+	 */
+	private boolean isIdentityMapping(Expression expr, String varName) {
+		if (expr instanceof SimpleName) {
+			return varName.equals(((SimpleName) expr).getIdentifier());
+		}
+		return false;
 	}
 
 	/**

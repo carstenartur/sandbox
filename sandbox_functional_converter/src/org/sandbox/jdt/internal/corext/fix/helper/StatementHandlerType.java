@@ -507,11 +507,26 @@ public enum StatementHandlerType {
 		public LoopBodyParser.ParseResult handle(Statement stmt, StatementParsingContext context,
 				List<ProspectiveOperation> ops, StatementHandlerContext handlerContext) {
 			
+			CollectPatternDetector collectDetector = context.getCollectDetector();
 			ReducePatternDetector reduceDetector = context.getReduceDetector();
 			String currentVarName = context.getCurrentVariableName();
 			SideEffectChecker sideEffectChecker = handlerContext.getSideEffectChecker();
 
-			// Try REDUCE pattern first
+			// Try COLLECT pattern first
+			ProspectiveOperation collectOp = collectDetector.detectCollectOperation(stmt);
+			if (collectOp != null) {
+				// For COLLECT, we might need a MAP operation before it if the added expression is not identity
+				Expression addedExpr = collectDetector.extractCollectExpression(stmt);
+				if (addedExpr != null && !isIdentityMapping(addedExpr, currentVarName)) {
+					// Create a MAP operation for the transformation
+					ProspectiveOperation mapOp = new ProspectiveOperation(addedExpr, OperationType.MAP, currentVarName);
+					ops.add(mapOp);
+				}
+				ops.add(collectOp);
+				return new LoopBodyParser.ParseResult(currentVarName);
+			}
+
+			// Try REDUCE pattern
 			ProspectiveOperation reduceOp = reduceDetector.detectReduceOperation(stmt);
 			if (reduceOp != null) {
 				reduceDetector.addMapBeforeReduce(ops, reduceOp, stmt, currentVarName, context.getAst());
@@ -535,6 +550,16 @@ public enum StatementHandlerType {
 			ops.add(forEachOp);
 			
 			return new LoopBodyParser.ParseResult(currentVarName);
+		}
+		
+		/**
+		 * Checks if an expression is an identity mapping (just returns the variable unchanged).
+		 */
+		private boolean isIdentityMapping(Expression expr, String varName) {
+			if (expr instanceof SimpleName) {
+				return varName.equals(((SimpleName) expr).getIdentifier());
+			}
+			return false;
 		}
 		
 		/**
