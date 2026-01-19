@@ -74,12 +74,6 @@ public class IteratorLoopToFunctional extends AbstractFunctionalCall<ASTNode> {
 	@Override
 	public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed) {
-		// TODO: Iterator loop conversion is temporarily disabled due to AST resolution issues
-		// The conversion causes RuntimeException during CompilationUnitResolver.resolve()
-		// Need to investigate why synthetic EnhancedForStatement causes AST problems
-		return;
-		
-		/* Disabled code:
 		ReferenceHolder<Integer, FunctionalHolder> dataHolder = new ReferenceHolder<>();
 		
 		// Find while-iterator loops
@@ -91,7 +85,6 @@ public class IteratorLoopToFunctional extends AbstractFunctionalCall<ASTNode> {
 		HelperVisitor.callForStatementVisitor(compilationUnit, dataHolder, nodesprocessed,
 				(visited, aholder) -> processForLoop(fixcore, operations, nodesprocessed, visited),
 				(visited, aholder) -> {});
-		*/
 	}
 
 	private boolean processWhileLoop(UseFunctionalCallFixCore fixcore,

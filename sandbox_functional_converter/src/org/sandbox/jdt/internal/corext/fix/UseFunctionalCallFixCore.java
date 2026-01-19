@@ -32,8 +32,8 @@ import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
 public enum UseFunctionalCallFixCore {
 
-	LOOP(new LoopToFunctional()),
-	ITERATOR_LOOP(new IteratorLoopToFunctional());
+	LOOP(new LoopToFunctional());
+	// ITERATOR_LOOP(new IteratorLoopToFunctional()); // Temporarily disabled - causes AST resolution errors
 
 	AbstractFunctionalCall<ASTNode> functionalcall;
 
