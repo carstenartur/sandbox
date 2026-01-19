@@ -128,8 +128,7 @@ public class IteratorLoopAnalyzer {
 		});
 		
 		// Build and process
-		ASTVisitor visitor = builder.build();
-		body.accept(visitor);
+		builder.build(body);
 	}
 	
 	/**
