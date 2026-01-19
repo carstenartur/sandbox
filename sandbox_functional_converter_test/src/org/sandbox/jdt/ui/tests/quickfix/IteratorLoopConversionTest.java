@@ -122,7 +122,7 @@ public class IteratorLoopConversionTest {
 				}
 			}""";
 
-		IPackageFragment pack = context.getfSourceFolder().createPackageFragment("test1", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { output }, null);
@@ -170,7 +170,7 @@ public class IteratorLoopConversionTest {
 				}
 			}""";
 
-		IPackageFragment pack = context.getfSourceFolder().createPackageFragment("test1", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { output }, null);
@@ -208,7 +208,7 @@ public class IteratorLoopConversionTest {
 		// Should NOT be converted - output should match input
 		String output = input;
 
-		IPackageFragment pack = context.getfSourceFolder().createPackageFragment("test1", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { output }, null);
@@ -243,7 +243,7 @@ public class IteratorLoopConversionTest {
 		// Should NOT be converted - output should match input
 		String output = input;
 
-		IPackageFragment pack = context.getfSourceFolder().createPackageFragment("test1", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { output }, null);
@@ -288,7 +288,7 @@ public class IteratorLoopConversionTest {
 				}
 			}""";
 
-		IPackageFragment pack = context.getfSourceFolder().createPackageFragment("test1", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { output }, null);
@@ -337,7 +337,7 @@ public class IteratorLoopConversionTest {
 				}
 			}""";
 
-		IPackageFragment pack = context.getfSourceFolder().createPackageFragment("test1", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { output }, null);
@@ -383,7 +383,7 @@ public class IteratorLoopConversionTest {
 				}
 			}""";
 
-		IPackageFragment pack = context.getfSourceFolder().createPackageFragment("test1", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { output }, null);
@@ -430,7 +430,7 @@ public class IteratorLoopConversionTest {
 				}
 			}""";
 
-		IPackageFragment pack = context.getfSourceFolder().createPackageFragment("test1", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { output }, null);
@@ -480,7 +480,7 @@ public class IteratorLoopConversionTest {
 				}
 			}""";
 
-		IPackageFragment pack = context.getfSourceFolder().createPackageFragment("test1", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { output }, null);
