@@ -32,6 +32,9 @@ import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 public enum UseFunctionalCallFixCore {
 
 	LOOP(new LoopToFunctional());
+	// V2 - Neue ULR-basierte Implementierung (Stub, wird später implementiert)
+	// Siehe https://github.com/carstenartur/sandbox/issues/450
+	// LOOP_V2(new LoopToFunctionalV2());  // Auskommentiert bis LoopToFunctionalV2 existiert
 
 	AbstractFunctionalCall<ASTNode> functionalcall;
 
