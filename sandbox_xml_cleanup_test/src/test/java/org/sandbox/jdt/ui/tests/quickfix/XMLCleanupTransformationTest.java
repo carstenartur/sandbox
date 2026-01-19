@@ -133,7 +133,6 @@ public class XMLCleanupTransformationTest {
 	/**
 	 * Test that comments are preserved during transformation.
 	 */
-	@Disabled("comments are not preserved currently")
 	@Test
 	public void testCommentsPreserved() throws Exception {
 		String xmlWithComment = """
