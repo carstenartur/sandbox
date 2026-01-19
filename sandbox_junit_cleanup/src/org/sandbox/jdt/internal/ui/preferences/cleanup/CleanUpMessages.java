@@ -64,6 +64,13 @@ public final class CleanUpMessages {
 	public static String JavaFeatureTabPage_GroupName_JUnit3;
 	public static String JavaFeatureTabPage_CheckboxName_JUNIT3_CLEANUP;
 	public static String JavaFeatureTabPage_CheckboxName_JUNIT3_CLEANUP_TEST;
+	public static String JavaFeatureTabPage_QuickSelect_Label;
+	public static String JavaFeatureTabPage_QuickSelect_Empty;
+	public static String JavaFeatureTabPage_QuickSelect_FullMigration;
+	public static String JavaFeatureTabPage_QuickSelect_AnnotationsOnly;
+	public static String JavaFeatureTabPage_QuickSelect_LifecycleOnly;
+	public static String JavaFeatureTabPage_QuickSelect_AssertionsOnly;
+	public static String JavaFeatureTabPage_QuickSelect_RulesOnly;
 	
 
 	static {

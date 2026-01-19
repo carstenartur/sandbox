@@ -13,6 +13,7 @@ This file was missing from the sandbox_junit_cleanup plugin. It has been created
 - ✅ Multiple plugin implementations for different migration scenarios
 - ✅ @Test(expected) parameter migration to assertThrows()
 - ✅ Parameter order correction for assertions (expected/actual swapping)
+- ✅ Quick Select presets for easier preference configuration
 
 ### In Progress
 - None currently
@@ -21,6 +22,32 @@ This file was missing from the sandbox_junit_cleanup plugin. It has been created
 - [ ] Additional JUnit 5 features support
 - [ ] Performance optimization for large test suites
 - [ ] Enhanced error reporting
+
+## Recent Enhancements
+
+### Quick Select Presets (✅ COMPLETED)
+**Priority**: High  
+**Effort**: 2-3 hours  
+**Status**: ✅ **COMPLETED**
+
+Added Quick Select combo box to JUnit cleanup preferences to allow users to select predefined groups of cleanup options:
+- **Full Migration**: Enables all JUnit 4 to 5 migration options (except optimizations)
+- **Annotations Only**: Safe migration of annotations (@Test, @Before, @After, @BeforeClass, @AfterClass, @Ignore)
+- **Lifecycle Only**: Just lifecycle annotations (@Before, @After, @BeforeClass, @AfterClass)
+- **Assertions Only**: Migrate Assert → Assertions
+- **Rules Only**: Migrate JUnit 4 Rules (TemporaryFolder, TestName, ExternalResource, Timeout)
+
+**Benefits**:
+- Significantly reduces time to configure JUnit migration preferences
+- Reduces user errors when selecting related options
+- Provides guided migration paths for different use cases
+- Users can still customize individual options after selecting a preset
+
+**Implementation**:
+- Added combo box widget in SandboxCodeTabPage.java
+- Implemented applyQuickSelection() method to programmatically set checkbox states
+- Added internationalized message strings for all preset options
+- Main JUNIT_CLEANUP checkbox is automatically enabled when any preset is selected
 
 ## Priority Tasks
 

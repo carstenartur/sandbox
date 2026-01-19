@@ -451,6 +451,80 @@ Plugin tests in `JUnitMigrationCleanUpTest` validate end-to-end transformations 
 
 4. **Selective Transformation**: The `find()` method identifies specific nodes to transform, avoiding unnecessary processing
 
+## User Interface Components
+
+### SandboxCodeTabPage (Preferences UI)
+
+**Location**: `org.sandbox.jdt.internal.ui.preferences.cleanup.SandboxCodeTabPage`
+
+**Responsibilities**:
+- Provides Eclipse preferences UI for configuring JUnit cleanup options
+- Extends Eclipse's `AbstractCleanUpTabPage` framework
+- Manages checkbox preferences for individual cleanup features
+- Implements Quick Select combo box for preset configurations
+
+**Key Features**:
+
+1. **Hierarchical Checkbox Organization**:
+   - Main "JUNIT_CLEANUP" checkbox enables/disables all sub-options
+   - Grouped checkboxes for related features (assertions, lifecycle, rules, etc.)
+   - Nested dependencies (e.g., @Test enables timeout and expected parameter options)
+
+2. **Quick Select Presets** (New):
+   - Combo box widget allowing users to select predefined groups of options
+   - Five preset configurations covering common migration scenarios
+   - Automatically enables the main JUNIT_CLEANUP checkbox when a preset is selected
+   - Individual checkboxes remain editable after preset application
+
+**Quick Select Presets**:
+
+| Preset | Description | Enabled Options |
+|--------|-------------|-----------------|
+| **Full Migration** | Complete JUnit 4→5 migration | All cleanup options except optimizations |
+| **Annotations Only** | Safe annotation migration | @Test, @Before, @After, @BeforeClass, @AfterClass, @Ignore |
+| **Lifecycle Only** | Lifecycle annotations only | @Before, @After, @BeforeClass, @AfterClass |
+| **Assertions Only** | Assertion migration | Assert → Assertions |
+| **Rules Only** | JUnit 4 Rules migration | TemporaryFolder, TestName, ExternalResource, Timeout |
+
+**Implementation Details**:
+```java
+// Combo widget is added after the main JUNIT_CLEANUP checkbox
+Combo quickSelectCombo = new Combo(junitGroup, SWT.READ_ONLY | SWT.DROP_DOWN);
+
+// Selection listener applies the chosen preset
+quickSelectCombo.addSelectionListener(new SelectionAdapter() {
+    @Override
+    public void widgetSelected(SelectionEvent e) {
+        int index = quickSelectCombo.getSelectionIndex();
+        applyQuickSelection(index, ...checkboxPreferences...);
+    }
+});
+
+// applyQuickSelection() method programmatically sets checkbox states
+private void applyQuickSelection(int selectionIndex, CheckboxPreference... prefs) {
+    // Enable main checkbox
+    junitcb.setChecked(true);
+    
+    // Reset all sub-options, then enable specific ones based on preset
+    switch (selectionIndex) {
+        case 1: // Full Migration - enable all
+        case 2: // Annotations Only - enable annotation options
+        // ... etc
+    }
+}
+```
+
+**Benefits**:
+- Reduces configuration time from 15+ checkbox clicks to 2 clicks
+- Prevents user errors when selecting related options
+- Provides guided migration paths for different use cases
+- Maintains flexibility for custom configurations
+
+**Internationalization**:
+- All UI strings are externalized in `CleanUpMessages.properties`
+- Combo box items use message constants (e.g., `JavaFeatureTabPage_QuickSelect_FullMigration`)
+- Supports future translations
+
 ## Future Improvements
 
 1. **Parameterized Tests Migration**: Extract helper for JUnit 4 parameterized tests → JUnit 5 `@ParameterizedTest`
