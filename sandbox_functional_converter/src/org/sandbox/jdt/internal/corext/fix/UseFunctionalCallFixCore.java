@@ -26,12 +26,14 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.fix.helper.AbstractFunctionalCall;
+import org.sandbox.jdt.internal.corext.fix.helper.IteratorLoopToFunctional;
 import org.sandbox.jdt.internal.corext.fix.helper.LoopToFunctional;
 import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
 public enum UseFunctionalCallFixCore {
 
-	LOOP(new LoopToFunctional());
+	LOOP(new LoopToFunctional()),
+	ITERATOR_LOOP(new IteratorLoopToFunctional());
 
 	AbstractFunctionalCall<ASTNode> functionalcall;
 
