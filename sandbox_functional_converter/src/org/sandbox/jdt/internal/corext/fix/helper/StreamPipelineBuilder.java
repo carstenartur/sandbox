@@ -123,6 +123,7 @@ public class StreamPipelineBuilder {
 	private final EnhancedForStatement forLoop;
 	private final PreconditionsChecker preconditions;
 	private final ReducePatternDetector reduceDetector;
+	private final CollectPatternDetector collectDetector;
 	private final IfStatementAnalyzer ifAnalyzer;
 	private final LoopBodyParser loopBodyParser;
 
@@ -155,6 +156,7 @@ public class StreamPipelineBuilder {
 		this.forLoop = forLoop;
 		this.preconditions = preconditions;
 		this.reduceDetector = new ReducePatternDetector(forLoop);
+		this.collectDetector = new CollectPatternDetector(forLoop);
 		this.ifAnalyzer = new IfStatementAnalyzer(forLoop);
 
 		// Internal invariant: EnhancedForStatement must have a parameter with a name
@@ -168,7 +170,7 @@ public class StreamPipelineBuilder {
 		this.isAllMatchPattern = preconditions.isAllMatchPattern();
 		
 		// Initialize LoopBodyParser with all required dependencies
-		this.loopBodyParser = new LoopBodyParser(forLoop, reduceDetector, ifAnalyzer, 
+		this.loopBodyParser = new LoopBodyParser(forLoop, reduceDetector, collectDetector, ifAnalyzer, 
 				isAnyMatchPattern, isNoneMatchPattern, isAllMatchPattern);
 	}
 
@@ -219,6 +221,7 @@ public class StreamPipelineBuilder {
 		pipelineAssembler = new PipelineAssembler(forLoop, operations, loopVariableName);
 		pipelineAssembler.setUsedVariableNames(getUsedVariableNames(forLoop));
 		pipelineAssembler.setReduceDetector(reduceDetector);
+		pipelineAssembler.setCollectDetector(collectDetector);
 
 		convertible = true;
 		return true;
@@ -274,6 +277,24 @@ public class StreamPipelineBuilder {
 	 */
 	public boolean needsArraysImport() {
 		return pipelineAssembler != null && pipelineAssembler.needsArraysImport();
+	}
+
+	/**
+	 * Returns whether the pipeline needs the java.util.stream.Collectors import.
+	 * This is true when using collect operations (toList, toSet, etc.).
+	 * 
+	 * <p>This method should be called after {@link #buildPipeline()} to determine
+	 * if an import needs to be added.</p>
+	 * 
+	 * @return true if Collectors import is needed
+	 */
+	public boolean needsCollectorsImport() {
+		// Check if any operation is a COLLECT operation
+		if (operations == null) {
+			return false;
+		}
+		return operations.stream()
+				.anyMatch(op -> op.getOperationType() == OperationType.COLLECT);
 	}
 
 	/**
@@ -511,5 +532,17 @@ public class StreamPipelineBuilder {
 			}
 		}
 		return null;
+	}
+	
+	/**
+	 * Gets the target collection variable name for COLLECT operations.
+	 * 
+	 * @return the target variable name, or null if no COLLECT operation exists
+	 */
+	public String getCollectTargetVariable() {
+		if (!analyzed || !convertible || collectDetector == null) {
+			return null;
+		}
+		return collectDetector.getTargetVariable();
 	}
 }

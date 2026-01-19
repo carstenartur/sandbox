@@ -42,6 +42,8 @@ import org.eclipse.jdt.core.dom.Statement;
  *     Example: {@code if (condition) return false;} → {@code if (!stream.noneMatch(x -> condition)) return false;}</li>
  * <li><b>ALLMATCH</b>: Terminal predicate returning true if all elements match ({@code .allMatch(x -> condition)}). 
  *     Example: {@code if (!condition) return false;} → {@code if (!stream.allMatch(x -> condition)) return false;}</li>
+ * <li><b>COLLECT</b>: Terminal operation collecting elements into a collection ({@code .collect(Collectors.toList())}). 
+ *     Example: {@code result.add(item);} → {@code result = stream.collect(Collectors.toList());}</li>
  * </ul>
  * 
  * @see ProspectiveOperation
@@ -183,6 +185,24 @@ public enum OperationType {
 				return createPredicateLambdaBody(ast, context.originalExpression());
 			}
 			return null;
+		}
+	},
+	
+	/**
+	 * Terminal operation collecting elements into a collection.
+	 * Stream method: {@code .collect(Collectors.toList())} or {@code .collect(Collectors.toSet())}
+	 */
+	COLLECT(StreamConstants.COLLECT_METHOD, false, true) {
+		@Override
+		public ASTNode createLambdaBody(AST ast, LambdaBodyContext context) {
+			// COLLECT has special handling via getArgumentsForCollector()
+			// This method is not used for COLLECT operations
+			return null;
+		}
+		
+		@Override
+		public boolean hasSpecialArgumentHandling() {
+			return true;
 		}
 	};
 

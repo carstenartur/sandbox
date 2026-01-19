@@ -27,6 +27,7 @@ import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.IfStatement;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.PostfixExpression;
 import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.ReturnStatement;
@@ -67,6 +68,7 @@ public class LoopBodyParser {
 
 	private final AST ast;
 	private final ReducePatternDetector reduceDetector;
+	private final CollectPatternDetector collectDetector;
 	private final IfStatementAnalyzer ifAnalyzer;
 	private final boolean isAnyMatchPattern;
 	private final boolean isNoneMatchPattern;
@@ -81,6 +83,7 @@ public class LoopBodyParser {
 	 * 
 	 * @param forLoop           the enhanced for-loop to parse
 	 * @param reduceDetector    detector for reduce patterns
+	 * @param collectDetector   detector for collect patterns
 	 * @param ifAnalyzer        analyzer for if statements
 	 * @param isAnyMatchPattern whether anyMatch pattern is detected
 	 * @param isNoneMatchPattern whether noneMatch pattern is detected
@@ -88,12 +91,14 @@ public class LoopBodyParser {
 	 */
 	public LoopBodyParser(EnhancedForStatement forLoop, 
 			ReducePatternDetector reduceDetector,
+			CollectPatternDetector collectDetector,
 			IfStatementAnalyzer ifAnalyzer,
 			boolean isAnyMatchPattern, 
 			boolean isNoneMatchPattern, 
 			boolean isAllMatchPattern) {
 		this.ast = forLoop.getAST();
 		this.reduceDetector = reduceDetector;
+		this.collectDetector = collectDetector;
 		this.ifAnalyzer = ifAnalyzer;
 		this.isAnyMatchPattern = isAnyMatchPattern;
 		this.isNoneMatchPattern = isNoneMatchPattern;
@@ -183,6 +188,7 @@ public class LoopBodyParser {
 				ast,
 				ifAnalyzer,
 				reduceDetector,
+				collectDetector,
 				isAnyMatchPattern,
 				isNoneMatchPattern,
 				isAllMatchPattern);
@@ -231,6 +237,21 @@ public class LoopBodyParser {
 	private List<ProspectiveOperation> parseSingleStatement(Statement body, String loopVarName,
 			String currentVarName, List<ProspectiveOperation> ops) {
 		
+		// Check for COLLECT pattern first
+		ProspectiveOperation collectOp = collectDetector.detectCollectOperation(body);
+		if (collectOp != null) {
+			// For COLLECT, we might need a MAP operation before it if the added expression is not identity
+			Expression addedExpr = collectDetector.extractCollectExpression(body);
+			if (addedExpr != null && !isIdentityMapping(addedExpr, currentVarName)) {
+				// Create a MAP operation for the transformation
+				ProspectiveOperation mapOp = new ProspectiveOperation(addedExpr, OperationType.MAP, currentVarName);
+				ops.add(mapOp);
+			}
+			ops.add(collectOp);
+			return ops;
+		}
+		
+		// Check for REDUCE pattern
 		ProspectiveOperation reduceOp = reduceDetector.detectReduceOperation(body);
 		if (reduceOp != null) {
 			reduceDetector.addMapBeforeReduce(ops, reduceOp, body, currentVarName, ast);
@@ -246,6 +267,16 @@ public class LoopBodyParser {
 			ops.add(forEachOp);
 		}
 		return ops;
+	}
+	
+	/**
+	 * Checks if an expression is an identity mapping (just returns the variable unchanged).
+	 */
+	private boolean isIdentityMapping(Expression expr, String varName) {
+		if (expr instanceof SimpleName) {
+			return varName.equals(((SimpleName) expr).getIdentifier());
+		}
+		return false;
 	}
 
 	/**
@@ -292,8 +323,19 @@ public class LoopBodyParser {
 				// Check if this is a method call or other safe side-effect
 				ExpressionStatement exprStmt = (ExpressionStatement) stmt;
 				Expression expr = exprStmt.getExpression();
-				// Method invocations are safe side-effects
-				if (!(expr instanceof org.eclipse.jdt.core.dom.MethodInvocation)) {
+				
+				if (expr instanceof MethodInvocation) {
+					MethodInvocation methodInv = (MethodInvocation) expr;
+					// Check if this is a COLLECT pattern (collection.add())
+					// If so, don't treat as simple forEach - let COLLECT handling take over
+					if ("add".equals(methodInv.getName().getIdentifier())) {
+						ProspectiveOperation collectOp = collectDetector.detectCollectOperation(stmt);
+						if (collectOp != null) {
+							return false;  // NOT a simple forEach - it's a COLLECT pattern
+						}
+					}
+					// Other method invocations are safe side-effects
+				} else {
 					// Non-method-call expressions might be reduce operations or assignments
 					ProspectiveOperation reduceOp = reduceDetector.detectReduceOperation(stmt);
 					if (reduceOp != null) {

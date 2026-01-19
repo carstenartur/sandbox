@@ -47,6 +47,7 @@ public class StatementParsingContext {
 	private final AST ast;
 	private final IfStatementAnalyzer ifAnalyzer;
 	private final ReducePatternDetector reduceDetector;
+	private final CollectPatternDetector collectDetector;
 	private final boolean isAnyMatchPattern;
 	private final boolean isNoneMatchPattern;
 	private final boolean isAllMatchPattern;
@@ -63,6 +64,7 @@ public class StatementParsingContext {
 			AST ast,
 			IfStatementAnalyzer ifAnalyzer,
 			ReducePatternDetector reduceDetector,
+			CollectPatternDetector collectDetector,
 			boolean isAnyMatchPattern,
 			boolean isNoneMatchPattern,
 			boolean isAllMatchPattern) {
@@ -74,6 +76,7 @@ public class StatementParsingContext {
 		this.ast = ast;
 		this.ifAnalyzer = ifAnalyzer;
 		this.reduceDetector = reduceDetector;
+		this.collectDetector = collectDetector;
 		this.isAnyMatchPattern = isAnyMatchPattern;
 		this.isNoneMatchPattern = isNoneMatchPattern;
 		this.isAllMatchPattern = isAllMatchPattern;
@@ -115,6 +118,10 @@ public class StatementParsingContext {
 		return reduceDetector;
 	}
 
+	public CollectPatternDetector getCollectDetector() {
+		return collectDetector;
+	}
+
 	public boolean isAnyMatchPattern() {
 		return isAnyMatchPattern;
 	}
@@ -135,6 +142,7 @@ public class StatementParsingContext {
 			AST ast,
 			IfStatementAnalyzer ifAnalyzer,
 			ReducePatternDetector reduceDetector,
+			CollectPatternDetector collectDetector,
 			boolean isAnyMatchPattern,
 			boolean isNoneMatchPattern,
 			boolean isAllMatchPattern) {
@@ -147,6 +155,7 @@ public class StatementParsingContext {
 				ast,
 				ifAnalyzer,
 				reduceDetector,
+				collectDetector,
 				isAnyMatchPattern,
 				isNoneMatchPattern,
 				isAllMatchPattern);
