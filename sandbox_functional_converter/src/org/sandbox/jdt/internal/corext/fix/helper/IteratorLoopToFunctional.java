@@ -26,60 +26,88 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 
 /**
- * Converts traditional iterator-based while loops to functional stream operations.
+ * Converts traditional iterator-based loops (while and for) to functional stream operations.
  * 
- * <p><b>Example Transformation:</b></p>
+ * <p><b>Example Transformations:</b></p>
  * <pre>{@code
- * // Before:
+ * // Pattern 1: While loop with iterator
  * Iterator<String> it = list.iterator();
  * while (it.hasNext()) {
  *     String item = it.next();
  *     System.out.println(item);
  * }
  * 
- * // After:
+ * // Pattern 2: For loop with iterator
+ * for (Iterator<String> it = list.iterator(); it.hasNext(); ) {
+ *     String item = it.next();
+ *     System.out.println(item);
+ * }
+ * 
+ * // Both convert to:
  * list.forEach(item -> System.out.println(item));
  * }</pre>
  * 
  * <p><b>Supported Patterns:</b></p>
  * <ul>
+ * <li>While-iterator loops and for-iterator loops</li>
  * <li>Simple iteration with forEach</li>
  * <li>Mapping and filtering operations</li>
  * <li>Reduction operations</li>
  * <li>Early return patterns (anyMatch, noneMatch, allMatch)</li>
  * </ul>
  * 
- * <p><b>Safety Checks:</b></p>
+ * <p><b>Safety Checks (via IteratorLoopAnalyzer):</b></p>
  * <ul>
- * <li>Iterator must be used only for iteration (no remove())</li>
+ * <li>No calls to iterator.remove()</li>
  * <li>Single next() call at loop start</li>
- * <li>No modifications to collection during iteration</li>
- * <li>All variables effectively final</li>
+ * <li>No break or labeled continue statements</li>
  * </ul>
  * 
- * @see IteratorLoopPattern
+ * @see IteratorPatternDetector
+ * @see IteratorLoopAnalyzer
+ * @see IteratorLoopBodyParser
  * @see LoopToFunctional
  * @see StreamPipelineBuilder
  */
-public class IteratorLoopToFunctional extends AbstractFunctionalCall<WhileStatement> {
+public class IteratorLoopToFunctional extends AbstractFunctionalCall<ASTNode> {
 
 	@Override
 	public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, FunctionalHolder> dataHolder = new ReferenceHolder<>();
+		
+		// Find while-iterator loops
 		HelperVisitor.callWhileStatementVisitor(compilationUnit, dataHolder, nodesprocessed,
-				(visited, aholder) -> processFoundNode(fixcore, operations, nodesprocessed, visited, aholder),
+				(visited, aholder) -> processWhileLoop(fixcore, operations, nodesprocessed, visited),
+				(visited, aholder) -> {});
+		
+		// Find for-iterator loops
+		HelperVisitor.callForStatementVisitor(compilationUnit, dataHolder, nodesprocessed,
+				(visited, aholder) -> processForLoop(fixcore, operations, nodesprocessed, visited),
 				(visited, aholder) -> {});
 	}
 
-	private boolean processFoundNode(UseFunctionalCallFixCore fixcore,
-			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, WhileStatement visited,
-			ReferenceHolder<Integer, FunctionalHolder> dataHolder) {
+	private boolean processWhileLoop(UseFunctionalCallFixCore fixcore,
+			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, WhileStatement visited) {
 		
 		// Check if this while loop matches the iterator pattern
-		IteratorLoopPattern pattern = new IteratorLoopPattern(visited);
-		if (!pattern.matches()) {
+		IteratorPatternDetector.IteratorPattern pattern = IteratorPatternDetector.detectWhileIteratorPattern(visited);
+		if (pattern == null) {
 			// Not an iterator loop - continue visiting children
+			return true;
+		}
+		
+		// Analyze for safety
+		IteratorLoopAnalyzer analyzer = new IteratorLoopAnalyzer(pattern);
+		if (!analyzer.isSafeToConvert()) {
+			// Not safe to convert
+			return true;
+		}
+		
+		// Parse the loop body
+		IteratorLoopBodyParser parser = new IteratorLoopBodyParser(pattern);
+		if (!parser.parse()) {
+			// Could not parse
 			return true;
 		}
 		
@@ -87,23 +115,72 @@ public class IteratorLoopToFunctional extends AbstractFunctionalCall<WhileStatem
 		operations.add(fixcore.rewrite(visited));
 		nodesprocessed.add(visited);
 		
-		// Also mark the iterator declaration as processed to prevent it from being touched
-		if (pattern.getIteratorDeclaration() != null) {
-			nodesprocessed.add(pattern.getIteratorDeclaration());
+		// Also mark the iterator declaration as processed
+		if (pattern.hasExternalDeclaration()) {
+			nodesprocessed.add(pattern.getExternalIteratorDecl());
 		}
 		
-		// Return false to prevent visiting children since this loop was converted
+		// Return false to prevent visiting children
+		return false;
+	}
+
+	private boolean processForLoop(UseFunctionalCallFixCore fixcore,
+			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ForStatement visited) {
+		
+		// Check if this for loop matches the iterator pattern
+		IteratorPatternDetector.IteratorPattern pattern = IteratorPatternDetector.detectForLoopIteratorPattern(visited);
+		if (pattern == null) {
+			// Not an iterator loop - continue visiting children
+			return true;
+		}
+		
+		// Analyze for safety
+		IteratorLoopAnalyzer analyzer = new IteratorLoopAnalyzer(pattern);
+		if (!analyzer.isSafeToConvert()) {
+			// Not safe to convert
+			return true;
+		}
+		
+		// Parse the loop body
+		IteratorLoopBodyParser parser = new IteratorLoopBodyParser(pattern);
+		if (!parser.parse()) {
+			// Could not parse
+			return true;
+		}
+		
+		// Found a convertible iterator loop
+		operations.add(fixcore.rewrite(visited));
+		nodesprocessed.add(visited);
+		
+		// Return false to prevent visiting children
 		return false;
 	}
 
 	@Override
-	public void rewrite(UseFunctionalCallFixCore upp, final WhileStatement visited,
+	public void rewrite(UseFunctionalCallFixCore upp, final ASTNode visited,
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group) throws CoreException {
 		
-		// Detect the iterator pattern again
-		IteratorLoopPattern pattern = new IteratorLoopPattern(visited);
-		if (!pattern.matches()) {
-			// Should not happen since we already validated in find()
+		IteratorPatternDetector.IteratorPattern pattern = null;
+		
+		if (visited instanceof WhileStatement) {
+			pattern = IteratorPatternDetector.detectWhileIteratorPattern((WhileStatement) visited);
+		} else if (visited instanceof ForStatement) {
+			pattern = IteratorPatternDetector.detectForLoopIteratorPattern((ForStatement) visited);
+		}
+		
+		if (pattern == null) {
+			return;
+		}
+		
+		// Re-analyze for safety
+		IteratorLoopAnalyzer analyzer = new IteratorLoopAnalyzer(pattern);
+		if (!analyzer.isSafeToConvert()) {
+			return;
+		}
+		
+		// Re-parse the loop body
+		IteratorLoopBodyParser parser = new IteratorLoopBodyParser(pattern);
+		if (!parser.parse()) {
 			return;
 		}
 		
@@ -111,20 +188,17 @@ public class IteratorLoopToFunctional extends AbstractFunctionalCall<WhileStatem
 		AST ast = visited.getAST();
 		
 		// Create a synthetic EnhancedForStatement for the StreamPipelineBuilder
-		// This allows us to reuse all existing stream transformation logic
-		EnhancedForStatement syntheticLoop = createSyntheticEnhancedFor(ast, pattern);
+		EnhancedForStatement syntheticLoop = createSyntheticEnhancedFor(ast, pattern, parser);
 		
 		// Use existing PreconditionsChecker and StreamPipelineBuilder
 		PreconditionsChecker pc = new PreconditionsChecker(syntheticLoop, (CompilationUnit) visited.getRoot());
 		
 		if (!pc.isSafeToRefactor()) {
-			// Cannot convert - skip
 			return;
 		}
 		
 		StreamPipelineBuilder builder = new StreamPipelineBuilder(syntheticLoop, pc);
 		if (!builder.analyze()) {
-			// Cannot convert - skip
 			return;
 		}
 		
@@ -135,11 +209,12 @@ public class IteratorLoopToFunctional extends AbstractFunctionalCall<WhileStatem
 		
 		Statement replacement = builder.wrapPipeline(pipeline);
 		if (replacement != null) {
-			// Replace both the iterator declaration and the while loop
-			// First, remove the iterator declaration
-			rewrite.remove(pattern.getIteratorDeclaration(), group);
+			// For while loops, also remove the external iterator declaration
+			if (pattern.hasExternalDeclaration()) {
+				rewrite.remove(pattern.getExternalIteratorDecl(), group);
+			}
 			
-			// Then replace the while loop with the stream operation
+			// Replace the loop with the stream operation
 			rewrite.replace(visited, replacement, group);
 		}
 	}
@@ -150,18 +225,20 @@ public class IteratorLoopToFunctional extends AbstractFunctionalCall<WhileStatem
 	 * 
 	 * @param ast the AST to create nodes in
 	 * @param pattern the detected iterator pattern
+	 * @param parser the parsed loop body
 	 * @return a synthetic enhanced-for statement
 	 */
-	private EnhancedForStatement createSyntheticEnhancedFor(AST ast, IteratorLoopPattern pattern) {
+	private EnhancedForStatement createSyntheticEnhancedFor(AST ast,
+			IteratorPatternDetector.IteratorPattern pattern, IteratorLoopBodyParser parser) {
 		EnhancedForStatement enhancedFor = ast.newEnhancedForStatement();
 		
 		// Set the parameter: T item
 		SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
-		param.setName(ast.newSimpleName(pattern.getElementVarName()));
+		param.setName(ast.newSimpleName(parser.getElementVarName()));
 		
 		// Try to set the type if we know it
-		if (pattern.getElementType() != null) {
-			param.setType(ast.newSimpleType(ast.newName(pattern.getElementType().getName())));
+		if (parser.getElementType() != null) {
+			param.setType(ast.newSimpleType(ast.newName(parser.getElementType().getName())));
 		} else {
 			// Fallback to Object if type unknown
 			param.setType(ast.newSimpleType(ast.newSimpleName("Object"))); //$NON-NLS-1$
@@ -173,7 +250,7 @@ public class IteratorLoopToFunctional extends AbstractFunctionalCall<WhileStatem
 		enhancedFor.setExpression((Expression) ASTNode.copySubtree(ast, pattern.getCollectionExpression()));
 		
 		// Set the body: loop body without the next() call
-		enhancedFor.setBody((Statement) ASTNode.copySubtree(ast, pattern.getLoopBody()));
+		enhancedFor.setBody((Statement) ASTNode.copySubtree(ast, parser.getBodyWithoutNext()));
 		
 		return enhancedFor;
 	}
