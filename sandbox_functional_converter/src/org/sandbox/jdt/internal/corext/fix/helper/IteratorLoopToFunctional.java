@@ -160,62 +160,67 @@ public class IteratorLoopToFunctional extends AbstractFunctionalCall<ASTNode> {
 	public void rewrite(UseFunctionalCallFixCore upp, final ASTNode visited,
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group) throws CoreException {
 		
-		IteratorPatternDetector.IteratorPattern pattern = null;
-		
-		if (visited instanceof WhileStatement) {
-			pattern = IteratorPatternDetector.detectWhileIteratorPattern((WhileStatement) visited);
-		} else if (visited instanceof ForStatement) {
-			pattern = IteratorPatternDetector.detectForLoopIteratorPattern((ForStatement) visited);
-		}
-		
-		if (pattern == null) {
-			return;
-		}
-		
-		// Re-analyze for safety
-		IteratorLoopAnalyzer analyzer = new IteratorLoopAnalyzer(pattern);
-		if (!analyzer.isSafeToConvert()) {
-			return;
-		}
-		
-		// Re-parse the loop body
-		IteratorLoopBodyParser parser = new IteratorLoopBodyParser(pattern);
-		if (!parser.parse()) {
-			return;
-		}
-		
-		ASTRewrite rewrite = cuRewrite.getASTRewrite();
-		AST ast = visited.getAST();
-		
-		// Create a synthetic EnhancedForStatement for the StreamPipelineBuilder
-		EnhancedForStatement syntheticLoop = createSyntheticEnhancedFor(ast, pattern, parser);
-		
-		// Use existing PreconditionsChecker and StreamPipelineBuilder
-		PreconditionsChecker pc = new PreconditionsChecker(syntheticLoop, (CompilationUnit) visited.getRoot());
-		
-		if (!pc.isSafeToRefactor()) {
-			return;
-		}
-		
-		StreamPipelineBuilder builder = new StreamPipelineBuilder(syntheticLoop, pc);
-		if (!builder.analyze()) {
-			return;
-		}
-		
-		MethodInvocation pipeline = builder.buildPipeline();
-		if (pipeline == null) {
-			return;
-		}
-		
-		Statement replacement = builder.wrapPipeline(pipeline);
-		if (replacement != null) {
-			// For while loops, also remove the external iterator declaration
-			if (pattern.hasExternalDeclaration()) {
-				rewrite.remove(pattern.getExternalIteratorDecl(), group);
+		try {
+			IteratorPatternDetector.IteratorPattern pattern = null;
+			
+			if (visited instanceof WhileStatement) {
+				pattern = IteratorPatternDetector.detectWhileIteratorPattern((WhileStatement) visited);
+			} else if (visited instanceof ForStatement) {
+				pattern = IteratorPatternDetector.detectForLoopIteratorPattern((ForStatement) visited);
 			}
 			
-			// Replace the loop with the stream operation
-			rewrite.replace(visited, replacement, group);
+			if (pattern == null) {
+				return;
+			}
+			
+			// Re-analyze for safety
+			IteratorLoopAnalyzer analyzer = new IteratorLoopAnalyzer(pattern);
+			if (!analyzer.isSafeToConvert()) {
+				return;
+			}
+			
+			// Re-parse the loop body
+			IteratorLoopBodyParser parser = new IteratorLoopBodyParser(pattern);
+			if (!parser.parse()) {
+				return;
+			}
+			
+			ASTRewrite rewrite = cuRewrite.getASTRewrite();
+			AST ast = visited.getAST();
+			
+			// Create a synthetic EnhancedForStatement for the StreamPipelineBuilder
+			EnhancedForStatement syntheticLoop = createSyntheticEnhancedFor(ast, pattern, parser);
+			
+			// Use existing PreconditionsChecker and StreamPipelineBuilder
+			PreconditionsChecker pc = new PreconditionsChecker(syntheticLoop, (CompilationUnit) visited.getRoot());
+			
+			if (!pc.isSafeToRefactor()) {
+				return;
+			}
+			
+			StreamPipelineBuilder builder = new StreamPipelineBuilder(syntheticLoop, pc);
+			if (!builder.analyze()) {
+				return;
+			}
+			
+			MethodInvocation pipeline = builder.buildPipeline();
+			if (pipeline == null) {
+				return;
+			}
+			
+			Statement replacement = builder.wrapPipeline(pipeline);
+			if (replacement != null) {
+				// For while loops, also remove the external iterator declaration
+				if (pattern.hasExternalDeclaration()) {
+					rewrite.remove(pattern.getExternalIteratorDecl(), group);
+				}
+				
+				// Replace the loop with the stream operation
+				rewrite.replace(visited, replacement, group);
+			}
+		} catch (Exception e) {
+			// Silently skip if conversion fails - better to leave code unchanged than to break
+			return;
 		}
 	}
 	
