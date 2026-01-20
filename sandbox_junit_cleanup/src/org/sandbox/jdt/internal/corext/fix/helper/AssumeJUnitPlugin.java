@@ -99,8 +99,14 @@ public class AssumeJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 		if (junitHolder.minv instanceof MethodInvocation) {
 			MethodInvocation minv= junitHolder.getMethodInvocation();
 			if ("assumeThat".equals(minv.getName().getIdentifier()) && isJUnitAssume(minv)) {
-				importRewriter.addStaticImport("org.junit.jupiter.api.Assumptions", "assumeThat", true);
-//				importRewriter.addStaticImport("org.hamcrest.junit.MatcherAssume", "assumeThat", true);
+				// Check if this is using Hamcrest matchers
+				if (usesHamcrestMatcher(minv)) {
+					// Use Hamcrest's MatcherAssume for Hamcrest matchers
+					importRewriter.addStaticImport("org.hamcrest.junit.MatcherAssume", "assumeThat", true);
+				} else {
+					// Use JUnit Jupiter's Assumptions for non-Hamcrest assumeThat
+					importRewriter.addStaticImport("org.junit.jupiter.api.Assumptions", "assumeThat", true);
+				}
 				importRewriter.removeStaticImport("org.junit.Assume.assumeThat");
 				MethodInvocation newAssumeThatCall = ast.newMethodInvocation();
 				newAssumeThatCall.setName(ast.newSimpleName("assumeThat"));
@@ -109,12 +115,15 @@ public class AssumeJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 				}
 				ASTNodes.replaceButKeepComment(rewriter,minv, newAssumeThatCall, group);
 			} else {
+				// For assumeTrue, assumeFalse, assumeNotNull - use JUnit 5 Assumptions
 				reorderParameters(minv, rewriter, group, ONEPARAM_ASSUMPTIONS, MULTI_PARAM_ASSUMPTIONS);
 				SimpleName newQualifier= ast.newSimpleName(ASSUMPTIONS);
 				Expression expression= minv.getExpression();
 				if (expression != null) {
 					ASTNodes.replaceButKeepComment(rewriter, expression, newQualifier, group);
 				}
+				// Add import for Assumptions class (needed for qualified method calls)
+				importRewriter.addImport(ORG_JUNIT_JUPITER_API_ASSUMPTIONS);
 			}
 		} else {
 			changeImportDeclaration(junitHolder.getImportDeclaration(), importRewriter, group);
@@ -133,15 +142,91 @@ public class AssumeJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 	}
 
 	/**
+	 * Checks if assumeThat is being used with Hamcrest matchers.
+	 * Hamcrest's assumeThat has a Matcher parameter, identified by checking if any parameter
+	 * implements org.hamcrest.Matcher interface.
+	 * 
+	 * @param minv the method invocation to check
+	 * @return true if using Hamcrest matchers, false otherwise
+	 */
+	private boolean usesHamcrestMatcher(MethodInvocation minv) {
+		if (minv.arguments().isEmpty()) {
+			return false;
+		}
+		
+		// Check each argument to see if it's a Hamcrest Matcher
+		for (Object arg : minv.arguments()) {
+			if (arg instanceof Expression) {
+				Expression expr = (Expression) arg;
+				org.eclipse.jdt.core.dom.ITypeBinding typeBinding = expr.resolveTypeBinding();
+				if (typeBinding != null && implementsHamcrestMatcher(typeBinding)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Recursively checks if a type binding implements org.hamcrest.Matcher interface.
+	 * 
+	 * @param typeBinding the type binding to check
+	 * @return true if the type implements Matcher
+	 */
+	private boolean implementsHamcrestMatcher(org.eclipse.jdt.core.dom.ITypeBinding typeBinding) {
+		if (typeBinding == null) {
+			return false;
+		}
+		
+		// Check if the type itself is Matcher
+		String qualifiedName = typeBinding.getErasure().getQualifiedName();
+		if ("org.hamcrest.Matcher".equals(qualifiedName)) {
+			return true;
+		}
+		
+		// Check interfaces
+		for (org.eclipse.jdt.core.dom.ITypeBinding interfaceBinding : typeBinding.getInterfaces()) {
+			if (implementsHamcrestMatcher(interfaceBinding)) {
+				return true;
+			}
+		}
+		
+		// Check superclass
+		org.eclipse.jdt.core.dom.ITypeBinding superclass = typeBinding.getSuperclass();
+		if (superclass != null && implementsHamcrestMatcher(superclass)) {
+			return true;
+		}
+		
+		return false;
+	}
+
+	/**
 	 * Changes import declarations for JUnit 4 Assume to JUnit 5 Assumptions.
-	 * Delegates to base class implementation.
+	 * 
+	 * Note: This method now only removes the old import. The new imports (either
+	 * org.junit.jupiter.api.Assumptions or org.hamcrest.junit.MatcherAssume) are
+	 * added in process2Rewrite based on the actual usage context.
 	 * 
 	 * @param node the import declaration to change
 	 * @param importRewriter the import rewriter to use
 	 * @param group text edit group (unused - import rewrites are tracked separately)
 	 */
 	public void changeImportDeclaration(ImportDeclaration node, ImportRewrite importRewriter, TextEditGroup group) {
-		changeImportDeclaration(node, importRewriter, ORG_JUNIT_ASSUME, ORG_JUNIT_JUPITER_API_ASSUMPTIONS);
+		String importName = node.getName().getFullyQualifiedName();
+		
+		// Remove the JUnit 4 Assume import
+		if (importName.equals(ORG_JUNIT_ASSUME)) {
+			importRewriter.removeImport(ORG_JUNIT_ASSUME);
+			// Note: We do NOT add the replacement import here.
+			// The appropriate import (Assumptions or MatcherAssume) will be added
+			// by process2Rewrite based on the actual method usage.
+		} else if (node.isStatic() && importName.startsWith(ORG_JUNIT_ASSUME + ".")) {
+			// Handle static imports like: import static org.junit.Assume.assumeThat
+			String methodName = importName.substring((ORG_JUNIT_ASSUME + ".").length());
+			importRewriter.removeStaticImport(ORG_JUNIT_ASSUME + "." + methodName);
+			// Note: We do NOT add the replacement import here.
+			// The appropriate import will be added by process2Rewrite.
+		}
 	}
 
 	@Override
