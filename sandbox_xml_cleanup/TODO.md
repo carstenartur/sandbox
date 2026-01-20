@@ -22,8 +22,7 @@
 - ✅ Test resources for PDE and ignored files (pom.xml, build.xml)
 
 ### In Progress
-- [ ] Comprehensive test coverage
-- [ ] XMLUnit integration for semantic equality testing
+- [ ] Comprehensive test coverage (file filtering tests pending)
 
 ### Pending
 - [ ] Batch processing across multiple projects
@@ -36,12 +35,12 @@
 **Effort**: 8-10 hours
 
 Create test cases to verify:
-- Size reduction for PDE XML files
-- Semantic equality (XMLUnit ignoring whitespace)
-- Idempotency (second run produces no change)
-- Leading-indent-only tab conversion (not inline text)
-- PDE file filtering accuracy
-- Non-PDE files are ignored (pom.xml, build.xml)
+- Size reduction for PDE XML files ✅
+- Semantic equality (XMLUnit ignoring whitespace) ✅
+- Idempotency (second run produces no change) ✅
+- Leading-indent-only tab conversion (not inline text) ✅
+- PDE file filtering accuracy (file filtering tests exist)
+- Non-PDE files are ignored (pom.xml, build.xml) (file filtering tests exist)
 - Indent preference behavior (default OFF, optional ON)
 
 **Test Resources Needed**:
@@ -57,7 +56,31 @@ sandbox_xml_cleanup_test/resources/
     └── build.xml (should NOT be processed) ✅
 ```
 
-**Status**: Test resources have been created. Need integration tests for file filtering.
+**Status**: XMLUnit integration ✅ COMPLETED. Test resources created. File filtering tests exist.
+
+### 1a. XMLUnit Integration (✅ COMPLETED)
+**Priority**: Medium  
+**Effort**: 4-6 hours
+
+**Status**: ✅ Completed
+- ✅ Added XMLUnit 2.9.1 dependencies (xmlunit-core, xmlunit-matchers)
+- ✅ Created `XMLTestUtils` utility class for semantic XML comparison
+- ✅ Created `XMLSemanticEqualityTest` with 7 comprehensive tests:
+  - Basic semantic equality preservation
+  - Multiple elements preservation
+  - Attribute preservation
+  - Text content preservation
+  - Namespace preservation
+  - Complex EXSD schema handling
+  - Size reduction with semantic equality verification
+- ✅ Enhanced existing `XMLCleanupTransformationTest` with semantic checks
+- ✅ Tests verify transformations preserve XML structure and meaning while only changing whitespace
+
+**Implementation Details**:
+- `XMLTestUtils.isXmlSemanticallyEqual()` - Ignores whitespace and comments
+- `XMLTestUtils.isXmlSemanticallyEqualWithComments()` - Preserves comment comparison
+- `XMLTestUtils.assertXmlSemanticallyEqual()` - Provides detailed diff on failure
+- Tests cover plugin.xml, feature.xml, .exsd, .xsd, and complex nested structures
 
 ### 2. UI Preferences Page (✅ COMPLETED)
 **Priority**: Medium  
@@ -262,7 +285,7 @@ For questions about XML cleanup or suggestions for improvements, please open an 
 5. [ ] Run code review and security scans
 
 ### Short Term (Next Sprint)
-1. [ ] Comprehensive test coverage (XMLUnit integration)
+1. ✅ Comprehensive test coverage (XMLUnit integration completed)
 2. ✅ UI preferences integration (completed with indent sub-preference)
 3. [ ] Performance testing with large files
 4. [ ] Bug fixes from initial testing
