@@ -140,12 +140,16 @@ Optionally migrate JUnit assertions to AssertJ:
 
 ### Hamcrest Matcher Support
 **Priority**: Low  
-**Effort**: 6-8 hours
+**Effort**: 6-8 hours  
+**Status**: ✅ **PARTIALLY COMPLETED** - assumeThat migration
 
 Handle Hamcrest matcher migration:
-- Update imports from `org.hamcrest` as needed
-- Ensure compatibility with JUnit 5
-- Preserve matcher-based assertions
+- ✅ `Assume.assumeThat()` with Hamcrest matchers now correctly uses `org.hamcrest.junit.MatcherAssume`
+- ✅ Detects Hamcrest matchers by checking if parameters implement `org.hamcrest.Matcher` interface
+- ✅ Avoids adding unused `org.junit.jupiter.api.Assumptions` import when only Hamcrest assumeThat is used
+- [ ] `Assert.assertThat()` with Hamcrest matchers (already uses `org.hamcrest.MatcherAssert` - see AssertJUnitPlugin)
+- [ ] Update other Hamcrest imports as needed
+- [ ] Additional Hamcrest integration improvements
 
 ### Test Categorization
 **Priority**: Low  

@@ -179,9 +179,12 @@ public class AssumeJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 		}
 		
 		// Check if the type itself is Matcher
-		String qualifiedName = typeBinding.getErasure().getQualifiedName();
-		if ("org.hamcrest.Matcher".equals(qualifiedName)) {
-			return true;
+		org.eclipse.jdt.core.dom.ITypeBinding erasure = typeBinding.getErasure();
+		if (erasure != null) {
+			String qualifiedName = erasure.getQualifiedName();
+			if ("org.hamcrest.Matcher".equals(qualifiedName)) {
+				return true;
+			}
 		}
 		
 		// Check interfaces
@@ -214,7 +217,16 @@ public class AssumeJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 	public void changeImportDeclaration(ImportDeclaration node, ImportRewrite importRewriter, TextEditGroup group) {
 		String importName = node.getName().getFullyQualifiedName();
 		
-		// Remove the JUnit 4 Assume import
+		// Handle static wildcard import (e.g., import static org.junit.Assume.*)
+		if (node.isStatic() && importName.equals(ORG_JUNIT_ASSUME)) {
+			importRewriter.removeStaticImport(ORG_JUNIT_ASSUME + ".*");
+			// Note: We do NOT add the replacement import here.
+			// The appropriate import (Assumptions or MatcherAssume) will be added
+			// by process2Rewrite based on the actual method usage.
+			return;
+		}
+		
+		// Remove the JUnit 4 Assume import (regular class import)
 		if (importName.equals(ORG_JUNIT_ASSUME)) {
 			importRewriter.removeImport(ORG_JUNIT_ASSUME);
 			// Note: We do NOT add the replacement import here.
