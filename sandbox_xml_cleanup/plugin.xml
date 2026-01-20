@@ -31,4 +31,70 @@
             class="org.sandbox.jdt.internal.corext.fix.helper.ExsdMarkerResolutionGenerator">
         </markerResolutionGenerator>
     </extension>
+    
+    <!-- PDE Integration: Command definition -->
+    <extension point="org.eclipse.ui.commands">
+        <category
+            id="org.sandbox.jdt.xml.cleanup.category"
+            name="XML Cleanup">
+        </category>
+        <command
+            id="org.sandbox.jdt.xml.cleanup.command"
+            name="Clean Up PDE XML Files"
+            description="Optimize whitespace in PDE XML files (plugin.xml, feature.xml, etc.)"
+            categoryId="org.sandbox.jdt.xml.cleanup.category">
+        </command>
+    </extension>
+
+    <!-- PDE Integration: Command handler -->
+    <extension point="org.eclipse.ui.handlers">
+        <handler
+            commandId="org.sandbox.jdt.xml.cleanup.command"
+            class="org.sandbox.jdt.internal.ui.handlers.XMLCleanupHandler">
+        </handler>
+    </extension>
+
+    <!-- PDE Integration: Menu contributions -->
+    <extension point="org.eclipse.ui.menus">
+        <!-- Context menu on XML files -->
+        <menuContribution locationURI="popup:org.eclipse.ui.popup.any?after=additions">
+            <command
+                commandId="org.sandbox.jdt.xml.cleanup.command"
+                label="Clean Up PDE XML"
+                icon="icons/full/obj16/sandbox.png"
+                style="push">
+                <visibleWhen checkEnabled="false">
+                    <or>
+                        <iterate ifEmpty="false">
+                            <adapt type="org.eclipse.core.resources.IFile">
+                                <or>
+                                    <test property="org.eclipse.core.resources.name" value="plugin.xml"/>
+                                    <test property="org.eclipse.core.resources.name" value="feature.xml"/>
+                                    <test property="org.eclipse.core.resources.name" value="fragment.xml"/>
+                                    <test property="org.eclipse.core.resources.extension" value="exsd"/>
+                                    <test property="org.eclipse.core.resources.extension" value="xsd"/>
+                                </or>
+                            </adapt>
+                        </iterate>
+                        <iterate ifEmpty="false">
+                            <adapt type="org.eclipse.core.resources.IProject"/>
+                        </iterate>
+                    </or>
+                </visibleWhen>
+            </command>
+        </menuContribution>
+        
+        <!-- Source menu entry -->
+        <menuContribution locationURI="menu:org.eclipse.ui.main.menu?after=source">
+            <menu
+                id="org.sandbox.jdt.xml.cleanup.menu"
+                label="XML Cleanup">
+                <command
+                    commandId="org.sandbox.jdt.xml.cleanup.command"
+                    label="Clean Up PDE XML Files"
+                    style="push">
+                </command>
+            </menu>
+        </menuContribution>
+    </extension>
 </plugin>
