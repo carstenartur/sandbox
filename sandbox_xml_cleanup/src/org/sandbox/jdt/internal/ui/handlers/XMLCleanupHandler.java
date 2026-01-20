@@ -95,12 +95,20 @@ public class XMLCleanupHandler extends AbstractHandler {
 	}
 	
 	/**
-	 * Perform the actual cleanup on selected resources.
+	 * Create and configure the XML cleanup service.
 	 */
-	private IStatus performCleanup(List<IResource> resources, IProgressMonitor monitor) {
+	private XMLCleanupService createXMLCleanupService() {
 		XMLCleanupService service = new XMLCleanupService();
 		// TODO: Add preference support for indent option
 		service.setEnableIndent(false);
+		return service;
+	}
+	
+	/**
+	 * Perform the actual cleanup on selected resources.
+	 */
+	private IStatus performCleanup(List<IResource> resources, IProgressMonitor monitor) {
+		XMLCleanupService service = createXMLCleanupService();
 		
 		int totalFilesProcessed = 0;
 		int totalProjects = 0;
@@ -142,7 +150,7 @@ public class XMLCleanupHandler extends AbstractHandler {
 						if (changed) {
 							totalFilesProcessed++;
 						}
-					} catch (Exception e) {
+					} catch (org.eclipse.core.runtime.CoreException e) {
 						return new Status(IStatus.ERROR, PLUGIN_ID,
 							"Error processing file: " + file.getName(), e);
 					}

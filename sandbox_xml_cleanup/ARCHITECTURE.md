@@ -152,24 +152,12 @@ After XSLT transformation, the following post-processing is applied:
 - Shows completion status with file count
 - Supports cancellation
 
-### XMLCleanupAction
-
-**Location**: `org.sandbox.jdt.internal.ui.actions.XMLCleanupAction`
-
-**Purpose**: Action delegate for backward compatibility
-
-**Key Features**:
-- Implements `IObjectActionDelegate` for context menu integration
-- Delegates to same cleanup logic as handler
-- Provides alternative integration point for Eclipse UI
-
 ## Package Structure
 
 - `org.sandbox.jdt.internal.corext.fix.*` - Core cleanup logic
 - `org.sandbox.jdt.internal.corext.fix.helper.*` - Transformation utilities
 - `org.sandbox.jdt.internal.ui.fix.*` - UI components and preferences (JDT-based)
 - `org.sandbox.jdt.internal.ui.handlers.*` - Command handlers (PDE integration)
-- `org.sandbox.jdt.internal.ui.actions.*` - UI actions (PDE integration)
 
 **Eclipse JDT Correspondence**:
 - Maps to `org.eclipse.jdt.internal.corext.fix.*` pattern
@@ -257,7 +245,6 @@ Defined in `sandbox_common/src/org/sandbox/jdt/internal/corext/fix2/MYCleanUpCon
 **PDE Integration**:
 - Command: `org.sandbox.jdt.xml.cleanup.command`
 - Handler: `XMLCleanupHandler` (extends `AbstractHandler`)
-- Action: `XMLCleanupAction` (implements `IObjectActionDelegate`)
 - Menu contributions:
   - Context menu on PDE XML files
   - Context menu on projects

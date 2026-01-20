@@ -71,9 +71,9 @@ public class XMLCleanupService {
 	 * @param file the file to process
 	 * @param monitor progress monitor (can be null)
 	 * @return true if file was processed and changed, false otherwise
-	 * @throws Exception if transformation fails
+	 * @throws CoreException if file access fails
 	 */
-	public boolean processFile(IFile file, IProgressMonitor monitor) throws Exception {
+	public boolean processFile(IFile file, IProgressMonitor monitor) throws CoreException {
 		if (monitor != null && monitor.isCanceled()) {
 			return false;
 		}
@@ -86,11 +86,27 @@ public class XMLCleanupService {
 		String originalContent;
 		try (InputStream is = file.getContents()) {
 			originalContent = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+		} catch (Exception e) {
+			throw new CoreException(new Status(IStatus.ERROR, PLUGIN_ID,
+				"Failed to read file: " + file.getName(), e));
 		}
 		
-		// Transform the file
-		Path filePath = file.getLocation().toFile().toPath();
-		String transformedContent = SchemaTransformationUtils.transform(filePath, enableIndent);
+		// Transform the file - check for null location
+		org.eclipse.core.runtime.IPath location = file.getLocation();
+		if (location == null) {
+			LOG.log(new Status(IStatus.WARNING, PLUGIN_ID,
+				"File does not have a physical location: " + file.getName()));
+			return false;
+		}
+		
+		Path filePath = location.toFile().toPath();
+		String transformedContent;
+		try {
+			transformedContent = SchemaTransformationUtils.transform(filePath, enableIndent);
+		} catch (Exception e) {
+			throw new CoreException(new Status(IStatus.ERROR, PLUGIN_ID,
+				"Failed to transform file: " + file.getName(), e));
+		}
 		
 		// Only write if content actually changed
 		if (!originalContent.equals(transformedContent)) {
@@ -130,8 +146,7 @@ public class XMLCleanupService {
 					return false;
 				}
 				
-				if (resource.getType() == IResource.FILE && resource instanceof IFile) {
-					IFile file = (IFile) resource;
+				if (resource instanceof IFile file) {
 					
 					if (isPDERelevantFile(file)) {
 						try {
@@ -147,7 +162,7 @@ public class XMLCleanupService {
 							if (monitor != null) {
 								monitor.worked(1);
 							}
-						} catch (Exception e) {
+						} catch (CoreException e) {
 							LOG.log(new Status(IStatus.ERROR, PLUGIN_ID, 
 								"Error processing file: " + file.getName(), e));
 						}
