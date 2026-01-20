@@ -204,6 +204,13 @@ public class MYCleanUpConstants {
 	public static final String USEFUNCTIONALLOOP_CLEANUP= "cleanup.functionalloop"; //$NON-NLS-1$
 
 	/**
+	 * NEU: V2 Konstante für parallele Implementierung (ULR-basiert)
+	 * 
+	 * @see <a href="https://github.com/carstenartur/sandbox/issues/450">Issue #450</a>
+	 */
+	public static final String USEFUNCTIONALLOOP_CLEANUP_V2= "cleanup.use_functional_loop_v2"; //$NON-NLS-1$
+
+	/**
 	 *
 	 */
 	public static final String METHOD_REUSE_CLEANUP= "cleanup.method_reuse"; //$NON-NLS-1$
