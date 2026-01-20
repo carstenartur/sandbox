@@ -123,7 +123,12 @@ public class AssumeJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 					ASTNodes.replaceButKeepComment(rewriter, expression, newQualifier, group);
 				}
 				// Add import for Assumptions class (needed for qualified method calls)
-				importRewriter.addImport(ORG_JUNIT_JUPITER_API_ASSUMPTIONS);
+				// Note: Only add for non-assumeThat methods (assumeTrue, assumeFalse, assumeNotNull)
+				// as assumeThat with Hamcrest uses MatcherAssume instead
+				String methodName = minv.getName().getIdentifier();
+				if (!"assumeThat".equals(methodName)) {
+					importRewriter.addImport(ORG_JUNIT_JUPITER_API_ASSUMPTIONS);
+				}
 			}
 		} else {
 			changeImportDeclaration(junitHolder.getImportDeclaration(), importRewriter, group);
