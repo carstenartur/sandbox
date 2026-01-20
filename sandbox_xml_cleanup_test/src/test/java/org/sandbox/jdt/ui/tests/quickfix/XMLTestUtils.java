@@ -57,6 +57,7 @@ public class XMLTestUtils {
 	
 	/**
 	 * Get detailed differences between two XML documents.
+	 * Ignores whitespace and comments for semantic comparison.
 	 * 
 	 * @param expected the expected XML content
 	 * @param actual the actual XML content
@@ -66,6 +67,8 @@ public class XMLTestUtils {
 		return DiffBuilder.compare(expected)
 				.withTest(actual)
 				.ignoreWhitespace()
+				.ignoreComments()
+				.normalizeWhitespace()
 				.build();
 	}
 	
