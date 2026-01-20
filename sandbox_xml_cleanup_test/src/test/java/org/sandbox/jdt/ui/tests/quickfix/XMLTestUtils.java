@@ -13,12 +13,18 @@
  *******************************************************************************/
 package org.sandbox.jdt.ui.tests.quickfix;
 
+import java.io.IOException;
+import java.io.StringReader;
+
+import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
-import java.io.StringReader;
+import org.xml.sax.SAXException;
 
 /**
  * Utility methods for XML testing using standard Java DOM APIs.
@@ -27,30 +33,42 @@ import java.io.StringReader;
 public class XMLTestUtils {
     
     /**
+     * Utility class constructor to prevent instantiation.
+     */
+    private XMLTestUtils() {
+        // utility class, do not instantiate
+    }
+    
+    /**
      * Check if two XML documents are semantically equivalent (ignoring whitespace).
      */
     public static boolean isXmlSemanticallyEqual(String expected, String actual) {
         try {
-            Document expectedDoc = parseXml(expected);
-            Document actualDoc = parseXml(actual);
+            Document expectedDoc = parseXml(expected, true);
+            Document actualDoc = parseXml(actual, true);
             
             expectedDoc.normalizeDocument();
             actualDoc.normalizeDocument();
             
             return expectedDoc.isEqualNode(actualDoc);
-        } catch (Exception e) {
+        } catch (ParserConfigurationException | SAXException | IOException e) {
             return false;
         }
     }
     
     /**
      * Parse XML string to Document, normalizing whitespace.
+     * 
+     * @param xml the XML string to parse
+     * @param ignoreComments whether to ignore comments during parsing
+     * @return the parsed Document
+     * @throws ParserConfigurationException if a DocumentBuilder cannot be created
+     * @throws SAXException if the XML is malformed
+     * @throws IOException if an I/O error occurs
      */
-    private static Document parseXml(String xml) throws Exception {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setIgnoringElementContentWhitespace(true);
-        factory.setIgnoringComments(true);
-        factory.setNamespaceAware(true);
+    private static Document parseXml(String xml, boolean ignoreComments) 
+            throws ParserConfigurationException, SAXException, IOException {
+        DocumentBuilderFactory factory = createSecureDocumentBuilderFactory(ignoreComments);
         
         DocumentBuilder builder = factory.newDocumentBuilder();
         Document doc = builder.parse(new InputSource(new StringReader(xml)));
@@ -60,6 +78,29 @@ public class XMLTestUtils {
         doc.normalizeDocument();
         
         return doc;
+    }
+    
+    /**
+     * Create a secure DocumentBuilderFactory with XXE protections.
+     * 
+     * @param ignoreComments whether to ignore comments during parsing
+     * @return a configured DocumentBuilderFactory
+     * @throws ParserConfigurationException if security features cannot be set
+     */
+    private static DocumentBuilderFactory createSecureDocumentBuilderFactory(boolean ignoreComments) 
+            throws ParserConfigurationException {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        factory.setIgnoringElementContentWhitespace(true);
+        factory.setIgnoringComments(ignoreComments);
+        factory.setNamespaceAware(true);
+        
+        // Security features to prevent XXE attacks
+        factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+        factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+        factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+        
+        return factory;
     }
     
     /**
@@ -100,23 +141,14 @@ public class XMLTestUtils {
      */
     public static boolean isXmlSemanticallyEqualWithComments(String expected, String actual) {
         try {
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            factory.setIgnoringElementContentWhitespace(true);
-            factory.setIgnoringComments(false); // Keep comments
-            factory.setNamespaceAware(true);
-            
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            Document expectedDoc = builder.parse(new InputSource(new StringReader(expected)));
-            Document actualDoc = builder.parse(new InputSource(new StringReader(actual)));
-            
-            removeWhitespaceNodes(expectedDoc.getDocumentElement());
-            removeWhitespaceNodes(actualDoc.getDocumentElement());
+            Document expectedDoc = parseXml(expected, false);
+            Document actualDoc = parseXml(actual, false);
             
             expectedDoc.normalizeDocument();
             actualDoc.normalizeDocument();
             
             return expectedDoc.isEqualNode(actualDoc);
-        } catch (Exception e) {
+        } catch (ParserConfigurationException | SAXException | IOException e) {
             return false;
         }
     }

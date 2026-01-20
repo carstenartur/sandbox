@@ -343,4 +343,27 @@ public class XMLSemanticEqualityTest {
 		assertTrue(XMLTestUtils.isXmlSemanticallyEqual(xml1, xml2),
 			"Nested elements with different whitespace should be semantically equal");
 	}
+
+	/**
+	 * Test that attribute order differences are ignored (attributes are unordered in XML).
+	 */
+	@Test
+	public void testAttributeOrderIgnored() {
+		String xml1 = """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<plugin>
+				    <view id="test" name="Test View" class="TestClass"/>
+				</plugin>
+				""";
+		
+		String xml2 = """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<plugin>
+				    <view class="TestClass" name="Test View" id="test"/>
+				</plugin>
+				""";
+		
+		assertTrue(XMLTestUtils.isXmlSemanticallyEqual(xml1, xml2),
+			"XML with different attribute order should be semantically equal");
+	}
 }
