@@ -16,6 +16,7 @@ package org.sandbox.jdt.ui.tests.quickfix;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.sandbox.jdt.ui.tests.quickfix.XMLTestUtils.assertXmlSemanticallyEqual;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -124,6 +125,10 @@ public class XMLCleanupTransformationTest {
 			// Both transformations should produce same result
 			assertEquals(firstTransform, secondTransform,
 				"Second transformation should produce same output as first");
+			
+			// Also verify semantic equality with original
+			assertXmlSemanticallyEqual(sampleXml, firstTransform);
+			assertXmlSemanticallyEqual(sampleXml, secondTransform);
 			
 		} finally {
 			Files.deleteIfExists(tempFile);
