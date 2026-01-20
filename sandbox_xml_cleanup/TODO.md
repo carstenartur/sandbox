@@ -10,20 +10,22 @@
 - ✅ PDE file filtering (plugin.xml, feature.xml, fragment.xml, *.exsd, *.xsd)
 - ✅ Location filtering (root, OSGI-INF, META-INF only)
 - ✅ XSLT transformation with secure processing
+- ✅ Comment and processing instruction preservation in XSLT
 - ✅ Whitespace normalization (reduce empty lines)
 - ✅ Leading space→tab conversion (4 spaces to 1 tab)
 - ✅ Eclipse workspace API integration (IFile, ILog)
 - ✅ Change detection (only write if content changed)
 - ✅ Indent preference support (default: OFF for size reduction)
+- ✅ UI preferences page integration (indent as sub-preference)
 - ✅ Duplicate file processing prevention
 - ✅ Proper error handling (no printStackTrace/System.out)
+- ✅ Test resources for PDE and ignored files (pom.xml, build.xml)
 
 ### In Progress
 - [ ] Comprehensive test coverage
 - [ ] XMLUnit integration for semantic equality testing
 
 ### Pending
-- [ ] UI preferences page for configuration
 - [ ] Batch processing across multiple projects
 - [ ] Eclipse PDE validation integration
 
@@ -45,26 +47,28 @@ Create test cases to verify:
 **Test Resources Needed**:
 ```
 sandbox_xml_cleanup_test/resources/
-├── plugin.xml (with various indentation patterns)
-├── feature.xml (with excessive whitespace)
-├── fragment.xml
-├── schema/
-│   ├── sample.exsd
-│   └── sample.xsd
-└── ignored/
-    ├── pom.xml (should NOT be processed)
-    └── build.xml (should NOT be processed)
+├── pde-files/
+│   ├── plugin.xml (with various indentation patterns and comments) ✅
+│   ├── feature.xml (with excessive whitespace) ✅
+│   ├── fragment.xml ✅
+│   └── sample.exsd (extension point schema) ✅
+└── ignored-files/
+    ├── pom.xml (should NOT be processed) ✅
+    └── build.xml (should NOT be processed) ✅
 ```
 
-### 2. UI Preferences Page
+**Status**: Test resources have been created. Need integration tests for file filtering.
+
+### 2. UI Preferences Page (✅ COMPLETED)
 **Priority**: Medium  
 **Effort**: 4-6 hours
 
-Create Eclipse preferences page for XML cleanup options:
-- Enable/disable XML cleanup
-- Enable/disable indentation (default: OFF)
-- Preview before/after transformation
-- Integration with existing `SandboxCodeTabPage`
+**Status**: ✅ Completed in recent update
+- ✅ Enable/disable XML cleanup checkbox
+- ✅ Enable/disable indentation as sub-preference (default: OFF)
+- ✅ Integration with existing `SandboxCodeTabPage`
+- ✅ Proper dependency registration (indent depends on main cleanup)
+- ⏭️ Preview before/after transformation (future enhancement)
 
 **Location**: `org.sandbox.jdt.internal.ui.preferences.cleanup.SandboxCodeTabPage`
 
@@ -207,8 +211,8 @@ Current implementation uses JAXP with DOM parsing:
 ### Caching Strategy
 Currently caches processed files per session:
 - ✅ **Good**: Prevents duplicate processing
-- ⚠️ **Issue**: Cache not cleared between runs
-- **Fix**: Clear cache when cleanup disabled or preferences changed
+- ✅ **Fixed**: Cache is cleared at start of each cleanup run (XMLPlugin.java:80)
+- ✅ **Verified**: No stale file references between runs
 
 ### Error Recovery
 Partial error handling implemented:
@@ -241,13 +245,14 @@ For questions about XML cleanup or suggestions for improvements, please open an 
 
 ### Immediate (This Week)
 1. ✅ Complete core implementation
-2. [ ] Add basic test cases
-3. [ ] Update documentation (architecture.md, todo.md)
-4. [ ] Run code review and security scans
+2. ✅ Add basic test cases (transformation tests, file filtering tests)
+3. ✅ Update documentation (architecture.md, todo.md)
+4. ✅ Fix XSLT comment preservation
+5. [ ] Run code review and security scans
 
 ### Short Term (Next Sprint)
-1. [ ] Comprehensive test coverage
-2. [ ] UI preferences integration
+1. [ ] Comprehensive test coverage (XMLUnit integration)
+2. ✅ UI preferences integration (completed with indent sub-preference)
 3. [ ] Performance testing with large files
 4. [ ] Bug fixes from initial testing
 
