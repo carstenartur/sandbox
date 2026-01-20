@@ -22,6 +22,7 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -150,7 +151,7 @@ public class XMLCleanupHandler extends AbstractHandler {
 						if (changed) {
 							totalFilesProcessed++;
 						}
-					} catch (org.eclipse.core.runtime.CoreException e) {
+					} catch (CoreException e) {
 						return new Status(IStatus.ERROR, PLUGIN_ID,
 							"Error processing file: " + file.getName(), e);
 					}
