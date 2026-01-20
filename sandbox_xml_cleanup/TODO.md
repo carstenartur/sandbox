@@ -85,8 +85,8 @@ Support batch processing of XML files:
 ## Known Issues
 
 ### Current Limitations
-1. **Requires Java Compilation Context**: XML cleanup triggers during Java cleanup, requiring a Java compilation unit. This is a limitation of integrating with Eclipse JDT cleanup framework.
-2. **No Standalone Mode**: Cannot be run independently without Java files in project.
+1. **Requires Java Compilation Context (JDT cleanup only)**: JDT-based cleanup triggers during Java cleanup, requiring a Java compilation unit. **However, the new PDE integration (XMLCleanupHandler/XMLCleanupAction) works independently without Java files.**
+2. **No Standalone Mode (JDT cleanup only)**: JDT cleanup cannot be run independently without Java files in project. **Use the new "Clean Up PDE XML" command for standalone operation.**
 3. **Location Hardcoded**: PDE directories (OSGI-INF, META-INF) are hardcoded, not configurable.
 
 ### Potential Issues
@@ -95,23 +95,34 @@ Support batch processing of XML files:
 
 ## Future Enhancements
 
-### PDE Integration
+### PDE Integration (✅ COMPLETED)
 **Priority**: High  
 **Effort**: 12-16 hours
 
+**Status**: ✅ Completed - PDE-specific integration has been added
+
 Move from JDT cleanup to PDE-specific integration:
 - **Problem**: Currently requires Java compilation unit context
-- **Solution**: Create PDE-specific cleanup action
+- **Solution**: Create PDE-specific cleanup action ✅
 - **Benefits**: 
-  - Works with non-Java Eclipse plugin projects
-  - Better integration with PDE validation
-  - Can run independently
+  - Works with non-Java Eclipse plugin projects ✅
+  - Better integration with PDE validation (future enhancement)
+  - Can run independently ✅
 
-**Approach**:
-1. Implement `org.eclipse.ui.IWorkbenchWindowActionDelegate`
-2. Register in `plugin.xml` under PDE menu
-3. Remove dependency on Java compilation unit
-4. Trigger via "Clean Up..." action in PDE editor
+**Implementation**:
+1. ✅ Created `XMLCleanupService` - Core transformation logic independent of JDT
+2. ✅ Created `XMLCleanupHandler` - Command handler for Eclipse UI
+3. ✅ Created `XMLCleanupAction` - Action delegate for backward compatibility
+4. ✅ Registered command, handler, and menu contributions in `plugin.xml`
+5. ✅ Added context menu on PDE XML files (plugin.xml, feature.xml, fragment.xml, *.exsd, *.xsd)
+6. ✅ Added project-level cleanup via context menu
+7. ✅ Progress dialog support with cancellation
+8. ✅ Background job execution (non-blocking UI)
+
+**Usage**:
+- Right-click on PDE XML files → "Clean Up PDE XML"
+- Right-click on project → "Clean Up PDE XML" (processes all PDE files)
+- Source menu → XML Cleanup → "Clean Up PDE XML Files"
 
 ### Schema Validation
 **Priority**: Medium  

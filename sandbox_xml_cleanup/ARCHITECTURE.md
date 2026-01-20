@@ -114,18 +114,62 @@ After XSLT transformation, the following post-processing is applied:
 
 **Location**: `org.sandbox.jdt.internal.ui.fix.XMLCleanUpCore`
 
-**Purpose**: Eclipse cleanup integration
+**Purpose**: Eclipse cleanup integration (JDT-based)
 
 **Features**:
 - Reads `XML_CLEANUP` and `XML_CLEANUP_INDENT` preferences
 - Configures indent preference before processing
 - Creates `CompilationUnitRewriteOperation` for file updates
 
+### XMLCleanupService
+
+**Location**: `org.sandbox.jdt.internal.corext.fix.helper.XMLCleanupService`
+
+**Purpose**: Standalone XML cleanup service independent of JDT framework
+
+**Key Features**:
+- Works without requiring Java compilation unit context
+- Processes single files or entire projects
+- Uses same file filtering logic as XMLPlugin (PDE-relevant files only)
+- Supports progress monitoring and cancellation
+- Can be invoked directly from UI actions/handlers
+
+**Methods**:
+- `processFile(IFile, IProgressMonitor)` - Process single XML file
+- `processProject(IProject, IProgressMonitor)` - Process all PDE files in project
+- `isPDERelevantFile(IFile)` - Check if file should be processed
+
+### XMLCleanupHandler
+
+**Location**: `org.sandbox.jdt.internal.ui.handlers.XMLCleanupHandler`
+
+**Purpose**: Command handler for PDE integration
+
+**Key Features**:
+- Implements `AbstractHandler` for Eclipse command framework
+- Handles selections of files or projects from UI
+- Runs cleanup in background job with progress dialog
+- Shows completion status with file count
+- Supports cancellation
+
+### XMLCleanupAction
+
+**Location**: `org.sandbox.jdt.internal.ui.actions.XMLCleanupAction`
+
+**Purpose**: Action delegate for backward compatibility
+
+**Key Features**:
+- Implements `IObjectActionDelegate` for context menu integration
+- Delegates to same cleanup logic as handler
+- Provides alternative integration point for Eclipse UI
+
 ## Package Structure
 
 - `org.sandbox.jdt.internal.corext.fix.*` - Core cleanup logic
 - `org.sandbox.jdt.internal.corext.fix.helper.*` - Transformation utilities
-- `org.sandbox.jdt.internal.ui.fix.*` - UI components and preferences
+- `org.sandbox.jdt.internal.ui.fix.*` - UI components and preferences (JDT-based)
+- `org.sandbox.jdt.internal.ui.handlers.*` - Command handlers (PDE integration)
+- `org.sandbox.jdt.internal.ui.actions.*` - UI actions (PDE integration)
 
 **Eclipse JDT Correspondence**:
 - Maps to `org.eclipse.jdt.internal.corext.fix.*` pattern
@@ -160,6 +204,28 @@ file.refreshLocal(IResource.DEPTH_ZERO, null);
 
 ## Eclipse Integration
 
+### Two Integration Paths
+
+The plugin provides two ways to trigger XML cleanup:
+
+#### 1. JDT Cleanup Integration (Original)
+- Registered in `plugin.xml` as `org.eclipse.jdt.ui.cleanup.xmlcleanup`
+- Requires Java compilation unit context
+- Triggered via Source → Clean Up... (when Java files are present)
+- Uses Eclipse cleanup framework
+- Integrated with Eclipse cleanup preferences
+
+#### 2. PDE Integration (New - Standalone)
+- Registered as Eclipse command: `org.sandbox.jdt.xml.cleanup.command`
+- Works independently without Java files
+- Triggered via:
+  - Right-click on PDE XML files → "Clean Up PDE XML"
+  - Right-click on project → "Clean Up PDE XML"
+  - Source menu → XML Cleanup → "Clean Up PDE XML Files"
+- Runs in background job with progress dialog
+- Supports cancellation
+- Shows completion status
+
 ### Cleanup Preferences
 
 **Default Behavior** (when `XML_CLEANUP` is enabled):
@@ -182,10 +248,21 @@ Defined in `sandbox_common/src/org/sandbox/jdt/internal/corext/fix2/MYCleanUpCon
 
 ### Integration Points
 
+**JDT Integration**:
 - Registered in `plugin.xml` as `org.eclipse.jdt.ui.cleanup.xmlcleanup`
 - Uses Eclipse resource visitor pattern to scan projects
 - Leverages Eclipse logging framework (`ILog`, `Status`)
 - Integrates with Eclipse cleanup framework
+
+**PDE Integration**:
+- Command: `org.sandbox.jdt.xml.cleanup.command`
+- Handler: `XMLCleanupHandler` (extends `AbstractHandler`)
+- Action: `XMLCleanupAction` (implements `IObjectActionDelegate`)
+- Menu contributions:
+  - Context menu on PDE XML files
+  - Context menu on projects
+  - Source main menu entry
+- Visibility conditions based on file name/extension
 
 ## Build Configuration
 
@@ -193,7 +270,9 @@ Defined in `sandbox_common/src/org/sandbox/jdt/internal/corext/fix2/MYCleanUpCon
 - **Packaging**: `eclipse-plugin`
 - **Dependencies**: 
   - Eclipse Core Resources
-  - Eclipse JDT Core
+  - Eclipse Core Commands
+  - Eclipse JDT Core (for JDT integration)
+  - Eclipse UI, JFace, Workbench
   - XML parsing libraries (built-in Java XML APIs)
   - `sandbox_common` for cleanup constants
 
@@ -213,7 +292,7 @@ Defined in `sandbox_common/src/org/sandbox/jdt/internal/corext/fix2/MYCleanUpCon
 2. **Location Restricted**: Files must be in project root, OSGI-INF, or META-INF
 3. **Leading Tabs Only**: Tab conversion only applies to leading whitespace, not inline content
 4. **No Schema Validation**: Doesn't validate against XML schemas (relies on Eclipse PDE validation)
-5. **Requires Compilation Unit**: Integration with Eclipse cleanup framework requires Java compilation unit context
+5. **Requires Compilation Unit (JDT cleanup only)**: JDT integration with Eclipse cleanup framework requires Java compilation unit context. **The new PDE integration (XMLCleanupHandler/XMLCleanupAction) works independently without Java files.**
 
 ## Security Considerations
 
