@@ -40,7 +40,11 @@ public class XMLTestUtils {
     }
     
     /**
-     * Check if two XML documents are semantically equivalent (ignoring whitespace).
+     * Check if two XML documents are semantically equivalent (ignoring whitespace and comments).
+     * 
+     * @param expected the expected XML string
+     * @param actual the actual XML string
+     * @return true if the XML documents are semantically equal, false otherwise
      */
     public static boolean isXmlSemanticallyEqual(String expected, String actual) {
         try {
@@ -138,6 +142,12 @@ public class XMLTestUtils {
     
     /**
      * Check if two XML documents are semantically equivalent, preserving comments.
+     * Unlike {@link #isXmlSemanticallyEqual(String, String)}, this method includes
+     * comments in the comparison.
+     * 
+     * @param expected the expected XML string
+     * @param actual the actual XML string
+     * @return true if the XML documents are semantically equal including comments, false otherwise
      */
     public static boolean isXmlSemanticallyEqualWithComments(String expected, String actual) {
         try {
