@@ -1,0 +1,17 @@
+Manifest-Version: 1.0
+Created-By: 17.0.17 (Eclipse Adoptium)
+Build-Jdk-Spec: 17
+Bnd-LastModified: 1768882907689
+Bundle-Description: AST-independent loop transformation core module for 
+ Unified Loop Representation (ULR)
+Bundle-ManifestVersion: 2
+Bundle-Name: Sandbox Functional Converter Core
+Bundle-SymbolicName: org.sandbox.functional.core
+Bundle-Vendor: Carsten Hammer
+Bundle-Version: 1.0.0.SNAPSHOT
+Export-Package: org.sandbox.functional.core;version="1.0.0",org.sandbox.
+ functional.core.model;version="1.0.0"
+Import-Package: java.lang
+Require-Capability: osgi.ee;filter:="(&(osgi.ee=JavaSE)(version=17))"
+Tool: Bnd-7.0.0.202310060912
+

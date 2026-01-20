@@ -53,6 +53,14 @@ This module intentionally has **NO** Eclipse/JDT/Tycho dependencies to keep it l
 - **JUnit 5 (jupiter)** - For testing
 - **AssertJ** - For fluent assertions (optional)
 
+## OSGi Integration
+
+This module is built as an OSGi bundle using the bnd-maven-plugin. After building with `mvn install`, the resulting JAR can be used as an Eclipse plugin dependency.
+
+### Bundle Information
+- **Bundle-SymbolicName:** org.sandbox.functional.core
+- **Export-Package:** org.sandbox.functional.core.*
+
 ## Development Status
 
 **Phase 1 (Current)**: Module structure and basic infrastructure
@@ -68,6 +76,15 @@ While this module has no Eclipse dependencies, it is designed to be used by Ecli
 2. Extract loop information into a `LoopModel`
 3. Apply transformations using this core module
 4. Generate refactored code using Eclipse AST rewrite
+
+## CI/CD
+
+The module has its own GitHub Actions workflow that runs on every push/PR affecting the core module:
+- Builds the module with Maven
+- Runs all unit tests
+- Uploads test results as artifacts
+
+[![Core Module Build](https://github.com/carstenartur/sandbox/actions/workflows/core-module-build.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/core-module-build.yml)
 
 ## References
 
