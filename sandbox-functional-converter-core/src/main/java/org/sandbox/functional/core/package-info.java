@@ -23,4 +23,4 @@
  * @see org.sandbox.functional.core.model.LoopModel
  * @see <a href="https://github.com/carstenartur/sandbox/issues/450">Issue #450</a>
  */
-package org.sandbox.functional.core.model;
+package org.sandbox.functional.core;

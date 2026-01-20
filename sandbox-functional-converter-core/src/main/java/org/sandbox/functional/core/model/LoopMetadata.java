@@ -149,4 +149,26 @@ public class LoopMetadata {
 				+ ", hasReturn=" + hasReturn + ", modifiesCollection=" + modifiesCollection 
 				+ ", requiresOrdering=" + requiresOrdering + "]";
 	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null || getClass() != obj.getClass()) {
+			return false;
+		}
+		LoopMetadata other = (LoopMetadata) obj;
+		return hasBreak == other.hasBreak
+				&& hasContinue == other.hasContinue
+				&& hasReturn == other.hasReturn
+				&& modifiesCollection == other.modifiesCollection
+				&& requiresOrdering == other.requiresOrdering;
+	}
+	
+	@Override
+	public int hashCode() {
+		return java.util.Objects.hash(hasBreak, hasContinue, hasReturn, 
+				modifiesCollection, requiresOrdering);
+	}
 }

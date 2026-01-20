@@ -105,4 +105,23 @@ public class ElementDescriptor {
 		return "ElementDescriptor[variableName=" + variableName + ", typeName=" + typeName 
 				+ ", isFinal=" + isFinal + "]";
 	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null || getClass() != obj.getClass()) {
+			return false;
+		}
+		ElementDescriptor other = (ElementDescriptor) obj;
+		return isFinal == other.isFinal
+				&& java.util.Objects.equals(variableName, other.variableName)
+				&& java.util.Objects.equals(typeName, other.typeName);
+	}
+	
+	@Override
+	public int hashCode() {
+		return java.util.Objects.hash(variableName, typeName, isFinal);
+	}
 }

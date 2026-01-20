@@ -185,4 +185,23 @@ public class SourceDescriptor {
 		return "SourceDescriptor[type=" + type + ", expression=" + expression 
 				+ ", elementTypeName=" + elementTypeName + "]";
 	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null || getClass() != obj.getClass()) {
+			return false;
+		}
+		SourceDescriptor other = (SourceDescriptor) obj;
+		return type == other.type
+				&& java.util.Objects.equals(expression, other.expression)
+				&& java.util.Objects.equals(elementTypeName, other.elementTypeName);
+	}
+	
+	@Override
+	public int hashCode() {
+		return java.util.Objects.hash(type, expression, elementTypeName);
+	}
 }

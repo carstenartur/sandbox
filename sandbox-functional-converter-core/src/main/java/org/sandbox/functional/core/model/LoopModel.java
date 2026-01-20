@@ -118,4 +118,23 @@ public class LoopModel {
 		return "LoopModel[source=" + source + ", element=" + element 
 				+ ", metadata=" + metadata + "]";
 	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null || getClass() != obj.getClass()) {
+			return false;
+		}
+		LoopModel other = (LoopModel) obj;
+		return java.util.Objects.equals(source, other.source)
+				&& java.util.Objects.equals(element, other.element)
+				&& java.util.Objects.equals(metadata, other.metadata);
+	}
+	
+	@Override
+	public int hashCode() {
+		return java.util.Objects.hash(source, element, metadata);
+	}
 }
