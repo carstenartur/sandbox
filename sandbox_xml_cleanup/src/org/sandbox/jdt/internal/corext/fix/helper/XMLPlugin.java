@@ -250,29 +250,28 @@ public class XMLPlugin extends AbstractTool<XMLCandidateHit> {
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {
 			return """
-				/* XML Cleanup - Transforms PDE XML files:
-				 * - plugin.xml, feature.xml, fragment.xml
-				 * - *.exsd, *.xsd extension point schemas
-				 *
-				 * After transformation (whitespace optimized):
+				/* XML Cleanup - After:
+				 * - Empty elements collapsed to self-closing
+				 * - Whitespace optimized
 				 */
 				// <?xml version="1.0" encoding="UTF-8"?>
 				// <plugin>
-				// <extension point="org.eclipse.ui.views">
-				// <view id="my.view" name="My View" class="MyView"/>
-				// </extension>
+				// <extension point="org.eclipse.ui.views"/>
+				// <view id="my.view" name="My View"/>
 				// </plugin>
 				"""; //$NON-NLS-1$
 		}
 		return """
-			/* XML Cleanup - Before transformation:
-			 * (Original XML with extra whitespace)
+			/* XML Cleanup - Before:
+			 * - Empty elements with closing tags
+			 * - Extra whitespace
 			 */
 			// <?xml version="1.0" encoding="UTF-8"?>
 			// <plugin>
 			//     <extension point="org.eclipse.ui.views">
-			//         <view id="my.view" name="My View" class="MyView" />
 			//     </extension>
+			//     <view id="my.view" name="My View">
+			//     </view>
 			// </plugin>
 			"""; //$NON-NLS-1$
 	}

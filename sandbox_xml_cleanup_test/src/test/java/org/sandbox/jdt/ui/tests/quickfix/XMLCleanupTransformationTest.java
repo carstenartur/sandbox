@@ -14,6 +14,7 @@
 package org.sandbox.jdt.ui.tests.quickfix;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -203,6 +204,201 @@ public class XMLCleanupTransformationTest {
 			
 			assertTrue(maxConsecutiveNewlines <= 2,
 				"Should not have more than 2 consecutive newlines (1 empty line), found: " + maxConsecutiveNewlines);
+			
+		} finally {
+			Files.deleteIfExists(tempFile);
+		}
+	}
+
+	@Test
+	public void testEmptyElementsCollapsed() throws Exception {
+		String xmlWithEmptyElements = """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<plugin>
+				    <extension point="org.eclipse.ui.views"></extension>
+				    <extension point="org.eclipse.ui.commands">
+				    </extension>
+				    <view id="test" name="Test"></view>
+				</plugin>
+				""";
+		
+		Path tempFile = Files.createTempFile("test", ".xml");
+		try {
+			Files.writeString(tempFile, xmlWithEmptyElements);
+			
+			String transformed = SchemaTransformationUtils.transform(tempFile, false);
+			
+			// Verify empty elements are collapsed
+			assertFalse(transformed.contains("></extension>"),
+				"Empty extension elements should be self-closing");
+			assertFalse(transformed.contains("></view>"),
+				"Empty view elements should be self-closing");
+			
+			// Verify self-closing tags are present
+			assertTrue(transformed.contains("/>"),
+				"Should contain self-closing tags");
+			
+		} finally {
+			Files.deleteIfExists(tempFile);
+		}
+	}
+
+	@Test
+	public void testElementsWithContentNotCollapsed() throws Exception {
+		String xmlWithContent = """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<feature>
+				    <description>This has content</description>
+				    <copyright>Copyright text</copyright>
+				</feature>
+				""";
+		
+		Path tempFile = Files.createTempFile("test", ".xml");
+		try {
+			Files.writeString(tempFile, xmlWithContent);
+			
+			String transformed = SchemaTransformationUtils.transform(tempFile, false);
+			
+			// Verify elements with content are NOT collapsed
+			assertTrue(transformed.contains("</description>"),
+				"Elements with content should not be collapsed");
+			assertTrue(transformed.contains("</copyright>"),
+				"Elements with content should not be collapsed");
+			assertTrue(transformed.contains("This has content"),
+				"Text content should be preserved");
+			
+		} finally {
+			Files.deleteIfExists(tempFile);
+		}
+	}
+
+	@Test
+	public void testSizeReductionFromCollapsing() throws Exception {
+		String xmlWithEmptyElements = """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<plugin>
+				    <extension point="org.eclipse.ui.views"></extension>
+				    <extension point="org.eclipse.ui.commands"></extension>
+				    <extension point="org.eclipse.ui.menus"></extension>
+				    <view id="v1"></view>
+				    <view id="v2"></view>
+				    <command id="c1"></command>
+				</plugin>
+				""";
+		
+		Path tempFile = Files.createTempFile("test", ".xml");
+		try {
+			Files.writeString(tempFile, xmlWithEmptyElements);
+			
+			String transformed = SchemaTransformationUtils.transform(tempFile, false);
+			
+			// Calculate size reduction
+			int originalSize = xmlWithEmptyElements.length();
+			int transformedSize = transformed.length();
+			
+			assertTrue(transformedSize < originalSize,
+				"Collapsing empty elements should reduce file size. " +
+				"Original: " + originalSize + ", Transformed: " + transformedSize);
+			
+			// Each </tagname> → /> saves approximately (tagname.length + 2) bytes
+			// Expect significant reduction
+			int reduction = originalSize - transformedSize;
+			assertTrue(reduction > 50, 
+				"Should save at least 50 bytes from collapsing. Saved: " + reduction);
+			
+		} finally {
+			Files.deleteIfExists(tempFile);
+		}
+	}
+
+	@Test
+	public void testEmptyElementsWithAttributesCollapsed() throws Exception {
+		String xmlWithEmptyElements = """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<plugin>
+				    <view id="test" name="Test View" class="TestClass"></view>
+				    <command id="cmd1" name="Command One"></command>
+				</plugin>
+				""";
+		
+		Path tempFile = Files.createTempFile("test", ".xml");
+		try {
+			Files.writeString(tempFile, xmlWithEmptyElements);
+			
+			String transformed = SchemaTransformationUtils.transform(tempFile, false);
+			
+			// Verify empty elements with attributes are collapsed
+			assertFalse(transformed.contains("></view>"),
+				"Empty view element with attributes should be self-closing");
+			assertFalse(transformed.contains("></command>"),
+				"Empty command element with attributes should be self-closing");
+			
+			// Verify attributes are preserved
+			assertTrue(transformed.contains("id=\"test\""),
+				"Attributes should be preserved");
+			assertTrue(transformed.contains("name=\"Test View\""),
+				"Attributes should be preserved");
+			
+		} finally {
+			Files.deleteIfExists(tempFile);
+		}
+	}
+
+	@Test
+	public void testEmptyElementsWithWhitespaceCollapsed() throws Exception {
+		String xmlWithWhitespace = """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<plugin>
+				    <extension point="test">   </extension>
+				    <view id="v1">
+				    </view>
+				</plugin>
+				""";
+		
+		Path tempFile = Files.createTempFile("test", ".xml");
+		try {
+			Files.writeString(tempFile, xmlWithWhitespace);
+			
+			String transformed = SchemaTransformationUtils.transform(tempFile, false);
+			
+			// Verify elements with only whitespace are collapsed
+			assertFalse(transformed.contains("></extension>"),
+				"Elements with only whitespace should be self-closing");
+			assertFalse(transformed.contains("></view>"),
+				"Elements with only whitespace should be self-closing");
+			
+		} finally {
+			Files.deleteIfExists(tempFile);
+		}
+	}
+
+	@Test
+	public void testNestedEmptyElementsCollapsed() throws Exception {
+		String xmlWithNested = """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<plugin>
+				    <extension point="test">
+				        <view id="v1"></view>
+				        <command id="c1"></command>
+				    </extension>
+				</plugin>
+				""";
+		
+		Path tempFile = Files.createTempFile("test", ".xml");
+		try {
+			Files.writeString(tempFile, xmlWithNested);
+			
+			String transformed = SchemaTransformationUtils.transform(tempFile, false);
+			
+			// Verify nested empty elements are collapsed
+			assertFalse(transformed.contains("></view>"),
+				"Nested empty view should be self-closing");
+			assertFalse(transformed.contains("></command>"),
+				"Nested empty command should be self-closing");
+			
+			// Parent extension should NOT be collapsed (has children)
+			assertTrue(transformed.contains("</extension>"),
+				"Parent element with children should not be collapsed");
 			
 		} finally {
 			Files.deleteIfExists(tempFile);
