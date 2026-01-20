@@ -115,14 +115,13 @@ public class FeatureParityTest {
 			}""";
 
 		// Erwartetes Ergebnis von V1 - wird später mit V2 verglichen
+		// V1 generiert Expression-Lambda, nicht Block-Lambda
 		String expected = """
 			package test1;
 			import java.util.List;
 			class MyTest {
 				public void test(List<String> list) {
-					list.stream().filter(item -> (item != null)).forEachOrdered(item -> {
-						System.out.println(item);
-					});
+					list.stream().filter(item -> (item != null)).forEachOrdered(item -> System.out.println(item));
 				}
 			}""";
 
