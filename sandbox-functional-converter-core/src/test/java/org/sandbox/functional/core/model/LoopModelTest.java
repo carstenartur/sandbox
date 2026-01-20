@@ -19,10 +19,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for {@link LoopModel}.
+ * Tests for {@link LoopModel} and related classes.
  * 
- * <p>This is a basic test to verify the module builds correctly.
- * Full test coverage will be implemented in subsequent phases.</p>
+ * <p>This tests the core model classes for the Unified Loop Representation.</p>
  */
 class LoopModelTest {
 	
@@ -39,5 +38,71 @@ class LoopModelTest {
 		assertThat(result)
 			.isNotNull()
 			.contains("LoopModel");
+	}
+	
+	@Test
+	void testLoopModelWithComponents() {
+		SourceDescriptor source = new SourceDescriptor(
+			SourceDescriptor.SourceType.COLLECTION, 
+			"myList", 
+			"String"
+		);
+		ElementDescriptor element = new ElementDescriptor("item", "String", false);
+		LoopMetadata metadata = new LoopMetadata(false, false, false, false, true);
+		
+		LoopModel model = new LoopModel(source, element, metadata);
+		
+		assertThat(model.getSource()).isEqualTo(source);
+		assertThat(model.getElement()).isEqualTo(element);
+		assertThat(model.getMetadata()).isEqualTo(metadata);
+	}
+	
+	@Test
+	void testSourceDescriptorBuilder() {
+		SourceDescriptor source = SourceDescriptor.builder()
+			.type(SourceDescriptor.SourceType.ARRAY)
+			.expression("myArray")
+			.elementTypeName("Integer")
+			.build();
+		
+		assertThat(source.getType()).isEqualTo(SourceDescriptor.SourceType.ARRAY);
+		assertThat(source.getExpression()).isEqualTo("myArray");
+		assertThat(source.getElementTypeName()).isEqualTo("Integer");
+	}
+	
+	@Test
+	void testElementDescriptor() {
+		ElementDescriptor element = new ElementDescriptor("x", "int", true);
+		
+		assertThat(element.getVariableName()).isEqualTo("x");
+		assertThat(element.getTypeName()).isEqualTo("int");
+		assertThat(element.isFinal()).isTrue();
+	}
+	
+	@Test
+	void testLoopMetadata() {
+		LoopMetadata metadata = new LoopMetadata(true, false, false, false, true);
+		
+		assertThat(metadata.hasBreak()).isTrue();
+		assertThat(metadata.hasContinue()).isFalse();
+		assertThat(metadata.hasReturn()).isFalse();
+		assertThat(metadata.modifiesCollection()).isFalse();
+		assertThat(metadata.requiresOrdering()).isTrue();
+	}
+	
+	@Test
+	void testLoopMetadataSetters() {
+		LoopMetadata metadata = new LoopMetadata();
+		metadata.setHasBreak(true);
+		metadata.setHasContinue(true);
+		metadata.setHasReturn(false);
+		metadata.setModifiesCollection(true);
+		metadata.setRequiresOrdering(false);
+		
+		assertThat(metadata.hasBreak()).isTrue();
+		assertThat(metadata.hasContinue()).isTrue();
+		assertThat(metadata.hasReturn()).isFalse();
+		assertThat(metadata.modifiesCollection()).isTrue();
+		assertThat(metadata.requiresOrdering()).isFalse();
 	}
 }

@@ -39,29 +39,39 @@ public class FeatureParityTest {
 	/**
 	 * Helper-Methode um V1 und V2 Ergebnisse zu vergleichen.
 	 * 
-	 * <p>TODO: Aktivieren sobald LOOP_V2 implementiert ist</p>
-	 * 
 	 * @param input Der ursprüngliche Java-Code
 	 * @param expectedOutput Der erwartete Code nach der Transformation
 	 * @throws CoreException bei Fehlern während der Refactoring-Ausführung
 	 */
 	private void assertParityBetweenV1AndV2(String input, String expectedOutput) 
 			throws CoreException {
-		// Phase 1: Nur V1 testen (V2 noch nicht implementiert)
 		IPackageFragment pack = context.getSourceFolder()
 			.createPackageFragment("test1", false, null);
-		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
+		
+		// Phase 1: V1 Test
+		ICompilationUnit cuV1 = pack.createCompilationUnit("TestV1.java", 
+			input.replace("MyTest", "TestV1"), false, null);
 		
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+		context.disable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP_V2);
 		context.assertRefactoringResultAsExpected(
-			new ICompilationUnit[] { cu }, 
-			new String[] { expectedOutput }, 
+			new ICompilationUnit[] { cuV1 }, 
+			new String[] { expectedOutput.replace("MyTest", "TestV1") }, 
 			null);
 		
-		// TODO Phase 2: Wenn V2 implementiert ist:
-		// - V2 aktivieren, V1 deaktivieren
-		// - Gleiches Refactoring ausführen
-		// - Ergebnisse vergleichen
+		// Phase 2: V2 Test
+		ICompilationUnit cuV2 = pack.createCompilationUnit("TestV2.java",
+			input.replace("MyTest", "TestV2"), false, null);
+		
+		context.disable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP_V2);
+		context.assertRefactoringResultAsExpected(
+			new ICompilationUnit[] { cuV2 }, 
+			new String[] { expectedOutput.replace("MyTest", "TestV2") }, 
+			null);
+		
+		// Both V1 and V2 should produce identical results
+		// If we reach this point, both tests passed, so parity is established
 	}
 
 	@Test
