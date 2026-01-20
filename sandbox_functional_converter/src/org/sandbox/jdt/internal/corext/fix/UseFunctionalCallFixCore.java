@@ -27,14 +27,16 @@ import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.fix.helper.AbstractFunctionalCall;
 import org.sandbox.jdt.internal.corext.fix.helper.LoopToFunctional;
+import org.sandbox.jdt.internal.corext.fix.helper.LoopToFunctionalV2;
 import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
 public enum UseFunctionalCallFixCore {
 
-	LOOP(new LoopToFunctional());
-	// V2 - Neue ULR-basierte Implementierung (Stub, wird später implementiert)
+	LOOP(new LoopToFunctional()),
+	// V2 - ULR-basierte Implementierung (Phase 1: Delegation für Feature-Parität)
 	// Siehe https://github.com/carstenartur/sandbox/issues/450
-	// LOOP_V2(new LoopToFunctionalV2());  // Auskommentiert bis LoopToFunctionalV2 existiert
+	// Siehe https://github.com/carstenartur/sandbox/issues/453
+	LOOP_V2(new LoopToFunctionalV2());
 
 	AbstractFunctionalCall<ASTNode> functionalcall;
 
