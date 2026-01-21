@@ -235,26 +235,34 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 		
 		// If there's a cause expectation, add the assertion
 		if (info.expectCauseCall != null && exceptionVarName != null) {
-			Expression causeArg = (Expression) info.expectCauseCall.arguments().get(0);
-			Expression causeClass = extractCauseClass(causeArg);
-			
-			if (causeClass != null) {
-				// Create: exception.getCause()
-				MethodInvocation getCauseCall = ast.newMethodInvocation();
-				getCauseCall.setExpression(ast.newSimpleName(exceptionVarName));
-				getCauseCall.setName(ast.newSimpleName("getCause"));
+			// Check if expectCauseCall has arguments before accessing
+			if (!info.expectCauseCall.arguments().isEmpty()) {
+				Expression causeArg = (Expression) info.expectCauseCall.arguments().get(0);
+				Expression causeClass = extractCauseClass(causeArg);
+				
+				if (causeClass != null) {
+					// Create: exception.getCause()
+					MethodInvocation getCauseCall = ast.newMethodInvocation();
+					getCauseCall.setExpression(ast.newSimpleName(exceptionVarName));
+					getCauseCall.setName(ast.newSimpleName("getCause"));
 
-				// Create: assertInstanceOf(CauseClass.class, exception.getCause());
-				MethodInvocation assertInstanceOfCall = ast.newMethodInvocation();
-				assertInstanceOfCall.setName(ast.newSimpleName("assertInstanceOf"));
-				assertInstanceOfCall.arguments().add(ASTNode.copySubtree(ast, causeClass));
-				assertInstanceOfCall.arguments().add(getCauseCall);
+					// Create: assertInstanceOf(CauseClass.class, exception.getCause());
+					MethodInvocation assertInstanceOfCall = ast.newMethodInvocation();
+					assertInstanceOfCall.setName(ast.newSimpleName("assertInstanceOf"));
+					assertInstanceOfCall.arguments().add(ASTNode.copySubtree(ast, causeClass));
+					assertInstanceOfCall.arguments().add(getCauseCall);
 
-				ExpressionStatement assertStatement = ast.newExpressionStatement(assertInstanceOfCall);
-				rewriter.getListRewrite(methodBody, Block.STATEMENTS_PROPERTY).insertLast(assertStatement, group);
+					ExpressionStatement assertStatement = ast.newExpressionStatement(assertInstanceOfCall);
+					rewriter.getListRewrite(methodBody, Block.STATEMENTS_PROPERTY).insertLast(assertStatement, group);
 
-				// Add assertInstanceOf import
-				importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, "assertInstanceOf", false);
+					// Add assertInstanceOf import
+					importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, "assertInstanceOf", false);
+				} else {
+					// Unsupported matcher - log warning
+					System.err.println("WARNING: RuleExpectedExceptionJUnitPlugin - Unsupported expectCause matcher in method '"
+							+ method.getName().getIdentifier()
+							+ "'. Only Hamcrest instanceOf() and isA() matchers are supported. Manual migration of the cause expectation may be required.");
+				}
 			}
 		}
 	}
@@ -322,9 +330,22 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 		return null;
 	}
 
+	/**
+	 * Extracts the cause exception class from a Hamcrest matcher expression.
+	 * 
+	 * Supported Hamcrest matchers:
+	 * - org.hamcrest.Matchers.instanceOf(ExceptionClass.class)
+	 * - org.hamcrest.Matchers.isA(ExceptionClass.class)
+	 * 
+	 * Unsupported matchers (will return null):
+	 * - any(Class.class)
+	 * - notNullValue()
+	 * - Custom matchers
+	 * 
+	 * @param causeArg the expression passed to expectCause()
+	 * @return the class literal expression, or null if the matcher is not supported
+	 */
 	private Expression extractCauseClass(Expression causeArg) {
-		// Handle Hamcrest matchers like: org.hamcrest.Matchers.instanceOf(IllegalArgumentException.class)
-		// or: org.hamcrest.Matchers.isA(IllegalArgumentException.class)
 		if (causeArg instanceof MethodInvocation methodInv) {
 			String methodName = methodInv.getName().getIdentifier();
 			if (("instanceOf".equals(methodName) || "isA".equals(methodName)) && !methodInv.arguments().isEmpty()) {

@@ -267,4 +267,54 @@ public class MyTest {
 				"""
 		}, null);
 	}
+	
+	@Test
+	public void migrates_expectedException_rule_with_message_and_cause() throws CoreException {
+		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
+				"""
+				package test;
+				import org.junit.Rule;
+				import org.junit.Test;
+				import org.junit.rules.ExpectedException;
+				
+				public class MyTest {
+					@Rule
+					public ExpectedException thrown = ExpectedException.none();
+					
+					@Test
+					public void testExceptionWithMessageAndCause() {
+						thrown.expect(RuntimeException.class);
+						thrown.expectMessage("wrapper message");
+						thrown.expectCause(org.hamcrest.Matchers.instanceOf(IllegalArgumentException.class));
+						throw new RuntimeException("wrapper message", new IllegalArgumentException());
+					}
+				}
+				""", false, null);
+	
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
+	
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+				"""
+				package test;
+				import static org.junit.jupiter.api.Assertions.assertEquals;
+				import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+				import static org.junit.jupiter.api.Assertions.assertThrows;
+				
+				import org.junit.jupiter.api.Test;
+				
+				public class MyTest {
+					@Test
+					public void testExceptionWithMessageAndCause() {
+						RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+							throw new RuntimeException("wrapper message", new IllegalArgumentException());
+						});
+						assertEquals("wrapper message", exception.getMessage());
+						assertInstanceOf(IllegalArgumentException.class, exception.getCause());
+					}
+				}
+				"""
+		}, null);
+	}
 	}
