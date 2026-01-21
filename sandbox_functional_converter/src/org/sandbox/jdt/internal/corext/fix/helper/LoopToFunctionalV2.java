@@ -46,9 +46,9 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
     public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
                      Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed) {
         
-        ReferenceHolder<ASTNode, LoopModel> dataHolder = new ReferenceHolder<>();
+        ReferenceHolder<ASTNode, Object> dataHolder = new ReferenceHolder<>();
         HelperVisitor.callEnhancedForStatementVisitor(compilationUnit, dataHolder, nodesprocessed,
-                (visited, holder) -> processFoundNode(fixcore, operations, nodesprocessed, visited, holder),
+                (visited, holder) -> processFoundNode(fixcore, operations, nodesprocessed, visited, holder, dataHolder),
                 (visited, holder) -> {});
     }
     
@@ -56,7 +56,8 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
                                       Set<CompilationUnitRewriteOperation> operations,
                                       Set<ASTNode> nodesprocessed,
                                       EnhancedForStatement visited,
-                                      ReferenceHolder<ASTNode, LoopModel> holder) {
+                                      ReferenceHolder<ASTNode, LoopModel> holder,
+                                      ReferenceHolder<ASTNode, Object> dataHolder) {
         
         // Extract LoopModel from AST
         LoopModel model = extractor.extract(visited);
@@ -68,7 +69,8 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
         
         // Store for later rewrite
         holder.put(visited, model);
-        operations.add(fixcore.rewrite(visited));
+        dataHolder.put(visited, model);
+        operations.add(fixcore.rewrite(visited, dataHolder));
         nodesprocessed.add(visited);
         
         return false;
@@ -76,10 +78,11 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
     
     @Override
     public void rewrite(UseFunctionalCallFixCore upp, EnhancedForStatement visited,
-                        CompilationUnitRewrite cuRewrite, TextEditGroup group) throws CoreException {
+                        CompilationUnitRewrite cuRewrite, TextEditGroup group,
+                        ReferenceHolder<ASTNode, Object> data) throws CoreException {
         
-        // Re-extract the model (since we don't have access to the holder from find())
-        LoopModel model = extractor.extract(visited);
+        // Get the model from the holder (passed from find())
+        LoopModel model = (LoopModel) data.get(visited);
         
         if (model == null || !isConvertible(model)) {
             return;
