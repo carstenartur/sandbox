@@ -287,6 +287,8 @@ public class ASTStreamRenderer implements StreamPipelineRenderer<Expression> {
             case NONE_MATCH:
                 matchCall.setName(ast.newSimpleName("noneMatch"));
                 break;
+            default:
+                throw new IllegalArgumentException("Unknown match type: " + terminal.matchType());
         }
         
         matchCall.arguments().add(createLambda(variableName, terminal.predicate()));
