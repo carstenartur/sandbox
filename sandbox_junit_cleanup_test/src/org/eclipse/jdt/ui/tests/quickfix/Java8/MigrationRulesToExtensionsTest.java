@@ -54,6 +54,7 @@ public class MigrationRulesToExtensionsTest {
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETEMPORARYFOLDER);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETESTNAME);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETIMEOUT);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { testCase.expected }, null);
 	}
 
@@ -397,7 +398,150 @@ public class MigrationRulesToExtensionsTest {
 						File dir = Files.createTempDirectory(folder, "").toFile();
 					}
 				}
-				""");
+				"""),
+	TimeoutSeconds(
+			"""
+			package test;
+			import org.junit.Rule;
+			import org.junit.Test;
+			import org.junit.rules.Timeout;
+			
+			public class MyTest {
+				@Rule
+				public Timeout globalTimeout = Timeout.seconds(10);
+				
+				@Test
+				public void test1() {
+					// test code
+				}
+				
+				@Test
+				public void test2() {
+					// test code
+				}
+			}
+			""",
+			"""
+			package test;
+			import java.util.concurrent.TimeUnit;
+			
+			import org.junit.jupiter.api.Test;
+			import org.junit.jupiter.api.Timeout;
+			
+			@Timeout(value = 10, unit = TimeUnit.SECONDS)
+			public class MyTest {
+				
+				@Test
+				public void test1() {
+					// test code
+				}
+				
+				@Test
+				public void test2() {
+					// test code
+				}
+			}
+			"""),
+	TimeoutMillis(
+			"""
+			package test;
+			import org.junit.Rule;
+			import org.junit.Test;
+			import org.junit.rules.Timeout;
+			
+			public class MyTest {
+				@Rule
+				public Timeout timeout = Timeout.millis(5000);
+				
+				@Test
+				public void testMethod() {
+					// test code
+				}
+			}
+			""",
+			"""
+			package test;
+			import java.util.concurrent.TimeUnit;
+			
+			import org.junit.jupiter.api.Test;
+			import org.junit.jupiter.api.Timeout;
+			
+			@Timeout(value = 5000, unit = TimeUnit.MILLISECONDS)
+			public class MyTest {
+				
+				@Test
+				public void testMethod() {
+					// test code
+				}
+			}
+			"""),
+	TimeoutConstructorMillis(
+			"""
+			package test;
+			import org.junit.Rule;
+			import org.junit.Test;
+			import org.junit.rules.Timeout;
+			
+			public class MyTest {
+				@Rule
+				public Timeout timeout = new Timeout(1000);
+				
+				@Test
+				public void testSomething() {
+					// test
+				}
+			}
+			""",
+			"""
+			package test;
+			import java.util.concurrent.TimeUnit;
+			
+			import org.junit.jupiter.api.Test;
+			import org.junit.jupiter.api.Timeout;
+			
+			@Timeout(value = 1000, unit = TimeUnit.MILLISECONDS)
+			public class MyTest {
+				
+				@Test
+				public void testSomething() {
+					// test
+				}
+			}
+			"""),
+	TimeoutConstructorWithUnit(
+			"""
+			package test;
+			import java.util.concurrent.TimeUnit;
+			import org.junit.Rule;
+			import org.junit.Test;
+			import org.junit.rules.Timeout;
+			
+			public class MyTest {
+				@Rule
+				public Timeout timeout = new Timeout(30, TimeUnit.SECONDS);
+				
+				@Test
+				public void longRunningTest() {
+					// test code
+				}
+			}
+			""",
+			"""
+			package test;
+			import java.util.concurrent.TimeUnit;
+			
+			import org.junit.jupiter.api.Test;
+			import org.junit.jupiter.api.Timeout;
+			
+			@Timeout(value = 30, unit = TimeUnit.SECONDS)
+			public class MyTest {
+				
+				@Test
+				public void longRunningTest() {
+					// test code
+				}
+			}
+			""");
 
 		final String given;
 		final String expected;
