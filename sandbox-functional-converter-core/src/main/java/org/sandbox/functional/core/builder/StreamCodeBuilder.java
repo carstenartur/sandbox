@@ -80,7 +80,6 @@ public class StreamCodeBuilder {
     }
     
     private String buildOperation(Operation op) {
-        String expr = op.expression();
         String varName = model.getElement() != null ? 
                          model.getElement().getVariableName() : "x";
         
@@ -109,14 +108,19 @@ public class StreamCodeBuilder {
             }
             case CollectTerminal c -> {
                 String collector = switch (c.collectorType()) {
-                    case TO_LIST -> "Collectors.toList()";
+                    case TO_LIST -> ".toList()";
                     case TO_SET -> "Collectors.toSet()";
                     case TO_MAP -> "Collectors.toMap(...)";
                     case JOINING -> "Collectors.joining()";
                     case GROUPING_BY -> "Collectors.groupingBy(...)";
                     case CUSTOM -> "...";
                 };
-                yield ".collect(" + collector + ")";
+                // TO_LIST uses .toList() directly, others use .collect()
+                if (c.collectorType() == CollectTerminal.CollectorType.TO_LIST) {
+                    yield collector;
+                } else {
+                    yield ".collect(" + collector + ")";
+                }
             }
             case ReduceTerminal r -> ".reduce(" + r.identity() + ", " + r.accumulator() + ")";
             case CountTerminal ct -> ".count()";
@@ -149,8 +153,11 @@ public class StreamCodeBuilder {
             }
         }
         
-        if (model.getTerminal() instanceof CollectTerminal) {
-            imports.add("java.util.stream.Collectors");
+        if (model.getTerminal() instanceof CollectTerminal ct) {
+            // TO_LIST uses .toList() which doesn't need Collectors import
+            if (ct.collectorType() != CollectTerminal.CollectorType.TO_LIST) {
+                imports.add("java.util.stream.Collectors");
+            }
         }
         
         return imports;

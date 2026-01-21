@@ -75,7 +75,7 @@ class StreamCodeBuilderTest {
         LoopModel model = new LoopModelBuilder()
             .source(SourceDescriptor.SourceType.ARRAY, "arr", "int")
             .element("n", "int", false)
-            .collect(CollectTerminal.CollectorType.TO_LIST, "result")
+            .collect(CollectTerminal.CollectorType.TO_SET, "result")
             .build();
         
         var imports = new StreamCodeBuilder(model).getRequiredImports();
@@ -258,7 +258,7 @@ class StreamCodeBuilderTest {
         
         String code = new StreamCodeBuilder(model).build();
         
-        assertThat(code).contains(".collect(Collectors.toList())");
+        assertThat(code).contains(".toList()");
     }
     
     @Test
