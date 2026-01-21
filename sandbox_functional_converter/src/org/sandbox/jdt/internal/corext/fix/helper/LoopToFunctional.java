@@ -92,13 +92,14 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 	public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, FunctionalHolder> dataHolder= new ReferenceHolder<>();
+		ReferenceHolder<ASTNode, Object> sharedDataHolder = new ReferenceHolder<>();
 		HelperVisitor.callEnhancedForStatementVisitor(compilationUnit, dataHolder, nodesprocessed,
-				(visited, aholder) -> processFoundNode(fixcore, operations, nodesprocessed, visited, aholder),(visited, aholder) -> {});
+				(visited, aholder) -> processFoundNode(fixcore, operations, nodesprocessed, visited, aholder, sharedDataHolder),(visited, aholder) -> {});
 	}
 
 	private boolean processFoundNode(UseFunctionalCallFixCore fixcore,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, EnhancedForStatement visited,
-			ReferenceHolder<Integer, FunctionalHolder> dataHolder) {
+			ReferenceHolder<Integer, FunctionalHolder> dataHolder, ReferenceHolder<ASTNode, Object> sharedDataHolder) {
 		PreconditionsChecker pc = new PreconditionsChecker(visited, (CompilationUnit) visited.getRoot());
 		if (!pc.isSafeToRefactor()) {
 			// Loop cannot be safely refactored to functional style
@@ -112,7 +113,8 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 			// Return true to continue visiting children - inner loops may still be convertible
 			return false;
 		}
-		operations.add(fixcore.rewrite(visited));
+		// V1 doesn't need to store data in the holder, but we pass it to maintain signature compatibility
+		operations.add(fixcore.rewrite(visited, sharedDataHolder));
 		nodesprocessed.add(visited);
 		// Return false to prevent visiting children since this loop was converted
 		// (children are now part of the lambda expression)
@@ -121,7 +123,8 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 
 	@Override
 	public void rewrite(UseFunctionalCallFixCore upp, final EnhancedForStatement visited,
-			final CompilationUnitRewrite cuRewrite, TextEditGroup group) throws CoreException {
+			final CompilationUnitRewrite cuRewrite, TextEditGroup group, 
+			org.sandbox.jdt.internal.common.ReferenceHolder<ASTNode, Object> data) throws CoreException {
 		ASTRewrite rewrite = cuRewrite.getASTRewrite();
 		PreconditionsChecker pc = new PreconditionsChecker(visited, (CompilationUnit) visited.getRoot());
 		Refactorer refactorer = new Refactorer(visited, rewrite, pc, group, cuRewrite);
