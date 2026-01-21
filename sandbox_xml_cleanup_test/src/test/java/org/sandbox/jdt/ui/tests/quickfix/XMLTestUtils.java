@@ -40,13 +40,6 @@ public class XMLTestUtils {
     }
     
     /**
-     * Utility class constructor to prevent instantiation.
-     */
-    private XMLTestUtils() {
-        // utility class, do not instantiate
-    }
-    
-    /**
      * Check if two XML documents are semantically equivalent (ignoring whitespace and comments).
      * 
      * @param expected the expected XML string
