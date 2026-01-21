@@ -13,136 +13,39 @@
  *******************************************************************************/
 package org.sandbox.functional.core.builder;
 
-import java.util.stream.Collectors;
+import java.util.HashSet;
+import java.util.Set;
 import org.sandbox.functional.core.model.*;
-import org.sandbox.functional.core.operation.*;
+import org.sandbox.functional.core.renderer.StringRenderer;
 import org.sandbox.functional.core.terminal.*;
+import org.sandbox.functional.core.transformer.LoopModelTransformer;
 
 /**
  * Generates stream code strings from a LoopModel.
  * 
- * <p>This builder is AST-independent and generates plain Java code strings.
- * JDT-specific AST generation is handled by JdtStreamGenerator in the
- * sandbox_functional_converter module.</p>
- * 
- * <p>Example:</p>
- * <pre>
- * String code = new StreamCodeBuilder(loopModel).build();
- * // Returns: "list.stream().filter(item -> item != null).forEach(item -> System.out.println(item))"
- * </pre>
+ * <p>This is a convenience wrapper around {@link LoopModelTransformer} 
+ * with {@link StringRenderer}.</p>
  */
 public class StreamCodeBuilder {
     
     private final LoopModel model;
+    private final LoopModelTransformer<String> transformer;
     
     public StreamCodeBuilder(LoopModel model) {
         this.model = model;
+        this.transformer = new LoopModelTransformer<>(new StringRenderer());
     }
     
-    /**
-     * Builds the complete stream pipeline code.
-     * 
-     * @return the generated stream code as a string
-     */
     public String build() {
-        StringBuilder sb = new StringBuilder();
-        
-        // Source
-        sb.append(buildSource());
-        
-        // Operations
-        for (Operation op : model.getOperations()) {
-            sb.append(buildOperation(op));
-        }
-        
-        // Terminal
-        if (model.getTerminal() != null) {
-            sb.append(buildTerminal(model.getTerminal()));
-        }
-        
-        return sb.toString();
+        return transformer.transform(model);
     }
     
-    private String buildSource() {
-        SourceDescriptor source = model.getSource();
-        if (source == null) return "";
-        
-        String expr = source.getExpression();
-        
-        return switch (source.getType()) {
-            case COLLECTION -> expr + ".stream()";
-            case ARRAY -> "Arrays.stream(" + expr + ")";
-            case ITERABLE -> "StreamSupport.stream(" + expr + ".spliterator(), false)";
-            case STREAM -> expr;
-            case INT_RANGE -> "IntStream.range(0, " + expr + ")";
-            default -> expr + ".stream()";
-        };
-    }
-    
-    private String buildOperation(Operation op) {
-        String varName = model.getElement() != null ? 
-                         model.getElement().getVariableName() : "x";
-        
-        return switch (op) {
-            case FilterOp f -> ".filter(" + varName + " -> " + f.expression() + ")";
-            case MapOp m -> ".map(" + varName + " -> " + m.expression() + ")";
-            case FlatMapOp fm -> ".flatMap(" + varName + " -> " + fm.expression() + ")";
-            case PeekOp p -> ".peek(" + varName + " -> " + p.expression() + ")";
-            case DistinctOp d -> ".distinct()";
-            case SortOp s -> s.expression() != null ? 
-                             ".sorted(" + s.expression() + ")" : ".sorted()";
-            case LimitOp l -> ".limit(" + l.maxSize() + ")";
-            case SkipOp sk -> ".skip(" + sk.count() + ")";
-        };
-    }
-    
-    private String buildTerminal(TerminalOperation terminal) {
-        String varName = model.getElement() != null ? 
-                         model.getElement().getVariableName() : "x";
-        
-        return switch (terminal) {
-            case ForEachTerminal fe -> {
-                String body = String.join("; ", fe.bodyStatements());
-                String method = fe.ordered() ? ".forEachOrdered" : ".forEach";
-                yield method + "(" + varName + " -> " + body + ")";
-            }
-            case CollectTerminal c -> {
-                String collector = switch (c.collectorType()) {
-                    case TO_LIST -> ".toList()";
-                    case TO_SET -> "Collectors.toSet()";
-                    case TO_MAP -> "Collectors.toMap(...)";
-                    case JOINING -> "Collectors.joining()";
-                    case GROUPING_BY -> "Collectors.groupingBy(...)";
-                    case CUSTOM -> "...";
-                };
-                // TO_LIST uses .toList() directly, others use .collect()
-                if (c.collectorType() == CollectTerminal.CollectorType.TO_LIST) {
-                    yield collector;
-                } else {
-                    yield ".collect(" + collector + ")";
-                }
-            }
-            case ReduceTerminal r -> ".reduce(" + r.identity() + ", " + r.accumulator() + ")";
-            case CountTerminal ct -> ".count()";
-            case FindTerminal f -> f.findFirst() ? ".findFirst()" : ".findAny()";
-            case MatchTerminal m -> "." + m.operationType() + "(" + varName + " -> " + m.predicate() + ")";
-        };
-    }
-    
-    /**
-     * Returns whether the model can be converted to a stream pipeline.
-     */
     public boolean canBuild() {
-        if (model == null || model.getSource() == null) return false;
-        if (model.getMetadata() != null && model.getMetadata().hasBreak()) return false;
-        return true;
+        return transformer.canTransform(model);
     }
     
-    /**
-     * Returns required imports for the generated code.
-     */
-    public java.util.Set<String> getRequiredImports() {
-        java.util.Set<String> imports = new java.util.HashSet<>();
+    public Set<String> getRequiredImports() {
+        Set<String> imports = new HashSet<>();
         
         if (model.getSource() != null) {
             switch (model.getSource().getType()) {
@@ -153,9 +56,8 @@ public class StreamCodeBuilder {
             }
         }
         
-        if (model.getTerminal() instanceof CollectTerminal ct) {
-            // TO_LIST uses .toList() which doesn't need Collectors import
-            if (ct.collectorType() != CollectTerminal.CollectorType.TO_LIST) {
+        if (model.getTerminal() instanceof CollectTerminal c) {
+            if (c.collectorType() != CollectTerminal.CollectorType.TO_LIST) {
                 imports.add("java.util.stream.Collectors");
             }
         }
