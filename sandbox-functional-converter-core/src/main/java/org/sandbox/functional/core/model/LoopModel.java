@@ -122,30 +122,38 @@ public class LoopModel {
 	}
 	
 	/**
-	 * Gets the list of operations.
+	 * Gets an unmodifiable view of the operations list.
 	 * 
-	 * @return the list of operations
+	 * @return an unmodifiable list of operations
 	 */
 	public List<Operation> getOperations() { 
-		return operations; 
+		return java.util.Collections.unmodifiableList(operations); 
 	}
 	
 	/**
 	 * Sets the list of operations.
 	 * 
-	 * @param operations the operations to set
+	 * <p>The contents of the provided list are copied into the internal
+	 * operations list. A {@code null} value clears the current operations.</p>
+	 * 
+	 * @param operations the operations to set, may be {@code null} to clear
 	 */
 	public void setOperations(List<Operation> operations) {
-		this.operations = operations;
+		this.operations.clear();
+		if (operations != null) {
+			this.operations.addAll(operations);
+		}
 	}
 	
 	/**
 	 * Adds an operation to the pipeline.
 	 * 
-	 * @param op the operation to add
+	 * @param op the operation to add, must not be {@code null}
 	 * @return this LoopModel for fluent API
+	 * @throws NullPointerException if op is {@code null}
 	 */
 	public LoopModel addOperation(Operation op) {
+		java.util.Objects.requireNonNull(op, "operation must not be null");
 		this.operations.add(op);
 		return this;
 	}
@@ -171,10 +179,12 @@ public class LoopModel {
 	/**
 	 * Sets the terminal operation (fluent API).
 	 * 
-	 * @param terminal the terminal operation
+	 * @param terminal the terminal operation, must not be {@code null}
 	 * @return this LoopModel for fluent API
+	 * @throws NullPointerException if terminal is {@code null}
 	 */
 	public LoopModel withTerminal(TerminalOperation terminal) {
+		java.util.Objects.requireNonNull(terminal, "terminal operation must not be null");
 		this.terminal = terminal;
 		return this;
 	}

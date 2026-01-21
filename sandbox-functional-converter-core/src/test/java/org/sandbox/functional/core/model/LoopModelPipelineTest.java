@@ -152,4 +152,64 @@ class LoopModelPipelineTest {
         
         assertThat(model1.hashCode()).isEqualTo(model2.hashCode());
     }
+    
+    @Test
+    void testGetOperationsReturnsUnmodifiableList() {
+        LoopModel model = new LoopModel();
+        model.addOperation(new FilterOp("x > 0"));
+        
+        List<org.sandbox.functional.core.operation.Operation> ops = model.getOperations();
+        assertThat(ops).hasSize(1);
+        
+        // Verify that the returned list is unmodifiable
+        org.junit.jupiter.api.Assertions.assertThrows(
+            UnsupportedOperationException.class,
+            () -> ops.add(new MapOp("x.toString()"))
+        );
+    }
+    
+    @Test
+    void testAddOperationRejectsNull() {
+        LoopModel model = new LoopModel();
+        
+        org.junit.jupiter.api.Assertions.assertThrows(
+            NullPointerException.class,
+            () -> model.addOperation(null)
+        );
+    }
+    
+    @Test
+    void testWithTerminalRejectsNull() {
+        LoopModel model = new LoopModel();
+        
+        org.junit.jupiter.api.Assertions.assertThrows(
+            NullPointerException.class,
+            () -> model.withTerminal(null)
+        );
+    }
+    
+    @Test
+    void testSetOperationsWithNull() {
+        LoopModel model = new LoopModel();
+        model.addOperation(new FilterOp("x > 0"));
+        assertThat(model.getOperations()).hasSize(1);
+        
+        // Setting null should clear the operations
+        model.setOperations(null);
+        assertThat(model.getOperations()).isEmpty();
+    }
+    
+    @Test
+    void testSetOperationsCopiesList() {
+        LoopModel model = new LoopModel();
+        java.util.List<org.sandbox.functional.core.operation.Operation> ops = new java.util.ArrayList<>();
+        ops.add(new FilterOp("x > 0"));
+        
+        model.setOperations(ops);
+        assertThat(model.getOperations()).hasSize(1);
+        
+        // Modifying the original list should not affect the model
+        ops.add(new MapOp("x.toString()"));
+        assertThat(model.getOperations()).hasSize(1);
+    }
 }
