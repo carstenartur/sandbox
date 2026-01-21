@@ -219,9 +219,4 @@ public class LoopModelBuilder {
     public boolean isValid() {
         return source != null && element != null;
     }
-    
-    public boolean isConvertible() {
-        if (metadata == null) return true;
-        return !metadata.hasBreak() && !metadata.hasReturn();
-    }
 }

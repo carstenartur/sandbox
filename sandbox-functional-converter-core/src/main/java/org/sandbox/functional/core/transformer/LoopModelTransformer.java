@@ -47,7 +47,7 @@ public class LoopModelTransformer<T> {
         }
         
         String varName = model.getElement() != null 
-            ? model.getElement().getVariableName() 
+            ? model.getElement().variableName() 
             : "x";
         
         // Start with source
@@ -96,7 +96,6 @@ public class LoopModelTransformer<T> {
      */
     public boolean canTransform(LoopModel model) {
         if (model == null || model.getSource() == null) return false;
-        if (model.getMetadata() != null && model.getMetadata().hasBreak()) return false;
-        return true;
+        return model.isConvertible();
     }
 }

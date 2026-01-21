@@ -48,7 +48,7 @@ public class StreamCodeBuilder {
         Set<String> imports = new HashSet<>();
         
         if (model.getSource() != null) {
-            switch (model.getSource().getType()) {
+            switch (model.getSource().type()) {
                 case ARRAY -> imports.add("java.util.Arrays");
                 case ITERABLE -> imports.add("java.util.stream.StreamSupport");
                 case INT_RANGE -> imports.add("java.util.stream.IntStream");

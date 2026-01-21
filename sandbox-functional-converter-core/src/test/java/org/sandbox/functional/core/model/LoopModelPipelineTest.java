@@ -98,14 +98,11 @@ class LoopModelPipelineTest {
     }
     
     @Test
-    void testSetOperationsList() {
+    void testAddMultipleOperations() {
         LoopModel model = new LoopModel();
-        List<org.sandbox.functional.core.operation.Operation> ops = List.of(
-            new FilterOp("x > 0"),
-            new MapOp("x.toString()")
-        );
-        model.setOperations(ops);
-        assertThat(model.getOperations()).isEqualTo(ops);
+        model.addOperation(new FilterOp("x > 0"));
+        model.addOperation(new MapOp("x.toString()"));
+        assertThat(model.getOperations()).hasSize(2);
     }
     
     @Test
@@ -189,27 +186,27 @@ class LoopModelPipelineTest {
     }
     
     @Test
-    void testSetOperationsWithNull() {
+    void testAddOperationsClearedByCreatingNewModel() {
         LoopModel model = new LoopModel();
         model.addOperation(new FilterOp("x > 0"));
         assertThat(model.getOperations()).hasSize(1);
         
-        // Setting null should clear the operations
-        model.setOperations(null);
-        assertThat(model.getOperations()).isEmpty();
+        // Create new model to test operations are empty
+        LoopModel newModel = new LoopModel();
+        assertThat(newModel.getOperations()).isEmpty();
     }
     
     @Test
-    void testSetOperationsCopiesList() {
+    void testOperationsAreIndependent() {
         LoopModel model = new LoopModel();
-        java.util.List<org.sandbox.functional.core.operation.Operation> ops = new java.util.ArrayList<>();
-        ops.add(new FilterOp("x > 0"));
-        
-        model.setOperations(ops);
+        FilterOp filter = new FilterOp("x > 0");
+        model.addOperation(filter);
         assertThat(model.getOperations()).hasSize(1);
         
-        // Modifying the original list should not affect the model
-        ops.add(new MapOp("x.toString()"));
+        // Adding to model should not affect other models
+        LoopModel model2 = new LoopModel();
+        model2.addOperation(new MapOp("x.toString()"));
         assertThat(model.getOperations()).hasSize(1);
+        assertThat(model2.getOperations()).hasSize(1);
     }
 }

@@ -58,24 +58,24 @@ class LoopModelTest {
 	}
 	
 	@Test
-	void testSourceDescriptorBuilder() {
-		SourceDescriptor source = SourceDescriptor.builder()
-			.type(SourceDescriptor.SourceType.ARRAY)
-			.expression("myArray")
-			.elementTypeName("Integer")
-			.build();
+	void testSourceDescriptor() {
+		SourceDescriptor source = new SourceDescriptor(
+			SourceDescriptor.SourceType.ARRAY,
+			"myArray",
+			"Integer"
+		);
 		
-		assertThat(source.getType()).isEqualTo(SourceDescriptor.SourceType.ARRAY);
-		assertThat(source.getExpression()).isEqualTo("myArray");
-		assertThat(source.getElementTypeName()).isEqualTo("Integer");
+		assertThat(source.type()).isEqualTo(SourceDescriptor.SourceType.ARRAY);
+		assertThat(source.expression()).isEqualTo("myArray");
+		assertThat(source.elementTypeName()).isEqualTo("Integer");
 	}
 	
 	@Test
 	void testElementDescriptor() {
 		ElementDescriptor element = new ElementDescriptor("x", "int", true);
 		
-		assertThat(element.getVariableName()).isEqualTo("x");
-		assertThat(element.getTypeName()).isEqualTo("int");
+		assertThat(element.variableName()).isEqualTo("x");
+		assertThat(element.typeName()).isEqualTo("int");
 		assertThat(element.isFinal()).isTrue();
 	}
 	
@@ -88,21 +88,5 @@ class LoopModelTest {
 		assertThat(metadata.hasReturn()).isFalse();
 		assertThat(metadata.modifiesCollection()).isFalse();
 		assertThat(metadata.requiresOrdering()).isTrue();
-	}
-	
-	@Test
-	void testLoopMetadataSetters() {
-		LoopMetadata metadata = new LoopMetadata();
-		metadata.setHasBreak(true);
-		metadata.setHasContinue(true);
-		metadata.setHasReturn(false);
-		metadata.setModifiesCollection(true);
-		metadata.setRequiresOrdering(false);
-		
-		assertThat(metadata.hasBreak()).isTrue();
-		assertThat(metadata.hasContinue()).isTrue();
-		assertThat(metadata.hasReturn()).isFalse();
-		assertThat(metadata.modifiesCollection()).isTrue();
-		assertThat(metadata.requiresOrdering()).isFalse();
 	}
 }
