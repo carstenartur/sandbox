@@ -13,6 +13,11 @@
  *******************************************************************************/
 package org.sandbox.functional.core.model;
 
+import java.util.ArrayList;
+import java.util.List;
+import org.sandbox.functional.core.operation.Operation;
+import org.sandbox.functional.core.terminal.TerminalOperation;
+
 /**
  * Unified Loop Representation (ULR) model.
  * 
@@ -34,6 +39,8 @@ public class LoopModel {
 	private SourceDescriptor source;
 	private ElementDescriptor element;
 	private LoopMetadata metadata;
+	private List<Operation> operations = new ArrayList<>();
+	private TerminalOperation terminal;
 	
 	/**
 	 * Default constructor.
@@ -67,9 +74,11 @@ public class LoopModel {
 	 * Sets the source descriptor.
 	 * 
 	 * @param source the source descriptor
+	 * @return this LoopModel for fluent API
 	 */
-	public void setSource(SourceDescriptor source) {
+	public LoopModel setSource(SourceDescriptor source) {
 		this.source = source;
+		return this;
 	}
 	
 	/**
@@ -85,9 +94,11 @@ public class LoopModel {
 	 * Sets the element descriptor.
 	 * 
 	 * @param element the element descriptor
+	 * @return this LoopModel for fluent API
 	 */
-	public void setElement(ElementDescriptor element) {
+	public LoopModel setElement(ElementDescriptor element) {
 		this.element = element;
+		return this;
 	}
 	
 	/**
@@ -103,9 +114,79 @@ public class LoopModel {
 	 * Sets the loop metadata.
 	 * 
 	 * @param metadata the loop metadata
+	 * @return this LoopModel for fluent API
 	 */
-	public void setMetadata(LoopMetadata metadata) {
+	public LoopModel setMetadata(LoopMetadata metadata) {
 		this.metadata = metadata;
+		return this;
+	}
+	
+	/**
+	 * Gets an unmodifiable view of the operations list.
+	 * 
+	 * @return an unmodifiable list of operations
+	 */
+	public List<Operation> getOperations() { 
+		return java.util.Collections.unmodifiableList(operations); 
+	}
+	
+	/**
+	 * Sets the list of operations.
+	 * 
+	 * <p>The contents of the provided list are copied into the internal
+	 * operations list. A {@code null} value clears the current operations.</p>
+	 * 
+	 * @param operations the operations to set, may be {@code null} to clear
+	 */
+	public void setOperations(List<Operation> operations) {
+		this.operations.clear();
+		if (operations != null) {
+			this.operations.addAll(operations);
+		}
+	}
+	
+	/**
+	 * Adds an operation to the pipeline.
+	 * 
+	 * @param op the operation to add, must not be {@code null}
+	 * @return this LoopModel for fluent API
+	 * @throws NullPointerException if op is {@code null}
+	 */
+	public LoopModel addOperation(Operation op) {
+		java.util.Objects.requireNonNull(op, "operation must not be null");
+		this.operations.add(op);
+		return this;
+	}
+	
+	/**
+	 * Gets the terminal operation.
+	 * 
+	 * @return the terminal operation
+	 */
+	public TerminalOperation getTerminal() { 
+		return terminal; 
+	}
+	
+	/**
+	 * Sets the terminal operation.
+	 * 
+	 * @param terminal the terminal operation
+	 */
+	public void setTerminal(TerminalOperation terminal) {
+		this.terminal = terminal;
+	}
+	
+	/**
+	 * Sets the terminal operation (fluent API).
+	 * 
+	 * @param terminal the terminal operation, must not be {@code null}
+	 * @return this LoopModel for fluent API
+	 * @throws NullPointerException if terminal is {@code null}
+	 */
+	public LoopModel withTerminal(TerminalOperation terminal) {
+		java.util.Objects.requireNonNull(terminal, "terminal operation must not be null");
+		this.terminal = terminal;
+		return this;
 	}
 	
 	/**
@@ -116,7 +197,8 @@ public class LoopModel {
 	@Override
 	public String toString() {
 		return "LoopModel[source=" + source + ", element=" + element 
-				+ ", metadata=" + metadata + "]";
+				+ ", metadata=" + metadata + ", operations=" + operations
+				+ ", terminal=" + terminal + "]";
 	}
 	
 	@Override
@@ -130,11 +212,13 @@ public class LoopModel {
 		LoopModel other = (LoopModel) obj;
 		return java.util.Objects.equals(source, other.source)
 				&& java.util.Objects.equals(element, other.element)
-				&& java.util.Objects.equals(metadata, other.metadata);
+				&& java.util.Objects.equals(metadata, other.metadata)
+				&& java.util.Objects.equals(operations, other.operations)
+				&& java.util.Objects.equals(terminal, other.terminal);
 	}
 	
 	@Override
 	public int hashCode() {
-		return java.util.Objects.hash(source, element, metadata);
+		return java.util.Objects.hash(source, element, metadata, operations, terminal);
 	}
 }
