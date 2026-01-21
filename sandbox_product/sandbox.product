@@ -198,6 +198,7 @@ United States, other countries, or both.
       <feature id="org.eclipse.equinox.p2.core.feature"/>
       <feature id="org.eclipse.equinox.p2.extras.feature"/>
       <feature id="sandbox_encoding_quickfix_feature"/>
+      <feature id="sandbox_css_cleanup_feature"/>
       <feature id="sandbox_extra_search_feature"/>
       <feature id="sandbox_usage_view_feature"/>
       <feature id="sandbox_platform_helper_feature"/>

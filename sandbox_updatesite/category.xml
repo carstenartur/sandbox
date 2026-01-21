@@ -33,6 +33,9 @@
    <feature id="sandbox_cleanup_application_feature">
       <category name="Sandbox"/>
    </feature>
+   <feature id="sandbox_css_cleanup_feature">
+      <category name="Sandbox"/>
+   </feature>
    <feature id="sandbox_extra_search_feature">
       <category name="Sandbox"/>
    </feature>
