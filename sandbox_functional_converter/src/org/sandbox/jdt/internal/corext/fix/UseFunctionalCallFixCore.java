@@ -70,13 +70,13 @@ public enum UseFunctionalCallFixCore {
 		functionalcall.find(this, compilationUnit, operations, nodesprocessed);
 	}
 
-	public CompilationUnitRewriteOperation rewrite(final ASTNode visited) {
+	public CompilationUnitRewriteOperation rewrite(final ASTNode visited, final org.sandbox.jdt.internal.common.ReferenceHolder<ASTNode, Object> data) {
 		return new CompilationUnitRewriteOperation() {
 			@Override
 			public void rewriteAST(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel) throws CoreException {
 				TextEditGroup group= createTextEditGroup(Messages.format(MultiFixMessages.FunctionalCallCleanUp_description,new Object[] {UseFunctionalCallFixCore.this.toString()}), cuRewrite);
 				cuRewrite.getASTRewrite().setTargetSourceRangeComputer(computer);
-				functionalcall.rewrite(UseFunctionalCallFixCore.this, visited, cuRewrite, group);
+				functionalcall.rewrite(UseFunctionalCallFixCore.this, visited, cuRewrite, group, data);
 			}
 		};
 	}

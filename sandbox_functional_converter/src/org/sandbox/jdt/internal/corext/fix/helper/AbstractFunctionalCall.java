@@ -31,7 +31,7 @@ public abstract class AbstractFunctionalCall<T extends ASTNode> {
 	public abstract void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed);
 
 	public abstract void rewrite(UseFunctionalCallFixCore useExplicitEncodingFixCore, T visited, CompilationUnitRewrite cuRewrite,
-			TextEditGroup group) throws CoreException;
+			TextEditGroup group, org.sandbox.jdt.internal.common.ReferenceHolder<ASTNode, Object> data) throws CoreException;
 
 	public abstract String getPreview(boolean afterRefactoring);
 }
