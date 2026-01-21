@@ -16,94 +16,134 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.EnhancedForStatement;
+import org.eclipse.jdt.core.dom.*;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.functional.core.model.LoopMetadata;
+import org.sandbox.functional.core.model.LoopModel;
+import org.sandbox.functional.core.transformer.LoopModelTransformer;
+import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 
 /**
- * V2 implementation based on Unified Loop Representation (ULR).
+ * V2 implementation using the Unified Loop Representation (ULR) architecture.
  * 
- * <p>This implementation uses the ULR model from sandbox-functional-converter-core
- * to provide a more modular and testable approach to loop-to-functional transformations.</p>
+ * <p>This class uses the abstract LoopModel from the core module and
+ * the ASTStreamRenderer to generate JDT AST nodes.</p>
  * 
- * <p><b>Current Status:</b> Phase 1 - Feature Parity with V1</p>
- * <p>This implementation currently delegates all operations to the V1 implementation
- * ({@link LoopToFunctional}) to ensure feature parity. Future phases will gradually
- * replace V1 logic with ULR-based transformations.</p>
- * 
- * <p><b>Architecture:</b></p>
- * <ul>
- * <li>Phase 1: Delegate to V1 for feature parity (current)</li>
- * <li>Phase 2: Implement AST-to-ULR extraction</li>
- * <li>Phase 3: Implement ULR-to-Stream transformation</li>
- * <li>Phase 4: Replace V1 delegation with ULR pipeline</li>
- * </ul>
- * 
- * @see LoopToFunctional
- * @see <a href="https://github.com/carstenartur/sandbox/issues/450">Issue #450</a>
- * @see <a href="https://github.com/carstenartur/sandbox/issues/453">Issue #453</a>
- * @since 1.0.0
+ * @see LoopModel
+ * @see ASTStreamRenderer
+ * @see LoopModelTransformer
  */
 public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatement> {
-	
-	/**
-	 * V1 implementation used for delegation during Phase 1.
-	 * 
-	 * <p>This ensures feature parity while the ULR-based implementation
-	 * is being developed.</p>
-	 */
-	private final LoopToFunctional v1Delegate = new LoopToFunctional();
-	
-	/**
-	 * Finds convertible loops in the compilation unit.
-	 * 
-	 * <p><b>Current Implementation:</b> Delegates to V1</p>
-	 * 
-	 * @param fixcore the fix core context
-	 * @param compilationUnit the compilation unit to search
-	 * @param operations set to collect rewrite operations
-	 * @param nodesprocessed set of already processed nodes
-	 */
-	@Override
-	public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
-			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed) {
-		// Phase 1: Delegate to V1 for feature parity
-		v1Delegate.find(fixcore, compilationUnit, operations, nodesprocessed);
-	}
-	
-	/**
-	 * Rewrites a loop statement to use functional/stream operations.
-	 * 
-	 * <p><b>Current Implementation:</b> Delegates to V1</p>
-	 * 
-	 * @param upp the fix core context
-	 * @param visited the enhanced for statement to transform
-	 * @param cuRewrite the compilation unit rewrite context
-	 * @param group the text edit group for tracking changes
-	 * @throws CoreException if rewriting fails
-	 */
-	@Override
-	public void rewrite(UseFunctionalCallFixCore upp, EnhancedForStatement visited,
-			CompilationUnitRewrite cuRewrite, TextEditGroup group) throws CoreException {
-		// Phase 1: Delegate to V1 for feature parity
-		v1Delegate.rewrite(upp, visited, cuRewrite, group);
-	}
-	
-	/**
-	 * Provides a preview of the transformation.
-	 * 
-	 * <p><b>Current Implementation:</b> Delegates to V1</p>
-	 * 
-	 * @param afterRefactoring true for after preview, false for before
-	 * @return preview string
-	 */
-	@Override
-	public String getPreview(boolean afterRefactoring) {
-		// Phase 1: Delegate to V1 for feature parity
-		return v1Delegate.getPreview(afterRefactoring);
-	}
+    
+    private final JdtLoopExtractor extractor = new JdtLoopExtractor();
+    
+    @Override
+    public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
+                     Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed) {
+        
+        ReferenceHolder<ASTNode, LoopModel> dataHolder = new ReferenceHolder<>();
+        HelperVisitor.callEnhancedForStatementVisitor(compilationUnit, dataHolder, nodesprocessed,
+                (visited, holder) -> processFoundNode(fixcore, operations, nodesprocessed, visited, holder));
+    }
+    
+    private boolean processFoundNode(UseFunctionalCallFixCore fixcore,
+                                      Set<CompilationUnitRewriteOperation> operations,
+                                      Set<ASTNode> nodesprocessed,
+                                      EnhancedForStatement visited,
+                                      ReferenceHolder<ASTNode, LoopModel> holder) {
+        
+        // Extract LoopModel from AST
+        LoopModel model = extractor.extract(visited);
+        
+        // Check if convertible using the model's metadata
+        if (!isConvertible(model)) {
+            return false;
+        }
+        
+        // Store for later rewrite
+        holder.put(visited, model);
+        operations.add(fixcore.rewrite(visited));
+        nodesprocessed.add(visited);
+        
+        return false;
+    }
+    
+    @Override
+    public void rewrite(UseFunctionalCallFixCore upp, EnhancedForStatement visited,
+                        CompilationUnitRewrite cuRewrite, TextEditGroup group) throws CoreException {
+        
+        // Re-extract the model (since we don't have access to the holder from find())
+        LoopModel model = extractor.extract(visited);
+        
+        if (model == null || !isConvertible(model)) {
+            return;
+        }
+        
+        AST ast = cuRewrite.getRoot().getAST();
+        ASTRewrite rewrite = cuRewrite.getASTRewrite();
+        
+        // Create renderer and transformer
+        ASTStreamRenderer renderer = new ASTStreamRenderer(ast, rewrite);
+        LoopModelTransformer<Expression> transformer = new LoopModelTransformer<>(renderer);
+        
+        // Transform the model to JDT Expression
+        Expression streamExpression = transformer.transform(model);
+        
+        if (streamExpression != null) {
+            // Create the replacement statement
+            ExpressionStatement newStatement = ast.newExpressionStatement(streamExpression);
+            
+            // Replace the for statement
+            rewrite.replace(visited, newStatement, group);
+            
+            // Add necessary imports
+            addImports(cuRewrite, model);
+        }
+    }
+    
+    private boolean isConvertible(LoopModel model) {
+        if (model == null) return false;
+        
+        LoopMetadata metadata = model.getMetadata();
+        if (metadata == null) return true; // No metadata = assume convertible
+        
+        // Don't convert if has break, continue, or return
+        return !metadata.hasBreak() && 
+               !metadata.hasContinue() && 
+               !metadata.hasReturn() &&
+               !metadata.modifiesCollection();
+    }
+    
+    private void addImports(CompilationUnitRewrite cuRewrite, LoopModel model) {
+        // Add necessary imports based on source type
+        switch (model.getSource().type()) {
+            case ARRAY:
+                cuRewrite.getImportRewrite().addImport("java.util.Arrays");
+                break;
+            case ITERABLE:
+                cuRewrite.getImportRewrite().addImport("java.util.stream.StreamSupport");
+                break;
+            default:
+                // No additional imports needed for Collection.stream()
+                break;
+        }
+        
+        // Add Collectors import if using collect terminal
+        if (model.getTerminal() instanceof org.sandbox.functional.core.terminal.CollectTerminal) {
+            cuRewrite.getImportRewrite().addImport("java.util.stream.Collectors");
+        }
+    }
+    
+    @Override
+    public String getPreview(boolean afterRefactoring) {
+        if (afterRefactoring) {
+            return "items.stream().forEach(item -> System.out.println(item));\n"; //$NON-NLS-1$
+        }
+        return "for (String item : items)\n    System.out.println(item);\n"; //$NON-NLS-1$
+    }
 }
