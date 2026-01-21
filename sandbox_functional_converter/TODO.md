@@ -48,6 +48,41 @@
    - [ ] Performance benchmarking (ULR vs V1)
 
 **Success Criteria**:
+- `LoopToFunctionalV2` uses ULR extraction + transformation instead of delegation
+- All existing tests pass without modification
+- Feature parity maintained with V1
+
+### Phase 3: Operation Model (PLANNED)
+**Objective**: Enhance ULR with stream operation models
+
+### Phase 4: Transformation Engine (PLANNED)
+**Objective**: Implement ULR-to-Stream transformer with callback pattern
+
+### Phase 5: JDT AST Renderer (IN PROGRESS - January 2026) ✅ 90% COMPLETE
+
+**Objective**: Create AST-based renderer for JDT integration
+
+**Completed Tasks**:
+- ✅ Created `ASTStreamRenderer` implementing `StreamPipelineRenderer<Expression>`
+- ✅ Implemented all 14 render methods (source, intermediate ops, terminal ops)
+- ✅ Added helper methods with proper validation (no silent transformations)
+- ✅ Created comprehensive test suite (25 test methods)
+- ✅ Fixed OSGi bundle dependency resolution (`org.sandbox.functional.core`)
+- ✅ Added core module to reactor build
+- ✅ Updated documentation (ARCHITECTURE.md, TODO.md)
+
+**Remaining Tasks**:
+- [ ] Integrate ASTStreamRenderer with LoopToFunctionalV2
+- [ ] Add end-to-end integration tests
+- [ ] Improve test assertions beyond toString() comparisons
+- [ ] Performance testing with real-world code
+
+**Key Implementation Details**:
+- Uses Java's `Character.isJavaIdentifierStart/Part()` for identifier validation
+- Fails fast with `IllegalArgumentException` instead of silent transformations
+- INT_RANGE parsing validates format "start,end"
+- English comments for Eclipse JDT contribution readiness
+- Removed unused `rewrite` field (reserved for future use)
 - All existing tests pass with V2 enabled
 - Feature parity between V1 and V2 maintained
 - ULR model classes have comprehensive test coverage
