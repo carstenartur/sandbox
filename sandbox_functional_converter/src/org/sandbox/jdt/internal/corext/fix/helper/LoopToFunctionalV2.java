@@ -48,7 +48,7 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
         
         ReferenceHolder<ASTNode, Object> dataHolder = new ReferenceHolder<>();
         HelperVisitor.callEnhancedForStatementVisitor(compilationUnit, dataHolder, nodesprocessed,
-                (visited, holder) -> processFoundNode(fixcore, operations, nodesprocessed, visited, holder, dataHolder),
+                (visited, holder) -> processFoundNode(fixcore, operations, nodesprocessed, visited, holder),
                 (visited, holder) -> {});
     }
     
@@ -56,8 +56,7 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
                                       Set<CompilationUnitRewriteOperation> operations,
                                       Set<ASTNode> nodesprocessed,
                                       EnhancedForStatement visited,
-                                      ReferenceHolder<ASTNode, LoopModel> holder,
-                                      ReferenceHolder<ASTNode, Object> dataHolder) {
+                                      ReferenceHolder<ASTNode, Object> holder) {
         
         // Extract LoopModel from AST
         LoopModel model = extractor.extract(visited);
@@ -67,10 +66,9 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
             return false;
         }
         
-        // Store for later rewrite
+        // Store for later rewrite in the shared holder
         holder.put(visited, model);
-        dataHolder.put(visited, model);
-        operations.add(fixcore.rewrite(visited, dataHolder));
+        operations.add(fixcore.rewrite(visited, holder));
         nodesprocessed.add(visited);
         
         return false;
