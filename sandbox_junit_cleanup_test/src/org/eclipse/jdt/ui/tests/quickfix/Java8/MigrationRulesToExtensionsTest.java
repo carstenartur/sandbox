@@ -430,7 +430,6 @@ public class MigrationRulesToExtensionsTest {
 			
 			@Timeout(value = 10, unit = TimeUnit.SECONDS)
 			public class MyTest {
-				
 				@Test
 				public void test1() {
 					// test code
@@ -468,7 +467,6 @@ public class MigrationRulesToExtensionsTest {
 			
 			@Timeout(value = 5000, unit = TimeUnit.MILLISECONDS)
 			public class MyTest {
-				
 				@Test
 				public void testMethod() {
 					// test code
@@ -501,7 +499,6 @@ public class MigrationRulesToExtensionsTest {
 			
 			@Timeout(value = 1000, unit = TimeUnit.MILLISECONDS)
 			public class MyTest {
-				
 				@Test
 				public void testSomething() {
 					// test
@@ -535,7 +532,6 @@ public class MigrationRulesToExtensionsTest {
 			
 			@Timeout(value = 30, unit = TimeUnit.SECONDS)
 			public class MyTest {
-				
 				@Test
 				public void longRunningTest() {
 					// test code

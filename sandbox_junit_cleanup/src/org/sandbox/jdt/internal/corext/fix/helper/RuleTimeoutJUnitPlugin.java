@@ -69,7 +69,12 @@ public class RuleTimeoutJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, FieldDeclaration node,
 			ReferenceHolder<Integer, JunitHolder> dataHolder) {
+		// Note: Only processes the first fragment. Multiple timeout fields in one declaration
+		// (e.g., @Rule public Timeout t1 = ..., t2 = ...;) are not supported but are extremely rare.
 		VariableDeclarationFragment fragment = (VariableDeclarationFragment) node.fragments().get(0);
+		if (fragment.resolveBinding() == null) {
+			return false;
+		}
 		ITypeBinding binding = fragment.resolveBinding().getType();
 		
 		if (binding != null && ORG_JUNIT_RULES_TIMEOUT.equals(binding.getQualifiedName())) {
@@ -143,8 +148,19 @@ public class RuleTimeoutJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 	private String extractTimeUnit(Expression expr) {
 		if (expr instanceof QualifiedName) {
 			QualifiedName qn = (QualifiedName) expr;
-			if ("TimeUnit".equals(qn.getQualifier().toString())) {
-				return qn.getName().getIdentifier();
+			// Prefer type binding to reliably detect java.util.concurrent.TimeUnit
+			ITypeBinding qualifierBinding = qn.getQualifier().resolveTypeBinding();
+			if (qualifierBinding != null) {
+				String qualifiedName = qualifierBinding.getQualifiedName();
+				if ("java.util.concurrent.TimeUnit".equals(qualifiedName)) {
+					return qn.getName().getIdentifier();
+				}
+			} else if (qn.getQualifier() instanceof SimpleName) {
+				// Fallback when bindings are unavailable: check simple qualifier name
+				SimpleName qualifier = (SimpleName) qn.getQualifier();
+				if ("TimeUnit".equals(qualifier.getIdentifier())) {
+					return qn.getName().getIdentifier();
+				}
 			}
 		} else if (expr instanceof SimpleName) {
 			// Handle imported static TimeUnit constants
