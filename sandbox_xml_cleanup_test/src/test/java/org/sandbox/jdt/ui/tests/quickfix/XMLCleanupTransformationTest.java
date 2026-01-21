@@ -409,4 +409,94 @@ public class XMLCleanupTransformationTest {
 			Files.deleteIfExists(tempFile);
 		}
 	}
+
+	@Test
+	public void testTrailingWhitespaceRemoved() throws Exception {
+		String xmlWithTrailingSpaces = "<?xml version=\"1.0\"?>   \n<plugin>  \n    <extension/>   \n</plugin>  ";
+		
+		Path tempFile = Files.createTempFile("test", ".xml");
+		try {
+			Files.writeString(tempFile, xmlWithTrailingSpaces);
+			
+			String transformed = SchemaTransformationUtils.transform(tempFile, false);
+			
+			// Verify no trailing whitespace
+			String[] lines = transformed.split("\n");
+			for (String line : lines) {
+				assertFalse(line.endsWith(" "), "Line should not end with space: " + line);
+				assertFalse(line.endsWith("\t"), "Line should not end with tab: " + line);
+			}
+			
+		} finally {
+			Files.deleteIfExists(tempFile);
+		}
+	}
+
+	@Test
+	public void testLeadingSpacesConvertedToTabs() throws Exception {
+		String xmlWithSpaces = """
+				<?xml version="1.0"?>
+				<plugin>
+				    <extension point="test">
+				        <view id="v"/>
+				    </extension>
+				</plugin>
+				""";
+		
+		Path tempFile = Files.createTempFile("test", ".xml");
+		try {
+			Files.writeString(tempFile, xmlWithSpaces);
+			
+			String transformed = SchemaTransformationUtils.transform(tempFile, false);
+			
+			// Verify tabs are used for indentation
+			assertTrue(transformed.contains("\t<extension") || transformed.contains("\t<view"),
+				"Should use tabs for indentation");
+			
+		} finally {
+			Files.deleteIfExists(tempFile);
+		}
+	}
+
+	@Test
+	public void testSizeReductionSignificant() throws Exception {
+		String verboseXml = """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<plugin>
+				
+				
+				    <extension point="org.eclipse.ui.views">   
+				    </extension>
+				    <extension point="org.eclipse.ui.commands">
+				    </extension>
+				    <view id="v1" name="View 1">   </view>
+				    <view id="v2" name="View 2"></view>
+				    <command id="c1"></command>   
+				
+				
+				</plugin>
+				""";
+		
+		Path tempFile = Files.createTempFile("test", ".xml");
+		try {
+			Files.writeString(tempFile, verboseXml);
+			
+			String transformed = SchemaTransformationUtils.transform(tempFile, false);
+			
+			int originalSize = verboseXml.length();
+			int transformedSize = transformed.length();
+			int reduction = originalSize - transformedSize;
+			
+			assertTrue(transformedSize < originalSize,
+				"Transformed should be smaller. Original: " + originalSize + ", Transformed: " + transformedSize);
+			
+			// Expect at least 10% reduction
+			double reductionPercent = (double) reduction / originalSize * 100;
+			assertTrue(reductionPercent > 10,
+				"Should reduce size by at least 10%. Actual: " + reductionPercent + "%");
+			
+		} finally {
+			Files.deleteIfExists(tempFile);
+		}
+	}
 }
