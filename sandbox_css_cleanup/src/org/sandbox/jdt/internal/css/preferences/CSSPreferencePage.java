@@ -13,10 +13,12 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.css.preferences;
 
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.preference.FileFieldEditor;
 import org.eclipse.jface.preference.StringFieldEditor;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
 import org.sandbox.jdt.internal.css.CSSCleanupPlugin;
@@ -37,13 +39,8 @@ public class CSSPreferencePage extends FieldEditorPreferencePage implements IWor
 
 	@Override
 	public void createFieldEditors() {
-		// Check tool availability and update description when page is displayed
-		String statusInfo = "\n\nStatus:\n" + //$NON-NLS-1$
-				"  Node.js: " + (NodeExecutor.isNodeAvailable() ? "Available" : "Not found") + "\n" + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
-				"  npx: " + (NodeExecutor.isNpxAvailable() ? "Available" : "Not found") + "\n" + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
-				"  Prettier: " + (PrettierRunner.isPrettierAvailable() ? "Available" : "Not installed") + "\n" + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
-				"  Stylelint: " + (StylelintRunner.isStylelintAvailable() ? "Available" : "Not installed"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-		setDescription(getDescription() + statusInfo);
+		// Show initial status message
+		setDescription(getDescription() + "\n\nStatus: Checking tool availability..."); //$NON-NLS-1$
 
 		addField(new BooleanFieldEditor(
 				CSSPreferenceConstants.ENABLE_PRETTIER,
@@ -64,6 +61,23 @@ public class CSSPreferencePage extends FieldEditorPreferencePage implements IWor
 				CSSPreferenceConstants.STYLELINT_CONFIG,
 				"Stylelint &config file:", //$NON-NLS-1$
 				getFieldEditorParent()));
+
+		// Check tool availability asynchronously to avoid blocking UI
+		Job.create("Checking CSS tool availability", monitor -> { //$NON-NLS-1$
+			String statusInfo = "\n\nStatus:\n" + //$NON-NLS-1$
+					"  Node.js: " + (NodeExecutor.isNodeAvailable() ? "Available" : "Not found") + "\n" + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+					"  npx: " + (NodeExecutor.isNpxAvailable() ? "Available" : "Not found") + "\n" + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+					"  Prettier: " + (PrettierRunner.isPrettierAvailable() ? "Available" : "Not installed") + "\n" + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+					"  Stylelint: " + (StylelintRunner.isStylelintAvailable() ? "Available" : "Not installed"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+
+			// Update description on UI thread
+			Display.getDefault().asyncExec(() -> {
+				if (!getControl().isDisposed()) {
+					setDescription("Configure CSS formatting and validation tools." + statusInfo); //$NON-NLS-1$
+				}
+			});
+			return org.eclipse.core.runtime.Status.OK_STATUS;
+		}).schedule();
 	}
 
 	@Override
