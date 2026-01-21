@@ -30,6 +30,8 @@
 		<module>sandbox_common</module>
 		<module>sandbox_common_test</module>
 		<module>sandbox_test_commons</module>
+		<module>sandbox_css_cleanup</module>
+		<module>sandbox_css_cleanup_feature</module>
 		<module>sandbox_encoding_quickfix</module>
 		<module>sandbox_encoding_quickfix_feature</module>
 		<module>sandbox_encoding_quickfix_test</module>
