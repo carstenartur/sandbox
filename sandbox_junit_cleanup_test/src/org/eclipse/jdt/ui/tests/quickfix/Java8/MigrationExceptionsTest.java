@@ -221,7 +221,6 @@ public class MyTest {
 		}, null);
 	}
 	
-	@Disabled("Not yet implemented - ExpectedException with cause")
 	@Test
 	public void migrates_expectedException_rule_with_cause() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);

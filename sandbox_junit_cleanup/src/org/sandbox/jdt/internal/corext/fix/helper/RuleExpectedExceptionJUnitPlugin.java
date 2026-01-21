@@ -145,9 +145,9 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 			return;
 		}
 
-		// Generate a unique variable name for the exception if we need to check the message
+		// Generate a unique variable name for the exception if we need to check the message or cause
 		String exceptionVarName = null;
-		if (info.expectMessageCall != null) {
+		if (info.expectMessageCall != null || info.expectCauseCall != null) {
 			Collection<String> usedNames = getUsedVariableNames(method);
 			exceptionVarName = generateUniqueVariableName("exception", usedNames);
 		}
@@ -232,6 +232,31 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 			// Add assertEquals import
 			importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, "assertEquals", false);
 		}
+		
+		// If there's a cause expectation, add the assertion
+		if (info.expectCauseCall != null && exceptionVarName != null) {
+			Expression causeArg = (Expression) info.expectCauseCall.arguments().get(0);
+			Expression causeClass = extractCauseClass(causeArg);
+			
+			if (causeClass != null) {
+				// Create: exception.getCause()
+				MethodInvocation getCauseCall = ast.newMethodInvocation();
+				getCauseCall.setExpression(ast.newSimpleName(exceptionVarName));
+				getCauseCall.setName(ast.newSimpleName("getCause"));
+
+				// Create: assertInstanceOf(CauseClass.class, exception.getCause());
+				MethodInvocation assertInstanceOfCall = ast.newMethodInvocation();
+				assertInstanceOfCall.setName(ast.newSimpleName("assertInstanceOf"));
+				assertInstanceOfCall.arguments().add(ASTNode.copySubtree(ast, causeClass));
+				assertInstanceOfCall.arguments().add(getCauseCall);
+
+				ExpressionStatement assertStatement = ast.newExpressionStatement(assertInstanceOfCall);
+				rewriter.getListRewrite(methodBody, Block.STATEMENTS_PROPERTY).insertLast(assertStatement, group);
+
+				// Add assertInstanceOf import
+				importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, "assertInstanceOf", false);
+			}
+		}
 	}
 
 	private ExpectedExceptionInfo findExpectedExceptionCalls(List<Statement> statements, String fieldName) {
@@ -272,10 +297,30 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 					info.firstExpectStatementIndex = i;
 				}
 				info.lastExpectStatementIndex = i;
+			} else if ("expectCause".equals(methodName)) {
+				info.expectCauseCall = invocation;
+				if (info.firstExpectStatementIndex == -1) {
+					info.firstExpectStatementIndex = i;
+				}
+				info.lastExpectStatementIndex = i;
 			}
 		}
 
 		return info;
+	}
+
+	private Expression extractCauseClass(Expression causeArg) {
+		// Handle Hamcrest matchers like: org.hamcrest.Matchers.instanceOf(IllegalArgumentException.class)
+		// or: org.hamcrest.Matchers.isA(IllegalArgumentException.class)
+		if (causeArg instanceof MethodInvocation methodInv) {
+			String methodName = methodInv.getName().getIdentifier();
+			if (("instanceOf".equals(methodName) || "isA".equals(methodName)) && !methodInv.arguments().isEmpty()) {
+				// Extract the class literal argument
+				Expression arg = (Expression) methodInv.arguments().get(0);
+				return arg;
+			}
+		}
+		return null;
 	}
 
 	private String extractExceptionTypeName(MethodInvocation expectCall) {
@@ -373,6 +418,7 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 	private static class ExpectedExceptionInfo {
 		MethodInvocation expectCall;
 		MethodInvocation expectMessageCall;
+		MethodInvocation expectCauseCall;
 		int firstExpectStatementIndex = -1;
 		int lastExpectStatementIndex = -1;
 	}
