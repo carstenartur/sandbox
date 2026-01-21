@@ -48,6 +48,51 @@ Issue [#450](https://github.com/carstenartur/sandbox/issues/450) introduced the 
 1. Implement ULR extraction from AST in `LoopToFunctionalV2`
 2. Create ULR → Stream transformation logic independent of AST
 3. Migrate simple patterns first (forEach, basic map/filter)
+
+### Phase 3: Operation Model (PLANNED)
+**Goal**: Enhance ULR with stream operation models
+
+### Phase 4: Transformation Engine (PLANNED)
+**Goal**: Implement ULR-to-Stream transformer with callback pattern
+
+### Phase 5: JDT AST Renderer (IN PROGRESS - January 2026)
+**Goal**: Create AST-based renderer for JDT integration
+
+**Status**: 🆕 Implementation started
+
+**Completed Deliverables**:
+1. **ASTStreamRenderer** (`org.sandbox.jdt.internal.corext.fix.helper`):
+   - Implements `StreamPipelineRenderer<Expression>` interface
+   - Generates JDT AST nodes instead of string concatenation
+   - Supports all source types (COLLECTION, ARRAY, ITERABLE, INT_RANGE, STREAM)
+   - Implements 14 render methods:
+     - **Source**: `renderSource()` - creates stream from various sources
+     - **Intermediate ops**: `renderFilter()`, `renderMap()`, `renderFlatMap()`, `renderPeek()`, `renderDistinct()`, `renderSorted()`, `renderLimit()`, `renderSkip()`
+     - **Terminal ops**: `renderForEach()`, `renderCollect()`, `renderReduce()`, `renderCount()`, `renderFind()`, `renderMatch()`
+   - Helper methods for AST node creation with proper validation
+   - Uses ASTParser for complex expression parsing
+
+2. **Integration with core module**:
+   - Added `org.sandbox.functional.core` as OSGi bundle dependency
+   - Exports helper package for test access
+   - Core module added to reactor build (parent pom.xml)
+
+3. **Test suite** (`ASTStreamRendererTest`):
+   - 25 test methods covering all operations
+   - Tests for all source types and terminal operations
+   - Complex pipeline construction validation
+   - Tests for edge cases (with/without identity in reduce, ordered forEach, etc.)
+
+**Implementation Notes**:
+- Uses Java's `Character.isJavaIdentifierStart/Part()` for robust identifier validation
+- Fails fast with descriptive errors instead of silent transformations
+- INT_RANGE parsing includes validation for format "start,end"
+- English comments for maintainability and Eclipse JDT contribution readiness
+
+**Next Steps for Phase 5**:
+- [ ] Integrate ASTStreamRenderer with LoopToFunctionalV2
+- [ ] Add end-to-end tests with actual loop transformations
+- [ ] Validate AST node correctness beyond toString() comparisons
 4. Validate feature parity for each pattern
 5. Gradually replace delegation with ULR-native code
 

@@ -31,16 +31,15 @@ import org.sandbox.functional.core.terminal.*;
 public class ASTStreamRenderer implements StreamPipelineRenderer<Expression> {
     
     private final AST ast;
-    private final ASTRewrite rewrite;
     
     public ASTStreamRenderer(AST ast, ASTRewrite rewrite) {
         this.ast = ast;
-        this.rewrite = rewrite;
+        // Note: rewrite parameter reserved for future use in complex AST transformations
     }
     
     @Override
     public Expression renderSource(SourceDescriptor source) {
-        // Erstelle: collection.stream() oder Arrays.stream(array)
+        // Create: collection.stream() or Arrays.stream(array)
         switch (source.type()) {
             case COLLECTION:
                 // collection.stream()
@@ -76,15 +75,19 @@ public class ASTStreamRenderer implements StreamPipelineRenderer<Expression> {
                 MethodInvocation intStream = ast.newMethodInvocation();
                 intStream.setExpression(ast.newSimpleName("IntStream"));
                 intStream.setName(ast.newSimpleName("range"));
-                // Parse start und end aus expression (format: "start,end")
+                // Parse start and end from expression (format: "start,end")
                 String[] parts = source.expression().split(",");
+                if (parts.length != 2) {
+                    throw new IllegalArgumentException("Invalid INT_RANGE expression: '" + source.expression()
+                            + "'. Expected format 'start,end'.");
+                }
                 intStream.arguments().add(createExpression(parts[0].trim()));
                 intStream.arguments().add(createExpression(parts[1].trim()));
                 return intStream;
                 
             case STREAM:
             default:
-                // Bereits ein Stream
+                // Already a Stream
                 return createExpression(source.expression());
         }
     }
@@ -303,17 +306,16 @@ public class ASTStreamRenderer implements StreamPipelineRenderer<Expression> {
     
     private Expression createExpression(String expressionText) {
         // Parse expression string to AST node
-        // Für einfache Fälle: SimpleName oder QualifiedName
         if (expressionText == null || expressionText.isEmpty()) {
             return ast.newNullLiteral();
         }
         
-        // Versuche als SimpleName
-        if (expressionText.matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
+        // Check for simple identifiers using Java's identifier validation
+        if (isValidJavaIdentifier(expressionText)) {
             return ast.newSimpleName(expressionText);
         }
         
-        // Für komplexere Expressions: nutze ASTParser
+        // For complex expressions: use ASTParser
         ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
         parser.setKind(ASTParser.K_EXPRESSION);
         parser.setSource(expressionText.toCharArray());
@@ -323,8 +325,27 @@ public class ASTStreamRenderer implements StreamPipelineRenderer<Expression> {
             return (Expression) ASTNode.copySubtree(ast, result);
         }
         
-        // Fallback: als SimpleName behandeln
-        return ast.newSimpleName(expressionText.replaceAll("[^a-zA-Z0-9_]", "_"));
+        // Expression could not be parsed; fail fast instead of silently mangling it
+        throw new IllegalArgumentException("Unable to parse expression: " + expressionText);
+    }
+    
+    /**
+     * Validates if a string is a valid Java identifier.
+     * Supports Unicode identifiers, underscores, and dollar signs.
+     */
+    private boolean isValidJavaIdentifier(String str) {
+        if (str == null || str.isEmpty()) {
+            return false;
+        }
+        if (!Character.isJavaIdentifierStart(str.charAt(0))) {
+            return false;
+        }
+        for (int i = 1; i < str.length(); i++) {
+            if (!Character.isJavaIdentifierPart(str.charAt(i))) {
+                return false;
+            }
+        }
+        return true;
     }
     
     private Statement createStatement(String statementText) {
@@ -350,12 +371,5 @@ public class ASTStreamRenderer implements StreamPipelineRenderer<Expression> {
      */
     public AST getAST() {
         return ast;
-    }
-    
-    /**
-     * Returns the ASTRewrite used by this renderer.
-     */
-    public ASTRewrite getRewrite() {
-        return rewrite;
     }
 }

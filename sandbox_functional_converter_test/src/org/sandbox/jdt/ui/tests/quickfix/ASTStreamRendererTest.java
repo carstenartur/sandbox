@@ -275,6 +275,40 @@ public class ASTStreamRendererTest {
     }
     
     @Test
+    void testRenderReduce_WithIdentity() {
+        Expression pipeline = ast.newSimpleName("stream");
+        org.sandbox.functional.core.terminal.ReduceTerminal terminal = 
+            new org.sandbox.functional.core.terminal.ReduceTerminal(
+                "0", "(a, b) -> a + b", null, 
+                org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.SUM);
+        
+        Expression result = renderer.renderReduce(pipeline, terminal, "x");
+        
+        assertNotNull(result);
+        assertTrue(result instanceof MethodInvocation);
+        MethodInvocation mi = (MethodInvocation) result;
+        assertEquals("reduce", mi.getName().getIdentifier());
+        assertEquals(2, mi.arguments().size()); // identity + accumulator
+    }
+    
+    @Test
+    void testRenderReduce_WithoutIdentity() {
+        Expression pipeline = ast.newSimpleName("stream");
+        org.sandbox.functional.core.terminal.ReduceTerminal terminal = 
+            new org.sandbox.functional.core.terminal.ReduceTerminal(
+                null, "(a, b) -> a + b", null, 
+                org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.CUSTOM);
+        
+        Expression result = renderer.renderReduce(pipeline, terminal, "x");
+        
+        assertNotNull(result);
+        assertTrue(result instanceof MethodInvocation);
+        MethodInvocation mi = (MethodInvocation) result;
+        assertEquals("reduce", mi.getName().getIdentifier());
+        assertEquals(1, mi.arguments().size()); // only accumulator
+    }
+    
+    @Test
     void testRenderCount() {
         Expression pipeline = ast.newSimpleName("stream");
         
@@ -364,11 +398,5 @@ public class ASTStreamRendererTest {
     void testGetAST() {
         assertNotNull(renderer.getAST());
         assertSame(ast, renderer.getAST());
-    }
-    
-    @Test
-    void testGetRewrite() {
-        assertNotNull(renderer.getRewrite());
-        assertSame(rewrite, renderer.getRewrite());
     }
 }
