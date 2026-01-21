@@ -194,9 +194,9 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 			fragment.setInitializer(assertThrowsCall);
 
 			VariableDeclarationStatement varDecl = ast.newVariableDeclarationStatement(fragment);
-			// Extract the exception type name from the class literal
-			String exceptionTypeName = extractExceptionTypeName(info.expectCall);
-			varDecl.setType(ast.newSimpleType(ast.newName(exceptionTypeName)));
+			// Extract the exception type from the class literal (use the Type directly to preserve simple name)
+			Type exceptionType = extractExceptionType(info.expectCall);
+			varDecl.setType((Type) ASTNode.copySubtree(ast, exceptionType));
 
 			newStatement = varDecl;
 		} else {
@@ -307,6 +307,19 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 		}
 
 		return info;
+	}
+
+	private Type extractExceptionType(MethodInvocation expectCall) {
+		// The argument is typically a TypeLiteral like IllegalArgumentException.class
+		if (!expectCall.arguments().isEmpty()) {
+			Expression arg = (Expression) expectCall.arguments().get(0);
+			
+			// Extract the Type from the TypeLiteral
+			if (arg instanceof TypeLiteral typeLiteral) {
+				return typeLiteral.getType();
+			}
+		}
+		return null;
 	}
 
 	private Expression extractCauseClass(Expression causeArg) {

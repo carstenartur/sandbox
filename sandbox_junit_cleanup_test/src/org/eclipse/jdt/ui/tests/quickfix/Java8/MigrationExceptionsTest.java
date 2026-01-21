@@ -207,7 +207,7 @@ import org.junit.jupiter.api.Test;
 public class MyTest {
 	@Test
 	public void testExceptionWithMessage() {
-		java.lang.IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
 			doSomethingThatThrows();
 		});
 		assertEquals("Invalid argument", exception.getMessage());
@@ -259,7 +259,7 @@ public class MyTest {
 					@Test
 					public void testExceptionWithCause() {
 						RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-						throw new RuntimeException(new IllegalArgumentException());
+							throw new RuntimeException(new IllegalArgumentException());
 						});
 						assertInstanceOf(IllegalArgumentException.class, exception.getCause());
 					}
