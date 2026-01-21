@@ -185,7 +185,8 @@ public class RuleTemporayFolderJUnitPlugin extends AbstractTool<ReferenceHolder<
 							MethodInvocation resolveInvocation= ast.newMethodInvocation();
 							resolveInvocation.setExpression(ast.newSimpleName(originalName));
 							resolveInvocation.setName(ast.newSimpleName("resolve"));
-							resolveInvocation.arguments().addAll(ASTNode.copySubtrees(ast, node.arguments()));
+							// newFile only takes a single String argument
+							resolveInvocation.arguments().add(ASTNode.copySubtree(ast, (ASTNode) node.arguments().get(0)));
 							
 							createFileInvocation.arguments().add(resolveInvocation);
 							
@@ -212,17 +213,32 @@ public class RuleTemporayFolderJUnitPlugin extends AbstractTool<ReferenceHolder<
 							
 							rewriter.replace(node, toFileInvocation, group);
 						} else {
-							// newFolder(String...) -> Files.createDirectories(tempDir.resolve(...)).toFile()
+							// newFolder(String...) -> Files.createDirectories(tempDir.resolve(...).resolve(...)).toFile()
+							// For multiple arguments, chain resolve() calls
 							MethodInvocation createDirInvocation= ast.newMethodInvocation();
 							createDirInvocation.setExpression(ast.newName("Files"));
 							createDirInvocation.setName(ast.newSimpleName("createDirectories"));
 							
-							MethodInvocation resolveInvocation= ast.newMethodInvocation();
-							resolveInvocation.setExpression(ast.newSimpleName(originalName));
-							resolveInvocation.setName(ast.newSimpleName("resolve"));
-							resolveInvocation.arguments().addAll(ASTNode.copySubtrees(ast, node.arguments()));
+							// Build chained resolve() calls for multiple arguments
+							// Start with tempFolder.resolve("a")
+							Object firstArg = node.arguments().get(0);
+							MethodInvocation chainedResolve = ast.newMethodInvocation();
+							chainedResolve.setExpression(ast.newSimpleName(originalName));
+							chainedResolve.setName(ast.newSimpleName("resolve"));
+							chainedResolve.arguments().add(ASTNode.copySubtree(ast, (ASTNode) firstArg));
 							
-							createDirInvocation.arguments().add(resolveInvocation);
+							// Chain additional resolve() calls for subsequent arguments
+							// .resolve("b").resolve("c")...
+							for (int i = 1; i < node.arguments().size(); i++) {
+								Object arg = node.arguments().get(i);
+								MethodInvocation nextResolve = ast.newMethodInvocation();
+								nextResolve.setExpression(chainedResolve);
+								nextResolve.setName(ast.newSimpleName("resolve"));
+								nextResolve.arguments().add(ASTNode.copySubtree(ast, (ASTNode) arg));
+								chainedResolve = nextResolve;
+							}
+							
+							createDirInvocation.arguments().add(chainedResolve);
 							
 							MethodInvocation toFileInvocation= ast.newMethodInvocation();
 							toFileInvocation.setExpression(createDirInvocation);
