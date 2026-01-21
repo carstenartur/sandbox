@@ -53,7 +53,11 @@ public class ASTStreamRendererTest {
         
         assertNotNull(result);
         assertTrue(result instanceof MethodInvocation);
-        assertEquals("items.stream()", result.toString());
+        MethodInvocation mi = (MethodInvocation) result;
+        assertEquals("stream", mi.getName().getIdentifier());
+        assertNotNull(mi.getExpression());
+        assertTrue(mi.getExpression() instanceof SimpleName);
+        assertEquals("items", ((SimpleName) mi.getExpression()).getIdentifier());
     }
     
     @Test
@@ -65,7 +69,12 @@ public class ASTStreamRendererTest {
         
         assertNotNull(result);
         assertTrue(result instanceof MethodInvocation);
-        assertEquals("Arrays.stream(arr)", result.toString());
+        MethodInvocation mi = (MethodInvocation) result;
+        assertEquals("stream", mi.getName().getIdentifier());
+        assertNotNull(mi.getExpression());
+        assertTrue(mi.getExpression() instanceof SimpleName);
+        assertEquals("Arrays", ((SimpleName) mi.getExpression()).getIdentifier());
+        assertEquals(1, mi.arguments().size());
     }
     
     @Test
@@ -77,8 +86,15 @@ public class ASTStreamRendererTest {
         
         assertNotNull(result);
         assertTrue(result instanceof MethodInvocation);
-        assertTrue(result.toString().contains("StreamSupport.stream"));
-        assertTrue(result.toString().contains("spliterator"));
+        MethodInvocation mi = (MethodInvocation) result;
+        assertEquals("stream", mi.getName().getIdentifier());
+        assertNotNull(mi.getExpression());
+        assertTrue(mi.getExpression() instanceof SimpleName);
+        assertEquals("StreamSupport", ((SimpleName) mi.getExpression()).getIdentifier());
+        assertEquals(2, mi.arguments().size()); // spliterator() and false
+        assertTrue(mi.arguments().get(0) instanceof MethodInvocation);
+        MethodInvocation spliterator = (MethodInvocation) mi.arguments().get(0);
+        assertEquals("spliterator", spliterator.getName().getIdentifier());
     }
     
     @Test
@@ -90,7 +106,12 @@ public class ASTStreamRendererTest {
         
         assertNotNull(result);
         assertTrue(result instanceof MethodInvocation);
-        assertEquals("IntStream.range(0,10)", result.toString());
+        MethodInvocation mi = (MethodInvocation) result;
+        assertEquals("range", mi.getName().getIdentifier());
+        assertNotNull(mi.getExpression());
+        assertTrue(mi.getExpression() instanceof SimpleName);
+        assertEquals("IntStream", ((SimpleName) mi.getExpression()).getIdentifier());
+        assertEquals(2, mi.arguments().size()); // start and end
     }
     
     @Test
@@ -258,8 +279,16 @@ public class ASTStreamRendererTest {
         
         assertNotNull(result);
         assertTrue(result instanceof MethodInvocation);
-        assertTrue(result.toString().contains("collect"));
-        assertTrue(result.toString().contains("Collectors.toList"));
+        MethodInvocation collectCall = (MethodInvocation) result;
+        assertEquals("collect", collectCall.getName().getIdentifier());
+        assertEquals(1, collectCall.arguments().size());
+        assertTrue(collectCall.arguments().get(0) instanceof MethodInvocation);
+        
+        MethodInvocation collector = (MethodInvocation) collectCall.arguments().get(0);
+        assertEquals("toList", collector.getName().getIdentifier());
+        assertNotNull(collector.getExpression());
+        assertTrue(collector.getExpression() instanceof SimpleName);
+        assertEquals("Collectors", ((SimpleName) collector.getExpression()).getIdentifier());
     }
     
     @Test
@@ -271,7 +300,14 @@ public class ASTStreamRendererTest {
         Expression result = renderer.renderCollect(pipeline, terminal, "x");
         
         assertNotNull(result);
-        assertTrue(result.toString().contains("toSet"));
+        assertTrue(result instanceof MethodInvocation);
+        MethodInvocation collectCall = (MethodInvocation) result;
+        assertEquals("collect", collectCall.getName().getIdentifier());
+        assertEquals(1, collectCall.arguments().size());
+        assertTrue(collectCall.arguments().get(0) instanceof MethodInvocation);
+        
+        MethodInvocation collector = (MethodInvocation) collectCall.arguments().get(0);
+        assertEquals("toSet", collector.getName().getIdentifier());
     }
     
     @Test
@@ -315,7 +351,12 @@ public class ASTStreamRendererTest {
         Expression result = renderer.renderCount(pipeline);
         
         assertNotNull(result);
-        assertEquals("stream.count()", result.toString());
+        assertTrue(result instanceof MethodInvocation);
+        MethodInvocation mi = (MethodInvocation) result;
+        assertEquals("count", mi.getName().getIdentifier());
+        assertNotNull(mi.getExpression());
+        assertTrue(mi.getExpression() instanceof SimpleName);
+        assertEquals("stream", ((SimpleName) mi.getExpression()).getIdentifier());
     }
     
     @Test
@@ -325,7 +366,9 @@ public class ASTStreamRendererTest {
         Expression result = renderer.renderFind(pipeline, true);
         
         assertNotNull(result);
-        assertTrue(result.toString().contains("findFirst"));
+        assertTrue(result instanceof MethodInvocation);
+        MethodInvocation mi = (MethodInvocation) result;
+        assertEquals("findFirst", mi.getName().getIdentifier());
     }
     
     @Test
@@ -335,7 +378,9 @@ public class ASTStreamRendererTest {
         Expression result = renderer.renderFind(pipeline, false);
         
         assertNotNull(result);
-        assertTrue(result.toString().contains("findAny"));
+        assertTrue(result instanceof MethodInvocation);
+        MethodInvocation mi = (MethodInvocation) result;
+        assertEquals("findAny", mi.getName().getIdentifier());
     }
     
     @Test
@@ -347,7 +392,11 @@ public class ASTStreamRendererTest {
         Expression result = renderer.renderMatch(pipeline, terminal, "x");
         
         assertNotNull(result);
-        assertTrue(result.toString().contains("anyMatch"));
+        assertTrue(result instanceof MethodInvocation);
+        MethodInvocation mi = (MethodInvocation) result;
+        assertEquals("anyMatch", mi.getName().getIdentifier());
+        assertEquals(1, mi.arguments().size());
+        assertTrue(mi.arguments().get(0) instanceof LambdaExpression);
     }
     
     @Test
@@ -359,7 +408,11 @@ public class ASTStreamRendererTest {
         Expression result = renderer.renderMatch(pipeline, terminal, "x");
         
         assertNotNull(result);
-        assertTrue(result.toString().contains("allMatch"));
+        assertTrue(result instanceof MethodInvocation);
+        MethodInvocation mi = (MethodInvocation) result;
+        assertEquals("allMatch", mi.getName().getIdentifier());
+        assertEquals(1, mi.arguments().size());
+        assertTrue(mi.arguments().get(0) instanceof LambdaExpression);
     }
     
     @Test
@@ -371,7 +424,11 @@ public class ASTStreamRendererTest {
         Expression result = renderer.renderMatch(pipeline, terminal, "x");
         
         assertNotNull(result);
-        assertTrue(result.toString().contains("noneMatch"));
+        assertTrue(result instanceof MethodInvocation);
+        MethodInvocation mi = (MethodInvocation) result;
+        assertEquals("noneMatch", mi.getName().getIdentifier());
+        assertEquals(1, mi.arguments().size());
+        assertTrue(mi.arguments().get(0) instanceof LambdaExpression);
     }
     
     @Test
@@ -387,11 +444,24 @@ public class ASTStreamRendererTest {
             java.util.List.of("System.out.println(x)"), "x", false);
         
         assertNotNull(pipeline);
-        String code = pipeline.toString();
-        assertTrue(code.contains("stream()"));
-        assertTrue(code.contains("filter"));
-        assertTrue(code.contains("map"));
-        assertTrue(code.contains("forEach"));
+        assertTrue(pipeline instanceof MethodInvocation, "Final result should be a MethodInvocation");
+        
+        // Verify the pipeline structure by checking the nested method invocations
+        MethodInvocation forEach = (MethodInvocation) pipeline;
+        assertEquals("forEach", forEach.getName().getIdentifier());
+        assertNotNull(forEach.getExpression(), "forEach should have an expression (the map call)");
+        
+        assertTrue(forEach.getExpression() instanceof MethodInvocation, "forEach expression should be map");
+        MethodInvocation map = (MethodInvocation) forEach.getExpression();
+        assertEquals("map", map.getName().getIdentifier());
+        
+        assertTrue(map.getExpression() instanceof MethodInvocation, "map expression should be filter");
+        MethodInvocation filter = (MethodInvocation) map.getExpression();
+        assertEquals("filter", filter.getName().getIdentifier());
+        
+        assertTrue(filter.getExpression() instanceof MethodInvocation, "filter expression should be stream");
+        MethodInvocation stream = (MethodInvocation) filter.getExpression();
+        assertEquals("stream", stream.getName().getIdentifier());
     }
     
     @Test
