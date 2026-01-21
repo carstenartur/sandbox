@@ -56,17 +56,25 @@ The Sandbox plugins are also available on the [Eclipse Marketplace](https://mark
 
 ## 📦 Release Process
 
-Creating a new release is simple:
+The Sandbox project uses an **automated release workflow**:
 
-1. Update version in `pom.xml` files (if needed)
-2. Create and push a version tag:
-   ```bash
-   git tag v1.2.3
-   git push origin v1.2.3
-   ```
-3. GitHub Actions automatically builds and deploys the release to the update site
+1. Navigate to **Actions** → **Release Workflow** → **Run workflow**
+2. Enter the release version (e.g., `1.2.2`)
+3. Enter the next SNAPSHOT version (e.g., `1.2.3-SNAPSHOT`)
+4. Click **Run workflow**
 
-The new release will be available at `https://carstenartur.github.io/sandbox/releases/` within a few minutes.
+The workflow automatically:
+- Updates all version files using `tycho-versions-plugin`
+- Builds and verifies the release
+- Creates git tag and maintenance branch
+- Deploys to GitHub Pages
+- Generates release notes from closed issues
+- Creates GitHub release
+- Bumps to next SNAPSHOT version
+
+The new release will be available at `https://carstenartur.github.io/sandbox/releases/X.Y.Z/` within a few minutes.
+
+For detailed instructions, see the [Release Process](#release-process) section below.
 
 ## Table of Contents
 
@@ -1259,90 +1267,87 @@ Found a bug or have a feature request? Please [open an issue](https://github.com
 
 ## Release Process
 
-This section describes how to create and publish a new release of the Sandbox project.
+This section describes how to create and publish a new release of the Sandbox project using the automated release workflow.
 
 ### Prerequisites
 
 - Write access to the repository
-- Local environment with Java 21 and Maven configured
 - All tests passing on the `main` branch
+- Decide on the release version number (e.g., `1.2.2`)
+- Decide on the next SNAPSHOT version (e.g., `1.2.3-SNAPSHOT`)
 
-### Release Steps
+### Automated Release Workflow
 
-#### 1. Update Version Numbers
+The release process is **fully automated** through GitHub Actions. To create a release:
 
-Update the version in all `pom.xml` files from `X.Y.Z-SNAPSHOT` to `X.Y.Z`:
+#### 1. Trigger the Release Workflow
 
-```bash
-# Example: Updating from 1.2.2-SNAPSHOT to 1.2.2
-mvn versions:set -DnewVersion=1.2.2
-mvn versions:commit
-```
+1. Go to the [GitHub Actions tab](https://github.com/carstenartur/sandbox/actions)
+2. Select **"Release Workflow"** from the workflows list
+3. Click **"Run workflow"** button
+4. Fill in the required inputs:
+   - **Release version**: The version to release (e.g., `1.2.2`)
+   - **Next SNAPSHOT version**: The next development version (e.g., `1.2.3-SNAPSHOT`)
+5. Click **"Run workflow"** to start the automated release process
 
-#### 2. Verify the Build
+#### 2. What the Workflow Does Automatically
 
-Ensure all tests pass and the build completes successfully:
+The workflow performs all release steps automatically:
 
-```bash
-# Run full build with tests and coverage
-mvn clean verify -Pjacoco
+1. ✅ **Updates version** in all `pom.xml`, `MANIFEST.MF`, `feature.xml`, and `*.product` files using `tycho-versions-plugin`
+2. ✅ **Verifies** that no SNAPSHOT references remain (except in `sandbox-functional-converter-core`)
+3. ✅ **Commits** the release version changes
+4. ✅ **Builds and verifies** the release
+5. ✅ **Creates git tag** (`vX.Y.Z`)
+6. ✅ **Creates maintenance branch** (`maintenance/X.Y.x`) for potential backports
+7. ✅ **Deploys** the P2 update site to GitHub Pages at `https://carstenartur.github.io/sandbox/releases/X.Y.Z/`
+8. ✅ **Updates composite metadata** to include the new release
+9. ✅ **Generates release notes** from closed issues since the last release
+10. ✅ **Creates GitHub release** with auto-generated notes
+11. ✅ **Bumps version** to the next SNAPSHOT version
+12. ✅ **Commits and pushes** the SNAPSHOT version back to `main`
+13. ✅ **Reminds** to update Eclipse Marketplace listing
 
-# Build with WAR file
-mvn -Dinclude=web -Pjacoco verify
-```
+#### 3. Post-Release Steps
 
-#### 3. Commit Version Changes
+After the workflow completes successfully:
 
-Commit the version updates:
+1. **Verify the release**:
+   - Check the [Releases page](https://github.com/carstenartur/sandbox/releases) for the new release
+   - Verify the update site is available at `https://carstenartur.github.io/sandbox/releases/X.Y.Z/`
 
-```bash
-git add .
-git commit -m "Release version 1.2.2"
-git push origin main
-```
+2. **Update Eclipse Marketplace** (if applicable):
+   - Go to [Eclipse Marketplace](https://marketplace.eclipse.org/)
+   - Update the listing with the new update site URL
 
-#### 4. Create a Git Tag
+3. **Test the release**:
+   - Install the plugins from the new update site in a clean Eclipse installation
+   - Verify core functionality works as expected
 
-Tag the release commit:
+### Workflow Inputs
 
-```bash
-git tag -a v1.2.2 -m "Release version 1.2.2"
-git push origin v1.2.2
-```
+The automated workflow requires two inputs:
 
-#### 5. Create GitHub Release
+- **`release_version`** (required): 
+  - The version number to release (e.g., `1.2.2`)
+  - Must NOT include `-SNAPSHOT` suffix
+  - Should follow [Semantic Versioning](https://semver.org/)
 
-1. Go to the [GitHub Releases page](https://github.com/carstenartur/sandbox/releases)
-2. Click **"Draft a new release"**
-3. Select the tag you just created (e.g., `v1.2.2`)
-4. Set the release title (e.g., `Release 1.2.2`)
-5. Add release notes describing:
-   - New features
-   - Bug fixes
-   - Breaking changes (if any)
-   - Known issues
-6. Click **"Publish release"**
+- **`next_snapshot_version`** (required):
+  - The next development version (e.g., `1.2.3-SNAPSHOT`)
+  - MUST include `-SNAPSHOT` suffix
+  - Typically the next patch, minor, or major version
 
-#### 6. Automated Publishing
+### Example Release
 
-When a GitHub release is created, the `maven-publish.yml` workflow automatically:
-- Builds the project with Maven
-- Publishes artifacts to GitHub Packages
-- Makes the P2 update site available
+To release version `1.2.2` and prepare for `1.2.3-SNAPSHOT`:
 
-#### 7. Prepare for Next Development Iteration
-
-Update versions to the next SNAPSHOT version:
-
-```bash
-# Example: Updating to 1.2.3-SNAPSHOT for next development cycle
-mvn versions:set -DnewVersion=1.2.3-SNAPSHOT
-mvn versions:commit
-
-git add .
-git commit -m "Prepare for next development iteration: 1.2.3-SNAPSHOT"
-git push origin main
-```
+1. Navigate to Actions → Release Workflow → Run workflow
+2. Enter `release_version`: `1.2.2`
+3. Enter `next_snapshot_version`: `1.2.3-SNAPSHOT`
+4. Click "Run workflow"
+5. Monitor the workflow progress in the Actions tab
+6. Once complete, the main branch will be at `1.2.3-SNAPSHOT`, ready for development
 
 ### Version Numbering
 

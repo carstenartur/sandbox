@@ -1,44 +1,43 @@
-name: Deploy Release to GitHub Pages
+name: Release Workflow
 
 on:
-  push:
-    tags:
-      - 'v*'  # Trigger on version tags like v1.2.3
   workflow_dispatch:
     inputs:
-      version:
+      release_version:
         description: 'Release version (e.g., 1.2.2)'
         required: true
+        type: string
+      next_snapshot_version:
+        description: 'Next SNAPSHOT version (e.g., 1.2.3-SNAPSHOT)'
+        required: true
+        type: string
 
 permissions:
-  contents: write  # Required to push to gh-pages branch
+  contents: write  # Required to push to main branch, create tags, and push to gh-pages
+  issues: read     # Required to read issues for release notes
+
+env:
+  GH_TOKEN: ${{ github.token }}
 
 jobs:
-  build-and-deploy:
+  release:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v6
+    # 1. Checkout with full history
+    - name: Checkout repository
+      uses: actions/checkout@v6
       with:
-        fetch-depth: 0  # Required for jgit timestamp provider
+        fetch-depth: 0  # Full history required for git describe and jgit timestamp provider
 
-    - name: Extract version from tag or input
-      id: version
-      run: |
-        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-          VERSION="${{ github.event.inputs.version }}"
-        else
-          VERSION="${GITHUB_REF#refs/tags/v}"
-        fi
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
-        echo "Publishing release version: $VERSION"
-
+    # 2. Set up JDK 21
     - name: Set up JDK 21
       uses: actions/setup-java@v5
       with:
         java-version: '21'
         distribution: 'temurin'
 
+    # Cache Maven dependencies for faster builds
     - name: Cache Maven dependencies
       uses: actions/cache@v5
       with:
@@ -46,9 +45,51 @@ jobs:
         key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
         restore-keys: ${{ runner.os }}-maven-
 
-    - name: Build Update Site
-      run: mvn clean verify -DskipTests
+    # 3. Set release version using tycho-versions-plugin
+    - name: Set release version
+      run: |
+        echo "Setting version to ${{ inputs.release_version }}"
+        mvn tycho-versions:set-version -DnewVersion=${{ inputs.release_version }}
 
+    # 4. Verify version update - fail if any SNAPSHOT versions remain
+    - name: Verify version update
+      run: |
+        echo "Checking for remaining SNAPSHOT references..."
+        if grep -r "SNAPSHOT" --include="pom.xml" --include="MANIFEST.MF" --include="feature.xml" --include="*.product" . | grep -v "sandbox-functional-converter-core"; then
+          echo "ERROR: Found remaining SNAPSHOT references (excluding sandbox-functional-converter-core)"
+          exit 1
+        fi
+        echo "Version verification passed - no unexpected SNAPSHOT references found"
+
+    # 5. Commit version changes
+    - name: Commit version changes
+      run: |
+        git config user.name 'github-actions[bot]'
+        git config user.email 'github-actions[bot]@users.noreply.github.com'
+        git add -A
+        git commit -m "Release version ${{ inputs.release_version }}"
+
+    # 6. Build and verify
+    - name: Build and verify
+      run: |
+        echo "Building release ${{ inputs.release_version }}..."
+        mvn clean verify -DskipTests
+
+    # 7. Create Git tag
+    - name: Create Git tag
+      run: |
+        git tag -a "v${{ inputs.release_version }}" -m "Release version ${{ inputs.release_version }}"
+        echo "Created tag v${{ inputs.release_version }}"
+
+    # 8. Create maintenance branch
+    - name: Create maintenance branch
+      run: |
+        # Extract major.minor from version (e.g., 1.2.2 -> 1.2)
+        MAJOR_MINOR=$(echo "${{ inputs.release_version }}" | sed 's/\.[^.]*$//')
+        echo "Creating maintenance branch: maintenance/${MAJOR_MINOR}.x"
+        git branch "maintenance/${MAJOR_MINOR}.x" || echo "Branch maintenance/${MAJOR_MINOR}.x already exists"
+
+    # 9. Deploy release to gh-pages
     - name: Checkout gh-pages branch
       uses: actions/checkout@v6
       with:
@@ -57,8 +98,8 @@ jobs:
 
     - name: Prepare release directory
       run: |
-        mkdir -p gh-pages-repo/releases/${{ steps.version.outputs.version }}
-        cp -r sandbox_updatesite/target/repository/* gh-pages-repo/releases/${{ steps.version.outputs.version }}/
+        mkdir -p gh-pages-repo/releases/${{ inputs.release_version }}
+        cp -r sandbox_updatesite/target/repository/* gh-pages-repo/releases/${{ inputs.release_version }}/
 
     - name: Update composite metadata
       run: |
@@ -105,7 +146,6 @@ jobs:
         EOF
         
         echo "Created composite metadata for $VERSION_COUNT versions"
-        cat compositeContent.xml
 
     - name: Commit and push to gh-pages
       run: |
@@ -113,5 +153,59 @@ jobs:
         git config user.name 'github-actions[bot]'
         git config user.email 'github-actions[bot]@users.noreply.github.com'
         git add .
-        git commit -m "Deploy release ${{ steps.version.outputs.version }}"
+        git commit -m "Deploy release ${{ inputs.release_version }}"
         git push origin gh-pages
+
+    # 10. Generate release notes from closed issues
+    - name: Generate release notes
+      run: |
+        echo "Generating release notes from closed issues..."
+        PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+        
+        if [ -n "$PREVIOUS_TAG" ]; then
+          echo "Getting closed issues since $PREVIOUS_TAG"
+          PREVIOUS_DATE=$(git log -1 --format=%aI $PREVIOUS_TAG)
+          gh issue list --state closed --search "closed:>$PREVIOUS_DATE" --json number,title --jq '.[] | "- #\(.number): \(.title)"' > release_notes.md || echo "No closed issues found"
+        else
+          echo "No previous tag found - first release"
+          echo "Initial release" > release_notes.md
+        fi
+        
+        echo "Release notes generated:"
+        cat release_notes.md
+
+    # 11. Create GitHub Release
+    - name: Create GitHub Release
+      run: |
+        echo "Creating GitHub release for v${{ inputs.release_version }}..."
+        gh release create "v${{ inputs.release_version }}" \
+          --title "Release ${{ inputs.release_version }}" \
+          --notes-file release_notes.md \
+          --generate-notes
+
+    # 12. Bump to next SNAPSHOT version
+    - name: Bump to next SNAPSHOT version
+      run: |
+        echo "Bumping version to ${{ inputs.next_snapshot_version }}"
+        mvn tycho-versions:set-version -DnewVersion=${{ inputs.next_snapshot_version }}
+
+    # 13. Commit and push SNAPSHOT version and tags
+    - name: Commit and push SNAPSHOT version
+      run: |
+        git add -A
+        git commit -m "Prepare for next development iteration ${{ inputs.next_snapshot_version }}"
+        
+        # Push main branch with SNAPSHOT version
+        git push origin main
+        
+        # Push the release tag
+        git push origin "v${{ inputs.release_version }}"
+        
+        # Push maintenance branch (don't fail if already exists on remote)
+        MAJOR_MINOR=$(echo "${{ inputs.release_version }}" | sed 's/\.[^.]*$//')
+        git push origin "maintenance/${MAJOR_MINOR}.x" || echo "Maintenance branch already exists on remote"
+
+    # 14. Add Eclipse Marketplace reminder
+    - name: Eclipse Marketplace reminder
+      run: |
+        echo "::notice::Remember to update the Eclipse Marketplace listing at https://marketplace.eclipse.org/ with the new update site URL: https://carstenartur.github.io/sandbox/releases/${{ inputs.release_version }}/"
