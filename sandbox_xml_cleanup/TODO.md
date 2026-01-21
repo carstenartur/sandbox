@@ -58,13 +58,15 @@ sandbox_xml_cleanup_test/resources/
 
 **Status**: XMLUnit integration ✅ COMPLETED. Test resources created. File filtering tests exist.
 
-### 1a. XMLUnit Integration (✅ COMPLETED)
+### 1a. XMLUnit Integration (✅ COMPLETED → ⚡ REPLACED with DOM-based implementation)
 **Priority**: Medium  
 **Effort**: 4-6 hours
 
-**Status**: ✅ Completed
-- ✅ Added XMLUnit 2.9.1 dependencies (xmlunit-core, xmlunit-matchers)
-- ✅ Created `XMLTestUtils` utility class for semantic XML comparison
+**Status**: ⚡ **Replaced with DOM-based implementation due to OSGi compatibility**
+- ✅ Initially added XMLUnit 2.9.1 dependencies (xmlunit-core, xmlunit-matchers)
+- ⚡ **Removed XMLUnit dependencies** - not available as OSGi bundle in Eclipse target platform
+- ⚡ **Replaced with DOM-based implementation** using standard Java XML APIs (`javax.xml.parsers`)
+- ✅ Created `XMLTestUtils` utility class for semantic XML comparison (now using DOM APIs)
 - ✅ Created `XMLSemanticEqualityTest` with 7 comprehensive tests:
   - Basic semantic equality preservation
   - Multiple elements preservation
@@ -77,10 +79,11 @@ sandbox_xml_cleanup_test/resources/
 - ✅ Tests verify transformations preserve XML structure and meaning while only changing whitespace
 
 **Implementation Details**:
-- `XMLTestUtils.isXmlSemanticallyEqual()` - Ignores whitespace and comments
-- `XMLTestUtils.isXmlSemanticallyEqualWithComments()` - Preserves comment comparison
-- `XMLTestUtils.assertXmlSemanticallyEqual()` - Provides detailed diff on failure
+- `XMLTestUtils.isXmlSemanticallyEqual()` - Ignores whitespace and comments (using DOM)
+- `XMLTestUtils.isXmlSemanticallyEqualWithComments()` - Preserves comment comparison (using DOM)
+- `XMLTestUtils.assertXmlSemanticallyEqual()` - Provides detailed diff on failure (using DOM)
 - Tests cover plugin.xml, feature.xml, .exsd, .xsd, and complex nested structures
+- **No external dependencies required** - uses only standard Java XML APIs
 
 ### 2. UI Preferences Page (✅ COMPLETED)
 **Priority**: Medium  
