@@ -73,22 +73,33 @@ public class JdtLoopExtractor {
     }
     
     private boolean isCollection(ITypeBinding binding) {
-        if (binding == null) return false;
+        if (binding == null) {
+            return false;
+        }
         
-        String name = binding.getQualifiedName();
-        if (name.startsWith("java.util.") && 
-            (name.contains("List") || name.contains("Set") || 
-             name.contains("Collection") || name.contains("Queue"))) {
+        ITypeBinding erasure = binding.getErasure();
+        if (erasure == null) {
+            return false;
+        }
+        
+        String qualifiedName = erasure.getQualifiedName();
+        if ("java.util.Collection".equals(qualifiedName)
+                || "java.util.List".equals(qualifiedName)
+                || "java.util.Set".equals(qualifiedName)
+                || "java.util.Queue".equals(qualifiedName)
+                || "java.util.Deque".equals(qualifiedName)) {
             return true;
         }
         
         // Check interfaces
-        for (ITypeBinding iface : binding.getInterfaces()) {
-            if (isCollection(iface)) return true;
+        for (ITypeBinding iface : erasure.getInterfaces()) {
+            if (isCollection(iface)) {
+                return true;
+            }
         }
         
         // Check superclass
-        ITypeBinding superclass = binding.getSuperclass();
+        ITypeBinding superclass = erasure.getSuperclass();
         if (superclass != null && isCollection(superclass)) {
             return true;
         }
@@ -111,7 +122,7 @@ public class JdtLoopExtractor {
             bodyStatements.add(body.toString());
         }
         
-        builder.forEach(bodyStatements, true); // ordered = true for enhanced for
+        builder.forEach(bodyStatements, false); // unordered for simple enhanced for
     }
     
     /**
