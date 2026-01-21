@@ -58,31 +58,37 @@ public class ASTStreamRenderer implements StreamPipelineRenderer<Expression> {
     
     @Override
     public Expression renderFlatMap(Expression pipeline, String expression, String variableName) {
+        // TODO: Implementierung in Phase 5
         throw new UnsupportedOperationException("Not yet implemented");
     }
     
     @Override
     public Expression renderPeek(Expression pipeline, String expression, String variableName) {
+        // TODO: Implementierung in Phase 5
         throw new UnsupportedOperationException("Not yet implemented");
     }
     
     @Override
     public Expression renderDistinct(Expression pipeline) {
+        // TODO: Implementierung in Phase 5
         throw new UnsupportedOperationException("Not yet implemented");
     }
     
     @Override
     public Expression renderSorted(Expression pipeline, String comparatorExpression) {
+        // TODO: Implementierung in Phase 5
         throw new UnsupportedOperationException("Not yet implemented");
     }
     
     @Override
     public Expression renderLimit(Expression pipeline, long maxSize) {
+        // TODO: Implementierung in Phase 5
         throw new UnsupportedOperationException("Not yet implemented");
     }
     
     @Override
     public Expression renderSkip(Expression pipeline, long count) {
+        // TODO: Implementierung in Phase 5
         throw new UnsupportedOperationException("Not yet implemented");
     }
     
@@ -95,26 +101,31 @@ public class ASTStreamRenderer implements StreamPipelineRenderer<Expression> {
     
     @Override
     public Expression renderCollect(Expression pipeline, CollectTerminal terminal, String variableName) {
+        // TODO: Implementierung in Phase 5
         throw new UnsupportedOperationException("Not yet implemented");
     }
     
     @Override
     public Expression renderReduce(Expression pipeline, ReduceTerminal terminal, String variableName) {
+        // TODO: Implementierung in Phase 5
         throw new UnsupportedOperationException("Not yet implemented");
     }
     
     @Override
     public Expression renderCount(Expression pipeline) {
+        // TODO: Implementierung in Phase 5
         throw new UnsupportedOperationException("Not yet implemented");
     }
     
     @Override
     public Expression renderFind(Expression pipeline, boolean findFirst) {
+        // TODO: Implementierung in Phase 5
         throw new UnsupportedOperationException("Not yet implemented");
     }
     
     @Override
     public Expression renderMatch(Expression pipeline, MatchTerminal terminal, String variableName) {
+        // TODO: Implementierung in Phase 5
         throw new UnsupportedOperationException("Not yet implemented");
     }
 }

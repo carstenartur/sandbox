@@ -116,7 +116,8 @@ public class LoopModel {
 		this.terminal = terminal;
 	}
 	
-	// Fluent setters (package-private, used by builder)
+	// Package-private setters for internal model construction and testing.
+	// Note: LoopModelBuilder in org.sandbox.functional.core.builder uses the public constructor instead.
 	LoopModel setSource(SourceDescriptor source) {
 		this.source = source;
 		return this;
