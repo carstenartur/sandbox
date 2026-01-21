@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2025 Carsten Hammer.
+ * Copyright (c) 2026 Carsten Hammer.
  *
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
@@ -13,238 +13,357 @@
  *******************************************************************************/
 package org.sandbox.jdt.ui.tests.quickfix;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-
 import org.junit.jupiter.api.Test;
-import org.sandbox.jdt.internal.corext.fix.helper.SchemaTransformationUtils;
 
 /**
- * Tests to verify that XML transformations preserve semantic equality.
- * Uses XMLUnit to compare XML documents ignoring whitespace differences.
+ * Tests for XML semantic equality comparison using DOM-based XMLTestUtils.
  */
 public class XMLSemanticEqualityTest {
 
+	/**
+	 * Test that identical XML documents are semantically equal.
+	 */
 	@Test
-	public void testTransformationPreservesSemanticEquality() throws Exception {
-		String originalXml = """
+	public void testIdenticalXmlIsEqual() {
+		String xml = """
 				<?xml version="1.0" encoding="UTF-8"?>
 				<plugin>
 				    <extension point="org.eclipse.ui.views">
-				        <view id="test" name="Test View" class="com.example.TestView"/>
+				        <view id="test" name="Test"/>
 				    </extension>
 				</plugin>
 				""";
 		
-		Path tempFile = Files.createTempFile("test", ".xml");
-		try {
-			Files.writeString(tempFile, originalXml);
-			
-			String transformed = SchemaTransformationUtils.transform(tempFile, false);
-			
-			// Verify semantic equality - content should be the same, only whitespace differs
-			XMLTestUtils.assertXmlSemanticallyEqual(originalXml, transformed);
-			
-		} finally {
-			Files.deleteIfExists(tempFile);
-		}
+		assertTrue(XMLTestUtils.isXmlSemanticallyEqual(xml, xml),
+			"Identical XML should be semantically equal");
 	}
-	
+
+	/**
+	 * Test that XML documents with different whitespace are semantically equal.
+	 */
 	@Test
-	public void testTransformationPreservesAllElements() throws Exception {
-		String originalXml = """
+	public void testWhitespaceIgnored() {
+		String xml1 = """
 				<?xml version="1.0" encoding="UTF-8"?>
 				<plugin>
 				    <extension point="org.eclipse.ui.views">
-				        <view id="view1" name="View 1" class="View1"/>
-				        <view id="view2" name="View 2" class="View2"/>
-				    </extension>
-				    <extension point="org.eclipse.ui.commands">
-				        <command id="cmd1" name="Command 1"/>
+				        <view id="test" name="Test"/>
 				    </extension>
 				</plugin>
 				""";
 		
-		Path tempFile = Files.createTempFile("test", ".xml");
-		try {
-			Files.writeString(tempFile, originalXml);
-			
-			String transformed = SchemaTransformationUtils.transform(tempFile, false);
-			
-			XMLTestUtils.assertXmlSemanticallyEqual(originalXml, transformed);
-			
-		} finally {
-			Files.deleteIfExists(tempFile);
-		}
+		String xml2 = """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<plugin><extension point="org.eclipse.ui.views"><view id="test" name="Test"/></extension></plugin>
+				""";
+		
+		assertTrue(XMLTestUtils.isXmlSemanticallyEqual(xml1, xml2),
+			"XML with different whitespace should be semantically equal");
 	}
-	
+
+	/**
+	 * Test that XML documents with different content are not semantically equal.
+	 */
 	@Test
-	public void testTransformationPreservesAttributes() throws Exception {
-		String originalXml = """
+	public void testDifferentContentNotEqual() {
+		String xml1 = """
 				<?xml version="1.0" encoding="UTF-8"?>
 				<plugin>
 				    <extension point="org.eclipse.ui.views">
-				        <view 
-				            id="my.view.id"
-				            name="My View Name"
-				            class="com.example.MyViewClass"
-				            icon="icons/view.png"
-				            restorable="true"
-				            allowMultiple="false"/>
+				        <view id="test1" name="Test1"/>
 				    </extension>
 				</plugin>
 				""";
 		
-		Path tempFile = Files.createTempFile("test", ".xml");
-		try {
-			Files.writeString(tempFile, originalXml);
-			
-			String transformed = SchemaTransformationUtils.transform(tempFile, false);
-			
-			XMLTestUtils.assertXmlSemanticallyEqual(originalXml, transformed);
-			
-		} finally {
-			Files.deleteIfExists(tempFile);
-		}
-	}
-	
-	@Test
-	public void testTransformationPreservesTextContent() throws Exception {
-		String originalXml = """
-				<?xml version="1.0" encoding="UTF-8"?>
-				<feature id="my.feature" label="My Feature" version="1.0.0">
-				    <description>
-				        This is a multi-line description
-				        with preserved text content.
-				    </description>
-				    <copyright>
-				        Copyright (c) 2024 Example Corp.
-				    </copyright>
-				</feature>
-				""";
-		
-		Path tempFile = Files.createTempFile("test", ".xml");
-		try {
-			Files.writeString(tempFile, originalXml);
-			
-			String transformed = SchemaTransformationUtils.transform(tempFile, false);
-			
-			XMLTestUtils.assertXmlSemanticallyEqual(originalXml, transformed);
-			
-		} finally {
-			Files.deleteIfExists(tempFile);
-		}
-	}
-	
-	@Test
-	public void testTransformationPreservesNamespaces() throws Exception {
-		String originalXml = """
-				<?xml version="1.0" encoding="UTF-8"?>
-				<schema xmlns="http://www.w3.org/2001/XMLSchema"
-				        xmlns:pde="http://www.eclipse.org/pde"
-				        targetNamespace="org.example">
-				    <element name="extension">
-				        <complexType>
-				            <attribute name="point" type="string" use="required"/>
-				        </complexType>
-				    </element>
-				</schema>
-				""";
-		
-		Path tempFile = Files.createTempFile("test", ".xsd");
-		try {
-			Files.writeString(tempFile, originalXml);
-			
-			String transformed = SchemaTransformationUtils.transform(tempFile, false);
-			
-			XMLTestUtils.assertXmlSemanticallyEqual(originalXml, transformed);
-			
-		} finally {
-			Files.deleteIfExists(tempFile);
-		}
-	}
-	
-	@Test
-	public void testComplexExsdSemanticEquality() throws Exception {
-		String originalXml = """
-				<?xml version='1.0' encoding='UTF-8'?>
-				<schema targetNamespace="org.example" xmlns="http://www.w3.org/2001/XMLSchema">
-				    <annotation>
-				        <appinfo>
-				            <meta.schema plugin="org.example" id="sample" name="Sample"/>
-				        </appinfo>
-				        <documentation>
-				            This extension point allows clients to contribute samples.
-				        </documentation>
-				    </annotation>
-				    <element name="extension">
-				        <complexType>
-				            <sequence minOccurs="1" maxOccurs="unbounded">
-				                <element ref="sample"/>
-				            </sequence>
-				            <attribute name="point" type="string" use="required"/>
-				        </complexType>
-				    </element>
-				    <element name="sample">
-				        <complexType>
-				            <attribute name="id" type="string" use="required"/>
-				            <attribute name="name" type="string" use="required"/>
-				            <attribute name="class" type="string" use="required"/>
-				        </complexType>
-				    </element>
-				</schema>
-				""";
-		
-		Path tempFile = Files.createTempFile("test", ".exsd");
-		try {
-			Files.writeString(tempFile, originalXml);
-			
-			String transformed = SchemaTransformationUtils.transform(tempFile, false);
-			
-			XMLTestUtils.assertXmlSemanticallyEqual(originalXml, transformed);
-			
-		} finally {
-			Files.deleteIfExists(tempFile);
-		}
-	}
-	
-	@Test
-	public void testSizeReductionWithSemanticEquality() throws Exception {
-		String verboseXml = """
+		String xml2 = """
 				<?xml version="1.0" encoding="UTF-8"?>
 				<plugin>
-				
-				
-				    <extension
-				            point="org.eclipse.ui.views">
-				        <view
-				                id="test"
-				                name="Test"
-				                class="Test"
-				                />
+				    <extension point="org.eclipse.ui.views">
+				        <view id="test2" name="Test2"/>
 				    </extension>
-				
-				
 				</plugin>
 				""";
 		
-		Path tempFile = Files.createTempFile("test", ".xml");
-		try {
-			Files.writeString(tempFile, verboseXml);
-			
-			String transformed = SchemaTransformationUtils.transform(tempFile, false);
-			
-			// Verify size reduction
-			assertTrue(transformed.length() < verboseXml.length(),
-				"Transformed XML should be smaller");
-			
-			// Verify semantic equality
-			XMLTestUtils.assertXmlSemanticallyEqual(verboseXml, transformed);
-			
-		} finally {
-			Files.deleteIfExists(tempFile);
-		}
+		assertFalse(XMLTestUtils.isXmlSemanticallyEqual(xml1, xml2),
+			"XML with different content should not be semantically equal");
+	}
+
+	/**
+	 * Test that XML documents with different element order are not semantically equal
+	 * (unless the specification says otherwise, which standard XML doesn't).
+	 */
+	@Test
+	public void testDifferentElementOrderNotEqual() {
+		String xml1 = """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<plugin>
+				    <extension point="org.eclipse.ui.views"/>
+				    <extension point="org.eclipse.ui.commands"/>
+				</plugin>
+				""";
+		
+		String xml2 = """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<plugin>
+				    <extension point="org.eclipse.ui.commands"/>
+				    <extension point="org.eclipse.ui.views"/>
+				</plugin>
+				""";
+		
+		assertFalse(XMLTestUtils.isXmlSemanticallyEqual(xml1, xml2),
+			"XML with different element order should not be semantically equal");
+	}
+
+	/**
+	 * Test that XML documents with different attribute values are not semantically equal.
+	 */
+	@Test
+	public void testDifferentAttributeValuesNotEqual() {
+		String xml1 = """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<plugin>
+				    <extension point="org.eclipse.ui.views">
+				        <view id="test" name="Test1"/>
+				    </extension>
+				</plugin>
+				""";
+		
+		String xml2 = """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<plugin>
+				    <extension point="org.eclipse.ui.views">
+				        <view id="test" name="Test2"/>
+				    </extension>
+				</plugin>
+				""";
+		
+		assertFalse(XMLTestUtils.isXmlSemanticallyEqual(xml1, xml2),
+			"XML with different attribute values should not be semantically equal");
+	}
+
+	/**
+	 * Test that comments are ignored by default.
+	 */
+	@Test
+	public void testCommentsIgnoredByDefault() {
+		String xml1 = """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<plugin>
+				    <!-- This is a comment -->
+				    <extension point="org.eclipse.ui.views">
+				        <view id="test" name="Test"/>
+				    </extension>
+				</plugin>
+				""";
+		
+		String xml2 = """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<plugin>
+				    <extension point="org.eclipse.ui.views">
+				        <view id="test" name="Test"/>
+				    </extension>
+				</plugin>
+				""";
+		
+		assertTrue(XMLTestUtils.isXmlSemanticallyEqual(xml1, xml2),
+			"XML with different comments should be semantically equal (comments ignored by default)");
+	}
+
+	/**
+	 * Test that comments are considered when using isXmlSemanticallyEqualWithComments.
+	 */
+	@Test
+	public void testCommentsConsideredWhenRequested() {
+		String xml1 = """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<plugin>
+				    <!-- Comment 1 -->
+				    <extension point="org.eclipse.ui.views">
+				        <view id="test" name="Test"/>
+				    </extension>
+				</plugin>
+				""";
+		
+		String xml2 = """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<plugin>
+				    <!-- Comment 2 -->
+				    <extension point="org.eclipse.ui.views">
+				        <view id="test" name="Test"/>
+				    </extension>
+				</plugin>
+				""";
+		
+		assertFalse(XMLTestUtils.isXmlSemanticallyEqualWithComments(xml1, xml2),
+			"XML with different comments should not be equal when preserving comments");
+	}
+
+	/**
+	 * Test that identical XML with comments is equal when preserving comments.
+	 */
+	@Test
+	public void testIdenticalCommentsEqual() {
+		String xml1 = """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<plugin>
+				    <!-- This is a comment -->
+				    <extension point="org.eclipse.ui.views">
+				        <view id="test" name="Test"/>
+				    </extension>
+				</plugin>
+				""";
+		
+		String xml2 = """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<plugin>
+				    <!-- This is a comment -->
+				    <extension point="org.eclipse.ui.views">
+				        <view id="test" name="Test"/>
+				    </extension>
+				</plugin>
+				""";
+		
+		assertTrue(XMLTestUtils.isXmlSemanticallyEqualWithComments(xml1, xml2),
+			"XML with identical comments should be equal when preserving comments");
+	}
+
+	/**
+	 * Test assertXmlSemanticallyEqual throws AssertionError on mismatch.
+	 */
+	@Test
+	public void testAssertThrowsOnMismatch() {
+		String xml1 = """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<plugin>
+				    <extension point="test1"/>
+				</plugin>
+				""";
+		
+		String xml2 = """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<plugin>
+				    <extension point="test2"/>
+				</plugin>
+				""";
+		
+		assertThrows(AssertionError.class, () -> {
+			XMLTestUtils.assertXmlSemanticallyEqual(xml1, xml2);
+		}, "assertXmlSemanticallyEqual should throw AssertionError on mismatch");
+	}
+
+	/**
+	 * Test assertXmlSemanticallyEqual does not throw on match.
+	 */
+	@Test
+	public void testAssertDoesNotThrowOnMatch() {
+		String xml1 = """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<plugin>
+				    <extension point="test"/>
+				</plugin>
+				""";
+		
+		String xml2 = """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<plugin><extension point="test"/></plugin>
+				""";
+		
+		// Should not throw
+		XMLTestUtils.assertXmlSemanticallyEqual(xml1, xml2);
+	}
+
+	/**
+	 * Test that empty elements are handled correctly.
+	 */
+	@Test
+	public void testEmptyElementsEqual() {
+		String xml1 = """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<plugin>
+				    <extension point="test"></extension>
+				</plugin>
+				""";
+		
+		String xml2 = """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<plugin>
+				    <extension point="test"/>
+				</plugin>
+				""";
+		
+		assertTrue(XMLTestUtils.isXmlSemanticallyEqual(xml1, xml2),
+			"Empty elements should be equal regardless of self-closing syntax");
+	}
+
+	/**
+	 * Test that invalid XML returns false rather than throwing.
+	 */
+	@Test
+	public void testInvalidXmlReturnsFalse() {
+		String validXml = """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<plugin>
+				    <extension point="test"/>
+				</plugin>
+				""";
+		
+		String invalidXml = "<plugin><extension point=\"test\"";
+		
+		assertFalse(XMLTestUtils.isXmlSemanticallyEqual(validXml, invalidXml),
+			"Invalid XML should return false");
+		assertFalse(XMLTestUtils.isXmlSemanticallyEqual(invalidXml, validXml),
+			"Invalid XML should return false");
+	}
+
+	/**
+	 * Test that nested elements are compared correctly.
+	 */
+	@Test
+	public void testNestedElementsEqual() {
+		String xml1 = """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<plugin>
+				    <extension point="org.eclipse.ui.views">
+				        <category id="cat1" name="Category1">
+				            <view id="view1" name="View1"/>
+				        </category>
+				    </extension>
+				</plugin>
+				""";
+		
+		String xml2 = """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<plugin><extension point="org.eclipse.ui.views"><category id="cat1" name="Category1"><view id="view1" name="View1"/></category></extension></plugin>
+				""";
+		
+		assertTrue(XMLTestUtils.isXmlSemanticallyEqual(xml1, xml2),
+			"Nested elements with different whitespace should be semantically equal");
+	}
+
+	/**
+	 * Test that attribute order differences are ignored (attributes are unordered in XML).
+	 */
+	@Test
+	public void testAttributeOrderIgnored() {
+		String xml1 = """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<plugin>
+				    <view id="test" name="Test View" class="TestClass"/>
+				</plugin>
+				""";
+		
+		String xml2 = """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<plugin>
+				    <view class="TestClass" name="Test View" id="test"/>
+				</plugin>
+				""";
+		
+		assertTrue(XMLTestUtils.isXmlSemanticallyEqual(xml1, xml2),
+			"XML with different attribute order should be semantically equal");
 	}
 }

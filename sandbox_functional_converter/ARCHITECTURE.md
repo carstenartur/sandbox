@@ -5,6 +5,79 @@
 ## Overview
 The functional loop converter transforms imperative enhanced for-loops into functional Java 8 Stream pipelines. This document describes the architecture and implementation details of the `StreamPipelineBuilder` approach.
 
+## V2 Parallel Implementation Strategy (Phase 1 - January 2026)
+
+**Status**: 🆕 Phase 1 Complete - ULR infrastructure established
+
+### Background
+Issue [#450](https://github.com/carstenartur/sandbox/issues/450) introduced the Unified Loop Representation (ULR) to enable:
+- AST-independent loop modeling for easier testing and maintenance
+- Parallel V1/V2 implementations for gradual migration
+- Better separation of concerns between AST parsing and transformation logic
+
+### Phase 1: Infrastructure Setup (COMPLETED)
+**Goal**: Establish V2 infrastructure without changing V1 behavior
+
+**Completed Deliverables**:
+1. **Core Module** (`sandbox-functional-converter-core`):
+   - Pure Java 17 module with **zero Eclipse/JDT dependencies**
+   - ULR model classes: `LoopModel`, `SourceDescriptor`, `ElementDescriptor`, `LoopMetadata`
+   - Standalone Maven module (not part of Tycho build)
+   - Tests run independently: `mvn test`
+
+2. **V2 Cleanup Infrastructure**:
+   - `LOOP_V2` enum entry in `UseFunctionalCallFixCore`
+   - `UseFunctionalCallCleanUpV2` class (mirrors V1 structure)
+   - `LoopToFunctionalV2` helper (delegates to V1 for feature parity)
+   - `USEFUNCTIONALLOOP_CLEANUP_V2` constant in `MYCleanUpConstants`
+
+3. **Delegation Pattern**:
+   - Phase 1 uses **delegation**: V2 delegates to existing V1 implementation
+   - Ensures identical behavior between V1 and V2
+   - `FeatureParityTest` validates both produce same output
+
+4. **V1 Isolation**:
+   - Modified `UseFunctionalCallCleanUpCore.computeFixSet()` to explicitly add only `LOOP`
+   - Prevents V1 from inadvertently running V2 conversions
+   - V1 and V2 operate independently based on which cleanup is enabled
+
+### Phase 2: ULR-Native Implementation (PLANNED)
+**Goal**: Gradually switch individual loop patterns to ULR-based implementations
+
+**Planned Activities**:
+1. Implement ULR extraction from AST in `LoopToFunctionalV2`
+2. Create ULR → Stream transformation logic independent of AST
+3. Migrate simple patterns first (forEach, basic map/filter)
+4. Validate feature parity for each pattern
+5. Gradually replace delegation with ULR-native code
+
+**Success Criteria**:
+- All `FeatureParityTest` cases pass with ULR implementation
+- No regressions in existing V1 functionality
+- Code coverage maintained or improved
+
+### Phase 3: V1 Deprecation and Cleanup (FUTURE)
+**Goal**: Make ULR the primary implementation and retire legacy code
+
+**Planned Activities**:
+1. Mark V1 (`LOOP`) as deprecated
+2. Migrate all users to V2 (`LOOP_V2`)
+3. Remove V1 implementation and cleanup
+4. Remove delegation pattern from V2
+5. Consolidate documentation
+
+### Architecture Benefits
+- **Testability**: ULR model can be tested without Eclipse runtime
+- **Maintainability**: Clear separation between AST parsing and transformation
+- **Portability**: ULR model can be reused in other contexts (e.g., IntelliJ plugin)
+- **Safety**: Parallel implementation ensures no regressions during migration
+
+### Related Issues
+- [#450 - Unified Loop Representation](https://github.com/carstenartur/sandbox/issues/450)
+- [#453 - V2 Implementation](https://github.com/carstenartur/sandbox/issues/453)
+
+---
+
 ## Class Overview
 
 The functional converter is organized into focused, single-responsibility classes:

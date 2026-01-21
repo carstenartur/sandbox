@@ -13,6 +13,7 @@
 - ✅ Comment and processing instruction preservation in XSLT
 - ✅ Whitespace normalization (reduce empty lines)
 - ✅ Leading space→tab conversion (4 spaces to 1 tab)
+- ✅ Empty element collapsing (<element></element> → <element/>)
 - ✅ Eclipse workspace API integration (IFile, ILog)
 - ✅ Change detection (only write if content changed)
 - ✅ Indent preference support (default: OFF for size reduction)

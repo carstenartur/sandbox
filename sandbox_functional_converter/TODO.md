@@ -2,6 +2,71 @@
 
 > **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#functional_converter) | [Architecture](ARCHITECTURE.md)
 
+## V2 Parallel Implementation Roadmap
+
+### Phase 1: Infrastructure Setup ✅ COMPLETED (January 2026)
+
+**Objective**: Establish V2 infrastructure alongside V1 without breaking changes
+
+**Completed Deliverables**:
+- ✅ Core module `sandbox-functional-converter-core` with ULR model classes
+- ✅ V2 cleanup infrastructure (`LOOP_V2`, `UseFunctionalCallCleanUpV2`, `LoopToFunctionalV2`)
+- ✅ Delegation pattern: V2 delegates to V1 for identical behavior
+- ✅ `FeatureParityTest` with 3 test methods validating V1/V2 equivalence
+- ✅ V1 isolation: Modified `computeFixSet()` to explicitly add only `LOOP`
+- ✅ Documentation updates in `ARCHITECTURE.md` and `TODO.md`
+
+**Key Decision**: V1 uses `fixSet.add(UseFunctionalCallFixCore.LOOP)` instead of `EnumSet.allOf()` to prevent inadvertently running V2 conversions.
+
+### Phase 2: ULR-Native Implementation (NEXT MILESTONE)
+
+**Objective**: Replace delegation with ULR-based transformation logic
+
+**Planned Tasks**:
+1. **ULR Extraction** (High Priority)
+   - [ ] Implement AST → ULR conversion in `LoopToFunctionalV2`
+   - [ ] Extract `SourceDescriptor` from enhanced-for source expression
+   - [ ] Extract `ElementDescriptor` from loop variable
+   - [ ] Analyze loop body for `LoopMetadata` (break, continue, side effects)
+   
+2. **ULR → Stream Transformation** (High Priority)
+   - [ ] Implement ULR-based stream pipeline builder (AST-independent)
+   - [ ] Map ULR operations to stream methods (map, filter, forEach, reduce)
+   - [ ] Handle ULR metadata constraints (ordering, side effects)
+   
+3. **Pattern Migration** (Incremental)
+   - [ ] Migrate simple forEach pattern to ULR
+   - [ ] Migrate map operations to ULR
+   - [ ] Migrate filter operations to ULR
+   - [ ] Migrate reduce patterns to ULR
+   - [ ] Migrate match patterns (anyMatch, noneMatch) to ULR
+   
+4. **Testing and Validation**
+   - [ ] Ensure all `FeatureParityTest` cases pass with ULR implementation
+   - [ ] Add ULR-specific unit tests (independent of Eclipse runtime)
+   - [ ] Validate code coverage maintained or improved
+   - [ ] Performance benchmarking (ULR vs V1)
+
+**Success Criteria**:
+- All existing tests pass with V2 enabled
+- Feature parity between V1 and V2 maintained
+- ULR model classes have comprehensive test coverage
+- No performance regression compared to V1
+
+### Phase 3: V1 Deprecation (FUTURE)
+
+**Objective**: Retire V1 implementation once V2 is stable
+
+**Planned Tasks**:
+- [ ] Mark `LOOP` (V1) as `@Deprecated`
+- [ ] Migrate all users to `LOOP_V2`
+- [ ] Remove V1 implementation (`LoopToFunctional` delegation code)
+- [ ] Remove `USEFUNCTIONALLOOP_CLEANUP` constant (replace with V2)
+- [ ] Update documentation to reflect V2 as primary implementation
+- [ ] Remove `FeatureParityTest` (no longer needed)
+
+---
+
 ## Status Summary (January 2026 - Updated)
 
 **Current Milestone**: Full StreamPipelineBuilder Implementation + Code Cleanup + Enhanced Tests + Nested Loop Detection ✅ **COMPLETE**
