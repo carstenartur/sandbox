@@ -351,9 +351,15 @@ public class ASTStreamRenderer implements StreamPipelineRenderer<Expression> {
     }
     
     private Statement createStatement(String statementText) {
+        // Ensure statement ends with semicolon for proper parsing
+        String normalizedStatement = statementText.trim();
+        if (!normalizedStatement.endsWith(";")) {
+            normalizedStatement += ";";
+        }
+        
         ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
         parser.setKind(ASTParser.K_STATEMENTS);
-        parser.setSource(statementText.toCharArray());
+        parser.setSource(normalizedStatement.toCharArray());
         ASTNode result = parser.createAST(null);
         
         if (result instanceof Block) {
@@ -363,9 +369,8 @@ public class ASTStreamRenderer implements StreamPipelineRenderer<Expression> {
             }
         }
         
-        // Fallback: ExpressionStatement
-        ExpressionStatement exprStmt = ast.newExpressionStatement(createExpression(statementText));
-        return exprStmt;
+        // Statement could not be parsed; fail fast
+        throw new IllegalArgumentException("Unable to parse statement: " + statementText);
     }
     
     /**
