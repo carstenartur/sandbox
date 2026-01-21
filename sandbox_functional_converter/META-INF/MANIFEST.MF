@@ -18,10 +18,12 @@ Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.jface,
  org.eclipse.ui.workbench,
  org.eclipse.jdt.core.manipulation,
- sandbox_common
+ sandbox_common,
+ org.sandbox.sandbox-functional-converter-core;bundle-version="1.0.0"
 Bundle-ActivationPolicy: lazy
 Eclipse-RegisterBuddy: org.eclipse.jdt.core.manipulation
 Eclipse-BuddyPolicy: global
 Import-Package: org.sandbox.jdt.internal.common,
  org.sandbox.jdt.internal.corext.fix2
+Export-Package: org.sandbox.jdt.internal.corext.fix.helper;x-friends:="sandbox_functional_converter_test"
 Automatic-Module-Name: sandbox.functional.converter

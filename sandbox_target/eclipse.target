@@ -51,6 +51,9 @@
   <unit id="bcpkix" version="1.81.0"/>
   <unit id="bcpg"  version="1.81.0"/>
 </location>
+
+        <!-- 7. Sandbox Functional Converter Core (local jar) -->
+        <location path="${project_loc:sandbox_target}/sandbox-functional-converter-core-1.0.0-SNAPSHOT.jar" type="Directory"/>
     </locations>
 
 </target>
