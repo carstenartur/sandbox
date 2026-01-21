@@ -64,7 +64,7 @@ The Sandbox project uses an **automated release workflow**:
 4. Click **Run workflow**
 
 The workflow automatically:
-- Updates all version files using `tycho-versions-plugin`
+- Updates all version files using `tycho-versions-plugin` (except `sandbox-functional-converter-core`)
 - Builds and verifies the release
 - Creates git tag and maintenance branch
 - Deploys to GitHub Pages
@@ -73,8 +73,6 @@ The workflow automatically:
 - Bumps to next SNAPSHOT version
 
 The new release will be available at `https://carstenartur.github.io/sandbox/releases/X.Y.Z/` within a few minutes.
-
-For detailed instructions, see the [Release Process](#release-process) section below.
 
 ## Table of Contents
 
@@ -1294,19 +1292,20 @@ The release process is **fully automated** through GitHub Actions. To create a r
 
 The workflow performs all release steps automatically:
 
-1. ✅ **Updates version** in all `pom.xml`, `MANIFEST.MF`, `feature.xml`, and `*.product` files using `tycho-versions-plugin`
-2. ✅ **Verifies** that no SNAPSHOT references remain (except in `sandbox-functional-converter-core`)
-3. ✅ **Commits** the release version changes
-4. ✅ **Builds and verifies** the release
-5. ✅ **Creates git tag** (`vX.Y.Z`)
-6. ✅ **Creates maintenance branch** (`maintenance/X.Y.x`) for potential backports
-7. ✅ **Deploys** the P2 update site to GitHub Pages at `https://carstenartur.github.io/sandbox/releases/X.Y.Z/`
-8. ✅ **Updates composite metadata** to include the new release
-9. ✅ **Generates release notes** from closed issues since the last release
-10. ✅ **Creates GitHub release** with auto-generated notes
-11. ✅ **Bumps version** to the next SNAPSHOT version
-12. ✅ **Commits and pushes** the SNAPSHOT version back to `main`
-13. ✅ **Reminds** to update Eclipse Marketplace listing
+1. ✅ **Validates inputs** to ensure release_version has no `-SNAPSHOT` suffix and next_snapshot_version includes it
+2. ✅ **Updates version** in all `pom.xml`, `MANIFEST.MF`, `feature.xml`, and `*.product` files using `tycho-versions-plugin` for all modules **except** `sandbox-functional-converter-core`, which maintains independent versioning
+3. ✅ **Verifies** that no SNAPSHOT references remain (except in `sandbox-functional-converter-core`)
+4. ✅ **Commits** the release version changes
+5. ✅ **Builds and verifies** the release
+6. ✅ **Creates and pushes git tag** (`vX.Y.Z`) immediately
+7. ✅ **Creates and pushes maintenance branch** (`maintenance/X.Y.x`) immediately for potential backports
+8. ✅ **Generates release notes** from closed issues since the last release
+9. ✅ **Creates GitHub release** with auto-generated notes
+10. ✅ **Deploys** the P2 update site to GitHub Pages at `https://carstenartur.github.io/sandbox/releases/X.Y.Z/`
+11. ✅ **Updates composite metadata** to include the new release
+12. ✅ **Bumps version** to the next SNAPSHOT version
+13. ✅ **Commits and pushes** the SNAPSHOT version back to `main`
+14. ✅ **Reminds** to update Eclipse Marketplace listing
 
 #### 3. Post-Release Steps
 
