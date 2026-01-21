@@ -14,6 +14,7 @@
 package org.sandbox.jdt.internal.css.core;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
@@ -21,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.ILog;
@@ -60,8 +62,13 @@ public class StylelintRunner {
 
 	/**
 	 * Fix CSS issues automatically using Stylelint --fix.
+	 * 
+	 * @param file the CSS file to fix
+	 * @return the fixed content, or original content if fixing failed
+	 * @throws IOException if an I/O error occurs
+	 * @throws InterruptedException if the thread is interrupted
 	 */
-	public static String fix(IFile file) throws Exception {
+	public static String fix(IFile file) throws IOException, InterruptedException {
 		if (!NodeExecutor.isNpxAvailable()) {
 			throw new IllegalStateException("npx is not available. Please install Node.js."); //$NON-NLS-1$
 		}
@@ -93,7 +100,32 @@ public class StylelintRunner {
 			fixed = sb.toString();
 		}
 
-		process.waitFor();
+		String errorOutput;
+		try (BufferedReader errorReader = new BufferedReader(
+				new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8))) {
+			StringBuilder errorSb = new StringBuilder();
+			String errorLine;
+			while ((errorLine = errorReader.readLine()) != null) {
+				errorSb.append(errorLine).append("\n"); //$NON-NLS-1$
+			}
+			errorOutput = errorSb.toString();
+		}
+
+		boolean finished = process.waitFor(30, TimeUnit.SECONDS);
+		if (!finished) {
+			process.destroyForcibly();
+			LOG.log(new Status(IStatus.WARNING, "sandbox_css_cleanup", //$NON-NLS-1$
+					"stylelint --fix timed out after 30 seconds")); //$NON-NLS-1$
+			return originalContent;
+		}
+
+		int exitCode = process.exitValue();
+
+		if (exitCode != 0) {
+			LOG.log(new Status(IStatus.WARNING, "sandbox_css_cleanup", //$NON-NLS-1$
+					"stylelint --fix failed with exit code " + exitCode + " and error output:\n" + errorOutput)); //$NON-NLS-1$ //$NON-NLS-2$
+			return originalContent;
+		}
 
 		return fixed.isEmpty() ? originalContent : fixed;
 	}
@@ -123,7 +155,7 @@ public class StylelintRunner {
 					"Failed to parse stylelint output", e)); //$NON-NLS-1$
 		}
 
-		return new CSSValidationResult(exitCode == 0, issues);
+		return new CSSValidationResult(false, issues);
 	}
 
 	/**

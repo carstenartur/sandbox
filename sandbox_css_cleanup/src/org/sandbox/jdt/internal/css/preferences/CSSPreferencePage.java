@@ -32,16 +32,19 @@ public class CSSPreferencePage extends FieldEditorPreferencePage implements IWor
 	public CSSPreferencePage() {
 		super(GRID);
 		setPreferenceStore(CSSCleanupPlugin.getDefault().getPreferenceStore());
-		setDescription("Configure CSS formatting and validation tools.\n\n" + //$NON-NLS-1$
-				"Status:\n" + //$NON-NLS-1$
-				"  Node.js: " + (NodeExecutor.isNodeAvailable() ? "Available" : "Not found") + "\n" + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
-				"  npx: " + (NodeExecutor.isNpxAvailable() ? "Available" : "Not found") + "\n" + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
-				"  Prettier: " + (PrettierRunner.isPrettierAvailable() ? "Available" : "Not installed") + "\n" + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
-				"  Stylelint: " + (StylelintRunner.isStylelintAvailable() ? "Available" : "Not installed")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		setDescription("Configure CSS formatting and validation tools."); //$NON-NLS-1$
 	}
 
 	@Override
 	public void createFieldEditors() {
+		// Check tool availability and update description when page is displayed
+		String statusInfo = "\n\nStatus:\n" + //$NON-NLS-1$
+				"  Node.js: " + (NodeExecutor.isNodeAvailable() ? "Available" : "Not found") + "\n" + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+				"  npx: " + (NodeExecutor.isNpxAvailable() ? "Available" : "Not found") + "\n" + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+				"  Prettier: " + (PrettierRunner.isPrettierAvailable() ? "Available" : "Not installed") + "\n" + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+				"  Stylelint: " + (StylelintRunner.isStylelintAvailable() ? "Available" : "Not installed"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		setDescription(getDescription() + statusInfo);
+
 		addField(new BooleanFieldEditor(
 				CSSPreferenceConstants.ENABLE_PRETTIER,
 				"&Enable Prettier formatting", //$NON-NLS-1$

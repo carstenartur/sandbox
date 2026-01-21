@@ -35,12 +35,20 @@ public class NodeExecutor {
 	 * Check if Node.js is available on the system.
 	 */
 	public static boolean isNodeAvailable() {
+		Process process = null;
 		try {
 			ProcessBuilder pb = new ProcessBuilder("node", "--version"); //$NON-NLS-1$ //$NON-NLS-2$
-			Process process = pb.start();
+			process = pb.start();
 			boolean finished = process.waitFor(5, TimeUnit.SECONDS);
-			return finished && process.exitValue() == 0;
-		} catch (Exception e) {
+			if (!finished) {
+				process.destroyForcibly();
+				return false;
+			}
+			return process.exitValue() == 0;
+		} catch (IOException | InterruptedException e) {
+			if (process != null) {
+				process.destroyForcibly();
+			}
 			return false;
 		}
 	}
@@ -49,12 +57,20 @@ public class NodeExecutor {
 	 * Check if npx is available.
 	 */
 	public static boolean isNpxAvailable() {
+		Process process = null;
 		try {
 			ProcessBuilder pb = new ProcessBuilder("npx", "--version"); //$NON-NLS-1$ //$NON-NLS-2$
-			Process process = pb.start();
+			process = pb.start();
 			boolean finished = process.waitFor(5, TimeUnit.SECONDS);
-			return finished && process.exitValue() == 0;
-		} catch (Exception e) {
+			if (!finished) {
+				process.destroyForcibly();
+				return false;
+			}
+			return process.exitValue() == 0;
+		} catch (IOException | InterruptedException e) {
+			if (process != null) {
+				process.destroyForcibly();
+			}
 			return false;
 		}
 	}
@@ -72,8 +88,12 @@ public class NodeExecutor {
 
 		Process process = pb.start();
 
-		String stdout = readStream(process.getInputStream());
-		String stderr = readStream(process.getErrorStream());
+		// Use StreamGobbler to read streams concurrently and avoid deadlock
+		StreamGobbler outputGobbler = new StreamGobbler(process.getInputStream());
+		StreamGobbler errorGobbler = new StreamGobbler(process.getErrorStream());
+		
+		outputGobbler.start();
+		errorGobbler.start();
 
 		boolean finished = process.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS);
 		if (!finished) {
@@ -81,7 +101,10 @@ public class NodeExecutor {
 			throw new IOException("Process timed out after " + TIMEOUT_SECONDS + " seconds"); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 
-		return new ExecutionResult(process.exitValue(), stdout, stderr);
+		outputGobbler.join(1000);
+		errorGobbler.join(1000);
+
+		return new ExecutionResult(process.exitValue(), outputGobbler.getOutput(), errorGobbler.getOutput());
 	}
 
 	private static String readStream(InputStream is) throws IOException {
@@ -92,6 +115,35 @@ public class NodeExecutor {
 				sb.append(line).append("\n"); //$NON-NLS-1$
 			}
 			return sb.toString();
+		}
+	}
+
+	/**
+	 * Helper class to read stream output in a separate thread to avoid deadlock.
+	 */
+	private static class StreamGobbler extends Thread {
+		private final InputStream inputStream;
+		private final StringBuilder output = new StringBuilder();
+
+		StreamGobbler(InputStream inputStream) {
+			this.inputStream = inputStream;
+		}
+
+		@Override
+		public void run() {
+			try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+				String line;
+				while ((line = reader.readLine()) != null) {
+					output.append(line).append("\n"); //$NON-NLS-1$
+				}
+			} catch (IOException e) {
+				LOG.log(new org.eclipse.core.runtime.Status(org.eclipse.core.runtime.IStatus.WARNING, 
+						"sandbox_css_cleanup", "Error reading stream", e)); //$NON-NLS-1$ //$NON-NLS-2$
+			}
+		}
+
+		String getOutput() {
+			return output.toString();
 		}
 	}
 

@@ -20,6 +20,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.ILog;
@@ -39,8 +40,10 @@ public class PrettierRunner {
 	 * 
 	 * @param file the CSS file to format
 	 * @return the formatted content, or null if formatting failed
+	 * @throws IOException if an I/O error occurs
+	 * @throws InterruptedException if the thread is interrupted
 	 */
-	public static String format(IFile file) throws Exception {
+	public static String format(IFile file) throws IOException, InterruptedException {
 		if (!NodeExecutor.isNpxAvailable()) {
 			throw new IllegalStateException("npx is not available. Please install Node.js."); //$NON-NLS-1$
 		}
@@ -86,7 +89,15 @@ public class PrettierRunner {
 			errors = sb.toString();
 		}
 
-		int exitCode = process.waitFor();
+		boolean finished = process.waitFor(30, TimeUnit.SECONDS);
+		if (!finished) {
+			process.destroyForcibly();
+			LOG.log(new Status(IStatus.WARNING, "sandbox_css_cleanup", //$NON-NLS-1$
+					"Prettier timed out after 30 seconds")); //$NON-NLS-1$
+			return null;
+		}
+
+		int exitCode = process.exitValue();
 
 		if (exitCode != 0) {
 			LOG.log(new Status(IStatus.WARNING, "sandbox_css_cleanup", //$NON-NLS-1$

@@ -18,16 +18,19 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.Adapters;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IObjectActionDelegate;
 import org.eclipse.ui.IWorkbenchPart;
 
+import org.sandbox.jdt.internal.css.CSSCleanupPlugin;
 import org.sandbox.jdt.internal.css.core.CSSValidationResult;
 import org.sandbox.jdt.internal.css.core.NodeExecutor;
 import org.sandbox.jdt.internal.css.core.PrettierRunner;
 import org.sandbox.jdt.internal.css.core.StylelintRunner;
+import org.sandbox.jdt.internal.css.preferences.CSSPreferenceConstants;
 
 /**
  * Action to format and validate CSS files.
@@ -74,28 +77,36 @@ public class CSSCleanupAction implements IObjectActionDelegate {
 
 	private void processCSSFile(IFile file, Shell shell) {
 		try {
-			// Format with Prettier
-			String formatted = PrettierRunner.format(file);
+			IPreferenceStore store = CSSCleanupPlugin.getDefault().getPreferenceStore();
+			boolean enablePrettier = store.getBoolean(CSSPreferenceConstants.ENABLE_PRETTIER);
+			boolean enableStylelint = store.getBoolean(CSSPreferenceConstants.ENABLE_STYLELINT);
 
-			if (formatted != null) {
-				// Write back to file
-				file.setContents(
-						new java.io.ByteArrayInputStream(formatted.getBytes(java.nio.charset.StandardCharsets.UTF_8)),
-						IResource.KEEP_HISTORY,
-						null);
-				file.refreshLocal(IResource.DEPTH_ZERO, null);
+			// Format with Prettier if enabled
+			if (enablePrettier) {
+				String formatted = PrettierRunner.format(file);
+
+				if (formatted != null) {
+					// Write back to file
+					file.setContents(
+							new java.io.ByteArrayInputStream(formatted.getBytes(java.nio.charset.StandardCharsets.UTF_8)),
+							IResource.KEEP_HISTORY,
+							null);
+					file.refreshLocal(IResource.DEPTH_ZERO, null);
+				}
 			}
 
-			// Validate with Stylelint
-			CSSValidationResult result = StylelintRunner.validate(file);
+			// Validate with Stylelint if enabled
+			if (enableStylelint) {
+				CSSValidationResult result = StylelintRunner.validate(file);
 
-			if (!result.isValid()) {
-				StringBuilder msg = new StringBuilder("CSS validation issues:\n\n"); //$NON-NLS-1$
-				for (CSSValidationResult.Issue issue : result.getIssues()) {
-					msg.append(String.format("Line %d: [%s] %s\n", //$NON-NLS-1$
-							Integer.valueOf(issue.line), issue.severity, issue.message));
+				if (!result.isValid()) {
+					StringBuilder msg = new StringBuilder("CSS validation issues:%n%n"); //$NON-NLS-1$
+					for (CSSValidationResult.Issue issue : result.getIssues()) {
+						msg.append(String.format("Line %d: [%s] %s%n", //$NON-NLS-1$
+								Integer.valueOf(issue.line), issue.severity, issue.message));
+					}
+					MessageDialog.openWarning(shell, "CSS Validation", msg.toString()); //$NON-NLS-1$
 				}
-				MessageDialog.openWarning(shell, "CSS Validation", msg.toString()); //$NON-NLS-1$
 			}
 
 		} catch (Exception e) {
