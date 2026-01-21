@@ -28,9 +28,9 @@ public class StringRenderer implements StreamPipelineRenderer<String> {
     @Override
     public String renderSource(SourceDescriptor source) {
         if (source == null) return "";
-        String expr = source.getExpression();
+        String expr = source.expression();
         
-        return switch (source.getType()) {
+        return switch (source.type()) {
             case COLLECTION -> expr + ".stream()";
             case ARRAY -> "Arrays.stream(" + expr + ")";
             case ITERABLE -> "StreamSupport.stream(" + expr + ".spliterator(), false)";

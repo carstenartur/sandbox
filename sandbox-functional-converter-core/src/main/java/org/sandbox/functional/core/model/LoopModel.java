@@ -14,6 +14,7 @@
 package org.sandbox.functional.core.model;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.sandbox.functional.core.operation.Operation;
 import org.sandbox.functional.core.terminal.TerminalOperation;
@@ -39,7 +40,7 @@ public class LoopModel {
 	private SourceDescriptor source;
 	private ElementDescriptor element;
 	private LoopMetadata metadata;
-	private List<Operation> operations = new ArrayList<>();
+	private final List<Operation> operations = new ArrayList<>();
 	private TerminalOperation terminal;
 	
 	/**
@@ -71,34 +72,12 @@ public class LoopModel {
 	}
 	
 	/**
-	 * Sets the source descriptor.
-	 * 
-	 * @param source the source descriptor
-	 * @return this LoopModel for fluent API
-	 */
-	public LoopModel setSource(SourceDescriptor source) {
-		this.source = source;
-		return this;
-	}
-	
-	/**
 	 * Gets the element descriptor.
 	 * 
 	 * @return the element descriptor
 	 */
 	public ElementDescriptor getElement() {
 		return element;
-	}
-	
-	/**
-	 * Sets the element descriptor.
-	 * 
-	 * @param element the element descriptor
-	 * @return this LoopModel for fluent API
-	 */
-	public LoopModel setElement(ElementDescriptor element) {
-		this.element = element;
-		return this;
 	}
 	
 	/**
@@ -111,51 +90,12 @@ public class LoopModel {
 	}
 	
 	/**
-	 * Sets the loop metadata.
-	 * 
-	 * @param metadata the loop metadata
-	 * @return this LoopModel for fluent API
-	 */
-	public LoopModel setMetadata(LoopMetadata metadata) {
-		this.metadata = metadata;
-		return this;
-	}
-	
-	/**
 	 * Gets an unmodifiable view of the operations list.
 	 * 
 	 * @return an unmodifiable list of operations
 	 */
 	public List<Operation> getOperations() { 
-		return java.util.Collections.unmodifiableList(operations); 
-	}
-	
-	/**
-	 * Sets the list of operations.
-	 * 
-	 * <p>The contents of the provided list are copied into the internal
-	 * operations list. A {@code null} value clears the current operations.</p>
-	 * 
-	 * @param operations the operations to set, may be {@code null} to clear
-	 */
-	public void setOperations(List<Operation> operations) {
-		this.operations.clear();
-		if (operations != null) {
-			this.operations.addAll(operations);
-		}
-	}
-	
-	/**
-	 * Adds an operation to the pipeline.
-	 * 
-	 * @param op the operation to add, must not be {@code null}
-	 * @return this LoopModel for fluent API
-	 * @throws NullPointerException if op is {@code null}
-	 */
-	public LoopModel addOperation(Operation op) {
-		java.util.Objects.requireNonNull(op, "operation must not be null");
-		this.operations.add(op);
-		return this;
+		return Collections.unmodifiableList(operations); 
 	}
 	
 	/**
@@ -176,6 +116,36 @@ public class LoopModel {
 		this.terminal = terminal;
 	}
 	
+	// Package-private setters for internal model construction and testing.
+	// Note: LoopModelBuilder in org.sandbox.functional.core.builder uses the public constructor instead.
+	LoopModel setSource(SourceDescriptor source) {
+		this.source = source;
+		return this;
+	}
+	
+	LoopModel setElement(ElementDescriptor element) {
+		this.element = element;
+		return this;
+	}
+	
+	LoopModel setMetadata(LoopMetadata metadata) {
+		this.metadata = metadata;
+		return this;
+	}
+	
+	/**
+	 * Adds an operation to the pipeline.
+	 * 
+	 * @param op the operation to add, must not be {@code null}
+	 * @return this LoopModel for fluent API
+	 * @throws NullPointerException if op is {@code null}
+	 */
+	public LoopModel addOperation(Operation op) {
+		java.util.Objects.requireNonNull(op, "operation must not be null");
+		this.operations.add(op);
+		return this;
+	}
+	
 	/**
 	 * Sets the terminal operation (fluent API).
 	 * 
@@ -187,6 +157,14 @@ public class LoopModel {
 		java.util.Objects.requireNonNull(terminal, "terminal operation must not be null");
 		this.terminal = terminal;
 		return this;
+	}
+	
+	/**
+	 * Checks if this model can be converted to a stream.
+	 */
+	public boolean isConvertible() {
+		if (metadata == null) return true;
+		return metadata.isConvertible();
 	}
 	
 	/**

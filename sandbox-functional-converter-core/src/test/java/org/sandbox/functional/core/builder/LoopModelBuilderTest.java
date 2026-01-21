@@ -37,8 +37,8 @@ class LoopModelBuilderTest {
             .forEach(List.of("System.out.println(item)"))
             .build();
         
-        assertThat(model.getSource().getExpression()).isEqualTo("list");
-        assertThat(model.getElement().getVariableName()).isEqualTo("item");
+        assertThat(model.getSource().expression()).isEqualTo("list");
+        assertThat(model.getElement().variableName()).isEqualTo("item");
         assertThat(model.getTerminal()).isInstanceOf(ForEachTerminal.class);
     }
     
@@ -69,41 +69,45 @@ class LoopModelBuilderTest {
     
     @Test
     void testConvertibilityCheck() {
-        LoopModelBuilder builder = new LoopModelBuilder()
+        LoopModel model = new LoopModelBuilder()
             .source(SourceDescriptor.SourceType.COLLECTION, "list", "String")
             .element("x", "String", false)
-            .metadata(true, false, false, false, false); // hasBreak = true
+            .metadata(true, false, false, false, false) // hasBreak = true
+            .build();
         
-        assertThat(builder.isConvertible()).isFalse();
+        assertThat(model.isConvertible()).isFalse();
     }
     
     @Test
     void testConvertibilityCheckWithReturn() {
-        LoopModelBuilder builder = new LoopModelBuilder()
+        LoopModel model = new LoopModelBuilder()
             .source(SourceDescriptor.SourceType.COLLECTION, "list", "String")
             .element("x", "String", false)
-            .metadata(false, false, true, false, false); // hasReturn = true
+            .metadata(false, false, true, false, false) // hasReturn = true
+            .build();
         
-        assertThat(builder.isConvertible()).isFalse();
+        assertThat(model.isConvertible()).isFalse();
     }
     
     @Test
     void testConvertibilityCheckWithoutProblems() {
-        LoopModelBuilder builder = new LoopModelBuilder()
+        LoopModel model = new LoopModelBuilder()
             .source(SourceDescriptor.SourceType.COLLECTION, "list", "String")
             .element("x", "String", false)
-            .metadata(false, false, false, false, true);
+            .metadata(false, false, false, false, true)
+            .build();
         
-        assertThat(builder.isConvertible()).isTrue();
+        assertThat(model.isConvertible()).isTrue();
     }
     
     @Test
     void testConvertibilityCheckNoMetadata() {
-        LoopModelBuilder builder = new LoopModelBuilder()
+        LoopModel model = new LoopModelBuilder()
             .source(SourceDescriptor.SourceType.COLLECTION, "list", "String")
-            .element("x", "String", false);
+            .element("x", "String", false)
+            .build();
         
-        assertThat(builder.isConvertible()).isTrue();
+        assertThat(model.isConvertible()).isTrue();
     }
     
     @Test
