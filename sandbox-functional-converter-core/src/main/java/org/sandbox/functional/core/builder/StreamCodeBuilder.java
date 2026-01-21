@@ -69,20 +69,14 @@ public class StreamCodeBuilder {
         
         String expr = source.getExpression();
         
-        switch (source.getType()) {
-            case COLLECTION:
-                return expr + ".stream()";
-            case ARRAY:
-                return "Arrays.stream(" + expr + ")";
-            case ITERABLE:
-                return "StreamSupport.stream(" + expr + ".spliterator(), false)";
-            case STREAM:
-                return expr;
-            case INT_RANGE:
-                return "IntStream.range(0, " + expr + ")";
-            default:
-                return expr + ".stream()";
-        }
+        return switch (source.getType()) {
+            case COLLECTION -> expr + ".stream()";
+            case ARRAY -> "Arrays.stream(" + expr + ")";
+            case ITERABLE -> "StreamSupport.stream(" + expr + ".spliterator(), false)";
+            case STREAM -> expr;
+            case INT_RANGE -> "IntStream.range(0, " + expr + ")";
+            default -> expr + ".stream()";
+        };
     }
     
     private String buildOperation(Operation op) {
@@ -90,69 +84,45 @@ public class StreamCodeBuilder {
         String varName = model.getElement() != null ? 
                          model.getElement().getVariableName() : "x";
         
-        if (op instanceof FilterOp f) {
-            return ".filter(" + varName + " -> " + f.expression() + ")";
-        } else if (op instanceof MapOp m) {
-            return ".map(" + varName + " -> " + m.expression() + ")";
-        } else if (op instanceof FlatMapOp fm) {
-            return ".flatMap(" + varName + " -> " + fm.expression() + ")";
-        } else if (op instanceof PeekOp p) {
-            return ".peek(" + varName + " -> " + p.expression() + ")";
-        } else if (op instanceof DistinctOp) {
-            return ".distinct()";
-        } else if (op instanceof SortOp s) {
-            return s.expression() != null ? 
-                   ".sorted(" + s.expression() + ")" : ".sorted()";
-        } else if (op instanceof LimitOp l) {
-            return ".limit(" + l.maxSize() + ")";
-        } else if (op instanceof SkipOp sk) {
-            return ".skip(" + sk.count() + ")";
-        }
-        return "";
+        return switch (op) {
+            case FilterOp f -> ".filter(" + varName + " -> " + f.expression() + ")";
+            case MapOp m -> ".map(" + varName + " -> " + m.expression() + ")";
+            case FlatMapOp fm -> ".flatMap(" + varName + " -> " + fm.expression() + ")";
+            case PeekOp p -> ".peek(" + varName + " -> " + p.expression() + ")";
+            case DistinctOp d -> ".distinct()";
+            case SortOp s -> s.expression() != null ? 
+                             ".sorted(" + s.expression() + ")" : ".sorted()";
+            case LimitOp l -> ".limit(" + l.maxSize() + ")";
+            case SkipOp sk -> ".skip(" + sk.count() + ")";
+        };
     }
     
     private String buildTerminal(TerminalOperation terminal) {
         String varName = model.getElement() != null ? 
                          model.getElement().getVariableName() : "x";
         
-        if (terminal instanceof ForEachTerminal fe) {
-            String body = String.join("; ", fe.bodyStatements());
-            String method = fe.ordered() ? ".forEachOrdered" : ".forEach";
-            return method + "(" + varName + " -> " + body + ")";
-        } else if (terminal instanceof CollectTerminal c) {
-            String collector;
-            switch (c.collectorType()) {
-                case TO_LIST:
-                    collector = "Collectors.toList()";
-                    break;
-                case TO_SET:
-                    collector = "Collectors.toSet()";
-                    break;
-                case TO_MAP:
-                    collector = "Collectors.toMap(...)";
-                    break;
-                case JOINING:
-                    collector = "Collectors.joining()";
-                    break;
-                case GROUPING_BY:
-                    collector = "Collectors.groupingBy(...)";
-                    break;
-                case CUSTOM:
-                default:
-                    collector = "...";
-                    break;
+        return switch (terminal) {
+            case ForEachTerminal fe -> {
+                String body = String.join("; ", fe.bodyStatements());
+                String method = fe.ordered() ? ".forEachOrdered" : ".forEach";
+                yield method + "(" + varName + " -> " + body + ")";
             }
-            return ".collect(" + collector + ")";
-        } else if (terminal instanceof ReduceTerminal r) {
-            return ".reduce(" + r.identity() + ", " + r.accumulator() + ")";
-        } else if (terminal instanceof CountTerminal) {
-            return ".count()";
-        } else if (terminal instanceof FindTerminal f) {
-            return f.findFirst() ? ".findFirst()" : ".findAny()";
-        } else if (terminal instanceof MatchTerminal m) {
-            return "." + m.operationType() + "(" + varName + " -> " + m.predicate() + ")";
-        }
-        return "";
+            case CollectTerminal c -> {
+                String collector = switch (c.collectorType()) {
+                    case TO_LIST -> "Collectors.toList()";
+                    case TO_SET -> "Collectors.toSet()";
+                    case TO_MAP -> "Collectors.toMap(...)";
+                    case JOINING -> "Collectors.joining()";
+                    case GROUPING_BY -> "Collectors.groupingBy(...)";
+                    case CUSTOM -> "...";
+                };
+                yield ".collect(" + collector + ")";
+            }
+            case ReduceTerminal r -> ".reduce(" + r.identity() + ", " + r.accumulator() + ")";
+            case CountTerminal ct -> ".count()";
+            case FindTerminal f -> f.findFirst() ? ".findFirst()" : ".findAny()";
+            case MatchTerminal m -> "." + m.operationType() + "(" + varName + " -> " + m.predicate() + ")";
+        };
     }
     
     /**

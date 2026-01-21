@@ -13,9 +13,9 @@
 	<description>AST-independent loop transformation core module for Unified Loop Representation (ULR)</description>
 	
 	<properties>
-		<maven.compiler.source>17</maven.compiler.source>
-		<maven.compiler.target>17</maven.compiler.target>
-		<maven.compiler.release>17</maven.compiler.release>
+		<maven.compiler.source>21</maven.compiler.source>
+		<maven.compiler.target>21</maven.compiler.target>
+		<maven.compiler.release>21</maven.compiler.release>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<junit.version>5.11.4</junit.version>
 		<assertj.version>3.27.3</assertj.version>
@@ -46,7 +46,7 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.14.1</version>
 				<configuration>
-					<release>17</release>
+					<release>21</release>
 				</configuration>
 			</plugin>
 			
