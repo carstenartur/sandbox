@@ -355,6 +355,8 @@ The update sites provide:
 [![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)  
 [![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)
 
+**Code Coverage Reports**: Available at [https://carstenartur.github.io/sandbox/coverage/](https://carstenartur.github.io/sandbox/coverage/) (updated on every push to main)
+
 ### 2022-09
 
 [![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg?branch=2022-09)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)  
@@ -1209,6 +1211,7 @@ When contributing to this project, please maintain documentation quality:
 
 **By Topic:**
 - **Building & Setup**: [Build Instructions](#build-instructions), [Eclipse Version Configuration](#eclipse-version-configuration)
+- **Code Coverage**: [Coverage Deployment](COVERAGE_DEPLOYMENT.md) - JaCoCo reports on GitHub Pages
 - **Plugin Usage**: See [Projects](#projects) section for detailed descriptions of each plugin
 - **Architecture**: Check `ARCHITECTURE.md` in each plugin directory
 - **Testing**: [HelperVisitor API](sandbox_common_test/TESTING.md), [JUnit Migration](sandbox_junit_cleanup_test/TESTING.md)
