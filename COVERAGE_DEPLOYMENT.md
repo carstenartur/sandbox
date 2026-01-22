@@ -24,6 +24,8 @@ The `.github/workflows/maven.yml` workflow:
 2. Generates the aggregated coverage report in `sandbox_coverage/target/site/jacoco-aggregate/`
 3. Deploys the report to GitHub Pages under the `coverage/` directory (only on pushes to `main`)
 
+**Important**: The workflow uses `keep_files: true` to preserve other content on the `gh-pages` branch (like releases and snapshots). The `destination_dir: coverage` ensures only the coverage directory is updated.
+
 ## GitHub Pages Setup
 
 ### Manual Configuration Required
