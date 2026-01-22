@@ -116,10 +116,21 @@ public class JdtLoopExtractor {
         if (body instanceof Block) {
             Block block = (Block) body;
             for (Object stmt : block.statements()) {
-                bodyStatements.add(stmt.toString());
+                String stmtStr = stmt.toString();
+                // Strip trailing semicolon for expression statements
+                // This allows the renderer to use them as lambda expressions
+                if (stmtStr.endsWith(";")) {
+                    stmtStr = stmtStr.substring(0, stmtStr.length() - 1).trim();
+                }
+                bodyStatements.add(stmtStr);
             }
         } else {
-            bodyStatements.add(body.toString());
+            String stmtStr = body.toString();
+            // Strip trailing semicolon for expression statements
+            if (stmtStr.endsWith(";")) {
+                stmtStr = stmtStr.substring(0, stmtStr.length() - 1).trim();
+            }
+            bodyStatements.add(stmtStr);
         }
         
         builder.forEach(bodyStatements, false); // unordered for simple enhanced for
