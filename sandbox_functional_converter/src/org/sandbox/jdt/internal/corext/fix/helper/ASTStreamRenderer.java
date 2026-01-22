@@ -31,9 +31,11 @@ import org.sandbox.functional.core.terminal.*;
 public class ASTStreamRenderer implements StreamPipelineRenderer<Expression> {
     
     private final AST ast;
+    private final CompilationUnit compilationUnit;
     
-    public ASTStreamRenderer(AST ast, ASTRewrite rewrite) {
+    public ASTStreamRenderer(AST ast, ASTRewrite rewrite, CompilationUnit compilationUnit) {
         this.ast = ast;
+        this.compilationUnit = compilationUnit;
         // Note: rewrite parameter reserved for future use in complex AST transformations
     }
     
@@ -320,10 +322,19 @@ public class ASTStreamRenderer implements StreamPipelineRenderer<Expression> {
             return ast.newSimpleName(expressionText);
         }
         
-        // For complex expressions: use ASTParser
+        // For complex expressions: use ASTParser with binding resolution
         ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
         parser.setKind(ASTParser.K_EXPRESSION);
         parser.setSource(expressionText.toCharArray());
+        parser.setResolveBindings(true);  // Enable binding resolution
+        parser.setBindingsRecovery(true);  // Recover from binding errors
+        
+        // Set up the environment from our compilation unit
+        if (compilationUnit != null && compilationUnit.getJavaElement() != null) {
+            parser.setProject(compilationUnit.getJavaElement().getJavaProject());
+            parser.setUnitName("__expression.java");  // Virtual file name
+        }
+        
         ASTNode result = parser.createAST(null);
         
         if (result instanceof Expression) {
@@ -363,6 +374,15 @@ public class ASTStreamRenderer implements StreamPipelineRenderer<Expression> {
         ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
         parser.setKind(ASTParser.K_STATEMENTS);
         parser.setSource(normalizedStatement.toCharArray());
+        parser.setResolveBindings(true);  // Enable binding resolution
+        parser.setBindingsRecovery(true);  // Recover from binding errors
+        
+        // Set up the environment from our compilation unit
+        if (compilationUnit != null && compilationUnit.getJavaElement() != null) {
+            parser.setProject(compilationUnit.getJavaElement().getJavaProject());
+            parser.setUnitName("__statement.java");  // Virtual file name
+        }
+        
         ASTNode result = parser.createAST(null);
         
         if (result instanceof Block) {

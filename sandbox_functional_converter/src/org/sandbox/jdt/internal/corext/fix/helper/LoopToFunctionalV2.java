@@ -88,9 +88,10 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
         
         AST ast = cuRewrite.getRoot().getAST();
         ASTRewrite rewrite = cuRewrite.getASTRewrite();
+        CompilationUnit compilationUnit = cuRewrite.getRoot();
         
-        // Create renderer and transformer
-        ASTStreamRenderer renderer = new ASTStreamRenderer(ast, rewrite);
+        // Create renderer and transformer with compilation unit for binding context
+        ASTStreamRenderer renderer = new ASTStreamRenderer(ast, rewrite, compilationUnit);
         LoopModelTransformer<Expression> transformer = new LoopModelTransformer<>(renderer);
         
         // Transform the model to JDT Expression
