@@ -186,6 +186,9 @@ public class ASTStreamRenderer implements StreamPipelineRenderer<Expression> {
         param.setName(ast.newSimpleName(variableName));
         lambda.parameters().add(param);
         
+        // For single parameter without type annotation, don't use parentheses
+        lambda.setParentheses(false);
+        
         if (bodyStatements.size() == 1) {
             // Einzelne Expression -> Expression-Body
             lambda.setBody(createExpression(bodyStatements.get(0)));
