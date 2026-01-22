@@ -15,6 +15,8 @@ jobs:
       contents: read
       checks: write
       pull-requests: write
+      pages: write
+      id-token: write
     runs-on: ubuntu-latest
     env:
       DISPLAY: :0
@@ -62,3 +64,11 @@ jobs:
         name: update-site-repository
         path: sandbox_updatesite/target/repository/
         retention-days: 1
+    - name: Deploy Coverage to GitHub Pages
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./sandbox_coverage/target/site/jacoco-aggregate
+        destination_dir: coverage
+        keep_files: false
