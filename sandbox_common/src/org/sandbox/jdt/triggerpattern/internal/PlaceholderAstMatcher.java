@@ -262,9 +262,35 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 			return false;
 		}
 		
-		// Match fragments (variable names)
-		if (!safeSubtreeMatch(patternNode.fragments(), otherField.fragments())) {
+		// Match fragments (variable names) - need special handling for placeholders
+		@SuppressWarnings("unchecked")
+		List<Object> patternFragments = patternNode.fragments();
+		@SuppressWarnings("unchecked")
+		List<Object> otherFragments = otherField.fragments();
+		
+		if (patternFragments.size() != otherFragments.size()) {
 			return false;
+		}
+		
+		// For each fragment, we only need to match the variable name (not the initializer)
+		// because the pattern might have placeholder names like $name
+		for (int i = 0; i < patternFragments.size(); i++) {
+			org.eclipse.jdt.core.dom.VariableDeclarationFragment patternFrag = 
+					(org.eclipse.jdt.core.dom.VariableDeclarationFragment) patternFragments.get(i);
+			org.eclipse.jdt.core.dom.VariableDeclarationFragment otherFrag = 
+					(org.eclipse.jdt.core.dom.VariableDeclarationFragment) otherFragments.get(i);
+			
+			// Match the variable name (this handles placeholders via SimpleName matching)
+			if (!safeSubtreeMatch(patternFrag.getName(), otherFrag.getName())) {
+				return false;
+			}
+			
+			// Only check initializers if pattern has one
+			if (patternFrag.getInitializer() != null) {
+				if (!safeSubtreeMatch(patternFrag.getInitializer(), otherFrag.getInitializer())) {
+					return false;
+				}
+			}
 		}
 		
 		return true;
