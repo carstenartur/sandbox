@@ -17,9 +17,13 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
@@ -54,6 +58,14 @@ public class PatternParser {
 			return parseExpression(patternValue);
 		} else if (kind == PatternKind.STATEMENT) {
 			return parseStatement(patternValue);
+		} else if (kind == PatternKind.ANNOTATION) {
+			return parseAnnotation(patternValue);
+		} else if (kind == PatternKind.METHOD_CALL) {
+			return parseMethodCall(patternValue);
+		} else if (kind == PatternKind.IMPORT) {
+			return parseImport(patternValue);
+		} else if (kind == PatternKind.FIELD) {
+			return parseField(patternValue);
 		}
 		
 		return null;
@@ -141,5 +153,146 @@ public class PatternParser {
 		}
 		
 		return (Statement) method.getBody().statements().get(0);
+	}
+	
+	/**
+	 * Parses an annotation pattern.
+	 * 
+	 * @param annotationSnippet the annotation snippet (e.g., {@code "@Before"}, {@code "@Test(expected=$ex)"})
+	 * @return the parsed Annotation node, or {@code null} if parsing fails
+	 * @since 1.2.3
+	 */
+	private Annotation parseAnnotation(String annotationSnippet) {
+		// Wrap the annotation in a minimal class context
+		String source = annotationSnippet + " class _Pattern {}"; //$NON-NLS-1$
+		
+		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
+		parser.setSource(source.toCharArray());
+		parser.setKind(ASTParser.K_COMPILATION_UNIT);
+		parser.setCompilerOptions(JavaCore.getOptions());
+		
+		CompilationUnit cu = (CompilationUnit) parser.createAST(null);
+		
+		// Navigate to the annotation: CompilationUnit -> TypeDeclaration -> modifiers
+		if (cu.types().isEmpty()) {
+			return null;
+		}
+		
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		if (typeDecl.modifiers().isEmpty()) {
+			return null;
+		}
+		
+		Object firstModifier = typeDecl.modifiers().get(0);
+		if (!(firstModifier instanceof Annotation)) {
+			return null;
+		}
+		
+		return (Annotation) firstModifier;
+	}
+	
+	/**
+	 * Parses a method call pattern.
+	 * 
+	 * @param methodCallSnippet the method call snippet (e.g., {@code "Assert.assertEquals($a, $b)"})
+	 * @return the parsed MethodInvocation node, or {@code null} if parsing fails
+	 * @since 1.2.3
+	 */
+	private MethodInvocation parseMethodCall(String methodCallSnippet) {
+		// Wrap the method call in a minimal method context
+		String source = "class _Pattern { void _method() { " + methodCallSnippet + "; } }"; //$NON-NLS-1$ //$NON-NLS-2$
+		
+		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
+		parser.setSource(source.toCharArray());
+		parser.setKind(ASTParser.K_COMPILATION_UNIT);
+		parser.setCompilerOptions(JavaCore.getOptions());
+		
+		CompilationUnit cu = (CompilationUnit) parser.createAST(null);
+		
+		// Navigate to the method invocation: CompilationUnit -> TypeDeclaration -> MethodDeclaration -> Block -> ExpressionStatement -> Expression
+		if (cu.types().isEmpty()) {
+			return null;
+		}
+		
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		if (typeDecl.getMethods().length == 0) {
+			return null;
+		}
+		
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		if (method.getBody() == null || method.getBody().statements().isEmpty()) {
+			return null;
+		}
+		
+		Statement stmt = (Statement) method.getBody().statements().get(0);
+		if (stmt instanceof org.eclipse.jdt.core.dom.ExpressionStatement) {
+			org.eclipse.jdt.core.dom.ExpressionStatement exprStmt = (org.eclipse.jdt.core.dom.ExpressionStatement) stmt;
+			Expression expr = exprStmt.getExpression();
+			
+			if (expr instanceof MethodInvocation) {
+				return (MethodInvocation) expr;
+			}
+		}
+		
+		return null;
+	}
+	
+	/**
+	 * Parses an import pattern.
+	 * 
+	 * @param importSnippet the import snippet (e.g., {@code "import org.junit.Assert"})
+	 * @return the parsed ImportDeclaration node, or {@code null} if parsing fails
+	 * @since 1.2.3
+	 */
+	private ImportDeclaration parseImport(String importSnippet) {
+		// Ensure the import statement ends with a semicolon
+		String importStatement = importSnippet.endsWith(";") ? importSnippet : importSnippet + ";"; //$NON-NLS-1$ //$NON-NLS-2$
+		String source = importStatement + " class _Pattern {}"; //$NON-NLS-1$
+		
+		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
+		parser.setSource(source.toCharArray());
+		parser.setKind(ASTParser.K_COMPILATION_UNIT);
+		parser.setCompilerOptions(JavaCore.getOptions());
+		
+		CompilationUnit cu = (CompilationUnit) parser.createAST(null);
+		
+		// Navigate to the import: CompilationUnit -> imports
+		if (cu.imports().isEmpty()) {
+			return null;
+		}
+		
+		return (ImportDeclaration) cu.imports().get(0);
+	}
+	
+	/**
+	 * Parses a field pattern.
+	 * 
+	 * @param fieldSnippet the field snippet (e.g., {@code "@Rule public TemporaryFolder $name"})
+	 * @return the parsed FieldDeclaration node, or {@code null} if parsing fails
+	 * @since 1.2.3
+	 */
+	private FieldDeclaration parseField(String fieldSnippet) {
+		// Ensure the field declaration ends with a semicolon
+		String fieldStatement = fieldSnippet.endsWith(";") ? fieldSnippet : fieldSnippet + ";"; //$NON-NLS-1$ //$NON-NLS-2$
+		String source = "class _Pattern { " + fieldStatement + " }"; //$NON-NLS-1$ //$NON-NLS-2$
+		
+		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
+		parser.setSource(source.toCharArray());
+		parser.setKind(ASTParser.K_COMPILATION_UNIT);
+		parser.setCompilerOptions(JavaCore.getOptions());
+		
+		CompilationUnit cu = (CompilationUnit) parser.createAST(null);
+		
+		// Navigate to the field: CompilationUnit -> TypeDeclaration -> FieldDeclaration
+		if (cu.types().isEmpty()) {
+			return null;
+		}
+		
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		if (typeDecl.getFields().length == 0) {
+			return null;
+		}
+		
+		return typeDecl.getFields()[0];
 	}
 }
