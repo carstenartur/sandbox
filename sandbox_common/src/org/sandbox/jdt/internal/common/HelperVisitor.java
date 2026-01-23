@@ -87,6 +87,106 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	 */
 	public static final String EXCEPTIONTYPE = "exceptiontype"; //$NON-NLS-1$
 
+	/**
+	 * Creates a fluent builder for visiting marker annotations.
+	 * 
+	 * <p><b>Example:</b></p>
+	 * <pre>
+	 * HelperVisitor.forAnnotation("org.junit.Before")
+	 *     .in(compilationUnit)
+	 *     .excluding(nodesprocessed)
+	 *     .processEach((node, holder) -&gt; processNode(node, holder));
+	 * </pre>
+	 * 
+	 * @param annotationFQN the fully qualified name of the annotation to find
+	 * @return a fluent builder for annotation visitors
+	 * @since 1.15
+	 */
+	public static AnnotationVisitorBuilder forAnnotation(String annotationFQN) {
+		return new AnnotationVisitorBuilder(annotationFQN);
+	}
+
+	/**
+	 * Creates a fluent builder for visiting multiple method invocations.
+	 * 
+	 * <p><b>Example:</b></p>
+	 * <pre>
+	 * HelperVisitor.forMethodCalls("org.junit.Assert", ALL_ASSERTION_METHODS)
+	 *     .andStaticImports()
+	 *     .andImportsOf("org.junit.Assert")
+	 *     .in(compilationUnit)
+	 *     .excluding(nodesprocessed)
+	 *     .processEach((node, holder) -&gt; processNode(node, holder));
+	 * </pre>
+	 * 
+	 * @param typeFQN the fully qualified name of the type containing the methods
+	 * @param methodNames the set of method names to find
+	 * @return a fluent builder for method invocation visitors
+	 * @since 1.15
+	 */
+	public static MethodCallVisitorBuilder forMethodCalls(String typeFQN, Set<String> methodNames) {
+		return new MethodCallVisitorBuilder(typeFQN, methodNames);
+	}
+
+	/**
+	 * Creates a fluent builder for visiting a single method invocation.
+	 * 
+	 * <p><b>Example:</b></p>
+	 * <pre>
+	 * HelperVisitor.forMethodCall("org.junit.Assert", "assertTrue")
+	 *     .in(compilationUnit)
+	 *     .excluding(nodesprocessed)
+	 *     .processEach((node, holder) -&gt; processNode(node, holder));
+	 * </pre>
+	 * 
+	 * @param typeFQN the fully qualified name of the type containing the method
+	 * @param methodName the method name to find
+	 * @return a fluent builder for method invocation visitors
+	 * @since 1.15
+	 */
+	public static MethodCallVisitorBuilder forMethodCall(String typeFQN, String methodName) {
+		return new MethodCallVisitorBuilder(typeFQN, Set.of(methodName));
+	}
+
+	/**
+	 * Creates a fluent builder for visiting field declarations.
+	 * 
+	 * <p><b>Example:</b></p>
+	 * <pre>
+	 * HelperVisitor.forField()
+	 *     .withAnnotation("org.junit.Rule")
+	 *     .ofType("org.junit.rules.TemporaryFolder")
+	 *     .in(compilationUnit)
+	 *     .excluding(nodesprocessed)
+	 *     .processEach((node, holder) -&gt; processNode(node, holder));
+	 * </pre>
+	 * 
+	 * @return a fluent builder for field declaration visitors
+	 * @since 1.15
+	 */
+	public static FieldVisitorBuilder forField() {
+		return new FieldVisitorBuilder();
+	}
+
+	/**
+	 * Creates a fluent builder for visiting import declarations.
+	 * 
+	 * <p><b>Example:</b></p>
+	 * <pre>
+	 * HelperVisitor.forImport("org.junit.Assert")
+	 *     .in(compilationUnit)
+	 *     .excluding(nodesprocessed)
+	 *     .processEach((node, holder) -&gt; processNode(node, holder));
+	 * </pre>
+	 * 
+	 * @param importFQN the fully qualified name of the import to find
+	 * @return a fluent builder for import declaration visitors
+	 * @since 1.15
+	 */
+	public static ImportVisitorBuilder forImport(String importFQN) {
+		return new ImportVisitorBuilder(importFQN);
+	}
+
 	ASTVisitor astvisitor;
 
 	/**
