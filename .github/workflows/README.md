@@ -34,7 +34,31 @@ Use the `manual-cleanup.yml` workflow when you want to:
 
 ## Available Workflows
 
-### 1. Auto PR Cleanup (`pr-auto-cleanup.yml`)
+### 1. Fix NLS Comments (`fix-nls.yml`)
+
+**Triggers**: Automatically on PR opened/synchronized (when `.java` files change)
+- Only runs for PRs created by `copilot[bot]`
+- Or when PR is labeled with `auto-fix-nls`
+
+**What it does**:
+- Scans plugin source directories (not test modules)
+- Adds missing `//$NON-NLS-n$` comments to string literals
+- Commits and pushes changes if needed
+- Preserves existing NLS comments (no duplicates)
+
+**Directories processed**:
+- ✅ All `sandbox_*/src/` directories (plugin modules)
+- ❌ Excludes `*_test/` directories (test modules)
+- ❌ Excludes `sandbox_test_commons/`, `sandbox_web/`, etc.
+
+**Use cases**:
+- GitHub Copilot creates code without NLS comments
+- Automatic cleanup of Eclipse internationalization warnings
+- Ensures string literals are properly marked for translation
+
+**Manual trigger**: Add the `auto-fix-nls` label to any PR to manually trigger this workflow.
+
+### 2. Auto PR Cleanup (`pr-auto-cleanup.yml`)
 
 **Triggers**: Automatically on PR opened/synchronized (when `.java` files change)
 
@@ -49,7 +73,7 @@ Use the `manual-cleanup.yml` workflow when you want to:
 - Change source directory: modify `source-dir` parameter
 - Disable auto-commit: remove the commit step
 
-### 2. Manual Cleanup (`manual-cleanup.yml`)
+### 3. Manual Cleanup (`manual-cleanup.yml`)
 
 **Triggers**: Manual dispatch from GitHub Actions UI
 
@@ -277,6 +301,30 @@ jobs:
 1. **For one PR**: Add `[skip cleanup]` to the PR title or description (requires workflow modification)
 2. **For all PRs**: Disable the workflow in GitHub UI (Actions → Auto PR Cleanup → ⋯ → Disable workflow)
 3. **Permanently**: Delete `.github/workflows/pr-auto-cleanup.yml`
+
+### Q: What does the NLS fix workflow do?
+
+**A**: The NLS (Non-Localized String) fix workflow automatically adds `//$NON-NLS-n$` comments to string literals in Java files. This is required by Eclipse to suppress warnings about strings that should not be internationalized.
+
+**How it works**:
+- Scans only plugin source directories (`sandbox_*/src/`)
+- Skips test modules (directories ending with `_test`)
+- Counts string literals on each line
+- Adds sequential NLS comments (e.g., `//$NON-NLS-1$ //$NON-NLS-2$`)
+- Preserves existing NLS comments (no duplicates)
+
+**When it runs**:
+- Automatically for PRs created by GitHub Copilot
+- Manually by adding the `auto-fix-nls` label to any PR
+
+**Example**:
+```java
+// Before:
+return "Hello World";
+
+// After:
+return "Hello World"; //$NON-NLS-1$
+```
 
 ## Troubleshooting
 
