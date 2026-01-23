@@ -19,6 +19,8 @@ import java.util.Map;
 
 import org.eclipse.jdt.core.dom.ASTMatcher;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.IExtendedModifier;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MemberValuePair;
 import org.eclipse.jdt.core.dom.NormalAnnotation;
@@ -202,6 +204,73 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 	}
 	
 	/**
+	 * Matches field declarations with support for annotations and placeholders.
+	 * 
+	 * @param patternNode the pattern field declaration
+	 * @param other the candidate node
+	 * @return {@code true} if the fields match
+	 * @since 1.2.3
+	 */
+	@Override
+	public boolean match(FieldDeclaration patternNode, Object other) {
+		if (!(other instanceof FieldDeclaration)) {
+			return false;
+		}
+		FieldDeclaration otherField = (FieldDeclaration) other;
+		
+		// Match modifiers (including annotations)
+		@SuppressWarnings("unchecked")
+		List<IExtendedModifier> patternModifiers = patternNode.modifiers();
+		@SuppressWarnings("unchecked")
+		List<IExtendedModifier> otherModifiers = otherField.modifiers();
+		
+		// Match each modifier/annotation in the pattern
+		for (IExtendedModifier patternMod : patternModifiers) {
+			if (patternMod.isAnnotation()) {
+				// Find matching annotation in other field
+				boolean found = false;
+				for (IExtendedModifier otherMod : otherModifiers) {
+					if (otherMod.isAnnotation()) {
+						if (safeSubtreeMatch((ASTNode) patternMod, (ASTNode) otherMod)) {
+							found = true;
+							break;
+						}
+					}
+				}
+				if (!found) {
+					return false;
+				}
+			} else if (patternMod.isModifier()) {
+				// Check if other has the same modifier
+				boolean found = false;
+				for (IExtendedModifier otherMod : otherModifiers) {
+					if (otherMod.isModifier()) {
+						if (safeSubtreeMatch((ASTNode) patternMod, (ASTNode) otherMod)) {
+							found = true;
+							break;
+						}
+					}
+				}
+				if (!found) {
+					return false;
+				}
+			}
+		}
+		
+		// Match type
+		if (!safeSubtreeMatch(patternNode.getType(), otherField.getType())) {
+			return false;
+		}
+		
+		// Match fragments (variable names)
+		if (!safeSubtreeMatch(patternNode.fragments(), otherField.fragments())) {
+			return false;
+		}
+		
+		return true;
+	}
+	
+	/**
 	 * Helper method to perform subtree matching using this matcher.
 	 */
 	private boolean safeSubtreeMatch(ASTNode node1, ASTNode node2) {
@@ -209,5 +278,29 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 			return node2 == null;
 		}
 		return node1.subtreeMatch(this, node2);
+	}
+	
+	/**
+	 * Helper method to perform list matching using this matcher.
+	 */
+	private boolean safeSubtreeMatch(List<?> list1, List<?> list2) {
+		if (list1 == null) {
+			return list2 == null;
+		}
+		if (list2 == null || list1.size() != list2.size()) {
+			return false;
+		}
+		for (int i = 0; i < list1.size(); i++) {
+			Object item1 = list1.get(i);
+			Object item2 = list2.get(i);
+			if (item1 instanceof ASTNode && item2 instanceof ASTNode) {
+				if (!safeSubtreeMatch((ASTNode) item1, (ASTNode) item2)) {
+					return false;
+				}
+			} else if (!item1.equals(item2)) {
+				return false;
+			}
+		}
+		return true;
 	}
 }
