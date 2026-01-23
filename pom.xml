@@ -64,8 +64,7 @@
 		<module>sandbox_usage_view</module>
 		<module>sandbox_usage_view_feature</module>
 		<module>sandbox_usage_view_test</module>
-		<module>sandbox_product</module>
-		<module>sandbox_updatesite</module>
+		<!-- Heavy modules (sandbox_product, sandbox_updatesite) moved to profiles below -->
 	</modules>
 	<repositories>
 		<!-- 1. Eclipse SimRel Release Repository - upgraded to 2025-09 to resolve Bouncy Castle import conflicts -->
@@ -560,6 +559,29 @@ See README.md for more information.
 		</repository>
 	</distributionManagement>
 	<profiles>
+		<!-- Product profile: Build Eclipse product with p2-director materialization -->
+		<profile>
+			<id>product</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+			<modules>
+				<module>sandbox_product</module>
+			</modules>
+		</profile>
+		
+		<!-- Repository profile: Build p2 update site repository -->
+		<profile>
+			<id>repo</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+			<modules>
+				<module>sandbox_updatesite</module>
+			</modules>
+		</profile>
+		
+		<!-- Web profile: Build WAR file with update site -->
 		<profile>
 			<id>web</id>
 			<activation>
@@ -569,9 +591,12 @@ See README.md for more information.
 				</property>
 			</activation>
 			<modules>
+				<module>sandbox_product</module>
 				<module>sandbox_web</module>
 			</modules>
 		</profile>
+		
+		<!-- JaCoCo profile: Enable code coverage -->
 		<profile>
 			<id>jacoco</id>
 			<activation>

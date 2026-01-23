@@ -39,15 +39,22 @@ jobs:
       uses: actions/cache@v5
       with:
         path: ~/.m2/repository
-        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml', 'sandbox_target/*.target') }}
         restore-keys: ${{ runner.os }}-maven-
     - name: Set up Maven
       uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1 # v5
       with:
         maven-version: 3.9.9
     - name: Build with Maven
-      run: xvfb-run --auto-servernum mvn -e -V --batch-mode -Dtycho.localArtifacts=ignore -Pjacoco clean verify
-#       run: xvfb-run --auto-servernum mvn -e -V --batch-mode -Dtycho.localArtifacts=ignore -Pweb,jacoco clean verify
+      run: |
+        if [ "${{ github.event_name }}" == "pull_request" ]; then
+          # Fast PR build - skip product/repo for quick feedback
+          xvfb-run --auto-servernum mvn -e -V -T 1C --batch-mode -Dtycho.localArtifacts=ignore -Pjacoco clean verify
+        else
+          # Full build for main branch - includes product and repository
+          xvfb-run --auto-servernum mvn -e -V -T 1C --batch-mode -Dtycho.localArtifacts=ignore -Pjacoco,product,repo clean verify
+        fi
+#       run: xvfb-run --auto-servernum mvn -e -V --batch-mode -Dtycho.localArtifacts=ignore -Dinclude=web -Pjacoco clean verify
     - name: Cleanup xvfb pidx build
       uses: bcomnes/cleanup-xvfb@v1
     - name: Publish Test Report
