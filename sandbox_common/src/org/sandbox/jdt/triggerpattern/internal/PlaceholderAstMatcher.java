@@ -173,19 +173,19 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 			return false;
 		}
 		
-		// Match each pattern pair with any other pair having the same name
+		// Create a map for O(n) lookup instead of O(n²)
+		Map<String, MemberValuePair> otherPairMap = new HashMap<>();
+		for (MemberValuePair otherPair : otherPairs) {
+			otherPairMap.put(otherPair.getName().getIdentifier(), otherPair);
+		}
+		
+		// Match each pattern pair with corresponding pair in other annotation
 		// (annotation pairs can be in any order)
 		for (MemberValuePair patternPair : patternPairs) {
 			String patternName = patternPair.getName().getIdentifier();
 			
 			// Find corresponding pair in other annotation
-			MemberValuePair matchingOtherPair = null;
-			for (MemberValuePair otherPair : otherPairs) {
-				if (patternName.equals(otherPair.getName().getIdentifier())) {
-					matchingOtherPair = otherPair;
-					break;
-				}
-			}
+			MemberValuePair matchingOtherPair = otherPairMap.get(patternName);
 			
 			// If no matching pair found, annotations don't match
 			if (matchingOtherPair == null) {
