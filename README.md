@@ -303,10 +303,10 @@ mvn -Dinclude=web -Pproduct,jacoco -T 1C verify
 A Makefile is provided for easier build commands:
 
 ```bash
-make dev       # Fast development build
-make product   # Build with product
-make repo      # Build with repository
-make release   # Full release build with coverage
+make dev       # Fast development build (skips tests)
+make product   # Build with product (requires xvfb for tests)
+make repo      # Build with repository (requires xvfb for tests)
+make release   # Full release build with coverage (requires xvfb for tests)
 make test      # Run tests with coverage (requires xvfb)
 make clean     # Clean all build artifacts
 make help      # Show all available targets
@@ -326,7 +326,7 @@ make help      # Show all available targets
 - **`product`**: Adds Eclipse product materialization (heavy step, takes time)
 - **`repo`**: Adds p2 update site repository assembly (heavy step, takes time)
 - **`jacoco`**: Adds code coverage reporting (includes `sandbox_coverage` module)
-- **`web`**: Adds WAR file with update site (requires `-Dinclude=web` property)
+- **`web`**: Adds WAR file with update site (requires `-Dinclude=web` property, also builds `sandbox_product`)
 
 **Backward Compatibility**: The command `mvn -Pproduct,repo verify` produces the same result as the previous full build behavior.
 

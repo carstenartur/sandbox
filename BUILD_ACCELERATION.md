@@ -29,7 +29,7 @@ The solution implements Maven profiles to control which modules are built:
 | **`repo`** | Default + `sandbox_updatesite` | Create p2 update site | `mvn -Prepo verify` |
 | **`product,repo`** | Everything | Full release build | `mvn -Pproduct,repo verify` |
 | **`jacoco`** | Adds `sandbox_coverage` | Code coverage reporting | `mvn -Pjacoco verify` |
-| **`web`** | Adds `sandbox_web` | WAR file with update site | `mvn -Dinclude=web verify` |
+| **`web`** | Adds `sandbox_product` + `sandbox_web` | WAR file with update site | `mvn -Dinclude=web verify` |
 
 ### Backward Compatibility
 

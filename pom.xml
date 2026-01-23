@@ -591,6 +591,7 @@ See README.md for more information.
 				</property>
 			</activation>
 			<modules>
+				<module>sandbox_product</module>
 				<module>sandbox_web</module>
 			</modules>
 		</profile>

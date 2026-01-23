@@ -8,10 +8,10 @@ help:
 	@echo "Sandbox Build Targets:"
 	@echo "====================="
 	@echo ""
-	@echo "  make dev       - Fast development build (bundles + features + tests only)"
-	@echo "  make product   - Build with Eclipse product materialization"
-	@echo "  make repo      - Build with p2 update site repository"
-	@echo "  make release   - Full release build (product + repo + coverage)"
+	@echo "  make dev       - Fast development build (bundles + features, skips tests)"
+	@echo "  make product   - Build with Eclipse product materialization (requires xvfb for tests)"
+	@echo "  make repo      - Build with p2 update site repository (requires xvfb for tests)"
+	@echo "  make release   - Full release build (product + repo + coverage, requires xvfb for tests)"
 	@echo "  make test      - Run tests with coverage (requires xvfb)"
 	@echo "  make clean     - Clean all build artifacts"
 	@echo ""
@@ -26,15 +26,15 @@ dev:
 
 # Build with product materialization
 product:
-	mvn -Pproduct -T 1C verify
+	xvfb-run --auto-servernum mvn -Pproduct -T 1C verify
 
 # Build with p2 repository
 repo:
-	mvn -Prepo -T 1C verify
+	xvfb-run --auto-servernum mvn -Prepo -T 1C verify
 
 # Full release build with coverage
 release:
-	mvn -Pproduct,repo,jacoco -T 1C verify
+	xvfb-run --auto-servernum mvn -Pproduct,repo,jacoco -T 1C verify
 
 # Run tests with coverage (requires xvfb on Linux)
 test:
