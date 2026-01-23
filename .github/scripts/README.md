@@ -63,9 +63,10 @@ The script is automatically run by the `Fix NLS Comments` workflow (`.github/wor
 - Automatically commits changes back to the PR
 
 **Limitations:**
-- Uses simple quote counting (may not handle complex string concatenations)
-- Only processes single-line statements
-- Multi-line string concatenations are handled when the closing line ends with `;`, `)`, or `}`
+- Uses simple quote counting (may not handle all edge cases with escape sequences like `\"` or `\\`)
+- Only processes lines ending with `;`, `)`, or `}`
+- Multi-line string concatenations are **not** fully supported; only the final line is processed if it contains string literals and ends with a terminator
+- Does not handle Java 15+ text blocks
 
 ### generate_test_report.py
 

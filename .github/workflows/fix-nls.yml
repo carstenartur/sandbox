@@ -18,16 +18,15 @@ jobs:
     
     steps:
       - name: Checkout PR branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Fix missing NLS comments in plugin sources
-        run: |
-          chmod +x .github/scripts/fix-nls.sh
-          .github/scripts/fix-nls.sh
+        run: .github/scripts/fix-nls.sh
       
       - name: Check for changes
         id: changes

@@ -36,7 +36,7 @@ Use the `manual-cleanup.yml` workflow when you want to:
 
 ### 1. Fix NLS Comments (`fix-nls.yml`)
 
-**Triggers**: Automatically on PR opened/synchronized (when `.java` files change)
+**Triggers**: Automatically on PR opened/synchronized (on PRs that modify `.java` files)
 - Only runs for PRs created by `copilot[bot]`
 - Or when PR is labeled with `auto-fix-nls`
 
@@ -47,9 +47,14 @@ Use the `manual-cleanup.yml` workflow when you want to:
 - Preserves existing NLS comments (no duplicates)
 
 **Directories processed**:
-- ✅ All `sandbox_*/src/` directories (plugin modules)
+- ✅ All `sandbox_*/` and `sandbox-*/` src directories (plugin modules)
 - ❌ Excludes `*_test/` directories (test modules)
 - ❌ Excludes `sandbox_test_commons/`, `sandbox_web/`, etc.
+
+**Limitations**:
+- Only processes single-line statements ending with `;`, `)`, or `}`
+- Multi-line string concatenations are not fully supported
+- Uses simple quote counting (may not handle all edge cases with escape sequences)
 
 **Use cases**:
 - GitHub Copilot creates code without NLS comments
