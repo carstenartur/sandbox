@@ -230,14 +230,58 @@ java -version  # Should show Java 21 or later
 
 ### Building
 
-To build the project, including a WAR file that contains the update site, run:
+## Build Profiles
 
+The project supports Maven profiles to optimize build speed:
+
+| Profile | Modules Built | Use Case |
+|---------|---------------|----------|
+| `dev` (default) | All bundles, features, tests | Fast local development |
+| `product` | + Eclipse Product (`sandbox_product`) | Building distributable product |
+| `repo` | + P2 Update Site (`sandbox_updatesite`) | Building update site |
+| `jacoco` | + Coverage reports | CI/Coverage builds |
+
+### Build Commands
+
+**Quick Dev Build (fastest):**
 ```bash
-mvn -Dinclude=web -Pjacoco verify
+mvn -T 1C verify
 ```
 
-- The product will be located in `sandbox_product/target`
-- The WAR file will be located in `sandbox_web/target`
+**Build with Product:**
+```bash
+mvn -Pproduct -T 1C verify
+```
+
+**Build with P2 Repository:**
+```bash
+mvn -Prepo -T 1C verify
+```
+
+**Full Release Build (product + repo):**
+```bash
+mvn -Pproduct,repo -T 1C verify
+```
+
+**Full CI Build with Coverage:**
+```bash
+mvn -Pjacoco,product,repo -T 1C verify
+```
+
+**Skip Tests for Local Iteration:**
+```bash
+mvn -T 1C -DskipTests verify
+```
+
+**Build with WAR file (web module):**
+```bash
+mvn -Dinclude=web -Pjacoco,product,repo -T 1C verify
+```
+
+**Note:** 
+- The product will be located in `sandbox_product/target` (when using `-Pproduct`)
+- The WAR file will be located in `sandbox_web/target` (when using `-Dinclude=web`)
+- The P2 update site will be in `sandbox_updatesite/target/repository/` (when using `-Prepo`)
 
 ### Troubleshooting
 
