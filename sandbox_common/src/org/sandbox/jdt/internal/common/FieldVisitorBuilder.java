@@ -71,7 +71,7 @@ public class FieldVisitorBuilder extends HelperVisitorBuilder<FieldDeclaration> 
         if (annotationFQN == null || typeFQN == null) {
             throw new IllegalStateException(
                 "FieldVisitorBuilder requires both withAnnotation(...) and ofType(...) to be configured " //$NON-NLS-1$
-                + "before processing. annotationFQN=" + annotationFQN + ", typeFQN=" + typeFQN); //$NON-NLS-1$
+                + "before processing. annotationFQN=" + annotationFQN + ", typeFQN=" + typeFQN); //$NON-NLS-1$ //$NON-NLS-2$
         }
     }
     
