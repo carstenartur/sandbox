@@ -305,28 +305,4 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 		}
 		return node1.subtreeMatch(this, node2);
 	}
-	
-	/**
-	 * Helper method to perform list matching using this matcher.
-	 */
-	private boolean safeSubtreeMatch(List<?> list1, List<?> list2) {
-		if (list1 == null) {
-			return list2 == null;
-		}
-		if (list2 == null || list1.size() != list2.size()) {
-			return false;
-		}
-		for (int i = 0; i < list1.size(); i++) {
-			Object item1 = list1.get(i);
-			Object item2 = list2.get(i);
-			if (item1 instanceof ASTNode && item2 instanceof ASTNode) {
-				if (!safeSubtreeMatch((ASTNode) item1, (ASTNode) item2)) {
-					return false;
-				}
-			} else if (!item1.equals(item2)) {
-				return false;
-			}
-		}
-		return true;
-	}
 }
