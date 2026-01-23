@@ -230,7 +230,7 @@ java -version  # Should show Java 21 or later
 
 ### Building
 
-## Build Profiles
+#### Build Profiles
 
 The project supports Maven profiles to optimize build speed:
 
@@ -241,7 +241,7 @@ The project supports Maven profiles to optimize build speed:
 | `repo` | + P2 Update Site (`sandbox_updatesite`) | Building update site |
 | `jacoco` | + Coverage reports | CI/Coverage builds |
 
-### Build Commands
+#### Build Commands
 
 **Quick Dev Build (fastest):**
 ```bash
@@ -275,7 +275,7 @@ mvn -T 1C -DskipTests verify
 
 **Build with WAR file (web module):**
 ```bash
-mvn -Dinclude=web -Pjacoco,product,repo -T 1C verify
+mvn -Dinclude=web -Pjacoco,product -T 1C verify
 ```
 
 **Note:** 
