@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>AbstractMethodReuse.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_method_reuse</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper.lib</a> &gt; <span class="el_source">AbstractMethodReuse.java</span></div><h1>AbstractMethodReuse.java</h1><pre class="source lang-java linenums">package org.sandbox.jdt.internal.corext.fix.helper.lib;
+
+import java.util.Set;
+
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
+
+<span class="fc" id="L12">public abstract class AbstractMethodReuse&lt;T extends ASTNode&gt; {</span>
+
+	/**
+	 * Find inline code sequences that can be replaced with method calls
+	 * 
+	 * @param fixcore the cleanup fix core (any enum type)
+	 * @param compilationUnit the compilation unit to analyze
+	 * @param operations set to collect rewrite operations
+	 * @param nodesprocessed set of already processed AST nodes to avoid duplicates
+	 */
+	public abstract void find(Object fixcore, CompilationUnit compilationUnit,
+			Set&lt;?&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) throws CoreException;
+
+	/**
+	 * Rewrite the AST to replace inline code with method calls
+	 * 
+	 * @param fixcore the cleanup fix core (any enum type)
+	 * @param visited the visited node (for backward compatibility)
+	 * @param cuRewrite the compilation unit rewrite
+	 * @param group the text edit group
+	 * @param holder reference holder containing the data needed for rewriting
+	 * @throws CoreException if rewriting fails
+	 */
+	public void rewrite(Object fixcore, ASTNode visited,
+			CompilationUnitRewrite cuRewrite, TextEditGroup group, ReferenceHolder&lt;?, ?&gt; holder) throws CoreException {
+		// Default implementation for backward compatibility - does nothing
+		// Subclasses should override either this method or the other rewrite signature
+<span class="nc" id="L39">	}</span>
+
+	/**
+	 * Rewrite the AST to replace inline code with method calls (new signature)
+	 * 
+	 * @param fixcore the cleanup fix core (any enum type)
+	 * @param holder reference holder containing the data needed for rewriting
+	 * @param cuRewrite the compilation unit rewrite
+	 * @param group the text edit group
+	 * @throws CoreException if rewriting fails
+	 */
+	public void rewrite(Object fixcore, ReferenceHolder&lt;?, ?&gt; holder,
+			CompilationUnitRewrite cuRewrite, TextEditGroup group) throws CoreException {
+		// Default implementation for forward compatibility
+		// Subclasses should override either this method or the other rewrite signature
+<span class="nc" id="L54">	}</span>
+
+	/**
+	 * Gets a preview of the code before or after refactoring.
+	 * Used to display examples in the Eclipse cleanup preferences UI.
+	 * 
+	 * @param afterRefactoring if true, returns the &quot;after&quot; preview; if false, returns the &quot;before&quot; preview
+	 * @return a code snippet showing the transformation (formatted as Java source code)
+	 */
+	public abstract String getPreview(boolean afterRefactoring);
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

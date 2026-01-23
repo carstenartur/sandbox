@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>LoopToFunctionalV2.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_functional_converter</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">LoopToFunctionalV2.java</span></div><h1>LoopToFunctionalV2.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import java.util.Set;
+
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.EnhancedForStatement;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
+
+/**
+ * V2 implementation based on Unified Loop Representation (ULR).
+ * 
+ * &lt;p&gt;This implementation uses the ULR model from sandbox-functional-converter-core
+ * to provide a more modular and testable approach to loop-to-functional transformations.&lt;/p&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Current Status:&lt;/b&gt; Phase 1 - Feature Parity with V1&lt;/p&gt;
+ * &lt;p&gt;This implementation currently delegates all operations to the V1 implementation
+ * ({@link LoopToFunctional}) to ensure feature parity. Future phases will gradually
+ * replace V1 logic with ULR-based transformations.&lt;/p&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Architecture:&lt;/b&gt;&lt;/p&gt;
+ * &lt;ul&gt;
+ * &lt;li&gt;Phase 1: Delegate to V1 for feature parity (current)&lt;/li&gt;
+ * &lt;li&gt;Phase 2: Implement AST-to-ULR extraction&lt;/li&gt;
+ * &lt;li&gt;Phase 3: Implement ULR-to-Stream transformation&lt;/li&gt;
+ * &lt;li&gt;Phase 4: Replace V1 delegation with ULR pipeline&lt;/li&gt;
+ * &lt;/ul&gt;
+ * 
+ * @see LoopToFunctional
+ * @see &lt;a href=&quot;https://github.com/carstenartur/sandbox/issues/450&quot;&gt;Issue #450&lt;/a&gt;
+ * @see &lt;a href=&quot;https://github.com/carstenartur/sandbox/issues/453&quot;&gt;Issue #453&lt;/a&gt;
+ * @since 1.0.0
+ */
+<span class="fc" id="L51">public class LoopToFunctionalV2 extends AbstractFunctionalCall&lt;EnhancedForStatement&gt; {</span>
+	
+	/**
+	 * V1 implementation used for delegation during Phase 1.
+	 * 
+	 * &lt;p&gt;This ensures feature parity while the ULR-based implementation
+	 * is being developed.&lt;/p&gt;
+	 */
+<span class="fc" id="L59">	private final LoopToFunctional v1Delegate = new LoopToFunctional();</span>
+	
+	/**
+	 * Finds convertible loops in the compilation unit.
+	 * 
+	 * &lt;p&gt;&lt;b&gt;Current Implementation:&lt;/b&gt; Delegates to V1&lt;/p&gt;
+	 * 
+	 * @param fixcore the fix core context
+	 * @param compilationUnit the compilation unit to search
+	 * @param operations set to collect rewrite operations
+	 * @param nodesprocessed set of already processed nodes
+	 */
+	@Override
+	public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
+			Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
+		// Phase 1: Delegate to V1 for feature parity
+<span class="fc" id="L75">		v1Delegate.find(fixcore, compilationUnit, operations, nodesprocessed);</span>
+<span class="fc" id="L76">	}</span>
+	
+	/**
+	 * Rewrites a loop statement to use functional/stream operations.
+	 * 
+	 * &lt;p&gt;&lt;b&gt;Current Implementation:&lt;/b&gt; Delegates to V1&lt;/p&gt;
+	 * 
+	 * @param upp the fix core context
+	 * @param visited the enhanced for statement to transform
+	 * @param cuRewrite the compilation unit rewrite context
+	 * @param group the text edit group for tracking changes
+	 * @throws CoreException if rewriting fails
+	 */
+	@Override
+	public void rewrite(UseFunctionalCallFixCore upp, EnhancedForStatement visited,
+			CompilationUnitRewrite cuRewrite, TextEditGroup group) throws CoreException {
+		// Phase 1: Delegate to V1 for feature parity
+<span class="fc" id="L93">		v1Delegate.rewrite(upp, visited, cuRewrite, group);</span>
+<span class="fc" id="L94">	}</span>
+	
+	/**
+	 * Provides a preview of the transformation.
+	 * 
+	 * &lt;p&gt;&lt;b&gt;Current Implementation:&lt;/b&gt; Delegates to V1&lt;/p&gt;
+	 * 
+	 * @param afterRefactoring true for after preview, false for before
+	 * @return preview string
+	 */
+	@Override
+	public String getPreview(boolean afterRefactoring) {
+		// Phase 1: Delegate to V1 for feature parity
+<span class="nc" id="L107">		return v1Delegate.getPreview(afterRefactoring);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

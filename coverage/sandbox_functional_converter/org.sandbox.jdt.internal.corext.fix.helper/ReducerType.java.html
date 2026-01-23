@@ -1,0 +1,462 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ReducerType.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_functional_converter</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">ReducerType.java</span></div><h1>ReducerType.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2025 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.LambdaExpression;
+import org.eclipse.jdt.core.dom.TypeMethodReference;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+
+/**
+ * Types of reduction operations supported for REDUCE operations.
+ * 
+ * &lt;p&gt;Each reducer type represents a specific accumulation pattern and knows how to
+ * create its own accumulator expression for the stream pipeline.&lt;/p&gt;
+ * 
+ * &lt;ul&gt;
+ * &lt;li&gt;&lt;b&gt;INCREMENT&lt;/b&gt;: Counts elements by incrementing an accumulator. 
+ *     Pattern: {@code i++}, {@code ++i}. 
+ *     Maps to: {@code .map(_item -&gt; 1).reduce(i, Integer::sum)}&lt;/li&gt;
+ * &lt;li&gt;&lt;b&gt;DECREMENT&lt;/b&gt;: Decrements an accumulator for each element. 
+ *     Pattern: {@code i--}, {@code --i}, {@code i -= 1}. 
+ *     Maps to: {@code .map(_item -&gt; -1).reduce(i, Integer::sum)}&lt;/li&gt;
+ * &lt;li&gt;&lt;b&gt;SUM&lt;/b&gt;: Sums values from the stream. 
+ *     Pattern: {@code sum += value}. 
+ *     Maps to: {@code .reduce(sum, Integer::sum)} or {@code .map(x -&gt; value).reduce(sum, Integer::sum)}&lt;/li&gt;
+ * &lt;li&gt;&lt;b&gt;PRODUCT&lt;/b&gt;: Multiplies values from the stream. 
+ *     Pattern: {@code product *= value}. 
+ *     Maps to: {@code .reduce(product, (acc, x) -&gt; acc * x)}&lt;/li&gt;
+ * &lt;li&gt;&lt;b&gt;STRING_CONCAT&lt;/b&gt;: Concatenates strings. 
+ *     Pattern: {@code str += substring}. 
+ *     Maps to: {@code .reduce(str, String::concat)} (when null-safe)&lt;/li&gt;
+ * &lt;li&gt;&lt;b&gt;MAX&lt;/b&gt;: Finds the maximum value. 
+ *     Pattern: {@code max = Math.max(max, value)}. 
+ *     Maps to: {@code .reduce(max, Math::max)} or {@code .reduce(max, Integer::max)}&lt;/li&gt;
+ * &lt;li&gt;&lt;b&gt;MIN&lt;/b&gt;: Finds the minimum value. 
+ *     Pattern: {@code min = Math.min(min, value)}. 
+ *     Maps to: {@code .reduce(min, Math::min)} or {@code .reduce(min, Integer::min)}&lt;/li&gt;
+ * &lt;li&gt;&lt;b&gt;CUSTOM_AGGREGATE&lt;/b&gt;: User-defined aggregation patterns not covered by standard types.&lt;/li&gt;
+ * &lt;/ul&gt;
+ * 
+ * @see ProspectiveOperation
+ */
+public enum ReducerType {
+	
+<span class="fc" id="L58">	/**</span>
+	 * Counts elements by incrementing an accumulator.
+	 * Pattern: {@code i++}, {@code ++i}
+	 */
+<span class="fc" id="L62">	INCREMENT {</span>
+		@Override
+		public Expression createAccumulatorExpression(AST ast, String accumulatorType, boolean isNullSafe) {
+<span class="fc" id="L65">			return createSumExpression(ast, accumulatorType, true);</span>
+		}
+		
+		@Override
+		public Expression createMapExpression(MapExpressionContext context) {
+<span class="fc" id="L70">			return createTypedLiteralOne(context.ast(), context.accumulatorType());</span>
+		}
+		
+		@Override
+		public String getMapVariableName() {
+<span class="fc" id="L75">			return UNUSED_PARAMETER_NAME;</span>
+		}
+	},
+	
+<span class="fc" id="L79">	/**</span>
+	 * Decrements an accumulator for each element.
+	 * Pattern: {@code i--}, {@code --i}, {@code i -= 1}
+	 */
+<span class="fc" id="L83">	DECREMENT {</span>
+		@Override
+		public Expression createAccumulatorExpression(AST ast, String accumulatorType, boolean isNullSafe) {
+<span class="nc" id="L86">			return createCountingLambda(ast, InfixExpression.Operator.MINUS);</span>
+		}
+		
+		@Override
+		public Expression createMapExpression(MapExpressionContext context) {
+<span class="nc" id="L91">			return createTypedLiteralOne(context.ast(), context.accumulatorType());</span>
+		}
+		
+		@Override
+		public String getMapVariableName() {
+<span class="nc" id="L96">			return UNUSED_PARAMETER_NAME;</span>
+		}
+	},
+	
+<span class="fc" id="L100">	/**</span>
+	 * Sums values from the stream.
+	 * Pattern: {@code sum += value}
+	 */
+<span class="fc" id="L104">	SUM {</span>
+		@Override
+		public Expression createAccumulatorExpression(AST ast, String accumulatorType, boolean isNullSafe) {
+<span class="fc" id="L107">			return createSumExpression(ast, accumulatorType, false);</span>
+		}
+		
+		@Override
+		public Expression createMapExpression(MapExpressionContext context) {
+<span class="fc" id="L112">			return context.rhsExpression();</span>
+		}
+	},
+	
+<span class="fc" id="L116">	/**</span>
+	 * Multiplies values from the stream.
+	 * Pattern: {@code product *= value}
+	 */
+<span class="fc" id="L120">	PRODUCT {</span>
+		@Override
+		public Expression createAccumulatorExpression(AST ast, String accumulatorType, boolean isNullSafe) {
+<span class="fc" id="L123">			return createBinaryOperatorLambda(ast, InfixExpression.Operator.TIMES);</span>
+		}
+		
+		@Override
+		public Expression createMapExpression(MapExpressionContext context) {
+<span class="nc" id="L128">			return context.rhsExpression();</span>
+		}
+	},
+	
+<span class="fc" id="L132">	/**</span>
+	 * Concatenates strings.
+	 * Pattern: {@code str += substring}
+	 */
+<span class="fc" id="L136">	STRING_CONCAT {</span>
+		@Override
+		public Expression createAccumulatorExpression(AST ast, String accumulatorType, boolean isNullSafe) {
+<span class="fc bfc" id="L139" title="All 2 branches covered.">			if (isNullSafe) {</span>
+<span class="fc" id="L140">				return createMethodReference(ast, &quot;String&quot;, &quot;concat&quot;);</span>
+			} else {
+<span class="fc" id="L142">				return createBinaryOperatorLambda(ast, InfixExpression.Operator.PLUS);</span>
+			}
+		}
+		
+		@Override
+		public Expression createMapExpression(MapExpressionContext context) {
+<span class="fc" id="L148">			return context.rhsExpression();</span>
+		}
+	},
+	
+<span class="fc" id="L152">	/**</span>
+	 * Finds the maximum value.
+	 * Pattern: {@code max = Math.max(max, value)}
+	 */
+<span class="fc" id="L156">	MAX {</span>
+		@Override
+		public Expression createAccumulatorExpression(AST ast, String accumulatorType, boolean isNullSafe) {
+<span class="fc" id="L159">			return createMaxMinMethodReference(ast, accumulatorType, &quot;max&quot;);</span>
+		}
+		
+		@Override
+		public Expression createMapExpression(MapExpressionContext context) {
+<span class="fc" id="L164">			return context.mathArgExpression();</span>
+		}
+	},
+	
+<span class="fc" id="L168">	/**</span>
+	 * Finds the minimum value.
+	 * Pattern: {@code min = Math.min(min, value)}
+	 */
+<span class="fc" id="L172">	MIN {</span>
+		@Override
+		public Expression createAccumulatorExpression(AST ast, String accumulatorType, boolean isNullSafe) {
+<span class="fc" id="L175">			return createMaxMinMethodReference(ast, accumulatorType, &quot;min&quot;);</span>
+		}
+		
+		@Override
+		public Expression createMapExpression(MapExpressionContext context) {
+<span class="fc" id="L180">			return context.mathArgExpression();</span>
+		}
+	},
+	
+<span class="fc" id="L184">	/**</span>
+	 * User-defined aggregation patterns not covered by standard types.
+	 */
+<span class="fc" id="L187">	CUSTOM_AGGREGATE {</span>
+		@Override
+		public Expression createAccumulatorExpression(AST ast, String accumulatorType, boolean isNullSafe) {
+<span class="nc" id="L190">			return createAccumulatorLambda(ast);</span>
+		}
+		
+		@Override
+		public Expression createMapExpression(MapExpressionContext context) {
+<span class="nc" id="L195">			return null; // No MAP needed for custom aggregate</span>
+		}
+	};
+	
+<span class="fc" id="L199">	private static final String UNUSED_PARAMETER_NAME = StreamConstants.UNUSED_PARAMETER_NAME;</span>
+	
+	/**
+	 * Creates the accumulator expression for the reduce() operation.
+	 * Returns method references when possible, or lambdas otherwise.
+	 * 
+	 * @param ast             the AST to create nodes in
+	 * @param accumulatorType the type of the accumulator variable (e.g., &quot;int&quot;, &quot;double&quot;)
+	 * @param isNullSafe      whether the operation is null-safe
+	 * @return an Expression suitable for the second argument of reduce()
+	 */
+	public abstract Expression createAccumulatorExpression(AST ast, 
+			String accumulatorType, boolean isNullSafe);
+	
+	/**
+	 * Creates the MAP expression to use before the REDUCE operation.
+	 * 
+	 * &lt;p&gt;Each reducer type knows what expression to map to:&lt;/p&gt;
+	 * &lt;ul&gt;
+	 * &lt;li&gt;&lt;b&gt;Counting reducers&lt;/b&gt;: Map each element to 1 (typed appropriately)&lt;/li&gt;
+	 * &lt;li&gt;&lt;b&gt;Arithmetic reducers&lt;/b&gt;: Use the RHS expression from the assignment&lt;/li&gt;
+	 * &lt;li&gt;&lt;b&gt;Min/max reducers&lt;/b&gt;: Use the non-accumulator argument from Math.max/min&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * 
+	 * @param context the context containing all necessary data for expression creation
+	 * @return the expression to use in the MAP operation, or null if no MAP is needed
+	 */
+	public abstract Expression createMapExpression(MapExpressionContext context);
+	
+	/**
+	 * Returns the variable name to use for the MAP operation parameter.
+	 * 
+	 * &lt;p&gt;For counting reducers (INCREMENT, DECREMENT), this returns an unused parameter name
+	 * like &quot;_item&quot; since the element is not used. For other reducers, returns null to use
+	 * the current variable name.&lt;/p&gt;
+	 * 
+	 * @return the parameter name for the MAP lambda, or null to use the default
+	 */
+	public String getMapVariableName() {
+<span class="fc" id="L238">		return null; // Default: use current variable name</span>
+	}
+	
+	/**
+	 * Context record containing all data needed to create a MAP expression for a REDUCE operation.
+	 * 
+	 * @param ast              the AST to create nodes in
+	 * @param accumulatorType  the type of the accumulator variable
+	 * @param currentVarName   the current variable name in the pipeline
+	 * @param rhsExpression    the right-hand side expression (for arithmetic reducers)
+	 * @param mathArgExpression the non-accumulator argument (for min/max reducers)
+	 */
+	public record MapExpressionContext(
+			AST ast,
+			String accumulatorType,
+			String currentVarName,
+			Expression rhsExpression,
+			Expression mathArgExpression
+	) {}
+	
+	/**
+	 * Returns whether this reducer type is an arithmetic reducer (SUM, PRODUCT, STRING_CONCAT).
+	 * 
+	 * &lt;p&gt;Arithmetic reducers accumulate values using binary operations on the stream elements.&lt;/p&gt;
+	 * 
+	 * @return true if this is SUM, PRODUCT, or STRING_CONCAT
+	 */
+	public boolean isArithmetic() {
+<span class="nc bnc" id="L266" title="All 6 branches missed.">		return this == SUM || this == PRODUCT || this == STRING_CONCAT;</span>
+	}
+	
+	/**
+	 * Returns whether this reducer type is a min/max reducer (MAX, MIN).
+	 * 
+	 * &lt;p&gt;Min/max reducers find the extreme value using Math.max or Math.min.&lt;/p&gt;
+	 * 
+	 * @return true if this is MAX or MIN
+	 */
+	public boolean isMinMax() {
+<span class="nc bnc" id="L277" title="All 4 branches missed.">		return this == MAX || this == MIN;</span>
+	}
+	
+	/**
+	 * Returns whether this reducer type is a counting reducer (INCREMENT, DECREMENT).
+	 * 
+	 * &lt;p&gt;Counting reducers count elements by incrementing or decrementing an accumulator.&lt;/p&gt;
+	 * 
+	 * @return true if this is INCREMENT or DECREMENT
+	 */
+	public boolean isCounting() {
+<span class="pc bpc" id="L288" title="1 of 4 branches missed.">		return this == INCREMENT || this == DECREMENT;</span>
+	}
+	
+	/**
+	 * Returns whether this reducer type requires a MAP operation before the REDUCE.
+	 * 
+	 * &lt;p&gt;Some reducers need a preceding MAP to transform elements before reduction:&lt;/p&gt;
+	 * &lt;ul&gt;
+	 * &lt;li&gt;&lt;b&gt;Counting reducers&lt;/b&gt;: Map each element to 1 before summing&lt;/li&gt;
+	 * &lt;li&gt;&lt;b&gt;Arithmetic reducers&lt;/b&gt;: May need to extract the RHS expression&lt;/li&gt;
+	 * &lt;li&gt;&lt;b&gt;Min/max reducers&lt;/b&gt;: May need to extract the non-accumulator argument&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * 
+	 * @return true if this reducer type may need a MAP operation before REDUCE
+	 */
+	public boolean mayNeedMapBeforeReduce() {
+<span class="nc bnc" id="L304" title="All 2 branches missed.">		return this != CUSTOM_AGGREGATE;</span>
+	}
+	
+	// ==================== Helper Methods ====================
+	
+	/**
+	 * Creates a typed literal &quot;1&quot; appropriate for the accumulator type.
+	 * Handles int, long, float, double, byte, short, char types.
+	 * 
+	 * @param ast             the AST to create nodes in
+	 * @param accumulatorType the accumulator type name
+	 * @return an Expression representing the typed literal 1 (never null)
+	 */
+	private static Expression createTypedLiteralOne(AST ast, String accumulatorType) {
+<span class="pc bpc" id="L318" title="1 of 2 branches missed.">		if (accumulatorType == null) {</span>
+<span class="nc" id="L319">			return ast.newNumberLiteral(&quot;1&quot;);</span>
+		}
+
+<span class="pc bpc" id="L322" title="5 of 7 branches missed.">		switch (accumulatorType) {</span>
+		case &quot;double&quot;:
+<span class="nc" id="L324">			return ast.newNumberLiteral(&quot;1.0&quot;);</span>
+		case &quot;float&quot;:
+<span class="nc" id="L326">			return ast.newNumberLiteral(&quot;1.0f&quot;);</span>
+		case &quot;long&quot;:
+<span class="fc" id="L328">			return ast.newNumberLiteral(&quot;1L&quot;);</span>
+		case &quot;byte&quot;:
+<span class="nc" id="L330">			return createCastExpression(ast, org.eclipse.jdt.core.dom.PrimitiveType.BYTE, &quot;1&quot;);</span>
+		case &quot;short&quot;:
+<span class="nc" id="L332">			return createCastExpression(ast, org.eclipse.jdt.core.dom.PrimitiveType.SHORT, &quot;1&quot;);</span>
+		case &quot;char&quot;:
+<span class="nc" id="L334">			return createCastExpression(ast, org.eclipse.jdt.core.dom.PrimitiveType.CHAR, &quot;1&quot;);</span>
+		default:
+<span class="fc" id="L336">			return ast.newNumberLiteral(&quot;1&quot;);</span>
+		}
+	}
+	
+	/**
+	 * Creates a cast expression for the given primitive type.
+	 * Example: (byte) 1, (short) 1
+	 */
+	private static org.eclipse.jdt.core.dom.CastExpression createCastExpression(AST ast,
+			org.eclipse.jdt.core.dom.PrimitiveType.Code typeCode, String literal) {
+<span class="nc" id="L346">		org.eclipse.jdt.core.dom.CastExpression cast = ast.newCastExpression();</span>
+<span class="nc" id="L347">		cast.setType(ast.newPrimitiveType(typeCode));</span>
+<span class="nc" id="L348">		cast.setExpression(ast.newNumberLiteral(literal));</span>
+<span class="nc" id="L349">		return cast;</span>
+	}
+	
+	/**
+	 * Creates the appropriate sum expression based on the accumulator type.
+	 * Uses method references for Integer, Long, Double; lambdas for others.
+	 */
+	private static Expression createSumExpression(AST ast, String accumulatorType, boolean isIncrement) {
+<span class="pc bpc" id="L357" title="1 of 2 branches missed.">		if (accumulatorType == null) {</span>
+<span class="nc" id="L358">			return createMethodReference(ast, &quot;Integer&quot;, &quot;sum&quot;);</span>
+		}
+
+<span class="pc bpc" id="L361" title="2 of 5 branches missed.">		switch (accumulatorType) {</span>
+		case &quot;double&quot;:
+		case &quot;java.lang.Double&quot;:
+<span class="pc bpc" id="L364" title="1 of 2 branches missed.">			if (isIncrement) {</span>
+<span class="nc" id="L365">				return createCountingLambda(ast, InfixExpression.Operator.PLUS);</span>
+			}
+<span class="fc" id="L367">			return createMethodReference(ast, &quot;Double&quot;, &quot;sum&quot;);</span>
+		case &quot;float&quot;:
+		case &quot;java.lang.Float&quot;:
+<span class="nc bnc" id="L370" title="All 2 branches missed.">			if (isIncrement) {</span>
+<span class="nc" id="L371">				return createCountingLambda(ast, InfixExpression.Operator.PLUS);</span>
+			}
+<span class="nc" id="L373">			return createBinaryOperatorLambda(ast, InfixExpression.Operator.PLUS);</span>
+		case &quot;long&quot;:
+		case &quot;java.lang.Long&quot;:
+<span class="fc" id="L376">			return createMethodReference(ast, &quot;Long&quot;, &quot;sum&quot;);</span>
+		case &quot;short&quot;:
+		case &quot;java.lang.Short&quot;:
+		case &quot;byte&quot;:
+		case &quot;java.lang.Byte&quot;:
+<span class="nc bnc" id="L381" title="All 2 branches missed.">			if (isIncrement) {</span>
+<span class="nc" id="L382">				return createCountingLambda(ast, InfixExpression.Operator.PLUS);</span>
+			}
+<span class="nc" id="L384">			return createBinaryOperatorLambda(ast, InfixExpression.Operator.PLUS);</span>
+		default:
+<span class="fc" id="L386">			return createMethodReference(ast, &quot;Integer&quot;, &quot;sum&quot;);</span>
+		}
+	}
+	
+	/**
+	 * Creates a method reference like Integer::sum or String::concat.
+	 */
+	private static TypeMethodReference createMethodReference(AST ast, String typeName, String methodName) {
+<span class="fc" id="L394">		TypeMethodReference methodRef = ast.newTypeMethodReference();</span>
+<span class="fc" id="L395">		methodRef.setType(ast.newSimpleType(ast.newSimpleName(typeName)));</span>
+<span class="fc" id="L396">		methodRef.setName(ast.newSimpleName(methodName));</span>
+<span class="fc" id="L397">		return methodRef;</span>
+	}
+	
+	/**
+	 * Creates a method reference for max/min operations based on the accumulator type.
+	 * Always uses Math::max and Math::min since these patterns are detected from Math.max/min calls.
+	 */
+	private static TypeMethodReference createMaxMinMethodReference(AST ast, String accumulatorType, String methodName) {
+		// Always use Math for max/min operations since they're detected from Math.max/min patterns
+<span class="fc" id="L406">		return createMethodReference(ast, &quot;Math&quot;, methodName);</span>
+	}
+	
+	/**
+	 * Creates a binary operator lambda like (a, b) -&gt; a * b.
+	 */
+	private static LambdaExpression createBinaryOperatorLambda(AST ast, InfixExpression.Operator operator) {
+<span class="fc" id="L413">		LambdaExpression lambda = ast.newLambdaExpression();</span>
+
+<span class="fc" id="L415">		VariableDeclarationFragment param1 = ast.newVariableDeclarationFragment();</span>
+<span class="fc" id="L416">		param1.setName(ast.newSimpleName(&quot;a&quot;));</span>
+<span class="fc" id="L417">		VariableDeclarationFragment param2 = ast.newVariableDeclarationFragment();</span>
+<span class="fc" id="L418">		param2.setName(ast.newSimpleName(&quot;b&quot;));</span>
+<span class="fc" id="L419">		lambda.parameters().add(param1);</span>
+<span class="fc" id="L420">		lambda.parameters().add(param2);</span>
+
+<span class="fc" id="L422">		InfixExpression operationExpr = ast.newInfixExpression();</span>
+<span class="fc" id="L423">		operationExpr.setLeftOperand(ast.newSimpleName(&quot;a&quot;));</span>
+<span class="fc" id="L424">		operationExpr.setRightOperand(ast.newSimpleName(&quot;b&quot;));</span>
+<span class="fc" id="L425">		operationExpr.setOperator(operator);</span>
+<span class="fc" id="L426">		lambda.setBody(operationExpr);</span>
+
+<span class="fc" id="L428">		return lambda;</span>
+	}
+	
+	/**
+	 * Creates a counting lambda like (a, _item) -&gt; a + 1.
+	 * Used for INCREMENT/DECREMENT operations.
+	 */
+	private static LambdaExpression createCountingLambda(AST ast, InfixExpression.Operator operator) {
+<span class="nc" id="L436">		LambdaExpression lambda = ast.newLambdaExpression();</span>
+
+<span class="nc" id="L438">		VariableDeclarationFragment param1 = ast.newVariableDeclarationFragment();</span>
+<span class="nc" id="L439">		param1.setName(ast.newSimpleName(&quot;a&quot;));</span>
+<span class="nc" id="L440">		VariableDeclarationFragment param2 = ast.newVariableDeclarationFragment();</span>
+<span class="nc" id="L441">		param2.setName(ast.newSimpleName(&quot;_item&quot;));</span>
+<span class="nc" id="L442">		lambda.parameters().add(param1);</span>
+<span class="nc" id="L443">		lambda.parameters().add(param2);</span>
+
+<span class="nc" id="L445">		InfixExpression operationExpr = ast.newInfixExpression();</span>
+<span class="nc" id="L446">		operationExpr.setLeftOperand(ast.newSimpleName(&quot;a&quot;));</span>
+<span class="nc" id="L447">		operationExpr.setRightOperand(ast.newNumberLiteral(&quot;1&quot;));</span>
+<span class="nc" id="L448">		operationExpr.setOperator(operator);</span>
+<span class="nc" id="L449">		lambda.setBody(operationExpr);</span>
+
+<span class="nc" id="L451">		return lambda;</span>
+	}
+	
+	/**
+	 * Creates a general accumulator lambda like (a, b) -&gt; a + b.
+	 * Used as a fallback for custom aggregation patterns.
+	 */
+	private static LambdaExpression createAccumulatorLambda(AST ast) {
+<span class="nc" id="L459">		return createBinaryOperatorLambda(ast, InfixExpression.Operator.PLUS);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>CollectorType.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_functional_converter</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">CollectorType.java</span></div><h1>CollectorType.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+
+/**
+ * Types of collector operations supported for COLLECT operations.
+ * 
+ * &lt;p&gt;Each collector type represents a specific collection pattern and knows how to
+ * create the appropriate Collectors method invocation for the stream pipeline.&lt;/p&gt;
+ * 
+ * &lt;ul&gt;
+ * &lt;li&gt;&lt;b&gt;TO_LIST&lt;/b&gt;: Collects elements into a List. 
+ *     Pattern: {@code result.add(item)}. 
+ *     Maps to: {@code .collect(Collectors.toList())}&lt;/li&gt;
+ * &lt;li&gt;&lt;b&gt;TO_SET&lt;/b&gt;: Collects elements into a Set. 
+ *     Pattern: {@code set.add(item)}. 
+ *     Maps to: {@code .collect(Collectors.toSet())}&lt;/li&gt;
+ * &lt;/ul&gt;
+ * 
+ * @see ProspectiveOperation
+ * @see OperationType#COLLECT
+ */
+<span class="fc" id="L38">public enum CollectorType {</span>
+	
+<span class="fc" id="L40">	/**</span>
+	 * Collects elements into a List.
+	 * Pattern: {@code List&lt;T&gt; result = new ArrayList&lt;&gt;(); for(T item : items) result.add(item);}
+	 */
+<span class="fc" id="L44">	TO_LIST(&quot;toList&quot;, StreamConstants.COLLECTORS_CLASS),</span>
+	
+<span class="fc" id="L46">	/**</span>
+	 * Collects elements into a Set.
+	 * Pattern: {@code Set&lt;T&gt; result = new HashSet&lt;&gt;(); for(T item : items) result.add(item);}
+	 */
+<span class="fc" id="L50">	TO_SET(&quot;toSet&quot;, StreamConstants.COLLECTORS_CLASS);</span>
+	
+	private final String methodName;
+	private final String className;
+	
+<span class="fc" id="L55">	CollectorType(String methodName, String className) {</span>
+<span class="fc" id="L56">		this.methodName = methodName;</span>
+<span class="fc" id="L57">		this.className = className;</span>
+<span class="fc" id="L58">	}</span>
+	
+	/**
+	 * Returns the collector method name (e.g., &quot;toList&quot;, &quot;toSet&quot;).
+	 * 
+	 * @return the method name
+	 */
+	public String getMethodName() {
+<span class="nc" id="L66">		return methodName;</span>
+	}
+	
+	/**
+	 * Returns the fully qualified collector class name.
+	 * 
+	 * @return the class name (e.g., &quot;java.util.stream.Collectors&quot;)
+	 */
+	public String getClassName() {
+<span class="nc" id="L75">		return className;</span>
+	}
+	
+	/**
+	 * Creates a Collectors method invocation expression.
+	 * Example: {@code Collectors.toList()} or {@code Collectors.toSet()}
+	 * 
+	 * @param ast the AST to create nodes in
+	 * @return a MethodInvocation for the Collectors factory method
+	 */
+	public Expression createCollectorExpression(AST ast) {
+<span class="fc" id="L86">		MethodInvocation collectorInvocation = ast.newMethodInvocation();</span>
+<span class="fc" id="L87">		collectorInvocation.setExpression(ast.newSimpleName(StreamConstants.COLLECTORS_CLASS_NAME));</span>
+<span class="fc" id="L88">		collectorInvocation.setName(ast.newSimpleName(methodName));</span>
+<span class="fc" id="L89">		return collectorInvocation;</span>
+	}
+	
+	/**
+	 * Determines the appropriate CollectorType based on the collection type binding.
+	 * 
+	 * @param collectionTypeQualifiedName the fully qualified name of the collection type
+	 * @return TO_LIST for List types, TO_SET for Set types, or null if not supported
+	 */
+	public static CollectorType fromCollectionType(String collectionTypeQualifiedName) {
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">		if (collectionTypeQualifiedName == null) {</span>
+<span class="nc" id="L100">			return null;</span>
+		}
+		
+		// Check for List types
+<span class="fc bfc" id="L104" title="All 2 branches covered.">		if (collectionTypeQualifiedName.equals(&quot;java.util.List&quot;) || </span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">			collectionTypeQualifiedName.equals(&quot;java.util.ArrayList&quot;) ||</span>
+<span class="nc bnc" id="L106" title="All 2 branches missed.">			collectionTypeQualifiedName.equals(&quot;java.util.LinkedList&quot;)) {</span>
+<span class="fc" id="L107">			return TO_LIST;</span>
+		}
+		
+		// Check for Set types
+<span class="nc bnc" id="L111" title="All 2 branches missed.">		if (collectionTypeQualifiedName.equals(&quot;java.util.Set&quot;) ||</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">			collectionTypeQualifiedName.equals(&quot;java.util.HashSet&quot;) ||</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">			collectionTypeQualifiedName.equals(&quot;java.util.TreeSet&quot;) ||</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">			collectionTypeQualifiedName.equals(&quot;java.util.LinkedHashSet&quot;)) {</span>
+<span class="nc" id="L115">			return TO_SET;</span>
+		}
+		
+<span class="nc" id="L118">		return null;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

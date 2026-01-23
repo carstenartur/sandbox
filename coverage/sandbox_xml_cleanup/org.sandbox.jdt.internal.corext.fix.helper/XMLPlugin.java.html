@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>XMLPlugin.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_xml_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">XMLPlugin.java</span></div><h1>XMLPlugin.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2021 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IFolder;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.ILog;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.corext.fix.XMLCleanUpFixCore;
+
+/**
+ * XML cleanup processor for PDE-relevant files (plugin.xml, feature.xml, fragment.xml, *.exsd, *.xsd).
+ */
+<span class="nc" id="L42">public class XMLPlugin extends AbstractTool&lt;XMLCandidateHit&gt; {</span>
+
+<span class="nc" id="L44">	private static final ILog LOG = Platform.getLog(XMLPlugin.class);</span>
+	private static final String PLUGIN_ID = &quot;org.sandbox.jdt.internal.corext.fix.helper&quot;;
+	
+	// PDE-relevant file names
+<span class="nc" id="L48">	private static final Set&lt;String&gt; PDE_FILE_NAMES = Set.of(</span>
+<span class="nc" id="L49">		&quot;plugin.xml&quot;,</span>
+<span class="nc" id="L50">		&quot;feature.xml&quot;, </span>
+<span class="nc" id="L51">		&quot;fragment.xml&quot;</span>
+	);
+	
+	// PDE-relevant file extensions
+<span class="nc" id="L55">	private static final Set&lt;String&gt; PDE_EXTENSIONS = Set.of(&quot;exsd&quot;, &quot;xsd&quot;);</span>
+	
+	// PDE-typical directories
+<span class="nc" id="L58">	private static final Set&lt;String&gt; PDE_DIRECTORIES = Set.of(&quot;OSGI-INF&quot;, &quot;META-INF&quot;);</span>
+	
+	// Cache for processed files to avoid duplicate processing
+<span class="nc" id="L61">	private final Set&lt;Path&gt; processedFiles = new HashSet&lt;&gt;();</span>
+	
+	// Indentation preference (default: false for size reduction)
+<span class="nc" id="L64">	private boolean enableIndent = false;</span>
+
+	/**
+	 * Set whether to enable indentation in XML output.
+	 * 
+	 * @param enable true to enable indentation, false for compact output (default)
+	 */
+	public void setEnableIndent(boolean enable) {
+<span class="nc" id="L72">		this.enableIndent = enable;</span>
+<span class="nc" id="L73">	}</span>
+
+	@Override
+	public void find(XMLCleanUpFixCore fixcore, CompilationUnit compilationUnit,
+			Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesProcessed,
+			boolean createForOnlyIfVarUsed) {
+		// Clear cache at start of each cleanup run to avoid stale file references
+<span class="nc" id="L80">		processedFiles.clear();</span>
+		
+		try {
+			// Get the resource associated with the compilation unit
+<span class="nc" id="L84">			IResource resource = compilationUnit.getJavaElement().getResource();</span>
+
+<span class="nc bnc" id="L86" title="All 6 branches missed.">			if (resource == null || !resource.exists() || !(resource instanceof IFile)) {</span>
+<span class="nc" id="L87">				return;</span>
+			}
+
+			// Iterate over all resources in the project
+<span class="nc" id="L91">			IProject project = resource.getProject();</span>
+<span class="nc" id="L92">			project.accept(myResource -&gt; {</span>
+<span class="nc bnc" id="L93" title="All 4 branches missed.">				if (myResource.getType() == IResource.FILE &amp;&amp; myResource instanceof IFile) {</span>
+<span class="nc" id="L94">					IFile file = (IFile) myResource;</span>
+					
+					// Filter to PDE-relevant files only
+<span class="nc bnc" id="L97" title="All 2 branches missed.">					if (isPDERelevantFile(file)) {</span>
+						try {
+<span class="nc" id="L99">							processFile(fixcore, file, operations, compilationUnit);</span>
+<span class="nc" id="L100">						} catch (Exception e) {</span>
+<span class="nc" id="L101">							LOG.log(new Status(IStatus.ERROR, PLUGIN_ID, </span>
+<span class="nc" id="L102">								&quot;Error processing file: &quot; + file.getName(), e));</span>
+						}
+					}
+				}
+<span class="nc" id="L106">				return true; // Continue iteration</span>
+			});
+
+<span class="nc" id="L109">		} catch (CoreException e) {</span>
+<span class="nc" id="L110">			LOG.log(new Status(IStatus.ERROR, PLUGIN_ID, </span>
+<span class="nc" id="L111">				&quot;Error during XML cleanup&quot;, e));</span>
+		}
+<span class="nc" id="L113">	}</span>
+	
+	/**
+	 * Check if a file is PDE-relevant based on name, extension, and location.
+	 * 
+	 * @param file the file to check
+	 * @return true if the file should be processed
+	 */
+	private boolean isPDERelevantFile(IFile file) {
+<span class="nc" id="L122">		String fileName = file.getName();</span>
+<span class="nc" id="L123">		String extension = file.getFileExtension();</span>
+		
+		// Check if it's a known PDE file name
+<span class="nc bnc" id="L126" title="All 2 branches missed.">		if (PDE_FILE_NAMES.contains(fileName)) {</span>
+			// Must be in project root, OSGI-INF, or META-INF
+<span class="nc" id="L128">			return isInPDELocation(file);</span>
+		}
+		
+		// Check if it's a PDE extension (exsd, xsd)
+<span class="nc bnc" id="L132" title="All 4 branches missed.">		if (extension != null &amp;&amp; PDE_EXTENSIONS.contains(extension)) {</span>
+<span class="nc" id="L133">			return isInPDELocation(file);</span>
+		}
+		
+<span class="nc" id="L136">		return false;</span>
+	}
+	
+	/**
+	 * Check if file is in a PDE-typical location.
+	 * 
+	 * @param file the file to check
+	 * @return true if in root, OSGI-INF, or META-INF
+	 */
+	private boolean isInPDELocation(IFile file) {
+<span class="nc" id="L146">		IResource parent = file.getParent();</span>
+		
+		// Check if in project root
+<span class="nc bnc" id="L149" title="All 2 branches missed.">		if (parent instanceof IProject) {</span>
+<span class="nc" id="L150">			return true;</span>
+		}
+		
+		// Check if in OSGI-INF or META-INF
+<span class="nc bnc" id="L154" title="All 2 branches missed.">		if (parent instanceof IFolder) {</span>
+<span class="nc" id="L155">			String folderName = parent.getName();</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">			if (PDE_DIRECTORIES.contains(folderName)) {</span>
+<span class="nc" id="L157">				return true;</span>
+			}
+			
+			// Also check parent's parent (for nested structures)
+<span class="nc" id="L161">			IResource grandParent = parent.getParent();</span>
+<span class="nc bnc" id="L162" title="All 2 branches missed.">			if (grandParent instanceof IFolder) {</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">				if (PDE_DIRECTORIES.contains(grandParent.getName())) {</span>
+<span class="nc" id="L164">					return true;</span>
+				}
+			}
+		}
+		
+<span class="nc" id="L169">		return false;</span>
+	}
+
+	/**
+	 * Process a single XML file for cleanup.
+	 * 
+	 * @param fixcore the cleanup fix core
+	 * @param file the file to process
+	 * @param operations the set of operations to add to
+	 * @param compilationUnit the compilation unit for creating operations
+	 * @throws Exception if processing fails
+	 */
+	private void processFile(XMLCleanUpFixCore fixcore, IFile file, 
+			Set&lt;CompilationUnitRewriteOperation&gt; operations, CompilationUnit compilationUnit) 
+			throws Exception {
+		
+		// Check if file was already processed
+<span class="nc" id="L186">		Path filePath = file.getLocation().toFile().toPath();</span>
+<span class="nc bnc" id="L187" title="All 2 branches missed.">		if (processedFiles.contains(filePath)) {</span>
+<span class="nc" id="L188">			return;</span>
+		}
+
+		// Read original content
+		String originalContent;
+<span class="nc" id="L193">		try (InputStream is = file.getContents()) {</span>
+<span class="nc" id="L194">			originalContent = new String(is.readAllBytes(), StandardCharsets.UTF_8);</span>
+		}
+
+		// Transform the file
+<span class="nc" id="L198">		String transformedContent = SchemaTransformationUtils.transform(filePath, enableIndent);</span>
+
+		// Only create operation if content actually changed
+<span class="nc bnc" id="L201" title="All 2 branches missed.">		if (!originalContent.equals(transformedContent)) {</span>
+<span class="nc" id="L202">			XMLCandidateHit hit = new XMLCandidateHit(file, originalContent);</span>
+<span class="nc" id="L203">			hit.transformedContent = transformedContent;</span>
+			
+			// Use the compilation unit as a placeholder for the operation
+			// This is required by the Eclipse cleanup framework
+<span class="nc" id="L207">			hit.whileStatement = compilationUnit;</span>
+			
+<span class="nc" id="L209">			operations.add(fixcore.rewrite(hit));</span>
+			
+			// Mark file as processed
+<span class="nc" id="L212">			processedFiles.add(filePath);</span>
+			
+<span class="nc" id="L214">			LOG.log(new Status(IStatus.INFO, PLUGIN_ID,</span>
+<span class="nc" id="L215">				&quot;Queued transformation for: &quot; + file.getName()));</span>
+		}
+<span class="nc" id="L217">	}</span>
+
+	@Override
+	public void rewrite(XMLCleanUpFixCore upp, final XMLCandidateHit hit,
+			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
+		
+<span class="nc bnc" id="L223" title="All 4 branches missed.">		if (hit.file == null || hit.transformedContent == null) {</span>
+<span class="nc" id="L224">			LOG.log(new Status(IStatus.WARNING, PLUGIN_ID,</span>
+<span class="nc" id="L225">				&quot;Invalid XMLCandidateHit: missing file or transformed content&quot;));</span>
+<span class="nc" id="L226">			return;</span>
+		}
+		
+		try {
+			// Update file contents using Eclipse workspace API
+<span class="nc" id="L231">			byte[] newContent = hit.transformedContent.getBytes(StandardCharsets.UTF_8);</span>
+<span class="nc" id="L232">			ByteArrayInputStream inputStream = new ByteArrayInputStream(newContent);</span>
+			
+			// Update file (don't force, keep history)
+<span class="nc" id="L235">			hit.file.setContents(inputStream, IResource.KEEP_HISTORY, null);</span>
+			
+			// Refresh the resource to sync with filesystem
+<span class="nc" id="L238">			hit.file.refreshLocal(IResource.DEPTH_ZERO, null);</span>
+			
+<span class="nc" id="L240">			LOG.log(new Status(IStatus.INFO, PLUGIN_ID,</span>
+<span class="nc" id="L241">				&quot;Applied transformation to: &quot; + hit.file.getName()));</span>
+			
+<span class="nc" id="L243">		} catch (CoreException e) {</span>
+<span class="nc" id="L244">			LOG.log(new Status(IStatus.ERROR, PLUGIN_ID,</span>
+<span class="nc" id="L245">				&quot;Failed to write transformed content to: &quot; + hit.file.getName(), e));</span>
+		}
+<span class="nc" id="L247">	}</span>
+
+	@Override
+	public String getPreview(boolean afterRefactoring) {
+<span class="nc bnc" id="L251" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L252">			return &quot;&quot;&quot;</span>
+				/* XML Cleanup - After:
+				 * - Empty elements collapsed to self-closing
+				 * - Whitespace optimized
+				 */
+				// &lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+				// &lt;plugin&gt;
+				// &lt;extension point=&quot;org.eclipse.ui.views&quot;/&gt;
+				// &lt;view id=&quot;my.view&quot; name=&quot;My View&quot;/&gt;
+				// &lt;/plugin&gt;
+				&quot;&quot;&quot;; //$NON-NLS-1$
+		}
+<span class="nc" id="L264">		return &quot;&quot;&quot;</span>
+			/* XML Cleanup - Before:
+			 * - Empty elements with closing tags
+			 * - Extra whitespace
+			 */
+			// &lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+			// &lt;plugin&gt;
+			//     &lt;extension point=&quot;org.eclipse.ui.views&quot;&gt;
+			//     &lt;/extension&gt;
+			//     &lt;view id=&quot;my.view&quot; name=&quot;My View&quot;&gt;
+			//     &lt;/view&gt;
+			// &lt;/plugin&gt;
+			&quot;&quot;&quot;; //$NON-NLS-1$
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

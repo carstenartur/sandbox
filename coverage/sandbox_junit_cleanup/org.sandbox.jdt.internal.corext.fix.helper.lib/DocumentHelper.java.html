@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>DocumentHelper.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper.lib</a> &gt; <span class="el_source">DocumentHelper.java</span></div><h1>DocumentHelper.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper.lib;
+
+import org.eclipse.core.filebuffers.FileBuffers;
+import org.eclipse.core.filebuffers.ITextFileBuffer;
+import org.eclipse.core.filebuffers.ITextFileBufferManager;
+import org.eclipse.core.filebuffers.LocationKind;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.refactoring.CompilationUnitChange;
+import org.eclipse.jface.text.IDocument;
+import org.eclipse.text.edits.TextEdit;
+import org.eclipse.text.edits.TextEditGroup;
+
+/**
+ * Helper class for document-related operations during JUnit migration.
+ * Handles document access and compilation unit change creation.
+ */
+public final class DocumentHelper {
+
+	// Private constructor to prevent instantiation
+<span class="nc" id="L36">	private DocumentHelper() {</span>
+<span class="nc" id="L37">		throw new UnsupportedOperationException(&quot;Utility class&quot;);</span>
+	}
+
+	/**
+	 * Gets the document for a compilation unit.
+	 * Used to access the text buffer for AST rewrite operations.
+	 * 
+	 * @param compilationUnit the compilation unit
+	 * @return the document associated with the compilation unit
+	 */
+	public static IDocument getDocumentForCompilationUnit(CompilationUnit compilationUnit) {
+<span class="pc bpc" id="L48" title="2 of 4 branches missed.">		if (compilationUnit == null || compilationUnit.getJavaElement() == null) {</span>
+<span class="nc" id="L49">			throw new IllegalArgumentException(&quot;Invalid CompilationUnit or missing JavaElement.&quot;);</span>
+		}
+
+<span class="fc" id="L52">		ICompilationUnit icu = (ICompilationUnit) compilationUnit.getJavaElement();</span>
+<span class="fc" id="L53">		ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();</span>
+
+		try {
+			// Connect to the file corresponding to the CompilationUnit
+<span class="fc" id="L57">			bufferManager.connect(icu.getPath(), LocationKind.IFILE, null);</span>
+
+			// Get the associated TextFileBuffer
+<span class="fc" id="L60">			ITextFileBuffer textFileBuffer = bufferManager.getTextFileBuffer(icu.getPath(), LocationKind.IFILE);</span>
+
+<span class="pc bpc" id="L62" title="1 of 2 branches missed.">			if (textFileBuffer == null) {</span>
+<span class="nc" id="L63">				throw new RuntimeException(&quot;No text file buffer found for the provided compilation unit.&quot;);</span>
+			}
+
+			// Return the document
+<span class="fc" id="L67">			return textFileBuffer.getDocument();</span>
+<span class="nc" id="L68">		} catch (CoreException e) {</span>
+<span class="nc" id="L69">			throw new RuntimeException(&quot;Failed to connect to text file buffer: &quot; + e.getMessage(), e);</span>
+		} finally {
+			try {
+				// Disconnect from the buffer
+<span class="fc" id="L73">				bufferManager.disconnect(icu.getPath(), LocationKind.IFILE, null);</span>
+<span class="pc" id="L74">			} catch (CoreException e) {</span>
+				// Disconnection failed, wrap and re-throw
+<span class="nc" id="L76">				throw new RuntimeException(&quot;Failed to disconnect from text file buffer: &quot; + e.getMessage(), e);</span>
+			}
+		}
+	}
+
+	/**
+	 * Creates a compilation unit change for the given AST rewrite.
+	 * Used when creating changes in separate compilation units during refactoring.
+	 * 
+	 * @param compilationUnit the compilation unit being modified
+	 * @param rewrite the AST rewrite to apply
+	 * @return the compilation unit change
+	 */
+	public static CompilationUnitChange createChangeForRewrite(CompilationUnit compilationUnit, ASTRewrite rewrite) {
+		try {
+			// Access the IDocument of the CompilationUnit
+<span class="fc" id="L92">			IDocument document = getDocumentForCompilationUnit(compilationUnit);</span>
+
+			// Describe changes (but don't apply them)
+<span class="fc" id="L95">			TextEdit edits = rewrite.rewriteAST(document, null);</span>
+
+			// Create a TextChange object
+<span class="fc" id="L98">			CompilationUnitChange change = new CompilationUnitChange(&quot;JUnit Migration&quot;,</span>
+<span class="fc" id="L99">					(ICompilationUnit) compilationUnit.getJavaElement());</span>
+<span class="fc" id="L100">			change.setEdit(edits);</span>
+
+			// Optional: Add comments or markers
+<span class="fc" id="L103">			change.addTextEditGroup(new TextEditGroup(&quot;Migrate JUnit&quot;, edits));</span>
+
+<span class="fc" id="L105">			return change;</span>
+
+<span class="nc" id="L107">		} catch (IllegalArgumentException e) {</span>
+<span class="nc" id="L108">			throw new RuntimeException(&quot;Invalid argument in change for rewrite: &quot; + e.getMessage(), e);</span>
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

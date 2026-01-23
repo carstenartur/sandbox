@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>UseFunctionalCallFixCore.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_functional_converter</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix</a> &gt; <span class="el_source">UseFunctionalCallFixCore.java</span></div><h1>UseFunctionalCallFixCore.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2021 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix;
+
+import java.util.Set;
+
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.rewrite.TargetSourceRangeComputer;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.jdt.internal.corext.util.Messages;
+import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.corext.fix.helper.AbstractFunctionalCall;
+import org.sandbox.jdt.internal.corext.fix.helper.LoopToFunctional;
+import org.sandbox.jdt.internal.corext.fix.helper.LoopToFunctionalV2;
+import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
+
+public enum UseFunctionalCallFixCore {
+
+<span class="fc" id="L35">	LOOP(new LoopToFunctional()),</span>
+<span class="fc" id="L36">	// V2 - ULR-based implementation running in parallel to LOOP (V1).</span>
+	// Phase 1 uses a delegation pattern: LOOP_V2 delegates to the existing implementation
+	// to maintain feature parity while introducing the new ULR infrastructure.
+	// Roadmap for future ULR phases:
+	//   - Phase 2: Gradually switch individual loop patterns to ULR-native implementations.
+	//   - Phase 3: Make ULR the primary implementation and retire legacy paths once stable.
+	// Documentation note (per coding guidelines):
+	// sandbox_functional_converter/ARCHITECTURE.md and sandbox_functional_converter/TODO.md
+	// have been reviewed and updated to describe:
+	//   (1) the V2 parallel implementation strategy,
+	//   (2) the Phase 1 delegation pattern,
+	//   (3) the roadmap for future ULR implementation phases.
+	// Related issues: https://github.com/carstenartur/sandbox/issues/450
+	//                 https://github.com/carstenartur/sandbox/issues/453
+<span class="fc" id="L50">	LOOP_V2(new LoopToFunctionalV2());</span>
+
+	AbstractFunctionalCall&lt;ASTNode&gt; functionalcall;
+
+	@SuppressWarnings(&quot;unchecked&quot;)
+<span class="fc" id="L55">	UseFunctionalCallFixCore(AbstractFunctionalCall&lt;? extends ASTNode&gt; explicitencoding) {</span>
+<span class="fc" id="L56">		this.functionalcall=(AbstractFunctionalCall&lt;ASTNode&gt;) explicitencoding;</span>
+<span class="fc" id="L57">	}</span>
+
+	public String getPreview(boolean i) {
+<span class="nc" id="L60">		return functionalcall.getPreview(i);</span>
+	}
+	/**
+	 * Compute set of CompilationUnitRewriteOperation to refactor supported situations using default encoding to make use of explicit calls
+	 *
+	 * @param compilationUnit unit to search in
+	 * @param operations set of all CompilationUnitRewriteOperations created already
+	 * @param nodesprocessed list to remember nodes already processed
+	 */
+	public void findOperations(final CompilationUnit compilationUnit,final Set&lt;CompilationUnitRewriteOperation&gt; operations,final Set&lt;ASTNode&gt; nodesprocessed) {
+<span class="fc" id="L70">		functionalcall.find(this, compilationUnit, operations, nodesprocessed);</span>
+<span class="fc" id="L71">	}</span>
+
+	public CompilationUnitRewriteOperation rewrite(final ASTNode visited) {
+<span class="fc" id="L74">		return new CompilationUnitRewriteOperation() {</span>
+			@Override
+			public void rewriteAST(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel) throws CoreException {
+<span class="fc" id="L77">				TextEditGroup group= createTextEditGroup(Messages.format(MultiFixMessages.FunctionalCallCleanUp_description,new Object[] {UseFunctionalCallFixCore.this.toString()}), cuRewrite);</span>
+<span class="fc" id="L78">				cuRewrite.getASTRewrite().setTargetSourceRangeComputer(computer);</span>
+<span class="fc" id="L79">				functionalcall.rewrite(UseFunctionalCallFixCore.this, visited, cuRewrite, group);</span>
+<span class="fc" id="L80">			}</span>
+		};
+	}
+
+<span class="fc" id="L84">	final static TargetSourceRangeComputer computer= new TargetSourceRangeComputer() {</span>
+		@Override
+		public SourceRange computeSourceRange(final ASTNode nodeWithComment) {
+<span class="fc bfc" id="L87" title="All 2 branches covered.">			if (Boolean.TRUE.equals(nodeWithComment.getProperty(ASTNodes.UNTOUCH_COMMENT))) {</span>
+<span class="fc" id="L88">				return new SourceRange(nodeWithComment.getStartPosition(), nodeWithComment.getLength());</span>
+			}
+<span class="fc" id="L90">			return super.computeSourceRange(nodeWithComment);</span>
+		}
+<span class="fc" id="L92">	};</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ExsdMarkerResolutionGenerator.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_xml_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">ExsdMarkerResolutionGenerator.java</span></div><h1>ExsdMarkerResolutionGenerator.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2021 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import org.eclipse.core.resources.IMarker;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.ILog;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.ui.IMarkerResolution;
+import org.eclipse.ui.IMarkerResolutionGenerator2;
+
+/**
+ * Marker resolution generator for EXSD cleanup markers.
+ */
+<span class="nc" id="L28">public class ExsdMarkerResolutionGenerator implements IMarkerResolutionGenerator2 {</span>
+
+<span class="nc" id="L30">	private static final ILog LOG = Platform.getLog(ExsdMarkerResolutionGenerator.class);</span>
+<span class="nc" id="L31">	private static final String PLUGIN_ID = &quot;org.sandbox.jdt.internal.corext.fix.helper&quot;;</span>
+	
+	@Override
+	public boolean hasResolutions(IMarker marker) {
+		try {
+<span class="nc" id="L36">			return &quot;my.exsd.cleanup.marker&quot;.equals(marker.getType());</span>
+<span class="nc" id="L37">		} catch (CoreException e) {</span>
+<span class="nc" id="L38">			LOG.log(new Status(IStatus.ERROR, PLUGIN_ID,</span>
+<span class="nc" id="L39">				&quot;Error checking marker type&quot;, e));</span>
+		}
+<span class="nc" id="L41">		return false;</span>
+	}
+
+	@Override
+	public IMarkerResolution[] getResolutions(IMarker marker) {
+<span class="nc" id="L46">		return new IMarkerResolution[] {</span>
+<span class="nc" id="L47">			new ReplaceSpacesWithTabsQuickFix()</span>
+		};
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

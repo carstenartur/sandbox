@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>PrintStreamExplicitEncoding.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_encoding_quickfix</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">PrintStreamExplicitEncoding.java</span></div><h1>PrintStreamExplicitEncoding.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2021 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import java.io.BufferedWriter;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintStream;
+import java.util.List;
+import java.util.Set;
+
+import org.eclipse.text.edits.TextEditGroup;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+
+import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+
+/**
+ * Change
+ *
+ * Find: Stream fw=new PrintStream(&quot;file.txt&quot;, &quot;UTF-8&quot;)
+ *
+ * Rewrite: Stream fw=new PrintStream(&quot;file.txt&quot;, StandardCharsets.UTF_8)
+ *
+ * Find: Stream fw=new PrintStream(new File(&quot;file.txt&quot;), &quot;UTF-8&quot;)
+ *
+ * Rewrite: Stream fw=new PrintStream(new File(&quot;file.txt&quot;), StandardCharsets.UTF_8)
+ *
+ * Find: Stream fw=new PrintStream(new java.io.OutputStream(), boolean, &quot;UTF-8&quot;)
+ *
+ * Rewrite: Stream fw=new PrintStream(new java.io.OutputStream(), boolean, StandardCharsets.UTF_8)
+ *
+ */
+<span class="fc" id="L55">public class PrintStreamExplicitEncoding extends AbstractExplicitEncoding&lt;ClassInstanceCreation&gt; {</span>
+
+	@Override
+	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesprocessed, ChangeBehavior cb) {
+<span class="fc" id="L59">		ReferenceHolder&lt;ASTNode, Object&gt; datah= new ReferenceHolder&lt;&gt;();</span>
+<span class="pc" id="L60">		HelperVisitor.callClassInstanceCreationVisitor(PrintStream.class, compilationUnit, datah, nodesprocessed, (visited, holder) -&gt; processFoundNode(fixcore, operations, cb, visited, holder));</span>
+<span class="fc" id="L61">	}</span>
+
+	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore, Set&lt;CompilationUnitRewriteOperation&gt; operations,
+			ChangeBehavior cb, ClassInstanceCreation visited,
+			ReferenceHolder&lt;ASTNode, Object&gt; holder) {
+<span class="nc" id="L66">		List&lt;ASTNode&gt; arguments= visited.arguments();</span>
+<span class="nc bnc" id="L67" title="All 4 branches missed.">		switch (arguments.size()) {</span>
+			case 1:
+<span class="nc" id="L69">				break;</span>
+			case 2:
+<span class="nc bnc" id="L71" title="All 2 branches missed.">				if (!(arguments.get(1) instanceof StringLiteral)) {</span>
+<span class="nc" id="L72">					return false;</span>
+				}
+<span class="nc" id="L74">				StringLiteral argstring3= (StringLiteral) arguments.get(1);</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">				if (!ENCODINGS.contains(argstring3.getLiteralValue())) {</span>
+<span class="nc" id="L76">					return false;</span>
+				}
+<span class="nc" id="L78">				holder.put(argstring3, ENCODING_MAP.get(argstring3.getLiteralValue()));</span>
+<span class="nc" id="L79">				break;</span>
+			case 3:
+<span class="nc bnc" id="L81" title="All 2 branches missed.">				if (!(arguments.get(2) instanceof StringLiteral)) {</span>
+<span class="nc" id="L82">					return false;</span>
+				}
+<span class="nc" id="L84">				StringLiteral argstring4= (StringLiteral) arguments.get(2);</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">				if (!ENCODINGS.contains(argstring4.getLiteralValue())) {</span>
+<span class="nc" id="L86">					return false;</span>
+				}
+<span class="nc" id="L88">				holder.put(argstring4, ENCODING_MAP.get(argstring4.getLiteralValue()));</span>
+<span class="nc" id="L89">				break;</span>
+			default:
+<span class="nc" id="L91">				return false;</span>
+		}
+<span class="nc" id="L93">		operations.add(fixcore.rewrite(visited, cb, holder));</span>
+<span class="nc" id="L94">		return false;</span>
+	}
+
+	@Override
+	public void rewrite(UseExplicitEncodingFixCore upp, final ClassInstanceCreation visited, final CompilationUnitRewrite cuRewrite,
+			TextEditGroup group, ChangeBehavior cb, ReferenceHolder&lt;ASTNode, Object&gt; data) {
+<span class="nc" id="L100">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
+<span class="nc" id="L101">		AST ast= cuRewrite.getRoot().getAST();</span>
+<span class="nc" id="L102">		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, (String) data.get(visited),getCharsetConstants());</span>
+		/**
+		 * new FileOutputStream(&lt;filename&gt;)
+		 */
+<span class="nc" id="L106">		ClassInstanceCreation fosclassInstance= ast.newClassInstanceCreation();</span>
+<span class="nc" id="L107">		fosclassInstance.setType(ast.newSimpleType(addImport(FileOutputStream.class.getCanonicalName(), cuRewrite, ast)));</span>
+<span class="nc" id="L108">		fosclassInstance.arguments().add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression((ASTNode) visited.arguments().get(0))));</span>
+		/**
+		 * new OutputStreamWriter(new FileOutputStream(&lt;filename&gt;))
+		 */
+<span class="nc" id="L112">		ClassInstanceCreation oswclassInstance= ast.newClassInstanceCreation();</span>
+<span class="nc" id="L113">		oswclassInstance.setType(ast.newSimpleType(addImport(OutputStreamWriter.class.getCanonicalName(), cuRewrite, ast)));</span>
+<span class="nc" id="L114">		oswclassInstance.arguments().add(fosclassInstance);</span>
+<span class="nc" id="L115">		oswclassInstance.arguments().add(callToCharsetDefaultCharset);</span>
+		/**
+		 * new BufferedWriter(new OutputStreamWriter(new FileOutputStream(&lt;filename&gt;)))
+		 */
+<span class="nc" id="L119">		ClassInstanceCreation bwclassInstance= ast.newClassInstanceCreation();</span>
+<span class="nc" id="L120">		bwclassInstance.setType(ast.newSimpleType(addImport(BufferedWriter.class.getCanonicalName(), cuRewrite, ast)));</span>
+<span class="nc" id="L121">		bwclassInstance.arguments().add(oswclassInstance);</span>
+
+<span class="nc" id="L123">		ASTNodes.replaceButKeepComment(rewrite, visited, bwclassInstance, group);</span>
+<span class="nc" id="L124">	}</span>
+
+	@Override
+	public String getPreview(boolean afterRefactoring, ChangeBehavior cb) {
+<span class="nc bnc" id="L128" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L129">			return &quot;Stream w=new PrintStream(\&quot;out.txt\&quot;,&quot; + cb.computeCharsetforPreview() + &quot;);\n&quot; + //$NON-NLS-1$ //$NON-NLS-2$</span>
+					&quot;Stream w=new PrintStream(\&quot;out.txt\&quot;,StandardCharsets.UTF_8);\n&quot; + //$NON-NLS-1$
+					&quot;Stream w=new PrintStream(new File(\&quot;out.txt\&quot;),StandardCharsets.UTF_8);\n&quot;; //$NON-NLS-1$
+		}
+<span class="nc" id="L133">		return &quot;&quot;&quot;</span>
+				Stream w=new PrintStream(&quot;out.txt&quot;);
+				Stream w=new PrintStream(&quot;out.txt&quot;,&quot;UTF-8&quot;);
+				Stream w=new PrintStream(new File(&quot;out.txt&quot;),&quot;UTF-8&quot;);
+				&quot;&quot;&quot;; //$NON-NLS-1$
+	}
+
+	@Override
+	public String toString() {
+<span class="nc" id="L142">		return &quot;new PrintStream(\&quot;out.txt\&quot;)&quot;; //$NON-NLS-1$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

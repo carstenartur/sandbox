@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ChannelsNewReaderExplicitEncoding.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_encoding_quickfix</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">ChannelsNewReaderExplicitEncoding.java</span></div><h1>ChannelsNewReaderExplicitEncoding.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2021 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import static org.sandbox.jdt.internal.common.LibStandardNames.METHOD_NEW_READER;
+
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
+import java.util.List;
+import java.util.Set;
+
+import org.eclipse.text.edits.TextEditGroup;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+
+import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.eclipse.jdt.internal.core.manipulation.JavaManipulationPlugin;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
+
+/**
+ * Java 10
+ *
+ * Change
+ *
+ * Find: Reader r=Channels.newReader(ch,&quot;UTF-8&quot;)
+ *
+ * Rewrite: Reader r=Channels.newReader(ch,StandardCharsets.UTF_8)
+ *
+ * Find: Reader r5 = Channels.newReader(ch, &quot;ISO-8859-1&quot;, 0, 1024)
+ *
+ * Rewrite: Reader r5 = Channels.newReader(ch, StandardCharsets.ISO_8859_1, 0, 1024)
+ *
+ *
+ *
+ */
+<span class="fc" id="L60">public class ChannelsNewReaderExplicitEncoding extends AbstractExplicitEncoding&lt;MethodInvocation&gt; {</span>
+
+	@Override
+	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesprocessed, ChangeBehavior cb) {
+<span class="fc bfc" id="L64" title="All 2 branches covered.">		if (!JavaModelUtil.is10OrHigher(compilationUnit.getJavaElement().getJavaProject())) {</span>
+			/**
+			 * For Java 9 and older just do nothing
+			 */
+<span class="fc" id="L68">			return;</span>
+		}
+<span class="fc" id="L70">		ReferenceHolder&lt;ASTNode, Object&gt; datah= new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L71">		HelperVisitor.callMethodInvocationVisitor(Channels.class, METHOD_NEW_READER, compilationUnit, datah, nodesprocessed,</span>
+<span class="fc" id="L72">				(visited, holder) -&gt; processFoundNode(fixcore, operations, cb, visited, holder));</span>
+<span class="fc" id="L73">	}</span>
+
+	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore,
+			Set&lt;CompilationUnitRewriteOperation&gt; operations, ChangeBehavior cb,
+			MethodInvocation visited, ReferenceHolder&lt;ASTNode, Object&gt; holder) {
+<span class="fc" id="L78">		List&lt;ASTNode&gt; arguments= visited.arguments();</span>
+<span class="fc" id="L79">		if (ASTNodes.usesGivenSignature(visited, Channels.class.getCanonicalName(), METHOD_NEW_READER,</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">				ReadableByteChannel.class.getCanonicalName(), String.class.getCanonicalName())) {</span>
+
+<span class="fc" id="L82">			ASTNode encodingArg= arguments.get(1);</span>
+
+<span class="fc" id="L84">			String encodingValue= null;</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">			if (encodingArg instanceof StringLiteral) {</span>
+<span class="fc" id="L86">				encodingValue= ((StringLiteral) encodingArg).getLiteralValue().toUpperCase(java.util.Locale.ROOT);</span>
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">			} else if (encodingArg instanceof SimpleName) {</span>
+<span class="fc" id="L88">				encodingValue= findVariableValue((SimpleName) encodingArg, visited);</span>
+			}
+
+<span class="fc bfc" id="L91" title="All 4 branches covered.">			if (encodingValue != null &amp;&amp; ENCODINGS.contains(encodingValue)) {</span>
+<span class="fc" id="L92">				NodeData nd= new NodeData(true, encodingArg, ENCODING_MAP.get(encodingValue));</span>
+<span class="fc" id="L93">				holder.put(visited, nd);</span>
+<span class="fc" id="L94">				operations.add(fixcore.rewrite(visited, cb, holder));</span>
+<span class="fc" id="L95">				return false;</span>
+			}
+		}
+<span class="fc" id="L98">		return false;</span>
+	}
+
+	@Override
+	public void rewrite(UseExplicitEncodingFixCore upp, final MethodInvocation visited, final CompilationUnitRewrite cuRewrite,
+			TextEditGroup group, ChangeBehavior cb, ReferenceHolder&lt;ASTNode, Object&gt; data) {
+<span class="fc" id="L104">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L105">		AST ast= cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L106">		ImportRewrite importRewriter= cuRewrite.getImportRewrite();</span>
+<span class="fc" id="L107">		NodeData nodedata= (NodeData) data.get(visited);</span>
+<span class="fc" id="L108">		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding(),getCharsetConstants());</span>
+		/**
+		 * Add Charset.defaultCharset() as second (last) parameter
+		 */
+<span class="fc" id="L112">		ListRewrite listRewrite= rewrite.getListRewrite(visited, MethodInvocation.ARGUMENTS_PROPERTY);</span>
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">		if (nodedata.replace()) {</span>
+			try {
+<span class="fc" id="L115">				ASTNodes.replaceAndRemoveNLS(rewrite, nodedata.visited(), callToCharsetDefaultCharset, group, cuRewrite);</span>
+<span class="pc" id="L116">			} catch (CoreException e) {</span>
+<span class="nc" id="L117">				JavaManipulationPlugin.log(e); // should never happen</span>
+			}
+//			listRewrite.replace(nodedata.visited(), callToCharsetDefaultCharset, group);
+//			removeNLSComment(cuRewrite, visited, group);
+<span class="nc" id="L121">		} else {</span>
+<span class="nc" id="L122">			listRewrite.insertLast(callToCharsetDefaultCharset, group);</span>
+		}
+<span class="fc" id="L124">		removeUnsupportedEncodingException(visited, group, rewrite, importRewriter);</span>
+<span class="fc" id="L125">	}</span>
+
+	@Override
+	public String getPreview(boolean afterRefactoring, ChangeBehavior cb) {
+<span class="nc bnc" id="L129" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L130">			return &quot;Reader r=Channels.newReader(ch,StandardCharsets.UTF_8);\n&quot;; //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L132">		return &quot;Reader r=Channels.newReader(ch,\&quot;UTF-8\&quot;);\n&quot;; //$NON-NLS-1$</span>
+	}
+
+	@Override
+	public String toString() {
+<span class="fc" id="L137">		return &quot;Channels.newReader(ch,StandardCharsets.UTF_8)&quot;; //$NON-NLS-1$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

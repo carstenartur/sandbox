@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ASTNavigationUtils.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.util</a> &gt; <span class="el_source">ASTNavigationUtils.java</span></div><h1>ASTNavigationUtils.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.util;
+
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
+import org.eclipse.jdt.core.dom.AnnotationTypeDeclaration;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.EnumDeclaration;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+
+/**
+ * Utility class for navigating and finding nodes in the AST tree.
+ * Provides common operations for locating type declarations, compilation units,
+ * and other AST elements needed during JUnit migration.
+ */
+public final class ASTNavigationUtils {
+
+	private ASTNavigationUtils() {
+		// Utility class - prevent instantiation
+	}
+
+	/**
+	 * Finds the CompilationUnit that contains the given AST node.
+	 * 
+	 * @param node the AST node to start from
+	 * @return the containing CompilationUnit, or null if not found
+	 */
+	public static CompilationUnit findCompilationUnit(ASTNode node) {
+<span class="fc" id="L49">		return ASTNodes.getTypedAncestor(node, CompilationUnit.class);</span>
+	}
+
+	/**
+	 * Gets the parent TypeDeclaration for the given AST node.
+	 * 
+	 * @param node the AST node to start from
+	 * @return the enclosing TypeDeclaration, or null if none found
+	 */
+	public static TypeDeclaration getParentTypeDeclaration(ASTNode node) {
+<span class="fc" id="L59">		return ASTNodes.getTypedAncestor(node, TypeDeclaration.class);</span>
+	}
+
+	/**
+	 * Finds the enclosing TypeDeclaration for the given AST node.
+	 * This is an alias for {@link #getParentTypeDeclaration(ASTNode)}.
+	 * 
+	 * @param node the AST node to start from
+	 * @return the enclosing TypeDeclaration, or null if not found
+	 */
+	public static TypeDeclaration findEnclosingTypeDeclaration(ASTNode node) {
+<span class="fc" id="L70">		return getParentTypeDeclaration(node);</span>
+	}
+
+	/**
+	 * Finds a type declaration by its fully qualified name within a Java project.
+	 * 
+	 * @param javaProject the Java project to search in
+	 * @param fullyQualifiedTypeName the fully qualified type name
+	 * @return the TypeDeclaration if found, or null otherwise
+	 * @throws RuntimeException if there is an error accessing the Java model
+	 */
+	public static TypeDeclaration findTypeDeclaration(IJavaProject javaProject, String fullyQualifiedTypeName) {
+		try {
+<span class="fc" id="L83">			IType type = javaProject.findType(fullyQualifiedTypeName);</span>
+<span class="pc bpc" id="L84" title="2 of 4 branches missed.">			if (type != null &amp;&amp; type.exists()) {</span>
+<span class="fc" id="L85">				CompilationUnit unit = parseCompilationUnit(type.getCompilationUnit());</span>
+<span class="fc" id="L86">				return findTypeDeclarationInCompilationUnit(unit, fullyQualifiedTypeName);</span>
+			}
+<span class="nc" id="L88">		} catch (JavaModelException e) {</span>
+<span class="nc" id="L89">			throw new RuntimeException(&quot;Failed to find type declaration for: &quot; + fullyQualifiedTypeName, e); //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L91">		return null;</span>
+	}
+
+	/**
+	 * Finds a type declaration within a compilation unit by name.
+	 * 
+	 * @param unit the compilation unit to search
+	 * @param fullyQualifiedTypeName the fully qualified type name
+	 * @return the TypeDeclaration if found, or null otherwise
+	 */
+	public static TypeDeclaration findTypeDeclarationInCompilationUnit(CompilationUnit unit, String fullyQualifiedTypeName) {
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">		for (Object obj : unit.types()) {</span>
+<span class="pc bpc" id="L103" title="1 of 2 branches missed.">			if (obj instanceof TypeDeclaration) {</span>
+<span class="fc" id="L104">				TypeDeclaration typeDecl = (TypeDeclaration) obj;</span>
+<span class="fc" id="L105">				TypeDeclaration result = findTypeDeclarationInType(typeDecl, fullyQualifiedTypeName);</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">				if (result != null) {</span>
+<span class="fc" id="L107">					return result;</span>
+				}
+			}
+		}
+<span class="nc" id="L111">		return null;</span>
+	}
+
+	/**
+	 * Finds a type declaration by type binding within a compilation unit.
+	 * 
+	 * @param typeBinding the type binding to match
+	 * @param cu the compilation unit to search
+	 * @return the TypeDeclaration if found, or null otherwise
+	 */
+	public static TypeDeclaration findTypeDeclarationInCompilationUnit(ITypeBinding typeBinding, CompilationUnit cu) {
+<span class="fc" id="L122">		final TypeDeclaration[] result = { null };</span>
+
+<span class="fc" id="L124">		cu.accept(new ASTVisitor() {</span>
+			private boolean checkAndMatchBinding(AbstractTypeDeclaration node, ITypeBinding typeBinding) {
+<span class="fc" id="L126">				ITypeBinding binding = node.resolveBinding();</span>
+<span class="pc bpc" id="L127" title="1 of 4 branches missed.">				if (binding != null &amp;&amp; ASTNodes.areBindingsEqual(binding, typeBinding)) {</span>
+<span class="fc" id="L128">					result[0] = (TypeDeclaration) node;</span>
+<span class="fc" id="L129">					return false;</span>
+				}
+<span class="fc" id="L131">				return true;</span>
+			}
+
+			@Override
+			public boolean visit(AnnotationTypeDeclaration node) {
+<span class="nc" id="L136">				return checkAndMatchBinding(node, typeBinding);</span>
+			}
+
+			@Override
+			public boolean visit(EnumDeclaration node) {
+<span class="nc" id="L141">				return checkAndMatchBinding(node, typeBinding);</span>
+			}
+
+			@Override
+			public boolean visit(TypeDeclaration node) {
+<span class="fc" id="L146">				return checkAndMatchBinding(node, typeBinding);</span>
+			}
+		});
+
+<span class="fc" id="L150">		return result[0];</span>
+	}
+
+	/**
+	 * Finds a type declaration within the project for the given type binding.
+	 * 
+	 * @param typeBinding the type binding to find
+	 * @return the TypeDeclaration if found, or null otherwise
+	 */
+	public static TypeDeclaration findTypeDeclarationInProject(ITypeBinding typeBinding) {
+<span class="fc" id="L160">		IType type = (IType) typeBinding.getJavaElement();</span>
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">		return type != null ? findTypeDeclaration(type.getJavaProject(), type.getFullyQualifiedName()) : null;</span>
+	}
+
+	/**
+	 * Recursively searches for a type declaration within a type hierarchy.
+	 * 
+	 * @param typeDecl the type declaration to start from
+	 * @param qualifiedTypeName the qualified type name to find
+	 * @return the TypeDeclaration if found, or null otherwise
+	 */
+	public static TypeDeclaration findTypeDeclarationInType(TypeDeclaration typeDecl, String qualifiedTypeName) {
+<span class="fc bfc" id="L172" title="All 2 branches covered.">		if (getQualifiedName(typeDecl).equals(qualifiedTypeName)) {</span>
+<span class="fc" id="L173">			return typeDecl;</span>
+		}
+
+<span class="pc bpc" id="L176" title="1 of 2 branches missed.">		for (TypeDeclaration nestedType : typeDecl.getTypes()) {</span>
+<span class="fc" id="L177">			TypeDeclaration result = findTypeDeclarationInType(nestedType, qualifiedTypeName);</span>
+<span class="pc bpc" id="L178" title="1 of 2 branches missed.">			if (result != null) {</span>
+<span class="fc" id="L179">				return result;</span>
+			}
+		}
+<span class="nc" id="L182">		return null;</span>
+	}
+
+	/**
+	 * Finds the type declaration for a given type binding, searching first in the
+	 * compilation unit and then in the project.
+	 * 
+	 * @param typeBinding the type binding to find
+	 * @param cu the compilation unit to search first
+	 * @return the type declaration if found, or null otherwise
+	 */
+	public static ASTNode findTypeDeclarationForBinding(ITypeBinding typeBinding, CompilationUnit cu) {
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">		if (typeBinding == null)</span>
+<span class="nc" id="L195">			return null;</span>
+
+<span class="fc" id="L197">		TypeDeclaration typeDecl = findTypeDeclarationInCompilationUnit(typeBinding, cu);</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">		return typeDecl != null ? typeDecl : findTypeDeclarationInProject(typeBinding);</span>
+	}
+
+	/**
+	 * Determines the fully qualified name of a TypeDeclaration.
+	 * 
+	 * @param typeDecl the type declaration
+	 * @return the fully qualified name including package and nested class separators
+	 */
+	public static String getQualifiedName(TypeDeclaration typeDecl) {
+<span class="fc" id="L208">		StringBuilder qualifiedName = new StringBuilder(typeDecl.getName().getIdentifier());</span>
+<span class="fc" id="L209">		ASTNode parent = typeDecl.getParent();</span>
+
+		// Process nested classes
+<span class="fc bfc" id="L212" title="All 2 branches covered.">		while (parent instanceof TypeDeclaration) {</span>
+<span class="fc" id="L213">			TypeDeclaration parentType = (TypeDeclaration) parent;</span>
+<span class="fc" id="L214">			qualifiedName.insert(0, parentType.getName().getIdentifier() + &quot;$&quot;); // $ for nested classes //$NON-NLS-1$</span>
+<span class="fc" id="L215">			parent = parent.getParent();</span>
+		}
+
+		// Add package name
+<span class="fc" id="L219">		CompilationUnit compilationUnit = ASTNodes.getTypedAncestor(typeDecl, CompilationUnit.class);</span>
+<span class="pc bpc" id="L220" title="2 of 4 branches missed.">		if (compilationUnit != null &amp;&amp; compilationUnit.getPackage() != null) {</span>
+<span class="fc" id="L221">			String packageName = compilationUnit.getPackage().getName().getFullyQualifiedName();</span>
+<span class="fc" id="L222">			qualifiedName.insert(0, packageName + &quot;.&quot;); //$NON-NLS-1$</span>
+		}
+
+<span class="fc" id="L225">		return qualifiedName.toString();</span>
+	}
+
+	/**
+	 * Parses a compilation unit from an ICompilationUnit.
+	 * 
+	 * @param iCompilationUnit the compilation unit to parse
+	 * @return the parsed CompilationUnit
+	 */
+	public static CompilationUnit parseCompilationUnit(org.eclipse.jdt.core.ICompilationUnit iCompilationUnit) {
+<span class="fc" id="L235">		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L236">		parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
+<span class="fc" id="L237">		parser.setSource(iCompilationUnit);</span>
+<span class="fc" id="L238">		parser.setResolveBindings(true);</span>
+<span class="fc" id="L239">		return (CompilationUnit) parser.createAST(null);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ExternalResourceJUnitPlugin.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">ExternalResourceJUnitPlugin.java</span></div><h1>ExternalResourceJUnitPlugin.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2021 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
+
+/*-
+ * #%L
+ * Sandbox junit cleanup
+ * %%
+ * Copyright (C) 2024 hammer
+ * %%
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0.
+ * 
+ * This Source Code may also be made available under the following Secondary
+ * Licenses when the conditions for such availability set forth in the Eclipse
+ * Public License, v. 2.0 are satisfied: GNU General Public License, version 2
+ * with the GNU Classpath Exception which is
+ * available at https://www.gnu.org/software/classpath/license.html.
+ * 
+ * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+ * #L%
+ */
+
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
+
+/**
+ * Plugin to migrate JUnit 4 ExternalResource classes to JUnit 5 lifecycle callbacks.
+ * &lt;p&gt;
+ * Transforms classes that extend {@code org.junit.rules.ExternalResource} to implement
+ * JUnit 5 callback interfaces ({@code BeforeEachCallback}, {@code AfterEachCallback}).
+ * Renames lifecycle methods (before/after) to match JUnit 5 naming conventions.
+ * &lt;/p&gt;
+ */
+<span class="fc" id="L63">public class ExternalResourceJUnitPlugin extends AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; {</span>
+
+	@Override
+	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
+			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
+<span class="fc" id="L68">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder= new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L69">		HelperVisitor.callTypeDeclarationVisitor(ORG_JUNIT_RULES_EXTERNAL_RESOURCE, compilationUnit, dataHolder,</span>
+<span class="fc" id="L70">				nodesprocessed, (visited, aholder) -&gt; processFoundNode(fixcore, operations, visited, aholder,nodesprocessed));</span>
+<span class="fc" id="L71">	}</span>
+
+	/**
+	 * Processes a type declaration that extends ExternalResource.
+	 * Only processes types that either:
+	 * - Directly extend ExternalResource, or
+	 * - Indirectly extend ExternalResource AND have before()/after() lifecycle methods
+	 * 
+	 * @param fixcore the cleanup fix core
+	 * @param operations the set of operations to add to
+	 * @param node the type declaration found
+	 * @param dataHolder the reference holder for data
+	 * @param nodesprocessed set of already processed nodes
+	 * @return false to continue visiting
+	 */
+	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
+			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, TypeDeclaration node,
+			ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder, Set&lt;ASTNode&gt; nodesprocessed) {
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">		if (nodesprocessed.contains(node)) {</span>
+<span class="nc" id="L90">			return false;</span>
+		}
+		
+		// For indirect subclasses, only process if they have lifecycle methods
+<span class="fc bfc" id="L94" title="All 2 branches covered.">		if (!isDirectlyExtendingExternalResource(node.resolveBinding())) {</span>
+<span class="fc" id="L95">			boolean hasLifecycleMethod = false;</span>
+<span class="pc bfc" id="L96" title="All 2 branches covered.">			for (MethodDeclaration method : node.getMethods()) {</span>
+<span class="fc" id="L97">				String methodName = method.getName().getIdentifier();</span>
+<span class="pc bpc" id="L98" title="3 of 4 branches missed.">				if (METHOD_BEFORE.equals(methodName) || METHOD_AFTER.equals(methodName)) {</span>
+<span class="fc" id="L99">					hasLifecycleMethod = true;</span>
+<span class="fc" id="L100">					break;</span>
+				}
+			}
+<span class="fc bfc" id="L103" title="All 2 branches covered.">			if (!hasLifecycleMethod) {</span>
+<span class="fc" id="L104">				return false;</span>
+			}
+		}
+		
+<span class="fc" id="L108">		nodesprocessed.add(node);</span>
+<span class="fc" id="L109">		JunitHolder mh= new JunitHolder();</span>
+<span class="fc" id="L110">		mh.minv= node;</span>
+<span class="fc" id="L111">		dataHolder.put(dataHolder.size(), mh);</span>
+<span class="fc" id="L112">		operations.add(fixcore.rewrite(dataHolder));</span>
+<span class="fc" id="L113">		return false;</span>
+	}
+
+	@Override
+	protected
+	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+			JunitHolder junitHolder) {
+<span class="fc" id="L120">		TypeDeclaration node= junitHolder.getTypeDeclaration();</span>
+<span class="fc" id="L121">		modifyExternalResourceClass(node, null, false, rewriter, ast, group, importRewriter);</span>
+<span class="fc" id="L122">	}</span>
+	
+	@Override
+	public String getPreview(boolean afterRefactoring) {
+<span class="nc bnc" id="L126" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L127">			return &quot;&quot;&quot;</span>
+					class MyExternalResource implements BeforeEachCallback, AfterEachCallback {
+						@Override
+						public void beforeEach(ExtensionContext context) throws Exception {
+						}
+
+						@Override
+						public void afterEach(ExtensionContext context) {
+						}
+					}
+					&quot;&quot;&quot;; //$NON-NLS-1$
+		}
+<span class="nc" id="L139">		return &quot;&quot;&quot;</span>
+				class MyExternalResource extends ExternalResource {
+					@Override
+					protected void before() throws Throwable {
+					}
+
+					@Override
+					protected void after() {
+					}
+				}
+				&quot;&quot;&quot;; //$NON-NLS-1$
+	}
+
+	@Override
+	public String toString() {
+<span class="fc" id="L154">		return &quot;ExternalResource&quot;; //$NON-NLS-1$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

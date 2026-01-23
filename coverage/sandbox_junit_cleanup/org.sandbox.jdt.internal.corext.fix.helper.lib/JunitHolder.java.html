@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JunitHolder.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper.lib</a> &gt; <span class="el_source">JunitHolder.java</span></div><h1>JunitHolder.java</h1><pre class="source lang-java linenums">package org.sandbox.jdt.internal.corext.fix.helper.lib;
+
+/*-
+ * #%L
+ * Sandbox junit cleanup
+ * %%
+ * Copyright (C) 2024 hammer
+ * %%
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0.
+ * 
+ * This Source Code may also be made available under the following Secondary
+ * Licenses when the conditions for such availability set forth in the Eclipse
+ * Public License, v. 2.0 are satisfied: GNU General Public License, version 2
+ * with the GNU Classpath Exception which is
+ * available at https://www.gnu.org/software/classpath/license.html.
+ * 
+ * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+ * #L%
+ */
+
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+
+/**
+ * Data holder for JUnit migration operations.
+ * &lt;p&gt;
+ * This class stores information about AST nodes found during the find phase
+ * that need to be transformed during the rewrite phase of JUnit migration.
+ * Different plugins use this holder to pass different types of AST nodes
+ * (annotations, method invocations, field declarations, etc.) to the rewrite operation.
+ * &lt;/p&gt;
+ */
+<span class="fc" id="L41">public class JunitHolder {</span>
+	/** The main AST node to be transformed (can be Annotation, MethodInvocation, FieldDeclaration, TypeDeclaration, or ImportDeclaration) */
+	public ASTNode minv;
+	
+	/** Name or identifier associated with the node (e.g., annotation name, method name) */
+	public String minvname;
+	
+	/** Set of already processed nodes to avoid duplicate transformations */
+	public Set&lt;ASTNode&gt; nodesprocessed;
+	
+	/** Additional string value for the transformation */
+	public String value;
+	
+	/** Method invocation reference (if applicable) */
+	public MethodInvocation method;
+	
+	/** Counter for tracking multiple transformations */
+	public int count;
+	
+	/** Additional context information for complex transformations */
+	public Object additionalInfo;
+
+	/**
+	 * Gets the node as an Annotation.
+	 * @return the AST node cast to Annotation
+	 */
+	public Annotation getAnnotation() {
+<span class="fc" id="L68">		return (Annotation) minv;</span>
+	}
+
+	/**
+	 * Gets the node as a MethodInvocation.
+	 * @return the AST node cast to MethodInvocation
+	 */
+	public MethodInvocation getMethodInvocation() {
+<span class="fc" id="L76">		return (MethodInvocation) minv;</span>
+	}
+
+	/**
+	 * Gets the node as an ImportDeclaration.
+	 * @return the AST node cast to ImportDeclaration
+	 */
+	public ImportDeclaration getImportDeclaration() {
+<span class="fc" id="L84">		return (ImportDeclaration) minv;</span>
+	}
+
+	/**
+	 * Gets the node as a FieldDeclaration.
+	 * @return the AST node cast to FieldDeclaration
+	 */
+	public FieldDeclaration getFieldDeclaration() {
+<span class="fc" id="L92">		return (FieldDeclaration) minv;</span>
+	}
+
+	/**
+	 * Gets the node as a TypeDeclaration.
+	 * @return the AST node cast to TypeDeclaration
+	 */
+	public TypeDeclaration getTypeDeclaration() {
+<span class="fc" id="L100">		return (TypeDeclaration) minv;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>Refactorer.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_functional_converter</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">Refactorer.java</span></div><h1>Refactorer.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import java.util.List;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.EnhancedForStatement;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.text.edits.TextEditGroup;
+
+/**
+ * Orchestrates the refactoring of enhanced for-loops into functional stream pipelines.
+ * 
+ * &lt;p&gt;
+ * This class serves as the main entry point for converting imperative for-loops
+ * into declarative stream operations. It coordinates the analysis, validation,
+ * and transformation phases using {@link PreconditionsChecker} and
+ * {@link StreamPipelineBuilder}.
+ * &lt;/p&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Refactoring Process:&lt;/b&gt;&lt;/p&gt;
+ * &lt;ol&gt;
+ * &lt;li&gt;&lt;b&gt;Precondition Check&lt;/b&gt;: Validates loop is safe to refactor (no breaks,
+ *     returns, exceptions, etc.)&lt;/li&gt;
+ * &lt;li&gt;&lt;b&gt;Analysis&lt;/b&gt;: Parses loop body into stream operations&lt;/li&gt;
+ * &lt;li&gt;&lt;b&gt;Pipeline Construction&lt;/b&gt;: Builds method invocation chain&lt;/li&gt;
+ * &lt;li&gt;&lt;b&gt;AST Replacement&lt;/b&gt;: Replaces for-loop with stream pipeline in AST&lt;/li&gt;
+ * &lt;/ol&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Usage Example:&lt;/b&gt;&lt;/p&gt;
+ * &lt;pre&gt;{@code
+ * PreconditionsChecker preconditions = new PreconditionsChecker(forLoop, cu);
+ * Refactorer refactorer = new Refactorer(forLoop, rewrite, preconditions, group);
+ * 
+ * if (refactorer.isRefactorable()) {
+ *     refactorer.refactor(); // Performs the transformation
+ * }
+ * }&lt;/pre&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;AST Modification:&lt;/b&gt;&lt;/p&gt;
+ * &lt;p&gt;
+ * This class uses Eclipse JDT's {@link ASTRewrite} mechanism to modify the AST.
+ * All changes are tracked in a {@link TextEditGroup} for editor integration.
+ * Comments on the original for-loop are preserved when possible.
+ * &lt;/p&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Thread Safety:&lt;/b&gt; This class is not thread-safe. Create a new instance
+ * for each refactoring operation.&lt;/p&gt;
+ * 
+ * @see StreamPipelineBuilder
+ * @see PreconditionsChecker
+ * @see ASTRewrite
+ */
+public class Refactorer {
+	
+	private static final String JAVA_UTIL_ARRAYS = &quot;java.util.Arrays&quot;; //$NON-NLS-1$
+	private static final String JAVA_UTIL_STREAM_COLLECTORS = StreamConstants.COLLECTORS_CLASS; //$NON-NLS-1$
+	
+	private final EnhancedForStatement forLoop;
+	private final ASTRewrite rewrite;
+	private final PreconditionsChecker preconditions;
+	private final TextEditGroup group;
+	private final CompilationUnitRewrite cuRewrite;
+
+	/**
+	 * Creates a new Refactorer.
+	 * 
+	 * @param forLoop       the enhanced for-loop to refactor
+	 * @param rewrite       the AST rewrite to use
+	 * @param preconditions the preconditions checker
+	 * @param group         the text edit group for tracking changes
+	 * @deprecated Use {@link #Refactorer(EnhancedForStatement, ASTRewrite, PreconditionsChecker, TextEditGroup, CompilationUnitRewrite)} instead
+	 */
+	@Deprecated
+	public Refactorer(EnhancedForStatement forLoop, ASTRewrite rewrite, PreconditionsChecker preconditions,
+			TextEditGroup group) {
+<span class="nc" id="L99">		this(forLoop, rewrite, preconditions, group, null);</span>
+<span class="nc" id="L100">	}</span>
+	
+	/**
+	 * Creates a new Refactorer with CompilationUnitRewrite for import management.
+	 * 
+	 * @param forLoop       the enhanced for-loop to refactor
+	 * @param rewrite       the AST rewrite to use
+	 * @param preconditions the preconditions checker
+	 * @param group         the text edit group for tracking changes
+	 * @param cuRewrite     the compilation unit rewrite for import management (may be null)
+	 */
+<span class="fc" id="L111">	public Refactorer(EnhancedForStatement forLoop, ASTRewrite rewrite, PreconditionsChecker preconditions,</span>
+			TextEditGroup group, CompilationUnitRewrite cuRewrite) {
+<span class="fc" id="L113">		this.forLoop = forLoop;</span>
+<span class="fc" id="L114">		this.rewrite = rewrite;</span>
+<span class="fc" id="L115">		this.preconditions = preconditions;</span>
+<span class="fc" id="L116">		this.group = group;</span>
+<span class="fc" id="L117">		this.cuRewrite = cuRewrite;</span>
+<span class="fc" id="L118">	}</span>
+
+	/** Checks if the loop can be refactored to a stream operation. */
+	public boolean isRefactorable() {
+<span class="nc bnc" id="L122" title="All 2 branches missed.">		if (!preconditions.isSafeToRefactor()) {</span>
+<span class="nc" id="L123">			return false;</span>
+		}
+		// Also verify that the StreamPipelineBuilder can analyze and build the pipeline
+<span class="nc" id="L126">		StreamPipelineBuilder builder = new StreamPipelineBuilder(forLoop, preconditions);</span>
+<span class="nc bnc" id="L127" title="All 4 branches missed.">		return builder.analyze() &amp;&amp; builder.buildPipeline() != null;</span>
+	}
+
+	/**
+	 * Performs the refactoring of the loop into a stream operation. Uses
+	 * StreamPipelineBuilder for all conversions.
+	 */
+	public void refactor() {
+<span class="fc" id="L135">		refactorWithBuilder();</span>
+<span class="fc" id="L136">	}</span>
+
+	/**
+	 * Refactors the loop using the StreamPipelineBuilder approach.
+	 */
+	private void refactorWithBuilder() {
+<span class="fc" id="L142">		StreamPipelineBuilder builder = new StreamPipelineBuilder(forLoop, preconditions);</span>
+
+<span class="pc bpc" id="L144" title="1 of 2 branches missed.">		if (!builder.analyze()) {</span>
+<span class="nc" id="L145">			return; // Cannot convert</span>
+		}
+
+<span class="fc" id="L148">		MethodInvocation pipeline = builder.buildPipeline();</span>
+<span class="fc" id="L149">		Statement replacement = builder.wrapPipeline(pipeline);</span>
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">		if (replacement != null) {</span>
+			// Add Arrays import if needed (for array iteration)
+<span class="pc bpc" id="L152" title="1 of 4 branches missed.">			if (builder.needsArraysImport() &amp;&amp; cuRewrite != null) {</span>
+<span class="fc" id="L153">				cuRewrite.getImportRewrite().addImport(JAVA_UTIL_ARRAYS);</span>
+			}
+			// Add Collectors import if needed (for collect operations)
+<span class="pc bpc" id="L156" title="1 of 4 branches missed.">			if (builder.needsCollectorsImport() &amp;&amp; cuRewrite != null) {</span>
+<span class="fc" id="L157">				cuRewrite.getImportRewrite().addImport(JAVA_UTIL_STREAM_COLLECTORS);</span>
+			}
+			
+			// Check if this is a COLLECT operation with a preceding empty collection declaration
+<span class="fc" id="L161">			Statement mergedDeclaration = tryMergeWithPrecedingDeclaration(builder, pipeline, replacement);</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">			if (mergedDeclaration != null) {</span>
+				// Use the merged declaration instead
+<span class="fc" id="L164">				replacement = mergedDeclaration;</span>
+			}
+			
+<span class="fc" id="L167">			ASTNodes.replaceButKeepComment(rewrite, forLoop, replacement, group);</span>
+		}
+<span class="fc" id="L169">	}</span>
+	
+	/**
+	 * Attempts to merge a COLLECT operation with its preceding empty collection declaration.
+	 * 
+	 * &lt;p&gt;Pattern detected:&lt;/p&gt;
+	 * &lt;pre&gt;{@code
+	 * List&lt;Integer&gt; result = new ArrayList&lt;&gt;();  // Empty collection declaration
+	 * for (Integer l : ls) {
+	 *     result.add(l);  // COLLECT operation
+	 * }
+	 * }&lt;/pre&gt;
+	 * 
+	 * &lt;p&gt;Merged result:&lt;/p&gt;
+	 * &lt;pre&gt;{@code
+	 * List&lt;Integer&gt; result = ls.stream().collect(Collectors.toList());
+	 * }&lt;/pre&gt;
+	 * 
+	 * @param builder the stream pipeline builder
+	 * @param pipeline the stream pipeline method invocation
+	 * @param replacement the current replacement statement (assignment)
+	 * @return a merged VariableDeclarationStatement if merge is possible, null otherwise
+	 */
+	private Statement tryMergeWithPrecedingDeclaration(StreamPipelineBuilder builder, 
+			MethodInvocation pipeline, Statement replacement) {
+		// Only apply to COLLECT operations
+<span class="fc bfc" id="L195" title="All 2 branches covered.">		if (!builder.needsCollectorsImport()) {</span>
+<span class="fc" id="L196">			return null;</span>
+		}
+		
+		// The replacement must be an ExpressionStatement containing an assignment
+<span class="pc bpc" id="L200" title="1 of 2 branches missed.">		if (!(replacement instanceof ExpressionStatement)) {</span>
+<span class="nc" id="L201">			return null;</span>
+		}
+		
+		// Find the target variable from the CollectPatternDetector
+<span class="fc" id="L205">		String targetVariable = builder.getCollectTargetVariable();</span>
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">		if (targetVariable == null) {</span>
+<span class="nc" id="L207">			return null;</span>
+		}
+		
+		// Get the parent block
+<span class="fc" id="L211">		ASTNode parent = forLoop.getParent();</span>
+<span class="pc bpc" id="L212" title="1 of 2 branches missed.">		if (!(parent instanceof Block)) {</span>
+<span class="nc" id="L213">			return null;</span>
+		}
+		
+<span class="fc" id="L216">		Block block = (Block) parent;</span>
+<span class="fc" id="L217">		List&lt;?&gt; statements = block.statements();</span>
+		
+		// Find the index of the for-loop
+<span class="fc" id="L220">		int forLoopIndex = -1;</span>
+<span class="pc bpc" id="L221" title="1 of 2 branches missed.">		for (int i = 0; i &lt; statements.size(); i++) {</span>
+<span class="fc bfc" id="L222" title="All 2 branches covered.">			if (statements.get(i) == forLoop) {</span>
+<span class="fc" id="L223">				forLoopIndex = i;</span>
+<span class="fc" id="L224">				break;</span>
+			}
+		}
+		
+		// Check if there's a statement before the for-loop
+<span class="pc bpc" id="L229" title="1 of 2 branches missed.">		if (forLoopIndex &lt;= 0) {</span>
+<span class="nc" id="L230">			return null;</span>
+		}
+		
+<span class="fc" id="L233">		Statement precedingStmt = (Statement) statements.get(forLoopIndex - 1);</span>
+		
+		// Check if the preceding statement is an empty collection declaration for the same variable
+<span class="fc" id="L236">		String declaredVar = CollectPatternDetector.isEmptyCollectionDeclaration(precedingStmt);</span>
+<span class="pc bpc" id="L237" title="2 of 4 branches missed.">		if (declaredVar == null || !declaredVar.equals(targetVariable)) {</span>
+<span class="nc" id="L238">			return null;</span>
+		}
+		
+		// We have a match! Create a merged VariableDeclarationStatement
+<span class="fc" id="L242">		VariableDeclarationStatement originalDecl = (VariableDeclarationStatement) precedingStmt;</span>
+		VariableDeclarationFragment originalFragment = 
+<span class="fc" id="L244">				(VariableDeclarationFragment) originalDecl.fragments().get(0);</span>
+		
+<span class="fc" id="L246">		AST ast = forLoop.getAST();</span>
+		
+		// Create new VariableDeclarationFragment with the pipeline as initializer
+<span class="fc" id="L249">		VariableDeclarationFragment newFragment = ast.newVariableDeclarationFragment();</span>
+<span class="fc" id="L250">		newFragment.setName(ast.newSimpleName(targetVariable));</span>
+<span class="fc" id="L251">		newFragment.setInitializer((MethodInvocation) ASTNode.copySubtree(ast, pipeline));</span>
+		
+		// Create new VariableDeclarationStatement with the same type
+<span class="fc" id="L254">		VariableDeclarationStatement newDecl = ast.newVariableDeclarationStatement(newFragment);</span>
+<span class="fc" id="L255">		Type originalType = originalDecl.getType();</span>
+<span class="fc" id="L256">		newDecl.setType((Type) ASTNode.copySubtree(ast, originalType));</span>
+		
+		// Copy modifiers if any
+<span class="fc" id="L259">		newDecl.modifiers().addAll(ASTNode.copySubtrees(ast, originalDecl.modifiers()));</span>
+		
+		// Remove the preceding declaration
+<span class="fc" id="L262">		rewrite.remove(precedingStmt, group);</span>
+		
+<span class="fc" id="L264">		return newDecl;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

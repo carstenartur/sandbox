@@ -1,0 +1,469 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>IfStatementAnalyzer.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_functional_converter</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">IfStatementAnalyzer.java</span></div><h1>IfStatementAnalyzer.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import java.util.List;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.BooleanLiteral;
+import org.eclipse.jdt.core.dom.BreakStatement;
+import org.eclipse.jdt.core.dom.ContinueStatement;
+import org.eclipse.jdt.core.dom.EnhancedForStatement;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.IfStatement;
+import org.eclipse.jdt.core.dom.ReturnStatement;
+import org.eclipse.jdt.core.dom.Statement;
+import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
+
+/**
+ * Analyzes IF statements to detect patterns that can be converted to stream operations.
+ * 
+ * &lt;p&gt;This class identifies various IF statement patterns:&lt;/p&gt;
+ * &lt;ul&gt;
+ * &lt;li&gt;&lt;b&gt;Early Return Patterns&lt;/b&gt;: anyMatch, noneMatch, allMatch&lt;/li&gt;
+ * &lt;li&gt;&lt;b&gt;Continue Patterns&lt;/b&gt;: Can be converted to negated filters&lt;/li&gt;
+ * &lt;li&gt;&lt;b&gt;Break/Labeled Continue&lt;/b&gt;: Cannot be converted (rejects conversion)&lt;/li&gt;
+ * &lt;/ul&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Pattern Examples:&lt;/b&gt;&lt;/p&gt;
+ * &lt;pre&gt;{@code
+ * // anyMatch: if (condition) return true; ... return false;
+ * // noneMatch: if (condition) return false; ... return true;
+ * // allMatch: if (!condition) return false; ... return true;
+ * // filter: if (condition) continue; → .filter(x -&gt; !condition)
+ * }&lt;/pre&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Usage:&lt;/b&gt;&lt;/p&gt;
+ * &lt;pre&gt;{@code
+ * IfStatementAnalyzer analyzer = new IfStatementAnalyzer(forLoop);
+ * if (analyzer.isEarlyReturnIf(ifStmt)) {
+ *     MatchPatternType pattern = analyzer.getMatchPatternType();
+ *     // Create appropriate stream operation
+ * }
+ * }&lt;/pre&gt;
+ * 
+ * @see StreamPipelineBuilder
+ * @see OperationType
+ */
+public final class IfStatementAnalyzer {
+
+	/**
+	 * Represents the type of match pattern detected in an IF statement.
+	 */
+<span class="fc" id="L65">	public enum MatchPatternType {</span>
+<span class="fc" id="L66">		/** {@code if (condition) return true;} followed by {@code return false;} */</span>
+<span class="fc" id="L67">		ANY_MATCH,</span>
+<span class="fc" id="L68">		/** {@code if (condition) return false;} followed by {@code return true;} */</span>
+<span class="fc" id="L69">		NONE_MATCH,</span>
+<span class="fc" id="L70">		/** {@code if (!condition) return false;} followed by {@code return true;} */</span>
+<span class="fc" id="L71">		ALL_MATCH,</span>
+<span class="fc" id="L72">		/** No match pattern detected */</span>
+<span class="fc" id="L73">		NONE</span>
+	}
+
+	private final EnhancedForStatement forLoop;
+<span class="fc" id="L77">	private MatchPatternType detectedPattern = MatchPatternType.NONE;</span>
+
+	/**
+	 * Creates a new IfStatementAnalyzer for the given for-loop context.
+	 * 
+	 * @param forLoop the enhanced for-loop being analyzed
+	 * @throws IllegalArgumentException if forLoop is null
+	 */
+<span class="fc" id="L85">	public IfStatementAnalyzer(EnhancedForStatement forLoop) {</span>
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">		if (forLoop == null) {</span>
+<span class="nc" id="L87">			throw new IllegalArgumentException(&quot;forLoop cannot be null&quot;);</span>
+		}
+<span class="fc" id="L89">		this.forLoop = forLoop;</span>
+<span class="fc" id="L90">	}</span>
+
+	/**
+	 * Returns the match pattern type detected by the last call to
+	 * {@link #isEarlyReturnIf(IfStatement)}.
+	 * 
+	 * @return the detected pattern type, or {@link MatchPatternType#NONE} if none detected
+	 */
+	public MatchPatternType getDetectedPattern() {
+<span class="nc" id="L99">		return detectedPattern;</span>
+	}
+
+	/**
+	 * Checks if an IF statement contains an unlabeled continue statement.
+	 * This pattern can be converted to a negated filter.
+	 * 
+	 * &lt;p&gt;Pattern: {@code if (condition) continue;} → {@code .filter(x -&gt; !condition)}&lt;/p&gt;
+	 * 
+	 * @param ifStatement the IF statement to check
+	 * @return true if the then branch contains an unlabeled continue statement
+	 */
+	public boolean isIfWithContinue(IfStatement ifStatement) {
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">		if (ifStatement == null) {</span>
+<span class="nc" id="L113">			return false;</span>
+		}
+<span class="fc" id="L115">		Statement thenStatement = ifStatement.getThenStatement();</span>
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">		if (thenStatement instanceof ContinueStatement) {</span>
+<span class="nc" id="L117">			ContinueStatement continueStmt = (ContinueStatement) thenStatement;</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">			return continueStmt.getLabel() == null;</span>
+		}
+<span class="fc bfc" id="L120" title="All 2 branches covered.">		if (thenStatement instanceof Block) {</span>
+<span class="fc" id="L121">			Block block = (Block) thenStatement;</span>
+<span class="fc bfc" id="L122" title="All 4 branches covered.">			if (block.statements().size() == 1 &amp;&amp; block.statements().get(0) instanceof ContinueStatement) {</span>
+<span class="fc" id="L123">				ContinueStatement continueStmt = (ContinueStatement) block.statements().get(0);</span>
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">				return continueStmt.getLabel() == null;</span>
+			}
+		}
+<span class="fc" id="L127">		return false;</span>
+	}
+
+	/**
+	 * Checks if the IF statement contains a labeled continue statement.
+	 * Labeled continues cannot be converted to stream operations.
+	 * 
+	 * @param ifStatement the IF statement to check
+	 * @return true if the IF contains a labeled continue statement
+	 */
+	public boolean isIfWithLabeledContinue(IfStatement ifStatement) {
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">		if (ifStatement == null) {</span>
+<span class="nc" id="L139">			return false;</span>
+		}
+<span class="fc" id="L141">		Statement thenStatement = ifStatement.getThenStatement();</span>
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">		if (thenStatement instanceof ContinueStatement) {</span>
+<span class="nc" id="L143">			ContinueStatement continueStmt = (ContinueStatement) thenStatement;</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">			return continueStmt.getLabel() != null;</span>
+		}
+<span class="fc bfc" id="L146" title="All 2 branches covered.">		if (thenStatement instanceof Block) {</span>
+<span class="fc" id="L147">			Block block = (Block) thenStatement;</span>
+<span class="fc bfc" id="L148" title="All 4 branches covered.">			if (block.statements().size() == 1 &amp;&amp; block.statements().get(0) instanceof ContinueStatement) {</span>
+<span class="fc" id="L149">				ContinueStatement continueStmt = (ContinueStatement) block.statements().get(0);</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">				return continueStmt.getLabel() != null;</span>
+			}
+		}
+<span class="fc" id="L153">		return false;</span>
+	}
+
+	/**
+	 * Checks if the IF statement contains a break statement.
+	 * Break statements cannot be converted to stream operations.
+	 * 
+	 * @param ifStatement the IF statement to check
+	 * @return true if the IF contains a break statement
+	 */
+	public boolean isIfWithBreak(IfStatement ifStatement) {
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">		if (ifStatement == null) {</span>
+<span class="nc" id="L165">			return false;</span>
+		}
+<span class="fc" id="L167">		Statement thenStatement = ifStatement.getThenStatement();</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">		if (thenStatement instanceof BreakStatement) {</span>
+<span class="fc" id="L169">			return true;</span>
+		}
+<span class="fc bfc" id="L171" title="All 2 branches covered.">		if (thenStatement instanceof Block) {</span>
+<span class="fc" id="L172">			Block block = (Block) thenStatement;</span>
+<span class="fc bfc" id="L173" title="All 4 branches covered.">			if (block.statements().size() == 1 &amp;&amp; block.statements().get(0) instanceof BreakStatement) {</span>
+<span class="fc" id="L174">				return true;</span>
+			}
+		}
+<span class="fc" id="L177">		return false;</span>
+	}
+
+	/**
+	 * Checks if the IF statement contains a return statement that cannot be converted.
+	 * Returns that are not boolean literals (like return null, return someValue) 
+	 * cannot be converted to stream operations because they would lose the return semantics.
+	 * 
+	 * @param ifStatement the IF statement to check
+	 * @return true if the IF contains a non-convertible return statement
+	 */
+	public boolean isIfWithUnconvertibleReturn(IfStatement ifStatement) {
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">		if (ifStatement == null) {</span>
+<span class="nc" id="L190">			return false;</span>
+		}
+<span class="fc" id="L192">		Statement thenStatement = ifStatement.getThenStatement();</span>
+<span class="fc" id="L193">		ReturnStatement returnStmt = extractReturnStatement(thenStatement);</span>
+		
+<span class="fc bfc" id="L195" title="All 2 branches covered.">		if (returnStmt == null) {</span>
+<span class="fc" id="L196">			return false;</span>
+		}
+		
+		// Check if it's a boolean literal - those can be converted to anyMatch/noneMatch/allMatch
+<span class="fc" id="L200">		Expression returnExpr = returnStmt.getExpression();</span>
+<span class="fc bfc" id="L201" title="All 2 branches covered.">		if (returnExpr instanceof BooleanLiteral) {</span>
+			// This could be part of a match pattern - let other methods handle it
+<span class="fc" id="L203">			return false;</span>
+		}
+		
+		// Any other return (null, variable, method call, etc.) cannot be converted
+<span class="fc" id="L207">		return true;</span>
+	}
+
+	/**
+	 * Checks if the IF statement body contains an assignment to an external variable.
+	 * Such assignments cannot be safely converted to stream operations because
+	 * they would either be lost or would break stream semantics.
+	 * 
+	 * &lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; Compound assignments (+=, -=, *=, etc.) are allowed because they
+	 * represent accumulator/reducer patterns that CAN be converted to reduce() operations.&lt;/p&gt;
+	 * 
+	 * @param ifStatement the IF statement to check
+	 * @param loopVarName the loop variable name (assignments to this are internal)
+	 * @return true if the IF body contains a simple assignment to an external variable
+	 */
+	public boolean isIfWithExternalAssignment(IfStatement ifStatement, String loopVarName) {
+<span class="pc bpc" id="L223" title="1 of 2 branches missed.">		if (ifStatement == null) {</span>
+<span class="nc" id="L224">			return false;</span>
+		}
+<span class="fc" id="L226">		Statement thenStatement = ifStatement.getThenStatement();</span>
+<span class="fc" id="L227">		return containsExternalSimpleAssignment(thenStatement, loopVarName);</span>
+	}
+
+	/**
+	 * Recursively checks if a statement contains a simple assignment (=) to an external variable.
+	 * Compound assignments (+=, -=, *=, etc.) are NOT flagged because they are accumulator patterns.
+	 */
+	private boolean containsExternalSimpleAssignment(Statement stmt, String loopVarName) {
+<span class="pc bpc" id="L235" title="1 of 2 branches missed.">		if (stmt == null) {</span>
+<span class="nc" id="L236">			return false;</span>
+		}
+		
+<span class="fc bfc" id="L239" title="All 2 branches covered.">		if (stmt instanceof org.eclipse.jdt.core.dom.ExpressionStatement) {</span>
+<span class="fc" id="L240">			org.eclipse.jdt.core.dom.ExpressionStatement exprStmt = (org.eclipse.jdt.core.dom.ExpressionStatement) stmt;</span>
+<span class="fc" id="L241">			Expression expr = exprStmt.getExpression();</span>
+<span class="fc bfc" id="L242" title="All 2 branches covered.">			if (expr instanceof org.eclipse.jdt.core.dom.Assignment) {</span>
+<span class="fc" id="L243">				org.eclipse.jdt.core.dom.Assignment assignment = (org.eclipse.jdt.core.dom.Assignment) expr;</span>
+				
+				// Compound assignments (+=, -=, *=, etc.) are accumulator patterns - allow them
+<span class="fc bfc" id="L246" title="All 2 branches covered.">				if (assignment.getOperator() != org.eclipse.jdt.core.dom.Assignment.Operator.ASSIGN) {</span>
+<span class="fc" id="L247">					return false; // Not a simple assignment, it's an accumulator pattern - this single statement is OK</span>
+				}
+				
+				// Simple assignment (=) to something other than the loop variable
+<span class="fc" id="L251">				Expression lhs = assignment.getLeftHandSide();</span>
+<span class="pc bpc" id="L252" title="1 of 2 branches missed.">				if (lhs instanceof org.eclipse.jdt.core.dom.SimpleName) {</span>
+<span class="fc" id="L253">					String varName = ((org.eclipse.jdt.core.dom.SimpleName) lhs).getIdentifier();</span>
+					// If simple-assigning to something other than the loop variable, it's problematic
+<span class="pc bpc" id="L255" title="1 of 2 branches missed.">					if (!varName.equals(loopVarName)) {</span>
+<span class="fc" id="L256">						return true;</span>
+					}
+				}
+			}
+			// Other expression statements (method calls, etc.) are OK
+<span class="fc" id="L261">			return false;</span>
+<span class="fc bfc" id="L262" title="All 2 branches covered.">		} else if (stmt instanceof Block) {</span>
+<span class="fc" id="L263">			Block block = (Block) stmt;</span>
+<span class="fc bfc" id="L264" title="All 2 branches covered.">			for (Object obj : block.statements()) {</span>
+<span class="fc bfc" id="L265" title="All 2 branches covered.">				if (containsExternalSimpleAssignment((Statement) obj, loopVarName)) {</span>
+<span class="fc" id="L266">					return true;</span>
+				}
+			}
+<span class="fc" id="L269">			return false;</span>
+<span class="fc bfc" id="L270" title="All 2 branches covered.">		} else if (stmt instanceof IfStatement) {</span>
+<span class="fc" id="L271">			IfStatement nested = (IfStatement) stmt;</span>
+<span class="pc bpc" id="L272" title="1 of 2 branches missed.">			if (containsExternalSimpleAssignment(nested.getThenStatement(), loopVarName)) {</span>
+<span class="nc" id="L273">				return true;</span>
+			}
+<span class="pc bpc" id="L275" title="3 of 4 branches missed.">			if (nested.getElseStatement() != null &amp;&amp; containsExternalSimpleAssignment(nested.getElseStatement(), loopVarName)) {</span>
+<span class="nc" id="L276">				return true;</span>
+			}
+<span class="fc" id="L278">			return false;</span>
+		}
+		
+		// Other statement types (variable declarations, etc.) are OK
+<span class="fc" id="L282">		return false;</span>
+	}
+
+	/**
+	 * Checks if the IF statement contains an early return pattern that can be
+	 * converted to anyMatch/noneMatch/allMatch.
+	 * 
+	 * &lt;p&gt;This method detects patterns by examining:&lt;/p&gt;
+	 * &lt;ol&gt;
+	 * &lt;li&gt;The IF statement structure (no else, returns boolean literal)&lt;/li&gt;
+	 * &lt;li&gt;The return statement following the loop&lt;/li&gt;
+	 * &lt;li&gt;Whether the condition is negated (for allMatch)&lt;/li&gt;
+	 * &lt;/ol&gt;
+	 * 
+	 * &lt;p&gt;After calling this method, use {@link #getDetectedPattern()} to determine
+	 * which pattern was detected.&lt;/p&gt;
+	 * 
+	 * @param ifStatement the IF statement to check
+	 * @return true if an early return pattern is detected
+	 */
+	public boolean isEarlyReturnIf(IfStatement ifStatement) {
+<span class="fc" id="L303">		detectedPattern = MatchPatternType.NONE;</span>
+
+<span class="pc bpc" id="L305" title="2 of 4 branches missed.">		if (ifStatement == null || ifStatement.getElseStatement() != null) {</span>
+<span class="nc" id="L306">			return false;</span>
+		}
+
+<span class="fc" id="L309">		Statement thenStmt = ifStatement.getThenStatement();</span>
+<span class="fc" id="L310">		ReturnStatement returnStmt = extractReturnStatement(thenStmt);</span>
+
+<span class="pc bpc" id="L312" title="2 of 4 branches missed.">		if (returnStmt == null || !(returnStmt.getExpression() instanceof BooleanLiteral)) {</span>
+<span class="nc" id="L313">			return false;</span>
+		}
+
+<span class="fc" id="L316">		BooleanLiteral returnValue = (BooleanLiteral) returnStmt.getExpression();</span>
+<span class="fc" id="L317">		BooleanLiteral followingReturn = getReturnAfterLoop();</span>
+
+<span class="pc bpc" id="L319" title="1 of 2 branches missed.">		if (followingReturn == null) {</span>
+<span class="nc" id="L320">			return false;</span>
+		}
+
+		// Detect pattern based on return values
+<span class="pc bpc" id="L324" title="1 of 4 branches missed.">		if (returnValue.booleanValue() &amp;&amp; !followingReturn.booleanValue()) {</span>
+			// if (condition) return true; ... return false; → anyMatch
+<span class="fc" id="L326">			detectedPattern = MatchPatternType.ANY_MATCH;</span>
+<span class="fc" id="L327">			return true;</span>
+<span class="pc bpc" id="L328" title="2 of 4 branches missed.">		} else if (!returnValue.booleanValue() &amp;&amp; followingReturn.booleanValue()) {</span>
+			// if (condition) return false; ... return true; → noneMatch or allMatch
+<span class="fc" id="L330">			Expression condition = ifStatement.getExpression();</span>
+<span class="fc bfc" id="L331" title="All 2 branches covered.">			if (ExpressionHelper.isNegatedExpression(condition)) {</span>
+				// if (!condition) return false; ... return true; → allMatch
+<span class="fc" id="L333">				detectedPattern = MatchPatternType.ALL_MATCH;</span>
+<span class="fc" id="L334">			} else {</span>
+				// if (condition) return false; ... return true; → noneMatch
+<span class="fc" id="L336">				detectedPattern = MatchPatternType.NONE_MATCH;</span>
+			}
+<span class="fc" id="L338">			return true;</span>
+		}
+
+<span class="nc" id="L341">		return false;</span>
+	}
+
+	/**
+	 * Checks if this IF statement is an early return pattern based on precomputed flags.
+	 * This is used when the pattern type has already been determined by PreconditionsChecker.
+	 * 
+	 * @param ifStatement the IF statement to check
+	 * @param isAnyMatch true if this is an anyMatch pattern
+	 * @param isNoneMatch true if this is a noneMatch pattern
+	 * @param isAllMatch true if this is an allMatch pattern
+	 * @return true if the IF matches the specified pattern
+	 */
+	public boolean isEarlyReturnIf(IfStatement ifStatement, boolean isAnyMatch, boolean isNoneMatch, boolean isAllMatch) {
+<span class="pc bpc" id="L355" title="2 of 4 branches missed.">		if (ifStatement == null || ifStatement.getElseStatement() != null) {</span>
+<span class="nc" id="L356">			return false;</span>
+		}
+
+<span class="fc" id="L359">		Statement thenStmt = ifStatement.getThenStatement();</span>
+<span class="fc" id="L360">		ReturnStatement returnStmt = extractReturnStatement(thenStmt);</span>
+
+<span class="pc bpc" id="L362" title="1 of 4 branches missed.">		if (returnStmt == null || !(returnStmt.getExpression() instanceof BooleanLiteral)) {</span>
+<span class="fc" id="L363">			return false;</span>
+		}
+
+<span class="fc" id="L366">		BooleanLiteral returnValue = (BooleanLiteral) returnStmt.getExpression();</span>
+
+		// Check against precomputed flags
+<span class="pc bpc" id="L369" title="3 of 4 branches missed.">		if (isAnyMatch &amp;&amp; returnValue.booleanValue()) {</span>
+<span class="nc" id="L370">			detectedPattern = MatchPatternType.ANY_MATCH;</span>
+<span class="nc" id="L371">			return true;</span>
+<span class="pc bpc" id="L372" title="3 of 4 branches missed.">		} else if (isNoneMatch &amp;&amp; !returnValue.booleanValue()) {</span>
+<span class="nc" id="L373">			detectedPattern = MatchPatternType.NONE_MATCH;</span>
+<span class="nc" id="L374">			return true;</span>
+<span class="pc bpc" id="L375" title="3 of 4 branches missed.">		} else if (isAllMatch &amp;&amp; !returnValue.booleanValue()) {</span>
+<span class="nc" id="L376">			detectedPattern = MatchPatternType.ALL_MATCH;</span>
+<span class="nc" id="L377">			return true;</span>
+		}
+
+		// Fall back to auto-detection
+<span class="fc" id="L381">		return isEarlyReturnIf(ifStatement);</span>
+	}
+
+	/**
+	 * Creates a match operation from an IF statement based on the detected pattern.
+	 * 
+	 * @param ifStmt the IF statement containing the early return pattern
+	 * @return a ProspectiveOperation for the match, or null if no pattern detected
+	 */
+	public ProspectiveOperation createMatchOperation(IfStatement ifStmt) {
+<span class="pc bpc" id="L391" title="1 of 2 branches missed.">		if (detectedPattern == MatchPatternType.NONE) {</span>
+<span class="nc" id="L392">			return null;</span>
+		}
+
+		OperationType opType;
+<span class="pc bpc" id="L396" title="1 of 4 branches missed.">		switch (detectedPattern) {</span>
+		case ANY_MATCH:
+<span class="fc" id="L398">			opType = OperationType.ANYMATCH;</span>
+<span class="fc" id="L399">			break;</span>
+		case NONE_MATCH:
+<span class="fc" id="L401">			opType = OperationType.NONEMATCH;</span>
+<span class="fc" id="L402">			break;</span>
+		case ALL_MATCH:
+<span class="fc" id="L404">			opType = OperationType.ALLMATCH;</span>
+<span class="fc" id="L405">			break;</span>
+		default:
+<span class="nc" id="L407">			return null;</span>
+		}
+
+<span class="fc" id="L410">		Expression condition = ifStmt.getExpression();</span>
+		// For allMatch, strip the negation since the pattern is &quot;if (!condition) return false&quot;
+<span class="fc bfc" id="L412" title="All 2 branches covered.">		if (detectedPattern == MatchPatternType.ALL_MATCH) {</span>
+<span class="fc" id="L413">			condition = ExpressionHelper.stripNegation(condition);</span>
+		}
+
+<span class="fc" id="L416">		return new ProspectiveOperation(condition, opType);</span>
+	}
+
+	/**
+	 * Extracts a return statement from an IF's then-branch.
+	 * Handles both direct return statements and blocks containing a single return.
+	 */
+	private ReturnStatement extractReturnStatement(Statement thenStmt) {
+<span class="fc bfc" id="L424" title="All 2 branches covered.">		if (thenStmt instanceof ReturnStatement) {</span>
+<span class="fc" id="L425">			return (ReturnStatement) thenStmt;</span>
+		}
+<span class="fc bfc" id="L427" title="All 2 branches covered.">		if (thenStmt instanceof Block) {</span>
+<span class="fc" id="L428">			Block block = (Block) thenStmt;</span>
+<span class="fc bfc" id="L429" title="All 4 branches covered.">			if (block.statements().size() == 1 &amp;&amp; block.statements().get(0) instanceof ReturnStatement) {</span>
+<span class="fc" id="L430">				return (ReturnStatement) block.statements().get(0);</span>
+			}
+		}
+<span class="fc" id="L433">		return null;</span>
+	}
+
+	/**
+	 * Gets the boolean return value from the statement immediately following the loop.
+	 * 
+	 * @return the BooleanLiteral returned after the loop, or null if not found
+	 */
+	private BooleanLiteral getReturnAfterLoop() {
+<span class="fc" id="L442">		ASTNode parent = forLoop.getParent();</span>
+
+<span class="pc bpc" id="L444" title="1 of 2 branches missed.">		if (!(parent instanceof Block)) {</span>
+<span class="nc" id="L445">			return null;</span>
+		}
+
+<span class="fc" id="L448">		Block block = (Block) parent;</span>
+<span class="fc" id="L449">		List&lt;?&gt; statements = block.statements();</span>
+
+<span class="fc" id="L451">		int loopIndex = statements.indexOf(forLoop);</span>
+<span class="pc bpc" id="L452" title="2 of 4 branches missed.">		if (loopIndex == -1 || loopIndex &gt;= statements.size() - 1) {</span>
+<span class="nc" id="L453">			return null;</span>
+		}
+
+<span class="fc" id="L456">		Statement nextStmt = (Statement) statements.get(loopIndex + 1);</span>
+
+<span class="pc bpc" id="L458" title="1 of 2 branches missed.">		if (nextStmt instanceof ReturnStatement) {</span>
+<span class="fc" id="L459">			ReturnStatement returnStmt = (ReturnStatement) nextStmt;</span>
+<span class="fc" id="L460">			Expression expr = returnStmt.getExpression();</span>
+<span class="pc bpc" id="L461" title="1 of 2 branches missed.">			if (expr instanceof BooleanLiteral) {</span>
+<span class="fc" id="L462">				return (BooleanLiteral) expr;</span>
+			}
+		}
+
+<span class="nc" id="L466">		return null;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

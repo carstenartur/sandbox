@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>TestNameRefactorer.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper.lib</a> &gt; <span class="el_source">TestNameRefactorer.java</span></div><h1>TestNameRefactorer.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper.lib;
+
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.ITypeHierarchy;
+import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Assignment;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.FieldAccess;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.MarkerAnnotation;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.PrimitiveType;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
+
+/**
+ * Helper class for refactoring JUnit 4 TestName rule to JUnit 5 TestInfo parameter.
+ * Replaces @Rule TestName fields with a @BeforeEach method that captures test information.
+ */
+public final class TestNameRefactorer {
+
+	// Private constructor to prevent instantiation
+<span class="nc" id="L55">	private TestNameRefactorer() {</span>
+<span class="nc" id="L56">		throw new UnsupportedOperationException(&quot;Utility class&quot;);</span>
+	}
+
+	/**
+	 * Refactors TestName field usage in a class and optionally in its subclasses.
+	 * Replaces JUnit 4 @Rule TestName with a @BeforeEach method that captures test info.
+	 * 
+	 * @param group the text edit group
+	 * @param rewriter the AST rewriter
+	 * @param ast the AST instance
+	 * @param importRewrite the import rewriter
+	 * @param node the TestName field declaration to replace
+	 */
+	public static void refactorTestnameInClass(TextEditGroup group, ASTRewrite rewriter, AST ast,
+			ImportRewrite importRewrite, FieldDeclaration node) {
+<span class="pc bpc" id="L71" title="4 of 8 branches missed.">		if (node == null || rewriter == null || ast == null || importRewrite == null) {</span>
+<span class="nc" id="L72">			return;</span>
+		}
+
+		// Remove the old @Rule TestName field
+<span class="fc" id="L76">		rewriter.remove(node, group);</span>
+
+		// Add new infrastructure: @BeforeEach init method and private String testName field
+<span class="fc" id="L79">		TypeDeclaration parentClass = ASTNodes.getParent(node, TypeDeclaration.class);</span>
+<span class="fc" id="L80">		addBeforeEachInitMethod(parentClass, rewriter, group);</span>
+<span class="fc" id="L81">		addTestNameField(parentClass, rewriter, group);</span>
+
+		// Update method references from testNameField.getMethodName() to just testName
+<span class="fc" id="L84">		updateMethodReferences(parentClass, ast, rewriter, group);</span>
+
+		// Update imports
+<span class="fc" id="L87">		importRewrite.addImport(ORG_JUNIT_JUPITER_API_TEST_INFO);</span>
+<span class="fc" id="L88">		importRewrite.addImport(ORG_JUNIT_JUPITER_API_BEFORE_EACH);</span>
+<span class="fc" id="L89">		importRewrite.removeImport(ORG_JUNIT_RULE);</span>
+<span class="fc" id="L90">		importRewrite.removeImport(ORG_JUNIT_RULES_TEST_NAME);</span>
+<span class="fc" id="L91">	}</span>
+
+	/**
+	 * Refactors TestName usage in a class and all its subclasses.
+	 * 
+	 * @param group the text edit group
+	 * @param rewriter the AST rewriter
+	 * @param ast the AST instance
+	 * @param importRewrite the import rewriter
+	 * @param node the TestName field declaration to replace
+	 */
+	public static void refactorTestnameInClassAndSubclasses(TextEditGroup group, ASTRewrite rewriter, AST ast,
+			ImportRewrite importRewrite, FieldDeclaration node) {
+<span class="fc" id="L104">		refactorTestnameInClass(group, rewriter, ast, importRewrite, node);</span>
+
+<span class="fc" id="L106">		TypeDeclaration parentClass = ASTNodes.getParent(node, TypeDeclaration.class);</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">		if (parentClass == null) {</span>
+<span class="nc" id="L108">			return;</span>
+		}
+<span class="fc" id="L110">		ITypeBinding typeBinding = parentClass.resolveBinding();</span>
+<span class="fc" id="L111">		List&lt;ITypeBinding&gt; subclasses = getAllSubclasses(typeBinding);</span>
+
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">		for (ITypeBinding subclassBinding : subclasses) {</span>
+<span class="nc" id="L114">			IType subclassType = (IType) subclassBinding.getJavaElement();</span>
+
+<span class="nc" id="L116">			CompilationUnit subclassUnit = ASTNavigationUtils.parseCompilationUnit(subclassType.getCompilationUnit());</span>
+<span class="nc" id="L117">			subclassUnit.accept(new ASTVisitor() {</span>
+				@Override
+				public boolean visit(TypeDeclaration subclassNode) {
+<span class="nc bnc" id="L120" title="All 2 branches missed.">					if (subclassNode.resolveBinding().equals(subclassBinding)) {</span>
+<span class="nc" id="L121">						refactorTestnameInClass(group, rewriter, subclassNode.getAST(), importRewrite, node);</span>
+					}
+<span class="nc" id="L123">					return false;</span>
+				}
+			});
+		}
+<span class="fc" id="L127">	}</span>
+
+	/**
+	 * Adds a @BeforeEach init method that captures the test name from TestInfo.
+	 * 
+	 * @param parentClass the class to add the method to
+	 * @param rewriter the AST rewriter
+	 * @param group the text edit group
+	 */
+	public static void addBeforeEachInitMethod(TypeDeclaration parentClass, ASTRewrite rewriter, TextEditGroup group) {
+<span class="fc" id="L137">		AST ast = parentClass.getAST();</span>
+
+<span class="fc" id="L139">		MethodDeclaration methodDeclaration = createInitMethod(ast);</span>
+<span class="fc" id="L140">		MarkerAnnotation beforeEachAnnotation = createBeforeEachAnnotation(ast);</span>
+
+<span class="fc" id="L142">		addMethodToClass(parentClass, methodDeclaration, beforeEachAnnotation, rewriter, group);</span>
+<span class="fc" id="L143">	}</span>
+
+	/**
+	 * Adds a private String field named 'testName' to the class.
+	 * Used when migrating JUnit 4 TestName rule to JUnit 5 TestInfo parameter.
+	 * 
+	 * @param parentClass the class to add the field to
+	 * @param rewriter the AST rewriter
+	 * @param group the text edit group
+	 */
+	public static void addTestNameField(TypeDeclaration parentClass, ASTRewrite rewriter, TextEditGroup group) {
+<span class="fc" id="L154">		AST ast = parentClass.getAST();</span>
+<span class="fc" id="L155">		VariableDeclarationFragment fragment = ast.newVariableDeclarationFragment();</span>
+<span class="fc" id="L156">		fragment.setName(ast.newSimpleName(TEST_NAME));</span>
+
+<span class="fc" id="L158">		FieldDeclaration fieldDeclaration = ast.newFieldDeclaration(fragment);</span>
+<span class="fc" id="L159">		fieldDeclaration.setType(ast.newSimpleType(ast.newName(&quot;String&quot;)));</span>
+<span class="fc" id="L160">		fieldDeclaration.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.PRIVATE_KEYWORD));</span>
+
+<span class="fc" id="L162">		ListRewrite listRewrite = rewriter.getListRewrite(parentClass, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);</span>
+<span class="fc" id="L163">		listRewrite.insertFirst(fieldDeclaration, group);</span>
+<span class="fc" id="L164">	}</span>
+
+	/**
+	 * Updates method references from testNameField.getMethodName() to just testName.
+	 * 
+	 * @param parentClass the class containing methods to update
+	 * @param ast the AST instance
+	 * @param rewriter the AST rewriter
+	 * @param group the text edit group
+	 */
+	public static void updateMethodReferences(TypeDeclaration parentClass, AST ast, ASTRewrite rewriter,
+			TextEditGroup group) {
+<span class="fc bfc" id="L176" title="All 2 branches covered.">		for (MethodDeclaration method : parentClass.getMethods()) {</span>
+<span class="pc bpc" id="L177" title="1 of 2 branches missed.">			if (method.getBody() != null) {</span>
+<span class="fc" id="L178">				method.getBody().accept(new ASTVisitor() {</span>
+					@Override
+					public boolean visit(MethodInvocation node) {
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">						if (node.getExpression() != null &amp;&amp; ORG_JUNIT_RULES_TEST_NAME</span>
+<span class="fc bfc" id="L182" title="All 2 branches covered.">								.equals(node.getExpression().resolveTypeBinding().getQualifiedName())) {</span>
+<span class="fc" id="L183">							SimpleName newFieldAccess = ast.newSimpleName(TEST_NAME);</span>
+<span class="fc" id="L184">							rewriter.replace(node, newFieldAccess, group);</span>
+						}
+<span class="fc" id="L186">						return super.visit(node);</span>
+					}
+				});
+			}
+		}
+<span class="fc" id="L191">	}</span>
+
+	/**
+	 * Gets all direct and indirect subclasses of the given type.
+	 * Uses the JDT type hierarchy to discover subclasses in the project.
+	 * 
+	 * @param typeBinding the type binding to find subclasses for
+	 * @return list of type bindings for all subclasses
+	 */
+	public static List&lt;ITypeBinding&gt; getAllSubclasses(ITypeBinding typeBinding) {
+<span class="fc" id="L201">		List&lt;ITypeBinding&gt; subclasses = new ArrayList&lt;&gt;();</span>
+
+		try {
+			// Create the corresponding IType of the given ITypeBinding
+<span class="fc" id="L205">			IType type = (IType) typeBinding.getJavaElement();</span>
+
+			// Create the type hierarchy for the given type within the project (null uses entire project)
+<span class="fc" id="L208">			ITypeHierarchy typeHierarchy = type.newTypeHierarchy(null);</span>
+
+			// Iterate through all direct and indirect subtypes and add them to the list
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">			for (IType subtype : typeHierarchy.getAllSubtypes(type)) {</span>
+<span class="nc" id="L212">				ITypeBinding subtypeBinding = subtype.getAdapter(ITypeBinding.class);</span>
+<span class="nc bnc" id="L213" title="All 2 branches missed.">				if (subtypeBinding != null) {</span>
+<span class="nc" id="L214">					subclasses.add(subtypeBinding);</span>
+				}
+			}
+<span class="pc" id="L217">		} catch (JavaModelException e) {</span>
+<span class="nc" id="L218">			System.err.println(&quot;Failed to get subclasses for type: &quot; + typeBinding.getQualifiedName());</span>
+<span class="nc" id="L219">			e.printStackTrace();</span>
+<span class="nc" id="L220">			return new ArrayList&lt;&gt;();</span>
+		}
+<span class="fc" id="L222">		return subclasses;</span>
+	}
+
+	/**
+	 * Creates the init method that assigns testInfo.getDisplayName() to this.testName.
+	 * 
+	 * @param ast the AST instance
+	 * @return the method declaration
+	 */
+	private static MethodDeclaration createInitMethod(AST ast) {
+<span class="fc" id="L232">		MethodDeclaration methodDeclaration = ast.newMethodDeclaration();</span>
+<span class="fc" id="L233">		methodDeclaration.setName(ast.newSimpleName(&quot;init&quot;));</span>
+<span class="fc" id="L234">		methodDeclaration.setReturnType2(ast.newPrimitiveType(PrimitiveType.VOID));</span>
+
+		// Add parameter: TestInfo testInfo
+<span class="fc" id="L237">		SingleVariableDeclaration param = ast.newSingleVariableDeclaration();</span>
+<span class="fc" id="L238">		param.setType(ast.newSimpleType(ast.newName(&quot;TestInfo&quot;)));</span>
+<span class="fc" id="L239">		param.setName(ast.newSimpleName(&quot;testInfo&quot;));</span>
+<span class="fc" id="L240">		methodDeclaration.parameters().add(param);</span>
+
+		// Create method body
+<span class="fc" id="L243">		Block body = createInitMethodBody(ast);</span>
+<span class="fc" id="L244">		methodDeclaration.setBody(body);</span>
+
+<span class="fc" id="L246">		return methodDeclaration;</span>
+	}
+
+	/**
+	 * Creates the body of the init method: this.testName = testInfo.getDisplayName();
+	 * 
+	 * @param ast the AST instance
+	 * @return the method body block
+	 */
+	private static Block createInitMethodBody(AST ast) {
+<span class="fc" id="L256">		Block body = ast.newBlock();</span>
+
+		// Create assignment: this.testName = testInfo.getDisplayName()
+<span class="fc" id="L259">		Assignment assignment = ast.newAssignment();</span>
+
+		// Left side: this.testName
+<span class="fc" id="L262">		FieldAccess fieldAccess = ast.newFieldAccess();</span>
+<span class="fc" id="L263">		fieldAccess.setExpression(ast.newThisExpression());</span>
+<span class="fc" id="L264">		fieldAccess.setName(ast.newSimpleName(TEST_NAME));</span>
+<span class="fc" id="L265">		assignment.setLeftHandSide(fieldAccess);</span>
+
+		// Right side: testInfo.getDisplayName()
+<span class="fc" id="L268">		MethodInvocation methodInvocation = ast.newMethodInvocation();</span>
+<span class="fc" id="L269">		methodInvocation.setExpression(ast.newSimpleName(&quot;testInfo&quot;));</span>
+<span class="fc" id="L270">		methodInvocation.setName(ast.newSimpleName(&quot;getDisplayName&quot;));</span>
+<span class="fc" id="L271">		assignment.setRightHandSide(methodInvocation);</span>
+
+<span class="fc" id="L273">		body.statements().add(ast.newExpressionStatement(assignment));</span>
+<span class="fc" id="L274">		return body;</span>
+	}
+
+	/**
+	 * Creates a @BeforeEach annotation.
+	 * 
+	 * @param ast the AST instance
+	 * @return the annotation
+	 */
+	private static MarkerAnnotation createBeforeEachAnnotation(AST ast) {
+<span class="fc" id="L284">		MarkerAnnotation annotation = ast.newMarkerAnnotation();</span>
+<span class="fc" id="L285">		annotation.setTypeName(ast.newName(&quot;BeforeEach&quot;));</span>
+<span class="fc" id="L286">		return annotation;</span>
+	}
+
+	/**
+	 * Adds a method with its annotation to a class.
+	 * 
+	 * @param parentClass the class to add to
+	 * @param method the method to add
+	 * @param annotation the annotation to add to the method
+	 * @param rewriter the AST rewriter
+	 * @param group the text edit group
+	 */
+	private static void addMethodToClass(TypeDeclaration parentClass, MethodDeclaration method,
+			MarkerAnnotation annotation, ASTRewrite rewriter, TextEditGroup group) {
+		// Add method to class
+<span class="fc" id="L301">		ListRewrite classBodyRewrite = rewriter.getListRewrite(parentClass, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);</span>
+<span class="fc" id="L302">		classBodyRewrite.insertFirst(method, group);</span>
+
+		// Add annotation to method
+<span class="fc" id="L305">		ListRewrite modifierRewrite = rewriter.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);</span>
+<span class="fc" id="L306">		modifierRewrite.insertFirst(annotation, group);</span>
+<span class="fc" id="L307">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

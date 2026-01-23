@@ -1,0 +1,533 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>WhileToForEach.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_tools</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">WhileToForEach.java</span></div><h1>WhileToForEach.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2021 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Assignment;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.EnhancedForStatement;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.ParameterizedType;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.StructuralPropertyDescriptor;
+import org.eclipse.jdt.core.dom.ThisExpression;
+import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.eclipse.jdt.core.dom.WhileStatement;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite.ImportRewriteContext;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite.TypeLocation;
+import org.eclipse.jdt.internal.corext.codemanipulation.ContextSensitiveImportRewriteContext;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.dom.AbortSearchException;
+import org.eclipse.jdt.internal.corext.dom.Bindings;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.jdt.internal.corext.fix.ConvertLoopOperation;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.jdt.internal.corext.refactoring.structure.ImportRemover;
+import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.sandbox.jdt.internal.corext.fix.UseIteratorToForLoopFixCore;
+
+/**
+ * Find: while (it.hasNext()){ System.out.println(it.next()); }
+ *
+ * Rewrite: for(Object o:collection) { System.out.println(o); });
+ *
+ */
+<span class="fc" id="L71">public class WhileToForEach extends AbstractTool&lt;WhileLoopToChangeHit&gt; {</span>
+
+	@Override
+	public void find(UseIteratorToForLoopFixCore fixcore, CompilationUnit compilationUnit,
+			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed,
+			boolean createForOnlyIfVarUsed) {
+<span class="fc" id="L77">		ReferenceHolder&lt;ASTNode, WhileLoopToChangeHit&gt; dataholder= new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L78">		Map&lt;ASTNode, WhileLoopToChangeHit&gt; operationsMap= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L79">		WhileLoopToChangeHit invalidHit= new WhileLoopToChangeHit(true);</span>
+<span class="fc" id="L80">		HelperVisitor.callVariableDeclarationStatementVisitor(Iterator.class, compilationUnit, dataholder,</span>
+<span class="fc" id="L81">				nodesprocessed, (init_iterator, holder_a) -&gt; {</span>
+<span class="fc" id="L82">					List&lt;Object&gt; computeVarName= computeVarName(init_iterator);</span>
+<span class="fc" id="L83">					MethodInvocation iteratorCall= computeIteratorCall(init_iterator);</span>
+<span class="pc bpc" id="L84" title="1 of 4 branches missed.">					if (computeVarName != null &amp;&amp; iteratorCall != null) {</span>
+<span class="fc" id="L85">						Statement iteratorAssignment= ASTNodes.getFirstAncestorOrNull(iteratorCall,</span>
+<span class="fc" id="L86">								Statement.class);</span>
+<span class="fc" id="L87">						HelperVisitor.callWhileStatementVisitor(init_iterator.getParent(), dataholder, nodesprocessed,</span>
+<span class="fc" id="L88">								(whilestatement, holder) -&gt; {</span>
+<span class="fc" id="L89">									String name= computeNextVarname(whilestatement);</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">									if (computeVarName.get(0).equals(name)</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">											&amp;&amp; iteratorCall.getStartPosition() &lt; whilestatement.getStartPosition()) {</span>
+<span class="fc" id="L92">										WhileLoopToChangeHit hit= holder.computeIfAbsent(whilestatement,</span>
+<span class="fc" id="L93">												k -&gt; new WhileLoopToChangeHit());</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">										if (!createForOnlyIfVarUsed) {</span>
+<span class="fc" id="L95">											hit.iteratorDeclaration= init_iterator;</span>
+<span class="fc" id="L96">											hit.iteratorCall= iteratorAssignment;</span>
+<span class="fc" id="L97">											hit.iteratorName= name;</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">											if (computeVarName.size() == 1) {</span>
+<span class="fc" id="L99">												hit.self= true;</span>
+<span class="fc" id="L100">											} else {</span>
+<span class="fc" id="L101">												hit.collectionExpression= (Expression) computeVarName.get(1);</span>
+											}
+<span class="fc" id="L103">											hit.whileStatement= whilestatement;</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">											if (hit.self) {</span>
+<span class="fc" id="L105">												hit.loopVarName= ConvertLoopOperation.modifyBaseName(&quot;i&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">											} else if (hit.collectionExpression instanceof SimpleName) {</span>
+<span class="fc" id="L107">												hit.loopVarName= ConvertLoopOperation.modifyBaseName(</span>
+<span class="fc" id="L108">														((SimpleName) hit.collectionExpression).getIdentifier());</span>
+<span class="fc" id="L109">											} else {</span>
+<span class="nc" id="L110">												hit.loopVarName= ConvertLoopOperation.modifyBaseName(&quot;element&quot;); //$NON-NLS-1$</span>
+											}
+<span class="fc" id="L112">											operationsMap.put(whilestatement, hit);</span>
+										}
+<span class="fc" id="L114">										HelperVisitor.callMethodInvocationVisitor(whilestatement.getBody(), dataholder,</span>
+<span class="fc" id="L115">												nodesprocessed, (mi, holder2) -&gt; {</span>
+<span class="fc" id="L116">													SimpleName sn= ASTNodes.as(mi.getExpression(), SimpleName.class);</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">													if (sn != null) {</span>
+<span class="fc" id="L118">														String identifier= sn.getIdentifier();</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">														if (!name.equals(identifier)) {</span>
+<span class="fc" id="L120">															return true;</span>
+														}
+<span class="fc" id="L122">														String method= mi.getName().getFullyQualifiedName();</span>
+<span class="fc" id="L123">														WhileLoopToChangeHit previousHit= operationsMap</span>
+<span class="fc" id="L124">																.get(whilestatement);</span>
+<span class="pc bpc" id="L125" title="2 of 4 branches missed.">														if (previousHit != null &amp;&amp; (previousHit == invalidHit</span>
+<span class="pc bpc" id="L126" title="1 of 4 branches missed.">																|| previousHit.nextFound || !method.equals(&quot;next&quot;))) { //$NON-NLS-1$</span>
+<span class="fc" id="L127">															operationsMap.put(whilestatement, invalidHit);</span>
+<span class="fc" id="L128">															return true;</span>
+														}
+<span class="fc bfc" id="L130" title="All 2 branches covered.">														if (ASTNodes.getFirstAncestorOrNull(mi,</span>
+<span class="fc" id="L131">																ExpressionStatement.class) != null</span>
+<span class="pc bpc" id="L132" title="1 of 2 branches missed.">																&amp;&amp; createForOnlyIfVarUsed) {</span>
+<span class="nc" id="L133">															operationsMap.put(whilestatement, invalidHit);</span>
+<span class="nc" id="L134">															return true;</span>
+														}
+<span class="fc" id="L136">														hit.nextFound= true;</span>
+<span class="fc" id="L137">														hit.iteratorName= name;</span>
+<span class="fc" id="L138">														hit.iteratorDeclaration= init_iterator;</span>
+<span class="fc" id="L139">														hit.iteratorCall= iteratorAssignment;</span>
+<span class="fc" id="L140">														hit.whileStatement= whilestatement;</span>
+<span class="fc" id="L141">														hit.loopVarDeclaration= mi;</span>
+<span class="fc bfc" id="L142" title="All 2 branches covered.">														if (computeVarName.size() == 1) {</span>
+<span class="fc" id="L143">															hit.self= true;</span>
+<span class="fc" id="L144">														} else {</span>
+<span class="fc" id="L145">															hit.collectionExpression= (Expression) computeVarName</span>
+<span class="fc" id="L146">																	.get(1);</span>
+														}
+<span class="fc" id="L148">														VariableDeclarationStatement typedAncestor= ASTNodes</span>
+<span class="fc" id="L149">																.getTypedAncestor(mi,</span>
+<span class="fc" id="L150">																		VariableDeclarationStatement.class);</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">														if (typedAncestor != null) {</span>
+<span class="fc" id="L152">															ITypeBinding iteratorTypeArgument= computeTypeArgument(</span>
+<span class="fc" id="L153">																	init_iterator);</span>
+<span class="fc" id="L154">															ITypeBinding varTypeBinding= typedAncestor.getType()</span>
+<span class="fc" id="L155">																	.resolveBinding();</span>
+<span class="pc bpc" id="L156" title="2 of 4 branches missed.">															if (varTypeBinding == null || iteratorTypeArgument == null</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">																	|| (!varTypeBinding.isEqualTo(iteratorTypeArgument)</span>
+<span class="fc" id="L158">																			&amp;&amp; !Bindings.isSuperType(varTypeBinding,</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">																					iteratorTypeArgument))) {</span>
+<span class="fc" id="L160">																operationsMap.put(whilestatement, invalidHit);</span>
+<span class="fc" id="L161">																return true;</span>
+															}
+<span class="fc" id="L163">															VariableDeclarationFragment vdf= (VariableDeclarationFragment) typedAncestor</span>
+<span class="fc" id="L164">																	.fragments().get(0);</span>
+<span class="fc" id="L165">															hit.loopVarName= vdf.getName().getIdentifier();</span>
+<span class="fc" id="L166">														} else {</span>
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">															if (hit.self) {</span>
+<span class="nc" id="L168">																hit.loopVarName= ConvertLoopOperation</span>
+<span class="nc" id="L169">																		.modifyBaseName(&quot;i&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">															} else if (hit.collectionExpression instanceof SimpleName) {</span>
+<span class="fc" id="L171">																hit.loopVarName= ConvertLoopOperation.modifyBaseName(</span>
+<span class="fc" id="L172">																		((SimpleName) hit.collectionExpression)</span>
+<span class="fc" id="L173">																		.getIdentifier());</span>
+<span class="fc" id="L174">															} else {</span>
+<span class="nc" id="L175">																hit.loopVarName= ConvertLoopOperation</span>
+<span class="nc" id="L176">																		.modifyBaseName(&quot;element&quot;); //$NON-NLS-1$</span>
+															}
+<span class="fc" id="L178">															hit.nextWithoutVariableDeclaration= true;</span>
+														}
+<span class="fc" id="L180">														operationsMap.put(whilestatement, hit);</span>
+<span class="fc" id="L181">														HelperVisitor&lt;ReferenceHolder&lt;ASTNode, WhileLoopToChangeHit&gt;, ASTNode, WhileLoopToChangeHit&gt; helperVisitor= holder</span>
+<span class="fc" id="L182">																.getHelperVisitor();</span>
+<span class="fc" id="L183">														helperVisitor.nodesprocessed.add(whilestatement);</span>
+<span class="fc" id="L184">														holder2.remove(whilestatement);</span>
+													}
+<span class="fc" id="L186">													return true;</span>
+												});
+									}
+<span class="fc" id="L189">									return true;</span>
+								});
+					}
+<span class="fc" id="L192">					return true;</span>
+				});
+<span class="fc bfc" id="L194" title="All 2 branches covered.">		for (WhileLoopToChangeHit hit : operationsMap.values()) {</span>
+<span class="pc bpc" id="L195" title="1 of 4 branches missed.">			if (!hit.isInvalid &amp;&amp; validate(hit)) {</span>
+<span class="fc" id="L196">				operations.add(fixcore.rewrite(hit));</span>
+			}
+		}
+<span class="fc" id="L199">	}</span>
+
+	private static boolean validate(final WhileLoopToChangeHit hit) {
+<span class="fc" id="L202">		ASTNode iterDeclarationParent= hit.iteratorDeclaration.getParent();</span>
+<span class="fc" id="L203">		List&lt;StructuralPropertyDescriptor&gt; descs= iterDeclarationParent.structuralPropertiesForType();</span>
+<span class="fc" id="L204">		boolean hasStatements= false;</span>
+<span class="pc bpc" id="L205" title="1 of 2 branches missed.">		for (StructuralPropertyDescriptor desc : descs) {</span>
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">			if (desc.getId().equals(&quot;statements&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L207">				hasStatements= true;</span>
+<span class="fc" id="L208">				break;</span>
+			}
+		}
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">		if (!hasStatements) {</span>
+<span class="nc" id="L212">			return false;</span>
+		}
+<span class="fc" id="L214">		ReferenceHolder&lt;ASTNode, WhileLoopToChangeHit&gt; dataholder= new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L215">		Set&lt;ASTNode&gt; nodesprocessed= new HashSet&lt;&gt;();</span>
+<span class="fc" id="L216">		VariableDeclarationFragment iterDeclFragment= (VariableDeclarationFragment) hit.iteratorDeclaration.fragments()</span>
+<span class="fc" id="L217">				.get(0);</span>
+<span class="fc" id="L218">		IVariableBinding iterBinding= iterDeclFragment.resolveBinding();</span>
+<span class="pc bpc" id="L219" title="1 of 2 branches missed.">		if (iterBinding == null) {</span>
+<span class="nc" id="L220">			return false;</span>
+		}
+<span class="fc" id="L222">		HelperVisitor.callMethodInvocationVisitor(iterDeclarationParent, dataholder, nodesprocessed, (mi, holder2) -&gt; {</span>
+<span class="fc" id="L223">			SimpleName sn= ASTNodes.as(mi.getExpression(), SimpleName.class);</span>
+<span class="fc bfc" id="L224" title="All 4 branches covered.">			if (sn != null &amp;&amp; sn.getIdentifier().equals(hit.iteratorName)) {</span>
+<span class="pc bpc" id="L225" title="1 of 2 branches missed.">				if (mi.getStartPosition() &lt; hit.whileStatement.getStartPosition()) {</span>
+<span class="nc" id="L226">					hit.isInvalid= true;</span>
+<span class="nc" id="L227">					return false;</span>
+				}
+<span class="fc bfc" id="L229" title="All 2 branches covered.">			} else if (mi.getName().getIdentifier().equals(&quot;iterator&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L230">				ASTNode assignment= ASTNodes.getFirstAncestorOrNull(mi, Assignment.class);</span>
+<span class="pc bpc" id="L231" title="1 of 2 branches missed.">				if (assignment instanceof Assignment) {</span>
+<span class="nc" id="L232">					Expression leftSide= ((Assignment) assignment).getLeftHandSide();</span>
+<span class="nc" id="L233">					SimpleName assignedVar= ASTNodes.as(leftSide, SimpleName.class);</span>
+<span class="nc bnc" id="L234" title="All 4 branches missed.">					if (assignedVar != null &amp;&amp; assignedVar.getIdentifier().equals(hit.iteratorName)) {</span>
+<span class="nc" id="L235">						Statement stmt= ASTNodes.getFirstAncestorOrNull(assignment, Statement.class);</span>
+<span class="nc bnc" id="L236" title="All 4 branches missed.">						if (stmt == null || stmt.getParent() != hit.whileStatement.getParent()) {</span>
+<span class="nc" id="L237">							hit.isInvalid= true;</span>
+<span class="nc" id="L238">							return false;</span>
+						}
+					}
+				}
+			}
+<span class="fc" id="L243">			return true;</span>
+		});
+<span class="pc bpc" id="L245" title="1 of 2 branches missed.">		return !hit.isInvalid;</span>
+	}
+
+	private static String computeNextVarname(WhileStatement whilestatement) {
+<span class="fc" id="L249">		String name= null;</span>
+<span class="fc" id="L250">		Expression exp= whilestatement.getExpression();</span>
+<span class="pc bpc" id="L251" title="1 of 2 branches missed.">		if (exp instanceof MethodInvocation mi) {</span>
+<span class="pc bpc" id="L252" title="1 of 2 branches missed.">			if (mi.getName().getIdentifier().equals(&quot;hasNext&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L253">				SimpleName variable= ASTNodes.as(mi.getExpression(), SimpleName.class);</span>
+<span class="pc bpc" id="L254" title="1 of 2 branches missed.">				if (variable != null) {</span>
+<span class="fc" id="L255">					IBinding resolveBinding= variable.resolveBinding();</span>
+<span class="fc" id="L256">					name= resolveBinding.getName();</span>
+				}
+			}
+		}
+<span class="fc" id="L260">		return name;</span>
+	}
+
+	private static List&lt;Object&gt; computeVarName(VariableDeclarationStatement node_a) {
+<span class="fc" id="L264">		List&lt;Object&gt; objectList= new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L265" title="1 of 2 branches missed.">		if (node_a.fragments().size() &gt; 1) {</span>
+<span class="nc" id="L266">			return null;</span>
+		}
+<span class="fc" id="L268">		VariableDeclarationFragment bli= (VariableDeclarationFragment) node_a.fragments().get(0);</span>
+<span class="fc" id="L269">		objectList.add(bli.getName().getIdentifier());</span>
+<span class="fc" id="L270">		Expression exp= bli.getInitializer();</span>
+<span class="pc bpc" id="L271" title="1 of 2 branches missed.">		if (exp == null) {</span>
+<span class="nc" id="L272">			exp= computeIteratorCall(node_a);</span>
+		}
+<span class="fc" id="L274">		MethodInvocation mi= ASTNodes.as(exp, MethodInvocation.class);</span>
+<span class="pc bpc" id="L275" title="1 of 4 branches missed.">		if (mi == null || !mi.getName().getIdentifier().equals(&quot;iterator&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L276">			return null;</span>
+		}
+<span class="fc" id="L278">		ITypeBinding iterableAncestor= null;</span>
+<span class="fc" id="L279">		IMethodBinding miBinding= mi.resolveMethodBinding();</span>
+<span class="pc bpc" id="L280" title="1 of 2 branches missed.">		if (miBinding != null) {</span>
+<span class="fc" id="L281">			iterableAncestor= ASTNodes.findImplementedType(miBinding.getDeclaringClass(),</span>
+<span class="fc" id="L282">					Iterable.class.getCanonicalName());</span>
+		}
+<span class="fc bfc" id="L284" title="All 4 branches covered.">		if (iterableAncestor == null || iterableAncestor.isRawType()) {</span>
+<span class="fc" id="L285">			return null;</span>
+		}
+<span class="fc" id="L287">		Expression sn= ASTNodes.as(mi.getExpression(), Expression.class);</span>
+<span class="fc bfc" id="L288" title="All 2 branches covered.">		if (sn != null) {</span>
+<span class="fc" id="L289">			objectList.add(sn);</span>
+		}
+<span class="fc" id="L291">		return objectList;</span>
+	}
+
+	private static MethodInvocation computeIteratorCall(VariableDeclarationStatement node_a) {
+<span class="fc" id="L295">		VariableDeclarationFragment bli= (VariableDeclarationFragment) node_a.fragments().get(0);</span>
+<span class="fc" id="L296">		Expression exp= bli.getInitializer();</span>
+<span class="pc bpc" id="L297" title="1 of 2 branches missed.">		if (exp == null) {</span>
+<span class="nc" id="L298">			IBinding bliBinding= bli.getName().resolveBinding();</span>
+<span class="nc bnc" id="L299" title="All 2 branches missed.">			if (bliBinding == null) {</span>
+<span class="nc" id="L300">				return null;</span>
+			}
+<span class="nc" id="L302">			ASTNode parent= node_a.getParent();</span>
+<span class="nc" id="L303">			ReferenceHolder&lt;ASTNode, Object&gt; dataholder= new ReferenceHolder&lt;&gt;();</span>
+<span class="nc" id="L304">			Set&lt;ASTNode&gt; nodesprocessed= new HashSet&lt;&gt;();</span>
+<span class="nc" id="L305">			final Object Invalid= new Object();</span>
+			try {
+<span class="nc" id="L307">				HelperVisitor.callAssignmentVisitor(parent, dataholder, nodesprocessed, (assignment, holder2) -&gt; {</span>
+<span class="nc bnc" id="L308" title="All 2 branches missed.">					if (assignment.getStartPosition() &gt; node_a.getStartPosition()) {</span>
+<span class="nc" id="L309">						Expression leftSide= assignment.getLeftHandSide();</span>
+<span class="nc" id="L310">						SimpleName sn= ASTNodes.as(leftSide, SimpleName.class);</span>
+<span class="nc bnc" id="L311" title="All 2 branches missed.">						if (sn != null) {</span>
+<span class="nc" id="L312">							IBinding binding= sn.resolveBinding();</span>
+<span class="nc bnc" id="L313" title="All 2 branches missed.">							if (binding.isEqualTo(bliBinding)) {</span>
+<span class="nc" id="L314">								MethodInvocation mi= ASTNodes.as(assignment.getRightHandSide(), MethodInvocation.class);</span>
+<span class="nc bnc" id="L315" title="All 4 branches missed.">								if (mi == null || !mi.getName().getIdentifier().equals(&quot;iterator&quot;) //$NON-NLS-1$</span>
+<span class="nc bnc" id="L316" title="All 2 branches missed.">										|| (dataholder.get(node_a) != null)) {</span>
+<span class="nc" id="L317">									dataholder.put(node_a, Invalid);</span>
+<span class="nc" id="L318">									throw new AbortSearchException();</span>
+								}
+<span class="nc" id="L320">								dataholder.put(node_a, mi);</span>
+							}
+						}
+					}
+<span class="nc" id="L324">					return true;</span>
+				});
+<span class="nc" id="L326">			} catch (AbortSearchException e) {</span>
+				// do nothing
+			}
+<span class="nc" id="L329">			Object holderObject= dataholder.get(node_a);</span>
+<span class="nc bnc" id="L330" title="All 4 branches missed.">			if (holderObject == Invalid || holderObject == null) {</span>
+<span class="nc" id="L331">				return null;</span>
+			}
+<span class="nc" id="L333">			return (MethodInvocation) holderObject;</span>
+		}
+<span class="fc" id="L335">		return ASTNodes.as(exp, MethodInvocation.class);</span>
+	}
+
+	private static ITypeBinding computeTypeArgument(VariableDeclarationStatement node_a) {
+<span class="fc" id="L339">		VariableDeclarationFragment bli= (VariableDeclarationFragment) node_a.fragments().get(0);</span>
+<span class="fc" id="L340">		Expression exp= bli.getInitializer();</span>
+<span class="pc bpc" id="L341" title="1 of 2 branches missed.">		if (exp == null) {</span>
+<span class="nc" id="L342">			IBinding bliBinding= bli.getName().resolveBinding();</span>
+<span class="nc bnc" id="L343" title="All 2 branches missed.">			if (bliBinding == null) {</span>
+<span class="nc" id="L344">				return null;</span>
+			}
+<span class="nc" id="L346">			ASTNode parent= node_a.getParent();</span>
+<span class="nc" id="L347">			ReferenceHolder&lt;ASTNode, Object&gt; dataholder= new ReferenceHolder&lt;&gt;();</span>
+<span class="nc" id="L348">			Set&lt;ASTNode&gt; nodesprocessed= new HashSet&lt;&gt;();</span>
+<span class="nc" id="L349">			final Object Invalid= new Object();</span>
+			try {
+<span class="nc" id="L351">				HelperVisitor.callAssignmentVisitor(parent, dataholder, nodesprocessed, (assignment, holder2) -&gt; {</span>
+<span class="nc bnc" id="L352" title="All 2 branches missed.">					if (assignment.getStartPosition() &gt; node_a.getStartPosition()) {</span>
+<span class="nc" id="L353">						Expression leftSide= assignment.getLeftHandSide();</span>
+<span class="nc" id="L354">						SimpleName sn= ASTNodes.as(leftSide, SimpleName.class);</span>
+<span class="nc bnc" id="L355" title="All 2 branches missed.">						if (sn != null) {</span>
+<span class="nc" id="L356">							IBinding binding= sn.resolveBinding();</span>
+<span class="nc bnc" id="L357" title="All 2 branches missed.">							if (binding.isEqualTo(bliBinding)) {</span>
+<span class="nc" id="L358">								MethodInvocation mi= ASTNodes.as(assignment.getRightHandSide(), MethodInvocation.class);</span>
+<span class="nc bnc" id="L359" title="All 4 branches missed.">								if (mi == null || !mi.getName().getIdentifier().equals(&quot;iterator&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L360">									dataholder.put(node_a, Invalid);</span>
+<span class="nc" id="L361">									throw new AbortSearchException();</span>
+								}
+<span class="nc" id="L363">								dataholder.put(node_a, mi);</span>
+							}
+						}
+					}
+<span class="nc" id="L367">					return true;</span>
+				});
+<span class="nc" id="L369">			} catch (AbortSearchException e) {</span>
+				// do nothing
+			}
+<span class="nc" id="L372">			Object holderObject= dataholder.get(node_a);</span>
+<span class="nc bnc" id="L373" title="All 4 branches missed.">			if (holderObject == Invalid || holderObject == null) {</span>
+<span class="nc" id="L374">				return null;</span>
+			}
+<span class="nc" id="L376">			exp= (Expression) dataholder.get(node_a);</span>
+		}
+<span class="fc" id="L378">		MethodInvocation mi= ASTNodes.as(exp, MethodInvocation.class);</span>
+<span class="pc bpc" id="L379" title="2 of 4 branches missed.">		if (mi != null &amp;&amp; mi.getName().toString().equals(&quot;iterator&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L380">			ITypeBinding iterableAncestor= null;</span>
+<span class="fc" id="L381">			IMethodBinding miBinding= mi.resolveMethodBinding();</span>
+<span class="pc bpc" id="L382" title="1 of 2 branches missed.">			if (miBinding != null) {</span>
+<span class="fc" id="L383">				iterableAncestor= ASTNodes.findImplementedType(miBinding.getDeclaringClass(),</span>
+<span class="fc" id="L384">						Iterable.class.getCanonicalName());</span>
+			}
+<span class="pc bpc" id="L386" title="1 of 2 branches missed.">			if (iterableAncestor != null) {</span>
+<span class="fc" id="L387">				ITypeBinding[] typeArgs= iterableAncestor.getTypeArguments();</span>
+<span class="pc bpc" id="L388" title="1 of 2 branches missed.">				if (typeArgs.length &gt; 0) {</span>
+<span class="fc" id="L389">					return typeArgs[0];</span>
+				}
+			}
+		} else {
+<span class="nc" id="L393">			ITypeBinding varTypeBinding= node_a.getType().resolveBinding();</span>
+<span class="nc bnc" id="L394" title="All 2 branches missed.">			if (varTypeBinding != null) {</span>
+<span class="nc" id="L395">				ITypeBinding[] typeArgs= varTypeBinding.getTypeArguments();</span>
+<span class="nc bnc" id="L396" title="All 2 branches missed.">				if (typeArgs.length &gt; 0) {</span>
+<span class="nc" id="L397">					return typeArgs[0];</span>
+				}
+			}
+		}
+<span class="nc" id="L401">		return node_a.getAST().resolveWellKnownType(&quot;java.lang.Object&quot;); //$NON-NLS-1$</span>
+	}
+
+	@Override
+	public void rewrite(UseIteratorToForLoopFixCore upp, final WhileLoopToChangeHit hit,
+			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
+<span class="fc" id="L407">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L408">		AST ast= cuRewrite.getRoot().getAST();</span>
+
+<span class="fc" id="L410">		ImportRewrite importRewrite= cuRewrite.getImportRewrite();</span>
+<span class="fc" id="L411">		ImportRemover remover= cuRewrite.getImportRemover();</span>
+
+<span class="fc" id="L413">		EnhancedForStatement newEnhancedForStatement= ast.newEnhancedForStatement();</span>
+
+<span class="fc" id="L415">		SingleVariableDeclaration result= ast.newSingleVariableDeclaration();</span>
+
+<span class="fc" id="L417">		SimpleName name= ast.newSimpleName(hit.loopVarName);</span>
+<span class="fc" id="L418">		result.setName(name);</span>
+
+		String looptargettype;
+		Type type;
+<span class="fc" id="L422">		ITypeBinding varBinding= null;</span>
+<span class="pc bpc" id="L423" title="1 of 4 branches missed.">		if (hit.nextWithoutVariableDeclaration || !hit.nextFound) {</span>
+<span class="fc" id="L424">			type= null;</span>
+<span class="fc" id="L425">		} else {</span>
+<span class="fc" id="L426">			Expression expression= hit.loopVarDeclaration.getExpression();</span>
+<span class="fc" id="L427">			SimpleName variable= ASTNodes.as(expression, SimpleName.class);</span>
+<span class="fc" id="L428">			looptargettype= variable.resolveTypeBinding().getErasure().getQualifiedName();</span>
+<span class="fc" id="L429">			VariableDeclarationStatement typedAncestor= ASTNodes.getTypedAncestor(hit.loopVarDeclaration,</span>
+<span class="fc" id="L430">					VariableDeclarationStatement.class);</span>
+<span class="fc" id="L431">			type= typedAncestor.getType();</span>
+<span class="fc" id="L432">			varBinding= type.resolveBinding();</span>
+		}
+<span class="pc bpc" id="L434" title="1 of 4 branches missed.">		if (type == null || varBinding == null) {</span>
+<span class="fc" id="L435">			looptargettype= &quot;java.lang.Object&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L436">			ITypeBinding binding= computeTypeArgument(hit.iteratorDeclaration);</span>
+<span class="fc" id="L437">			Type collectionType= null;</span>
+<span class="pc bpc" id="L438" title="1 of 2 branches missed.">			if (binding != null) {</span>
+<span class="fc" id="L439">				looptargettype= binding.getErasure().getQualifiedName();</span>
+<span class="pc bpc" id="L440" title="1 of 2 branches missed.">				if (binding.isParameterizedType()) {</span>
+<span class="nc" id="L441">					collectionType= handleParametrizedType(binding, ast, cuRewrite);</span>
+				}
+			}
+<span class="pc bpc" id="L444" title="1 of 2 branches missed.">			if (collectionType == null) {</span>
+<span class="fc" id="L445">				collectionType= ast.newSimpleType(addImport(looptargettype, cuRewrite, ast));</span>
+			}
+<span class="fc" id="L447">			result.setType(collectionType);</span>
+<span class="fc" id="L448">		} else {</span>
+<span class="fc" id="L449">			Type importType= importType(varBinding, hit.iteratorDeclaration, importRewrite,</span>
+<span class="fc" id="L450">					(CompilationUnit) hit.iteratorDeclaration.getRoot(), TypeLocation.LOCAL_VARIABLE);</span>
+<span class="fc" id="L451">			remover.registerAddedImports(importType);</span>
+
+<span class="fc" id="L453">			result.setType(importType);</span>
+		}
+<span class="fc" id="L455">		newEnhancedForStatement.setParameter(result);</span>
+<span class="fc bfc" id="L456" title="All 2 branches covered.">		if (hit.self) {</span>
+<span class="fc" id="L457">			ThisExpression newThisExpression= ast.newThisExpression();</span>
+<span class="fc" id="L458">			newEnhancedForStatement.setExpression(newThisExpression);</span>
+<span class="fc" id="L459">		} else {</span>
+<span class="fc" id="L460">			Expression loopExpression= (Expression) rewrite.createCopyTarget(hit.collectionExpression);</span>
+<span class="fc" id="L461">			newEnhancedForStatement.setExpression(loopExpression);</span>
+		}
+<span class="fc" id="L463">		ASTNodes.removeButKeepComment(rewrite, hit.iteratorDeclaration, group);</span>
+<span class="fc" id="L464">		remover.registerRemovedNode(hit.iteratorDeclaration.getType());</span>
+<span class="pc bpc" id="L465" title="1 of 2 branches missed.">		if (hit.iteratorCall != hit.iteratorDeclaration) {</span>
+<span class="nc" id="L466">			ASTNodes.removeButKeepComment(rewrite, hit.iteratorCall, group);</span>
+<span class="nc" id="L467">			remover.registerRemovedNode(hit.iteratorCall);</span>
+		}
+<span class="pc bpc" id="L469" title="1 of 2 branches missed.">		if (hit.nextFound) {</span>
+<span class="fc bfc" id="L470" title="All 2 branches covered.">			if (hit.nextWithoutVariableDeclaration) {</span>
+				// remove it.next(); expression statements
+<span class="fc" id="L472">				ASTNode loopVarDeclaration= hit.loopVarDeclaration;</span>
+<span class="pc bpc" id="L473" title="1 of 2 branches missed.">				while (loopVarDeclaration.getParent() instanceof ParenthesizedExpression) {</span>
+<span class="nc" id="L474">					loopVarDeclaration= loopVarDeclaration.getParent();</span>
+				}
+<span class="pc bpc" id="L476" title="1 of 2 branches missed.">				if (loopVarDeclaration.getLocationInParent() == ExpressionStatement.EXPRESSION_PROPERTY) {</span>
+<span class="nc" id="L477">					rewrite.remove(loopVarDeclaration.getParent(), group);</span>
+<span class="nc" id="L478">					remover.registerRemovedNode(loopVarDeclaration);</span>
+<span class="nc" id="L479">				} else {</span>
+<span class="fc" id="L480">					ASTNodes.replaceButKeepComment(rewrite, hit.loopVarDeclaration, name, group);</span>
+<span class="fc" id="L481">					remover.registerRemovedNode(hit.loopVarDeclaration);</span>
+				}
+<span class="fc" id="L483">			} else {</span>
+<span class="fc" id="L484">				ASTNode node= ASTNodes.getTypedAncestor(hit.loopVarDeclaration, VariableDeclarationStatement.class);</span>
+<span class="fc" id="L485">				ASTNodes.removeButKeepComment(rewrite, node, group);</span>
+<span class="fc" id="L486">				remover.registerRemovedNode(node);</span>
+			}
+		}
+<span class="fc" id="L489">		newEnhancedForStatement.setBody(ASTNodes.createMoveTarget(rewrite, hit.whileStatement.getBody()));</span>
+<span class="fc" id="L490">		ASTNodes.replaceButKeepComment(rewrite, hit.whileStatement, newEnhancedForStatement, group);</span>
+<span class="fc" id="L491">		remover.registerRemovedNode(hit.whileStatement.getExpression());</span>
+<span class="fc" id="L492">		remover.applyRemoves(importRewrite);</span>
+<span class="fc" id="L493">	}</span>
+
+	private Type handleParametrizedType(ITypeBinding binding, AST ast, CompilationUnitRewrite cuRewrite) {
+<span class="nc" id="L496">		ITypeBinding[] args= binding.getTypeArguments();</span>
+<span class="nc" id="L497">		String looptargettype= binding.getErasure().getQualifiedName();</span>
+<span class="nc" id="L498">		Type collectionType= ast.newSimpleType(addImport(looptargettype, cuRewrite, ast));</span>
+<span class="nc bnc" id="L499" title="All 2 branches missed.">		if (binding.isParameterizedType()) {</span>
+<span class="nc" id="L500">			ParameterizedType pType= ast.newParameterizedType(collectionType);</span>
+<span class="nc" id="L501">			Collection&lt;Type&gt; typeArgs= new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L502" title="All 2 branches missed.">			for (ITypeBinding arg : args) {</span>
+<span class="nc" id="L503">				Type argType= null;</span>
+<span class="nc bnc" id="L504" title="All 2 branches missed.">				if (arg.isParameterizedType()) {</span>
+<span class="nc" id="L505">					argType= handleParametrizedType(arg, ast, cuRewrite);</span>
+<span class="nc" id="L506">				} else {</span>
+<span class="nc" id="L507">					looptargettype= arg.getQualifiedName();</span>
+<span class="nc" id="L508">					argType= ast.newSimpleType(addImport(looptargettype, cuRewrite, ast));</span>
+				}
+<span class="nc" id="L510">				typeArgs.add(argType);</span>
+			}
+<span class="nc" id="L512">			pType.typeArguments().addAll(typeArgs);</span>
+<span class="nc" id="L513">			collectionType= pType;</span>
+		}
+<span class="nc" id="L515">		return collectionType;</span>
+	}
+
+	private static Type importType(final ITypeBinding toImport, final ASTNode accessor, ImportRewrite imports,
+			final CompilationUnit compilationUnit, TypeLocation location) {
+<span class="fc" id="L520">		ImportRewriteContext importContext= new ContextSensitiveImportRewriteContext(compilationUnit,</span>
+<span class="fc" id="L521">				accessor.getStartPosition(), imports);</span>
+<span class="fc" id="L522">		return imports.addImport(toImport, compilationUnit.getAST(), importContext, location);</span>
+	}
+
+	@Override
+	public String getPreview(boolean afterRefactoring) {
+<span class="nc bnc" id="L527" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L528">			return &quot;\nfor (String s : strings) {\n\n	System.out.println(s);\n}\n\n&quot;; //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L530">		return &quot;Iterator it = lists.iterator();\nwhile (it.hasNext()) {\n    String s = (String) it.next();\n	System.out.println(s);\n}\n\n&quot;; //$NON-NLS-1$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

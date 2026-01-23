@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>CodeSequenceMatcher.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_method_reuse</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper.lib</a> &gt; <span class="el_source">CodeSequenceMatcher.java</span></div><h1>CodeSequenceMatcher.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper.lib;
+
+import java.util.List;
+
+import org.eclipse.jdt.core.dom.ASTMatcher;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.Statement;
+
+/**
+ * Code Sequence Matcher - Matches AST subtrees with variable normalization
+ * 
+ * This class compares code sequences to determine if they are structurally equivalent,
+ * even when different variable names are used. It creates a mapping between variables
+ * in the target and candidate sequences.
+ */
+<span class="nc" id="L29">public class CodeSequenceMatcher {</span>
+	
+	/**
+	 * Try to match a candidate sequence against a target sequence
+	 * 
+	 * @param targetSequence The target statement sequence (from the method being searched for)
+	 * @param candidateSequence The candidate statement sequence (from inline code)
+	 * @return VariableMapping if match successful, null otherwise
+	 */
+	public static VariableMapping matchSequence(List&lt;Statement&gt; targetSequence, List&lt;Statement&gt; candidateSequence) {
+<span class="pc bpc" id="L39" title="2 of 4 branches missed.">		if (targetSequence == null || candidateSequence == null) {</span>
+<span class="nc" id="L40">			return null;</span>
+		}
+		
+<span class="pc bpc" id="L43" title="1 of 2 branches missed.">		if (targetSequence.size() != candidateSequence.size()) {</span>
+<span class="nc" id="L44">			return null;</span>
+		}
+		
+<span class="fc" id="L47">		VariableMapping mapping = new VariableMapping();</span>
+		
+		// Match each statement pair
+<span class="fc bfc" id="L50" title="All 2 branches covered.">		for (int i = 0; i &lt; targetSequence.size(); i++) {</span>
+<span class="fc" id="L51">			Statement targetStmt = targetSequence.get(i);</span>
+<span class="fc" id="L52">			Statement candidateStmt = candidateSequence.get(i);</span>
+			
+<span class="fc bfc" id="L54" title="All 2 branches covered.">			if (!matchStatement(targetStmt, candidateStmt, mapping)) {</span>
+<span class="fc" id="L55">				return null;</span>
+			}
+		}
+		
+<span class="fc" id="L59">		return mapping;</span>
+	}
+	
+	/**
+	 * Match two statements with variable mapping
+	 */
+	@SuppressWarnings(&quot;unchecked&quot;)
+	private static boolean matchStatement(Statement target, Statement candidate, VariableMapping mapping) {
+<span class="pc bpc" id="L67" title="2 of 4 branches missed.">		if (target == null || candidate == null) {</span>
+<span class="nc" id="L68">			return false;</span>
+		}
+		
+		// Special case: return statement can match variable declaration
+		// This allows matching code like &quot;return x + y;&quot; with &quot;int result = x + y;&quot;
+<span class="fc bfc" id="L73" title="All 2 branches covered.">		if (target instanceof org.eclipse.jdt.core.dom.ReturnStatement &amp;&amp; </span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">			candidate instanceof org.eclipse.jdt.core.dom.VariableDeclarationStatement) {</span>
+			
+<span class="fc" id="L76">			org.eclipse.jdt.core.dom.ReturnStatement returnStmt = (org.eclipse.jdt.core.dom.ReturnStatement) target;</span>
+<span class="fc" id="L77">			org.eclipse.jdt.core.dom.VariableDeclarationStatement varDecl = (org.eclipse.jdt.core.dom.VariableDeclarationStatement) candidate;</span>
+			
+			// Return statement must have an expression
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">			if (returnStmt.getExpression() == null) {</span>
+<span class="nc" id="L81">				return false;</span>
+			}
+			
+			// Variable declaration must have exactly one fragment with an initializer
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">			if (varDecl.fragments().size() != 1) {</span>
+<span class="nc" id="L86">				return false;</span>
+			}
+			
+			// Defensive check: ensure fragment list is not empty before accessing index 0
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">			if (varDecl.fragments().isEmpty()) {</span>
+<span class="nc" id="L91">				return false;</span>
+			}
+			
+<span class="fc" id="L94">			org.eclipse.jdt.core.dom.VariableDeclarationFragment fragment = </span>
+<span class="fc" id="L95">				(org.eclipse.jdt.core.dom.VariableDeclarationFragment) varDecl.fragments().get(0);</span>
+			
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">			if (fragment.getInitializer() == null) {</span>
+<span class="nc" id="L98">				return false;</span>
+			}
+			
+			// Match the return expression against the initializer expression
+<span class="fc" id="L102">			VariableMappingMatcher matcher = new VariableMappingMatcher(mapping);</span>
+<span class="fc" id="L103">			return returnStmt.getExpression().subtreeMatch(matcher, fragment.getInitializer());</span>
+		}
+		
+		// Must be same statement type for normal matching
+<span class="fc bfc" id="L107" title="All 2 branches covered.">		if (target.getNodeType() != candidate.getNodeType()) {</span>
+<span class="fc" id="L108">			return false;</span>
+		}
+		
+		// Use custom AST matcher that tracks variable mappings
+<span class="fc" id="L112">		VariableMappingMatcher matcher = new VariableMappingMatcher(mapping);</span>
+<span class="fc" id="L113">		return target.subtreeMatch(matcher, candidate);</span>
+	}
+	
+	/**
+	 * Custom AST Matcher that tracks variable name mappings
+	 */
+	private static class VariableMappingMatcher extends ASTMatcher {
+		private final VariableMapping mapping;
+		
+<span class="fc" id="L122">		public VariableMappingMatcher(VariableMapping mapping) {</span>
+<span class="fc" id="L123">			this.mapping = mapping;</span>
+<span class="fc" id="L124">		}</span>
+		
+		@Override
+		public boolean match(SimpleName node, Object other) {
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">			if (!(other instanceof org.eclipse.jdt.core.dom.ASTNode)) {</span>
+<span class="nc" id="L129">				return false;</span>
+			}
+			
+<span class="fc" id="L132">			String targetName = node.getIdentifier();</span>
+			
+			// If other is also a SimpleName, do normal name mapping
+<span class="fc bfc" id="L135" title="All 2 branches covered.">			if (other instanceof SimpleName) {</span>
+<span class="fc" id="L136">				SimpleName otherName = (SimpleName) other;</span>
+<span class="fc" id="L137">				String candidateName = otherName.getIdentifier();</span>
+<span class="fc" id="L138">				return mapping.addMapping(targetName, candidateName);</span>
+			}
+			
+			// If other is a complex expression (not a SimpleName), store it as an expression mapping
+			// This handles cases like: parameter 'a' matching expression 'u.getFirst()'
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">			if (other instanceof org.eclipse.jdt.core.dom.Expression) {</span>
+<span class="fc" id="L144">				org.eclipse.jdt.core.dom.Expression candidateExpr = (org.eclipse.jdt.core.dom.Expression) other;</span>
+<span class="fc" id="L145">				mapping.addExpressionMapping(targetName, candidateExpr);</span>
+<span class="fc" id="L146">				return true;</span>
+			}
+			
+			// For all other ASTNode kinds (e.g., Statement, Type, etc.) we intentionally do not
+			// create a mapping and report &quot;no match&quot; to avoid binding a SimpleName placeholder
+			// to structurally larger constructs.
+<span class="nc" id="L152">			return false;</span>
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

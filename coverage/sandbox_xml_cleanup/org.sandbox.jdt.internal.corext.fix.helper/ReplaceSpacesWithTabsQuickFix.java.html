@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ReplaceSpacesWithTabsQuickFix.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_xml_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">ReplaceSpacesWithTabsQuickFix.java</span></div><h1>ReplaceSpacesWithTabsQuickFix.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2021 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IMarker;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.ILog;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.ui.IMarkerResolution;
+
+/**
+ * Quick fix to replace leading 4 spaces with tabs in XML files.
+ * Only replaces spaces at the beginning of lines, not inside text content.
+ */
+<span class="nc" id="L34">public class ReplaceSpacesWithTabsQuickFix implements IMarkerResolution {</span>
+	
+<span class="nc" id="L36">	private static final ILog LOG = Platform.getLog(ReplaceSpacesWithTabsQuickFix.class);</span>
+<span class="nc" id="L37">	private static final String PLUGIN_ID = &quot;org.sandbox.jdt.internal.corext.fix.helper&quot;;</span>
+	
+	@Override
+	public String getLabel() {
+<span class="nc" id="L41">		return &quot;Replace leading 4 spaces with tabs&quot;;</span>
+	}
+
+	@Override
+	public void run(IMarker marker) {
+		try {
+<span class="nc" id="L47">			IResource resource = marker.getResource();</span>
+<span class="nc bnc" id="L48" title="All 2 branches missed.">			if (!(resource instanceof IFile)) {</span>
+<span class="nc" id="L49">				LOG.log(new Status(IStatus.WARNING, PLUGIN_ID,</span>
+<span class="nc" id="L50">					&quot;Marker resource is not a file: &quot; + resource));</span>
+<span class="nc" id="L51">				return;</span>
+			}
+			
+<span class="nc" id="L54">			IFile file = (IFile) resource;</span>
+			
+			// Read file content
+			String content;
+<span class="nc" id="L58">			try (InputStream is = file.getContents()) {</span>
+<span class="nc" id="L59">				content = new String(is.readAllBytes(), StandardCharsets.UTF_8);</span>
+			}
+
+			// Detect original line ending style
+<span class="nc" id="L63">			String lineEnding = &quot;\n&quot;;</span>
+<span class="nc bnc" id="L64" title="All 2 branches missed.">			if (content.contains(&quot;\r\n&quot;)) {</span>
+<span class="nc" id="L65">				lineEnding = &quot;\r\n&quot;;</span>
+			}
+
+			// Replace leading 4 spaces with tabs (line by line to avoid replacing inline spaces)
+<span class="nc" id="L69">			String[] lines = content.split(&quot;\r?\n&quot;, -1); // -1 to preserve empty lines</span>
+<span class="nc" id="L70">			StringBuilder result = new StringBuilder();</span>
+			
+<span class="nc bnc" id="L72" title="All 2 branches missed.">			for (int i = 0; i &lt; lines.length; i++) {</span>
+<span class="nc" id="L73">				String line = lines[i];</span>
+				
+				// Count leading spaces
+<span class="nc" id="L76">				int leadingSpaces = 0;</span>
+<span class="nc bnc" id="L77" title="All 4 branches missed.">				while (leadingSpaces &lt; line.length() &amp;&amp; line.charAt(leadingSpaces) == ' ') {</span>
+<span class="nc" id="L78">					leadingSpaces++;</span>
+				}
+				
+				// Convert groups of 4 leading spaces to tabs
+<span class="nc" id="L82">				int numTabs = leadingSpaces / 4;</span>
+<span class="nc" id="L83">				int remainingSpaces = leadingSpaces % 4;</span>
+				
+				// Rebuild line with tabs
+<span class="nc bnc" id="L86" title="All 2 branches missed.">				if (numTabs &gt; 0) {</span>
+<span class="nc" id="L87">					result.append(&quot;\t&quot;.repeat(numTabs));</span>
+				}
+<span class="nc bnc" id="L89" title="All 2 branches missed.">				if (remainingSpaces &gt; 0) {</span>
+<span class="nc" id="L90">					result.append(&quot; &quot;.repeat(remainingSpaces));</span>
+				}
+<span class="nc" id="L92">				result.append(line.substring(leadingSpaces));</span>
+				
+<span class="nc bnc" id="L94" title="All 2 branches missed.">				if (i &lt; lines.length - 1) {</span>
+<span class="nc" id="L95">					result.append(lineEnding);</span>
+				}
+			}
+
+			// Write back using Eclipse workspace API
+<span class="nc" id="L100">			byte[] newContent = result.toString().getBytes(StandardCharsets.UTF_8);</span>
+<span class="nc" id="L101">			ByteArrayInputStream inputStream = new ByteArrayInputStream(newContent);</span>
+<span class="nc" id="L102">			file.setContents(inputStream, IResource.KEEP_HISTORY, null);</span>
+			
+			// Refresh resource
+<span class="nc" id="L105">			file.refreshLocal(IResource.DEPTH_ZERO, null);</span>
+
+			// Delete marker
+<span class="nc" id="L108">			marker.delete();</span>
+			
+<span class="nc" id="L110">			LOG.log(new Status(IStatus.INFO, PLUGIN_ID,</span>
+<span class="nc" id="L111">				&quot;Replaced leading spaces with tabs in: &quot; + file.getName()));</span>
+			
+<span class="nc" id="L113">		} catch (CoreException e) {</span>
+<span class="nc" id="L114">			LOG.log(new Status(IStatus.ERROR, PLUGIN_ID,</span>
+<span class="nc" id="L115">				&quot;Error applying quick fix&quot;, e));</span>
+<span class="nc" id="L116">		} catch (Exception e) {</span>
+<span class="nc" id="L117">			LOG.log(new Status(IStatus.ERROR, PLUGIN_ID,</span>
+<span class="nc" id="L118">				&quot;Unexpected error applying quick fix&quot;, e));</span>
+		}
+<span class="nc" id="L120">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

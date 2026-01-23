@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>InlineSequencesPlugin.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_method_reuse</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">InlineSequencesPlugin.java</span></div><h1>InlineSequencesPlugin.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import java.util.List;
+import java.util.Set;
+
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.ReturnStatement;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.jdt.internal.corext.refactoring.util.TightSourceRangeComputer;
+import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.sandbox.jdt.internal.corext.fix.MethodReuseCleanUpFixCore;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractMethodReuse;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.InlineCodeSequenceFinder;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.InlineCodeSequenceFinder.InlineSequenceMatch;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.MethodCallReplacer;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.VariableMapping;
+
+/**
+ * Plugin for detecting and replacing inline code sequences with method calls
+ */
+<span class="fc" id="L50">public class InlineSequencesPlugin extends AbstractMethodReuse&lt;MethodDeclaration&gt; {</span>
+
+	@Override
+	public void find(Object fixcore, CompilationUnit compilationUnit,
+			Set&lt;?&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) throws CoreException {
+		
+		// Cast to the correct type
+		@SuppressWarnings(&quot;unchecked&quot;)
+<span class="fc" id="L58">		Set&lt;CompilationUnitRewriteOperation&gt; ops = (Set&lt;CompilationUnitRewriteOperation&gt;) operations;</span>
+<span class="fc" id="L59">		MethodReuseCleanUpFixCore fixCore = (MethodReuseCleanUpFixCore) fixcore;</span>
+		
+		// Use HelperVisitor to visit all methods in the compilation unit
+<span class="fc" id="L62">		ReferenceHolder&lt;Integer, Object&gt; dataholder = new ReferenceHolder&lt;&gt;();</span>
+		
+<span class="fc" id="L64">		HelperVisitor.callMethodDeclarationVisitor(compilationUnit, dataholder, nodesprocessed,</span>
+<span class="fc" id="L65">				(node, holder) -&gt; {</span>
+					// Search for inline sequences matching this method
+<span class="fc" id="L67">					List&lt;InlineSequenceMatch&gt; matches = InlineCodeSequenceFinder.findInlineSequences(compilationUnit, node);</span>
+					
+					// Create operations for each match found
+<span class="fc bfc" id="L70" title="All 2 branches covered.">					for (InlineSequenceMatch match : matches) {</span>
+<span class="fc" id="L71">						List&lt;Statement&gt; matchingStatements = match.getMatchingStatements();</span>
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">						if (matchingStatements.isEmpty()) {</span>
+<span class="nc" id="L73">							continue;</span>
+						}
+<span class="pc bpc" id="L75" title="1 of 2 branches missed.">						if (!nodesprocessed.contains(matchingStatements.get(0))) {</span>
+							// Create a ReferenceHolder to store both the method and the match
+<span class="fc" id="L77">							ReferenceHolder&lt;Integer, Object&gt; matchHolder = new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L78">							matchHolder.put(0, node);</span>
+<span class="fc" id="L79">							matchHolder.put(1, match);</span>
+<span class="fc" id="L80">							ops.add(fixCore.rewrite(matchHolder));</span>
+							// Mark all statements in the match as processed
+<span class="fc" id="L82">							matchingStatements.forEach(nodesprocessed::add);</span>
+						}
+					}
+<span class="fc" id="L85">					return false;</span>
+				});
+<span class="fc" id="L87">	}</span>
+
+	@Override
+	public void rewrite(Object fixcore, ReferenceHolder&lt;?, ?&gt; holder,
+			CompilationUnitRewrite cuRewrite, TextEditGroup group) throws CoreException {
+		
+		// Cast to the correct types
+<span class="fc" id="L94">		MethodReuseCleanUpFixCore fixCore = (MethodReuseCleanUpFixCore) fixcore;</span>
+		
+		// Get the method declaration and match from the holder
+<span class="fc" id="L97">		MethodDeclaration targetMethod = (MethodDeclaration) holder.get(0);</span>
+<span class="fc" id="L98">		InlineSequenceMatch match = (InlineSequenceMatch) holder.get(1);</span>
+		
+<span class="pc bpc" id="L100" title="2 of 4 branches missed.">		if (targetMethod == null || match == null) {</span>
+<span class="nc" id="L101">			return;</span>
+		}
+		
+		// Important: Get the AST from cuRewrite's root, not from the original nodes
+<span class="fc" id="L105">		AST ast = cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L106">		ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+		
+		// Set up tight source range computer
+		TightSourceRangeComputer rangeComputer;
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">		if (rewrite.getExtendedSourceRangeComputer() instanceof TightSourceRangeComputer) {</span>
+<span class="nc" id="L111">			rangeComputer = (TightSourceRangeComputer) rewrite.getExtendedSourceRangeComputer();</span>
+<span class="nc" id="L112">		} else {</span>
+<span class="fc" id="L113">			rangeComputer = new TightSourceRangeComputer();</span>
+		}
+		
+<span class="fc" id="L116">		List&lt;Statement&gt; statementsToReplace = match.getMatchingStatements();</span>
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">		if (!statementsToReplace.isEmpty()) {</span>
+<span class="fc" id="L118">			rangeComputer.addTightSourceNode(statementsToReplace.get(0));</span>
+		}
+<span class="fc" id="L120">		rewrite.setTargetSourceRangeComputer(rangeComputer);</span>
+		
+		// Create the method invocation
+<span class="fc" id="L123">		VariableMapping variableMapping = match.getVariableMapping();</span>
+<span class="fc" id="L124">		MethodInvocation methodCall = MethodCallReplacer.createMethodCall(ast, targetMethod, variableMapping);</span>
+		
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">		if (methodCall == null) {</span>
+<span class="nc" id="L127">			return;</span>
+		}
+		
+		// Determine how to replace based on the target method's return type
+<span class="fc" id="L131">		replaceStatementsWithMethodCall(rewrite, ast, targetMethod, methodCall, statementsToReplace, group);</span>
+<span class="fc" id="L132">	}</span>
+
+	/**
+	 * Replace the inline code sequence with a method call
+	 * Handles both return statements and variable declarations
+	 */
+	@SuppressWarnings(&quot;unchecked&quot;)
+	private void replaceStatementsWithMethodCall(ASTRewrite rewrite, AST ast, 
+			MethodDeclaration targetMethod, MethodInvocation methodCall,
+			List&lt;Statement&gt; statementsToReplace, TextEditGroup group) {
+		
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">		if (statementsToReplace.isEmpty()) {</span>
+<span class="nc" id="L144">			return;</span>
+		}
+		
+<span class="fc" id="L147">		Statement firstStatement = statementsToReplace.get(0);</span>
+<span class="fc" id="L148">		ASTNode parent = firstStatement.getParent();</span>
+		
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">		if (!(parent instanceof Block)) {</span>
+<span class="nc" id="L151">			return;</span>
+		}
+		
+<span class="fc" id="L154">		ListRewrite listRewrite = rewrite.getListRewrite(parent, Block.STATEMENTS_PROPERTY);</span>
+		
+		// Check if the target method has a return statement
+		// If so, we need to handle variable declaration specially
+<span class="fc" id="L158">		boolean targetReturnsValue = methodReturnsValue(targetMethod);</span>
+<span class="fc" id="L159">		Statement lastInlineStatement = statementsToReplace.get(statementsToReplace.size() - 1);</span>
+		
+<span class="pc bpc" id="L161" title="2 of 4 branches missed.">		if (targetReturnsValue &amp;&amp; lastInlineStatement instanceof VariableDeclarationStatement) {</span>
+			// The last statement is a variable declaration that corresponds to the return value
+			// Replace it with a variable declaration using the method call
+<span class="fc" id="L164">			VariableDeclarationStatement varDecl = (VariableDeclarationStatement) lastInlineStatement;</span>
+			
+			// Defensive check: ensure there is at least one fragment before accessing index 0
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">			if (varDecl.fragments().isEmpty()) {</span>
+				// Fallback to simple replacement with a method call expression
+<span class="nc" id="L169">				ExpressionStatement expressionStatement = ast.newExpressionStatement((Expression) ASTNode.copySubtree(ast, methodCall));</span>
+<span class="nc" id="L170">				listRewrite.replace(firstStatement, expressionStatement, group);</span>
+				
+				// Remove remaining statements
+<span class="nc bnc" id="L173" title="All 2 branches missed.">				for (int i = 1; i &lt; statementsToReplace.size(); i++) {</span>
+<span class="nc" id="L174">					listRewrite.remove(statementsToReplace.get(i), group);</span>
+				}
+<span class="nc" id="L176">				return;</span>
+			}
+			
+<span class="fc" id="L179">			VariableDeclarationFragment fragment = (VariableDeclarationFragment) varDecl.fragments().get(0);</span>
+			
+			// Create new variable declaration with method call as initializer
+<span class="fc" id="L182">			VariableDeclarationFragment newFragment = ast.newVariableDeclarationFragment();</span>
+<span class="fc" id="L183">			newFragment.setName(ast.newSimpleName(fragment.getName().getIdentifier()));</span>
+<span class="fc" id="L184">			newFragment.setInitializer((Expression) ASTNode.copySubtree(ast, methodCall));</span>
+			
+<span class="fc" id="L186">			VariableDeclarationStatement newVarDecl = ast.newVariableDeclarationStatement(newFragment);</span>
+<span class="fc" id="L187">			newVarDecl.setType((org.eclipse.jdt.core.dom.Type) ASTNode.copySubtree(ast, varDecl.getType()));</span>
+			
+			// Replace the first statement with the new variable declaration
+<span class="fc" id="L190">			listRewrite.replace(firstStatement, newVarDecl, group);</span>
+			
+			// Remove intermediate statements (but not the last one which we're effectively replacing)
+<span class="pc bpc" id="L193" title="1 of 2 branches missed.">			for (int i = 1; i &lt; statementsToReplace.size() - 1; i++) {</span>
+<span class="nc" id="L194">				listRewrite.remove(statementsToReplace.get(i), group);</span>
+			}
+			
+			// Remove the last statement
+<span class="fc bfc" id="L198" title="All 2 branches covered.">			if (statementsToReplace.size() &gt; 1) {</span>
+<span class="fc" id="L199">				listRewrite.remove(lastInlineStatement, group);</span>
+			}
+<span class="fc" id="L201">		} else {</span>
+			// Simple case: just replace with expression statement
+<span class="nc" id="L203">			ExpressionStatement expressionStatement = ast.newExpressionStatement((Expression) ASTNode.copySubtree(ast, methodCall));</span>
+<span class="nc" id="L204">			listRewrite.replace(firstStatement, expressionStatement, group);</span>
+			
+			// Remove remaining statements
+<span class="nc bnc" id="L207" title="All 2 branches missed.">			for (int i = 1; i &lt; statementsToReplace.size(); i++) {</span>
+<span class="nc" id="L208">				listRewrite.remove(statementsToReplace.get(i), group);</span>
+			}
+		}
+<span class="fc" id="L211">	}</span>
+
+	/**
+	 * Check if a method returns a value (has a return statement with an expression)
+	 */
+	@SuppressWarnings(&quot;unchecked&quot;)
+	private boolean methodReturnsValue(MethodDeclaration method) {
+<span class="pc bpc" id="L218" title="1 of 2 branches missed.">		if (method.getBody() == null) {</span>
+<span class="nc" id="L219">			return false;</span>
+		}
+		
+<span class="fc" id="L222">		List&lt;Statement&gt; statements = method.getBody().statements();</span>
+<span class="pc bpc" id="L223" title="1 of 2 branches missed.">		if (statements.isEmpty()) {</span>
+<span class="nc" id="L224">			return false;</span>
+		}
+		
+		// Check the last statement
+<span class="fc" id="L228">		Statement lastStatement = statements.get(statements.size() - 1);</span>
+<span class="pc bpc" id="L229" title="1 of 2 branches missed.">		if (lastStatement instanceof ReturnStatement) {</span>
+<span class="fc" id="L230">			ReturnStatement returnStmt = (ReturnStatement) lastStatement;</span>
+<span class="pc bpc" id="L231" title="1 of 2 branches missed.">			return returnStmt.getExpression() != null;</span>
+		}
+		
+<span class="nc" id="L234">		return false;</span>
+	}
+
+	@Override
+	public String getPreview(boolean afterRefactoring) {
+<span class="nc bnc" id="L239" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L240">			return &quot;&quot;&quot;</span>
+				// After: Inline code replaced with method call
+				String name = formatName(firstName, lastName);
+				System.out.println(name);
+				&quot;&quot;&quot;;
+		} else {
+<span class="nc" id="L246">			return &quot;&quot;&quot;</span>
+				// Before: Duplicated code inline
+				String name = firstName.trim() + &quot; &quot; + lastName.trim();
+				System.out.println(name);
+				&quot;&quot;&quot;;
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

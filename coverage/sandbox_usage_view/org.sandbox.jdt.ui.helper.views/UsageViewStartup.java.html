@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>UsageViewStartup.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_usage_view</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.ui.helper.views</a> &gt; <span class="el_source">UsageViewStartup.java</span></div><h1>UsageViewStartup.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.ui.helper.views;
+
+import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.ui.IStartup;
+import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.IWorkbenchWindow;
+import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.PlatformUI;
+import org.sandbox.jdt.ui.helper.views.preferences.UsageViewPreferenceConstants;
+
+/**
+ * Startup class that shows the JavaHelper View at startup if the preference is enabled.
+ */
+<span class="fc" id="L27">public class UsageViewStartup implements IStartup {</span>
+
+	@Override
+	public void earlyStartup() {
+		// Run in UI thread
+<span class="fc" id="L32">		PlatformUI.getWorkbench().getDisplay().asyncExec(() -&gt; {</span>
+			// Check if plugin is properly activated
+<span class="fc" id="L34">			UsageViewPlugin plugin = UsageViewPlugin.getDefault();</span>
+<span class="pc bpc" id="L35" title="1 of 2 branches missed.">			if (plugin == null) {</span>
+<span class="nc" id="L36">				return;</span>
+			}
+			
+<span class="fc" id="L39">			IPreferenceStore store = plugin.getPreferenceStore();</span>
+<span class="fc" id="L40">			boolean showAtStartup = store.getBoolean(UsageViewPreferenceConstants.SHOW_VIEW_AT_STARTUP);</span>
+			
+<span class="pc bpc" id="L42" title="1 of 2 branches missed.">			if (showAtStartup) {</span>
+<span class="fc" id="L43">				IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();</span>
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">				if (window != null) {</span>
+<span class="fc" id="L45">					IWorkbenchPage page = window.getActivePage();</span>
+<span class="pc bpc" id="L46" title="1 of 2 branches missed.">					if (page != null) {</span>
+						try {
+<span class="fc" id="L48">							page.showView(&quot;org.eclipse.jdt.ui.helper.views.JavaHelperView&quot;);</span>
+<span class="pc" id="L49">						} catch (PartInitException e) {</span>
+							// Log error but don't fail startup
+<span class="nc" id="L51">							plugin.getLog().error(&quot;Failed to show JavaHelper View at startup&quot;, e);</span>
+						}
+					}
+				}
+			}
+<span class="fc" id="L56">		});</span>
+<span class="fc" id="L57">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

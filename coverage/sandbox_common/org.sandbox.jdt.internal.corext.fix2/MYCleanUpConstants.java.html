@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>MYCleanUpConstants.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix2</a> &gt; <span class="el_source">MYCleanUpConstants.java</span></div><h1>MYCleanUpConstants.java</h1><pre class="source lang-java linenums">package org.sandbox.jdt.internal.corext.fix2;
+
+/*-
+ * #%L
+ * Sandbox common
+ * %%
+ * Copyright (C) 2024 hammer
+ * %%
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0.
+ * 
+ * This Source Code may also be made available under the following Secondary
+ * Licenses when the conditions for such availability set forth in the Eclipse
+ * Public License, v. 2.0 are satisfied: GNU General Public License, version 2
+ * with the GNU Classpath Exception which is
+ * available at https://www.gnu.org/software/classpath/license.html.
+ * 
+ * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+ * #L%
+ */
+
+
+/**
+ * @author chammer
+ *
+ */
+<span class="nc" id="L28">public class MYCleanUpConstants {</span>
+
+	/**
+	 *
+	 */
+	public static final String EXPLICITENCODING_CLEANUP= &quot;cleanup.explicit_encoding&quot;; //$NON-NLS-1$
+
+	/**
+	 * Don't change behavior - just replace or insert to make use of platform encoding visible in the code.
+	 * &lt;p&gt;
+	 * Possible values: {TRUE, FALSE}
+	 * &lt;p&gt;
+	 *
+	 * @see CleanUpOptionsCore#TRUE
+	 * @see CleanUpOptionsCore#FALSE
+	 *
+	 */
+	public static final String EXPLICITENCODING_KEEP_BEHAVIOR= &quot;cleanup.explicit_encoding_keep_behavior&quot;; //$NON-NLS-1$
+
+	/**
+	 * Set all uses of platform encoding explicitly to UTF-8 - This changes behavior of the resulting code!
+	 * &lt;p&gt;
+	 * Possible values: {TRUE, FALSE}
+	 * &lt;p&gt;
+	 *
+	 * @see CleanUpOptionsCore#TRUE
+	 * @see CleanUpOptionsCore#FALSE
+	 *
+	 */
+	public static final String EXPLICITENCODING_INSERT_UTF8= &quot;cleanup.explicit_encoding_insert_utf8&quot;; //$NON-NLS-1$
+
+	/**
+	 * Set all uses of platform encoding explicitly to UTF-8 - This changes behavior of the resulting code!
+	 * At the same time try to have a single constant per project for this encoding that is referenced whenever
+	 * code is changed to use this charset. That way later it is easy to change the default.
+	 * &lt;p&gt;
+	 * Possible values: {TRUE, FALSE}
+	 * &lt;p&gt;
+	 *
+	 * @see CleanUpOptionsCore#TRUE
+	 * @see CleanUpOptionsCore#FALSE
+	 *
+	 */
+	public static final String EXPLICITENCODING_AGGREGATE_TO_UTF8= &quot;cleanup.explicit_encoding_aggregate_to_utf8&quot;; //$NON-NLS-1$
+
+	/**
+	 *
+	 */
+	public static final String SIMPLIFY_STATUS_CLEANUP= &quot;cleanup.simplify_status_creation&quot;; //$NON-NLS-1$
+
+	/**
+	 *
+	 */
+	public static final String XML_CLEANUP= &quot;cleanup.xmlcleanup&quot;; //$NON-NLS-1$
+	
+	/**
+	 * Enable indentation for XML cleanup. When disabled (default), indent=&quot;no&quot; is used
+	 * to minimize file size. When enabled, minimal indentation is applied.
+	 * &lt;p&gt;
+	 * Possible values: {TRUE, FALSE}
+	 * &lt;p&gt;
+	 *
+	 * @see CleanUpOptionsCore#TRUE
+	 * @see CleanUpOptionsCore#FALSE
+	 */
+	public static final String XML_CLEANUP_INDENT= &quot;cleanup.xmlcleanup_indent&quot;; //$NON-NLS-1$
+	
+	/**
+	 *
+	 */
+	public static final String JUNIT_CLEANUP= &quot;cleanup.junitcleanup&quot;; //$NON-NLS-1$
+	/**
+	 *
+	 */
+	public static final String JUNIT3_CLEANUP= &quot;cleanup.junit3cleanup&quot;; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_ASSERT= &quot;cleanup.junitcleanup_4_assert&quot;; //$NON-NLS-1$
+	/**
+	 * Optimization of assertTrue/assertFalse to more specific assertions
+	 */
+	public static final String JUNIT_CLEANUP_4_ASSERT_OPTIMIZATION= &quot;cleanup.junitcleanup_4_assert_optimization&quot;; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_ASSUME= &quot;cleanup.junitcleanup_4_assume&quot;; //$NON-NLS-1$
+	/**
+	 * Optimization of assumeTrue/assumeFalse to more specific assumptions
+	 */
+	public static final String JUNIT_CLEANUP_4_ASSUME_OPTIMIZATION= &quot;cleanup.junitcleanup_4_assume_optimization&quot;; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_SUITE= &quot;cleanup.junitcleanup_4_suite&quot;; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_BEFORE= &quot;cleanup.junitcleanup_4_before&quot;; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_AFTER= &quot;cleanup.junitcleanup_4_after&quot;; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_BEFORECLASS= &quot;cleanup.junitcleanup_4_beforeclass&quot;; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_AFTERCLASS= &quot;cleanup.junitcleanup_4_afterclass&quot;; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_IGNORE= &quot;cleanup.junitcleanup_4_ignore&quot;; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_CATEGORY= &quot;cleanup.junitcleanup_4_category&quot;; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_TEST= &quot;cleanup.junitcleanup_4_test&quot;; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_3_TEST= &quot;cleanup.junitcleanup_3_test&quot;; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_RULETEMPORARYFOLDER= &quot;cleanup.junitcleanup_4_ruletemporaryfolder&quot;; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_RULETESTNAME= &quot;cleanup.junitcleanup_4_ruletestname&quot;; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_EXTERNALRESOURCE= &quot;cleanup.junitcleanup_4_externalresource&quot;; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE= &quot;cleanup.junitcleanup_4_ruleexternalresource&quot;; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_RUNWITH= &quot;cleanup.junitcleanup_4_runwith&quot;; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_TEST_TIMEOUT= &quot;cleanup.junitcleanup_4_test_timeout&quot;; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_TEST_EXPECTED= &quot;cleanup.junitcleanup_4_test_expected&quot;; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_PARAMETERIZED= &quot;cleanup.junitcleanup_4_parameterized&quot;; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_RULETIMEOUT= &quot;cleanup.junitcleanup_4_ruletimeout&quot;; //$NON-NLS-1$
+	/**
+	 * Find and fix &quot;lost&quot; JUnit 3 tests that were not properly migrated
+	 * (methods starting with &quot;test&quot; but missing @Test annotation)
+	 */
+	public static final String JUNIT_CLEANUP_4_LOST_TESTS= &quot;cleanup.junitcleanup_4_lost_tests&quot;; //$NON-NLS-1$
+	/**
+	 *
+	 */
+	public static final String JFACE_CLEANUP= &quot;cleanup.jfacecleanup&quot;; //$NON-NLS-1$
+
+	/**
+	 *
+	 */
+	public static final String USEFUNCTIONALLOOP_CLEANUP= &quot;cleanup.functionalloop&quot;; //$NON-NLS-1$
+
+	/**
+	 * NEU: V2 Konstante für parallele Implementierung (ULR-basiert)
+	 * 
+	 * @see &lt;a href=&quot;https://github.com/carstenartur/sandbox/issues/450&quot;&gt;Issue #450&lt;/a&gt;
+	 */
+	public static final String USEFUNCTIONALLOOP_CLEANUP_V2= &quot;cleanup.use_functional_loop_v2&quot;; //$NON-NLS-1$
+
+	/**
+	 *
+	 */
+	public static final String METHOD_REUSE_CLEANUP= &quot;cleanup.method_reuse&quot;; //$NON-NLS-1$
+
+	/**
+	 * Enable detection of inline code sequences that can be replaced with method calls.
+	 * &lt;p&gt;
+	 * Possible values: {TRUE, FALSE}
+	 * &lt;p&gt;
+	 *
+	 * @see CleanUpOptionsCore#TRUE
+	 * @see CleanUpOptionsCore#FALSE
+	 */
+	public static final String METHOD_REUSE_INLINE_SEQUENCES= &quot;cleanup.method_reuse_inline_sequences&quot;; //$NON-NLS-1$
+
+	/**
+	 * Enable string simplification cleanup using TriggerPattern hints.
+	 * &lt;p&gt;
+	 * Simplifies patterns like {@code &quot;&quot; + x} and {@code x + &quot;&quot;} to {@code String.valueOf(x)}.
+	 * &lt;p&gt;
+	 * Possible values: {TRUE, FALSE}
+	 * &lt;p&gt;
+	 *
+	 * @see CleanUpOptionsCore#TRUE
+	 * @see CleanUpOptionsCore#FALSE
+	 * @since 1.2.2
+	 */
+	public static final String TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP= &quot;cleanup.string_simplification&quot;; //$NON-NLS-1$
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JUnitCleanUpFixCore.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix</a> &gt; <span class="el_source">JUnitCleanUpFixCore.java</span></div><h1>JUnitCleanUpFixCore.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2021 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix;
+
+import java.util.Set;
+
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.jdt.internal.corext.refactoring.util.TightSourceRangeComputer;
+import org.eclipse.jdt.internal.corext.util.Messages;
+import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.sandbox.jdt.internal.corext.fix.helper.AfterClassJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.AfterJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.AssertJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.AssertOptimizationJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.AssumeJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.AssumeOptimizationJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.BeforeClassJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.BeforeJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.CategoryJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.ExternalResourceJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.IgnoreJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.ParameterizedTestJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.RuleExpectedExceptionJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.RuleExternalResourceJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.RuleTemporayFolderJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.RuleTestnameJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.RuleTimeoutJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.RunWithJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.TestJUnit3Plugin;
+import org.sandbox.jdt.internal.corext.fix.helper.TestJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.TestTimeoutJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.TestExpectedJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.LostTestFinderJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
+import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
+
+<span class="fc" id="L56">public enum JUnitCleanUpFixCore {</span>
+
+<span class="fc" id="L58">	BEFORE(new BeforeJUnitPlugin()),</span>
+<span class="fc" id="L59">	AFTER(new AfterJUnitPlugin()),</span>
+<span class="fc" id="L60">	TEST(new TestJUnitPlugin()),</span>
+<span class="fc" id="L61">	TEST3(new TestJUnit3Plugin()),</span>
+<span class="fc" id="L62">	TEST_TIMEOUT(new TestTimeoutJUnitPlugin()),</span>
+<span class="fc" id="L63">	TEST_EXPECTED(new TestExpectedJUnitPlugin()),</span>
+<span class="fc" id="L64">	BEFORECLASS(new BeforeClassJUnitPlugin()),</span>
+<span class="fc" id="L65">	AFTERCLASS(new AfterClassJUnitPlugin()),</span>
+<span class="fc" id="L66">	IGNORE(new IgnoreJUnitPlugin()),</span>
+<span class="fc" id="L67">	CATEGORY(new CategoryJUnitPlugin()),</span>
+<span class="fc" id="L68">	RUNWITH(new RunWithJUnitPlugin()),</span>
+<span class="fc" id="L69">	ASSERT(new AssertJUnitPlugin()),</span>
+<span class="fc" id="L70">	ASSERT_OPTIMIZATION(new AssertOptimizationJUnitPlugin()),</span>
+<span class="fc" id="L71">	ASSUME(new AssumeJUnitPlugin()),</span>
+<span class="fc" id="L72">	ASSUME_OPTIMIZATION(new AssumeOptimizationJUnitPlugin()),</span>
+<span class="fc" id="L73">	RULEEXTERNALRESOURCE(new RuleExternalResourceJUnitPlugin()),</span>
+<span class="fc" id="L74">	RULETESTNAME(new RuleTestnameJUnitPlugin()),</span>
+<span class="fc" id="L75">	RULETEMPORARYFOLDER(new RuleTemporayFolderJUnitPlugin()),</span>
+<span class="fc" id="L76">	RULETIMEOUT(new RuleTimeoutJUnitPlugin()),</span>
+<span class="fc" id="L77">	RULEEXPECTEDEXCEPTION(new RuleExpectedExceptionJUnitPlugin()),</span>
+<span class="fc" id="L78">	EXTERNALRESOURCE(new ExternalResourceJUnitPlugin()),</span>
+<span class="fc" id="L79">	LOSTTESTS(new LostTestFinderJUnitPlugin()),</span>
+<span class="fc" id="L80">	PARAMETERIZED(new ParameterizedTestJUnitPlugin());</span>
+
+	AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; junitfound;
+
+	@SuppressWarnings(&quot;unchecked&quot;)
+<span class="fc" id="L85">	JUnitCleanUpFixCore(AbstractTool&lt;? extends ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; junitprocess) {</span>
+<span class="fc" id="L86">		this.junitfound= (AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt;) junitprocess;</span>
+<span class="fc" id="L87">	}</span>
+
+	public String getPreview(boolean i) {
+<span class="nc bnc" id="L90" title="All 2 branches missed.">		long countother= junitfound.getPreview(!i).lines().count();</span>
+<span class="nc" id="L91">		StringBuilder preview= new StringBuilder(junitfound.getPreview(i));</span>
+<span class="nc" id="L92">		long countnow= preview.toString().lines().count();</span>
+<span class="nc bnc" id="L93" title="All 2 branches missed.">		if(countnow&lt;countother) {</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">			for (long ii=0;ii&lt;countother-countnow;ii++) {</span>
+<span class="nc" id="L95">				preview.append(System.lineSeparator());</span>
+			}
+		}
+<span class="nc" id="L98">		return preview.toString();</span>
+	}
+
+	/**
+	 * Compute set of CompilationUnitRewriteOperation to refactor supported
+	 * situations
+	 *
+	 * @param compilationUnit        unit to search in
+	 * @param operations             set of all CompilationUnitRewriteOperations
+	 *                               created already
+	 * @param nodesprocessed         list to remember nodes already processed
+	 * @param createForOnlyIfVarUsed true if for loop should be created only only if
+	 *                               loop var used within
+	 */
+	public void findOperations(final CompilationUnit compilationUnit,
+			final Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, final Set&lt;ASTNode&gt; nodesprocessed) {
+<span class="fc" id="L114">		junitfound.find(this, compilationUnit, operations, nodesprocessed);</span>
+<span class="fc" id="L115">	}</span>
+
+	public CompilationUnitRewriteOperationWithSourceRange rewrite(final ReferenceHolder&lt;Integer, JunitHolder&gt; hit) {
+<span class="fc" id="L118">		return new CompilationUnitRewriteOperationWithSourceRange() {</span>
+			@Override
+			public void rewriteASTInternal(final CompilationUnitRewrite cuRewrite,
+					final LinkedProposalModelCore linkedModel) throws CoreException {
+<span class="fc" id="L122">				TextEditGroup group= createTextEditGroup(Messages.format(MultiFixMessages.JUnitCleanUp_description,</span>
+<span class="fc" id="L123">						new Object[] { JUnitCleanUpFixCore.this.toString() }), cuRewrite);</span>
+				TightSourceRangeComputer rangeComputer;
+<span class="fc" id="L125">				ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">				if (rewrite.getExtendedSourceRangeComputer() instanceof TightSourceRangeComputer) {</span>
+<span class="nc" id="L127">					rangeComputer= (TightSourceRangeComputer) rewrite.getExtendedSourceRangeComputer();</span>
+<span class="nc" id="L128">				} else {</span>
+<span class="fc" id="L129">					rangeComputer= new TightSourceRangeComputer();</span>
+				}
+<span class="fc" id="L131">				rangeComputer.addTightSourceNode(hit.get(0).minv);</span>
+<span class="fc" id="L132">				rewrite.setTargetSourceRangeComputer(rangeComputer);</span>
+<span class="fc" id="L133">				junitfound.rewrite(JUnitCleanUpFixCore.this, hit, cuRewrite, group);</span>
+<span class="fc" id="L134">			}</span>
+		};
+	}
+
+	@Override
+	public String toString() {
+<span class="fc" id="L140">		return junitfound.toString();</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

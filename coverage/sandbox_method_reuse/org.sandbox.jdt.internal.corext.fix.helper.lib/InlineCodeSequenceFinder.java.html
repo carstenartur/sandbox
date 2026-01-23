@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>InlineCodeSequenceFinder.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_method_reuse</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper.lib</a> &gt; <span class="el_source">InlineCodeSequenceFinder.java</span></div><h1>InlineCodeSequenceFinder.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper.lib;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.Statement;
+
+/**
+ * Inline Code Sequence Finder - Searches for inline code sequences in method bodies
+ * 
+ * This class traverses the AST to find code sequences within method bodies that
+ * match the body of a target method and could be replaced by a method call.
+ */
+<span class="nc" id="L31">public class InlineCodeSequenceFinder {</span>
+	
+	/**
+	 * Result class containing information about a found inline code sequence
+	 */
+	public static class InlineSequenceMatch {
+		private final MethodDeclaration containingMethod;
+		private final List&lt;Statement&gt; matchingStatements;
+		private final VariableMapping variableMapping;
+		
+<span class="fc" id="L41">		public InlineSequenceMatch(MethodDeclaration containingMethod, List&lt;Statement&gt; matchingStatements, VariableMapping variableMapping) {</span>
+<span class="fc" id="L42">			this.containingMethod = containingMethod;</span>
+<span class="fc" id="L43">			this.matchingStatements = matchingStatements;</span>
+<span class="fc" id="L44">			this.variableMapping = variableMapping;</span>
+<span class="fc" id="L45">		}</span>
+		
+		public MethodDeclaration getContainingMethod() {
+<span class="nc" id="L48">			return containingMethod;</span>
+		}
+		
+		public List&lt;Statement&gt; getMatchingStatements() {
+<span class="fc" id="L52">			return matchingStatements;</span>
+		}
+		
+		public VariableMapping getVariableMapping() {
+<span class="fc" id="L56">			return variableMapping;</span>
+		}
+	}
+	
+	/**
+	 * Find inline code sequences in the compilation unit that match the target method body
+	 * 
+	 * @param cu The compilation unit to search
+	 * @param targetMethod The method whose body we're looking for inline
+	 * @return List of matches found
+	 */
+	public static List&lt;InlineSequenceMatch&gt; findInlineSequences(CompilationUnit cu, MethodDeclaration targetMethod) {
+<span class="pc bpc" id="L68" title="3 of 6 branches missed.">		if (cu == null || targetMethod == null || targetMethod.getBody() == null) {</span>
+<span class="nc" id="L69">			return new ArrayList&lt;&gt;();</span>
+		}
+		
+<span class="fc" id="L72">		List&lt;InlineSequenceMatch&gt; matches = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L73">		Block targetBody = targetMethod.getBody();</span>
+<span class="fc" id="L74">		List&lt;Statement&gt; targetStatements = getStatements(targetBody);</span>
+		
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">		if (targetStatements.isEmpty()) {</span>
+<span class="nc" id="L77">			return matches;</span>
+		}
+		
+		// Visit all methods in the compilation unit
+<span class="fc" id="L81">		cu.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(MethodDeclaration node) {
+				// Don't search in the target method itself
+<span class="fc bfc" id="L85" title="All 2 branches covered.">				if (node == targetMethod) {</span>
+<span class="fc" id="L86">					return false;</span>
+				}
+				
+				// Search for matching sequences in this method
+<span class="fc" id="L90">				searchInMethod(node, targetStatements, matches);</span>
+<span class="fc" id="L91">				return true;</span>
+			}
+		});
+		
+<span class="fc" id="L95">		return matches;</span>
+	}
+	
+	/**
+	 * Search for matching code sequences within a single method
+	 */
+	private static void searchInMethod(MethodDeclaration method, List&lt;Statement&gt; targetStatements, List&lt;InlineSequenceMatch&gt; matches) {
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">		if (method.getBody() == null) {</span>
+<span class="nc" id="L103">			return;</span>
+		}
+		
+<span class="fc" id="L106">		List&lt;Statement&gt; methodStatements = getStatements(method.getBody());</span>
+<span class="fc" id="L107">		int targetLength = targetStatements.size();</span>
+		
+		// Try to find the target sequence at each position
+<span class="fc bfc" id="L110" title="All 2 branches covered.">		for (int i = 0; i &lt;= methodStatements.size() - targetLength; i++) {</span>
+<span class="fc" id="L111">			List&lt;Statement&gt; candidateSequence = methodStatements.subList(i, i + targetLength);</span>
+			
+			// Try to match this sequence with the target
+<span class="fc" id="L114">			VariableMapping mapping = CodeSequenceMatcher.matchSequence(targetStatements, candidateSequence);</span>
+			
+<span class="fc bfc" id="L116" title="All 4 branches covered.">			if (mapping != null &amp;&amp; mapping.isValid()) {</span>
+				// Found a match!
+<span class="fc" id="L118">				matches.add(new InlineSequenceMatch(method, new ArrayList&lt;&gt;(candidateSequence), mapping));</span>
+			}
+		}
+<span class="fc" id="L121">	}</span>
+	
+	/**
+	 * Extract statements from a block (helper method)
+	 */
+	@SuppressWarnings(&quot;unchecked&quot;)
+	private static List&lt;Statement&gt; getStatements(Block block) {
+<span class="fc" id="L128">		return block.statements();</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

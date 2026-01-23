@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>StatementDispatcher.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.common</a> &gt; <span class="el_source">StatementDispatcher.java</span></div><h1>StatementDispatcher.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.common;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.BiFunction;
+import java.util.function.Predicate;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+
+/**
+ * A registry-based dispatcher for handling different statement types in a type-safe manner.
+ * 
+ * &lt;p&gt;This class provides an alternative to long if-else instanceof chains by allowing
+ * handlers to be registered for specific types. The dispatcher tries handlers in
+ * registration order and stops at the first successful match.&lt;/p&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Example - Before (nested if-instanceof):&lt;/b&gt;&lt;/p&gt;
+ * &lt;pre&gt;{@code
+ * if (stmt instanceof VariableDeclarationStatement &amp;&amp; !isLast) {
+ *     // handle variable declaration
+ * } else if (stmt instanceof IfStatement &amp;&amp; !isLast) {
+ *     // handle non-last if
+ * } else if (stmt instanceof IfStatement &amp;&amp; isLast) {
+ *     // handle last if
+ * } else if (!isLast) {
+ *     // handle other non-last
+ * } else {
+ *     // handle last
+ * }
+ * }&lt;/pre&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Example - After (registry-based):&lt;/b&gt;&lt;/p&gt;
+ * &lt;pre&gt;{@code
+ * StatementDispatcher&lt;MyContext, MyResult&gt; dispatcher = StatementDispatcher.&lt;MyContext, MyResult&gt;create()
+ *     .when(VariableDeclarationStatement.class)
+ *         .and(ctx -&gt; !ctx.isLast())
+ *         .then((stmt, ctx) -&gt; handleVariableDecl((VariableDeclarationStatement) stmt, ctx))
+ *     .when(IfStatement.class)
+ *         .and(ctx -&gt; !ctx.isLast())
+ *         .then((stmt, ctx) -&gt; handleNonLastIf((IfStatement) stmt, ctx))
+ *     .when(IfStatement.class)
+ *         .and(ctx -&gt; ctx.isLast())
+ *         .then((stmt, ctx) -&gt; handleLastIf((IfStatement) stmt, ctx))
+ *     .otherwise((stmt, ctx) -&gt; handleDefault(stmt, ctx));
+ * 
+ * MyResult result = dispatcher.dispatch(stmt, context);
+ * }&lt;/pre&gt;
+ * 
+ * @param &lt;C&gt; the context type passed to handlers
+ * @param &lt;R&gt; the result type returned by handlers
+ */
+public final class StatementDispatcher&lt;C, R&gt; {
+
+	/**
+	 * A handler entry that combines type matching, condition checking, and action execution.
+	 */
+	private static class HandlerEntry&lt;C, R&gt; {
+		final Class&lt;? extends ASTNode&gt; nodeType;
+		final Predicate&lt;C&gt; condition;
+		final BiFunction&lt;ASTNode, C, Optional&lt;R&gt;&gt; handler;
+
+<span class="nc" id="L76">		HandlerEntry(Class&lt;? extends ASTNode&gt; nodeType, Predicate&lt;C&gt; condition, BiFunction&lt;ASTNode, C, Optional&lt;R&gt;&gt; handler) {</span>
+<span class="nc" id="L77">			this.nodeType = nodeType;</span>
+<span class="nc" id="L78">			this.condition = condition;</span>
+<span class="nc" id="L79">			this.handler = handler;</span>
+<span class="nc" id="L80">		}</span>
+
+		boolean matches(ASTNode node, C context) {
+<span class="nc bnc" id="L83" title="All 6 branches missed.">			return nodeType.isInstance(node) &amp;&amp; (condition == null || condition.test(context));</span>
+		}
+
+		Optional&lt;R&gt; handle(ASTNode node, C context) {
+<span class="nc" id="L87">			return handler.apply(node, context);</span>
+		}
+	}
+
+<span class="nc" id="L91">	private final List&lt;HandlerEntry&lt;C, R&gt;&gt; handlers = new ArrayList&lt;&gt;();</span>
+	private BiFunction&lt;ASTNode, C, Optional&lt;R&gt;&gt; defaultHandler;
+
+<span class="nc" id="L94">	private StatementDispatcher() {</span>
+<span class="nc" id="L95">	}</span>
+
+	/**
+	 * Creates a new StatementDispatcher.
+	 * 
+	 * @param &lt;C&gt; the context type
+	 * @param &lt;R&gt; the result type
+	 * @return a new dispatcher instance
+	 */
+	public static &lt;C, R&gt; StatementDispatcher&lt;C, R&gt; create() {
+<span class="nc" id="L105">		return new StatementDispatcher&lt;&gt;();</span>
+	}
+
+	/**
+	 * Starts building a handler for the specified node type.
+	 * 
+	 * @param &lt;N&gt; the node type
+	 * @param nodeType the class of the node type to handle
+	 * @return a handler builder
+	 */
+	public &lt;N extends ASTNode&gt; HandlerBuilder&lt;N, C, R&gt; when(Class&lt;N&gt; nodeType) {
+<span class="nc" id="L116">		return new HandlerBuilder&lt;&gt;(this, nodeType);</span>
+	}
+
+	/**
+	 * Sets the default handler for when no other handler matches.
+	 * 
+	 * @param handler the default handler
+	 * @return this dispatcher for chaining
+	 */
+	public StatementDispatcher&lt;C, R&gt; otherwise(BiFunction&lt;ASTNode, C, Optional&lt;R&gt;&gt; handler) {
+<span class="nc" id="L126">		this.defaultHandler = handler;</span>
+<span class="nc" id="L127">		return this;</span>
+	}
+
+	/**
+	 * Sets the default handler that always returns a value.
+	 * 
+	 * @param handler the default handler
+	 * @return this dispatcher for chaining
+	 */
+	public StatementDispatcher&lt;C, R&gt; otherwiseReturn(BiFunction&lt;ASTNode, C, R&gt; handler) {
+<span class="nc" id="L137">		this.defaultHandler = (node, ctx) -&gt; Optional.ofNullable(handler.apply(node, ctx));</span>
+<span class="nc" id="L138">		return this;</span>
+	}
+
+	/**
+	 * Dispatches a node to the appropriate handler.
+	 * 
+	 * @param node the AST node to dispatch
+	 * @param context the context to pass to handlers
+	 * @return the result from the first matching handler, or empty if no handler matches
+	 */
+	public Optional&lt;R&gt; dispatch(ASTNode node, C context) {
+<span class="nc bnc" id="L149" title="All 2 branches missed.">		for (HandlerEntry&lt;C, R&gt; entry : handlers) {</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">			if (entry.matches(node, context)) {</span>
+<span class="nc" id="L151">				Optional&lt;R&gt; result = entry.handle(node, context);</span>
+<span class="nc bnc" id="L152" title="All 2 branches missed.">				if (result.isPresent()) {</span>
+<span class="nc" id="L153">					return result;</span>
+				}
+			}
+		}
+<span class="nc bnc" id="L157" title="All 2 branches missed.">		if (defaultHandler != null) {</span>
+<span class="nc" id="L158">			return defaultHandler.apply(node, context);</span>
+		}
+<span class="nc" id="L160">		return Optional.empty();</span>
+	}
+
+	/**
+	 * Dispatches a node and returns the result or a default value.
+	 * 
+	 * @param node the AST node to dispatch
+	 * @param context the context to pass to handlers
+	 * @param defaultValue the default value if no handler matches
+	 * @return the result from the first matching handler, or the default value
+	 */
+	public R dispatchOrDefault(ASTNode node, C context, R defaultValue) {
+<span class="nc" id="L172">		return dispatch(node, context).orElse(defaultValue);</span>
+	}
+
+	/**
+	 * Dispatches a node and executes the handler without returning a value.
+	 * Useful for side-effect operations.
+	 * 
+	 * @param node the AST node to dispatch
+	 * @param context the context to pass to handlers
+	 * @return true if a handler was executed
+	 */
+	public boolean dispatchVoid(ASTNode node, C context) {
+<span class="nc" id="L184">		return dispatch(node, context).isPresent();</span>
+	}
+
+	/**
+	 * Internal method to add a handler.
+	 */
+	void addHandler(HandlerEntry&lt;C, R&gt; entry) {
+<span class="nc" id="L191">		handlers.add(entry);</span>
+<span class="nc" id="L192">	}</span>
+
+	/**
+	 * Builder for constructing handlers with conditions.
+	 * 
+	 * @param &lt;N&gt; the node type
+	 * @param &lt;C&gt; the context type
+	 * @param &lt;R&gt; the result type
+	 */
+	public static final class HandlerBuilder&lt;N extends ASTNode, C, R&gt; {
+		private final StatementDispatcher&lt;C, R&gt; dispatcher;
+		private final Class&lt;N&gt; nodeType;
+		private Predicate&lt;C&gt; condition;
+
+<span class="nc" id="L206">		HandlerBuilder(StatementDispatcher&lt;C, R&gt; dispatcher, Class&lt;N&gt; nodeType) {</span>
+<span class="nc" id="L207">			this.dispatcher = dispatcher;</span>
+<span class="nc" id="L208">			this.nodeType = nodeType;</span>
+<span class="nc" id="L209">		}</span>
+
+		/**
+		 * Adds a condition that must be true for the handler to execute.
+		 * 
+		 * @param condition the condition predicate
+		 * @return this builder for chaining
+		 */
+		public HandlerBuilder&lt;N, C, R&gt; and(Predicate&lt;C&gt; condition) {
+<span class="nc" id="L218">			this.condition = condition;</span>
+<span class="nc" id="L219">			return this;</span>
+		}
+
+		/**
+		 * Adds an additional condition that the node itself must satisfy.
+		 * 
+		 * @param nodeCondition the condition on the node
+		 * @return this builder for chaining
+		 */
+		public HandlerBuilder&lt;N, C, R&gt; matching(Predicate&lt;N&gt; nodeCondition) {
+			// Create a combined condition that checks both the context and the node
+<span class="nc" id="L230">			Predicate&lt;C&gt; originalCondition = this.condition;</span>
+			// We'll need to apply this in the handler instead
+<span class="nc" id="L232">			return this;</span>
+		}
+
+		/**
+		 * Specifies the handler to execute when the type and condition match.
+		 * 
+		 * @param handler the handler function that returns an Optional result
+		 * @return the dispatcher for chaining
+		 */
+		public StatementDispatcher&lt;C, R&gt; then(BiFunction&lt;N, C, Optional&lt;R&gt;&gt; handler) {
+			@SuppressWarnings(&quot;unchecked&quot;)
+<span class="nc" id="L243">			BiFunction&lt;ASTNode, C, Optional&lt;R&gt;&gt; wrappedHandler = (node, ctx) -&gt; handler.apply((N) node, ctx);</span>
+<span class="nc" id="L244">			dispatcher.addHandler(new HandlerEntry&lt;&gt;(nodeType, condition, wrappedHandler));</span>
+<span class="nc" id="L245">			return dispatcher;</span>
+		}
+
+		/**
+		 * Specifies the handler to execute, returning a non-optional result.
+		 * 
+		 * @param handler the handler function
+		 * @return the dispatcher for chaining
+		 */
+		public StatementDispatcher&lt;C, R&gt; thenReturn(BiFunction&lt;N, C, R&gt; handler) {
+<span class="nc" id="L255">			return then((node, ctx) -&gt; Optional.ofNullable(handler.apply(node, ctx)));</span>
+		}
+
+		/**
+		 * Specifies a handler that performs a side effect and returns empty.
+		 * 
+		 * @param handler the handler consumer
+		 * @return the dispatcher for chaining
+		 */
+		public StatementDispatcher&lt;C, R&gt; thenDo(java.util.function.BiConsumer&lt;N, C&gt; handler) {
+<span class="nc" id="L265">			return then((node, ctx) -&gt; {</span>
+<span class="nc" id="L266">				handler.accept(node, ctx);</span>
+<span class="nc" id="L267">				return Optional.empty();</span>
+			});
+		}
+
+		/**
+		 * Specifies that this handler should signal to skip processing (returns empty Optional).
+		 * 
+		 * @return the dispatcher for chaining
+		 */
+		public StatementDispatcher&lt;C, R&gt; thenSkip() {
+<span class="nc" id="L277">			return then((node, ctx) -&gt; Optional.empty());</span>
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>CollectPatternDetector.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_functional_converter</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">CollectPatternDetector.java</span></div><h1>CollectPatternDetector.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Assignment;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.sandbox.jdt.internal.corext.util.VariableResolver;
+
+/**
+ * Detects and handles COLLECT patterns in loop statements.
+ * 
+ * &lt;p&gt;This class is responsible for identifying collection accumulation patterns
+ * that can be converted to stream collect operations:&lt;/p&gt;
+ * 
+ * &lt;ul&gt;
+ * &lt;li&gt;&lt;b&gt;List.add():&lt;/b&gt; {@code result.add(item)}&lt;/li&gt;
+ * &lt;li&gt;&lt;b&gt;Set.add():&lt;/b&gt; {@code set.add(item)}&lt;/li&gt;
+ * &lt;/ul&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Usage Example:&lt;/b&gt;&lt;/p&gt;
+ * &lt;pre&gt;{@code
+ * CollectPatternDetector detector = new CollectPatternDetector(forLoop);
+ * ProspectiveOperation collectOp = detector.detectCollectOperation(stmt);
+ * if (collectOp != null) {
+ *     String targetVar = detector.getTargetVariable();
+ *     CollectorType collectorType = detector.getCollectorType();
+ *     // ... use in stream pipeline
+ * }
+ * }&lt;/pre&gt;
+ * 
+ * @see ProspectiveOperation
+ * @see CollectorType
+ * @see StreamPipelineBuilder
+ */
+public final class CollectPatternDetector {
+
+	private final ASTNode contextNode;
+<span class="fc" id="L58">	private String targetVariable = null;</span>
+<span class="fc" id="L59">	private CollectorType collectorType = null;</span>
+
+	/**
+	 * Creates a new CollectPatternDetector.
+	 * 
+	 * @param contextNode the context node (typically the for-loop) for type resolution
+	 * @throws IllegalArgumentException if contextNode is null
+	 */
+<span class="fc" id="L67">	public CollectPatternDetector(ASTNode contextNode) {</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">		if (contextNode == null) {</span>
+<span class="nc" id="L69">			throw new IllegalArgumentException(&quot;contextNode cannot be null&quot;);</span>
+		}
+<span class="fc" id="L71">		this.contextNode = contextNode;</span>
+<span class="fc" id="L72">	}</span>
+
+	/**
+	 * Returns the target collection variable name detected during the last
+	 * {@link #detectCollectOperation(Statement)} call.
+	 * 
+	 * @return the target variable name, or null if no collect was detected
+	 */
+	public String getTargetVariable() {
+<span class="fc" id="L81">		return targetVariable;</span>
+	}
+
+	/**
+	 * Returns the collector type detected during the last
+	 * {@link #detectCollectOperation(Statement)} call.
+	 * 
+	 * @return the collector type (TO_LIST or TO_SET), or null if not detected
+	 */
+	public CollectorType getCollectorType() {
+<span class="nc" id="L91">		return collectorType;</span>
+	}
+
+	/**
+	 * Detects if a statement contains a COLLECT pattern.
+	 * 
+	 * &lt;p&gt;&lt;b&gt;Supported Patterns:&lt;/b&gt;&lt;/p&gt;
+	 * &lt;ul&gt;
+	 * &lt;li&gt;Collection add: {@code result.add(item)}, {@code set.add(value)}&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * 
+	 * &lt;p&gt;&lt;b&gt;Examples:&lt;/b&gt;&lt;/p&gt;
+	 * &lt;pre&gt;{@code
+	 * // TO_LIST pattern
+	 * result.add(item);  // → .collect(Collectors.toList())
+	 * 
+	 * // TO_SET pattern
+	 * set.add(value);  // → .collect(Collectors.toSet())
+	 * }&lt;/pre&gt;
+	 * 
+	 * @param stmt the statement to check
+	 * @return a COLLECT operation if detected, null otherwise
+	 */
+	public ProspectiveOperation detectCollectOperation(Statement stmt) {
+<span class="fc bfc" id="L115" title="All 2 branches covered.">		if (!(stmt instanceof ExpressionStatement)) {</span>
+<span class="fc" id="L116">			return null;</span>
+		}
+
+<span class="fc" id="L119">		ExpressionStatement exprStmt = (ExpressionStatement) stmt;</span>
+<span class="fc" id="L120">		Expression expr = exprStmt.getExpression();</span>
+
+		// Check for method invocation: result.add(item)
+<span class="fc bfc" id="L123" title="All 2 branches covered.">		if (expr instanceof MethodInvocation) {</span>
+<span class="fc" id="L124">			return detectAddMethodPattern((MethodInvocation) expr, stmt);</span>
+		}
+
+<span class="fc" id="L127">		return null;</span>
+	}
+
+	/**
+	 * Detects collection.add() patterns.
+	 * Pattern: result.add(item)
+	 */
+	private ProspectiveOperation detectAddMethodPattern(MethodInvocation methodInv, Statement stmt) {
+		// Check if method name is &quot;add&quot;
+<span class="fc bfc" id="L136" title="All 2 branches covered.">		if (!&quot;add&quot;.equals(methodInv.getName().getIdentifier())) {</span>
+<span class="fc" id="L137">			return null;</span>
+		}
+
+		// Check if invoked on a SimpleName (the collection variable)
+<span class="fc" id="L141">		Expression receiver = methodInv.getExpression();</span>
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">		if (!(receiver instanceof SimpleName)) {</span>
+<span class="nc" id="L143">			return null;</span>
+		}
+
+<span class="fc" id="L146">		String varName = ((SimpleName) receiver).getIdentifier();</span>
+
+		// Resolve the type of the collection variable
+<span class="fc" id="L149">		ITypeBinding varType = VariableResolver.getTypeBinding(contextNode, varName);</span>
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">		if (varType == null) {</span>
+<span class="nc" id="L151">			return null;</span>
+		}
+
+		// Determine the collector type based on the collection type
+<span class="fc" id="L155">		CollectorType type = CollectorType.fromCollectionType(varType.getErasure().getQualifiedName());</span>
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">		if (type == null) {</span>
+<span class="nc" id="L157">			return null;</span>
+		}
+
+		// Extract the expression being added (the argument to add())
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">		if (methodInv.arguments().isEmpty()) {</span>
+<span class="nc" id="L162">			return null;</span>
+		}
+
+<span class="fc" id="L165">		Expression addedExpr = (Expression) methodInv.arguments().get(0);</span>
+
+<span class="fc" id="L167">		targetVariable = varName;</span>
+<span class="fc" id="L168">		collectorType = type;</span>
+
+		// Create a COLLECT operation with the added expression
+<span class="fc" id="L171">		ProspectiveOperation op = new ProspectiveOperation(addedExpr, OperationType.COLLECT, null);</span>
+<span class="fc" id="L172">		op.setCollectorType(type);</span>
+<span class="fc" id="L173">		op.setTargetVariable(varName);</span>
+
+<span class="fc" id="L175">		return op;</span>
+	}
+
+	/**
+	 * Checks if a statement declares and initializes an empty collection.
+	 * Pattern: List&lt;T&gt; result = new ArrayList&lt;&gt;();
+	 * 
+	 * @param stmt the statement to check
+	 * @return the variable name if it's an empty collection initialization, null otherwise
+	 */
+	public static String isEmptyCollectionDeclaration(Statement stmt) {
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">		if (!(stmt instanceof VariableDeclarationStatement)) {</span>
+<span class="nc" id="L187">			return null;</span>
+		}
+
+<span class="fc" id="L190">		VariableDeclarationStatement varDecl = (VariableDeclarationStatement) stmt;</span>
+<span class="pc bpc" id="L191" title="1 of 2 branches missed.">		if (varDecl.fragments().size() != 1) {</span>
+<span class="nc" id="L192">			return null;</span>
+		}
+
+<span class="fc" id="L195">		VariableDeclarationFragment fragment = (VariableDeclarationFragment) varDecl.fragments().get(0);</span>
+<span class="fc" id="L196">		Expression initializer = fragment.getInitializer();</span>
+
+		// Check if initialized with new ArrayList&lt;&gt;() or new HashSet&lt;&gt;()
+<span class="pc bpc" id="L199" title="1 of 2 branches missed.">		if (!(initializer instanceof ClassInstanceCreation)) {</span>
+<span class="nc" id="L200">			return null;</span>
+		}
+
+<span class="fc" id="L203">		ClassInstanceCreation creation = (ClassInstanceCreation) initializer;</span>
+		
+		// Check that no arguments are passed (empty collection)
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">		if (!creation.arguments().isEmpty()) {</span>
+<span class="nc" id="L207">			return null;</span>
+		}
+
+<span class="fc" id="L210">		ITypeBinding typeBinding = creation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">		if (typeBinding == null) {</span>
+<span class="nc" id="L212">			return null;</span>
+		}
+
+		// Check if it's a supported collection type
+<span class="fc" id="L216">		String qualifiedName = typeBinding.getErasure().getQualifiedName();</span>
+<span class="pc bpc" id="L217" title="1 of 2 branches missed.">		if (CollectorType.fromCollectionType(qualifiedName) != null) {</span>
+<span class="fc" id="L218">			return fragment.getName().getIdentifier();</span>
+		}
+
+<span class="nc" id="L221">		return null;</span>
+	}
+
+	/**
+	 * Extracts the expression being added from a COLLECT operation.
+	 * For example, in &quot;result.add(foo(item))&quot;, extracts &quot;foo(item)&quot;.
+	 * 
+	 * @param stmt the statement containing the collect operation
+	 * @return the expression to be collected, or null if none
+	 */
+	public Expression extractCollectExpression(Statement stmt) {
+<span class="pc bpc" id="L232" title="1 of 2 branches missed.">		if (!(stmt instanceof ExpressionStatement)) {</span>
+<span class="nc" id="L233">			return null;</span>
+		}
+
+<span class="fc" id="L236">		ExpressionStatement exprStmt = (ExpressionStatement) stmt;</span>
+<span class="fc" id="L237">		Expression expr = exprStmt.getExpression();</span>
+
+<span class="pc bpc" id="L239" title="1 of 2 branches missed.">		if (expr instanceof MethodInvocation) {</span>
+<span class="fc" id="L240">			MethodInvocation methodInv = (MethodInvocation) expr;</span>
+<span class="pc bpc" id="L241" title="2 of 4 branches missed.">			if (&quot;add&quot;.equals(methodInv.getName().getIdentifier()) &amp;&amp; !methodInv.arguments().isEmpty()) {</span>
+<span class="fc" id="L242">				return (Expression) methodInv.arguments().get(0);</span>
+			}
+		}
+
+<span class="nc" id="L246">		return null;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

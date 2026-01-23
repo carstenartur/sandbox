@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SideEffectAnalyzer.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_method_reuse</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper.lib</a> &gt; <span class="el_source">SideEffectAnalyzer.java</span></div><h1>SideEffectAnalyzer.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper.lib;
+
+import java.util.List;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Assignment;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.FieldAccess;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.PostfixExpression;
+import org.eclipse.jdt.core.dom.PrefixExpression;
+import org.eclipse.jdt.core.dom.QualifiedName;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.SuperFieldAccess;
+import org.eclipse.jdt.core.dom.SuperMethodInvocation;
+
+/**
+ * Side Effect Analyzer - Analyzes whether code replacement is semantically safe
+ * 
+ * This class checks for side effects and ensures that replacing an inline code
+ * sequence with a method call preserves the original semantics.
+ */
+<span class="nc" id="L37">public class SideEffectAnalyzer {</span>
+	
+	/**
+	 * Check if a sequence of statements is safe to replace with a method call
+	 * 
+	 * @param statements The statements to analyze
+	 * @return true if replacement is safe
+	 */
+	public static boolean isSafeToReplace(List&lt;Statement&gt; statements) {
+<span class="nc bnc" id="L46" title="All 4 branches missed.">		if (statements == null || statements.isEmpty()) {</span>
+<span class="nc" id="L47">			return false;</span>
+		}
+		
+		// Check each statement for problematic patterns
+<span class="nc bnc" id="L51" title="All 2 branches missed.">		for (Statement stmt : statements) {</span>
+<span class="nc bnc" id="L52" title="All 2 branches missed.">			if (!isSafeStatement(stmt)) {</span>
+<span class="nc" id="L53">				return false;</span>
+			}
+		}
+		
+<span class="nc" id="L57">		return true;</span>
+	}
+	
+	/**
+	 * Check if a single statement is safe
+	 */
+	private static boolean isSafeStatement(Statement stmt) {
+<span class="nc bnc" id="L64" title="All 2 branches missed.">		if (stmt == null) {</span>
+<span class="nc" id="L65">			return false;</span>
+		}
+		
+		// Check for field modifications
+<span class="nc bnc" id="L69" title="All 2 branches missed.">		if (hasFieldModifications(stmt)) {</span>
+<span class="nc" id="L70">			return false;</span>
+		}
+		
+		// Check for method calls that might have side effects
+<span class="nc bnc" id="L74" title="All 2 branches missed.">		if (hasUnsafeMethodCalls(stmt)) {</span>
+<span class="nc" id="L75">			return false;</span>
+		}
+		
+		// Check for complex control flow
+<span class="nc bnc" id="L79" title="All 2 branches missed.">		if (hasComplexControlFlow(stmt)) {</span>
+<span class="nc" id="L80">			return false;</span>
+		}
+		
+<span class="nc" id="L83">		return true;</span>
+	}
+	
+	/**
+	 * Check if statement modifies fields (not local variables)
+	 */
+	private static boolean hasFieldModifications(Statement stmt) {
+<span class="nc" id="L90">		FieldModificationVisitor visitor = new FieldModificationVisitor();</span>
+<span class="nc" id="L91">		stmt.accept(visitor);</span>
+<span class="nc" id="L92">		return visitor.hasFieldModification;</span>
+	}
+	
+	/**
+	 * Check if statement contains method calls that might have side effects
+	 * 
+	 * Note: This is a conservative check. We allow known safe methods like
+	 * String.trim(), but reject most other method calls to be safe.
+	 */
+	private static boolean hasUnsafeMethodCalls(Statement stmt) {
+<span class="nc" id="L102">		UnsafeMethodCallVisitor visitor = new UnsafeMethodCallVisitor();</span>
+<span class="nc" id="L103">		stmt.accept(visitor);</span>
+<span class="nc" id="L104">		return visitor.hasUnsafeCall;</span>
+	}
+	
+	/**
+	 * Check for complex control flow (loops, try-catch, etc.)
+	 */
+	private static boolean hasComplexControlFlow(Statement stmt) {
+		// Simple check: reject if statement contains certain node types
+<span class="nc" id="L112">		int nodeType = stmt.getNodeType();</span>
+		
+		// These statement types indicate complex control flow
+<span class="nc bnc" id="L115" title="All 2 branches missed.">		switch (nodeType) {</span>
+			case ASTNode.FOR_STATEMENT:
+			case ASTNode.ENHANCED_FOR_STATEMENT:
+			case ASTNode.WHILE_STATEMENT:
+			case ASTNode.DO_STATEMENT:
+			case ASTNode.TRY_STATEMENT:
+			case ASTNode.SYNCHRONIZED_STATEMENT:
+			case ASTNode.SWITCH_STATEMENT:
+			case ASTNode.BREAK_STATEMENT:
+			case ASTNode.CONTINUE_STATEMENT:
+<span class="nc" id="L125">				return true;</span>
+			default:
+<span class="nc" id="L127">				return false;</span>
+		}
+	}
+	
+	/**
+	 * Visitor to detect field modifications
+	 */
+<span class="nc" id="L134">	private static class FieldModificationVisitor extends ASTVisitor {</span>
+<span class="nc" id="L135">		boolean hasFieldModification = false;</span>
+		
+		@Override
+		public boolean visit(Assignment node) {
+<span class="nc" id="L139">			Expression left = node.getLeftHandSide();</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">			if (isFieldAccess(left)) {</span>
+<span class="nc" id="L141">				hasFieldModification = true;</span>
+<span class="nc" id="L142">				return false;</span>
+			}
+<span class="nc" id="L144">			return true;</span>
+		}
+		
+		@Override
+		public boolean visit(PrefixExpression node) {
+			// Check for ++ and -- on fields
+<span class="nc" id="L150">			PrefixExpression.Operator op = node.getOperator();</span>
+<span class="nc bnc" id="L151" title="All 4 branches missed.">			if (op == PrefixExpression.Operator.INCREMENT || op == PrefixExpression.Operator.DECREMENT) {</span>
+<span class="nc bnc" id="L152" title="All 2 branches missed.">				if (isFieldAccess(node.getOperand())) {</span>
+<span class="nc" id="L153">					hasFieldModification = true;</span>
+<span class="nc" id="L154">					return false;</span>
+				}
+			}
+<span class="nc" id="L157">			return true;</span>
+		}
+		
+		@Override
+		public boolean visit(PostfixExpression node) {
+			// Check for ++ and -- on fields
+<span class="nc bnc" id="L163" title="All 2 branches missed.">			if (isFieldAccess(node.getOperand())) {</span>
+<span class="nc" id="L164">				hasFieldModification = true;</span>
+<span class="nc" id="L165">				return false;</span>
+			}
+<span class="nc" id="L167">			return true;</span>
+		}
+		
+		private boolean isFieldAccess(Expression expr) {
+<span class="nc bnc" id="L171" title="All 2 branches missed.">			return expr instanceof FieldAccess || </span>
+<span class="nc bnc" id="L172" title="All 2 branches missed.">			       expr instanceof SuperFieldAccess ||</span>
+<span class="nc bnc" id="L173" title="All 4 branches missed.">			       (expr instanceof QualifiedName &amp;&amp; isFieldReference((QualifiedName) expr));</span>
+		}
+		
+		private boolean isFieldReference(QualifiedName name) {
+			// Simple heuristic: qualified names might be field accesses
+			// More sophisticated analysis would use type bindings
+<span class="nc" id="L179">			return true;</span>
+		}
+	}
+	
+	/**
+	 * Visitor to detect potentially unsafe method calls
+	 */
+<span class="nc" id="L186">	private static class UnsafeMethodCallVisitor extends ASTVisitor {</span>
+<span class="nc" id="L187">		boolean hasUnsafeCall = false;</span>
+		
+		@Override
+		public boolean visit(MethodInvocation node) {
+			// Check if this is a known safe method
+<span class="nc bnc" id="L192" title="All 2 branches missed.">			if (!isKnownSafeMethod(node)) {</span>
+<span class="nc" id="L193">				hasUnsafeCall = true;</span>
+<span class="nc" id="L194">				return false;</span>
+			}
+<span class="nc" id="L196">			return true;</span>
+		}
+		
+		@Override
+		public boolean visit(SuperMethodInvocation node) {
+			// Super method calls might have side effects
+<span class="nc" id="L202">			hasUnsafeCall = true;</span>
+<span class="nc" id="L203">			return false;</span>
+		}
+		
+		/**
+		 * Check if a method is known to be side-effect free
+		 */
+		private boolean isKnownSafeMethod(MethodInvocation node) {
+<span class="nc" id="L210">			String methodName = node.getName().getIdentifier();</span>
+			
+			// Known safe String methods
+<span class="nc bnc" id="L213" title="All 4 branches missed.">			if (&quot;trim&quot;.equals(methodName) || &quot;length&quot;.equals(methodName) || </span>
+<span class="nc bnc" id="L214" title="All 4 branches missed.">			    &quot;isEmpty&quot;.equals(methodName) || &quot;toString&quot;.equals(methodName)) {</span>
+<span class="nc" id="L215">				return true;</span>
+			}
+			
+			// For now, be conservative and reject other methods
+			// A more sophisticated analysis would check method purity
+<span class="nc" id="L220">			return false;</span>
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

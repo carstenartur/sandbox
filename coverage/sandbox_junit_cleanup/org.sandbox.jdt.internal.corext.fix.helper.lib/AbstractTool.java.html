@@ -1,0 +1,336 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>AbstractTool.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper.lib</a> &gt; <span class="el_source">AbstractTool.java</span></div><h1>AbstractTool.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2021, 2025 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper.lib;
+
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
+
+import java.util.Collection;
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
+import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
+import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
+import org.sandbox.jdt.internal.corext.util.NamingUtils;
+
+/**
+ * Abstract base class for JUnit migration tools.
+ * Provides common functionality for transforming JUnit 3/4 tests to JUnit 5.
+ * Delegates to specialized helper classes for most operations.
+ * 
+ * @param &lt;T&gt; Type found in Visitor
+ */
+<span class="fc" id="L52">public abstract class AbstractTool&lt;T&gt; {</span>
+
+	/**
+	 * Gets all variable names used in the scope of the given AST node.
+	 * 
+	 * @param node the AST node to analyze
+	 * @return collection of variable names used in the node's scope
+	 */
+	public static Collection&lt;String&gt; getUsedVariableNames(ASTNode node) {
+<span class="fc" id="L61">		CompilationUnit root = (CompilationUnit) node.getRoot();</span>
+<span class="fc" id="L62">		return new ScopeAnalyzer(root).getUsedVariableNames(node.getStartPosition(), node.getLength());</span>
+	}
+
+	/**
+	 * Extracts the class name from a field declaration's initializer.
+	 * Delegates to {@link NamingUtils#extractClassNameFromField(FieldDeclaration)}.
+	 * 
+	 * @param field the field declaration to extract from
+	 * @return the class name, or null if not found
+	 */
+	public String extractClassNameFromField(FieldDeclaration field) {
+<span class="fc" id="L73">		return NamingUtils.extractClassNameFromField(field);</span>
+	}
+
+	/**
+	 * Finds JUnit migration opportunities in the compilation unit.
+	 * Implementations should scan for patterns that need to be migrated from JUnit 3/4 to JUnit 5.
+	 * 
+	 * @param fixcore the JUnit cleanup fix core
+	 * @param compilationUnit the compilation unit to analyze
+	 * @param operations set to collect rewrite operations
+	 * @param nodesprocessed set of already processed AST nodes to avoid duplicates
+	 */
+	public abstract void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
+			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed);
+
+	/**
+	 * Gets a preview of the code before or after refactoring.
+	 * Used to display examples in the Eclipse cleanup preferences UI.
+	 * 
+	 * @param afterRefactoring if true, returns the &quot;after&quot; preview; if false, returns the &quot;before&quot; preview
+	 * @return a code snippet showing the transformation (formatted as Java source code)
+	 */
+	public abstract String getPreview(boolean afterRefactoring);
+
+	/**
+	 * Finds the type definition (TypeDeclaration or AnonymousClassDeclaration) for a field.
+	 * Checks the field's initializer and type binding to locate the definition.
+	 * 
+	 * @param fieldDeclaration the field declaration to analyze
+	 * @param cu the compilation unit containing the field
+	 * @return the type definition node, or null if not found
+	 */
+	protected ASTNode getTypeDefinitionForField(FieldDeclaration fieldDeclaration, CompilationUnit cu) {
+<span class="fc" id="L106">		return (ASTNode) fieldDeclaration.fragments().stream()</span>
+<span class="fc" id="L107">				.filter(VariableDeclarationFragment.class::isInstance)</span>
+<span class="fc" id="L108">				.map(VariableDeclarationFragment.class::cast)</span>
+<span class="fc" id="L109">				.map(fragment -&gt; getTypeDefinitionFromFragment((VariableDeclarationFragment) fragment, cu))</span>
+<span class="fc" id="L110">				.filter(java.util.Objects::nonNull)</span>
+<span class="fc" id="L111">				.findFirst()</span>
+<span class="fc" id="L112">				.orElse(null);</span>
+	}
+
+	private ASTNode getTypeDefinitionFromFragment(VariableDeclarationFragment fragment, CompilationUnit cu) {
+		// Check initializer
+<span class="fc" id="L117">		Expression initializer = fragment.getInitializer();</span>
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">		if (initializer instanceof org.eclipse.jdt.core.dom.ClassInstanceCreation) {</span>
+<span class="fc" id="L119">			org.eclipse.jdt.core.dom.ClassInstanceCreation classInstanceCreation = (org.eclipse.jdt.core.dom.ClassInstanceCreation) initializer;</span>
+
+			// Check for anonymous class
+<span class="fc" id="L122">			AnonymousClassDeclaration anonymousClass = classInstanceCreation.getAnonymousClassDeclaration();</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">			if (anonymousClass != null) {</span>
+<span class="fc" id="L124">				return anonymousClass;</span>
+			}
+
+			// Check type binding
+<span class="fc" id="L128">			ITypeBinding typeBinding = classInstanceCreation.resolveTypeBinding();</span>
+<span class="fc" id="L129">			return ASTNavigationUtils.findTypeDeclarationForBinding(typeBinding, cu);</span>
+		}
+
+		// Check field type if no initialization is present
+<span class="nc" id="L133">		IVariableBinding fieldBinding = fragment.resolveBinding();</span>
+<span class="nc bnc" id="L134" title="All 2 branches missed.">		if (fieldBinding != null) {</span>
+<span class="nc" id="L135">			ITypeBinding fieldTypeBinding = fieldBinding.getType();</span>
+<span class="nc" id="L136">			return ASTNavigationUtils.findTypeDeclarationForBinding(fieldTypeBinding, cu);</span>
+		}
+
+<span class="nc" id="L139">		return null;</span>
+	}
+
+	/**
+	 * Checks if a class has either a default constructor or no constructors at all.
+	 * Used to determine if ExternalResource subclasses can be easily migrated.
+	 * 
+	 * @param classNode the class to check
+	 * @return true if the class has a default constructor or no constructors
+	 */
+	protected boolean hasDefaultConstructorOrNoConstructor(TypeDeclaration classNode) {
+<span class="nc" id="L150">		boolean hasConstructor = false;</span>
+
+<span class="nc bnc" id="L152" title="All 2 branches missed.">		for (Object bodyDecl : classNode.bodyDeclarations()) {</span>
+<span class="nc bnc" id="L153" title="All 2 branches missed.">			if (bodyDecl instanceof org.eclipse.jdt.core.dom.MethodDeclaration) {</span>
+<span class="nc" id="L154">				org.eclipse.jdt.core.dom.MethodDeclaration method = (org.eclipse.jdt.core.dom.MethodDeclaration) bodyDecl;</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">				if (method.isConstructor()) {</span>
+<span class="nc" id="L156">					hasConstructor = true;</span>
+<span class="nc bnc" id="L157" title="All 4 branches missed.">					if (method.parameters().isEmpty() &amp;&amp; method.getBody() != null</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">							&amp;&amp; method.getBody().statements().isEmpty()) {</span>
+<span class="nc" id="L159">						return true;</span>
+					}
+				}
+			}
+		}
+<span class="nc bnc" id="L164" title="All 2 branches missed.">		return !hasConstructor;</span>
+	}
+
+	/**
+	 * Checks if a variable declaration fragment represents an anonymous class.
+	 * 
+	 * @param fragment the variable declaration fragment to check
+	 * @return true if the fragment's initializer is an anonymous class
+	 */
+	public boolean isAnonymousClass(VariableDeclarationFragment fragment) {
+<span class="nc" id="L174">		Expression initializer = fragment.getInitializer();</span>
+<span class="nc bnc" id="L175" title="All 2 branches missed.">		return initializer instanceof org.eclipse.jdt.core.dom.ClassInstanceCreation</span>
+<span class="nc bnc" id="L176" title="All 2 branches missed.">				&amp;&amp; ((org.eclipse.jdt.core.dom.ClassInstanceCreation) initializer).getAnonymousClassDeclaration() != null;</span>
+	}
+
+	/**
+	 * Checks if the given type binding directly extends ExternalResource.
+	 * 
+	 * @param binding the type binding to check
+	 * @return true if the type's superclass is ExternalResource
+	 */
+	protected boolean isDirectlyExtendingExternalResource(ITypeBinding binding) {
+<span class="fc" id="L186">		ITypeBinding superclass = binding.getSuperclass();</span>
+<span class="pc bpc" id="L187" title="1 of 4 branches missed.">		return superclass != null &amp;&amp; ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(superclass.getQualifiedName());</span>
+	}
+
+	/**
+	 * Checks if a field is annotated with the specified annotation.
+	 * 
+	 * @param field the field declaration to check
+	 * @param annotationClass the fully qualified annotation class name
+	 * @return true if the field has the annotation
+	 */
+	protected boolean isFieldAnnotatedWith(FieldDeclaration field, String annotationClass) {
+<span class="fc" id="L198">		return AnnotationUtils.isFieldAnnotatedWith(field, annotationClass);</span>
+	}
+
+	/**
+	 * Modifies a class that extends ExternalResource to use JUnit 5 extensions instead.
+	 * Delegates to {@link ExternalResourceRefactorer#modifyExternalResourceClass}.
+	 * 
+	 * @param node the type declaration to modify
+	 * @param field the field declaration with ExternalResource
+	 * @param fieldStatic whether the field is static (affects callback type)
+	 * @param rewriter the AST rewriter
+	 * @param ast the AST instance
+	 * @param group the text edit group
+	 * @param importRewriter the import rewriter
+	 */
+	protected void modifyExternalResourceClass(TypeDeclaration node, FieldDeclaration field, boolean fieldStatic,
+			ASTRewrite rewriter, AST ast, TextEditGroup group, ImportRewrite importRewriter) {
+<span class="fc" id="L215">		ExternalResourceRefactorer.modifyExternalResourceClass(node, field, fieldStatic, rewriter, ast, group,</span>
+<span class="fc" id="L216">				importRewriter);</span>
+<span class="fc" id="L217">	}</span>
+
+
+	/**
+	 * Processes a JUnit migration by applying the necessary AST rewrites.
+	 * Implementations should transform the matched pattern into JUnit 5 compatible code.
+	 * 
+	 * @param group the text edit group for tracking changes
+	 * @param rewriter the AST rewriter
+	 * @param ast the AST instance
+	 * @param importRewriter the import rewriter
+	 * @param junitHolder the holder containing JUnit migration information
+	 */
+	protected abstract void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+			JunitHolder junitHolder);
+
+	/**
+	 * Refactors an anonymous ExternalResource class to implement JUnit 5 callback interfaces.
+	 * Delegates to {@link ExternalResourceRefactorer#refactorAnonymousClassToImplementCallbacks}.
+	 * 
+	 * @param anonymousClass the anonymous class declaration to refactor
+	 * @param fieldDeclaration the field containing the anonymous class
+	 * @param fieldStatic whether the field is static
+	 * @param rewriter the AST rewriter
+	 * @param ast the AST instance
+	 * @param group the text edit group
+	 * @param importRewriter the import rewriter
+	 */
+	protected void refactorAnonymousClassToImplementCallbacks(AnonymousClassDeclaration anonymousClass,
+			FieldDeclaration fieldDeclaration, boolean fieldStatic, ASTRewrite rewriter, AST ast, TextEditGroup group,
+			ImportRewrite importRewriter) {
+<span class="fc" id="L248">		ExternalResourceRefactorer.refactorAnonymousClassToImplementCallbacks(anonymousClass, fieldDeclaration,</span>
+<span class="fc" id="L249">				fieldStatic, rewriter, ast, group, importRewriter);</span>
+<span class="fc" id="L250">	}</span>
+
+	/**
+	 * Refactors TestName field usage in a class and all its subclasses.
+	 * Delegates to {@link TestNameRefactorer#refactorTestnameInClassAndSubclasses}.
+	 * 
+	 * @param group the text edit group
+	 * @param rewriter the AST rewriter
+	 * @param ast the AST instance
+	 * @param importRewrite the import rewriter
+	 * @param node the TestName field declaration to replace
+	 */
+	protected void refactorTestnameInClassAndSubclasses(TextEditGroup group, ASTRewrite rewriter, AST ast,
+			ImportRewrite importRewrite, FieldDeclaration node) {
+<span class="fc" id="L264">		TestNameRefactorer.refactorTestnameInClassAndSubclasses(group, rewriter, ast, importRewrite, node);</span>
+<span class="fc" id="L265">	}</span>
+
+	/**
+	 * Reorders parameters in a method invocation to match JUnit 5 assertion parameter order.
+	 * Delegates to {@link AssertionRefactorer#reorderParameters}.
+	 * 
+	 * @param node the method invocation to reorder
+	 * @param rewriter the AST rewriter
+	 * @param group the text edit group
+	 * @param oneparam assertion methods with one value parameter
+	 * @param twoparam assertion methods with two value parameters
+	 */
+	public void reorderParameters(MethodInvocation node, ASTRewrite rewriter, TextEditGroup group, Set&lt;String&gt; oneparam,
+			Set&lt;String&gt; twoparam) {
+<span class="fc" id="L279">		AssertionRefactorer.reorderParameters(node, rewriter, group, oneparam, twoparam);</span>
+<span class="fc" id="L280">	}</span>
+
+	/**
+	 * Standard helper for processing found nodes in the common pattern.
+	 * Creates a JunitHolder, stores the node, adds it to the data holder,
+	 * and creates a rewrite operation.
+	 * 
+	 * @param fixcore the cleanup fix core
+	 * @param operations the set of operations to add to
+	 * @param node the AST node that was found
+	 * @param dataHolder the reference holder for storing data
+	 * @return false to continue visiting
+	 */
+	protected boolean addStandardRewriteOperation(JUnitCleanUpFixCore fixcore,
+			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, ASTNode node,
+			ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder) {
+<span class="fc" id="L296">		JunitHolder mh = new JunitHolder();</span>
+<span class="fc" id="L297">		mh.minv = node;</span>
+<span class="fc" id="L298">		dataHolder.put(dataHolder.size(), mh);</span>
+<span class="fc" id="L299">		operations.add(fixcore.rewrite(dataHolder));</span>
+<span class="fc" id="L300">		return false;</span>
+	}
+
+	/**
+	 * Handles import declaration changes for migrating JUnit 4 to JUnit 5.
+	 * Delegates to {@link ImportHelper#changeImportDeclaration}.
+	 * 
+	 * @param node the import declaration to change
+	 * @param importRewriter the import rewriter to use
+	 * @param sourceClass the JUnit 4 fully qualified class name
+	 * @param targetClass the JUnit 5 fully qualified class name
+	 */
+	protected void changeImportDeclaration(ImportDeclaration node, ImportRewrite importRewriter, String sourceClass,
+			String targetClass) {
+<span class="fc" id="L314">		ImportHelper.changeImportDeclaration(node, importRewriter, sourceClass, targetClass);</span>
+<span class="fc" id="L315">	}</span>
+
+	/**
+	 * Applies the JUnit migration rewrite to the compilation unit.
+	 * Delegates to the abstract process2Rewrite method for actual transformation.
+	 * 
+	 * @param upp the JUnit cleanup fix core
+	 * @param hit the reference holder containing migration information
+	 * @param cuRewrite the compilation unit rewrite
+	 * @param group the text edit group
+	 */
+	public void rewrite(JUnitCleanUpFixCore upp, ReferenceHolder&lt;Integer, JunitHolder&gt; hit,
+			CompilationUnitRewrite cuRewrite, TextEditGroup group) {
+<span class="fc" id="L328">		ASTRewrite rewriter = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L329">		AST ast = cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L330">		ImportRewrite importRewriter = cuRewrite.getImportRewrite();</span>
+<span class="fc" id="L331">		JunitHolder junitHolder = hit.get(hit.size() - 1);</span>
+<span class="fc" id="L332">		process2Rewrite(group, rewriter, ast, importRewriter, junitHolder);</span>
+<span class="fc" id="L333">		hit.remove(hit.size() - 1);</span>
+<span class="fc" id="L334">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

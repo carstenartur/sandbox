@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>OperationType.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_functional_converter</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">OperationType.java</span></div><h1>OperationType.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2025 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.ReturnStatement;
+import org.eclipse.jdt.core.dom.Statement;
+
+/**
+ * Types of stream operations that can be extracted from loop bodies.
+ * 
+ * &lt;p&gt;Each operation type corresponds to a specific stream method and knows how to
+ * create its lambda body expression.&lt;/p&gt;
+ * 
+ * &lt;ul&gt;
+ * &lt;li&gt;&lt;b&gt;MAP&lt;/b&gt;: Transforms elements ({@code .map(x -&gt; f(x))}). 
+ *     Example: {@code String s = item.toString();} → {@code .map(item -&gt; item.toString())}&lt;/li&gt;
+ * &lt;li&gt;&lt;b&gt;FILTER&lt;/b&gt;: Selects elements based on a predicate ({@code .filter(x -&gt; condition)}). 
+ *     Example: {@code if (item != null)} → {@code .filter(item -&gt; item != null)}&lt;/li&gt;
+ * &lt;li&gt;&lt;b&gt;FOREACH&lt;/b&gt;: Terminal operation performing an action on each element ({@code .forEachOrdered(x -&gt; action(x))}). 
+ *     Example: {@code System.out.println(item);} → {@code .forEachOrdered(item -&gt; System.out.println(item))}&lt;/li&gt;
+ * &lt;li&gt;&lt;b&gt;REDUCE&lt;/b&gt;: Terminal accumulation operation ({@code .reduce(identity, accumulator)}). 
+ *     Example: {@code sum += item;} → {@code .reduce(sum, Integer::sum)}&lt;/li&gt;
+ * &lt;li&gt;&lt;b&gt;ANYMATCH&lt;/b&gt;: Terminal predicate returning true if any element matches ({@code .anyMatch(x -&gt; condition)}). 
+ *     Example: {@code if (condition) return true;} → {@code if (stream.anyMatch(x -&gt; condition)) return true;}&lt;/li&gt;
+ * &lt;li&gt;&lt;b&gt;NONEMATCH&lt;/b&gt;: Terminal predicate returning true if no elements match ({@code .noneMatch(x -&gt; condition)}). 
+ *     Example: {@code if (condition) return false;} → {@code if (!stream.noneMatch(x -&gt; condition)) return false;}&lt;/li&gt;
+ * &lt;li&gt;&lt;b&gt;ALLMATCH&lt;/b&gt;: Terminal predicate returning true if all elements match ({@code .allMatch(x -&gt; condition)}). 
+ *     Example: {@code if (!condition) return false;} → {@code if (!stream.allMatch(x -&gt; condition)) return false;}&lt;/li&gt;
+ * &lt;li&gt;&lt;b&gt;COLLECT&lt;/b&gt;: Terminal operation collecting elements into a collection ({@code .collect(Collectors.toList())}). 
+ *     Example: {@code result.add(item);} → {@code result = stream.collect(Collectors.toList());}&lt;/li&gt;
+ * &lt;/ul&gt;
+ * 
+ * @see ProspectiveOperation
+ * @see StreamConstants
+ */
+<span class="fc" id="L52">public enum OperationType {</span>
+	
+<span class="fc" id="L54">	/**</span>
+	 * Transforms elements using a mapping function.
+	 * Stream method: {@code .map(x -&gt; f(x))}
+	 */
+<span class="fc" id="L58">	MAP(StreamConstants.MAP_METHOD, false, false) {</span>
+		@Override
+		public ASTNode createLambdaBody(AST ast, LambdaBodyContext context) {
+			// Check for side-effect MAP operations FIRST (originalStatement != null with loopVariableName)
+			// These need a block body with return statement
+<span class="pc bpc" id="L63" title="1 of 4 branches missed.">			if (context.originalStatement() != null &amp;&amp; context.loopVariableName() != null) {</span>
+				// For MAP with side-effect statement: create block with statement and return
+<span class="fc" id="L65">				Block block = ast.newBlock();</span>
+				
+				// Handle Block statements specially - copy statements from the block
+<span class="fc bfc" id="L68" title="All 2 branches covered.">				if (context.originalStatement() instanceof Block) {</span>
+<span class="fc" id="L69">					Block originalBlock = (Block) context.originalStatement();</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">					for (Object stmt : originalBlock.statements()) {</span>
+<span class="fc" id="L71">						block.statements().add(ASTNode.copySubtree(ast, (Statement) stmt));</span>
+					}
+<span class="fc" id="L73">				} else {</span>
+<span class="fc" id="L74">					block.statements().add(ASTNode.copySubtree(ast, context.originalStatement()));</span>
+				}
+
+				// Add return statement to return the current pipeline variable
+<span class="fc" id="L78">				ReturnStatement returnStmt = ast.newReturnStatement();</span>
+<span class="fc" id="L79">				returnStmt.setExpression(ast.newSimpleName(context.loopVariableName()));</span>
+<span class="fc" id="L80">				block.statements().add(returnStmt);</span>
+
+<span class="fc" id="L82">				return block;</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">			} else if (context.originalExpression() != null) {</span>
+				// For MAP with expression only: lambda body is just the expression
+<span class="fc" id="L85">				return ASTNode.copySubtree(ast, context.originalExpression());</span>
+			}
+<span class="nc" id="L87">			return null;</span>
+		}
+	},
+	
+<span class="fc" id="L91">	/**</span>
+	 * Terminal operation performing an action on each element.
+	 * Stream method: {@code .forEachOrdered(x -&gt; action(x))}
+	 */
+<span class="fc" id="L95">	FOREACH(StreamConstants.FOR_EACH_ORDERED_METHOD, false, true) {</span>
+		@Override
+		public ASTNode createLambdaBody(AST ast, LambdaBodyContext context) {
+<span class="fc bfc" id="L98" title="All 2 branches covered.">			if (context.originalExpression() != null </span>
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">					&amp;&amp; context.originalStatement() instanceof ExpressionStatement) {</span>
+				// For FOREACH with a single expression (from ExpressionStatement):
+				// Use the expression directly as lambda body (without block) for cleaner code
+<span class="fc" id="L102">				return ASTNode.copySubtree(ast, context.originalExpression());</span>
+<span class="pc bpc" id="L103" title="1 of 2 branches missed.">			} else if (context.originalStatement() != null) {</span>
+				// For FOREACH with other statement types: lambda body is the statement (as block)
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">				if (context.originalStatement() instanceof Block) {</span>
+<span class="fc" id="L106">					return ASTNode.copySubtree(ast, context.originalStatement());</span>
+				} else {
+<span class="nc" id="L108">					Block block = ast.newBlock();</span>
+<span class="nc" id="L109">					block.statements().add(ASTNode.copySubtree(ast, context.originalStatement()));</span>
+<span class="nc" id="L110">					return block;</span>
+				}
+			}
+<span class="nc" id="L113">			return null;</span>
+		}
+	},
+	
+<span class="fc" id="L117">	/**</span>
+	 * Selects elements based on a predicate.
+	 * Stream method: {@code .filter(x -&gt; condition)}
+	 */
+<span class="fc" id="L121">	FILTER(StreamConstants.FILTER_METHOD, true, false) {</span>
+		@Override
+		public ASTNode createLambdaBody(AST ast, LambdaBodyContext context) {
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">			if (context.originalExpression() != null) {</span>
+<span class="fc" id="L125">				return createPredicateLambdaBody(ast, context.originalExpression());</span>
+			}
+<span class="nc" id="L127">			return null;</span>
+		}
+	},
+	
+<span class="fc" id="L131">	/**</span>
+	 * Terminal accumulation operation.
+	 * Stream method: {@code .reduce(identity, accumulator)}
+	 */
+<span class="fc" id="L135">	REDUCE(StreamConstants.REDUCE_METHOD, false, true) {</span>
+		@Override
+		public ASTNode createLambdaBody(AST ast, LambdaBodyContext context) {
+			// REDUCE has special handling via getArgumentsForReducer()
+			// This method is not used for REDUCE operations
+<span class="nc" id="L140">			return null;</span>
+		}
+		
+		@Override
+		public boolean hasSpecialArgumentHandling() {
+<span class="fc" id="L145">			return true;</span>
+		}
+	},
+	
+<span class="fc" id="L149">	/**</span>
+	 * Terminal predicate returning true if any element matches.
+	 * Stream method: {@code .anyMatch(x -&gt; condition)}
+	 */
+<span class="fc" id="L153">	ANYMATCH(StreamConstants.ANY_MATCH_METHOD, true, true) {</span>
+		@Override
+		public ASTNode createLambdaBody(AST ast, LambdaBodyContext context) {
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">			if (context.originalExpression() != null) {</span>
+<span class="fc" id="L157">				return createPredicateLambdaBody(ast, context.originalExpression());</span>
+			}
+<span class="nc" id="L159">			return null;</span>
+		}
+	},
+	
+<span class="fc" id="L163">	/**</span>
+	 * Terminal predicate returning true if no elements match.
+	 * Stream method: {@code .noneMatch(x -&gt; condition)}
+	 */
+<span class="fc" id="L167">	NONEMATCH(StreamConstants.NONE_MATCH_METHOD, true, true) {</span>
+		@Override
+		public ASTNode createLambdaBody(AST ast, LambdaBodyContext context) {
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">			if (context.originalExpression() != null) {</span>
+<span class="fc" id="L171">				return createPredicateLambdaBody(ast, context.originalExpression());</span>
+			}
+<span class="nc" id="L173">			return null;</span>
+		}
+	},
+	
+<span class="fc" id="L177">	/**</span>
+	 * Terminal predicate returning true if all elements match.
+	 * Stream method: {@code .allMatch(x -&gt; condition)}
+	 */
+<span class="fc" id="L181">	ALLMATCH(StreamConstants.ALL_MATCH_METHOD, true, true) {</span>
+		@Override
+		public ASTNode createLambdaBody(AST ast, LambdaBodyContext context) {
+<span class="pc bpc" id="L184" title="1 of 2 branches missed.">			if (context.originalExpression() != null) {</span>
+<span class="fc" id="L185">				return createPredicateLambdaBody(ast, context.originalExpression());</span>
+			}
+<span class="nc" id="L187">			return null;</span>
+		}
+	},
+	
+<span class="fc" id="L191">	/**</span>
+	 * Terminal operation collecting elements into a collection.
+	 * Stream method: {@code .collect(Collectors.toList())} or {@code .collect(Collectors.toSet())}
+	 */
+<span class="fc" id="L195">	COLLECT(StreamConstants.COLLECT_METHOD, false, true) {</span>
+		@Override
+		public ASTNode createLambdaBody(AST ast, LambdaBodyContext context) {
+			// COLLECT has special handling via getArgumentsForCollector()
+			// This method is not used for COLLECT operations
+<span class="nc" id="L200">			return null;</span>
+		}
+		
+		@Override
+		public boolean hasSpecialArgumentHandling() {
+<span class="fc" id="L205">			return true;</span>
+		}
+	};
+
+	private final String methodName;
+	private final boolean predicate;
+	private final boolean terminal;
+
+<span class="fc" id="L213">	OperationType(String methodName, boolean isPredicate, boolean isTerminal) {</span>
+<span class="fc" id="L214">		this.methodName = methodName;</span>
+<span class="fc" id="L215">		this.predicate = isPredicate;</span>
+<span class="fc" id="L216">		this.terminal = isTerminal;</span>
+<span class="fc" id="L217">	}</span>
+
+	/**
+	 * Returns the stream method name for this operation type.
+	 * 
+	 * @return the method name (e.g., &quot;map&quot;, &quot;filter&quot;, &quot;forEachOrdered&quot;, &quot;reduce&quot;)
+	 */
+	public String getMethodName() {
+<span class="fc" id="L225">		return methodName;</span>
+	}
+	
+	/**
+	 * Creates the lambda body for this operation type.
+	 * 
+	 * @param ast the AST to create nodes in
+	 * @param context the context containing expression, statement, and variable information
+	 * @return the lambda body (Expression or Block), or null if cannot be created
+	 */
+	public abstract ASTNode createLambdaBody(AST ast, LambdaBodyContext context);
+	
+	/**
+	 * Returns whether this operation type has special argument handling.
+	 * If true, the operation uses a custom method (like getArgumentsForReducer) instead of createLambdaBody.
+	 * 
+	 * @return true if special handling is required
+	 */
+	public boolean hasSpecialArgumentHandling() {
+<span class="fc" id="L244">		return false;</span>
+	}
+	
+	/**
+	 * Returns whether this operation type uses a predicate (boolean condition).
+	 * 
+	 * @return true if this is a predicate-based operation (FILTER, ANYMATCH, NONEMATCH, ALLMATCH)
+	 */
+	public boolean isPredicate() {
+<span class="nc" id="L253">		return predicate;</span>
+	}
+	
+	/**
+	 * Returns whether this operation type is a terminal operation.
+	 * 
+	 * @return true if this is a terminal operation (FOREACH, REDUCE, ANYMATCH, NONEMATCH, ALLMATCH)
+	 */
+	public boolean isTerminal() {
+<span class="nc" id="L262">		return terminal;</span>
+	}
+	
+	// ==================== Helper Methods ====================
+	
+	/**
+	 * Creates a lambda body for predicate expressions.
+	 * Wraps the expression in parentheses only for InfixExpressions.
+	 */
+	protected static Expression createPredicateLambdaBody(AST ast, Expression expression) {
+<span class="fc" id="L272">		LambdaGenerator generator = new LambdaGenerator(ast);</span>
+<span class="fc" id="L273">		return generator.createPredicateLambdaBody(expression);</span>
+	}
+	
+	/**
+	 * Context record containing the information needed to create a lambda body.
+	 * 
+	 * @param originalExpression the original expression being transformed (may be null)
+	 * @param originalStatement the original statement being transformed (may be null)
+	 * @param loopVariableName the loop variable name for side-effect operations (may be null)
+	 */
+	public record LambdaBodyContext(
+			Expression originalExpression,
+			Statement originalStatement,
+			String loopVariableName
+	) {
+		/**
+		 * Creates a context with only an expression.
+		 */
+		public static LambdaBodyContext ofExpression(Expression expression) {
+<span class="nc" id="L292">			return new LambdaBodyContext(expression, null, null);</span>
+		}
+		
+		/**
+		 * Creates a context with a statement and loop variable name.
+		 */
+		public static LambdaBodyContext ofStatement(Statement statement, String loopVarName) {
+<span class="nc" id="L299">			Expression expr = null;</span>
+<span class="nc bnc" id="L300" title="All 2 branches missed.">			if (statement instanceof ExpressionStatement) {</span>
+<span class="nc" id="L301">				expr = ((ExpressionStatement) statement).getExpression();</span>
+			}
+<span class="nc" id="L303">			return new LambdaBodyContext(expr, statement, loopVarName);</span>
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

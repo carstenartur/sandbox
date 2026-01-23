@@ -1,0 +1,2163 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>LambdaASTVisitor.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.common</a> &gt; <span class="el_source">LambdaASTVisitor.java</span></div><h1>LambdaASTVisitor.java</h1><pre class="source lang-java linenums">package org.sandbox.jdt.internal.common;
+
+/*-
+ * #%L
+ * Sandbox common
+ * %%
+ * Copyright (C) 2024 hammer
+ * %%
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0.
+ * 
+ * This Source Code may also be made available under the following Secondary
+ * Licenses when the conditions for such availability set forth in the Eclipse
+ * Public License, v. 2.0 are satisfied: GNU General Public License, version 2
+ * with the GNU Classpath Exception which is
+ * available at https://www.gnu.org/software/classpath/license.html.
+ * 
+ * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+ * #L%
+ */
+
+
+import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.BiPredicate;
+
+import org.eclipse.jdt.core.dom.*;
+
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+
+/**
+ *
+ * @author chammer
+ *
+ * @param &lt;E&gt; - type that extends HelpVisitorProvider that provides {@code HelperVisitor&lt;V, T&gt;}
+ * @param &lt;V&gt; - type that HelperVisitor uses as map key type
+ * @param &lt;T&gt; - type that HelperVisitor uses as map value type
+ * @since 1.15
+ */
+@SuppressWarnings({ &quot;unchecked&quot; })
+public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V, T&gt; extends ASTVisitor {
+	/**
+	 *
+	 */
+	private final HelperVisitor&lt;E,V,T&gt; helperVisitor;
+
+	/**
+	 * @param helperVisitor - HelperVisitor
+	 */
+	LambdaASTVisitor(HelperVisitor&lt;E,V,T&gt; helperVisitor) {
+<span class="nc" id="L52">		super(false);</span>
+<span class="nc" id="L53">		this.helperVisitor = helperVisitor;</span>
+<span class="nc" id="L54">	}</span>
+
+	LambdaASTVisitor(HelperVisitor&lt;E,V,T&gt; helperVisitor, boolean visitjavadoc) {
+<span class="fc" id="L57">		super(visitjavadoc);</span>
+<span class="fc" id="L58">		this.helperVisitor = helperVisitor;</span>
+<span class="fc" id="L59">	}</span>
+
+	@Override
+	public boolean visit(AnnotationTypeDeclaration node) {
+<span class="nc bnc" id="L63" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.AnnotationTypeDeclaration)) {</span>
+<span class="nc" id="L64">			return ((BiPredicate&lt;AnnotationTypeDeclaration, E&gt;) (this.helperVisitor.predicatemap</span>
+<span class="nc" id="L65">					.get(VisitorEnum.AnnotationTypeDeclaration))).test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L67">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(AnnotationTypeMemberDeclaration node) {
+<span class="nc bnc" id="L72" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.AnnotationTypeMemberDeclaration)) {</span>
+<span class="nc" id="L73">			return ((BiPredicate&lt;AnnotationTypeMemberDeclaration, E&gt;) (this.helperVisitor.predicatemap</span>
+<span class="nc" id="L74">					.get(VisitorEnum.AnnotationTypeMemberDeclaration))).test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L76">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(AnonymousClassDeclaration node) {
+<span class="pc bpc" id="L81" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.AnonymousClassDeclaration)) {</span>
+<span class="nc" id="L82">			return ((BiPredicate&lt;AnonymousClassDeclaration, E&gt;) (this.helperVisitor.predicatemap</span>
+<span class="nc" id="L83">					.get(VisitorEnum.AnonymousClassDeclaration))).test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L85">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(ArrayAccess node) {
+<span class="nc bnc" id="L90" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ArrayAccess)) {</span>
+<span class="nc" id="L91">			return ((BiPredicate&lt;ArrayAccess, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.ArrayAccess)))</span>
+<span class="nc" id="L92">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L94">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(ArrayCreation node) {
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ArrayCreation)) {</span>
+<span class="nc" id="L100">			return ((BiPredicate&lt;ArrayCreation, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.ArrayCreation)))</span>
+<span class="nc" id="L101">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L103">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(ArrayInitializer node) {
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ArrayInitializer)) {</span>
+<span class="nc" id="L109">			return ((BiPredicate&lt;ArrayInitializer, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.ArrayInitializer)))</span>
+<span class="nc" id="L110">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L112">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(ArrayType node) {
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ArrayType)) {</span>
+<span class="nc" id="L118">			return ((BiPredicate&lt;ArrayType, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.ArrayType)))</span>
+<span class="nc" id="L119">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L121">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(AssertStatement node) {
+<span class="nc bnc" id="L126" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.AssertStatement)) {</span>
+<span class="nc" id="L127">			return ((BiPredicate&lt;AssertStatement, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.AssertStatement)))</span>
+<span class="nc" id="L128">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L130">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(Assignment node) {
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.Assignment)) {</span>
+<span class="nc" id="L136">			Map&lt;String, Object&gt; map=(Map&lt;String, Object&gt;) this.helperVisitor.getSupplierData().get(VisitorEnum.Assignment);</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">			if(map != null) {</span>
+<span class="nc" id="L138">				Assignment.Operator operator=(Assignment.Operator) map.get(HelperVisitor.OPERATOR);</span>
+<span class="nc bnc" id="L139" title="All 4 branches missed.">				if(operator != null &amp;&amp; !node.getOperator().equals(operator)) {</span>
+<span class="nc" id="L140">					return true;</span>
+				}
+			}
+<span class="nc" id="L143">			return ((BiPredicate&lt;Assignment, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.Assignment)))</span>
+<span class="nc" id="L144">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L146">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(Block node) {
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.Block)) {</span>
+<span class="nc" id="L152">			return ((BiPredicate&lt;Block, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.Block))).test(node, this.helperVisitor.dataholder)</span>
+					;
+		}
+<span class="fc" id="L155">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(BlockComment node) {
+<span class="nc bnc" id="L160" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.BlockComment)) {</span>
+<span class="nc" id="L161">			return ((BiPredicate&lt;BlockComment, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.BlockComment)))</span>
+<span class="nc" id="L162">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L164">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(BooleanLiteral node) {
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.BooleanLiteral)) {</span>
+<span class="nc" id="L170">			return ((BiPredicate&lt;BooleanLiteral, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.BooleanLiteral)))</span>
+<span class="nc" id="L171">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L173">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(BreakStatement node) {
+<span class="pc bpc" id="L178" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.BreakStatement)) {</span>
+<span class="nc" id="L179">			return ((BiPredicate&lt;BreakStatement, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.BreakStatement)))</span>
+<span class="nc" id="L180">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L182">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(CastExpression node) {
+<span class="pc bpc" id="L187" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.CastExpression)) {</span>
+<span class="nc" id="L188">			return ((BiPredicate&lt;CastExpression, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.CastExpression)))</span>
+<span class="nc" id="L189">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L191">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(CatchClause node) {
+<span class="pc bpc" id="L196" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.CatchClause)) {</span>
+<span class="nc" id="L197">			Map&lt;String, Object&gt; map=(Map&lt;String, Object&gt;) this.helperVisitor.getSupplierData().get(VisitorEnum.CatchClause);</span>
+<span class="nc bnc" id="L198" title="All 2 branches missed.">			if(map != null) {</span>
+<span class="nc" id="L199">				Class&lt;?&gt; exceptionType=(Class&lt;?&gt;) map.get(HelperVisitor.EXCEPTIONTYPE);</span>
+<span class="nc bnc" id="L200" title="All 2 branches missed.">				if(exceptionType != null) {</span>
+<span class="nc" id="L201">					ITypeBinding binding= node.getException().getType().resolveBinding();</span>
+<span class="nc bnc" id="L202" title="All 2 branches missed.">					if(binding != null) {</span>
+<span class="nc bnc" id="L203" title="All 2 branches missed.">						if(!isTypeMatching(binding, exceptionType.getCanonicalName())) {</span>
+<span class="nc" id="L204">							return true;</span>
+						}
+					} else {
+						// Fallback to simple name matching when binding is null (e.g., in stub environments)
+<span class="nc" id="L208">						String typeName = node.getException().getType().toString();</span>
+<span class="nc" id="L209">						String expectedSimpleName = exceptionType.getSimpleName();</span>
+<span class="nc" id="L210">						String expectedFullName = exceptionType.getCanonicalName();</span>
+<span class="nc bnc" id="L211" title="All 4 branches missed.">						if(!typeName.equals(expectedSimpleName) &amp;&amp; !typeName.equals(expectedFullName)) {</span>
+<span class="nc" id="L212">							return true;</span>
+						}
+					}
+				}
+			}
+<span class="nc" id="L217">			return ((BiPredicate&lt;CatchClause, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.CatchClause)))</span>
+<span class="nc" id="L218">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L220">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(CharacterLiteral node) {
+<span class="nc bnc" id="L225" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.CharacterLiteral)) {</span>
+<span class="nc" id="L226">			return ((BiPredicate&lt;CharacterLiteral, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.CharacterLiteral)))</span>
+<span class="nc" id="L227">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L229">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(ClassInstanceCreation node) {
+<span class="fc bfc" id="L234" title="All 2 branches covered.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ClassInstanceCreation)) {</span>
+<span class="fc" id="L235">			Map&lt;String, Object&gt; map=(Map&lt;String, Object&gt;) this.helperVisitor.getSupplierData().get(VisitorEnum.ClassInstanceCreation);</span>
+<span class="pc bpc" id="L236" title="1 of 2 branches missed.">			if(map != null) {</span>
+<span class="fc" id="L237">				Class&lt;?&gt; typeof=(Class&lt;?&gt;) map.get(HelperVisitor.TYPEOF);</span>
+<span class="pc bpc" id="L238" title="1 of 2 branches missed.">				if(typeof!=null) {</span>
+<span class="fc" id="L239">					ITypeBinding binding= node.resolveTypeBinding();</span>
+<span class="fc bfc" id="L240" title="All 2 branches covered.">					if (!typeof.getSimpleName().equals(binding.getName())) {</span>
+<span class="fc" id="L241">						return true;</span>
+					}
+				}
+			}
+<span class="fc" id="L245">			return ((BiPredicate&lt;ClassInstanceCreation, E&gt;) (this.helperVisitor.predicatemap</span>
+<span class="fc" id="L246">					.get(VisitorEnum.ClassInstanceCreation))).test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L248">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(CompilationUnit node) {
+<span class="pc bpc" id="L253" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.CompilationUnit)) {</span>
+<span class="nc" id="L254">			return ((BiPredicate&lt;CompilationUnit, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.CompilationUnit)))</span>
+<span class="nc" id="L255">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L257">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(ConditionalExpression node) {
+<span class="nc bnc" id="L262" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ConditionalExpression)) {</span>
+<span class="nc" id="L263">			return ((BiPredicate&lt;ConditionalExpression, E&gt;) (this.helperVisitor.predicatemap</span>
+<span class="nc" id="L264">					.get(VisitorEnum.ConditionalExpression))).test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L266">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(ConstructorInvocation node) {
+<span class="nc bnc" id="L271" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ConstructorInvocation)) {</span>
+<span class="nc" id="L272">			return ((BiPredicate&lt;ConstructorInvocation, E&gt;) (this.helperVisitor.predicatemap</span>
+<span class="nc" id="L273">					.get(VisitorEnum.ConstructorInvocation))).test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L275">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(ContinueStatement node) {
+<span class="pc bpc" id="L280" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ContinueStatement)) {</span>
+<span class="nc" id="L281">			return ((BiPredicate&lt;ContinueStatement, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.ContinueStatement)))</span>
+<span class="nc" id="L282">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L284">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(CreationReference node) {
+<span class="nc bnc" id="L289" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.CreationReference)) {</span>
+<span class="nc" id="L290">			return ((BiPredicate&lt;CreationReference, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.CreationReference)))</span>
+<span class="nc" id="L291">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L293">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(Dimension node) {
+<span class="pc bpc" id="L298" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.Dimension)) {</span>
+<span class="nc" id="L299">			return ((BiPredicate&lt;Dimension, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.Dimension)))</span>
+<span class="nc" id="L300">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L302">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(DoStatement node) {
+<span class="pc bpc" id="L307" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.DoStatement)) {</span>
+<span class="nc" id="L308">			return ((BiPredicate&lt;DoStatement, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.DoStatement)))</span>
+<span class="nc" id="L309">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L311">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(EmptyStatement node) {
+<span class="nc bnc" id="L316" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.EmptyStatement)) {</span>
+<span class="nc" id="L317">			return ((BiPredicate&lt;EmptyStatement, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.EmptyStatement)))</span>
+<span class="nc" id="L318">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L320">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(EnhancedForStatement node) {
+<span class="fc bfc" id="L325" title="All 2 branches covered.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.EnhancedForStatement)) {</span>
+<span class="fc" id="L326">			return ((BiPredicate&lt;EnhancedForStatement, E&gt;) (this.helperVisitor.predicatemap</span>
+<span class="fc" id="L327">					.get(VisitorEnum.EnhancedForStatement))).test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L329">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(EnumConstantDeclaration node) {
+<span class="nc bnc" id="L334" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.EnumConstantDeclaration)) {</span>
+<span class="nc" id="L335">			return ((BiPredicate&lt;EnumConstantDeclaration, E&gt;) (this.helperVisitor.predicatemap</span>
+<span class="nc" id="L336">					.get(VisitorEnum.EnumConstantDeclaration))).test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L338">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(EnumDeclaration node) {
+<span class="nc bnc" id="L343" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.EnumDeclaration)) {</span>
+<span class="nc" id="L344">			return ((BiPredicate&lt;EnumDeclaration, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.EnumDeclaration)))</span>
+<span class="nc" id="L345">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L347">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(ExportsDirective node) {
+<span class="nc bnc" id="L352" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ExportsDirective)) {</span>
+<span class="nc" id="L353">			return ((BiPredicate&lt;ExportsDirective, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.ExportsDirective)))</span>
+<span class="nc" id="L354">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L356">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(ExpressionMethodReference node) {
+<span class="nc bnc" id="L361" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.BreakStatement)) {</span>
+<span class="nc" id="L362">			return ((BiPredicate&lt;ExpressionMethodReference, E&gt;) (this.helperVisitor.predicatemap</span>
+<span class="nc" id="L363">					.get(VisitorEnum.ExpressionMethodReference))).test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L365">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(ExpressionStatement node) {
+<span class="pc bpc" id="L370" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ExpressionStatement)) {</span>
+<span class="nc" id="L371">			return ((BiPredicate&lt;ExpressionStatement, E&gt;) (this.helperVisitor.predicatemap</span>
+<span class="nc" id="L372">					.get(VisitorEnum.ExpressionStatement))).test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L374">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(FieldAccess node) {
+<span class="pc bpc" id="L379" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.FieldAccess)) {</span>
+<span class="nc" id="L380">			return ((BiPredicate&lt;FieldAccess, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.FieldAccess)))</span>
+<span class="nc" id="L381">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L383">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(FieldDeclaration node) {
+<span class="fc bfc" id="L388" title="All 2 branches covered.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.FieldDeclaration)) {</span>
+<span class="fc" id="L389">			Map&lt;String, Object&gt; map=(Map&lt;String, Object&gt;) this.helperVisitor.getSupplierData().get(VisitorEnum.FieldDeclaration);</span>
+<span class="pc bpc" id="L390" title="1 of 2 branches missed.">			if(map != null) {</span>
+<span class="fc" id="L391">				Class&lt;?&gt; typeof=(Class&lt;?&gt;) map.get(HelperVisitor.TYPEOF);</span>
+<span class="pc bpc" id="L392" title="1 of 2 branches missed.">				if(typeof != null) {</span>
+<span class="nc" id="L393">					ITypeBinding binding= node.getType().resolveBinding();</span>
+<span class="nc bnc" id="L394" title="All 4 branches missed.">					if(binding == null || !isTypeMatching(binding, typeof.getCanonicalName())) {</span>
+<span class="nc" id="L395">						return true;</span>
+					}
+				}
+<span class="fc" id="L398">				String superclassname=(String) map.get(HelperVisitor.SUPERCLASSNAME);</span>
+<span class="fc" id="L399">				String annotationclass=(String) map.get(HelperVisitor.ANNOTATIONNAME);</span>
+<span class="pc bpc" id="L400" title="2 of 4 branches missed.">				if(superclassname != null &amp;&amp; annotationclass != null) {</span>
+<span class="fc" id="L401">					boolean bothmatch=false;</span>
+<span class="fc bfc" id="L402" title="All 2 branches covered.">					for (Object modifier : node.modifiers()) {</span>
+<span class="fc bfc" id="L403" title="All 2 branches covered.">						if (modifier instanceof Annotation annotation) {</span>
+<span class="fc" id="L404">							ITypeBinding anotbinding = annotation.resolveTypeBinding();</span>
+<span class="fc" id="L405">							String annotationName = anotbinding.getQualifiedName();</span>
+<span class="fc bfc" id="L406" title="All 2 branches covered.">							if (annotationName.equals(annotationclass)) {</span>
+								// Feld- oder Klassentyp des @Rule-Felds bestimmen
+<span class="fc" id="L408">								VariableDeclarationFragment fragment = (VariableDeclarationFragment) node.fragments().get(0);</span>
+<span class="fc" id="L409">								ITypeBinding binding = fragment.resolveBinding().getType();</span>
+								// Prüfen, ob die Klasse von ExternalResource erbt
+<span class="fc bfc" id="L411" title="All 2 branches covered.">								if (isExternalResource(binding,superclassname)) {</span>
+<span class="fc" id="L412">									bothmatch=true;</span>
+								}
+							}
+						}
+					}
+<span class="fc bfc" id="L417" title="All 2 branches covered.">					if(!bothmatch) {</span>
+<span class="fc" id="L418">						return true;</span>
+					}
+				}
+			}
+<span class="fc" id="L422">			return ((BiPredicate&lt;FieldDeclaration, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.FieldDeclaration))).test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L424">		return true;</span>
+	}
+
+	private static boolean isExternalResource(ITypeBinding typeBinding, String qualifiedname) {
+<span class="fc bfc" id="L428" title="All 2 branches covered.">		while (typeBinding != null) {</span>
+<span class="fc bfc" id="L429" title="All 2 branches covered.">			if (typeBinding.getQualifiedName().equals(qualifiedname)) {</span>
+<span class="fc" id="L430">				return true;</span>
+			}
+<span class="fc" id="L432">			typeBinding = typeBinding.getSuperclass();</span>
+		}
+<span class="fc" id="L434">		return false;</span>
+	}
+	
+	@Override
+	public boolean visit(ForStatement node) {
+<span class="pc bpc" id="L439" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ForStatement)) {</span>
+<span class="nc" id="L440">			Map&lt;String, Object&gt; map=(Map&lt;String, Object&gt;) this.helperVisitor.getSupplierData().get(VisitorEnum.ForStatement);</span>
+<span class="nc bnc" id="L441" title="All 2 branches missed.">			if(map != null) {</span>
+<span class="nc" id="L442">				Class&lt;?&gt; typeof=(Class&lt;?&gt;) map.get(HelperVisitor.TYPEOF);</span>
+<span class="nc bnc" id="L443" title="All 2 branches missed.">				if(typeof != null) {</span>
+					// Check if any initializer declares a variable of the specified type
+<span class="nc" id="L445">					boolean typeMatches = false;</span>
+<span class="nc bnc" id="L446" title="All 2 branches missed.">					for(Object init : node.initializers()) {</span>
+<span class="nc bnc" id="L447" title="All 2 branches missed.">						if(init instanceof VariableDeclarationExpression vde) {</span>
+<span class="nc" id="L448">							ITypeBinding binding= vde.getType().resolveBinding();</span>
+<span class="nc bnc" id="L449" title="All 4 branches missed.">							if(binding != null &amp;&amp; isTypeMatching(binding, typeof.getCanonicalName())) {</span>
+<span class="nc" id="L450">								typeMatches = true;</span>
+<span class="nc" id="L451">								break;</span>
+							}
+						}
+					}
+<span class="nc bnc" id="L455" title="All 2 branches missed.">					if(!typeMatches) {</span>
+<span class="nc" id="L456">						return true;</span>
+					}
+				}
+			}
+<span class="nc" id="L460">			return ((BiPredicate&lt;ForStatement, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.ForStatement)))</span>
+<span class="nc" id="L461">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L463">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(IfStatement node) {
+<span class="pc bpc" id="L468" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.IfStatement)) {</span>
+<span class="nc" id="L469">			return ((BiPredicate&lt;IfStatement, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.IfStatement)))</span>
+<span class="nc" id="L470">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L472">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(ImportDeclaration node) {
+<span class="fc bfc" id="L477" title="All 2 branches covered.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ImportDeclaration)) {</span>
+<span class="fc" id="L478">			Map&lt;String, Object&gt; map=(Map&lt;String, Object&gt;) this.helperVisitor.getSupplierData().get(VisitorEnum.ImportDeclaration);</span>
+<span class="pc bpc" id="L479" title="1 of 2 branches missed.">			if(map != null) {</span>
+<span class="fc" id="L480">				String data=(String) map.get(HelperVisitor.IMPORT);</span>
+<span class="fc" id="L481">				String fullyQualifiedName = node.getName().getFullyQualifiedName();</span>
+<span class="pc bpc" id="L482" title="1 of 4 branches missed.">				if ((data!= null) &amp;&amp; !fullyQualifiedName.equals(data)) {</span>
+<span class="fc" id="L483">					return true;</span>
+				}
+			}
+<span class="fc" id="L486">			return ((BiPredicate&lt;ImportDeclaration, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.ImportDeclaration))).test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L488">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(InfixExpression node) {
+<span class="pc bpc" id="L493" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.InfixExpression)) {</span>
+<span class="nc" id="L494">			Map&lt;String, Object&gt; map=(Map&lt;String, Object&gt;) this.helperVisitor.getSupplierData().get(VisitorEnum.InfixExpression);</span>
+<span class="nc bnc" id="L495" title="All 2 branches missed.">			if(map != null) {</span>
+<span class="nc" id="L496">				InfixExpression.Operator operator=(InfixExpression.Operator) map.get(HelperVisitor.OPERATOR);</span>
+<span class="nc bnc" id="L497" title="All 4 branches missed.">				if(operator != null &amp;&amp; !node.getOperator().equals(operator)) {</span>
+<span class="nc" id="L498">					return true;</span>
+				}
+			}
+<span class="nc" id="L501">			return ((BiPredicate&lt;InfixExpression, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.InfixExpression)))</span>
+<span class="nc" id="L502">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L504">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(Initializer node) {
+<span class="pc bpc" id="L509" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.Initializer)) {</span>
+<span class="nc" id="L510">			return ((BiPredicate&lt;Initializer, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.Initializer)))</span>
+<span class="nc" id="L511">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L513">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(InstanceofExpression node) {
+<span class="pc bpc" id="L518" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.InstanceofExpression)) {</span>
+<span class="nc" id="L519">			return ((BiPredicate&lt;InstanceofExpression, E&gt;) (this.helperVisitor.predicatemap</span>
+<span class="nc" id="L520">					.get(VisitorEnum.InstanceofExpression))).test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L522">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(IntersectionType node) {
+<span class="nc bnc" id="L527" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.IntersectionType)) {</span>
+<span class="nc" id="L528">			return ((BiPredicate&lt;IntersectionType, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.IntersectionType)))</span>
+<span class="nc" id="L529">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L531">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(Javadoc node) {
+<span class="pc bpc" id="L536" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.Javadoc)) {</span>
+<span class="nc" id="L537">			return ((BiPredicate&lt;Javadoc, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.Javadoc)))</span>
+<span class="nc" id="L538">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L540">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(LabeledStatement node) {
+<span class="pc bpc" id="L545" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.LabeledStatement)) {</span>
+<span class="nc" id="L546">			return ((BiPredicate&lt;LabeledStatement, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.LabeledStatement)))</span>
+<span class="nc" id="L547">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L549">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(LambdaExpression node) {
+<span class="pc bpc" id="L554" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.LambdaExpression)) {</span>
+<span class="nc" id="L555">			return ((BiPredicate&lt;LambdaExpression, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.LambdaExpression)))</span>
+<span class="nc" id="L556">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L558">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(LineComment node) {
+<span class="nc bnc" id="L563" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.LineComment)) {</span>
+<span class="nc" id="L564">			return ((BiPredicate&lt;LineComment, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.LineComment)))</span>
+<span class="nc" id="L565">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L567">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(MarkerAnnotation node) {
+<span class="fc bfc" id="L572" title="All 2 branches covered.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.MarkerAnnotation)) {</span>
+<span class="fc" id="L573">			Map&lt;String, Object&gt; map=(Map&lt;String, Object&gt;) this.helperVisitor.getSupplierData().get(VisitorEnum.MarkerAnnotation);</span>
+<span class="pc bpc" id="L574" title="1 of 2 branches missed.">			if(map != null) {</span>
+<span class="fc" id="L575">				String data=(String) map.get(HelperVisitor.ANNOTATIONNAME);</span>
+<span class="fc" id="L576">				ITypeBinding binding = node.resolveTypeBinding();</span>
+				String fullyQualifiedName;
+<span class="pc bpc" id="L578" title="1 of 2 branches missed.">				if (binding != null) {</span>
+<span class="fc" id="L579">					fullyQualifiedName = binding.getQualifiedName();</span>
+<span class="fc" id="L580">				}else {</span>
+<span class="nc" id="L581">					fullyQualifiedName = node.getTypeName().getFullyQualifiedName();</span>
+				}
+<span class="pc bpc" id="L583" title="1 of 4 branches missed.">				if ((data!= null) &amp;&amp; !fullyQualifiedName.equals(data)) {</span>
+<span class="fc" id="L584">					return true;</span>
+				}
+			}
+<span class="fc" id="L587">			return ((BiPredicate&lt;MarkerAnnotation, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.MarkerAnnotation))).test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L589">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(MemberRef node) {
+<span class="nc bnc" id="L594" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.MemberRef)) {</span>
+<span class="nc" id="L595">			return ((BiPredicate&lt;MemberRef, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.MemberRef)))</span>
+<span class="nc" id="L596">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L598">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(MemberValuePair node) {
+<span class="pc bpc" id="L603" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.MemberValuePair)) {</span>
+<span class="nc" id="L604">			return ((BiPredicate&lt;MemberValuePair, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.MemberValuePair)))</span>
+<span class="nc" id="L605">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L607">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(MethodRef node) {
+<span class="nc bnc" id="L612" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.MethodRef)) {</span>
+<span class="nc" id="L613">			return ((BiPredicate&lt;MethodRef, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.MethodRef)))</span>
+<span class="nc" id="L614">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L616">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(MethodRefParameter node) {
+<span class="nc bnc" id="L621" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.MethodRefParameter)) {</span>
+<span class="nc" id="L622">			return ((BiPredicate&lt;MethodRefParameter, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.MethodRefParameter)))</span>
+<span class="nc" id="L623">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L625">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(MethodDeclaration node) {
+<span class="fc bfc" id="L630" title="All 2 branches covered.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.MethodDeclaration)) {</span>
+<span class="fc" id="L631">			Map&lt;String, Object&gt; map=(Map&lt;String, Object&gt;) this.helperVisitor.getSupplierData().get(VisitorEnum.MethodDeclaration);</span>
+<span class="pc bpc" id="L632" title="1 of 2 branches missed.">			if(map != null) {</span>
+<span class="nc" id="L633">				String methodName=(String) map.get(HelperVisitor.METHODNAME);</span>
+<span class="nc bnc" id="L634" title="All 4 branches missed.">				if(methodName != null &amp;&amp; !node.getName().getIdentifier().equals(methodName)) {</span>
+<span class="nc" id="L635">					return true;</span>
+				}
+			}
+<span class="fc" id="L638">			return ((BiPredicate&lt;MethodDeclaration, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.MethodDeclaration)))</span>
+<span class="fc" id="L639">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L641">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(MethodInvocation node) {
+<span class="fc bfc" id="L646" title="All 2 branches covered.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.MethodInvocation)) {</span>
+<span class="fc" id="L647">			Map&lt;String, Object&gt; map=(Map&lt;String, Object&gt;) this.helperVisitor.getSupplierData().get(VisitorEnum.MethodInvocation);</span>
+<span class="fc bfc" id="L648" title="All 2 branches covered.">			if(map != null) {</span>
+<span class="fc" id="L649">				String data=(String) map.get(HelperVisitor.METHODNAME);</span>
+<span class="pc bpc" id="L650" title="1 of 4 branches missed.">				if ((data!= null) &amp;&amp; !node.getName().getIdentifier().equals(data)) {</span>
+<span class="fc" id="L651">					return true;</span>
+				}
+<span class="fc" id="L653">				Object object = map.get(HelperVisitor.TYPEOF);</span>
+				String canonicaltype;
+<span class="pc bpc" id="L655" title="1 of 2 branches missed.">				if(object!=null) {</span>
+<span class="fc bfc" id="L656" title="All 2 branches covered.">					if(object instanceof Class typeof) {</span>
+<span class="fc" id="L657">						canonicaltype= typeof.getCanonicalName();</span>
+<span class="fc" id="L658">					} else {</span>
+<span class="fc" id="L659">						canonicaltype= (String)object;</span>
+					}
+<span class="fc" id="L661">					String[] parameterTypesQualifiedNames=(String[]) map.get(HelperVisitor.PARAMTYPENAMES);</span>
+<span class="pc bpc" id="L662" title="1 of 2 branches missed.">					if(parameterTypesQualifiedNames==null) {</span>
+<span class="fc bfc" id="L663" title="All 2 branches covered.">						if (!usesGivenSignature(node, canonicaltype, data)) {</span>
+<span class="fc" id="L664">							return true;</span>
+						}
+					} else
+<span class="nc bnc" id="L667" title="All 2 branches missed.">						if (!ASTNodes.usesGivenSignature(node, canonicaltype, data, parameterTypesQualifiedNames)) {</span>
+<span class="nc" id="L668">							return true;</span>
+						}
+				}
+			}
+<span class="fc" id="L672">			return ((BiPredicate&lt;MethodInvocation, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.MethodInvocation))).test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L674">		return true;</span>
+	}
+
+	private static boolean usesGivenSignature(MethodInvocation node, String canonicaltype, String methodName) {
+<span class="fc" id="L678">		IMethodBinding methodBinding= node.resolveMethodBinding();</span>
+<span class="fc bfc" id="L679" title="All 2 branches covered.">		if(methodBinding==null) {</span>
+<span class="pc bpc" id="L680" title="1 of 2 branches missed.">			if(!methodName.equals(node.getName().getIdentifier())){</span>
+<span class="nc" id="L681">				return false;</span>
+			}
+		} else {
+<span class="pc bpc" id="L684" title="1 of 2 branches missed.">			if(!methodName.equals(methodBinding.getName())){</span>
+<span class="nc" id="L685">				return false;</span>
+			}
+		}
+<span class="fc bfc" id="L688" title="All 2 branches covered.">		if(isClassQualifiedNameMatching(node,canonicaltype)){</span>
+<span class="fc" id="L689">			return true;</span>
+		}
+<span class="fc" id="L691">		return false;</span>
+	}
+
+	/**
+	 * @param methodInvocation
+	 * @param qualifiedName
+	 * @return result
+	 */
+	public static boolean isClassQualifiedNameMatching(MethodInvocation methodInvocation, String qualifiedName) {
+<span class="fc" id="L700">		Expression expression = methodInvocation.getExpression();</span>
+<span class="fc bfc" id="L701" title="All 2 branches covered.">		if (expression != null) {</span>
+<span class="fc" id="L702">			ITypeBinding typeBinding = expression.resolveTypeBinding();</span>
+<span class="pc bpc" id="L703" title="1 of 2 branches missed.">			if (typeBinding != null) {</span>
+<span class="fc bfc" id="L704" title="All 2 branches covered.">				if (!typeBinding.isRecovered()) {</span>
+<span class="fc" id="L705">					return qualifiedName.equals(typeBinding.getQualifiedName());</span>
+				}
+<span class="pc bpc" id="L707" title="1 of 2 branches missed.">				if (expression instanceof SimpleName) {</span>
+<span class="fc" id="L708">					String startswith=typeBinding.toString().substring(9);</span>
+<span class="fc" id="L709">					startswith=startswith.substring(0, startswith.length()-1);</span>
+<span class="fc" id="L710">					return qualifiedName.endsWith(startswith);</span>
+				}
+			}
+		} else {
+<span class="fc" id="L714">			IMethodBinding methodBinding = methodInvocation.resolveMethodBinding();</span>
+<span class="pc bpc" id="L715" title="1 of 2 branches missed.">			if (methodBinding != null) {</span>
+<span class="fc" id="L716">				ITypeBinding declaringClass = methodBinding.getDeclaringClass();</span>
+<span class="pc bpc" id="L717" title="1 of 2 branches missed.">				if (declaringClass != null) {</span>
+<span class="fc" id="L718">					return qualifiedName.equals(declaringClass.getQualifiedName());</span>
+				}
+			}
+		}
+<span class="nc" id="L722">		return false;</span>
+	}
+
+	/**
+	 * Checks if the given type binding matches the specified qualified name.
+	 * Handles both exact matches and inheritance checks.
+	 *
+	 * @param typeBinding the type binding to check
+	 * @param qualifiedName the fully qualified name to match against
+	 * @return true if the type matches, false otherwise
+	 */
+	private static boolean isTypeMatching(ITypeBinding typeBinding, String qualifiedName) {
+<span class="nc bnc" id="L734" title="All 4 branches missed.">		if (typeBinding == null || qualifiedName == null) {</span>
+<span class="nc" id="L735">			return false;</span>
+		}
+		// For generic types, use erasure to get the raw type
+<span class="nc" id="L738">		ITypeBinding erasedType = typeBinding.getErasure();</span>
+		// Check for exact match or simple name match
+<span class="nc bnc" id="L740" title="All 2 branches missed.">		if (qualifiedName.equals(erasedType.getQualifiedName()) || </span>
+<span class="nc bnc" id="L741" title="All 2 branches missed.">		    qualifiedName.equals(erasedType.getName())) {</span>
+<span class="nc" id="L742">			return true;</span>
+		}
+		// Check superclasses and interfaces
+<span class="nc" id="L745">		return isExternalResource(erasedType, qualifiedName);</span>
+	}
+
+	@Override
+	public boolean visit(Modifier node) {
+<span class="pc bpc" id="L750" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.Modifier)) {</span>
+<span class="nc" id="L751">			return ((BiPredicate&lt;Modifier, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.Modifier)))</span>
+<span class="nc" id="L752">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L754">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(ModuleDeclaration node) {
+<span class="nc bnc" id="L759" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ModuleDeclaration)) {</span>
+<span class="nc" id="L760">			return ((BiPredicate&lt;ModuleDeclaration, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.ModuleDeclaration)))</span>
+<span class="nc" id="L761">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L763">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(ModuleModifier node) {
+<span class="nc bnc" id="L768" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ModuleModifier)) {</span>
+<span class="nc" id="L769">			return ((BiPredicate&lt;ModuleModifier, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.ModuleModifier)))</span>
+<span class="nc" id="L770">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L772">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(NameQualifiedType node) {
+<span class="nc bnc" id="L777" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.NameQualifiedType)) {</span>
+<span class="nc" id="L778">			return ((BiPredicate&lt;NameQualifiedType, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.NameQualifiedType)))</span>
+<span class="nc" id="L779">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L781">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(NormalAnnotation node) {
+<span class="fc bfc" id="L786" title="All 2 branches covered.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.NormalAnnotation)) {</span>
+<span class="fc" id="L787">			Map&lt;String, Object&gt; map=(Map&lt;String, Object&gt;) this.helperVisitor.getSupplierData().get(VisitorEnum.NormalAnnotation);</span>
+<span class="pc bpc" id="L788" title="1 of 2 branches missed.">			if(map != null) {</span>
+<span class="fc" id="L789">				String data=(String) map.get(HelperVisitor.ANNOTATIONNAME);</span>
+<span class="fc" id="L790">				ITypeBinding binding = node.resolveTypeBinding();</span>
+				String fullyQualifiedName;
+<span class="pc bpc" id="L792" title="1 of 2 branches missed.">				if (binding != null) {</span>
+<span class="fc" id="L793">					fullyQualifiedName = binding.getQualifiedName();</span>
+<span class="fc" id="L794">				}else {</span>
+<span class="nc" id="L795">					fullyQualifiedName = node.getTypeName().getFullyQualifiedName();</span>
+				}
+<span class="pc bpc" id="L797" title="2 of 4 branches missed.">				if ((data!= null) &amp;&amp; !fullyQualifiedName.equals(data)) {</span>
+<span class="nc" id="L798">					return true;</span>
+				}
+			}
+<span class="fc" id="L801">			return ((BiPredicate&lt;NormalAnnotation, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.NormalAnnotation))).test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L803">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(NullLiteral node) {
+<span class="pc bpc" id="L808" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.NullLiteral)) {</span>
+<span class="nc" id="L809">			return ((BiPredicate&lt;NullLiteral, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.NullLiteral)))</span>
+<span class="nc" id="L810">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L812">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(NumberLiteral node) {
+<span class="pc bpc" id="L817" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.NumberLiteral)) {</span>
+<span class="nc" id="L818">			return ((BiPredicate&lt;NumberLiteral, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.NumberLiteral)))</span>
+<span class="nc" id="L819">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L821">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(OpensDirective node) {
+<span class="nc bnc" id="L826" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.OpensDirective)) {</span>
+<span class="nc" id="L827">			return ((BiPredicate&lt;OpensDirective, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.OpensDirective)))</span>
+<span class="nc" id="L828">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L830">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(PackageDeclaration node) {
+<span class="pc bpc" id="L835" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.PackageDeclaration)) {</span>
+<span class="nc" id="L836">			return ((BiPredicate&lt;PackageDeclaration, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.PackageDeclaration)))</span>
+<span class="nc" id="L837">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L839">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(ParameterizedType node) {
+<span class="pc bpc" id="L844" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ParameterizedType)) {</span>
+<span class="nc" id="L845">			return ((BiPredicate&lt;ParameterizedType, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.ParameterizedType)))</span>
+<span class="nc" id="L846">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L848">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(ParenthesizedExpression node) {
+<span class="pc bpc" id="L853" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ParenthesizedExpression)) {</span>
+<span class="nc" id="L854">			return ((BiPredicate&lt;ParenthesizedExpression, E&gt;) (this.helperVisitor.predicatemap</span>
+<span class="nc" id="L855">					.get(VisitorEnum.ParenthesizedExpression))).test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L857">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(PatternInstanceofExpression node) {
+<span class="nc bnc" id="L862" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.PatternInstanceofExpression)) {</span>
+<span class="nc" id="L863">			return ((BiPredicate&lt;PatternInstanceofExpression, E&gt;) (this.helperVisitor.predicatemap</span>
+<span class="nc" id="L864">					.get(VisitorEnum.PatternInstanceofExpression))).test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L866">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(PostfixExpression node) {
+<span class="pc bpc" id="L871" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.PostfixExpression)) {</span>
+<span class="nc" id="L872">			return ((BiPredicate&lt;PostfixExpression, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.PostfixExpression)))</span>
+<span class="nc" id="L873">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L875">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(PrefixExpression node) {
+<span class="pc bpc" id="L880" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.PrefixExpression)) {</span>
+<span class="nc" id="L881">			return ((BiPredicate&lt;PrefixExpression, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.PrefixExpression)))</span>
+<span class="nc" id="L882">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L884">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(ProvidesDirective node) {
+<span class="nc bnc" id="L889" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ProvidesDirective)) {</span>
+<span class="nc" id="L890">			return ((BiPredicate&lt;ProvidesDirective, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.ProvidesDirective)))</span>
+<span class="nc" id="L891">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L893">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(PrimitiveType node) {
+<span class="pc bpc" id="L898" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.PrimitiveType)) {</span>
+<span class="nc" id="L899">			return ((BiPredicate&lt;PrimitiveType, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.PrimitiveType)))</span>
+<span class="nc" id="L900">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L902">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(QualifiedName node) {
+<span class="pc bpc" id="L907" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.QualifiedName)) {</span>
+<span class="nc" id="L908">			return ((BiPredicate&lt;QualifiedName, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.QualifiedName)))</span>
+<span class="nc" id="L909">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L911">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(QualifiedType node) {
+<span class="nc bnc" id="L916" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.QualifiedType)) {</span>
+<span class="nc" id="L917">			return ((BiPredicate&lt;QualifiedType, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.QualifiedType)))</span>
+<span class="nc" id="L918">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L920">		return true;</span>
+	}
+
+//	@Override
+//	public boolean visit(ModuleQualifiedName node) {
+//		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ModuleQualifiedName)) {
+//			return ((BiPredicate&lt;ModuleQualifiedName, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.ModuleQualifiedName)))
+//					.test(node, this.helperVisitor.dataholder);
+//		}
+//		return true;
+//	}
+
+	@Override
+	public boolean visit(RequiresDirective node) {
+<span class="nc bnc" id="L934" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.RequiresDirective)) {</span>
+<span class="nc" id="L935">			return ((BiPredicate&lt;RequiresDirective, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.RequiresDirective)))</span>
+<span class="nc" id="L936">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L938">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(RecordDeclaration node) {
+<span class="nc bnc" id="L943" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.RecordDeclaration)) {</span>
+<span class="nc" id="L944">			return ((BiPredicate&lt;RecordDeclaration, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.RecordDeclaration)))</span>
+<span class="nc" id="L945">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L947">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(ReturnStatement node) {
+<span class="pc bpc" id="L952" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ReturnStatement)) {</span>
+<span class="nc" id="L953">			return ((BiPredicate&lt;ReturnStatement, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.ReturnStatement)))</span>
+<span class="nc" id="L954">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L956">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(SimpleName node) {
+<span class="fc bfc" id="L961" title="All 2 branches covered.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SimpleName)) {</span>
+<span class="fc" id="L962">			return ((BiPredicate&lt;SimpleName, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.SimpleName)))</span>
+<span class="fc" id="L963">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L965">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(SimpleType node) {
+<span class="pc bpc" id="L970" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SimpleType)) {</span>
+<span class="nc" id="L971">			return ((BiPredicate&lt;SimpleType, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.SimpleType)))</span>
+<span class="nc" id="L972">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L974">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(SingleMemberAnnotation node) {
+<span class="fc bfc" id="L979" title="All 2 branches covered.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SingleMemberAnnotation)) {</span>
+<span class="fc" id="L980">			Map&lt;String, Object&gt; map=(Map&lt;String, Object&gt;) this.helperVisitor.getSupplierData().get(VisitorEnum.SingleMemberAnnotation);</span>
+<span class="pc bpc" id="L981" title="1 of 2 branches missed.">			if(map != null) {</span>
+<span class="fc" id="L982">				String data=(String) map.get(HelperVisitor.ANNOTATIONNAME);</span>
+<span class="fc" id="L983">				ITypeBinding binding = node.resolveTypeBinding();</span>
+				String fullyQualifiedName;
+<span class="pc bpc" id="L985" title="1 of 2 branches missed.">				if (binding != null) {</span>
+<span class="fc" id="L986">					fullyQualifiedName = binding.getQualifiedName();</span>
+<span class="fc" id="L987">				}else {</span>
+<span class="nc" id="L988">					fullyQualifiedName = node.getTypeName().getFullyQualifiedName();</span>
+				}
+<span class="pc bpc" id="L990" title="1 of 4 branches missed.">				if ((data!= null) &amp;&amp; !fullyQualifiedName.equals(data)) {</span>
+<span class="fc" id="L991">					return true;</span>
+				}
+			}
+<span class="fc" id="L994">			return ((BiPredicate&lt;SingleMemberAnnotation, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.SingleMemberAnnotation))).test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L996">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(SingleVariableDeclaration node) {
+<span class="pc bpc" id="L1001" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SingleVariableDeclaration)) {</span>
+<span class="nc" id="L1002">			return ((BiPredicate&lt;SingleVariableDeclaration, E&gt;) (this.helperVisitor.predicatemap</span>
+<span class="nc" id="L1003">					.get(VisitorEnum.SingleVariableDeclaration))).test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1005">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(StringLiteral node) {
+<span class="pc bpc" id="L1010" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.StringLiteral)) {</span>
+<span class="nc" id="L1011">			return ((BiPredicate&lt;StringLiteral, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.StringLiteral)))</span>
+<span class="nc" id="L1012">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1014">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(SuperConstructorInvocation node) {
+<span class="nc bnc" id="L1019" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SuperConstructorInvocation)) {</span>
+<span class="nc" id="L1020">			return ((BiPredicate&lt;SuperConstructorInvocation, E&gt;) (this.helperVisitor.predicatemap</span>
+<span class="nc" id="L1021">					.get(VisitorEnum.SuperConstructorInvocation))).test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1023">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(SuperFieldAccess node) {
+<span class="nc bnc" id="L1028" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SuperFieldAccess)) {</span>
+<span class="nc" id="L1029">			return ((BiPredicate&lt;SuperFieldAccess, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.SuperFieldAccess)))</span>
+<span class="nc" id="L1030">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1032">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(SuperMethodInvocation node) {
+<span class="pc bpc" id="L1037" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SuperMethodInvocation)) {</span>
+<span class="nc" id="L1038">			Map&lt;String, Object&gt; map=(Map&lt;String, Object&gt;) this.helperVisitor.getSupplierData().get(VisitorEnum.SuperMethodInvocation);</span>
+<span class="nc bnc" id="L1039" title="All 2 branches missed.">			if(map != null) {</span>
+<span class="nc" id="L1040">				String methodName=(String) map.get(HelperVisitor.METHODNAME);</span>
+<span class="nc bnc" id="L1041" title="All 4 branches missed.">				if(methodName != null &amp;&amp; !node.getName().getIdentifier().equals(methodName)) {</span>
+<span class="nc" id="L1042">					return true;</span>
+				}
+			}
+<span class="nc" id="L1045">			return ((BiPredicate&lt;SuperMethodInvocation, E&gt;) (this.helperVisitor.predicatemap</span>
+<span class="nc" id="L1046">					.get(VisitorEnum.SuperMethodInvocation))).test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1048">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(SuperMethodReference node) {
+<span class="nc bnc" id="L1053" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SuperMethodReference)) {</span>
+<span class="nc" id="L1054">			return ((BiPredicate&lt;SuperMethodReference, E&gt;) (this.helperVisitor.predicatemap</span>
+<span class="nc" id="L1055">					.get(VisitorEnum.SuperMethodReference))).test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1057">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(SwitchCase node) {
+<span class="pc bpc" id="L1062" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SwitchCase)) {</span>
+<span class="nc" id="L1063">			return ((BiPredicate&lt;SwitchCase, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.SwitchCase)))</span>
+<span class="nc" id="L1064">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1066">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(SwitchExpression node) {
+<span class="nc bnc" id="L1071" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SwitchExpression)) {</span>
+<span class="nc" id="L1072">			return ((BiPredicate&lt;SwitchExpression, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.SwitchExpression)))</span>
+<span class="nc" id="L1073">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1075">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(SwitchStatement node) {
+<span class="pc bpc" id="L1080" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SwitchStatement)) {</span>
+<span class="nc" id="L1081">			return ((BiPredicate&lt;SwitchStatement, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.SwitchStatement)))</span>
+<span class="nc" id="L1082">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1084">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(SynchronizedStatement node) {
+<span class="pc bpc" id="L1089" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SynchronizedStatement)) {</span>
+<span class="nc" id="L1090">			return ((BiPredicate&lt;SynchronizedStatement, E&gt;) (this.helperVisitor.predicatemap</span>
+<span class="nc" id="L1091">					.get(VisitorEnum.SynchronizedStatement))).test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1093">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(TagElement node) {
+<span class="pc bpc" id="L1098" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.TagElement)) {</span>
+<span class="nc" id="L1099">			return ((BiPredicate&lt;TagElement, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.TagElement)))</span>
+<span class="nc" id="L1100">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1102">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(TextBlock node) {
+<span class="nc bnc" id="L1107" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.TextBlock)) {</span>
+<span class="nc" id="L1108">			return ((BiPredicate&lt;TextBlock, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.TextBlock)))</span>
+<span class="nc" id="L1109">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1111">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(TextElement node) {
+<span class="pc bpc" id="L1116" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.TextElement)) {</span>
+<span class="nc" id="L1117">			return ((BiPredicate&lt;TextElement, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.TextElement)))</span>
+<span class="nc" id="L1118">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1120">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(ThisExpression node) {
+<span class="pc bpc" id="L1125" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ThisExpression)) {</span>
+<span class="nc" id="L1126">			return ((BiPredicate&lt;ThisExpression, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.ThisExpression)))</span>
+<span class="nc" id="L1127">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1129">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(ThrowStatement node) {
+<span class="pc bpc" id="L1134" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ThrowStatement)) {</span>
+<span class="nc" id="L1135">			return ((BiPredicate&lt;ThrowStatement, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.ThrowStatement)))</span>
+<span class="nc" id="L1136">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1138">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(TryStatement node) {
+<span class="pc bpc" id="L1143" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.TryStatement)) {</span>
+<span class="nc" id="L1144">			return ((BiPredicate&lt;TryStatement, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.TryStatement)))</span>
+<span class="nc" id="L1145">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1147">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(TypeDeclaration node) {
+<span class="fc bfc" id="L1152" title="All 2 branches covered.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.TypeDeclaration)) {</span>
+<span class="fc" id="L1153">			Map&lt;String, Object&gt; map=(Map&lt;String, Object&gt;) this.helperVisitor.getSupplierData().get(VisitorEnum.TypeDeclaration);</span>
+<span class="pc bpc" id="L1154" title="1 of 2 branches missed.">			if(map != null) {</span>
+<span class="fc" id="L1155">				String typeName=(String) map.get(HelperVisitor.TYPENAME);</span>
+<span class="pc bpc" id="L1156" title="3 of 4 branches missed.">				if(typeName != null &amp;&amp; !node.getName().getIdentifier().equals(typeName)) {</span>
+<span class="nc" id="L1157">					return true;</span>
+				}
+<span class="fc" id="L1159">				String superclassname=(String) map.get(HelperVisitor.SUPERCLASSNAME);</span>
+<span class="pc bpc" id="L1160" title="1 of 2 branches missed.">				if(superclassname != null) {</span>
+<span class="fc" id="L1161">					boolean bothmatch=false;</span>
+<span class="fc" id="L1162">					ITypeBinding binding = node.resolveBinding();</span>
+<span class="fc bfc" id="L1163" title="All 2 branches covered.">					if (isExternalResource(binding,superclassname)) {</span>
+<span class="fc" id="L1164">						bothmatch=true;</span>
+					}
+<span class="fc bfc" id="L1166" title="All 2 branches covered.">					if(!bothmatch) {</span>
+<span class="fc" id="L1167">						return true;</span>
+					}
+				}
+			}
+<span class="fc" id="L1171">			return ((BiPredicate&lt;TypeDeclaration, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.TypeDeclaration))).test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1173">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(TypeDeclarationStatement node) {
+<span class="nc bnc" id="L1178" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.TypeDeclarationStatement)) {</span>
+<span class="nc" id="L1179">			return ((BiPredicate&lt;TypeDeclarationStatement, E&gt;) (this.helperVisitor.predicatemap</span>
+<span class="nc" id="L1180">					.get(VisitorEnum.TypeDeclarationStatement))).test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1182">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(TypeLiteral node) {
+<span class="pc bpc" id="L1187" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.TypeLiteral)) {</span>
+<span class="nc" id="L1188">			return ((BiPredicate&lt;TypeLiteral, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.TypeLiteral)))</span>
+<span class="nc" id="L1189">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1191">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(TypeMethodReference node) {
+<span class="nc bnc" id="L1196" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.TypeMethodReference)) {</span>
+<span class="nc" id="L1197">			return ((BiPredicate&lt;TypeMethodReference, E&gt;) (this.helperVisitor.predicatemap</span>
+<span class="nc" id="L1198">					.get(VisitorEnum.TypeMethodReference))).test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1200">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(TypeParameter node) {
+<span class="nc bnc" id="L1205" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.TypeParameter)) {</span>
+<span class="nc" id="L1206">			return ((BiPredicate&lt;TypeParameter, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.TypeParameter)))</span>
+<span class="nc" id="L1207">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1209">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(UnionType node) {
+<span class="pc bpc" id="L1214" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.UnionType)) {</span>
+<span class="nc" id="L1215">			return ((BiPredicate&lt;UnionType, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.UnionType)))</span>
+<span class="nc" id="L1216">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1218">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(UsesDirective node) {
+<span class="nc bnc" id="L1223" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.UsesDirective)) {</span>
+<span class="nc" id="L1224">			return ((BiPredicate&lt;UsesDirective, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.UsesDirective)))</span>
+<span class="nc" id="L1225">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1227">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(VariableDeclarationExpression node) {
+<span class="pc bpc" id="L1232" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.VariableDeclarationExpression)) {</span>
+<span class="nc" id="L1233">			return ((BiPredicate&lt;VariableDeclarationExpression, E&gt;) (this.helperVisitor.predicatemap</span>
+<span class="nc" id="L1234">					.get(VisitorEnum.VariableDeclarationExpression))).test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1236">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(VariableDeclarationStatement node) {
+<span class="fc bfc" id="L1241" title="All 2 branches covered.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.VariableDeclarationStatement)) {</span>
+<span class="fc" id="L1242">			Map&lt;String, Object&gt; map=(Map&lt;String, Object&gt;)this.helperVisitor.getConsumerData().get(VisitorEnum.VariableDeclarationStatement);</span>
+<span class="pc bpc" id="L1243" title="1 of 2 branches missed.">			if(map != null) {</span>
+<span class="nc" id="L1244">				Class&lt;?&gt; data=(Class&lt;?&gt;) map.get(HelperVisitor.TYPEOF);</span>
+<span class="nc bnc" id="L1245" title="All 2 branches missed.">				if (data!= null) {</span>
+<span class="nc" id="L1246">					VariableDeclarationFragment bli = (VariableDeclarationFragment) node.fragments().get(0);</span>
+<span class="nc" id="L1247">					IVariableBinding resolveBinding = bli.resolveBinding();</span>
+<span class="nc bnc" id="L1248" title="All 2 branches missed.">					if(resolveBinding!=null) {</span>
+<span class="nc" id="L1249">						String qualifiedName = resolveBinding.getType().getErasure().getQualifiedName();</span>
+<span class="nc bnc" id="L1250" title="All 2 branches missed.">						if (!data.getCanonicalName().equals(qualifiedName)) {</span>
+<span class="nc" id="L1251">							return true;</span>
+						}
+					}
+				}
+			}
+<span class="fc" id="L1256">			return ((BiPredicate&lt;VariableDeclarationStatement, E&gt;) (this.helperVisitor.predicatemap</span>
+<span class="fc" id="L1257">					.get(VisitorEnum.VariableDeclarationStatement))).test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1259">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(VariableDeclarationFragment node) {
+<span class="fc bfc" id="L1264" title="All 2 branches covered.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.VariableDeclarationFragment)) {</span>
+<span class="fc" id="L1265">			return ((BiPredicate&lt;VariableDeclarationFragment, E&gt;) (this.helperVisitor.predicatemap</span>
+<span class="fc" id="L1266">					.get(VisitorEnum.VariableDeclarationFragment))).test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1268">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(WhileStatement node) {
+<span class="fc bfc" id="L1273" title="All 2 branches covered.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.WhileStatement)) {</span>
+<span class="fc" id="L1274">			return ((BiPredicate&lt;WhileStatement, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.WhileStatement)))</span>
+<span class="fc" id="L1275">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1277">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(WildcardType node) {
+<span class="nc bnc" id="L1282" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.WildcardType)) {</span>
+<span class="nc" id="L1283">			return ((BiPredicate&lt;WildcardType, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.WildcardType)))</span>
+<span class="nc" id="L1284">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1286">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(YieldStatement node) {
+<span class="nc bnc" id="L1291" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.YieldStatement)) {</span>
+<span class="nc" id="L1292">			return ((BiPredicate&lt;YieldStatement, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.YieldStatement)))</span>
+<span class="nc" id="L1293">					.test(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1295">		return true;</span>
+	}
+
+	@Override
+	public void endVisit(AnnotationTypeDeclaration node) {
+<span class="nc bnc" id="L1300" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.AnnotationTypeDeclaration)) {</span>
+<span class="nc" id="L1301">			((BiConsumer&lt;AnnotationTypeDeclaration, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.AnnotationTypeDeclaration)))</span>
+<span class="nc" id="L1302">					.accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1304">	}</span>
+
+	@Override
+	public void endVisit(AnnotationTypeMemberDeclaration node) {
+<span class="nc bnc" id="L1308" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.AnnotationTypeMemberDeclaration)) {</span>
+<span class="nc" id="L1309">			((BiConsumer&lt;AnnotationTypeMemberDeclaration, E&gt;) (this.helperVisitor.consumermap</span>
+<span class="nc" id="L1310">					.get(VisitorEnum.AnnotationTypeMemberDeclaration))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1312">	}</span>
+
+	@Override
+	public void endVisit(AnonymousClassDeclaration node) {
+<span class="pc bpc" id="L1316" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.AnonymousClassDeclaration)) {</span>
+<span class="nc" id="L1317">			((BiConsumer&lt;AnonymousClassDeclaration, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.AnonymousClassDeclaration)))</span>
+<span class="nc" id="L1318">					.accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1320">	}</span>
+
+	@Override
+	public void endVisit(ArrayAccess node) {
+<span class="nc bnc" id="L1324" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ArrayAccess)) {</span>
+<span class="nc" id="L1325">			((BiConsumer&lt;ArrayAccess, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.ArrayAccess))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1327">	}</span>
+
+	@Override
+	public void endVisit(ArrayCreation node) {
+<span class="pc bpc" id="L1331" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ArrayCreation)) {</span>
+<span class="nc" id="L1332">			((BiConsumer&lt;ArrayCreation, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.ArrayCreation))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1334">	}</span>
+
+	@Override
+	public void endVisit(ArrayInitializer node) {
+<span class="pc bpc" id="L1338" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ArrayInitializer)) {</span>
+<span class="nc" id="L1339">			((BiConsumer&lt;ArrayInitializer, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.ArrayInitializer))).accept(node,</span>
+<span class="nc" id="L1340">					this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1342">	}</span>
+
+	@Override
+	public void endVisit(ArrayType node) {
+<span class="pc bpc" id="L1346" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ArrayType)) {</span>
+<span class="nc" id="L1347">			((BiConsumer&lt;ArrayType, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.ArrayType))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1349">	}</span>
+
+	@Override
+	public void endVisit(AssertStatement node) {
+<span class="nc bnc" id="L1353" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.AssertStatement)) {</span>
+<span class="nc" id="L1354">			((BiConsumer&lt;AssertStatement, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.AssertStatement))).accept(node,</span>
+<span class="nc" id="L1355">					this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1357">	}</span>
+
+	@Override
+	public void endVisit(Assignment node) {
+<span class="pc bpc" id="L1361" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.Assignment)) {</span>
+<span class="nc" id="L1362">			((BiConsumer&lt;Assignment, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.Assignment))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1364">	}</span>
+
+	@Override
+	public void endVisit(Block node) {
+<span class="pc bpc" id="L1368" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.Block)) {</span>
+<span class="nc" id="L1369">			((BiConsumer&lt;Block, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.Block))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1371">	}</span>
+
+	@Override
+	public void endVisit(BlockComment node) {
+<span class="nc bnc" id="L1375" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.BlockComment)) {</span>
+<span class="nc" id="L1376">			((BiConsumer&lt;BlockComment, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.BlockComment))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1378">	}</span>
+
+	@Override
+	public void endVisit(BooleanLiteral node) {
+<span class="pc bpc" id="L1382" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.BooleanLiteral)) {</span>
+<span class="nc" id="L1383">			((BiConsumer&lt;BooleanLiteral, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.BooleanLiteral))).accept(node,</span>
+<span class="nc" id="L1384">					this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1386">	}</span>
+
+	@Override
+	public void endVisit(BreakStatement node) {
+<span class="pc bpc" id="L1390" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.BreakStatement)) {</span>
+<span class="nc" id="L1391">			((BiConsumer&lt;BreakStatement, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.BreakStatement))).accept(node,</span>
+<span class="nc" id="L1392">					this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1394">	}</span>
+
+	@Override
+	public void endVisit(CastExpression node) {
+<span class="pc bpc" id="L1398" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.CastExpression)) {</span>
+<span class="nc" id="L1399">			((BiConsumer&lt;CastExpression, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.CastExpression))).accept(node,</span>
+<span class="nc" id="L1400">					this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1402">	}</span>
+
+	@Override
+	public void endVisit(CatchClause node) {
+<span class="pc bpc" id="L1406" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.CatchClause)) {</span>
+<span class="nc" id="L1407">			((BiConsumer&lt;CatchClause, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.CatchClause))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1409">	}</span>
+
+	@Override
+	public void endVisit(CharacterLiteral node) {
+<span class="nc bnc" id="L1413" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.CharacterLiteral)) {</span>
+<span class="nc" id="L1414">			((BiConsumer&lt;CharacterLiteral, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.CharacterLiteral))).accept(node,</span>
+<span class="nc" id="L1415">					this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1417">	}</span>
+
+	@Override
+	public void endVisit(ClassInstanceCreation node) {
+<span class="pc bpc" id="L1421" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ClassInstanceCreation)) {</span>
+<span class="nc" id="L1422">			((BiConsumer&lt;ClassInstanceCreation, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.ClassInstanceCreation)))</span>
+<span class="nc" id="L1423">					.accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1425">	}</span>
+
+	@Override
+	public void endVisit(CompilationUnit node) {
+<span class="pc bpc" id="L1429" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.CompilationUnit)) {</span>
+<span class="nc" id="L1430">			((BiConsumer&lt;CompilationUnit, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.CompilationUnit))).accept(node,</span>
+<span class="nc" id="L1431">					this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1433">	}</span>
+
+	@Override
+	public void endVisit(ConditionalExpression node) {
+<span class="nc bnc" id="L1437" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ConditionalExpression)) {</span>
+<span class="nc" id="L1438">			((BiConsumer&lt;ConditionalExpression, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.ConditionalExpression)))</span>
+<span class="nc" id="L1439">					.accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1441">	}</span>
+
+	@Override
+	public void endVisit(ConstructorInvocation node) {
+<span class="nc bnc" id="L1445" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ConstructorInvocation)) {</span>
+<span class="nc" id="L1446">			((BiConsumer&lt;ConstructorInvocation, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.ConstructorInvocation)))</span>
+<span class="nc" id="L1447">					.accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1449">	}</span>
+
+	@Override
+	public void endVisit(ContinueStatement node) {
+<span class="pc bpc" id="L1453" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ContinueStatement)) {</span>
+<span class="nc" id="L1454">			((BiConsumer&lt;ContinueStatement, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.ContinueStatement))).accept(node,</span>
+<span class="nc" id="L1455">					this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1457">	}</span>
+
+	@Override
+	public void endVisit(CreationReference node) {
+<span class="nc bnc" id="L1461" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.CreationReference)) {</span>
+<span class="nc" id="L1462">			((BiConsumer&lt;CreationReference, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.CreationReference))).accept(node,</span>
+<span class="nc" id="L1463">					this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1465">	}</span>
+
+	@Override
+	public void endVisit(Dimension node) {
+<span class="pc bpc" id="L1469" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.Dimension)) {</span>
+<span class="nc" id="L1470">			((BiConsumer&lt;Dimension, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.Dimension))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1472">	}</span>
+
+	@Override
+	public void endVisit(DoStatement node) {
+<span class="pc bpc" id="L1476" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.DoStatement)) {</span>
+<span class="nc" id="L1477">			((BiConsumer&lt;DoStatement, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.DoStatement))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1479">	}</span>
+
+	@Override
+	public void endVisit(EmptyStatement node) {
+<span class="nc bnc" id="L1483" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.EmptyStatement)) {</span>
+<span class="nc" id="L1484">			((BiConsumer&lt;EmptyStatement, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.EmptyStatement))).accept(node,</span>
+<span class="nc" id="L1485">					this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1487">	}</span>
+
+	@Override
+	public void endVisit(EnhancedForStatement node) {
+<span class="fc bfc" id="L1491" title="All 2 branches covered.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.EnhancedForStatement)) {</span>
+<span class="fc" id="L1492">			((BiConsumer&lt;EnhancedForStatement, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.EnhancedForStatement))).accept(node,</span>
+<span class="fc" id="L1493">					this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1495">	}</span>
+
+	@Override
+	public void endVisit(EnumConstantDeclaration node) {
+<span class="nc bnc" id="L1499" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.EnumConstantDeclaration)) {</span>
+<span class="nc" id="L1500">			((BiConsumer&lt;EnumConstantDeclaration, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.EnumConstantDeclaration)))</span>
+<span class="nc" id="L1501">					.accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1503">	}</span>
+
+	@Override
+	public void endVisit(EnumDeclaration node) {
+<span class="nc bnc" id="L1507" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.EnumDeclaration)) {</span>
+<span class="nc" id="L1508">			((BiConsumer&lt;EnumDeclaration, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.EnumDeclaration))).accept(node,</span>
+<span class="nc" id="L1509">					this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1511">	}</span>
+
+	@Override
+	public void endVisit(ExportsDirective node) {
+<span class="nc bnc" id="L1515" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ExportsDirective)) {</span>
+<span class="nc" id="L1516">			((BiConsumer&lt;ExportsDirective, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.ExportsDirective))).accept(node,</span>
+<span class="nc" id="L1517">					this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1519">	}</span>
+
+	@Override
+	public void endVisit(ExpressionMethodReference node) {
+<span class="nc bnc" id="L1523" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ExpressionMethodReference)) {</span>
+<span class="nc" id="L1524">			((BiConsumer&lt;ExpressionMethodReference, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.ExpressionMethodReference)))</span>
+<span class="nc" id="L1525">					.accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1527">	}</span>
+
+	@Override
+	public void endVisit(ExpressionStatement node) {
+<span class="pc bpc" id="L1531" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ExpressionStatement)) {</span>
+<span class="nc" id="L1532">			((BiConsumer&lt;ExpressionStatement, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.ExpressionStatement))).accept(node,</span>
+<span class="nc" id="L1533">					this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1535">	}</span>
+
+	@Override
+	public void endVisit(FieldAccess node) {
+<span class="pc bpc" id="L1539" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.FieldAccess)) {</span>
+<span class="nc" id="L1540">			((BiConsumer&lt;FieldAccess, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.FieldAccess))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1542">	}</span>
+
+	@Override
+	public void endVisit(FieldDeclaration node) {
+<span class="pc bpc" id="L1546" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.FieldDeclaration)) {</span>
+<span class="nc" id="L1547">			((BiConsumer&lt;FieldDeclaration, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.FieldDeclaration))).accept(node,</span>
+<span class="nc" id="L1548">					this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1550">	}</span>
+
+	@Override
+	public void endVisit(ForStatement node) {
+<span class="pc bpc" id="L1554" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ForStatement)) {</span>
+<span class="nc" id="L1555">			((BiConsumer&lt;ForStatement, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.ForStatement))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1557">	}</span>
+
+	@Override
+	public void endVisit(IfStatement node) {
+<span class="pc bpc" id="L1561" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.IfStatement)) {</span>
+<span class="nc" id="L1562">			((BiConsumer&lt;IfStatement, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.IfStatement))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1564">	}</span>
+
+	@Override
+	public void endVisit(ImportDeclaration node) {
+<span class="pc bpc" id="L1568" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ImportDeclaration)) {</span>
+<span class="nc" id="L1569">			((BiConsumer&lt;ImportDeclaration, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.ImportDeclaration))).accept(node,</span>
+<span class="nc" id="L1570">					this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1572">	}</span>
+
+	@Override
+	public void endVisit(InfixExpression node) {
+<span class="pc bpc" id="L1576" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.InfixExpression)) {</span>
+<span class="nc" id="L1577">			((BiConsumer&lt;InfixExpression, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.InfixExpression))).accept(node,</span>
+<span class="nc" id="L1578">					this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1580">	}</span>
+
+	@Override
+	public void endVisit(Initializer node) {
+<span class="pc bpc" id="L1584" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.Initializer)) {</span>
+<span class="nc" id="L1585">			((BiConsumer&lt;Initializer, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.Initializer))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1587">	}</span>
+
+	@Override
+	public void endVisit(InstanceofExpression node) {
+<span class="pc bpc" id="L1591" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.InstanceofExpression)) {</span>
+<span class="nc" id="L1592">			((BiConsumer&lt;InstanceofExpression, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.InstanceofExpression))).accept(node,</span>
+<span class="nc" id="L1593">					this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1595">	}</span>
+
+	@Override
+	public void endVisit(IntersectionType node) {
+<span class="nc bnc" id="L1599" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.IntersectionType)) {</span>
+<span class="nc" id="L1600">			((BiConsumer&lt;IntersectionType, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.IntersectionType))).accept(node,</span>
+<span class="nc" id="L1601">					this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1603">	}</span>
+
+	@Override
+	public void endVisit(Javadoc node) {
+<span class="pc bpc" id="L1607" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.Javadoc)) {</span>
+<span class="nc" id="L1608">			((BiConsumer&lt;Javadoc, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.Javadoc))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1610">	}</span>
+
+	@Override
+	public void endVisit(LabeledStatement node) {
+<span class="pc bpc" id="L1614" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.LabeledStatement)) {</span>
+<span class="nc" id="L1615">			((BiConsumer&lt;LabeledStatement, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.LabeledStatement))).accept(node,</span>
+<span class="nc" id="L1616">					this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1618">	}</span>
+
+	@Override
+	public void endVisit(LambdaExpression node) {
+<span class="pc bpc" id="L1622" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.LambdaExpression)) {</span>
+<span class="nc" id="L1623">			((BiConsumer&lt;LambdaExpression, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.LambdaExpression))).accept(node,</span>
+<span class="nc" id="L1624">					this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1626">	}</span>
+
+	@Override
+	public void endVisit(LineComment node) {
+<span class="nc bnc" id="L1630" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.LineComment)) {</span>
+<span class="nc" id="L1631">			((BiConsumer&lt;LineComment, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.LineComment))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1633">	}</span>
+
+	@Override
+	public void endVisit(MarkerAnnotation node) {
+<span class="pc bpc" id="L1637" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.MarkerAnnotation)) {</span>
+<span class="nc" id="L1638">			Map&lt;String, Object&gt; map=(Map&lt;String, Object&gt;) this.helperVisitor.getConsumerData().get(VisitorEnum.MarkerAnnotation);</span>
+<span class="nc bnc" id="L1639" title="All 2 branches missed.">			if(map != null) {</span>
+<span class="nc" id="L1640">				String data=(String) map.get(HelperVisitor.ANNOTATIONNAME);</span>
+<span class="nc" id="L1641">				ITypeBinding binding = node.resolveTypeBinding();</span>
+				String fullyQualifiedName;
+<span class="nc bnc" id="L1643" title="All 2 branches missed.">				if (binding != null) {</span>
+<span class="nc" id="L1644">					fullyQualifiedName = binding.getQualifiedName();</span>
+<span class="nc" id="L1645">				}else {</span>
+<span class="nc" id="L1646">					fullyQualifiedName = node.getTypeName().getFullyQualifiedName();</span>
+				}
+<span class="nc bnc" id="L1648" title="All 4 branches missed.">				if ((data!= null) &amp;&amp; !fullyQualifiedName.equals(data)) {</span>
+<span class="nc" id="L1649">					return;</span>
+				}
+			}
+<span class="nc" id="L1652">			((BiConsumer&lt;MarkerAnnotation, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.MarkerAnnotation))).accept(node,</span>
+<span class="nc" id="L1653">					this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1655">	}</span>
+
+	@Override
+	public void endVisit(MemberRef node) {
+<span class="nc bnc" id="L1659" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.MemberRef)) {</span>
+<span class="nc" id="L1660">			((BiConsumer&lt;MemberRef, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.MemberRef))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1662">	}</span>
+
+	@Override
+	public void endVisit(MemberValuePair node) {
+<span class="pc bpc" id="L1666" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.MemberValuePair)) {</span>
+<span class="nc" id="L1667">			((BiConsumer&lt;MemberValuePair, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.MemberValuePair))).accept(node,</span>
+<span class="nc" id="L1668">					this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1670">	}</span>
+
+	@Override
+	public void endVisit(MethodRef node) {
+<span class="nc bnc" id="L1674" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.MethodRef)) {</span>
+<span class="nc" id="L1675">			((BiConsumer&lt;MethodRef, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.MethodRef))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1677">	}</span>
+
+	@Override
+	public void endVisit(MethodRefParameter node) {
+<span class="nc bnc" id="L1681" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.MethodRefParameter)) {</span>
+<span class="nc" id="L1682">			((BiConsumer&lt;MethodRefParameter, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.MethodRefParameter))).accept(node,</span>
+<span class="nc" id="L1683">					this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1685">	}</span>
+
+	@Override
+	public void endVisit(MethodDeclaration node) {
+<span class="pc bpc" id="L1689" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.MethodDeclaration)) {</span>
+<span class="nc" id="L1690">			((BiConsumer&lt;MethodDeclaration, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.MethodDeclaration))).accept(node,</span>
+<span class="nc" id="L1691">					this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1693">	}</span>
+
+	@Override
+	public void endVisit(MethodInvocation node) {
+<span class="pc bpc" id="L1697" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.MethodInvocation)) {</span>
+<span class="nc" id="L1698">			Map&lt;String, Object&gt; map=(Map&lt;String, Object&gt;) this.helperVisitor.getConsumerData().get(VisitorEnum.MethodInvocation);</span>
+<span class="nc bnc" id="L1699" title="All 2 branches missed.">			if(map != null) {</span>
+<span class="nc" id="L1700">				String data=(String) map.get(HelperVisitor.METHODNAME);</span>
+<span class="nc bnc" id="L1701" title="All 4 branches missed.">				if ((data!= null) &amp;&amp; !node.getName().getIdentifier().equals(data)) {</span>
+<span class="nc" id="L1702">					return;</span>
+				}
+<span class="nc" id="L1704">				Object object = map.get(HelperVisitor.TYPEOF);</span>
+				String canonicaltype;
+<span class="nc bnc" id="L1706" title="All 2 branches missed.">				if(object!=null) {</span>
+<span class="nc bnc" id="L1707" title="All 2 branches missed.">					if(object instanceof Class typeof) {</span>
+<span class="nc" id="L1708">						canonicaltype= typeof.getCanonicalName();</span>
+<span class="nc" id="L1709">					} else {</span>
+<span class="nc" id="L1710">						canonicaltype= (String)object;</span>
+					}
+<span class="nc bnc" id="L1712" title="All 2 branches missed.">					if (!ASTNodes.usesGivenSignature(node, canonicaltype, data)) {</span>
+<span class="nc" id="L1713">						return;</span>
+					}
+				}
+			}
+<span class="nc" id="L1717">			((BiConsumer&lt;MethodInvocation, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.MethodInvocation))).accept(node,</span>
+<span class="nc" id="L1718">					this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1720">	}</span>
+
+	@Override
+	public void endVisit(Modifier node) {
+<span class="pc bpc" id="L1724" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.Modifier)) {</span>
+<span class="nc" id="L1725">			((BiConsumer&lt;Modifier, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.Modifier))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1727">	}</span>
+
+	@Override
+	public void endVisit(ModuleDeclaration node) {
+<span class="nc bnc" id="L1731" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ModuleDeclaration)) {</span>
+<span class="nc" id="L1732">			((BiConsumer&lt;ModuleDeclaration, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.ModuleDeclaration))).accept(node,</span>
+<span class="nc" id="L1733">					this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1735">	}</span>
+
+	@Override
+	public void endVisit(ModuleModifier node) {
+<span class="nc bnc" id="L1739" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ModuleModifier)) {</span>
+<span class="nc" id="L1740">			((BiConsumer&lt;ModuleModifier, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.ModuleModifier))).accept(node,</span>
+<span class="nc" id="L1741">					this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1743">	}</span>
+
+	@Override
+	public void endVisit(NameQualifiedType node) {
+<span class="nc bnc" id="L1747" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.NameQualifiedType)) {</span>
+<span class="nc" id="L1748">			((BiConsumer&lt;NameQualifiedType, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.NameQualifiedType))).accept(node,</span>
+<span class="nc" id="L1749">					this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1751">	}</span>
+
+	@Override
+	public void endVisit(NormalAnnotation node) {
+<span class="pc bpc" id="L1755" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.NormalAnnotation)) {</span>
+<span class="nc" id="L1756">			Map&lt;String, Object&gt; map=(Map&lt;String, Object&gt;) this.helperVisitor.getConsumerData().get(VisitorEnum.NormalAnnotation);</span>
+<span class="nc bnc" id="L1757" title="All 2 branches missed.">			if(map != null) {</span>
+<span class="nc" id="L1758">				String data=(String) map.get(HelperVisitor.ANNOTATIONNAME);</span>
+<span class="nc" id="L1759">				ITypeBinding binding = node.resolveTypeBinding();</span>
+				String fullyQualifiedName;
+<span class="nc bnc" id="L1761" title="All 2 branches missed.">				if (binding != null) {</span>
+<span class="nc" id="L1762">					fullyQualifiedName = binding.getQualifiedName();</span>
+<span class="nc" id="L1763">				}else {</span>
+<span class="nc" id="L1764">					fullyQualifiedName = node.getTypeName().getFullyQualifiedName();</span>
+				}
+<span class="nc bnc" id="L1766" title="All 4 branches missed.">				if ((data!= null) &amp;&amp; !fullyQualifiedName.equals(data)) {</span>
+<span class="nc" id="L1767">					return;</span>
+				}
+			}
+<span class="nc" id="L1770">			((BiConsumer&lt;NormalAnnotation, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.NormalAnnotation))).accept(node,</span>
+<span class="nc" id="L1771">					this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1773">	}</span>
+
+	@Override
+	public void endVisit(NullLiteral node) {
+<span class="pc bpc" id="L1777" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.NullLiteral)) {</span>
+<span class="nc" id="L1778">			((BiConsumer&lt;NullLiteral, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.NullLiteral))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1780">	}</span>
+
+	@Override
+	public void endVisit(NumberLiteral node) {
+<span class="pc bpc" id="L1784" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.NumberLiteral)) {</span>
+<span class="nc" id="L1785">			((BiConsumer&lt;NumberLiteral, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.NumberLiteral))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1787">	}</span>
+
+	@Override
+	public void endVisit(OpensDirective node) {
+<span class="nc bnc" id="L1791" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.OpensDirective)) {</span>
+<span class="nc" id="L1792">			((BiConsumer&lt;OpensDirective, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.OpensDirective))).accept(node,</span>
+<span class="nc" id="L1793">					this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1795">	}</span>
+
+	@Override
+	public void endVisit(PackageDeclaration node) {
+<span class="pc bpc" id="L1799" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.PackageDeclaration)) {</span>
+<span class="nc" id="L1800">			((BiConsumer&lt;PackageDeclaration, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.PackageDeclaration))).accept(node,</span>
+<span class="nc" id="L1801">					this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1803">	}</span>
+
+	@Override
+	public void endVisit(ParameterizedType node) {
+<span class="pc bpc" id="L1807" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ParameterizedType)) {</span>
+<span class="nc" id="L1808">			((BiConsumer&lt;ParameterizedType, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.ParameterizedType))).accept(node,</span>
+<span class="nc" id="L1809">					this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1811">	}</span>
+
+	@Override
+	public void endVisit(ParenthesizedExpression node) {
+<span class="pc bpc" id="L1815" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ParenthesizedExpression)) {</span>
+<span class="nc" id="L1816">			((BiConsumer&lt;ParenthesizedExpression, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.ParenthesizedExpression)))</span>
+<span class="nc" id="L1817">					.accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1819">	}</span>
+
+	@Override
+	public void endVisit(PatternInstanceofExpression node) {
+<span class="nc bnc" id="L1823" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.PatternInstanceofExpression)) {</span>
+<span class="nc" id="L1824">			((BiConsumer&lt;PatternInstanceofExpression, E&gt;) (this.helperVisitor.consumermap</span>
+<span class="nc" id="L1825">					.get(VisitorEnum.PatternInstanceofExpression))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1827">	}</span>
+
+	@Override
+	public void endVisit(PostfixExpression node) {
+<span class="pc bpc" id="L1831" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.PostfixExpression)) {</span>
+<span class="nc" id="L1832">			((BiConsumer&lt;PostfixExpression, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.PostfixExpression))).accept(node,</span>
+<span class="nc" id="L1833">					this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1835">	}</span>
+
+	@Override
+	public void endVisit(PrefixExpression node) {
+<span class="pc bpc" id="L1839" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.PrefixExpression)) {</span>
+<span class="nc" id="L1840">			((BiConsumer&lt;PrefixExpression, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.PrefixExpression))).accept(node,</span>
+<span class="nc" id="L1841">					this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1843">	}</span>
+
+	@Override
+	public void endVisit(ProvidesDirective node) {
+<span class="nc bnc" id="L1847" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ProvidesDirective)) {</span>
+<span class="nc" id="L1848">			((BiConsumer&lt;ProvidesDirective, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.ProvidesDirective))).accept(node,</span>
+<span class="nc" id="L1849">					this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1851">	}</span>
+
+	@Override
+	public void endVisit(PrimitiveType node) {
+<span class="pc bpc" id="L1855" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.PrimitiveType)) {</span>
+<span class="nc" id="L1856">			((BiConsumer&lt;PrimitiveType, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.PrimitiveType))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1858">	}</span>
+
+	@Override
+	public void endVisit(QualifiedName node) {
+<span class="pc bpc" id="L1862" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.QualifiedName)) {</span>
+<span class="nc" id="L1863">			((BiConsumer&lt;QualifiedName, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.QualifiedName))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1865">	}</span>
+
+	@Override
+	public void endVisit(QualifiedType node) {
+<span class="nc bnc" id="L1869" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.QualifiedType)) {</span>
+<span class="nc" id="L1870">			((BiConsumer&lt;QualifiedType, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.QualifiedType))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1872">	}</span>
+
+	@Override
+	public void endVisit(ModuleQualifiedName node) {
+<span class="nc bnc" id="L1876" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ModuleQualifiedName)) {</span>
+<span class="nc" id="L1877">			((BiConsumer&lt;ModuleQualifiedName, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.ModuleQualifiedName))).accept(node,</span>
+<span class="nc" id="L1878">					this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1880">	}</span>
+
+	@Override
+	public void endVisit(RequiresDirective node) {
+<span class="nc bnc" id="L1884" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.RequiresDirective)) {</span>
+<span class="nc" id="L1885">			((BiConsumer&lt;RequiresDirective, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.RequiresDirective))).accept(node,</span>
+<span class="nc" id="L1886">					this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1888">	}</span>
+
+	@Override
+	public void endVisit(RecordDeclaration node) {
+<span class="nc bnc" id="L1892" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.RecordDeclaration)) {</span>
+<span class="nc" id="L1893">			((BiConsumer&lt;RecordDeclaration, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.RecordDeclaration))).accept(node,</span>
+<span class="nc" id="L1894">					this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1896">	}</span>
+
+	@Override
+	public void endVisit(ReturnStatement node) {
+<span class="pc bpc" id="L1900" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ReturnStatement)) {</span>
+<span class="nc" id="L1901">			((BiConsumer&lt;ReturnStatement, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.ReturnStatement))).accept(node,</span>
+<span class="nc" id="L1902">					this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1904">	}</span>
+
+	@Override
+	public void endVisit(SimpleName node) {
+<span class="pc bpc" id="L1908" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.SimpleName)) {</span>
+<span class="nc" id="L1909">			((BiConsumer&lt;SimpleName, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.SimpleName))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1911">	}</span>
+
+	@Override
+	public void endVisit(SimpleType node) {
+<span class="pc bpc" id="L1915" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.SimpleType)) {</span>
+<span class="nc" id="L1916">			((BiConsumer&lt;SimpleType, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.SimpleType))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1918">	}</span>
+
+	@Override
+	public void endVisit(SingleMemberAnnotation node) {
+<span class="pc bpc" id="L1922" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.SingleMemberAnnotation)) {</span>
+<span class="nc" id="L1923">			((BiConsumer&lt;SingleMemberAnnotation, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.SingleMemberAnnotation)))</span>
+<span class="nc" id="L1924">					.accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1926">	}</span>
+
+	@Override
+	public void endVisit(SingleVariableDeclaration node) {
+<span class="pc bpc" id="L1930" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.SingleVariableDeclaration)) {</span>
+<span class="nc" id="L1931">			((BiConsumer&lt;SingleVariableDeclaration, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.SingleVariableDeclaration)))</span>
+<span class="nc" id="L1932">					.accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1934">	}</span>
+
+	@Override
+	public void endVisit(StringLiteral node) {
+<span class="pc bpc" id="L1938" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.StringLiteral)) {</span>
+<span class="nc" id="L1939">			((BiConsumer&lt;StringLiteral, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.StringLiteral))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1941">	}</span>
+
+	@Override
+	public void endVisit(SuperConstructorInvocation node) {
+<span class="nc bnc" id="L1945" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.SuperConstructorInvocation)) {</span>
+<span class="nc" id="L1946">			((BiConsumer&lt;SuperConstructorInvocation, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.SuperConstructorInvocation)))</span>
+<span class="nc" id="L1947">					.accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1949">	}</span>
+
+	@Override
+	public void endVisit(SuperFieldAccess node) {
+<span class="nc bnc" id="L1953" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.SuperFieldAccess)) {</span>
+<span class="nc" id="L1954">			((BiConsumer&lt;SuperFieldAccess, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.SuperFieldAccess))).accept(node,</span>
+<span class="nc" id="L1955">					this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1957">	}</span>
+
+	@Override
+	public void endVisit(SuperMethodInvocation node) {
+<span class="pc bpc" id="L1961" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.SuperMethodInvocation)) {</span>
+<span class="nc" id="L1962">			((BiConsumer&lt;SuperMethodInvocation, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.SuperMethodInvocation)))</span>
+<span class="nc" id="L1963">					.accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1965">	}</span>
+
+	@Override
+	public void endVisit(SuperMethodReference node) {
+<span class="nc bnc" id="L1969" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.SuperMethodReference)) {</span>
+<span class="nc" id="L1970">			((BiConsumer&lt;SuperMethodReference, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.SuperMethodReference))).accept(node,</span>
+<span class="nc" id="L1971">					this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1973">	}</span>
+
+	@Override
+	public void endVisit(SwitchCase node) {
+<span class="pc bpc" id="L1977" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.SwitchCase)) {</span>
+<span class="nc" id="L1978">			((BiConsumer&lt;SwitchCase, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.SwitchCase))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1980">	}</span>
+
+	@Override
+	public void endVisit(SwitchExpression node) {
+<span class="nc bnc" id="L1984" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.SwitchExpression)) {</span>
+<span class="nc" id="L1985">			((BiConsumer&lt;SwitchExpression, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.SwitchExpression))).accept(node,</span>
+<span class="nc" id="L1986">					this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L1988">	}</span>
+
+	@Override
+	public void endVisit(SwitchStatement node) {
+<span class="pc bpc" id="L1992" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.SwitchStatement)) {</span>
+<span class="nc" id="L1993">			((BiConsumer&lt;SwitchStatement, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.SwitchStatement))).accept(node,</span>
+<span class="nc" id="L1994">					this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L1996">	}</span>
+
+	@Override
+	public void endVisit(SynchronizedStatement node) {
+<span class="pc bpc" id="L2000" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.SynchronizedStatement)) {</span>
+<span class="nc" id="L2001">			((BiConsumer&lt;SynchronizedStatement, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.SynchronizedStatement)))</span>
+<span class="nc" id="L2002">					.accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L2004">	}</span>
+
+	@Override
+	public void endVisit(TagElement node) {
+<span class="pc bpc" id="L2008" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.TagElement)) {</span>
+<span class="nc" id="L2009">			((BiConsumer&lt;TagElement, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.TagElement))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L2011">	}</span>
+
+	@Override
+	public void endVisit(TextBlock node) {
+<span class="nc bnc" id="L2015" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.TextBlock)) {</span>
+<span class="nc" id="L2016">			((BiConsumer&lt;TextBlock, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.TextBlock))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L2018">	}</span>
+
+	@Override
+	public void endVisit(TextElement node) {
+<span class="pc bpc" id="L2022" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.TextElement)) {</span>
+<span class="nc" id="L2023">			((BiConsumer&lt;TextElement, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.TextElement))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L2025">	}</span>
+
+	@Override
+	public void endVisit(ThisExpression node) {
+<span class="pc bpc" id="L2029" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ThisExpression)) {</span>
+<span class="nc" id="L2030">			((BiConsumer&lt;ThisExpression, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.ThisExpression))).accept(node,</span>
+<span class="nc" id="L2031">					this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L2033">	}</span>
+
+	@Override
+	public void endVisit(ThrowStatement node) {
+<span class="pc bpc" id="L2037" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ThrowStatement)) {</span>
+<span class="nc" id="L2038">			((BiConsumer&lt;ThrowStatement, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.ThrowStatement))).accept(node,</span>
+<span class="nc" id="L2039">					this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L2041">	}</span>
+
+	@Override
+	public void endVisit(TryStatement node) {
+<span class="pc bpc" id="L2045" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.TryStatement)) {</span>
+<span class="nc" id="L2046">			((BiConsumer&lt;TryStatement, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.TryStatement))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L2048">	}</span>
+
+	@Override
+	public void endVisit(TypeDeclaration node) {
+<span class="pc bpc" id="L2052" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.TypeDeclaration)) {</span>
+<span class="nc" id="L2053">			((BiConsumer&lt;TypeDeclaration, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.TypeDeclaration))).accept(node,</span>
+<span class="nc" id="L2054">					this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L2056">	}</span>
+
+	@Override
+	public void endVisit(TypeDeclarationStatement node) {
+<span class="nc bnc" id="L2060" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.TypeDeclarationStatement)) {</span>
+<span class="nc" id="L2061">			((BiConsumer&lt;TypeDeclarationStatement, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.TypeDeclarationStatement)))</span>
+<span class="nc" id="L2062">					.accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L2064">	}</span>
+
+	@Override
+	public void endVisit(TypeLiteral node) {
+<span class="pc bpc" id="L2068" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.TypeLiteral)) {</span>
+<span class="nc" id="L2069">			((BiConsumer&lt;TypeLiteral, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.TypeLiteral))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L2071">	}</span>
+
+	@Override
+	public void endVisit(TypeMethodReference node) {
+<span class="nc bnc" id="L2075" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.TypeMethodReference)) {</span>
+<span class="nc" id="L2076">			((BiConsumer&lt;TypeMethodReference, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.TypeMethodReference))).accept(node,</span>
+<span class="nc" id="L2077">					this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L2079">	}</span>
+
+	@Override
+	public void endVisit(TypeParameter node) {
+<span class="nc bnc" id="L2083" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.TypeParameter)) {</span>
+<span class="nc" id="L2084">			((BiConsumer&lt;TypeParameter, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.TypeParameter))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L2086">	}</span>
+
+	@Override
+	public void endVisit(UnionType node) {
+<span class="pc bpc" id="L2090" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.UnionType)) {</span>
+<span class="nc" id="L2091">			((BiConsumer&lt;UnionType, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.UnionType))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L2093">	}</span>
+
+	@Override
+	public void endVisit(UsesDirective node) {
+<span class="nc bnc" id="L2097" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.UsesDirective)) {</span>
+<span class="nc" id="L2098">			((BiConsumer&lt;UsesDirective, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.UsesDirective))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L2100">	}</span>
+
+	@Override
+	public void endVisit(VariableDeclarationExpression node) {
+<span class="pc bpc" id="L2104" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.VariableDeclarationExpression)) {</span>
+<span class="nc" id="L2105">			((BiConsumer&lt;VariableDeclarationExpression, E&gt;) (this.helperVisitor.consumermap</span>
+<span class="nc" id="L2106">					.get(VisitorEnum.VariableDeclarationExpression))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L2108">	}</span>
+
+	@Override
+	public void endVisit(VariableDeclarationStatement node) {
+<span class="pc bpc" id="L2112" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.VariableDeclarationStatement)) {</span>
+<span class="nc" id="L2113">			Map&lt;String, Object&gt; map=(Map&lt;String, Object&gt;)this.helperVisitor.getConsumerData().get(VisitorEnum.VariableDeclarationStatement);</span>
+<span class="nc bnc" id="L2114" title="All 2 branches missed.">			if(map != null) {</span>
+<span class="nc" id="L2115">				Class&lt;?&gt; data=(Class&lt;?&gt;) map.get(HelperVisitor.TYPEOF);</span>
+<span class="nc bnc" id="L2116" title="All 2 branches missed.">				if (data!= null) {</span>
+<span class="nc" id="L2117">					VariableDeclarationFragment bli = (VariableDeclarationFragment) node.fragments().get(0);</span>
+<span class="nc" id="L2118">					IVariableBinding resolveBinding = bli.resolveBinding();</span>
+<span class="nc bnc" id="L2119" title="All 2 branches missed.">					if(resolveBinding!=null) {</span>
+<span class="nc" id="L2120">						String qualifiedName = resolveBinding.getType().getErasure().getQualifiedName();</span>
+<span class="nc bnc" id="L2121" title="All 2 branches missed.">						if (!data.getCanonicalName().equals(qualifiedName)) {</span>
+<span class="nc" id="L2122">							return;</span>
+						}
+					}
+				}
+			}
+<span class="nc" id="L2127">			((BiConsumer&lt;VariableDeclarationStatement, E&gt;) (this.helperVisitor.consumermap</span>
+<span class="nc" id="L2128">					.get(VisitorEnum.VariableDeclarationStatement))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L2130">	}</span>
+
+	@Override
+	public void endVisit(VariableDeclarationFragment node) {
+<span class="pc bpc" id="L2134" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.VariableDeclarationFragment)) {</span>
+<span class="nc" id="L2135">			((BiConsumer&lt;VariableDeclarationFragment, E&gt;) (this.helperVisitor.consumermap</span>
+<span class="nc" id="L2136">					.get(VisitorEnum.VariableDeclarationFragment))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L2138">	}</span>
+
+	@Override
+	public void endVisit(WhileStatement node) {
+<span class="pc bpc" id="L2142" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.WhileStatement)) {</span>
+<span class="nc" id="L2143">			((BiConsumer&lt;WhileStatement, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.WhileStatement))).accept(node,</span>
+<span class="nc" id="L2144">					this.helperVisitor.dataholder);</span>
+		}
+<span class="fc" id="L2146">	}</span>
+
+	@Override
+	public void endVisit(WildcardType node) {
+<span class="nc bnc" id="L2150" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.WildcardType)) {</span>
+<span class="nc" id="L2151">			((BiConsumer&lt;WildcardType, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.WildcardType))).accept(node, this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L2153">	}</span>
+
+	@Override
+	public void endVisit(YieldStatement node) {
+<span class="nc bnc" id="L2157" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.YieldStatement)) {</span>
+<span class="nc" id="L2158">			((BiConsumer&lt;YieldStatement, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.YieldStatement))).accept(node,</span>
+<span class="nc" id="L2159">					this.helperVisitor.dataholder);</span>
+		}
+<span class="nc" id="L2161">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

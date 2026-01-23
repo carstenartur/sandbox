@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>XMLCleanupService.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_xml_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">XMLCleanupService.java</span></div><h1>XMLCleanupService.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.Set;
+
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IFolder;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IResourceVisitor;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.ILog;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Status;
+
+/**
+ * Service for XML cleanup that can be used independently of JDT cleanup framework.
+ * This allows XML cleanup to work without requiring Java compilation unit context.
+ */
+<span class="nc" id="L38">public class XMLCleanupService {</span>
+	
+<span class="nc" id="L40">	private static final ILog LOG = Platform.getLog(XMLCleanupService.class);</span>
+	private static final String PLUGIN_ID = &quot;sandbox_xml_cleanup&quot;;
+	
+	// PDE-relevant file names
+<span class="nc" id="L44">	private static final Set&lt;String&gt; PDE_FILE_NAMES = Set.of(</span>
+<span class="nc" id="L45">		&quot;plugin.xml&quot;,</span>
+<span class="nc" id="L46">		&quot;feature.xml&quot;, </span>
+<span class="nc" id="L47">		&quot;fragment.xml&quot;</span>
+	);
+	
+	// PDE-relevant file extensions
+<span class="nc" id="L51">	private static final Set&lt;String&gt; PDE_EXTENSIONS = Set.of(&quot;exsd&quot;, &quot;xsd&quot;);</span>
+	
+	// PDE-typical directories
+<span class="nc" id="L54">	private static final Set&lt;String&gt; PDE_DIRECTORIES = Set.of(&quot;OSGI-INF&quot;, &quot;META-INF&quot;);</span>
+	
+	// Indentation preference (default: false for size reduction)
+<span class="nc" id="L57">	private boolean enableIndent = false;</span>
+
+	/**
+	 * Set whether to enable indentation in XML output.
+	 * 
+	 * @param enable true to enable indentation, false for compact output (default)
+	 */
+	public void setEnableIndent(boolean enable) {
+<span class="nc" id="L65">		this.enableIndent = enable;</span>
+<span class="nc" id="L66">	}</span>
+
+	/**
+	 * Process a single XML file.
+	 * 
+	 * @param file the file to process
+	 * @param monitor progress monitor (can be null)
+	 * @return true if file was processed and changed, false otherwise
+	 * @throws CoreException if file access fails
+	 */
+	public boolean processFile(IFile file, IProgressMonitor monitor) throws CoreException {
+<span class="nc bnc" id="L77" title="All 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
+<span class="nc" id="L78">			return false;</span>
+		}
+		
+<span class="nc bnc" id="L81" title="All 2 branches missed.">		if (!isPDERelevantFile(file)) {</span>
+<span class="nc" id="L82">			return false;</span>
+		}
+		
+		// Read original content
+		String originalContent;
+<span class="nc" id="L87">		try (InputStream is = file.getContents()) {</span>
+<span class="nc" id="L88">			originalContent = new String(is.readAllBytes(), StandardCharsets.UTF_8);</span>
+<span class="nc" id="L89">		} catch (Exception e) {</span>
+<span class="nc" id="L90">			throw new CoreException(new Status(IStatus.ERROR, PLUGIN_ID,</span>
+<span class="nc" id="L91">				&quot;Failed to read file: &quot; + file.getName(), e));</span>
+		}
+		
+		// Transform the file - check for null location
+<span class="nc" id="L95">		org.eclipse.core.runtime.IPath location = file.getLocation();</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">		if (location == null) {</span>
+<span class="nc" id="L97">			LOG.log(new Status(IStatus.WARNING, PLUGIN_ID,</span>
+<span class="nc" id="L98">				&quot;File does not have a physical location: &quot; + file.getName()));</span>
+<span class="nc" id="L99">			return false;</span>
+		}
+		
+<span class="nc" id="L102">		Path filePath = location.toFile().toPath();</span>
+		String transformedContent;
+		try {
+<span class="nc" id="L105">			transformedContent = SchemaTransformationUtils.transform(filePath, enableIndent);</span>
+<span class="nc" id="L106">		} catch (Exception e) {</span>
+<span class="nc" id="L107">			throw new CoreException(new Status(IStatus.ERROR, PLUGIN_ID,</span>
+<span class="nc" id="L108">				&quot;Failed to transform file: &quot; + file.getName(), e));</span>
+		}
+		
+		// Only write if content actually changed
+<span class="nc bnc" id="L112" title="All 2 branches missed.">		if (!originalContent.equals(transformedContent)) {</span>
+<span class="nc" id="L113">			byte[] newContent = transformedContent.getBytes(StandardCharsets.UTF_8);</span>
+<span class="nc" id="L114">			ByteArrayInputStream inputStream = new ByteArrayInputStream(newContent);</span>
+			
+			// Update file (don't force, keep history)
+<span class="nc" id="L117">			file.setContents(inputStream, IResource.KEEP_HISTORY, monitor);</span>
+			
+			// Refresh the resource to sync with filesystem
+<span class="nc" id="L120">			file.refreshLocal(IResource.DEPTH_ZERO, monitor);</span>
+			
+<span class="nc" id="L122">			LOG.log(new Status(IStatus.INFO, PLUGIN_ID,</span>
+<span class="nc" id="L123">				&quot;Applied transformation to: &quot; + file.getName()));</span>
+			
+<span class="nc" id="L125">			return true;</span>
+		}
+		
+<span class="nc" id="L128">		return false;</span>
+	}
+	
+	/**
+	 * Process all PDE XML files in a project.
+	 * 
+	 * @param project the project to process
+	 * @param monitor progress monitor (can be null)
+	 * @return number of files processed and changed
+	 * @throws CoreException if resource traversal fails
+	 */
+	public int processProject(IProject project, IProgressMonitor monitor) throws CoreException {
+<span class="nc" id="L140">		final int[] filesProcessed = {0};</span>
+		
+<span class="nc" id="L142">		project.accept(new IResourceVisitor() {</span>
+			@Override
+			public boolean visit(IResource resource) throws CoreException {
+<span class="nc bnc" id="L145" title="All 4 branches missed.">				if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
+<span class="nc" id="L146">					return false;</span>
+				}
+				
+<span class="nc bnc" id="L149" title="All 2 branches missed.">				if (resource instanceof IFile file) {</span>
+					
+<span class="nc bnc" id="L151" title="All 2 branches missed.">					if (isPDERelevantFile(file)) {</span>
+						try {
+<span class="nc bnc" id="L153" title="All 2 branches missed.">							if (monitor != null) {</span>
+<span class="nc" id="L154">								monitor.subTask(&quot;Processing: &quot; + file.getName());</span>
+							}
+							
+<span class="nc" id="L157">							boolean changed = processFile(file, monitor);</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">							if (changed) {</span>
+<span class="nc" id="L159">								filesProcessed[0]++;</span>
+							}
+							
+<span class="nc bnc" id="L162" title="All 2 branches missed.">							if (monitor != null) {</span>
+<span class="nc" id="L163">								monitor.worked(1);</span>
+							}
+<span class="nc" id="L165">						} catch (CoreException e) {</span>
+<span class="nc" id="L166">							LOG.log(new Status(IStatus.ERROR, PLUGIN_ID, </span>
+<span class="nc" id="L167">								&quot;Error processing file: &quot; + file.getName(), e));</span>
+						}
+					}
+				}
+<span class="nc" id="L171">				return true; // Continue iteration</span>
+			}
+		});
+		
+<span class="nc" id="L175">		return filesProcessed[0];</span>
+	}
+	
+	/**
+	 * Check if file is PDE-relevant.
+	 * 
+	 * @param file the file to check
+	 * @return true if the file should be processed
+	 */
+	public boolean isPDERelevantFile(IFile file) {
+<span class="nc" id="L185">		String fileName = file.getName();</span>
+<span class="nc" id="L186">		String extension = file.getFileExtension();</span>
+		
+		// Check if it's a known PDE file name
+<span class="nc bnc" id="L189" title="All 2 branches missed.">		if (PDE_FILE_NAMES.contains(fileName)) {</span>
+			// Must be in project root, OSGI-INF, or META-INF
+<span class="nc" id="L191">			return isInPDELocation(file);</span>
+		}
+		
+		// Check if it's a PDE extension (exsd, xsd)
+<span class="nc bnc" id="L195" title="All 4 branches missed.">		if (extension != null &amp;&amp; PDE_EXTENSIONS.contains(extension)) {</span>
+<span class="nc" id="L196">			return isInPDELocation(file);</span>
+		}
+		
+<span class="nc" id="L199">		return false;</span>
+	}
+	
+	/**
+	 * Check if file is in a PDE-typical location.
+	 * 
+	 * @param file the file to check
+	 * @return true if in root, OSGI-INF, or META-INF
+	 */
+	private boolean isInPDELocation(IFile file) {
+<span class="nc" id="L209">		IResource parent = file.getParent();</span>
+		
+		// Check if in project root
+<span class="nc bnc" id="L212" title="All 2 branches missed.">		if (parent instanceof IProject) {</span>
+<span class="nc" id="L213">			return true;</span>
+		}
+		
+		// Check if in OSGI-INF or META-INF
+<span class="nc bnc" id="L217" title="All 2 branches missed.">		if (parent instanceof IFolder) {</span>
+<span class="nc" id="L218">			String folderName = parent.getName();</span>
+<span class="nc bnc" id="L219" title="All 2 branches missed.">			if (PDE_DIRECTORIES.contains(folderName)) {</span>
+<span class="nc" id="L220">				return true;</span>
+			}
+			
+			// Also check parent's parent (for nested structures)
+<span class="nc" id="L224">			IResource grandParent = parent.getParent();</span>
+<span class="nc bnc" id="L225" title="All 2 branches missed.">			if (grandParent instanceof IFolder) {</span>
+<span class="nc bnc" id="L226" title="All 2 branches missed.">				if (PDE_DIRECTORIES.contains(grandParent.getName())) {</span>
+<span class="nc" id="L227">					return true;</span>
+				}
+			}
+		}
+		
+<span class="nc" id="L232">		return false;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

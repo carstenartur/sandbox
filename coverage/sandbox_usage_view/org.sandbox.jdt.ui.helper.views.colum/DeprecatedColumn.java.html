@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>DeprecatedColumn.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_usage_view</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.ui.helper.views.colum</a> &gt; <span class="el_source">DeprecatedColumn.java</span></div><h1>DeprecatedColumn.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2020 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer - initial API and implementation
+ *******************************************************************************/
+package org.sandbox.jdt.ui.helper.views.colum;
+
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jface.viewers.TableViewer;
+
+<span class="fc" id="L20">public class DeprecatedColumn extends AbstractColumn {</span>
+
+	private static final int bounds= 100;
+	private static final String title= &quot;Deprecated&quot;; //$NON-NLS-1$
+
+	@Override
+	public void createColumn(TableViewer viewer, int pos) {
+		// now the deprecated or not checkbox
+<span class="fc" id="L28">		createTableViewerColumn(viewer, title, bounds, pos).setLabelProvider(new AlternatingColumnLabelProvider() {</span>
+			@Override
+			public String getText(Object element) {
+<span class="nc" id="L31">				IVariableBinding p= (IVariableBinding) element;</span>
+<span class="nc" id="L32">				return String.valueOf(p.isDeprecated());</span>
+			}
+		});
+<span class="fc" id="L35">	}</span>
+
+	@Override
+	protected int compare(IVariableBinding p1, IVariableBinding p2) {
+<span class="nc" id="L39">		ITypeBinding declaringClass1= p1.getDeclaringClass();</span>
+<span class="nc" id="L40">		ITypeBinding declaringClass2= p2.getDeclaringClass();</span>
+<span class="nc bnc" id="L41" title="All 4 branches missed.">		if (declaringClass1 != null &amp;&amp; declaringClass2 != null) {</span>
+<span class="nc" id="L42">			return Boolean.compare(declaringClass1.isDeprecated(), declaringClass2.isDeprecated());</span>
+		}
+<span class="nc" id="L44">		return 0;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

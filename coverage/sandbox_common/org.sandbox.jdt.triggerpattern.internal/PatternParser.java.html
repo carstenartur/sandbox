@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>PatternParser.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.internal</a> &gt; <span class="el_source">PatternParser.java</span></div><h1>PatternParser.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer - initial API and implementation
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.internal;
+
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.sandbox.jdt.triggerpattern.api.Pattern;
+import org.sandbox.jdt.triggerpattern.api.PatternKind;
+
+/**
+ * Parses pattern strings into AST nodes.
+ * 
+ * &lt;p&gt;This parser handles both expression and statement patterns by embedding them
+ * in a minimal wrapper structure (fake class and method) to create valid Java code
+ * that can be parsed by the Eclipse JDT parser.&lt;/p&gt;
+ * 
+ * @since 1.2.2
+ */
+<span class="fc" id="L37">public class PatternParser {</span>
+	
+	/**
+	 * Parses a pattern into an AST node.
+	 * 
+	 * @param pattern the pattern to parse
+	 * @return the parsed AST node (Expression or Statement), or {@code null} if parsing fails
+	 */
+	public ASTNode parse(Pattern pattern) {
+<span class="pc bpc" id="L46" title="1 of 2 branches missed.">		if (pattern == null) {</span>
+<span class="nc" id="L47">			return null;</span>
+		}
+		
+<span class="fc" id="L50">		String patternValue = pattern.getValue();</span>
+<span class="fc" id="L51">		PatternKind kind = pattern.getKind();</span>
+		
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">		if (kind == PatternKind.EXPRESSION) {</span>
+<span class="fc" id="L54">			return parseExpression(patternValue);</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">		} else if (kind == PatternKind.STATEMENT) {</span>
+<span class="nc" id="L56">			return parseStatement(patternValue);</span>
+		}
+		
+<span class="nc" id="L59">		return null;</span>
+	}
+	
+	/**
+	 * Parses an expression pattern.
+	 * 
+	 * @param expressionSnippet the expression snippet (e.g., {@code &quot;$x + 1&quot;})
+	 * @return the parsed Expression node, or {@code null} if parsing fails
+	 */
+	private Expression parseExpression(String expressionSnippet) {
+		// Wrap the expression in a minimal method context
+<span class="fc" id="L70">		String source = &quot;class _Pattern { void _method() { _result = &quot; + expressionSnippet + &quot;; } }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+		
+<span class="fc" id="L72">		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L73">		parser.setSource(source.toCharArray());</span>
+<span class="fc" id="L74">		parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
+<span class="fc" id="L75">		parser.setCompilerOptions(JavaCore.getOptions());</span>
+		
+<span class="fc" id="L77">		CompilationUnit cu = (CompilationUnit) parser.createAST(null);</span>
+		
+		// Navigate to the expression: CompilationUnit -&gt; TypeDeclaration -&gt; MethodDeclaration -&gt; Block -&gt; ExpressionStatement -&gt; Assignment -&gt; right-hand side
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">		if (cu.types().isEmpty()) {</span>
+<span class="nc" id="L81">			return null;</span>
+		}
+		
+<span class="fc" id="L84">		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);</span>
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">		if (typeDecl.getMethods().length == 0) {</span>
+<span class="nc" id="L86">			return null;</span>
+		}
+		
+<span class="fc" id="L89">		MethodDeclaration method = typeDecl.getMethods()[0];</span>
+<span class="pc bpc" id="L90" title="2 of 4 branches missed.">		if (method.getBody() == null || method.getBody().statements().isEmpty()) {</span>
+<span class="nc" id="L91">			return null;</span>
+		}
+		
+<span class="fc" id="L94">		Statement stmt = (Statement) method.getBody().statements().get(0);</span>
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">		if (stmt instanceof org.eclipse.jdt.core.dom.ExpressionStatement) {</span>
+<span class="fc" id="L96">			org.eclipse.jdt.core.dom.ExpressionStatement exprStmt = (org.eclipse.jdt.core.dom.ExpressionStatement) stmt;</span>
+<span class="fc" id="L97">			Expression expr = exprStmt.getExpression();</span>
+			
+			// If it's an assignment, extract the right-hand side
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">			if (expr instanceof org.eclipse.jdt.core.dom.Assignment) {</span>
+<span class="fc" id="L101">				org.eclipse.jdt.core.dom.Assignment assignment = (org.eclipse.jdt.core.dom.Assignment) expr;</span>
+<span class="fc" id="L102">				return assignment.getRightHandSide();</span>
+			}
+			
+<span class="nc" id="L105">			return expr;</span>
+		}
+		
+<span class="nc" id="L108">		return null;</span>
+	}
+	
+	/**
+	 * Parses a statement pattern.
+	 * 
+	 * @param statementSnippet the statement snippet (e.g., {@code &quot;if ($cond) $then;&quot;})
+	 * @return the parsed Statement node, or {@code null} if parsing fails
+	 */
+	private Statement parseStatement(String statementSnippet) {
+		// Wrap the statement in a minimal method context
+<span class="nc" id="L119">		String source = &quot;class _Pattern { void _method() { &quot; + statementSnippet + &quot; } }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+		
+<span class="nc" id="L121">		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="nc" id="L122">		parser.setSource(source.toCharArray());</span>
+<span class="nc" id="L123">		parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
+<span class="nc" id="L124">		parser.setCompilerOptions(JavaCore.getOptions());</span>
+		
+<span class="nc" id="L126">		CompilationUnit cu = (CompilationUnit) parser.createAST(null);</span>
+		
+		// Navigate to the statement: CompilationUnit -&gt; TypeDeclaration -&gt; MethodDeclaration -&gt; Block -&gt; Statement
+<span class="nc bnc" id="L129" title="All 2 branches missed.">		if (cu.types().isEmpty()) {</span>
+<span class="nc" id="L130">			return null;</span>
+		}
+		
+<span class="nc" id="L133">		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);</span>
+<span class="nc bnc" id="L134" title="All 2 branches missed.">		if (typeDecl.getMethods().length == 0) {</span>
+<span class="nc" id="L135">			return null;</span>
+		}
+		
+<span class="nc" id="L138">		MethodDeclaration method = typeDecl.getMethods()[0];</span>
+<span class="nc bnc" id="L139" title="All 4 branches missed.">		if (method.getBody() == null || method.getBody().statements().isEmpty()) {</span>
+<span class="nc" id="L140">			return null;</span>
+		}
+		
+<span class="nc" id="L143">		return (Statement) method.getBody().statements().get(0);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

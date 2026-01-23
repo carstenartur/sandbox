@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ReferenceHolder.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.common</a> &gt; <span class="el_source">ReferenceHolder.java</span></div><h1>ReferenceHolder.java</h1><pre class="source lang-java linenums">package org.sandbox.jdt.internal.common;
+
+/*-
+ * #%L
+ * Sandbox common
+ * %%
+ * Copyright (C) 2024 hammer
+ * %%
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0.
+ * 
+ * This Source Code may also be made available under the following Secondary
+ * Licenses when the conditions for such availability set forth in the Eclipse
+ * Public License, v. 2.0 are satisfied: GNU General Public License, version 2
+ * with the GNU Classpath Exception which is
+ * available at https://www.gnu.org/software/classpath/license.html.
+ * 
+ * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+ * #L%
+ */
+
+
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * A thread-safe reference holder that extends ConcurrentHashMap for storing AST node references.
+ * This class is used by cleanup visitors to track and store references to AST nodes during traversal.
+ * 
+ * &lt;p&gt;This class does not allow null to be used as a key or value because it is derived from ConcurrentHashMap.&lt;/p&gt;
+ * 
+ * &lt;p&gt;&lt;strong&gt;Thread Safety:&lt;/strong&gt; This class is thread-safe due to its ConcurrentHashMap base.&lt;/p&gt;
+ * 
+ * @param &lt;V&gt; the type of keys maintained by this map
+ * @param &lt;T&gt; the type of mapped values
+ * 
+ * @author chammer
+ * @since 1.15
+ */
+<span class="fc" id="L43">public class ReferenceHolder&lt;V,T&gt; extends ConcurrentHashMap&lt;V,T&gt; implements HelperVisitorProvider&lt;V,T,ReferenceHolder&lt;V,T&gt;&gt; {</span>
+
+	/**
+	 * Serial version UID for serialization compatibility.
+	 */
+	private static final long serialVersionUID = 1L;
+	
+	/**
+	 * The associated helper visitor for processing AST nodes.
+	 */
+	HelperVisitor&lt;ReferenceHolder&lt;V,T&gt;,V,T&gt; hv;
+
+	/**
+	 * Gets the helper visitor associated with this reference holder.
+	 * 
+	 * @return the helper visitor, or null if not set
+	 */
+	@Override
+	public HelperVisitor&lt;ReferenceHolder&lt;V,T&gt;,V,T&gt; getHelperVisitor() {
+<span class="fc" id="L62">		return hv;</span>
+	}
+
+	/**
+	 * Sets the helper visitor for this reference holder.
+	 * The helper visitor is used to process AST nodes during traversal.
+	 * 
+	 * @param hv the helper visitor to associate with this holder
+	 */
+	@Override
+	public void setHelperVisitor(HelperVisitor&lt;ReferenceHolder&lt;V,T&gt;,V,T&gt; hv) {
+<span class="fc" id="L73">		this.hv=hv;</span>
+<span class="fc" id="L74">	}</span>
+
+	/**
+	 * Custom serialization method for writing this object to an ObjectOutputStream.
+	 * Uses default serialization behavior.
+	 * 
+	 * @param stream the object output stream
+	 * @throws IOException if an I/O error occurs
+	 */
+	@SuppressWarnings(&quot;static-method&quot;)
+	private void writeObject(ObjectOutputStream stream)
+			throws IOException {
+<span class="nc" id="L86">		stream.defaultWriteObject();</span>
+<span class="nc" id="L87">	}</span>
+
+	/**
+	 * Custom deserialization method for reading this object from an ObjectInputStream.
+	 * Uses default deserialization behavior.
+	 * 
+	 * @param stream the object input stream
+	 * @throws IOException if an I/O error occurs
+	 * @throws ClassNotFoundException if the class of a serialized object cannot be found
+	 */
+	@SuppressWarnings(&quot;static-method&quot;)
+	private void readObject(ObjectInputStream stream)
+			throws IOException, ClassNotFoundException {
+<span class="nc" id="L100">		stream.defaultReadObject();</span>
+<span class="nc" id="L101">	}</span>
+
+	/**
+	 * Returns the hash code value for this reference holder.
+	 * Delegates to the superclass implementation.
+	 * 
+	 * @return the hash code value
+	 */
+	@Override
+	public int hashCode() {
+<span class="nc" id="L111">		return super.hashCode();</span>
+	}
+
+	/**
+	 * Compares the specified object with this reference holder for equality.
+	 * Delegates to the superclass implementation.
+	 * 
+	 * @param o the object to be compared for equality
+	 * @return true if the specified object is equal to this reference holder
+	 */
+	@Override
+	public boolean equals(Object o) {
+<span class="nc" id="L123">		return super.equals(o);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

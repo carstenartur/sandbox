@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>VariableMapping.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_method_reuse</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper.lib</a> &gt; <span class="el_source">VariableMapping.java</span></div><h1>VariableMapping.java</h1><pre class="source lang-java linenums">package org.sandbox.jdt.internal.corext.fix.helper.lib;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.eclipse.jdt.core.dom.Expression;
+
+/**
+ * Represents a one-to-one mapping between variable names in the target code and
+ * variable names or expressions in the candidate code.
+ * &lt;p&gt;
+ * This helper is used by {@link CodeSequenceMatcher} (via
+ * {@code VariableMappingMatcher}) to normalize variable names when comparing
+ * AST subtrees. It maintains a bidirectional mapping (target → candidate and
+ * candidate → target) and enforces consistency: once a name pair is mapped,
+ * subsequent mappings for either name must match the original pair or the
+ * mapping is considered invalid.
+ * &lt;p&gt;
+ * This class also supports mapping variable names to complex expressions (not just
+ * simple names), which is useful for cases where a parameter is replaced by a
+ * method call or other expression.
+ */
+<span class="fc" id="L23">public class VariableMapping {</span>
+	// Maps from target variable name to candidate variable name
+<span class="fc" id="L25">	private final Map&lt;String, String&gt; targetToCandidate = new HashMap&lt;&gt;();</span>
+	// Maps from candidate variable name to target variable name (for reverse lookup)
+<span class="fc" id="L27">	private final Map&lt;String, String&gt; candidateToTarget = new HashMap&lt;&gt;();</span>
+	// Maps from target variable name to candidate expression (for complex expressions)
+<span class="fc" id="L29">	private final Map&lt;String, Expression&gt; targetToExpression = new HashMap&lt;&gt;();</span>
+	
+	/**
+	 * Add or verify a mapping between target and candidate variable names
+	 * 
+	 * @param targetName Variable name in target code
+	 * @param candidateName Variable name in candidate code
+	 * @return true if mapping is consistent, false if conflict
+	 */
+	public boolean addMapping(String targetName, String candidateName) {
+		// Check if we already have a mapping for this target name
+<span class="fc bfc" id="L40" title="All 2 branches covered.">		if (targetToCandidate.containsKey(targetName)) {</span>
+			// Verify consistency: same target name must always map to same candidate name
+<span class="fc" id="L42">			return targetToCandidate.get(targetName).equals(candidateName);</span>
+		}
+		
+		// Check if candidate name is already mapped to a different target name
+<span class="pc bpc" id="L46" title="1 of 2 branches missed.">		if (candidateToTarget.containsKey(candidateName)) {</span>
+			// Verify consistency: same candidate name must always map to same target name
+<span class="nc" id="L48">			return candidateToTarget.get(candidateName).equals(targetName);</span>
+		}
+		
+		// New mapping - add it
+<span class="fc" id="L52">		targetToCandidate.put(targetName, candidateName);</span>
+<span class="fc" id="L53">		candidateToTarget.put(candidateName, targetName);</span>
+<span class="fc" id="L54">		return true;</span>
+	}
+	
+	/**
+	 * Add a mapping from a target variable name to a candidate expression
+	 * Used when the candidate uses a complex expression (like a method call) 
+	 * where the target uses a simple variable
+	 * 
+	 * Note: This method does not perform bidirectional consistency checking like addMapping.
+	 * Callers are responsible for ensuring expression mappings don't conflict with existing
+	 * name mappings. If a simple name mapping already exists for the target name, it will
+	 * be overridden by the expression mapping.
+	 * 
+	 * @param targetName Variable name in target code
+	 * @param candidateExpr Expression in candidate code
+	 */
+	public void addExpressionMapping(String targetName, Expression candidateExpr) {
+<span class="fc" id="L71">		targetToExpression.put(targetName, candidateExpr);</span>
+<span class="fc" id="L72">	}</span>
+	
+	/**
+	 * Get the candidate name mapped to a target name
+	 */
+	public String getCandidateName(String targetName) {
+<span class="nc" id="L78">		return targetToCandidate.get(targetName);</span>
+	}
+	
+	/**
+	 * Get the candidate expression mapped to a target name
+	 */
+	public Expression getCandidateExpression(String targetName) {
+<span class="nc" id="L85">		return targetToExpression.get(targetName);</span>
+	}
+	
+	/**
+	 * Check if a target name has an expression mapping (not just a name mapping)
+	 */
+	public boolean hasExpressionMapping(String targetName) {
+<span class="fc" id="L92">		return targetToExpression.containsKey(targetName);</span>
+	}
+	
+	/**
+	 * Check if mapping is valid (at least one mapping exists)
+	 */
+	public boolean isValid() {
+<span class="pc bpc" id="L99" title="1 of 4 branches missed.">		return !targetToCandidate.isEmpty() || !targetToExpression.isEmpty();</span>
+	}
+	
+	/**
+	 * Get all target to candidate mappings
+	 */
+	public Map&lt;String, String&gt; getMappings() {
+<span class="fc" id="L106">		return new HashMap&lt;&gt;(targetToCandidate);</span>
+	}
+	
+	/**
+	 * Get all target to expression mappings
+	 */
+	public Map&lt;String, Expression&gt; getExpressionMappings() {
+<span class="fc" id="L113">		return new HashMap&lt;&gt;(targetToExpression);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

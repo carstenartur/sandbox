@@ -1,0 +1,614 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ReducePatternDetector.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_functional_converter</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">ReducePatternDetector.java</span></div><h1>ReducePatternDetector.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import java.util.List;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Assignment;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.PostfixExpression;
+import org.eclipse.jdt.core.dom.PrefixExpression;
+import org.eclipse.jdt.core.dom.QualifiedName;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.Statement;
+import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
+import org.sandbox.jdt.internal.corext.util.VariableResolver;
+
+/**
+ * Detects and handles REDUCE patterns in loop statements.
+ * 
+ * &lt;p&gt;This class is responsible for identifying various reduction patterns
+ * that can be converted to stream reduce operations:&lt;/p&gt;
+ * 
+ * &lt;ul&gt;
+ * &lt;li&gt;&lt;b&gt;INCREMENT:&lt;/b&gt; {@code i++}, {@code ++i}&lt;/li&gt;
+ * &lt;li&gt;&lt;b&gt;DECREMENT:&lt;/b&gt; {@code i--}, {@code --i}, {@code i -= 1}&lt;/li&gt;
+ * &lt;li&gt;&lt;b&gt;SUM:&lt;/b&gt; {@code sum += value}&lt;/li&gt;
+ * &lt;li&gt;&lt;b&gt;PRODUCT:&lt;/b&gt; {@code product *= value}&lt;/li&gt;
+ * &lt;li&gt;&lt;b&gt;STRING_CONCAT:&lt;/b&gt; {@code str += substring}&lt;/li&gt;
+ * &lt;li&gt;&lt;b&gt;MAX:&lt;/b&gt; {@code max = Math.max(max, value)}&lt;/li&gt;
+ * &lt;li&gt;&lt;b&gt;MIN:&lt;/b&gt; {@code min = Math.min(min, value)}&lt;/li&gt;
+ * &lt;/ul&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Usage Example:&lt;/b&gt;&lt;/p&gt;
+ * &lt;pre&gt;{@code
+ * ReducePatternDetector detector = new ReducePatternDetector(forLoop);
+ * ProspectiveOperation reduceOp = detector.detectReduceOperation(stmt);
+ * if (reduceOp != null) {
+ *     String accumulatorVar = detector.getAccumulatorVariable();
+ *     String accumulatorType = detector.getAccumulatorType();
+ *     // ... use in stream pipeline
+ * }
+ * }&lt;/pre&gt;
+ * 
+ * @see ProspectiveOperation
+ * @see ReducerType
+ * @see StreamPipelineBuilder
+ */
+public final class ReducePatternDetector {
+
+	private static final String MATH_CLASS_NAME = StreamConstants.MATH_CLASS_NAME;
+	private static final String MAX_METHOD_NAME = StreamConstants.MAX_METHOD_NAME;
+	private static final String MIN_METHOD_NAME = StreamConstants.MIN_METHOD_NAME;
+	private static final String JAVA_LANG_MATH = StreamConstants.JAVA_LANG_MATH;
+	private static final String JAVA_LANG_STRING = StreamConstants.JAVA_LANG_STRING;
+
+	private final ASTNode contextNode;
+<span class="fc" id="L75">	private String accumulatorVariable = null;</span>
+<span class="fc" id="L76">	private String accumulatorType = null;</span>
+
+	/**
+	 * Creates a new ReducePatternDetector.
+	 * 
+	 * @param contextNode the context node (typically the for-loop) for type resolution
+	 * @throws IllegalArgumentException if contextNode is null
+	 */
+<span class="fc" id="L84">	public ReducePatternDetector(ASTNode contextNode) {</span>
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">		if (contextNode == null) {</span>
+<span class="nc" id="L86">			throw new IllegalArgumentException(&quot;contextNode cannot be null&quot;);</span>
+		}
+<span class="fc" id="L88">		this.contextNode = contextNode;</span>
+<span class="fc" id="L89">	}</span>
+
+	/**
+	 * Returns the accumulator variable name detected during the last
+	 * {@link #detectReduceOperation(Statement)} call.
+	 * 
+	 * @return the accumulator variable name, or null if no reduce was detected
+	 */
+	public String getAccumulatorVariable() {
+<span class="fc" id="L98">		return accumulatorVariable;</span>
+	}
+
+	/**
+	 * Returns the accumulator type detected during the last
+	 * {@link #detectReduceOperation(Statement)} call.
+	 * 
+	 * @return the accumulator type name (e.g., &quot;int&quot;, &quot;double&quot;), or null if not detected
+	 */
+	public String getAccumulatorType() {
+<span class="nc" id="L108">		return accumulatorType;</span>
+	}
+
+	/**
+	 * Detects if a statement contains a REDUCE pattern.
+	 * 
+	 * &lt;p&gt;&lt;b&gt;Supported Patterns:&lt;/b&gt;&lt;/p&gt;
+	 * &lt;ul&gt;
+	 * &lt;li&gt;Postfix/Prefix increment: {@code i++}, {@code ++i}, {@code i--}, {@code --i}&lt;/li&gt;
+	 * &lt;li&gt;Compound assignments: {@code sum += x}, {@code product *= y}&lt;/li&gt;
+	 * &lt;li&gt;Math operations: {@code max = Math.max(max, x)}&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * 
+	 * &lt;p&gt;&lt;b&gt;Examples:&lt;/b&gt;&lt;/p&gt;
+	 * &lt;pre&gt;{@code
+	 * // INCREMENT pattern
+	 * count++;  // → .map(_item -&gt; 1).reduce(count, Integer::sum)
+	 * 
+	 * // SUM pattern
+	 * sum += value;  // → .map(value).reduce(sum, Integer::sum)
+	 * 
+	 * // MAX pattern
+	 * max = Math.max(max, num);  // → .map(num).reduce(max, Math::max)
+	 * }&lt;/pre&gt;
+	 * 
+	 * @param stmt the statement to check
+	 * @return a REDUCE operation if detected, null otherwise
+	 */
+	public ProspectiveOperation detectReduceOperation(Statement stmt) {
+<span class="fc bfc" id="L137" title="All 2 branches covered.">		if (!(stmt instanceof ExpressionStatement)) {</span>
+<span class="fc" id="L138">			return null;</span>
+		}
+
+<span class="fc" id="L141">		ExpressionStatement exprStmt = (ExpressionStatement) stmt;</span>
+<span class="fc" id="L142">		Expression expr = exprStmt.getExpression();</span>
+
+		// Check for postfix increment/decrement: i++, i--
+<span class="fc bfc" id="L145" title="All 2 branches covered.">		if (expr instanceof PostfixExpression) {</span>
+<span class="fc" id="L146">			return detectPostfixReducePattern((PostfixExpression) expr, stmt);</span>
+		}
+
+		// Check for prefix increment/decrement: ++i, --i
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">		if (expr instanceof PrefixExpression) {</span>
+<span class="nc" id="L151">			return detectPrefixReducePattern((PrefixExpression) expr, stmt);</span>
+		}
+
+		// Check for compound assignments: +=, -=, *=, etc.
+<span class="fc bfc" id="L155" title="All 2 branches covered.">		if (expr instanceof Assignment) {</span>
+<span class="fc" id="L156">			return detectAssignmentReducePattern((Assignment) expr, stmt);</span>
+		}
+
+<span class="fc" id="L159">		return null;</span>
+	}
+
+	/**
+	 * Detects postfix increment/decrement patterns: i++, i--
+	 */
+	private ProspectiveOperation detectPostfixReducePattern(PostfixExpression postfix, Statement stmt) {
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">		if (!(postfix.getOperand() instanceof SimpleName)) {</span>
+<span class="nc" id="L167">			return null;</span>
+		}
+
+<span class="fc" id="L170">		String varName = ((SimpleName) postfix.getOperand()).getIdentifier();</span>
+		ReducerType reducerType;
+
+<span class="pc bpc" id="L173" title="1 of 2 branches missed.">		if (postfix.getOperator() == PostfixExpression.Operator.INCREMENT) {</span>
+<span class="fc" id="L174">			reducerType = ReducerType.INCREMENT;</span>
+<span class="pc bnc" id="L175" title="All 2 branches missed.">		} else if (postfix.getOperator() == PostfixExpression.Operator.DECREMENT) {</span>
+<span class="nc" id="L176">			reducerType = ReducerType.DECREMENT;</span>
+<span class="nc" id="L177">		} else {</span>
+<span class="nc" id="L178">			return null;</span>
+		}
+
+<span class="fc" id="L181">		accumulatorVariable = varName;</span>
+<span class="fc" id="L182">		accumulatorType = VariableResolver.getVariableType(contextNode, varName);</span>
+<span class="fc" id="L183">		ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);</span>
+<span class="fc" id="L184">		op.setAccumulatorType(accumulatorType);</span>
+<span class="fc" id="L185">		return op;</span>
+	}
+
+	/**
+	 * Detects prefix increment/decrement patterns: ++i, --i
+	 */
+	private ProspectiveOperation detectPrefixReducePattern(PrefixExpression prefix, Statement stmt) {
+<span class="nc bnc" id="L192" title="All 2 branches missed.">		if (!(prefix.getOperand() instanceof SimpleName)) {</span>
+<span class="nc" id="L193">			return null;</span>
+		}
+
+<span class="nc" id="L196">		String varName = ((SimpleName) prefix.getOperand()).getIdentifier();</span>
+		ReducerType reducerType;
+
+<span class="nc bnc" id="L199" title="All 2 branches missed.">		if (prefix.getOperator() == PrefixExpression.Operator.INCREMENT) {</span>
+<span class="nc" id="L200">			reducerType = ReducerType.INCREMENT;</span>
+<span class="nc bnc" id="L201" title="All 2 branches missed.">		} else if (prefix.getOperator() == PrefixExpression.Operator.DECREMENT) {</span>
+<span class="nc" id="L202">			reducerType = ReducerType.DECREMENT;</span>
+<span class="nc" id="L203">		} else {</span>
+<span class="nc" id="L204">			return null;</span>
+		}
+
+<span class="nc" id="L207">		accumulatorVariable = varName;</span>
+<span class="nc" id="L208">		accumulatorType = VariableResolver.getVariableType(contextNode, varName);</span>
+<span class="nc" id="L209">		ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);</span>
+<span class="nc" id="L210">		op.setAccumulatorType(accumulatorType);</span>
+<span class="nc" id="L211">		return op;</span>
+	}
+
+	/**
+	 * Detects compound assignment patterns: +=, -=, *=, and Math.max/min patterns
+	 */
+	private ProspectiveOperation detectAssignmentReducePattern(Assignment assignment, Statement stmt) {
+<span class="pc bpc" id="L218" title="1 of 2 branches missed.">		if (!(assignment.getLeftHandSide() instanceof SimpleName)) {</span>
+<span class="nc" id="L219">			return null;</span>
+		}
+
+<span class="fc" id="L222">		String varName = ((SimpleName) assignment.getLeftHandSide()).getIdentifier();</span>
+
+		// Check for simple assignment operators first
+<span class="fc bfc" id="L225" title="All 2 branches covered.">		if (assignment.getOperator() != Assignment.Operator.ASSIGN) {</span>
+<span class="fc" id="L226">			return detectCompoundAssignmentPattern(assignment, stmt, varName);</span>
+		}
+
+		// Check for regular assignment with Math.max/Math.min pattern
+		// Pattern: max = Math.max(max, x) or min = Math.min(min, x)
+<span class="fc" id="L231">		Expression rhs = assignment.getRightHandSide();</span>
+<span class="fc" id="L232">		ReducerType reducerType = detectMathMaxMinPattern(varName, rhs);</span>
+<span class="fc bfc" id="L233" title="All 2 branches covered.">		if (reducerType != null) {</span>
+<span class="fc" id="L234">			accumulatorVariable = varName;</span>
+<span class="fc" id="L235">			accumulatorType = VariableResolver.getVariableType(contextNode, varName);</span>
+<span class="fc" id="L236">			ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);</span>
+<span class="fc" id="L237">			op.setAccumulatorType(accumulatorType);</span>
+<span class="fc" id="L238">			return op;</span>
+		}
+
+		// Check for regular assignment with infix expression pattern
+		// Pattern: result = result + item, product = product * value, etc.
+<span class="fc" id="L243">		ProspectiveOperation infixOp = detectInfixReducePattern(assignment, stmt, varName);</span>
+<span class="fc bfc" id="L244" title="All 2 branches covered.">		if (infixOp != null) {</span>
+<span class="fc" id="L245">			return infixOp;</span>
+		}
+
+<span class="fc" id="L248">		return null;</span>
+	}
+
+	/**
+	 * Detects compound assignment patterns: +=, -=, *=
+	 */
+	private ProspectiveOperation detectCompoundAssignmentPattern(Assignment assignment, Statement stmt, String varName) {
+		ReducerType reducerType;
+
+<span class="pc bpc" id="L257" title="1 of 2 branches missed.">		if (assignment.getOperator() == Assignment.Operator.PLUS_ASSIGN) {</span>
+			// Check if this is string concatenation
+<span class="fc" id="L259">			ITypeBinding varType = VariableResolver.getTypeBinding(contextNode, varName);</span>
+<span class="pc bpc" id="L260" title="2 of 4 branches missed.">			if (varType != null &amp;&amp; JAVA_LANG_STRING.equals(varType.getQualifiedName())) {</span>
+<span class="nc" id="L261">				reducerType = ReducerType.STRING_CONCAT;</span>
+<span class="nc" id="L262">			} else {</span>
+<span class="fc" id="L263">				reducerType = ReducerType.SUM;</span>
+			}
+<span class="pc bnc" id="L265" title="All 2 branches missed.">		} else if (assignment.getOperator() == Assignment.Operator.TIMES_ASSIGN) {</span>
+<span class="nc" id="L266">			reducerType = ReducerType.PRODUCT;</span>
+<span class="nc bnc" id="L267" title="All 2 branches missed.">		} else if (assignment.getOperator() == Assignment.Operator.MINUS_ASSIGN) {</span>
+<span class="nc" id="L268">			reducerType = ReducerType.DECREMENT;</span>
+<span class="nc" id="L269">		} else {</span>
+			// Other assignment operators not yet supported
+<span class="nc" id="L271">			return null;</span>
+		}
+
+<span class="fc" id="L274">		accumulatorVariable = varName;</span>
+<span class="fc" id="L275">		accumulatorType = VariableResolver.getVariableType(contextNode, varName);</span>
+
+<span class="fc" id="L277">		ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);</span>
+<span class="fc" id="L278">		op.setAccumulatorType(accumulatorType);</span>
+
+		// For STRING_CONCAT, check if the accumulator variable has @NotNull
+<span class="pc bpc" id="L281" title="1 of 2 branches missed.">		if (reducerType == ReducerType.STRING_CONCAT) {</span>
+<span class="nc" id="L282">			boolean isNullSafe = VariableResolver.hasNotNullAnnotation(contextNode, varName);</span>
+<span class="nc" id="L283">			op.setNullSafe(isNullSafe);</span>
+		}
+
+<span class="fc" id="L286">		return op;</span>
+	}
+
+	/**
+	 * Detects infix expression reduction patterns in regular assignments.
+	 * Patterns: result = result + item, product = product * value, etc.
+	 * 
+	 * &lt;p&gt;IMPORTANT: This method does NOT check if the accumulator variable is declared
+	 * inside the loop. External variable modification (variable declared outside and used
+	 * after the loop) should be rejected by the caller.&lt;/p&gt;
+	 * 
+	 * @param assignment the assignment to check
+	 * @param stmt       the statement containing the assignment
+	 * @param varName    the accumulator variable name
+	 * @return a REDUCE operation if pattern detected, null otherwise
+	 */
+	private ProspectiveOperation detectInfixReducePattern(Assignment assignment, Statement stmt, String varName) {
+<span class="fc" id="L303">		Expression rhs = assignment.getRightHandSide();</span>
+		
+		// Check if RHS is an infix expression
+<span class="fc bfc" id="L306" title="All 2 branches covered.">		if (!(rhs instanceof InfixExpression)) {</span>
+<span class="fc" id="L307">			return null;</span>
+		}
+		
+<span class="fc" id="L310">		InfixExpression infixExpr = (InfixExpression) rhs;</span>
+		
+		// Check if left operand is the accumulator variable
+<span class="fc" id="L313">		Expression leftOperand = infixExpr.getLeftOperand();</span>
+<span class="pc bpc" id="L314" title="1 of 2 branches missed.">		if (!(leftOperand instanceof SimpleName)) {</span>
+<span class="nc" id="L315">			return null;</span>
+		}
+		
+<span class="fc" id="L318">		SimpleName leftName = (SimpleName) leftOperand;</span>
+<span class="pc bpc" id="L319" title="1 of 2 branches missed.">		if (!varName.equals(leftName.getIdentifier())) {</span>
+<span class="nc" id="L320">			return null;</span>
+		}
+		
+		// Note: We intentionally do NOT check isExternalVariableModification here.
+		// REDUCE operations are specifically designed for external accumulator patterns
+		// like: String result = &quot;&quot;; for (s : items) result = result + s;
+		// The accumulator is expected to be declared outside the loop.
+		
+		// Determine reducer type based on operator
+		ReducerType reducerType;
+<span class="fc" id="L330">		InfixExpression.Operator operator = infixExpr.getOperator();</span>
+		
+<span class="pc bpc" id="L332" title="1 of 2 branches missed.">		if (operator == InfixExpression.Operator.PLUS) {</span>
+			// Check if this is string concatenation
+<span class="fc" id="L334">			ITypeBinding varType = VariableResolver.getTypeBinding(contextNode, varName);</span>
+<span class="pc bpc" id="L335" title="1 of 4 branches missed.">			if (varType != null &amp;&amp; JAVA_LANG_STRING.equals(varType.getQualifiedName())) {</span>
+<span class="fc" id="L336">				reducerType = ReducerType.STRING_CONCAT;</span>
+<span class="fc" id="L337">			} else {</span>
+<span class="fc" id="L338">				reducerType = ReducerType.SUM;</span>
+			}
+<span class="pc bnc" id="L340" title="All 2 branches missed.">		} else if (operator == InfixExpression.Operator.TIMES) {</span>
+<span class="nc" id="L341">			reducerType = ReducerType.PRODUCT;</span>
+<span class="nc bnc" id="L342" title="All 2 branches missed.">		} else if (operator == InfixExpression.Operator.MINUS) {</span>
+<span class="nc" id="L343">			reducerType = ReducerType.DECREMENT;</span>
+<span class="nc" id="L344">		} else {</span>
+			// Other operators not yet supported
+<span class="nc" id="L346">			return null;</span>
+		}
+		
+<span class="fc" id="L349">		accumulatorVariable = varName;</span>
+<span class="fc" id="L350">		accumulatorType = VariableResolver.getVariableType(contextNode, varName);</span>
+		
+<span class="fc" id="L352">		ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);</span>
+<span class="fc" id="L353">		op.setAccumulatorType(accumulatorType);</span>
+		
+		// For STRING_CONCAT, check if the accumulator variable has @NotNull
+<span class="fc bfc" id="L356" title="All 2 branches covered.">		if (reducerType == ReducerType.STRING_CONCAT) {</span>
+<span class="fc" id="L357">			boolean isNullSafe = VariableResolver.hasNotNullAnnotation(contextNode, varName);</span>
+<span class="fc" id="L358">			op.setNullSafe(isNullSafe);</span>
+		}
+		
+<span class="fc" id="L361">		return op;</span>
+	}
+
+	/**
+	 * Detects Math.max/Math.min patterns in an expression.
+	 * Patterns: max = Math.max(max, x) or min = Math.min(min, x)
+	 * 
+	 * @param varName the accumulator variable name
+	 * @param expr    the right-hand side expression to check
+	 * @return MAX or MIN if pattern detected, null otherwise
+	 */
+	ReducerType detectMathMaxMinPattern(String varName, Expression expr) {
+<span class="fc bfc" id="L373" title="All 2 branches covered.">		if (!(expr instanceof MethodInvocation)) {</span>
+<span class="fc" id="L374">			return null;</span>
+		}
+
+<span class="fc" id="L377">		MethodInvocation methodInv = (MethodInvocation) expr;</span>
+
+		// Get method name first
+<span class="fc" id="L380">		String methodName = methodInv.getName().getIdentifier();</span>
+<span class="fc bfc" id="L381" title="All 4 branches covered.">		if (!MAX_METHOD_NAME.equals(methodName) &amp;&amp; !MIN_METHOD_NAME.equals(methodName)) {</span>
+<span class="fc" id="L382">			return null;</span>
+		}
+
+		// Check if it's a Math.max or Math.min call
+		// Try binding resolution first (more robust)
+<span class="fc" id="L387">		IMethodBinding binding = methodInv.resolveMethodBinding();</span>
+<span class="pc bpc" id="L388" title="1 of 2 branches missed.">		if (binding != null) {</span>
+<span class="fc" id="L389">			ITypeBinding declaringClass = binding.getDeclaringClass();</span>
+<span class="pc bpc" id="L390" title="2 of 4 branches missed.">			if (declaringClass != null &amp;&amp; JAVA_LANG_MATH.equals(declaringClass.getQualifiedName())) {</span>
+				// Confirmed it's Math.max or Math.min via binding
+<span class="pc bpc" id="L392" title="1 of 2 branches missed.">				if (hasAccumulatorArgument(methodInv, varName)) {</span>
+<span class="fc bfc" id="L393" title="All 2 branches covered.">					return MAX_METHOD_NAME.equals(methodName) ? ReducerType.MAX</span>
+<span class="fc" id="L394">							: ReducerType.MIN;</span>
+				}
+			}
+		}
+
+		// Fallback: Check syntactically if binding resolution failed
+<span class="nc" id="L400">		Expression receiverExpr = methodInv.getExpression();</span>
+<span class="nc bnc" id="L401" title="All 2 branches missed.">		if (receiverExpr instanceof SimpleName) {</span>
+<span class="nc" id="L402">			SimpleName className = (SimpleName) receiverExpr;</span>
+<span class="nc bnc" id="L403" title="All 2 branches missed.">			if (MATH_CLASS_NAME.equals(className.getIdentifier())) {</span>
+<span class="nc bnc" id="L404" title="All 2 branches missed.">				if (hasAccumulatorArgument(methodInv, varName)) {</span>
+<span class="nc bnc" id="L405" title="All 2 branches missed.">					return MAX_METHOD_NAME.equals(methodName) ? ReducerType.MAX</span>
+<span class="nc" id="L406">							: ReducerType.MIN;</span>
+				}
+			}
+<span class="nc bnc" id="L409" title="All 2 branches missed.">		} else if (receiverExpr instanceof QualifiedName) {</span>
+			// Handle fully qualified: java.lang.Math.max()
+<span class="nc" id="L411">			QualifiedName qualName = (QualifiedName) receiverExpr;</span>
+<span class="nc bnc" id="L412" title="All 2 branches missed.">			if (MATH_CLASS_NAME.equals(qualName.getName().getIdentifier())) {</span>
+<span class="nc bnc" id="L413" title="All 2 branches missed.">				if (hasAccumulatorArgument(methodInv, varName)) {</span>
+<span class="nc bnc" id="L414" title="All 2 branches missed.">					return MAX_METHOD_NAME.equals(methodName) ? ReducerType.MAX</span>
+<span class="nc" id="L415">							: ReducerType.MIN;</span>
+				}
+			}
+		}
+
+<span class="nc" id="L420">		return null;</span>
+	}
+
+	/**
+	 * Checks if the method invocation has the accumulator variable as one of its arguments.
+	 */
+	private boolean hasAccumulatorArgument(MethodInvocation methodInv, String varName) {
+<span class="fc" id="L427">		List&lt;?&gt; args = methodInv.arguments();</span>
+<span class="pc bpc" id="L428" title="1 of 2 branches missed.">		if (args.size() != 2) {</span>
+<span class="nc" id="L429">			return false;</span>
+		}
+
+<span class="pc bpc" id="L432" title="1 of 2 branches missed.">		for (Object argObj : args) {</span>
+<span class="pc bpc" id="L433" title="1 of 2 branches missed.">			if (argObj instanceof SimpleName) {</span>
+<span class="fc" id="L434">				SimpleName argName = (SimpleName) argObj;</span>
+<span class="pc bpc" id="L435" title="1 of 2 branches missed.">				if (varName.equals(argName.getIdentifier())) {</span>
+<span class="fc" id="L436">					return true;</span>
+				}
+			}
+		}
+<span class="nc" id="L440">		return false;</span>
+	}
+
+	/**
+	 * Extracts the expression from a REDUCE operation's right-hand side.
+	 * For example, in &quot;i += foo(l)&quot;, extracts &quot;foo(l)&quot;.
+	 * For &quot;result = result + item&quot;, extracts &quot;item&quot;.
+	 * 
+	 * @param stmt the statement containing the reduce operation
+	 * @return the expression to be mapped, or null if none
+	 */
+	public Expression extractReduceExpression(Statement stmt) {
+<span class="pc bpc" id="L452" title="1 of 2 branches missed.">		if (!(stmt instanceof ExpressionStatement)) {</span>
+<span class="nc" id="L453">			return null;</span>
+		}
+
+<span class="fc" id="L456">		ExpressionStatement exprStmt = (ExpressionStatement) stmt;</span>
+<span class="fc" id="L457">		Expression expr = exprStmt.getExpression();</span>
+
+<span class="fc bfc" id="L459" title="All 2 branches covered.">		if (expr instanceof Assignment) {</span>
+<span class="fc" id="L460">			Assignment assignment = (Assignment) expr;</span>
+			// Return the right-hand side expression for compound assignments
+<span class="fc bfc" id="L462" title="All 2 branches covered.">			if (assignment.getOperator() != Assignment.Operator.ASSIGN) {</span>
+<span class="fc" id="L463">				return assignment.getRightHandSide();</span>
+			}
+			
+			// For regular assignment with infix expression (e.g., result = result + item)
+			// Extract the right operand of the infix expression
+<span class="fc" id="L468">			Expression rhs = assignment.getRightHandSide();</span>
+<span class="fc bfc" id="L469" title="All 2 branches covered.">			if (rhs instanceof InfixExpression) {</span>
+<span class="fc" id="L470">				InfixExpression infixExpr = (InfixExpression) rhs;</span>
+				// Return the right operand (the item being accumulated)
+<span class="fc" id="L472">				return infixExpr.getRightOperand();</span>
+			}
+		}
+
+<span class="fc" id="L476">		return null;</span>
+	}
+
+	/**
+	 * Extracts the non-accumulator argument from Math.max/min call.
+	 * For example, in &quot;max = Math.max(max, foo(l))&quot;, extracts &quot;foo(l)&quot;.
+	 * Returns null if the non-accumulator argument is just the loop variable (identity mapping).
+	 * 
+	 * @param stmt           the statement containing the Math.max/min operation
+	 * @param accumulatorVar the accumulator variable name
+	 * @param currentVarName the current variable name in the pipeline
+	 * @return the expression to be mapped, or null if it's an identity mapping
+	 */
+	public Expression extractMathMaxMinArgument(Statement stmt, String accumulatorVar, String currentVarName) {
+<span class="pc bpc" id="L490" title="1 of 2 branches missed.">		if (!(stmt instanceof ExpressionStatement)) {</span>
+<span class="nc" id="L491">			return null;</span>
+		}
+
+<span class="fc" id="L494">		ExpressionStatement exprStmt = (ExpressionStatement) stmt;</span>
+<span class="fc" id="L495">		Expression expr = exprStmt.getExpression();</span>
+
+<span class="fc bfc" id="L497" title="All 2 branches covered.">		if (!(expr instanceof Assignment)) {</span>
+<span class="fc" id="L498">			return null;</span>
+		}
+
+<span class="fc" id="L501">		Assignment assignment = (Assignment) expr;</span>
+<span class="fc bfc" id="L502" title="All 2 branches covered.">		if (assignment.getOperator() != Assignment.Operator.ASSIGN) {</span>
+<span class="fc" id="L503">			return null;</span>
+		}
+
+<span class="fc" id="L506">		Expression rhs = assignment.getRightHandSide();</span>
+<span class="fc bfc" id="L507" title="All 2 branches covered.">		if (!(rhs instanceof MethodInvocation)) {</span>
+<span class="fc" id="L508">			return null;</span>
+		}
+
+<span class="fc" id="L511">		MethodInvocation methodInv = (MethodInvocation) rhs;</span>
+<span class="fc" id="L512">		List&lt;?&gt; args = methodInv.arguments();</span>
+<span class="pc bpc" id="L513" title="1 of 2 branches missed.">		if (args.size() != 2) {</span>
+<span class="nc" id="L514">			return null;</span>
+		}
+
+		// Find the argument that is NOT the accumulator variable
+<span class="pc bpc" id="L518" title="1 of 2 branches missed.">		for (Object argObj : args) {</span>
+<span class="pc bpc" id="L519" title="1 of 2 branches missed.">			if (argObj instanceof Expression) {</span>
+<span class="fc" id="L520">				Expression arg = (Expression) argObj;</span>
+				// Skip if this argument is just the accumulator variable
+<span class="pc bpc" id="L522" title="1 of 2 branches missed.">				if (arg instanceof SimpleName) {</span>
+<span class="fc" id="L523">					SimpleName name = (SimpleName) arg;</span>
+<span class="fc bfc" id="L524" title="All 2 branches covered.">					if (accumulatorVar.equals(name.getIdentifier())) {</span>
+<span class="fc" id="L525">						continue; // This is the accumulator, skip it</span>
+					}
+					// Check if this is just the current loop/pipeline variable (identity mapping)
+<span class="pc bpc" id="L528" title="1 of 2 branches missed.">					if (currentVarName.equals(name.getIdentifier())) {</span>
+<span class="fc" id="L529">						return null; // Skip identity mapping</span>
+					}
+				}
+				// Return the non-accumulator argument
+<span class="nc" id="L533">				return arg;</span>
+			}
+		}
+
+<span class="nc" id="L537">		return null;</span>
+	}
+
+	/**
+	 * Adds a MAP operation before a REDUCE operation based on the reducer type.
+	 * 
+	 * &lt;p&gt;
+	 * The reducer type itself determines what MAP expression is needed:
+	 * &lt;ul&gt;
+	 * &lt;li&gt;&lt;b&gt;INCREMENT/DECREMENT:&lt;/b&gt; Maps to 1 (or 1.0 for double types)&lt;/li&gt;
+	 * &lt;li&gt;&lt;b&gt;SUM/PRODUCT/STRING_CONCAT:&lt;/b&gt; Uses the RHS expression&lt;/li&gt;
+	 * &lt;li&gt;&lt;b&gt;MAX/MIN:&lt;/b&gt; Uses the non-accumulator argument from Math.max/min&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * 
+	 * @param ops            the list to add the MAP operation to (must not be null)
+	 * @param reduceOp       the REDUCE operation (must not be null and must be a REDUCE type)
+	 * @param stmt           the statement containing the reduce operation (must not be null)
+	 * @param currentVarName the current variable name in the pipeline (must not be null)
+	 * @param ast            the AST for creating new nodes
+	 * @throws IllegalArgumentException if any parameter is null or reduceOp is not a REDUCE operation
+	 */
+	public void addMapBeforeReduce(List&lt;ProspectiveOperation&gt; ops, ProspectiveOperation reduceOp, Statement stmt,
+			String currentVarName, AST ast) {
+		// Defensive null checks
+<span class="pc bpc" id="L561" title="1 of 2 branches missed.">		if (ops == null) {</span>
+<span class="nc" id="L562">			throw new IllegalArgumentException(&quot;ops list cannot be null&quot;);</span>
+		}
+<span class="pc bpc" id="L564" title="1 of 2 branches missed.">		if (reduceOp == null) {</span>
+<span class="nc" id="L565">			throw new IllegalArgumentException(&quot;reduceOp cannot be null&quot;);</span>
+		}
+<span class="pc bpc" id="L567" title="1 of 2 branches missed.">		if (stmt == null) {</span>
+<span class="nc" id="L568">			throw new IllegalArgumentException(&quot;stmt cannot be null&quot;);</span>
+		}
+<span class="pc bpc" id="L570" title="1 of 2 branches missed.">		if (currentVarName == null) {</span>
+<span class="nc" id="L571">			throw new IllegalArgumentException(&quot;currentVarName cannot be null&quot;);</span>
+		}
+<span class="pc bpc" id="L573" title="1 of 2 branches missed.">		if (ast == null) {</span>
+<span class="nc" id="L574">			throw new IllegalArgumentException(&quot;ast cannot be null&quot;);</span>
+		}
+<span class="pc bpc" id="L576" title="1 of 2 branches missed.">		if (reduceOp.getOperationType() != OperationType.REDUCE) {</span>
+<span class="nc" id="L577">			throw new IllegalArgumentException(&quot;reduceOp must be a REDUCE operation&quot;);</span>
+		}
+
+<span class="fc" id="L580">		ReducerType reducerType = reduceOp.getReducerType();</span>
+<span class="pc bpc" id="L581" title="1 of 2 branches missed.">		if (reducerType == null) {</span>
+<span class="nc" id="L582">			throw new IllegalArgumentException(&quot;reduceOp must have a non-null reducerType for REDUCE operations&quot;);</span>
+		}
+
+		// Create context with all data needed for MAP expression creation
+<span class="fc" id="L586">		ReducerType.MapExpressionContext context = new ReducerType.MapExpressionContext(</span>
+<span class="fc" id="L587">				ast,</span>
+<span class="fc" id="L588">				accumulatorType,</span>
+<span class="fc" id="L589">				currentVarName,</span>
+<span class="fc" id="L590">				extractReduceExpression(stmt),</span>
+<span class="fc" id="L591">				extractMathMaxMinArgument(stmt, accumulatorVariable, currentVarName)</span>
+		);
+		
+		// Let the reducer type create the appropriate MAP expression
+<span class="fc" id="L595">		Expression mapExpression = reducerType.createMapExpression(context);</span>
+		
+<span class="fc bfc" id="L597" title="All 2 branches covered.">		if (mapExpression != null) {</span>
+			// Skip identity mapping for non-counting reducers
+<span class="fc bfc" id="L599" title="All 4 branches covered.">			if (!reducerType.isCounting() &amp;&amp; ExpressionHelper.isIdentityMapping(mapExpression, currentVarName)) {</span>
+<span class="fc" id="L600">				return;</span>
+			}
+			
+			// Determine the variable name for the MAP operation
+<span class="fc" id="L604">			String mapVarName = reducerType.getMapVariableName();</span>
+<span class="fc bfc" id="L605" title="All 2 branches covered.">			if (mapVarName == null) {</span>
+<span class="fc" id="L606">				mapVarName = currentVarName;</span>
+			}
+			
+<span class="fc" id="L609">			ProspectiveOperation mapOp = new ProspectiveOperation(mapExpression, OperationType.MAP, mapVarName);</span>
+<span class="fc" id="L610">			ops.add(mapOp);</span>
+		}
+<span class="fc" id="L612">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

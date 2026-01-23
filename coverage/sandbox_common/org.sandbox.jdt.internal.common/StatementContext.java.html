@@ -1,0 +1,335 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>StatementContext.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.common</a> &gt; <span class="el_source">StatementContext.java</span></div><h1>StatementContext.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.common;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.Statement;
+
+/**
+ * Provides contextual information about a statement's position within a block.
+ * 
+ * &lt;p&gt;This class helps eliminate repetitive index tracking and position checking
+ * in statement processing loops. Instead of manually tracking if a statement is
+ * first, last, or at a specific position, this context object provides that
+ * information directly.&lt;/p&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Example - Before:&lt;/b&gt;&lt;/p&gt;
+ * &lt;pre&gt;{@code
+ * List&lt;Statement&gt; statements = block.statements();
+ * for (int i = 0; i &lt; statements.size(); i++) {
+ *     Statement stmt = statements.get(i);
+ *     boolean isLast = (i == statements.size() - 1);
+ *     boolean isFirst = (i == 0);
+ *     
+ *     if (stmt instanceof IfStatement &amp;&amp; !isLast) {
+ *         // handle non-last IF
+ *     } else if (stmt instanceof IfStatement &amp;&amp; isLast) {
+ *         // handle last IF
+ *     }
+ * }
+ * }&lt;/pre&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Example - After:&lt;/b&gt;&lt;/p&gt;
+ * &lt;pre&gt;{@code
+ * StatementContext.forEachInBlock(block, (stmt, ctx) -&gt; {
+ *     NodeMatcher.on(stmt)
+ *         .ifIfStatementMatching(
+ *             ifStmt -&gt; !ctx.isLast(),
+ *             ifStmt -&gt; handleNonLastIf(ifStmt, ctx)
+ *         )
+ *         .ifIfStatementMatching(
+ *             ifStmt -&gt; ctx.isLast(),
+ *             ifStmt -&gt; handleLastIf(ifStmt, ctx)
+ *         );
+ * });
+ * }&lt;/pre&gt;
+ * 
+ * @see NodeMatcher
+ */
+public final class StatementContext {
+
+	private final Statement statement;
+	private final int index;
+	private final int totalCount;
+	private final List&lt;Statement&gt; allStatements;
+
+<span class="nc" id="L74">	private StatementContext(Statement statement, int index, List&lt;Statement&gt; allStatements) {</span>
+<span class="nc" id="L75">		this.statement = statement;</span>
+<span class="nc" id="L76">		this.index = index;</span>
+<span class="nc" id="L77">		this.totalCount = allStatements.size();</span>
+<span class="nc" id="L78">		this.allStatements = allStatements;</span>
+<span class="nc" id="L79">	}</span>
+
+	/**
+	 * Creates a StatementContext for a single statement (not part of a list).
+	 */
+	public static StatementContext forSingle(Statement statement) {
+<span class="nc" id="L85">		return new StatementContext(statement, 0, List.of(statement));</span>
+	}
+
+	/**
+	 * Creates a StatementContext for a statement at a specific position in a list.
+	 */
+	public static StatementContext forStatement(Statement statement, int index, List&lt;Statement&gt; allStatements) {
+<span class="nc" id="L92">		return new StatementContext(statement, index, allStatements);</span>
+	}
+
+	/**
+	 * Processes each statement in a block with its context.
+	 * 
+	 * @param block the block containing statements
+	 * @param consumer the consumer to process each statement with its context
+	 */
+	public static void forEachInBlock(Block block, BiConsumer&lt;Statement, StatementContext&gt; consumer) {
+		@SuppressWarnings(&quot;unchecked&quot;)
+<span class="nc" id="L103">		List&lt;Statement&gt; statements = block.statements();</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">		for (int i = 0; i &lt; statements.size(); i++) {</span>
+<span class="nc" id="L105">			Statement stmt = statements.get(i);</span>
+<span class="nc" id="L106">			StatementContext ctx = new StatementContext(stmt, i, statements);</span>
+<span class="nc" id="L107">			consumer.accept(stmt, ctx);</span>
+		}
+<span class="nc" id="L109">	}</span>
+
+	/**
+	 * Processes each statement in a block with its context, allowing early termination.
+	 * 
+	 * @param &lt;R&gt; the result type
+	 * @param block the block containing statements
+	 * @param processor the function to process each statement; return non-empty to stop
+	 * @return the first non-empty result, or empty if all statements were processed
+	 */
+	public static &lt;R&gt; Optional&lt;R&gt; processBlock(Block block, BiFunction&lt;Statement, StatementContext, Optional&lt;R&gt;&gt; processor) {
+		@SuppressWarnings(&quot;unchecked&quot;)
+<span class="nc" id="L121">		List&lt;Statement&gt; statements = block.statements();</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">		for (int i = 0; i &lt; statements.size(); i++) {</span>
+<span class="nc" id="L123">			Statement stmt = statements.get(i);</span>
+<span class="nc" id="L124">			StatementContext ctx = new StatementContext(stmt, i, statements);</span>
+<span class="nc" id="L125">			Optional&lt;R&gt; result = processor.apply(stmt, ctx);</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">			if (result.isPresent()) {</span>
+<span class="nc" id="L127">				return result;</span>
+			}
+		}
+<span class="nc" id="L130">		return Optional.empty();</span>
+	}
+
+	// ========== Position Queries ==========
+
+	/**
+	 * Returns the current statement.
+	 */
+	public Statement getStatement() {
+<span class="nc" id="L139">		return statement;</span>
+	}
+
+	/**
+	 * Returns the index of the current statement.
+	 */
+	public int getIndex() {
+<span class="nc" id="L146">		return index;</span>
+	}
+
+	/**
+	 * Returns the total number of statements.
+	 */
+	public int getTotalCount() {
+<span class="nc" id="L153">		return totalCount;</span>
+	}
+
+	/**
+	 * Returns true if this is the first statement.
+	 */
+	public boolean isFirst() {
+<span class="nc bnc" id="L160" title="All 2 branches missed.">		return index == 0;</span>
+	}
+
+	/**
+	 * Returns true if this is the last statement.
+	 */
+	public boolean isLast() {
+<span class="nc bnc" id="L167" title="All 2 branches missed.">		return index == totalCount - 1;</span>
+	}
+
+	/**
+	 * Returns true if this is the only statement.
+	 */
+	public boolean isOnly() {
+<span class="nc bnc" id="L174" title="All 2 branches missed.">		return totalCount == 1;</span>
+	}
+
+	/**
+	 * Returns true if this is neither first nor last.
+	 */
+	public boolean isMiddle() {
+<span class="nc bnc" id="L181" title="All 4 branches missed.">		return !isFirst() &amp;&amp; !isLast();</span>
+	}
+
+	/**
+	 * Returns the number of statements remaining after this one.
+	 */
+	public int getRemainingCount() {
+<span class="nc" id="L188">		return totalCount - index - 1;</span>
+	}
+
+	/**
+	 * Returns true if there are statements after this one.
+	 */
+	public boolean hasNext() {
+<span class="nc bnc" id="L195" title="All 2 branches missed.">		return index &lt; totalCount - 1;</span>
+	}
+
+	/**
+	 * Returns true if there are statements before this one.
+	 */
+	public boolean hasPrevious() {
+<span class="nc bnc" id="L202" title="All 2 branches missed.">		return index &gt; 0;</span>
+	}
+
+	// ========== Navigation ==========
+
+	/**
+	 * Returns the next statement if available.
+	 */
+	public Optional&lt;Statement&gt; getNextStatement() {
+<span class="nc bnc" id="L211" title="All 2 branches missed.">		if (hasNext()) {</span>
+<span class="nc" id="L212">			return Optional.of(allStatements.get(index + 1));</span>
+		}
+<span class="nc" id="L214">		return Optional.empty();</span>
+	}
+
+	/**
+	 * Returns the previous statement if available.
+	 */
+	public Optional&lt;Statement&gt; getPreviousStatement() {
+<span class="nc bnc" id="L221" title="All 2 branches missed.">		if (hasPrevious()) {</span>
+<span class="nc" id="L222">			return Optional.of(allStatements.get(index - 1));</span>
+		}
+<span class="nc" id="L224">		return Optional.empty();</span>
+	}
+
+	/**
+	 * Returns the statement at the specified offset from the current position.
+	 * 
+	 * @param offset positive for forward, negative for backward
+	 * @return the statement at the offset, or empty if out of bounds
+	 */
+	public Optional&lt;Statement&gt; getStatementAt(int offset) {
+<span class="nc" id="L234">		int targetIndex = index + offset;</span>
+<span class="nc bnc" id="L235" title="All 4 branches missed.">		if (targetIndex &gt;= 0 &amp;&amp; targetIndex &lt; totalCount) {</span>
+<span class="nc" id="L236">			return Optional.of(allStatements.get(targetIndex));</span>
+		}
+<span class="nc" id="L238">		return Optional.empty();</span>
+	}
+
+	/**
+	 * Returns all statements from the current position to the end (exclusive of current).
+	 */
+	public List&lt;Statement&gt; getRemainingStatements() {
+<span class="nc bnc" id="L245" title="All 2 branches missed.">		if (hasNext()) {</span>
+<span class="nc" id="L246">			return allStatements.subList(index + 1, totalCount);</span>
+		}
+<span class="nc" id="L248">		return List.of();</span>
+	}
+
+	/**
+	 * Returns all statements from the start to the current position (exclusive of current).
+	 */
+	public List&lt;Statement&gt; getPrecedingStatements() {
+<span class="nc bnc" id="L255" title="All 2 branches missed.">		if (hasPrevious()) {</span>
+<span class="nc" id="L256">			return allStatements.subList(0, index);</span>
+		}
+<span class="nc" id="L258">		return List.of();</span>
+	}
+
+	// ========== Conditional Helpers ==========
+
+	/**
+	 * Executes the consumer only if this is the last statement.
+	 */
+	public StatementContext ifLast(Consumer&lt;Statement&gt; consumer) {
+<span class="nc bnc" id="L267" title="All 2 branches missed.">		if (isLast()) {</span>
+<span class="nc" id="L268">			consumer.accept(statement);</span>
+		}
+<span class="nc" id="L270">		return this;</span>
+	}
+
+	/**
+	 * Executes the consumer only if this is not the last statement.
+	 */
+	public StatementContext ifNotLast(Consumer&lt;Statement&gt; consumer) {
+<span class="nc bnc" id="L277" title="All 2 branches missed.">		if (!isLast()) {</span>
+<span class="nc" id="L278">			consumer.accept(statement);</span>
+		}
+<span class="nc" id="L280">		return this;</span>
+	}
+
+	/**
+	 * Executes the consumer only if this is the first statement.
+	 */
+	public StatementContext ifFirst(Consumer&lt;Statement&gt; consumer) {
+<span class="nc bnc" id="L287" title="All 2 branches missed.">		if (isFirst()) {</span>
+<span class="nc" id="L288">			consumer.accept(statement);</span>
+		}
+<span class="nc" id="L290">		return this;</span>
+	}
+
+	/**
+	 * Executes the consumer only if this is the only statement.
+	 */
+	public StatementContext ifOnly(Consumer&lt;Statement&gt; consumer) {
+<span class="nc bnc" id="L297" title="All 2 branches missed.">		if (isOnly()) {</span>
+<span class="nc" id="L298">			consumer.accept(statement);</span>
+		}
+<span class="nc" id="L300">		return this;</span>
+	}
+
+	/**
+	 * Creates a NodeMatcher for the current statement.
+	 */
+	public NodeMatcher&lt;Statement&gt; matcher() {
+<span class="nc" id="L307">		return NodeMatcher.on(statement);</span>
+	}
+
+	/**
+	 * Checks if the next statement matches the given predicate.
+	 */
+	public boolean nextMatches(Predicate&lt;Statement&gt; predicate) {
+<span class="nc" id="L314">		return getNextStatement().filter(predicate).isPresent();</span>
+	}
+
+	/**
+	 * Checks if the next statement is of the given type.
+	 */
+	public &lt;T extends Statement&gt; boolean nextIs(Class&lt;T&gt; type) {
+<span class="nc" id="L321">		return getNextStatement().filter(type::isInstance).isPresent();</span>
+	}
+
+	/**
+	 * Checks if the next statement is of the given type and matches the predicate.
+	 */
+	public &lt;T extends Statement&gt; boolean nextIs(Class&lt;T&gt; type, Predicate&lt;T&gt; predicate) {
+<span class="nc" id="L328">		return getNextStatement()</span>
+<span class="nc" id="L329">				.filter(type::isInstance)</span>
+<span class="nc" id="L330">				.map(type::cast)</span>
+<span class="nc" id="L331">				.filter(predicate)</span>
+<span class="nc" id="L332">				.isPresent();</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

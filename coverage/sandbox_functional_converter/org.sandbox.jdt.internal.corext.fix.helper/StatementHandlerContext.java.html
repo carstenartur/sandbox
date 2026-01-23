@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>StatementHandlerContext.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_functional_converter</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">StatementHandlerContext.java</span></div><h1>StatementHandlerContext.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+/**
+ * Context object holding dependencies needed by {@link StatementHandlerType} handlers.
+ * 
+ * &lt;p&gt;This context is separate from {@link StatementParsingContext} because it contains
+ * dependencies that are shared across all statements being parsed, while
+ * {@code StatementParsingContext} contains statement-specific information.&lt;/p&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Contained Dependencies:&lt;/b&gt;&lt;/p&gt;
+ * &lt;ul&gt;
+ * &lt;li&gt;{@link LoopBodyParser} - For recursive parsing of nested statements&lt;/li&gt;
+ * &lt;li&gt;{@link SideEffectChecker} - For checking if statements have safe side effects&lt;/li&gt;
+ * &lt;/ul&gt;
+ * 
+ * @see StatementHandlerType
+ * @see StatementParsingContext
+ */
+public final class StatementHandlerContext {
+
+	private final LoopBodyParser parser;
+	private final SideEffectChecker sideEffectChecker;
+
+	/**
+	 * Creates a new StatementHandlerContext.
+	 * 
+	 * @param parser           the loop body parser for recursive parsing
+	 * @param sideEffectChecker the side effect checker
+	 */
+<span class="fc" id="L43">	public StatementHandlerContext(LoopBodyParser parser, SideEffectChecker sideEffectChecker) {</span>
+<span class="fc" id="L44">		this.parser = parser;</span>
+<span class="fc" id="L45">		this.sideEffectChecker = sideEffectChecker;</span>
+<span class="fc" id="L46">	}</span>
+
+	/**
+	 * Returns the loop body parser for recursive parsing of nested statements.
+	 * 
+	 * @return the parser
+	 */
+	public LoopBodyParser getParser() {
+<span class="fc" id="L54">		return parser;</span>
+	}
+
+	/**
+	 * Returns the side effect checker.
+	 * 
+	 * @return the side effect checker
+	 */
+	public SideEffectChecker getSideEffectChecker() {
+<span class="fc" id="L63">		return sideEffectChecker;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

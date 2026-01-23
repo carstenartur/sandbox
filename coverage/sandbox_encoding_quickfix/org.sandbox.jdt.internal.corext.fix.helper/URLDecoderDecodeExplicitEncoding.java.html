@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>URLDecoderDecodeExplicitEncoding.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_encoding_quickfix</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">URLDecoderDecodeExplicitEncoding.java</span></div><h1>URLDecoderDecodeExplicitEncoding.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2021 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import static org.sandbox.jdt.internal.common.LibStandardNames.METHOD_DECODE;
+
+import java.net.URLDecoder;
+import java.util.List;
+import java.util.Set;
+
+import org.eclipse.text.edits.TextEditGroup;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+
+import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
+
+/**
+ * Java 10
+ *
+ * Find: java.net.URLDecoder.decode(&quot;asdf&quot;,&quot;UTF-8&quot;)
+ *
+ * Rewrite: java.net.URLDecoder.decode(&quot;asdf&quot;,StandardCharsets.UTF_8)
+ *
+ * Find: java.net.URLDecoder.decode(&quot;asdf&quot;) Without the parameter the default is the file.encoding
+ * system property so Charset.defaultCharset() URLDecoder.decode(&quot;asdf&quot;) is (nearly) the same as
+ * URLDecoder.decode(&quot;asdf&quot;,Charset.defaultCharset()) But it is not really better (other than that
+ * you can see that it is depending on the default charset)
+ *
+ * KEEP
+ *
+ * Rewrite: java.net.URLDecoder.decode(&quot;asdf&quot;,Charset.defaultCharset())
+ *
+ * USE_UTF8
+ *
+ * Rewrite: java.net.URLDecoder.decode(&quot;asdf&quot;,StandardCharsets.UTF_8) This changes how the code
+ * works but it might be the better choice if you want to get rid of depending on environment
+ * settings
+ */
+<span class="fc" id="L64">public class URLDecoderDecodeExplicitEncoding extends AbstractExplicitEncoding&lt;MethodInvocation&gt; {</span>
+
+	@Override
+	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesprocessed, ChangeBehavior cb) {
+<span class="fc bfc" id="L68" title="All 2 branches covered.">		if (!JavaModelUtil.is10OrHigher(compilationUnit.getJavaElement().getJavaProject())) {</span>
+			/**
+			 * For Java 9 and older just do nothing
+			 */
+<span class="fc" id="L72">			return;</span>
+		}
+<span class="fc" id="L74">		ReferenceHolder&lt;ASTNode, Object&gt; datah= new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L75">		HelperVisitor.callMethodInvocationVisitor(URLDecoder.class, METHOD_DECODE, compilationUnit, datah, nodesprocessed,</span>
+<span class="fc" id="L76">				(visited, holder) -&gt; processFoundNode(fixcore, operations, cb, visited, holder));</span>
+<span class="fc" id="L77">	}</span>
+
+	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore,
+			Set&lt;CompilationUnitRewriteOperation&gt; operations, ChangeBehavior cb,
+			MethodInvocation visited, ReferenceHolder&lt;ASTNode, Object&gt; holder) {
+<span class="fc" id="L82">		List&lt;ASTNode&gt; arguments= visited.arguments();</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">		if (ASTNodes.usesGivenSignature(visited, URLDecoder.class.getCanonicalName(), METHOD_DECODE, String.class.getCanonicalName(), String.class.getCanonicalName())) {</span>
+<span class="fc" id="L84">			ASTNode encodingArg= arguments.get(1);</span>
+
+<span class="fc" id="L86">			String encodingValue= null;</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">			if (encodingArg instanceof StringLiteral) {</span>
+<span class="fc" id="L88">				encodingValue= ((StringLiteral) encodingArg).getLiteralValue().toUpperCase(java.util.Locale.ROOT);</span>
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">			} else if (encodingArg instanceof SimpleName) {</span>
+<span class="fc" id="L90">				encodingValue= findVariableValue((SimpleName) encodingArg, visited);</span>
+			}
+
+<span class="fc bfc" id="L93" title="All 4 branches covered.">			if (encodingValue != null &amp;&amp; ENCODINGS.contains(encodingValue)) {</span>
+<span class="fc" id="L94">				NodeData nd= new NodeData(true, encodingArg, ENCODING_MAP.get(encodingValue));</span>
+<span class="fc" id="L95">				holder.put(visited, nd);</span>
+<span class="fc" id="L96">				operations.add(fixcore.rewrite(visited, cb, holder));</span>
+<span class="fc" id="L97">				return false;</span>
+			}
+		}
+<span class="fc bfc" id="L100" title="All 2 branches covered.">		if (ASTNodes.usesGivenSignature(visited, URLDecoder.class.getCanonicalName(), METHOD_DECODE, String.class.getCanonicalName())) {</span>
+			String encoding;
+<span class="pc bpc" id="L102" title="1 of 4 branches missed.">			switch (cb) {</span>
+				case KEEP_BEHAVIOR:
+<span class="fc" id="L104">					encoding= null;</span>
+<span class="fc" id="L105">					break;</span>
+				case ENFORCE_UTF8:
+<span class="fc" id="L107">					encoding= &quot;UTF_8&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L108">					break;</span>
+				case ENFORCE_UTF8_AGGREGATE:
+<span class="fc" id="L110">					encoding= &quot;UTF_8&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L111">					break;</span>
+				default:
+<span class="nc" id="L113">					encoding= null;</span>
+					break;
+			}
+<span class="fc" id="L116">			NodeData nd= new NodeData(false, visited, encoding);</span>
+<span class="fc" id="L117">			holder.put(visited, nd);</span>
+<span class="fc" id="L118">			operations.add(fixcore.rewrite(visited, cb, holder));</span>
+<span class="fc" id="L119">			return false;</span>
+		}
+<span class="fc" id="L121">		return false;</span>
+	}
+
+	@Override
+	public void rewrite(UseExplicitEncodingFixCore upp, final MethodInvocation visited, final CompilationUnitRewrite cuRewrite,
+			TextEditGroup group, ChangeBehavior cb, ReferenceHolder&lt;ASTNode, Object&gt; data) {
+<span class="fc" id="L127">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L128">		AST ast= cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L129">		ImportRewrite importRewriter= cuRewrite.getImportRewrite();</span>
+<span class="fc" id="L130">		NodeData nodedata= (NodeData) data.get(visited);</span>
+<span class="fc" id="L131">		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding(),getCharsetConstants());</span>
+		/**
+		 * Add Charset.defaultCharset() or StandardCharsets.UTF_8 as second (last) parameter
+		 */
+<span class="fc" id="L135">		ListRewrite listRewrite= rewrite.getListRewrite(visited, MethodInvocation.ARGUMENTS_PROPERTY);</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">		if (nodedata.replace()) {</span>
+<span class="fc" id="L137">			listRewrite.replace(nodedata.visited(), callToCharsetDefaultCharset, group);</span>
+<span class="fc" id="L138">		} else {</span>
+<span class="fc" id="L139">			listRewrite.insertLast(callToCharsetDefaultCharset, group);</span>
+		}
+<span class="fc" id="L141">		removeUnsupportedEncodingException(visited, group, rewrite, importRewriter);</span>
+<span class="fc" id="L142">	}</span>
+
+	@Override
+	public String getPreview(boolean afterRefactoring, ChangeBehavior cb) {
+<span class="nc bnc" id="L146" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L147">			return &quot;java.net.URLDecoder.decode(\&quot;asdf\&quot;, StandardCharsets.UTF_8);\n&quot;; //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L149">		return &quot;java.net.URLDecoder.decode(\&quot;asdf\&quot;, \&quot;UTF-8\&quot;);\n&quot;; //$NON-NLS-1$</span>
+	}
+
+	@Override
+	public String toString() {
+<span class="fc" id="L154">		return &quot;URLDecoder.decode()&quot;; //$NON-NLS-1$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,549 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>StreamPipelineBuilder.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_functional_converter</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">StreamPipelineBuilder.java</span></div><h1>StreamPipelineBuilder.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.EnhancedForStatement;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
+
+/**
+ * Builder class for constructing stream pipelines from enhanced for-loops.
+ * 
+ * &lt;p&gt;
+ * This class analyzes the body of an enhanced for-loop and determines if it can
+ * be converted into a stream pipeline. It handles various patterns including:
+ * &lt;ul&gt;
+ * &lt;li&gt;Simple forEach operations&lt;/li&gt;
+ * &lt;li&gt;MAP operations (variable declarations with initializers)&lt;/li&gt;
+ * &lt;li&gt;FILTER operations (IF statements)&lt;/li&gt;
+ * &lt;li&gt;REDUCE operations (accumulator patterns including SUM, PRODUCT,
+ * INCREMENT, MAX, MIN)&lt;/li&gt;
+ * &lt;li&gt;ANYMATCH/NONEMATCH/ALLMATCH operations (early returns)&lt;/li&gt;
+ * &lt;/ul&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Architecture Overview:&lt;/b&gt;&lt;/p&gt;
+ * &lt;p&gt;The conversion process involves three phases:&lt;/p&gt;
+ * 
+ * &lt;ol&gt;
+ * &lt;li&gt;&lt;b&gt;Analysis Phase&lt;/b&gt; ({@link #analyze()}):
+ *     &lt;ul&gt;
+ *     &lt;li&gt;Validates preconditions via {@link PreconditionsChecker}&lt;/li&gt;
+ *     &lt;li&gt;Parses loop body into {@link ProspectiveOperation}s&lt;/li&gt;
+ *     &lt;li&gt;Validates variable scoping&lt;/li&gt;
+ *     &lt;li&gt;Returns true if conversion is possible&lt;/li&gt;
+ *     &lt;/ul&gt;
+ * &lt;/li&gt;
+ * &lt;li&gt;&lt;b&gt;Construction Phase&lt;/b&gt; ({@link #buildPipeline()}):
+ *     &lt;ul&gt;
+ *     &lt;li&gt;Determines if .stream() prefix is needed&lt;/li&gt;
+ *     &lt;li&gt;Chains operations into MethodInvocation&lt;/li&gt;
+ *     &lt;li&gt;Generates lambda parameters and arguments&lt;/li&gt;
+ *     &lt;li&gt;Returns the complete pipeline expression&lt;/li&gt;
+ *     &lt;/ul&gt;
+ * &lt;/li&gt;
+ * &lt;li&gt;&lt;b&gt;Wrapping Phase&lt;/b&gt; ({@link #wrapPipeline(MethodInvocation)}):
+ *     &lt;ul&gt;
+ *     &lt;li&gt;Wraps in appropriate Statement type&lt;/li&gt;
+ *     &lt;li&gt;Handles reducers (assignment to accumulator)&lt;/li&gt;
+ *     &lt;li&gt;Handles anyMatch/noneMatch/allMatch (IF with early return)&lt;/li&gt;
+ *     &lt;li&gt;Returns the final Statement to replace the for-loop&lt;/li&gt;
+ *     &lt;/ul&gt;
+ * &lt;/li&gt;
+ * &lt;/ol&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Supported Patterns:&lt;/b&gt;&lt;/p&gt;
+ * &lt;ul&gt;
+ * &lt;li&gt;&lt;b&gt;FOREACH:&lt;/b&gt; {@code for (x : xs) { action(x); }} → {@code xs.forEach(x -&gt; action(x))}&lt;/li&gt;
+ * &lt;li&gt;&lt;b&gt;MAP:&lt;/b&gt; {@code for (x : xs) { T y = f(x); ... }} → {@code xs.stream().map(x -&gt; f(x))...}&lt;/li&gt;
+ * &lt;li&gt;&lt;b&gt;FILTER:&lt;/b&gt; {@code for (x : xs) { if (p(x)) { ... } }} → {@code xs.stream().filter(x -&gt; p(x))...}&lt;/li&gt;
+ * &lt;li&gt;&lt;b&gt;REDUCE:&lt;/b&gt; {@code for (x : xs) { sum += x; }} → {@code sum = xs.stream().reduce(sum, Integer::sum)}&lt;/li&gt;
+ * &lt;li&gt;&lt;b&gt;ANYMATCH:&lt;/b&gt; {@code for (x : xs) { if (p(x)) return true; } return false;} → {@code if (xs.stream().anyMatch(x -&gt; p(x))) return true;}&lt;/li&gt;
+ * &lt;/ul&gt;
+ * 
+ * &lt;p&gt;
+ * &lt;b&gt;Supported Reduction Patterns:&lt;/b&gt;
+ * &lt;ul&gt;
+ * &lt;li&gt;INCREMENT: {@code i++}, {@code ++i}&lt;/li&gt;
+ * &lt;li&gt;DECREMENT: {@code i--}, {@code --i}, {@code i -= 1}&lt;/li&gt;
+ * &lt;li&gt;SUM: {@code sum += value}&lt;/li&gt;
+ * &lt;li&gt;PRODUCT: {@code product *= value}&lt;/li&gt;
+ * &lt;li&gt;STRING_CONCAT: {@code str += substring}&lt;/li&gt;
+ * &lt;li&gt;MAX: {@code max = Math.max(max, value)}&lt;/li&gt;
+ * &lt;li&gt;MIN: {@code min = Math.min(min, value)}&lt;/li&gt;
+ * &lt;li&gt;CUSTOM_AGGREGATE: Custom aggregation patterns&lt;/li&gt;
+ * &lt;/ul&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Thread Safety:&lt;/b&gt; This class is not thread-safe. Create a new instance
+ * for each loop to be analyzed.&lt;/p&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Usage Example:&lt;/b&gt;&lt;/p&gt;
+ * &lt;pre&gt;{@code
+ * PreconditionsChecker preconditions = new PreconditionsChecker(forLoop, ...);
+ * StreamPipelineBuilder builder = new StreamPipelineBuilder(forLoop, preconditions);
+ * 
+ * if (builder.analyze()) {
+ *     MethodInvocation pipeline = builder.buildPipeline();
+ *     Statement replacement = builder.wrapPipeline(pipeline);
+ *     // Replace forLoop with replacement
+ * }
+ * }&lt;/pre&gt;
+ * 
+ * &lt;p&gt;
+ * Based on the NetBeans mapreduce hints implementation:
+ * https://github.com/apache/netbeans/tree/master/java/java.hints/src/org/netbeans/modules/java/hints/jdk/mapreduce
+ * 
+ * @see ProspectiveOperation
+ * @see PreconditionsChecker
+ * @see org.sandbox.jdt.internal.corext.util.VariableResolver
+ * @see org.sandbox.jdt.internal.corext.util.ExpressionHelper
+ * @see Refactorer
+ */
+<span class="fc" id="L121">public class StreamPipelineBuilder {</span>
+
+	private final EnhancedForStatement forLoop;
+	private final PreconditionsChecker preconditions;
+	private final ReducePatternDetector reduceDetector;
+	private final CollectPatternDetector collectDetector;
+	private final IfStatementAnalyzer ifAnalyzer;
+	private final LoopBodyParser loopBodyParser;
+
+	private List&lt;ProspectiveOperation&gt; operations;
+	private String loopVariableName;
+<span class="fc" id="L132">	private boolean analyzed = false;</span>
+<span class="fc" id="L133">	private boolean convertible = false;</span>
+<span class="fc" id="L134">	private boolean isAnyMatchPattern = false;</span>
+<span class="fc" id="L135">	private boolean isNoneMatchPattern = false;</span>
+<span class="fc" id="L136">	private boolean isAllMatchPattern = false;</span>
+	
+	/** Assembler for building the final pipeline (initialized after analysis). */
+	private PipelineAssembler pipelineAssembler;
+
+	/**
+	 * Creates a new StreamPipelineBuilder for the given for-loop.
+	 * 
+	 * @param forLoop       the enhanced for-loop to analyze
+	 * @param preconditions the preconditions checker for the loop
+	 * @throws IllegalArgumentException if forLoop or preconditions is null
+	 */
+<span class="fc" id="L148">	public StreamPipelineBuilder(EnhancedForStatement forLoop, PreconditionsChecker preconditions) {</span>
+<span class="pc bpc" id="L149" title="1 of 2 branches missed.">		if (forLoop == null) {</span>
+<span class="nc" id="L150">			throw new IllegalArgumentException(&quot;forLoop cannot be null&quot;);</span>
+		}
+<span class="pc bpc" id="L152" title="1 of 2 branches missed.">		if (preconditions == null) {</span>
+<span class="nc" id="L153">			throw new IllegalArgumentException(&quot;preconditions cannot be null&quot;);</span>
+		}
+
+<span class="fc" id="L156">		this.forLoop = forLoop;</span>
+<span class="fc" id="L157">		this.preconditions = preconditions;</span>
+<span class="fc" id="L158">		this.reduceDetector = new ReducePatternDetector(forLoop);</span>
+<span class="fc" id="L159">		this.collectDetector = new CollectPatternDetector(forLoop);</span>
+<span class="fc" id="L160">		this.ifAnalyzer = new IfStatementAnalyzer(forLoop);</span>
+
+		// Internal invariant: EnhancedForStatement must have a parameter with a name
+<span class="pc bnc" id="L163" title="All 4 branches missed.">		assert forLoop.getParameter() != null &amp;&amp; forLoop.getParameter().getName() != null</span>
+<span class="nc" id="L164">				: &quot;forLoop must have a valid parameter with a name&quot;;</span>
+
+<span class="fc" id="L166">		this.loopVariableName = forLoop.getParameter().getName().getIdentifier();</span>
+<span class="fc" id="L167">		this.operations = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L168">		this.isAnyMatchPattern = preconditions.isAnyMatchPattern();</span>
+<span class="fc" id="L169">		this.isNoneMatchPattern = preconditions.isNoneMatchPattern();</span>
+<span class="fc" id="L170">		this.isAllMatchPattern = preconditions.isAllMatchPattern();</span>
+		
+		// Initialize LoopBodyParser with all required dependencies
+<span class="fc" id="L173">		this.loopBodyParser = new LoopBodyParser(forLoop, reduceDetector, collectDetector, ifAnalyzer, </span>
+<span class="fc" id="L174">				isAnyMatchPattern, isNoneMatchPattern, isAllMatchPattern);</span>
+<span class="fc" id="L175">	}</span>
+
+	/**
+	 * Analyzes the loop body to determine if it can be converted to a stream
+	 * pipeline.
+	 * 
+	 * &lt;p&gt;
+	 * This method should be called before attempting to build the pipeline. It
+	 * inspects the loop body and extracts a sequence of
+	 * {@link ProspectiveOperation}s that represent the transformation.
+	 * 
+	 * @return true if the loop can be converted to a stream pipeline, false
+	 *         otherwise
+	 */
+	public boolean analyze() {
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">		if (analyzed) {</span>
+<span class="nc" id="L191">			return convertible;</span>
+		}
+
+<span class="fc" id="L194">		analyzed = true;</span>
+
+		// Check basic preconditions
+<span class="pc bpc" id="L197" title="1 of 2 branches missed.">		if (!preconditions.isSafeToRefactor() </span>
+//				|| !preconditions.iteratesOverIterable()
+				) {
+<span class="nc" id="L200">			convertible = false;</span>
+<span class="nc" id="L201">			return false;</span>
+		}
+
+		// Parse the loop body into operations
+<span class="fc" id="L205">		Statement loopBody = forLoop.getBody();</span>
+<span class="fc" id="L206">		operations = parseLoopBody(loopBody, loopVariableName);</span>
+
+		// Check if we have any operations
+<span class="fc bfc" id="L209" title="All 2 branches covered.">		if (operations.isEmpty()) {</span>
+<span class="fc" id="L210">			convertible = false;</span>
+<span class="fc" id="L211">			return false;</span>
+		}
+
+		// Validate variable scoping
+<span class="pc bpc" id="L215" title="1 of 2 branches missed.">		if (!validateVariableScope(operations, loopVariableName)) {</span>
+<span class="nc" id="L216">			convertible = false;</span>
+<span class="nc" id="L217">			return false;</span>
+		}
+
+		// Initialize the pipeline assembler for building the final pipeline
+<span class="fc" id="L221">		pipelineAssembler = new PipelineAssembler(forLoop, operations, loopVariableName);</span>
+<span class="fc" id="L222">		pipelineAssembler.setUsedVariableNames(getUsedVariableNames(forLoop));</span>
+<span class="fc" id="L223">		pipelineAssembler.setReduceDetector(reduceDetector);</span>
+<span class="fc" id="L224">		pipelineAssembler.setCollectDetector(collectDetector);</span>
+
+<span class="fc" id="L226">		convertible = true;</span>
+<span class="fc" id="L227">		return true;</span>
+	}
+
+	/**
+	 * Builds the stream pipeline from the analyzed operations.
+	 * 
+	 * &lt;p&gt;This method constructs a chain of method invocations representing
+	 * the complete stream pipeline. It automatically determines whether to
+	 * use {@code .stream()} prefix or direct collection methods like
+	 * {@code .forEach()}.&lt;/p&gt;
+	 * 
+	 * &lt;p&gt;&lt;b&gt;Examples:&lt;/b&gt;&lt;/p&gt;
+	 * &lt;pre&gt;{@code
+	 * // Simple forEach (no .stream() needed)
+	 * list.forEach(item -&gt; System.out.println(item))
+	 * 
+	 * // Complex pipeline (needs .stream())
+	 * list.stream()
+	 *     .filter(item -&gt; item != null)
+	 *     .map(item -&gt; item.toString())
+	 *     .reduce(&quot;&quot;, String::concat)
+	 * }&lt;/pre&gt;
+	 * 
+	 * &lt;p&gt;&lt;b&gt;Prerequisites:&lt;/b&gt;&lt;/p&gt;
+	 * &lt;ul&gt;
+	 * &lt;li&gt;{@link #analyze()} must have been called and returned {@code true}&lt;/li&gt;
+	 * &lt;li&gt;The operations list must not be empty&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * 
+	 * @return a MethodInvocation representing the stream pipeline, or null if
+	 *         the loop cannot be converted
+	 * @see #analyze()
+	 * @see #wrapPipeline(MethodInvocation)
+	 * @see PipelineAssembler
+	 */
+	public MethodInvocation buildPipeline() {
+<span class="pc bpc" id="L263" title="3 of 6 branches missed.">		if (!analyzed || !convertible || pipelineAssembler == null) {</span>
+<span class="nc" id="L264">			return null;</span>
+		}
+<span class="fc" id="L266">		return pipelineAssembler.buildPipeline();</span>
+	}
+	
+	/**
+	 * Returns whether the pipeline needs the java.util.Arrays import.
+	 * This is true when iterating over an array.
+	 * 
+	 * &lt;p&gt;This method should be called after {@link #buildPipeline()} to determine
+	 * if an import needs to be added.&lt;/p&gt;
+	 * 
+	 * @return true if Arrays import is needed
+	 */
+	public boolean needsArraysImport() {
+<span class="pc bpc" id="L279" title="1 of 4 branches missed.">		return pipelineAssembler != null &amp;&amp; pipelineAssembler.needsArraysImport();</span>
+	}
+
+	/**
+	 * Returns whether the pipeline needs the java.util.stream.Collectors import.
+	 * This is true when using collect operations (toList, toSet, etc.).
+	 * 
+	 * &lt;p&gt;This method should be called after {@link #buildPipeline()} to determine
+	 * if an import needs to be added.&lt;/p&gt;
+	 * 
+	 * @return true if Collectors import is needed
+	 */
+	public boolean needsCollectorsImport() {
+		// Check if any operation is a COLLECT operation
+<span class="pc bpc" id="L293" title="1 of 2 branches missed.">		if (operations == null) {</span>
+<span class="nc" id="L294">			return false;</span>
+		}
+<span class="fc" id="L296">		return operations.stream()</span>
+<span class="fc bfc" id="L297" title="All 2 branches covered.">				.anyMatch(op -&gt; op.getOperationType() == OperationType.COLLECT);</span>
+	}
+
+	/**
+	 * Wraps the stream pipeline in an appropriate statement type based on the terminal operation.
+	 * 
+	 * &lt;p&gt;
+	 * The wrapping strategy depends on the type of terminal operation:
+	 * &lt;ul&gt;
+	 * &lt;li&gt;&lt;b&gt;ANYMATCH&lt;/b&gt;: Wraps in {@code if (stream.anyMatch(...)) { return true; }}&lt;/li&gt;
+	 * &lt;li&gt;&lt;b&gt;NONEMATCH&lt;/b&gt;: Wraps in {@code if (!stream.noneMatch(...)) { return false; }}&lt;/li&gt;
+	 * &lt;li&gt;&lt;b&gt;ALLMATCH&lt;/b&gt;: Wraps in {@code if (!stream.allMatch(...)) { return false; }}&lt;/li&gt;
+	 * &lt;li&gt;&lt;b&gt;REDUCE&lt;/b&gt;: Wraps in assignment {@code accumulatorVariable = stream.reduce(...)}&lt;/li&gt;
+	 * &lt;li&gt;&lt;b&gt;FOREACH&lt;/b&gt; (and others): Wraps in {@link org.eclipse.jdt.core.dom.ExpressionStatement}&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * 
+	 * @param pipeline the stream pipeline to wrap (must not be null)
+	 * @return a Statement wrapping the pipeline, or null if pipeline is null
+	 * @see OperationType
+	 * @see PipelineAssembler
+	 */
+	public Statement wrapPipeline(MethodInvocation pipeline) {
+<span class="pc bpc" id="L319" title="1 of 2 branches missed.">		if (pipelineAssembler == null) {</span>
+<span class="nc" id="L320">			return null;</span>
+		}
+<span class="fc" id="L322">		return pipelineAssembler.wrapPipeline(pipeline);</span>
+	}
+
+	/**
+	 * Analyzes the body of an enhanced for-loop and extracts a list of
+	 * {@link ProspectiveOperation} objects representing the operations that can be
+	 * mapped to stream operations.
+	 * 
+	 * &lt;p&gt;&lt;b&gt;Example Patterns:&lt;/b&gt;&lt;/p&gt;
+	 * &lt;pre&gt;{@code
+	 * // MAP: Variable declaration with initializer
+	 * for (Integer num : numbers) {
+	 *     int squared = num * num;  // → .map(num -&gt; num * num)
+	 *     System.out.println(squared);
+	 * }
+	 * 
+	 * // FILTER: IF statement
+	 * for (String item : items) {
+	 *     if (item != null) {  // → .filter(item -&gt; item != null)
+	 *         System.out.println(item);
+	 *     }
+	 * }
+	 * 
+	 * // REDUCE: Accumulator pattern
+	 * int sum = 0;
+	 * for (Integer num : numbers) {
+	 *     sum += num;  // → .reduce(sum, Integer::sum)
+	 * }
+	 * }&lt;/pre&gt;
+	 * 
+	 * @param body the {@link Statement} representing the loop body
+	 * @param loopVarName the name of the loop variable
+	 * @return a list of {@link ProspectiveOperation} objects
+	 */
+	private List&lt;ProspectiveOperation&gt; parseLoopBody(Statement body, String loopVarName) {
+<span class="fc" id="L357">		return loopBodyParser.parse(body, loopVarName);</span>
+	}
+
+	/**
+	 * Validates that variables used in operations are properly scoped.
+	 * 
+	 * &lt;p&gt;
+	 * This method ensures that:
+	 * &lt;ul&gt;
+	 * &lt;li&gt;Consumed variables are available in the current scope (defined earlier in
+	 * pipeline)&lt;/li&gt;
+	 * &lt;li&gt;Produced variables don't shadow loop variables improperly&lt;/li&gt;
+	 * &lt;li&gt;Accumulator variables don't leak into lambda scopes&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * 
+	 * &lt;p&gt;
+	 * &lt;b&gt;Relationship with {@link #isSafeSideEffect}:&lt;/b&gt;
+	 * &lt;/p&gt;
+	 * &lt;p&gt;
+	 * While {@code isSafeSideEffect} performs early detection of obvious assignment
+	 * issues during pipeline construction, this method performs comprehensive scope
+	 * checking across the entire pipeline to catch variable availability issues.
+	 * Both methods work together to ensure safe conversions:
+	 * &lt;ul&gt;
+	 * &lt;li&gt;{@code isSafeSideEffect}: Detects unsafe assignments to external/loop
+	 * variables&lt;/li&gt;
+	 * &lt;li&gt;{@code validateVariableScope}: Validates all variables are properly
+	 * defined and scoped&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * 
+	 * &lt;p&gt;
+	 * &lt;b&gt;Algorithm:&lt;/b&gt;
+	 * &lt;/p&gt;
+	 * &lt;p&gt;
+	 * Tracks available variables as we process operations in sequence. For each
+	 * operation:
+	 * &lt;ol&gt;
+	 * &lt;li&gt;Check that all consumed variables (except loop var and accumulators) are
+	 * available&lt;/li&gt;
+	 * &lt;li&gt;Add any produced variables to the available set for subsequent
+	 * operations&lt;/li&gt;
+	 * &lt;li&gt;Return false if any consumed variable is used before being defined&lt;/li&gt;
+	 * &lt;/ol&gt;
+	 * 
+	 * @param operations  the list of operations to validate (must not be null)
+	 * @param loopVarName the loop variable name (must not be null)
+	 * @return true if all variables are properly scoped, false otherwise
+	 * @throws IllegalArgumentException if operations or loopVarName is null
+	 */
+	private boolean validateVariableScope(List&lt;ProspectiveOperation&gt; operations, String loopVarName) {
+<span class="pc bpc" id="L407" title="1 of 2 branches missed.">		if (operations == null) {</span>
+<span class="nc" id="L408">			throw new IllegalArgumentException(&quot;operations cannot be null&quot;);</span>
+		}
+<span class="pc bpc" id="L410" title="1 of 2 branches missed.">		if (loopVarName == null) {</span>
+<span class="nc" id="L411">			throw new IllegalArgumentException(&quot;loopVarName cannot be null&quot;);</span>
+		}
+
+<span class="fc" id="L414">		Set&lt;String&gt; availableVars = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L415">		availableVars.add(loopVarName);</span>
+		
+		// Add all variables from outer scope (method parameters, fields, etc.)
+		// These are always available in lambdas
+<span class="fc" id="L419">		Collection&lt;String&gt; outerScopeVars = getUsedVariableNames(forLoop);</span>
+<span class="fc" id="L420">		availableVars.addAll(outerScopeVars);</span>
+		
+		// Track if we've moved past the loop variable to a mapped variable
+<span class="fc" id="L423">		boolean loopVarConsumed = false;</span>
+
+<span class="fc bfc" id="L425" title="All 2 branches covered.">		for (ProspectiveOperation op : operations) {</span>
+<span class="pc bpc" id="L426" title="1 of 2 branches missed.">			if (op == null) {</span>
+<span class="nc" id="L427">				throw new IllegalStateException(&quot;Encountered null ProspectiveOperation in operations list&quot;);</span>
+			}
+
+			// Check consumed variables are available
+<span class="fc" id="L431">			Set&lt;String&gt; consumed = op.getConsumedVariables();</span>
+<span class="fc bfc" id="L432" title="All 2 branches covered.">			for (String var : consumed) {</span>
+				// Accumulator variables are in outer scope, always available
+<span class="fc bfc" id="L434" title="All 2 branches covered.">				if (isAccumulatorVariable(var, operations)) {</span>
+<span class="fc" id="L435">					continue;</span>
+				}
+				
+				// Variables from outer scope (method parameters, fields, etc.) are always available
+<span class="fc bfc" id="L439" title="All 2 branches covered.">				if (outerScopeVars.contains(var)) {</span>
+<span class="fc" id="L440">					continue;</span>
+				}
+				
+				// After a MAP produces a new variable, the loop variable should not be used
+				// unless it's the current operation that consumes it
+<span class="pc bpc" id="L445" title="1 of 2 branches missed.">				if (var.equals(loopVarName)) {</span>
+<span class="pc bpc" id="L446" title="1 of 4 branches missed.">					if (loopVarConsumed &amp;&amp; op.getProducedVariableName() != null) {</span>
+						// Loop variable used after it's been replaced by a MAP - scope violation
+<span class="nc" id="L448">						return false;</span>
+					}
+				} else {
+					// Non-loop, non-accumulator, non-outer-scope variable - must be in availableVars
+<span class="nc bnc" id="L452" title="All 2 branches missed.">					if (!availableVars.contains(var)) {</span>
+						// Variable used before it's defined - this is a scope violation
+<span class="nc" id="L454">						return false;</span>
+					}
+				}
+			}
+
+			// Add produced variables to available set and mark loop var as consumed if applicable
+<span class="fc" id="L460">			String produced = op.getProducedVariableName();</span>
+<span class="pc bpc" id="L461" title="1 of 4 branches missed.">			if (produced != null &amp;&amp; !produced.isEmpty()) {</span>
+<span class="fc" id="L462">				availableVars.add(produced);</span>
+				
+				// If this MAP operation consumed the loop variable, mark it as consumed
+<span class="fc bfc" id="L465" title="All 2 branches covered.">				if (consumed.contains(loopVarName)) {</span>
+<span class="fc" id="L466">					loopVarConsumed = true;</span>
+					// Remove loop variable from available vars - it's now been replaced
+<span class="fc" id="L468">					availableVars.remove(loopVarName);</span>
+				}
+			}
+		}
+
+<span class="fc" id="L473">		return true;</span>
+	}
+
+	/**
+	 * Checks if a variable is an accumulator variable in any REDUCE operation.
+	 * 
+	 * @param varName    the variable name to check
+	 * @param operations the list of operations
+	 * @return true if the variable is an accumulator, false otherwise
+	 */
+	private boolean isAccumulatorVariable(String varName, List&lt;ProspectiveOperation&gt; operations) {
+<span class="fc bfc" id="L484" title="All 2 branches covered.">		for (ProspectiveOperation op : operations) {</span>
+<span class="fc bfc" id="L485" title="All 2 branches covered.">					if (op.getOperationType() == OperationType.REDUCE) {</span>
+<span class="fc bfc" id="L486" title="All 2 branches covered.">				if (varName.equals(op.getAccumulatorVariableName())) {</span>
+<span class="fc" id="L487">					return true;</span>
+				}
+			}
+		}
+<span class="fc" id="L491">		return false;</span>
+	}
+
+	/**
+	 * Gets all variable names used in the scope of the given AST node.
+	 * This is used to generate unique lambda parameter names that don't clash
+	 * with existing variables in scope.
+	 * 
+	 * @param node the AST node to analyze
+	 * @return collection of variable names used in the node's scope
+	 */
+	private static Collection&lt;String&gt; getUsedVariableNames(ASTNode node) {
+<span class="fc" id="L503">		CompilationUnit root = (CompilationUnit) node.getRoot();</span>
+<span class="fc" id="L504">		return new ScopeAnalyzer(root).getUsedVariableNames(node.getStartPosition(), node.getLength());</span>
+	}
+	
+	/**
+	 * Checks if the analyzed operations include a REDUCE operation.
+	 * 
+	 * @return true if there is a REDUCE operation, false otherwise
+	 */
+	public boolean hasReduceOperation() {
+<span class="nc bnc" id="L513" title="All 4 branches missed.">		if (!analyzed || !convertible) {</span>
+<span class="nc" id="L514">			return false;</span>
+		}
+<span class="nc" id="L516">		return operations.stream()</span>
+<span class="nc bnc" id="L517" title="All 2 branches missed.">				.anyMatch(op -&gt; op.getOperationType() == OperationType.REDUCE);</span>
+	}
+	
+	/**
+	 * Gets the accumulator variable name for REDUCE operations.
+	 * 
+	 * @return the accumulator variable name, or null if no REDUCE operation exists
+	 */
+	public String getAccumulatorVariableName() {
+<span class="nc bnc" id="L526" title="All 4 branches missed.">		if (!analyzed || !convertible) {</span>
+<span class="nc" id="L527">			return null;</span>
+		}
+<span class="nc bnc" id="L529" title="All 2 branches missed.">		for (ProspectiveOperation op : operations) {</span>
+<span class="nc bnc" id="L530" title="All 2 branches missed.">			if (op.getOperationType() == OperationType.REDUCE) {</span>
+<span class="nc" id="L531">				return op.getAccumulatorVariableName();</span>
+			}
+		}
+<span class="nc" id="L534">		return null;</span>
+	}
+	
+	/**
+	 * Gets the target collection variable name for COLLECT operations.
+	 * 
+	 * @return the target variable name, or null if no COLLECT operation exists
+	 */
+	public String getCollectTargetVariable() {
+<span class="pc bpc" id="L543" title="3 of 6 branches missed.">		if (!analyzed || !convertible || collectDetector == null) {</span>
+<span class="nc" id="L544">			return null;</span>
+		}
+<span class="fc" id="L546">		return collectDetector.getTargetVariable();</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>LambdaGenerator.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_functional_converter</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">LambdaGenerator.java</span></div><h1>LambdaGenerator.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.LambdaExpression;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
+import org.eclipse.jdt.core.dom.PrefixExpression;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
+
+/**
+ * Generates lambda expressions and method references for stream operations.
+ * 
+ * &lt;p&gt;This class is responsible for creating the lambda expressions and method
+ * references used in stream pipeline operations. It handles:&lt;/p&gt;
+ * 
+ * &lt;ul&gt;
+ * &lt;li&gt;Accumulator lambdas: {@code (a, b) -&gt; a + b}&lt;/li&gt;
+ * &lt;li&gt;Predicate lambda bodies for filter/match operations&lt;/li&gt;
+ * &lt;li&gt;Unique variable name generation to avoid scope conflicts&lt;/li&gt;
+ * &lt;/ul&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Variable Name Generation:&lt;/b&gt;&lt;/p&gt;
+ * &lt;p&gt;The generator ensures lambda parameter names don't conflict with variables
+ * already in scope by tracking used variable names and generating unique alternatives.&lt;/p&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Usage Example:&lt;/b&gt;&lt;/p&gt;
+ * &lt;pre&gt;{@code
+ * LambdaGenerator generator = new LambdaGenerator(ast);
+ * generator.setUsedVariableNames(scopeVariables);
+ * 
+ * // Create an accumulator expression for REDUCE operations
+ * Expression accExpr = generator.createAccumulatorExpression(ReducerType.SUM, &quot;int&quot;, false);
+ * 
+ * // Create a predicate lambda body for FILTER operations
+ * Expression predicateBody = generator.createPredicateLambdaBody(condition);
+ * }&lt;/pre&gt;
+ * 
+ * @see ProspectiveOperation
+ * @see StreamPipelineBuilder
+ * @see ReducerType
+ */
+public final class LambdaGenerator {
+
+	private final AST ast;
+<span class="fc" id="L65">	private Set&lt;String&gt; usedVariableNames = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L66">	private Set&lt;String&gt; neededVariables = new HashSet&lt;&gt;();</span>
+
+	/**
+	 * Creates a new LambdaGenerator for the given AST.
+	 * 
+	 * @param ast the AST to create nodes in (must not be null)
+	 * @throws IllegalArgumentException if ast is null
+	 */
+<span class="fc" id="L74">	public LambdaGenerator(AST ast) {</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">		if (ast == null) {</span>
+<span class="fc" id="L76">			throw new IllegalArgumentException(&quot;ast cannot be null&quot;);</span>
+		}
+<span class="fc" id="L78">		this.ast = ast;</span>
+<span class="fc" id="L79">	}</span>
+
+	/**
+	 * Sets the collection of variable names already in use in the current scope.
+	 * This is used to generate unique lambda parameter names.
+	 * 
+	 * @param usedNames the collection of variable names in use (may be null)
+	 */
+	public void setUsedVariableNames(Collection&lt;String&gt; usedNames) {
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">		if (usedNames != null) {</span>
+<span class="fc" id="L89">			this.usedVariableNames = new HashSet&lt;&gt;(usedNames);</span>
+		}
+<span class="fc" id="L91">	}</span>
+
+	/**
+	 * Sets the collection of variables needed/referenced by the operation.
+	 * This is combined with usedVariableNames to ensure unique parameter names.
+	 * 
+	 * @param needed the set of needed variable names (may be null)
+	 */
+	public void setNeededVariables(Set&lt;String&gt; needed) {
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">		if (needed != null) {</span>
+<span class="fc" id="L101">			this.neededVariables = new HashSet&lt;&gt;(needed);</span>
+		}
+<span class="fc" id="L103">	}</span>
+
+	/**
+	 * Generates a unique variable name that doesn't collide with existing variables in scope.
+	 * 
+	 * @param baseName the base name to use (e.g., &quot;a&quot;, &quot;_item&quot;, &quot;accumulator&quot;)
+	 * @return a unique variable name that doesn't exist in the current scope
+	 */
+	public String generateUniqueVariableName(String baseName) {
+<span class="fc" id="L112">		Set&lt;String&gt; allUsedNames = new HashSet&lt;&gt;(neededVariables);</span>
+<span class="fc" id="L113">		allUsedNames.addAll(usedVariableNames);</span>
+
+<span class="fc bfc" id="L115" title="All 2 branches covered.">		if (!allUsedNames.contains(baseName)) {</span>
+<span class="fc" id="L116">			return baseName;</span>
+		}
+
+<span class="fc" id="L119">		int counter = 2;</span>
+<span class="fc" id="L120">		String candidate = baseName + counter;</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">		while (allUsedNames.contains(candidate)) {</span>
+<span class="fc" id="L122">			counter++;</span>
+<span class="fc" id="L123">			candidate = baseName + counter;</span>
+		}
+<span class="fc" id="L125">		return candidate;</span>
+	}
+
+	/**
+	 * Creates a general accumulator lambda like (a, b) -&gt; a + b.
+	 * Used as a fallback for custom aggregation patterns.
+	 * 
+	 * @return a LambdaExpression with generic parameters
+	 */
+	public LambdaExpression createAccumulatorLambda() {
+<span class="nc" id="L135">		LambdaExpression lambda = ast.newLambdaExpression();</span>
+
+<span class="nc" id="L137">		String param1Name = generateUniqueVariableName(&quot;a&quot;);</span>
+<span class="nc" id="L138">		String param2Name = generateUniqueVariableName(&quot;b&quot;);</span>
+
+<span class="nc" id="L140">		VariableDeclarationFragment paramA = ast.newVariableDeclarationFragment();</span>
+<span class="nc" id="L141">		paramA.setName(ast.newSimpleName(param1Name));</span>
+<span class="nc" id="L142">		VariableDeclarationFragment paramB = ast.newVariableDeclarationFragment();</span>
+<span class="nc" id="L143">		paramB.setName(ast.newSimpleName(param2Name));</span>
+<span class="nc" id="L144">		lambda.parameters().add(paramA);</span>
+<span class="nc" id="L145">		lambda.parameters().add(paramB);</span>
+
+<span class="nc" id="L147">		InfixExpression operationExpr = ast.newInfixExpression();</span>
+<span class="nc" id="L148">		operationExpr.setLeftOperand(ast.newSimpleName(param1Name));</span>
+<span class="nc" id="L149">		operationExpr.setRightOperand(ast.newSimpleName(param2Name));</span>
+<span class="nc" id="L150">		operationExpr.setOperator(InfixExpression.Operator.PLUS);</span>
+<span class="nc" id="L151">		lambda.setBody(operationExpr);</span>
+
+<span class="nc" id="L153">		return lambda;</span>
+	}
+
+	/**
+	 * Creates a lambda body for predicate expressions (FILTER, ANYMATCH, etc.).
+	 * 
+	 * &lt;p&gt;Wraps InfixExpressions in parentheses for clarity. Does NOT wrap:
+	 * PrefixExpression with NOT, MethodInvocation, SimpleName, BooleanLiteral.&lt;/p&gt;
+	 * 
+	 * @param expression the predicate expression
+	 * @return the lambda body expression, possibly wrapped in parentheses
+	 */
+	public Expression createPredicateLambdaBody(Expression expression) {
+		// Unwrap parentheses to check the actual expression type
+<span class="fc" id="L167">		Expression unwrapped = ExpressionHelper.getUnparenthesized(expression);</span>
+
+		// Don't wrap PrefixExpression with NOT - already has proper precedence
+<span class="fc bfc" id="L170" title="All 2 branches covered.">		if (unwrapped instanceof PrefixExpression) {</span>
+<span class="fc" id="L171">			PrefixExpression prefix = (PrefixExpression) unwrapped;</span>
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">			if (prefix.getOperator() == PrefixExpression.Operator.NOT) {</span>
+<span class="fc" id="L173">				return (Expression) ASTNode.copySubtree(ast, unwrapped);</span>
+			}
+		}
+
+		// Only wrap InfixExpressions for readability
+<span class="fc bfc" id="L178" title="All 2 branches covered.">		if (unwrapped instanceof InfixExpression) {</span>
+<span class="fc" id="L179">			ParenthesizedExpression parenExpr = ast.newParenthesizedExpression();</span>
+<span class="fc" id="L180">			parenExpr.setExpression((Expression) ASTNode.copySubtree(ast, unwrapped));</span>
+<span class="fc" id="L181">			return parenExpr;</span>
+		}
+
+		// For all other expressions, no parentheses needed
+<span class="fc" id="L185">		return (Expression) ASTNode.copySubtree(ast, unwrapped);</span>
+	}
+
+	/**
+	 * Creates the accumulator expression for a REDUCE operation.
+	 * Delegates to the ReducerType enum which encapsulates the logic for each reducer type.
+	 * 
+	 * @param reducerType     the type of reducer
+	 * @param accumulatorType the type of the accumulator variable
+	 * @param isNullSafe      whether the operation is null-safe
+	 * @return an Expression suitable for the second argument of reduce()
+	 */
+	public Expression createAccumulatorExpression(ReducerType reducerType,
+			String accumulatorType, boolean isNullSafe) {
+<span class="pc bpc" id="L199" title="1 of 2 branches missed.">		if (reducerType == null) {</span>
+<span class="nc" id="L200">			return createAccumulatorLambda();</span>
+		}
+<span class="fc" id="L202">		return reducerType.createAccumulatorExpression(ast, accumulatorType, isNullSafe);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

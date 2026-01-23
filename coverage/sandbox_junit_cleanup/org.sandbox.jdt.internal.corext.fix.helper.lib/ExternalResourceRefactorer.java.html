@@ -1,0 +1,611 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ExternalResourceRefactorer.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper.lib</a> &gt; <span class="el_source">ExternalResourceRefactorer.java</span></div><h1>ExternalResourceRefactorer.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper.lib;
+
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
+import org.eclipse.jdt.core.dom.BodyDeclaration;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.MarkerAnnotation;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
+import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.TypeLiteral;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
+import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
+import org.sandbox.jdt.internal.corext.util.NamingUtils;
+
+/**
+ * Helper class for refactoring JUnit 4 ExternalResource to JUnit 5 lifecycle callbacks.
+ * Handles transformation of ExternalResource classes and anonymous instances.
+ */
+public final class ExternalResourceRefactorer {
+
+	// Private constructor to prevent instantiation
+<span class="nc" id="L50">	private ExternalResourceRefactorer() {</span>
+<span class="nc" id="L51">		throw new UnsupportedOperationException(&quot;Utility class&quot;);</span>
+	}
+
+	/**
+	 * Modifies a class that extends ExternalResource to use JUnit 5 extensions instead.
+	 * 
+	 * @param node the type declaration to modify
+	 * @param field the field declaration with ExternalResource
+	 * @param fieldStatic whether the field is static (affects callback type)
+	 * @param rewriter the AST rewriter
+	 * @param ast the AST instance
+	 * @param group the text edit group
+	 * @param importRewriter the import rewriter
+	 */
+	public static void modifyExternalResourceClass(TypeDeclaration node, FieldDeclaration field, boolean fieldStatic,
+			ASTRewrite rewriter, AST ast, TextEditGroup group, ImportRewrite importRewriter) {
+<span class="pc bpc" id="L67" title="1 of 2 branches missed.">		if (!shouldProcessNode(node)) {</span>
+<span class="nc" id="L68">			return;</span>
+		}
+
+<span class="fc" id="L71">		CallbackConfig callbackConfig = determineCallbackConfig(fieldStatic);</span>
+
+<span class="fc bfc" id="L73" title="All 2 branches covered.">		if (field != null) {</span>
+<span class="fc" id="L74">			processExternalResourceField(field, rewriter, ast, group, importRewriter);</span>
+		}
+
+<span class="fc bfc" id="L77" title="All 2 branches covered.">		if (isDirectlyExtendingExternalResource(node.resolveBinding())) {</span>
+<span class="fc" id="L78">			refactorToImplementCallbacks(node, rewriter, ast, group, importRewriter, callbackConfig.beforeCallback,</span>
+<span class="fc" id="L79">					callbackConfig.afterCallback, callbackConfig.importBeforeCallback,</span>
+<span class="fc" id="L80">					callbackConfig.importAfterCallback);</span>
+		}
+
+<span class="fc" id="L83">		LifecycleMethodAdapter.updateLifecycleMethodsInClass(node, rewriter, ast, group, importRewriter, METHOD_BEFORE,</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">				METHOD_AFTER, fieldStatic ? METHOD_BEFORE_ALL : METHOD_BEFORE_EACH,</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">				fieldStatic ? METHOD_AFTER_ALL : METHOD_AFTER_EACH);</span>
+<span class="fc" id="L86">	}</span>
+
+	/**
+	 * Processes an ExternalResource field by removing JUnit 4 annotations and adding JUnit 5 equivalents.
+	 * 
+	 * @param field the field to process
+	 * @param rewriter the AST rewriter
+	 * @param ast the AST instance
+	 * @param group the text edit group
+	 * @param importRewriter the import rewriter
+	 */
+	public static void processExternalResourceField(FieldDeclaration field, ASTRewrite rewriter, AST ast,
+			TextEditGroup group, ImportRewrite importRewriter) {
+<span class="fc" id="L99">		String ruleAnnotation = null;</span>
+
+<span class="fc bfc" id="L101" title="All 2 branches covered.">		if (AnnotationUtils.isAnnotatedWith(field, ORG_JUNIT_RULE)</span>
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">				&amp;&amp; isExternalResource(field, ORG_JUNIT_RULES_EXTERNAL_RESOURCE)) {</span>
+<span class="fc" id="L103">			ruleAnnotation = ORG_JUNIT_RULE;</span>
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">		} else if (AnnotationUtils.isAnnotatedWith(field, ORG_JUNIT_CLASS_RULE)</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">				&amp;&amp; isExternalResource(field, ORG_JUNIT_RULES_EXTERNAL_RESOURCE)) {</span>
+<span class="fc" id="L106">			ruleAnnotation = ORG_JUNIT_CLASS_RULE;</span>
+		}
+
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">		if (ruleAnnotation != null) {</span>
+<span class="fc" id="L110">			removeRuleAnnotation(field, rewriter, group, importRewriter, ruleAnnotation);</span>
+<span class="fc" id="L111">			addRegisterExtensionAnnotation(field, rewriter, ast, importRewriter, group);</span>
+<span class="fc" id="L112">			ITypeBinding fieldType = ((VariableDeclarationFragment) field.fragments().get(0)).resolveBinding()</span>
+<span class="fc" id="L113">					.getType();</span>
+<span class="fc" id="L114">			adaptExternalResourceHierarchy(fieldType, rewriter, ast, importRewriter, group);</span>
+		}
+<span class="fc" id="L116">	}</span>
+
+	/**
+	 * Adapts the superclass hierarchy for types extending ExternalResource.
+	 * Walks up the inheritance chain, transforming each type to use JUnit 5 extensions
+	 * until reaching ExternalResource itself.
+	 * 
+	 * @param typeBinding the type binding to start from
+	 * @param rewrite the AST rewriter
+	 * @param ast the AST instance
+	 * @param importRewrite the import rewriter
+	 * @param group the text edit group
+	 */
+	public static void adaptExternalResourceHierarchy(ITypeBinding typeBinding, ASTRewrite rewrite, AST ast,
+			ImportRewrite importRewrite, TextEditGroup group) {
+<span class="pc bpc" id="L131" title="1 of 2 branches missed.">		while (typeBinding != null) {</span>
+			// Stop when we reach ExternalResource itself
+<span class="fc bfc" id="L133" title="All 2 branches covered.">			if (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(typeBinding.getQualifiedName())) {</span>
+<span class="fc" id="L134">				break;</span>
+			}
+
+			// Process types that extend ExternalResource
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">			if (isExternalResource(typeBinding, ORG_JUNIT_RULES_EXTERNAL_RESOURCE)) {</span>
+<span class="fc" id="L139">				TypeDeclaration typeDecl = ASTNavigationUtils.findTypeDeclarationInProject(typeBinding);</span>
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">				if (typeDecl != null) {</span>
+<span class="fc" id="L141">					adaptTypeDeclaration(typeDecl, rewrite, ast, importRewrite, group);</span>
+				}
+			}
+
+<span class="fc" id="L145">			typeBinding = typeBinding.getSuperclass();</span>
+		}
+<span class="fc" id="L147">	}</span>
+
+	/**
+	 * Adapts a type declaration that extends ExternalResource to use JUnit 5 lifecycle callbacks.
+	 * Removes the ExternalResource superclass and updates lifecycle methods (before/after).
+	 * 
+	 * @param typeDecl the type declaration to adapt
+	 * @param globalRewrite the global AST rewriter (may be different from typeDecl's AST)
+	 * @param ast the AST instance
+	 * @param importRewrite the import rewriter
+	 * @param group the text edit group
+	 */
+	public static void adaptTypeDeclaration(TypeDeclaration typeDecl, ASTRewrite globalRewrite, AST ast,
+			ImportRewrite importRewrite, TextEditGroup group) {
+		// Create separate rewriters if the type declaration is in a different compilation unit
+<span class="fc" id="L162">		ASTRewrite rewriteToUse = getASTRewrite(typeDecl, ast, globalRewrite);</span>
+<span class="fc" id="L163">		ImportRewrite importRewriteToUse = getImportRewrite(typeDecl, ast, importRewrite);</span>
+
+		// Remove ExternalResource superclass
+<span class="fc" id="L166">		removeSuperclassType(typeDecl, rewriteToUse, group);</span>
+
+		// Update lifecycle methods: before() -&gt; beforeEach(), after() -&gt; afterEach()
+<span class="fc" id="L169">		LifecycleMethodAdapter.updateLifecycleMethodsInClass(typeDecl, rewriteToUse, ast, group, importRewriteToUse,</span>
+<span class="fc" id="L170">				METHOD_BEFORE, METHOD_AFTER, METHOD_BEFORE_EACH, METHOD_AFTER_EACH);</span>
+
+		// Add required JUnit 5 callback imports
+<span class="fc" id="L173">		importRewriteToUse.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);</span>
+<span class="fc" id="L174">		importRewriteToUse.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);</span>
+
+		// If we created a separate rewriter, commit the change
+<span class="pc bpc" id="L177" title="1 of 2 branches missed.">		if (rewriteToUse != globalRewrite) {</span>
+<span class="fc" id="L178">			DocumentHelper.createChangeForRewrite(ASTNavigationUtils.findCompilationUnit(typeDecl), rewriteToUse);</span>
+		}
+<span class="fc" id="L180">	}</span>
+
+	/**
+	 * Refactors an anonymous ExternalResource class to implement JUnit 5 callback interfaces.
+	 * Converts the anonymous class to a named nested class with before/after callback methods.
+	 * 
+	 * @param anonymousClass the anonymous class declaration to refactor
+	 * @param fieldDeclaration the field containing the anonymous class
+	 * @param fieldStatic whether the field is static
+	 * @param rewriter the AST rewriter
+	 * @param ast the AST instance
+	 * @param group the text edit group
+	 * @param importRewriter the import rewriter
+	 */
+	public static void refactorAnonymousClassToImplementCallbacks(AnonymousClassDeclaration anonymousClass,
+			FieldDeclaration fieldDeclaration, boolean fieldStatic, ASTRewrite rewriter, AST ast, TextEditGroup group,
+			ImportRewrite importRewriter) {
+
+<span class="pc bpc" id="L198" title="1 of 2 branches missed.">		if (anonymousClass == null) {</span>
+<span class="nc" id="L199">			return;</span>
+		}
+
+		// Access the surrounding ClassInstanceCreation
+<span class="fc" id="L203">		ASTNode parent = anonymousClass.getParent();</span>
+<span class="pc bpc" id="L204" title="1 of 2 branches missed.">		if (parent instanceof ClassInstanceCreation) {</span>
+<span class="fc" id="L205">			ClassInstanceCreation classInstanceCreation = (ClassInstanceCreation) parent;</span>
+<span class="fc" id="L206">			ensureClassInstanceRewrite(classInstanceCreation, rewriter, importRewriter, group, fieldStatic);</span>
+
+<span class="fc" id="L208">			String fieldName = NamingUtils.extractFieldName(fieldDeclaration);</span>
+<span class="fc" id="L209">			String nestedClassName = NamingUtils.generateUniqueNestedClassName(anonymousClass, fieldName);</span>
+<span class="fc" id="L210">			TypeDeclaration nestedClass = createNestedClassFromAnonymous(anonymousClass, nestedClassName, fieldStatic,</span>
+<span class="fc" id="L211">					rewriter, ast, importRewriter, group);</span>
+
+<span class="fc" id="L213">			replaceFieldWithExtensionDeclaration(classInstanceCreation, nestedClassName, fieldStatic, rewriter, ast,</span>
+<span class="fc" id="L214">					group, importRewriter);</span>
+		}
+<span class="fc" id="L216">	}</span>
+
+	/**
+	 * Creates a nested class from an anonymous ExternalResource declaration.
+	 * Converts anonymous class lifecycle methods (before/after) to JUnit 5 callback methods
+	 * (beforeEach/afterEach) and implements the appropriate callback interfaces.
+	 * 
+	 * @param anonymousClass the anonymous class to convert
+	 * @param className the name for the new nested class
+	 * @param fieldStatic whether the field is static (affects which callbacks to implement)
+	 * @param rewriter the AST rewriter
+	 * @param ast the AST instance
+	 * @param importRewriter the import rewriter
+	 * @param group the text edit group
+	 * @return the newly created nested class declaration
+	 */
+	public static TypeDeclaration createNestedClassFromAnonymous(AnonymousClassDeclaration anonymousClass,
+			String className, boolean fieldStatic, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+			TextEditGroup group) {
+
+		// Create the new TypeDeclaration
+<span class="fc" id="L237">		TypeDeclaration nestedClass = ast.newTypeDeclaration();</span>
+<span class="fc" id="L238">		nestedClass.setName(ast.newSimpleName(className));</span>
+<span class="pc bpc" id="L239" title="1 of 2 branches missed.">		if (fieldStatic) {</span>
+<span class="nc" id="L240">			nestedClass.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.STATIC_KEYWORD));</span>
+		}
+
+		// Add JUnit 5 callback interfaces (before/after each or all depending on static)
+		// Use addImport to get the appropriate name (simple or qualified based on conflicts)
+<span class="pc bpc" id="L245" title="1 of 2 branches missed.">		if (fieldStatic) {</span>
+<span class="nc" id="L246">			String beforeAllName = importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_ALL_CALLBACK);</span>
+<span class="nc" id="L247">			String afterAllName = importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_ALL_CALLBACK);</span>
+<span class="nc" id="L248">			nestedClass.superInterfaceTypes()</span>
+<span class="nc" id="L249">					.add(ast.newSimpleType(ast.newName(beforeAllName)));</span>
+<span class="nc" id="L250">			nestedClass.superInterfaceTypes()</span>
+<span class="nc" id="L251">					.add(ast.newSimpleType(ast.newName(afterAllName)));</span>
+<span class="nc" id="L252">		} else {</span>
+<span class="fc" id="L253">			String beforeEachName = importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);</span>
+<span class="fc" id="L254">			String afterEachName = importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);</span>
+<span class="fc" id="L255">			nestedClass.superInterfaceTypes()</span>
+<span class="fc" id="L256">					.add(ast.newSimpleType(ast.newName(beforeEachName)));</span>
+<span class="fc" id="L257">			nestedClass.superInterfaceTypes()</span>
+<span class="fc" id="L258">					.add(ast.newSimpleType(ast.newName(afterEachName)));</span>
+		}
+
+		// Transfer lifecycle methods from anonymous class to new class
+<span class="fc" id="L262">		ListRewrite bodyRewrite = rewriter.getListRewrite(nestedClass, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);</span>
+<span class="fc bfc" id="L263" title="All 2 branches covered.">		for (Object decl : anonymousClass.bodyDeclarations()) {</span>
+<span class="pc bpc" id="L264" title="1 of 2 branches missed.">			if (decl instanceof MethodDeclaration) {</span>
+<span class="fc" id="L265">				MethodDeclaration method = (MethodDeclaration) decl;</span>
+
+				// Convert before() -&gt; beforeEach/beforeAll(ExtensionContext) and after() -&gt; afterEach/afterAll(ExtensionContext)
+<span class="fc bfc" id="L268" title="All 2 branches covered.">				if (isLifecycleMethod(method, METHOD_BEFORE)) {</span>
+<span class="pc bpc" id="L269" title="1 of 2 branches missed.">					String beforeMethodName = fieldStatic ? METHOD_BEFORE_ALL : METHOD_BEFORE_EACH;</span>
+<span class="fc" id="L270">					MethodDeclaration beforeCallbackMethod = LifecycleMethodAdapter.createLifecycleCallbackMethod(ast,</span>
+<span class="fc" id="L271">							beforeMethodName, EXTENSION_CONTEXT, method.getBody(), group);</span>
+<span class="fc" id="L272">					bodyRewrite.insertLast(beforeCallbackMethod, group);</span>
+<span class="pc bpc" id="L273" title="1 of 2 branches missed.">				} else if (isLifecycleMethod(method, METHOD_AFTER)) {</span>
+<span class="pc bpc" id="L274" title="1 of 2 branches missed.">					String afterMethodName = fieldStatic ? METHOD_AFTER_ALL : METHOD_AFTER_EACH;</span>
+<span class="fc" id="L275">					MethodDeclaration afterCallbackMethod = LifecycleMethodAdapter.createLifecycleCallbackMethod(ast,</span>
+<span class="fc" id="L276">							afterMethodName, EXTENSION_CONTEXT, method.getBody(), group);</span>
+<span class="fc" id="L277">					bodyRewrite.insertLast(afterCallbackMethod, group);</span>
+				}
+			}
+		}
+
+		// Add the new class to the enclosing type
+<span class="fc" id="L283">		TypeDeclaration parentType = ASTNavigationUtils.findEnclosingTypeDeclaration(anonymousClass);</span>
+<span class="pc bpc" id="L284" title="1 of 2 branches missed.">		if (parentType != null) {</span>
+<span class="fc" id="L285">			ListRewrite enclosingBodyRewrite = rewriter.getListRewrite(parentType,</span>
+<span class="fc" id="L286">					TypeDeclaration.BODY_DECLARATIONS_PROPERTY);</span>
+<span class="fc" id="L287">			enclosingBodyRewrite.insertLast(nestedClass, group);</span>
+		}
+
+<span class="fc" id="L290">		return nestedClass;</span>
+	}
+
+	/**
+	 * Ensures that an anonymous ExternalResource class is properly rewritten for JUnit 5.
+	 * Removes the ExternalResource superclass and adds necessary JUnit 5 callback imports.
+	 * 
+	 * @param classInstanceCreation the class instance creation containing the anonymous class
+	 * @param rewriter the AST rewriter
+	 * @param importRewriter the import rewriter
+	 * @param group the text edit group
+	 * @param fieldStatic true if the field is static (use BeforeAll/AfterAll), false for instance (use BeforeEach/AfterEach)
+	 */
+	public static void ensureClassInstanceRewrite(ClassInstanceCreation classInstanceCreation, ASTRewrite rewriter,
+			ImportRewrite importRewriter, TextEditGroup group, boolean fieldStatic) {
+<span class="fc" id="L305">		removeExternalResourceSuperclass(classInstanceCreation, rewriter, importRewriter, group);</span>
+
+		// Add required JUnit 5 callback imports
+<span class="pc bpc" id="L308" title="1 of 2 branches missed.">		if (fieldStatic) {</span>
+<span class="nc" id="L309">			importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_ALL_CALLBACK);</span>
+<span class="nc" id="L310">			importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_ALL_CALLBACK);</span>
+<span class="nc" id="L311">		} else {</span>
+<span class="fc" id="L312">			importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);</span>
+<span class="fc" id="L313">			importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);</span>
+		}
+<span class="fc" id="L315">		importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT);</span>
+<span class="fc" id="L316">	}</span>
+
+	/**
+	 * Removes the ExternalResource superclass from an anonymous class.
+	 * 
+	 * @param anonymousClass the class instance creation
+	 * @param rewrite the AST rewriter
+	 * @param importRewriter the import rewriter
+	 * @param group the text edit group
+	 */
+	private static void removeExternalResourceSuperclass(ClassInstanceCreation anonymousClass, ASTRewrite rewrite,
+			ImportRewrite importRewriter, TextEditGroup group) {
+		// Check if the anonymous class inherits from ExternalResource
+<span class="fc" id="L329">		ITypeBinding typeBinding = anonymousClass.resolveTypeBinding();</span>
+<span class="pc bpc" id="L330" title="1 of 2 branches missed.">		if (typeBinding.getSuperclass() != null</span>
+<span class="pc bpc" id="L331" title="1 of 2 branches missed.">				&amp;&amp; ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(typeBinding.getSuperclass().getQualifiedName())) {</span>
+
+			// Remove the superclass by replacing the type in the ClassInstanceCreation
+<span class="fc" id="L334">			Type type = anonymousClass.getType();</span>
+<span class="pc bpc" id="L335" title="1 of 2 branches missed.">			if (type != null) {</span>
+<span class="fc" id="L336">				rewrite.replace(type, anonymousClass.getAST().newSimpleType(anonymousClass.getAST().newSimpleName(&quot;Object&quot;)),</span>
+<span class="fc" id="L337">						group);</span>
+			}
+
+			// Remove the import of the superclass
+<span class="fc" id="L341">			importRewriter.removeImport(ORG_JUNIT_RULES_EXTERNAL_RESOURCE);</span>
+		}
+<span class="fc" id="L343">	}</span>
+
+	/**
+	 * Refactors a type to implement JUnit 5 callback interfaces instead of extending ExternalResource.
+	 * 
+	 * @param node the type declaration
+	 * @param rewriter the AST rewriter
+	 * @param ast the AST instance
+	 * @param group the text edit group
+	 * @param importRewriter the import rewriter
+	 * @param beforeCallback the before callback simple name
+	 * @param afterCallback the after callback simple name
+	 * @param importBeforeCallback the before callback fully qualified name
+	 * @param importAfterCallback the after callback fully qualified name
+	 */
+	private static void refactorToImplementCallbacks(TypeDeclaration node, ASTRewrite rewriter, AST ast,
+			TextEditGroup group, ImportRewrite importRewriter, String beforeCallback, String afterCallback,
+			String importBeforeCallback, String importAfterCallback) {
+
+<span class="pc bpc" id="L362" title="4 of 8 branches missed.">		if (node == null || rewriter == null || ast == null || importRewriter == null) {</span>
+<span class="nc" id="L363">			return;</span>
+		}
+
+<span class="fc" id="L366">		ASTRewrite rewriteToUse = getASTRewrite(node, ast, rewriter);</span>
+<span class="fc" id="L367">		ImportRewrite importRewriteToUse = getImportRewrite(node, ast, importRewriter);</span>
+
+<span class="fc" id="L369">		rewriteToUse.remove(node.getSuperclassType(), group);</span>
+<span class="fc" id="L370">		importRewriteToUse.removeImport(ORG_JUNIT_RULES_EXTERNAL_RESOURCE);</span>
+
+<span class="fc" id="L372">		ListRewrite listRewrite = rewriteToUse.getListRewrite(node, TypeDeclaration.SUPER_INTERFACE_TYPES_PROPERTY);</span>
+<span class="fc" id="L373">		ImportHelper.addInterfaceCallback(listRewrite, ast, beforeCallback, group, importRewriteToUse,</span>
+<span class="fc" id="L374">				importBeforeCallback);</span>
+<span class="fc" id="L375">		ImportHelper.addInterfaceCallback(listRewrite, ast, afterCallback, group, importRewriteToUse,</span>
+<span class="fc" id="L376">				importAfterCallback);</span>
+
+<span class="fc bfc" id="L378" title="All 2 branches covered.">		if (rewriteToUse != rewriter) {</span>
+<span class="fc" id="L379">			DocumentHelper.createChangeForRewrite(ASTNavigationUtils.findCompilationUnit(node), rewriteToUse);</span>
+		}
+<span class="fc" id="L381">	}</span>
+
+	/**
+	 * Removes the superclass type from a type declaration.
+	 * Used when converting ExternalResource subclasses to implement callback interfaces.
+	 * 
+	 * @param typeDecl the type declaration to modify
+	 * @param rewrite the AST rewriter
+	 * @param group the text edit group
+	 */
+	private static void removeSuperclassType(TypeDeclaration typeDecl, ASTRewrite rewrite, TextEditGroup group) {
+<span class="pc bpc" id="L392" title="1 of 2 branches missed.">		if (typeDecl.getSuperclassType() != null) {</span>
+<span class="fc" id="L393">			rewrite.remove(typeDecl.getSuperclassType(), group);</span>
+		}
+<span class="fc" id="L395">	}</span>
+
+	/**
+	 * Adds the @RegisterExtension annotation to a field.
+	 * Resolves the field declaration from the given node and delegates to addRegisterExtensionToField.
+	 * 
+	 * @param node the AST node (either a FieldDeclaration or a ClassInstanceCreation)
+	 * @param rewrite the AST rewriter
+	 * @param ast the AST instance
+	 * @param importRewrite the import rewriter
+	 * @param group the text edit group
+	 */
+	private static void addRegisterExtensionAnnotation(ASTNode node, ASTRewrite rewrite, AST ast,
+			ImportRewrite importRewrite, TextEditGroup group) {
+<span class="fc" id="L409">		FieldDeclaration field = resolveFieldDeclaration(node);</span>
+<span class="pc bpc" id="L410" title="1 of 2 branches missed.">		if (field != null) {</span>
+<span class="fc" id="L411">			addRegisterExtensionToField(field, rewrite, ast, importRewrite, group);</span>
+		}
+<span class="fc" id="L413">	}</span>
+
+	/**
+	 * Resolves the {@link FieldDeclaration} from the given AST node.
+	 * 
+	 * @param node an AST node that is either a {@link FieldDeclaration} or a
+	 *             {@link ClassInstanceCreation} within a field initializer
+	 * @return the resolved {@link FieldDeclaration}, or {@code null} if not found
+	 */
+	private static FieldDeclaration resolveFieldDeclaration(ASTNode node) {
+<span class="pc bpc" id="L423" title="1 of 2 branches missed.">		if (node instanceof FieldDeclaration) {</span>
+<span class="fc" id="L424">			return (FieldDeclaration) node;</span>
+<span class="nc bnc" id="L425" title="All 2 branches missed.">		} else if (node instanceof ClassInstanceCreation) {</span>
+<span class="nc" id="L426">			return ASTNodes.getParent(node, FieldDeclaration.class);</span>
+		}
+<span class="nc" id="L428">		return null;</span>
+	}
+
+	/**
+	 * Adds the {@code @RegisterExtension} annotation to the given field if not already present.
+	 */
+	private static void addRegisterExtensionToField(FieldDeclaration field, ASTRewrite rewrite, AST ast,
+			ImportRewrite importRewrite, TextEditGroup group) {
+<span class="fc" id="L436">		boolean hasRegisterExtension = AnnotationUtils.hasAnnotationBySimpleName(field.modifiers(),</span>
+<span class="fc" id="L437">				ANNOTATION_REGISTER_EXTENSION);</span>
+
+<span class="fc" id="L439">		ListRewrite listRewrite = rewrite.getListRewrite(field, FieldDeclaration.MODIFIERS2_PROPERTY);</span>
+<span class="fc" id="L440">		boolean hasPendingRegisterExtension = listRewrite.getRewrittenList().stream()</span>
+<span class="pc bpc" id="L441" title="1 of 2 branches missed.">				.anyMatch(rewritten -&gt; rewritten instanceof MarkerAnnotation &amp;&amp; ((MarkerAnnotation) rewritten)</span>
+<span class="pc bnc" id="L442" title="All 2 branches missed.">						.getTypeName().getFullyQualifiedName().equals(ANNOTATION_REGISTER_EXTENSION));</span>
+
+<span class="pc bpc" id="L444" title="2 of 4 branches missed.">		if (!hasRegisterExtension &amp;&amp; !hasPendingRegisterExtension) {</span>
+<span class="fc" id="L445">			MarkerAnnotation registerExtensionAnnotation = ast.newMarkerAnnotation();</span>
+<span class="fc" id="L446">			registerExtensionAnnotation.setTypeName(ast.newName(ANNOTATION_REGISTER_EXTENSION));</span>
+<span class="fc" id="L447">			listRewrite.insertFirst(registerExtensionAnnotation, group);</span>
+<span class="fc" id="L448">			importRewrite.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_REGISTER_EXTENSION);</span>
+		}
+<span class="fc" id="L450">	}</span>
+
+	/**
+	 * Adds the @ExtendWith annotation to a class for JUnit 5 extension integration.
+	 * Used when migrating JUnit 4 @Rule fields to JUnit 5 @RegisterExtension.
+	 * 
+	 * @param rewrite the AST rewriter
+	 * @param ast the AST instance
+	 * @param group the text edit group
+	 * @param importRewriter the import rewriter
+	 * @param className the simple name of the extension class
+	 * @param field the field that triggered the need for this annotation
+	 */
+	public static void addExtendWithAnnotation(ASTRewrite rewrite, AST ast, TextEditGroup group,
+			ImportRewrite importRewriter, String className, FieldDeclaration field) {
+<span class="nc" id="L465">		TypeDeclaration parentClass = getParentTypeDeclaration(field);</span>
+<span class="nc bnc" id="L466" title="All 2 branches missed.">		if (parentClass == null) {</span>
+<span class="nc" id="L467">			return;</span>
+		}
+
+		// Create @ExtendWith(ClassName.class) annotation
+<span class="nc" id="L471">		SingleMemberAnnotation newAnnotation = ast.newSingleMemberAnnotation();</span>
+<span class="nc" id="L472">		newAnnotation.setTypeName(ast.newName(ANNOTATION_EXTEND_WITH));</span>
+<span class="nc" id="L473">		TypeLiteral newTypeLiteral = ast.newTypeLiteral();</span>
+<span class="nc" id="L474">		newTypeLiteral.setType(ast.newSimpleType(ast.newSimpleName(className)));</span>
+<span class="nc" id="L475">		newAnnotation.setValue(newTypeLiteral);</span>
+
+		// Add annotation to class
+<span class="nc" id="L478">		ListRewrite modifierListRewrite = rewrite.getListRewrite(parentClass, TypeDeclaration.MODIFIERS2_PROPERTY);</span>
+<span class="nc" id="L479">		modifierListRewrite.insertFirst(newAnnotation, group);</span>
+
+		// Add import for @ExtendWith
+<span class="nc" id="L482">		importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH);</span>
+<span class="nc" id="L483">	}</span>
+
+	/**
+	 * Removes a @Rule or @ClassRule annotation from a body declaration.
+	 * Also removes the corresponding import statement.
+	 * 
+	 * @param declaration the body declaration to remove the annotation from
+	 * @param rewriter the AST rewriter
+	 * @param group the text edit group
+	 * @param importRewriter the import rewriter
+	 * @param annotationclass the fully qualified annotation class name to remove
+	 */
+	private static void removeRuleAnnotation(BodyDeclaration declaration, ASTRewrite rewriter, TextEditGroup group,
+			ImportRewrite importRewriter, String annotationclass) {
+<span class="fc" id="L497">		java.util.List&lt;?&gt; modifiers = declaration.modifiers();</span>
+<span class="pc bpc" id="L498" title="1 of 2 branches missed.">		for (Object modifier : modifiers) {</span>
+<span class="pc bpc" id="L499" title="1 of 2 branches missed.">			if (modifier instanceof Annotation) {</span>
+<span class="fc" id="L500">				Annotation annotation = (Annotation) modifier;</span>
+<span class="fc" id="L501">				ITypeBinding binding = annotation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L502" title="2 of 4 branches missed.">				if (binding != null &amp;&amp; binding.getQualifiedName().equals(annotationclass)) {</span>
+<span class="fc" id="L503">					rewriter.remove(annotation, group);</span>
+<span class="fc" id="L504">					importRewriter.removeImport(annotationclass);</span>
+<span class="fc" id="L505">					break;</span>
+				}
+			}
+		}
+<span class="fc" id="L509">	}</span>
+
+	private static void replaceFieldWithExtensionDeclaration(ClassInstanceCreation classInstanceCreation,
+			String nestedClassName, boolean fieldStatic, ASTRewrite rewriter, AST ast, TextEditGroup group,
+			ImportRewrite importRewriter) {
+
+<span class="fc" id="L515">		FieldDeclaration fieldDecl = ASTNodes.getParent(classInstanceCreation, FieldDeclaration.class);</span>
+<span class="pc bpc" id="L516" title="1 of 2 branches missed.">		if (fieldDecl != null) {</span>
+			// Remove the @Rule annotation
+<span class="fc" id="L518">			removeRuleAnnotation(fieldDecl, rewriter, group, importRewriter, ORG_JUNIT_RULE);</span>
+
+			// Add the @RegisterExtension annotation
+<span class="fc" id="L521">			addRegisterExtensionAnnotation(fieldDecl, rewriter, ast, importRewriter, group);</span>
+
+			// Change the type of the FieldDeclaration
+<span class="fc" id="L524">			Type newType = ast.newSimpleType(ast.newName(nestedClassName));</span>
+<span class="fc" id="L525">			rewriter.replace(fieldDecl.getType(), newType, group);</span>
+
+			// Add the initialization
+<span class="fc bfc" id="L528" title="All 2 branches covered.">			for (Object fragment : fieldDecl.fragments()) {</span>
+<span class="pc bpc" id="L529" title="1 of 2 branches missed.">				if (fragment instanceof VariableDeclarationFragment) {</span>
+<span class="fc" id="L530">					VariableDeclarationFragment fragmentNode = (VariableDeclarationFragment) fragment;</span>
+<span class="fc" id="L531">					ClassInstanceCreation newInstance = ast.newClassInstanceCreation();</span>
+<span class="fc" id="L532">					newInstance.setType(ast.newSimpleType(ast.newName(nestedClassName)));</span>
+<span class="fc" id="L533">					rewriter.replace(fragmentNode.getInitializer(), newInstance, group);</span>
+				}
+			}
+		}
+<span class="fc" id="L537">	}</span>
+
+	/**
+	 * Determines the appropriate callback configuration based on whether the field is static.
+	 * 
+	 * @param fieldStatic whether the field is static
+	 * @return the callback configuration with callback names and import paths
+	 */
+	private static CallbackConfig determineCallbackConfig(boolean fieldStatic) {
+<span class="fc bfc" id="L546" title="All 2 branches covered.">		if (fieldStatic) {</span>
+<span class="fc" id="L547">			return new CallbackConfig(BEFORE_ALL_CALLBACK, AFTER_ALL_CALLBACK,</span>
+<span class="fc" id="L548">					ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_ALL_CALLBACK,</span>
+<span class="fc" id="L549">					ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_ALL_CALLBACK);</span>
+		} else {
+<span class="fc" id="L551">			return new CallbackConfig(BEFORE_EACH_CALLBACK, AFTER_EACH_CALLBACK,</span>
+<span class="fc" id="L552">					ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK,</span>
+<span class="fc" id="L553">					ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);</span>
+		}
+	}
+
+	/**
+	 * Configuration holder for callback names and import paths.
+	 */
+	private static class CallbackConfig {
+		final String beforeCallback;
+		final String afterCallback;
+		final String importBeforeCallback;
+		final String importAfterCallback;
+
+<span class="fc" id="L566">		CallbackConfig(String beforeCallback, String afterCallback, String importBeforeCallback,</span>
+				String importAfterCallback) {
+<span class="fc" id="L568">			this.beforeCallback = beforeCallback;</span>
+<span class="fc" id="L569">			this.afterCallback = afterCallback;</span>
+<span class="fc" id="L570">			this.importBeforeCallback = importBeforeCallback;</span>
+<span class="fc" id="L571">			this.importAfterCallback = importAfterCallback;</span>
+<span class="fc" id="L572">		}</span>
+	}
+
+	private static boolean shouldProcessNode(TypeDeclaration node) {
+<span class="fc" id="L576">		ITypeBinding binding = node.resolveBinding();</span>
+<span class="pc bpc" id="L577" title="2 of 4 branches missed.">		return binding != null &amp;&amp; isExternalResource(binding, ORG_JUNIT_RULES_EXTERNAL_RESOURCE);</span>
+	}
+
+	private static boolean isExternalResource(FieldDeclaration field, String typeToLookup) {
+<span class="fc" id="L581">		ITypeBinding binding = ((VariableDeclarationFragment) field.fragments().get(0)).resolveBinding().getType();</span>
+<span class="fc" id="L582">		return org.sandbox.jdt.internal.corext.util.TypeCheckingUtils.isTypeOrSubtype(binding, typeToLookup);</span>
+	}
+
+	private static boolean isExternalResource(ITypeBinding typeBinding, String typeToLookup) {
+<span class="fc" id="L586">		return org.sandbox.jdt.internal.corext.util.TypeCheckingUtils.isTypeOrSubtype(typeBinding, typeToLookup);</span>
+	}
+
+	private static boolean isDirectlyExtendingExternalResource(ITypeBinding binding) {
+<span class="fc" id="L590">		ITypeBinding superclass = binding.getSuperclass();</span>
+<span class="pc bpc" id="L591" title="1 of 4 branches missed.">		return superclass != null &amp;&amp; ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(superclass.getQualifiedName());</span>
+	}
+
+	private static boolean isLifecycleMethod(MethodDeclaration method, String methodName) {
+<span class="fc" id="L595">		return methodName.equals(method.getName().getIdentifier());</span>
+	}
+
+	private static TypeDeclaration getParentTypeDeclaration(ASTNode node) {
+<span class="nc" id="L599">		return ASTNavigationUtils.getParentTypeDeclaration(node);</span>
+	}
+
+	private static ASTRewrite getASTRewrite(ASTNode node, AST globalAST, ASTRewrite globalRewrite) {
+<span class="fc bfc" id="L603" title="All 2 branches covered.">		return (node.getAST() == globalAST) ? globalRewrite : ASTRewrite.create(node.getAST());</span>
+	}
+
+	private static ImportRewrite getImportRewrite(ASTNode node, AST globalAST, ImportRewrite globalImportRewrite) {
+<span class="fc" id="L607">		org.eclipse.jdt.core.dom.CompilationUnit compilationUnit = ASTNavigationUtils.findCompilationUnit(node);</span>
+<span class="fc bfc" id="L608" title="All 2 branches covered.">		return (node.getAST() == globalAST) ? globalImportRewrite : ImportRewrite.create(compilationUnit, true);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

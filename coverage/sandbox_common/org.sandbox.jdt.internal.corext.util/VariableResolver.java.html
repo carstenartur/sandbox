@@ -1,0 +1,421 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>VariableResolver.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.util</a> &gt; <span class="el_source">VariableResolver.java</span></div><h1>VariableResolver.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.util;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ArrayType;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.IAnnotationBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.Initializer;
+import org.eclipse.jdt.core.dom.LambdaExpression;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.PrimitiveType;
+import org.eclipse.jdt.core.dom.SimpleType;
+import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+
+/**
+ * Utility class for resolving variable types and declarations in AST nodes.
+ * 
+ * &lt;p&gt;
+ * This class provides centralized variable resolution functionality for
+ * sandbox cleanup plugins. It walks the AST tree to find variable declarations
+ * and extract type information, which is critical for generating type-aware
+ * code transformations.
+ * &lt;/p&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Key Functionality:&lt;/b&gt;&lt;/p&gt;
+ * &lt;ul&gt;
+ * &lt;li&gt;Variable type resolution across scopes&lt;/li&gt;
+ * &lt;li&gt;Type binding extraction&lt;/li&gt;
+ * &lt;li&gt;Annotation checking (@NotNull, @NonNull)&lt;/li&gt;
+ * &lt;li&gt;Support for primitive and reference types&lt;/li&gt;
+ * &lt;/ul&gt;
+ * 
+ * @see TypeCheckingUtils
+ * @see AnnotationUtils
+ */
+public final class VariableResolver {
+
+	/**
+	 * Private constructor to prevent instantiation of this utility class.
+	 */
+	private VariableResolver() {
+		// Utility class - no instances allowed
+	}
+
+	/**
+	 * Attempts to determine the type name of a variable by searching for its
+	 * declaration in the AST tree.
+	 * 
+	 * &lt;p&gt;
+	 * This method walks up the AST tree starting from the given node, searching
+	 * through all parent scopes (blocks, methods, initializers, lambdas) to find
+	 * the variable declaration. It returns the simple type name (e.g., &quot;int&quot;,
+	 * &quot;String&quot;, &quot;double&quot;) if found.
+	 * &lt;/p&gt;
+	 * 
+	 * &lt;p&gt;&lt;b&gt;Supported Scopes:&lt;/b&gt;&lt;/p&gt;
+	 * &lt;ul&gt;
+	 * &lt;li&gt;Block statements&lt;/li&gt;
+	 * &lt;li&gt;Method declarations&lt;/li&gt;
+	 * &lt;li&gt;Initializer blocks (instance or static)&lt;/li&gt;
+	 * &lt;li&gt;Lambda expressions&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * 
+	 * &lt;p&gt;&lt;b&gt;Examples:&lt;/b&gt;&lt;/p&gt;
+	 * &lt;pre&gt;{@code
+	 * // Finds variable in method scope
+	 * public void method() {
+	 *     int count = 0;  // getVariableType(&quot;count&quot;) → &quot;int&quot;
+	 *     for (Item item : items) {
+	 *         count++;
+	 *     }
+	 * }
+	 * 
+	 * // Finds variable in block scope
+	 * {
+	 *     double sum = 0.0;  // getVariableType(&quot;sum&quot;) → &quot;double&quot;
+	 *     for (Number n : numbers) {
+	 *         sum += n.doubleValue();
+	 *     }
+	 * }
+	 * }&lt;/pre&gt;
+	 * 
+	 * @param startNode the starting node for the search (typically a loop node)
+	 *                  (must not be null)
+	 * @param varName   the variable name to look up (must not be null)
+	 * @return the simple type name (e.g., &quot;double&quot;, &quot;int&quot;, &quot;String&quot;) or null if not
+	 *         found
+	 * @throws IllegalArgumentException if startNode or varName is null
+	 */
+	public static String getVariableType(ASTNode startNode, String varName) {
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">		if (startNode == null) {</span>
+<span class="nc" id="L108">			throw new IllegalArgumentException(&quot;startNode cannot be null&quot;); //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">		if (varName == null) {</span>
+<span class="nc" id="L111">			throw new IllegalArgumentException(&quot;varName cannot be null&quot;); //$NON-NLS-1$</span>
+		}
+
+		// Walk up the AST tree searching for the variable in each scope
+<span class="fc" id="L115">		ASTNode currentNode = startNode.getParent();</span>
+
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">		while (currentNode != null) {</span>
+			// Search in blocks
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">			if (currentNode instanceof Block) {</span>
+<span class="fc" id="L120">				Block block = (Block) currentNode;</span>
+<span class="fc" id="L121">				String type = searchBlockForVariableType(block, varName);</span>
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">				if (type != null) {</span>
+<span class="fc" id="L123">					return type;</span>
+				}
+			}
+			// Search in method bodies
+<span class="nc bnc" id="L127" title="All 2 branches missed.">			else if (currentNode instanceof MethodDeclaration) {</span>
+<span class="nc" id="L128">				MethodDeclaration method = (MethodDeclaration) currentNode;</span>
+<span class="nc bnc" id="L129" title="All 2 branches missed.">				if (method.getBody() != null) {</span>
+<span class="nc" id="L130">					String type = searchBlockForVariableType(method.getBody(), varName);</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">					if (type != null) {</span>
+<span class="nc" id="L132">						return type;</span>
+					}
+				}
+			}
+			// Search in initializer blocks (instance or static)
+<span class="nc bnc" id="L137" title="All 2 branches missed.">			else if (currentNode instanceof Initializer) {</span>
+<span class="nc" id="L138">				Initializer initializer = (Initializer) currentNode;</span>
+<span class="nc bnc" id="L139" title="All 2 branches missed.">				if (initializer.getBody() != null) {</span>
+<span class="nc" id="L140">					String type = searchBlockForVariableType(initializer.getBody(), varName);</span>
+<span class="nc bnc" id="L141" title="All 2 branches missed.">					if (type != null) {</span>
+<span class="nc" id="L142">						return type;</span>
+					}
+				}
+			}
+			// Search in lambda expressions
+<span class="nc bnc" id="L147" title="All 2 branches missed.">			else if (currentNode instanceof LambdaExpression) {</span>
+<span class="nc" id="L148">				LambdaExpression lambda = (LambdaExpression) currentNode;</span>
+<span class="nc bnc" id="L149" title="All 2 branches missed.">				if (lambda.getBody() instanceof Block) {</span>
+<span class="nc" id="L150">					String type = searchBlockForVariableType((Block) lambda.getBody(), varName);</span>
+<span class="nc bnc" id="L151" title="All 2 branches missed.">					if (type != null) {</span>
+<span class="nc" id="L152">						return type;</span>
+					}
+				}
+			}
+
+			// Move up to parent scope
+<span class="nc" id="L158">			currentNode = currentNode.getParent();</span>
+		}
+
+<span class="nc" id="L161">		return null;</span>
+	}
+
+	/**
+	 * Searches a block for a variable declaration and returns its type.
+	 * 
+	 * &lt;p&gt;
+	 * This method iterates through all statements in the block looking for
+	 * {@link VariableDeclarationStatement}s that declare the specified variable. It
+	 * handles primitive types, simple types, and array types, using bindings when
+	 * available for accurate type resolution.
+	 * &lt;/p&gt;
+	 * 
+	 * &lt;p&gt;&lt;b&gt;Type Resolution Strategy:&lt;/b&gt;&lt;/p&gt;
+	 * &lt;ol&gt;
+	 * &lt;li&gt;Primitive types: Returns the primitive type code (e.g., &quot;int&quot;, &quot;double&quot;)&lt;/li&gt;
+	 * &lt;li&gt;Simple types with bindings: Returns the binding's simple name&lt;/li&gt;
+	 * &lt;li&gt;Simple types without bindings: Returns the fully qualified name&lt;/li&gt;
+	 * &lt;li&gt;Array types: Recursively resolves element type and appends &quot;[]&quot;&lt;/li&gt;
+	 * &lt;li&gt;Other types: Returns the string representation of the type&lt;/li&gt;
+	 * &lt;/ol&gt;
+	 * 
+	 * @param block   the block to search (may be null)
+	 * @param varName the variable name to find (must not be null)
+	 * @return the simple type name or null if not found
+	 * @throws IllegalArgumentException if varName is null
+	 */
+	public static String searchBlockForVariableType(Block block, String varName) {
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">		if (varName == null) {</span>
+<span class="nc" id="L190">			throw new IllegalArgumentException(&quot;varName cannot be null&quot;); //$NON-NLS-1$</span>
+		}
+
+<span class="pc bpc" id="L193" title="1 of 2 branches missed.">		if (block == null) {</span>
+<span class="nc" id="L194">			return null;</span>
+		}
+
+<span class="pc bpc" id="L197" title="1 of 2 branches missed.">		for (Object stmtObj : block.statements()) {</span>
+<span class="pc bpc" id="L198" title="1 of 2 branches missed.">			if (stmtObj instanceof VariableDeclarationStatement) {</span>
+<span class="fc" id="L199">				VariableDeclarationStatement varDecl = (VariableDeclarationStatement) stmtObj;</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">				for (Object fragObj : varDecl.fragments()) {</span>
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">					if (fragObj instanceof VariableDeclarationFragment) {</span>
+<span class="fc" id="L202">						VariableDeclarationFragment frag = (VariableDeclarationFragment) fragObj;</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">						if (frag.getName().getIdentifier().equals(varName)) {</span>
+<span class="fc" id="L204">							return extractTypeName(varDecl.getType());</span>
+						}
+					}
+				}
+			}
+		}
+<span class="nc" id="L210">		return null;</span>
+	}
+
+	/**
+	 * Extracts the type name from a Type node.
+	 * 
+	 * @param type the type to extract the name from
+	 * @return the type name, or null if unable to determine
+	 */
+	private static String extractTypeName(Type type) {
+<span class="pc bpc" id="L220" title="1 of 2 branches missed.">		if (type == null) {</span>
+<span class="nc" id="L221">			return null;</span>
+		}
+
+<span class="fc bfc" id="L224" title="All 2 branches covered.">		if (type.isPrimitiveType()) {</span>
+<span class="fc" id="L225">			return ((PrimitiveType) type).getPrimitiveTypeCode().toString();</span>
+<span class="pc bpc" id="L226" title="1 of 2 branches missed.">		} else if (type.isSimpleType()) {</span>
+<span class="fc" id="L227">			SimpleType simpleType = (SimpleType) type;</span>
+<span class="fc" id="L228">			ITypeBinding binding = simpleType.resolveBinding();</span>
+<span class="pc bpc" id="L229" title="1 of 2 branches missed.">			if (binding != null) {</span>
+<span class="fc" id="L230">				return binding.getName();</span>
+			} else {
+<span class="nc" id="L232">				return simpleType.getName().getFullyQualifiedName();</span>
+			}
+<span class="nc bnc" id="L234" title="All 2 branches missed.">		} else if (type.isArrayType()) {</span>
+<span class="nc" id="L235">			ArrayType arrayType = (ArrayType) type;</span>
+<span class="nc" id="L236">			Type elementType = arrayType.getElementType();</span>
+<span class="nc" id="L237">			String elementTypeName = extractTypeName(elementType);</span>
+<span class="nc bnc" id="L238" title="All 2 branches missed.">			return elementTypeName != null ? elementTypeName + &quot;[]&quot; : null; //$NON-NLS-1$</span>
+		} else {
+<span class="nc" id="L240">			return type.toString();</span>
+		}
+	}
+
+	/**
+	 * Gets the type binding for a variable name.
+	 * 
+	 * &lt;p&gt;
+	 * This method finds the variable declaration in the AST tree and returns its
+	 * {@link ITypeBinding}. Type bindings provide access to full type information
+	 * including qualified names, which is useful for distinguishing between
+	 * different types with the same simple name.
+	 * &lt;/p&gt;
+	 * 
+	 * &lt;p&gt;&lt;b&gt;Use Cases:&lt;/b&gt;&lt;/p&gt;
+	 * &lt;ul&gt;
+	 * &lt;li&gt;Distinguishing {@code String} concatenation from numeric addition&lt;/li&gt;
+	 * &lt;li&gt;Checking if a type is a specific class (e.g., {@code java.lang.String})&lt;/li&gt;
+	 * &lt;li&gt;Accessing type hierarchy information&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * 
+	 * @param startNode the starting node for the search (must not be null)
+	 * @param varName   the variable name (must not be null)
+	 * @return the type binding, or null if not found
+	 * @throws IllegalArgumentException if startNode or varName is null
+	 */
+	public static ITypeBinding getTypeBinding(ASTNode startNode, String varName) {
+<span class="pc bpc" id="L267" title="1 of 2 branches missed.">		if (startNode == null) {</span>
+<span class="nc" id="L268">			throw new IllegalArgumentException(&quot;startNode cannot be null&quot;); //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L270" title="1 of 2 branches missed.">		if (varName == null) {</span>
+<span class="nc" id="L271">			throw new IllegalArgumentException(&quot;varName cannot be null&quot;); //$NON-NLS-1$</span>
+		}
+
+<span class="fc" id="L274">		VariableDeclarationFragment frag = findVariableDeclaration(startNode, varName);</span>
+<span class="pc bpc" id="L275" title="1 of 2 branches missed.">		if (frag != null) {</span>
+<span class="fc" id="L276">			IVariableBinding binding = frag.resolveBinding();</span>
+<span class="pc bpc" id="L277" title="1 of 2 branches missed.">			if (binding != null) {</span>
+<span class="fc" id="L278">				return binding.getType();</span>
+			}
+		}
+<span class="nc" id="L281">		return null;</span>
+	}
+
+	/**
+	 * Finds the variable declaration fragment for a given variable name.
+	 * 
+	 * &lt;p&gt;
+	 * This method searches up the AST tree starting from the given node to find the
+	 * {@link VariableDeclarationFragment} that declares the specified variable. It
+	 * searches through all blocks in parent scopes.
+	 * &lt;/p&gt;
+	 * 
+	 * &lt;p&gt;&lt;b&gt;Search Strategy:&lt;/b&gt;&lt;/p&gt;
+	 * &lt;ol&gt;
+	 * &lt;li&gt;Start from the given node and walk up to parent nodes&lt;/li&gt;
+	 * &lt;li&gt;For each Block encountered, search its statements&lt;/li&gt;
+	 * &lt;li&gt;Look for VariableDeclarationStatements containing the variable&lt;/li&gt;
+	 * &lt;li&gt;Return the first matching VariableDeclarationFragment found&lt;/li&gt;
+	 * &lt;/ol&gt;
+	 * 
+	 * @param startNode the starting node for the search (must not be null)
+	 * @param varName   the variable name to find (must not be null)
+	 * @return the VariableDeclarationFragment, or null if not found
+	 * @throws IllegalArgumentException if startNode or varName is null
+	 */
+	public static VariableDeclarationFragment findVariableDeclaration(ASTNode startNode, String varName) {
+<span class="pc bpc" id="L307" title="1 of 2 branches missed.">		if (startNode == null) {</span>
+<span class="nc" id="L308">			throw new IllegalArgumentException(&quot;startNode cannot be null&quot;); //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L310" title="1 of 2 branches missed.">		if (varName == null) {</span>
+<span class="nc" id="L311">			throw new IllegalArgumentException(&quot;varName cannot be null&quot;); //$NON-NLS-1$</span>
+		}
+
+		// Try to find the variable declaration in the AST
+		// Start from the given node and walk up to find variable declarations
+<span class="fc" id="L316">		ASTNode current = startNode;</span>
+<span class="pc bpc" id="L317" title="1 of 2 branches missed.">		while (current != null) {</span>
+<span class="fc bfc" id="L318" title="All 2 branches covered.">			if (current instanceof Block) {</span>
+<span class="fc" id="L319">				Block block = (Block) current;</span>
+<span class="pc bpc" id="L320" title="1 of 2 branches missed.">				for (Object stmtObj : block.statements()) {</span>
+<span class="pc bpc" id="L321" title="1 of 2 branches missed.">					if (stmtObj instanceof VariableDeclarationStatement) {</span>
+<span class="fc" id="L322">						VariableDeclarationStatement varDecl = (VariableDeclarationStatement) stmtObj;</span>
+<span class="fc bfc" id="L323" title="All 2 branches covered.">						for (Object fragObj : varDecl.fragments()) {</span>
+<span class="pc bpc" id="L324" title="1 of 2 branches missed.">							if (fragObj instanceof VariableDeclarationFragment) {</span>
+<span class="fc" id="L325">								VariableDeclarationFragment frag = (VariableDeclarationFragment) fragObj;</span>
+<span class="fc bfc" id="L326" title="All 2 branches covered.">								if (varName.equals(frag.getName().getIdentifier())) {</span>
+<span class="fc" id="L327">									return frag;</span>
+								}
+							}
+						}
+					}
+				}
+			}
+<span class="fc" id="L334">			current = current.getParent();</span>
+		}
+
+<span class="nc" id="L337">		return null;</span>
+	}
+
+	/**
+	 * Checks if a variable has a @NotNull or @NonNull annotation.
+	 * 
+	 * &lt;p&gt;
+	 * This is used to determine if certain operations can be safely used.
+	 * For example, String::concat can be safely used instead of a null-safe lambda
+	 * (a, b) -&gt; a + b when the accumulator variable is guaranteed non-null.
+	 * &lt;/p&gt;
+	 * 
+	 * &lt;p&gt;&lt;b&gt;Supported Annotations:&lt;/b&gt;&lt;/p&gt;
+	 * &lt;ul&gt;
+	 * &lt;li&gt;{@code @NotNull} (various packages)&lt;/li&gt;
+	 * &lt;li&gt;{@code @NonNull} (various packages)&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * 
+	 * &lt;p&gt;&lt;b&gt;Example:&lt;/b&gt;&lt;/p&gt;
+	 * &lt;pre&gt;{@code
+	 * @NotNull String result = &quot;&quot;;
+	 * for (String s : strings) {
+	 *     result += s;  // Can use String::concat safely
+	 * }
+	 * }&lt;/pre&gt;
+	 * 
+	 * @param startNode the starting node for the search (must not be null)
+	 * @param varName   the variable name to check (must not be null)
+	 * @return true if the variable has a @NotNull or @NonNull annotation
+	 * @throws IllegalArgumentException if startNode or varName is null
+	 */
+	public static boolean hasNotNullAnnotation(ASTNode startNode, String varName) {
+<span class="pc bpc" id="L369" title="1 of 2 branches missed.">		if (startNode == null) {</span>
+<span class="nc" id="L370">			throw new IllegalArgumentException(&quot;startNode cannot be null&quot;); //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L372" title="1 of 2 branches missed.">		if (varName == null) {</span>
+<span class="nc" id="L373">			throw new IllegalArgumentException(&quot;varName cannot be null&quot;); //$NON-NLS-1$</span>
+		}
+
+<span class="fc" id="L376">		VariableDeclarationFragment frag = findVariableDeclaration(startNode, varName);</span>
+<span class="pc bpc" id="L377" title="1 of 2 branches missed.">		if (frag != null) {</span>
+<span class="fc" id="L378">			IVariableBinding binding = frag.resolveBinding();</span>
+<span class="pc bpc" id="L379" title="1 of 2 branches missed.">			if (binding != null) {</span>
+<span class="fc" id="L380">				return hasNotNullAnnotationOnBinding(binding);</span>
+			}
+		}
+<span class="nc" id="L383">		return false;</span>
+	}
+
+	/**
+	 * Checks if a binding has @NotNull or @NonNull annotation.
+	 * 
+	 * &lt;p&gt;
+	 * This is a helper method that examines the annotations on a variable binding
+	 * to determine if it has a non-null annotation from any package. The check is
+	 * done by examining the qualified name of each annotation type and looking for
+	 * names ending with &quot;.NotNull&quot; or &quot;.NonNull&quot;.
+	 * &lt;/p&gt;
+	 * 
+	 * @param binding the variable binding to check (may be null)
+	 * @return true if the binding has a @NotNull or @NonNull annotation
+	 */
+	public static boolean hasNotNullAnnotationOnBinding(IVariableBinding binding) {
+<span class="pc bpc" id="L400" title="1 of 2 branches missed.">		if (binding == null) {</span>
+<span class="nc" id="L401">			return false;</span>
+		}
+
+<span class="fc" id="L404">		IAnnotationBinding[] annotations = binding.getAnnotations();</span>
+<span class="pc bpc" id="L405" title="1 of 2 branches missed.">		if (annotations != null) {</span>
+<span class="pc bfc" id="L406" title="All 2 branches covered.">			for (IAnnotationBinding annotation : annotations) {</span>
+<span class="fc" id="L407">				ITypeBinding annotationType = annotation.getAnnotationType();</span>
+<span class="pc bpc" id="L408" title="1 of 2 branches missed.">				if (annotationType != null) {</span>
+<span class="fc" id="L409">					String qualifiedName = annotationType.getQualifiedName();</span>
+<span class="pc bpc" id="L410" title="1 of 2 branches missed.">					if (qualifiedName != null</span>
+<span class="pc bpc" id="L411" title="3 of 4 branches missed.">							&amp;&amp; (qualifiedName.endsWith(&quot;.NotNull&quot;) || qualifiedName.endsWith(&quot;.NonNull&quot;))) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L412">						return true;</span>
+					}
+				}
+			}
+		}
+
+<span class="fc" id="L418">		return false;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

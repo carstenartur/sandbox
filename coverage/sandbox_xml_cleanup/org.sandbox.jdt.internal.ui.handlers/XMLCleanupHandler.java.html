@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>XMLCleanupHandler.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_xml_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.handlers</a> &gt; <span class="el_source">XMLCleanupHandler.java</span></div><h1>XMLCleanupHandler.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.ui.handlers;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.eclipse.core.commands.AbstractHandler;
+import org.eclipse.core.commands.ExecutionEvent;
+import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IAdaptable;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.viewers.ISelection;
+import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.ui.handlers.HandlerUtil;
+import org.sandbox.jdt.internal.corext.fix.helper.XMLCleanupService;
+
+/**
+ * Command handler for XML cleanup that works independently of JDT.
+ * This allows XML cleanup to be triggered directly on PDE files or projects.
+ */
+<span class="nc" id="L41">public class XMLCleanupHandler extends AbstractHandler {</span>
+	
+	private static final String PLUGIN_ID = &quot;sandbox_xml_cleanup&quot;;
+	
+	@Override
+	public Object execute(ExecutionEvent event) throws ExecutionException {
+<span class="nc" id="L47">		ISelection selection = HandlerUtil.getCurrentSelection(event);</span>
+		
+<span class="nc bnc" id="L49" title="All 2 branches missed.">		if (!(selection instanceof IStructuredSelection)) {</span>
+<span class="nc" id="L50">			return null;</span>
+		}
+		
+<span class="nc" id="L53">		IStructuredSelection structuredSelection = (IStructuredSelection) selection;</span>
+<span class="nc" id="L54">		List&lt;IResource&gt; resources = new ArrayList&lt;&gt;();</span>
+		
+		// Collect all resources from selection
+<span class="nc bnc" id="L57" title="All 2 branches missed.">		for (Object element : structuredSelection.toList()) {</span>
+<span class="nc" id="L58">			IResource resource = getResource(element);</span>
+<span class="nc bnc" id="L59" title="All 2 branches missed.">			if (resource != null) {</span>
+<span class="nc" id="L60">				resources.add(resource);</span>
+			}
+		}
+		
+<span class="nc bnc" id="L64" title="All 2 branches missed.">		if (resources.isEmpty()) {</span>
+<span class="nc" id="L65">			MessageDialog.openInformation(</span>
+<span class="nc" id="L66">				HandlerUtil.getActiveShell(event),</span>
+<span class="nc" id="L67">				&quot;XML Cleanup&quot;,</span>
+<span class="nc" id="L68">				&quot;No valid files or projects selected.&quot;);</span>
+<span class="nc" id="L69">			return null;</span>
+		}
+		
+		// Run cleanup in a background job
+<span class="nc" id="L73">		Job job = new Job(&quot;XML Cleanup&quot;) {</span>
+			@Override
+			protected IStatus run(IProgressMonitor monitor) {
+<span class="nc" id="L76">				return performCleanup(resources, monitor);</span>
+			}
+		};
+<span class="nc" id="L79">		job.setUser(true);</span>
+<span class="nc" id="L80">		job.schedule();</span>
+		
+<span class="nc" id="L82">		return null;</span>
+	}
+	
+	/**
+	 * Get IResource from a selection element.
+	 */
+	private IResource getResource(Object element) {
+<span class="nc bnc" id="L89" title="All 2 branches missed.">		if (element instanceof IResource) {</span>
+<span class="nc" id="L90">			return (IResource) element;</span>
+		}
+<span class="nc bnc" id="L92" title="All 2 branches missed.">		if (element instanceof IAdaptable) {</span>
+<span class="nc" id="L93">			return ((IAdaptable) element).getAdapter(IResource.class);</span>
+		}
+<span class="nc" id="L95">		return null;</span>
+	}
+	
+	/**
+	 * Create and configure the XML cleanup service.
+	 */
+	private XMLCleanupService createXMLCleanupService() {
+<span class="nc" id="L102">		XMLCleanupService service = new XMLCleanupService();</span>
+		// TODO: Add preference support for indent option
+<span class="nc" id="L104">		service.setEnableIndent(false);</span>
+<span class="nc" id="L105">		return service;</span>
+	}
+	
+	/**
+	 * Perform the actual cleanup on selected resources.
+	 */
+	private IStatus performCleanup(List&lt;IResource&gt; resources, IProgressMonitor monitor) {
+<span class="nc" id="L112">		XMLCleanupService service = createXMLCleanupService();</span>
+		
+<span class="nc" id="L114">		int totalFilesProcessed = 0;</span>
+<span class="nc" id="L115">		int totalProjects = 0;</span>
+<span class="nc" id="L116">		int totalFiles = 0;</span>
+		
+		// Count total work
+<span class="nc bnc" id="L119" title="All 2 branches missed.">		for (IResource resource : resources) {</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">			if (resource instanceof IProject) {</span>
+<span class="nc" id="L121">				totalProjects++;</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">			} else if (resource instanceof IFile) {</span>
+<span class="nc" id="L123">				totalFiles++;</span>
+			}
+		}
+		
+		// Estimate work units (projects are more expensive)
+<span class="nc" id="L128">		int totalWork = totalProjects * 50 + totalFiles;</span>
+<span class="nc" id="L129">		monitor.beginTask(&quot;Cleaning up PDE XML files&quot;, totalWork);</span>
+		
+		try {
+<span class="nc bnc" id="L132" title="All 2 branches missed.">			for (IResource resource : resources) {</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">				if (monitor.isCanceled()) {</span>
+<span class="nc" id="L134">					return Status.CANCEL_STATUS;</span>
+				}
+				
+<span class="nc bnc" id="L137" title="All 2 branches missed.">				if (resource instanceof IProject) {</span>
+<span class="nc" id="L138">					IProject project = (IProject) resource;</span>
+<span class="nc" id="L139">					monitor.subTask(&quot;Processing project: &quot; + project.getName());</span>
+					
+<span class="nc" id="L141">					int filesChanged = service.processProject(project, monitor);</span>
+<span class="nc" id="L142">					totalFilesProcessed += filesChanged;</span>
+					
+<span class="nc" id="L144">					monitor.worked(50);</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">				} else if (resource instanceof IFile) {</span>
+<span class="nc" id="L146">					IFile file = (IFile) resource;</span>
+<span class="nc" id="L147">					monitor.subTask(&quot;Processing file: &quot; + file.getName());</span>
+					
+					try {
+<span class="nc" id="L150">						boolean changed = service.processFile(file, monitor);</span>
+<span class="nc bnc" id="L151" title="All 2 branches missed.">						if (changed) {</span>
+<span class="nc" id="L152">							totalFilesProcessed++;</span>
+						}
+<span class="nc" id="L154">					} catch (CoreException e) {</span>
+<span class="nc" id="L155">						return new Status(IStatus.ERROR, PLUGIN_ID,</span>
+<span class="nc" id="L156">							&quot;Error processing file: &quot; + file.getName(), e);</span>
+					}
+					
+<span class="nc" id="L159">					monitor.worked(1);</span>
+				}
+			}
+			
+<span class="nc" id="L163">			String message = String.format(&quot;XML Cleanup completed. %d file(s) processed and updated.&quot;, </span>
+<span class="nc" id="L164">				totalFilesProcessed);</span>
+			
+<span class="nc" id="L166">			return new Status(IStatus.OK, PLUGIN_ID, message);</span>
+			
+<span class="nc" id="L168">		} catch (Exception e) {</span>
+<span class="nc" id="L169">			return new Status(IStatus.ERROR, PLUGIN_ID, </span>
+<span class="nc" id="L170">				&quot;Error during XML cleanup&quot;, e);</span>
+		} finally {
+<span class="nc" id="L172">			monitor.done();</span>
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

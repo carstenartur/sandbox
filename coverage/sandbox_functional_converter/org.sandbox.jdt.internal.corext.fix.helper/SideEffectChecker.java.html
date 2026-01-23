@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SideEffectChecker.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_functional_converter</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">SideEffectChecker.java</span></div><h1>SideEffectChecker.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import java.util.List;
+
+import org.eclipse.jdt.core.dom.Assignment;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.Statement;
+
+/**
+ * Checks if a statement is a safe side-effect that can be included in a stream pipeline.
+ * 
+ * &lt;p&gt;A side-effect is considered safe if it doesn't modify variables that would
+ * violate stream semantics (e.g., loop variables, accumulator variables, or
+ * external variables).&lt;/p&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Safe side-effects:&lt;/b&gt;&lt;/p&gt;
+ * &lt;ul&gt;
+ * &lt;li&gt;Method calls (System.out.println, logging, etc.)&lt;/li&gt;
+ * &lt;li&gt;Array element assignments&lt;/li&gt;
+ * &lt;li&gt;Field assignments&lt;/li&gt;
+ * &lt;/ul&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Unsafe side-effects:&lt;/b&gt;&lt;/p&gt;
+ * &lt;ul&gt;
+ * &lt;li&gt;Assignments to the current pipeline variable&lt;/li&gt;
+ * &lt;li&gt;Assignments to accumulator variables&lt;/li&gt;
+ * &lt;li&gt;Assignments to external simple variables&lt;/li&gt;
+ * &lt;/ul&gt;
+ * 
+ * @see LoopBodyParser
+ * @see ProspectiveOperation
+ */
+<span class="fc" id="L48">public class SideEffectChecker {</span>
+
+	/**
+	 * Checks if a statement is a safe side-effect.
+	 * 
+	 * @param stmt           the statement to check
+	 * @param currentVarName the current variable name in the pipeline
+	 * @param operations     the list of operations (to check for accumulators)
+	 * @return true if safe, false otherwise
+	 */
+	public boolean isSafeSideEffect(Statement stmt, String currentVarName, 
+			List&lt;ProspectiveOperation&gt; operations) {
+		
+<span class="fc bfc" id="L61" title="All 2 branches covered.">		if (stmt == null) {</span>
+<span class="fc" id="L62">			return false;</span>
+		}
+
+<span class="fc bfc" id="L65" title="All 2 branches covered.">		if (!(stmt instanceof ExpressionStatement)) {</span>
+<span class="fc" id="L66">			return false;</span>
+		}
+
+<span class="fc" id="L69">		ExpressionStatement exprStmt = (ExpressionStatement) stmt;</span>
+<span class="fc" id="L70">		Expression expr = exprStmt.getExpression();</span>
+
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">		if (expr == null) {</span>
+<span class="nc" id="L73">			return false;</span>
+		}
+
+		// Check for assignments
+<span class="fc bfc" id="L77" title="All 2 branches covered.">		if (expr instanceof Assignment) {</span>
+<span class="fc" id="L78">			return isAssignmentSafe((Assignment) expr, currentVarName, operations);</span>
+		}
+
+		// Method calls and other expressions are generally safe
+<span class="fc" id="L82">		return true;</span>
+	}
+
+	/**
+	 * Checks if an assignment is safe for stream conversion.
+	 */
+	private boolean isAssignmentSafe(Assignment assignment, String currentVarName,
+			List&lt;ProspectiveOperation&gt; operations) {
+		
+<span class="fc" id="L91">		Expression lhs = assignment.getLeftHandSide();</span>
+
+		// Only validate SimpleName assignments (simple variables)
+		// Array access and field access are conservatively allowed
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">		if (lhs instanceof SimpleName) {</span>
+<span class="fc" id="L96">			String varName = ((SimpleName) lhs).getIdentifier();</span>
+
+			// Assignment to current pipeline variable is unsafe
+<span class="fc bfc" id="L99" title="All 2 branches covered.">			if (varName.equals(currentVarName)) {</span>
+<span class="fc" id="L100">				return false;</span>
+			}
+
+			// Assignment to accumulator variables is handled by REDUCE
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">			if (isAccumulatorVariable(varName, operations)) {</span>
+<span class="nc" id="L105">				return false;</span>
+			}
+
+			// Other assignments to external variables are unsafe
+<span class="fc" id="L109">			return false;</span>
+		}
+
+		// Non-SimpleName assignments (array access, field access) are allowed
+<span class="nc" id="L113">		return true;</span>
+	}
+
+	/**
+	 * Checks if a variable is an accumulator variable in any REDUCE operation.
+	 */
+	private boolean isAccumulatorVariable(String varName, List&lt;ProspectiveOperation&gt; operations) {
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">		for (ProspectiveOperation op : operations) {</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">				if (op.getOperationType() == OperationType.REDUCE) {</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">				if (varName.equals(op.getAccumulatorVariableName())) {</span>
+<span class="nc" id="L123">					return true;</span>
+				}
+			}
+		}
+<span class="fc" id="L127">		return false;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

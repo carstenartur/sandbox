@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>StatementParsingContext.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_functional_converter</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">StatementParsingContext.java</span></div><h1>StatementParsingContext.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import java.util.List;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.Statement;
+
+/**
+ * Context object holding all state needed during statement parsing.
+ * 
+ * &lt;p&gt;This class encapsulates the parsing state to avoid passing many parameters
+ * between methods and to provide a cleaner interface for {@link StatementHandler}
+ * implementations.&lt;/p&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Contents:&lt;/b&gt;&lt;/p&gt;
+ * &lt;ul&gt;
+ * &lt;li&gt;Current variable name in the pipeline&lt;/li&gt;
+ * &lt;li&gt;Loop variable name&lt;/li&gt;
+ * &lt;li&gt;Position information (isLast, currentIndex)&lt;/li&gt;
+ * &lt;li&gt;Statement list for look-ahead operations&lt;/li&gt;
+ * &lt;li&gt;Helper objects (AST, analyzers, detectors)&lt;/li&gt;
+ * &lt;/ul&gt;
+ * 
+ * @see StatementHandler
+ * @see LoopBodyParser
+ */
+public class StatementParsingContext {
+
+	private final String loopVariableName;
+	private String currentVariableName;
+	private final boolean isLastStatement;
+	private final int currentIndex;
+	private final List&lt;Statement&gt; allStatements;
+	private final AST ast;
+	private final IfStatementAnalyzer ifAnalyzer;
+	private final ReducePatternDetector reduceDetector;
+	private final CollectPatternDetector collectDetector;
+	private final boolean isAnyMatchPattern;
+	private final boolean isNoneMatchPattern;
+	private final boolean isAllMatchPattern;
+
+	/**
+	 * Creates a new parsing context.
+	 */
+<span class="fc" id="L58">	public StatementParsingContext(</span>
+			String loopVariableName,
+			String currentVariableName,
+			boolean isLastStatement,
+			int currentIndex,
+			List&lt;Statement&gt; allStatements,
+			AST ast,
+			IfStatementAnalyzer ifAnalyzer,
+			ReducePatternDetector reduceDetector,
+			CollectPatternDetector collectDetector,
+			boolean isAnyMatchPattern,
+			boolean isNoneMatchPattern,
+			boolean isAllMatchPattern) {
+<span class="fc" id="L71">		this.loopVariableName = loopVariableName;</span>
+<span class="fc" id="L72">		this.currentVariableName = currentVariableName;</span>
+<span class="fc" id="L73">		this.isLastStatement = isLastStatement;</span>
+<span class="fc" id="L74">		this.currentIndex = currentIndex;</span>
+<span class="fc" id="L75">		this.allStatements = allStatements;</span>
+<span class="fc" id="L76">		this.ast = ast;</span>
+<span class="fc" id="L77">		this.ifAnalyzer = ifAnalyzer;</span>
+<span class="fc" id="L78">		this.reduceDetector = reduceDetector;</span>
+<span class="fc" id="L79">		this.collectDetector = collectDetector;</span>
+<span class="fc" id="L80">		this.isAnyMatchPattern = isAnyMatchPattern;</span>
+<span class="fc" id="L81">		this.isNoneMatchPattern = isNoneMatchPattern;</span>
+<span class="fc" id="L82">		this.isAllMatchPattern = isAllMatchPattern;</span>
+<span class="fc" id="L83">	}</span>
+
+	public String getLoopVariableName() {
+<span class="fc" id="L86">		return loopVariableName;</span>
+	}
+
+	public String getCurrentVariableName() {
+<span class="fc" id="L90">		return currentVariableName;</span>
+	}
+
+	public void setCurrentVariableName(String name) {
+<span class="fc" id="L94">		this.currentVariableName = name;</span>
+<span class="fc" id="L95">	}</span>
+
+	public boolean isLastStatement() {
+<span class="fc" id="L98">		return isLastStatement;</span>
+	}
+
+	public int getCurrentIndex() {
+<span class="fc" id="L102">		return currentIndex;</span>
+	}
+
+	public List&lt;Statement&gt; getAllStatements() {
+<span class="fc" id="L106">		return allStatements;</span>
+	}
+
+	public AST getAst() {
+<span class="fc" id="L110">		return ast;</span>
+	}
+
+	public IfStatementAnalyzer getIfAnalyzer() {
+<span class="fc" id="L114">		return ifAnalyzer;</span>
+	}
+
+	public ReducePatternDetector getReduceDetector() {
+<span class="fc" id="L118">		return reduceDetector;</span>
+	}
+
+	public CollectPatternDetector getCollectDetector() {
+<span class="fc" id="L122">		return collectDetector;</span>
+	}
+
+	public boolean isAnyMatchPattern() {
+<span class="fc" id="L126">		return isAnyMatchPattern;</span>
+	}
+
+	public boolean isNoneMatchPattern() {
+<span class="fc" id="L130">		return isNoneMatchPattern;</span>
+	}
+
+	public boolean isAllMatchPattern() {
+<span class="fc" id="L134">		return isAllMatchPattern;</span>
+	}
+
+	/**
+	 * Creates a context for a single statement (not in a block).
+	 */
+	public static StatementParsingContext forSingleStatement(
+			String loopVariableName,
+			AST ast,
+			IfStatementAnalyzer ifAnalyzer,
+			ReducePatternDetector reduceDetector,
+			CollectPatternDetector collectDetector,
+			boolean isAnyMatchPattern,
+			boolean isNoneMatchPattern,
+			boolean isAllMatchPattern) {
+<span class="fc" id="L149">		return new StatementParsingContext(</span>
+<span class="fc" id="L150">				loopVariableName,</span>
+<span class="fc" id="L151">				loopVariableName,</span>
+<span class="fc" id="L152">				true, // single statement is always &quot;last&quot;</span>
+<span class="fc" id="L153">				0,</span>
+<span class="fc" id="L154">				null,</span>
+<span class="fc" id="L155">				ast,</span>
+<span class="fc" id="L156">				ifAnalyzer,</span>
+<span class="fc" id="L157">				reduceDetector,</span>
+<span class="fc" id="L158">				collectDetector,</span>
+<span class="fc" id="L159">				isAnyMatchPattern,</span>
+<span class="fc" id="L160">				isNoneMatchPattern,</span>
+<span class="fc" id="L161">				isAllMatchPattern);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

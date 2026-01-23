@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>FunctionalHolder.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_functional_converter</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">FunctionalHolder.java</span></div><h1>FunctionalHolder.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import org.eclipse.jdt.core.dom.EnhancedForStatement;
+import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.HelperVisitorProvider;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
+
+/**
+ * Data holder for functional loop conversion context.
+ * 
+ * &lt;p&gt;
+ * This class serves as a container for the enhanced for-loop being analyzed
+ * for potential conversion to functional stream operations. It implements
+ * {@link HelperVisitorProvider} to integrate with the sandbox common visitor
+ * framework.
+ * &lt;/p&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Usage:&lt;/b&gt;&lt;/p&gt;
+ * &lt;pre&gt;{@code
+ * FunctionalHolder holder = new FunctionalHolder();
+ * holder.setEnhancedForStatement(forLoop);
+ * // Use holder in visitor pattern processing
+ * }&lt;/pre&gt;
+ * 
+ * @see HelperVisitorProvider
+ * @see ReferenceHolder
+ */
+public class FunctionalHolder 
+		implements HelperVisitorProvider&lt;ReferenceHolder&lt;String, Object&gt;, String, FunctionalHolder&gt; {
+
+	/**
+	 * The enhanced for-loop statement being analyzed for conversion.
+	 */
+	private EnhancedForStatement enhancedForStatement;
+	
+	/**
+	 * The helper visitor used for traversing the AST.
+	 */
+	private HelperVisitor&lt;FunctionalHolder, ReferenceHolder&lt;String, Object&gt;, String&gt; helperVisitor;
+
+	/**
+	 * Default constructor.
+	 */
+<span class="nc" id="L57">	public FunctionalHolder() {</span>
+		// Default constructor
+<span class="nc" id="L59">	}</span>
+
+	/**
+	 * Gets the enhanced for-loop statement.
+	 * 
+	 * @return the enhanced for-loop statement, or null if not set
+	 */
+	public EnhancedForStatement getEnhancedForStatement() {
+<span class="nc" id="L67">		return enhancedForStatement;</span>
+	}
+
+	/**
+	 * Sets the enhanced for-loop statement to analyze.
+	 * 
+	 * @param enhancedForStatement the for-loop to set
+	 */
+	public void setEnhancedForStatement(EnhancedForStatement enhancedForStatement) {
+<span class="nc" id="L76">		this.enhancedForStatement = enhancedForStatement;</span>
+<span class="nc" id="L77">	}</span>
+
+	/**
+	 * Legacy field access for backward compatibility.
+	 * @deprecated Use {@link #getEnhancedForStatement()} instead
+	 */
+	@Deprecated
+	public EnhancedForStatement minv;
+
+	@Override
+	public HelperVisitor&lt;FunctionalHolder, ReferenceHolder&lt;String, Object&gt;, String&gt; getHelperVisitor() {
+<span class="nc" id="L88">		return helperVisitor;</span>
+	}
+
+	@Override
+	public void setHelperVisitor(HelperVisitor&lt;FunctionalHolder, ReferenceHolder&lt;String, Object&gt;, String&gt; hv) {
+<span class="nc" id="L93">		this.helperVisitor = hv;</span>
+<span class="nc" id="L94">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

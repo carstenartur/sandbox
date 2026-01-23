@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>TriggerPatternQuickAssistProcessor.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.ui</a> &gt; <span class="el_source">TriggerPatternQuickAssistProcessor.java</span></div><h1>TriggerPatternQuickAssistProcessor.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer - initial API and implementation
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.ui;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.ILog;
+import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.ui.text.java.IInvocationContext;
+import org.eclipse.jdt.ui.text.java.IJavaCompletionProposal;
+import org.eclipse.jdt.ui.text.java.IProblemLocation;
+import org.eclipse.jdt.ui.text.java.IQuickAssistProcessor;
+import org.sandbox.jdt.triggerpattern.api.HintContext;
+import org.sandbox.jdt.triggerpattern.api.Match;
+import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
+import org.sandbox.jdt.triggerpattern.internal.HintRegistry;
+import org.sandbox.jdt.triggerpattern.internal.HintRegistry.HintDescriptor;
+
+/**
+ * Quick Assist processor for trigger pattern hints.
+ * 
+ * &lt;p&gt;This processor finds matching patterns at the cursor location and invokes
+ * registered hint methods to provide completion proposals.&lt;/p&gt;
+ * 
+ * @since 1.2.2
+ */
+<span class="nc" id="L47">public class TriggerPatternQuickAssistProcessor implements IQuickAssistProcessor {</span>
+	
+<span class="nc" id="L49">	private static final HintRegistry REGISTRY = new HintRegistry();</span>
+<span class="nc" id="L50">	private final TriggerPatternEngine engine = new TriggerPatternEngine();</span>
+	
+	@Override
+	public boolean hasAssists(IInvocationContext context) throws CoreException {
+		// Quick check - we could optimize this by caching patterns
+<span class="nc bnc" id="L55" title="All 2 branches missed.">		return !REGISTRY.getHints().isEmpty();</span>
+	}
+	
+	@Override
+	public IJavaCompletionProposal[] getAssists(IInvocationContext context, IProblemLocation[] locations)
+			throws CoreException {
+		
+<span class="nc" id="L62">		ICompilationUnit icu = context.getCompilationUnit();</span>
+<span class="nc bnc" id="L63" title="All 2 branches missed.">		if (icu == null) {</span>
+<span class="nc" id="L64">			return null;</span>
+		}
+		
+		// Parse the compilation unit
+<span class="nc" id="L68">		CompilationUnit cu = getCompilationUnit(icu);</span>
+<span class="nc bnc" id="L69" title="All 2 branches missed.">		if (cu == null) {</span>
+<span class="nc" id="L70">			return null;</span>
+		}
+		
+		// Get the AST node at the cursor position
+<span class="nc" id="L74">		int offset = context.getSelectionOffset();</span>
+<span class="nc" id="L75">		ASTNode coveringNode = getCoveringNode(cu, offset);</span>
+<span class="nc bnc" id="L76" title="All 2 branches missed.">		if (coveringNode == null) {</span>
+<span class="nc" id="L77">			return null;</span>
+		}
+		
+<span class="nc" id="L80">		List&lt;IJavaCompletionProposal&gt; proposals = new ArrayList&lt;&gt;();</span>
+		
+		// Check each registered hint
+<span class="nc bnc" id="L83" title="All 2 branches missed.">		for (HintDescriptor hint : REGISTRY.getHints()) {</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">			if (!hint.isEnabledByDefault()) {</span>
+<span class="nc" id="L85">				continue;</span>
+			}
+			
+			// Find matches for this pattern near the cursor
+<span class="nc" id="L89">			List&lt;Match&gt; matches = engine.findMatches(cu, hint.getPattern());</span>
+			
+			// Check if any match contains the cursor position
+<span class="nc bnc" id="L92" title="All 2 branches missed.">			for (Match match : matches) {</span>
+<span class="nc bnc" id="L93" title="All 2 branches missed.">				if (containsOffset(match, offset)) {</span>
+					// Create hint context
+<span class="nc" id="L95">					ASTRewrite rewrite = ASTRewrite.create(cu.getAST());</span>
+<span class="nc" id="L96">					HintContext hintContext = new HintContext(cu, icu, match, rewrite);</span>
+					
+					try {
+						// Invoke the hint method
+<span class="nc" id="L100">						Object result = hint.invoke(hintContext);</span>
+						
+						// Convert result to proposals
+<span class="nc bnc" id="L103" title="All 2 branches missed.">						if (result instanceof IJavaCompletionProposal) {</span>
+<span class="nc" id="L104">							proposals.add((IJavaCompletionProposal) result);</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">						} else if (result instanceof List) {</span>
+							@SuppressWarnings(&quot;unchecked&quot;)
+<span class="nc" id="L107">							List&lt;IJavaCompletionProposal&gt; list = (List&lt;IJavaCompletionProposal&gt;) result;</span>
+<span class="nc" id="L108">							proposals.addAll(list);</span>
+						}
+<span class="nc" id="L110">					} catch (Exception e) {</span>
+						// Log error but continue with other hints
+<span class="nc" id="L112">						ILog log = Platform.getLog(TriggerPatternQuickAssistProcessor.class);</span>
+<span class="nc" id="L113">						log.log(Status.error(&quot;Error invoking hint method&quot;, e)); //$NON-NLS-1$</span>
+					}
+				}
+			}
+		}
+		
+<span class="nc bnc" id="L119" title="All 2 branches missed.">		return proposals.isEmpty() ? null : proposals.toArray(new IJavaCompletionProposal[0]);</span>
+	}
+	
+	/**
+	 * Parses the compilation unit.
+	 */
+	private CompilationUnit getCompilationUnit(ICompilationUnit icu) {
+<span class="nc" id="L126">		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="nc" id="L127">		parser.setSource(icu);</span>
+<span class="nc" id="L128">		parser.setResolveBindings(false);</span>
+<span class="nc" id="L129">		return (CompilationUnit) parser.createAST(null);</span>
+	}
+	
+	/**
+	 * Gets the AST node covering the given offset.
+	 */
+	private ASTNode getCoveringNode(CompilationUnit cu, int offset) {
+		// Find the smallest node that covers the offset
+		class NodeFinder extends org.eclipse.jdt.core.dom.ASTVisitor {
+<span class="nc" id="L138">			ASTNode result = null;</span>
+			int targetOffset;
+			
+<span class="nc" id="L141">			NodeFinder(int offset) {</span>
+<span class="nc" id="L142">				this.targetOffset = offset;</span>
+<span class="nc" id="L143">			}</span>
+			
+			@Override
+			public void preVisit(ASTNode node) {
+<span class="nc" id="L147">				int start = node.getStartPosition();</span>
+<span class="nc" id="L148">				int end = start + node.getLength();</span>
+				
+<span class="nc bnc" id="L150" title="All 4 branches missed.">				if (start &lt;= targetOffset &amp;&amp; targetOffset &lt;= end) {</span>
+					// This node covers the offset
+<span class="nc bnc" id="L152" title="All 4 branches missed.">					if (result == null || node.getLength() &lt; result.getLength()) {</span>
+<span class="nc" id="L153">						result = node;</span>
+					}
+				}
+<span class="nc" id="L156">			}</span>
+		}
+		
+<span class="nc" id="L159">		NodeFinder finder = new NodeFinder(offset);</span>
+<span class="nc" id="L160">		cu.accept(finder);</span>
+<span class="nc" id="L161">		return finder.result;</span>
+	}
+	
+	/**
+	 * Checks if a match contains the given offset.
+	 */
+	private boolean containsOffset(Match match, int offset) {
+<span class="nc" id="L168">		int start = match.getOffset();</span>
+<span class="nc" id="L169">		int end = start + match.getLength();</span>
+<span class="nc bnc" id="L170" title="All 4 branches missed.">		return start &lt;= offset &amp;&amp; offset &lt;= end;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
