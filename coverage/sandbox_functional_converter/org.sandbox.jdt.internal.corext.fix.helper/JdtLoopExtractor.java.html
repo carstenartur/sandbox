@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JdtLoopExtractor.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_functional_converter</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">JdtLoopExtractor.java</span></div><h1>JdtLoopExtractor.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import org.eclipse.jdt.core.dom.*;
+import org.sandbox.functional.core.builder.LoopModelBuilder;
+import org.sandbox.functional.core.model.*;
+import org.sandbox.functional.core.model.SourceDescriptor.SourceType;
+
+/**
+ * Extracts a LoopModel from JDT AST nodes.
+ * This bridges the JDT world with the abstract ULR model.
+ */
+<span class="fc" id="L25">public class JdtLoopExtractor {</span>
+    
+    /**
+     * Extracts a LoopModel from an EnhancedForStatement.
+     */
+    /**
+     * Enhanced wrapper that includes both the abstract LoopModel and the original AST nodes.
+     * This allows the renderer to use the actual AST nodes instead of parsing strings.
+     */
+    public static class ExtractedLoop {
+        public final LoopModel model;
+        public final Statement originalBody;
+        
+<span class="fc" id="L38">        public ExtractedLoop(LoopModel model, Statement originalBody) {</span>
+<span class="fc" id="L39">            this.model = model;</span>
+<span class="fc" id="L40">            this.originalBody = originalBody;</span>
+<span class="fc" id="L41">        }</span>
+    }
+    
+    public ExtractedLoop extract(EnhancedForStatement forStatement) {
+<span class="fc" id="L45">        Expression iterable = forStatement.getExpression();</span>
+<span class="fc" id="L46">        SingleVariableDeclaration parameter = forStatement.getParameter();</span>
+<span class="fc" id="L47">        Statement body = forStatement.getBody();</span>
+        
+        // Determine source type
+<span class="fc" id="L50">        SourceType sourceType = determineSourceType(iterable);</span>
+<span class="fc" id="L51">        String sourceExpression = iterable.toString();</span>
+<span class="fc" id="L52">        String elementType = parameter.getType().toString();</span>
+        
+        // Element info
+<span class="fc" id="L55">        String varName = parameter.getName().getIdentifier();</span>
+<span class="fc" id="L56">        boolean isFinal = Modifier.isFinal(parameter.getModifiers());</span>
+        
+        // Analyze metadata
+<span class="fc" id="L59">        LoopBodyAnalyzer analyzer = new LoopBodyAnalyzer();</span>
+<span class="fc" id="L60">        body.accept(analyzer);</span>
+        
+        // Build model
+<span class="fc" id="L63">        LoopModelBuilder builder = new LoopModelBuilder()</span>
+<span class="fc" id="L64">            .source(sourceType, sourceExpression, elementType)</span>
+<span class="fc" id="L65">            .element(varName, elementType, isFinal)</span>
+<span class="fc" id="L66">            .metadata(analyzer.hasBreak(), analyzer.hasContinue(), </span>
+<span class="fc" id="L67">                      analyzer.hasReturn(), analyzer.modifiesCollection(), true);</span>
+        
+        // Analyze body and add operations/terminal
+<span class="fc" id="L70">        analyzeAndAddOperations(body, builder, varName);</span>
+        
+<span class="fc" id="L72">        LoopModel model = builder.build();</span>
+<span class="fc" id="L73">        return new ExtractedLoop(model, body);</span>
+    }
+    
+    private SourceType determineSourceType(Expression iterable) {
+<span class="fc" id="L77">        ITypeBinding binding = iterable.resolveTypeBinding();</span>
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">        if (binding != null) {</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">            if (binding.isArray()) {</span>
+<span class="fc" id="L80">                return SourceType.ARRAY;</span>
+            }
+            // Check for Collection
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">            if (isCollection(binding)) {</span>
+<span class="fc" id="L84">                return SourceType.COLLECTION;</span>
+            }
+        }
+<span class="nc" id="L87">        return SourceType.ITERABLE;</span>
+    }
+    
+    private boolean isCollection(ITypeBinding binding) {
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">        if (binding == null) {</span>
+<span class="nc" id="L92">            return false;</span>
+        }
+        
+<span class="fc" id="L95">        ITypeBinding erasure = binding.getErasure();</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">        if (erasure == null) {</span>
+<span class="nc" id="L97">            return false;</span>
+        }
+        
+<span class="fc" id="L100">        String qualifiedName = erasure.getQualifiedName();</span>
+<span class="pc bpc" id="L101" title="1 of 2 branches missed.">        if (&quot;java.util.Collection&quot;.equals(qualifiedName)</span>
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">                || &quot;java.util.List&quot;.equals(qualifiedName)</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">                || &quot;java.util.Set&quot;.equals(qualifiedName)</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">                || &quot;java.util.Queue&quot;.equals(qualifiedName)</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">                || &quot;java.util.Deque&quot;.equals(qualifiedName)) {</span>
+<span class="fc" id="L106">            return true;</span>
+        }
+        
+        // Check interfaces
+<span class="nc bnc" id="L110" title="All 2 branches missed.">        for (ITypeBinding iface : erasure.getInterfaces()) {</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">            if (isCollection(iface)) {</span>
+<span class="nc" id="L112">                return true;</span>
+            }
+        }
+        
+        // Check superclass
+<span class="nc" id="L117">        ITypeBinding superclass = erasure.getSuperclass();</span>
+<span class="nc bnc" id="L118" title="All 4 branches missed.">        if (superclass != null &amp;&amp; isCollection(superclass)) {</span>
+<span class="nc" id="L119">            return true;</span>
+        }
+        
+<span class="nc" id="L122">        return false;</span>
+    }
+    
+    private void analyzeAndAddOperations(Statement body, LoopModelBuilder builder, String varName) {
+        // For now, treat the entire body as a forEach terminal
+        // More sophisticated analysis will be added later
+        
+<span class="fc" id="L129">        java.util.List&lt;String&gt; bodyStatements = new java.util.ArrayList&lt;&gt;();</span>
+        
+<span class="pc bpc" id="L131" title="1 of 2 branches missed.">        if (body instanceof Block) {</span>
+<span class="fc" id="L132">            Block block = (Block) body;</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">            for (Object stmt : block.statements()) {</span>
+<span class="fc" id="L134">                String stmtStr = stmt.toString();</span>
+                // Strip trailing semicolon for expression statements
+                // This allows the renderer to use them as lambda expressions
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">                if (stmtStr.endsWith(&quot;;&quot;)) {</span>
+<span class="nc" id="L138">                    stmtStr = stmtStr.substring(0, stmtStr.length() - 1).trim();</span>
+                }
+<span class="fc" id="L140">                bodyStatements.add(stmtStr);</span>
+            }
+<span class="fc" id="L142">        } else {</span>
+<span class="nc" id="L143">            String stmtStr = body.toString();</span>
+            // Strip trailing semicolon for expression statements
+<span class="nc bnc" id="L145" title="All 2 branches missed.">            if (stmtStr.endsWith(&quot;;&quot;)) {</span>
+<span class="nc" id="L146">                stmtStr = stmtStr.substring(0, stmtStr.length() - 1).trim();</span>
+            }
+<span class="nc" id="L148">            bodyStatements.add(stmtStr);</span>
+        }
+        
+<span class="fc" id="L151">        builder.forEach(bodyStatements, false); // unordered for simple enhanced for</span>
+<span class="fc" id="L152">    }</span>
+    
+    /**
+     * Visitor to analyze loop body for control flow.
+     */
+<span class="fc" id="L157">    private static class LoopBodyAnalyzer extends ASTVisitor {</span>
+<span class="fc" id="L158">        private boolean hasBreak = false;</span>
+<span class="fc" id="L159">        private boolean hasContinue = false;</span>
+<span class="fc" id="L160">        private boolean hasReturn = false;</span>
+<span class="fc" id="L161">        private boolean modifiesCollection = false;</span>
+        
+        @Override
+        public boolean visit(BreakStatement node) {
+<span class="fc" id="L165">            hasBreak = true;</span>
+<span class="fc" id="L166">            return false;</span>
+        }
+        
+        @Override
+        public boolean visit(ContinueStatement node) {
+<span class="fc" id="L171">            hasContinue = true;</span>
+<span class="fc" id="L172">            return false;</span>
+        }
+        
+        @Override
+        public boolean visit(ReturnStatement node) {
+<span class="fc" id="L177">            hasReturn = true;</span>
+<span class="fc" id="L178">            return false;</span>
+        }
+        
+        @Override
+        public boolean visit(MethodInvocation node) {
+<span class="fc" id="L183">            String name = node.getName().getIdentifier();</span>
+<span class="pc bpc" id="L184" title="2 of 4 branches missed.">            if (&quot;add&quot;.equals(name) || &quot;remove&quot;.equals(name) || </span>
+<span class="pc bpc" id="L185" title="2 of 4 branches missed.">                &quot;clear&quot;.equals(name) || &quot;set&quot;.equals(name)) {</span>
+<span class="nc" id="L186">                modifiesCollection = true;</span>
+            }
+<span class="fc" id="L188">            return true;</span>
+        }
+        
+<span class="fc" id="L191">        public boolean hasBreak() { return hasBreak; }</span>
+<span class="fc" id="L192">        public boolean hasContinue() { return hasContinue; }</span>
+<span class="fc" id="L193">        public boolean hasReturn() { return hasReturn; }</span>
+<span class="fc" id="L194">        public boolean modifiesCollection() { return modifiesCollection; }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -92,49 +92,52 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 	public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
 <span class="fc" id="L94">		ReferenceHolder&lt;Integer, FunctionalHolder&gt; dataHolder= new ReferenceHolder&lt;&gt;();</span>
-<span class="fc" id="L95">		HelperVisitor.callEnhancedForStatementVisitor(compilationUnit, dataHolder, nodesprocessed,</span>
-<span class="fc" id="L96">				(visited, aholder) -&gt; processFoundNode(fixcore, operations, nodesprocessed, visited, aholder),(visited, aholder) -&gt; {});</span>
-<span class="fc" id="L97">	}</span>
+<span class="fc" id="L95">		ReferenceHolder&lt;ASTNode, Object&gt; sharedDataHolder = new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L96">		HelperVisitor.callEnhancedForStatementVisitor(compilationUnit, dataHolder, nodesprocessed,</span>
+<span class="fc" id="L97">				(visited, aholder) -&gt; processFoundNode(fixcore, operations, nodesprocessed, visited, aholder, sharedDataHolder),(visited, aholder) -&gt; {});</span>
+<span class="fc" id="L98">	}</span>
 
 	private boolean processFoundNode(UseFunctionalCallFixCore fixcore,
 			Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesprocessed, EnhancedForStatement visited,
-			ReferenceHolder&lt;Integer, FunctionalHolder&gt; dataHolder) {
-<span class="fc" id="L102">		PreconditionsChecker pc = new PreconditionsChecker(visited, (CompilationUnit) visited.getRoot());</span>
-<span class="pc bpc" id="L103" title="1 of 2 branches missed.">		if (!pc.isSafeToRefactor()) {</span>
+			ReferenceHolder&lt;Integer, FunctionalHolder&gt; dataHolder, ReferenceHolder&lt;ASTNode, Object&gt; sharedDataHolder) {
+<span class="fc" id="L103">		PreconditionsChecker pc = new PreconditionsChecker(visited, (CompilationUnit) visited.getRoot());</span>
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">		if (!pc.isSafeToRefactor()) {</span>
 			// Loop cannot be safely refactored to functional style
 			// Return true to continue visiting children - inner loops may still be convertible
-<span class="nc" id="L106">			return false;</span>
+<span class="nc" id="L107">			return false;</span>
 		}
 		// Check if the loop can be analyzed for stream conversion
-<span class="fc" id="L109">		StreamPipelineBuilder builder = new StreamPipelineBuilder(visited, pc);</span>
-<span class="fc bfc" id="L110" title="All 2 branches covered.">		if (!builder.analyze()) {</span>
+<span class="fc" id="L110">		StreamPipelineBuilder builder = new StreamPipelineBuilder(visited, pc);</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">		if (!builder.analyze()) {</span>
 			// Cannot convert this loop to functional style
 			// Return true to continue visiting children - inner loops may still be convertible
-<span class="fc" id="L113">			return false;</span>
+<span class="fc" id="L114">			return false;</span>
 		}
-<span class="fc" id="L115">		operations.add(fixcore.rewrite(visited));</span>
-<span class="fc" id="L116">		nodesprocessed.add(visited);</span>
+		// V1 doesn't need to store data in the holder, but we pass it to maintain signature compatibility
+<span class="fc" id="L117">		operations.add(fixcore.rewrite(visited, sharedDataHolder));</span>
+<span class="fc" id="L118">		nodesprocessed.add(visited);</span>
 		// Return false to prevent visiting children since this loop was converted
 		// (children are now part of the lambda expression)
-<span class="fc" id="L119">		return false;</span>
+<span class="fc" id="L121">		return false;</span>
 	}
 
 	@Override
 	public void rewrite(UseFunctionalCallFixCore upp, final EnhancedForStatement visited,
-			final CompilationUnitRewrite cuRewrite, TextEditGroup group) throws CoreException {
-<span class="fc" id="L125">		ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
-<span class="fc" id="L126">		PreconditionsChecker pc = new PreconditionsChecker(visited, (CompilationUnit) visited.getRoot());</span>
-<span class="fc" id="L127">		Refactorer refactorer = new Refactorer(visited, rewrite, pc, group, cuRewrite);</span>
+			final CompilationUnitRewrite cuRewrite, TextEditGroup group, 
+			org.sandbox.jdt.internal.common.ReferenceHolder&lt;ASTNode, Object&gt; data) throws CoreException {
+<span class="fc" id="L128">		ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L129">		PreconditionsChecker pc = new PreconditionsChecker(visited, (CompilationUnit) visited.getRoot());</span>
+<span class="fc" id="L130">		Refactorer refactorer = new Refactorer(visited, rewrite, pc, group, cuRewrite);</span>
 		// Preconditions already checked in find(), but refactorer.refactor() handles edge cases
-<span class="fc" id="L129">		refactorer.refactor();</span>
-<span class="fc" id="L130">	}</span>
+<span class="fc" id="L132">		refactorer.refactor();</span>
+<span class="fc" id="L133">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L134" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L135">			return &quot;ls.forEach(l -&gt; {\n	System.out.println(l);\n});\n&quot;; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L138">			return &quot;ls.forEach(l -&gt; {\n	System.out.println(l);\n});\n&quot;; //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L137">		return &quot;for (Integer l : ls)\n	System.out.println(l);\n\n&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L140">		return &quot;for (Integer l : ls)\n	System.out.println(l);\n\n&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

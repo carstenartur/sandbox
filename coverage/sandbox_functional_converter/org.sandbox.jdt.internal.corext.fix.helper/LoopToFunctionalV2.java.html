@@ -16,95 +16,138 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.EnhancedForStatement;
+import org.eclipse.jdt.core.dom.*;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.functional.core.model.LoopMetadata;
+import org.sandbox.functional.core.model.LoopModel;
+import org.sandbox.functional.core.transformer.LoopModelTransformer;
+import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 
 /**
- * V2 implementation based on Unified Loop Representation (ULR).
+ * V2 implementation using the Unified Loop Representation (ULR) architecture.
  * 
- * &lt;p&gt;This implementation uses the ULR model from sandbox-functional-converter-core
- * to provide a more modular and testable approach to loop-to-functional transformations.&lt;/p&gt;
+ * &lt;p&gt;This class uses the abstract LoopModel from the core module and
+ * the ASTStreamRenderer to generate JDT AST nodes.&lt;/p&gt;
  * 
- * &lt;p&gt;&lt;b&gt;Current Status:&lt;/b&gt; Phase 1 - Feature Parity with V1&lt;/p&gt;
- * &lt;p&gt;This implementation currently delegates all operations to the V1 implementation
- * ({@link LoopToFunctional}) to ensure feature parity. Future phases will gradually
- * replace V1 logic with ULR-based transformations.&lt;/p&gt;
- * 
- * &lt;p&gt;&lt;b&gt;Architecture:&lt;/b&gt;&lt;/p&gt;
- * &lt;ul&gt;
- * &lt;li&gt;Phase 1: Delegate to V1 for feature parity (current)&lt;/li&gt;
- * &lt;li&gt;Phase 2: Implement AST-to-ULR extraction&lt;/li&gt;
- * &lt;li&gt;Phase 3: Implement ULR-to-Stream transformation&lt;/li&gt;
- * &lt;li&gt;Phase 4: Replace V1 delegation with ULR pipeline&lt;/li&gt;
- * &lt;/ul&gt;
- * 
- * @see LoopToFunctional
- * @see &lt;a href=&quot;https://github.com/carstenartur/sandbox/issues/450&quot;&gt;Issue #450&lt;/a&gt;
- * @see &lt;a href=&quot;https://github.com/carstenartur/sandbox/issues/453&quot;&gt;Issue #453&lt;/a&gt;
- * @since 1.0.0
+ * @see LoopModel
+ * @see ASTStreamRenderer
+ * @see LoopModelTransformer
  */
-<span class="fc" id="L51">public class LoopToFunctionalV2 extends AbstractFunctionalCall&lt;EnhancedForStatement&gt; {</span>
-	
-	/**
-	 * V1 implementation used for delegation during Phase 1.
-	 * 
-	 * &lt;p&gt;This ensures feature parity while the ULR-based implementation
-	 * is being developed.&lt;/p&gt;
-	 */
-<span class="fc" id="L59">	private final LoopToFunctional v1Delegate = new LoopToFunctional();</span>
-	
-	/**
-	 * Finds convertible loops in the compilation unit.
-	 * 
-	 * &lt;p&gt;&lt;b&gt;Current Implementation:&lt;/b&gt; Delegates to V1&lt;/p&gt;
-	 * 
-	 * @param fixcore the fix core context
-	 * @param compilationUnit the compilation unit to search
-	 * @param operations set to collect rewrite operations
-	 * @param nodesprocessed set of already processed nodes
-	 */
-	@Override
-	public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
-			Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
-		// Phase 1: Delegate to V1 for feature parity
-<span class="fc" id="L75">		v1Delegate.find(fixcore, compilationUnit, operations, nodesprocessed);</span>
-<span class="fc" id="L76">	}</span>
-	
-	/**
-	 * Rewrites a loop statement to use functional/stream operations.
-	 * 
-	 * &lt;p&gt;&lt;b&gt;Current Implementation:&lt;/b&gt; Delegates to V1&lt;/p&gt;
-	 * 
-	 * @param upp the fix core context
-	 * @param visited the enhanced for statement to transform
-	 * @param cuRewrite the compilation unit rewrite context
-	 * @param group the text edit group for tracking changes
-	 * @throws CoreException if rewriting fails
-	 */
-	@Override
-	public void rewrite(UseFunctionalCallFixCore upp, EnhancedForStatement visited,
-			CompilationUnitRewrite cuRewrite, TextEditGroup group) throws CoreException {
-		// Phase 1: Delegate to V1 for feature parity
-<span class="fc" id="L93">		v1Delegate.rewrite(upp, visited, cuRewrite, group);</span>
-<span class="fc" id="L94">	}</span>
-	
-	/**
-	 * Provides a preview of the transformation.
-	 * 
-	 * &lt;p&gt;&lt;b&gt;Current Implementation:&lt;/b&gt; Delegates to V1&lt;/p&gt;
-	 * 
-	 * @param afterRefactoring true for after preview, false for before
-	 * @return preview string
-	 */
-	@Override
-	public String getPreview(boolean afterRefactoring) {
-		// Phase 1: Delegate to V1 for feature parity
-<span class="nc" id="L107">		return v1Delegate.getPreview(afterRefactoring);</span>
-	}
+<span class="fc" id="L41">public class LoopToFunctionalV2 extends AbstractFunctionalCall&lt;EnhancedForStatement&gt; {</span>
+    
+<span class="fc" id="L43">    private final JdtLoopExtractor extractor = new JdtLoopExtractor();</span>
+    
+    @Override
+    public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
+                     Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
+        
+<span class="fc" id="L49">        ReferenceHolder&lt;ASTNode, Object&gt; dataHolder = new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L50">        HelperVisitor.callEnhancedForStatementVisitor(compilationUnit, dataHolder, nodesprocessed,</span>
+<span class="fc" id="L51">                (visited, holder) -&gt; processFoundNode(fixcore, operations, nodesprocessed, visited, holder),</span>
+<span class="fc" id="L52">                (visited, holder) -&gt; {});</span>
+<span class="fc" id="L53">    }</span>
+    
+    private boolean processFoundNode(UseFunctionalCallFixCore fixcore,
+                                      Set&lt;CompilationUnitRewriteOperation&gt; operations,
+                                      Set&lt;ASTNode&gt; nodesprocessed,
+                                      EnhancedForStatement visited,
+                                      ReferenceHolder&lt;ASTNode, Object&gt; holder) {
+        
+        // Extract LoopModel AND original body from AST
+<span class="fc" id="L62">        JdtLoopExtractor.ExtractedLoop extracted = extractor.extract(visited);</span>
+        
+        // Check if convertible using the model's metadata
+<span class="fc bfc" id="L65" title="All 2 branches covered.">        if (!isConvertible(extracted.model)) {</span>
+<span class="fc" id="L66">            return false;</span>
+        }
+        
+        // Store extracted loop (model + body) for later rewrite in the shared holder
+<span class="fc" id="L70">        holder.put(visited, extracted);</span>
+<span class="fc" id="L71">        operations.add(fixcore.rewrite(visited, holder));</span>
+<span class="fc" id="L72">        nodesprocessed.add(visited);</span>
+        
+<span class="fc" id="L74">        return false;</span>
+    }
+    
+    @Override
+    public void rewrite(UseFunctionalCallFixCore upp, EnhancedForStatement visited,
+                        CompilationUnitRewrite cuRewrite, TextEditGroup group,
+                        ReferenceHolder&lt;ASTNode, Object&gt; data) throws CoreException {
+        
+        // Get the extracted loop from the holder (passed from find())
+<span class="fc" id="L83">        JdtLoopExtractor.ExtractedLoop extracted = (JdtLoopExtractor.ExtractedLoop) data.get(visited);</span>
+        
+<span class="pc bpc" id="L85" title="2 of 4 branches missed.">        if (extracted == null || !isConvertible(extracted.model)) {</span>
+<span class="nc" id="L86">            return;</span>
+        }
+        
+<span class="fc" id="L89">        AST ast = cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L90">        ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L91">        CompilationUnit compilationUnit = cuRewrite.getRoot();</span>
+        
+        // Create renderer with original body for AST node access
+<span class="fc" id="L94">        ASTStreamRenderer renderer = new ASTStreamRenderer(ast, rewrite, compilationUnit, extracted.originalBody);</span>
+<span class="fc" id="L95">        LoopModelTransformer&lt;Expression&gt; transformer = new LoopModelTransformer&lt;&gt;(renderer);</span>
+        
+        // Transform the model to JDT Expression
+<span class="fc" id="L98">        Expression streamExpression = transformer.transform(extracted.model);</span>
+        
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">        if (streamExpression != null) {</span>
+            // Create the replacement statement
+<span class="fc" id="L102">            ExpressionStatement newStatement = ast.newExpressionStatement(streamExpression);</span>
+            
+            // Replace the for statement
+<span class="fc" id="L105">            rewrite.replace(visited, newStatement, group);</span>
+            
+            // Add necessary imports
+<span class="fc" id="L108">            addImports(cuRewrite, extracted.model);</span>
+        }
+<span class="fc" id="L110">    }</span>
+    
+    private boolean isConvertible(LoopModel model) {
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">        if (model == null) return false;</span>
+        
+<span class="fc" id="L115">        LoopMetadata metadata = model.getMetadata();</span>
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">        if (metadata == null) return true; // No metadata = assume convertible</span>
+        
+        // Don't convert if has break, continue, or return
+<span class="fc bfc" id="L119" title="All 2 branches covered.">        return !metadata.hasBreak() &amp;&amp; </span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">               !metadata.hasContinue() &amp;&amp; </span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">               !metadata.hasReturn() &amp;&amp;</span>
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">               !metadata.modifiesCollection();</span>
+    }
+    
+    private void addImports(CompilationUnitRewrite cuRewrite, LoopModel model) {
+        // Add necessary imports based on source type
+<span class="pc bpc" id="L127" title="1 of 3 branches missed.">        switch (model.getSource().type()) {</span>
+            case ARRAY:
+<span class="fc" id="L129">                cuRewrite.getImportRewrite().addImport(&quot;java.util.Arrays&quot;);</span>
+<span class="fc" id="L130">                break;</span>
+            case ITERABLE:
+<span class="nc" id="L132">                cuRewrite.getImportRewrite().addImport(&quot;java.util.stream.StreamSupport&quot;);</span>
+<span class="nc" id="L133">                break;</span>
+            default:
+                // No additional imports needed for Collection.stream()
+                break;
+        }
+        
+        // Add Collectors import if using collect terminal
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">        if (model.getTerminal() instanceof org.sandbox.functional.core.terminal.CollectTerminal) {</span>
+<span class="nc" id="L141">            cuRewrite.getImportRewrite().addImport(&quot;java.util.stream.Collectors&quot;);</span>
+        }
+<span class="fc" id="L143">    }</span>
+    
+    @Override
+    public String getPreview(boolean afterRefactoring) {
+<span class="nc bnc" id="L147" title="All 2 branches missed.">        if (afterRefactoring) {</span>
+<span class="nc" id="L148">            return &quot;items.stream().forEach(item -&gt; System.out.println(item));\n&quot;; //$NON-NLS-1$</span>
+        }
+<span class="nc" id="L150">        return &quot;for (String item : items)\n    System.out.println(item);\n&quot;; //$NON-NLS-1$</span>
+    }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

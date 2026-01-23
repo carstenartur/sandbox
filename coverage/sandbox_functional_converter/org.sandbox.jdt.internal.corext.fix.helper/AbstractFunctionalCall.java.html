@@ -31,7 +31,7 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 	public abstract void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit, Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesprocessed);
 
 	public abstract void rewrite(UseFunctionalCallFixCore useExplicitEncodingFixCore, T visited, CompilationUnitRewrite cuRewrite,
-			TextEditGroup group) throws CoreException;
+			TextEditGroup group, org.sandbox.jdt.internal.common.ReferenceHolder&lt;ASTNode, Object&gt; data) throws CoreException;
 
 	public abstract String getPreview(boolean afterRefactoring);
 }
