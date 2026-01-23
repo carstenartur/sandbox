@@ -95,7 +95,10 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	 * HelperVisitor.forAnnotation("org.junit.Before")
 	 *     .in(compilationUnit)
 	 *     .excluding(nodesprocessed)
-	 *     .processEach((node, holder) -&gt; processNode(node, holder));
+	 *     .processEach((node, holder) -&gt; {
+	 *         processNode(node, holder);
+	 *         return true;
+	 *     });
 	 * </pre>
 	 * 
 	 * @param annotationFQN the fully qualified name of the annotation to find
@@ -116,7 +119,10 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	 *     .andImportsOf("org.junit.Assert")
 	 *     .in(compilationUnit)
 	 *     .excluding(nodesprocessed)
-	 *     .processEach((node, holder) -&gt; processNode(node, holder));
+	 *     .processEach((node, holder) -&gt; {
+	 *         processNode(node, holder);
+	 *         return true;
+	 *     });
 	 * </pre>
 	 * 
 	 * @param typeFQN the fully qualified name of the type containing the methods
@@ -136,7 +142,10 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	 * HelperVisitor.forMethodCall("org.junit.Assert", "assertTrue")
 	 *     .in(compilationUnit)
 	 *     .excluding(nodesprocessed)
-	 *     .processEach((node, holder) -&gt; processNode(node, holder));
+	 *     .processEach((node, holder) -&gt; {
+	 *         processNode(node, holder);
+	 *         return true;
+	 *     });
 	 * </pre>
 	 * 
 	 * @param typeFQN the fully qualified name of the type containing the method
@@ -158,7 +167,10 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	 *     .ofType("org.junit.rules.TemporaryFolder")
 	 *     .in(compilationUnit)
 	 *     .excluding(nodesprocessed)
-	 *     .processEach((node, holder) -&gt; processNode(node, holder));
+	 *     .processEach((node, holder) -&gt; {
+	 *         processNode(node, holder);
+	 *         return true;
+	 *     });
 	 * </pre>
 	 * 
 	 * @return a fluent builder for field declaration visitors
@@ -176,7 +188,10 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	 * HelperVisitor.forImport("org.junit.Assert")
 	 *     .in(compilationUnit)
 	 *     .excluding(nodesprocessed)
-	 *     .processEach((node, holder) -&gt; processNode(node, holder));
+	 *     .processEach((node, holder) -&gt; {
+	 *         processNode(node, holder);
+	 *         return true;
+	 *     });
 	 * </pre>
 	 * 
 	 * @param importFQN the fully qualified name of the import to find
