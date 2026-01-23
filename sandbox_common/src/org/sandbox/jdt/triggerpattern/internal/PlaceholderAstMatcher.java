@@ -117,7 +117,7 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 	}
 	
 	/**
-	 * Matches single member annotations (e.g., @Test(expected=Exception.class)).
+	 * Matches single member annotations (e.g., {@code @SuppressWarnings("unchecked")}).
 	 * 
 	 * @param patternNode the pattern annotation
 	 * @param other the candidate node
