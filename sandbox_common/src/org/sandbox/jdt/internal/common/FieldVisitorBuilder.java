@@ -1,16 +1,3 @@
-/*******************************************************************************
- * Copyright (c) 2026 Carsten Hammer.
- *
- * This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License 2.0
- * which accompanies this distribution, and is available at
- * https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- *
- * Contributors:
- *     Carsten Hammer
- *******************************************************************************/
 package org.sandbox.jdt.internal.common;
 
 /*-
@@ -49,7 +36,10 @@ import org.eclipse.jdt.core.dom.FieldDeclaration;
  *     .ofType("org.junit.rules.TemporaryFolder")
  *     .in(compilationUnit)
  *     .excluding(nodesprocessed)
- *     .processEach((field, holder) -&gt; addOperation(field));
+ *     .processEach((field, holder) -&gt; {
+ *         addOperation(field);
+ *         return true;
+ *     });
  * </pre>
  * 
  * @author Carsten Hammer
@@ -80,6 +70,16 @@ public class FieldVisitorBuilder extends HelperVisitorBuilder<FieldDeclaration> 
     public FieldVisitorBuilder ofType(String typeFQN) {
         this.typeFQN = typeFQN;
         return this;
+    }
+    
+    @Override
+    protected void validateState() {
+        super.validateState();
+        if (annotationFQN == null || typeFQN == null) {
+            throw new IllegalStateException(
+                "FieldVisitorBuilder requires both withAnnotation(...) and ofType(...) to be configured "
+                + "before processing. annotationFQN=" + annotationFQN + ", typeFQN=" + typeFQN);
+        }
     }
     
     @Override

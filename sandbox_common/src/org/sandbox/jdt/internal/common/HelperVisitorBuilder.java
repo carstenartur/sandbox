@@ -1,16 +1,3 @@
-/*******************************************************************************
- * Copyright (c) 2026 Carsten Hammer.
- *
- * This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License 2.0
- * which accompanies this distribution, and is available at
- * https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- *
- * Contributors:
- *     Carsten Hammer
- *******************************************************************************/
 package org.sandbox.jdt.internal.common;
 
 /*-
@@ -52,7 +39,10 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
  * HelperVisitor.forAnnotation("org.junit.Before")
  *     .in(compilationUnit)
  *     .excluding(nodesprocessed)
- *     .processEach((node, holder) -&gt; addOperation(node));
+ *     .processEach((node, holder) -&gt; {
+ *         addOperation(node);
+ *         return true; // Continue visiting
+ *     });
  * </pre>
  * 
  * @param <T> the type of AST node being visited
@@ -102,26 +92,42 @@ public abstract class HelperVisitorBuilder<T extends ASTNode> {
      * @param <V> the type of keys in the reference holder
      * @param <H> the type of values in the reference holder
      * @param processor the bi-predicate that processes each found node
+     * @throws IllegalStateException if the compilation unit was not configured via {@code in(...)}
      */
     public <V, H> void processEach(BiPredicate<ASTNode, ReferenceHolder<V, H>> processor) {
+        validateState();
         ReferenceHolder<V, H> holder = new ReferenceHolder<>();
         executeVisitors(holder, processor);
     }
     
     /**
      * Terminal operation that collects all found nodes into a list.
+     * Note: This returns ASTNode instead of T to handle cases where builders
+     * may visit multiple node types (e.g., when including imports alongside annotations).
      * 
      * @return a list of all nodes that match the visitor criteria
+     * @throws IllegalStateException if the compilation unit was not configured via {@code in(...)}
      */
-    public List<T> collect() {
-        List<T> results = new ArrayList<>();
+    public List<ASTNode> collect() {
+        validateState();
+        List<ASTNode> results = new ArrayList<>();
         processEach((node, holder) -> {
-            @SuppressWarnings("unchecked")
-            T typedNode = (T) node;
-            results.add(typedNode);
+            results.add(node);
             return true; // Continue visiting
         });
         return results;
+    }
+    
+    /**
+     * Validates that required state has been configured before executing visitors.
+     * 
+     * @throws IllegalStateException if the compilation unit was not set
+     */
+    protected void validateState() {
+        if (compilationUnit == null) {
+            throw new IllegalStateException(
+                "Compilation unit must be configured via in(...) before calling processEach() or collect()");
+        }
     }
     
     /**
