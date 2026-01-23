@@ -136,9 +136,11 @@ public class HelperVisitorBuilderTest {
 	}
 
 	private static CompilationUnit createUnit(ASTParser parser, String source, String unitName) {
+		parser.setEnvironment(new String[] {}, new String[] {}, null, true);
+		parser.setBindingsRecovery(true);
+		parser.setResolveBindings(true);
 		parser.setUnitName(unitName);
 		parser.setSource(source.toCharArray());
-		parser.setResolveBindings(false);
 		return (CompilationUnit) parser.createAST(null);
 	}
 
