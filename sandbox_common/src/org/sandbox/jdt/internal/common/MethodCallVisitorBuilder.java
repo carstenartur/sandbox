@@ -35,7 +35,10 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
  * HelperVisitor.forMethodCall("org.junit.Assert", "assertTrue")
  *     .in(compilationUnit)
  *     .excluding(nodesprocessed)
- *     .processEach((methodInv, holder) -&gt; addOperation(methodInv));
+ *     .processEach((methodInv, holder) -&gt; {
+ *         addOperation(methodInv);
+ *         return true;
+ *     });
  *     
  * // Multiple methods with imports
  * HelperVisitor.forMethodCalls("org.junit.Assert", ALL_ASSERTION_METHODS)
@@ -43,8 +46,17 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
  *     .andImportsOf("org.junit.Assert")
  *     .in(compilationUnit)
  *     .excluding(nodesprocessed)
- *     .processEach((methodInv, holder) -&gt; addOperation(methodInv));
+ *     .processEach((node, holder) -&gt; {
+ *         addOperation(node);
+ *         return true;
+ *     });
  * </pre>
+ * 
+ * <p><b>Note on mixed node types:</b> When {@code andStaticImports()} or {@code andImportsOf(...)} 
+ * are enabled, the processor will receive both {@code MethodInvocation} and {@code ImportDeclaration} 
+ * nodes. This is intentional to match the pattern used in JUnit cleanup plugins (e.g., AssertJUnitPlugin) 
+ * where a single processor handles all related nodes polymorphically. Use {@code instanceof} checks 
+ * if you need to handle different node types differently.</p>
  * 
  * @author Carsten Hammer
  * @since 1.15
