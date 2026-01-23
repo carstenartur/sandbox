@@ -98,7 +98,7 @@ If the coverage report is not generated:
 
 If deployment to GitHub Pages fails:
 1. Verify repository settings have GitHub Pages enabled
-2. Check that the workflow has necessary permissions (`pages: write`, `id-token: write`)
+2. Check that the workflow has necessary permissions (for `peaceiris/actions-gh-pages` this requires `contents: write`; `pages: write` and `id-token: write` are only needed when using the official GitHub Pages actions)
 3. Ensure the `gh-pages` branch exists (it will be created automatically on first deployment)
 4. Check GitHub Actions logs for detailed error messages
 
@@ -111,11 +111,36 @@ If the coverage report is empty or incomplete:
 
 ## Optional: Coverage Badge
 
-To add a coverage badge to the README, you can use a service like [Codecov](https://codecov.io/) or [Coveralls](https://coveralls.io/), or create a custom badge using the coverage percentage from the reports.
+### Using Third-Party Services
 
-Example badge (placeholder):
+To add a coverage badge to the README, you can use services like:
+- **[Codecov](https://codecov.io/)** - Requires uploading coverage reports to their service
+- **[Coveralls](https://coveralls.io/)** - Similar to Codecov, requires integration
+- **[Codacy](https://www.codacy.com/)** - Comprehensive code quality platform with coverage support
+
+### Static Badge
+
+For a simple static badge showing the coverage URL is available, you can use shields.io:
+
 ```markdown
-![Coverage](https://img.shields.io/badge/coverage-XX%25-brightgreen)
+[![Coverage Report](https://img.shields.io/badge/Coverage-Report-blue)](https://carstenartur.github.io/sandbox/coverage/)
+```
+
+Result: [![Coverage Report](https://img.shields.io/badge/Coverage-Report-blue)](https://carstenartur.github.io/sandbox/coverage/)
+
+### Dynamic Badge (Advanced)
+
+To create a dynamic badge that shows actual coverage percentage, you would need to:
+1. Parse the JaCoCo XML report (`jacoco.xml`) during the workflow
+2. Extract the coverage percentage
+3. Either:
+   - Upload to a badge service (Codecov, Coveralls)
+   - Use a GitHub Action like `cicirello/jacoco-badge-generator` to generate a badge
+   - Create a gist-based badge using shields.io endpoint badges
+
+Example using a static percentage (update manually):
+```markdown
+![Coverage](https://img.shields.io/badge/coverage-85%25-brightgreen)
 ```
 
 ## References

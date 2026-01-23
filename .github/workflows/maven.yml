@@ -12,11 +12,9 @@ on:
 jobs:
   build:
     permissions:
-      contents: read
+      contents: write
       checks: write
       pull-requests: write
-      pages: write
-      id-token: write
     runs-on: ubuntu-latest
     env:
       DISPLAY: :0
