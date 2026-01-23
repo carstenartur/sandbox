@@ -1,0 +1,48 @@
+name: Fix NLS Comments
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - '**.java'
+
+jobs:
+  fix-nls:
+    runs-on: ubuntu-latest
+    # Only run if PR is from Copilot or has specific label
+    if: github.actor == 'copilot[bot]' || contains(github.event.pull_request.labels.*.name, 'auto-fix-nls')
+    
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Fix missing NLS comments in plugin sources
+        run: |
+          chmod +x .github/scripts/fix-nls.sh
+          .github/scripts/fix-nls.sh
+      
+      - name: Check for changes
+        id: changes
+        run: |
+          git add -A
+          if git diff --staged --quiet; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Commit and push fixes
+        if: steps.changes.outputs.has_changes == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git commit -m "fix: Add missing NLS comments to string literals"
+          git push
