@@ -230,14 +230,105 @@ java -version  # Should show Java 21 or later
 
 ### Building
 
-To build the project, including a WAR file that contains the update site, run:
+The project supports different build profiles for different purposes. Choose the appropriate command based on your needs:
+
+#### Quick Development Build (Fastest)
+
+For rapid iteration during development, use the default build which excludes heavy product materialization and p2 repository assembly:
 
 ```bash
-mvn -Dinclude=web -Pjacoco verify
+mvn -T 1C verify
 ```
 
-- The product will be located in `sandbox_product/target`
+- **Builds**: All bundles, features, and tests
+- **Skips**: Product materialization (`sandbox_product`) and p2 repository assembly (`sandbox_updatesite`)
+- **Use case**: Fast feedback during development, testing code changes
+- **Time**: Significantly faster than full build
+
+You can skip tests for even faster iteration:
+
+```bash
+mvn -T 1C -DskipTests verify
+```
+
+#### Build with Eclipse Product
+
+To build the Eclipse product with p2-director materialization (creates installable Eclipse distributions):
+
+```bash
+mvn -Pproduct -T 1C verify
+```
+
+- **Builds**: Everything in default build + Eclipse product
+- **Output**: `sandbox_product/target/products/`
+- **Use case**: Testing the Eclipse product locally
+
+#### Build with P2 Update Site Repository
+
+To build the p2 update site repository (for plugin distribution):
+
+```bash
+mvn -Prepo -T 1C verify
+```
+
+- **Builds**: Everything in default build + p2 update site
+- **Output**: `sandbox_updatesite/target/repository/`
+- **Use case**: Creating update site for plugin distribution
+
+#### Full Release Build
+
+For complete builds including product, repository, and code coverage:
+
+```bash
+mvn -Pproduct,repo,jacoco -T 1C verify
+```
+
+- **Builds**: Everything (bundles, features, tests, product, repository, coverage)
+- **Output**: Complete release artifacts in respective module `target/` directories
+- **Coverage Report**: `sandbox_coverage/target/site/jacoco-aggregate/`
+- **Use case**: Release builds, CI main branch builds
+
+#### Build with WAR File (Legacy)
+
+To build a WAR file that contains the update site:
+
+```bash
+mvn -Dinclude=web -Pproduct,jacoco -T 1C verify
+```
+
 - The WAR file will be located in `sandbox_web/target`
+
+#### Using Make (Convenience)
+
+A Makefile is provided for easier build commands:
+
+```bash
+make dev       # Fast development build
+make product   # Build with product
+make repo      # Build with repository
+make release   # Full release build with coverage
+make test      # Run tests with coverage (requires xvfb)
+make clean     # Clean all build artifacts
+make help      # Show all available targets
+```
+
+#### Build Flags
+
+- `-T 1C`: Enables parallel builds with 1 thread per CPU core (faster builds)
+- `-DskipTests`: Skips test execution (faster iteration)
+- `-Pjacoco`: Enables JaCoCo code coverage
+- `-Pproduct`: Includes Eclipse product build
+- `-Prepo`: Includes p2 repository build
+
+#### Understanding the Profiles
+
+- **Default (no profiles)**: Fast development build - bundles, features, and tests only
+- **`product`**: Adds Eclipse product materialization (heavy step, takes time)
+- **`repo`**: Adds p2 update site repository assembly (heavy step, takes time)
+- **`jacoco`**: Adds code coverage reporting (includes `sandbox_coverage` module)
+- **`web`**: Adds WAR file with update site (requires `-Dinclude=web` property)
+
+**Backward Compatibility**: The command `mvn -Pproduct,repo verify` produces the same result as the previous full build behavior.
 
 ### Troubleshooting
 
