@@ -41,8 +41,8 @@ public class ASTStreamRendererTest {
     void setUp() {
         ast = AST.newAST(AST.getJLSLatest(), false);
         rewrite = ASTRewrite.create(ast);
-        // Pass null for CompilationUnit since these tests don't require binding resolution
-        renderer = new ASTStreamRenderer(ast, rewrite, null);
+        // Pass null for CompilationUnit and originalBody since these tests don't require them
+        renderer = new ASTStreamRenderer(ast, rewrite, null, null);
     }
     
     @Test
