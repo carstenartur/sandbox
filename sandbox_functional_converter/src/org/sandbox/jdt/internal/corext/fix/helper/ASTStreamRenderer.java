@@ -32,10 +32,12 @@ public class ASTStreamRenderer implements StreamPipelineRenderer<Expression> {
     
     private final AST ast;
     private final CompilationUnit compilationUnit;
+    private final Statement originalBody;
     
-    public ASTStreamRenderer(AST ast, ASTRewrite rewrite, CompilationUnit compilationUnit) {
+    public ASTStreamRenderer(AST ast, ASTRewrite rewrite, CompilationUnit compilationUnit, Statement originalBody) {
         this.ast = ast;
         this.compilationUnit = compilationUnit;
+        this.originalBody = originalBody;
         // Note: rewrite parameter reserved for future use in complex AST transformations
     }
     
@@ -191,21 +193,46 @@ public class ASTStreamRenderer implements StreamPipelineRenderer<Expression> {
         // For single parameter without type annotation, don't use parentheses
         lambda.setParentheses(false);
         
-        if (bodyStatements.size() == 1) {
-            // Einzelne Expression -> Expression-Body
-            lambda.setBody(createExpression(bodyStatements.get(0)));
-        } else {
-            // Mehrere Statements -> Block-Body
-            Block block = ast.newBlock();
-            for (String stmt : bodyStatements) {
-                block.statements().add(createStatement(stmt));
+        // Use copySubtree from original body instead of parsing strings
+        if (originalBody instanceof Block) {
+            Block block = (Block) originalBody;
+            if (block.statements().size() == 1) {
+                // Single statement - extract as expression
+                Statement stmt = (Statement) block.statements().get(0);
+                if (stmt instanceof ExpressionStatement) {
+                    ExpressionStatement exprStmt = (ExpressionStatement) stmt;
+                    lambda.setBody((Expression) ASTNode.copySubtree(ast, exprStmt.getExpression()));
+                } else {
+                    // Not an expression statement, copy the whole statement as block
+                    Block lambdaBlock = ast.newBlock();
+                    lambdaBlock.statements().add(ASTNode.copySubtree(ast, stmt));
+                    lambda.setBody(lambdaBlock);
+                }
+            } else {
+                // Multiple statements - copy all into a block
+                Block lambdaBlock = ast.newBlock();
+                for (Object stmt : block.statements()) {
+                    lambdaBlock.statements().add(ASTNode.copySubtree(ast, (Statement) stmt));
+                }
+                lambda.setBody(lambdaBlock);
             }
-            lambda.setBody(block);
+        } else {
+            // Body is a single statement (not a block)
+            if (originalBody instanceof ExpressionStatement) {
+                ExpressionStatement exprStmt = (ExpressionStatement) originalBody;
+                lambda.setBody((Expression) ASTNode.copySubtree(ast, exprStmt.getExpression()));
+            } else {
+                // Not an expression statement, wrap in block
+                Block lambdaBlock = ast.newBlock();
+                lambdaBlock.statements().add(ASTNode.copySubtree(ast, originalBody));
+                lambda.setBody(lambdaBlock);
+            }
         }
         
         forEachCall.arguments().add(lambda);
         return forEachCall;
     }
+    
     
     @Override
     public Expression renderCollect(Expression pipeline, CollectTerminal terminal, String variableName) {

@@ -58,16 +58,16 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
                                       EnhancedForStatement visited,
                                       ReferenceHolder<ASTNode, Object> holder) {
         
-        // Extract LoopModel from AST
-        LoopModel model = extractor.extract(visited);
+        // Extract LoopModel AND original body from AST
+        JdtLoopExtractor.ExtractedLoop extracted = extractor.extract(visited);
         
         // Check if convertible using the model's metadata
-        if (!isConvertible(model)) {
+        if (!isConvertible(extracted.model)) {
             return false;
         }
         
-        // Store for later rewrite in the shared holder
-        holder.put(visited, model);
+        // Store extracted loop (model + body) for later rewrite in the shared holder
+        holder.put(visited, extracted);
         operations.add(fixcore.rewrite(visited, holder));
         nodesprocessed.add(visited);
         
@@ -79,10 +79,10 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
                         CompilationUnitRewrite cuRewrite, TextEditGroup group,
                         ReferenceHolder<ASTNode, Object> data) throws CoreException {
         
-        // Get the model from the holder (passed from find())
-        LoopModel model = (LoopModel) data.get(visited);
+        // Get the extracted loop from the holder (passed from find())
+        JdtLoopExtractor.ExtractedLoop extracted = (JdtLoopExtractor.ExtractedLoop) data.get(visited);
         
-        if (model == null || !isConvertible(model)) {
+        if (extracted == null || !isConvertible(extracted.model)) {
             return;
         }
         
@@ -90,12 +90,12 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
         ASTRewrite rewrite = cuRewrite.getASTRewrite();
         CompilationUnit compilationUnit = cuRewrite.getRoot();
         
-        // Create renderer and transformer with compilation unit for binding context
-        ASTStreamRenderer renderer = new ASTStreamRenderer(ast, rewrite, compilationUnit);
+        // Create renderer with original body for AST node access
+        ASTStreamRenderer renderer = new ASTStreamRenderer(ast, rewrite, compilationUnit, extracted.originalBody);
         LoopModelTransformer<Expression> transformer = new LoopModelTransformer<>(renderer);
         
         // Transform the model to JDT Expression
-        Expression streamExpression = transformer.transform(model);
+        Expression streamExpression = transformer.transform(extracted.model);
         
         if (streamExpression != null) {
             // Create the replacement statement
@@ -105,7 +105,7 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
             rewrite.replace(visited, newStatement, group);
             
             // Add necessary imports
-            addImports(cuRewrite, model);
+            addImports(cuRewrite, extracted.model);
         }
     }
     
