@@ -173,18 +173,27 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 			return false;
 		}
 		
-		// Match each pair
-		for (int i = 0; i < patternPairs.size(); i++) {
-			MemberValuePair patternPair = patternPairs.get(i);
-			MemberValuePair otherPair = otherPairs.get(i);
+		// Match each pattern pair with any other pair having the same name
+		// (annotation pairs can be in any order)
+		for (MemberValuePair patternPair : patternPairs) {
+			String patternName = patternPair.getName().getIdentifier();
 			
-			// Names must match exactly
-			if (!patternPair.getName().getIdentifier().equals(otherPair.getName().getIdentifier())) {
+			// Find corresponding pair in other annotation
+			MemberValuePair matchingOtherPair = null;
+			for (MemberValuePair otherPair : otherPairs) {
+				if (patternName.equals(otherPair.getName().getIdentifier())) {
+					matchingOtherPair = otherPair;
+					break;
+				}
+			}
+			
+			// If no matching pair found, annotations don't match
+			if (matchingOtherPair == null) {
 				return false;
 			}
 			
 			// Values must match (with placeholder support)
-			if (!safeSubtreeMatch(patternPair.getValue(), otherPair.getValue())) {
+			if (!safeSubtreeMatch(patternPair.getValue(), matchingOtherPair.getValue())) {
 				return false;
 			}
 		}

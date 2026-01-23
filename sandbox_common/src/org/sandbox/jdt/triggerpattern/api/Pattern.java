@@ -146,16 +146,18 @@ public final class Pattern {
 		Pattern other = (Pattern) obj;
 		return Objects.equals(value, other.value) 
 				&& kind == other.kind 
-				&& Objects.equals(id, other.id);
+				&& Objects.equals(id, other.id)
+				&& Objects.equals(qualifiedType, other.qualifiedType);
 	}
 	
 	@Override
 	public int hashCode() {
-		return Objects.hash(value, kind, id);
+		return Objects.hash(value, kind, id, qualifiedType);
 	}
 	
 	@Override
 	public String toString() {
-		return "Pattern[kind=" + kind + ", value=" + value + ", id=" + id + "]"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+		return "Pattern[kind=" + kind + ", value=" + value + ", id=" + id  //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				+ (qualifiedType != null ? ", qualifiedType=" + qualifiedType : "") + "]"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 	}
 }
