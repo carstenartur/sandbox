@@ -14,11 +14,16 @@
 package org.sandbox.jdt.triggerpattern.internal;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jdt.core.dom.ASTMatcher;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.MarkerAnnotation;
+import org.eclipse.jdt.core.dom.MemberValuePair;
+import org.eclipse.jdt.core.dom.NormalAnnotation;
 import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 
 /**
  * An AST matcher that supports placeholder matching.
@@ -89,5 +94,111 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 		
 		// Not a placeholder - use default matching
 		return super.match(patternNode, other);
+	}
+	
+	/**
+	 * Matches marker annotations (e.g., @Before, @After).
+	 * 
+	 * @param patternNode the pattern annotation
+	 * @param other the candidate node
+	 * @return {@code true} if the annotations match
+	 * @since 1.2.3
+	 */
+	@Override
+	public boolean match(MarkerAnnotation patternNode, Object other) {
+		if (!(other instanceof MarkerAnnotation)) {
+			return false;
+		}
+		MarkerAnnotation otherAnnotation = (MarkerAnnotation) other;
+		
+		// Match annotation name
+		return patternNode.getTypeName().getFullyQualifiedName()
+				.equals(otherAnnotation.getTypeName().getFullyQualifiedName());
+	}
+	
+	/**
+	 * Matches single member annotations (e.g., @Test(expected=Exception.class)).
+	 * 
+	 * @param patternNode the pattern annotation
+	 * @param other the candidate node
+	 * @return {@code true} if the annotations match
+	 * @since 1.2.3
+	 */
+	@Override
+	public boolean match(SingleMemberAnnotation patternNode, Object other) {
+		if (!(other instanceof SingleMemberAnnotation)) {
+			return false;
+		}
+		SingleMemberAnnotation otherAnnotation = (SingleMemberAnnotation) other;
+		
+		// Match annotation name
+		if (!patternNode.getTypeName().getFullyQualifiedName()
+				.equals(otherAnnotation.getTypeName().getFullyQualifiedName())) {
+			return false;
+		}
+		
+		// Match the value with placeholder support
+		return safeSubtreeMatch(patternNode.getValue(), otherAnnotation.getValue());
+	}
+	
+	/**
+	 * Matches normal annotations (e.g., @Test(expected=Exception.class, timeout=1000)).
+	 * 
+	 * @param patternNode the pattern annotation
+	 * @param other the candidate node
+	 * @return {@code true} if the annotations match
+	 * @since 1.2.3
+	 */
+	@Override
+	public boolean match(NormalAnnotation patternNode, Object other) {
+		if (!(other instanceof NormalAnnotation)) {
+			return false;
+		}
+		NormalAnnotation otherAnnotation = (NormalAnnotation) other;
+		
+		// Match annotation name
+		if (!patternNode.getTypeName().getFullyQualifiedName()
+				.equals(otherAnnotation.getTypeName().getFullyQualifiedName())) {
+			return false;
+		}
+		
+		// Match member-value pairs with placeholder support
+		@SuppressWarnings("unchecked")
+		List<MemberValuePair> patternPairs = patternNode.values();
+		@SuppressWarnings("unchecked")
+		List<MemberValuePair> otherPairs = otherAnnotation.values();
+		
+		// Must have same number of pairs
+		if (patternPairs.size() != otherPairs.size()) {
+			return false;
+		}
+		
+		// Match each pair
+		for (int i = 0; i < patternPairs.size(); i++) {
+			MemberValuePair patternPair = patternPairs.get(i);
+			MemberValuePair otherPair = otherPairs.get(i);
+			
+			// Names must match exactly
+			if (!patternPair.getName().getIdentifier().equals(otherPair.getName().getIdentifier())) {
+				return false;
+			}
+			
+			// Values must match (with placeholder support)
+			if (!safeSubtreeMatch(patternPair.getValue(), otherPair.getValue())) {
+				return false;
+			}
+		}
+		
+		return true;
+	}
+	
+	/**
+	 * Helper method to perform subtree matching using this matcher.
+	 */
+	private boolean safeSubtreeMatch(ASTNode node1, ASTNode node2) {
+		if (node1 == null) {
+			return node2 == null;
+		}
+		return node1.subtreeMatch(this, node2);
 	}
 }

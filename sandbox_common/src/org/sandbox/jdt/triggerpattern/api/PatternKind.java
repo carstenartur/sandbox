@@ -27,5 +27,29 @@ public enum PatternKind {
 	/**
 	 * Pattern represents a Java statement (e.g., {@code if ($cond) $then;}, {@code return $x;})
 	 */
-	STATEMENT
+	STATEMENT,
+	
+	/**
+	 * Pattern represents a Java annotation (e.g., {@code @Before}, {@code @Test(expected=$ex)})
+	 * @since 1.2.3
+	 */
+	ANNOTATION,
+	
+	/**
+	 * Pattern represents a Java method invocation (e.g., {@code Assert.assertEquals($a, $b)})
+	 * @since 1.2.3
+	 */
+	METHOD_CALL,
+	
+	/**
+	 * Pattern represents an import declaration (e.g., {@code import org.junit.Assert})
+	 * @since 1.2.3
+	 */
+	IMPORT,
+	
+	/**
+	 * Pattern represents a field declaration (e.g., {@code @Rule public TemporaryFolder $name})
+	 * @since 1.2.3
+	 */
+	FIELD
 }

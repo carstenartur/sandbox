@@ -21,8 +21,12 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Statement;
 import org.sandbox.jdt.triggerpattern.internal.PatternParser;
 import org.sandbox.jdt.triggerpattern.internal.PlaceholderAstMatcher;
@@ -66,6 +70,14 @@ public class TriggerPatternEngine {
 				if (pattern.getKind() == PatternKind.EXPRESSION && node instanceof Expression) {
 					checkMatch(node, patternNode, matches);
 				} else if (pattern.getKind() == PatternKind.STATEMENT && node instanceof Statement) {
+					checkMatch(node, patternNode, matches);
+				} else if (pattern.getKind() == PatternKind.ANNOTATION && node instanceof Annotation) {
+					checkMatch(node, patternNode, matches);
+				} else if (pattern.getKind() == PatternKind.METHOD_CALL && node instanceof MethodInvocation) {
+					checkMatch(node, patternNode, matches);
+				} else if (pattern.getKind() == PatternKind.IMPORT && node instanceof ImportDeclaration) {
+					checkMatch(node, patternNode, matches);
+				} else if (pattern.getKind() == PatternKind.FIELD && node instanceof FieldDeclaration) {
 					checkMatch(node, patternNode, matches);
 				}
 			}
