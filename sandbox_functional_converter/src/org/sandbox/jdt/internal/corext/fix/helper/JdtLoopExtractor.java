@@ -27,7 +27,21 @@ public class JdtLoopExtractor {
     /**
      * Extracts a LoopModel from an EnhancedForStatement.
      */
-    public LoopModel extract(EnhancedForStatement forStatement) {
+    /**
+     * Enhanced wrapper that includes both the abstract LoopModel and the original AST nodes.
+     * This allows the renderer to use the actual AST nodes instead of parsing strings.
+     */
+    public static class ExtractedLoop {
+        public final LoopModel model;
+        public final Statement originalBody;
+        
+        public ExtractedLoop(LoopModel model, Statement originalBody) {
+            this.model = model;
+            this.originalBody = originalBody;
+        }
+    }
+    
+    public ExtractedLoop extract(EnhancedForStatement forStatement) {
         Expression iterable = forStatement.getExpression();
         SingleVariableDeclaration parameter = forStatement.getParameter();
         Statement body = forStatement.getBody();
@@ -55,7 +69,8 @@ public class JdtLoopExtractor {
         // Analyze body and add operations/terminal
         analyzeAndAddOperations(body, builder, varName);
         
-        return builder.build();
+        LoopModel model = builder.build();
+        return new ExtractedLoop(model, body);
     }
     
     private SourceType determineSourceType(Expression iterable) {
