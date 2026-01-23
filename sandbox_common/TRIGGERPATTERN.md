@@ -94,6 +94,63 @@ Match Java statements:
 // Matches: return statements
 ```
 
+### Annotation Patterns
+
+Match annotations on classes, methods, or fields:
+
+```java
+@TriggerPattern(value = "@Before", kind = PatternKind.ANNOTATION)
+// Matches: simple marker annotations like @Before, @After
+
+@TriggerPattern(value = "@Test(expected=$ex)", kind = PatternKind.ANNOTATION)
+// Matches: @Test annotation with expected parameter, captures exception type
+
+@TriggerPattern(value = "@SuppressWarnings($value)", kind = PatternKind.ANNOTATION)
+// Matches: @SuppressWarnings with any value, captures the value
+```
+
+### Method Call Patterns
+
+Match method invocations with placeholders:
+
+```java
+@TriggerPattern(value = "Assert.assertEquals($a, $b)", kind = PatternKind.METHOD_CALL)
+// Matches: assertEquals calls with 2 arguments
+
+@TriggerPattern(value = "assertEquals($msg, $expected, $actual)", kind = PatternKind.METHOD_CALL)
+// Matches: assertEquals calls with 3 arguments (with message)
+
+@TriggerPattern(value = "$obj.toString()", kind = PatternKind.METHOD_CALL)
+// Matches: toString() calls on any object, captures the receiver
+```
+
+### Import Patterns
+
+Match import declarations:
+
+```java
+@TriggerPattern(value = "import org.junit.Assert", kind = PatternKind.IMPORT)
+// Matches: specific import statement
+
+@TriggerPattern(value = "import static org.junit.Assert.assertEquals", kind = PatternKind.IMPORT)
+// Matches: static import for assertEquals method
+```
+
+### Field Patterns
+
+Match field declarations with placeholders:
+
+```java
+@TriggerPattern(value = "private String $name", kind = PatternKind.FIELD)
+// Matches: private String fields, captures field name
+
+@TriggerPattern(value = "@Rule public TemporaryFolder $name", kind = PatternKind.FIELD)
+// Matches: @Rule annotated TemporaryFolder fields
+
+@TriggerPattern(value = "public $type $name", kind = PatternKind.FIELD)
+// Matches: any public field, captures both type and name
+```
+
 ### Placeholder Rules
 
 - **Prefix with `$`**: `$x`, `$var`, `$condition`
@@ -260,6 +317,72 @@ See `org.sandbox.jdt.triggerpattern.examples.ExampleHintProvider` for working ex
 - **simplifyIncrement**: Replaces `$x + 1` with `++$x`
 - **simplifyDecrement**: Replaces `$x - 1` with `--$x`
 
+### Example: JUnit Migration Using New Pattern Kinds
+
+```java
+// Migrate @Before annotations to @BeforeEach
+@TriggerPattern(value = "@Before", kind = PatternKind.ANNOTATION)
+@Hint(displayName = "Migrate to JUnit 5 @BeforeEach")
+public static IJavaCompletionProposal migrateBeforeAnnotation(HintContext ctx) {
+    ImportRewrite imports = ctx.getImportRewrite();
+    imports.addImport("org.junit.jupiter.api.BeforeEach");
+    imports.removeImport("org.junit.Before");
+    
+    // Replace @Before with @BeforeEach
+    AST ast = ctx.getASTRewrite().getAST();
+    MarkerAnnotation newAnnotation = ast.newMarkerAnnotation();
+    newAnnotation.setTypeName(ast.newName("BeforeEach"));
+    
+    ctx.getASTRewrite().replace(ctx.getMatch().getMatchedNode(), newAnnotation, null);
+    return createProposal(ctx);
+}
+
+// Migrate Assert.assertEquals to Assertions.assertEquals
+@TriggerPattern(value = "Assert.assertEquals($a, $b)", kind = PatternKind.METHOD_CALL)
+@Hint(displayName = "Migrate to JUnit 5 Assertions")
+public static IJavaCompletionProposal migrateAssertEquals(HintContext ctx) {
+    Map<String, ASTNode> bindings = ctx.getMatch().getBindings();
+    
+    ImportRewrite imports = ctx.getImportRewrite();
+    imports.addImport("org.junit.jupiter.api.Assertions");
+    
+    // Create Assertions.assertEquals(a, b)
+    AST ast = ctx.getASTRewrite().getAST();
+    MethodInvocation newCall = ast.newMethodInvocation();
+    newCall.setExpression(ast.newName("Assertions"));
+    newCall.setName(ast.newSimpleName("assertEquals"));
+    newCall.arguments().add(ASTNode.copySubtree(ast, bindings.get("$a")));
+    newCall.arguments().add(ASTNode.copySubtree(ast, bindings.get("$b")));
+    
+    ctx.getASTRewrite().replace(ctx.getMatch().getMatchedNode(), newCall, null);
+    return createProposal(ctx);
+}
+
+// Remove unused imports
+@TriggerPattern(value = "import org.junit.Assert", kind = PatternKind.IMPORT)
+@Hint(displayName = "Remove unused JUnit 4 import")
+public static IJavaCompletionProposal removeUnusedImport(HintContext ctx) {
+    ctx.getASTRewrite().remove(ctx.getMatch().getMatchedNode(), null);
+    return createProposal(ctx);
+}
+
+// Migrate @Rule fields to @TempDir
+@TriggerPattern(value = "@Rule public TemporaryFolder $name", kind = PatternKind.FIELD)
+@Hint(displayName = "Migrate to JUnit 5 @TempDir")
+public static IJavaCompletionProposal migrateTempFolder(HintContext ctx) {
+    Map<String, ASTNode> bindings = ctx.getMatch().getBindings();
+    
+    ImportRewrite imports = ctx.getImportRewrite();
+    imports.addImport("org.junit.jupiter.api.io.TempDir");
+    
+    // Create @TempDir Path name
+    AST ast = ctx.getASTRewrite().getAST();
+    // ... (field transformation logic)
+    
+    return createProposal(ctx);
+}
+```
+
 ## Architecture
 
 The TriggerPattern engine consists of:
@@ -280,12 +403,22 @@ The `sandbox_common_test` module contains comprehensive tests:
 - **PlaceholderMatcherTest**: Tests placeholder binding logic
 - **TriggerPatternEngineTest**: Tests pattern matching and traversal
 
+## Recent Enhancements
+
+Version 1.2.3 added support for:
+
+- **ANNOTATION patterns**: Match annotations like `@Before`, `@Test(expected=$ex)`
+- **METHOD_CALL patterns**: Match method invocations like `Assert.assertEquals($a, $b)`
+- **IMPORT patterns**: Match import declarations like `import org.junit.Assert`
+- **FIELD patterns**: Match field declarations like `@Rule public TemporaryFolder $name`
+- **Qualified type support**: Optional `qualifiedType` parameter for type-aware matching
+
 ## Future Enhancements
 
 Planned features (see [TODO.md](TODO.md) for details):
 
 - **Multi-placeholders**: `$x$` to match lists (argument lists, statement sequences)
-- **Constraints**: Type-based placeholder constraints (`$x:SimpleName`)
+- **Type constraints**: Type-based placeholder constraints (`$x:SimpleName`)
 - **Performance**: Pattern indexing for faster matching
 - **Cleanup Integration**: Use patterns in Save Actions and batch cleanups
 - **Pattern Libraries**: Reusable pattern catalogs
