@@ -106,7 +106,7 @@ public class MethodCallVisitorBuilder extends HelperVisitorBuilder<MethodInvocat
         // Optionally include static imports for each method
         if (includeStaticImports) {
             methodNames.forEach(methodName -> {
-                HelperVisitor.callImportDeclarationVisitor(typeFQN + "." + methodName, 
+                HelperVisitor.callImportDeclarationVisitor(typeFQN + "." + methodName, //$NON-NLS-1$
                         compilationUnit, holder, nodesprocessed, (node, h) -> processor.test(node, h));
             });
         }
