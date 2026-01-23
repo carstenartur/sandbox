@@ -193,38 +193,53 @@ public class ASTStreamRenderer implements StreamPipelineRenderer<Expression> {
         // For single parameter without type annotation, don't use parentheses
         lambda.setParentheses(false);
         
-        // Use copySubtree from original body instead of parsing strings
-        if (originalBody instanceof Block) {
-            Block block = (Block) originalBody;
-            if (block.statements().size() == 1) {
-                // Single statement - extract as expression
-                Statement stmt = (Statement) block.statements().get(0);
-                if (stmt instanceof ExpressionStatement) {
-                    ExpressionStatement exprStmt = (ExpressionStatement) stmt;
-                    lambda.setBody((Expression) ASTNode.copySubtree(ast, exprStmt.getExpression()));
+        // Use original body if available (production), otherwise fall back to string parsing (tests)
+        if (originalBody != null) {
+            // Production path: Use copySubtree from original body to preserve binding information
+            if (originalBody instanceof Block) {
+                Block block = (Block) originalBody;
+                if (block.statements().size() == 1) {
+                    // Single statement - extract as expression
+                    Statement stmt = (Statement) block.statements().get(0);
+                    if (stmt instanceof ExpressionStatement) {
+                        ExpressionStatement exprStmt = (ExpressionStatement) stmt;
+                        lambda.setBody((Expression) ASTNode.copySubtree(ast, exprStmt.getExpression()));
+                    } else {
+                        // Not an expression statement, copy the whole statement as block
+                        Block lambdaBlock = ast.newBlock();
+                        lambdaBlock.statements().add(ASTNode.copySubtree(ast, stmt));
+                        lambda.setBody(lambdaBlock);
+                    }
                 } else {
-                    // Not an expression statement, copy the whole statement as block
+                    // Multiple statements - copy all into a block
                     Block lambdaBlock = ast.newBlock();
-                    lambdaBlock.statements().add(ASTNode.copySubtree(ast, stmt));
+                    for (Object stmt : block.statements()) {
+                        lambdaBlock.statements().add(ASTNode.copySubtree(ast, (Statement) stmt));
+                    }
                     lambda.setBody(lambdaBlock);
                 }
             } else {
-                // Multiple statements - copy all into a block
-                Block lambdaBlock = ast.newBlock();
-                for (Object stmt : block.statements()) {
-                    lambdaBlock.statements().add(ASTNode.copySubtree(ast, (Statement) stmt));
+                // Body is a single statement (not a block)
+                if (originalBody instanceof ExpressionStatement) {
+                    ExpressionStatement exprStmt = (ExpressionStatement) originalBody;
+                    lambda.setBody((Expression) ASTNode.copySubtree(ast, exprStmt.getExpression()));
+                } else {
+                    // Not an expression statement, wrap in block
+                    Block lambdaBlock = ast.newBlock();
+                    lambdaBlock.statements().add(ASTNode.copySubtree(ast, originalBody));
+                    lambda.setBody(lambdaBlock);
                 }
-                lambda.setBody(lambdaBlock);
             }
         } else {
-            // Body is a single statement (not a block)
-            if (originalBody instanceof ExpressionStatement) {
-                ExpressionStatement exprStmt = (ExpressionStatement) originalBody;
-                lambda.setBody((Expression) ASTNode.copySubtree(ast, exprStmt.getExpression()));
+            // Test/fallback path: Use bodyStatements strings (for unit tests)
+            if (bodyStatements.size() == 1) {
+                Expression bodyExpr = createExpression(bodyStatements.get(0));
+                lambda.setBody(bodyExpr);
             } else {
-                // Not an expression statement, wrap in block
                 Block lambdaBlock = ast.newBlock();
-                lambdaBlock.statements().add(ASTNode.copySubtree(ast, originalBody));
+                for (String stmt : bodyStatements) {
+                    lambdaBlock.statements().add(createStatement(stmt));
+                }
                 lambda.setBody(lambdaBlock);
             }
         }
