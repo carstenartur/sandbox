@@ -35,6 +35,7 @@ public final class Pattern {
 	private final PatternKind kind;
 	private final String id;
 	private final String displayName;
+	private final String qualifiedType;
 	
 	/**
 	 * Creates a new pattern with the specified value and kind.
@@ -43,8 +44,8 @@ public final class Pattern {
 	 * @param kind the kind of pattern (EXPRESSION or STATEMENT)
 	 */
 	public Pattern(String value, PatternKind kind) {
-<span class="fc" id="L46">		this(value, kind, null, null);</span>
-<span class="fc" id="L47">	}</span>
+<span class="fc" id="L47">		this(value, kind, null, null, null);</span>
+<span class="fc" id="L48">	}</span>
 	
 	/**
 	 * Creates a new pattern with the specified value, kind, id, and display name.
@@ -54,12 +55,39 @@ public final class Pattern {
 	 * @param id optional unique identifier for the pattern
 	 * @param displayName optional human-readable name for the pattern
 	 */
-<span class="fc" id="L57">	public Pattern(String value, PatternKind kind, String id, String displayName) {</span>
-<span class="fc" id="L58">		this.value = Objects.requireNonNull(value, &quot;Pattern value cannot be null&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L59">		this.kind = Objects.requireNonNull(kind, &quot;Pattern kind cannot be null&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L60">		this.id = id;</span>
-<span class="fc" id="L61">		this.displayName = displayName;</span>
-<span class="fc" id="L62">	}</span>
+	public Pattern(String value, PatternKind kind, String id, String displayName) {
+<span class="nc" id="L59">		this(value, kind, id, displayName, null);</span>
+<span class="nc" id="L60">	}</span>
+	
+	/**
+	 * Creates a new pattern with the specified value, kind, id, display name, and qualified type.
+	 * 
+	 * @param value the pattern string with placeholders
+	 * @param kind the kind of pattern
+	 * @param id optional unique identifier for the pattern
+	 * @param displayName optional human-readable name for the pattern
+	 * @param qualifiedType optional qualified type name (e.g., &quot;org.junit.Before&quot; for annotation patterns)
+	 * @since 1.2.3
+	 */
+<span class="fc" id="L72">	public Pattern(String value, PatternKind kind, String id, String displayName, String qualifiedType) {</span>
+<span class="fc" id="L73">		this.value = Objects.requireNonNull(value, &quot;Pattern value cannot be null&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L74">		this.kind = Objects.requireNonNull(kind, &quot;Pattern kind cannot be null&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L75">		this.id = id;</span>
+<span class="fc" id="L76">		this.displayName = displayName;</span>
+<span class="fc" id="L77">		this.qualifiedType = qualifiedType;</span>
+<span class="fc" id="L78">	}</span>
+	
+	/**
+	 * Creates a new pattern with the specified value, kind, and qualified type.
+	 * 
+	 * @param value the pattern string with placeholders
+	 * @param kind the kind of pattern
+	 * @param qualifiedType qualified type name (e.g., &quot;org.junit.Before&quot;)
+	 * @since 1.2.3
+	 */
+	public Pattern(String value, PatternKind kind, String qualifiedType) {
+<span class="nc" id="L89">		this(value, kind, null, null, qualifiedType);</span>
+<span class="nc" id="L90">	}</span>
 	
 	/**
 	 * Returns the pattern string.
@@ -67,7 +95,7 @@ public final class Pattern {
 	 * @return the pattern string with placeholders
 	 */
 	public String getValue() {
-<span class="fc" id="L70">		return value;</span>
+<span class="fc" id="L98">		return value;</span>
 	}
 	
 	/**
@@ -76,7 +104,7 @@ public final class Pattern {
 	 * @return the kind (EXPRESSION or STATEMENT)
 	 */
 	public PatternKind getKind() {
-<span class="fc" id="L79">		return kind;</span>
+<span class="fc" id="L107">		return kind;</span>
 	}
 	
 	/**
@@ -85,7 +113,7 @@ public final class Pattern {
 	 * @return the pattern ID or {@code null} if not set
 	 */
 	public String getId() {
-<span class="nc" id="L88">		return id;</span>
+<span class="nc" id="L116">		return id;</span>
 	}
 	
 	/**
@@ -94,31 +122,43 @@ public final class Pattern {
 	 * @return the display name or {@code null} if not set
 	 */
 	public String getDisplayName() {
-<span class="nc" id="L97">		return displayName;</span>
+<span class="nc" id="L125">		return displayName;</span>
+	}
+	
+	/**
+	 * Returns the optional qualified type.
+	 * 
+	 * @return the qualified type name or {@code null} if not set
+	 * @since 1.2.3
+	 */
+	public String getQualifiedType() {
+<span class="nc" id="L135">		return qualifiedType;</span>
 	}
 	
 	@Override
 	public boolean equals(Object obj) {
-<span class="nc bnc" id="L102" title="All 2 branches missed.">		if (this == obj) {</span>
-<span class="nc" id="L103">			return true;</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">		if (this == obj) {</span>
+<span class="nc" id="L141">			return true;</span>
 		}
-<span class="nc bnc" id="L105" title="All 4 branches missed.">		if (obj == null || getClass() != obj.getClass()) {</span>
-<span class="nc" id="L106">			return false;</span>
+<span class="nc bnc" id="L143" title="All 4 branches missed.">		if (obj == null || getClass() != obj.getClass()) {</span>
+<span class="nc" id="L144">			return false;</span>
 		}
-<span class="nc" id="L108">		Pattern other = (Pattern) obj;</span>
-<span class="nc bnc" id="L109" title="All 2 branches missed.">		return Objects.equals(value, other.value) </span>
-<span class="nc bnc" id="L110" title="All 2 branches missed.">				&amp;&amp; kind == other.kind </span>
-<span class="nc bnc" id="L111" title="All 2 branches missed.">				&amp;&amp; Objects.equals(id, other.id);</span>
+<span class="nc" id="L146">		Pattern other = (Pattern) obj;</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">		return Objects.equals(value, other.value) </span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">				&amp;&amp; kind == other.kind </span>
+<span class="nc bnc" id="L149" title="All 2 branches missed.">				&amp;&amp; Objects.equals(id, other.id)</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">				&amp;&amp; Objects.equals(qualifiedType, other.qualifiedType);</span>
 	}
 	
 	@Override
 	public int hashCode() {
-<span class="nc" id="L116">		return Objects.hash(value, kind, id);</span>
+<span class="nc" id="L155">		return Objects.hash(value, kind, id, qualifiedType);</span>
 	}
 	
 	@Override
 	public String toString() {
-<span class="nc" id="L121">		return &quot;Pattern[kind=&quot; + kind + &quot;, value=&quot; + value + &quot;, id=&quot; + id + &quot;]&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+<span class="nc" id="L160">		return &quot;Pattern[kind=&quot; + kind + &quot;, value=&quot; + value + &quot;, id=&quot; + id  //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="nc bnc" id="L161" title="All 2 branches missed.">				+ (qualifiedType != null ? &quot;, qualifiedType=&quot; + qualifiedType : &quot;&quot;) + &quot;]&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

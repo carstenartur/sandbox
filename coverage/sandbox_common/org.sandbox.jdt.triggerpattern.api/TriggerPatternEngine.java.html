@@ -21,8 +21,12 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Statement;
 import org.sandbox.jdt.triggerpattern.internal.PatternParser;
 import org.sandbox.jdt.triggerpattern.internal.PlaceholderAstMatcher;
@@ -36,9 +40,9 @@ import org.sandbox.jdt.triggerpattern.internal.PlaceholderAstMatcher;
  * 
  * @since 1.2.2
  */
-<span class="fc" id="L39">public class TriggerPatternEngine {</span>
+<span class="fc" id="L43">public class TriggerPatternEngine {</span>
 	
-<span class="fc" id="L41">	private final PatternParser parser = new PatternParser();</span>
+<span class="fc" id="L45">	private final PatternParser parser = new PatternParser();</span>
 	
 	/**
 	 * Finds all matches of the given pattern in the compilation unit.
@@ -48,30 +52,38 @@ import org.sandbox.jdt.triggerpattern.internal.PlaceholderAstMatcher;
 	 * @return a list of all matches (may be empty)
 	 */
 	public List&lt;Match&gt; findMatches(CompilationUnit cu, Pattern pattern) {
-<span class="pc bpc" id="L51" title="2 of 4 branches missed.">		if (cu == null || pattern == null) {</span>
-<span class="nc" id="L52">			return List.of();</span>
+<span class="pc bpc" id="L55" title="2 of 4 branches missed.">		if (cu == null || pattern == null) {</span>
+<span class="nc" id="L56">			return List.of();</span>
 		}
 		
-<span class="fc" id="L55">		ASTNode patternNode = parser.parse(pattern);</span>
-<span class="pc bpc" id="L56" title="1 of 2 branches missed.">		if (patternNode == null) {</span>
-<span class="nc" id="L57">			return List.of();</span>
+<span class="fc" id="L59">		ASTNode patternNode = parser.parse(pattern);</span>
+<span class="pc bpc" id="L60" title="1 of 2 branches missed.">		if (patternNode == null) {</span>
+<span class="nc" id="L61">			return List.of();</span>
 		}
 		
-<span class="fc" id="L60">		List&lt;Match&gt; matches = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L64">		List&lt;Match&gt; matches = new ArrayList&lt;&gt;();</span>
 		
-<span class="fc" id="L62">		cu.accept(new ASTVisitor() {</span>
+<span class="fc" id="L66">		cu.accept(new ASTVisitor() {</span>
 			@Override
 			public void preVisit(ASTNode node) {
 				// Only check nodes of compatible types
-<span class="pc bpc" id="L66" title="1 of 4 branches missed.">				if (pattern.getKind() == PatternKind.EXPRESSION &amp;&amp; node instanceof Expression) {</span>
-<span class="fc" id="L67">					checkMatch(node, patternNode, matches);</span>
-<span class="pc bpc" id="L68" title="3 of 4 branches missed.">				} else if (pattern.getKind() == PatternKind.STATEMENT &amp;&amp; node instanceof Statement) {</span>
-<span class="nc" id="L69">					checkMatch(node, patternNode, matches);</span>
+<span class="pc bpc" id="L70" title="1 of 4 branches missed.">				if (pattern.getKind() == PatternKind.EXPRESSION &amp;&amp; node instanceof Expression) {</span>
+<span class="fc" id="L71">					checkMatch(node, patternNode, matches);</span>
+<span class="pc bpc" id="L72" title="3 of 4 branches missed.">				} else if (pattern.getKind() == PatternKind.STATEMENT &amp;&amp; node instanceof Statement) {</span>
+<span class="nc" id="L73">					checkMatch(node, patternNode, matches);</span>
+<span class="pc bpc" id="L74" title="3 of 4 branches missed.">				} else if (pattern.getKind() == PatternKind.ANNOTATION &amp;&amp; node instanceof Annotation) {</span>
+<span class="nc" id="L75">					checkMatch(node, patternNode, matches);</span>
+<span class="pc bpc" id="L76" title="3 of 4 branches missed.">				} else if (pattern.getKind() == PatternKind.METHOD_CALL &amp;&amp; node instanceof MethodInvocation) {</span>
+<span class="nc" id="L77">					checkMatch(node, patternNode, matches);</span>
+<span class="pc bpc" id="L78" title="3 of 4 branches missed.">				} else if (pattern.getKind() == PatternKind.IMPORT &amp;&amp; node instanceof ImportDeclaration) {</span>
+<span class="nc" id="L79">					checkMatch(node, patternNode, matches);</span>
+<span class="pc bpc" id="L80" title="3 of 4 branches missed.">				} else if (pattern.getKind() == PatternKind.FIELD &amp;&amp; node instanceof FieldDeclaration) {</span>
+<span class="nc" id="L81">					checkMatch(node, patternNode, matches);</span>
 				}
-<span class="fc" id="L71">			}</span>
+<span class="fc" id="L83">			}</span>
 		});
 		
-<span class="fc" id="L74">		return matches;</span>
+<span class="fc" id="L86">		return matches;</span>
 	}
 	
 	/**
@@ -82,32 +94,32 @@ import org.sandbox.jdt.triggerpattern.internal.PlaceholderAstMatcher;
 	 * @return a list of all matches (may be empty)
 	 */
 	public List&lt;Match&gt; findMatches(ICompilationUnit icu, Pattern pattern) {
-<span class="nc bnc" id="L85" title="All 4 branches missed.">		if (icu == null || pattern == null) {</span>
-<span class="nc" id="L86">			return List.of();</span>
+<span class="nc bnc" id="L97" title="All 4 branches missed.">		if (icu == null || pattern == null) {</span>
+<span class="nc" id="L98">			return List.of();</span>
 		}
 		
-<span class="nc" id="L89">		ASTParser astParser = ASTParser.newParser(AST.getJLSLatest());</span>
-<span class="nc" id="L90">		astParser.setSource(icu);</span>
-<span class="nc" id="L91">		astParser.setResolveBindings(false);</span>
-<span class="nc" id="L92">		CompilationUnit cu = (CompilationUnit) astParser.createAST(null);</span>
+<span class="nc" id="L101">		ASTParser astParser = ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="nc" id="L102">		astParser.setSource(icu);</span>
+<span class="nc" id="L103">		astParser.setResolveBindings(false);</span>
+<span class="nc" id="L104">		CompilationUnit cu = (CompilationUnit) astParser.createAST(null);</span>
 		
-<span class="nc" id="L94">		return findMatches(cu, pattern);</span>
+<span class="nc" id="L106">		return findMatches(cu, pattern);</span>
 	}
 	
 	/**
 	 * Checks if a candidate node matches the pattern node and adds a Match if it does.
 	 */
 	private void checkMatch(ASTNode candidate, ASTNode patternNode, List&lt;Match&gt; matches) {
-<span class="fc" id="L101">		PlaceholderAstMatcher matcher = new PlaceholderAstMatcher();</span>
+<span class="fc" id="L113">		PlaceholderAstMatcher matcher = new PlaceholderAstMatcher();</span>
 		
-<span class="fc bfc" id="L103" title="All 2 branches covered.">		if (patternNode.subtreeMatch(matcher, candidate)) {</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">		if (patternNode.subtreeMatch(matcher, candidate)) {</span>
 			// We have a match! Create a Match object with bindings and position
-<span class="fc" id="L105">			int offset = candidate.getStartPosition();</span>
-<span class="fc" id="L106">			int length = candidate.getLength();</span>
+<span class="fc" id="L117">			int offset = candidate.getStartPosition();</span>
+<span class="fc" id="L118">			int length = candidate.getLength();</span>
 			
-<span class="fc" id="L108">			Match match = new Match(candidate, matcher.getBindings(), offset, length);</span>
-<span class="fc" id="L109">			matches.add(match);</span>
+<span class="fc" id="L120">			Match match = new Match(candidate, matcher.getBindings(), offset, length);</span>
+<span class="fc" id="L121">			matches.add(match);</span>
 		}
-<span class="fc" id="L111">	}</span>
+<span class="fc" id="L123">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
