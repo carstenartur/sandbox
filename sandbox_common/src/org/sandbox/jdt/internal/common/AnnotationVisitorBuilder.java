@@ -34,15 +34,27 @@ import org.eclipse.jdt.core.dom.MarkerAnnotation;
  * HelperVisitor.forAnnotation("org.junit.Before")
  *     .in(compilationUnit)
  *     .excluding(nodesprocessed)
- *     .processEach((annotation, holder) -&gt; addOperation(annotation));
+ *     .processEach((annotation, holder) -&gt; {
+ *         addOperation(annotation);
+ *         return true;
+ *     });
  *     
  * // Include import declarations
  * HelperVisitor.forAnnotation("org.junit.Before")
  *     .andImports()
  *     .in(compilationUnit)
  *     .excluding(nodesprocessed)
- *     .processEach((node, holder) -&gt; addOperation(node));
+ *     .processEach((node, holder) -&gt; {
+ *         addOperation(node);
+ *         return true;
+ *     });
  * </pre>
+ * 
+ * <p><b>Note on mixed node types:</b> When {@code andImports()} is enabled, the processor
+ * will receive both {@code MarkerAnnotation} and {@code ImportDeclaration} nodes. This is
+ * intentional to match the pattern used in JUnit cleanup plugins where a single processor
+ * handles all related nodes polymorphically. Use {@code instanceof} checks if you need
+ * to handle different node types differently.</p>
  * 
  * @author Carsten Hammer
  * @since 1.15
