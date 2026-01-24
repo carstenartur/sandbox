@@ -49,53 +49,51 @@ public class TestTimeoutJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder = new ReferenceHolder<>();
-		HelperVisitor.forAnnotation(ORG_JUNIT_TEST)
-			.in(compilationUnit)
-			.excluding(nodesprocessed)
-			.processEach(dataHolder, (visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+		HelperVisitor.callNormalAnnotationVisitor(ORG_JUNIT_TEST, compilationUnit, dataHolder, nodesprocessed,
+				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, ASTNode node,
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, NormalAnnotation node,
 			ReferenceHolder<Integer, JunitHolder> dataHolder) {
-		if (node instanceof NormalAnnotation normalAnnotation) {
-			// Check if this @Test annotation has a timeout parameter
-			Long timeoutValue = null;
-			MemberValuePair timeoutPair = null;
-			
-			@SuppressWarnings("unchecked")
-			List<MemberValuePair> values = normalAnnotation.values();
-			for (MemberValuePair pair : values) {
-				if ("timeout".equals(pair.getName().getIdentifier())) {
-					timeoutPair = pair;
-					Expression value = pair.getValue();
-					if (value instanceof NumberLiteral) {
-						try {
-							timeoutValue = Long.parseLong(((NumberLiteral) value).getToken());
-						} catch (NumberFormatException e) {
-							// Skip invalid timeout values
-							return false;
-						}
-					} else {
-						// Timeout value is not a simple number literal (could be a constant or expression)
-						// Skip this case as it requires more complex analysis
+		
+		// Check if this @Test annotation has a timeout parameter
+		Long timeoutValue = null;
+		MemberValuePair timeoutPair = null;
+		
+		@SuppressWarnings("unchecked")
+		List<MemberValuePair> values = node.values();
+		for (MemberValuePair pair : values) {
+			if ("timeout".equals(pair.getName().getIdentifier())) {
+				timeoutPair = pair;
+				Expression value = pair.getValue();
+				if (value instanceof NumberLiteral) {
+					try {
+						timeoutValue = Long.parseLong(((NumberLiteral) value).getToken());
+					} catch (NumberFormatException e) {
+						// Skip invalid timeout values
 						return false;
 					}
-					break;
+				} else {
+					// Timeout value is not a simple number literal (could be a constant or expression)
+					// Skip this case as it requires more complex analysis
+					return false;
 				}
-			}
-			
-			// Only process if we found a timeout parameter with a valid numeric value
-			if (timeoutValue != null && timeoutPair != null) {
-				JunitHolder mh = new JunitHolder();
-				mh.minv = normalAnnotation;
-				mh.minvname = normalAnnotation.getTypeName().getFullyQualifiedName();
-				mh.value = String.valueOf(timeoutValue);
-				mh.additionalInfo = timeoutPair; // Store the timeout pair for removal
-				dataHolder.put(dataHolder.size(), mh);
-				operations.add(fixcore.rewrite(dataHolder));
+				break;
 			}
 		}
+		
+		// Only process if we found a timeout parameter with a valid numeric value
+		if (timeoutValue != null && timeoutPair != null) {
+			JunitHolder mh = new JunitHolder();
+			mh.minv = node;
+			mh.minvname = node.getTypeName().getFullyQualifiedName();
+			mh.value = String.valueOf(timeoutValue);
+			mh.additionalInfo = timeoutPair; // Store the timeout pair for removal
+			dataHolder.put(dataHolder.size(), mh);
+			operations.add(fixcore.rewrite(dataHolder));
+		}
+		
 		return false;
 	}
 

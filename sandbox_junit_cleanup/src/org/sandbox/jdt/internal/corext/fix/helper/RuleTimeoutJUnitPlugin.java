@@ -56,31 +56,22 @@ public class RuleTimeoutJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 		ReferenceHolder<Integer, JunitHolder> dataHolder = new ReferenceHolder<>();
 		
 		// Look for @Rule Timeout fields
-		HelperVisitor.forField()
-			.withAnnotation(ORG_JUNIT_RULE)
-			.ofType(ORG_JUNIT_RULES_TIMEOUT)
-			.in(compilationUnit)
-			.excluding(nodesprocessed)
-			.processEach(dataHolder, (visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+		HelperVisitor.callFieldDeclarationVisitor(ORG_JUNIT_RULE, ORG_JUNIT_RULES_TIMEOUT, compilationUnit,
+				dataHolder, nodesprocessed,
+				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 		
 		// Also look for @ClassRule Timeout fields (static fields)
-		HelperVisitor.forField()
-			.withAnnotation(ORG_JUNIT_CLASS_RULE)
-			.ofType(ORG_JUNIT_RULES_TIMEOUT)
-			.in(compilationUnit)
-			.excluding(nodesprocessed)
-			.processEach(dataHolder, (visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+		HelperVisitor.callFieldDeclarationVisitor(ORG_JUNIT_CLASS_RULE, ORG_JUNIT_RULES_TIMEOUT, compilationUnit,
+				dataHolder, nodesprocessed,
+				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, ASTNode node,
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, FieldDeclaration node,
 			ReferenceHolder<Integer, JunitHolder> dataHolder) {
-		if (!(node instanceof FieldDeclaration fieldDeclaration)) {
-			return false;
-		}
 		// Note: Only processes the first fragment. Multiple timeout fields in one declaration
 		// (e.g., @Rule public Timeout t1 = ..., t2 = ...;) are not supported but are extremely rare.
-		VariableDeclarationFragment fragment = (VariableDeclarationFragment) fieldDeclaration.fragments().get(0);
+		VariableDeclarationFragment fragment = (VariableDeclarationFragment) node.fragments().get(0);
 		if (fragment.resolveBinding() == null) {
 			return false;
 		}
@@ -92,7 +83,7 @@ public class RuleTimeoutJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 				TimeoutInfo info = extractTimeoutInfo(initializer);
 				if (info != null) {
 					JunitHolder mh = new JunitHolder();
-					mh.minv = fieldDeclaration;
+					mh.minv = node;
 					mh.value = String.valueOf(info.value);
 					mh.minvname = info.unit;
 					dataHolder.put(dataHolder.size(), mh);
