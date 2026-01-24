@@ -230,6 +230,28 @@ java -version  # Should show Java 21 or later
 
 ### Building
 
+#### Build Profiles
+
+The project supports Maven profiles to optimize build speed:
+
+| Profile | Modules Built | Use Case |
+|---------|---------------|----------|
+| `dev` (default) | All bundles, features, tests | Fast local development |
+| `product` | + Eclipse Product (`sandbox_product`) | Building distributable product |
+| `repo` | + P2 Update Site (`sandbox_updatesite`) | Building update site |
+| `jacoco` | + Coverage reports | CI/Coverage builds |
+
+#### Build Commands
+
+| Command | Description |
+|---------|-------------|
+| `mvn -T 1C verify` | Quick dev build (fastest) |
+| `mvn -Pproduct -T 1C verify` | Build with Eclipse product |
+| `mvn -Prepo -T 1C verify` | Build with P2 update site |
+| `mvn -Pproduct,repo -T 1C verify` | Full release build |
+| `mvn -Pjacoco,product,repo -T 1C verify` | Full CI build with coverage |
+| `mvn -T 1C -DskipTests verify` | Skip tests for local iteration |
+
 The project supports different build profiles for different purposes. Choose the appropriate command based on your needs:
 
 #### Quick Development Build (Fastest)

@@ -559,6 +559,14 @@ See README.md for more information.
 		</repository>
 	</distributionManagement>
 	<profiles>
+		<!-- Dev profile: Fast development build - excludes heavy product and updatesite modules -->
+		<profile>
+			<id>dev</id>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+		</profile>
+		
 		<!-- Product profile: Build Eclipse product with p2-director materialization -->
 		<profile>
 			<id>product</id>
