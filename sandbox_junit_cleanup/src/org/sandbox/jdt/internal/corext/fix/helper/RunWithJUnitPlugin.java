@@ -66,19 +66,26 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder= new ReferenceHolder<>();
-		HelperVisitor.callSingleMemberAnnotationVisitor(ORG_JUNIT_RUNWITH, compilationUnit, dataHolder, nodesprocessed,
-				(visited, aholder) -> processFoundNodeRunWith(fixcore, operations, visited, aholder));
-		HelperVisitor.callSingleMemberAnnotationVisitor(ORG_JUNIT_SUITE_SUITECLASSES, compilationUnit, dataHolder,
-				nodesprocessed, (visited, aholder) -> processFoundNodeSuite(fixcore, operations, visited, aholder));
+		HelperVisitor.forAnnotation(ORG_JUNIT_RUNWITH)
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(dataHolder, (visited, aholder) -> processFoundNodeRunWith(fixcore, operations, visited, aholder));
+		HelperVisitor.forAnnotation(ORG_JUNIT_SUITE_SUITECLASSES)
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(dataHolder, (visited, aholder) -> processFoundNodeSuite(fixcore, operations, visited, aholder));
 	}
 
 	private boolean processFoundNodeRunWith(JUnitCleanUpFixCore fixcore,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Annotation node,
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, ASTNode node,
 			ReferenceHolder<Integer, JunitHolder> dataHolder) {
+		if (!(node instanceof Annotation annotation)) {
+			return false;
+		}
 		JunitHolder mh= new JunitHolder();
-		mh.minv= node;
-		mh.minvname= node.getTypeName().getFullyQualifiedName();
-		if (node instanceof SingleMemberAnnotation mynode) {
+		mh.minv= annotation;
+		mh.minvname= annotation.getTypeName().getFullyQualifiedName();
+		if (annotation instanceof SingleMemberAnnotation mynode) {
 			Expression value= mynode.getValue();
 			if (value instanceof TypeLiteral myvalue) {
 				ITypeBinding classBinding= myvalue.resolveTypeBinding();
@@ -146,11 +153,14 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 	}
 
 	private boolean processFoundNodeSuite(JUnitCleanUpFixCore fixcore,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Annotation node,
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, ASTNode node,
 			ReferenceHolder<Integer, JunitHolder> dataHolder) {
+		if (!(node instanceof Annotation annotation)) {
+			return false;
+		}
 		JunitHolder mh= new JunitHolder();
-		mh.minv= node;
-		mh.minvname= node.getTypeName().getFullyQualifiedName();
+		mh.minv= annotation;
+		mh.minvname= annotation.getTypeName().getFullyQualifiedName();
 		mh.value= ORG_JUNIT_SUITE_SUITECLASSES;
 		dataHolder.put(dataHolder.size(), mh);
 		operations.add(fixcore.rewrite(dataHolder));

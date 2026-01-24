@@ -61,27 +61,34 @@ public abstract class AbstractMarkerAnnotationJUnitPlugin extends AbstractTool<R
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder= new ReferenceHolder<>();
-		HelperVisitor.callMarkerAnnotationVisitor(getSourceAnnotation(), compilationUnit, dataHolder, nodesprocessed,
-				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+		HelperVisitor.forAnnotation(getSourceAnnotation())
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(dataHolder, (visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 	}
 
 	/**
-	 * Processes a found marker annotation node and adds a rewrite operation.
+	 * Processes a found annotation node and adds a rewrite operation.
+	 * The Fluent API forAnnotation() matches all annotation types (MarkerAnnotation, 
+	 * SingleMemberAnnotation, NormalAnnotation), but AbstractMarkerAnnotationJUnitPlugin
+	 * is designed specifically for marker annotations, so we cast to Annotation.
 	 * 
 	 * @param fixcore the cleanup fix core
 	 * @param operations the set of operations to add to
-	 * @param node the found marker annotation
+	 * @param node the found annotation node
 	 * @param dataHolder the reference holder for data
 	 * @return false to continue visiting
 	 */
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, MarkerAnnotation node,
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, ASTNode node,
 			ReferenceHolder<Integer, JunitHolder> dataHolder) {
-		JunitHolder mh= new JunitHolder();
-		mh.minv= node;
-		mh.minvname= node.getTypeName().getFullyQualifiedName();
-		dataHolder.put(dataHolder.size(), mh);
-		operations.add(fixcore.rewrite(dataHolder));
+		if (node instanceof Annotation annotation) {
+			JunitHolder mh= new JunitHolder();
+			mh.minv= annotation;
+			mh.minvname= annotation.getTypeName().getFullyQualifiedName();
+			dataHolder.put(dataHolder.size(), mh);
+			operations.add(fixcore.rewrite(dataHolder));
+		}
 		return false;
 	}
 
