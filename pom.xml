@@ -22,6 +22,7 @@
 		<bouncycastle.version>1.83</bouncycastle.version>
 	</properties>
 	<modules>
+		<module>sandbox-functional-converter-core</module>
 		<module>sandbox_target</module>
 		<module>sandbox_cleanup_application</module>
 		<module>sandbox_cleanup_application_feature</module>
@@ -29,6 +30,8 @@
 		<module>sandbox_common</module>
 		<module>sandbox_common_test</module>
 		<module>sandbox_test_commons</module>
+		<module>sandbox_css_cleanup</module>
+		<module>sandbox_css_cleanup_feature</module>
 		<module>sandbox_encoding_quickfix</module>
 		<module>sandbox_encoding_quickfix_feature</module>
 		<module>sandbox_encoding_quickfix_test</module>
@@ -61,8 +64,7 @@
 		<module>sandbox_usage_view</module>
 		<module>sandbox_usage_view_feature</module>
 		<module>sandbox_usage_view_test</module>
-		<module>sandbox_product</module>
-		<module>sandbox_updatesite</module>
+		<!-- Heavy modules (sandbox_product, sandbox_updatesite) moved to profiles below -->
 	</modules>
 	<repositories>
 		<!-- 1. Eclipse SimRel Release Repository - upgraded to 2025-09 to resolve Bouncy Castle import conflicts -->
@@ -557,6 +559,37 @@ See README.md for more information.
 		</repository>
 	</distributionManagement>
 	<profiles>
+		<!-- Dev profile: Fast development build - excludes heavy product and updatesite modules -->
+		<profile>
+			<id>dev</id>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+		</profile>
+		
+		<!-- Product profile: Build Eclipse product with p2-director materialization -->
+		<profile>
+			<id>product</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+			<modules>
+				<module>sandbox_product</module>
+			</modules>
+		</profile>
+		
+		<!-- Repository profile: Build p2 update site repository -->
+		<profile>
+			<id>repo</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+			<modules>
+				<module>sandbox_updatesite</module>
+			</modules>
+		</profile>
+		
+		<!-- Web profile: Build WAR file with update site -->
 		<profile>
 			<id>web</id>
 			<activation>
@@ -566,9 +599,12 @@ See README.md for more information.
 				</property>
 			</activation>
 			<modules>
+				<module>sandbox_product</module>
 				<module>sandbox_web</module>
 			</modules>
 		</profile>
+		
+		<!-- JaCoCo profile: Enable code coverage -->
 		<profile>
 			<id>jacoco</id>
 			<activation>

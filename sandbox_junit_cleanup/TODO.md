@@ -11,28 +11,65 @@ This file was missing from the sandbox_junit_cleanup plugin. It has been created
 - ✅ Helper class extraction for maintainability
 - ✅ Comprehensive test coverage
 - ✅ Multiple plugin implementations for different migration scenarios
-- ✅ @Test(expected) parameter migration to assertThrows()
-- ✅ Parameter order correction for assertions (expected/actual swapping)
+- ✅ @Test(expected) parameter migration to assertThrows() (TestExpectedJUnitPlugin)
+- ✅ @Test(timeout) parameter migration to @Timeout (TestTimeoutJUnitPlugin)
+- ✅ Parameter order correction for assertions (AssertOptimizationJUnitPlugin - expected/actual swapping)
+- ✅ Quick Select presets for easier preference configuration (SandboxCodeTabPage)
+- ✅ Parameterized test migration (ParameterizedTestJUnitPlugin)
+- ✅ @Category to @Tag migration (CategoryJUnitPlugin)
+- ✅ @Rule TemporaryFolder migration to @TempDir
+- ✅ @Rule ExpectedException migration to assertThrows()
 
 ### In Progress
 - None currently
 
 ### Pending
+- [ ] @Rule Timeout migration (constant exists but RuleTimeoutJUnitPlugin not implemented)
+- [ ] @Rule ErrorCollector migration to multiple assertions
 - [ ] Additional JUnit 5 features support
 - [ ] Performance optimization for large test suites
 - [ ] Enhanced error reporting
+
+## Recent Enhancements
+
+### Quick Select Presets (✅ COMPLETED)
+**Priority**: High  
+**Effort**: 2-3 hours  
+**Status**: ✅ **COMPLETED**
+
+Added Quick Select combo box to JUnit cleanup preferences to allow users to select predefined groups of cleanup options:
+- **Full Migration**: Enables all JUnit 4 to 5 migration options (except optimizations)
+- **Annotations Only**: Safe migration of annotations (@Test, @Before, @After, @BeforeClass, @AfterClass, @Ignore)
+- **Lifecycle Only**: Just lifecycle annotations (@Before, @After, @BeforeClass, @AfterClass)
+- **Assertions Only**: Migrate Assert → Assertions
+- **Rules Only**: Migrate JUnit 4 Rules (TemporaryFolder, TestName, ExternalResource, Timeout)
+
+**Benefits**:
+- Significantly reduces time to configure JUnit migration preferences
+- Reduces user errors when selecting related options
+- Provides guided migration paths for different use cases
+- Users can still customize individual options after selecting a preset
+
+**Implementation**:
+- Added combo box widget in SandboxCodeTabPage.java
+- Implemented applyQuickSelection() method to programmatically set checkbox states
+- Added internationalized message strings for all preset options
+- Main JUNIT_CLEANUP checkbox is automatically enabled when any preset is selected
 
 ## Priority Tasks
 
 ### 1. Parameterized Test Migration
 **Priority**: Medium  
-**Effort**: 10-12 hours
+**Effort**: 10-12 hours  
+**Status**: ✅ **COMPLETED**
 
-Add support for migrating JUnit 4 parameterized tests to JUnit 5 `@ParameterizedTest`:
-- Detect JUnit 4 `@RunWith(Parameterized.class)` tests
-- Transform to `@ParameterizedTest` with appropriate source annotations
-- Handle parameter providers and method sources
-- Update test method signatures
+Support for migrating JUnit 4 parameterized tests to JUnit 5 `@ParameterizedTest` has been implemented:
+- ✅ Detects JUnit 4 `@RunWith(Parameterized.class)` tests
+- ✅ Transforms to `@ParameterizedTest` with appropriate source annotations
+- ✅ Handles parameter providers and method sources
+- ✅ Updates test method signatures
+
+**Implementation**: `ParameterizedTestJUnitPlugin` is fully implemented and registered in `JUnitCleanUpFixCore`.
 
 **Benefits**:
 - More comprehensive JUnit 5 migration
@@ -75,10 +112,16 @@ Migrate @Test(expected) parameter to assertThrows():
 Generalize ExternalResourceRefactorer to handle other JUnit 4 rules:
 - ~~`TemporaryFolder` → `@TempDir`~~ ✅ **COMPLETED**
 - ~~`ExpectedException` → `assertThrows()`~~ ✅ **COMPLETED**
-- `ErrorCollector` → multiple assertions
-- Custom rules → extension implementations
+- `@Rule Timeout` → `@Timeout` annotation - ⚠️ **PENDING** (constant exists but no RuleTimeoutJUnitPlugin implementation)
+- `ErrorCollector` → multiple assertions - **PENDING**
+- Custom rules → extension implementations - **PENDING**
 
-**Status**: TemporaryFolder and ExpectedException migrations fully implemented. ExpectedException handles basic expect() and expectMessage() patterns. ExpectedException with cause/matchers not yet supported.
+**Status**: 
+- ✅ TemporaryFolder migration fully implemented
+- ✅ ExpectedException migration fully implemented (handles basic expect() and expectMessage() patterns; cause/matchers not yet supported)
+- ⚠️ Timeout Rule: `JUNIT_CLEANUP_4_RULETIMEOUT` constant exists in `MYCleanUpConstants`, but `RuleTimeoutJUnitPlugin` class has not been implemented yet
+- ❌ ErrorCollector migration not yet implemented
+- ❌ Custom rules migration not yet implemented
 
 **Benefits**:
 - Complete JUnit 4 to 5 migration capability
@@ -113,12 +156,16 @@ Optionally migrate JUnit assertions to AssertJ:
 
 ### Hamcrest Matcher Support
 **Priority**: Low  
-**Effort**: 6-8 hours
+**Effort**: 6-8 hours  
+**Status**: ✅ **PARTIALLY COMPLETED** - assumeThat migration
 
 Handle Hamcrest matcher migration:
-- Update imports from `org.hamcrest` as needed
-- Ensure compatibility with JUnit 5
-- Preserve matcher-based assertions
+- ✅ `Assume.assumeThat()` with Hamcrest matchers now correctly uses `org.hamcrest.junit.MatcherAssume`
+- ✅ Detects Hamcrest matchers by checking if parameters implement `org.hamcrest.Matcher` interface
+- ✅ Avoids adding unused `org.junit.jupiter.api.Assumptions` import when only Hamcrest assumeThat is used
+- [ ] `Assert.assertThat()` with Hamcrest matchers (already uses `org.hamcrest.MatcherAssert` - see AssertJUnitPlugin)
+- [ ] Update other Hamcrest imports as needed
+- [ ] Additional Hamcrest integration improvements
 
 ### Test Categorization
 **Priority**: Low  

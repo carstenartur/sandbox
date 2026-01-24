@@ -41,6 +41,7 @@ Files must be in one of these locations to be processed:
 - Uses `formatter.xsl` stylesheet from classpath
 - Applies secure XML processing (external DTD/entities disabled)
 - Preserves XML structure, comments, and content
+- **Strips whitespace-only text nodes** - Elements with only whitespace become empty
 - **Default: `indent="no"`** - Produces compact output for size reduction
 - **Optional: `indent="yes"`** - Enabled via `XML_CLEANUP_INDENT` preference
 
@@ -53,7 +54,20 @@ After XSLT transformation, the following post-processing is applied:
   - Preserves remainder spaces (e.g., 5 spaces → 1 tab + 1 space)
   - **Does NOT touch inline text or content nodes**
 
-### 3. Change Detection
+### 3. Empty Element Collapsing
+Post-processing step to reduce file size by collapsing empty elements:
+
+- **Pattern**: `<tagname attributes></tagname>` → `<tagname attributes/>`
+- **Handles**: Elements with attributes, whitespace-only content, and namespaces
+- **Preserves**: Elements with actual text content or child elements
+- **Benefits**: Significant size reduction (typically 5-15% for PDE files)
+
+**Examples**:
+- `<extension point="org.eclipse.ui.views"></extension>` → `<extension point="org.eclipse.ui.views"/>`
+- `<view id="v1">   </view>` → `<view id="v1"/>`
+- `<description>Real content</description>` → Preserved unchanged
+
+### 4. Change Detection
 - Only writes file if content actually changed
 - Uses Eclipse workspace APIs (`IFile.setContents()`)
 - Maintains file history (`IResource.KEEP_HISTORY`)
@@ -86,6 +100,12 @@ After XSLT transformation, the following post-processing is applied:
 - Supports configurable indentation (default: OFF)
 - Performs whitespace normalization
 - Converts leading 4-space indentation to tabs
+- Collapses empty XML elements to self-closing tags
+
+**Post-Processing Pipeline**:
+1. XSLT transformation (strips whitespace-only text nodes)
+2. Whitespace normalization (reduce empty lines, convert spaces to tabs)
+3. Empty element collapsing (regex-based post-processing)
 
 ### XMLCandidateHit
 
@@ -114,18 +134,50 @@ After XSLT transformation, the following post-processing is applied:
 
 **Location**: `org.sandbox.jdt.internal.ui.fix.XMLCleanUpCore`
 
-**Purpose**: Eclipse cleanup integration
+**Purpose**: Eclipse cleanup integration (JDT-based)
 
 **Features**:
 - Reads `XML_CLEANUP` and `XML_CLEANUP_INDENT` preferences
 - Configures indent preference before processing
 - Creates `CompilationUnitRewriteOperation` for file updates
 
+### XMLCleanupService
+
+**Location**: `org.sandbox.jdt.internal.corext.fix.helper.XMLCleanupService`
+
+**Purpose**: Standalone XML cleanup service independent of JDT framework
+
+**Key Features**:
+- Works without requiring Java compilation unit context
+- Processes single files or entire projects
+- Uses same file filtering logic as XMLPlugin (PDE-relevant files only)
+- Supports progress monitoring and cancellation
+- Can be invoked directly from UI actions/handlers
+
+**Methods**:
+- `processFile(IFile, IProgressMonitor)` - Process single XML file
+- `processProject(IProject, IProgressMonitor)` - Process all PDE files in project
+- `isPDERelevantFile(IFile)` - Check if file should be processed
+
+### XMLCleanupHandler
+
+**Location**: `org.sandbox.jdt.internal.ui.handlers.XMLCleanupHandler`
+
+**Purpose**: Command handler for PDE integration
+
+**Key Features**:
+- Implements `AbstractHandler` for Eclipse command framework
+- Handles selections of files or projects from UI
+- Runs cleanup in background job with progress dialog
+- Shows completion status with file count
+- Supports cancellation
+
 ## Package Structure
 
 - `org.sandbox.jdt.internal.corext.fix.*` - Core cleanup logic
 - `org.sandbox.jdt.internal.corext.fix.helper.*` - Transformation utilities
-- `org.sandbox.jdt.internal.ui.fix.*` - UI components and preferences
+- `org.sandbox.jdt.internal.ui.fix.*` - UI components and preferences (JDT-based)
+- `org.sandbox.jdt.internal.ui.handlers.*` - Command handlers (PDE integration)
 
 **Eclipse JDT Correspondence**:
 - Maps to `org.eclipse.jdt.internal.corext.fix.*` pattern
@@ -150,6 +202,35 @@ Matcher matcher = leadingSpaces.matcher(content);
 // Replace only at line start, not inline
 ```
 
+### Empty Element Collapsing
+```java
+// Pattern matches: <tagname attributes></tagname> or <tagname attributes>   </tagname>
+// Captures the opening tag (without >) and ensures matching closing tag
+// Supports namespaces (e.g., ns:element)
+Pattern emptyElementPattern = Pattern.compile(
+    "<([\\w:]+)((?:\\s+[^>]*?)?)>\\s*</\\1>",
+    Pattern.MULTILINE
+);
+
+Matcher matcher = emptyElementPattern.matcher(content);
+StringBuffer sb = new StringBuffer();
+
+while (matcher.find()) {
+    String tagName = matcher.group(1);
+    String attributes = matcher.group(2);
+    // Replace with self-closing tag
+    String replacement = "<" + tagName + attributes + "/>";
+    matcher.appendReplacement(sb, Matcher.quoteReplacement(replacement));
+}
+matcher.appendTail(sb);
+```
+
+**Key Points**:
+- Uses backreference `\\1` to ensure opening and closing tags match
+- `(?:\\s+[^>]*?)?` captures optional attributes
+- `\\s*` matches any whitespace between tags (including newlines)
+- `Matcher.quoteReplacement()` prevents regex interpretation of replacement string
+
 ### Eclipse Workspace Integration
 ```java
 byte[] newContent = transformedContent.getBytes(StandardCharsets.UTF_8);
@@ -159,6 +240,28 @@ file.refreshLocal(IResource.DEPTH_ZERO, null);
 ```
 
 ## Eclipse Integration
+
+### Two Integration Paths
+
+The plugin provides two ways to trigger XML cleanup:
+
+#### 1. JDT Cleanup Integration (Original)
+- Registered in `plugin.xml` as `org.eclipse.jdt.ui.cleanup.xmlcleanup`
+- Requires Java compilation unit context
+- Triggered via Source → Clean Up... (when Java files are present)
+- Uses Eclipse cleanup framework
+- Integrated with Eclipse cleanup preferences
+
+#### 2. PDE Integration (New - Standalone)
+- Registered as Eclipse command: `org.sandbox.jdt.xml.cleanup.command`
+- Works independently without Java files
+- Triggered via:
+  - Right-click on PDE XML files → "Clean Up PDE XML"
+  - Right-click on project → "Clean Up PDE XML"
+  - Source menu → XML Cleanup → "Clean Up PDE XML Files"
+- Runs in background job with progress dialog
+- Supports cancellation
+- Shows completion status
 
 ### Cleanup Preferences
 
@@ -182,10 +285,20 @@ Defined in `sandbox_common/src/org/sandbox/jdt/internal/corext/fix2/MYCleanUpCon
 
 ### Integration Points
 
+**JDT Integration**:
 - Registered in `plugin.xml` as `org.eclipse.jdt.ui.cleanup.xmlcleanup`
 - Uses Eclipse resource visitor pattern to scan projects
 - Leverages Eclipse logging framework (`ILog`, `Status`)
 - Integrates with Eclipse cleanup framework
+
+**PDE Integration**:
+- Command: `org.sandbox.jdt.xml.cleanup.command`
+- Handler: `XMLCleanupHandler` (extends `AbstractHandler`)
+- Menu contributions:
+  - Context menu on PDE XML files
+  - Context menu on projects
+  - Source main menu entry
+- Visibility conditions based on file name/extension
 
 ## Build Configuration
 
@@ -193,7 +306,9 @@ Defined in `sandbox_common/src/org/sandbox/jdt/internal/corext/fix2/MYCleanUpCon
 - **Packaging**: `eclipse-plugin`
 - **Dependencies**: 
   - Eclipse Core Resources
-  - Eclipse JDT Core
+  - Eclipse Core Commands
+  - Eclipse JDT Core (for JDT integration)
+  - Eclipse UI, JFace, Workbench
   - XML parsing libraries (built-in Java XML APIs)
   - `sandbox_common` for cleanup constants
 
@@ -213,7 +328,7 @@ Defined in `sandbox_common/src/org/sandbox/jdt/internal/corext/fix2/MYCleanUpCon
 2. **Location Restricted**: Files must be in project root, OSGI-INF, or META-INF
 3. **Leading Tabs Only**: Tab conversion only applies to leading whitespace, not inline content
 4. **No Schema Validation**: Doesn't validate against XML schemas (relies on Eclipse PDE validation)
-5. **Requires Compilation Unit**: Integration with Eclipse cleanup framework requires Java compilation unit context
+5. **Requires Compilation Unit (JDT cleanup only)**: JDT integration with Eclipse cleanup framework requires Java compilation unit context. **The new PDE integration (XMLCleanupHandler/XMLCleanupAction) works independently without Java files.**
 
 ## Security Considerations
 

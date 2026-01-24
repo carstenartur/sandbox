@@ -5,6 +5,195 @@
 ## Overview
 The functional loop converter transforms imperative enhanced for-loops into functional Java 8 Stream pipelines. This document describes the architecture and implementation details of the `StreamPipelineBuilder` approach.
 
+## V2 Parallel Implementation Strategy (Phase 1 - January 2026)
+
+**Status**: 🆕 Phase 1 Complete - ULR infrastructure established
+
+### Background
+Issue [#450](https://github.com/carstenartur/sandbox/issues/450) introduced the Unified Loop Representation (ULR) to enable:
+- AST-independent loop modeling for easier testing and maintenance
+- Parallel V1/V2 implementations for gradual migration
+- Better separation of concerns between AST parsing and transformation logic
+
+### Phase 1: Infrastructure Setup (COMPLETED)
+**Goal**: Establish V2 infrastructure without changing V1 behavior
+
+**Completed Deliverables**:
+1. **Core Module** (`sandbox-functional-converter-core`):
+   - Pure Java 17 module with **zero Eclipse/JDT dependencies**
+   - ULR model classes: `LoopModel`, `SourceDescriptor`, `ElementDescriptor`, `LoopMetadata`
+   - Standalone Maven module (not part of Tycho build)
+   - Tests run independently: `mvn test`
+
+2. **V2 Cleanup Infrastructure**:
+   - `LOOP_V2` enum entry in `UseFunctionalCallFixCore`
+   - `UseFunctionalCallCleanUpV2` class (mirrors V1 structure)
+   - `LoopToFunctionalV2` helper (delegates to V1 for feature parity)
+   - `USEFUNCTIONALLOOP_CLEANUP_V2` constant in `MYCleanUpConstants`
+
+3. **Delegation Pattern**:
+   - Phase 1 uses **delegation**: V2 delegates to existing V1 implementation
+   - Ensures identical behavior between V1 and V2
+   - `FeatureParityTest` validates both produce same output
+
+4. **V1 Isolation**:
+   - Modified `UseFunctionalCallCleanUpCore.computeFixSet()` to explicitly add only `LOOP`
+   - Prevents V1 from inadvertently running V2 conversions
+   - V1 and V2 operate independently based on which cleanup is enabled
+
+### Phase 2: ULR-Native Implementation (PLANNED)
+**Goal**: Gradually switch individual loop patterns to ULR-based implementations
+
+**Planned Activities**:
+1. Implement ULR extraction from AST in `LoopToFunctionalV2`
+2. Create ULR → Stream transformation logic independent of AST
+3. Migrate simple patterns first (forEach, basic map/filter)
+
+### Phase 3: Operation Model (PLANNED)
+**Goal**: Enhance ULR with stream operation models
+
+### Phase 4: Transformation Engine (PLANNED)
+**Goal**: Implement ULR-to-Stream transformer with callback pattern
+
+### Phase 5: JDT AST Renderer (IN PROGRESS - January 2026)
+**Goal**: Create AST-based renderer for JDT integration
+
+**Status**: 🆕 Implementation started
+
+**Completed Deliverables**:
+1. **ASTStreamRenderer** (`org.sandbox.jdt.internal.corext.fix.helper`):
+   - Implements `StreamPipelineRenderer<Expression>` interface
+   - Generates JDT AST nodes instead of string concatenation
+   - Supports all source types (COLLECTION, ARRAY, ITERABLE, INT_RANGE, STREAM)
+   - Implements 14 render methods:
+     - **Source**: `renderSource()` - creates stream from various sources
+     - **Intermediate ops**: `renderFilter()`, `renderMap()`, `renderFlatMap()`, `renderPeek()`, `renderDistinct()`, `renderSorted()`, `renderLimit()`, `renderSkip()`
+     - **Terminal ops**: `renderForEach()`, `renderCollect()`, `renderReduce()`, `renderCount()`, `renderFind()`, `renderMatch()`
+   - Helper methods for AST node creation with proper validation
+   - Uses ASTParser for complex expression parsing
+
+2. **Integration with core module**:
+   - Added `org.sandbox.functional.core` as OSGi bundle dependency
+   - Exports helper package for test access
+   - Core module added to reactor build (parent pom.xml)
+
+3. **Test suite** (`ASTStreamRendererTest`):
+   - 25 test methods covering all operations
+   - Tests for all source types and terminal operations
+   - Complex pipeline construction validation
+   - Tests for edge cases (with/without identity in reduce, ordered forEach, etc.)
+
+**Implementation Notes**:
+- Uses Java's `Character.isJavaIdentifierStart/Part()` for robust identifier validation
+- Fails fast with descriptive errors instead of silent transformations
+- INT_RANGE parsing includes validation for format "start,end"
+- English comments for maintainability and Eclipse JDT contribution readiness
+
+**Next Steps for Phase 5**:
+- [x] Integrate ASTStreamRenderer with LoopToFunctionalV2
+- [x] Add end-to-end tests with actual loop transformations
+- [x] Validate AST node correctness beyond toString() comparisons
+
+**Success Criteria**:
+- All `FeatureParityTest` cases pass with ULR implementation
+- No regressions in existing V1 functionality
+- Code coverage maintained or improved
+
+### Phase 6: Complete ULR Integration (COMPLETED - January 2026)
+**Goal**: Remove V1 delegation and implement native ULR pipeline in LoopToFunctionalV2
+
+**Status**: ✅ Phase 6 Complete - Full ULR pipeline operational
+
+**Completed Deliverables**:
+1. **JdtLoopExtractor** (`org.sandbox.jdt.internal.corext.fix.helper`):
+   - Bridges JDT AST (`EnhancedForStatement`) to abstract ULR `LoopModel`
+   - **Source type detection**: Identifies ARRAY, COLLECTION, ITERABLE via type binding analysis
+     - Uses `ITypeBinding.isArray()` for arrays
+     - Checks type hierarchy for `java.util.Collection` and subinterfaces (List, Set, Queue, Deque)
+     - Falls back to ITERABLE for other iterable types
+   - **Control flow analysis**: `LoopBodyAnalyzer` visitor detects:
+     - Break statements (prevents conversion)
+     - Continue statements (prevents conversion)
+     - Return statements (prevents conversion)
+     - Collection modifications (add/remove/clear/set calls)
+   - **Integration**: Delegates to `LoopModelBuilder` for model construction
+   
+2. **LoopToFunctionalV2 Native Implementation**:
+   - **Removed**: V1 delegation pattern (`v1Delegate` field removed)
+   - **find() method**: 
+     - Uses `JdtLoopExtractor` to extract `LoopModel` from AST
+     - Validates convertibility via `LoopMetadata` (checks for break/continue/return)
+     - Stores model in `ReferenceHolder` for later rewrite
+     - Uses `HelperVisitor.callEnhancedForStatementVisitor()` with BiPredicate pattern
+   - **rewrite() method**:
+     - Re-extracts model (necessary due to framework architecture)
+     - Creates `ASTStreamRenderer` with JDT AST and ASTRewrite
+     - Uses `LoopModelTransformer<Expression>` to transform model to stream AST
+     - Replaces original for-statement with stream expression
+   - **Import management**:
+     - Automatically adds `java.util.Arrays` for array sources
+     - Automatically adds `java.util.stream.StreamSupport` for iterable sources
+     - Automatically adds `java.util.stream.Collectors` for collect terminals
+
+3. **ULR Pipeline**:
+   ```
+   EnhancedForStatement (JDT AST)
+           ↓
+      JdtLoopExtractor (extracts)
+           ↓
+      LoopModel (ULR - AST-independent)
+           ↓
+      LoopModelTransformer (transforms)
+           ↓
+      ASTStreamRenderer (renders)
+           ↓
+   Expression (JDT AST - stream pipeline)
+   ```
+
+4. **Test Suite** (`LoopToFunctionalV2Test`):
+   - Simple forEach conversion from List to `items.stream().forEach()`
+   - Array iteration generates `Arrays.stream(array).forEach()`
+   - Loops with break/continue/return remain unchanged (negative tests)
+   - Uses `MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP_V2` constant
+
+**Implementation Notes**:
+- Collection detection uses `ITypeBinding.getErasure()` for robust type checking
+- Ordered parameter set to `false` for simple forEach (produces `forEach()` not `forEachOrdered()`)
+- Model re-extraction in rewrite() is necessary due to framework architecture (model not passed through operation)
+- Body statements converted to strings via `toString()` for model storage (canonical representation)
+
+**Architecture Changes**:
+- V2 no longer delegates to V1 - fully independent ULR-based implementation
+- `JdtLoopExtractor` serves as the AST-to-ULR bridge component
+- Complete pipeline from JDT AST through abstract model back to JDT AST
+
+**Known Limitations**:
+- Model re-extraction in rewrite() creates duplicate work
+- Body statement toString() may normalize formatting
+- Collection modification detection doesn't verify receiver (may produce false positives)
+
+### Phase 7: V1 Deprecation and Cleanup (FUTURE)
+**Goal**: Make ULR the primary implementation and retire legacy code
+
+**Planned Activities**:
+1. Mark V1 (`LOOP`) as deprecated
+2. Migrate all users to V2 (`LOOP_V2`)
+3. Remove V1 implementation and cleanup
+4. Remove delegation pattern from V2
+5. Consolidate documentation
+
+### Architecture Benefits
+- **Testability**: ULR model can be tested without Eclipse runtime
+- **Maintainability**: Clear separation between AST parsing and transformation
+- **Portability**: ULR model can be reused in other contexts (e.g., IntelliJ plugin)
+- **Safety**: Parallel implementation ensures no regressions during migration
+
+### Related Issues
+- [#450 - Unified Loop Representation](https://github.com/carstenartur/sandbox/issues/450)
+- [#453 - V2 Implementation](https://github.com/carstenartur/sandbox/issues/453)
+
+---
+
 ## Class Overview
 
 The functional converter is organized into focused, single-responsibility classes:

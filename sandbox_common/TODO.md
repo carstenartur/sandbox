@@ -171,6 +171,18 @@ For questions about shared utilities or adding new common code, please open an i
 - [x] Example hint provider (increment/decrement simplification)
 - [x] Test module with parser, matcher, and engine tests
 
+### Completed (v1.2.3)
+- [x] Extended pattern parser for annotations, method calls, imports, and fields
+- [x] New PatternKind values: ANNOTATION, METHOD_CALL, IMPORT, FIELD
+- [x] Annotation pattern matching with placeholder support
+- [x] Method call pattern matching with placeholder support
+- [x] Import declaration pattern matching
+- [x] Field declaration pattern matching
+- [x] Optional qualifiedType field in Pattern class for type-aware matching
+- [x] Order-independent annotation member-value pair matching
+- [x] Comprehensive test suite for new pattern kinds (NewPatternKindsTest)
+- [x] Updated documentation with examples for JUnit migration use cases
+
 ### Planned Enhancements
 
 #### High Priority

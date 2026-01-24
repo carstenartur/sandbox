@@ -22,5 +22,6 @@ public class SaveActionCleanUpOptionsInitializer implements ICleanUpOptionsIniti
 	@Override
 	public void setDefaultOptions(CleanUpOptions options) {
 		options.setOption(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP, CleanUpOptions.FALSE);
+		options.setOption(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP_V2, CleanUpOptions.FALSE);
 	}
 }

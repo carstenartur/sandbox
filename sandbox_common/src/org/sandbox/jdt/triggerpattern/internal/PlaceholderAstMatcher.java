@@ -14,11 +14,18 @@
 package org.sandbox.jdt.triggerpattern.internal;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jdt.core.dom.ASTMatcher;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.IExtendedModifier;
+import org.eclipse.jdt.core.dom.MarkerAnnotation;
+import org.eclipse.jdt.core.dom.MemberValuePair;
+import org.eclipse.jdt.core.dom.NormalAnnotation;
 import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 
 /**
  * An AST matcher that supports placeholder matching.
@@ -89,5 +96,213 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 		
 		// Not a placeholder - use default matching
 		return super.match(patternNode, other);
+	}
+	
+	/**
+	 * Matches marker annotations (e.g., @Before, @After).
+	 * 
+	 * @param patternNode the pattern annotation
+	 * @param other the candidate node
+	 * @return {@code true} if the annotations match
+	 * @since 1.2.3
+	 */
+	@Override
+	public boolean match(MarkerAnnotation patternNode, Object other) {
+		if (!(other instanceof MarkerAnnotation)) {
+			return false;
+		}
+		MarkerAnnotation otherAnnotation = (MarkerAnnotation) other;
+		
+		// Match annotation name
+		return patternNode.getTypeName().getFullyQualifiedName()
+				.equals(otherAnnotation.getTypeName().getFullyQualifiedName());
+	}
+	
+	/**
+	 * Matches single member annotations (e.g., {@code @SuppressWarnings("unchecked")}).
+	 * 
+	 * @param patternNode the pattern annotation
+	 * @param other the candidate node
+	 * @return {@code true} if the annotations match
+	 * @since 1.2.3
+	 */
+	@Override
+	public boolean match(SingleMemberAnnotation patternNode, Object other) {
+		if (!(other instanceof SingleMemberAnnotation)) {
+			return false;
+		}
+		SingleMemberAnnotation otherAnnotation = (SingleMemberAnnotation) other;
+		
+		// Match annotation name
+		if (!patternNode.getTypeName().getFullyQualifiedName()
+				.equals(otherAnnotation.getTypeName().getFullyQualifiedName())) {
+			return false;
+		}
+		
+		// Match the value with placeholder support
+		return safeSubtreeMatch(patternNode.getValue(), otherAnnotation.getValue());
+	}
+	
+	/**
+	 * Matches normal annotations (e.g., @Test(expected=Exception.class, timeout=1000)).
+	 * 
+	 * @param patternNode the pattern annotation
+	 * @param other the candidate node
+	 * @return {@code true} if the annotations match
+	 * @since 1.2.3
+	 */
+	@Override
+	public boolean match(NormalAnnotation patternNode, Object other) {
+		if (!(other instanceof NormalAnnotation)) {
+			return false;
+		}
+		NormalAnnotation otherAnnotation = (NormalAnnotation) other;
+		
+		// Match annotation name
+		if (!patternNode.getTypeName().getFullyQualifiedName()
+				.equals(otherAnnotation.getTypeName().getFullyQualifiedName())) {
+			return false;
+		}
+		
+		// Match member-value pairs with placeholder support
+		@SuppressWarnings("unchecked")
+		List<MemberValuePair> patternPairs = patternNode.values();
+		@SuppressWarnings("unchecked")
+		List<MemberValuePair> otherPairs = otherAnnotation.values();
+		
+		// Must have same number of pairs
+		if (patternPairs.size() != otherPairs.size()) {
+			return false;
+		}
+		
+		// Create a map for O(n) lookup instead of O(n²)
+		Map<String, MemberValuePair> otherPairMap = new HashMap<>();
+		for (MemberValuePair otherPair : otherPairs) {
+			otherPairMap.put(otherPair.getName().getIdentifier(), otherPair);
+		}
+		
+		// Match each pattern pair with corresponding pair in other annotation
+		// (annotation pairs can be in any order)
+		for (MemberValuePair patternPair : patternPairs) {
+			String patternName = patternPair.getName().getIdentifier();
+			
+			// Find corresponding pair in other annotation
+			MemberValuePair matchingOtherPair = otherPairMap.get(patternName);
+			
+			// If no matching pair found, annotations don't match
+			if (matchingOtherPair == null) {
+				return false;
+			}
+			
+			// Values must match (with placeholder support)
+			if (!safeSubtreeMatch(patternPair.getValue(), matchingOtherPair.getValue())) {
+				return false;
+			}
+		}
+		
+		return true;
+	}
+	
+	/**
+	 * Matches field declarations with support for annotations and placeholders.
+	 * 
+	 * @param patternNode the pattern field declaration
+	 * @param other the candidate node
+	 * @return {@code true} if the fields match
+	 * @since 1.2.3
+	 */
+	@Override
+	public boolean match(FieldDeclaration patternNode, Object other) {
+		if (!(other instanceof FieldDeclaration)) {
+			return false;
+		}
+		FieldDeclaration otherField = (FieldDeclaration) other;
+		
+		// Match modifiers (including annotations)
+		@SuppressWarnings("unchecked")
+		List<IExtendedModifier> patternModifiers = patternNode.modifiers();
+		@SuppressWarnings("unchecked")
+		List<IExtendedModifier> otherModifiers = otherField.modifiers();
+		
+		// Match each modifier/annotation in the pattern
+		for (IExtendedModifier patternMod : patternModifiers) {
+			if (patternMod.isAnnotation()) {
+				// Find matching annotation in other field
+				boolean found = false;
+				for (IExtendedModifier otherMod : otherModifiers) {
+					if (otherMod.isAnnotation()) {
+						if (safeSubtreeMatch((ASTNode) patternMod, (ASTNode) otherMod)) {
+							found = true;
+							break;
+						}
+					}
+				}
+				if (!found) {
+					return false;
+				}
+			} else if (patternMod.isModifier()) {
+				// Check if other has the same modifier
+				boolean found = false;
+				for (IExtendedModifier otherMod : otherModifiers) {
+					if (otherMod.isModifier()) {
+						if (safeSubtreeMatch((ASTNode) patternMod, (ASTNode) otherMod)) {
+							found = true;
+							break;
+						}
+					}
+				}
+				if (!found) {
+					return false;
+				}
+			}
+		}
+		
+		// Match type
+		if (!safeSubtreeMatch(patternNode.getType(), otherField.getType())) {
+			return false;
+		}
+		
+		// Match fragments (variable names) - need special handling for placeholders
+		@SuppressWarnings("unchecked")
+		List<Object> patternFragments = patternNode.fragments();
+		@SuppressWarnings("unchecked")
+		List<Object> otherFragments = otherField.fragments();
+		
+		if (patternFragments.size() != otherFragments.size()) {
+			return false;
+		}
+		
+		// For each fragment, we only need to match the variable name (not the initializer)
+		// because the pattern might have placeholder names like $name
+		for (int i = 0; i < patternFragments.size(); i++) {
+			org.eclipse.jdt.core.dom.VariableDeclarationFragment patternFrag = 
+					(org.eclipse.jdt.core.dom.VariableDeclarationFragment) patternFragments.get(i);
+			org.eclipse.jdt.core.dom.VariableDeclarationFragment otherFrag = 
+					(org.eclipse.jdt.core.dom.VariableDeclarationFragment) otherFragments.get(i);
+			
+			// Match the variable name (this handles placeholders via SimpleName matching)
+			if (!safeSubtreeMatch(patternFrag.getName(), otherFrag.getName())) {
+				return false;
+			}
+			
+			// Only check initializers if pattern has one
+			if (patternFrag.getInitializer() != null) {
+				if (!safeSubtreeMatch(patternFrag.getInitializer(), otherFrag.getInitializer())) {
+					return false;
+				}
+			}
+		}
+		
+		return true;
+	}
+	
+	/**
+	 * Helper method to perform subtree matching using this matcher.
+	 */
+	private boolean safeSubtreeMatch(ASTNode node1, ASTNode node2) {
+		if (node1 == null) {
+			return node2 == null;
+		}
+		return node1.subtreeMatch(this, node2);
 	}
 }

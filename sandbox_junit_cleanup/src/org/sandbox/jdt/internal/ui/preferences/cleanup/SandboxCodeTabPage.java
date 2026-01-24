@@ -38,8 +38,14 @@ import java.util.Map;
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
 import org.eclipse.jdt.internal.ui.preferences.cleanup.AbstractCleanUpTabPage;
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.SelectionAdapter;
+import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
+import org.eclipse.swt.widgets.Label;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.internal.ui.fix.JUnitCleanUp;
 
@@ -63,6 +69,27 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 		final CheckboxPreference junitcb= createCheckboxPref(junitGroup, numColumns,
 				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP, MYCleanUpConstants.JUNIT_CLEANUP,
 				FALSE_TRUE);
+		
+		// Add Quick Select combo box
+		intent(junitGroup);
+		Label quickSelectLabel = new Label(junitGroup, SWT.NONE);
+		quickSelectLabel.setText(CleanUpMessages.JavaFeatureTabPage_QuickSelect_Label);
+		
+		intent(junitGroup);
+		final Combo quickSelectCombo = new Combo(junitGroup, SWT.READ_ONLY | SWT.DROP_DOWN);
+		quickSelectCombo.setItems(new String[] {
+				CleanUpMessages.JavaFeatureTabPage_QuickSelect_Empty,
+				CleanUpMessages.JavaFeatureTabPage_QuickSelect_FullMigration,
+				CleanUpMessages.JavaFeatureTabPage_QuickSelect_AnnotationsOnly,
+				CleanUpMessages.JavaFeatureTabPage_QuickSelect_LifecycleOnly,
+				CleanUpMessages.JavaFeatureTabPage_QuickSelect_AssertionsOnly,
+				CleanUpMessages.JavaFeatureTabPage_QuickSelect_RulesOnly
+		});
+		quickSelectCombo.select(0); // Default to "(Custom)"
+		GridData comboGridData = new GridData(SWT.FILL, SWT.CENTER, true, false);
+		comboGridData.horizontalSpan = numColumns - 2;
+		quickSelectCombo.setLayoutData(comboGridData);
+		
 		intent(junitGroup);
 		final CheckboxPreference junit_assert= createCheckboxPref(junitGroup, numColumns-1,
 				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_ASSERT, MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT,
@@ -211,6 +238,19 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				junit_parameterized
 		});
 		
+		// Add Quick Select combo selection listener
+		quickSelectCombo.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				int index = quickSelectCombo.getSelectionIndex();
+				applyQuickSelection(index, junitcb, junit_assert, junit_assume, junit_ignore, junit_test,
+						junit_test_timeout, junit_test_expected, junit_before, junit_after, 
+						junit_beforeclass, junit_afterclass, junit_ruletempfolder, junit_ruletestname,
+						junit_ruleexternalresource, junit_externalresource, junit_runwith, 
+						junit_suite, junit_category, junit_ruletimeout);
+			}
+		});
+		
 		intent(junitGroup);
 		registerPreference(junitcb);
 		
@@ -232,5 +272,125 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				});
 		intent(junit3Group);
 		registerPreference(junit3cb);
+	}
+	
+	/**
+	 * Apply a quick selection preset to the JUnit cleanup checkboxes.
+	 * 
+	 * @param selectionIndex The index of the selected preset (0=Custom, 1=Full Migration, 2=Annotations Only, etc.)
+	 * @param junitcb Main JUnit cleanup checkbox
+	 * @param junit_assert Assert checkbox
+	 * @param junit_assume Assume checkbox
+	 * @param junit_ignore Ignore checkbox
+	 * @param junit_test Test checkbox
+	 * @param junit_test_timeout Test timeout checkbox
+	 * @param junit_test_expected Test expected checkbox
+	 * @param junit_before Before checkbox
+	 * @param junit_after After checkbox
+	 * @param junit_beforeclass BeforeClass checkbox
+	 * @param junit_afterclass AfterClass checkbox
+	 * @param junit_ruletempfolder Rule TemporaryFolder checkbox
+	 * @param junit_ruletestname Rule TestName checkbox
+	 * @param junit_ruleexternalresource Rule ExternalResource checkbox
+	 * @param junit_externalresource ExternalResource checkbox
+	 * @param junit_runwith RunWith checkbox
+	 * @param junit_suite Suite checkbox
+	 * @param junit_category Category checkbox
+	 * @param junit_ruletimeout Rule Timeout checkbox
+	 */
+	private void applyQuickSelection(int selectionIndex, CheckboxPreference junitcb,
+			CheckboxPreference junit_assert, CheckboxPreference junit_assume, 
+			CheckboxPreference junit_ignore, CheckboxPreference junit_test,
+			CheckboxPreference junit_test_timeout, CheckboxPreference junit_test_expected,
+			CheckboxPreference junit_before, CheckboxPreference junit_after,
+			CheckboxPreference junit_beforeclass, CheckboxPreference junit_afterclass,
+			CheckboxPreference junit_ruletempfolder, CheckboxPreference junit_ruletestname,
+			CheckboxPreference junit_ruleexternalresource, CheckboxPreference junit_externalresource,
+			CheckboxPreference junit_runwith, CheckboxPreference junit_suite,
+			CheckboxPreference junit_category, CheckboxPreference junit_ruletimeout) {
+		
+		// Reset all checkboxes to unchecked first
+		if (selectionIndex > 0) {
+			// Enable main checkbox when any preset is selected
+			junitcb.setChecked(true);
+			
+			// Reset all sub-options
+			junit_assert.setChecked(false);
+			junit_assume.setChecked(false);
+			junit_ignore.setChecked(false);
+			junit_test.setChecked(false);
+			junit_test_timeout.setChecked(false);
+			junit_test_expected.setChecked(false);
+			junit_before.setChecked(false);
+			junit_after.setChecked(false);
+			junit_beforeclass.setChecked(false);
+			junit_afterclass.setChecked(false);
+			junit_ruletempfolder.setChecked(false);
+			junit_ruletestname.setChecked(false);
+			junit_ruleexternalresource.setChecked(false);
+			junit_externalresource.setChecked(false);
+			junit_runwith.setChecked(false);
+			junit_suite.setChecked(false);
+			junit_category.setChecked(false);
+			junit_ruletimeout.setChecked(false);
+		}
+		
+		switch (selectionIndex) {
+			case 0: // Custom - do nothing
+				break;
+				
+			case 1: // Full Migration
+				junit_assert.setChecked(true);
+				junit_assume.setChecked(true);
+				junit_ignore.setChecked(true);
+				junit_test.setChecked(true);
+				junit_test_timeout.setChecked(true);
+				junit_test_expected.setChecked(true);
+				junit_before.setChecked(true);
+				junit_after.setChecked(true);
+				junit_beforeclass.setChecked(true);
+				junit_afterclass.setChecked(true);
+				junit_ruletempfolder.setChecked(true);
+				junit_ruletestname.setChecked(true);
+				junit_ruleexternalresource.setChecked(true);
+				junit_externalresource.setChecked(true);
+				junit_runwith.setChecked(true);
+				junit_suite.setChecked(true);
+				junit_category.setChecked(true);
+				junit_ruletimeout.setChecked(true);
+				break;
+				
+			case 2: // Annotations Only
+				junit_test.setChecked(true);
+				junit_before.setChecked(true);
+				junit_after.setChecked(true);
+				junit_beforeclass.setChecked(true);
+				junit_afterclass.setChecked(true);
+				junit_ignore.setChecked(true);
+				break;
+				
+			case 3: // Lifecycle Only
+				junit_before.setChecked(true);
+				junit_after.setChecked(true);
+				junit_beforeclass.setChecked(true);
+				junit_afterclass.setChecked(true);
+				break;
+				
+			case 4: // Assertions Only
+				junit_assert.setChecked(true);
+				break;
+				
+			case 5: // Rules Only
+				junit_ruletempfolder.setChecked(true);
+				junit_ruletestname.setChecked(true);
+				junit_ruleexternalresource.setChecked(true);
+				junit_externalresource.setChecked(true);
+				junit_ruletimeout.setChecked(true);
+				break;
+				
+			default:
+				// Unknown selection, do nothing
+				break;
+		}
 	}
 }
