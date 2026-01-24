@@ -65,12 +65,17 @@ public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder= new ReferenceHolder<>();
-		HelperVisitor.forMethodCalls(ORG_JUNIT_ASSERT, ALL_ASSERTION_METHODS)
-			.andStaticImports()
-			.andImportsOf(ORG_JUNIT_ASSERT)
-			.in(compilationUnit)
-			.excluding(nodesprocessed)
-			.processEach(dataHolder, (visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+		ALL_ASSERTION_METHODS.forEach(assertionmethod -> {
+			HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSERT, assertionmethod, compilationUnit, dataHolder,
+					nodesprocessed, (visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+		});
+		ALL_ASSERTION_METHODS.forEach(assertionmethod -> {
+			HelperVisitor.callImportDeclarationVisitor(ORG_JUNIT_ASSERT + "." + assertionmethod, compilationUnit,
+					dataHolder, nodesprocessed,
+					(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+		});
+		HelperVisitor.callImportDeclarationVisitor(ORG_JUNIT_ASSERT, compilationUnit, dataHolder, nodesprocessed,
+				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,

@@ -61,34 +61,27 @@ public abstract class AbstractMarkerAnnotationJUnitPlugin extends AbstractTool<R
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder= new ReferenceHolder<>();
-		HelperVisitor.forAnnotation(getSourceAnnotation())
-			.in(compilationUnit)
-			.excluding(nodesprocessed)
-			.processEach(dataHolder, (visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+		HelperVisitor.callMarkerAnnotationVisitor(getSourceAnnotation(), compilationUnit, dataHolder, nodesprocessed,
+				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 	}
 
 	/**
-	 * Processes a found annotation node and adds a rewrite operation.
-	 * The Fluent API forAnnotation() matches all annotation types (MarkerAnnotation, 
-	 * SingleMemberAnnotation, NormalAnnotation). This method uses instanceof pattern matching
-	 * to verify the node is an Annotation before processing.
+	 * Processes a found marker annotation node and adds a rewrite operation.
 	 * 
 	 * @param fixcore the cleanup fix core
 	 * @param operations the set of operations to add to
-	 * @param node the found annotation node
+	 * @param node the found marker annotation
 	 * @param dataHolder the reference holder for data
 	 * @return false to continue visiting
 	 */
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, ASTNode node,
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, MarkerAnnotation node,
 			ReferenceHolder<Integer, JunitHolder> dataHolder) {
-		if (node instanceof Annotation annotation) {
-			JunitHolder mh= new JunitHolder();
-			mh.minv= annotation;
-			mh.minvname= annotation.getTypeName().getFullyQualifiedName();
-			dataHolder.put(dataHolder.size(), mh);
-			operations.add(fixcore.rewrite(dataHolder));
-		}
+		JunitHolder mh= new JunitHolder();
+		mh.minv= node;
+		mh.minvname= node.getTypeName().getFullyQualifiedName();
+		dataHolder.put(dataHolder.size(), mh);
+		operations.add(fixcore.rewrite(dataHolder));
 		return false;
 	}
 
