@@ -48,16 +48,20 @@ public enum UseFunctionalCallFixCore {
 	// Related issues: https://github.com/carstenartur/sandbox/issues/450
 	//                 https://github.com/carstenartur/sandbox/issues/453
 <span class="fc" id="L50">	LOOP_V2(new LoopToFunctionalV2());</span>
+	// ITERATOR_LOOP - Iterator-based loop conversion (from PR #449)
+	// Converts while-iterator and for-loop-iterator patterns to stream operations.
+	// Enable after Phase 7 validation and comprehensive testing.
+	// ITERATOR_LOOP(new IteratorLoopToFunctional());
 
 	AbstractFunctionalCall&lt;ASTNode&gt; functionalcall;
 
 	@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L55">	UseFunctionalCallFixCore(AbstractFunctionalCall&lt;? extends ASTNode&gt; explicitencoding) {</span>
-<span class="fc" id="L56">		this.functionalcall=(AbstractFunctionalCall&lt;ASTNode&gt;) explicitencoding;</span>
-<span class="fc" id="L57">	}</span>
+<span class="fc" id="L59">	UseFunctionalCallFixCore(AbstractFunctionalCall&lt;? extends ASTNode&gt; explicitencoding) {</span>
+<span class="fc" id="L60">		this.functionalcall=(AbstractFunctionalCall&lt;ASTNode&gt;) explicitencoding;</span>
+<span class="fc" id="L61">	}</span>
 
 	public String getPreview(boolean i) {
-<span class="nc" id="L60">		return functionalcall.getPreview(i);</span>
+<span class="nc" id="L64">		return functionalcall.getPreview(i);</span>
 	}
 	/**
 	 * Compute set of CompilationUnitRewriteOperation to refactor supported situations using default encoding to make use of explicit calls
@@ -67,28 +71,28 @@ public enum UseFunctionalCallFixCore {
 	 * @param nodesprocessed list to remember nodes already processed
 	 */
 	public void findOperations(final CompilationUnit compilationUnit,final Set&lt;CompilationUnitRewriteOperation&gt; operations,final Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="fc" id="L70">		functionalcall.find(this, compilationUnit, operations, nodesprocessed);</span>
-<span class="fc" id="L71">	}</span>
+<span class="fc" id="L74">		functionalcall.find(this, compilationUnit, operations, nodesprocessed);</span>
+<span class="fc" id="L75">	}</span>
 
 	public CompilationUnitRewriteOperation rewrite(final ASTNode visited, final org.sandbox.jdt.internal.common.ReferenceHolder&lt;ASTNode, Object&gt; data) {
-<span class="fc" id="L74">		return new CompilationUnitRewriteOperation() {</span>
+<span class="fc" id="L78">		return new CompilationUnitRewriteOperation() {</span>
 			@Override
 			public void rewriteAST(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel) throws CoreException {
-<span class="fc" id="L77">				TextEditGroup group= createTextEditGroup(Messages.format(MultiFixMessages.FunctionalCallCleanUp_description,new Object[] {UseFunctionalCallFixCore.this.toString()}), cuRewrite);</span>
-<span class="fc" id="L78">				cuRewrite.getASTRewrite().setTargetSourceRangeComputer(computer);</span>
-<span class="fc" id="L79">				functionalcall.rewrite(UseFunctionalCallFixCore.this, visited, cuRewrite, group, data);</span>
-<span class="fc" id="L80">			}</span>
+<span class="fc" id="L81">				TextEditGroup group= createTextEditGroup(Messages.format(MultiFixMessages.FunctionalCallCleanUp_description,new Object[] {UseFunctionalCallFixCore.this.toString()}), cuRewrite);</span>
+<span class="fc" id="L82">				cuRewrite.getASTRewrite().setTargetSourceRangeComputer(computer);</span>
+<span class="fc" id="L83">				functionalcall.rewrite(UseFunctionalCallFixCore.this, visited, cuRewrite, group, data);</span>
+<span class="fc" id="L84">			}</span>
 		};
 	}
 
-<span class="fc" id="L84">	final static TargetSourceRangeComputer computer= new TargetSourceRangeComputer() {</span>
+<span class="fc" id="L88">	final static TargetSourceRangeComputer computer= new TargetSourceRangeComputer() {</span>
 		@Override
 		public SourceRange computeSourceRange(final ASTNode nodeWithComment) {
-<span class="fc bfc" id="L87" title="All 2 branches covered.">			if (Boolean.TRUE.equals(nodeWithComment.getProperty(ASTNodes.UNTOUCH_COMMENT))) {</span>
-<span class="fc" id="L88">				return new SourceRange(nodeWithComment.getStartPosition(), nodeWithComment.getLength());</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">			if (Boolean.TRUE.equals(nodeWithComment.getProperty(ASTNodes.UNTOUCH_COMMENT))) {</span>
+<span class="fc" id="L92">				return new SourceRange(nodeWithComment.getStartPosition(), nodeWithComment.getLength());</span>
 			}
-<span class="fc" id="L90">			return super.computeSourceRange(nodeWithComment);</span>
+<span class="fc" id="L94">			return super.computeSourceRange(nodeWithComment);</span>
 		}
-<span class="fc" id="L92">	};</span>
+<span class="fc" id="L96">	};</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
