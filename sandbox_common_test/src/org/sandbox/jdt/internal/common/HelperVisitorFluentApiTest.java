@@ -205,9 +205,9 @@ public class HelperVisitorFluentApiTest {
                     return true;
                 });
             
-            // Note: Without proper binding resolution, println is not recognized as PrintStream method,
-            // so the callback is not invoked and the counter remains 0.
-            assertEquals(0, callCount.get(), "Without binding resolution, no method calls should be found");
+            // With the improved parser configuration (JavaCore options), method invocation matching
+            // can work even with limited binding resolution. System.out.println is recognized.
+            assertEquals(1, callCount.get(), "Method invocation should be found");
         }
 
         @Test
