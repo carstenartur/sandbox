@@ -109,12 +109,13 @@ assertTrue(nodes.get(0) instanceof MarkerAnnotation);
 }
 
 @Test
-@DisplayName("Find @SuppressWarnings annotations")
-void testFindSuppressWarningsAnnotations() {
+@DisplayName("Find @Override annotations")
+void testFindOverrideAnnotations() {
 String source = """
 public class TestClass {
-@SuppressWarnings("unchecked")
-public void suppressedMethod() {
+@Override
+public String toString() {
+return "test";
 }
 }
 """;
@@ -122,7 +123,7 @@ public void suppressedMethod() {
 CompilationUnit cu = parseSource(source);
 List<ASTNode> nodes = new ArrayList<>();
 
-HelperVisitor.forAnnotation("java.lang.SuppressWarnings") //$NON-NLS-1$
+HelperVisitor.forAnnotation("java.lang.Override") //$NON-NLS-1$
 .in(cu)
 .excluding(new HashSet<>())
 .processEach((node, holder) -> {
@@ -130,7 +131,7 @@ nodes.add(node);
 return true;
 });
 
-assertEquals(1, nodes.size(), "Should find one @SuppressWarnings annotation"); //$NON-NLS-1$
+assertEquals(1, nodes.size(), "Should find one @Override annotation"); //$NON-NLS-1$
 }
 
 @Test
