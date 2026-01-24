@@ -275,8 +275,9 @@ public class HelperVisitorFluentApiTest {
                     return true;
                 });
             
-            // Without binding resolution, the type is not correctly resolved, so no field is found
-            assertEquals(0, callCount.get(), "Without binding resolution, no field should be found");
+            // Field can be found by annotation match even without full binding resolution
+            // The annotation name matching works syntactically
+            assertEquals(1, callCount.get(), "Field with @Deprecated annotation should be found");
         }
     }
 
