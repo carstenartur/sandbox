@@ -270,8 +270,9 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         if (body != null) {
             lambda.setBody((Expression) ASTNode.copySubtree(ast, body));
         } else {
-            // Fallback to null literal if no body provided
-            lambda.setBody(ast.newNullLiteral());
+            // Fallback to an empty block (no-op) if no body is provided
+            Block emptyBody = ast.newBlock();
+            lambda.setBody(emptyBody);
         }
         
         forEachCall.arguments().add(lambda);

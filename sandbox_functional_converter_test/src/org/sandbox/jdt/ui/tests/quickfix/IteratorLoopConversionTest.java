@@ -13,12 +13,15 @@
  *******************************************************************************/
 package org.sandbox.jdt.ui.tests.quickfix;
 
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
+import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
+import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
+import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 
 /**
  * Tests for iterator loop conversion to functional streams.
@@ -33,15 +36,15 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
  * <p>Note: These tests are disabled by default until ITERATOR_LOOP is enabled
  * in UseFunctionalCallFixCore.</p>
  */
-public class IteratorLoopConversionTest extends QuickFixTest {
+public class IteratorLoopConversionTest {
     
     @RegisterExtension
-    QuickFixTestSetup testSetup = new QuickFixTestSetup();
+    AbstractEclipseJava context = new EclipseJava22();
     
     @Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
     @Test
     public void testSimpleWhileIterator_forEach() throws Exception {
-        IPackageFragment pack = testSetup.fSourceFolder.createPackageFragment("test", false, null);
+        IPackageFragment pack = context.getRoot().createPackageFragment("test", false, null);
         
         String given = """
             package test;
@@ -69,14 +72,16 @@ public class IteratorLoopConversionTest extends QuickFixTest {
             """;
         
         ICompilationUnit cu = pack.createCompilationUnit("E.java", given, false, null);
-        enable(UseFunctionalCallFixCore.ITERATOR_LOOP);
-        assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+        // enable(UseFunctionalCallFixCore.ITERATOR_LOOP); // Commented out until ITERATOR_LOOP is enabled
+        context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected },
+                null, new MYCleanUpConstants.CleanUpOption(MYCleanUpConstants.USE_FUNCTIONAL_LOOP, 
+                        MYCleanUpConstants.TRUE));
     }
     
     @Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
     @Test
     public void testForLoopIterator_forEach() throws Exception {
-        IPackageFragment pack = testSetup.fSourceFolder.createPackageFragment("test", false, null);
+        IPackageFragment pack = context.getRoot().createPackageFragment("test", false, null);
         
         String given = """
             package test;
@@ -103,14 +108,16 @@ public class IteratorLoopConversionTest extends QuickFixTest {
             """;
         
         ICompilationUnit cu = pack.createCompilationUnit("E.java", given, false, null);
-        enable(UseFunctionalCallFixCore.ITERATOR_LOOP);
-        assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+        // enable(UseFunctionalCallFixCore.ITERATOR_LOOP); // Commented out until ITERATOR_LOOP is enabled
+        context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected },
+                null, new MYCleanUpConstants.CleanUpOption(MYCleanUpConstants.USE_FUNCTIONAL_LOOP, 
+                        MYCleanUpConstants.TRUE));
     }
     
     @Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
     @Test
     public void testIteratorWithRemove_notConverted() throws Exception {
-        IPackageFragment pack = testSetup.fSourceFolder.createPackageFragment("test", false, null);
+        IPackageFragment pack = context.getRoot().createPackageFragment("test", false, null);
         
         String given = """
             package test;
@@ -130,14 +137,16 @@ public class IteratorLoopConversionTest extends QuickFixTest {
         
         // Should not be converted because it.remove() is not safe
         ICompilationUnit cu = pack.createCompilationUnit("E.java", given, false, null);
-        enable(UseFunctionalCallFixCore.ITERATOR_LOOP);
-        assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+        // enable(UseFunctionalCallFixCore.ITERATOR_LOOP); // Commented out until ITERATOR_LOOP is enabled
+        context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu },
+                new MYCleanUpConstants.CleanUpOption(MYCleanUpConstants.USE_FUNCTIONAL_LOOP, 
+                        MYCleanUpConstants.TRUE));
     }
     
     @Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
     @Test
     public void testIteratorMultipleNext_notConverted() throws Exception {
-        IPackageFragment pack = testSetup.fSourceFolder.createPackageFragment("test", false, null);
+        IPackageFragment pack = context.getRoot().createPackageFragment("test", false, null);
         
         String given = """
             package test;
@@ -156,14 +165,16 @@ public class IteratorLoopConversionTest extends QuickFixTest {
         
         // Should not be converted because multiple next() calls
         ICompilationUnit cu = pack.createCompilationUnit("E.java", given, false, null);
-        enable(UseFunctionalCallFixCore.ITERATOR_LOOP);
-        assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+        // enable(UseFunctionalCallFixCore.ITERATOR_LOOP); // Commented out until ITERATOR_LOOP is enabled
+        context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu },
+                new MYCleanUpConstants.CleanUpOption(MYCleanUpConstants.USE_FUNCTIONAL_LOOP, 
+                        MYCleanUpConstants.TRUE));
     }
     
     @Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
     @Test
     public void testMultipleStatements_forEach() throws Exception {
-        IPackageFragment pack = testSetup.fSourceFolder.createPackageFragment("test", false, null);
+        IPackageFragment pack = context.getRoot().createPackageFragment("test", false, null);
         
         String given = """
             package test;
@@ -195,14 +206,16 @@ public class IteratorLoopConversionTest extends QuickFixTest {
             """;
         
         ICompilationUnit cu = pack.createCompilationUnit("E.java", given, false, null);
-        enable(UseFunctionalCallFixCore.ITERATOR_LOOP);
-        assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+        // enable(UseFunctionalCallFixCore.ITERATOR_LOOP); // Commented out until ITERATOR_LOOP is enabled
+        context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected },
+                null, new MYCleanUpConstants.CleanUpOption(MYCleanUpConstants.USE_FUNCTIONAL_LOOP, 
+                        MYCleanUpConstants.TRUE));
     }
     
     @Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
     @Test
     public void testWithBreak_notYetSupported() throws Exception {
-        IPackageFragment pack = testSetup.fSourceFolder.createPackageFragment("test", false, null);
+        IPackageFragment pack = context.getRoot().createPackageFragment("test", false, null);
         
         String given = """
             package test;
@@ -221,11 +234,12 @@ public class IteratorLoopConversionTest extends QuickFixTest {
             }
             """;
         
-        // For now, break statements are considered safe but the actual conversion
-        // logic needs enhancement to handle them properly (e.g., using filter or takeWhile)
+        // Break statements are not yet supported - will not be converted until
+        // the feature is enhanced to handle them (e.g., using filter or takeWhile)
         ICompilationUnit cu = pack.createCompilationUnit("E.java", given, false, null);
-        enable(UseFunctionalCallFixCore.ITERATOR_LOOP);
-        // This test documents current behavior - may be enhanced in future
-        assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+        // enable(UseFunctionalCallFixCore.ITERATOR_LOOP); // Commented out until ITERATOR_LOOP is enabled
+        context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu },
+                new MYCleanUpConstants.CleanUpOption(MYCleanUpConstants.USE_FUNCTIONAL_LOOP, 
+                        MYCleanUpConstants.TRUE));
     }
 }
