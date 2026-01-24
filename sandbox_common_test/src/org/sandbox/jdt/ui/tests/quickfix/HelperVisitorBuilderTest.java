@@ -135,6 +135,31 @@ assertEquals(1, nodes.size(), "Should find one @Override annotation"); //$NON-NL
 }
 
 @Test
+@DisplayName("Find @SuppressWarnings annotations (SingleMemberAnnotation)")
+void testFindSuppressWarningsAnnotations() {
+String source = """
+public class TestClass {
+@SuppressWarnings("unchecked")
+public void test() {
+}
+}
+""";
+
+CompilationUnit cu = parseSource(source);
+List<ASTNode> nodes = new ArrayList<>();
+
+HelperVisitor.forAnnotation("java.lang.SuppressWarnings") //$NON-NLS-1$
+.in(cu)
+.excluding(new HashSet<>())
+.processEach((node, holder) -> {
+nodes.add(node);
+return true;
+});
+
+assertEquals(1, nodes.size(), "Should find one @SuppressWarnings annotation"); //$NON-NLS-1$
+}
+
+@Test
 @DisplayName("Collect annotations using collect() method")
 void testCollectAnnotations() {
 String source = """

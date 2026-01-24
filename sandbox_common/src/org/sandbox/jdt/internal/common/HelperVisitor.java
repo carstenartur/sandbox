@@ -88,11 +88,23 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	public static final String EXCEPTIONTYPE = "exceptiontype"; //$NON-NLS-1$
 
 	/**
-	 * Creates a fluent builder for visiting marker annotations.
+	 * Creates a fluent builder for visiting annotations of all types.
+	 * 
+	 * <p>This method matches <b>all annotation types</b> regardless of whether they have parameters:</p>
+	 * <ul>
+	 * <li>{@code MarkerAnnotation} - annotations without parameters (e.g., {@code @Override})</li>
+	 * <li>{@code SingleMemberAnnotation} - annotations with a single value (e.g., {@code @SuppressWarnings("unchecked")})</li>
+	 * <li>{@code NormalAnnotation} - annotations with named parameters (e.g., {@code @RequestMapping(path="/api", method=GET)})</li>
+	 * </ul>
+	 * 
+	 * <p><b>Note:</b> This differs from the underlying {@code callMarkerAnnotationVisitor()} method, 
+	 * which only matches {@code MarkerAnnotation} nodes. This fluent API provides a more intuitive 
+	 * interface by automatically handling all annotation types.</p>
 	 * 
 	 * <p><b>Example:</b></p>
 	 * <pre>
-	 * HelperVisitor.forAnnotation("org.junit.Before")
+	 * // Matches @Deprecated (MarkerAnnotation), @SuppressWarnings("unchecked") (SingleMemberAnnotation), etc.
+	 * HelperVisitor.forAnnotation("java.lang.Deprecated")
 	 *     .in(compilationUnit)
 	 *     .excluding(nodesprocessed)
 	 *     .processEach((node, holder) -&gt; {
@@ -102,7 +114,7 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	 * </pre>
 	 * 
 	 * @param annotationFQN the fully qualified name of the annotation to find
-	 * @return a fluent builder for annotation visitors
+	 * @return a fluent builder for annotation visitors that matches all annotation types
 	 * @since 1.15
 	 */
 	public static AnnotationVisitorBuilder forAnnotation(String annotationFQN) {
