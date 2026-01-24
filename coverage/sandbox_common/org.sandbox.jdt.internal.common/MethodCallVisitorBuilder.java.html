@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>MethodCallVisitorBuilder.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.common</a> &gt; <span class="el_source">MethodCallVisitorBuilder.java</span></div><h1>MethodCallVisitorBuilder.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.common;
+
+import java.util.Set;
+import java.util.function.BiPredicate;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+
+/**
+ * Fluent builder for visiting method invocations.
+ * 
+ * &lt;p&gt;&lt;b&gt;Example Usage:&lt;/b&gt;&lt;/p&gt;
+ * &lt;pre&gt;
+ * // Single method
+ * HelperVisitor.forMethodCall(&quot;org.junit.Assert&quot;, &quot;assertTrue&quot;)
+ *     .in(compilationUnit)
+ *     .excluding(nodesprocessed)
+ *     .processEach((methodInv, holder) -&amp;gt; {
+ *         addOperation(methodInv);
+ *         return true;
+ *     });
+ *     
+ * // Multiple methods with imports
+ * HelperVisitor.forMethodCalls(&quot;org.junit.Assert&quot;, ALL_ASSERTION_METHODS)
+ *     .andStaticImports()
+ *     .andImportsOf(&quot;org.junit.Assert&quot;)
+ *     .in(compilationUnit)
+ *     .excluding(nodesprocessed)
+ *     .processEach((node, holder) -&amp;gt; {
+ *         addOperation(node);
+ *         return true;
+ *     });
+ * &lt;/pre&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Note on mixed node types:&lt;/b&gt; When {@code andStaticImports()} or {@code andImportsOf(...)} 
+ * are enabled, the processor will receive both {@code MethodInvocation} and {@code ImportDeclaration} 
+ * nodes. This is intentional to match the pattern used in JUnit cleanup plugins (e.g., AssertJUnitPlugin) 
+ * where a single processor handles all related nodes polymorphically. Use {@code instanceof} checks 
+ * if you need to handle different node types differently.&lt;/p&gt;
+ * 
+ * @author Carsten Hammer
+ * @since 1.15
+ */
+public class MethodCallVisitorBuilder extends HelperVisitorBuilder&lt;MethodInvocation&gt; {
+    
+    private final String typeFQN;
+    private final Set&lt;String&gt; methodNames;
+    private String importFQN;
+<span class="nc" id="L62">    private boolean includeStaticImports = false;</span>
+    
+    /**
+     * Creates a new method call visitor builder.
+     * 
+     * @param typeFQN the fully qualified name of the type containing the methods
+     * @param methodNames the set of method names to find
+     */
+<span class="nc" id="L70">    public MethodCallVisitorBuilder(String typeFQN, Set&lt;String&gt; methodNames) {</span>
+<span class="nc" id="L71">        this.typeFQN = typeFQN;</span>
+<span class="nc" id="L72">        this.methodNames = methodNames;</span>
+<span class="nc" id="L73">    }</span>
+    
+    /**
+     * Configures the builder to also process static imports for each method.
+     * Static imports are of the form &quot;typeFQN.methodName&quot;.
+     * 
+     * @return this builder for chaining
+     */
+    public MethodCallVisitorBuilder andStaticImports() {
+<span class="nc" id="L82">        this.includeStaticImports = true;</span>
+<span class="nc" id="L83">        return this;</span>
+    }
+    
+    /**
+     * Configures the builder to also process the regular import declaration.
+     * 
+     * @param importFQN the fully qualified name of the import to include
+     * @return this builder for chaining
+     */
+    public MethodCallVisitorBuilder andImportsOf(String importFQN) {
+<span class="nc" id="L93">        this.importFQN = importFQN;</span>
+<span class="nc" id="L94">        return this;</span>
+    }
+    
+    @Override
+    protected &lt;V, H&gt; void executeVisitors(ReferenceHolder&lt;V, H&gt; holder, 
+            BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, H&gt;&gt; processor) {
+        // Visit method invocations for each method name
+<span class="nc" id="L101">        methodNames.forEach(methodName -&gt; {</span>
+<span class="nc" id="L102">            HelperVisitor.callMethodInvocationVisitor(typeFQN, methodName, compilationUnit,</span>
+<span class="nc" id="L103">                    holder, nodesprocessed, (node, h) -&gt; processor.test(node, h));</span>
+<span class="nc" id="L104">        });</span>
+        
+        // Optionally include static imports for each method
+<span class="nc bnc" id="L107" title="All 2 branches missed.">        if (includeStaticImports) {</span>
+<span class="nc" id="L108">            methodNames.forEach(methodName -&gt; {</span>
+<span class="nc" id="L109">                HelperVisitor.callImportDeclarationVisitor(typeFQN + &quot;.&quot; + methodName, //$NON-NLS-1$</span>
+<span class="nc" id="L110">                        compilationUnit, holder, nodesprocessed, (node, h) -&gt; processor.test(node, h));</span>
+<span class="nc" id="L111">            });</span>
+        }
+        
+        // Optionally include the regular import
+<span class="nc bnc" id="L115" title="All 2 branches missed.">        if (importFQN != null) {</span>
+<span class="nc" id="L116">            HelperVisitor.callImportDeclarationVisitor(importFQN, compilationUnit,</span>
+<span class="nc" id="L117">                    holder, nodesprocessed, (node, h) -&gt; processor.test(node, h));</span>
+        }
+<span class="nc" id="L119">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
