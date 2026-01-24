@@ -86,10 +86,10 @@ public class HelperVisitorFluentApiTest {
                 .in(cu)
                 .excluding(nodesprocessed)
                 .processEach(dataHolder, (node, holder) -> {
-                    callCount.incrementAndGet();
+                    int index = callCount.getAndIncrement();
                     TestHolder th = new TestHolder();
                     th.node = node;
-                    holder.put(holder.size(), th);
+                    holder.put(index, th);
                     return true;
                 });
             
@@ -301,10 +301,10 @@ public class HelperVisitorFluentApiTest {
                 .in(cu)
                 .excluding(nodesprocessed)
                 .processEach(dataHolder, (node, holder) -> {
-                    callCount.incrementAndGet();
+                    int index = callCount.getAndIncrement();
                     TestHolder th = new TestHolder();
                     th.node = node;
-                    holder.put(holder.size(), th);
+                    holder.put(index, th);
                     return true;
                 });
             
@@ -359,6 +359,7 @@ public class HelperVisitorFluentApiTest {
             cu = parseSource(source);
             
             ReferenceHolder<Integer, TestHolder> dataHolder = new ReferenceHolder<>();
+            AtomicInteger index = new AtomicInteger(0);
             
             HelperVisitor.forAnnotation("java.lang.Deprecated")
                 .in(cu)
@@ -367,7 +368,7 @@ public class HelperVisitorFluentApiTest {
                     TestHolder th = new TestHolder();
                     th.node = node;
                     th.name = "Deprecated";
-                    holder.put(holder.size(), th);
+                    holder.put(index.getAndIncrement(), th);
                     return true;
                 });
             
@@ -392,6 +393,7 @@ public class HelperVisitorFluentApiTest {
             cu = parseSource(source);
             
             ReferenceHolder<Integer, TestHolder> dataHolder = new ReferenceHolder<>();
+            AtomicInteger index = new AtomicInteger(0);
             
             // Find all java.util imports
             HelperVisitor.forImport("java.util.List")
@@ -400,7 +402,7 @@ public class HelperVisitorFluentApiTest {
                 .processEach(dataHolder, (node, holder) -> {
                     TestHolder th = new TestHolder();
                     th.node = node;
-                    holder.put(holder.size(), th);
+                    holder.put(index.getAndIncrement(), th);
                     return true;
                 });
             
@@ -410,7 +412,7 @@ public class HelperVisitorFluentApiTest {
                 .processEach(dataHolder, (node, holder) -> {
                     TestHolder th = new TestHolder();
                     th.node = node;
-                    holder.put(holder.size(), th);
+                    holder.put(index.getAndIncrement(), th);
                     return true;
                 });
             
