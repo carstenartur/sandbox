@@ -111,6 +111,10 @@ public class AnnotationVisitorBuilder extends HelperVisitorBuilder<Annotation> {
         
         // Create adapter BiPredicates for each annotation type that delegate to the processor
         BiPredicate<MarkerAnnotation, ReferenceHolder<V, H>> markerAdapter = (MarkerAnnotation node, ReferenceHolder<V, H> h) -> {
+            // Check if already processed (excluded)
+            if (nodesprocessed != null && nodesprocessed.contains(node)) {
+                return true; // Skip this node but continue processing others
+            }
             Boolean shouldContinue = (Boolean) h.get(continueKey);
             if (shouldContinue == null || !shouldContinue) {
                 return false;
@@ -123,6 +127,10 @@ public class AnnotationVisitorBuilder extends HelperVisitorBuilder<Annotation> {
         };
         
         BiPredicate<SingleMemberAnnotation, ReferenceHolder<V, H>> singleMemberAdapter = (SingleMemberAnnotation node, ReferenceHolder<V, H> h) -> {
+            // Check if already processed (excluded)
+            if (nodesprocessed != null && nodesprocessed.contains(node)) {
+                return true; // Skip this node but continue processing others
+            }
             Boolean shouldContinue = (Boolean) h.get(continueKey);
             if (shouldContinue == null || !shouldContinue) {
                 return false;
@@ -135,6 +143,10 @@ public class AnnotationVisitorBuilder extends HelperVisitorBuilder<Annotation> {
         };
         
         BiPredicate<NormalAnnotation, ReferenceHolder<V, H>> normalAdapter = (NormalAnnotation node, ReferenceHolder<V, H> h) -> {
+            // Check if already processed (excluded)
+            if (nodesprocessed != null && nodesprocessed.contains(node)) {
+                return true; // Skip this node but continue processing others
+            }
             Boolean shouldContinue = (Boolean) h.get(continueKey);
             if (shouldContinue == null || !shouldContinue) {
                 return false;
@@ -147,6 +159,10 @@ public class AnnotationVisitorBuilder extends HelperVisitorBuilder<Annotation> {
         };
         
         BiPredicate<ImportDeclaration, ReferenceHolder<V, H>> importAdapter = (ImportDeclaration node, ReferenceHolder<V, H> h) -> {
+            // Check if already processed (excluded)
+            if (nodesprocessed != null && nodesprocessed.contains(node)) {
+                return true; // Skip this node but continue processing others
+            }
             Boolean shouldContinue = (Boolean) h.get(continueKey);
             if (shouldContinue == null || !shouldContinue) {
                 return false;
