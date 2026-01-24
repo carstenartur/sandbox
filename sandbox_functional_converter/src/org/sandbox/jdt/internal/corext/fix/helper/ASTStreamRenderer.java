@@ -14,9 +14,11 @@
 package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.List;
+import java.util.function.Supplier;
 import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.sandbox.functional.core.model.SourceDescriptor;
+import org.sandbox.functional.core.renderer.ASTAwareRenderer;
 import org.sandbox.functional.core.renderer.StreamPipelineRenderer;
 import org.sandbox.functional.core.terminal.*;
 
@@ -27,8 +29,9 @@ import org.sandbox.functional.core.terminal.*;
  * allowing direct integration with Eclipse refactoring infrastructure.</p>
  * 
  * @see StreamPipelineRenderer
+ * @see ASTAwareRenderer
  */
-public class ASTStreamRenderer implements StreamPipelineRenderer<Expression> {
+public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement, Expression> {
     
     private final AST ast;
     private final CompilationUnit compilationUnit;
@@ -246,6 +249,87 @@ public class ASTStreamRenderer implements StreamPipelineRenderer<Expression> {
         
         forEachCall.arguments().add(lambda);
         return forEachCall;
+    }
+    
+    @Override
+    public Expression renderForEachWithBody(Expression pipeline, Supplier<Expression> bodySupplier, 
+                                             String variableName, boolean ordered) {
+        // Similar to renderForEach but uses the supplier to get the body directly
+        MethodInvocation forEachCall = ast.newMethodInvocation();
+        forEachCall.setExpression(pipeline);
+        forEachCall.setName(ast.newSimpleName(ordered ? "forEachOrdered" : "forEach"));
+        
+        LambdaExpression lambda = ast.newLambdaExpression();
+        VariableDeclarationFragment param = ast.newVariableDeclarationFragment();
+        param.setName(ast.newSimpleName(variableName));
+        lambda.parameters().add(param);
+        lambda.setParentheses(false);
+        
+        // Get the body from the supplier (AST-aware)
+        Expression body = bodySupplier.get();
+        if (body != null) {
+            lambda.setBody((Expression) ASTNode.copySubtree(ast, body));
+        } else {
+            // Fallback to null literal if no body provided
+            lambda.setBody(ast.newNullLiteral());
+        }
+        
+        forEachCall.arguments().add(lambda);
+        return forEachCall;
+    }
+    
+    @Override
+    public Expression renderFilterWithPredicate(Expression pipeline, Supplier<Expression> predicateSupplier,
+                                                 String variableName) {
+        // Similar to renderFilter but uses the supplier
+        MethodInvocation filterCall = ast.newMethodInvocation();
+        filterCall.setExpression(pipeline);
+        filterCall.setName(ast.newSimpleName("filter"));
+        
+        LambdaExpression lambda = ast.newLambdaExpression();
+        VariableDeclarationFragment param = ast.newVariableDeclarationFragment();
+        param.setName(ast.newSimpleName(variableName));
+        lambda.parameters().add(param);
+        lambda.setParentheses(false);
+        
+        // Get the predicate from the supplier (AST-aware)
+        Expression predicate = predicateSupplier.get();
+        if (predicate != null) {
+            lambda.setBody((Expression) ASTNode.copySubtree(ast, predicate));
+        } else {
+            // Fallback to true literal
+            lambda.setBody(ast.newBooleanLiteral(true));
+        }
+        
+        filterCall.arguments().add(lambda);
+        return filterCall;
+    }
+    
+    @Override
+    public Expression renderMapWithMapper(Expression pipeline, Supplier<Expression> mapperSupplier,
+                                           String variableName, String targetType) {
+        // Similar to renderMap but uses the supplier
+        MethodInvocation mapCall = ast.newMethodInvocation();
+        mapCall.setExpression(pipeline);
+        mapCall.setName(ast.newSimpleName("map"));
+        
+        LambdaExpression lambda = ast.newLambdaExpression();
+        VariableDeclarationFragment param = ast.newVariableDeclarationFragment();
+        param.setName(ast.newSimpleName(variableName));
+        lambda.parameters().add(param);
+        lambda.setParentheses(false);
+        
+        // Get the mapper from the supplier (AST-aware)
+        Expression mapper = mapperSupplier.get();
+        if (mapper != null) {
+            lambda.setBody((Expression) ASTNode.copySubtree(ast, mapper));
+        } else {
+            // Fallback to the variable itself (identity mapper)
+            lambda.setBody(ast.newSimpleName(variableName));
+        }
+        
+        mapCall.arguments().add(lambda);
+        return mapCall;
     }
     
     
