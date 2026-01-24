@@ -466,12 +466,14 @@ HelperVisitor.forAnnotation("java.lang.Deprecated") //$NON-NLS-1$
 .in(cu)
 .excluding(new HashSet<>())
 .processEach((node, h) -> {
-List<String> data = h.get(0);
+@SuppressWarnings("unchecked")
+List<String> data = (List<String>) h.get(0);
 data.add(node.toString());
 return true;
 });
 
-List<String> collected = holder.get(0);
+@SuppressWarnings("unchecked")
+List<String> collected = (List<String>) holder.get(0);
 assertEquals(2, collected.size(), "Should have collected 2 annotations"); //$NON-NLS-1$
 }
 }
