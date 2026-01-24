@@ -17,6 +17,7 @@ import java.util.function.BiPredicate;
 
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.NormalAnnotation;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
@@ -145,6 +146,18 @@ public class AnnotationVisitorBuilder extends HelperVisitorBuilder<Annotation> {
             return result;
         };
         
+        BiPredicate<ImportDeclaration, ReferenceHolder<V, H>> importAdapter = (ImportDeclaration node, ReferenceHolder<V, H> h) -> {
+            Boolean shouldContinue = (Boolean) h.get(continueKey);
+            if (shouldContinue == null || !shouldContinue) {
+                return false;
+            }
+            boolean result = processor.test((ASTNode) node, h);
+            if (!result) {
+                h.put(continueKey, (H) Boolean.FALSE);
+            }
+            return result;
+        };
+        
         // Call visitors for all three annotation types to match annotations regardless of parameters
         Boolean shouldContinue = (Boolean) holder.get(continueKey);
         if (shouldContinue != null && shouldContinue) {
@@ -166,7 +179,7 @@ public class AnnotationVisitorBuilder extends HelperVisitorBuilder<Annotation> {
         shouldContinue = (Boolean) holder.get(continueKey);
         if (shouldContinue != null && shouldContinue && includeImports) {
             HelperVisitor.callImportDeclarationVisitor(annotationFQN, compilationUnit,
-                    holder, nodesprocessed, wrappedProcessor);
+                    holder, nodesprocessed, importAdapter);
         }
         
         // Clean up the continuation state key
