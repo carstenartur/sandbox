@@ -70,8 +70,8 @@ public abstract class AbstractMarkerAnnotationJUnitPlugin extends AbstractTool<R
 	/**
 	 * Processes a found annotation node and adds a rewrite operation.
 	 * The Fluent API forAnnotation() matches all annotation types (MarkerAnnotation, 
-	 * SingleMemberAnnotation, NormalAnnotation), but AbstractMarkerAnnotationJUnitPlugin
-	 * is designed specifically for marker annotations, so we cast to Annotation.
+	 * SingleMemberAnnotation, NormalAnnotation). This method uses instanceof pattern matching
+	 * to verify the node is an Annotation before processing.
 	 * 
 	 * @param fixcore the cleanup fix core
 	 * @param operations the set of operations to add to
