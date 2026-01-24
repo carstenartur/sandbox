@@ -14,11 +14,13 @@
 package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.Set;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.*;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
-import org.sandbox.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.IteratorLoopAnalyzer.SafetyAnalysis;
 import org.sandbox.jdt.internal.corext.fix.helper.IteratorLoopBodyParser.ParsedBody;
@@ -135,7 +137,7 @@ public class IteratorLoopToFunctional extends AbstractFunctionalCall<ASTNode> {
     @Override
     public void rewrite(UseFunctionalCallFixCore fixCore, ASTNode node, 
                         CompilationUnitRewrite cuRewrite, TextEditGroup group,
-                        ReferenceHolder<ASTNode, Object> holder) {
+                        ReferenceHolder<ASTNode, Object> holder) throws CoreException {
         
         Object data = holder.get(node);
         if (!(data instanceof IteratorPattern)) {
