@@ -49,20 +49,25 @@ public class TestTimeoutJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder = new ReferenceHolder<>();
-		HelperVisitor.callNormalAnnotationVisitor(ORG_JUNIT_TEST, compilationUnit, dataHolder, nodesprocessed,
-				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+		HelperVisitor.forAnnotation(ORG_JUNIT_TEST)
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(dataHolder, (visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, NormalAnnotation node,
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, ASTNode node,
 			ReferenceHolder<Integer, JunitHolder> dataHolder) {
+		if (!(node instanceof NormalAnnotation normalAnnotation)) {
+			return false;
+		}
 		
 		// Check if this @Test annotation has a timeout parameter
 		Long timeoutValue = null;
 		MemberValuePair timeoutPair = null;
 		
 		@SuppressWarnings("unchecked")
-		List<MemberValuePair> values = node.values();
+		List<MemberValuePair> values = normalAnnotation.values();
 		for (MemberValuePair pair : values) {
 			if ("timeout".equals(pair.getName().getIdentifier())) {
 				timeoutPair = pair;
@@ -86,8 +91,8 @@ public class TestTimeoutJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 		// Only process if we found a timeout parameter with a valid numeric value
 		if (timeoutValue != null && timeoutPair != null) {
 			JunitHolder mh = new JunitHolder();
-			mh.minv = node;
-			mh.minvname = node.getTypeName().getFullyQualifiedName();
+			mh.minv = normalAnnotation;
+			mh.minvname = normalAnnotation.getTypeName().getFullyQualifiedName();
 			mh.value = String.valueOf(timeoutValue);
 			mh.additionalInfo = timeoutPair; // Store the timeout pair for removal
 			dataHolder.put(dataHolder.size(), mh);

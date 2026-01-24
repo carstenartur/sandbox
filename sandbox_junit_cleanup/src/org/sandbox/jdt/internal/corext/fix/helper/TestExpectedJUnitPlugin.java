@@ -70,20 +70,25 @@ public class TestExpectedJUnitPlugin extends AbstractTool<ReferenceHolder<Intege
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder = new ReferenceHolder<>();
-		HelperVisitor.callNormalAnnotationVisitor(ORG_JUNIT_TEST, compilationUnit, dataHolder, nodesprocessed,
-				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+		HelperVisitor.forAnnotation(ORG_JUNIT_TEST)
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(dataHolder, (visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, NormalAnnotation node,
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, ASTNode node,
 			ReferenceHolder<Integer, JunitHolder> dataHolder) {
+		if (!(node instanceof NormalAnnotation normalAnnotation)) {
+			return false;
+		}
 		
 		// Check if this @Test annotation has an "expected" parameter
 		MemberValuePair expectedPair = null;
 		Expression expectedValue = null;
 		
 		@SuppressWarnings("unchecked")
-		List<MemberValuePair> values = node.values();
+		List<MemberValuePair> values = normalAnnotation.values();
 		for (MemberValuePair pair : values) {
 			if ("expected".equals(pair.getName().getIdentifier())) {
 				expectedPair = pair;
@@ -95,8 +100,8 @@ public class TestExpectedJUnitPlugin extends AbstractTool<ReferenceHolder<Intege
 		// Only process if we found an expected parameter
 		if (expectedPair != null && expectedValue != null) {
 			JunitHolder mh = new JunitHolder();
-			mh.minv = node;
-			mh.minvname = node.getTypeName().getFullyQualifiedName();
+			mh.minv = normalAnnotation;
+			mh.minvname = normalAnnotation.getTypeName().getFullyQualifiedName();
 			mh.additionalInfo = expectedPair; // Store the expected pair for removal
 			dataHolder.put(dataHolder.size(), mh);
 			operations.add(fixcore.rewrite(dataHolder));

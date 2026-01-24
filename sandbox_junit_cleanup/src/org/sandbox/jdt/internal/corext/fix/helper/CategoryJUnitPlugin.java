@@ -77,19 +77,23 @@ public class CategoryJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, J
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder= new ReferenceHolder<>();
-		HelperVisitor.callSingleMemberAnnotationVisitor(ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORY, compilationUnit, 
-				dataHolder, nodesprocessed,
-				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+		HelperVisitor.forAnnotation(ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORY)
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(dataHolder, (visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Annotation node,
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, ASTNode node,
 			ReferenceHolder<Integer, JunitHolder> dataHolder) {
+		if (!(node instanceof Annotation annotation)) {
+			return false;
+		}
 		JunitHolder mh= new JunitHolder();
-		mh.minv= node;
-		mh.minvname= node.getTypeName().getFullyQualifiedName();
+		mh.minv= annotation;
+		mh.minvname= annotation.getTypeName().getFullyQualifiedName();
 		
-		if (node instanceof SingleMemberAnnotation mynode) {
+		if (annotation instanceof SingleMemberAnnotation mynode) {
 			Expression value= mynode.getValue();
 			List<String> categoryNames= extractCategoryNames(value);
 			if (!categoryNames.isEmpty()) {
