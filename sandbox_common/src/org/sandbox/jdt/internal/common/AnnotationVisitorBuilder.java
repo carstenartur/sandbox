@@ -91,18 +91,38 @@ public class AnnotationVisitorBuilder extends HelperVisitorBuilder<Annotation> {
     @Override
     protected <V, H> void executeVisitors(ReferenceHolder<V, H> holder, 
             BiPredicate<ASTNode, ReferenceHolder<V, H>> processor) {
+        // Use a flag to track if processing should continue across all visitor calls
+        // This ensures early termination works correctly when visiting multiple annotation types
+        boolean[] continueProcessing = {true};
+        BiPredicate<ASTNode, ReferenceHolder<V, H>> wrappedProcessor = (node, h) -> {
+            if (!continueProcessing[0]) {
+                return false;
+            }
+            boolean result = processor.test(node, h);
+            if (!result) {
+                continueProcessing[0] = false;
+            }
+            return result;
+        };
+        
         // Call visitors for all three annotation types to match annotations regardless of parameters
-        HelperVisitor.callMarkerAnnotationVisitor(annotationFQN, compilationUnit, 
-                holder, nodesprocessed, (node, h) -> processor.test(node, h));
-        HelperVisitor.callSingleMemberAnnotationVisitor(annotationFQN, compilationUnit,
-                holder, nodesprocessed, (node, h) -> processor.test(node, h));
-        HelperVisitor.callNormalAnnotationVisitor(annotationFQN, compilationUnit,
-                holder, nodesprocessed, (node, h) -> processor.test(node, h));
+        if (continueProcessing[0]) {
+            HelperVisitor.callMarkerAnnotationVisitor(annotationFQN, compilationUnit, 
+                    holder, nodesprocessed, wrappedProcessor);
+        }
+        if (continueProcessing[0]) {
+            HelperVisitor.callSingleMemberAnnotationVisitor(annotationFQN, compilationUnit,
+                    holder, nodesprocessed, wrappedProcessor);
+        }
+        if (continueProcessing[0]) {
+            HelperVisitor.callNormalAnnotationVisitor(annotationFQN, compilationUnit,
+                    holder, nodesprocessed, wrappedProcessor);
+        }
         
         // Optionally include import declarations
-        if (includeImports) {
+        if (continueProcessing[0] && includeImports) {
             HelperVisitor.callImportDeclarationVisitor(annotationFQN, compilationUnit,
-                    holder, nodesprocessed, (node, h) -> processor.test(node, h));
+                    holder, nodesprocessed, wrappedProcessor);
         }
     }
 }
