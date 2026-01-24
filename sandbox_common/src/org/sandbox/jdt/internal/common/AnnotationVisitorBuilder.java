@@ -106,36 +106,36 @@ public class AnnotationVisitorBuilder extends HelperVisitorBuilder<Annotation> {
         holder.put(continueKey, (H) Boolean.TRUE);
         
         // Create adapter BiPredicates for each annotation type that delegate to the processor
-        BiPredicate<MarkerAnnotation, ReferenceHolder<V, H>> markerAdapter = (node, h) -> {
+        BiPredicate<MarkerAnnotation, ReferenceHolder<V, H>> markerAdapter = (MarkerAnnotation node, ReferenceHolder<V, H> h) -> {
             Boolean shouldContinue = (Boolean) h.get(continueKey);
             if (shouldContinue == null || !shouldContinue) {
                 return false;
             }
-            boolean result = processor.test(node, h);
+            boolean result = processor.test((ASTNode) node, h);
             if (!result) {
                 h.put(continueKey, (H) Boolean.FALSE);
             }
             return result;
         };
         
-        BiPredicate<SingleMemberAnnotation, ReferenceHolder<V, H>> singleMemberAdapter = (node, h) -> {
+        BiPredicate<SingleMemberAnnotation, ReferenceHolder<V, H>> singleMemberAdapter = (SingleMemberAnnotation node, ReferenceHolder<V, H> h) -> {
             Boolean shouldContinue = (Boolean) h.get(continueKey);
             if (shouldContinue == null || !shouldContinue) {
                 return false;
             }
-            boolean result = processor.test(node, h);
+            boolean result = processor.test((ASTNode) node, h);
             if (!result) {
                 h.put(continueKey, (H) Boolean.FALSE);
             }
             return result;
         };
         
-        BiPredicate<NormalAnnotation, ReferenceHolder<V, H>> normalAdapter = (node, h) -> {
+        BiPredicate<NormalAnnotation, ReferenceHolder<V, H>> normalAdapter = (NormalAnnotation node, ReferenceHolder<V, H> h) -> {
             Boolean shouldContinue = (Boolean) h.get(continueKey);
             if (shouldContinue == null || !shouldContinue) {
                 return false;
             }
-            boolean result = processor.test(node, h);
+            boolean result = processor.test((ASTNode) node, h);
             if (!result) {
                 h.put(continueKey, (H) Boolean.FALSE);
             }
