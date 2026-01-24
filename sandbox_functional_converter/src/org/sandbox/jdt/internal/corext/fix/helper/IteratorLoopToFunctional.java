@@ -79,7 +79,6 @@ public class IteratorLoopToFunctional extends AbstractFunctionalCall<ASTNode> {
                 
                 ReferenceHolder<ASTNode, Object> holder = new ReferenceHolder<>();
                 holder.put(node, pattern);
-                holder.put(previousStmt, pattern); // Also store for the declaration
                 
                 operations.add(fixCore.rewrite(node, holder));
                 
@@ -154,11 +153,7 @@ public class IteratorLoopToFunctional extends AbstractFunctionalCall<ASTNode> {
         AST ast = cuRewrite.getAST();
         ASTRewrite rewrite = cuRewrite.getASTRewrite();
         
-        // Create a synthetic EnhancedForStatement for delegation
-        EnhancedForStatement syntheticFor = createSyntheticEnhancedFor(ast, pattern, parsedBody);
-        
-        // Use the existing StreamPipelineBuilder/ASTStreamRenderer infrastructure
-        // For now, just create a simple forEach conversion
+        // Create a stream pipeline expression directly
         Expression streamPipeline = createStreamPipeline(ast, pattern, parsedBody);
         
         if (streamPipeline != null) {
@@ -180,31 +175,8 @@ public class IteratorLoopToFunctional extends AbstractFunctionalCall<ASTNode> {
     }
     
     /**
-     * Creates a synthetic EnhancedForStatement for delegation to existing infrastructure.
-     */
-    private EnhancedForStatement createSyntheticEnhancedFor(AST ast, IteratorPattern pattern, 
-                                                             ParsedBody parsedBody) {
-        EnhancedForStatement enhancedFor = ast.newEnhancedForStatement();
-        
-        // Parameter: elementType elementVar
-        SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
-        param.setType(ast.newSimpleType(ast.newSimpleName(parsedBody.elementType)));
-        param.setName(ast.newSimpleName(parsedBody.elementVariableName));
-        enhancedFor.setParameter(param);
-        
-        // Expression: collection
-        enhancedFor.setExpression((Expression) ASTNode.copySubtree(ast, pattern.collectionExpression));
-        
-        // Body: actual body statements
-        Block syntheticBlock = bodyParser.createSyntheticBlock(ast, parsedBody);
-        enhancedFor.setBody(syntheticBlock);
-        
-        return enhancedFor;
-    }
-    
-    /**
      * Creates a stream pipeline expression.
-     * This is a simplified version - full implementation would use StreamPipelineBuilder.
+     * This creates a simple forEach conversion directly without using StreamPipelineBuilder.
      */
     private Expression createStreamPipeline(AST ast, IteratorPattern pattern, ParsedBody parsedBody) {
         // collection.stream().forEach(item -> { ... })

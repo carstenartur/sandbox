@@ -85,7 +85,12 @@ public class IteratorLoopAnalyzer {
                                          false, false, visitor.hasBreak, true);
         }
         
-        // break statements are okay - they can be converted to filter or short-circuit operations
+        // break statements are not yet supported for conversion
+        // Future enhancement: could be converted using takeWhile or filter with short-circuit
+        if (visitor.hasBreak) {
+            return SafetyAnalysis.unsafe("break statements in the loop body are not yet supported for stream conversion",
+                                         false, false, true, false);
+        }
         
         return SafetyAnalysis.safe();
     }
