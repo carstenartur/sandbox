@@ -142,8 +142,8 @@ public class HelperVisitorFluentApiTest {
         }
 
         @Test
-        @DisplayName("forAnnotation with andImportsOf also finds imports")
-        void testForAnnotation_andImportsOf_findsImports() {
+        @DisplayName("forAnnotation with andImports also finds imports")
+        void testForAnnotation_andImports_findsImports() {
             String source = """
                 import java.lang.Deprecated;
                 public class MyClass {
@@ -158,7 +158,7 @@ public class HelperVisitorFluentApiTest {
             ReferenceHolder<Integer, TestHolder> dataHolder = new ReferenceHolder<>();
             
             HelperVisitor.forAnnotation("java.lang.Deprecated")
-                .andImportsOf("java.lang.Deprecated")
+                .andImports()
                 .in(cu)
                 .excluding(nodesprocessed)
                 .processEach(dataHolder, (node, holder) -> {
