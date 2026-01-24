@@ -91,38 +91,57 @@ public class AnnotationVisitorBuilder extends HelperVisitorBuilder<Annotation> {
     @Override
     protected <V, H> void executeVisitors(ReferenceHolder<V, H> holder, 
             BiPredicate<ASTNode, ReferenceHolder<V, H>> processor) {
-        // Use a flag to track if processing should continue across all visitor calls
+        // Use the HelperVisitor stored in the ReferenceHolder to track continuation state
         // This ensures early termination works correctly when visiting multiple annotation types
-        boolean[] continueProcessing = {true};
+        HelperVisitor<ReferenceHolder<V, H>, V, H> helperVisitor = holder.getHelperVisitor();
+        if (helperVisitor == null) {
+            helperVisitor = new HelperVisitor<>(nodesprocessed, holder);
+            holder.setHelperVisitor(helperVisitor);
+        }
+        
+        // Store the continuation state in the dataholder (ReferenceHolder)
+        // Using a special key that won't conflict with normal data
+        @SuppressWarnings("unchecked")
+        V continueKey = (V) "__CONTINUE_PROCESSING__"; //$NON-NLS-1$
+        holder.put(continueKey, (H) Boolean.TRUE);
+        
         BiPredicate<ASTNode, ReferenceHolder<V, H>> wrappedProcessor = (node, h) -> {
-            if (!continueProcessing[0]) {
+            Boolean shouldContinue = (Boolean) h.get(continueKey);
+            if (shouldContinue == null || !shouldContinue) {
                 return false;
             }
             boolean result = processor.test(node, h);
             if (!result) {
-                continueProcessing[0] = false;
+                h.put(continueKey, (H) Boolean.FALSE);
             }
             return result;
         };
         
         // Call visitors for all three annotation types to match annotations regardless of parameters
-        if (continueProcessing[0]) {
+        Boolean shouldContinue = (Boolean) holder.get(continueKey);
+        if (shouldContinue != null && shouldContinue) {
             HelperVisitor.callMarkerAnnotationVisitor(annotationFQN, compilationUnit, 
                     holder, nodesprocessed, wrappedProcessor);
         }
-        if (continueProcessing[0]) {
+        shouldContinue = (Boolean) holder.get(continueKey);
+        if (shouldContinue != null && shouldContinue) {
             HelperVisitor.callSingleMemberAnnotationVisitor(annotationFQN, compilationUnit,
                     holder, nodesprocessed, wrappedProcessor);
         }
-        if (continueProcessing[0]) {
+        shouldContinue = (Boolean) holder.get(continueKey);
+        if (shouldContinue != null && shouldContinue) {
             HelperVisitor.callNormalAnnotationVisitor(annotationFQN, compilationUnit,
                     holder, nodesprocessed, wrappedProcessor);
         }
         
         // Optionally include import declarations
-        if (continueProcessing[0] && includeImports) {
+        shouldContinue = (Boolean) holder.get(continueKey);
+        if (shouldContinue != null && shouldContinue && includeImports) {
             HelperVisitor.callImportDeclarationVisitor(annotationFQN, compilationUnit,
                     holder, nodesprocessed, wrappedProcessor);
         }
+        
+        // Clean up the continuation state key
+        holder.remove(continueKey);
     }
 }
