@@ -78,9 +78,6 @@ public class RuleTestnameJUnitPlugin extends AbstractTool<ReferenceHolder<Intege
 		}
 		JunitHolder mh= new JunitHolder();
 		VariableDeclarationFragment fragment= (VariableDeclarationFragment) fieldDeclaration.fragments().get(0);
-		if (fragment.resolveBinding() == null) {
-			return false;
-		}
 		ITypeBinding binding= fragment.resolveBinding().getType();
 		if (binding != null && ORG_JUNIT_RULES_TEST_NAME.equals(binding.getQualifiedName())) {
 			mh.minv= fieldDeclaration;
