@@ -20,10 +20,13 @@ package org.sandbox.jdt.internal.corext.fix.helper.lib;
  * #L%
  */
 
+import java.util.Map;
+import java.util.HashMap;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
@@ -59,6 +62,9 @@ public class JunitHolder {
 	
 	/** Additional context information for complex transformations */
 	public Object additionalInfo;
+	
+	/** Placeholder bindings from TriggerPattern (e.g., "$x" -> ASTNode) */
+	public Map<String, ASTNode> bindings = new HashMap<>();
 
 	/**
 	 * Gets the node as an Annotation.
@@ -98,5 +104,36 @@ public class JunitHolder {
 	 */
 	public TypeDeclaration getTypeDeclaration() {
 		return (TypeDeclaration) minv;
+	}
+	
+	/**
+	 * Gets a placeholder binding as an Expression.
+	 * 
+	 * @param placeholder the placeholder name (e.g., "$x")
+	 * @return the bound expression, or null if not found
+	 */
+	public Expression getBindingAsExpression(String placeholder) {
+		ASTNode node = bindings.get(placeholder);
+		return node instanceof Expression ? (Expression) node : null;
+	}
+	
+	/**
+	 * Gets a placeholder binding.
+	 * 
+	 * @param placeholder the placeholder name (e.g., "$x")
+	 * @return the bound AST node, or null if not found
+	 */
+	public ASTNode getBinding(String placeholder) {
+		return bindings.get(placeholder);
+	}
+	
+	/**
+	 * Checks if a placeholder binding exists.
+	 * 
+	 * @param placeholder the placeholder name
+	 * @return true if the binding exists
+	 */
+	public boolean hasBinding(String placeholder) {
+		return bindings.containsKey(placeholder);
 	}
 }
