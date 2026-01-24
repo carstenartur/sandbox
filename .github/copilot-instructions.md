@@ -27,6 +27,12 @@ UnsupportedClassVersionError: class file version 65.0
 → Fix: Set JAVA_HOME to temurin-21-jdk-amd64
 ```
 
+⚠️ **Fast builds**: Use profiles and parallel builds
+```bash
+mvn -T 1C verify                    # Standard (without Product/Updatesite)
+mvn -Pproduct,repo -T 1C verify     # Full build
+```
+
 ## Repository Overview
 
 This is a sandbox repository for experimenting with Eclipse JDT cleanups, build strategies, and various Eclipse plugins. The project contains multiple Eclipse plugin modules focused on code quality improvements and automated refactoring.
@@ -106,6 +112,31 @@ mvn -Dinclude=web -Pjacoco verify
 **Build outputs:**
 - Product: `sandbox_product/target`
 - WAR file: `sandbox_web/target`
+
+### Maven Profiles for Build Acceleration
+
+The project uses Maven profiles to optimize build times. The "heavy" modules (`sandbox_product`, `sandbox_updatesite`) are not included in the default build.
+
+| Profile | Description | Command |
+|---------|-------------|---------|
+| `dev` (default) | Fast development - without Product/Updatesite | `mvn verify` |
+| `product` | With Eclipse Product | `mvn -Pproduct verify` |
+| `repo` | With P2 Update Site | `mvn -Prepo verify` |
+| `jacoco` | With Code Coverage + sandbox_coverage module | `mvn -Pjacoco verify` |
+| `web` | With WAR file (sandbox_product + sandbox_web) | `mvn -Dinclude=web verify` |
+
+**Combined profiles for full build:**
+```bash
+mvn -Pproduct,repo,jacoco verify  # Build everything (like before)
+```
+
+**Parallel builds for faster iteration:**
+```bash
+mvn -T 1C verify              # Parallel build (1 thread per CPU core)
+mvn -T 1C -DskipTests verify  # Without tests for fast iteration
+```
+
+For detailed information see [BUILD_ACCELERATION.md](../BUILD_ACCELERATION.md).
 
 ### Running Tests
 
@@ -241,6 +272,18 @@ The project follows an Eclipse plugin structure with paired modules:
 2. **Feature Module** (`sandbox_*_feature`) - Eclipse feature packaging
 3. **Test Module** (`sandbox_*_test`) - JUnit 5 tests
 
+### Module Types
+
+The project contains different module types:
+
+1. **Eclipse Plugin Modules** (`sandbox_*`) - Tycho/Eclipse Plugin Packaging
+2. **Standard Java Modules** (`sandbox-*-core`) - Maven JAR Packaging without Eclipse dependencies
+3. **Feature Modules** (`sandbox_*_feature`) - Eclipse Feature for installation
+4. **Test Modules** (`sandbox_*_test`) - Eclipse Plugin Tests (require Xvfb)
+5. **Infrastructure Modules** - `sandbox_target`, `sandbox_coverage`, `sandbox_product`, `sandbox_updatesite`
+
+**Important**: Modules with `-` in the name (e.g., `sandbox-functional-converter-core`) are standard Maven modules and can be built and tested without an Eclipse environment.
+
 ### Key Modules
 
 #### sandbox_encoding_quickfix
@@ -259,6 +302,14 @@ Converts imperative loops to Java 8 Streams:
 - Enhanced for-loops → `forEach()`
 - Mapping/filtering → `stream().map().filter()`
 - Reductions → `reduce()`
+
+#### sandbox-functional-converter-core
+AST-independent core module for loop transformations (Unified Loop Representation - ULR):
+- **Packaging**: Standard Maven JAR (not Eclipse Plugin)
+- **Build**: Uses `maven-compiler-plugin` and `bnd-maven-plugin` for OSGi bundle generation
+- **Tests**: JUnit 5 with AssertJ - can run without Xvfb
+- **Purpose**: Reusable transformation logic without Eclipse dependencies
+- **Special Note**: This module can be used independently from the Tycho build
 
 #### sandbox_junit_cleanup
 Migrates JUnit 3/4 tests to JUnit 5:
@@ -448,11 +499,20 @@ export PATH=$JAVA_HOME/bin:$PATH
 # Verify Java version (should show "21")
 java -version
 
+# Fast development build (without Product/Updatesite)
+mvn -T 1C verify
+
+# Full release build
+mvn -Pproduct,repo,jacoco -T 1C verify
+
 # Full build with coverage
 mvn clean verify -Pjacoco
 
 # Skip tests
 mvn clean install -DskipTests
+
+# Only core modules test (without Xvfb)
+mvn test -pl sandbox-functional-converter-core
 
 # Run specific test
 xvfb-run --auto-servernum mvn test -Dtest=ExplicitEncodingCleanUpTest -pl sandbox_encoding_quickfix_test
@@ -466,6 +526,20 @@ mvn license:update-file-header
 # Build product
 mvn clean verify -Pjacoco
 # Output: sandbox_product/target/products/
+```
+
+### Makefile Commands (Alternative to Maven)
+
+The project contains a `Makefile` for commonly used commands:
+
+```bash
+make dev         # Fast build with tests
+make dev-notests # Fast build without tests
+make product     # Build with Eclipse Product
+make repo        # Build with P2 Repository
+make release     # Full release build
+make test        # Tests with coverage
+make clean       # Clean artifacts
 ```
 
 ## Troubleshooting
