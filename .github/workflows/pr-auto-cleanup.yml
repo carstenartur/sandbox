@@ -8,16 +8,25 @@
 # - For PRs from the main repository: Full functionality (cleanup PR created automatically)
 # - For PRs from forked repositories: Fallback mode (review comments + diff in PR comment)
 #   The workflow will post review comments and provide a full diff for manual review.
+#
+# TEMPORARILY DISABLED:
+# - The automatic PR trigger is disabled because the cleanup action requires the Eclipse product
+#   to be built, which conflicts with the build acceleration profiles (product is skipped in PR builds).
+# - See: https://github.com/carstenartur/sandbox/issues/XXX for tracking
+# - Use workflow_dispatch for manual cleanup until a solution is found (e.g., pre-built Docker image
+#   or cached Eclipse product artifact).
 
 name: Auto PR Cleanup
 
 on:
-  pull_request:
-    types: [opened, synchronize]
-    branches: [main]
-    paths:
-      - '**.java'
-  workflow_dispatch:  # Keep manual triggering as fallback
+  # TEMPORARILY DISABLED - cleanup action requires Eclipse product which is not built in PR builds
+  # Uncomment when a solution is implemented (pre-built image, cached artifact, etc.)
+  # pull_request:
+  #   types: [opened, synchronize]
+  #   branches: [main]
+  #   paths:
+  #     - '**.java'
+  workflow_dispatch:  # Manual triggering still works
 
 permissions:
   contents: write
@@ -61,7 +70,7 @@ jobs:
         CHANGED_FILES=$(git status --porcelain | wc -l)
         echo "changed_count=$CHANGED_FILES" >> $GITHUB_OUTPUT
         
-        # Liste der geänderten Dateien (erste 20)
+        # Liste der geänderter Dateien (erste 20)
         CHANGED_LIST=$(git status --porcelain | awk '{print $2}' | head -20)
         echo "changed_list<<EOF" >> $GITHUB_OUTPUT
         echo "$CHANGED_LIST" >> $GITHUB_OUTPUT
@@ -89,7 +98,7 @@ jobs:
         
         # Create a unique cleanup branch name, sanitizing slashes in the base branch
         BASE_BRANCH="${{ github.event.pull_request.head.ref }}"
-        SANITIZED_BASE_BRANCH="${BASE_BRANCH//\//-}"
+        SANITIZED_BASE_BRANCH="${BASE_BRANCH//\/-}"
         CLEANUP_BRANCH="cleanup/${SANITIZED_BASE_BRANCH}-${{ github.run_number }}"
         echo "cleanup_branch=$CLEANUP_BRANCH" >> $GITHUB_OUTPUT
         
@@ -120,7 +129,9 @@ jobs:
           
           const changedFiles = changedList.split('\n')
             .filter(f => f.trim())
-            .map(f => `- \`${f}\``)
+            .map(f => `- \
+            \
+            `)
             .join('\n');
           
           // Create PR
@@ -235,10 +246,10 @@ jobs:
                 pull_number: context.issue.number,
                 event: 'COMMENT',
                 body: '🧹 **Automatic cleanup suggestions**\n\n' +
-                      'The cleanup process identified improvements to your code. ' +
-                      'Since this is from a forked repository, I cannot create a cleanup PR, ' +
+                      'The cleanup process identified improvements to your code. '
+                      'Since this is from a forked repository, I cannot create a cleanup PR, '
                       'but I\'ve added review comments showing the suggested changes.\n\n' +
-                      '**Note**: Due to diff preview limitations, only a sample of changes are shown. ' +
+                      '**Note**: Due to diff preview limitations, only a sample of changes are shown. '
                       'For the complete diff, see the comment below.',
                 comments: comments
               });
@@ -289,7 +300,9 @@ jobs:
             // Failure case: PR creation failed (likely due to fork permissions)
             const changedFiles = changedList.split('\n')
               .filter(f => f.trim())
-              .map(f => `- \`${f}\``)
+              .map(f => `- \
+              \
+              `)
               .join('\n');
             
             commentBody = `## 🧹 Cleanup suggestions available\n\n` +
@@ -312,15 +325,23 @@ jobs:
                           `### Diff preview\n` +
                           `<details>\n` +
                           `<summary>Click to show diff</summary>\n\n` +
-                          `\`\`\`diff\n` +
+                          `\\` + `diff\n` +
                           diffPreview + `\n` +
-                          `\`\`\`\n` +
+                          `\\` + `\n` +
                           `</details>\n\n` +
                           `### Manual review options:\n` +
                           `1. **Review the diff above** and manually apply changes you want\n` +
-                          `2. **Check the cleanup branch**: \`${cleanupBranch}\`\n` +
-                          `   - Fetch: \`git fetch origin ${cleanupBranch}\`\n` +
-                          `   - Compare: \`git diff ${cleanupBranch}\`\n` +
+                          `2. **Check the cleanup branch**: \
+              \
+              ` +
+                          `   - Fetch: \
+              \
+              ` +
+                          `git fetch origin ${cleanupBranch}\n` +
+                          `   - Compare: \
+              \
+              ` +
+                          `git diff ${cleanupBranch}\n` +
                           `   - Cherry-pick specific changes if desired\n\n` +
                           `**Error details**: ${errorMessage || 'Unknown error'}`;
           }
@@ -331,4 +352,3 @@ jobs:
             repo: context.repo.repo,
             body: commentBody
           });
-
