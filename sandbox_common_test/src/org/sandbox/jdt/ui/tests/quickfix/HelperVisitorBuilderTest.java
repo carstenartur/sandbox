@@ -491,7 +491,7 @@ holder.put(0, new ArrayList<>());
 HelperVisitor.forAnnotation("java.lang.Deprecated") //$NON-NLS-1$
 .in(cu)
 .excluding(new HashSet<>())
-.processEach((node, h) -> {
+.processEach(holder, (node, h) -> {
 @SuppressWarnings("unchecked")
 List<String> data = (List<String>) h.get(0);
 data.add(node.toString());

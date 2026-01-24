@@ -94,6 +94,23 @@ public abstract class HelperVisitorBuilder<T extends ASTNode> {
     }
     
     /**
+     * Terminal operation that processes each found node with the given processor,
+     * using a pre-initialized ReferenceHolder for data collection.
+     * The processor accepts ASTNode to allow handling different node types polymorphically.
+     * The processor returns a boolean - return false to stop visiting.
+     * 
+     * @param <V> the type of keys in the reference holder
+     * @param <H> the type of values in the reference holder
+     * @param holder the pre-initialized reference holder to use for data collection
+     * @param processor the bi-predicate that processes each found node
+     * @throws IllegalStateException if the compilation unit was not configured via {@code in(...)}
+     */
+    public <V, H> void processEach(ReferenceHolder<V, H> holder, BiPredicate<ASTNode, ReferenceHolder<V, H>> processor) {
+        validateState();
+        executeVisitors(holder, processor);
+    }
+    
+    /**
      * Terminal operation that collects all found nodes into a list.
      * Note: This returns ASTNode instead of T to handle cases where builders
      * may visit multiple node types (e.g., when including imports alongside annotations).
