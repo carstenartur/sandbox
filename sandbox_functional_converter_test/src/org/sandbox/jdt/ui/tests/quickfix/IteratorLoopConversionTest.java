@@ -44,7 +44,7 @@ public class IteratorLoopConversionTest {
     @Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
     @Test
     public void testSimpleWhileIterator_forEach() throws Exception {
-        IPackageFragment pack = context.getRoot().createPackageFragment("test", false, null);
+        IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
         
         String given = """
             package test;
@@ -72,16 +72,15 @@ public class IteratorLoopConversionTest {
             """;
         
         ICompilationUnit cu = pack.createCompilationUnit("E.java", given, false, null);
+        context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
         // enable(UseFunctionalCallFixCore.ITERATOR_LOOP); // Commented out until ITERATOR_LOOP is enabled
-        context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected },
-                null, new MYCleanUpConstants.CleanUpOption(MYCleanUpConstants.USE_FUNCTIONAL_LOOP, 
-                        MYCleanUpConstants.TRUE));
+        context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
     }
     
     @Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
     @Test
     public void testForLoopIterator_forEach() throws Exception {
-        IPackageFragment pack = context.getRoot().createPackageFragment("test", false, null);
+        IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
         
         String given = """
             package test;
@@ -108,16 +107,15 @@ public class IteratorLoopConversionTest {
             """;
         
         ICompilationUnit cu = pack.createCompilationUnit("E.java", given, false, null);
+        context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
         // enable(UseFunctionalCallFixCore.ITERATOR_LOOP); // Commented out until ITERATOR_LOOP is enabled
-        context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected },
-                null, new MYCleanUpConstants.CleanUpOption(MYCleanUpConstants.USE_FUNCTIONAL_LOOP, 
-                        MYCleanUpConstants.TRUE));
+        context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
     }
     
     @Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
     @Test
     public void testIteratorWithRemove_notConverted() throws Exception {
-        IPackageFragment pack = context.getRoot().createPackageFragment("test", false, null);
+        IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
         
         String given = """
             package test;
@@ -137,16 +135,15 @@ public class IteratorLoopConversionTest {
         
         // Should not be converted because it.remove() is not safe
         ICompilationUnit cu = pack.createCompilationUnit("E.java", given, false, null);
+        context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
         // enable(UseFunctionalCallFixCore.ITERATOR_LOOP); // Commented out until ITERATOR_LOOP is enabled
-        context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu },
-                new MYCleanUpConstants.CleanUpOption(MYCleanUpConstants.USE_FUNCTIONAL_LOOP, 
-                        MYCleanUpConstants.TRUE));
+        context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
     }
     
     @Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
     @Test
     public void testIteratorMultipleNext_notConverted() throws Exception {
-        IPackageFragment pack = context.getRoot().createPackageFragment("test", false, null);
+        IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
         
         String given = """
             package test;
@@ -165,16 +162,15 @@ public class IteratorLoopConversionTest {
         
         // Should not be converted because multiple next() calls
         ICompilationUnit cu = pack.createCompilationUnit("E.java", given, false, null);
+        context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
         // enable(UseFunctionalCallFixCore.ITERATOR_LOOP); // Commented out until ITERATOR_LOOP is enabled
-        context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu },
-                new MYCleanUpConstants.CleanUpOption(MYCleanUpConstants.USE_FUNCTIONAL_LOOP, 
-                        MYCleanUpConstants.TRUE));
+        context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
     }
     
     @Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
     @Test
     public void testMultipleStatements_forEach() throws Exception {
-        IPackageFragment pack = context.getRoot().createPackageFragment("test", false, null);
+        IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
         
         String given = """
             package test;
@@ -206,16 +202,15 @@ public class IteratorLoopConversionTest {
             """;
         
         ICompilationUnit cu = pack.createCompilationUnit("E.java", given, false, null);
+        context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
         // enable(UseFunctionalCallFixCore.ITERATOR_LOOP); // Commented out until ITERATOR_LOOP is enabled
-        context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected },
-                null, new MYCleanUpConstants.CleanUpOption(MYCleanUpConstants.USE_FUNCTIONAL_LOOP, 
-                        MYCleanUpConstants.TRUE));
+        context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
     }
     
     @Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
     @Test
     public void testWithBreak_notYetSupported() throws Exception {
-        IPackageFragment pack = context.getRoot().createPackageFragment("test", false, null);
+        IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
         
         String given = """
             package test;
@@ -237,9 +232,8 @@ public class IteratorLoopConversionTest {
         // Break statements are not yet supported - will not be converted until
         // the feature is enhanced to handle them (e.g., using filter or takeWhile)
         ICompilationUnit cu = pack.createCompilationUnit("E.java", given, false, null);
+        context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
         // enable(UseFunctionalCallFixCore.ITERATOR_LOOP); // Commented out until ITERATOR_LOOP is enabled
-        context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu },
-                new MYCleanUpConstants.CleanUpOption(MYCleanUpConstants.USE_FUNCTIONAL_LOOP, 
-                        MYCleanUpConstants.TRUE));
+        context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
     }
 }
