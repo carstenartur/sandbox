@@ -105,7 +105,32 @@ public class AnnotationVisitorBuilder extends HelperVisitorBuilder<Annotation> {
         V continueKey = (V) "__CONTINUE_PROCESSING__"; //$NON-NLS-1$
         holder.put(continueKey, (H) Boolean.TRUE);
         
-        BiPredicate<ASTNode, ReferenceHolder<V, H>> wrappedProcessor = (node, h) -> {
+        // Create adapter BiPredicates for each annotation type that delegate to the processor
+        BiPredicate<MarkerAnnotation, ReferenceHolder<V, H>> markerAdapter = (node, h) -> {
+            Boolean shouldContinue = (Boolean) h.get(continueKey);
+            if (shouldContinue == null || !shouldContinue) {
+                return false;
+            }
+            boolean result = processor.test(node, h);
+            if (!result) {
+                h.put(continueKey, (H) Boolean.FALSE);
+            }
+            return result;
+        };
+        
+        BiPredicate<SingleMemberAnnotation, ReferenceHolder<V, H>> singleMemberAdapter = (node, h) -> {
+            Boolean shouldContinue = (Boolean) h.get(continueKey);
+            if (shouldContinue == null || !shouldContinue) {
+                return false;
+            }
+            boolean result = processor.test(node, h);
+            if (!result) {
+                h.put(continueKey, (H) Boolean.FALSE);
+            }
+            return result;
+        };
+        
+        BiPredicate<NormalAnnotation, ReferenceHolder<V, H>> normalAdapter = (node, h) -> {
             Boolean shouldContinue = (Boolean) h.get(continueKey);
             if (shouldContinue == null || !shouldContinue) {
                 return false;
@@ -121,17 +146,17 @@ public class AnnotationVisitorBuilder extends HelperVisitorBuilder<Annotation> {
         Boolean shouldContinue = (Boolean) holder.get(continueKey);
         if (shouldContinue != null && shouldContinue) {
             HelperVisitor.callMarkerAnnotationVisitor(annotationFQN, compilationUnit, 
-                    holder, nodesprocessed, wrappedProcessor);
+                    holder, nodesprocessed, markerAdapter);
         }
         shouldContinue = (Boolean) holder.get(continueKey);
         if (shouldContinue != null && shouldContinue) {
             HelperVisitor.callSingleMemberAnnotationVisitor(annotationFQN, compilationUnit,
-                    holder, nodesprocessed, wrappedProcessor);
+                    holder, nodesprocessed, singleMemberAdapter);
         }
         shouldContinue = (Boolean) holder.get(continueKey);
         if (shouldContinue != null && shouldContinue) {
             HelperVisitor.callNormalAnnotationVisitor(annotationFQN, compilationUnit,
-                    holder, nodesprocessed, wrappedProcessor);
+                    holder, nodesprocessed, normalAdapter);
         }
         
         // Optionally include import declarations
