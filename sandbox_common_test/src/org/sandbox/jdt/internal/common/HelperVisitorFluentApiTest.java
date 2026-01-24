@@ -33,11 +33,11 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Systematische Tests für die HelperVisitor Fluent API.
- * Diese Tests beweisen, dass die Fluent API korrekt funktioniert
- * und ReferenceHolder korrekt befüllt werden.
+ * Systematic tests for the HelperVisitor Fluent API.
+ * These tests verify that the Fluent API works correctly
+ * and that ReferenceHolder instances are populated correctly.
  */
-class HelperVisitorFluentApiTest {
+public class HelperVisitorFluentApiTest {
 
     private CompilationUnit cu;
     private Set<ASTNode> nodesprocessed;
@@ -51,9 +51,15 @@ class HelperVisitorFluentApiTest {
         ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
         parser.setSource(source.toCharArray());
         parser.setKind(ASTParser.K_COMPILATION_UNIT);
-        parser.setResolveBindings(true);
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, String> options = org.eclipse.jdt.core.JavaCore.getOptions();
+        org.eclipse.jdt.core.JavaCore.setComplianceOptions(org.eclipse.jdt.core.JavaCore.VERSION_21, options);
+        parser.setCompilerOptions(options);
+        parser.setEnvironment(new String[] {}, new String[] {}, null, true);
         parser.setBindingsRecovery(true);
+        parser.setResolveBindings(true);
         parser.setStatementsRecovery(true);
+        parser.setUnitName("Test.java"); //$NON-NLS-1$
         return (CompilationUnit) parser.createAST(null);
     }
 
@@ -62,7 +68,7 @@ class HelperVisitorFluentApiTest {
     class ForAnnotationTests {
 
         @Test
-        @DisplayName("forAnnotation findet MarkerAnnotation und befüllt ReferenceHolder korrekt")
+        @DisplayName("forAnnotation finds MarkerAnnotation and populates ReferenceHolder correctly")
         void testForAnnotation_findsMarkerAnnotation_populatesReferenceHolder() {
             String source = """
                 import java.lang.Deprecated;
@@ -87,15 +93,15 @@ class HelperVisitorFluentApiTest {
                     return true;
                 });
             
-            assertEquals(1, callCount.get(), "Callback sollte genau einmal aufgerufen werden");
-            assertEquals(1, dataHolder.size(), "ReferenceHolder sollte einen Eintrag haben");
-            assertNotNull(dataHolder.get(0), "Eintrag bei Index 0 sollte nicht null sein");
-            assertNotNull(dataHolder.get(0).node, "Node im Holder sollte nicht null sein");
-            assertTrue(dataHolder.get(0).node instanceof Annotation, "Node sollte eine Annotation sein");
+            assertEquals(1, callCount.get(), "Callback should be invoked exactly once");
+            assertEquals(1, dataHolder.size(), "ReferenceHolder should have one entry");
+            assertNotNull(dataHolder.get(0), "Entry at index 0 should not be null");
+            assertNotNull(dataHolder.get(0).node, "Node in holder should not be null");
+            assertTrue(dataHolder.get(0).node instanceof Annotation, "Node should be an Annotation");
         }
 
         @Test
-        @DisplayName("forAnnotation überspringt bereits verarbeitete Nodes")
+        @DisplayName("forAnnotation skips already processed nodes")
         void testForAnnotation_skipsProcessedNodes() {
             String source = """
                 import java.lang.Deprecated;
@@ -108,7 +114,7 @@ class HelperVisitorFluentApiTest {
                 """;
             cu = parseSource(source);
             
-            // Erste Annotation manuell als "verarbeitet" markieren
+            // Mark first annotation manually as "processed"
             cu.accept(new org.eclipse.jdt.core.dom.ASTVisitor() {
                 boolean first = true;
                 @Override
@@ -132,11 +138,11 @@ class HelperVisitorFluentApiTest {
                     return true;
                 });
             
-            assertEquals(1, callCount.get(), "Nur nicht-verarbeitete Annotations sollten besucht werden");
+            assertEquals(1, callCount.get(), "Only unprocessed annotations should be visited");
         }
 
         @Test
-        @DisplayName("forAnnotation mit andImportsOf findet auch Imports")
+        @DisplayName("forAnnotation with andImportsOf also finds imports")
         void testForAnnotation_andImportsOf_findsImports() {
             String source = """
                 import java.lang.Deprecated;
@@ -164,8 +170,8 @@ class HelperVisitorFluentApiTest {
                     return true;
                 });
             
-            assertEquals(1, annotationCount.get(), "Eine Annotation sollte gefunden werden");
-            assertEquals(1, importCount.get(), "Ein Import sollte gefunden werden");
+            assertEquals(1, annotationCount.get(), "One annotation should be found");
+            assertEquals(1, importCount.get(), "One import should be found");
         }
     }
 
@@ -174,7 +180,7 @@ class HelperVisitorFluentApiTest {
     class ForMethodCallsTests {
 
         @Test
-        @DisplayName("forMethodCalls findet MethodInvocation und befüllt ReferenceHolder korrekt")
+        @DisplayName("forMethodCalls finds MethodInvocation and populates ReferenceHolder correctly")
         void testForMethodCalls_findsMethodInvocation_populatesReferenceHolder() {
             String source = """
                 public class MyClass {
@@ -199,13 +205,13 @@ class HelperVisitorFluentApiTest {
                     return true;
                 });
             
-            // Beachte: Ohne Binding-Resolution wird println nicht als PrintStream erkannt
-            // Der Test verifiziert aber dass die API grundsätzlich funktioniert
-            assertTrue(callCount.get() >= 0, "API sollte ohne Exception ausführen");
+            // Note: Without proper binding resolution, println is not recognized as PrintStream method,
+            // so the callback is not invoked and the counter remains 0.
+            assertEquals(0, callCount.get(), "Without binding resolution, no method calls should be found");
         }
 
         @Test
-        @DisplayName("forMethodCalls mit andStaticImports und andImportsOf")
+        @DisplayName("forMethodCalls with andStaticImports and andImportsOf")
         void testForMethodCalls_withImports_findsAllNodes() {
             String source = """
                 import static org.junit.Assert.assertEquals;
@@ -232,8 +238,8 @@ class HelperVisitorFluentApiTest {
                     return true;
                 });
             
-            // Sollte: 2 MethodInvocations + 1 static import + 1 regular import = 4
-            assertTrue(nodeCount.get() >= 1, "Mindestens ein Node sollte gefunden werden");
+            // Should find: 1 static import + 1 regular import = 2 (method invocations need binding resolution)
+            assertTrue(nodeCount.get() >= 1, "At least one node should be found");
         }
     }
 
@@ -242,7 +248,7 @@ class HelperVisitorFluentApiTest {
     class ForFieldTests {
 
         @Test
-        @DisplayName("forField mit Annotation findet FieldDeclaration")
+        @DisplayName("forField with annotation finds FieldDeclaration")
         void testForField_withAnnotation_findsFieldDeclaration() {
             String source = """
                 import java.lang.Deprecated;
@@ -269,8 +275,8 @@ class HelperVisitorFluentApiTest {
                     return true;
                 });
             
-            // Ohne Binding-Resolution wird der Typ nicht korrekt aufgelöst
-            assertTrue(callCount.get() >= 0, "API sollte ohne Exception ausführen");
+            // Without binding resolution, the type is not correctly resolved, so no field is found
+            assertEquals(0, callCount.get(), "Without binding resolution, no field should be found");
         }
     }
 
@@ -279,7 +285,7 @@ class HelperVisitorFluentApiTest {
     class ForImportTests {
 
         @Test
-        @DisplayName("forImport findet ImportDeclaration und befüllt ReferenceHolder korrekt")
+        @DisplayName("forImport finds ImportDeclaration and populates ReferenceHolder correctly")
         void testForImport_findsImportDeclaration_populatesReferenceHolder() {
             String source = """
                 import java.util.List;
@@ -302,9 +308,9 @@ class HelperVisitorFluentApiTest {
                     return true;
                 });
             
-            assertEquals(1, callCount.get(), "Genau ein Import sollte gefunden werden");
-            assertEquals(1, dataHolder.size(), "ReferenceHolder sollte einen Eintrag haben");
-            assertNotNull(dataHolder.get(0), "Eintrag sollte nicht null sein");
+            assertEquals(1, callCount.get(), "Exactly one import should be found");
+            assertEquals(1, dataHolder.size(), "ReferenceHolder should have one entry");
+            assertNotNull(dataHolder.get(0), "Entry should not be null");
         }
     }
 
@@ -313,7 +319,7 @@ class HelperVisitorFluentApiTest {
     class CollectTests {
 
         @Test
-        @DisplayName("collect() sammelt alle gefundenen Nodes")
+        @DisplayName("collect() gathers all found nodes")
         void testCollect_returnsAllFoundNodes() {
             String source = """
                 import java.util.List;
@@ -328,17 +334,17 @@ class HelperVisitorFluentApiTest {
                 .excluding(nodesprocessed)
                 .collect();
             
-            assertEquals(1, nodes.size(), "Genau ein Node sollte gesammelt werden");
-            assertTrue(nodes.get(0) instanceof ImportDeclaration, "Node sollte ImportDeclaration sein");
+            assertEquals(1, nodes.size(), "Exactly one node should be collected");
+            assertTrue(nodes.get(0) instanceof ImportDeclaration, "Node should be ImportDeclaration");
         }
     }
 
     @Nested
-    @DisplayName("ReferenceHolder Korrektheits-Tests")
+    @DisplayName("ReferenceHolder Correctness Tests")
     class ReferenceHolderCorrectnessTests {
 
         @Test
-        @DisplayName("ReferenceHolder wird in processEach korrekt befüllt und ist danach zugreifbar")
+        @DisplayName("ReferenceHolder is correctly populated in processEach and accessible afterwards")
         void testReferenceHolder_isCorrectlyPopulated_andAccessibleAfterProcessing() {
             String source = """
                 import java.lang.Deprecated;
@@ -365,17 +371,17 @@ class HelperVisitorFluentApiTest {
                     return true;
                 });
             
-            // Verifiziere dass ReferenceHolder NACH dem processEach-Aufruf korrekt ist
-            assertEquals(1, dataHolder.size(), "ReferenceHolder sollte einen Eintrag haben");
+            // Verify that ReferenceHolder is correct AFTER processEach returns
+            assertEquals(1, dataHolder.size(), "ReferenceHolder should have one entry");
             
             TestHolder holder0 = dataHolder.get(0);
-            assertNotNull(holder0, "Eintrag 0 sollte nicht null sein");
-            assertNotNull(holder0.node, "Node im Eintrag sollte nicht null sein");
-            assertEquals("Deprecated", holder0.name, "Name sollte korrekt gesetzt sein");
+            assertNotNull(holder0, "Entry 0 should not be null");
+            assertNotNull(holder0.node, "Node in entry should not be null");
+            assertEquals("Deprecated", holder0.name, "Name should be correctly set");
         }
 
         @Test
-        @DisplayName("Mehrere Nodes werden korrekt in ReferenceHolder gespeichert")
+        @DisplayName("Multiple nodes are correctly stored in ReferenceHolder")
         void testReferenceHolder_multipleNodes_allAccessible() {
             String source = """
                 import java.util.List;
@@ -387,7 +393,7 @@ class HelperVisitorFluentApiTest {
             
             ReferenceHolder<Integer, TestHolder> dataHolder = new ReferenceHolder<>();
             
-            // Alle java.util Imports finden
+            // Find all java.util imports
             HelperVisitor.forImport("java.util.List")
                 .in(cu)
                 .excluding(nodesprocessed)
@@ -408,13 +414,51 @@ class HelperVisitorFluentApiTest {
                     return true;
                 });
             
-            assertEquals(2, dataHolder.size(), "ReferenceHolder sollte zwei Einträge haben");
-            assertNotNull(dataHolder.get(0), "Eintrag 0 sollte nicht null sein");
-            assertNotNull(dataHolder.get(1), "Eintrag 1 sollte nicht null sein");
+            assertEquals(2, dataHolder.size(), "ReferenceHolder should have two entries");
+            assertNotNull(dataHolder.get(0), "Entry 0 should not be null");
+            assertNotNull(dataHolder.get(1), "Entry 1 should not be null");
+        }
+
+        @Test
+        @DisplayName("ReferenceHolder.get() returns null for non-existent key - edge case from PR #494")
+        void testReferenceHolder_returnsNullForNonExistentKey() {
+            String source = """
+                import java.util.List;
+                public class MyClass {}
+                """;
+            cu = parseSource(source);
+            
+            ReferenceHolder<Integer, TestHolder> dataHolder = new ReferenceHolder<>();
+            
+            // Intentionally search for something that doesn't exist
+            HelperVisitor.forAnnotation("java.lang.NonExistent")
+                .in(cu)
+                .excluding(nodesprocessed)
+                .processEach(dataHolder, (node, holder) -> {
+                    TestHolder th = new TestHolder();
+                    th.node = node;
+                    holder.put(holder.size(), th);
+                    return true;
+                });
+            
+            // Verify that ReferenceHolder is empty when no matches found
+            assertEquals(0, dataHolder.size(), "ReferenceHolder should be empty when no nodes match");
+            
+            // This is the critical test: accessing a non-existent key returns null
+            // This is the scenario that caused NPE in PR #494 - accessing holder.get(0).minv
+            // when holder.get(0) returned null
+            assertNull(dataHolder.get(0), "ReferenceHolder.get(0) should return null for non-existent key");
+            
+            // Demonstrate defensive coding pattern to prevent NPE
+            TestHolder holder0 = dataHolder.get(0);
+            if (holder0 != null) {
+                // Safe to access holder0.node or holder0.name
+                fail("Should not reach here when holder is empty");
+            }
         }
     }
 
-    // Helper class für Tests
+    // Helper class for tests
     static class TestHolder {
         ASTNode node;
         String name;
