@@ -79,7 +79,7 @@ public class IteratorLoopToStreamTest {
 		String given = """
 				package test1;
 				import java.util.*;
-				public class E {
+				public class MyTest {
 					void process(List<String> items) {
 						Iterator<String> it = items.iterator();
 						while (it.hasNext()) {
@@ -93,14 +93,14 @@ public class IteratorLoopToStreamTest {
 		String expected = """
 				package test1;
 				import java.util.*;
-				public class E {
+				public class MyTest {
 					void process(List<String> items) {
 						items.forEach(item -> System.out.println(item));
 					}
 				}
 				""";
 
-		ICompilationUnit cu = pack.createCompilationUnit("E.java", given, false, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", given, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 	}
@@ -120,7 +120,7 @@ public class IteratorLoopToStreamTest {
 		String given = """
 				package test1;
 				import java.util.*;
-				public class E {
+				public class MyTest {
 					void process(List<String> items) {
 						for (Iterator<String> it = items.iterator(); it.hasNext(); ) {
 							String item = it.next();
@@ -133,14 +133,14 @@ public class IteratorLoopToStreamTest {
 		String expected = """
 				package test1;
 				import java.util.*;
-				public class E {
+				public class MyTest {
 					void process(List<String> items) {
 						items.forEach(item -> System.out.println(item));
 					}
 				}
 				""";
 
-		ICompilationUnit cu = pack.createCompilationUnit("E.java", given, false, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", given, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 	}
@@ -160,7 +160,7 @@ public class IteratorLoopToStreamTest {
 		String given = """
 				package test1;
 				import java.util.*;
-				public class E {
+				public class MyTest {
 					void process(List<String> items) {
 						Iterator<String> it = items.iterator();
 						while (it.hasNext()) {
@@ -175,7 +175,7 @@ public class IteratorLoopToStreamTest {
 		String expected = """
 				package test1;
 				import java.util.*;
-				public class E {
+				public class MyTest {
 					void process(List<String> items) {
 						items.forEach(item -> {
 							String upper = item.toUpperCase();
@@ -185,7 +185,7 @@ public class IteratorLoopToStreamTest {
 				}
 				""";
 
-		ICompilationUnit cu = pack.createCompilationUnit("E.java", given, false, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", given, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 	}
@@ -210,7 +210,7 @@ public class IteratorLoopToStreamTest {
 		String given = """
 				package test1;
 				import java.util.*;
-				public class E {
+				public class MyTest {
 					List<String> collect(List<String> items) {
 						List<String> result = new ArrayList<>();
 						Iterator<String> it = items.iterator();
@@ -227,7 +227,7 @@ public class IteratorLoopToStreamTest {
 				package test1;
 				import java.util.*;
 				import java.util.stream.Collectors;
-				public class E {
+				public class MyTest {
 					List<String> collect(List<String> items) {
 						List<String> result = items.stream().collect(Collectors.toList());
 						return result;
@@ -235,7 +235,7 @@ public class IteratorLoopToStreamTest {
 				}
 				""";
 
-		ICompilationUnit cu = pack.createCompilationUnit("E.java", given, false, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", given, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 	}
@@ -256,7 +256,7 @@ public class IteratorLoopToStreamTest {
 		String given = """
 				package test1;
 				import java.util.*;
-				public class E {
+				public class MyTest {
 					Set<String> collectUnique(List<String> items) {
 						Set<String> result = new HashSet<>();
 						Iterator<String> it = items.iterator();
@@ -273,7 +273,7 @@ public class IteratorLoopToStreamTest {
 				package test1;
 				import java.util.*;
 				import java.util.stream.Collectors;
-				public class E {
+				public class MyTest {
 					Set<String> collectUnique(List<String> items) {
 						Set<String> result = items.stream().collect(Collectors.toSet());
 						return result;
@@ -281,7 +281,7 @@ public class IteratorLoopToStreamTest {
 				}
 				""";
 
-		ICompilationUnit cu = pack.createCompilationUnit("E.java", given, false, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", given, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 	}
@@ -306,7 +306,7 @@ public class IteratorLoopToStreamTest {
 		String given = """
 				package test1;
 				import java.util.*;
-				public class E {
+				public class MyTest {
 					List<String> transformAll(List<Integer> numbers) {
 						List<String> result = new ArrayList<>();
 						Iterator<Integer> it = numbers.iterator();
@@ -323,7 +323,7 @@ public class IteratorLoopToStreamTest {
 				package test1;
 				import java.util.*;
 				import java.util.stream.Collectors;
-				public class E {
+				public class MyTest {
 					List<String> transformAll(List<Integer> numbers) {
 						List<String> result = numbers.stream()
 							.map(num -> num.toString())
@@ -333,7 +333,7 @@ public class IteratorLoopToStreamTest {
 				}
 				""";
 
-		ICompilationUnit cu = pack.createCompilationUnit("E.java", given, false, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", given, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 	}
@@ -354,7 +354,7 @@ public class IteratorLoopToStreamTest {
 		String given = """
 				package test1;
 				import java.util.*;
-				public class E {
+				public class MyTest {
 					List<String> toUpperAll(List<String> items) {
 						List<String> result = new ArrayList<>();
 						Iterator<String> it = items.iterator();
@@ -371,7 +371,7 @@ public class IteratorLoopToStreamTest {
 				package test1;
 				import java.util.*;
 				import java.util.stream.Collectors;
-				public class E {
+				public class MyTest {
 					List<String> toUpperAll(List<String> items) {
 						List<String> result = items.stream()
 							.map(String::toUpperCase)
@@ -381,7 +381,7 @@ public class IteratorLoopToStreamTest {
 				}
 				""";
 
-		ICompilationUnit cu = pack.createCompilationUnit("E.java", given, false, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", given, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 	}
@@ -406,7 +406,7 @@ public class IteratorLoopToStreamTest {
 		String given = """
 				package test1;
 				import java.util.*;
-				public class E {
+				public class MyTest {
 					List<String> filterNonEmpty(List<String> items) {
 						List<String> result = new ArrayList<>();
 						Iterator<String> it = items.iterator();
@@ -425,7 +425,7 @@ public class IteratorLoopToStreamTest {
 				package test1;
 				import java.util.*;
 				import java.util.stream.Collectors;
-				public class E {
+				public class MyTest {
 					List<String> filterNonEmpty(List<String> items) {
 						List<String> result = items.stream()
 							.filter(item -> !item.isEmpty())
@@ -435,7 +435,7 @@ public class IteratorLoopToStreamTest {
 				}
 				""";
 
-		ICompilationUnit cu = pack.createCompilationUnit("E.java", given, false, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", given, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 	}
@@ -460,7 +460,7 @@ public class IteratorLoopToStreamTest {
 		String given = """
 				package test1;
 				import java.util.*;
-				public class E {
+				public class MyTest {
 					List<String> processPositive(List<Integer> numbers) {
 						List<String> result = new ArrayList<>();
 						Iterator<Integer> it = numbers.iterator();
@@ -479,7 +479,7 @@ public class IteratorLoopToStreamTest {
 				package test1;
 				import java.util.*;
 				import java.util.stream.Collectors;
-				public class E {
+				public class MyTest {
 					List<String> processPositive(List<Integer> numbers) {
 						List<String> result = numbers.stream()
 							.filter(num -> num > 0)
@@ -490,7 +490,7 @@ public class IteratorLoopToStreamTest {
 				}
 				""";
 
-		ICompilationUnit cu = pack.createCompilationUnit("E.java", given, false, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", given, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 	}
@@ -515,7 +515,7 @@ public class IteratorLoopToStreamTest {
 		String given = """
 				package test1;
 				import java.util.*;
-				public class E {
+				public class MyTest {
 					int calculateSum(List<Integer> numbers) {
 						int sum = 0;
 						Iterator<Integer> it = numbers.iterator();
@@ -531,7 +531,7 @@ public class IteratorLoopToStreamTest {
 		String expected = """
 				package test1;
 				import java.util.*;
-				public class E {
+				public class MyTest {
 					int calculateSum(List<Integer> numbers) {
 						int sum = numbers.stream()
 							.mapToInt(num -> num)
@@ -541,7 +541,7 @@ public class IteratorLoopToStreamTest {
 				}
 				""";
 
-		ICompilationUnit cu = pack.createCompilationUnit("E.java", given, false, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", given, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 	}
@@ -570,7 +570,7 @@ public class IteratorLoopToStreamTest {
 		String given = """
 				package test1;
 				import java.util.*;
-				public class E {
+				public class MyTest {
 					void removeEmpty(List<String> items) {
 						Iterator<String> it = items.iterator();
 						while (it.hasNext()) {
@@ -583,7 +583,7 @@ public class IteratorLoopToStreamTest {
 				}
 				""";
 
-		ICompilationUnit cu = pack.createCompilationUnit("E.java", given, false, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", given, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
@@ -608,7 +608,7 @@ public class IteratorLoopToStreamTest {
 		String given = """
 				package test1;
 				import java.util.*;
-				public class E {
+				public class MyTest {
 					void processPairs(List<String> items) {
 						Iterator<String> it = items.iterator();
 						while (it.hasNext()) {
@@ -620,7 +620,7 @@ public class IteratorLoopToStreamTest {
 				}
 				""";
 
-		ICompilationUnit cu = pack.createCompilationUnit("E.java", given, false, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", given, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
@@ -645,7 +645,7 @@ public class IteratorLoopToStreamTest {
 		String given = """
 				package test1;
 				import java.util.*;
-				public class E {
+				public class MyTest {
 					void processUntilEmpty(List<String> items) {
 						Iterator<String> it = items.iterator();
 						while (it.hasNext()) {
@@ -659,7 +659,7 @@ public class IteratorLoopToStreamTest {
 				}
 				""";
 
-		ICompilationUnit cu = pack.createCompilationUnit("E.java", given, false, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", given, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
@@ -684,7 +684,7 @@ public class IteratorLoopToStreamTest {
 		String given = """
 				package test1;
 				import java.util.*;
-				public class E {
+				public class MyTest {
 					void trackLast(List<String> items) {
 						String lastItem = null;
 						Iterator<String> it = items.iterator();
@@ -698,7 +698,7 @@ public class IteratorLoopToStreamTest {
 				}
 				""";
 
-		ICompilationUnit cu = pack.createCompilationUnit("E.java", given, false, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", given, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
