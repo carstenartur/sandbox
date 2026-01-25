@@ -97,8 +97,9 @@ public class TestJUnitPluginV2 extends TriggerPatternCleanupPlugin {
 				}
 			}
 		} else if (node instanceof SingleMemberAnnotation singleMemberAnnotation) {
-			// Handle @Test(ExpectedException.class) - single parameter defaults to "value"
-			// but for @Test, single parameter is usually "expected"
+			// SingleMemberAnnotation is not commonly used for @Test in JUnit 4
+			// JUnit 4 @Test uses either no parameters (marker) or named parameters (normal)
+			// This case is included for completeness but is not expected in practice
 			Expression value = singleMemberAnnotation.getValue();
 			if (value instanceof TypeLiteral) {
 				holder.expectedExceptionType = value;
@@ -265,9 +266,9 @@ public class TestJUnitPluginV2 extends TriggerPatternCleanupPlugin {
 		
 		// Add imports
 		importRewriter.addImport(ORG_JUNIT_JUPITER_API_TIMEOUT);
-		importRewriter.addImport("java.util.concurrent.TimeUnit");
+		importRewriter.addImport(JAVA_UTIL_CONCURRENT_TIME_UNIT);
 		
-		// Create @Timeout(value = N, unit = TimeUnit.XXX)
+		// Create @Timeout(value = timeoutValue, unit = TimeUnit.SECONDS or MILLISECONDS)
 		NormalAnnotation timeoutAnnotation = ast.newNormalAnnotation();
 		timeoutAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_TIMEOUT));
 		

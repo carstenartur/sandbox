@@ -117,6 +117,10 @@ public final class JUnitConstants {
 	public static final String ORG_JUNIT_JUPITER_API_ASSUMPTIONS = "org.junit.jupiter.api.Assumptions";
 	public static final String ORG_JUNIT_JUPITER_API_TAG = "org.junit.jupiter.api.Tag";
 	
+	// ===== Java Utility Fully Qualified References =====
+	
+	public static final String JAVA_UTIL_CONCURRENT_TIME_UNIT = "java.util.concurrent.TimeUnit";
+	
 	// ===== JUnit 5 Parameterized Fully Qualified References =====
 	
 	public static final String ORG_JUNIT_JUPITER_PARAMS_PARAMETERIZED_TEST = "org.junit.jupiter.params.ParameterizedTest";
