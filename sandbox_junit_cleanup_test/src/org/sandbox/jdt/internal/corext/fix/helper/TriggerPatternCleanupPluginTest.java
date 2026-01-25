@@ -85,6 +85,6 @@ class TriggerPatternCleanupPluginTest {
         String preview = plugin.getPreview(true);
         
         assertTrue(preview.contains("@BeforeEach"));
-        assertFalse(preview.contains("@Before\n"));
+        assertFalse(preview.contains("@Before"));
     }
 }
