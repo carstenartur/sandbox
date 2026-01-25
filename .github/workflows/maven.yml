@@ -57,19 +57,16 @@ jobs:
       if: always() # always run even if the previous step fails
       with:
         report_paths: '**/target/surefire-reports/TEST-*.xml'
+        summary: true
+        include_passed: true
+        detailed_summary: true
     - name: Generate HTML Test Reports
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       run: |
-        # Test reports are now generated automatically as part of the build
-        # during the test phase via maven-surefire-report-plugin
-        # This step just verifies that reports were created
-        echo "Verifying test reports were generated..."
-        report_count=$(find . -type f -name 'surefire-report.html' | wc -l)
-        echo "Found $report_count test report(s)"
-        if [ "$report_count" -eq 0 ]; then
-          echo "Warning: No test reports found"
-          # Don't fail the build - tests might have been skipped
-        fi
+        # Generate HTML reports from existing XML test results
+        # -DskipTests ensures we don't re-run tests, just generate reports
+        # -DlinkXRef=false skips cross-reference generation (faster)
+        mvn surefire-report:report-only -DlinkXRef=false -DskipTests --batch-mode
     - name: Prepare Test Reports for GitHub Pages
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       run: |
