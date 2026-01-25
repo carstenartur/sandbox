@@ -108,14 +108,14 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 	 */
 	@Override
 	public boolean match(MarkerAnnotation patternNode, Object other) {
-<span class="nc bnc" id="L111" title="All 2 branches missed.">		if (!(other instanceof MarkerAnnotation)) {</span>
-<span class="nc" id="L112">			return false;</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">		if (!(other instanceof MarkerAnnotation)) {</span>
+<span class="fc" id="L112">			return false;</span>
 		}
-<span class="nc" id="L114">		MarkerAnnotation otherAnnotation = (MarkerAnnotation) other;</span>
+<span class="fc" id="L114">		MarkerAnnotation otherAnnotation = (MarkerAnnotation) other;</span>
 		
 		// Match annotation name
-<span class="nc" id="L117">		return patternNode.getTypeName().getFullyQualifiedName()</span>
-<span class="nc" id="L118">				.equals(otherAnnotation.getTypeName().getFullyQualifiedName());</span>
+<span class="fc" id="L117">		return patternNode.getTypeName().getFullyQualifiedName()</span>
+<span class="fc" id="L118">				.equals(otherAnnotation.getTypeName().getFullyQualifiedName());</span>
 	}
 	
 	/**
@@ -128,19 +128,19 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 	 */
 	@Override
 	public boolean match(SingleMemberAnnotation patternNode, Object other) {
-<span class="nc bnc" id="L131" title="All 2 branches missed.">		if (!(other instanceof SingleMemberAnnotation)) {</span>
-<span class="nc" id="L132">			return false;</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">		if (!(other instanceof SingleMemberAnnotation)) {</span>
+<span class="fc" id="L132">			return false;</span>
 		}
-<span class="nc" id="L134">		SingleMemberAnnotation otherAnnotation = (SingleMemberAnnotation) other;</span>
+<span class="fc" id="L134">		SingleMemberAnnotation otherAnnotation = (SingleMemberAnnotation) other;</span>
 		
 		// Match annotation name
-<span class="nc" id="L137">		if (!patternNode.getTypeName().getFullyQualifiedName()</span>
-<span class="nc bnc" id="L138" title="All 2 branches missed.">				.equals(otherAnnotation.getTypeName().getFullyQualifiedName())) {</span>
+<span class="fc" id="L137">		if (!patternNode.getTypeName().getFullyQualifiedName()</span>
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">				.equals(otherAnnotation.getTypeName().getFullyQualifiedName())) {</span>
 <span class="nc" id="L139">			return false;</span>
 		}
 		
 		// Match the value with placeholder support
-<span class="nc" id="L143">		return safeSubtreeMatch(patternNode.getValue(), otherAnnotation.getValue());</span>
+<span class="fc" id="L143">		return safeSubtreeMatch(patternNode.getValue(), otherAnnotation.getValue());</span>
 	}
 	
 	/**
@@ -153,54 +153,54 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 	 */
 	@Override
 	public boolean match(NormalAnnotation patternNode, Object other) {
-<span class="nc bnc" id="L156" title="All 2 branches missed.">		if (!(other instanceof NormalAnnotation)) {</span>
-<span class="nc" id="L157">			return false;</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">		if (!(other instanceof NormalAnnotation)) {</span>
+<span class="fc" id="L157">			return false;</span>
 		}
-<span class="nc" id="L159">		NormalAnnotation otherAnnotation = (NormalAnnotation) other;</span>
+<span class="fc" id="L159">		NormalAnnotation otherAnnotation = (NormalAnnotation) other;</span>
 		
 		// Match annotation name
-<span class="nc" id="L162">		if (!patternNode.getTypeName().getFullyQualifiedName()</span>
-<span class="nc bnc" id="L163" title="All 2 branches missed.">				.equals(otherAnnotation.getTypeName().getFullyQualifiedName())) {</span>
+<span class="fc" id="L162">		if (!patternNode.getTypeName().getFullyQualifiedName()</span>
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">				.equals(otherAnnotation.getTypeName().getFullyQualifiedName())) {</span>
 <span class="nc" id="L164">			return false;</span>
 		}
 		
 		// Match member-value pairs with placeholder support
 		@SuppressWarnings(&quot;unchecked&quot;)
-<span class="nc" id="L169">		List&lt;MemberValuePair&gt; patternPairs = patternNode.values();</span>
+<span class="fc" id="L169">		List&lt;MemberValuePair&gt; patternPairs = patternNode.values();</span>
 		@SuppressWarnings(&quot;unchecked&quot;)
-<span class="nc" id="L171">		List&lt;MemberValuePair&gt; otherPairs = otherAnnotation.values();</span>
+<span class="fc" id="L171">		List&lt;MemberValuePair&gt; otherPairs = otherAnnotation.values();</span>
 		
 		// Must have same number of pairs
-<span class="nc bnc" id="L174" title="All 2 branches missed.">		if (patternPairs.size() != otherPairs.size()) {</span>
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">		if (patternPairs.size() != otherPairs.size()) {</span>
 <span class="nc" id="L175">			return false;</span>
 		}
 		
 		// Create a map for O(n) lookup instead of O(n²)
-<span class="nc" id="L179">		Map&lt;String, MemberValuePair&gt; otherPairMap = new HashMap&lt;&gt;();</span>
-<span class="nc bnc" id="L180" title="All 2 branches missed.">		for (MemberValuePair otherPair : otherPairs) {</span>
-<span class="nc" id="L181">			otherPairMap.put(otherPair.getName().getIdentifier(), otherPair);</span>
+<span class="fc" id="L179">		Map&lt;String, MemberValuePair&gt; otherPairMap = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L180" title="All 2 branches covered.">		for (MemberValuePair otherPair : otherPairs) {</span>
+<span class="fc" id="L181">			otherPairMap.put(otherPair.getName().getIdentifier(), otherPair);</span>
 		}
 		
 		// Match each pattern pair with corresponding pair in other annotation
 		// (annotation pairs can be in any order)
-<span class="nc bnc" id="L186" title="All 2 branches missed.">		for (MemberValuePair patternPair : patternPairs) {</span>
-<span class="nc" id="L187">			String patternName = patternPair.getName().getIdentifier();</span>
+<span class="fc bfc" id="L186" title="All 2 branches covered.">		for (MemberValuePair patternPair : patternPairs) {</span>
+<span class="fc" id="L187">			String patternName = patternPair.getName().getIdentifier();</span>
 			
 			// Find corresponding pair in other annotation
-<span class="nc" id="L190">			MemberValuePair matchingOtherPair = otherPairMap.get(patternName);</span>
+<span class="fc" id="L190">			MemberValuePair matchingOtherPair = otherPairMap.get(patternName);</span>
 			
 			// If no matching pair found, annotations don't match
-<span class="nc bnc" id="L193" title="All 2 branches missed.">			if (matchingOtherPair == null) {</span>
+<span class="pc bpc" id="L193" title="1 of 2 branches missed.">			if (matchingOtherPair == null) {</span>
 <span class="nc" id="L194">				return false;</span>
 			}
 			
 			// Values must match (with placeholder support)
-<span class="nc bnc" id="L198" title="All 2 branches missed.">			if (!safeSubtreeMatch(patternPair.getValue(), matchingOtherPair.getValue())) {</span>
+<span class="pc bpc" id="L198" title="1 of 2 branches missed.">			if (!safeSubtreeMatch(patternPair.getValue(), matchingOtherPair.getValue())) {</span>
 <span class="nc" id="L199">				return false;</span>
 			}
 		}
 		
-<span class="nc" id="L203">		return true;</span>
+<span class="fc" id="L203">		return true;</span>
 	}
 	
 	/**
@@ -300,10 +300,10 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 	 * Helper method to perform subtree matching using this matcher.
 	 */
 	private boolean safeSubtreeMatch(ASTNode node1, ASTNode node2) {
-<span class="nc bnc" id="L303" title="All 2 branches missed.">		if (node1 == null) {</span>
+<span class="pc bpc" id="L303" title="1 of 2 branches missed.">		if (node1 == null) {</span>
 <span class="nc bnc" id="L304" title="All 2 branches missed.">			return node2 == null;</span>
 		}
-<span class="nc" id="L306">		return node1.subtreeMatch(this, node2);</span>
+<span class="fc" id="L306">		return node1.subtreeMatch(this, node2);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

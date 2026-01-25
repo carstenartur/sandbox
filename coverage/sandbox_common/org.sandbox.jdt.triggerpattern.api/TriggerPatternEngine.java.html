@@ -67,12 +67,12 @@ import org.sandbox.jdt.triggerpattern.internal.PlaceholderAstMatcher;
 			@Override
 			public void preVisit(ASTNode node) {
 				// Only check nodes of compatible types
-<span class="pc bpc" id="L70" title="1 of 4 branches missed.">				if (pattern.getKind() == PatternKind.EXPRESSION &amp;&amp; node instanceof Expression) {</span>
+<span class="fc bfc" id="L70" title="All 4 branches covered.">				if (pattern.getKind() == PatternKind.EXPRESSION &amp;&amp; node instanceof Expression) {</span>
 <span class="fc" id="L71">					checkMatch(node, patternNode, matches);</span>
 <span class="pc bpc" id="L72" title="3 of 4 branches missed.">				} else if (pattern.getKind() == PatternKind.STATEMENT &amp;&amp; node instanceof Statement) {</span>
 <span class="nc" id="L73">					checkMatch(node, patternNode, matches);</span>
-<span class="pc bpc" id="L74" title="3 of 4 branches missed.">				} else if (pattern.getKind() == PatternKind.ANNOTATION &amp;&amp; node instanceof Annotation) {</span>
-<span class="nc" id="L75">					checkMatch(node, patternNode, matches);</span>
+<span class="pc bfc" id="L74" title="All 4 branches covered.">				} else if (pattern.getKind() == PatternKind.ANNOTATION &amp;&amp; node instanceof Annotation) {</span>
+<span class="fc" id="L75">					checkMatch(node, patternNode, matches);</span>
 <span class="pc bpc" id="L76" title="3 of 4 branches missed.">				} else if (pattern.getKind() == PatternKind.METHOD_CALL &amp;&amp; node instanceof MethodInvocation) {</span>
 <span class="nc" id="L77">					checkMatch(node, patternNode, matches);</span>
 <span class="pc bpc" id="L78" title="3 of 4 branches missed.">				} else if (pattern.getKind() == PatternKind.IMPORT &amp;&amp; node instanceof ImportDeclaration) {</span>

@@ -569,22 +569,22 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 
 	@Override
 	public boolean visit(MarkerAnnotation node) {
-<span class="fc bfc" id="L572" title="All 2 branches covered.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.MarkerAnnotation)) {</span>
-<span class="fc" id="L573">			Map&lt;String, Object&gt; map=(Map&lt;String, Object&gt;) this.helperVisitor.getSupplierData().get(VisitorEnum.MarkerAnnotation);</span>
-<span class="pc bpc" id="L574" title="1 of 2 branches missed.">			if(map != null) {</span>
-<span class="fc" id="L575">				String data=(String) map.get(HelperVisitor.ANNOTATIONNAME);</span>
-<span class="fc" id="L576">				ITypeBinding binding = node.resolveTypeBinding();</span>
+<span class="pc bpc" id="L572" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.MarkerAnnotation)) {</span>
+<span class="nc" id="L573">			Map&lt;String, Object&gt; map=(Map&lt;String, Object&gt;) this.helperVisitor.getSupplierData().get(VisitorEnum.MarkerAnnotation);</span>
+<span class="nc bnc" id="L574" title="All 2 branches missed.">			if(map != null) {</span>
+<span class="nc" id="L575">				String data=(String) map.get(HelperVisitor.ANNOTATIONNAME);</span>
+<span class="nc" id="L576">				ITypeBinding binding = node.resolveTypeBinding();</span>
 				String fullyQualifiedName;
-<span class="pc bpc" id="L578" title="1 of 2 branches missed.">				if (binding != null) {</span>
-<span class="fc" id="L579">					fullyQualifiedName = binding.getQualifiedName();</span>
-<span class="fc" id="L580">				}else {</span>
+<span class="nc bnc" id="L578" title="All 2 branches missed.">				if (binding != null) {</span>
+<span class="nc" id="L579">					fullyQualifiedName = binding.getQualifiedName();</span>
+<span class="nc" id="L580">				}else {</span>
 <span class="nc" id="L581">					fullyQualifiedName = node.getTypeName().getFullyQualifiedName();</span>
 				}
-<span class="pc bpc" id="L583" title="1 of 4 branches missed.">				if ((data!= null) &amp;&amp; !fullyQualifiedName.equals(data)) {</span>
-<span class="fc" id="L584">					return true;</span>
+<span class="nc bnc" id="L583" title="All 4 branches missed.">				if ((data!= null) &amp;&amp; !fullyQualifiedName.equals(data)) {</span>
+<span class="nc" id="L584">					return true;</span>
 				}
 			}
-<span class="fc" id="L587">			return ((BiPredicate&lt;MarkerAnnotation, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.MarkerAnnotation))).test(node, this.helperVisitor.dataholder);</span>
+<span class="nc" id="L587">			return ((BiPredicate&lt;MarkerAnnotation, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.MarkerAnnotation))).test(node, this.helperVisitor.dataholder);</span>
 		}
 <span class="fc" id="L589">		return true;</span>
 	}
@@ -1279,11 +1279,11 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 
 	@Override
 	public boolean visit(WildcardType node) {
-<span class="nc bnc" id="L1282" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.WildcardType)) {</span>
+<span class="pc bpc" id="L1282" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.WildcardType)) {</span>
 <span class="nc" id="L1283">			return ((BiPredicate&lt;WildcardType, E&gt;) (this.helperVisitor.predicatemap.get(VisitorEnum.WildcardType)))</span>
 <span class="nc" id="L1284">					.test(node, this.helperVisitor.dataholder);</span>
 		}
-<span class="nc" id="L1286">		return true;</span>
+<span class="fc" id="L1286">		return true;</span>
 	}
 
 	@Override
@@ -2147,10 +2147,10 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 
 	@Override
 	public void endVisit(WildcardType node) {
-<span class="nc bnc" id="L2150" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.WildcardType)) {</span>
+<span class="pc bpc" id="L2150" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.WildcardType)) {</span>
 <span class="nc" id="L2151">			((BiConsumer&lt;WildcardType, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.WildcardType))).accept(node, this.helperVisitor.dataholder);</span>
 		}
-<span class="nc" id="L2153">	}</span>
+<span class="fc" id="L2153">	}</span>
 
 	@Override
 	public void endVisit(YieldStatement node) {

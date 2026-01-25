@@ -102,17 +102,17 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
 		
 		// Check for List types
 <span class="fc bfc" id="L104" title="All 2 branches covered.">		if (collectionTypeQualifiedName.equals(&quot;java.util.List&quot;) || </span>
-<span class="pc bpc" id="L105" title="1 of 2 branches missed.">			collectionTypeQualifiedName.equals(&quot;java.util.ArrayList&quot;) ||</span>
-<span class="nc bnc" id="L106" title="All 2 branches missed.">			collectionTypeQualifiedName.equals(&quot;java.util.LinkedList&quot;)) {</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">			collectionTypeQualifiedName.equals(&quot;java.util.ArrayList&quot;) ||</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">			collectionTypeQualifiedName.equals(&quot;java.util.LinkedList&quot;)) {</span>
 <span class="fc" id="L107">			return TO_LIST;</span>
 		}
 		
 		// Check for Set types
-<span class="nc bnc" id="L111" title="All 2 branches missed.">		if (collectionTypeQualifiedName.equals(&quot;java.util.Set&quot;) ||</span>
-<span class="nc bnc" id="L112" title="All 2 branches missed.">			collectionTypeQualifiedName.equals(&quot;java.util.HashSet&quot;) ||</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">		if (collectionTypeQualifiedName.equals(&quot;java.util.Set&quot;) ||</span>
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">			collectionTypeQualifiedName.equals(&quot;java.util.HashSet&quot;) ||</span>
 <span class="nc bnc" id="L113" title="All 2 branches missed.">			collectionTypeQualifiedName.equals(&quot;java.util.TreeSet&quot;) ||</span>
 <span class="nc bnc" id="L114" title="All 2 branches missed.">			collectionTypeQualifiedName.equals(&quot;java.util.LinkedHashSet&quot;)) {</span>
-<span class="nc" id="L115">			return TO_SET;</span>
+<span class="fc" id="L115">			return TO_SET;</span>
 		}
 		
 <span class="nc" id="L118">		return null;</span>

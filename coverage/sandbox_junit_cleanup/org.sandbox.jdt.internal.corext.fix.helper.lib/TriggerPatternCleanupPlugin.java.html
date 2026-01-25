@@ -76,9 +76,9 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
      * @throws IllegalStateException if neither @CleanupPattern annotation is present nor getPatterns() is overridden
      */
     protected List&lt;Pattern&gt; getPatterns() {
-<span class="nc" id="L79">        Pattern pattern = getPattern();</span>
-<span class="nc bnc" id="L80" title="All 2 branches missed.">        if (pattern != null) {</span>
-<span class="nc" id="L81">            return List.of(pattern);</span>
+<span class="fc" id="L79">        Pattern pattern = getPattern();</span>
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">        if (pattern != null) {</span>
+<span class="fc" id="L81">            return List.of(pattern);</span>
         }
 <span class="nc" id="L83">        throw new IllegalStateException(</span>
 <span class="nc" id="L84">            &quot;Plugin &quot; + getClass().getSimpleName() + </span>
@@ -114,10 +114,10 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
      * @return a JunitHolder containing match information, or null to skip this match
      */
     protected JunitHolder createHolder(Match match) {
-<span class="nc" id="L117">        JunitHolder holder = new JunitHolder();</span>
-<span class="nc" id="L118">        holder.minv = match.getMatchedNode();</span>
-<span class="nc" id="L119">        holder.bindings = match.getBindings();</span>
-<span class="nc" id="L120">        return holder;</span>
+<span class="fc" id="L117">        JunitHolder holder = new JunitHolder();</span>
+<span class="fc" id="L118">        holder.minv = match.getMatchedNode();</span>
+<span class="fc" id="L119">        holder.bindings = match.getBindings();</span>
+<span class="fc" id="L120">        return holder;</span>
     }
     
     /**
@@ -129,7 +129,7 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
      * @return true if this match should be processed
      */
     protected boolean shouldProcess(Match match, Pattern pattern) {
-<span class="nc" id="L132">        return true;</span>
+<span class="fc" id="L132">        return true;</span>
     }
     
     /**
@@ -145,55 +145,55 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
     protected boolean processMatch(Match match, JUnitCleanUpFixCore fixcore,
             Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations,
             ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder) {
-<span class="nc" id="L148">        JunitHolder holder = createHolder(match);</span>
-<span class="nc bnc" id="L149" title="All 2 branches missed.">        if (holder != null) {</span>
-<span class="nc" id="L150">            dataHolder.put(dataHolder.size(), holder);</span>
-<span class="nc" id="L151">            operations.add(fixcore.rewrite(dataHolder));</span>
+<span class="fc" id="L148">        JunitHolder holder = createHolder(match);</span>
+<span class="pc bpc" id="L149" title="1 of 2 branches missed.">        if (holder != null) {</span>
+<span class="fc" id="L150">            dataHolder.put(dataHolder.size(), holder);</span>
+<span class="fc" id="L151">            operations.add(fixcore.rewrite(dataHolder));</span>
         }
-<span class="nc" id="L153">        return false;</span>
+<span class="fc" id="L153">        return false;</span>
     }
     
     @Override
     public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
             Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
         
-<span class="nc" id="L160">        ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder = new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L160">        ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder = new ReferenceHolder&lt;&gt;();</span>
         
-<span class="nc bnc" id="L162" title="All 2 branches missed.">        for (Pattern pattern : getPatterns()) {</span>
-<span class="nc" id="L163">            List&lt;Match&gt; matches = ENGINE.findMatches(compilationUnit, pattern);</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">        for (Pattern pattern : getPatterns()) {</span>
+<span class="fc" id="L163">            List&lt;Match&gt; matches = ENGINE.findMatches(compilationUnit, pattern);</span>
             
-<span class="nc bnc" id="L165" title="All 2 branches missed.">            for (Match match : matches) {</span>
-<span class="nc" id="L166">                ASTNode node = match.getMatchedNode();</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">            for (Match match : matches) {</span>
+<span class="fc" id="L166">                ASTNode node = match.getMatchedNode();</span>
                 
                 // Skip already processed nodes
-<span class="nc bnc" id="L169" title="All 2 branches missed.">                if (nodesprocessed.contains(node)) {</span>
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">                if (nodesprocessed.contains(node)) {</span>
 <span class="nc" id="L170">                    continue;</span>
                 }
                 
                 // Validate qualified type if specified
-<span class="nc bnc" id="L174" title="All 2 branches missed.">                if (pattern.getQualifiedType() != null) {</span>
-<span class="nc bnc" id="L175" title="All 2 branches missed.">                    if (!validateQualifiedType(node, pattern.getQualifiedType())) {</span>
-<span class="nc" id="L176">                        continue;</span>
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">                if (pattern.getQualifiedType() != null) {</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">                    if (!validateQualifiedType(node, pattern.getQualifiedType())) {</span>
+<span class="fc" id="L176">                        continue;</span>
                     }
                 }
                 
                 // Mark node as processed once it passes basic type validation
                 // so it is not re-evaluated in subsequent find() calls, even if
                 // shouldProcess() decides to skip it.
-<span class="nc" id="L183">                nodesprocessed.add(node);</span>
+<span class="fc" id="L183">                nodesprocessed.add(node);</span>
                 
                 // Allow subclasses to add additional validation
-<span class="nc bnc" id="L186" title="All 2 branches missed.">                if (!shouldProcess(match, pattern)) {</span>
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">                if (!shouldProcess(match, pattern)) {</span>
 <span class="nc" id="L187">                    continue;</span>
                 }
                 
-<span class="nc" id="L190">                boolean stop = processMatch(match, fixcore, operations, dataHolder);</span>
-<span class="nc bnc" id="L191" title="All 2 branches missed.">                if (stop) {</span>
+<span class="fc" id="L190">                boolean stop = processMatch(match, fixcore, operations, dataHolder);</span>
+<span class="pc bpc" id="L191" title="1 of 2 branches missed.">                if (stop) {</span>
 <span class="nc" id="L192">                    return;</span>
                 }
             }
         }
-<span class="nc" id="L196">    }</span>
+<span class="fc" id="L196">    }</span>
     
     /**
      * Validates that the node's type binding matches the expected qualified type.
@@ -203,11 +203,11 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
      * @return true if types match, false otherwise
      */
     protected boolean validateQualifiedType(ASTNode node, String qualifiedType) {
-<span class="nc bnc" id="L206" title="All 2 branches missed.">        if (node instanceof Annotation) {</span>
-<span class="nc" id="L207">            Annotation annotation = (Annotation) node;</span>
-<span class="nc" id="L208">            ITypeBinding binding = annotation.resolveTypeBinding();</span>
-<span class="nc bnc" id="L209" title="All 2 branches missed.">            if (binding != null) {</span>
-<span class="nc" id="L210">                return qualifiedType.equals(binding.getQualifiedName());</span>
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">        if (node instanceof Annotation) {</span>
+<span class="fc" id="L207">            Annotation annotation = (Annotation) node;</span>
+<span class="fc" id="L208">            ITypeBinding binding = annotation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L209" title="1 of 2 branches missed.">            if (binding != null) {</span>
+<span class="fc" id="L210">                return qualifiedType.equals(binding.getQualifiedName());</span>
             }
             // Fallback: check simple name
 <span class="nc" id="L213">            return annotation.getTypeName().getFullyQualifiedName().equals(</span>
