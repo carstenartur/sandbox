@@ -137,6 +137,45 @@ class StreamCodeBuilderTest {
     }
     
     @Test
+    void testExplicitRangeSource() {
+        LoopModel model = new LoopModelBuilder()
+            .source(SourceDescriptor.SourceType.EXPLICIT_RANGE, "0,10", "int")
+            .element("i", "int", false)
+            .forEach(List.of("System.out.println(i)"))
+            .build();
+        
+        String code = new StreamCodeBuilder(model).build();
+        
+        assertThat(code).startsWith("IntStream.range(0, 10)");
+    }
+    
+    @Test
+    void testExplicitRangeSourceWithVariables() {
+        LoopModel model = new LoopModelBuilder()
+            .source(SourceDescriptor.SourceType.EXPLICIT_RANGE, "start,end", "int")
+            .element("i", "int", false)
+            .forEach(List.of("System.out.println(i)"))
+            .build();
+        
+        String code = new StreamCodeBuilder(model).build();
+        
+        assertThat(code).startsWith("IntStream.range(start, end)");
+    }
+    
+    @Test
+    void testExplicitRangeSourceImport() {
+        LoopModel model = new LoopModelBuilder()
+            .source(SourceDescriptor.SourceType.EXPLICIT_RANGE, "0,n", "int")
+            .element("i", "int", false)
+            .forEach(List.of("sum += i"))
+            .build();
+        
+        var imports = new StreamCodeBuilder(model).getRequiredImports();
+        
+        assertThat(imports).contains("java.util.stream.IntStream");
+    }
+    
+    @Test
     void testStreamSource() {
         LoopModel model = new LoopModelBuilder()
             .source(SourceDescriptor.SourceType.STREAM, "myStream", "String")

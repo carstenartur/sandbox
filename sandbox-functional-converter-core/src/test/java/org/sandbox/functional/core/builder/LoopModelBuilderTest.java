@@ -213,4 +213,30 @@ class LoopModelBuilderTest {
         
         assertThat(model.getOperations()).hasSize(1);
     }
+    
+    @Test
+    void testExplicitRangeSource() {
+        LoopModel model = new LoopModelBuilder()
+            .source(SourceDescriptor.SourceType.EXPLICIT_RANGE, "0,n", "int")
+            .element("i", "int", false)
+            .forEach(List.of("sum += i"))
+            .build();
+        
+        assertThat(model.getSource().type()).isEqualTo(SourceDescriptor.SourceType.EXPLICIT_RANGE);
+        assertThat(model.getSource().expression()).isEqualTo("0,n");
+        assertThat(model.getElement().variableName()).isEqualTo("i");
+    }
+    
+    @Test
+    void testExplicitRangeWithFilter() {
+        LoopModel model = new LoopModelBuilder()
+            .source(SourceDescriptor.SourceType.EXPLICIT_RANGE, "start,end", "int")
+            .element("i", "int", false)
+            .filter("i % 2 == 0")
+            .forEach(List.of("processEven(i)"))
+            .build();
+        
+        assertThat(model.getSource().type()).isEqualTo(SourceDescriptor.SourceType.EXPLICIT_RANGE);
+        assertThat(model.getOperations()).hasSize(1);
+    }
 }

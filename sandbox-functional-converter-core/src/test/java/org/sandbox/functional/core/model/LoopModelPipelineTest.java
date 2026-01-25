@@ -209,4 +209,39 @@ class LoopModelPipelineTest {
         assertThat(model.getOperations()).hasSize(1);
         assertThat(model2.getOperations()).hasSize(1);
     }
+    
+    @Test
+    void testExplicitRangeWithForEach() {
+        // Classic for loop: for(int i=0; i<n; i++)
+        LoopModel model = new LoopModel()
+            .setSource(new SourceDescriptor(
+                SourceDescriptor.SourceType.EXPLICIT_RANGE, "0,n", "int"))
+            .setElement(new ElementDescriptor("i", "int", false))
+            .withTerminal(new ForEachTerminal(
+                List.of("sum += i"), false));
+        
+        assertThat(model.getSource().type()).isEqualTo(SourceDescriptor.SourceType.EXPLICIT_RANGE);
+        assertThat(model.getSource().expression()).isEqualTo("0,n");
+        assertThat(model.getElement().variableName()).isEqualTo("i");
+        assertThat(model.getTerminal()).isInstanceOf(ForEachTerminal.class);
+    }
+    
+    @Test
+    void testExplicitRangeWithFilterAndMap() {
+        // Classic for loop with filtering and transformation
+        // for(int i=start; i<end; i++) { if(i % 2 == 0) process(i * 2); }
+        LoopModel model = new LoopModel()
+            .setSource(new SourceDescriptor(
+                SourceDescriptor.SourceType.EXPLICIT_RANGE, "start,end", "int"))
+            .setElement(new ElementDescriptor("i", "int", false))
+            .addOperation(new FilterOp("i % 2 == 0"))
+            .addOperation(new MapOp("i * 2", "int"))
+            .withTerminal(new ForEachTerminal(
+                List.of("process(i)"), false));
+        
+        assertThat(model.getSource().type()).isEqualTo(SourceDescriptor.SourceType.EXPLICIT_RANGE);
+        assertThat(model.getOperations()).hasSize(2);
+        assertThat(model.getOperations().get(0)).isInstanceOf(FilterOp.class);
+        assertThat(model.getOperations().get(1)).isInstanceOf(MapOp.class);
+    }
 }
