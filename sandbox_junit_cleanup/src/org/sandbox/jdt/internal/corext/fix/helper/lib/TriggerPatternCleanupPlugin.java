@@ -52,9 +52,13 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
      * Returns the Pattern extracted from the @CleanupPattern annotation.
      * Subclasses can override {@link #getPatterns()} instead if they need multiple patterns.
      * 
-     * @return the pattern for matching, or null if using multiple patterns
+     * <p>Note: This method returns {@code null} when no annotation is present, which signals
+     * that the subclass should override {@link #getPatterns()} instead. In contrast,
+     * {@link #getCleanupId()} and {@link #getDescription()} return empty strings as safe defaults.</p>
+     * 
+     * @return the pattern for matching, or null if no @CleanupPattern annotation is present
      */
-    protected Pattern getPattern() {
+    public Pattern getPattern() {
         CleanupPattern annotation = this.getClass().getAnnotation(CleanupPattern.class);
         if (annotation == null) {
             return null; // Subclass uses getPatterns() instead
@@ -84,9 +88,9 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
     /**
      * Returns the cleanup ID from the @CleanupPattern annotation.
      * 
-     * @return the cleanup ID or empty string if not set
+     * @return the cleanup ID, or empty string if annotation is not present or cleanupId is not set
      */
-    protected String getCleanupId() {
+    public String getCleanupId() {
         CleanupPattern annotation = this.getClass().getAnnotation(CleanupPattern.class);
         return annotation != null ? annotation.cleanupId() : "";
     }
@@ -94,9 +98,9 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
     /**
      * Returns the description from the @CleanupPattern annotation.
      * 
-     * @return the description or empty string if not set
+     * @return the description, or empty string if annotation is not present or description is not set
      */
-    protected String getDescription() {
+    public String getDescription() {
         CleanupPattern annotation = this.getClass().getAnnotation(CleanupPattern.class);
         return annotation != null ? annotation.description() : "";
     }
@@ -173,12 +177,15 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
                     }
                 }
                 
+                // Mark node as processed once it passes basic type validation
+                // so it is not re-evaluated in subsequent find() calls, even if
+                // shouldProcess() decides to skip it.
+                nodesprocessed.add(node);
+                
                 // Allow subclasses to add additional validation
                 if (!shouldProcess(match, pattern)) {
                     continue;
                 }
-                
-                nodesprocessed.add(node);
                 
                 boolean stop = processMatch(match, fixcore, operations, dataHolder);
                 if (stop) {
