@@ -147,13 +147,8 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
             ReferenceHolder<Integer, JunitHolder> dataHolder) {
         JunitHolder holder = createHolder(match);
         if (holder != null) {
-            // Create a separate dataHolder for each match to avoid index mismatches
-            // JUnitCleanUpFixCore.rewrite() uses hit.get(0) for source range computation
-            // while AbstractTool.rewrite() uses hit.get(hit.size()-1) for processing.
-            // With a single-item holder, both indices point to the same item.
-            ReferenceHolder<Integer, JunitHolder> perMatchDataHolder = new ReferenceHolder<>();
-            perMatchDataHolder.put(0, holder);
-            operations.add(fixcore.rewrite(perMatchDataHolder));
+            dataHolder.put(dataHolder.size(), holder);
+            operations.add(fixcore.rewrite(dataHolder));
         }
         return false;
     }
