@@ -124,7 +124,9 @@ jobs:
             cp -r "$module/target/site/"* "/tmp/gh-pages/tests/$module/"
             
             # Add module entry to index with HTML escaping for display text
-            # Use raw module name for href (URL path), HTML-escape only for display
+            # Module names follow pattern sandbox_*_test (alphanumeric + underscore only)
+            # so they're URL-safe and can be used directly in href
+            # HTML-escape only for display text to prevent XSS
             module_escaped=$(echo "$module" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g; s/'\''/\&#39;/g')
             cat >> /tmp/gh-pages/tests/index.html << EOF
             <div class="module">
