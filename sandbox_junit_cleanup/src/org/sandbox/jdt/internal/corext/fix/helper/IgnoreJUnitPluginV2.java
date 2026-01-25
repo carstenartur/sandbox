@@ -15,6 +15,8 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
+import java.util.List;
+
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
@@ -27,6 +29,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.TriggerPatternCleanupPlugin;
 import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
 import org.sandbox.jdt.triggerpattern.api.Match;
+import org.sandbox.jdt.triggerpattern.api.Pattern;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
 /**
@@ -79,6 +82,19 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
     displayName = "JUnit 4 @Ignore → JUnit 5 @Disabled"
 )
 public class IgnoreJUnitPluginV2 extends TriggerPatternCleanupPlugin {
+
+	@Override
+	protected List<Pattern> getPatterns() {
+		// Need to explicitly match all three annotation types like the old V1 plugin did
+		return List.of(
+			// Match @Ignore (MarkerAnnotation)
+			new Pattern("@Ignore", PatternKind.ANNOTATION, ORG_JUNIT_IGNORE),
+			// Match @Ignore("reason") (SingleMemberAnnotation) 
+			new Pattern("@Ignore($value)", PatternKind.ANNOTATION, ORG_JUNIT_IGNORE),
+			// Match @Ignore(value="reason") (NormalAnnotation)
+			new Pattern("@Ignore(value=$value)", PatternKind.ANNOTATION, ORG_JUNIT_IGNORE)
+		);
+	}
 
 	@Override
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
