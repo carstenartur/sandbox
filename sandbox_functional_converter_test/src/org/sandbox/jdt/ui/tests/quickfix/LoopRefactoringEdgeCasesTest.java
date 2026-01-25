@@ -464,6 +464,9 @@ class MyTest {
 							System.out.println(value);
 						}
 					}
+					public static void main(String[] args) {
+						new MyTest().process(Arrays.asList("a", "b"));
+					}
 				}
 				""";
 
@@ -476,6 +479,9 @@ class MyTest {
 							String value = item.toUpperCase();
 							System.out.println(value);
 						});
+					}
+					public static void main(String[] args) {
+						new MyTest().process(Arrays.asList("a", "b"));
 					}
 				}
 				""";
