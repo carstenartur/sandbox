@@ -63,15 +63,35 @@ jobs:
     - name: Generate HTML Test Reports
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       run: |
-        # Generate HTML reports from existing XML test results
-        # -DskipTests ensures we don't re-run tests, just generate reports
-        # -DlinkXRef=false skips cross-reference generation (faster)
-        mvn surefire-report:report-only -DlinkXRef=false -DskipTests --batch-mode
+        echo "=== Checking for test XML reports ==="
+        find . -path "*/target/surefire-reports/TEST-*.xml" -type f | head -20
+        
+        echo ""
+        echo "=== Generating HTML reports for each test module ==="
+        # Generate reports for each test module individually
+        for module in sandbox_*_test; do
+          if [ -d "$module" ]; then
+            echo "Generating report for $module..."
+            # Check if XML reports exist for this module
+            if ls "$module/target/surefire-reports/TEST-"*.xml 1> /dev/null 2>&1; then
+              mvn surefire-report:report-only -DlinkXRef=false -pl "$module" --batch-mode || echo "Warning: Failed to generate report for $module"
+            else
+              echo "No test XML files found for $module, skipping..."
+            fi
+          fi
+        done
+        
+        echo ""
+        echo "=== Checking generated HTML reports ==="
+        find . -path "*/target/site/surefire-report.html" -type f
     - name: Prepare Test Reports for GitHub Pages
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       run: |
         # Create directory structure for test reports
         mkdir -p /tmp/gh-pages/tests
+        
+        # Track if we found any reports
+        found_reports=false
         
         # Create an index.html for the tests directory
         cat > /tmp/gh-pages/tests/index.html << 'EOF'
@@ -89,6 +109,7 @@ jobs:
             a { color: #0066cc; text-decoration: none; }
             a:hover { text-decoration: underline; }
             .description { color: #666; margin: 10px 0; }
+            .no-reports { background: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; }
           </style>
         </head>
         <body>
@@ -102,16 +123,30 @@ jobs:
         
         # Copy test reports and add links to index
         for module in sandbox_*_test; do
-          if [ -d "$module/target/site" ] && [ -f "$module/target/site/surefire-report.html" ]; then
-            echo "Processing test report for $module..."
+          echo "Checking $module for reports..."
+          
+          # Check multiple possible locations for the report
+          report_file=""
+          if [ -f "$module/target/site/surefire-report.html" ]; then
+            report_file="$module/target/site/surefire-report.html"
+          elif [ -f "$module/target/surefire-reports/surefire-report.html" ]; then
+            report_file="$module/target/surefire-reports/surefire-report.html"
+          fi
+          
+          if [ -n "$report_file" ]; then
+            echo "Found report for $module at $report_file"
+            found_reports=true
+            
             # Copy the entire site directory to preserve resources
             mkdir -p "/tmp/gh-pages/tests/$module"
-            cp -r "$module/target/site/"* "/tmp/gh-pages/tests/$module/"
+            if [ -d "$module/target/site" ]; then
+              cp -r "$module/target/site/"* "/tmp/gh-pages/tests/$module/" 2>/dev/null || true
+            fi
             
-            # Add module entry to index with HTML escaping for display text
-            # Module names follow pattern sandbox_*_test (alphanumeric + underscore only)
-            # so they're URL-safe and can be used directly in href
-            # HTML-escape only for display text to prevent XSS
+            # Ensure the report file is copied
+            cp "$report_file" "/tmp/gh-pages/tests/$module/surefire-report.html" 2>/dev/null || true
+            
+            # Add module entry to index
             module_escaped=$(echo "$module" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g; s/'\''/\&#39;/g')
             cat >> /tmp/gh-pages/tests/index.html << EOF
             <div class="module">
@@ -119,8 +154,26 @@ jobs:
               <p><a href="${module}/surefire-report.html">View Test Report</a></p>
             </div>
         EOF
+          else
+            echo "No report found for $module"
+            # Check if XML reports exist (tests ran but HTML not generated)
+            if ls "$module/target/surefire-reports/TEST-"*.xml 1> /dev/null 2>&1; then
+              echo "  (XML reports exist but HTML was not generated)"
+            fi
           fi
         done
+        
+        # If no reports found, add a message
+        if [ "$found_reports" = false ]; then
+          echo "WARNING: No HTML test reports were found!"
+          cat >> /tmp/gh-pages/tests/index.html << 'EOF'
+            <div class="no-reports">
+              <strong>⚠️ No test reports available yet.</strong>
+              <p>Test reports will appear here after a successful build with test execution.</p>
+              <p>Check the <a href="https://github.com/carstenartur/sandbox/actions">GitHub Actions</a> for build status.</p>
+            </div>
+        EOF
+        fi
         
         # Close HTML
         cat >> /tmp/gh-pages/tests/index.html << 'EOF'
@@ -134,8 +187,12 @@ jobs:
         </html>
         EOF
         
-        echo "Test reports prepared in /tmp/gh-pages/tests"
+        echo ""
+        echo "=== Test reports prepared ==="
         ls -la /tmp/gh-pages/tests/
+        echo ""
+        echo "=== Index.html content ==="
+        cat /tmp/gh-pages/tests/index.html
     - name: Deploy Test Reports to GitHub Pages
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       uses: peaceiris/actions-gh-pages@v4
