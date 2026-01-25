@@ -468,7 +468,7 @@ The update sites provide:
 [![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)  
 [![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)
 
-**Code Coverage Reports**: Available at [https://carstenartur.github.io/sandbox/coverage/](https://carstenartur.github.io/sandbox/coverage/) (updated on every push to main)
+**Code Coverage Reports**: Available at [https://carstenartur.github.io/sandbox/coverage/](https://carstenartur.github.io/sandbox/coverage/) (updated daily when there are commits to main, or on manual trigger)
 
 **Test Results**: Available at [https://carstenartur.github.io/sandbox/tests/](https://carstenartur.github.io/sandbox/tests/) (updated on every push to main)
 
