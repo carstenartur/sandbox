@@ -12,6 +12,7 @@
     a { color: #0066cc; text-decoration: none; }
     a:hover { text-decoration: underline; }
     .description { color: #666; margin: 10px 0; }
+    .no-reports { background: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; }
   </style>
 </head>
 <body>
@@ -21,6 +22,11 @@
     Each module's report shows test results including passed, failed, and disabled tests.
   </p>
   <div class="modules">
+    <div class="no-reports">
+      <strong>⚠️ No test reports available yet.</strong>
+      <p>Test reports will appear here after a successful build with test execution.</p>
+      <p>Check the <a href="https://github.com/carstenartur/sandbox/actions">GitHub Actions</a> for build status.</p>
+    </div>
   </div>
   <hr>
   <p style="text-align: center; color: #666; margin-top: 30px;">
