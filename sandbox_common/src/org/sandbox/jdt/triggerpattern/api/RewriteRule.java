@@ -52,10 +52,25 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 public @interface RewriteRule {
     /**
-     * The replacement pattern. Can include placeholders from the source pattern.
-     * Examples: "@BeforeEach", "@Disabled($value)", "Assertions.assertEquals($a, $b)"
+     * The replacement pattern. Can include a single placeholder from the source pattern.
      * 
-     * @return the replacement pattern with optional placeholders
+     * <p><b>Supported patterns:</b></p>
+     * <ul>
+     *   <li>Simple marker annotation: {@code "@BeforeEach"}</li>
+     *   <li>Single-value annotation: {@code "@Disabled($value)"}</li>
+     * </ul>
+     * 
+     * <p><b>Current limitations:</b></p>
+     * <ul>
+     *   <li>Only simple (unqualified) annotation names are supported, not fully qualified names like 
+     *       {@code "@org.junit.jupiter.api.BeforeEach"}</li>
+     *   <li>Only single placeholder patterns are supported. Multi-placeholder patterns like 
+     *       {@code "Assertions.assertEquals($a, $b)"} are not yet implemented.</li>
+     *   <li>Named parameters (NormalAnnotation) are not supported. Annotations like 
+     *       {@code @Ignore(value="reason")} require custom {@code process2Rewrite()} implementation.</li>
+     * </ul>
+     * 
+     * @return the replacement pattern with optional single placeholder
      */
     String replaceWith();
     

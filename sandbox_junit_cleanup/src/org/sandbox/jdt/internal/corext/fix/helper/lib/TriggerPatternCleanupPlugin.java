@@ -226,10 +226,22 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
         return true;
     }
     
+    // Regex pattern for parsing replacement patterns (compiled once for performance)
+    private static final java.util.regex.Pattern REPLACEMENT_PATTERN = 
+        java.util.regex.Pattern.compile("@([A-Za-z_][A-Za-z0-9_]*)(?:\\(\\$([A-Za-z_][A-Za-z0-9_]*)\\))?");
+    
     /**
      * Provides default implementation of process2Rewrite using @RewriteRule annotation.
      * Subclasses can override this method if they need custom rewrite logic,
      * or they can use @RewriteRule for simple annotation replacements.
+     * 
+     * <p><b>Limitations:</b> This default implementation only supports:
+     * <ul>
+     *   <li>MarkerAnnotation (no parameters): {@code @BeforeEach}</li>
+     *   <li>SingleMemberAnnotation (single value): {@code @Disabled($value)}</li>
+     * </ul>
+     * NormalAnnotation with named parameters like {@code @Ignore(value="reason")} is not supported.
+     * Plugins that need such transformations must override this method.
      * 
      * @param group the text edit group for tracking changes
      * @param rewriter the AST rewriter
@@ -245,7 +257,7 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
         if (rewriteRule == null) {
             throw new UnsupportedOperationException(
                 "Plugin " + getClass().getSimpleName() + 
-                " must either implement process2Rewrite() or be annotated with @RewriteRule");
+                " must be annotated with @RewriteRule because it does not override process2Rewrite()");
         }
         
         // Process the replacement pattern
@@ -263,10 +275,26 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
             singleMemberAnnotation.setTypeName(ast.newSimpleName(replacementInfo.annotationName));
             
             // Get the placeholder value from bindings
+            // TriggerPattern stores placeholders with $ prefix in the bindings map
             String placeholder = replacementInfo.placeholderName;
-            Expression value = junitHolder.getBindingAsExpression(placeholder);
+            Expression value = junitHolder.getBindingAsExpression("$" + placeholder);
             
-            // If no binding found, try to extract from old annotation directly
+            /*
+             * Fallback: if no binding is found for the placeholder, reuse the value from the
+             * existing annotation when it is a SingleMemberAnnotation.
+             *
+             * This is a defensive, last-resort mechanism to preserve the original annotation
+             * value so that the cleanup does not silently drop semantics.
+             *
+             * NOTE / TODO:
+             * - In normal operation, placeholder lookup via junitHolder.getBindingAsExpression(...)
+             *   should succeed and this block should not be relied upon.
+             * - If placeholder names or bindings are misconfigured, this fallback can mask the
+             *   underlying bug by making the transformation appear to succeed.
+             * - Once placeholder lookup is reliable, consider removing this fallback (or replacing
+             *   it with a more visible failure mechanism) so that binding errors surface during
+             *   development and testing.
+             */
             if (value == null && oldAnnotation instanceof SingleMemberAnnotation) {
                 value = ((SingleMemberAnnotation) oldAnnotation).getValue();
             }
@@ -315,13 +343,18 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
     /**
      * Parses a replacement pattern to extract annotation name and placeholder information.
      * 
+     * <p><b>Pattern format:</b> {@code @AnnotationName} or {@code @AnnotationName($placeholder)}</p>
+     * 
+     * <p><b>Note:</b> This intentionally supports only simple (unqualified) annotation names without dots,
+     * e.g., "@BeforeEach" or "@Disabled($value)". Fully qualified names such as
+     * "@org.junit.jupiter.api.BeforeEach" are not supported here; resolution relies on imports.
+     * To support qualified names in the future, this regex (and related logic) must be updated.</p>
+     * 
      * @param pattern the replacement pattern (e.g., "@BeforeEach", "@Disabled($value)")
      * @return parsed annotation replacement information
      */
     private AnnotationReplacementInfo parseReplacementPattern(String pattern) {
-        // Pattern: @AnnotationName or @AnnotationName($placeholder)
-        java.util.regex.Pattern regex = java.util.regex.Pattern.compile("@([A-Za-z_][A-Za-z0-9_]*)(?:\\(\\$([A-Za-z_][A-Za-z0-9_]*)\\))?");
-        java.util.regex.Matcher matcher = regex.matcher(pattern.trim());
+        java.util.regex.Matcher matcher = REPLACEMENT_PATTERN.matcher(pattern.trim());
         
         if (matcher.matches()) {
             String annotationName = matcher.group(1);
