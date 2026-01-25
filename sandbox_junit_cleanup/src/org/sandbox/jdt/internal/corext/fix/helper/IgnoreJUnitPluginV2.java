@@ -81,12 +81,6 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 public class IgnoreJUnitPluginV2 extends TriggerPatternCleanupPlugin {
 
 	@Override
-	protected JunitHolder createHolder(Match match) {
-		// Call parent implementation to get holder with bindings set
-		return super.createHolder(match);
-	}
-
-	@Override
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
 			ImportRewrite importRewriter, JunitHolder junitHolder) {
 		Annotation annotation = junitHolder.getAnnotation();
