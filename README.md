@@ -470,6 +470,31 @@ The update sites provide:
 
 **Code Coverage Reports**: Available at [https://carstenartur.github.io/sandbox/coverage/](https://carstenartur.github.io/sandbox/coverage/) (updated on every push to main)
 
+**Test Results**: Available at [https://carstenartur.github.io/sandbox/tests/](https://carstenartur.github.io/sandbox/tests/) (updated on every push to main)
+
+### Report Details
+
+#### Coverage Reports
+The JaCoCo coverage reports show code coverage statistics for the entire codebase:
+- **Location**: `https://carstenartur.github.io/sandbox/coverage/`
+- **Content**: Line, branch, and method coverage for all modules
+- **Update Frequency**: Automatically updated on every push to the main branch
+- **Local Generation**: Run `mvn -Pjacoco verify` to generate locally in `sandbox_coverage/target/site/jacoco-aggregate/`
+
+#### Test Results
+HTML test reports for all test modules, showing detailed test execution results:
+- **Location**: `https://carstenartur.github.io/sandbox/tests/`
+- **Content**: 
+  - Individual test module reports (e.g., `sandbox_encoding_quickfix_test`, `sandbox_functional_converter_test`)
+  - Test success/failure statistics
+  - Disabled tests (JUnit 5 `@Disabled` annotations)
+  - Detailed test execution information
+- **Update Frequency**: Automatically updated on every push to the main branch
+- **Local Generation**: Run `mvn surefire-report:report` in any test module to generate locally in `target/site/surefire-report.html`
+- **Structure**:
+  - Main index: Lists all test modules with links to their individual reports
+  - Module reports: Detailed test results for each module
+
 ### 2022-09
 
 [![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg?branch=2022-09)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)  

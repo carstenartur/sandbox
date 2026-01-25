@@ -329,6 +329,15 @@ See README.md for more information.
 					<onlyAnalyze>org.sandbox.jdt.*</onlyAnalyze>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-report-plugin</artifactId>
+				<version>3.6.3</version>
+				<configuration>
+					<showSuccess>true</showSuccess>
+					<linkXRef>false</linkXRef>
+				</configuration>
+			</plugin>
 		</plugins>
 	</reporting>
 	<dependencyManagement>
