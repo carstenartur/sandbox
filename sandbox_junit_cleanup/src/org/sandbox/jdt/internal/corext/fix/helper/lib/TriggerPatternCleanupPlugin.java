@@ -69,6 +69,7 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
      * Subclasses can override to provide multiple patterns.
      * 
      * @return list of patterns to match
+     * @throws IllegalStateException if neither @CleanupPattern annotation is present nor getPatterns() is overridden
      */
     protected List<Pattern> getPatterns() {
         Pattern pattern = getPattern();
@@ -77,7 +78,7 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
         }
         throw new IllegalStateException(
             "Plugin " + getClass().getSimpleName() + 
-            " must either have @CleanupPattern annotation or override getPatterns()");
+            " must either be annotated with @CleanupPattern or override getPatterns() method to define patterns");
     }
     
     /**
@@ -106,7 +107,7 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
      * Subclasses can override to customize holder creation.
      * 
      * @param match the matched pattern
-     * @return a JunitHolder containing match information
+     * @return a JunitHolder containing match information, or null to skip this match
      */
     protected JunitHolder createHolder(Match match) {
         JunitHolder holder = new JunitHolder();
