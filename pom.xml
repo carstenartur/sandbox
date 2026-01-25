@@ -314,7 +314,7 @@ See README.md for more information.
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-report-plugin</artifactId>
-				<version>3.6.3</version>
+				<version>3.5.2</version>
 				<executions>
 					<execution>
 						<id>generate-test-report</id>
@@ -350,7 +350,7 @@ See README.md for more information.
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-report-plugin</artifactId>
-				<version>3.6.3</version>
+				<version>3.5.2</version>
 				<configuration>
 					<showSuccess>true</showSuccess>
 					<linkXRef>false</linkXRef>
