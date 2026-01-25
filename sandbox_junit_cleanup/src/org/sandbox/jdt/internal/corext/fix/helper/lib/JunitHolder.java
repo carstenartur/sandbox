@@ -65,6 +65,12 @@ public class JunitHolder {
 	
 	/** Placeholder bindings from TriggerPattern (e.g., "$x" -> ASTNode) */
 	public Map<String, ASTNode> bindings = new HashMap<>();
+	
+	/** Expected exception type for @Test(expected=...) migration */
+	public Expression expectedExceptionType;
+	
+	/** Timeout value for @Test(timeout=...) migration */
+	public Expression timeoutValue;
 
 	/**
 	 * Gets the node as an Annotation.
