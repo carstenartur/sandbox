@@ -104,7 +104,7 @@ public class LoopRefactoringEdgeCasesTest {
 	 * 
 	 * <p><b>Note:</b> Currently disabled - pattern not converting in V1. Needs investigation.</p>
 	 */
-	@Disabled("Pattern not converting in V1 - needs investigation")
+//	@Disabled("Pattern not converting in V1 - needs investigation")
 	@Test
 	@DisplayName("Single element: consistent transformation")
 	void testSingleElement() throws CoreException {
@@ -195,7 +195,7 @@ class MyTest {
 	 * <p><b>Expected:</b> Filter null before performing operations</p>
 	 * <p><b>Note:</b> Current implementation uses lambda for filter</p>
 	 */
-	@Disabled("Filter+collect pattern not supported in V1 - requires V2 enhancement")
+//	@Disabled("Filter+collect pattern not supported in V1 - requires V2 enhancement")
 	@Test
 	@DisplayName("Null-safe operation: filter before map")
 	void testNullSafeOperation() throws CoreException {
@@ -215,15 +215,16 @@ class MyTest {
 				""";
 
 		String expected = """
-				package test1;
-				import java.util.*;
-				import java.util.stream.Collectors;
-				class MyTest {
-					public void process(List<String> items) {
-						List<String> upper = items.stream().filter(item -> item != null).map(item -> item.toUpperCase()).collect(Collectors.toList());
-					}
-				}
-				""";
+package test1;
+import java.util.*;
+import java.util.stream.Collectors;
+class MyTest {
+	public void process(List<String> items) {
+		List<String> upper = items.stream().filter(item -> (item != null)).map(item -> item.toUpperCase())
+				.collect(Collectors.toList());
+	}
+}
+""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -244,7 +245,7 @@ class MyTest {
 	 * 
 	 * <p><b>Note:</b> Currently disabled - pattern not converting in V1. Needs investigation.</p>
 	 */
-	@Disabled("Pattern not converting in V1 - needs investigation")
+//	@Disabled("Pattern not converting in V1 - needs investigation")
 	@Test
 	@DisplayName("Nested generics: List<List<T>> type inference")
 	void testNestedGenerics() throws CoreException {
@@ -584,7 +585,7 @@ class MyTest {
 	 * <p><b>Note:</b> Currently disabled - cleanup intentionally skips empty loops since
 	 * transforming them to forEach provides no benefit.</p>
 	 */
-	@Disabled("Empty loops are intentionally not transformed - no benefit from forEach conversion")
+//	@Disabled("Empty loops are intentionally not transformed - no benefit from forEach conversion")
 	@Test
 	@DisplayName("No-op loop: empty body still transforms")
 	void testNoOpLoop() throws CoreException {
@@ -601,16 +602,16 @@ class MyTest {
 				""";
 
 		String expected = """
-				package test1;
-				import java.util.*;
-				class MyTest {
-					public void process(List<String> items) {
-						items.forEach(item -> {
-							// Empty body
-						});
-					}
-				}
-				""";
+package test1;
+import java.util.*;
+class MyTest {
+	public void process(List<String> items) {
+		for (String item : items) {
+			// Empty body
+		}
+	}
+}
+""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
