@@ -69,7 +69,7 @@ jobs:
         for module in sandbox_*_test; do
           if [ -d "$module" ]; then
             echo "Generating test report for $module..."
-            mvn -pl $module surefire-report:report-only || echo "Warning: Failed to generate report for $module"
+            mvn -pl "$module" surefire-report:report-only || echo "Warning: Failed to generate report for $module"
           fi
         done
     - name: Prepare Test Reports for GitHub Pages
@@ -113,11 +113,13 @@ jobs:
             mkdir -p "/tmp/gh-pages/tests/$module"
             cp -r "$module/target/site/"* "/tmp/gh-pages/tests/$module/"
             
-            # Add module entry to index
+            # Add module entry to index with HTML escaping
+            # Module names follow pattern sandbox_*_test so they're safe, but escape for security
+            module_escaped=$(echo "$module" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g; s/'\''/\&#39;/g')
             cat >> /tmp/gh-pages/tests/index.html << EOF
             <div class="module">
-              <h2>${module}</h2>
-              <p><a href="${module}/surefire-report.html">View Test Report</a></p>
+              <h2>${module_escaped}</h2>
+              <p><a href="${module_escaped}/surefire-report.html">View Test Report</a></p>
             </div>
         EOF
           fi
