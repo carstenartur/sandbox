@@ -36,6 +36,15 @@ public class StringRenderer implements StreamPipelineRenderer<String> {
             case ITERABLE -> "StreamSupport.stream(" + expr + ".spliterator(), false)";
             case STREAM -> expr;
             case INT_RANGE -> "IntStream.range(0, " + expr + ")";
+            case EXPLICIT_RANGE -> {
+                // Parse start and end from expression (format: "start,end")
+                String[] parts = expr.split(",");
+                if (parts.length != 2) {
+                    throw new IllegalArgumentException("Invalid EXPLICIT_RANGE expression: '" + expr
+                            + "'. Expected format 'start,end'.");
+                }
+                yield "IntStream.range(" + parts[0].trim() + ", " + parts[1].trim() + ")";
+            }
             default -> expr + ".stream()";
         };
     }

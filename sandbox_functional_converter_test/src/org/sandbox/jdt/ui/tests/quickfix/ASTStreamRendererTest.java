@@ -101,7 +101,24 @@ public class ASTStreamRendererTest {
     @Test
     void testRenderSource_IntRange() {
         SourceDescriptor source = new SourceDescriptor(
-            SourceType.INT_RANGE, "0,10", "int");
+            SourceType.INT_RANGE, "10", "int");
+        
+        Expression result = renderer.renderSource(source);
+        
+        assertNotNull(result);
+        assertTrue(result instanceof MethodInvocation);
+        MethodInvocation mi = (MethodInvocation) result;
+        assertEquals("range", mi.getName().getIdentifier());
+        assertNotNull(mi.getExpression());
+        assertTrue(mi.getExpression() instanceof SimpleName);
+        assertEquals("IntStream", ((SimpleName) mi.getExpression()).getIdentifier());
+        assertEquals(2, mi.arguments().size()); // 0 and end
+    }
+    
+    @Test
+    void testRenderSource_ExplicitRange() {
+        SourceDescriptor source = new SourceDescriptor(
+            SourceType.EXPLICIT_RANGE, "0,10", "int");
         
         Expression result = renderer.renderSource(source);
         
@@ -113,6 +130,20 @@ public class ASTStreamRendererTest {
         assertTrue(mi.getExpression() instanceof SimpleName);
         assertEquals("IntStream", ((SimpleName) mi.getExpression()).getIdentifier());
         assertEquals(2, mi.arguments().size()); // start and end
+    }
+    
+    @Test
+    void testRenderSource_ExplicitRangeWithVariables() {
+        SourceDescriptor source = new SourceDescriptor(
+            SourceType.EXPLICIT_RANGE, "start,end", "int");
+        
+        Expression result = renderer.renderSource(source);
+        
+        assertNotNull(result);
+        assertTrue(result instanceof MethodInvocation);
+        MethodInvocation mi = (MethodInvocation) result;
+        assertEquals("range", mi.getName().getIdentifier());
+        assertEquals(2, mi.arguments().size());
     }
     
     @Test

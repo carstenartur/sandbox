@@ -78,14 +78,23 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
                 return streamSupport;
                 
             case INT_RANGE:
-                // IntStream.range(start, end)
+                // IntStream.range(0, end) - for simple INT_RANGE with just end value
+                MethodInvocation intStreamSimple = ast.newMethodInvocation();
+                intStreamSimple.setExpression(ast.newSimpleName("IntStream"));
+                intStreamSimple.setName(ast.newSimpleName("range"));
+                intStreamSimple.arguments().add(ast.newNumberLiteral("0"));
+                intStreamSimple.arguments().add(createExpression(source.expression()));
+                return intStreamSimple;
+                
+            case EXPLICIT_RANGE:
+                // IntStream.range(start, end) - for explicit start and end
                 MethodInvocation intStream = ast.newMethodInvocation();
                 intStream.setExpression(ast.newSimpleName("IntStream"));
                 intStream.setName(ast.newSimpleName("range"));
                 // Parse start and end from expression (format: "start,end")
                 String[] parts = source.expression().split(",");
                 if (parts.length != 2) {
-                    throw new IllegalArgumentException("Invalid INT_RANGE expression: '" + source.expression()
+                    throw new IllegalArgumentException("Invalid EXPLICIT_RANGE expression: '" + source.expression()
                             + "'. Expected format 'start,end'.");
                 }
                 intStream.arguments().add(createExpression(parts[0].trim()));

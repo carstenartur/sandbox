@@ -51,7 +51,7 @@ public class StreamCodeBuilder {
             switch (model.getSource().type()) {
                 case ARRAY -> imports.add("java.util.Arrays");
                 case ITERABLE -> imports.add("java.util.stream.StreamSupport");
-                case INT_RANGE -> imports.add("java.util.stream.IntStream");
+                case INT_RANGE, EXPLICIT_RANGE -> imports.add("java.util.stream.IntStream");
                 default -> {}
             }
         }
