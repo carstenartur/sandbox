@@ -61,11 +61,11 @@ public class TriggerPatternEngineTest {
 		assertTrue(match.getOffset() >= 0);
 		assertTrue(match.getLength() > 0);
 		
-		Map<String, ASTNode> bindings = match.getBindings();
+		Map<String, Object> bindings = match.getBindings();
 		assertEquals(1, bindings.size());
 		assertTrue(bindings.containsKey("$x"));
 		
-		ASTNode boundNode = bindings.get("$x");
+		ASTNode boundNode = match.getBinding("$x");
 		assertTrue(boundNode instanceof SimpleName);
 		assertEquals("a", ((SimpleName) boundNode).getIdentifier());
 	}
