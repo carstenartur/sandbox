@@ -98,8 +98,9 @@ public class UseFunctionalCallCleanUpCore extends AbstractCleanUp {
 		EnumSet<UseFunctionalCallFixCore> fixSet = EnumSet.noneOf(UseFunctionalCallFixCore.class);
 
 		if (isEnabled(USEFUNCTIONALLOOP_CLEANUP)) {
-			// Only add LOOP (V1) to avoid inadvertently running V2 conversions
+			// Add LOOP (V1) and ITERATOR_LOOP (Phase 7) for comprehensive loop conversions
 			fixSet.add(UseFunctionalCallFixCore.LOOP);
+			fixSet.add(UseFunctionalCallFixCore.ITERATOR_LOOP);
 		}
 		return fixSet;
 	}

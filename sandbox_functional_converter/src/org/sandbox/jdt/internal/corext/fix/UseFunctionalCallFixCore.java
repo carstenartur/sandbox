@@ -26,6 +26,7 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.fix.helper.AbstractFunctionalCall;
+import org.sandbox.jdt.internal.corext.fix.helper.IteratorLoopToFunctional;
 import org.sandbox.jdt.internal.corext.fix.helper.LoopToFunctional;
 import org.sandbox.jdt.internal.corext.fix.helper.LoopToFunctionalV2;
 import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
@@ -47,11 +48,11 @@ public enum UseFunctionalCallFixCore {
 	//   (3) the roadmap for future ULR implementation phases.
 	// Related issues: https://github.com/carstenartur/sandbox/issues/450
 	//                 https://github.com/carstenartur/sandbox/issues/453
-	LOOP_V2(new LoopToFunctionalV2());
+	LOOP_V2(new LoopToFunctionalV2()),
 	// ITERATOR_LOOP - Iterator-based loop conversion (from PR #449)
 	// Converts while-iterator and for-loop-iterator patterns to stream operations.
-	// Enable after Phase 7 validation and comprehensive testing.
-	// ITERATOR_LOOP(new IteratorLoopToFunctional());
+	// Activated January 2026 - Phase 7: Iterator pattern support
+	ITERATOR_LOOP(new IteratorLoopToFunctional());
 
 	AbstractFunctionalCall<ASTNode> functionalcall;
 

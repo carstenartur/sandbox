@@ -70,7 +70,7 @@ public class IteratorLoopToStreamTest {
 	 * <p><b>Expected:</b> {@code collection.forEach(item -> ...)}</p>
 	 * <p><b>Best Practice:</b> Direct forEach on collection is more idiomatic than stream().forEach()</p>
 	 */
-	@Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
+	// Enabled January 2026 - Phase 7: Iterator pattern support
 	@Test
 	@DisplayName("while-iterator forEach: list.forEach(item -> println(item))")
 	public void testWhileIterator_forEach() throws CoreException {
@@ -111,7 +111,7 @@ public class IteratorLoopToStreamTest {
 	 * <p><b>Pattern:</b> {@code for (Iterator<T> it = c.iterator(); it.hasNext(); ) { ... }}</p>
 	 * <p><b>Expected:</b> {@code collection.forEach(item -> ...)}</p>
 	 */
-	@Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
+	// Enabled January 2026 - Phase 7: Iterator pattern support
 	@Test
 	@DisplayName("for-loop-iterator forEach: list.forEach(item -> println(item))")
 	public void testForLoopIterator_forEach() throws CoreException {
@@ -151,7 +151,7 @@ public class IteratorLoopToStreamTest {
 	 * <p><b>Pattern:</b> Multiple statements in loop body</p>
 	 * <p><b>Expected:</b> Block lambda with multiple statements</p>
 	 */
-	@Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
+	// Enabled January 2026 - Phase 7: Iterator pattern support
 	@Test
 	@DisplayName("forEach with block lambda for multiple statements")
 	public void testIterator_forEachWithMultipleStatements() throws CoreException {
@@ -201,7 +201,7 @@ public class IteratorLoopToStreamTest {
 	 * <p><b>Expected:</b> {@code collection.stream().collect(Collectors.toList())}</p>
 	 * <p><b>Best Practice:</b> Use Collectors.toList() for collecting to List</p>
 	 */
-	@Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
+	// Enabled January 2026 - Phase 7: Iterator pattern support
 	@Test
 	@DisplayName("Iterator collect to List: stream().collect(Collectors.toList())")
 	public void testIterator_collectToList() throws CoreException {
@@ -247,7 +247,7 @@ public class IteratorLoopToStreamTest {
 	 * <p><b>Expected:</b> {@code collection.stream().collect(Collectors.toSet())}</p>
 	 * <p><b>Best Practice:</b> Use Collectors.toSet() for collecting to Set</p>
 	 */
-	@Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
+	// Enabled January 2026 - Phase 7: Iterator pattern support
 	@Test
 	@DisplayName("Iterator collect to Set: stream().collect(Collectors.toSet())")
 	public void testIterator_collectToSet() throws CoreException {
@@ -297,7 +297,7 @@ public class IteratorLoopToStreamTest {
 	 * <p><b>Expected:</b> {@code collection.stream().map(item -> transform(item)).collect(Collectors.toList())}</p>
 	 * <p><b>Best Practice:</b> Use map() for transformations before collecting</p>
 	 */
-	@Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
+	// Enabled January 2026 - Phase 7: Iterator pattern support
 	@Test
 	@DisplayName("Iterator map+collect: stream().map(transform).collect(toList())")
 	public void testIterator_mapAndCollect() throws CoreException {
@@ -345,7 +345,7 @@ public class IteratorLoopToStreamTest {
 	 * <p><b>Expected:</b> {@code collection.stream().map(ClassName::method).collect(Collectors.toList())}</p>
 	 * <p><b>Best Practice:</b> Use method references for simple transformations (more concise)</p>
 	 */
-	@Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
+	// Enabled January 2026 - Phase 7: Iterator pattern support
 	@Test
 	@DisplayName("Iterator map with method reference: stream().map(String::toUpperCase)")
 	public void testIterator_mapWithMethodReference() throws CoreException {
@@ -397,7 +397,7 @@ public class IteratorLoopToStreamTest {
 	 * <p><b>Expected:</b> {@code collection.stream().filter(condition).collect(Collectors.toList())}</p>
 	 * <p><b>Best Practice:</b> Use filter() for conditional collection</p>
 	 */
-	@Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
+	// Enabled January 2026 - Phase 7: Iterator pattern support
 	@Test
 	@DisplayName("Iterator filter+collect: stream().filter(predicate).collect(toList())")
 	public void testIterator_filterAndCollect() throws CoreException {
@@ -451,7 +451,7 @@ public class IteratorLoopToStreamTest {
 	 * <p><b>Expected:</b> {@code collection.stream().filter(condition).map(transform).collect(Collectors.toList())}</p>
 	 * <p><b>Best Practice:</b> Chain filter() before map() for optimal performance</p>
 	 */
-	@Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
+	// Enabled January 2026 - Phase 7: Iterator pattern support
 	@Test
 	@DisplayName("Iterator filter+map+collect: stream().filter().map().collect()")
 	public void testIterator_filterMapAndCollect() throws CoreException {
@@ -506,7 +506,7 @@ public class IteratorLoopToStreamTest {
 	 * <p><b>Expected:</b> {@code collection.stream().mapToInt(i -> i).sum()}</p>
 	 * <p><b>Best Practice:</b> Use specialized streams (IntStream) for primitive operations</p>
 	 */
-	@Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
+	// Enabled January 2026 - Phase 7: Iterator pattern support
 	@Test
 	@DisplayName("Iterator sum reduction: stream().mapToInt(i -> i).sum()")
 	public void testIterator_sumReduction() throws CoreException {
@@ -561,7 +561,7 @@ public class IteratorLoopToStreamTest {
 	 * <p><b>Pattern:</b> {@code while(it.hasNext()) { if(condition) it.remove(); }}</p>
 	 * <p><b>Expected:</b> No conversion (loop remains unchanged)</p>
 	 */
-	@Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
+	// Enabled January 2026 - Phase 7: Iterator pattern support
 	@Test
 	@DisplayName("Iterator.remove() prevents conversion - unsafe pattern")
 	public void testIterator_withRemove_notConverted() throws CoreException {
@@ -599,7 +599,7 @@ public class IteratorLoopToStreamTest {
 	 * <p><b>Pattern:</b> {@code while(it.hasNext()) { T a = it.next(); T b = it.next(); }}</p>
 	 * <p><b>Expected:</b> No conversion (loop remains unchanged)</p>
 	 */
-	@Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
+	// Enabled January 2026 - Phase 7: Iterator pattern support
 	@Test
 	@DisplayName("Multiple next() calls prevent conversion - unsafe pattern")
 	public void testIterator_multipleNext_notConverted() throws CoreException {
@@ -636,7 +636,7 @@ public class IteratorLoopToStreamTest {
 	 * <p><b>Pattern:</b> {@code while(it.hasNext()) { if(condition) break; }}</p>
 	 * <p><b>Expected:</b> No conversion (loop remains unchanged)</p>
 	 */
-	@Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
+	// Enabled January 2026 - Phase 7: Iterator pattern support
 	@Test
 	@DisplayName("Break statement prevents conversion - not yet supported")
 	public void testIterator_withBreak_notConverted() throws CoreException {
@@ -675,7 +675,7 @@ public class IteratorLoopToStreamTest {
 	 * <p><b>Pattern:</b> {@code while(it.hasNext()) { externalVar = item; }}</p>
 	 * <p><b>Expected:</b> No conversion (loop remains unchanged)</p>
 	 */
-	@Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
+	// Enabled January 2026 - Phase 7: Iterator pattern support
 	@Test
 	@DisplayName("External state modification prevents conversion - side effect")
 	public void testIterator_withExternalModification_notConverted() throws CoreException {

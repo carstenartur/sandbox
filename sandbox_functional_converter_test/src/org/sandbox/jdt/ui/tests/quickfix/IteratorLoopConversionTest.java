@@ -40,7 +40,7 @@ public class IteratorLoopConversionTest {
     @RegisterExtension
     AbstractEclipseJava context = new EclipseJava22();
     
-    @Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
+    // Enabled January 2026 - Phase 7: Iterator pattern support
     @Test
     public void testSimpleWhileIterator_forEach() throws Exception {
         IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
@@ -76,7 +76,7 @@ public class IteratorLoopConversionTest {
         context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
     }
     
-    @Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
+    // Enabled January 2026 - Phase 7: Iterator pattern support
     @Test
     public void testForLoopIterator_forEach() throws Exception {
         IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
@@ -111,7 +111,7 @@ public class IteratorLoopConversionTest {
         context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
     }
     
-    @Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
+    // Enabled January 2026 - Phase 7: Iterator pattern support
     @Test
     public void testIteratorWithRemove_notConverted() throws Exception {
         IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
@@ -139,7 +139,7 @@ public class IteratorLoopConversionTest {
         context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
     }
     
-    @Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
+    // Enabled January 2026 - Phase 7: Iterator pattern support
     @Test
     public void testIteratorMultipleNext_notConverted() throws Exception {
         IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
@@ -166,7 +166,7 @@ public class IteratorLoopConversionTest {
         context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
     }
     
-    @Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
+    // Enabled January 2026 - Phase 7: Iterator pattern support
     @Test
     public void testMultipleStatements_forEach() throws Exception {
         IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
@@ -206,7 +206,7 @@ public class IteratorLoopConversionTest {
         context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
     }
     
-    @Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
+    // Enabled January 2026 - Phase 7: Iterator pattern support
     @Test
     public void testWithBreak_notYetSupported() throws Exception {
         IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
