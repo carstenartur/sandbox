@@ -208,19 +208,19 @@ Issue [#450](https://github.com/carstenartur/sandbox/issues/450) introduced the 
 
 **Supported Iterator Patterns** (Phase 7):
 1. **while-iterator**: `Iterator<T> it = coll.iterator(); while (it.hasNext()) { T item = it.next(); ... }`
-   - Converts to: `collection.forEach(item -> ...)`
-   - Also supports map, filter, collect, reduce, match patterns
+   - Converts to: `collection.stream().forEach(item -> ...)`
+   - Currently limited to forEach pattern; map, filter, collect, reduce, match patterns planned for future implementation
 
 2. **for-loop-iterator**: `for (Iterator<T> it = coll.iterator(); it.hasNext(); ) { T item = it.next(); ... }`
-   - Converts to: `collection.forEach(item -> ...)`
-   - Same pattern support as while-iterator
+   - Converts to: `collection.stream().forEach(item -> ...)`
+   - Same forEach-only support as while-iterator
 
 **Implementation Architecture** (Phase 7):
 - `IteratorLoopToFunctional` extends `AbstractFunctionalCall<ASTNode>`
 - Uses `IteratorPatternDetector` to identify iterator patterns in AST
 - Uses `IteratorLoopAnalyzer` to validate safety (no breaks, continues, etc.)
 - Uses `IteratorLoopBodyParser` to extract loop body and next() variable
-- Synthesizes `EnhancedForStatement` and delegates to existing LoopToFunctional infrastructure
+- Performs a direct AST rewrite of supported iterator loops into functional stream pipelines
 - Marks both iterator declaration and loop statement as processed to prevent double conversion
 
 **Test Coverage** (Phase 7):

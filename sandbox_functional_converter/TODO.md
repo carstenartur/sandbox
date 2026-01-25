@@ -131,19 +131,22 @@
 - `IteratorLoopToFunctional` class already fully implemented (from PR #449)
 - Pattern detectors: `IteratorPatternDetector`, `IteratorLoopAnalyzer`, `IteratorLoopBodyParser`
 - Supports both while-iterator and for-loop-iterator patterns
-- Automatically synthesizes EnhancedForStatement and delegates to existing infrastructure
+- Converts recognized iterator loops directly to stream-based forms (e.g., `collection.stream().forEach(...)`)
 
 **Supported Patterns** (Phase 7):
 1. **while-iterator pattern**: `Iterator<T> it = coll.iterator(); while (it.hasNext()) { T item = it.next(); ... }`
+   - Converts to: `collection.stream().forEach(item -> ...)`
 2. **for-loop-iterator pattern**: `for (Iterator<T> it = coll.iterator(); it.hasNext(); ) { T item = it.next(); ... }`
+   - Converts to: `collection.stream().forEach(item -> ...)`
 
 **Test Coverage** (Phase 7):
-- 14 tests in `IteratorLoopToStreamTest` covering forEach, collect, map, filter, reduce, match patterns
+- 14 tests in `IteratorLoopToStreamTest` covering iterator-to-stream forEach conversions
+  - Currently limited to forEach pattern; collect, map, filter, reduce, match patterns documented for future implementation
 - 6 tests in `IteratorLoopConversionTest` for additional iterator variants
 - 5 tests in `LoopBidirectionalTransformationTest` (2 active, 3 future)
 - 9 tests in `AdditionalLoopPatternsTest` (6 active negative tests, 3 future)
 
-**Total Active Iterator Tests**: 20 tests now enabled and running
+**Total Active Iterator Tests**: 20 tests enabled (forEach pattern functional, advanced patterns planned)
 
 ### Phase 8: V1 Deprecation (FUTURE)
 

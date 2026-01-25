@@ -89,12 +89,9 @@ public class AdditionalLoopPatternsTest {
 				}
 				""";
 
-		// Should remain unchanged - no collection iteration
-		String expected = given;
-
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", given, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 
 	/**
@@ -123,12 +120,10 @@ public class AdditionalLoopPatternsTest {
 				}
 				""";
 
-		// Should remain unchanged - not a standard iteration pattern
-		String expected = given;
 
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", given, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 
 	// ===========================================
@@ -174,12 +169,10 @@ public class AdditionalLoopPatternsTest {
 				}
 				""";
 
-		// Should remain unchanged - do-while semantics incompatible with streams
-		String expected = given;
 
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", given, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 
 	/**
@@ -203,12 +196,10 @@ public class AdditionalLoopPatternsTest {
 				}
 				""";
 
-		// Should remain unchanged
-		String expected = given;
 
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", given, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 
 	// ===========================================
@@ -339,12 +330,10 @@ public class AdditionalLoopPatternsTest {
 				}
 				""";
 
-		// Should remain unchanged - cannot convert to stream without zip()
-		String expected = given;
 
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", given, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 
 	/**
@@ -374,11 +363,9 @@ public class AdditionalLoopPatternsTest {
 				}
 				""";
 
-		// Should remain unchanged - complex iterator manipulation
-		String expected = given;
 
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", given, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 }

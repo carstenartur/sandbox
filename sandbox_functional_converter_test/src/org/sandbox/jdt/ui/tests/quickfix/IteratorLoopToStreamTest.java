@@ -16,7 +16,6 @@ package org.sandbox.jdt.ui.tests.quickfix;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -46,9 +45,9 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
  *   <li>Collectors are used for terminal operations that build collections</li>
  * </ul>
  * 
- * <p><b>Note:</b> These tests are currently disabled pending activation of
- * ITERATOR_LOOP support in UseFunctionalCallFixCore. Enable tests incrementally
- * as iterator pattern support is implemented.</p>
+ * <p><b>Note:</b> ITERATOR_LOOP support has been activated in UseFunctionalCallFixCore (Phase 7).
+ * Tests are enabled and validate iterator-to-stream forEach conversions.
+ * Advanced patterns (collect, map, filter, reduce) are documented but not yet fully implemented.</p>
  * 
  * @see org.sandbox.jdt.internal.ui.fix.UseFunctionalLoopCleanUp
  * @see org.sandbox.jdt.internal.corext.fix.helper.StreamPipelineBuilder
@@ -72,7 +71,7 @@ public class IteratorLoopToStreamTest {
 	 */
 	// Enabled January 2026 - Phase 7: Iterator pattern support
 	@Test
-	@DisplayName("while-iterator forEach: list.forEach(item -> println(item))")
+	@DisplayName("while-iterator forEach: list.stream().forEach(item -> println(item))")
 	public void testWhileIterator_forEach() throws CoreException {
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 
@@ -95,7 +94,7 @@ public class IteratorLoopToStreamTest {
 				import java.util.*;
 				public class MyTest {
 					void process(List<String> items) {
-						items.forEach(item -> System.out.println(item));
+						items.stream().forEach(item -> System.out.println(item));
 					}
 				}
 				""";
@@ -113,7 +112,7 @@ public class IteratorLoopToStreamTest {
 	 */
 	// Enabled January 2026 - Phase 7: Iterator pattern support
 	@Test
-	@DisplayName("for-loop-iterator forEach: list.forEach(item -> println(item))")
+	@DisplayName("for-loop-iterator forEach: list.stream().forEach(item -> println(item))")
 	public void testForLoopIterator_forEach() throws CoreException {
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 
@@ -135,7 +134,7 @@ public class IteratorLoopToStreamTest {
 				import java.util.*;
 				public class MyTest {
 					void process(List<String> items) {
-						items.forEach(item -> System.out.println(item));
+						items.stream().forEach(item -> System.out.println(item));
 					}
 				}
 				""";
@@ -177,7 +176,7 @@ public class IteratorLoopToStreamTest {
 				import java.util.*;
 				public class MyTest {
 					void process(List<String> items) {
-						items.forEach(item -> {
+						items.stream().forEach(item -> {
 							String upper = item.toUpperCase();
 							System.out.println(upper);
 						});

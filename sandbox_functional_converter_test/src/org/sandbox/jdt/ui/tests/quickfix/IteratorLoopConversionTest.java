@@ -15,7 +15,6 @@ package org.sandbox.jdt.ui.tests.quickfix;
 
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
@@ -32,8 +31,8 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
  *   <li>Safety checks (iterator.remove(), multiple next() calls, etc.)</li>
  * </ul>
  * 
- * <p>Note: These tests are disabled by default until ITERATOR_LOOP is enabled
- * in UseFunctionalCallFixCore.</p>
+ * <p>Note: ITERATOR_LOOP has been activated in UseFunctionalCallFixCore (Phase 7).
+ * Tests are enabled and validate iterator-to-stream conversions.</p>
  */
 public class IteratorLoopConversionTest {
     
