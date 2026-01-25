@@ -926,6 +926,24 @@ As part of the December 2025 improvements, significant dead code was removed:
 
 ## Testing
 
+### Test Organization Strategy (January 2026)
+
+**New Approach**: Tests are organized by **transformation pattern** rather than implementation phase. This provides better discoverability, easier maintenance, and clear documentation.
+
+See [TEST_STRATEGY.md](../sandbox_functional_converter_test/TEST_STRATEGY.md) for comprehensive testing guidelines.
+
+### Pattern-Based Test Structure
+
+| Test Class | Purpose | Pattern Examples |
+|------------|---------|------------------|
+| `IteratorLoopToStreamTest` | Iterator-specific patterns | `while(it.hasNext())`, `for(Iterator it=...)`, collect/map/filter on iterators |
+| `LoopRefactoringCollectTest` | Collection accumulation patterns | Identity collect, mapped collect, filtered collect, filter+map chains |
+| `LoopRefactoringEdgeCasesTest` | Edge cases and boundaries | Empty collections, null handling, complex generics, variable shadowing |
+| `FunctionalLoopNegativeTest` | Patterns that should NOT convert | break/throw/continue, external modifications, unsafe transformations |
+| `FunctionalLoopSimpleConversionTest` | Basic forEach patterns | Simple iteration, method references, single statements |
+| `FunctionalLoopReducerTest` | Reduce/aggregate patterns | Sum, count, min/max, custom reductions |
+| `FunctionalLoopMatchPatternTest` | anyMatch/allMatch/noneMatch | Boolean aggregations, early exit patterns |
+
 ### Unit Tests (No Plugin Environment Required)
 
 The following tests can run without an Eclipse plugin environment using JDT's `ASTParser`:
@@ -953,6 +971,18 @@ All 26 test cases from `UseFunctionalLoop` enum are enabled:
 - Side effects (NoNeededVariablesMerging, SomeChainingWithNoNeededVar)
 - String operations (StringConcat)
 
+### Iterator Loop Tests (Disabled - Pending ITERATOR_LOOP Activation)
+
+New comprehensive test suite for iterator loops (`IteratorLoopToStreamTest`):
+- forEach patterns: `while(it.hasNext())` → `collection.forEach()`
+- Collect patterns: Iterator loop → `stream().collect(Collectors.toList())`
+- Map patterns: Iterator with transformation → `stream().map().collect()`
+- Filter patterns: Conditional iteration → `stream().filter().collect()`
+- Reduce patterns: Sum/count/aggregate → `stream().mapToInt().sum()`
+- Negative tests: `Iterator.remove()`, multiple `next()`, break statements
+
+**Status**: Tests created but disabled with `@Disabled` annotation. Will be activated once ITERATOR_LOOP support is implemented in `UseFunctionalCallFixCore`.
+
 ### Test Execution
 ```bash
 # Build project
@@ -961,7 +991,25 @@ mvn clean install -DskipTests
 # Run functional loop converter tests
 xvfb-run --auto-servernum mvn test -pl sandbox_functional_converter_test \
   -Dtest=Java8CleanUpTest#testSimpleForEachConversion
+
+# Run specific pattern test class
+xvfb-run --auto-servernum mvn test -pl sandbox_functional_converter_test \
+  -Dtest=LoopRefactoringCollectTest
+
+# Run iterator tests (once activated)
+xvfb-run --auto-servernum mvn test -pl sandbox_functional_converter_test \
+  -Dtest=IteratorLoopToStreamTest
 ```
+
+### Test Quality Standards
+
+All new tests follow modern Java best practices:
+- **Method References**: Prefer `String::toUpperCase` over `s -> s.toUpperCase()`
+- **Standard Collectors**: Use `Collectors.toList()`, `Collectors.toSet()`
+- **Optimal Ordering**: Filter before map for better performance
+- **Null Handling**: Use `Objects::nonNull` for null checks
+- **Direct forEach**: Use `collection.forEach()` not `collection.stream().forEach()`
+- **Specialized Streams**: Use `IntStream` for `int[]` to avoid boxing
 
 ## Integration with Eclipse JDT
 
