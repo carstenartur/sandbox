@@ -496,6 +496,7 @@ public class LoopRefactoringCollectTest {
 		String expected = """
 				package test1;
 				import java.util.*;
+				import java.util.Arrays;
 				import java.util.stream.Collectors;
 				class MyTest {
 					public void process(String[] items) {
@@ -537,6 +538,7 @@ public class LoopRefactoringCollectTest {
 		String expected = """
 				package test1;
 				import java.util.*;
+				import java.util.Arrays;
 				import java.util.stream.Collectors;
 				class MyTest {
 					public void process(Integer[] numbers) {
