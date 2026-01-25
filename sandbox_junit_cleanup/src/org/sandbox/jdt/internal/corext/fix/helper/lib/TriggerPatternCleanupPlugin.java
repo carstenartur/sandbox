@@ -23,36 +23,86 @@ import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
+import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
 import org.sandbox.jdt.triggerpattern.api.Match;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
 import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
 
 /**
- * Base class for JUnit cleanup plugins that use TriggerPattern for pattern matching.
+ * Abstract base class that connects TriggerPattern with the Cleanup framework.
+ * Reduces boilerplate from ~80 lines to ~20 lines per plugin.
  * 
- * <p>This provides a declarative approach to defining what AST patterns to match,
- * replacing the imperative HelperVisitor-based approach.</p>
- * 
- * <p>Subclasses only need to:</p>
+ * <p>Subclasses must:</p>
  * <ol>
- * <li>Override {@link #getPatterns()} to define patterns to match</li>
- * <li>Override {@link #processMatch(Match, JUnitCleanUpFixCore, Set, ReferenceHolder)} to handle matches (optional)</li>
- * <li>Override {@link #process2Rewrite(...)} for the actual AST transformation</li>
+ *   <li>Add {@link CleanupPattern} annotation to the class</li>
+ *   <li>Implement {@link #createHolder(Match)} to create the JunitHolder</li>
+ *   <li>Implement {@link #process2Rewrite} for the AST transformation</li>
+ *   <li>Implement {@link #getPreview(boolean)} for UI preview</li>
  * </ol>
+ * 
+ * <p>Alternative approach: Override {@link #getPatterns()} instead of using annotation.</p>
+ * 
+ * @since 1.3.0
  */
 public abstract class TriggerPatternCleanupPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
     
     private static final TriggerPatternEngine ENGINE = new TriggerPatternEngine();
     
     /**
+     * Returns the Pattern extracted from the @CleanupPattern annotation.
+     * Subclasses can override {@link #getPatterns()} instead if they need multiple patterns.
+     * 
+     * @return the pattern for matching, or null if using multiple patterns
+     */
+    protected Pattern getPattern() {
+        CleanupPattern annotation = this.getClass().getAnnotation(CleanupPattern.class);
+        if (annotation == null) {
+            return null; // Subclass uses getPatterns() instead
+        }
+        String qualifiedType = annotation.qualifiedType().isEmpty() ? null : annotation.qualifiedType();
+        return new Pattern(annotation.value(), annotation.kind(), qualifiedType);
+    }
+    
+    /**
      * Returns the patterns to match in the compilation unit.
+     * Default implementation returns a single pattern from @CleanupPattern annotation.
+     * Subclasses can override to provide multiple patterns.
      * 
      * @return list of patterns to match
      */
-    protected abstract List<Pattern> getPatterns();
+    protected List<Pattern> getPatterns() {
+        Pattern pattern = getPattern();
+        if (pattern != null) {
+            return List.of(pattern);
+        }
+        throw new IllegalStateException(
+            "Plugin " + getClass().getSimpleName() + 
+            " must either have @CleanupPattern annotation or override getPatterns()");
+    }
+    
+    /**
+     * Returns the cleanup ID from the @CleanupPattern annotation.
+     * 
+     * @return the cleanup ID or empty string if not set
+     */
+    protected String getCleanupId() {
+        CleanupPattern annotation = this.getClass().getAnnotation(CleanupPattern.class);
+        return annotation != null ? annotation.cleanupId() : "";
+    }
+    
+    /**
+     * Returns the description from the @CleanupPattern annotation.
+     * 
+     * @return the description or empty string if not set
+     */
+    protected String getDescription() {
+        CleanupPattern annotation = this.getClass().getAnnotation(CleanupPattern.class);
+        return annotation != null ? annotation.description() : "";
+    }
     
     /**
      * Creates a JunitHolder from a Match.
+     * Default implementation stores the matched node and bindings.
      * Subclasses can override to customize holder creation.
      * 
      * @param match the matched pattern
@@ -63,6 +113,18 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
         holder.minv = match.getMatchedNode();
         holder.bindings = match.getBindings();
         return holder;
+    }
+    
+    /**
+     * Subclasses can override to add additional validation.
+     * Default implementation returns true (process all matches).
+     * 
+     * @param match the pattern match
+     * @param pattern the pattern that was matched
+     * @return true if this match should be processed
+     */
+    protected boolean shouldProcess(Match match, Pattern pattern) {
+        return true;
     }
     
     /**
@@ -79,8 +141,10 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
             Set<CompilationUnitRewriteOperationWithSourceRange> operations,
             ReferenceHolder<Integer, JunitHolder> dataHolder) {
         JunitHolder holder = createHolder(match);
-        dataHolder.put(dataHolder.size(), holder);
-        operations.add(fixcore.rewrite(dataHolder));
+        if (holder != null) {
+            dataHolder.put(dataHolder.size(), holder);
+            operations.add(fixcore.rewrite(dataHolder));
+        }
         return false;
     }
     
@@ -106,6 +170,11 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
                     if (!validateQualifiedType(node, pattern.getQualifiedType())) {
                         continue;
                     }
+                }
+                
+                // Allow subclasses to add additional validation
+                if (!shouldProcess(match, pattern)) {
+                    continue;
                 }
                 
                 nodesprocessed.add(node);

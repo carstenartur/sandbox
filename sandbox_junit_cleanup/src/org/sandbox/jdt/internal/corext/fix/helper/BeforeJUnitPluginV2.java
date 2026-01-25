@@ -15,8 +15,6 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
-import java.util.List;
-
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
@@ -26,20 +24,53 @@ import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.TriggerPatternCleanupPlugin;
-import org.sandbox.jdt.triggerpattern.api.Pattern;
+import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
+import org.sandbox.jdt.triggerpattern.api.Match;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
 /**
- * Plugin to migrate JUnit 4 @Before annotations to JUnit 5 @BeforeEach.
- * Uses TriggerPattern for declarative pattern matching.
+ * Migrates JUnit 4 @Before annotations to JUnit 5 @BeforeEach.
+ * 
+ * <p>This is a simplified version using TriggerPattern-based declarative architecture.
+ * Compare with the original {@link BeforeJUnitPlugin} to see the reduction in boilerplate.</p>
+ * 
+ * <p><b>Before:</b></p>
+ * <pre>
+ * import org.junit.Before;
+ * 
+ * public class MyTest {
+ *     {@literal @}Before
+ *     public void setUp() { }
+ * }
+ * </pre>
+ * 
+ * <p><b>After:</b></p>
+ * <pre>
+ * import org.junit.jupiter.api.BeforeEach;
+ * 
+ * public class MyTest {
+ *     {@literal @}BeforeEach
+ *     public void setUp() { }
+ * }
+ * </pre>
+ * 
+ * @since 1.3.0
  */
+@CleanupPattern(
+    value = "@Before",
+    kind = PatternKind.ANNOTATION,
+    qualifiedType = ORG_JUNIT_BEFORE,
+    cleanupId = "cleanup.junit.before",
+    description = "Migrate @Before to @BeforeEach",
+    displayName = "JUnit 4 @Before → JUnit 5 @BeforeEach"
+)
 public class BeforeJUnitPluginV2 extends TriggerPatternCleanupPlugin {
 
 	@Override
-	protected List<Pattern> getPatterns() {
-		return List.of(
-			new Pattern("@Before", PatternKind.ANNOTATION, ORG_JUNIT_BEFORE)
-		);
+	protected JunitHolder createHolder(Match match) {
+		JunitHolder holder = new JunitHolder();
+		holder.minv = match.getMatchedNode();
+		return holder;
 	}
 
 	@Override
@@ -58,13 +89,13 @@ public class BeforeJUnitPluginV2 extends TriggerPatternCleanupPlugin {
 		if (afterRefactoring) {
 			return """
 				@BeforeEach
-				public static void setUp() throws Exception {
+				public void setUp() {
 				}
 				"""; //$NON-NLS-1$
 		}
 		return """
 			@Before
-			public static void setUp() throws Exception {
+			public void setUp() {
 			}
 			"""; //$NON-NLS-1$
 	}
