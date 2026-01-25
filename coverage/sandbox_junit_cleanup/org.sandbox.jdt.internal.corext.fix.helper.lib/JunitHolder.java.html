@@ -20,10 +20,13 @@
  * #L%
  */
 
+import java.util.Map;
+import java.util.HashMap;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
@@ -38,7 +41,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
  * (annotations, method invocations, field declarations, etc.) to the rewrite operation.
  * &lt;/p&gt;
  */
-<span class="fc" id="L41">public class JunitHolder {</span>
+<span class="fc" id="L44">public class JunitHolder {</span>
 	/** The main AST node to be transformed (can be Annotation, MethodInvocation, FieldDeclaration, TypeDeclaration, or ImportDeclaration) */
 	public ASTNode minv;
 	
@@ -59,13 +62,16 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	
 	/** Additional context information for complex transformations */
 	public Object additionalInfo;
+	
+	/** Placeholder bindings from TriggerPattern (e.g., &quot;$x&quot; -&gt; ASTNode) */
+<span class="fc" id="L67">	public Map&lt;String, ASTNode&gt; bindings = new HashMap&lt;&gt;();</span>
 
 	/**
 	 * Gets the node as an Annotation.
 	 * @return the AST node cast to Annotation
 	 */
 	public Annotation getAnnotation() {
-<span class="fc" id="L68">		return (Annotation) minv;</span>
+<span class="fc" id="L74">		return (Annotation) minv;</span>
 	}
 
 	/**
@@ -73,7 +79,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	 * @return the AST node cast to MethodInvocation
 	 */
 	public MethodInvocation getMethodInvocation() {
-<span class="fc" id="L76">		return (MethodInvocation) minv;</span>
+<span class="fc" id="L82">		return (MethodInvocation) minv;</span>
 	}
 
 	/**
@@ -81,7 +87,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	 * @return the AST node cast to ImportDeclaration
 	 */
 	public ImportDeclaration getImportDeclaration() {
-<span class="fc" id="L84">		return (ImportDeclaration) minv;</span>
+<span class="fc" id="L90">		return (ImportDeclaration) minv;</span>
 	}
 
 	/**
@@ -89,7 +95,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	 * @return the AST node cast to FieldDeclaration
 	 */
 	public FieldDeclaration getFieldDeclaration() {
-<span class="fc" id="L92">		return (FieldDeclaration) minv;</span>
+<span class="fc" id="L98">		return (FieldDeclaration) minv;</span>
 	}
 
 	/**
@@ -97,7 +103,38 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	 * @return the AST node cast to TypeDeclaration
 	 */
 	public TypeDeclaration getTypeDeclaration() {
-<span class="fc" id="L100">		return (TypeDeclaration) minv;</span>
+<span class="fc" id="L106">		return (TypeDeclaration) minv;</span>
+	}
+	
+	/**
+	 * Gets a placeholder binding as an Expression.
+	 * 
+	 * @param placeholder the placeholder name (e.g., &quot;$x&quot;)
+	 * @return the bound expression, or null if not found
+	 */
+	public Expression getBindingAsExpression(String placeholder) {
+<span class="nc" id="L116">		ASTNode node = bindings.get(placeholder);</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">		return node instanceof Expression ? (Expression) node : null;</span>
+	}
+	
+	/**
+	 * Gets a placeholder binding.
+	 * 
+	 * @param placeholder the placeholder name (e.g., &quot;$x&quot;)
+	 * @return the bound AST node, or null if not found
+	 */
+	public ASTNode getBinding(String placeholder) {
+<span class="nc" id="L127">		return bindings.get(placeholder);</span>
+	}
+	
+	/**
+	 * Checks if a placeholder binding exists.
+	 * 
+	 * @param placeholder the placeholder name
+	 * @return true if the binding exists
+	 */
+	public boolean hasBinding(String placeholder) {
+<span class="nc" id="L137">		return bindings.containsKey(placeholder);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

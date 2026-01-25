@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>TestExpectedJUnitPluginV2.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">TestExpectedJUnitPluginV2.java</span></div><h1>TestExpectedJUnitPluginV2.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
+
+import java.util.List;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.LambdaExpression;
+import org.eclipse.jdt.core.dom.MarkerAnnotation;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.TypeLiteral;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.TriggerPatternCleanupPlugin;
+import org.sandbox.jdt.triggerpattern.api.Pattern;
+import org.sandbox.jdt.triggerpattern.api.PatternKind;
+
+/**
+ * Plugin to migrate @Test(expected=Exception.class) to assertThrows().
+ * Demonstrates TriggerPattern with placeholder bindings.
+ */
+<span class="nc" id="L43">public class TestExpectedJUnitPluginV2 extends TriggerPatternCleanupPlugin {</span>
+
+	@Override
+	protected List&lt;Pattern&gt; getPatterns() {
+<span class="nc" id="L47">		return List.of(</span>
+			// Matches @Test(expected=SomeException.class)
+<span class="nc" id="L49">			new Pattern(&quot;@Test(expected=$exceptionType)&quot;, PatternKind.ANNOTATION, ORG_JUNIT_TEST)</span>
+		);
+	}
+
+	@Override
+	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
+			ImportRewrite importRewriter, JunitHolder junitHolder) {
+		
+<span class="nc" id="L57">		Annotation testAnnotation = junitHolder.getAnnotation();</span>
+		
+		// Get the exception type from placeholder binding
+<span class="nc" id="L60">		TypeLiteral exceptionType = (TypeLiteral) junitHolder.getBinding(&quot;$exceptionType&quot;);</span>
+		
+<span class="nc bnc" id="L62" title="All 2 branches missed.">		if (exceptionType == null) {</span>
+<span class="nc" id="L63">			return;</span>
+		}
+		
+		// Get the method declaration
+<span class="nc" id="L67">		MethodDeclaration method = ASTNodes.getParent(testAnnotation, MethodDeclaration.class);</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">		if (method == null) {</span>
+<span class="nc" id="L69">			return;</span>
+		}
+		
+<span class="nc" id="L72">		Block methodBody = method.getBody();</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">		if (methodBody == null) {</span>
+<span class="nc" id="L74">			return;</span>
+		}
+		
+		@SuppressWarnings(&quot;unchecked&quot;)
+<span class="nc" id="L78">		List&lt;Statement&gt; statements = methodBody.statements();</span>
+		
+		// Create assertThrows method invocation
+<span class="nc" id="L81">		MethodInvocation assertThrowsCall = ast.newMethodInvocation();</span>
+<span class="nc" id="L82">		assertThrowsCall.setName(ast.newSimpleName(METHOD_ASSERT_THROWS));</span>
+		
+		// Add the exception class as the first argument
+<span class="nc" id="L85">		TypeLiteral exceptionClass = (TypeLiteral) ASTNodes.copySubtree(ast, exceptionType);</span>
+<span class="nc" id="L86">		assertThrowsCall.arguments().add(exceptionClass);</span>
+		
+		// Create lambda expression for the method body
+<span class="nc" id="L89">		LambdaExpression lambda = ast.newLambdaExpression();</span>
+<span class="nc" id="L90">		lambda.setParentheses(true);</span>
+		
+<span class="nc" id="L92">		Block lambdaBody = ast.newBlock();</span>
+		
+		// Copy all statements from the original method body into the lambda
+<span class="nc bnc" id="L95" title="All 2 branches missed.">		for (Statement stmt : statements) {</span>
+<span class="nc" id="L96">			Statement copiedStmt = (Statement) ASTNodes.copySubtree(ast, stmt);</span>
+<span class="nc" id="L97">			lambdaBody.statements().add(copiedStmt);</span>
+		}
+		
+<span class="nc" id="L100">		lambda.setBody(lambdaBody);</span>
+<span class="nc" id="L101">		assertThrowsCall.arguments().add(lambda);</span>
+		
+		// Create the new expression statement with assertThrows
+<span class="nc" id="L104">		ExpressionStatement assertThrowsStatement = ast.newExpressionStatement(assertThrowsCall);</span>
+		
+		// Remove all existing statements from the method body
+<span class="nc bnc" id="L107" title="All 2 branches missed.">		for (int i = statements.size() - 1; i &gt;= 0; i--) {</span>
+<span class="nc" id="L108">			rewriter.remove(statements.get(i), group);</span>
+		}
+		
+		// Add the assertThrows statement as the only statement in the method
+<span class="nc" id="L112">		rewriter.getListRewrite(methodBody, Block.STATEMENTS_PROPERTY).insertLast(assertThrowsStatement, group);</span>
+		
+		// Replace @Test(expected=...) with @Test
+<span class="nc" id="L115">		MarkerAnnotation newAnnotation = ast.newMarkerAnnotation();</span>
+<span class="nc" id="L116">		newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_TEST));</span>
+<span class="nc" id="L117">		ASTNodes.replaceButKeepComment(rewriter, testAnnotation, newAnnotation, group);</span>
+		
+		// Update imports
+<span class="nc" id="L120">		importRewriter.removeImport(ORG_JUNIT_TEST);</span>
+<span class="nc" id="L121">		importRewriter.addImport(ORG_JUNIT_JUPITER_TEST);</span>
+<span class="nc" id="L122">		importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, METHOD_ASSERT_THROWS, false);</span>
+<span class="nc" id="L123">	}</span>
+
+	@Override
+	public String getPreview(boolean afterRefactoring) {
+<span class="nc bnc" id="L127" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L128">			return &quot;&quot;&quot;</span>
+				@Test
+				public void testException() {
+					assertThrows(IllegalArgumentException.class, () -&gt; {
+						throw new IllegalArgumentException();
+					});
+				}
+				&quot;&quot;&quot;; //$NON-NLS-1$
+		}
+<span class="nc" id="L137">		return &quot;&quot;&quot;</span>
+			@Test(expected = IllegalArgumentException.class)
+			public void testException() {
+				throw new IllegalArgumentException();
+			}
+			&quot;&quot;&quot;; //$NON-NLS-1$
+	}
+
+	@Override
+	public String toString() {
+<span class="nc" id="L147">		return &quot;Test(expected) (TriggerPattern)&quot;; //$NON-NLS-1$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
