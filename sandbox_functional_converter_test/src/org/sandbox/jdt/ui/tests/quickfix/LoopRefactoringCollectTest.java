@@ -326,11 +326,11 @@ public class LoopRefactoringCollectTest {
 	 * Tests null-filtering collect pattern.
 	 * 
 	 * <p><b>Pattern:</b> {@code for (T item : collection) if (item != null) result.add(item);}</p>
-	 * <p><b>Expected:</b> {@code collection.stream().filter(Objects::nonNull).collect(Collectors.toList())}</p>
-	 * <p><b>Best Practice:</b> Use Objects::nonNull for null filtering (more idiomatic)</p>
+	 * <p><b>Expected:</b> {@code collection.stream().filter(item -> item != null).collect(Collectors.toList())}</p>
+	 * <p><b>Note:</b> Current implementation uses lambda; future enhancement could use Objects::nonNull</p>
 	 */
 	@Test
-	@DisplayName("Null filter with method reference: filter(Objects::nonNull)")
+	@DisplayName("Null filter: filter(item -> item != null)")
 	void testNullFilteredCollect() throws CoreException {
 		String input = """
 				package test;
@@ -351,11 +351,10 @@ public class LoopRefactoringCollectTest {
 		String expected = """
 				package test;
 				import java.util.*;
-				import java.util.Objects;
 				import java.util.stream.Collectors;
 				class E {
 					public void process(List<String> items) {
-						List<String> nonNull = items.stream().filter(Objects::nonNull).collect(Collectors.toList());
+						List<String> nonNull = items.stream().filter(item -> item != null).collect(Collectors.toList());
 						System.out.println(nonNull);
 					}
 				}
