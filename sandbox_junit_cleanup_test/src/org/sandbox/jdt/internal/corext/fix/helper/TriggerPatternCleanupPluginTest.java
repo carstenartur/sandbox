@@ -89,4 +89,76 @@ class TriggerPatternCleanupPluginTest {
         assertTrue(preview.contains("@BeforeEach\n"));
         assertFalse(preview.contains("@Before\n"));
     }
+    
+    @Test
+    void testAfterJUnitPluginV2_annotation() {
+        AfterJUnitPluginV2 plugin = new AfterJUnitPluginV2();
+        
+        CleanupPattern annotation = plugin.getClass().getAnnotation(CleanupPattern.class);
+        
+        assertNotNull(annotation);
+        assertEquals("@After", annotation.value());
+        assertEquals(PatternKind.ANNOTATION, annotation.kind());
+        assertEquals("org.junit.After", annotation.qualifiedType());
+    }
+    
+    @Test
+    void testBeforeClassJUnitPluginV2_annotation() {
+        BeforeClassJUnitPluginV2 plugin = new BeforeClassJUnitPluginV2();
+        
+        CleanupPattern annotation = plugin.getClass().getAnnotation(CleanupPattern.class);
+        
+        assertNotNull(annotation);
+        assertEquals("@BeforeClass", annotation.value());
+        assertEquals(PatternKind.ANNOTATION, annotation.kind());
+        assertEquals("org.junit.BeforeClass", annotation.qualifiedType());
+    }
+    
+    @Test
+    void testAfterClassJUnitPluginV2_annotation() {
+        AfterClassJUnitPluginV2 plugin = new AfterClassJUnitPluginV2();
+        
+        CleanupPattern annotation = plugin.getClass().getAnnotation(CleanupPattern.class);
+        
+        assertNotNull(annotation);
+        assertEquals("@AfterClass", annotation.value());
+        assertEquals(PatternKind.ANNOTATION, annotation.kind());
+        assertEquals("org.junit.AfterClass", annotation.qualifiedType());
+    }
+    
+    @Test
+    void testTestJUnitPluginV2_annotation() {
+        TestJUnitPluginV2 plugin = new TestJUnitPluginV2();
+        
+        CleanupPattern annotation = plugin.getClass().getAnnotation(CleanupPattern.class);
+        
+        assertNotNull(annotation);
+        assertEquals("@Test", annotation.value());
+        assertEquals(PatternKind.ANNOTATION, annotation.kind());
+        assertEquals("org.junit.Test", annotation.qualifiedType());
+    }
+    
+    @Test
+    void testIgnoreJUnitPluginV2_annotation() {
+        IgnoreJUnitPluginV2 plugin = new IgnoreJUnitPluginV2();
+        
+        CleanupPattern annotation = plugin.getClass().getAnnotation(CleanupPattern.class);
+        
+        assertNotNull(annotation);
+        assertEquals("@Ignore", annotation.value());
+        assertEquals(PatternKind.ANNOTATION, annotation.kind());
+        assertEquals("org.junit.Ignore", annotation.qualifiedType());
+    }
+    
+    @Test
+    void testIgnoreJUnitPluginV2_preview_withReason() {
+        IgnoreJUnitPluginV2 plugin = new IgnoreJUnitPluginV2();
+        
+        String previewBefore = plugin.getPreview(false);
+        String previewAfter = plugin.getPreview(true);
+        
+        // Both previews should show the reason being preserved
+        assertTrue(previewBefore.contains("@Ignore(\"not implemented\")"));
+        assertTrue(previewAfter.contains("@Disabled(\"not implemented\")"));
+    }
 }
