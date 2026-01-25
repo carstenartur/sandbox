@@ -72,7 +72,7 @@ public class LoopRefactoringCollectTest {
 	@DisplayName("Identity collect to List: stream().collect(Collectors.toList())")
 	void testIdentityCollectToList() throws CoreException {
 		String input = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					public void process(List<Integer> items) {
@@ -86,7 +86,7 @@ public class LoopRefactoringCollectTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.*;
 				import java.util.stream.Collectors;
 				class E {
@@ -97,7 +97,7 @@ public class LoopRefactoringCollectTest {
 				}
 				""";
 
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
@@ -114,7 +114,7 @@ public class LoopRefactoringCollectTest {
 	@DisplayName("Identity collect to Set: stream().collect(Collectors.toSet())")
 	void testIdentityCollectToSet() throws CoreException {
 		String input = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					public void process(List<String> items) {
@@ -128,7 +128,7 @@ public class LoopRefactoringCollectTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.*;
 				import java.util.stream.Collectors;
 				class E {
@@ -139,7 +139,7 @@ public class LoopRefactoringCollectTest {
 				}
 				""";
 
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
@@ -160,7 +160,7 @@ public class LoopRefactoringCollectTest {
 	@DisplayName("Map+collect: stream().map(transform).collect(toList())")
 	void testMappedCollect() throws CoreException {
 		String input = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					public void process(List<Integer> numbers) {
@@ -174,7 +174,7 @@ public class LoopRefactoringCollectTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.*;
 				import java.util.stream.Collectors;
 				class E {
@@ -185,7 +185,7 @@ public class LoopRefactoringCollectTest {
 				}
 				""";
 
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
@@ -202,7 +202,7 @@ public class LoopRefactoringCollectTest {
 	@DisplayName("Map with method reference: stream().map(String::toUpperCase)")
 	void testMappedCollectWithMethodReference() throws CoreException {
 		String input = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					public void process(List<String> items) {
@@ -216,7 +216,7 @@ public class LoopRefactoringCollectTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.*;
 				import java.util.stream.Collectors;
 				class E {
@@ -227,7 +227,7 @@ public class LoopRefactoringCollectTest {
 				}
 				""";
 
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
@@ -243,7 +243,7 @@ public class LoopRefactoringCollectTest {
 	@DisplayName("Map with complex expression: stream().map(x -> x * 2 + 1)")
 	void testMappedCollectComplexExpression() throws CoreException {
 		String input = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					public void process(List<Integer> numbers) {
@@ -257,7 +257,7 @@ public class LoopRefactoringCollectTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.*;
 				import java.util.stream.Collectors;
 				class E {
@@ -268,7 +268,7 @@ public class LoopRefactoringCollectTest {
 				}
 				""";
 
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
@@ -289,7 +289,7 @@ public class LoopRefactoringCollectTest {
 	@DisplayName("Filter+collect: stream().filter(predicate).collect(toList())")
 	void testFilteredCollect() throws CoreException {
 		String input = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					public void process(List<String> items) {
@@ -305,7 +305,7 @@ public class LoopRefactoringCollectTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.*;
 				import java.util.stream.Collectors;
 				class E {
@@ -316,7 +316,7 @@ public class LoopRefactoringCollectTest {
 				}
 				""";
 
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
@@ -333,7 +333,7 @@ public class LoopRefactoringCollectTest {
 	@DisplayName("Null filter: filter(item -> item != null)")
 	void testNullFilteredCollect() throws CoreException {
 		String input = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					public void process(List<String> items) {
@@ -349,7 +349,7 @@ public class LoopRefactoringCollectTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.*;
 				import java.util.stream.Collectors;
 				class E {
@@ -360,7 +360,7 @@ public class LoopRefactoringCollectTest {
 				}
 				""";
 
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
@@ -381,7 +381,7 @@ public class LoopRefactoringCollectTest {
 	@DisplayName("Filter+map+collect chain: optimal ordering for performance")
 	void testFilterMapCollect() throws CoreException {
 		String input = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					public void process(List<Integer> numbers) {
@@ -397,7 +397,7 @@ public class LoopRefactoringCollectTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.*;
 				import java.util.stream.Collectors;
 				class E {
@@ -408,7 +408,7 @@ public class LoopRefactoringCollectTest {
 				}
 				""";
 
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
@@ -424,7 +424,7 @@ public class LoopRefactoringCollectTest {
 	@DisplayName("Complex filter+map: multiple conditions and transformations")
 	void testComplexFilterMapCollect() throws CoreException {
 		String input = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					public void process(List<String> items) {
@@ -440,7 +440,7 @@ public class LoopRefactoringCollectTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.*;
 				import java.util.stream.Collectors;
 				class E {
@@ -451,7 +451,7 @@ public class LoopRefactoringCollectTest {
 				}
 				""";
 
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
@@ -472,7 +472,7 @@ public class LoopRefactoringCollectTest {
 	@DisplayName("Array source collect: Arrays.stream(array).collect(toList())")
 	void testArraySourceCollect() throws CoreException {
 		String input = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					public void process(String[] items) {
@@ -486,7 +486,7 @@ public class LoopRefactoringCollectTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.*;
 				import java.util.stream.Collectors;
 				class E {
@@ -497,7 +497,7 @@ public class LoopRefactoringCollectTest {
 				}
 				""";
 
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
@@ -513,7 +513,7 @@ public class LoopRefactoringCollectTest {
 	@DisplayName("Array map+collect: Arrays.stream(arr).map(f).collect(toList())")
 	void testArraySourceMapCollect() throws CoreException {
 		String input = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					public void process(Integer[] numbers) {
@@ -527,7 +527,7 @@ public class LoopRefactoringCollectTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.*;
 				import java.util.stream.Collectors;
 				class E {
@@ -538,7 +538,7 @@ public class LoopRefactoringCollectTest {
 				}
 				""";
 
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);

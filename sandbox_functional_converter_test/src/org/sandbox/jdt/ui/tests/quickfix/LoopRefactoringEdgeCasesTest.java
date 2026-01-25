@@ -66,7 +66,7 @@ public class LoopRefactoringEdgeCasesTest {
 	@DisplayName("Empty collection: stream handles empty input correctly")
 	void testEmptyCollection() throws CoreException {
 		String input = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					public void process() {
@@ -79,7 +79,7 @@ public class LoopRefactoringEdgeCasesTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					public void process() {
@@ -89,7 +89,7 @@ public class LoopRefactoringEdgeCasesTest {
 				}
 				""";
 
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
@@ -105,7 +105,7 @@ public class LoopRefactoringEdgeCasesTest {
 	@DisplayName("Single element: consistent transformation")
 	void testSingleElement() throws CoreException {
 		String input = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					public void process() {
@@ -118,7 +118,7 @@ public class LoopRefactoringEdgeCasesTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					public void process() {
@@ -128,7 +128,7 @@ public class LoopRefactoringEdgeCasesTest {
 				}
 				""";
 
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
@@ -149,7 +149,7 @@ public class LoopRefactoringEdgeCasesTest {
 	@DisplayName("Null check filter: filter(item -> item != null)")
 	void testNullCheck() throws CoreException {
 		String input = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					public void process(List<String> items) {
@@ -163,7 +163,7 @@ public class LoopRefactoringEdgeCasesTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					public void process(List<String> items) {
@@ -172,7 +172,7 @@ public class LoopRefactoringEdgeCasesTest {
 				}
 				""";
 
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
@@ -189,7 +189,7 @@ public class LoopRefactoringEdgeCasesTest {
 	@DisplayName("Null-safe operation: filter before map")
 	void testNullSafeOperation() throws CoreException {
 		String input = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					public void process(List<String> items) {
@@ -204,7 +204,7 @@ public class LoopRefactoringEdgeCasesTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.*;
 				import java.util.stream.Collectors;
 				class E {
@@ -214,7 +214,7 @@ public class LoopRefactoringEdgeCasesTest {
 				}
 				""";
 
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
@@ -235,7 +235,7 @@ public class LoopRefactoringEdgeCasesTest {
 	@DisplayName("Nested generics: List<List<T>> type inference")
 	void testNestedGenerics() throws CoreException {
 		String input = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					public void process(List<List<String>> matrix) {
@@ -247,7 +247,7 @@ public class LoopRefactoringEdgeCasesTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					public void process(List<List<String>> matrix) {
@@ -256,7 +256,7 @@ public class LoopRefactoringEdgeCasesTest {
 				}
 				""";
 
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
@@ -272,7 +272,7 @@ public class LoopRefactoringEdgeCasesTest {
 	@DisplayName("Wildcard generics: List<? extends T> handling")
 	void testWildcardGenerics() throws CoreException {
 		String input = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					public void process(List<? extends Number> numbers) {
@@ -284,7 +284,7 @@ public class LoopRefactoringEdgeCasesTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					public void process(List<? extends Number> numbers) {
@@ -293,7 +293,7 @@ public class LoopRefactoringEdgeCasesTest {
 				}
 				""";
 
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
@@ -313,7 +313,7 @@ public class LoopRefactoringEdgeCasesTest {
 	@DisplayName("Method chaining: element.method1().method2()")
 	void testMethodChaining() throws CoreException {
 		String input = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					public void process(List<String> items) {
@@ -325,7 +325,7 @@ public class LoopRefactoringEdgeCasesTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					public void process(List<String> items) {
@@ -334,7 +334,7 @@ public class LoopRefactoringEdgeCasesTest {
 				}
 				""";
 
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
@@ -350,7 +350,7 @@ public class LoopRefactoringEdgeCasesTest {
 	@DisplayName("Chained map: map(x -> x.m1().m2())")
 	void testChainedMap() throws CoreException {
 		String input = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					public void process(List<String> items) {
@@ -363,7 +363,7 @@ public class LoopRefactoringEdgeCasesTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.*;
 				import java.util.stream.Collectors;
 				class E {
@@ -373,7 +373,7 @@ public class LoopRefactoringEdgeCasesTest {
 				}
 				""";
 
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
@@ -394,7 +394,7 @@ public class LoopRefactoringEdgeCasesTest {
 	@DisplayName("Variable shadowing: lambda preserves scope")
 	void testVariableShadowing() throws CoreException {
 		String input = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					public void process(List<String> items) {
@@ -408,7 +408,7 @@ public class LoopRefactoringEdgeCasesTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					public void process(List<String> items) {
@@ -419,7 +419,7 @@ public class LoopRefactoringEdgeCasesTest {
 				}
 				""";
 
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
@@ -435,7 +435,7 @@ public class LoopRefactoringEdgeCasesTest {
 	@DisplayName("Name conflict: avoid variable name collisions")
 	void testNameConflict() throws CoreException {
 		String input = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					public void process(List<String> list) {
@@ -448,7 +448,7 @@ public class LoopRefactoringEdgeCasesTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					public void process(List<String> list) {
@@ -460,7 +460,7 @@ public class LoopRefactoringEdgeCasesTest {
 				}
 				""";
 
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
@@ -481,7 +481,7 @@ public class LoopRefactoringEdgeCasesTest {
 	@DisplayName("Performance: use direct forEach when possible")
 	void testDirectForEachPerformance() throws CoreException {
 		String input = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					public void process(List<String> items) {
@@ -493,7 +493,7 @@ public class LoopRefactoringEdgeCasesTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					public void process(List<String> items) {
@@ -502,7 +502,7 @@ public class LoopRefactoringEdgeCasesTest {
 				}
 				""";
 
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
@@ -519,7 +519,7 @@ public class LoopRefactoringEdgeCasesTest {
 	@DisplayName("Primitive array: use IntStream for int[] to avoid boxing")
 	void testPrimitiveArrayPerformance() throws CoreException {
 		String input = """
-				package test;
+				package test1;
 				class E {
 					public void process(int[] numbers) {
 						for (int num : numbers) {
@@ -530,7 +530,7 @@ public class LoopRefactoringEdgeCasesTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.Arrays;
 				class E {
 					public void process(int[] numbers) {
@@ -539,7 +539,7 @@ public class LoopRefactoringEdgeCasesTest {
 				}
 				""";
 
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
@@ -559,7 +559,7 @@ public class LoopRefactoringEdgeCasesTest {
 	@DisplayName("No-op loop: empty body still transforms")
 	void testNoOpLoop() throws CoreException {
 		String input = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					public void process(List<String> items) {
@@ -571,7 +571,7 @@ public class LoopRefactoringEdgeCasesTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					public void process(List<String> items) {
@@ -582,7 +582,7 @@ public class LoopRefactoringEdgeCasesTest {
 				}
 				""";
 
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
@@ -598,7 +598,7 @@ public class LoopRefactoringEdgeCasesTest {
 	@DisplayName("Unused element: lambda with unused parameter")
 	void testUnusedElement() throws CoreException {
 		String input = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					private int counter = 0;
@@ -611,7 +611,7 @@ public class LoopRefactoringEdgeCasesTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.*;
 				class E {
 					private int counter = 0;
@@ -621,7 +621,7 @@ public class LoopRefactoringEdgeCasesTest {
 				}
 				""";
 
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);

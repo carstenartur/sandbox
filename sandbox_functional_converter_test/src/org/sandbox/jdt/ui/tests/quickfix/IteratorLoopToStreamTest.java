@@ -74,10 +74,10 @@ public class IteratorLoopToStreamTest {
 	@Test
 	@DisplayName("while-iterator forEach: list.forEach(item -> println(item))")
 	public void testWhileIterator_forEach() throws CoreException {
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 
 		String given = """
-				package test;
+				package test1;
 				import java.util.*;
 				public class E {
 					void process(List<String> items) {
@@ -91,7 +91,7 @@ public class IteratorLoopToStreamTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.*;
 				public class E {
 					void process(List<String> items) {
@@ -115,10 +115,10 @@ public class IteratorLoopToStreamTest {
 	@Test
 	@DisplayName("for-loop-iterator forEach: list.forEach(item -> println(item))")
 	public void testForLoopIterator_forEach() throws CoreException {
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 
 		String given = """
-				package test;
+				package test1;
 				import java.util.*;
 				public class E {
 					void process(List<String> items) {
@@ -131,7 +131,7 @@ public class IteratorLoopToStreamTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.*;
 				public class E {
 					void process(List<String> items) {
@@ -155,10 +155,10 @@ public class IteratorLoopToStreamTest {
 	@Test
 	@DisplayName("forEach with block lambda for multiple statements")
 	public void testIterator_forEachWithMultipleStatements() throws CoreException {
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 
 		String given = """
-				package test;
+				package test1;
 				import java.util.*;
 				public class E {
 					void process(List<String> items) {
@@ -173,7 +173,7 @@ public class IteratorLoopToStreamTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.*;
 				public class E {
 					void process(List<String> items) {
@@ -205,10 +205,10 @@ public class IteratorLoopToStreamTest {
 	@Test
 	@DisplayName("Iterator collect to List: stream().collect(Collectors.toList())")
 	public void testIterator_collectToList() throws CoreException {
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 
 		String given = """
-				package test;
+				package test1;
 				import java.util.*;
 				public class E {
 					List<String> collect(List<String> items) {
@@ -224,7 +224,7 @@ public class IteratorLoopToStreamTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.*;
 				import java.util.stream.Collectors;
 				public class E {
@@ -251,10 +251,10 @@ public class IteratorLoopToStreamTest {
 	@Test
 	@DisplayName("Iterator collect to Set: stream().collect(Collectors.toSet())")
 	public void testIterator_collectToSet() throws CoreException {
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 
 		String given = """
-				package test;
+				package test1;
 				import java.util.*;
 				public class E {
 					Set<String> collectUnique(List<String> items) {
@@ -270,7 +270,7 @@ public class IteratorLoopToStreamTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.*;
 				import java.util.stream.Collectors;
 				public class E {
@@ -301,10 +301,10 @@ public class IteratorLoopToStreamTest {
 	@Test
 	@DisplayName("Iterator map+collect: stream().map(transform).collect(toList())")
 	public void testIterator_mapAndCollect() throws CoreException {
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 
 		String given = """
-				package test;
+				package test1;
 				import java.util.*;
 				public class E {
 					List<String> transformAll(List<Integer> numbers) {
@@ -320,7 +320,7 @@ public class IteratorLoopToStreamTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.*;
 				import java.util.stream.Collectors;
 				public class E {
@@ -349,10 +349,10 @@ public class IteratorLoopToStreamTest {
 	@Test
 	@DisplayName("Iterator map with method reference: stream().map(String::toUpperCase)")
 	public void testIterator_mapWithMethodReference() throws CoreException {
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 
 		String given = """
-				package test;
+				package test1;
 				import java.util.*;
 				public class E {
 					List<String> toUpperAll(List<String> items) {
@@ -368,7 +368,7 @@ public class IteratorLoopToStreamTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.*;
 				import java.util.stream.Collectors;
 				public class E {
@@ -401,10 +401,10 @@ public class IteratorLoopToStreamTest {
 	@Test
 	@DisplayName("Iterator filter+collect: stream().filter(predicate).collect(toList())")
 	public void testIterator_filterAndCollect() throws CoreException {
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 
 		String given = """
-				package test;
+				package test1;
 				import java.util.*;
 				public class E {
 					List<String> filterNonEmpty(List<String> items) {
@@ -422,7 +422,7 @@ public class IteratorLoopToStreamTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.*;
 				import java.util.stream.Collectors;
 				public class E {
@@ -455,10 +455,10 @@ public class IteratorLoopToStreamTest {
 	@Test
 	@DisplayName("Iterator filter+map+collect: stream().filter().map().collect()")
 	public void testIterator_filterMapAndCollect() throws CoreException {
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 
 		String given = """
-				package test;
+				package test1;
 				import java.util.*;
 				public class E {
 					List<String> processPositive(List<Integer> numbers) {
@@ -476,7 +476,7 @@ public class IteratorLoopToStreamTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.*;
 				import java.util.stream.Collectors;
 				public class E {
@@ -510,10 +510,10 @@ public class IteratorLoopToStreamTest {
 	@Test
 	@DisplayName("Iterator sum reduction: stream().mapToInt(i -> i).sum()")
 	public void testIterator_sumReduction() throws CoreException {
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 
 		String given = """
-				package test;
+				package test1;
 				import java.util.*;
 				public class E {
 					int calculateSum(List<Integer> numbers) {
@@ -529,7 +529,7 @@ public class IteratorLoopToStreamTest {
 				""";
 
 		String expected = """
-				package test;
+				package test1;
 				import java.util.*;
 				public class E {
 					int calculateSum(List<Integer> numbers) {
@@ -565,10 +565,10 @@ public class IteratorLoopToStreamTest {
 	@Test
 	@DisplayName("Iterator.remove() prevents conversion - unsafe pattern")
 	public void testIterator_withRemove_notConverted() throws CoreException {
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 
 		String given = """
-				package test;
+				package test1;
 				import java.util.*;
 				public class E {
 					void removeEmpty(List<String> items) {
@@ -603,10 +603,10 @@ public class IteratorLoopToStreamTest {
 	@Test
 	@DisplayName("Multiple next() calls prevent conversion - unsafe pattern")
 	public void testIterator_multipleNext_notConverted() throws CoreException {
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 
 		String given = """
-				package test;
+				package test1;
 				import java.util.*;
 				public class E {
 					void processPairs(List<String> items) {
@@ -640,10 +640,10 @@ public class IteratorLoopToStreamTest {
 	@Test
 	@DisplayName("Break statement prevents conversion - not yet supported")
 	public void testIterator_withBreak_notConverted() throws CoreException {
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 
 		String given = """
-				package test;
+				package test1;
 				import java.util.*;
 				public class E {
 					void processUntilEmpty(List<String> items) {
@@ -679,10 +679,10 @@ public class IteratorLoopToStreamTest {
 	@Test
 	@DisplayName("External state modification prevents conversion - side effect")
 	public void testIterator_withExternalModification_notConverted() throws CoreException {
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 
 		String given = """
-				package test;
+				package test1;
 				import java.util.*;
 				public class E {
 					void trackLast(List<String> items) {
