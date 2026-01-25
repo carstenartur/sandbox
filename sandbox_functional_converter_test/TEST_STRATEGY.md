@@ -24,10 +24,11 @@ sandbox_functional_converter_test/
 └── src/org/sandbox/jdt/ui/tests/quickfix/
     ├── IteratorLoopToStreamTest.java         # Iterator-specific patterns
     ├── LoopRefactoringCollectTest.java       # Collect patterns (List, Set)
-    ├── LoopRefactoringMapFilterTest.java     # Map/Filter combinations
+    ├── LoopRefactoringMapFilterTest.java     # Map/Filter combinations (additional patterns)
     ├── LoopRefactoringEdgeCasesTest.java     # Edge cases and boundaries
     ├── FunctionalLoopNegativeTest.java       # Patterns that should NOT convert
     ├── FunctionalLoopSimpleConversionTest.java  # Basic forEach patterns
+    ├── FunctionalLoopFilterMapTest.java      # Existing filter/map tests
     ├── FunctionalLoopReducerTest.java        # Reduce/aggregate patterns
     ├── FunctionalLoopMatchPatternTest.java   # anyMatch/allMatch/noneMatch
     └── ... (existing test classes)
@@ -92,7 +93,29 @@ sandbox_functional_converter_test/
 
 **Why Important**: Edge cases often reveal bugs in pattern detection and transformation logic. Each test documents what could go wrong.
 
-### FunctionalLoopNegativeTest
+### LoopRefactoringMapFilterTest
+
+**Purpose**: Additional map and filter combination patterns
+
+**Patterns Covered**:
+- Filter-first patterns for optimal performance
+- Map-filter-map chains (multi-step transformations)
+- Multiple sequential filters
+- Null-safe map operations with `Objects::nonNull`
+- Combined AND conditions in single filter
+- Filter+map+collect chains
+- Complex multi-step transformations
+
+**Best Practices**:
+- Filter before map when possible (reduces number of transformations)
+- Use `Objects::nonNull` for null filtering
+- Combine filter conditions with && for efficiency
+- Chain operations in logical order (filter → map → terminal)
+
+**Note**: This class supplements `FunctionalLoopFilterMapTest` with additional
+pattern examples demonstrating best practices.
+
+### FunctionalLoopFilterMapTest (Existing)
 
 **Purpose**: Tests patterns that should NOT be converted
 
@@ -263,7 +286,8 @@ Choose the appropriate test class:
 |-------------|-----------|
 | Iterator-based loops | `IteratorLoopToStreamTest` |
 | Collecting to List/Set | `LoopRefactoringCollectTest` |
-| Map/Filter combinations | `LoopRefactoringMapFilterTest` |
+| Map/Filter combinations (additional) | `LoopRefactoringMapFilterTest` |
+| Map/Filter combinations (existing) | `FunctionalLoopFilterMapTest` |
 | Edge cases | `LoopRefactoringEdgeCasesTest` |
 | Should NOT convert | `FunctionalLoopNegativeTest` |
 | Basic forEach | `FunctionalLoopSimpleConversionTest` |
