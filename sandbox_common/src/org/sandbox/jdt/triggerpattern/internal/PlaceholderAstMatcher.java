@@ -485,7 +485,7 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 						return false;
 					} else {
 						// First occurrence - bind to list
-						bindings.put(placeholderName, new ArrayList<ASTNode>(otherArgs));
+						bindings.put(placeholderName, new ArrayList<>(otherArgs));
 						return true;
 					}
 				}
