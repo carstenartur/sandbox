@@ -172,7 +172,74 @@ Issue [#450](https://github.com/carstenartur/sandbox/issues/450) introduced the 
 - Body statement toString() may normalize formatting
 - Collection modification detection doesn't verify receiver (may produce false positives)
 
-### Phase 7: V1 Deprecation and Cleanup (FUTURE)
+### Phase 7: Iterator Loop Support (COMPLETED - January 2026)
+**Goal**: Activate iterator-based loop conversion for modern, idiomatic Java code
+
+**Status**: ✅ Complete - ITERATOR_LOOP activated and 20 tests enabled
+
+**Completed Deliverables**:
+1. **Activation in UseFunctionalCallFixCore**:
+   - Uncommented `ITERATOR_LOOP(new IteratorLoopToFunctional())` enum entry
+   - Added `IteratorLoopToFunctional` import
+   - Updated comments to reflect Phase 7 activation status
+
+2. **Cleanup Integration**:
+   - Modified `UseFunctionalCallCleanUpCore.computeFixSet()` to include ITERATOR_LOOP
+   - ITERATOR_LOOP runs alongside LOOP (V1) when `USEFUNCTIONALLOOP_CLEANUP` is enabled
+   - Both enhanced for-loops and iterator-based loops now supported in single cleanup pass
+
+3. **Test Activation**:
+   - Enabled 14 tests in `IteratorLoopToStreamTest` (removed @Disabled annotations)
+   - Enabled 6 tests in `IteratorLoopConversionTest` (removed @Disabled annotations)
+   - **Total**: 20 iterator tests now active and running
+
+4. **New Test Suites**:
+   - Created `LoopBidirectionalTransformationTest` (5 tests):
+     - 2 active tests validating for → Stream and Iterator → Stream
+     - 3 future tests documenting desired Stream → for, for → while, while → for transformations
+   - Created `AdditionalLoopPatternsTest` (9 tests):
+     - 6 active negative tests (classic while, do-while, complex iterators should NOT convert)
+     - 3 future tests for index-based for loops and collection access patterns
+
+5. **Documentation Updates**:
+   - Updated TODO.md with Phase 7 section
+   - Updated ARCHITECTURE.md with Phase 7 documentation
+   - Documented supported patterns and test coverage
+
+**Supported Iterator Patterns** (Phase 7):
+1. **while-iterator**: `Iterator<T> it = coll.iterator(); while (it.hasNext()) { T item = it.next(); ... }`
+   - Converts to: `collection.forEach(item -> ...)`
+   - Also supports map, filter, collect, reduce, match patterns
+
+2. **for-loop-iterator**: `for (Iterator<T> it = coll.iterator(); it.hasNext(); ) { T item = it.next(); ... }`
+   - Converts to: `collection.forEach(item -> ...)`
+   - Same pattern support as while-iterator
+
+**Implementation Architecture** (Phase 7):
+- `IteratorLoopToFunctional` extends `AbstractFunctionalCall<ASTNode>`
+- Uses `IteratorPatternDetector` to identify iterator patterns in AST
+- Uses `IteratorLoopAnalyzer` to validate safety (no breaks, continues, etc.)
+- Uses `IteratorLoopBodyParser` to extract loop body and next() variable
+- Synthesizes `EnhancedForStatement` and delegates to existing LoopToFunctional infrastructure
+- Marks both iterator declaration and loop statement as processed to prevent double conversion
+
+**Test Coverage** (Phase 7):
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `IteratorLoopToStreamTest` | 14 | ✅ Enabled |
+| `IteratorLoopConversionTest` | 6 | ✅ Enabled |
+| `LoopBidirectionalTransformationTest` | 2 active, 3 future | ✅ New |
+| `AdditionalLoopPatternsTest` | 6 active, 3 future | ✅ New |
+| **Total Active** | **28** | **All Enabled** |
+
+**Key Decisions**:
+- Iterator loops convert to same stream operations as enhanced for-loops
+- No new cleanup constant needed - reuses `USEFUNCTIONALLOOP_CLEANUP`
+- Both LOOP and ITERATOR_LOOP run in same cleanup pass for comprehensive conversion
+- Negative tests document patterns that should NOT convert (do-while, classic while, etc.)
+- Future tests document desired bidirectional transformations (Stream → for, etc.)
+
+### Phase 8: V1 Deprecation and Cleanup (FUTURE)
 **Goal**: Make ULR the primary implementation and retire legacy code
 
 **Planned Activities**:
