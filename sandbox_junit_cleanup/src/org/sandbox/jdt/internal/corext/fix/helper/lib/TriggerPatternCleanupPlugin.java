@@ -297,7 +297,18 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
             importRewriter.removeStaticImport(staticImportToRemove);
         }
         for (String staticImportToAdd : rewriteRule.addStaticImports()) {
-            importRewriter.addStaticImport(staticImportToAdd);
+            // Parse static import: "org.junit.Assert.assertEquals" -> class="org.junit.Assert", method="assertEquals"
+            int lastDot = staticImportToAdd.lastIndexOf('.');
+            if (lastDot > 0) {
+                String className = staticImportToAdd.substring(0, lastDot);
+                String methodName = staticImportToAdd.substring(lastDot + 1);
+                // Handle wildcard imports (*)
+                if ("*".equals(methodName)) {
+                    importRewriter.addStaticImport(className, "*", false);
+                } else {
+                    importRewriter.addStaticImport(className, methodName, false);
+                }
+            }
         }
     }
     
