@@ -90,6 +90,72 @@ class StringRendererTest {
     }
     
     @Test
+    void testRenderSourceExplicitRangeInvalidNoComma() {
+        var source = new SourceDescriptor(
+            SourceDescriptor.SourceType.EXPLICIT_RANGE, "10", "int");
+        
+        assertThatThrownBy(() -> renderer.renderSource(source))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("Invalid EXPLICIT_RANGE expression")
+            .hasMessageContaining("Expected format 'start,end'");
+    }
+    
+    @Test
+    void testRenderSourceExplicitRangeInvalidMultipleCommas() {
+        var source = new SourceDescriptor(
+            SourceDescriptor.SourceType.EXPLICIT_RANGE, "0,10,20", "int");
+        
+        assertThatThrownBy(() -> renderer.renderSource(source))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("Invalid EXPLICIT_RANGE expression")
+            .hasMessageContaining("Expected format 'start,end'");
+    }
+    
+    @Test
+    void testRenderSourceExplicitRangeInvalidEmptyStart() {
+        var source = new SourceDescriptor(
+            SourceDescriptor.SourceType.EXPLICIT_RANGE, ",10", "int");
+        
+        assertThatThrownBy(() -> renderer.renderSource(source))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("Invalid EXPLICIT_RANGE expression")
+            .hasMessageContaining("non-empty expressions");
+    }
+    
+    @Test
+    void testRenderSourceExplicitRangeInvalidEmptyEnd() {
+        var source = new SourceDescriptor(
+            SourceDescriptor.SourceType.EXPLICIT_RANGE, "0,", "int");
+        
+        assertThatThrownBy(() -> renderer.renderSource(source))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("Invalid EXPLICIT_RANGE expression")
+            .hasMessageContaining("non-empty expressions");
+    }
+    
+    @Test
+    void testRenderSourceExplicitRangeInvalidOnlyComma() {
+        var source = new SourceDescriptor(
+            SourceDescriptor.SourceType.EXPLICIT_RANGE, ",", "int");
+        
+        assertThatThrownBy(() -> renderer.renderSource(source))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("Invalid EXPLICIT_RANGE expression")
+            .hasMessageContaining("non-empty expressions");
+    }
+    
+    @Test
+    void testRenderSourceExplicitRangeInvalidWhitespaceOnly() {
+        var source = new SourceDescriptor(
+            SourceDescriptor.SourceType.EXPLICIT_RANGE, " , ", "int");
+        
+        assertThatThrownBy(() -> renderer.renderSource(source))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("Invalid EXPLICIT_RANGE expression")
+            .hasMessageContaining("non-empty expressions");
+    }
+    
+    @Test
     void testRenderFilter() {
         String result = renderer.renderFilter("stream", "x > 0", "x");
         assertThat(result).isEqualTo("stream.filter(x -> x > 0)");

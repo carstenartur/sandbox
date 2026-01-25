@@ -63,6 +63,11 @@ public record SourceDescriptor(
          *   <li>{@code "start,end"} → {@code IntStream.range(start, end)}</li>
          *   <li>{@code "i+1,arr.length"} → {@code IntStream.range(i+1, arr.length)}</li>
          * </ul>
+         * <p>
+         * Note: The start and end expressions must not contain unescaped commas, as comma is
+         * used as the delimiter. Simple expressions like variable names, field accesses, and
+         * binary operations are supported (for example, {@code "i+1,arr.length"}).
+         * </p>
          * Used for classic index-based for loops: {@code for(int i=start; i<end; i++)}
          */
         EXPLICIT_RANGE

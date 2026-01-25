@@ -93,9 +93,9 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
                 intStream.setName(ast.newSimpleName("range"));
                 // Parse start and end from expression (format: "start,end")
                 String[] parts = source.expression().split(",");
-                if (parts.length != 2) {
+                if (parts.length != 2 || parts[0].trim().isEmpty() || parts[1].trim().isEmpty()) {
                     throw new IllegalArgumentException("Invalid EXPLICIT_RANGE expression: '" + source.expression()
-                            + "'. Expected format 'start,end'.");
+                            + "'. Expected format 'start,end' with non-empty expressions.");
                 }
                 intStream.arguments().add(createExpression(parts[0].trim()));
                 intStream.arguments().add(createExpression(parts[1].trim()));

@@ -39,9 +39,9 @@ public class StringRenderer implements StreamPipelineRenderer<String> {
             case EXPLICIT_RANGE -> {
                 // Parse start and end from expression (format: "start,end")
                 String[] parts = expr.split(",");
-                if (parts.length != 2) {
+                if (parts.length != 2 || parts[0].trim().isEmpty() || parts[1].trim().isEmpty()) {
                     throw new IllegalArgumentException("Invalid EXPLICIT_RANGE expression: '" + expr
-                            + "'. Expected format 'start,end'.");
+                            + "'. Expected format 'start,end' with non-empty expressions.");
                 }
                 yield "IntStream.range(" + parts[0].trim() + ", " + parts[1].trim() + ")";
             }
