@@ -24,6 +24,13 @@ jobs:
     - uses: actions/checkout@v6
       with:
         fetch-depth: 0 # required for jgit timestamp provider to work
+    - name: Debug GitHub context
+      run: |
+        echo "event_name: ${{ github.event_name }}"
+        echo "ref: ${{ github.ref }}"
+        echo "ref_name: ${{ github.ref_name }}"
+        echo "head_ref: ${{ github.head_ref }}"
+        echo "base_ref: ${{ github.base_ref }}"
     - name: Set up JDK 21
       uses: actions/setup-java@v5
       with:
@@ -61,7 +68,7 @@ jobs:
         include_passed: true
         detailed_summary: true
     - name: Generate HTML Test Reports
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      if: github.event_name == 'push' && github.ref_name == 'main'
       run: |
         echo "=== Checking for test XML reports ==="
         find . -path "*/target/surefire-reports/TEST-*.xml" -type f | head -20
@@ -85,7 +92,7 @@ jobs:
         echo "=== Checking generated HTML reports ==="
         find . -path "*/target/site/surefire-report.html" -type f
     - name: Prepare Test Reports for GitHub Pages
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      if: github.event_name == 'push' && github.ref_name == 'main'
       run: |
         # Create directory structure for test reports
         mkdir -p /tmp/gh-pages/tests
@@ -194,7 +201,7 @@ jobs:
         echo "=== Index.html content ==="
         cat /tmp/gh-pages/tests/index.html
     - name: Deploy Test Reports to GitHub Pages
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      if: github.event_name == 'push' && github.ref_name == 'main'
       uses: peaceiris/actions-gh-pages@v4
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
