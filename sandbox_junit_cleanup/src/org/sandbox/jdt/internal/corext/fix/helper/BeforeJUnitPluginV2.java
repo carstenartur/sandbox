@@ -68,8 +68,9 @@ public class BeforeJUnitPluginV2 extends TriggerPatternCleanupPlugin {
 
 	@Override
 	protected JunitHolder createHolder(Match match) {
-		JunitHolder holder = new JunitHolder();
-		holder.minv = match.getMatchedNode();
+		// Call parent implementation to get holder with bindings set
+		JunitHolder holder = super.createHolder(match);
+		// No additional customization needed for @Before (no placeholders)
 		return holder;
 	}
 
