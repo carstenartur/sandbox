@@ -15,24 +15,16 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
-import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.Annotation;
-import org.eclipse.jdt.core.dom.MarkerAnnotation;
-import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
-import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
-import org.eclipse.jdt.internal.corext.dom.ASTNodes;
-import org.eclipse.text.edits.TextEditGroup;
-import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.TriggerPatternCleanupPlugin;
 import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
-import org.sandbox.jdt.triggerpattern.api.Match;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
+import org.sandbox.jdt.triggerpattern.api.RewriteRule;
 
 /**
  * Migrates JUnit 4 @Before annotations to JUnit 5 @BeforeEach.
  * 
- * <p>This is a simplified version using TriggerPattern-based declarative architecture.
- * Compare with the original {@link BeforeJUnitPlugin} to see the reduction in boilerplate.</p>
+ * <p>This is a simplified version using TriggerPattern-based declarative architecture
+ * with @RewriteRule annotation to eliminate boilerplate code.</p>
  * 
  * <p><b>Before:</b></p>
  * <pre>
@@ -64,26 +56,12 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
     description = "Migrate @Before to @BeforeEach",
     displayName = "JUnit 4 @Before → JUnit 5 @BeforeEach"
 )
+@RewriteRule(
+    replaceWith = "@BeforeEach",
+    removeImports = {ORG_JUNIT_BEFORE},
+    addImports = {ORG_JUNIT_JUPITER_API_BEFORE_EACH}
+)
 public class BeforeJUnitPluginV2 extends TriggerPatternCleanupPlugin {
-
-	@Override
-	protected JunitHolder createHolder(Match match) {
-		// Call parent implementation to get holder with bindings set
-		JunitHolder holder = super.createHolder(match);
-		// No additional customization needed for @Before (no placeholders)
-		return holder;
-	}
-
-	@Override
-	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
-			ImportRewrite importRewriter, JunitHolder junitHolder) {
-		Annotation annotation = junitHolder.getAnnotation();
-		MarkerAnnotation newAnnotation = ast.newMarkerAnnotation();
-		newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_BEFORE_EACH));
-		ASTNodes.replaceButKeepComment(rewriter, annotation, newAnnotation, group);
-		importRewriter.removeImport(ORG_JUNIT_BEFORE);
-		importRewriter.addImport(ORG_JUNIT_JUPITER_API_BEFORE_EACH);
-	}
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
