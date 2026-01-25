@@ -32,7 +32,7 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
  * Migrates JUnit 4 @After annotations to JUnit 5 @AfterEach.
  * 
  * <p>This is a simplified version using TriggerPattern-based declarative architecture.
- * Compare with the original {@link AfterJUnitPlugin} to see the reduction in boilerplate.</p>
+ * It replaces the previous AfterJUnitPlugin implementation and significantly reduces boilerplate.</p>
  * 
  * <p><b>Before:</b></p>
  * <pre>

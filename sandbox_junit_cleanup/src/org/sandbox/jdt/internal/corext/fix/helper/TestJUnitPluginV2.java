@@ -34,8 +34,9 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
  * <p>This plugin only handles marker annotations (without expected/timeout attributes).
  * @Test annotations with expected or timeout are handled by separate plugins.</p>
  * 
- * <p>This is a simplified version using TriggerPattern-based declarative architecture.
- * Compare with the original {@link TestJUnitPlugin} to see the reduction in boilerplate.</p>
+ * <p>This is a simplified version using TriggerPattern-based declarative architecture
+ * that replaces the original TestJUnitPlugin implementation and significantly reduces
+ * boilerplate.</p>
  * 
  * <p><b>Before:</b></p>
  * <pre>

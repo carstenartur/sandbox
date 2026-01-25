@@ -35,8 +35,8 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
  * <p>This plugin handles both marker and single-member annotations, preserving
  * the ignore reason when present.</p>
  * 
- * <p>This is a simplified version using TriggerPattern-based declarative architecture.
- * Compare with the original {@link IgnoreJUnitPlugin} to see the reduction in boilerplate.</p>
+ * <p>This refactored version replaces the earlier IgnoreJUnitPlugin implementation and
+ * uses the TriggerPattern-based declarative architecture to reduce boilerplate.</p>
  * 
  * <p><b>Before:</b></p>
  * <pre>
@@ -83,14 +83,7 @@ public class IgnoreJUnitPluginV2 extends TriggerPatternCleanupPlugin {
 	@Override
 	protected JunitHolder createHolder(Match match) {
 		// Call parent implementation to get holder with bindings set
-		JunitHolder holder = super.createHolder(match);
-		// Store annotation type information for proper transformation
-		Annotation annotation = (Annotation) match.getMatchedNode();
-		if (annotation instanceof SingleMemberAnnotation) {
-			SingleMemberAnnotation singleMember = (SingleMemberAnnotation) annotation;
-			holder.value = singleMember.getValue().toString();
-		}
-		return holder;
+		return super.createHolder(match);
 	}
 
 	@Override

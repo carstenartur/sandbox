@@ -31,8 +31,8 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 /**
  * Migrates JUnit 4 @AfterClass annotations to JUnit 5 @AfterAll.
  * 
- * <p>This is a simplified version using TriggerPattern-based declarative architecture.
- * Compare with the original {@link AfterClassJUnitPlugin} to see the reduction in boilerplate.</p>
+ * <p>This is a simplified version using TriggerPattern-based declarative architecture,
+ * refactored from the original plugin to reduce boilerplate.</p>
  * 
  * <p><b>Before:</b></p>
  * <pre>

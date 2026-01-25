@@ -31,8 +31,8 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 /**
  * Migrates JUnit 4 @BeforeClass annotations to JUnit 5 @BeforeAll.
  * 
- * <p>This is a simplified version using TriggerPattern-based declarative architecture.
- * Compare with the original {@link BeforeClassJUnitPlugin} to see the reduction in boilerplate.</p>
+ * <p>This is a simplified version using TriggerPattern-based declarative architecture
+ * that replaces the original BeforeClassJUnitPlugin implementation and reduces boilerplate.</p>
  * 
  * <p><b>Before:</b></p>
  * <pre>
