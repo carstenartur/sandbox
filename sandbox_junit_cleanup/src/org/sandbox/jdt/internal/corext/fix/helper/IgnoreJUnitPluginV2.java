@@ -94,6 +94,26 @@ public class IgnoreJUnitPluginV2 extends TriggerPatternCleanupPlugin {
 			// Move the value (reason) from old to new annotation
 			newSingleMemberAnnotation.setValue(ASTNodes.createMoveTarget(rewriter, oldAnnotation.getValue()));
 			newAnnotation = newSingleMemberAnnotation;
+		} else if (annotation instanceof org.eclipse.jdt.core.dom.NormalAnnotation) {
+			// Handle NormalAnnotation (e.g., @Ignore(value="reason"))
+			// Convert to SingleMemberAnnotation for @Disabled
+			org.eclipse.jdt.core.dom.NormalAnnotation oldAnnotation = (org.eclipse.jdt.core.dom.NormalAnnotation) annotation;
+			@SuppressWarnings("unchecked")
+			java.util.List<org.eclipse.jdt.core.dom.MemberValuePair> values = oldAnnotation.values();
+			
+			if (!values.isEmpty()) {
+				// If there's a value attribute, extract it and create SingleMemberAnnotation
+				org.eclipse.jdt.core.dom.MemberValuePair pair = values.get(0);
+				SingleMemberAnnotation newSingleMemberAnnotation = ast.newSingleMemberAnnotation();
+				newSingleMemberAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_DISABLED));
+				newSingleMemberAnnotation.setValue(ASTNodes.createMoveTarget(rewriter, pair.getValue()));
+				newAnnotation = newSingleMemberAnnotation;
+			} else {
+				// No value, treat as marker
+				MarkerAnnotation newMarkerAnnotation = ast.newMarkerAnnotation();
+				newMarkerAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_DISABLED));
+				newAnnotation = newMarkerAnnotation;
+			}
 		} else {
 			// MarkerAnnotation - no reason to preserve
 			MarkerAnnotation newMarkerAnnotation = ast.newMarkerAnnotation();
