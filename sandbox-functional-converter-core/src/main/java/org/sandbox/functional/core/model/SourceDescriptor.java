@@ -30,12 +30,41 @@ public record SourceDescriptor(
      * The type of iteration source.
      */
     public enum SourceType {
+        /** A collection like List, Set, etc. Generates: {@code collection.stream()} */
         COLLECTION,
+        
+        /** An array. Generates: {@code Arrays.stream(array)} */
         ARRAY,
+        
+        /** An Iterable. Generates: {@code StreamSupport.stream(iterable.spliterator(), false)} */
         ITERABLE,
+        
+        /** An Iterator (future use) */
         ITERATOR,
+        
+        /** Already a Stream. Expression is used as-is */
         STREAM,
+        
+        /** 
+         * Integer range from 0 to N (exclusive).
+         * Expression format: {@code "N"} where N is the upper bound.
+         * Generates: {@code IntStream.range(0, N)}
+         * Example: {@code "10"} → {@code IntStream.range(0, 10)}
+         */
         INT_RANGE,
+        
+        /** 
+         * Explicit integer range with start and end.
+         * Expression format: {@code "start,end"} (comma-separated).
+         * Generates: {@code IntStream.range(start, end)}
+         * Examples:
+         * <ul>
+         *   <li>{@code "0,10"} → {@code IntStream.range(0, 10)}</li>
+         *   <li>{@code "start,end"} → {@code IntStream.range(start, end)}</li>
+         *   <li>{@code "i+1,arr.length"} → {@code IntStream.range(i+1, arr.length)}</li>
+         * </ul>
+         * Used for classic index-based for loops: {@code for(int i=start; i<end; i++)}
+         */
         EXPLICIT_RANGE
     }
 }
