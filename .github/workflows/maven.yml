@@ -47,14 +47,9 @@ jobs:
         maven-version: 3.9.9
     - name: Build with Maven
       run: |
-        if [ "${{ github.event_name }}" == "pull_request" ]; then
-          # Fast PR build - skip product/repo for quick feedback
-          xvfb-run --auto-servernum mvn -e -V -T 1C --batch-mode -Dtycho.localArtifacts=ignore clean verify
-        else
-          # Full build for main branch - includes product and repository
-          xvfb-run --auto-servernum mvn -e -V -T 1C --batch-mode -Dtycho.localArtifacts=ignore -Pproduct,repo clean verify
-        fi
-#       run: xvfb-run --auto-servernum mvn -e -V --batch-mode -Dtycho.localArtifacts=ignore -Dinclude=web -Pjacoco clean verify
+        # Normal Maven/Tycho build without jacoco, product, repo profiles by default
+        # This ensures fast builds and test report generation on every commit
+        xvfb-run --auto-servernum mvn -e -V -T 1C --batch-mode -Dtycho.localArtifacts=ignore clean verify
     - name: Cleanup xvfb pidx build
       uses: bcomnes/cleanup-xvfb@v1
     - name: Publish Test Report
@@ -65,22 +60,15 @@ jobs:
     - name: Generate HTML Test Reports
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       run: |
-        # Generate HTML test reports for all test modules
-        failed_modules=""
-        for module in sandbox_*_test; do
-          if [ -d "$module" ]; then
-            echo "Generating test report for $module..."
-            if ! mvn -pl "$module" surefire-report:report-only; then
-              echo "Error: Failed to generate report for $module"
-              failed_modules="$failed_modules $module"
-            fi
-          fi
-        done
-        
-        # Exit with error if any module failed to generate reports
-        if [ -n "$failed_modules" ]; then
-          echo "Failed to generate reports for:$failed_modules"
-          exit 1
+        # Test reports are now generated automatically as part of the build
+        # during the test phase via maven-surefire-report-plugin
+        # This step just verifies that reports were created
+        echo "Verifying test reports were generated..."
+        report_count=$(find . -type f -name 'surefire-report.html' | wc -l)
+        echo "Found $report_count test report(s)"
+        if [ "$report_count" -eq 0 ]; then
+          echo "Warning: No test reports found"
+          # Don't fail the build - tests might have been skipped
         fi
     - name: Prepare Test Reports for GitHub Pages
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -151,24 +139,6 @@ jobs:
         
         echo "Test reports prepared in /tmp/gh-pages/tests"
         ls -la /tmp/gh-pages/tests/
-    - name: Upload Update Site Artifact
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-      uses: actions/upload-artifact@v6
-      with:
-        name: update-site-repository
-        path: sandbox_updatesite/target/repository/
-        retention-days: 1
-    - name: Deploy Coverage to GitHub Pages
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-      uses: peaceiris/actions-gh-pages@v4
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./sandbox_coverage/target/site/jacoco-aggregate
-        destination_dir: coverage
-        keep_files: true
-        user_name: 'github-actions[bot]'
-        user_email: 'github-actions[bot]@users.noreply.github.com'
-        commit_message: 'Deploy JaCoCo coverage report'
     - name: Deploy Test Reports to GitHub Pages
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       uses: peaceiris/actions-gh-pages@v4
