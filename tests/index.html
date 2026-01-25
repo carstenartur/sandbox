@@ -12,7 +12,7 @@
     a { color: #0066cc; text-decoration: none; }
     a:hover { text-decoration: underline; }
     .description { color: #666; margin: 10px 0; }
-    .no-reports { background: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; }
+    .update-info { background: #f0f0f0; padding: 10px; border-radius: 5px; margin: 20px 0; }
   </style>
 </head>
 <body>
@@ -21,12 +21,12 @@
     This page contains HTML test reports for all test modules in the Sandbox project.
     Each module's report shows test results including passed, failed, and disabled tests.
   </p>
+  <div class="update-info">
+    <strong>Note:</strong> These reports are updated from the scheduled (daily) coverage build,
+    which includes all test results alongside code coverage metrics. 
+    For the most recent test-only results (updated on every main commit), see the main build workflow.
+  </div>
   <div class="modules">
-    <div class="no-reports">
-      <strong>⚠️ No test reports available yet.</strong>
-      <p>Test reports will appear here after a successful build with test execution.</p>
-      <p>Check the <a href="https://github.com/carstenartur/sandbox/actions">GitHub Actions</a> for build status.</p>
-    </div>
   </div>
   <hr>
   <p style="text-align: center; color: #666; margin-top: 30px;">
