@@ -490,7 +490,7 @@ HTML test reports for all test modules, showing detailed test execution results:
   - Disabled tests (JUnit 5 `@Disabled` annotations)
   - Detailed test execution information
 - **Update Frequency**: Automatically updated on every push to the main branch
-- **Local Generation**: Run `mvn surefire-report:report` in any test module to generate locally in `target/site/surefire-report.html`
+- **Local Generation**: First run the tests for a given test module under the same environment you use for tests (for example, `xvfb-run --auto-servernum mvn test -pl <test-module>`), then run `mvn surefire-report:report` in that module to generate `target/site/surefire-report.html`
 - **Structure**:
   - Main index: Lists all test modules with links to their individual reports
   - Module reports: Detailed test results for each module

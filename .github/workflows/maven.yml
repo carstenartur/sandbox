@@ -66,12 +66,22 @@ jobs:
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       run: |
         # Generate HTML test reports for all test modules
+        failed_modules=""
         for module in sandbox_*_test; do
           if [ -d "$module" ]; then
             echo "Generating test report for $module..."
-            mvn -pl "$module" surefire-report:report-only || echo "Warning: Failed to generate report for $module"
+            if ! mvn -pl "$module" surefire-report:report-only; then
+              echo "Error: Failed to generate report for $module"
+              failed_modules="$failed_modules $module"
+            fi
           fi
         done
+        
+        # Exit with error if any module failed to generate reports
+        if [ -n "$failed_modules" ]; then
+          echo "Failed to generate reports for:$failed_modules"
+          exit 1
+        fi
     - name: Prepare Test Reports for GitHub Pages
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       run: |
@@ -113,13 +123,13 @@ jobs:
             mkdir -p "/tmp/gh-pages/tests/$module"
             cp -r "$module/target/site/"* "/tmp/gh-pages/tests/$module/"
             
-            # Add module entry to index with HTML escaping
-            # Module names follow pattern sandbox_*_test so they're safe, but escape for security
+            # Add module entry to index with HTML escaping for display text
+            # Use raw module name for href (URL path), HTML-escape only for display
             module_escaped=$(echo "$module" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g; s/'\''/\&#39;/g')
             cat >> /tmp/gh-pages/tests/index.html << EOF
             <div class="module">
               <h2>${module_escaped}</h2>
-              <p><a href="${module_escaped}/surefire-report.html">View Test Report</a></p>
+              <p><a href="${module}/surefire-report.html">View Test Report</a></p>
             </div>
         EOF
           fi
