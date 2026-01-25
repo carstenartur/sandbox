@@ -108,6 +108,9 @@ public class LoopRefactoringEdgeCasesTest {
 				package test1;
 				import java.util.*;
 				class MyTest {
+					public static void main(String[] args) {
+						new MyTest().process();
+					}
 					public void process() {
 						List<String> items = Collections.singletonList("only");
 						for (String item : items) {
@@ -121,6 +124,9 @@ public class LoopRefactoringEdgeCasesTest {
 				package test1;
 				import java.util.*;
 				class MyTest {
+					public static void main(String[] args) {
+						new MyTest().process();
+					}
 					public void process() {
 						List<String> items = Collections.singletonList("only");
 						items.forEach(item -> System.out.println(item));
@@ -238,6 +244,9 @@ public class LoopRefactoringEdgeCasesTest {
 				package test1;
 				import java.util.*;
 				class MyTest {
+					public static void main(String[] args) {
+						new MyTest().process(new ArrayList<>());
+					}
 					public void process(List<List<String>> matrix) {
 						for (List<String> row : matrix) {
 							System.out.println(row);
@@ -250,6 +259,9 @@ public class LoopRefactoringEdgeCasesTest {
 				package test1;
 				import java.util.*;
 				class MyTest {
+					public static void main(String[] args) {
+						new MyTest().process(new ArrayList<>());
+					}
 					public void process(List<List<String>> matrix) {
 						matrix.forEach(row -> System.out.println(row));
 					}
@@ -602,6 +614,9 @@ public class LoopRefactoringEdgeCasesTest {
 				import java.util.*;
 				class MyTest {
 					private int counter = 0;
+					public static void main(String[] args) {
+						new MyTest().process(new ArrayList<>());
+					}
 					public void process(List<String> items) {
 						for (String item : items) {
 							counter++;
@@ -615,6 +630,9 @@ public class LoopRefactoringEdgeCasesTest {
 				import java.util.*;
 				class MyTest {
 					private int counter = 0;
+					public static void main(String[] args) {
+						new MyTest().process(new ArrayList<>());
+					}
 					public void process(List<String> items) {
 						items.forEach(item -> counter++);
 					}
