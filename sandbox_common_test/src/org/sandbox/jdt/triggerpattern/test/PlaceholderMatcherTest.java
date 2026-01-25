@@ -59,11 +59,13 @@ public class PlaceholderMatcherTest {
 		
 		assertTrue(matches, "Pattern should match the candidate");
 		
-		Map<String, ASTNode> bindings = matcher.getBindings();
+		Map<String, Object> bindings = matcher.getBindings();
 		assertEquals(1, bindings.size(), "Should have one binding");
 		assertTrue(bindings.containsKey("$x"), "Should have binding for $x");
 		
-		ASTNode boundNode = bindings.get("$x");
+		Object boundValue = bindings.get("$x");
+		assertTrue(boundValue instanceof ASTNode, "Bound value should be an ASTNode");
+		ASTNode boundNode = (ASTNode) boundValue;
 		assertTrue(boundNode instanceof SimpleName, "Bound node should be a SimpleName");
 		assertEquals("y", ((SimpleName) boundNode).getIdentifier(), "Bound identifier should be 'y'");
 	}
@@ -111,7 +113,7 @@ public class PlaceholderMatcherTest {
 		
 		assertTrue(matches, "Pattern should match the candidate");
 		
-		Map<String, ASTNode> bindings = matcher.getBindings();
+		Map<String, Object> bindings = matcher.getBindings();
 		assertEquals(2, bindings.size(), "Should have two bindings");
 		assertTrue(bindings.containsKey("$x"), "Should have binding for $x");
 		assertTrue(bindings.containsKey("$y"), "Should have binding for $y");
