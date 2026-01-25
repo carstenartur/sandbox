@@ -66,7 +66,6 @@ public @interface RewriteRule {
      * <ul>
      *   <li>{@code $x} - Matches exactly one AST node</li>
      *   <li>{@code $x$} - Matches zero or more AST nodes (multi-placeholder)</li>
-     *   <li>{@code $x:TypeName} - Matches one node of specified type (type constraint)</li>
      * </ul>
      * 
      * <p><b>Current limitations:</b></p>

@@ -195,47 +195,6 @@ public static IJavaCompletionProposal myHint(HintContext ctx) {
 }
 ```
 
-### Type Constraints
-
-Type constraints restrict placeholders to match only specific AST node types using the syntax `$name:TypeName`:
-
-```java
-@TriggerPattern(value = "Assert.assertEquals($msg:StringLiteral, $a, $b)", 
-                kind = PatternKind.METHOD_CALL)
-// Only matches when first argument is a String literal
-// Matches: Assert.assertEquals("test failed", expected, actual)
-// Does NOT match: Assert.assertEquals(message, expected, actual)  // message is not a literal
-```
-
-**Supported type constraints:**
-- `StringLiteral` - String literals (`"text"`)
-- `NumberLiteral` - Numeric literals (`42`, `3.14`)
-- `TypeLiteral` - Type literals (`Exception.class`)
-- `SimpleName` - Simple identifiers (`variable`)
-- `MethodInvocation` - Method calls (`method()`)
-- `Expression` - Any expression (supertype)
-- `Statement` - Any statement (supertype)
-- Custom types - Any JDT AST node class name
-
-**Examples:**
-```java
-// Match only when exception is a class literal
-@TriggerPattern(value = "@Test(expected=$ex:TypeLiteral)", kind = PatternKind.ANNOTATION)
-
-// Match only when first argument is a method invocation
-@TriggerPattern(value = "$obj.equals($arg:MethodInvocation)", kind = PatternKind.METHOD_CALL)
-
-// Combine multi-placeholder with type constraint
-@TriggerPattern(value = "method($args$:Expression)", kind = PatternKind.METHOD_CALL)
-// All arguments must be expressions (which is always true, but demonstrates syntax)
-```
-
-**When to use type constraints:**
-- Avoid matching incorrect code patterns
-- Ensure transformations only apply when semantically valid
-- Reduce false positives in pattern matching
-- Make patterns more precise and self-documenting
-
 ## API Reference
 
 ### Core Classes
