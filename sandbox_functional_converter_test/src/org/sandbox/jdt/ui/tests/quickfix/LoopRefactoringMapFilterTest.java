@@ -83,14 +83,15 @@ public class LoopRefactoringMapFilterTest {
 				""";
 
 		String expected = """
-				package test1;
-				import java.util.*;
-				class MyTest {
-					public void process(List<String> items) {
-						items.stream().filter(item -> item.length() > 3).map(item -> item.toUpperCase()).forEachOrdered(upper -> System.out.println(upper));
-					}
-				}
-				""";
+package test1;
+import java.util.*;
+class MyTest {
+	public void process(List<String> items) {
+		items.stream().filter(item -> (item.length() > 3)).map(item -> item.toUpperCase())
+				.forEachOrdered(upper -> System.out.println(upper));
+	}
+}
+""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -124,14 +125,15 @@ public class LoopRefactoringMapFilterTest {
 				""";
 
 		String expected = """
-				package test1;
-				import java.util.*;
-				class MyTest {
-					public void process(List<Integer> numbers) {
-						numbers.stream().map(num -> num * 2).filter(doubled -> doubled > 10).map(doubled -> "Value: " + doubled).forEachOrdered(result -> System.out.println(result));
-					}
-				}
-				""";
+package test1;
+import java.util.*;
+class MyTest {
+	public void process(List<Integer> numbers) {
+		numbers.stream().map(num -> num * 2).filter(doubled -> (doubled > 10)).map(doubled -> "Value: " + doubled)
+				.forEachOrdered(result -> System.out.println(result));
+	}
+}
+""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -167,14 +169,15 @@ public class LoopRefactoringMapFilterTest {
 				""";
 
 		String expected = """
-				package test1;
-				import java.util.*;
-				class MyTest {
-					public void process(List<String> items) {
-						items.stream().filter(item -> item != null).filter(item -> item.length() > 0).forEachOrdered(item -> System.out.println(item));
-					}
-				}
-				""";
+package test1;
+import java.util.*;
+class MyTest {
+	public void process(List<String> items) {
+		items.stream().filter(item -> (item != null)).filter(item -> (item.length() > 0))
+				.forEachOrdered(item -> System.out.println(item));
+	}
+}
+""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -208,14 +211,15 @@ public class LoopRefactoringMapFilterTest {
 				""";
 
 		String expected = """
-				package test1;
-				import java.util.*;
-				class MyTest {
-					public void process(List<String> items) {
-						items.stream().filter(item -> item != null).map(item -> item.toUpperCase()).forEachOrdered(upper -> System.out.println(upper));
-					}
-				}
-				""";
+package test1;
+import java.util.*;
+class MyTest {
+	public void process(List<String> items) {
+		items.stream().filter(item -> (item != null)).map(item -> item.toUpperCase())
+				.forEachOrdered(upper -> System.out.println(upper));
+	}
+}
+""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -249,14 +253,15 @@ public class LoopRefactoringMapFilterTest {
 				""";
 
 		String expected = """
-				package test1;
-				import java.util.*;
-				class MyTest {
-					public void process(List<String> items) {
-						items.stream().filter(item -> item != null && item.length() > 3).map(item -> item.toUpperCase()).forEachOrdered(upper -> System.out.println(upper));
-					}
-				}
-				""";
+package test1;
+import java.util.*;
+class MyTest {
+	public void process(List<String> items) {
+		items.stream().filter(item -> (item != null && item.length() > 3)).map(item -> item.toUpperCase())
+				.forEachOrdered(upper -> System.out.println(upper));
+	}
+}
+""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -290,16 +295,17 @@ public class LoopRefactoringMapFilterTest {
 				""";
 
 		String expected = """
-				package test1;
-				import java.util.*;
-				import java.util.stream.Collectors;
-				class MyTest {
-					public void process(List<Integer> numbers) {
-						List<String> results = numbers.stream().filter(num -> num > 0).map(num -> num.toString()).collect(Collectors.toList());
-						System.out.println(results);
-					}
-				}
-				""";
+package test1;
+import java.util.*;
+import java.util.stream.Collectors;
+class MyTest {
+	public void process(List<Integer> numbers) {
+		List<String> results = numbers.stream().filter(num -> (num > 0)).map(num -> num.toString())
+				.collect(Collectors.toList());
+		System.out.println(results);
+	}
+}
+""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -333,14 +339,15 @@ public class LoopRefactoringMapFilterTest {
 				""";
 
 		String expected = """
-				package test1;
-				import java.util.*;
-				class MyTest {
-					public void process(List<Integer> numbers) {
-						numbers.stream().map(num -> num * 2).map(doubled -> doubled + 10).filter(plusTen -> plusTen < 100).forEachOrdered(plusTen -> System.out.println(plusTen));
-					}
-				}
-				""";
+package test1;
+import java.util.*;
+class MyTest {
+	public void process(List<Integer> numbers) {
+		numbers.stream().map(num -> num * 2).map(doubled -> doubled + 10).filter(plusTen -> (plusTen < 100))
+				.forEachOrdered(plusTen -> System.out.println(plusTen));
+	}
+}
+""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);

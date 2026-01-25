@@ -173,14 +173,14 @@ public class LoopRefactoringEdgeCasesTest {
 				""";
 
 		String expected = """
-				package test1;
-				import java.util.*;
-				class MyTest {
-					public void process(List<String> items) {
-						items.stream().filter(item -> item != null).forEachOrdered(item -> System.out.println(item));
-					}
-				}
-				""";
+package test1;
+import java.util.*;
+class MyTest {
+	public void process(List<String> items) {
+		items.stream().filter(item -> (item != null)).forEachOrdered(item -> System.out.println(item));
+	}
+}
+""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
@@ -550,14 +550,16 @@ public class LoopRefactoringEdgeCasesTest {
 				""";
 
 		String expected = """
-				package test1;
-				import java.util.Arrays;
-				class MyTest {
-					public void process(int[] numbers) {
-						Arrays.stream(numbers).forEach(num -> System.out.println(num));
-					}
-				}
-				""";
+package test1;
+
+import java.util.Arrays;
+
+class MyTest {
+	public void process(int[] numbers) {
+		Arrays.stream(numbers).forEach(num -> System.out.println(num));
+	}
+}
+""";
 
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
