@@ -28,7 +28,6 @@ import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.TriggerPatternCleanupPlugin;
 import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
-import org.sandbox.jdt.triggerpattern.api.Match;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
@@ -38,8 +37,10 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
  * <p>This plugin handles both marker and single-member annotations, preserving
  * the ignore reason when present.</p>
  * 
- * <p>This refactored version replaces the earlier IgnoreJUnitPlugin implementation and
- * uses the TriggerPattern-based declarative architecture to reduce boilerplate.</p>
+ * <p>This refactored version uses the TriggerPattern-based declarative architecture.
+ * Note: @RewriteRule cannot be used here because we need to handle three different
+ * annotation patterns (marker, single-member, and normal), so we keep the custom
+ * process2Rewrite() implementation.</p>
  * 
  * <p><b>Before:</b></p>
  * <pre>
@@ -85,7 +86,7 @@ public class IgnoreJUnitPluginV2 extends TriggerPatternCleanupPlugin {
 
 	@Override
 	protected List<Pattern> getPatterns() {
-		// Need to explicitly match all three annotation types like the old V1 plugin did
+		// Need to explicitly match all three annotation types
 		return List.of(
 			// Match @Ignore (MarkerAnnotation)
 			new Pattern("@Ignore", PatternKind.ANNOTATION, ORG_JUNIT_IGNORE),

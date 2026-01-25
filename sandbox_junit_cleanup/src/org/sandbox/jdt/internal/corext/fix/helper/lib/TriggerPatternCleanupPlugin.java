@@ -16,16 +16,25 @@ package org.sandbox.jdt.internal.corext.fix.helper.lib;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.MarkerAnnotation;
+import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
 import org.sandbox.jdt.triggerpattern.api.Match;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
+import org.sandbox.jdt.triggerpattern.api.RewriteRule;
 import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
 
 /**
@@ -215,5 +224,161 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
         }
         // Add more type checks as needed
         return true;
+    }
+    
+    // Regex pattern for parsing replacement patterns (compiled once for performance)
+    private static final java.util.regex.Pattern REPLACEMENT_PATTERN = 
+        java.util.regex.Pattern.compile("@([A-Za-z_][A-Za-z0-9_]*)(?:\\(\\$([A-Za-z_][A-Za-z0-9_]*)\\))?");
+    
+    /**
+     * Provides default implementation of process2Rewrite using @RewriteRule annotation.
+     * Subclasses can override this method if they need custom rewrite logic,
+     * or they can use @RewriteRule for simple annotation replacements.
+     * 
+     * <p><b>Limitations:</b> This default implementation only supports:
+     * <ul>
+     *   <li>MarkerAnnotation (no parameters): {@code @BeforeEach}</li>
+     *   <li>SingleMemberAnnotation (single value): {@code @Disabled($value)}</li>
+     * </ul>
+     * NormalAnnotation with named parameters like {@code @Ignore(value="reason")} is not supported.
+     * Plugins that need such transformations must override this method.
+     * 
+     * @param group the text edit group for tracking changes
+     * @param rewriter the AST rewriter
+     * @param ast the AST instance
+     * @param importRewriter the import rewriter
+     * @param junitHolder the holder containing JUnit migration information
+     */
+    @Override
+    protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
+            ImportRewrite importRewriter, JunitHolder junitHolder) {
+        
+        RewriteRule rewriteRule = this.getClass().getAnnotation(RewriteRule.class);
+        if (rewriteRule == null) {
+            throw new UnsupportedOperationException(
+                "Plugin " + getClass().getSimpleName() + 
+                " must be annotated with @RewriteRule because it does not override process2Rewrite()");
+        }
+        
+        // Process the replacement pattern
+        String replaceWith = rewriteRule.replaceWith();
+        Annotation oldAnnotation = junitHolder.getAnnotation();
+        
+        // Parse the replacement pattern to extract annotation name and placeholders
+        AnnotationReplacementInfo replacementInfo = parseReplacementPattern(replaceWith);
+        
+        // Create the new annotation based on whether placeholders are present
+        Annotation newAnnotation;
+        if (replacementInfo.hasPlaceholders()) {
+            // Create SingleMemberAnnotation with the placeholder value
+            SingleMemberAnnotation singleMemberAnnotation = ast.newSingleMemberAnnotation();
+            singleMemberAnnotation.setTypeName(ast.newSimpleName(replacementInfo.annotationName));
+            
+            // Get the placeholder value from bindings
+            // TriggerPattern stores placeholders with $ prefix in the bindings map
+            String placeholder = replacementInfo.placeholderName;
+            Expression value = junitHolder.getBindingAsExpression("$" + placeholder);
+            
+            /*
+             * Fallback: if no binding is found for the placeholder, reuse the value from the
+             * existing annotation when it is a SingleMemberAnnotation.
+             *
+             * This is a defensive, last-resort mechanism to preserve the original annotation
+             * value so that the cleanup does not silently drop semantics.
+             *
+             * NOTE / TODO:
+             * - In normal operation, placeholder lookup via junitHolder.getBindingAsExpression(...)
+             *   should succeed and this block should not be relied upon.
+             * - If placeholder names or bindings are misconfigured, this fallback can mask the
+             *   underlying bug by making the transformation appear to succeed.
+             * - Once placeholder lookup is reliable, consider removing this fallback (or replacing
+             *   it with a more visible failure mechanism) so that binding errors surface during
+             *   development and testing.
+             */
+            if (value == null && oldAnnotation instanceof SingleMemberAnnotation) {
+                value = ((SingleMemberAnnotation) oldAnnotation).getValue();
+            }
+            
+            if (value != null) {
+                singleMemberAnnotation.setValue(ASTNodes.createMoveTarget(rewriter, value));
+            }
+            
+            newAnnotation = singleMemberAnnotation;
+        } else {
+            // Create MarkerAnnotation (no parameters)
+            MarkerAnnotation markerAnnotation = ast.newMarkerAnnotation();
+            markerAnnotation.setTypeName(ast.newSimpleName(replacementInfo.annotationName));
+            newAnnotation = markerAnnotation;
+        }
+        
+        // Replace the old annotation with the new one
+        ASTNodes.replaceButKeepComment(rewriter, oldAnnotation, newAnnotation, group);
+        
+        // Handle imports
+        for (String importToRemove : rewriteRule.removeImports()) {
+            importRewriter.removeImport(importToRemove);
+        }
+        for (String importToAdd : rewriteRule.addImports()) {
+            importRewriter.addImport(importToAdd);
+        }
+        for (String staticImportToRemove : rewriteRule.removeStaticImports()) {
+            importRewriter.removeStaticImport(staticImportToRemove);
+        }
+        for (String staticImportToAdd : rewriteRule.addStaticImports()) {
+            // Parse static import: "org.junit.Assert.assertEquals" -> class="org.junit.Assert", method="assertEquals"
+            int lastDot = staticImportToAdd.lastIndexOf('.');
+            if (lastDot > 0) {
+                String className = staticImportToAdd.substring(0, lastDot);
+                String methodName = staticImportToAdd.substring(lastDot + 1);
+                // Handle wildcard imports (*)
+                if ("*".equals(methodName)) {
+                    importRewriter.addStaticImport(className, "*", false);
+                } else {
+                    importRewriter.addStaticImport(className, methodName, false);
+                }
+            }
+        }
+    }
+    
+    /**
+     * Parses a replacement pattern to extract annotation name and placeholder information.
+     * 
+     * <p><b>Pattern format:</b> {@code @AnnotationName} or {@code @AnnotationName($placeholder)}</p>
+     * 
+     * <p><b>Note:</b> This intentionally supports only simple (unqualified) annotation names without dots,
+     * e.g., "@BeforeEach" or "@Disabled($value)". Fully qualified names such as
+     * "@org.junit.jupiter.api.BeforeEach" are not supported here; resolution relies on imports.
+     * To support qualified names in the future, this regex (and related logic) must be updated.</p>
+     * 
+     * @param pattern the replacement pattern (e.g., "@BeforeEach", "@Disabled($value)")
+     * @return parsed annotation replacement information
+     */
+    private AnnotationReplacementInfo parseReplacementPattern(String pattern) {
+        java.util.regex.Matcher matcher = REPLACEMENT_PATTERN.matcher(pattern.trim());
+        
+        if (matcher.matches()) {
+            String annotationName = matcher.group(1);
+            String placeholderName = matcher.group(2); // null if no placeholder
+            return new AnnotationReplacementInfo(annotationName, placeholderName);
+        }
+        
+        throw new IllegalArgumentException("Invalid replacement pattern: " + pattern);
+    }
+    
+    /**
+     * Holds parsed information about an annotation replacement.
+     */
+    private static class AnnotationReplacementInfo {
+        final String annotationName;
+        final String placeholderName; // null if no placeholder
+        
+        AnnotationReplacementInfo(String annotationName, String placeholderName) {
+            this.annotationName = annotationName;
+            this.placeholderName = placeholderName;
+        }
+        
+        boolean hasPlaceholders() {
+            return placeholderName != null;
+        }
     }
 }

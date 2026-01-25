@@ -19,6 +19,7 @@ This file was missing from the sandbox_junit_cleanup plugin. It has been created
 - ✅ @Category to @Tag migration (CategoryJUnitPlugin)
 - ✅ @Rule TemporaryFolder migration to @TempDir
 - ✅ @Rule ExpectedException migration to assertThrows()
+- ✅ **@RewriteRule annotation framework** - Declarative transformation for simple annotation migrations
 
 ### In Progress
 - None currently
@@ -29,8 +30,68 @@ This file was missing from the sandbox_junit_cleanup plugin. It has been created
 - [ ] Additional JUnit 5 features support
 - [ ] Performance optimization for large test suites
 - [ ] Enhanced error reporting
+- [ ] **@RewriteRule enhancements**:
+  - [ ] Support for multi-placeholder patterns (e.g., method invocations with multiple parameters)
+  - [ ] Support for NormalAnnotation with named parameters
+  - [ ] Support for qualified annotation names in replacement patterns
 
 ## Recent Enhancements
+
+### @RewriteRule Annotation Framework (✅ COMPLETED)
+**Priority**: High  
+**Effort**: 6-8 hours  
+**Status**: ✅ **COMPLETED**
+
+Added declarative `@RewriteRule` annotation to eliminate boilerplate in simple annotation migration plugins:
+
+**Problem Solved**:
+- All TriggerPattern V2 plugins had nearly identical `process2Rewrite()` implementations (~15-20 lines of boilerplate)
+- Only differences: annotation names and import statements
+- High risk of copy-paste errors
+
+**Implementation**:
+- Created `@RewriteRule` annotation in `sandbox_common/src/org/sandbox/jdt/triggerpattern/api/RewriteRule.java`
+- Extended `TriggerPatternCleanupPlugin` with default `process2Rewrite()` implementation
+- Parses `replaceWith` pattern at runtime to create appropriate AST nodes
+- Automatically handles import/static import management
+- Supports placeholder preservation (e.g., `@Ignore($value)` → `@Disabled($value)`)
+
+**Usage Example**:
+```java
+@CleanupPattern(
+    value = "@Before",
+    kind = PatternKind.ANNOTATION,
+    qualifiedType = "org.junit.Before"
+)
+@RewriteRule(
+    replaceWith = "@BeforeEach",
+    removeImports = {"org.junit.Before"},
+    addImports = {"org.junit.jupiter.api.BeforeEach"}
+)
+public class BeforeJUnitPluginV2 extends TriggerPatternCleanupPlugin {
+    // process2Rewrite() now automatic - only getPreview() needed!
+}
+```
+
+**Benefits**:
+- Reduced plugin code from ~100 lines to ~80 lines (20% reduction per plugin)
+- Declarative, self-documenting transformations
+- Eliminated copy-paste errors
+- Foundation for future code generation tooling
+
+**Current Limitations** (documented in code):
+- Only simple (unqualified) annotation names supported
+- Only single placeholder patterns supported
+- NormalAnnotation with named parameters requires custom implementation
+
+**Plugins Using @RewriteRule**:
+- `BeforeJUnitPluginV2` - @Before → @BeforeEach
+- `AfterJUnitPluginV2` - @After → @AfterEach
+
+**Future Enhancements** (see Pending section):
+- Multi-placeholder support for complex transformations
+- NormalAnnotation support
+- Qualified annotation name support
 
 ### Quick Select Presets (✅ COMPLETED)
 **Priority**: High  
