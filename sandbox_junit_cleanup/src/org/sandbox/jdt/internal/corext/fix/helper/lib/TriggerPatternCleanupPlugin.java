@@ -16,16 +16,25 @@ package org.sandbox.jdt.internal.corext.fix.helper.lib;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.MarkerAnnotation;
+import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
 import org.sandbox.jdt.triggerpattern.api.Match;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
+import org.sandbox.jdt.triggerpattern.api.RewriteRule;
 import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
 
 /**
@@ -215,5 +224,117 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
         }
         // Add more type checks as needed
         return true;
+    }
+    
+    /**
+     * Provides default implementation of process2Rewrite using @RewriteRule annotation.
+     * Subclasses can override this method if they need custom rewrite logic,
+     * or they can use @RewriteRule for simple annotation replacements.
+     * 
+     * @param group the text edit group for tracking changes
+     * @param rewriter the AST rewriter
+     * @param ast the AST instance
+     * @param importRewriter the import rewriter
+     * @param junitHolder the holder containing JUnit migration information
+     */
+    @Override
+    protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
+            ImportRewrite importRewriter, JunitHolder junitHolder) {
+        
+        RewriteRule rewriteRule = this.getClass().getAnnotation(RewriteRule.class);
+        if (rewriteRule == null) {
+            throw new UnsupportedOperationException(
+                "Plugin " + getClass().getSimpleName() + 
+                " must either implement process2Rewrite() or be annotated with @RewriteRule");
+        }
+        
+        // Process the replacement pattern
+        String replaceWith = rewriteRule.replaceWith();
+        Annotation oldAnnotation = junitHolder.getAnnotation();
+        
+        // Parse the replacement pattern to extract annotation name and placeholders
+        AnnotationReplacementInfo replacementInfo = parseReplacementPattern(replaceWith);
+        
+        // Create the new annotation based on whether placeholders are present
+        Annotation newAnnotation;
+        if (replacementInfo.hasPlaceholders()) {
+            // Create SingleMemberAnnotation with the placeholder value
+            SingleMemberAnnotation singleMemberAnnotation = ast.newSingleMemberAnnotation();
+            singleMemberAnnotation.setTypeName(ast.newSimpleName(replacementInfo.annotationName));
+            
+            // Get the placeholder value from bindings
+            String placeholder = replacementInfo.placeholderName;
+            Expression value = junitHolder.getBindingAsExpression(placeholder);
+            
+            // If no binding found, try to extract from old annotation directly
+            if (value == null && oldAnnotation instanceof SingleMemberAnnotation) {
+                value = ((SingleMemberAnnotation) oldAnnotation).getValue();
+            }
+            
+            if (value != null) {
+                singleMemberAnnotation.setValue(ASTNodes.createMoveTarget(rewriter, value));
+            }
+            
+            newAnnotation = singleMemberAnnotation;
+        } else {
+            // Create MarkerAnnotation (no parameters)
+            MarkerAnnotation markerAnnotation = ast.newMarkerAnnotation();
+            markerAnnotation.setTypeName(ast.newSimpleName(replacementInfo.annotationName));
+            newAnnotation = markerAnnotation;
+        }
+        
+        // Replace the old annotation with the new one
+        ASTNodes.replaceButKeepComment(rewriter, oldAnnotation, newAnnotation, group);
+        
+        // Handle imports
+        for (String importToRemove : rewriteRule.removeImports()) {
+            importRewriter.removeImport(importToRemove);
+        }
+        for (String importToAdd : rewriteRule.addImports()) {
+            importRewriter.addImport(importToAdd);
+        }
+        for (String staticImportToRemove : rewriteRule.removeStaticImports()) {
+            importRewriter.removeStaticImport(staticImportToRemove);
+        }
+        for (String staticImportToAdd : rewriteRule.addStaticImports()) {
+            importRewriter.addStaticImport(staticImportToAdd);
+        }
+    }
+    
+    /**
+     * Parses a replacement pattern to extract annotation name and placeholder information.
+     * 
+     * @param pattern the replacement pattern (e.g., "@BeforeEach", "@Disabled($value)")
+     * @return parsed annotation replacement information
+     */
+    private AnnotationReplacementInfo parseReplacementPattern(String pattern) {
+        // Pattern: @AnnotationName or @AnnotationName($placeholder)
+        java.util.regex.Pattern regex = java.util.regex.Pattern.compile("@([A-Za-z_][A-Za-z0-9_]*)(?:\\(\\$([A-Za-z_][A-Za-z0-9_]*)\\))?");
+        java.util.regex.Matcher matcher = regex.matcher(pattern.trim());
+        
+        if (matcher.matches()) {
+            String annotationName = matcher.group(1);
+            String placeholderName = matcher.group(2); // null if no placeholder
+            return new AnnotationReplacementInfo(annotationName, placeholderName);
+        }
+        
+        throw new IllegalArgumentException("Invalid replacement pattern: " + pattern);
+    }
+    
+    /**
+     * Holds parsed information about an annotation replacement.
+     */
+    private static class AnnotationReplacementInfo {
+        final String annotationName;
+        final String placeholderName; // null if no placeholder
+        
+        AnnotationReplacementInfo(String annotationName, String placeholderName) {
+            this.annotationName = annotationName;
+            this.placeholderName = placeholderName;
+        }
+        
+        boolean hasPlaceholders() {
+            return placeholderName != null;
+        }
     }
 }
