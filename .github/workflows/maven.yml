@@ -49,10 +49,10 @@ jobs:
       run: |
         if [ "${{ github.event_name }}" == "pull_request" ]; then
           # Fast PR build - skip product/repo for quick feedback
-          xvfb-run --auto-servernum mvn -e -V -T 1C --batch-mode -Dtycho.localArtifacts=ignore -Pjacoco clean verify
+          xvfb-run --auto-servernum mvn -e -V -T 1C --batch-mode -Dtycho.localArtifacts=ignore clean verify
         else
           # Full build for main branch - includes product and repository
-          xvfb-run --auto-servernum mvn -e -V -T 1C --batch-mode -Dtycho.localArtifacts=ignore -Pjacoco,product,repo clean verify
+          xvfb-run --auto-servernum mvn -e -V -T 1C --batch-mode -Dtycho.localArtifacts=ignore -Pproduct,repo clean verify
         fi
 #       run: xvfb-run --auto-servernum mvn -e -V --batch-mode -Dtycho.localArtifacts=ignore -Dinclude=web -Pjacoco clean verify
     - name: Cleanup xvfb pidx build
@@ -69,14 +69,3 @@ jobs:
         name: update-site-repository
         path: sandbox_updatesite/target/repository/
         retention-days: 1
-    - name: Deploy Coverage to GitHub Pages
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-      uses: peaceiris/actions-gh-pages@v4
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./sandbox_coverage/target/site/jacoco-aggregate
-        destination_dir: coverage
-        keep_files: true
-        user_name: 'github-actions[bot]'
-        user_email: 'github-actions[bot]@users.noreply.github.com'
-        commit_message: 'Deploy JaCoCo coverage report'

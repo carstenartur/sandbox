@@ -1,0 +1,87 @@
+# This workflow generates and deploys code coverage reports
+# It runs on a daily schedule (only if there were commits), or manually via workflow_dispatch
+
+name: Code Coverage Report
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Daily at midnight UTC
+  workflow_dispatch:  # Allow manual trigger
+  # Optionally: push to main for immediate updates
+  # push:
+  #   branches: [main]
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      DISPLAY: :0
+      MAVEN_OPTS: -Djava.awt.headless=true
+
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+
+    - name: Check for recent commits (schedule only)
+      if: github.event_name == 'schedule'
+      id: check_commits
+      run: |
+        if git log --since="24 hours ago" --oneline | grep -q .; then
+          echo "has_commits=true" >> $GITHUB_OUTPUT
+        else
+          echo "has_commits=false" >> $GITHUB_OUTPUT
+          echo "No commits in the last 24 hours, skipping coverage build"
+        fi
+
+    - name: Set up JDK 21
+      if: github.event_name != 'schedule' || steps.check_commits.outputs.has_commits == 'true'
+      uses: actions/setup-java@v5
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+
+    - name: Install Xvfb
+      if: github.event_name != 'schedule' || steps.check_commits.outputs.has_commits == 'true'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y xvfb xauth \
+          libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 libxrandr2 libxfixes3 \
+          libasound2t64 libnss3 libgbm1
+        sudo /usr/bin/Xvfb $DISPLAY -screen 0 1280x1024x24 &
+
+    - name: Cache Maven dependencies
+      if: github.event_name != 'schedule' || steps.check_commits.outputs.has_commits == 'true'
+      uses: actions/cache@v5
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml', 'sandbox_target/*.target') }}
+        restore-keys: ${{ runner.os }}-maven-
+
+    - name: Set up Maven
+      if: github.event_name != 'schedule' || steps.check_commits.outputs.has_commits == 'true'
+      uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
+      with:
+        maven-version: 3.9.9
+
+    - name: Build with Coverage
+      if: github.event_name != 'schedule' || steps.check_commits.outputs.has_commits == 'true'
+      run: xvfb-run --auto-servernum mvn -e -V -T 1C --batch-mode -Dtycho.localArtifacts=ignore -Pjacoco,product,repo clean verify
+
+    - name: Cleanup xvfb
+      if: github.event_name != 'schedule' || steps.check_commits.outputs.has_commits == 'true'
+      uses: bcomnes/cleanup-xvfb@v1
+
+    - name: Deploy Coverage to GitHub Pages
+      if: github.event_name != 'schedule' || steps.check_commits.outputs.has_commits == 'true'
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./sandbox_coverage/target/site/jacoco-aggregate
+        destination_dir: coverage
+        keep_files: true
+        user_name: 'github-actions[bot]'
+        user_email: 'github-actions[bot]@users.noreply.github.com'
+        commit_message: 'Deploy JaCoCo coverage report'
