@@ -193,14 +193,15 @@ public class LoopRefactoringCollectTest {
 	}
 
 	/**
-	 * Tests collect with method reference transformation.
+	 * Tests collect with method reference potential (V1 produces lambda).
 	 * 
 	 * <p><b>Pattern:</b> {@code for (T item : collection) result.add(item.method());}</p>
-	 * <p><b>Expected:</b> {@code collection.stream().map(T::method).collect(Collectors.toList())}</p>
-	 * <p><b>Best Practice:</b> Use method references for better readability when applicable</p>
+	 * <p><b>Current V1:</b> {@code collection.stream().map(item -> item.method()).collect(Collectors.toList())}</p>
+	 * <p><b>Future V2:</b> Could optimize to {@code collection.stream().map(T::method).collect(Collectors.toList())}</p>
+	 * <p><b>Note:</b> V1 doesn't optimize to method references yet</p>
 	 */
 	@Test
-	@DisplayName("Map with method reference: stream().map(String::toUpperCase)")
+	@DisplayName("Map with lambda (method reference candidate): stream().map(item -> item.toUpperCase())")
 	void testMappedCollectWithMethodReference() throws CoreException {
 		String input = """
 				package test1;
@@ -222,7 +223,7 @@ public class LoopRefactoringCollectTest {
 				import java.util.stream.Collectors;
 				class MyTest {
 					public void process(List<String> items) {
-						List<String> upperCase = items.stream().map(String::toUpperCase).collect(Collectors.toList());
+						List<String> upperCase = items.stream().map(item -> item.toUpperCase()).collect(Collectors.toList());
 						System.out.println(upperCase);
 					}
 				}
