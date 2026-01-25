@@ -117,12 +117,20 @@ public class IgnoreJUnitPluginV2 extends TriggerPatternCleanupPlugin {
 			@SuppressWarnings("unchecked")
 			java.util.List<org.eclipse.jdt.core.dom.MemberValuePair> values = oldAnnotation.values();
 			
-			if (!values.isEmpty()) {
+			// Find the "value" member specifically
+			org.eclipse.jdt.core.dom.MemberValuePair valuePair = null;
+			for (org.eclipse.jdt.core.dom.MemberValuePair pair : values) {
+				if ("value".equals(pair.getName().getIdentifier())) {
+					valuePair = pair;
+					break;
+				}
+			}
+			
+			if (valuePair != null) {
 				// If there's a value attribute, extract it and create SingleMemberAnnotation
-				org.eclipse.jdt.core.dom.MemberValuePair pair = values.get(0);
 				SingleMemberAnnotation newSingleMemberAnnotation = ast.newSingleMemberAnnotation();
 				newSingleMemberAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_DISABLED));
-				newSingleMemberAnnotation.setValue(ASTNodes.createMoveTarget(rewriter, pair.getValue()));
+				newSingleMemberAnnotation.setValue(ASTNodes.createMoveTarget(rewriter, valuePair.getValue()));
 				newAnnotation = newSingleMemberAnnotation;
 			} else {
 				// No value, treat as marker
