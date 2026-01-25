@@ -420,8 +420,124 @@ Planned features (see [TODO.md](TODO.md) for details):
 - **Multi-placeholders**: `$x$` to match lists (argument lists, statement sequences)
 - **Type constraints**: Type-based placeholder constraints (`$x:SimpleName`)
 - **Performance**: Pattern indexing for faster matching
-- **Cleanup Integration**: Use patterns in Save Actions and batch cleanups
 - **Pattern Libraries**: Reusable pattern catalogs
+
+## Cleanup Plugin Integration
+
+### Using @CleanupPattern for Eclipse Cleanup Plugins
+
+The `@CleanupPattern` annotation connects TriggerPattern with Eclipse's cleanup framework, enabling declarative pattern-based cleanup plugins.
+
+#### Benefits
+
+| Aspect | Traditional Plugin | TriggerPattern Plugin |
+|--------|-------------------|----------------------|
+| Lines of Code | 80-150 | 20-40 |
+| Pattern Definition | Scattered in find() | Declarative annotation |
+| AST Traversal | Manual visitor | Automatic |
+| Type Validation | Manual binding checks | qualifiedType parameter |
+| Boilerplate | High | Minimal |
+
+#### Example: BeforeJUnitPluginV2
+
+```java
+@CleanupPattern(
+    value = "@Before",
+    kind = PatternKind.ANNOTATION,
+    qualifiedType = "org.junit.Before",
+    cleanupId = "cleanup.junit.before",
+    description = "Migrate @Before to @BeforeEach",
+    displayName = "JUnit 4 @Before → JUnit 5 @BeforeEach"
+)
+public class BeforeJUnitPluginV2 extends TriggerPatternCleanupPlugin {
+    
+    @Override
+    protected JunitHolder createHolder(Match match) {
+        JunitHolder holder = new JunitHolder();
+        holder.minv = match.getMatchedNode();
+        return holder;
+    }
+    
+    @Override
+    protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
+            ImportRewrite importRewriter, JunitHolder junitHolder) {
+        Annotation annotation = junitHolder.getAnnotation();
+        MarkerAnnotation newAnnotation = ast.newMarkerAnnotation();
+        newAnnotation.setTypeName(ast.newSimpleName("BeforeEach"));
+        ASTNodes.replaceButKeepComment(rewriter, annotation, newAnnotation, group);
+        importRewriter.removeImport("org.junit.Before");
+        importRewriter.addImport("org.junit.jupiter.api.BeforeEach");
+    }
+    
+    @Override
+    public String getPreview(boolean afterRefactoring) {
+        if (afterRefactoring) {
+            return """
+                @BeforeEach
+                public void setUp() {
+                }
+                """;
+        }
+        return """
+            @Before
+            public void setUp() {
+            }
+            """;
+    }
+}
+```
+
+#### How to Create a Cleanup Plugin
+
+1. **Extend TriggerPatternCleanupPlugin**: Your plugin class extends the base class
+2. **Add @CleanupPattern annotation**: Declare the pattern, type, and metadata
+3. **Implement createHolder()**: Extract data from the match
+4. **Implement process2Rewrite()**: Transform the AST
+5. **Implement getPreview()**: Provide before/after code examples
+
+#### Annotation Parameters
+
+- **value**: The pattern string with placeholders (e.g., `"@Before"`, `"Assert.assertEquals($a, $b)"`)
+- **kind**: PatternKind enum (ANNOTATION, METHOD_CALL, IMPORT, FIELD, EXPRESSION, STATEMENT)
+- **qualifiedType**: Optional fully qualified type for validation (e.g., `"org.junit.Before"`)
+- **cleanupId**: ID used in plugin.xml and preferences (e.g., `"cleanup.junit.before"`)
+- **description**: Human-readable description for UI
+- **displayName**: Optional display name for UI
+
+#### Advanced Usage
+
+##### Multiple Patterns
+
+If you need multiple patterns, override `getPatterns()` instead of using the annotation:
+
+```java
+public class MultiPatternPlugin extends TriggerPatternCleanupPlugin {
+    
+    @Override
+    protected List<Pattern> getPatterns() {
+        return List.of(
+            new Pattern("@Before", PatternKind.ANNOTATION, "org.junit.Before"),
+            new Pattern("@After", PatternKind.ANNOTATION, "org.junit.After")
+        );
+    }
+    
+    // ... rest of implementation
+}
+```
+
+##### Additional Validation
+
+Override `shouldProcess()` to add custom validation logic:
+
+```java
+@Override
+protected boolean shouldProcess(Match match, Pattern pattern) {
+    // Add custom checks beyond type validation
+    ASTNode node = match.getMatchedNode();
+    // ... custom validation logic
+    return true; // or false to skip this match
+}
+```
 
 ## Contributing
 
