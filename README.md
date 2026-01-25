@@ -240,6 +240,7 @@ The project supports Maven profiles to optimize build speed:
 | `product` | + Eclipse Product (`sandbox_product`) | Building distributable product |
 | `repo` | + P2 Update Site (`sandbox_updatesite`) | Building update site |
 | `jacoco` | + Coverage reports | CI/Coverage builds |
+| `reports` | + HTML test reports | CI/Test report builds |
 
 #### Build Commands
 
@@ -348,6 +349,7 @@ make help      # Show all available targets
 - **`product`**: Adds Eclipse product materialization (heavy step, takes time)
 - **`repo`**: Adds p2 update site repository assembly (heavy step, takes time)
 - **`jacoco`**: Adds code coverage reporting (includes `sandbox_coverage` module)
+- **`reports`**: Adds HTML test report generation (use without `-T 1C` to avoid thread-safety warning)
 - **`web`**: Adds WAR file with update site (requires `-Dinclude=web` property, also builds `sandbox_product`)
 
 **Backward Compatibility**: The command `mvn -Pproduct,repo verify` produces the same result as the previous full build behavior.
