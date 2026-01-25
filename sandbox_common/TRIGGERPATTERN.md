@@ -164,6 +164,78 @@ Example:
 // Does NOT match: a + b (different variables)
 ```
 
+### Multi-Placeholders
+
+Multi-placeholders match zero or more AST nodes using the syntax `$name$` (starting and ending with `$`):
+
+```java
+@TriggerPattern(value = "Assert.assertEquals($args$)", kind = PatternKind.METHOD_CALL)
+// Matches: assertEquals() with any number of arguments
+// - Assert.assertEquals(a, b)           → $args$ = [a, b]
+// - Assert.assertEquals("msg", a, b)    → $args$ = ["msg", a, b]
+// - Assert.assertEquals("msg", a, b, 0.01) → $args$ = ["msg", a, b, 0.01]
+```
+
+**Use cases:**
+- Match method calls with variable argument counts
+- Simplify patterns that previously required multiple separate patterns
+- Enable more flexible code transformations
+
+**Accessing multi-placeholder bindings:**
+```java
+public static IJavaCompletionProposal myHint(HintContext ctx) {
+    // For single placeholders
+    ASTNode node = ctx.getMatch().getBinding("$x");
+    
+    // For multi-placeholders
+    List<ASTNode> args = ctx.getMatch().getListBinding("$args$");
+    for (ASTNode arg : args) {
+        // Process each argument
+    }
+}
+```
+
+### Type Constraints
+
+Type constraints restrict placeholders to match only specific AST node types using the syntax `$name:TypeName`:
+
+```java
+@TriggerPattern(value = "Assert.assertEquals($msg:StringLiteral, $a, $b)", 
+                kind = PatternKind.METHOD_CALL)
+// Only matches when first argument is a String literal
+// Matches: Assert.assertEquals("test failed", expected, actual)
+// Does NOT match: Assert.assertEquals(message, expected, actual)  // message is not a literal
+```
+
+**Supported type constraints:**
+- `StringLiteral` - String literals (`"text"`)
+- `NumberLiteral` - Numeric literals (`42`, `3.14`)
+- `TypeLiteral` - Type literals (`Exception.class`)
+- `SimpleName` - Simple identifiers (`variable`)
+- `MethodInvocation` - Method calls (`method()`)
+- `Expression` - Any expression (supertype)
+- `Statement` - Any statement (supertype)
+- Custom types - Any JDT AST node class name
+
+**Examples:**
+```java
+// Match only when exception is a class literal
+@TriggerPattern(value = "@Test(expected=$ex:TypeLiteral)", kind = PatternKind.ANNOTATION)
+
+// Match only when first argument is a method invocation
+@TriggerPattern(value = "$obj.equals($arg:MethodInvocation)", kind = PatternKind.METHOD_CALL)
+
+// Combine multi-placeholder with type constraint
+@TriggerPattern(value = "method($args$:Expression)", kind = PatternKind.METHOD_CALL)
+// All arguments must be expressions (which is always true, but demonstrates syntax)
+```
+
+**When to use type constraints:**
+- Avoid matching incorrect code patterns
+- Ensure transformations only apply when semantically valid
+- Reduce false positives in pattern matching
+- Make patterns more precise and self-documenting
+
 ## API Reference
 
 ### Core Classes
@@ -181,7 +253,14 @@ Result of a successful pattern match.
 ```java
 Match match = ...;
 ASTNode matchedNode = match.getMatchedNode();
-Map<String, ASTNode> bindings = match.getBindings();
+
+// For single placeholders
+ASTNode node = match.getBinding("$x");
+Map<String, Object> bindings = match.getBindings();
+
+// For multi-placeholders
+List<ASTNode> nodes = match.getListBinding("$args$");
+
 int offset = match.getOffset();
 int length = match.getLength();
 ```

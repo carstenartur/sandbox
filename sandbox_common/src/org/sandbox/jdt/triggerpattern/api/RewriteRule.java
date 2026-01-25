@@ -52,25 +52,32 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 public @interface RewriteRule {
     /**
-     * The replacement pattern. Can include a single placeholder from the source pattern.
+     * The replacement pattern. Can include placeholders from the source pattern.
      * 
      * <p><b>Supported patterns:</b></p>
      * <ul>
      *   <li>Simple marker annotation: {@code "@BeforeEach"}</li>
      *   <li>Single-value annotation: {@code "@Disabled($value)"}</li>
+     *   <li>Multi-placeholder annotation: {@code "@Test($args$)"}</li>
+     *   <li>Method call with qualified name: {@code "Assertions.assertEquals($args$)"}</li>
+     * </ul>
+     * 
+     * <p><b>Placeholder syntax:</b></p>
+     * <ul>
+     *   <li>{@code $x} - Matches exactly one AST node</li>
+     *   <li>{@code $x$} - Matches zero or more AST nodes (multi-placeholder)</li>
+     *   <li>{@code $x:TypeName} - Matches one node of specified type (type constraint)</li>
      * </ul>
      * 
      * <p><b>Current limitations:</b></p>
      * <ul>
      *   <li>Only simple (unqualified) annotation names are supported, not fully qualified names like 
      *       {@code "@org.junit.jupiter.api.BeforeEach"}</li>
-     *   <li>Only single placeholder patterns are supported. Multi-placeholder patterns like 
-     *       {@code "Assertions.assertEquals($a, $b)"} are not yet implemented.</li>
      *   <li>Named parameters (NormalAnnotation) are not supported. Annotations like 
      *       {@code @Ignore(value="reason")} require custom {@code process2Rewrite()} implementation.</li>
      * </ul>
      * 
-     * @return the replacement pattern with optional single placeholder
+     * @return the replacement pattern with optional placeholders
      */
     String replaceWith();
     
