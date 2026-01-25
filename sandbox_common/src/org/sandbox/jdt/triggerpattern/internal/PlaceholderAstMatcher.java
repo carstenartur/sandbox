@@ -413,8 +413,19 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 		}
 		
 		// Match type arguments if present
-		if (!safeSubtreeMatch(patternNode.getExpression(), otherInvocation.getExpression())) {
+		@SuppressWarnings("unchecked")
+		List<org.eclipse.jdt.core.dom.Type> patternTypeArgs = patternNode.typeArguments();
+		@SuppressWarnings("unchecked")
+		List<org.eclipse.jdt.core.dom.Type> otherTypeArgs = otherInvocation.typeArguments();
+		
+		if (patternTypeArgs.size() != otherTypeArgs.size()) {
 			return false;
+		}
+		
+		for (int i = 0; i < patternTypeArgs.size(); i++) {
+			if (!safeSubtreeMatch(patternTypeArgs.get(i), otherTypeArgs.get(i))) {
+				return false;
+			}
 		}
 		
 		// Match arguments with multi-placeholder support
