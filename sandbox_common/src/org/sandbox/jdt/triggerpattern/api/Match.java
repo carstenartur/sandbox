@@ -14,6 +14,7 @@
 package org.sandbox.jdt.triggerpattern.api;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -26,6 +27,7 @@ import org.eclipse.jdt.core.dom.ASTNode;
  * <ul>
  *   <li>The matched AST node</li>
  *   <li>A map of placeholder bindings (e.g., {@code "$x" -> InfixExpression})</li>
+ *   <li>A map of multi-placeholder bindings (e.g., {@code "$args$" -> List<Expression>})</li>
  *   <li>Source location (offset and length)</li>
  * </ul>
  * 
@@ -33,7 +35,7 @@ import org.eclipse.jdt.core.dom.ASTNode;
  */
 public final class Match {
 	private final ASTNode matchedNode;
-	private final Map<String, ASTNode> bindings;
+	private final Map<String, Object> bindings;  // Changed to Object to support both ASTNode and List<ASTNode>
 	private final int offset;
 	private final int length;
 	
@@ -41,11 +43,11 @@ public final class Match {
 	 * Creates a new match.
 	 * 
 	 * @param matchedNode the AST node that matched the pattern
-	 * @param bindings map of placeholder names to their bound AST nodes
+	 * @param bindings map of placeholder names to their bound AST nodes or lists of AST nodes
 	 * @param offset the character offset of the match in the source
 	 * @param length the character length of the match in the source
 	 */
-	public Match(ASTNode matchedNode, Map<String, ASTNode> bindings, int offset, int length) {
+	public Match(ASTNode matchedNode, Map<String, Object> bindings, int offset, int length) {
 		this.matchedNode = Objects.requireNonNull(matchedNode, "Matched node cannot be null"); //$NON-NLS-1$
 		this.bindings = bindings != null ? Collections.unmodifiableMap(bindings) : Collections.emptyMap();
 		this.offset = offset;
@@ -64,10 +66,39 @@ public final class Match {
 	/**
 	 * Returns the placeholder bindings.
 	 * 
-	 * @return an unmodifiable map of placeholder names to AST nodes
+	 * @return an unmodifiable map of placeholder names to AST nodes or lists of AST nodes
 	 */
-	public Map<String, ASTNode> getBindings() {
+	public Map<String, Object> getBindings() {
 		return bindings;
+	}
+	
+	/**
+	 * Gets a single-placeholder binding as an AST node.
+	 * 
+	 * @param placeholderName the placeholder name including $ marker (e.g., "$x")
+	 * @return the bound AST node, or null if not found or if it's a multi-placeholder binding
+	 */
+	public ASTNode getBinding(String placeholderName) {
+		Object binding = bindings.get(placeholderName);
+		if (binding instanceof ASTNode) {
+			return (ASTNode) binding;
+		}
+		return null;
+	}
+	
+	/**
+	 * Gets a multi-placeholder binding as a list of nodes.
+	 * 
+	 * @param placeholderName the placeholder name including $ markers (e.g., "$args$")
+	 * @return the list of matched nodes, or empty list if not found or if it's a single-placeholder binding
+	 */
+	@SuppressWarnings("unchecked")
+	public List<ASTNode> getListBinding(String placeholderName) {
+		Object binding = bindings.get(placeholderName);
+		if (binding instanceof List<?>) {
+			return (List<ASTNode>) binding;
+		}
+		return Collections.emptyList();
 	}
 	
 	/**
