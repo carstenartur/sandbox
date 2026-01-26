@@ -67,6 +67,8 @@ jobs:
         summary: true
         include_passed: true
         detailed_summary: true
+    - name: Install xsltproc
+      run: sudo apt-get update && sudo apt-get install -y xsltproc
     - name: Generate HTML Test Reports
       if: github.event_name == 'push' && github.ref_name == 'main'
       run: |
