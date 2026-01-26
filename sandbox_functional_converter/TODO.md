@@ -223,6 +223,115 @@ List<RuleEntry> entries = Stream.concat(
 
 ### Phase 8: V1 Deprecation (FUTURE)
 
+
+### Phase 9: Target Format Selection (IN PROGRESS - January 2026)
+
+**Objective**: Allow users to choose target loop format in cleanup dialog
+
+**Status**: 🚧 **UI and Infrastructure Complete** - Transformation logic pending
+
+#### Completed Tasks ✅
+
+1. **Data Model**
+   - ✅ Created `LoopTargetFormat` enum (STREAM, FOR_LOOP, WHILE_LOOP)
+   - ✅ Added `USEFUNCTIONALLOOP_TARGET_FORMAT` constant to `MYCleanUpConstants`
+   - ✅ Implemented `fromId()` and `getId()` methods for persistence
+
+2. **UI Integration**
+   - ✅ Added combo box to `SandboxCodeTabPage` for format selection
+   - ✅ Created UI labels in `CleanUpMessages.properties`:
+     - "Target format:" label
+     - "Stream (forEach, map, filter)" option
+     - "Classic for-loop" option
+     - "While-loop" option
+   - ✅ Updated `DefaultCleanUpOptionsInitializer` with default value ("stream")
+   - ✅ Updated `SaveActionCleanUpOptionsInitializer`
+
+3. **Cleanup Integration**
+   - ✅ Modified `UseFunctionalCallCleanUpCore.createFix()` to read format preference
+   - ✅ Added logic to skip transformation for non-STREAM formats (placeholder)
+   - ✅ Added imports for `LoopTargetFormat` and format constant
+
+4. **Testing**
+   - ✅ Created `LoopTargetFormatTest` with 5 test methods
+   - ✅ Tests verify STREAM format works (current behavior)
+   - ✅ Tests verify FOR_LOOP and WHILE_LOOP skip transformation (not yet implemented)
+   - ✅ Tests verify enum parsing and ID methods
+
+#### Pending Tasks ⏳
+
+1. **Transformation Logic**
+   - [ ] Implement FOR_LOOP format transformer
+     - [ ] Stream → enhanced for-loop
+     - [ ] Iterator while → enhanced for-loop
+   - [ ] Implement WHILE_LOOP format transformer
+     - [ ] Stream → while-iterator
+     - [ ] Enhanced for → while-iterator
+   - [ ] Create `IFormatTransformer` implementations:
+     - [ ] `StreamFormatTransformer` (extract existing logic)
+     - [ ] `ForLoopFormatTransformer` (new)
+     - [ ] `WhileLoopFormatTransformer` (new)
+
+2. **Multiple Quickfix Proposals**
+   - [ ] Modify quickfix framework to offer all formats as options
+   - [ ] Each proposal shows preview for its target format
+   - [ ] User can choose format at application time (overrides default)
+
+3. **Bidirectional Transformations**
+   - [ ] Enable tests in `LoopBidirectionalTransformationTest`:
+     - [ ] `testStreamToFor_forEach()` - Stream → for
+     - [ ] `testForToWhile_iterator()` - for → while
+     - [ ] `testWhileToFor_iterator()` - while → for
+
+4. **Documentation**
+   - [ ] Update README.md with format selection examples
+   - [ ] Document available format options and their use cases
+   - [ ] Update ARCHITECTURE.md with format transformer design
+
+#### Current Behavior
+
+**What Works**:
+- ✅ UI combo box appears in cleanup dialog
+- ✅ Format preference is persisted
+- ✅ STREAM format performs conversions (existing behavior)
+- ✅ FOR_LOOP and WHILE_LOOP formats skip transformation (returns null)
+
+**What Doesn't Work Yet**:
+- ❌ FOR_LOOP format doesn't convert anything
+- ❌ WHILE_LOOP format doesn't convert anything
+- ❌ No reverse transformations (Stream → for, Stream → while)
+- ❌ No quickfix proposals for alternative formats
+
+#### Design Notes
+
+**Format Preference Strategy**:
+- **Default format**: STREAM (most modern Java style)
+- **User preference**: Stored in cleanup profile
+- **Quickfix behavior**: Could offer all formats as separate proposals
+- **Fallback**: If transformation not possible for selected format, skip
+
+**Use Cases by Format**:
+- **STREAM**: Modern functional style, immutable, parallelizable
+- **FOR_LOOP**: Simple iteration, easier debugging, backward compatibility
+- **WHILE_LOOP**: Manual iteration control, conditional advancement
+
+#### Success Criteria
+
+- [ ] Users can select target format in cleanup preferences UI
+- [ ] STREAM format converts loops to streams (existing behavior maintained)
+- [ ] FOR_LOOP format converts streams/iterators to enhanced for-loops
+- [ ] WHILE_LOOP format converts streams/for-loops to while-iterators
+- [ ] Quickfix offers multiple format proposals for same loop
+- [ ] All tests in `LoopTargetFormatTest` pass
+- [ ] Bidirectional tests in `LoopBidirectionalTransformationTest` pass
+
+**Priority**: MEDIUM (infrastructure complete, transformations can be added incrementally)
+
+**References**:
+- Issue: https://github.com/carstenartur/sandbox/issues/[TBD]
+- `LoopTargetFormat` enum in `sandbox_functional_converter`
+- `LoopBidirectionalTransformationTest` for desired behavior
+
 **Objective**: Retire V1 implementation once V2 is stable
 
 **Planned Tasks**:

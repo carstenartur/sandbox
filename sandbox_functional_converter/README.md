@@ -27,6 +27,45 @@ This Eclipse cleanup plugin automatically converts imperative enhanced for-loops
   - Improved side-effect statement validation
   - Better tracking of produced/consumed variables across pipeline stages
 
+## Target Format Selection (New!)
+
+**Status**: 🆕 **UI Available** - Transformation logic in progress
+
+The cleanup now supports selecting the target loop format through a combo box in the cleanup preferences dialog:
+
+### Available Formats
+
+| Format | Description | Status |
+|--------|-------------|--------|
+| **Stream** (default) | Java 8+ functional style (`forEach`, `map`, `filter`, `reduce`) | ✅ Fully implemented |
+| **Classic for-loop** | Enhanced for-loop (`for (T item : collection)`) | ⏳ UI only - transformation pending |
+| **While-loop** | Iterator-based while loop | ⏳ UI only - transformation pending |
+
+### How to Use
+
+1. Open **Source** → **Clean Up...** in Eclipse
+2. Navigate to **Sandbox** → **Java 8** section
+3. Enable **"Use functional call"**
+4. Select your preferred **Target format** from the dropdown
+5. Click **OK** to apply
+
+### Current Behavior
+
+- **Stream format**: Converts enhanced for-loops and iterator patterns to functional stream operations (existing behavior)
+- **For-loop format**: Currently skips transformation (implementation pending)
+- **While-loop format**: Currently skips transformation (implementation pending)
+
+### Planned Enhancements
+
+Future versions will support bidirectional transformations:
+- Stream → enhanced for-loop
+- Stream → while-iterator
+- Enhanced for → while-iterator
+- While-iterator → enhanced for
+
+See [TODO.md](TODO.md#phase-9-target-format-selection-in-progress---january-2026) for implementation roadmap.
+
+
 ## Supported Transformations
 
 The cleanup currently supports the following patterns:
