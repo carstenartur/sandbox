@@ -82,24 +82,71 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder = new ReferenceHolder<>();
 		
-		// Find assertTrue calls for optimization
-		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSERT, "assertTrue", compilationUnit, dataHolder,
-				nodesprocessed, (visited, aholder) -> processAssertion(fixcore, operations, visited, aholder, true));
-		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_JUPITER_API_ASSERTIONS, "assertTrue", compilationUnit, dataHolder,
-				nodesprocessed, (visited, aholder) -> processAssertion(fixcore, operations, visited, aholder, true));
+		// Find assertTrue calls for optimization (JUnit 4)
+		HelperVisitor.forMethodCall(ORG_JUNIT_ASSERT, "assertTrue")
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(dataHolder, (visited, aholder) -> {
+				if (visited instanceof MethodInvocation) {
+					return processAssertion(fixcore, operations, visited, aholder, true);
+				}
+				return true;
+			});
 		
-		// Find assertFalse calls for optimization
-		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSERT, "assertFalse", compilationUnit, dataHolder,
-				nodesprocessed, (visited, aholder) -> processAssertion(fixcore, operations, visited, aholder, false));
-		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_JUPITER_API_ASSERTIONS, "assertFalse", compilationUnit, dataHolder,
-				nodesprocessed, (visited, aholder) -> processAssertion(fixcore, operations, visited, aholder, false));
+		// Find assertTrue calls for optimization (JUnit 5)
+		HelperVisitor.forMethodCall(ORG_JUNIT_JUPITER_API_ASSERTIONS, "assertTrue")
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(dataHolder, (visited, aholder) -> {
+				if (visited instanceof MethodInvocation) {
+					return processAssertion(fixcore, operations, visited, aholder, true);
+				}
+				return true;
+			});
+		
+		// Find assertFalse calls for optimization (JUnit 4)
+		HelperVisitor.forMethodCall(ORG_JUNIT_ASSERT, "assertFalse")
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(dataHolder, (visited, aholder) -> {
+				if (visited instanceof MethodInvocation) {
+					return processAssertion(fixcore, operations, visited, aholder, false);
+				}
+				return true;
+			});
+		
+		// Find assertFalse calls for optimization (JUnit 5)
+		HelperVisitor.forMethodCall(ORG_JUNIT_JUPITER_API_ASSERTIONS, "assertFalse")
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(dataHolder, (visited, aholder) -> {
+				if (visited instanceof MethodInvocation) {
+					return processAssertion(fixcore, operations, visited, aholder, false);
+				}
+				return true;
+			});
 		
 		// Find assertion calls with expected/actual parameters for parameter order correction
 		METHODS_WITH_EXPECTED_ACTUAL.forEach(methodName -> {
-			HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSERT, methodName, compilationUnit, dataHolder,
-					nodesprocessed, (visited, aholder) -> processParameterOrder(fixcore, operations, visited, aholder));
-			HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_JUPITER_API_ASSERTIONS, methodName, compilationUnit, dataHolder,
-					nodesprocessed, (visited, aholder) -> processParameterOrder(fixcore, operations, visited, aholder));
+			HelperVisitor.forMethodCall(ORG_JUNIT_ASSERT, methodName)
+				.in(compilationUnit)
+				.excluding(nodesprocessed)
+				.processEach(dataHolder, (visited, aholder) -> {
+					if (visited instanceof MethodInvocation) {
+						return processParameterOrder(fixcore, operations, visited, aholder);
+					}
+					return true;
+				});
+			
+			HelperVisitor.forMethodCall(ORG_JUNIT_JUPITER_API_ASSERTIONS, methodName)
+				.in(compilationUnit)
+				.excluding(nodesprocessed)
+				.processEach(dataHolder, (visited, aholder) -> {
+					if (visited instanceof MethodInvocation) {
+						return processParameterOrder(fixcore, operations, visited, aholder);
+					}
+					return true;
+				});
 		});
 	}
 

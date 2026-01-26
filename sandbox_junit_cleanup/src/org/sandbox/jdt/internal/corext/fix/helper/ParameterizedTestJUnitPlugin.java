@@ -72,8 +72,15 @@ public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<I
 		ReferenceHolder<Integer, JunitHolder> dataHolder = new ReferenceHolder<>();
 		
 		// Find @RunWith(Parameterized.class) annotations
-		HelperVisitor.callSingleMemberAnnotationVisitor(ORG_JUNIT_RUNWITH, compilationUnit, dataHolder, nodesprocessed,
-				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+		HelperVisitor.forAnnotation(ORG_JUNIT_RUNWITH)
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(dataHolder, (visited, aholder) -> {
+				if (visited instanceof Annotation) {
+					return processFoundNode(fixcore, operations, (Annotation) visited, aholder);
+				}
+				return true;
+			});
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,

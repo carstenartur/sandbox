@@ -49,8 +49,15 @@ public class TestTimeoutJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder = new ReferenceHolder<>();
-		HelperVisitor.callNormalAnnotationVisitor(ORG_JUNIT_TEST, compilationUnit, dataHolder, nodesprocessed,
-				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+		HelperVisitor.forAnnotation(ORG_JUNIT_TEST)
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(dataHolder, (visited, aholder) -> {
+				if (visited instanceof NormalAnnotation) {
+					return processFoundNode(fixcore, operations, (NormalAnnotation) visited, aholder);
+				}
+				return true;
+			});
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
