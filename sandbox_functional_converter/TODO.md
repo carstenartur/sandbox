@@ -149,6 +149,78 @@
 
 **Total Active Iterator Tests**: 11 tests enabled (5 in IteratorLoopToStreamTest + 6 in IteratorLoopConversionTest), 9 disabled (1 safety bug + 8 pending advanced pattern support)
 
+### Phase 8: Multiple Loops to Stream.concat() (PLANNED)
+
+**Objective**: Support conversion of multiple consecutive for-loops adding to the same list
+
+**Problem Statement**:
+Currently, when multiple for-loops add elements to the same list, the cleanup incorrectly converts each loop independently. This produces semantically wrong code that **overwrites** the list instead of accumulating entries.
+
+**Current Buggy Behavior**:
+```java
+// Original:
+List<RuleEntry> entries = new ArrayList<>();
+for (MethodRule rule : methodRules) {
+    entries.add(new RuleEntry(rule, TYPE_METHOD));
+}
+for (TestRule rule : testRules) {
+    entries.add(new RuleEntry(rule, TYPE_TEST));
+}
+
+// Current (WRONG) conversion - loses methodRules entries!
+entries = methodRules.stream().map(r -> new RuleEntry(r, TYPE_METHOD)).collect(Collectors.toList());
+entries = testRules.stream().map(r -> new RuleEntry(r, TYPE_TEST)).collect(Collectors.toList());
+```
+
+**Expected Behavior**:
+```java
+// Correct conversion using Stream.concat():
+List<RuleEntry> entries = Stream.concat(
+    methodRules.stream().map(rule -> new RuleEntry(rule, TYPE_METHOD)),
+    testRules.stream().map(rule -> new RuleEntry(rule, TYPE_TEST))
+).collect(Collectors.toList());
+```
+
+**Implementation Tasks**:
+1. **Pattern Detection**
+   - [ ] Detect consecutive for-loops adding to the same collection variable
+   - [ ] Verify no other statements between the loops (except comments)
+   - [ ] Verify the target collection is only used for accumulation (no reads between loops)
+
+2. **Multi-Loop Grouping**
+   - [ ] Group consecutive add-loops targeting same variable
+   - [ ] Support 2+ loops (Stream.concat is binary, need nested calls for 3+)
+   - [ ] Alternative: Use `Stream.of(stream1, stream2, stream3).flatMap(s -> s)` for 3+ streams
+
+3. **Stream.concat Generation**
+   - [ ] Generate `Stream.concat()` call wrapping both stream pipelines
+   - [ ] Add `java.util.stream.Stream` import
+   - [ ] Handle type inference for generic streams
+
+4. **Edge Cases**
+   - [ ] Handle list initialized with capacity: `new ArrayList<>(size)`
+   - [ ] Handle different element types (may require common supertype)
+   - [ ] Handle loops with different transformations (map vs direct add)
+
+**Test Cases** (in `AdditionalLoopPatternsTest`):
+- ✅ `testMultipleLoopsPopulatingList_streamConcat` - Expected correct behavior (disabled)
+- ✅ `testMultipleLoopsPopulatingList_currentBuggyBehavior` - Documents current bug (enabled)
+
+**Success Criteria**:
+- [ ] Multiple loops adding to same list convert to Stream.concat()
+- [ ] Generated code is semantically equivalent to original
+- [ ] `testMultipleLoopsPopulatingList_streamConcat` passes
+- [ ] `testMultipleLoopsPopulatingList_currentBuggyBehavior` removed
+
+**Priority**: HIGH (current behavior produces incorrect code)
+
+**References**:
+- JUnit's RuleChain building pattern (motivation case)
+- `Stream.concat(Stream, Stream)` - combines two streams
+- `Stream.of(streams).flatMap(s -> s)` - alternative for 3+ streams
+
+
+
 ### Phase 8: V1 Deprecation (FUTURE)
 
 **Objective**: Retire V1 implementation once V2 is stable
