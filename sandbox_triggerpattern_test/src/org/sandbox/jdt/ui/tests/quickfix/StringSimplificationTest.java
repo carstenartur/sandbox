@@ -61,7 +61,7 @@ public class StringSimplificationTest {
 		assertEquals(1, matches.size(), "Should find exactly one match for \"\" + $x");
 
 		Match match = matches.get(0);
-		Map<String, ASTNode> bindings = match.getBindings();
+		Map<String, Object> bindings = match.getBindings();
 		assertEquals(1, bindings.size(), "Should have one binding for $x");
 		assertTrue(bindings.containsKey("$x"), "Should have binding for $x");
 	}
@@ -87,7 +87,7 @@ public class StringSimplificationTest {
 		assertEquals(1, matches.size(), "Should find exactly one match for $x + \"\"");
 
 		Match match = matches.get(0);
-		Map<String, ASTNode> bindings = match.getBindings();
+		Map<String, Object> bindings = match.getBindings();
 		assertEquals(1, bindings.size(), "Should have one binding for $x");
 		assertTrue(bindings.containsKey("$x"), "Should have binding for $x");
 	}
@@ -113,7 +113,7 @@ public class StringSimplificationTest {
 		assertEquals(1, matches.size(), "Should find exactly one match for $str.length() == 0");
 
 		Match match = matches.get(0);
-		Map<String, ASTNode> bindings = match.getBindings();
+		Map<String, Object> bindings = match.getBindings();
 		assertEquals(1, bindings.size(), "Should have one binding for $str");
 		assertTrue(bindings.containsKey("$str"), "Should have binding for $str");
 	}
@@ -139,7 +139,7 @@ public class StringSimplificationTest {
 		assertEquals(1, matches.size(), "Should find exactly one match for $str.equals(\"\")");
 
 		Match match = matches.get(0);
-		Map<String, ASTNode> bindings = match.getBindings();
+		Map<String, Object> bindings = match.getBindings();
 		assertEquals(1, bindings.size(), "Should have one binding for $str");
 		assertTrue(bindings.containsKey("$str"), "Should have binding for $str");
 	}
@@ -167,7 +167,7 @@ public class StringSimplificationTest {
 		assertEquals(1, matches.size(), "Should find exactly one match for $x == true");
 
 		Match match = matches.get(0);
-		Map<String, ASTNode> bindings = match.getBindings();
+		Map<String, Object> bindings = match.getBindings();
 		assertEquals(1, bindings.size(), "Should have one binding for $x");
 		assertTrue(bindings.containsKey("$x"), "Should have binding for $x");
 	}
@@ -195,7 +195,7 @@ public class StringSimplificationTest {
 		assertEquals(1, matches.size(), "Should find exactly one match for $x == false");
 
 		Match match = matches.get(0);
-		Map<String, ASTNode> bindings = match.getBindings();
+		Map<String, Object> bindings = match.getBindings();
 		assertEquals(1, bindings.size(), "Should have one binding for $x");
 		assertTrue(bindings.containsKey("$x"), "Should have binding for $x");
 	}
@@ -221,7 +221,7 @@ public class StringSimplificationTest {
 		assertEquals(1, matches.size(), "Should find exactly one match for $cond ? true : false");
 
 		Match match = matches.get(0);
-		Map<String, ASTNode> bindings = match.getBindings();
+		Map<String, Object> bindings = match.getBindings();
 		assertEquals(1, bindings.size(), "Should have one binding for $cond");
 		assertTrue(bindings.containsKey("$cond"), "Should have binding for $cond");
 	}
@@ -247,7 +247,7 @@ public class StringSimplificationTest {
 		assertEquals(1, matches.size(), "Should find exactly one match for $cond ? false : true");
 
 		Match match = matches.get(0);
-		Map<String, ASTNode> bindings = match.getBindings();
+		Map<String, Object> bindings = match.getBindings();
 		assertEquals(1, bindings.size(), "Should have one binding for $cond");
 		assertTrue(bindings.containsKey("$cond"), "Should have binding for $cond");
 	}
@@ -515,7 +515,7 @@ public class StringSimplificationTest {
 		assertEquals(1, matches.size(), "Should find StringBuilder single append pattern");
 		
 		Match match = matches.get(0);
-		Map<String, ASTNode> bindings = match.getBindings();
+		Map<String, Object> bindings = match.getBindings();
 		assertTrue(bindings.containsKey("$x"), "Should have binding for $x");
 	}
 
@@ -540,7 +540,7 @@ public class StringSimplificationTest {
 		assertEquals(1, matches.size(), "Should find String.format pattern");
 		
 		Match match = matches.get(0);
-		Map<String, ASTNode> bindings = match.getBindings();
+		Map<String, Object> bindings = match.getBindings();
 		assertTrue(bindings.containsKey("$x"), "Should have binding for $x");
 	}
 
@@ -565,7 +565,7 @@ public class StringSimplificationTest {
 		assertEquals(1, matches.size(), "Should find toString().equals() pattern");
 		
 		Match match = matches.get(0);
-		Map<String, ASTNode> bindings = match.getBindings();
+		Map<String, Object> bindings = match.getBindings();
 		assertEquals(2, bindings.size(), "Should have bindings for $x and $y");
 		assertTrue(bindings.containsKey("$x"), "Should have binding for $x");
 		assertTrue(bindings.containsKey("$y"), "Should have binding for $y");
@@ -592,7 +592,7 @@ public class StringSimplificationTest {
 		assertEquals(1, matches.size(), "Should find null-check ternary pattern");
 		
 		Match match = matches.get(0);
-		Map<String, ASTNode> bindings = match.getBindings();
+		Map<String, Object> bindings = match.getBindings();
 		assertEquals(2, bindings.size(), "Should have bindings for $x and $default");
 		assertTrue(bindings.containsKey("$x"), "Should have binding for $x");
 		assertTrue(bindings.containsKey("$default"), "Should have binding for $default");
