@@ -73,17 +73,12 @@ public class AssumeJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder= new ReferenceHolder<>();
-		ALL_ASSUMPTION_METHODS.forEach(assertionmethod -> {
-			HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSUME, assertionmethod, compilationUnit, dataHolder,
-					nodesprocessed, (visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
-		});
-		ALL_ASSUMPTION_METHODS.forEach(assertionmethod -> {
-			HelperVisitor.callImportDeclarationVisitor(ORG_JUNIT_ASSUME + "." + assertionmethod, compilationUnit,
-					dataHolder, nodesprocessed,
-					(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
-		});
-		HelperVisitor.callImportDeclarationVisitor(ORG_JUNIT_ASSUME, compilationUnit, dataHolder, nodesprocessed,
-				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+		HelperVisitor.forMethodCalls(ORG_JUNIT_ASSUME, ALL_ASSUMPTION_METHODS)
+			.andStaticImports()
+			.andImportsOf(ORG_JUNIT_ASSUME)
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(dataHolder, (visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,

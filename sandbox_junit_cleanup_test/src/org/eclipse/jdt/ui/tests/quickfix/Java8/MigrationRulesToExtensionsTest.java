@@ -157,7 +157,6 @@ public class MigrationRulesToExtensionsTest {
 		}, null);
 	}
 
-	@Disabled("Not yet implemented - Timeout rule migration")
 	@Test
 	public void migrates_timeout_rule() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
@@ -183,16 +182,19 @@ public class MigrationRulesToExtensionsTest {
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
 
+		// Note: JUnit 4's @Rule Timeout applies to all test methods in the class,
+		// so the correct JUnit 5 equivalent is a class-level @Timeout annotation
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
 				"""
 				package test;
-				import org.junit.jupiter.api.Test;
-				import org.junit.jupiter.api.Timeout;
 				import java.util.concurrent.TimeUnit;
 				
+				import org.junit.jupiter.api.Test;
+				import org.junit.jupiter.api.Timeout;
+				
+				@Timeout(value = 1000, unit = TimeUnit.MILLISECONDS)
 				public class MyTest {
 					@Test
-					@Timeout(value = 1000, unit = TimeUnit.MILLISECONDS)
 					public void testSomething() {
 						// Test code
 					}
@@ -201,22 +203,22 @@ public class MigrationRulesToExtensionsTest {
 		}, null);
 	}
 
-	@Disabled("Anonymous ExternalResource migration generates hash-based class names - covered by parameterized tests")
+	@Disabled("Anonymous ExternalResource migration generates hash-based class names - covered by JUnitMigrationCleanUpTest.testJUnitCleanupSelectedCase with JUnitCleanupCases.RuleAnonymousExternalResource")
 	@Test
 	public void migrates_externalResource_anonymous_class() throws CoreException {
 		// This test is disabled because the cleanup generates hash-based class names
-		// for anonymous ExternalResource instances (e.g., Resource_5b8b4).
+		// for anonymous ExternalResource instances (e.g., Er_5b8b4).
 		// The exact hash depends on the variable name and is tested in
-		// JUnitCleanupCases.RuleAnonymousExternalResource
+		// JUnitMigrationCleanUpTest.testJUnitCleanupSelectedCase using JUnitCleanupCases.RuleAnonymousExternalResource
 	}
 
-	@Disabled("ClassRule migration generates hash-based class names - covered by parameterized tests")
+	@Disabled("ClassRule migration generates hash-based class names - covered by JUnitMigrationCleanUpTest.testJUnitCleanupSelectedCase with JUnitCleanupCases.RuleNestedExternalResource")
 	@Test
 	public void migrates_classRule_to_static_extension() throws CoreException {
 		// This test is disabled because the cleanup generates hash-based class names
 		// for anonymous ExternalResource instances in ClassRule scenarios.
 		// The exact hash depends on the variable name and is tested in
-		// JUnitCleanupCases.RuleNestedExternalResource
+		// JUnitMigrationCleanUpTest.testJUnitCleanupSelectedCase using JUnitCleanupCases.RuleNestedExternalResource
 	}
 
 	enum RuleCases {

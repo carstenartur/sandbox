@@ -82,24 +82,71 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder = new ReferenceHolder<>();
 		
-		// Find assertTrue calls for optimization
-		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSERT, "assertTrue", compilationUnit, dataHolder,
-				nodesprocessed, (visited, aholder) -> processAssertion(fixcore, operations, visited, aholder, true));
-		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_JUPITER_API_ASSERTIONS, "assertTrue", compilationUnit, dataHolder,
-				nodesprocessed, (visited, aholder) -> processAssertion(fixcore, operations, visited, aholder, true));
+		// Find assertTrue calls for optimization (JUnit 4)
+		HelperVisitor.forMethodCall(ORG_JUNIT_ASSERT, "assertTrue")
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(dataHolder, (visited, aholder) -> {
+				if (visited instanceof MethodInvocation) {
+					return processAssertion(fixcore, operations, visited, aholder, true);
+				}
+				return true;
+			});
 		
-		// Find assertFalse calls for optimization
-		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSERT, "assertFalse", compilationUnit, dataHolder,
-				nodesprocessed, (visited, aholder) -> processAssertion(fixcore, operations, visited, aholder, false));
-		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_JUPITER_API_ASSERTIONS, "assertFalse", compilationUnit, dataHolder,
-				nodesprocessed, (visited, aholder) -> processAssertion(fixcore, operations, visited, aholder, false));
+		// Find assertTrue calls for optimization (JUnit 5)
+		HelperVisitor.forMethodCall(ORG_JUNIT_JUPITER_API_ASSERTIONS, "assertTrue")
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(dataHolder, (visited, aholder) -> {
+				if (visited instanceof MethodInvocation) {
+					return processAssertion(fixcore, operations, visited, aholder, true);
+				}
+				return true;
+			});
+		
+		// Find assertFalse calls for optimization (JUnit 4)
+		HelperVisitor.forMethodCall(ORG_JUNIT_ASSERT, "assertFalse")
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(dataHolder, (visited, aholder) -> {
+				if (visited instanceof MethodInvocation) {
+					return processAssertion(fixcore, operations, visited, aholder, false);
+				}
+				return true;
+			});
+		
+		// Find assertFalse calls for optimization (JUnit 5)
+		HelperVisitor.forMethodCall(ORG_JUNIT_JUPITER_API_ASSERTIONS, "assertFalse")
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(dataHolder, (visited, aholder) -> {
+				if (visited instanceof MethodInvocation) {
+					return processAssertion(fixcore, operations, visited, aholder, false);
+				}
+				return true;
+			});
 		
 		// Find assertion calls with expected/actual parameters for parameter order correction
 		METHODS_WITH_EXPECTED_ACTUAL.forEach(methodName -> {
-			HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSERT, methodName, compilationUnit, dataHolder,
-					nodesprocessed, (visited, aholder) -> processParameterOrder(fixcore, operations, visited, aholder));
-			HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_JUPITER_API_ASSERTIONS, methodName, compilationUnit, dataHolder,
-					nodesprocessed, (visited, aholder) -> processParameterOrder(fixcore, operations, visited, aholder));
+			HelperVisitor.forMethodCall(ORG_JUNIT_ASSERT, methodName)
+				.in(compilationUnit)
+				.excluding(nodesprocessed)
+				.processEach(dataHolder, (visited, aholder) -> {
+					if (visited instanceof MethodInvocation) {
+						return processParameterOrder(fixcore, operations, visited, aholder);
+					}
+					return true;
+				});
+			
+			HelperVisitor.forMethodCall(ORG_JUNIT_JUPITER_API_ASSERTIONS, methodName)
+				.in(compilationUnit)
+				.excluding(nodesprocessed)
+				.processEach(dataHolder, (visited, aholder) -> {
+					if (visited instanceof MethodInvocation) {
+						return processParameterOrder(fixcore, operations, visited, aholder);
+					}
+					return true;
+				});
 		});
 	}
 
@@ -108,14 +155,14 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 			ReferenceHolder<Integer, JunitHolder> dataHolder, boolean isTrue) {
 		
 		if (!(node instanceof MethodInvocation)) {
-			return false;
+			return true; // Continue processing other nodes
 		}
 		
 		MethodInvocation mi = (MethodInvocation) node;
 		List<?> arguments = mi.arguments();
 		
 		if (arguments.isEmpty()) {
-			return false;
+			return true; // Continue processing other nodes
 		}
 		
 		// Get the condition expression (may be first or second argument depending on whether message is present)
@@ -138,7 +185,7 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 		}
 		
 		if (condition == null || !canOptimize(condition)) {
-			return false;
+			return true; // Continue processing other nodes
 		}
 		
 		return addStandardRewriteOperation(fixcore, operations, node, dataHolder);
@@ -153,7 +200,7 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 			ReferenceHolder<Integer, JunitHolder> dataHolder) {
 		
 		if (!(node instanceof MethodInvocation)) {
-			return false;
+			return true; // Continue processing other nodes
 		}
 		
 		MethodInvocation mi = (MethodInvocation) node;
@@ -161,7 +208,7 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 		
 		// Need at least 2 arguments (expected, actual) or 3 with message
 		if (arguments.size() < 2) {
-			return false;
+			return true; // Continue processing other nodes
 		}
 		
 		// Get first two arguments (they might be expected/actual or message/expected depending on JUnit version)
@@ -190,7 +237,7 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 			return addStandardRewriteOperation(fixcore, operations, node, dataHolder);
 		}
 		
-		return false;
+		return true; // Continue processing other nodes
 	}
 
 	/**

@@ -56,14 +56,20 @@ public class RuleTimeoutJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 		ReferenceHolder<Integer, JunitHolder> dataHolder = new ReferenceHolder<>();
 		
 		// Look for @Rule Timeout fields
-		HelperVisitor.callFieldDeclarationVisitor(ORG_JUNIT_RULE, ORG_JUNIT_RULES_TIMEOUT, compilationUnit,
-				dataHolder, nodesprocessed,
-				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+		HelperVisitor.forField()
+			.withAnnotation(ORG_JUNIT_RULE)
+			.ofType(ORG_JUNIT_RULES_TIMEOUT)
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(dataHolder, (visited, aholder) -> processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));
 		
 		// Also look for @ClassRule Timeout fields (static fields)
-		HelperVisitor.callFieldDeclarationVisitor(ORG_JUNIT_CLASS_RULE, ORG_JUNIT_RULES_TIMEOUT, compilationUnit,
-				dataHolder, nodesprocessed,
-				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+		HelperVisitor.forField()
+			.withAnnotation(ORG_JUNIT_CLASS_RULE)
+			.ofType(ORG_JUNIT_RULES_TIMEOUT)
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(dataHolder, (visited, aholder) -> processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
@@ -73,7 +79,8 @@ public class RuleTimeoutJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 		// (e.g., @Rule public Timeout t1 = ..., t2 = ...;) are not supported but are extremely rare.
 		VariableDeclarationFragment fragment = (VariableDeclarationFragment) node.fragments().get(0);
 		if (fragment.resolveBinding() == null) {
-			return false;
+			// Return true to continue processing other fields
+			return true;
 		}
 		ITypeBinding binding = fragment.resolveBinding().getType();
 		
@@ -91,7 +98,8 @@ public class RuleTimeoutJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 				}
 			}
 		}
-		return false;
+		// Return true to continue processing other fields
+		return true;
 	}
 
 	/**

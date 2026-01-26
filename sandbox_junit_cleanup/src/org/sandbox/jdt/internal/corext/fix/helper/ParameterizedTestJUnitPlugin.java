@@ -72,8 +72,15 @@ public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<I
 		ReferenceHolder<Integer, JunitHolder> dataHolder = new ReferenceHolder<>();
 		
 		// Find @RunWith(Parameterized.class) annotations
-		HelperVisitor.callSingleMemberAnnotationVisitor(ORG_JUNIT_RUNWITH, compilationUnit, dataHolder, nodesprocessed,
-				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+		HelperVisitor.forAnnotation(ORG_JUNIT_RUNWITH)
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(dataHolder, (visited, aholder) -> {
+				if (visited instanceof Annotation) {
+					return processFoundNode(fixcore, operations, (Annotation) visited, aholder);
+				}
+				return true;
+			});
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
@@ -107,13 +114,15 @@ public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<I
 							
 							dataHolder.put(dataHolder.size(), mh);
 							operations.add(fixcore.rewrite(dataHolder));
-							return false;
+							// Return true to continue processing (there could be nested classes)
+							return true;
 						}
 					}
 				}
 			}
 		}
-		return false;
+		// Return true to continue processing other annotations
+		return true;
 	}
 
 	@Override

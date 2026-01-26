@@ -77,9 +77,15 @@ public class CategoryJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, J
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder= new ReferenceHolder<>();
-		HelperVisitor.callSingleMemberAnnotationVisitor(ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORY, compilationUnit, 
-				dataHolder, nodesprocessed,
-				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+		HelperVisitor.forAnnotation(ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORY)
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(dataHolder, (visited, aholder) -> {
+				if (visited instanceof Annotation) {
+					return processFoundNode(fixcore, operations, (Annotation) visited, aholder);
+				}
+				return true;
+			});
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
@@ -98,7 +104,9 @@ public class CategoryJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, J
 				operations.add(fixcore.rewrite(dataHolder));
 			}
 		}
-		return false;
+		// Return true to continue processing other @Category annotations
+		// (the fluent API interprets false as "stop all processing")
+		return true;
 	}
 
 	/**
