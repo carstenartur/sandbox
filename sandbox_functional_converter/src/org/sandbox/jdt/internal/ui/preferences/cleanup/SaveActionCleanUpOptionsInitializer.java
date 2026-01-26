@@ -23,5 +23,6 @@ public class SaveActionCleanUpOptionsInitializer implements ICleanUpOptionsIniti
 	public void setDefaultOptions(CleanUpOptions options) {
 		options.setOption(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP, CleanUpOptions.FALSE);
 		options.setOption(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP_V2, CleanUpOptions.FALSE);
+		options.setOption(MYCleanUpConstants.USEFUNCTIONALLOOP_TARGET_FORMAT, "stream"); // default to Stream
 	}
 }

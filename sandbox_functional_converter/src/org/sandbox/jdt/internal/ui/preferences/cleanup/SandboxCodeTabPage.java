@@ -47,6 +47,20 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 		Group java1d8Group= createGroup(numColumns, composite, CleanUpMessages.JavaFeatureTabPage_GroupName_Java1d8);
 		final CheckboxPreference functional_call= createCheckboxPref(java1d8Group, numColumns, CleanUpMessages.JavaFeatureTabPage_CheckboxName_FunctionalCall, MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP, FALSE_TRUE);
 		intent(java1d8Group);
+		
+		// Add combo box for target format selection
+		final String[] formatValues = new String[] { "stream", "for", "while" };
+		final String[] formatLabels = new String[] {
+			CleanUpMessages.JavaFeatureTabPage_TargetFormat_Stream,
+			CleanUpMessages.JavaFeatureTabPage_TargetFormat_ForLoop,
+			CleanUpMessages.JavaFeatureTabPage_TargetFormat_WhileLoop
+		};
+		final ComboPreference targetFormat = createComboPref(java1d8Group, numColumns, 
+			CleanUpMessages.JavaFeatureTabPage_ComboName_TargetFormat, 
+			MYCleanUpConstants.USEFUNCTIONALLOOP_TARGET_FORMAT, 
+			formatValues, formatLabels);
+		registerSlavePreference(functional_call, new RadioPreference[] { targetFormat });
+		
 		registerPreference(functional_call);
 	}
 }
