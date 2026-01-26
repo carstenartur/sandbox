@@ -73,7 +73,7 @@ public class StringSimplificationHintProvider {
 		InfixExpression infixExpr = (InfixExpression) matchedNode;
 
 		// Get the bound variable from placeholders
-		ASTNode xNode = ctx.getMatch().getBindings().get("$x"); //$NON-NLS-1$
+		ASTNode xNode = ctx.getMatch().getBinding("$x"); //$NON-NLS-1$
 		if (xNode == null || !(xNode instanceof Expression)) {
 			return null;
 		}
@@ -126,7 +126,7 @@ public class StringSimplificationHintProvider {
 		InfixExpression infixExpr = (InfixExpression) matchedNode;
 
 		// Get the bound variable
-		ASTNode xNode = ctx.getMatch().getBindings().get("$x"); //$NON-NLS-1$
+		ASTNode xNode = ctx.getMatch().getBinding("$x"); //$NON-NLS-1$
 		if (xNode == null || !(xNode instanceof Expression)) {
 			return null;
 		}
@@ -178,7 +178,7 @@ public class StringSimplificationHintProvider {
 		InfixExpression infixExpr = (InfixExpression) matchedNode;
 
 		// Get the string expression
-		ASTNode strNode = ctx.getMatch().getBindings().get("$str"); //$NON-NLS-1$
+		ASTNode strNode = ctx.getMatch().getBinding("$str"); //$NON-NLS-1$
 		if (strNode == null || !(strNode instanceof Expression)) {
 			return null;
 		}
@@ -229,7 +229,7 @@ public class StringSimplificationHintProvider {
 		MethodInvocation methodInvocation = (MethodInvocation) matchedNode;
 
 		// Get the string expression
-		ASTNode strNode = ctx.getMatch().getBindings().get("$str"); //$NON-NLS-1$
+		ASTNode strNode = ctx.getMatch().getBinding("$str"); //$NON-NLS-1$
 		if (strNode == null || !(strNode instanceof Expression)) {
 			return null;
 		}
@@ -280,7 +280,7 @@ public class StringSimplificationHintProvider {
 		InfixExpression infixExpr = (InfixExpression) matchedNode;
 
 		// Get the boolean variable
-		ASTNode xNode = ctx.getMatch().getBindings().get("$x"); //$NON-NLS-1$
+		ASTNode xNode = ctx.getMatch().getBinding("$x"); //$NON-NLS-1$
 		if (xNode == null || !(xNode instanceof Expression)) {
 			return null;
 		}
@@ -328,7 +328,7 @@ public class StringSimplificationHintProvider {
 		InfixExpression infixExpr = (InfixExpression) matchedNode;
 
 		// Get the boolean variable
-		ASTNode xNode = ctx.getMatch().getBindings().get("$x"); //$NON-NLS-1$
+		ASTNode xNode = ctx.getMatch().getBinding("$x"); //$NON-NLS-1$
 		if (xNode == null || !(xNode instanceof Expression)) {
 			return null;
 		}
@@ -378,7 +378,7 @@ public class StringSimplificationHintProvider {
 		ConditionalExpression ternary = (ConditionalExpression) matchedNode;
 
 		// Get the condition
-		ASTNode condNode = ctx.getMatch().getBindings().get("$cond"); //$NON-NLS-1$
+		ASTNode condNode = ctx.getMatch().getBinding("$cond"); //$NON-NLS-1$
 		if (condNode == null || !(condNode instanceof Expression)) {
 			return null;
 		}
@@ -426,7 +426,7 @@ public class StringSimplificationHintProvider {
 		ConditionalExpression ternary = (ConditionalExpression) matchedNode;
 
 		// Get the condition
-		ASTNode condNode = ctx.getMatch().getBindings().get("$cond"); //$NON-NLS-1$
+		ASTNode condNode = ctx.getMatch().getBinding("$cond"); //$NON-NLS-1$
 		if (condNode == null || !(condNode instanceof Expression)) {
 			return null;
 		}
@@ -477,7 +477,7 @@ public class StringSimplificationHintProvider {
 		InfixExpression infixExpr = (InfixExpression) matchedNode;
 
 		// Get the collection expression
-		ASTNode listNode = ctx.getMatch().getBindings().get("$list"); //$NON-NLS-1$
+		ASTNode listNode = ctx.getMatch().getBinding("$list"); //$NON-NLS-1$
 		if (listNode == null || !(listNode instanceof Expression)) {
 			return null;
 		}
@@ -528,7 +528,7 @@ public class StringSimplificationHintProvider {
 		InfixExpression infixExpr = (InfixExpression) matchedNode;
 
 		// Get the collection expression
-		ASTNode listNode = ctx.getMatch().getBindings().get("$list"); //$NON-NLS-1$
+		ASTNode listNode = ctx.getMatch().getBinding("$list"); //$NON-NLS-1$
 		if (listNode == null || !(listNode instanceof Expression)) {
 			return null;
 		}
@@ -587,7 +587,7 @@ public class StringSimplificationHintProvider {
 		MethodInvocation methodInvocation = (MethodInvocation) matchedNode;
 
 		// Get the appended value
-		ASTNode xNode = ctx.getMatch().getBindings().get("$x"); //$NON-NLS-1$
+		ASTNode xNode = ctx.getMatch().getBinding("$x"); //$NON-NLS-1$
 		if (xNode == null || !(xNode instanceof Expression)) {
 			return null;
 		}
@@ -642,7 +642,7 @@ public class StringSimplificationHintProvider {
 		MethodInvocation methodInvocation = (MethodInvocation) matchedNode;
 
 		// Get the formatted value
-		ASTNode xNode = ctx.getMatch().getBindings().get("$x"); //$NON-NLS-1$
+		ASTNode xNode = ctx.getMatch().getBinding("$x"); //$NON-NLS-1$
 		if (xNode == null || !(xNode instanceof Expression)) {
 			return null;
 		}
@@ -697,8 +697,8 @@ public class StringSimplificationHintProvider {
 		MethodInvocation methodInvocation = (MethodInvocation) matchedNode;
 
 		// Get both expressions
-		ASTNode xNode = ctx.getMatch().getBindings().get("$x"); //$NON-NLS-1$
-		ASTNode yNode = ctx.getMatch().getBindings().get("$y"); //$NON-NLS-1$
+		ASTNode xNode = ctx.getMatch().getBinding("$x"); //$NON-NLS-1$
+		ASTNode yNode = ctx.getMatch().getBinding("$y"); //$NON-NLS-1$
 		
 		if (xNode == null || !(xNode instanceof Expression) ||
 		    yNode == null || !(yNode instanceof Expression)) {
@@ -767,8 +767,8 @@ public class StringSimplificationHintProvider {
 		ConditionalExpression ternary = (ConditionalExpression) matchedNode;
 
 		// Get the expressions
-		ASTNode xNode = ctx.getMatch().getBindings().get("$x"); //$NON-NLS-1$
-		ASTNode defaultNode = ctx.getMatch().getBindings().get("$default"); //$NON-NLS-1$
+		ASTNode xNode = ctx.getMatch().getBinding("$x"); //$NON-NLS-1$
+		ASTNode defaultNode = ctx.getMatch().getBinding("$default"); //$NON-NLS-1$
 		
 		if (xNode == null || !(xNode instanceof Expression) ||
 		    defaultNode == null || !(defaultNode instanceof Expression)) {
