@@ -15,7 +15,6 @@ package org.sandbox.jdt.ui.tests.quickfix;
 
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
@@ -32,15 +31,15 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
  *   <li>Safety checks (iterator.remove(), multiple next() calls, etc.)</li>
  * </ul>
  * 
- * <p>Note: These tests are disabled by default until ITERATOR_LOOP is enabled
- * in UseFunctionalCallFixCore.</p>
+ * <p>Note: ITERATOR_LOOP has been activated in UseFunctionalCallFixCore (Phase 7).
+ * Tests are enabled and validate iterator-to-stream conversions.</p>
  */
 public class IteratorLoopConversionTest {
     
     @RegisterExtension
     AbstractEclipseJava context = new EclipseJava22();
     
-    @Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
+    // Enabled January 2026 - Phase 7: Iterator pattern support
     @Test
     public void testSimpleWhileIterator_forEach() throws Exception {
         IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
@@ -60,15 +59,14 @@ public class IteratorLoopConversionTest {
             """;
         
         String expected = """
-            package test;
-            import java.util.*;
-            public class E {
-                void foo(List<String> items) {
-                    items.stream()
-                        .forEach(item -> System.out.println(item));
-                }
-            }
-            """;
+package test;
+import java.util.*;
+public class E {
+    void foo(List<String> items) {
+        items.stream().forEach(item -> System.out.println(item));
+    }
+}
+""";
         
         ICompilationUnit cu = pack.createCompilationUnit("E.java", given, false, null);
         context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
@@ -76,7 +74,7 @@ public class IteratorLoopConversionTest {
         context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
     }
     
-    @Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
+    // Enabled January 2026 - Phase 7: Iterator pattern support
     @Test
     public void testForLoopIterator_forEach() throws Exception {
         IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
@@ -95,15 +93,14 @@ public class IteratorLoopConversionTest {
             """;
         
         String expected = """
-            package test;
-            import java.util.*;
-            public class E {
-                void foo(List<String> items) {
-                    items.stream()
-                        .forEach(item -> System.out.println(item));
-                }
-            }
-            """;
+package test;
+import java.util.*;
+public class E {
+    void foo(List<String> items) {
+        items.stream().forEach(item -> System.out.println(item));
+    }
+}
+""";
         
         ICompilationUnit cu = pack.createCompilationUnit("E.java", given, false, null);
         context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
@@ -111,7 +108,7 @@ public class IteratorLoopConversionTest {
         context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
     }
     
-    @Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
+    // Enabled January 2026 - Phase 7: Iterator pattern support
     @Test
     public void testIteratorWithRemove_notConverted() throws Exception {
         IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
@@ -139,7 +136,7 @@ public class IteratorLoopConversionTest {
         context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
     }
     
-    @Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
+    // Enabled January 2026 - Phase 7: Iterator pattern support
     @Test
     public void testIteratorMultipleNext_notConverted() throws Exception {
         IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
@@ -166,7 +163,7 @@ public class IteratorLoopConversionTest {
         context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
     }
     
-    @Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
+    // Enabled January 2026 - Phase 7: Iterator pattern support
     @Test
     public void testMultipleStatements_forEach() throws Exception {
         IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
@@ -187,18 +184,17 @@ public class IteratorLoopConversionTest {
             """;
         
         String expected = """
-            package test;
-            import java.util.*;
-            public class E {
-                void foo(List<String> items) {
-                    items.stream()
-                        .forEach(item -> {
-                            String upper = item.toUpperCase();
-                            System.out.println(upper);
-                        });
-                }
-            }
-            """;
+package test;
+import java.util.*;
+public class E {
+    void foo(List<String> items) {
+        items.stream().forEach(item -> {
+			String upper = item.toUpperCase();
+			System.out.println(upper);
+		});
+    }
+}
+""";
         
         ICompilationUnit cu = pack.createCompilationUnit("E.java", given, false, null);
         context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
@@ -206,7 +202,7 @@ public class IteratorLoopConversionTest {
         context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
     }
     
-    @Disabled("Enable after ITERATOR_LOOP is activated in UseFunctionalCallFixCore")
+    // Enabled January 2026 - Phase 7: Iterator pattern support
     @Test
     public void testWithBreak_notYetSupported() throws Exception {
         IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);

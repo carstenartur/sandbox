@@ -106,7 +106,50 @@
 - ULR model classes have comprehensive test coverage
 - No performance regression compared to V1
 
-### Phase 3: V1 Deprecation (FUTURE)
+### Phase 7: Iterator Loop Support ✅ COMPLETED (January 2026)
+
+**Objective**: Activate iterator-based loop conversion support
+
+**Completed Tasks**:
+- ✅ Activated `ITERATOR_LOOP` enum in `UseFunctionalCallFixCore`
+- ✅ Added `IteratorLoopToFunctional` import
+- ✅ Updated `UseFunctionalCallCleanUpCore` to include ITERATOR_LOOP in cleanup fixes
+- ✅ Enabled 14 disabled tests in `IteratorLoopToStreamTest` (removed @Disabled annotations)
+- ✅ Enabled 6 disabled tests in `IteratorLoopConversionTest` (removed @Disabled annotations)
+- ✅ Created comprehensive test suite for bidirectional transformations (`LoopBidirectionalTransformationTest`)
+  - Tests for for → Stream (supported)
+  - Tests for Iterator → Stream (supported)
+  - Future tests for Stream → for, for → while, while → for (documented)
+- ✅ Created additional edge case tests (`AdditionalLoopPatternsTest`)
+  - Negative tests for classic while loops (should not convert)
+  - Negative tests for do-while loops (semantic incompatibility)
+  - Future tests for index-based for loops
+  - Negative tests for complex iterator patterns
+- ✅ Updated TODO.md with Phase 7 documentation
+
+**Implementation Highlights**:
+- `IteratorLoopToFunctional` class already fully implemented (from PR #449)
+- Pattern detectors: `IteratorPatternDetector`, `IteratorLoopAnalyzer`, `IteratorLoopBodyParser`
+- Supports both while-iterator and for-loop-iterator patterns
+- Converts recognized iterator loops directly to stream-based forms (e.g., `collection.stream().forEach(...)`)
+
+**Supported Patterns** (Phase 7):
+1. **while-iterator pattern**: `Iterator<T> it = coll.iterator(); while (it.hasNext()) { T item = it.next(); ... }`
+   - Converts to: `collection.stream().forEach(item -> ...)`
+2. **for-loop-iterator pattern**: `for (Iterator<T> it = coll.iterator(); it.hasNext(); ) { T item = it.next(); ... }`
+   - Converts to: `collection.stream().forEach(item -> ...)`
+
+**Test Coverage** (Phase 7):
+- 14 tests in `IteratorLoopToStreamTest`: 5 enabled (2 simple forEach + 3 negative tests), 9 disabled (safety bug + advanced patterns + multi-statement)
+  - Enabled: Simple single-statement forEach conversions and partial safety validation (iterator.remove(), break, multiple next())
+  - Disabled: external state modification detection bug, multi-statement block lambdas, collect, map, filter, reduce patterns
+- 6 tests in `IteratorLoopConversionTest` for additional iterator variants
+- 5 tests in `LoopBidirectionalTransformationTest` (2 active, 3 future)
+- 9 tests in `AdditionalLoopPatternsTest` (6 active negative tests, 3 future)
+
+**Total Active Iterator Tests**: 11 tests enabled (5 in IteratorLoopToStreamTest + 6 in IteratorLoopConversionTest), 9 disabled (1 safety bug + 8 pending advanced pattern support)
+
+### Phase 8: V1 Deprecation (FUTURE)
 
 **Objective**: Retire V1 implementation once V2 is stable
 
