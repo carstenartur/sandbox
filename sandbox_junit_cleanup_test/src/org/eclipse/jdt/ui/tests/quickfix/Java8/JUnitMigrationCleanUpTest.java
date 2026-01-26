@@ -492,7 +492,7 @@ public class MyExternalResource2 implements BeforeEachCallback, AfterEachCallbac
 	
 	
 	@ParameterizedTest
-	@EnumSource(value=JUnitCleanupCases.class, names= {"RuleNestedExternalResource"})
+	@EnumSource(value=JUnitCleanupCases.class, names= {"RuleAnonymousExternalResource", "RuleNestedExternalResource"})
 	public void testJUnitCleanupSelectedCase(JUnitCleanupCases test) throws CoreException {
 		IPackageFragment pack= fRootJUnit4.createPackageFragment("test", true, null);
 		ICompilationUnit cu= pack.createCompilationUnit("MyTest.java", test.given, true, null); //$NON-NLS-1$
