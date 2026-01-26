@@ -1,0 +1,2238 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html xmlns:lxslt="http://xml.apache.org/xslt" xmlns:string="xalan://java.lang.String">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Test Results - sandbox-functional-converter-core</title>
+<style type="text/css">
+      body {
+        font:normal 68% verdana,arial,helvetica;
+        color:#000000;
+      }
+      table tr td, table tr th {
+          font-size: 68%;
+      }
+      table.details tr th{
+        font-weight: bold;
+        text-align:left;
+        background:#a6caf0;
+      }
+      table.details tr td{
+        background:#eeeee0;
+      }
+
+      p {
+        line-height:1.5em;
+        margin-top:0.5em; margin-bottom:1.0em;
+      }
+      h1 {
+        margin: 0px 0px 5px; font: 165% verdana,arial,helvetica
+      }
+      h2 {
+        margin-top: 1em; margin-bottom: 0.5em; font: bold 125% verdana,arial,helvetica
+      }
+      h3 {
+        margin-bottom: 0.5em; font: bold 115% verdana,arial,helvetica
+      }
+      h4 {
+        margin-bottom: 0.5em; font: bold 100% verdana,arial,helvetica
+      }
+      h5 {
+        margin-bottom: 0.5em; font: bold 100% verdana,arial,helvetica
+      }
+      h6 {
+        margin-bottom: 0.5em; font: bold 100% verdana,arial,helvetica
+      }
+      .Error {
+        font-weight:bold; color:red;
+      }
+      .Failure {
+        font-weight:bold; color:purple;
+      }
+      .Properties {
+        text-align:right;
+      }
+      /* Navigation buttons styling */
+      .nav-buttons {
+        position: fixed;
+        top: 8px;
+        right: 8px;
+        z-index: 1000;
+      }
+      .nav-buttons button {
+        font-size: 16px;
+        padding: 5px 10px;
+        margin-left: 5px;
+        cursor: pointer;
+        background-color: #f0f0f0;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+      }
+      .nav-buttons button:hover {
+        background-color: #e0e0e0;
+      }
+      </style>
+<script type="text/javascript" language="JavaScript">
+        var TestCases = new Array();
+        var cur;
+        
+    cur = TestCases['.org.sandbox.functional.core.model.LoopModelTest'] = new Array();
+    
+        cur['basedir'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core';
+    
+        cur['file.encoding'] = 'UTF-8';
+    
+        cur['file.separator'] = '/';
+    
+        cur['java.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/test-classes:/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/classes:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter/5.11.4/junit-jupiter-5.11.4.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.jar:/home/runner/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.jar:/home/runner/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.11.4/junit-jupiter-params-5.11.4.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.jar:/home/runner/.m2/repository/org/assertj/assertj-core/3.27.3/assertj-core-3.27.3.jar:/home/runner/.m2/repository/net/bytebuddy/byte-buddy/1.15.11/byte-buddy-1.15.11.jar:';
+    
+        cur['java.class.version'] = '65.0';
+    
+        cur['java.home'] = '/usr/lib/jvm/temurin-21-jdk-amd64';
+    
+        cur['java.io.tmpdir'] = '/tmp';
+    
+        cur['java.library.path'] = '/usr/java/packages/lib:/usr/lib64:/lib64:/lib:/usr/lib';
+    
+        cur['java.runtime.name'] = 'OpenJDK Runtime Environment';
+    
+        cur['java.runtime.version'] = '21.0.9+10-LTS';
+    
+        cur['java.specification.name'] = 'Java Platform API Specification';
+    
+        cur['java.specification.vendor'] = 'Oracle Corporation';
+    
+        cur['java.specification.version'] = '21';
+    
+        cur['java.vendor'] = 'Eclipse Adoptium';
+    
+        cur['java.vendor.url'] = 'https://adoptium.net/';
+    
+        cur['java.vendor.url.bug'] = 'https://github.com/adoptium/adoptium-support/issues';
+    
+        cur['java.vendor.version'] = 'Temurin-21.0.9+10';
+    
+        cur['java.version'] = '21.0.9';
+    
+        cur['java.version.date'] = '2025-10-21';
+    
+        cur['java.vm.compressedOopsMode'] = 'Zero based';
+    
+        cur['java.vm.info'] = 'mixed mode, sharing';
+    
+        cur['java.vm.name'] = 'OpenJDK 64-Bit Server VM';
+    
+        cur['java.vm.specification.name'] = 'Java Virtual Machine Specification';
+    
+        cur['java.vm.specification.vendor'] = 'Oracle Corporation';
+    
+        cur['java.vm.specification.version'] = '21';
+    
+        cur['java.vm.vendor'] = 'Eclipse Adoptium';
+    
+        cur['java.vm.version'] = '21.0.9+10-LTS';
+    
+        cur['jdk.debug'] = 'release';
+    
+        cur['line.separator'] = '
+';
+    
+        cur['localRepository'] = '/home/runner/.m2/repository';
+    
+        cur['native.encoding'] = 'UTF-8';
+    
+        cur['os.arch'] = 'amd64';
+    
+        cur['os.name'] = 'Linux';
+    
+        cur['os.version'] = '6.11.0-1018-azure';
+    
+        cur['path.separator'] = ':';
+    
+        cur['stderr.encoding'] = 'UTF-8';
+    
+        cur['stdout.encoding'] = 'UTF-8';
+    
+        cur['sun.arch.data.model'] = '64';
+    
+        cur['sun.boot.library.path'] = '/usr/lib/jvm/temurin-21-jdk-amd64/lib';
+    
+        cur['sun.cpu.endian'] = 'little';
+    
+        cur['sun.io.unicode.encoding'] = 'UnicodeLittle';
+    
+        cur['sun.java.command'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260126183849552_3.jar /home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire 2026-01-26T18-38-48_777-jvmRun1 surefire-20260126183849552_1tmp surefire_0-20260126183849552_2tmp';
+    
+        cur['sun.java.launcher'] = 'SUN_STANDARD';
+    
+        cur['sun.jnu.encoding'] = 'UTF-8';
+    
+        cur['sun.management.compiler'] = 'HotSpot 64-Bit Tiered Compilers';
+    
+        cur['surefire.real.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260126183849552_3.jar';
+    
+        cur['surefire.test.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/test-classes:/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/classes:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter/5.11.4/junit-jupiter-5.11.4.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.jar:/home/runner/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.jar:/home/runner/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.11.4/junit-jupiter-params-5.11.4.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.jar:/home/runner/.m2/repository/org/assertj/assertj-core/3.27.3/assertj-core-3.27.3.jar:/home/runner/.m2/repository/net/bytebuddy/byte-buddy/1.15.11/byte-buddy-1.15.11.jar:';
+    
+        cur['tycho.localArtifacts'] = 'ignore';
+    
+        cur['user.dir'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core';
+    
+        cur['user.home'] = '/home/runner';
+    
+        cur['user.language'] = 'en';
+    
+        cur['user.name'] = 'runner';
+    
+    cur = TestCases['.org.sandbox.functional.core.operation.OperationTest'] = new Array();
+    
+        cur['basedir'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core';
+    
+        cur['file.encoding'] = 'UTF-8';
+    
+        cur['file.separator'] = '/';
+    
+        cur['java.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/test-classes:/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/classes:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter/5.11.4/junit-jupiter-5.11.4.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.jar:/home/runner/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.jar:/home/runner/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.11.4/junit-jupiter-params-5.11.4.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.jar:/home/runner/.m2/repository/org/assertj/assertj-core/3.27.3/assertj-core-3.27.3.jar:/home/runner/.m2/repository/net/bytebuddy/byte-buddy/1.15.11/byte-buddy-1.15.11.jar:';
+    
+        cur['java.class.version'] = '65.0';
+    
+        cur['java.home'] = '/usr/lib/jvm/temurin-21-jdk-amd64';
+    
+        cur['java.io.tmpdir'] = '/tmp';
+    
+        cur['java.library.path'] = '/usr/java/packages/lib:/usr/lib64:/lib64:/lib:/usr/lib';
+    
+        cur['java.runtime.name'] = 'OpenJDK Runtime Environment';
+    
+        cur['java.runtime.version'] = '21.0.9+10-LTS';
+    
+        cur['java.specification.name'] = 'Java Platform API Specification';
+    
+        cur['java.specification.vendor'] = 'Oracle Corporation';
+    
+        cur['java.specification.version'] = '21';
+    
+        cur['java.vendor'] = 'Eclipse Adoptium';
+    
+        cur['java.vendor.url'] = 'https://adoptium.net/';
+    
+        cur['java.vendor.url.bug'] = 'https://github.com/adoptium/adoptium-support/issues';
+    
+        cur['java.vendor.version'] = 'Temurin-21.0.9+10';
+    
+        cur['java.version'] = '21.0.9';
+    
+        cur['java.version.date'] = '2025-10-21';
+    
+        cur['java.vm.compressedOopsMode'] = 'Zero based';
+    
+        cur['java.vm.info'] = 'mixed mode, sharing';
+    
+        cur['java.vm.name'] = 'OpenJDK 64-Bit Server VM';
+    
+        cur['java.vm.specification.name'] = 'Java Virtual Machine Specification';
+    
+        cur['java.vm.specification.vendor'] = 'Oracle Corporation';
+    
+        cur['java.vm.specification.version'] = '21';
+    
+        cur['java.vm.vendor'] = 'Eclipse Adoptium';
+    
+        cur['java.vm.version'] = '21.0.9+10-LTS';
+    
+        cur['jdk.debug'] = 'release';
+    
+        cur['line.separator'] = '
+';
+    
+        cur['localRepository'] = '/home/runner/.m2/repository';
+    
+        cur['native.encoding'] = 'UTF-8';
+    
+        cur['os.arch'] = 'amd64';
+    
+        cur['os.name'] = 'Linux';
+    
+        cur['os.version'] = '6.11.0-1018-azure';
+    
+        cur['path.separator'] = ':';
+    
+        cur['stderr.encoding'] = 'UTF-8';
+    
+        cur['stdout.encoding'] = 'UTF-8';
+    
+        cur['sun.arch.data.model'] = '64';
+    
+        cur['sun.boot.library.path'] = '/usr/lib/jvm/temurin-21-jdk-amd64/lib';
+    
+        cur['sun.cpu.endian'] = 'little';
+    
+        cur['sun.io.unicode.encoding'] = 'UnicodeLittle';
+    
+        cur['sun.java.command'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260126183849552_3.jar /home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire 2026-01-26T18-38-48_777-jvmRun1 surefire-20260126183849552_1tmp surefire_0-20260126183849552_2tmp';
+    
+        cur['sun.java.launcher'] = 'SUN_STANDARD';
+    
+        cur['sun.jnu.encoding'] = 'UTF-8';
+    
+        cur['sun.management.compiler'] = 'HotSpot 64-Bit Tiered Compilers';
+    
+        cur['surefire.real.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260126183849552_3.jar';
+    
+        cur['surefire.test.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/test-classes:/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/classes:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter/5.11.4/junit-jupiter-5.11.4.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.jar:/home/runner/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.jar:/home/runner/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.11.4/junit-jupiter-params-5.11.4.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.jar:/home/runner/.m2/repository/org/assertj/assertj-core/3.27.3/assertj-core-3.27.3.jar:/home/runner/.m2/repository/net/bytebuddy/byte-buddy/1.15.11/byte-buddy-1.15.11.jar:';
+    
+        cur['tycho.localArtifacts'] = 'ignore';
+    
+        cur['user.dir'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core';
+    
+        cur['user.home'] = '/home/runner';
+    
+        cur['user.language'] = 'en';
+    
+        cur['user.name'] = 'runner';
+    
+    cur = TestCases['.org.sandbox.functional.core.model.LoopModelPipelineTest'] = new Array();
+    
+        cur['basedir'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core';
+    
+        cur['file.encoding'] = 'UTF-8';
+    
+        cur['file.separator'] = '/';
+    
+        cur['java.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/test-classes:/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/classes:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter/5.11.4/junit-jupiter-5.11.4.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.jar:/home/runner/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.jar:/home/runner/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.11.4/junit-jupiter-params-5.11.4.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.jar:/home/runner/.m2/repository/org/assertj/assertj-core/3.27.3/assertj-core-3.27.3.jar:/home/runner/.m2/repository/net/bytebuddy/byte-buddy/1.15.11/byte-buddy-1.15.11.jar:';
+    
+        cur['java.class.version'] = '65.0';
+    
+        cur['java.home'] = '/usr/lib/jvm/temurin-21-jdk-amd64';
+    
+        cur['java.io.tmpdir'] = '/tmp';
+    
+        cur['java.library.path'] = '/usr/java/packages/lib:/usr/lib64:/lib64:/lib:/usr/lib';
+    
+        cur['java.runtime.name'] = 'OpenJDK Runtime Environment';
+    
+        cur['java.runtime.version'] = '21.0.9+10-LTS';
+    
+        cur['java.specification.name'] = 'Java Platform API Specification';
+    
+        cur['java.specification.vendor'] = 'Oracle Corporation';
+    
+        cur['java.specification.version'] = '21';
+    
+        cur['java.vendor'] = 'Eclipse Adoptium';
+    
+        cur['java.vendor.url'] = 'https://adoptium.net/';
+    
+        cur['java.vendor.url.bug'] = 'https://github.com/adoptium/adoptium-support/issues';
+    
+        cur['java.vendor.version'] = 'Temurin-21.0.9+10';
+    
+        cur['java.version'] = '21.0.9';
+    
+        cur['java.version.date'] = '2025-10-21';
+    
+        cur['java.vm.compressedOopsMode'] = 'Zero based';
+    
+        cur['java.vm.info'] = 'mixed mode, sharing';
+    
+        cur['java.vm.name'] = 'OpenJDK 64-Bit Server VM';
+    
+        cur['java.vm.specification.name'] = 'Java Virtual Machine Specification';
+    
+        cur['java.vm.specification.vendor'] = 'Oracle Corporation';
+    
+        cur['java.vm.specification.version'] = '21';
+    
+        cur['java.vm.vendor'] = 'Eclipse Adoptium';
+    
+        cur['java.vm.version'] = '21.0.9+10-LTS';
+    
+        cur['jdk.debug'] = 'release';
+    
+        cur['line.separator'] = '
+';
+    
+        cur['localRepository'] = '/home/runner/.m2/repository';
+    
+        cur['native.encoding'] = 'UTF-8';
+    
+        cur['os.arch'] = 'amd64';
+    
+        cur['os.name'] = 'Linux';
+    
+        cur['os.version'] = '6.11.0-1018-azure';
+    
+        cur['path.separator'] = ':';
+    
+        cur['stderr.encoding'] = 'UTF-8';
+    
+        cur['stdout.encoding'] = 'UTF-8';
+    
+        cur['sun.arch.data.model'] = '64';
+    
+        cur['sun.boot.library.path'] = '/usr/lib/jvm/temurin-21-jdk-amd64/lib';
+    
+        cur['sun.cpu.endian'] = 'little';
+    
+        cur['sun.io.unicode.encoding'] = 'UnicodeLittle';
+    
+        cur['sun.java.command'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260126183849552_3.jar /home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire 2026-01-26T18-38-48_777-jvmRun1 surefire-20260126183849552_1tmp surefire_0-20260126183849552_2tmp';
+    
+        cur['sun.java.launcher'] = 'SUN_STANDARD';
+    
+        cur['sun.jnu.encoding'] = 'UTF-8';
+    
+        cur['sun.management.compiler'] = 'HotSpot 64-Bit Tiered Compilers';
+    
+        cur['surefire.real.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260126183849552_3.jar';
+    
+        cur['surefire.test.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/test-classes:/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/classes:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter/5.11.4/junit-jupiter-5.11.4.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.jar:/home/runner/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.jar:/home/runner/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.11.4/junit-jupiter-params-5.11.4.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.jar:/home/runner/.m2/repository/org/assertj/assertj-core/3.27.3/assertj-core-3.27.3.jar:/home/runner/.m2/repository/net/bytebuddy/byte-buddy/1.15.11/byte-buddy-1.15.11.jar:';
+    
+        cur['tycho.localArtifacts'] = 'ignore';
+    
+        cur['user.dir'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core';
+    
+        cur['user.home'] = '/home/runner';
+    
+        cur['user.language'] = 'en';
+    
+        cur['user.name'] = 'runner';
+    
+    cur = TestCases['.org.sandbox.functional.core.transformer.LoopModelTransformerTest'] = new Array();
+    
+        cur['basedir'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core';
+    
+        cur['file.encoding'] = 'UTF-8';
+    
+        cur['file.separator'] = '/';
+    
+        cur['java.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/test-classes:/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/classes:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter/5.11.4/junit-jupiter-5.11.4.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.jar:/home/runner/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.jar:/home/runner/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.11.4/junit-jupiter-params-5.11.4.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.jar:/home/runner/.m2/repository/org/assertj/assertj-core/3.27.3/assertj-core-3.27.3.jar:/home/runner/.m2/repository/net/bytebuddy/byte-buddy/1.15.11/byte-buddy-1.15.11.jar:';
+    
+        cur['java.class.version'] = '65.0';
+    
+        cur['java.home'] = '/usr/lib/jvm/temurin-21-jdk-amd64';
+    
+        cur['java.io.tmpdir'] = '/tmp';
+    
+        cur['java.library.path'] = '/usr/java/packages/lib:/usr/lib64:/lib64:/lib:/usr/lib';
+    
+        cur['java.runtime.name'] = 'OpenJDK Runtime Environment';
+    
+        cur['java.runtime.version'] = '21.0.9+10-LTS';
+    
+        cur['java.specification.name'] = 'Java Platform API Specification';
+    
+        cur['java.specification.vendor'] = 'Oracle Corporation';
+    
+        cur['java.specification.version'] = '21';
+    
+        cur['java.vendor'] = 'Eclipse Adoptium';
+    
+        cur['java.vendor.url'] = 'https://adoptium.net/';
+    
+        cur['java.vendor.url.bug'] = 'https://github.com/adoptium/adoptium-support/issues';
+    
+        cur['java.vendor.version'] = 'Temurin-21.0.9+10';
+    
+        cur['java.version'] = '21.0.9';
+    
+        cur['java.version.date'] = '2025-10-21';
+    
+        cur['java.vm.compressedOopsMode'] = 'Zero based';
+    
+        cur['java.vm.info'] = 'mixed mode, sharing';
+    
+        cur['java.vm.name'] = 'OpenJDK 64-Bit Server VM';
+    
+        cur['java.vm.specification.name'] = 'Java Virtual Machine Specification';
+    
+        cur['java.vm.specification.vendor'] = 'Oracle Corporation';
+    
+        cur['java.vm.specification.version'] = '21';
+    
+        cur['java.vm.vendor'] = 'Eclipse Adoptium';
+    
+        cur['java.vm.version'] = '21.0.9+10-LTS';
+    
+        cur['jdk.debug'] = 'release';
+    
+        cur['line.separator'] = '
+';
+    
+        cur['localRepository'] = '/home/runner/.m2/repository';
+    
+        cur['native.encoding'] = 'UTF-8';
+    
+        cur['os.arch'] = 'amd64';
+    
+        cur['os.name'] = 'Linux';
+    
+        cur['os.version'] = '6.11.0-1018-azure';
+    
+        cur['path.separator'] = ':';
+    
+        cur['stderr.encoding'] = 'UTF-8';
+    
+        cur['stdout.encoding'] = 'UTF-8';
+    
+        cur['sun.arch.data.model'] = '64';
+    
+        cur['sun.boot.library.path'] = '/usr/lib/jvm/temurin-21-jdk-amd64/lib';
+    
+        cur['sun.cpu.endian'] = 'little';
+    
+        cur['sun.io.unicode.encoding'] = 'UnicodeLittle';
+    
+        cur['sun.java.command'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260126183849552_3.jar /home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire 2026-01-26T18-38-48_777-jvmRun1 surefire-20260126183849552_1tmp surefire_0-20260126183849552_2tmp';
+    
+        cur['sun.java.launcher'] = 'SUN_STANDARD';
+    
+        cur['sun.jnu.encoding'] = 'UTF-8';
+    
+        cur['sun.management.compiler'] = 'HotSpot 64-Bit Tiered Compilers';
+    
+        cur['surefire.real.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260126183849552_3.jar';
+    
+        cur['surefire.test.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/test-classes:/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/classes:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter/5.11.4/junit-jupiter-5.11.4.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.jar:/home/runner/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.jar:/home/runner/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.11.4/junit-jupiter-params-5.11.4.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.jar:/home/runner/.m2/repository/org/assertj/assertj-core/3.27.3/assertj-core-3.27.3.jar:/home/runner/.m2/repository/net/bytebuddy/byte-buddy/1.15.11/byte-buddy-1.15.11.jar:';
+    
+        cur['tycho.localArtifacts'] = 'ignore';
+    
+        cur['user.dir'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core';
+    
+        cur['user.home'] = '/home/runner';
+    
+        cur['user.language'] = 'en';
+    
+        cur['user.name'] = 'runner';
+    
+    cur = TestCases['.org.sandbox.functional.core.renderer.StringRendererTest'] = new Array();
+    
+        cur['basedir'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core';
+    
+        cur['file.encoding'] = 'UTF-8';
+    
+        cur['file.separator'] = '/';
+    
+        cur['java.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/test-classes:/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/classes:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter/5.11.4/junit-jupiter-5.11.4.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.jar:/home/runner/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.jar:/home/runner/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.11.4/junit-jupiter-params-5.11.4.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.jar:/home/runner/.m2/repository/org/assertj/assertj-core/3.27.3/assertj-core-3.27.3.jar:/home/runner/.m2/repository/net/bytebuddy/byte-buddy/1.15.11/byte-buddy-1.15.11.jar:';
+    
+        cur['java.class.version'] = '65.0';
+    
+        cur['java.home'] = '/usr/lib/jvm/temurin-21-jdk-amd64';
+    
+        cur['java.io.tmpdir'] = '/tmp';
+    
+        cur['java.library.path'] = '/usr/java/packages/lib:/usr/lib64:/lib64:/lib:/usr/lib';
+    
+        cur['java.runtime.name'] = 'OpenJDK Runtime Environment';
+    
+        cur['java.runtime.version'] = '21.0.9+10-LTS';
+    
+        cur['java.specification.name'] = 'Java Platform API Specification';
+    
+        cur['java.specification.vendor'] = 'Oracle Corporation';
+    
+        cur['java.specification.version'] = '21';
+    
+        cur['java.vendor'] = 'Eclipse Adoptium';
+    
+        cur['java.vendor.url'] = 'https://adoptium.net/';
+    
+        cur['java.vendor.url.bug'] = 'https://github.com/adoptium/adoptium-support/issues';
+    
+        cur['java.vendor.version'] = 'Temurin-21.0.9+10';
+    
+        cur['java.version'] = '21.0.9';
+    
+        cur['java.version.date'] = '2025-10-21';
+    
+        cur['java.vm.compressedOopsMode'] = 'Zero based';
+    
+        cur['java.vm.info'] = 'mixed mode, sharing';
+    
+        cur['java.vm.name'] = 'OpenJDK 64-Bit Server VM';
+    
+        cur['java.vm.specification.name'] = 'Java Virtual Machine Specification';
+    
+        cur['java.vm.specification.vendor'] = 'Oracle Corporation';
+    
+        cur['java.vm.specification.version'] = '21';
+    
+        cur['java.vm.vendor'] = 'Eclipse Adoptium';
+    
+        cur['java.vm.version'] = '21.0.9+10-LTS';
+    
+        cur['jdk.debug'] = 'release';
+    
+        cur['line.separator'] = '
+';
+    
+        cur['localRepository'] = '/home/runner/.m2/repository';
+    
+        cur['native.encoding'] = 'UTF-8';
+    
+        cur['os.arch'] = 'amd64';
+    
+        cur['os.name'] = 'Linux';
+    
+        cur['os.version'] = '6.11.0-1018-azure';
+    
+        cur['path.separator'] = ':';
+    
+        cur['stderr.encoding'] = 'UTF-8';
+    
+        cur['stdout.encoding'] = 'UTF-8';
+    
+        cur['sun.arch.data.model'] = '64';
+    
+        cur['sun.boot.library.path'] = '/usr/lib/jvm/temurin-21-jdk-amd64/lib';
+    
+        cur['sun.cpu.endian'] = 'little';
+    
+        cur['sun.io.unicode.encoding'] = 'UnicodeLittle';
+    
+        cur['sun.java.command'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260126183849552_3.jar /home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire 2026-01-26T18-38-48_777-jvmRun1 surefire-20260126183849552_1tmp surefire_0-20260126183849552_2tmp';
+    
+        cur['sun.java.launcher'] = 'SUN_STANDARD';
+    
+        cur['sun.jnu.encoding'] = 'UTF-8';
+    
+        cur['sun.management.compiler'] = 'HotSpot 64-Bit Tiered Compilers';
+    
+        cur['surefire.real.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260126183849552_3.jar';
+    
+        cur['surefire.test.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/test-classes:/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/classes:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter/5.11.4/junit-jupiter-5.11.4.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.jar:/home/runner/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.jar:/home/runner/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.11.4/junit-jupiter-params-5.11.4.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.jar:/home/runner/.m2/repository/org/assertj/assertj-core/3.27.3/assertj-core-3.27.3.jar:/home/runner/.m2/repository/net/bytebuddy/byte-buddy/1.15.11/byte-buddy-1.15.11.jar:';
+    
+        cur['tycho.localArtifacts'] = 'ignore';
+    
+        cur['user.dir'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core';
+    
+        cur['user.home'] = '/home/runner';
+    
+        cur['user.language'] = 'en';
+    
+        cur['user.name'] = 'runner';
+    
+    cur = TestCases['.org.sandbox.functional.core.builder.LoopModelBuilderTest'] = new Array();
+    
+        cur['basedir'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core';
+    
+        cur['file.encoding'] = 'UTF-8';
+    
+        cur['file.separator'] = '/';
+    
+        cur['java.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/test-classes:/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/classes:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter/5.11.4/junit-jupiter-5.11.4.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.jar:/home/runner/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.jar:/home/runner/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.11.4/junit-jupiter-params-5.11.4.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.jar:/home/runner/.m2/repository/org/assertj/assertj-core/3.27.3/assertj-core-3.27.3.jar:/home/runner/.m2/repository/net/bytebuddy/byte-buddy/1.15.11/byte-buddy-1.15.11.jar:';
+    
+        cur['java.class.version'] = '65.0';
+    
+        cur['java.home'] = '/usr/lib/jvm/temurin-21-jdk-amd64';
+    
+        cur['java.io.tmpdir'] = '/tmp';
+    
+        cur['java.library.path'] = '/usr/java/packages/lib:/usr/lib64:/lib64:/lib:/usr/lib';
+    
+        cur['java.runtime.name'] = 'OpenJDK Runtime Environment';
+    
+        cur['java.runtime.version'] = '21.0.9+10-LTS';
+    
+        cur['java.specification.name'] = 'Java Platform API Specification';
+    
+        cur['java.specification.vendor'] = 'Oracle Corporation';
+    
+        cur['java.specification.version'] = '21';
+    
+        cur['java.vendor'] = 'Eclipse Adoptium';
+    
+        cur['java.vendor.url'] = 'https://adoptium.net/';
+    
+        cur['java.vendor.url.bug'] = 'https://github.com/adoptium/adoptium-support/issues';
+    
+        cur['java.vendor.version'] = 'Temurin-21.0.9+10';
+    
+        cur['java.version'] = '21.0.9';
+    
+        cur['java.version.date'] = '2025-10-21';
+    
+        cur['java.vm.compressedOopsMode'] = 'Zero based';
+    
+        cur['java.vm.info'] = 'mixed mode, sharing';
+    
+        cur['java.vm.name'] = 'OpenJDK 64-Bit Server VM';
+    
+        cur['java.vm.specification.name'] = 'Java Virtual Machine Specification';
+    
+        cur['java.vm.specification.vendor'] = 'Oracle Corporation';
+    
+        cur['java.vm.specification.version'] = '21';
+    
+        cur['java.vm.vendor'] = 'Eclipse Adoptium';
+    
+        cur['java.vm.version'] = '21.0.9+10-LTS';
+    
+        cur['jdk.debug'] = 'release';
+    
+        cur['line.separator'] = '
+';
+    
+        cur['localRepository'] = '/home/runner/.m2/repository';
+    
+        cur['native.encoding'] = 'UTF-8';
+    
+        cur['os.arch'] = 'amd64';
+    
+        cur['os.name'] = 'Linux';
+    
+        cur['os.version'] = '6.11.0-1018-azure';
+    
+        cur['path.separator'] = ':';
+    
+        cur['stderr.encoding'] = 'UTF-8';
+    
+        cur['stdout.encoding'] = 'UTF-8';
+    
+        cur['sun.arch.data.model'] = '64';
+    
+        cur['sun.boot.library.path'] = '/usr/lib/jvm/temurin-21-jdk-amd64/lib';
+    
+        cur['sun.cpu.endian'] = 'little';
+    
+        cur['sun.io.unicode.encoding'] = 'UnicodeLittle';
+    
+        cur['sun.java.command'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260126183849552_3.jar /home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire 2026-01-26T18-38-48_777-jvmRun1 surefire-20260126183849552_1tmp surefire_0-20260126183849552_2tmp';
+    
+        cur['sun.java.launcher'] = 'SUN_STANDARD';
+    
+        cur['sun.jnu.encoding'] = 'UTF-8';
+    
+        cur['sun.management.compiler'] = 'HotSpot 64-Bit Tiered Compilers';
+    
+        cur['surefire.real.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260126183849552_3.jar';
+    
+        cur['surefire.test.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/test-classes:/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/classes:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter/5.11.4/junit-jupiter-5.11.4.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.jar:/home/runner/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.jar:/home/runner/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.11.4/junit-jupiter-params-5.11.4.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.jar:/home/runner/.m2/repository/org/assertj/assertj-core/3.27.3/assertj-core-3.27.3.jar:/home/runner/.m2/repository/net/bytebuddy/byte-buddy/1.15.11/byte-buddy-1.15.11.jar:';
+    
+        cur['tycho.localArtifacts'] = 'ignore';
+    
+        cur['user.dir'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core';
+    
+        cur['user.home'] = '/home/runner';
+    
+        cur['user.language'] = 'en';
+    
+        cur['user.name'] = 'runner';
+    
+    cur = TestCases['.org.sandbox.functional.core.terminal.TerminalOperationTest'] = new Array();
+    
+        cur['basedir'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core';
+    
+        cur['file.encoding'] = 'UTF-8';
+    
+        cur['file.separator'] = '/';
+    
+        cur['java.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/test-classes:/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/classes:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter/5.11.4/junit-jupiter-5.11.4.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.jar:/home/runner/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.jar:/home/runner/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.11.4/junit-jupiter-params-5.11.4.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.jar:/home/runner/.m2/repository/org/assertj/assertj-core/3.27.3/assertj-core-3.27.3.jar:/home/runner/.m2/repository/net/bytebuddy/byte-buddy/1.15.11/byte-buddy-1.15.11.jar:';
+    
+        cur['java.class.version'] = '65.0';
+    
+        cur['java.home'] = '/usr/lib/jvm/temurin-21-jdk-amd64';
+    
+        cur['java.io.tmpdir'] = '/tmp';
+    
+        cur['java.library.path'] = '/usr/java/packages/lib:/usr/lib64:/lib64:/lib:/usr/lib';
+    
+        cur['java.runtime.name'] = 'OpenJDK Runtime Environment';
+    
+        cur['java.runtime.version'] = '21.0.9+10-LTS';
+    
+        cur['java.specification.name'] = 'Java Platform API Specification';
+    
+        cur['java.specification.vendor'] = 'Oracle Corporation';
+    
+        cur['java.specification.version'] = '21';
+    
+        cur['java.vendor'] = 'Eclipse Adoptium';
+    
+        cur['java.vendor.url'] = 'https://adoptium.net/';
+    
+        cur['java.vendor.url.bug'] = 'https://github.com/adoptium/adoptium-support/issues';
+    
+        cur['java.vendor.version'] = 'Temurin-21.0.9+10';
+    
+        cur['java.version'] = '21.0.9';
+    
+        cur['java.version.date'] = '2025-10-21';
+    
+        cur['java.vm.compressedOopsMode'] = 'Zero based';
+    
+        cur['java.vm.info'] = 'mixed mode, sharing';
+    
+        cur['java.vm.name'] = 'OpenJDK 64-Bit Server VM';
+    
+        cur['java.vm.specification.name'] = 'Java Virtual Machine Specification';
+    
+        cur['java.vm.specification.vendor'] = 'Oracle Corporation';
+    
+        cur['java.vm.specification.version'] = '21';
+    
+        cur['java.vm.vendor'] = 'Eclipse Adoptium';
+    
+        cur['java.vm.version'] = '21.0.9+10-LTS';
+    
+        cur['jdk.debug'] = 'release';
+    
+        cur['line.separator'] = '
+';
+    
+        cur['localRepository'] = '/home/runner/.m2/repository';
+    
+        cur['native.encoding'] = 'UTF-8';
+    
+        cur['os.arch'] = 'amd64';
+    
+        cur['os.name'] = 'Linux';
+    
+        cur['os.version'] = '6.11.0-1018-azure';
+    
+        cur['path.separator'] = ':';
+    
+        cur['stderr.encoding'] = 'UTF-8';
+    
+        cur['stdout.encoding'] = 'UTF-8';
+    
+        cur['sun.arch.data.model'] = '64';
+    
+        cur['sun.boot.library.path'] = '/usr/lib/jvm/temurin-21-jdk-amd64/lib';
+    
+        cur['sun.cpu.endian'] = 'little';
+    
+        cur['sun.io.unicode.encoding'] = 'UnicodeLittle';
+    
+        cur['sun.java.command'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260126183849552_3.jar /home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire 2026-01-26T18-38-48_777-jvmRun1 surefire-20260126183849552_1tmp surefire_0-20260126183849552_2tmp';
+    
+        cur['sun.java.launcher'] = 'SUN_STANDARD';
+    
+        cur['sun.jnu.encoding'] = 'UTF-8';
+    
+        cur['sun.management.compiler'] = 'HotSpot 64-Bit Tiered Compilers';
+    
+        cur['surefire.real.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260126183849552_3.jar';
+    
+        cur['surefire.test.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/test-classes:/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/classes:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter/5.11.4/junit-jupiter-5.11.4.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.jar:/home/runner/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.jar:/home/runner/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.11.4/junit-jupiter-params-5.11.4.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.jar:/home/runner/.m2/repository/org/assertj/assertj-core/3.27.3/assertj-core-3.27.3.jar:/home/runner/.m2/repository/net/bytebuddy/byte-buddy/1.15.11/byte-buddy-1.15.11.jar:';
+    
+        cur['tycho.localArtifacts'] = 'ignore';
+    
+        cur['user.dir'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core';
+    
+        cur['user.home'] = '/home/runner';
+    
+        cur['user.language'] = 'en';
+    
+        cur['user.name'] = 'runner';
+    
+    cur = TestCases['.org.sandbox.functional.core.builder.StreamCodeBuilderTest'] = new Array();
+    
+        cur['basedir'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core';
+    
+        cur['file.encoding'] = 'UTF-8';
+    
+        cur['file.separator'] = '/';
+    
+        cur['java.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/test-classes:/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/classes:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter/5.11.4/junit-jupiter-5.11.4.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.jar:/home/runner/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.jar:/home/runner/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.11.4/junit-jupiter-params-5.11.4.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.jar:/home/runner/.m2/repository/org/assertj/assertj-core/3.27.3/assertj-core-3.27.3.jar:/home/runner/.m2/repository/net/bytebuddy/byte-buddy/1.15.11/byte-buddy-1.15.11.jar:';
+    
+        cur['java.class.version'] = '65.0';
+    
+        cur['java.home'] = '/usr/lib/jvm/temurin-21-jdk-amd64';
+    
+        cur['java.io.tmpdir'] = '/tmp';
+    
+        cur['java.library.path'] = '/usr/java/packages/lib:/usr/lib64:/lib64:/lib:/usr/lib';
+    
+        cur['java.runtime.name'] = 'OpenJDK Runtime Environment';
+    
+        cur['java.runtime.version'] = '21.0.9+10-LTS';
+    
+        cur['java.specification.name'] = 'Java Platform API Specification';
+    
+        cur['java.specification.vendor'] = 'Oracle Corporation';
+    
+        cur['java.specification.version'] = '21';
+    
+        cur['java.vendor'] = 'Eclipse Adoptium';
+    
+        cur['java.vendor.url'] = 'https://adoptium.net/';
+    
+        cur['java.vendor.url.bug'] = 'https://github.com/adoptium/adoptium-support/issues';
+    
+        cur['java.vendor.version'] = 'Temurin-21.0.9+10';
+    
+        cur['java.version'] = '21.0.9';
+    
+        cur['java.version.date'] = '2025-10-21';
+    
+        cur['java.vm.compressedOopsMode'] = 'Zero based';
+    
+        cur['java.vm.info'] = 'mixed mode, sharing';
+    
+        cur['java.vm.name'] = 'OpenJDK 64-Bit Server VM';
+    
+        cur['java.vm.specification.name'] = 'Java Virtual Machine Specification';
+    
+        cur['java.vm.specification.vendor'] = 'Oracle Corporation';
+    
+        cur['java.vm.specification.version'] = '21';
+    
+        cur['java.vm.vendor'] = 'Eclipse Adoptium';
+    
+        cur['java.vm.version'] = '21.0.9+10-LTS';
+    
+        cur['jdk.debug'] = 'release';
+    
+        cur['line.separator'] = '
+';
+    
+        cur['localRepository'] = '/home/runner/.m2/repository';
+    
+        cur['native.encoding'] = 'UTF-8';
+    
+        cur['os.arch'] = 'amd64';
+    
+        cur['os.name'] = 'Linux';
+    
+        cur['os.version'] = '6.11.0-1018-azure';
+    
+        cur['path.separator'] = ':';
+    
+        cur['stderr.encoding'] = 'UTF-8';
+    
+        cur['stdout.encoding'] = 'UTF-8';
+    
+        cur['sun.arch.data.model'] = '64';
+    
+        cur['sun.boot.library.path'] = '/usr/lib/jvm/temurin-21-jdk-amd64/lib';
+    
+        cur['sun.cpu.endian'] = 'little';
+    
+        cur['sun.io.unicode.encoding'] = 'UnicodeLittle';
+    
+        cur['sun.java.command'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260126183849552_3.jar /home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire 2026-01-26T18-38-48_777-jvmRun1 surefire-20260126183849552_1tmp surefire_0-20260126183849552_2tmp';
+    
+        cur['sun.java.launcher'] = 'SUN_STANDARD';
+    
+        cur['sun.jnu.encoding'] = 'UTF-8';
+    
+        cur['sun.management.compiler'] = 'HotSpot 64-Bit Tiered Compilers';
+    
+        cur['surefire.real.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260126183849552_3.jar';
+    
+        cur['surefire.test.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/test-classes:/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/classes:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter/5.11.4/junit-jupiter-5.11.4.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.jar:/home/runner/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.jar:/home/runner/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.11.4/junit-jupiter-params-5.11.4.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.jar:/home/runner/.m2/repository/org/assertj/assertj-core/3.27.3/assertj-core-3.27.3.jar:/home/runner/.m2/repository/net/bytebuddy/byte-buddy/1.15.11/byte-buddy-1.15.11.jar:';
+    
+        cur['tycho.localArtifacts'] = 'ignore';
+    
+        cur['user.dir'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core';
+    
+        cur['user.home'] = '/home/runner';
+    
+        cur['user.language'] = 'en';
+    
+        cur['user.name'] = 'runner';
+    </script><script type="text/javascript" language="JavaScript">
+        function displayProperties (name) {
+          var win = window.open('','JUnitSystemProperties','scrollbars=1,resizable=1');
+          var doc = win.document;
+          doc.open();
+          doc.write("<html><head><title>Properties of " + name + "</title>");
+          doc.write("<style>")
+          doc.write("body {font:normal 68% verdana,arial,helvetica; color:#000000; }");
+          doc.write("table tr td, table tr th { font-size: 68%; }");
+          doc.write("table.properties { border-collapse:collapse; border-left:solid 1 #cccccc; border-top:solid 1 #cccccc; padding:5px; }");
+          doc.write("table.properties th { text-align:left; border-right:solid 1 #cccccc; border-bottom:solid 1 #cccccc; background-color:#eeeeee; }");
+          doc.write("table.properties td { font:normal; text-align:left; border-right:solid 1 #cccccc; border-bottom:solid 1 #cccccc; background-color:#fffffff; }");
+          doc.write("h3 { margin-bottom: 0.5em; font: bold 115% verdana,arial,helvetica }");
+          doc.write("</style>");
+          doc.write("</head><body>");
+          doc.write("<h3>Properties of " + name + "</h3>");
+          doc.write("<div align=\"right\"><a href=\"javascript:window.close();\">Close</a></div>");
+          doc.write("<table class='properties'>");
+          doc.write("<tr><th>Name</th><th>Value</th></tr>");
+          for (prop in TestCases[name]) {
+            doc.write("<tr><th>" + prop + "</th><td>" + TestCases[name][prop] + "</td></tr>");
+          }
+          doc.write("</table>");
+          doc.write("</body></html>");
+          doc.close();
+          win.focus();
+        }
+        
+        // Jump to next/previous error or failure
+        function jumpToNextError(forward) {
+          var errors = document.querySelectorAll('tr.Error, tr.Failure');
+          if (errors.length === 0) return;
+          
+          var currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+          var target = null;
+          
+          if (forward) {
+            // Find first error below current position
+            for (var i = 0; i < errors.length; i++) {
+              var errorTop = errors[i].getBoundingClientRect().top + currentScroll;
+              if (errorTop > currentScroll + 10) {
+                target = errors[i];
+                break;
+              }
+            }
+            // If none found, wrap to first
+            if (!target) target = errors[0];
+          } else {
+            // Find last error above current position
+            for (var i = errors.length - 1; i >= 0; i--) {
+              var errorTop = errors[i].getBoundingClientRect().top + currentScroll;
+              if (errorTop < currentScroll - 10) {
+                target = errors[i];
+                break;
+              }
+            }
+            // If none found, wrap to last
+            if (!target) target = errors[errors.length - 1];
+          }
+          
+          if (target) {
+            target.scrollIntoView({behavior: 'smooth', block: 'center'});
+          }
+        }
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+          // Ctrl+. (period) - next error
+          if (e.ctrlKey && e.key === '.') {
+            e.preventDefault();
+            jumpToNextError(true);
+          }
+          // Ctrl+, (comma) - previous error
+          else if (e.ctrlKey && e.key === ',') {
+            e.preventDefault();
+            jumpToNextError(false);
+          }
+        });
+      
+      </script>
+</head>
+<body>
+<a name="top"></a><h1>Test Results - sandbox-functional-converter-core</h1>
+<div class="nav-buttons">
+<button title="Scroll to previous failure/error (Ctrl+,)" onclick="javascript:jumpToNextError(false);">▲</button><button title="Scroll to next failure/error (Ctrl+.)" onclick="javascript:jumpToNextError(true);">▼</button>
+</div>
+<table width="100%"><tr>
+<td align="left">
+<a href="../">All Test Modules</a> | 
+            <a href="https://github.com/carstenartur/sandbox">GitHub Repository</a>
+</td>
+<td align="right">Designed for use with <a href="http://junit.org/">JUnit</a>.</td>
+</tr></table>
+<hr size="1">
+<h2>Summary</h2>
+<table class="details" border="0" cellpadding="5" cellspacing="2" width="95%">
+<tr valign="top">
+<th>Tests</th>
+<th>Failures</th>
+<th>Errors</th>
+<th>Skipped</th>
+<th>Success rate</th>
+<th>Time</th>
+</tr>
+<tr valign="top" class="">
+<td>147</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>100.00%</td>
+<td>0.660</td>
+</tr>
+</table>
+<table border="0" width="95%"><tr><td style="text-align: justify;">
+        Note: <i>failures</i> are anticipated and checked for with assertions while <i>errors</i> are unanticipated.
+        </td></tr></table>
+<hr size="1" width="95%" align="left">
+<h2>Packages</h2>
+        Note: package statistics are not computed recursively, they only sum up all of its testsuites numbers.
+        <table class="details" border="0" cellpadding="5" cellspacing="2" width="95%">
+<tr valign="top">
+<th width="80%">Name</th>
+<th>Tests</th>
+<th>Errors</th>
+<th>Failures</th>
+<th>Skipped</th>
+<th nowrap>Time(s)</th>
+<th nowrap>Time Stamp</th>
+<th>Host</th>
+</tr>
+<tr valign="top" class="">
+<td><a href="#"></a></td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0.000</td>
+<td></td>
+<td></td>
+</tr>
+<tr valign="top" class="">
+<td><a href="#"></a></td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0.000</td>
+<td></td>
+<td></td>
+</tr>
+<tr valign="top" class="">
+<td><a href="#"></a></td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0.000</td>
+<td></td>
+<td></td>
+</tr>
+<tr valign="top" class="">
+<td><a href="#"></a></td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0.000</td>
+<td></td>
+<td></td>
+</tr>
+<tr valign="top" class="">
+<td><a href="#"></a></td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0.000</td>
+<td></td>
+<td></td>
+</tr>
+<tr valign="top" class="">
+<td><a href="#"></a></td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0.000</td>
+<td></td>
+<td></td>
+</tr>
+<tr valign="top" class="">
+<td><a href="#"></a></td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0.000</td>
+<td></td>
+<td></td>
+</tr>
+<tr valign="top" class="">
+<td><a href="#"></a></td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0.000</td>
+<td></td>
+<td></td>
+</tr>
+</table>
+<hr size="1" width="95%" align="left">
+<a name=""></a><h3>Package </h3>
+<table class="details" border="0" cellpadding="5" cellspacing="2" width="95%"><tr valign="top">
+<th width="80%">Name</th>
+<th>Tests</th>
+<th>Errors</th>
+<th>Failures</th>
+<th>Skipped</th>
+<th nowrap>Time(s)</th>
+<th nowrap>Time Stamp</th>
+<th>Host</th>
+</tr></table>
+<a href="#top">Back to top</a><p></p>
+<p></p>
+<a name=""></a><h3>Package </h3>
+<table class="details" border="0" cellpadding="5" cellspacing="2" width="95%"><tr valign="top">
+<th width="80%">Name</th>
+<th>Tests</th>
+<th>Errors</th>
+<th>Failures</th>
+<th>Skipped</th>
+<th nowrap>Time(s)</th>
+<th nowrap>Time Stamp</th>
+<th>Host</th>
+</tr></table>
+<a href="#top">Back to top</a><p></p>
+<p></p>
+<a name=""></a><h3>Package </h3>
+<table class="details" border="0" cellpadding="5" cellspacing="2" width="95%"><tr valign="top">
+<th width="80%">Name</th>
+<th>Tests</th>
+<th>Errors</th>
+<th>Failures</th>
+<th>Skipped</th>
+<th nowrap>Time(s)</th>
+<th nowrap>Time Stamp</th>
+<th>Host</th>
+</tr></table>
+<a href="#top">Back to top</a><p></p>
+<p></p>
+<a name=""></a><h3>Package </h3>
+<table class="details" border="0" cellpadding="5" cellspacing="2" width="95%"><tr valign="top">
+<th width="80%">Name</th>
+<th>Tests</th>
+<th>Errors</th>
+<th>Failures</th>
+<th>Skipped</th>
+<th nowrap>Time(s)</th>
+<th nowrap>Time Stamp</th>
+<th>Host</th>
+</tr></table>
+<a href="#top">Back to top</a><p></p>
+<p></p>
+<a name=""></a><h3>Package </h3>
+<table class="details" border="0" cellpadding="5" cellspacing="2" width="95%"><tr valign="top">
+<th width="80%">Name</th>
+<th>Tests</th>
+<th>Errors</th>
+<th>Failures</th>
+<th>Skipped</th>
+<th nowrap>Time(s)</th>
+<th nowrap>Time Stamp</th>
+<th>Host</th>
+</tr></table>
+<a href="#top">Back to top</a><p></p>
+<p></p>
+<a name=""></a><h3>Package </h3>
+<table class="details" border="0" cellpadding="5" cellspacing="2" width="95%"><tr valign="top">
+<th width="80%">Name</th>
+<th>Tests</th>
+<th>Errors</th>
+<th>Failures</th>
+<th>Skipped</th>
+<th nowrap>Time(s)</th>
+<th nowrap>Time Stamp</th>
+<th>Host</th>
+</tr></table>
+<a href="#top">Back to top</a><p></p>
+<p></p>
+<a name=""></a><h3>Package </h3>
+<table class="details" border="0" cellpadding="5" cellspacing="2" width="95%"><tr valign="top">
+<th width="80%">Name</th>
+<th>Tests</th>
+<th>Errors</th>
+<th>Failures</th>
+<th>Skipped</th>
+<th nowrap>Time(s)</th>
+<th nowrap>Time Stamp</th>
+<th>Host</th>
+</tr></table>
+<a href="#top">Back to top</a><p></p>
+<p></p>
+<a name=""></a><h3>Package </h3>
+<table class="details" border="0" cellpadding="5" cellspacing="2" width="95%"><tr valign="top">
+<th width="80%">Name</th>
+<th>Tests</th>
+<th>Errors</th>
+<th>Failures</th>
+<th>Skipped</th>
+<th nowrap>Time(s)</th>
+<th nowrap>Time Stamp</th>
+<th>Host</th>
+</tr></table>
+<a href="#top">Back to top</a><p></p>
+<p></p>
+<hr size="1" width="95%" align="left">
+<a name="org.sandbox.functional.core.builder.LoopModelBuilderTest"></a><h3>TestCase org.sandbox.functional.core.builder.LoopModelBuilderTest</h3>
+<table class="details" border="0" cellpadding="5" cellspacing="2" width="95%">
+<tr valign="top">
+<th>Name</th>
+<th>Status</th>
+<th width="80%">Type</th>
+<th nowrap>Time(s)</th>
+</tr>
+<tr valign="top" class="">
+<td>testAllOperationTypes</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testMapWithoutTargetType</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testExplicitRangeWithFilter</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testValidation</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testElementWithDescriptor</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testSortedWithComparator</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testBuildSimpleForEach</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testConvertibilityCheckNoMetadata</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testConvertibilityCheckWithoutProblems</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testExplicitRangeSource</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testSourceWithDescriptor</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testConvertibilityCheckWithReturn</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testAllTerminalTypes</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testBuildFilterMapPipeline</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testConvertibilityCheck</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+</table>
+<div class="Properties"><a href="javascript:displayProperties('.org.sandbox.functional.core.builder.LoopModelBuilderTest');">
+                    Properties »
+                </a></div>
+<p></p>
+<a href="#top">Back to top</a><a name="org.sandbox.functional.core.builder.StreamCodeBuilderTest"></a><h3>TestCase org.sandbox.functional.core.builder.StreamCodeBuilderTest</h3>
+<table class="details" border="0" cellpadding="5" cellspacing="2" width="95%">
+<tr valign="top">
+<th>Name</th>
+<th>Status</th>
+<th width="80%">Type</th>
+<th nowrap>Time(s)</th>
+</tr>
+<tr valign="top" class="">
+<td>testFilterMapForEach</td>
+<td>Success</td>
+<td></td>
+<td>0.046</td>
+</tr>
+<tr valign="top" class="">
+<td>testIntRangeSource</td>
+<td>Success</td>
+<td></td>
+<td>0.005</td>
+</tr>
+<tr valign="top" class="">
+<td>testPeekOperation</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testCanBuildWithValidModel</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testSkipOperation</td>
+<td>Success</td>
+<td></td>
+<td>0.008</td>
+</tr>
+<tr valign="top" class="">
+<td>testCollectToSet</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testExplicitRangeSourceImport</td>
+<td>Success</td>
+<td></td>
+<td>0.002</td>
+</tr>
+<tr valign="top" class="">
+<td>testRequiredImports</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testCollectTerminal</td>
+<td>Success</td>
+<td></td>
+<td>0.004</td>
+</tr>
+<tr valign="top" class="">
+<td>testFlatMapOperation</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testLimitOperation</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testSimpleForEach</td>
+<td>Success</td>
+<td></td>
+<td>0.002</td>
+</tr>
+<tr valign="top" class="">
+<td>testIterableSourceImport</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testCanBuildWithNullModel</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testSortedWithComparator</td>
+<td>Success</td>
+<td></td>
+<td>0.002</td>
+</tr>
+<tr valign="top" class="">
+<td>testStreamSource</td>
+<td>Success</td>
+<td></td>
+<td>0.007</td>
+</tr>
+<tr valign="top" class="">
+<td>testCountTerminal</td>
+<td>Success</td>
+<td></td>
+<td>0.004</td>
+</tr>
+<tr valign="top" class="">
+<td>testSortedOperation</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testAllMatchTerminal</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testCanBuildWithNullSource</td>
+<td>Success</td>
+<td></td>
+<td>0.002</td>
+</tr>
+<tr valign="top" class="">
+<td>testArraySource</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testCanBuildWithBreak</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testExplicitRangeSource</td>
+<td>Success</td>
+<td></td>
+<td>0.002</td>
+</tr>
+<tr valign="top" class="">
+<td>testExplicitRangeSourceWithVariables</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testReduceTerminal</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testAnyMatchTerminal</td>
+<td>Success</td>
+<td></td>
+<td>0.004</td>
+</tr>
+<tr valign="top" class="">
+<td>testComplexPipeline</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testNoneMatchTerminal</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testIntRangeSourceImport</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testFindFirstTerminal</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testMultipleStatementsInForEach</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testIterableSource</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testDistinctOperation</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testFindAnyTerminal</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+</table>
+<div class="Properties"><a href="javascript:displayProperties('.org.sandbox.functional.core.builder.StreamCodeBuilderTest');">
+                    Properties »
+                </a></div>
+<p></p>
+<a href="#top">Back to top</a><a name="org.sandbox.functional.core.model.LoopModelPipelineTest"></a><h3>TestCase org.sandbox.functional.core.model.LoopModelPipelineTest</h3>
+<table class="details" border="0" cellpadding="5" cellspacing="2" width="95%">
+<tr valign="top">
+<th>Name</th>
+<th>Status</th>
+<th width="80%">Type</th>
+<th nowrap>Time(s)</th>
+</tr>
+<tr valign="top" class="">
+<td>testEqualsIncludesOperationsAndTerminal</td>
+<td>Success</td>
+<td></td>
+<td>0.188</td>
+</tr>
+<tr valign="top" class="">
+<td>testBuildCompleteModel</td>
+<td>Success</td>
+<td></td>
+<td>0.011</td>
+</tr>
+<tr valign="top" class="">
+<td>testExplicitRangeWithFilterAndMap</td>
+<td>Success</td>
+<td></td>
+<td>0.006</td>
+</tr>
+<tr valign="top" class="">
+<td>testEmptyPipeline</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testWithTerminalRejectsNull</td>
+<td>Success</td>
+<td></td>
+<td>0.008</td>
+</tr>
+<tr valign="top" class="">
+<td>testFluentApiMetadataReturnsThis</td>
+<td>Success</td>
+<td></td>
+<td>0.008</td>
+</tr>
+<tr valign="top" class="">
+<td>testAddOperationRejectsNull</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testExplicitRangeWithForEach</td>
+<td>Success</td>
+<td></td>
+<td>0.004</td>
+</tr>
+<tr valign="top" class="">
+<td>testFluentApiElementReturnsThis</td>
+<td>Success</td>
+<td></td>
+<td>0.005</td>
+</tr>
+<tr valign="top" class="">
+<td>testAddMultipleOperations</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testOperationsAreIndependent</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testAddOperationsClearedByCreatingNewModel</td>
+<td>Success</td>
+<td></td>
+<td>0.003</td>
+</tr>
+<tr valign="top" class="">
+<td>testSetTerminal</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testHashCodeIncludesOperationsAndTerminal</td>
+<td>Success</td>
+<td></td>
+<td>0.007</td>
+</tr>
+<tr valign="top" class="">
+<td>testToStringIncludesOperationsAndTerminal</td>
+<td>Success</td>
+<td></td>
+<td>0.035</td>
+</tr>
+<tr valign="top" class="">
+<td>testFluentApiWithTerminalReturnsThis</td>
+<td>Success</td>
+<td></td>
+<td>0.002</td>
+</tr>
+<tr valign="top" class="">
+<td>testFluentApiSourceReturnsThis</td>
+<td>Success</td>
+<td></td>
+<td>0.002</td>
+</tr>
+<tr valign="top" class="">
+<td>testGetOperationsReturnsUnmodifiableList</td>
+<td>Success</td>
+<td></td>
+<td>0.003</td>
+</tr>
+<tr valign="top" class="">
+<td>testFluentApiAddOperationReturnsThis</td>
+<td>Success</td>
+<td></td>
+<td>0.002</td>
+</tr>
+</table>
+<div class="Properties"><a href="javascript:displayProperties('.org.sandbox.functional.core.model.LoopModelPipelineTest');">
+                    Properties »
+                </a></div>
+<p></p>
+<a href="#top">Back to top</a><a name="org.sandbox.functional.core.model.LoopModelTest"></a><h3>TestCase org.sandbox.functional.core.model.LoopModelTest</h3>
+<table class="details" border="0" cellpadding="5" cellspacing="2" width="95%">
+<tr valign="top">
+<th>Name</th>
+<th>Status</th>
+<th width="80%">Type</th>
+<th nowrap>Time(s)</th>
+</tr>
+<tr valign="top" class="">
+<td>testLoopMetadata</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testLoopModelToString</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testLoopModelWithComponents</td>
+<td>Success</td>
+<td></td>
+<td>0.004</td>
+</tr>
+<tr valign="top" class="">
+<td>testElementDescriptor</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testLoopModelCanBeInstantiated</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testSourceDescriptor</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+</table>
+<div class="Properties"><a href="javascript:displayProperties('.org.sandbox.functional.core.model.LoopModelTest');">
+                    Properties »
+                </a></div>
+<p></p>
+<a href="#top">Back to top</a><a name="org.sandbox.functional.core.operation.OperationTest"></a><h3>TestCase org.sandbox.functional.core.operation.OperationTest</h3>
+<table class="details" border="0" cellpadding="5" cellspacing="2" width="95%">
+<tr valign="top">
+<th>Name</th>
+<th>Status</th>
+<th width="80%">Type</th>
+<th nowrap>Time(s)</th>
+</tr>
+<tr valign="top" class="">
+<td>testMapOpSingleArg</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testSortOpWithComparator</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testMapOp</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testFlatMapOp</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testSortOpNatural</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testLimitOp</td>
+<td>Success</td>
+<td></td>
+<td>0.005</td>
+</tr>
+<tr valign="top" class="">
+<td>testFilterOp</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testMapOpWithTargetType</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testPeekOp</td>
+<td>Success</td>
+<td></td>
+<td>0.004</td>
+</tr>
+<tr valign="top" class="">
+<td>testSkipOp</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testDistinctOp</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+</table>
+<div class="Properties"><a href="javascript:displayProperties('.org.sandbox.functional.core.operation.OperationTest');">
+                    Properties »
+                </a></div>
+<p></p>
+<a href="#top">Back to top</a><a name="org.sandbox.functional.core.renderer.StringRendererTest"></a><h3>TestCase org.sandbox.functional.core.renderer.StringRendererTest</h3>
+<table class="details" border="0" cellpadding="5" cellspacing="2" width="95%">
+<tr valign="top">
+<th>Name</th>
+<th>Status</th>
+<th width="80%">Type</th>
+<th nowrap>Time(s)</th>
+</tr>
+<tr valign="top" class="">
+<td>testRenderSourceCollection</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testRenderMap</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testRenderSourceExplicitRangeInvalidMultipleCommas</td>
+<td>Success</td>
+<td></td>
+<td>0.006</td>
+</tr>
+<tr valign="top" class="">
+<td>testRenderSourceIterable</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testRenderSourceStream</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testRenderFindFirst</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testRenderAllMatch</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testRenderSourceExplicitRangeInvalidOnlyComma</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testRenderCollectToSet</td>
+<td>Success</td>
+<td></td>
+<td>0.004</td>
+</tr>
+<tr valign="top" class="">
+<td>testRenderSortedWithComparator</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testRenderNoneMatch</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testRenderSourceExplicitRangeInvalidEmptyEnd</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testRenderForEachOrdered</td>
+<td>Success</td>
+<td></td>
+<td>0.004</td>
+</tr>
+<tr valign="top" class="">
+<td>testRenderSourceExplicitRangeInvalidNoComma</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testRenderFindAny</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testRenderForEachMultipleStatements</td>
+<td>Success</td>
+<td></td>
+<td>0.004</td>
+</tr>
+<tr valign="top" class="">
+<td>testRenderFlatMap</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testRenderForEach</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testRenderPeek</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testRenderSkip</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testRenderSourceArray</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testRenderSourceExplicitRangeInvalidWhitespaceOnly</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testRenderAnyMatch</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testRenderSourceExplicitRangeWithVariables</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testRenderSourceExplicitRange</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testRenderFilter</td>
+<td>Success</td>
+<td></td>
+<td>0.004</td>
+</tr>
+<tr valign="top" class="">
+<td>testRenderSourceExplicitRangeInvalidEmptyStart</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testRenderDistinct</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testRenderSortedWithoutComparator</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testRenderCollectToList</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testRenderReduce</td>
+<td>Success</td>
+<td></td>
+<td>0.004</td>
+</tr>
+<tr valign="top" class="">
+<td>testRenderSourceExplicitRangeWithExpression</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testRenderCount</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testRenderLimit</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testRenderSourceIntRange</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+</table>
+<div class="Properties"><a href="javascript:displayProperties('.org.sandbox.functional.core.renderer.StringRendererTest');">
+                    Properties »
+                </a></div>
+<p></p>
+<a href="#top">Back to top</a><a name="org.sandbox.functional.core.terminal.TerminalOperationTest"></a><h3>TestCase org.sandbox.functional.core.terminal.TerminalOperationTest</h3>
+<table class="details" border="0" cellpadding="5" cellspacing="2" width="95%">
+<tr valign="top">
+<th>Name</th>
+<th>Status</th>
+<th width="80%">Type</th>
+<th nowrap>Time(s)</th>
+</tr>
+<tr valign="top" class="">
+<td>testCollectTerminal</td>
+<td>Success</td>
+<td></td>
+<td>0.002</td>
+</tr>
+<tr valign="top" class="">
+<td>testForEachOrderedTerminal</td>
+<td>Success</td>
+<td></td>
+<td>0.002</td>
+</tr>
+<tr valign="top" class="">
+<td>testForEachTerminal</td>
+<td>Success</td>
+<td></td>
+<td>0.002</td>
+</tr>
+<tr valign="top" class="">
+<td>testMatchTerminalAnyMatch</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testCountTerminal</td>
+<td>Success</td>
+<td></td>
+<td>0.002</td>
+</tr>
+<tr valign="top" class="">
+<td>testReduceTerminal</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testMatchTerminalNoneMatch</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testFindFirstTerminal</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testForEachTerminalSingleArg</td>
+<td>Success</td>
+<td></td>
+<td>0.002</td>
+</tr>
+<tr valign="top" class="">
+<td>testMatchTerminalAllMatch</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testFindAnyTerminal</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+</table>
+<div class="Properties"><a href="javascript:displayProperties('.org.sandbox.functional.core.terminal.TerminalOperationTest');">
+                    Properties »
+                </a></div>
+<p></p>
+<a href="#top">Back to top</a><a name="org.sandbox.functional.core.transformer.LoopModelTransformerTest"></a><h3>TestCase org.sandbox.functional.core.transformer.LoopModelTransformerTest</h3>
+<table class="details" border="0" cellpadding="5" cellspacing="2" width="95%">
+<tr valign="top">
+<th>Name</th>
+<th>Status</th>
+<th width="80%">Type</th>
+<th nowrap>Time(s)</th>
+</tr>
+<tr valign="top" class="">
+<td>testPeekOperation</td>
+<td>Success</td>
+<td></td>
+<td>0.004</td>
+</tr>
+<tr valign="top" class="">
+<td>testSkipOperation</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testTransformThrowsOnNullSource</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testCollectTerminal</td>
+<td>Success</td>
+<td></td>
+<td>0.004</td>
+</tr>
+<tr valign="top" class="">
+<td>testTransformThrowsOnNullModel</td>
+<td>Success</td>
+<td></td>
+<td>0.007</td>
+</tr>
+<tr valign="top" class="">
+<td>testSimpleForEach</td>
+<td>Success</td>
+<td></td>
+<td>0.002</td>
+</tr>
+<tr valign="top" class="">
+<td>testDefaultVariableNameWhenElementIsNull</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testCanTransformValidModel</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testCountTerminal</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testArraySource</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testCanTransformWithNullSource</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testFilterMapPipeline</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="">
+<td>testComplexPipeline</td>
+<td>Success</td>
+<td></td>
+<td>0.003</td>
+</tr>
+<tr valign="top" class="">
+<td>testCanTransformWithNullModel</td>
+<td>Success</td>
+<td></td>
+<td>0.004</td>
+</tr>
+<tr valign="top" class="">
+<td>testFindFirstTerminal</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="">
+<td>testCanTransformWithBreak</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+</table>
+<div class="Properties"><a href="javascript:displayProperties('.org.sandbox.functional.core.transformer.LoopModelTransformerTest');">
+                    Properties »
+                </a></div>
+<p></p>
+<a href="#top">Back to top</a>
+</body>
+</html>
