@@ -79,7 +79,8 @@ public class RuleTimeoutJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 		// (e.g., @Rule public Timeout t1 = ..., t2 = ...;) are not supported but are extremely rare.
 		VariableDeclarationFragment fragment = (VariableDeclarationFragment) node.fragments().get(0);
 		if (fragment.resolveBinding() == null) {
-			return false;
+			// Return true to continue processing other fields
+			return true;
 		}
 		ITypeBinding binding = fragment.resolveBinding().getType();
 		
@@ -97,7 +98,8 @@ public class RuleTimeoutJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 				}
 			}
 		}
-		return false;
+		// Return true to continue processing other fields
+		return true;
 	}
 
 	/**

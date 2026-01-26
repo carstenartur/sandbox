@@ -91,7 +91,8 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 		JunitHolder mh = new JunitHolder();
 		VariableDeclarationFragment fragment = (VariableDeclarationFragment) node.fragments().get(0);
 		if (fragment.resolveBinding() == null) {
-			return false;
+			// Return true to continue processing other fields
+			return true;
 		}
 		ITypeBinding binding = fragment.resolveBinding().getType();
 		if (binding != null && ORG_JUNIT_RULES_EXPECTED_EXCEPTION.equals(binding.getQualifiedName())) {
@@ -99,7 +100,8 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 			dataHolder.put(dataHolder.size(), mh);
 			operations.add(fixcore.rewrite(dataHolder));
 		}
-		return false;
+		// Return true to continue processing other fields
+		return true;
 	}
 
 	@Override

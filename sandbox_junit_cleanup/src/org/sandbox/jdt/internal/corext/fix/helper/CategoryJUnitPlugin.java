@@ -104,7 +104,9 @@ public class CategoryJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, J
 				operations.add(fixcore.rewrite(dataHolder));
 			}
 		}
-		return false;
+		// Return true to continue processing other @Category annotations
+		// (the fluent API interprets false as "stop all processing")
+		return true;
 	}
 
 	/**

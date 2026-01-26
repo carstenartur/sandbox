@@ -19,7 +19,6 @@
 	import org.eclipse.jdt.core.IPackageFragmentRoot;
 	import org.eclipse.jdt.junit.JUnitCore;
 	import org.junit.jupiter.api.BeforeEach;
-	import org.junit.jupiter.api.Disabled;
 	import org.junit.jupiter.api.Test;
 	import org.junit.jupiter.api.extension.RegisterExtension;
 	import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;

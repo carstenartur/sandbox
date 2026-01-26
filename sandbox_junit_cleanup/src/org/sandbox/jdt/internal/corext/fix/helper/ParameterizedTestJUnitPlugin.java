@@ -114,13 +114,15 @@ public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<I
 							
 							dataHolder.put(dataHolder.size(), mh);
 							operations.add(fixcore.rewrite(dataHolder));
-							return false;
+							// Return true to continue processing (there could be nested classes)
+							return true;
 						}
 					}
 				}
 			}
 		}
-		return false;
+		// Return true to continue processing other annotations
+		return true;
 	}
 
 	@Override

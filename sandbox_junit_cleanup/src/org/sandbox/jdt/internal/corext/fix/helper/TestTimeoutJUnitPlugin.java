@@ -101,7 +101,9 @@ public class TestTimeoutJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 			operations.add(fixcore.rewrite(dataHolder));
 		}
 		
-		return false;
+		// Return true to continue processing other annotations
+		// The fluent API interprets false as "stop processing all nodes"
+		return true;
 	}
 
 	@Override

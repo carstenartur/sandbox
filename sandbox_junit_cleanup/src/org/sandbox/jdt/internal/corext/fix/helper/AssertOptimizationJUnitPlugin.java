@@ -155,14 +155,14 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 			ReferenceHolder<Integer, JunitHolder> dataHolder, boolean isTrue) {
 		
 		if (!(node instanceof MethodInvocation)) {
-			return false;
+			return true; // Continue processing other nodes
 		}
 		
 		MethodInvocation mi = (MethodInvocation) node;
 		List<?> arguments = mi.arguments();
 		
 		if (arguments.isEmpty()) {
-			return false;
+			return true; // Continue processing other nodes
 		}
 		
 		// Get the condition expression (may be first or second argument depending on whether message is present)
@@ -185,7 +185,7 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 		}
 		
 		if (condition == null || !canOptimize(condition)) {
-			return false;
+			return true; // Continue processing other nodes
 		}
 		
 		return addStandardRewriteOperation(fixcore, operations, node, dataHolder);
@@ -200,7 +200,7 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 			ReferenceHolder<Integer, JunitHolder> dataHolder) {
 		
 		if (!(node instanceof MethodInvocation)) {
-			return false;
+			return true; // Continue processing other nodes
 		}
 		
 		MethodInvocation mi = (MethodInvocation) node;
@@ -208,7 +208,7 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 		
 		// Need at least 2 arguments (expected, actual) or 3 with message
 		if (arguments.size() < 2) {
-			return false;
+			return true; // Continue processing other nodes
 		}
 		
 		// Get first two arguments (they might be expected/actual or message/expected depending on JUnit version)
@@ -237,7 +237,7 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 			return addStandardRewriteOperation(fixcore, operations, node, dataHolder);
 		}
 		
-		return false;
+		return true; // Continue processing other nodes
 	}
 
 	/**

@@ -87,7 +87,8 @@ public class RuleTemporayFolderJUnitPlugin extends AbstractTool<ReferenceHolder<
 			dataHolder.put(dataHolder.size(), mh);
 			operations.add(fixcore.rewrite(dataHolder));
 		}
-		return false;
+		// Return true to continue processing other fields
+		return true;
 	}
 	
 	@Override

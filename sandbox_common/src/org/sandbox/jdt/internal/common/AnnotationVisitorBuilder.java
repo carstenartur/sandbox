@@ -103,11 +103,10 @@ public class AnnotationVisitorBuilder extends HelperVisitorBuilder<Annotation> {
             holder.setHelperVisitor(helperVisitor);
         }
         
-        // Store the continuation state in the dataholder (ReferenceHolder)
-        // Using a special key that won't conflict with normal data
-        @SuppressWarnings("unchecked")
-        V continueKey = (V) "__CONTINUE_PROCESSING__"; //$NON-NLS-1$
-        holder.put(continueKey, (H) Boolean.TRUE);
+        // Track continuation state using an array to allow modification from lambdas
+        // IMPORTANT: Do NOT store this in the holder as it would pollute the user's data
+        // and break indexing when users call holder.size() to get the next key
+        final boolean[] shouldContinue = { true };
         
         // Create adapter BiPredicates for each annotation type that delegate to the processor
         BiPredicate<MarkerAnnotation, ReferenceHolder<V, H>> markerAdapter = (MarkerAnnotation node, ReferenceHolder<V, H> h) -> {
@@ -115,13 +114,12 @@ public class AnnotationVisitorBuilder extends HelperVisitorBuilder<Annotation> {
             if (nodesprocessed != null && nodesprocessed.contains(node)) {
                 return true; // Skip this node but continue processing others
             }
-            Boolean shouldContinue = (Boolean) h.get(continueKey);
-            if (shouldContinue == null || !shouldContinue) {
+            if (!shouldContinue[0]) {
                 return false;
             }
             boolean result = processor.test((ASTNode) node, h);
             if (!result) {
-                h.put(continueKey, (H) Boolean.FALSE);
+                shouldContinue[0] = false;
             }
             return result;
         };
@@ -131,13 +129,12 @@ public class AnnotationVisitorBuilder extends HelperVisitorBuilder<Annotation> {
             if (nodesprocessed != null && nodesprocessed.contains(node)) {
                 return true; // Skip this node but continue processing others
             }
-            Boolean shouldContinue = (Boolean) h.get(continueKey);
-            if (shouldContinue == null || !shouldContinue) {
+            if (!shouldContinue[0]) {
                 return false;
             }
             boolean result = processor.test((ASTNode) node, h);
             if (!result) {
-                h.put(continueKey, (H) Boolean.FALSE);
+                shouldContinue[0] = false;
             }
             return result;
         };
@@ -147,13 +144,12 @@ public class AnnotationVisitorBuilder extends HelperVisitorBuilder<Annotation> {
             if (nodesprocessed != null && nodesprocessed.contains(node)) {
                 return true; // Skip this node but continue processing others
             }
-            Boolean shouldContinue = (Boolean) h.get(continueKey);
-            if (shouldContinue == null || !shouldContinue) {
+            if (!shouldContinue[0]) {
                 return false;
             }
             boolean result = processor.test((ASTNode) node, h);
             if (!result) {
-                h.put(continueKey, (H) Boolean.FALSE);
+                shouldContinue[0] = false;
             }
             return result;
         };
@@ -163,42 +159,34 @@ public class AnnotationVisitorBuilder extends HelperVisitorBuilder<Annotation> {
             if (nodesprocessed != null && nodesprocessed.contains(node)) {
                 return true; // Skip this node but continue processing others
             }
-            Boolean shouldContinue = (Boolean) h.get(continueKey);
-            if (shouldContinue == null || !shouldContinue) {
+            if (!shouldContinue[0]) {
                 return false;
             }
             boolean result = processor.test((ASTNode) node, h);
             if (!result) {
-                h.put(continueKey, (H) Boolean.FALSE);
+                shouldContinue[0] = false;
             }
             return result;
         };
         
         // Call visitors for all three annotation types to match annotations regardless of parameters
-        Boolean shouldContinue = (Boolean) holder.get(continueKey);
-        if (shouldContinue != null && shouldContinue) {
+        if (shouldContinue[0]) {
             HelperVisitor.callMarkerAnnotationVisitor(annotationFQN, compilationUnit, 
                     holder, nodesprocessed, markerAdapter);
         }
-        shouldContinue = (Boolean) holder.get(continueKey);
-        if (shouldContinue != null && shouldContinue) {
+        if (shouldContinue[0]) {
             HelperVisitor.callSingleMemberAnnotationVisitor(annotationFQN, compilationUnit,
                     holder, nodesprocessed, singleMemberAdapter);
         }
-        shouldContinue = (Boolean) holder.get(continueKey);
-        if (shouldContinue != null && shouldContinue) {
+        if (shouldContinue[0]) {
             HelperVisitor.callNormalAnnotationVisitor(annotationFQN, compilationUnit,
                     holder, nodesprocessed, normalAdapter);
         }
         
         // Optionally include import declarations
-        shouldContinue = (Boolean) holder.get(continueKey);
-        if (shouldContinue != null && shouldContinue && includeImports) {
+        if (shouldContinue[0] && includeImports) {
             HelperVisitor.callImportDeclarationVisitor(annotationFQN, compilationUnit,
                     holder, nodesprocessed, importAdapter);
         }
-        
-        // Clean up the continuation state key
-        holder.remove(continueKey);
     }
 }

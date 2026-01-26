@@ -288,7 +288,7 @@ public abstract class AbstractTool<T> {
 	 * @param operations the set of operations to add to
 	 * @param node the AST node that was found
 	 * @param dataHolder the reference holder for storing data
-	 * @return false to continue visiting
+	 * @return true to continue processing other nodes (fluent API semantics)
 	 */
 	protected boolean addStandardRewriteOperation(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, ASTNode node,
@@ -297,7 +297,7 @@ public abstract class AbstractTool<T> {
 		mh.minv = node;
 		dataHolder.put(dataHolder.size(), mh);
 		operations.add(fixcore.rewrite(dataHolder));
-		return false;
+		return true;
 	}
 
 	/**
