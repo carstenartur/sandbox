@@ -1114,3 +1114,141 @@ The corresponding feature module `sandbox_functional_converter_feature` MUST mai
 2. **feature_de.properties** - German translation of all properties
 
 These files enable Eclipse's built-in localization mechanism and provide user-facing documentation in the Eclipse IDE. When updating feature capabilities, ensure both property files are updated accordingly.
+## Phase 9: Target Format Selection (January 2026)
+
+### Overview
+Phase 9 introduces the ability for users to select the target loop format in the cleanup preferences dialog. Previously, the cleanup always converted loops to Stream API. Now users can choose between:
+- **Stream** (default): Java 8+ functional style (forEach, map, filter, reduce)
+- **For-loop**: Enhanced for-loop (for-each)
+- **While-loop**: Iterator-based while loop
+
+### Architecture
+
+#### Components
+
+1. **LoopTargetFormat Enum**
+   - Location: `org.sandbox.jdt.internal.corext.fix.helper.LoopTargetFormat`
+   - Purpose: Defines available target formats
+   - Values: STREAM, FOR_LOOP, WHILE_LOOP
+   - Methods:
+     - `getId()`: Returns string identifier ("stream", "for", "while")
+     - `fromId(String)`: Parses string to enum (with default fallback)
+
+2. **UI Integration**
+   - Component: `SandboxCodeTabPage`
+   - UI Element: Combo box with format selection
+   - Location: Eclipse cleanup preferences → Sandbox → Java 8
+   - Behavior: Enabled when "Use functional call" checkbox is checked
+
+3. **Cleanup Logic Integration**
+   - Component: `UseFunctionalCallCleanUpCore`
+   - Method: `createFix(CleanUpContext)`
+   - Reads preference: `MYCleanUpConstants.USEFUNCTIONALLOOP_TARGET_FORMAT`
+   - Current behavior: Only processes STREAM format, skips others (returns null)
+
+### Data Flow
+
+```
+User selects format in UI
+    ↓
+Preference saved to cleanup profile
+    ↓
+UseFunctionalCallCleanUpCore.createFix() reads preference
+    ↓
+LoopTargetFormat.fromId() parses string to enum
+    ↓
+If STREAM: Process transformation (existing behavior)
+If FOR_LOOP or WHILE_LOOP: Skip (returns null) - not yet implemented
+```
+
+### Current Implementation Status
+
+**Completed** ✅:
+- Data model (LoopTargetFormat enum)
+- UI integration (combo box in preferences)
+- Preference persistence (initializers, constants)
+- Cleanup logic reads format preference
+- Test infrastructure (LoopTargetFormatTest)
+- Documentation (README, TODO, ARCHITECTURE)
+
+**Pending** ⏳:
+- FOR_LOOP format transformation logic
+- WHILE_LOOP format transformation logic
+- Reverse transformations (Stream → for, Stream → while)
+- Multiple quickfix proposal support
+
+### Future Enhancement: Format Transformers
+
+**Planned Design** (not yet implemented):
+
+```java
+public interface IFormatTransformer {
+    Statement transform(Statement statement, CompilationUnitRewrite cuRewrite);
+    boolean canTransform(Statement statement);
+    LoopTargetFormat getTargetFormat();
+}
+
+// Implementations:
+- StreamFormatTransformer (extracts existing stream generation logic)
+- ForLoopFormatTransformer (converts to enhanced for-loop)
+- WhileLoopFormatTransformer (converts to iterator while-loop)
+```
+
+### Testing
+
+**Test Class**: `LoopTargetFormatTest`
+
+**Test Coverage**:
+1. STREAM format performs transformation (existing behavior)
+2. FOR_LOOP format skips transformation (not implemented)
+3. WHILE_LOOP format skips transformation (not implemented)
+4. LoopTargetFormat enum parsing (fromId, getId)
+
+All tests verify that:
+- Format preference is correctly read
+- STREAM format maintains existing behavior
+- Unimplemented formats fail gracefully (return null instead of error)
+
+### Integration with Existing Features
+
+**Relationship to Phase 7 (Iterator Loop Support)**:
+- Phase 7 added `IteratorLoopToFunctional` which converts iterator-based while loops **TO** streams
+- Phase 9 adds the infrastructure to convert **FROM** streams to other formats
+- Together they enable bidirectional transformations
+
+**Relationship to V2 (ULR)**:
+- Format transformers could leverage ULR's abstract loop model
+- ULR → Format renderer pattern would enable easier format generation
+- Current implementation is V1-based (direct AST manipulation)
+
+### API Constants
+
+```java
+// In MYCleanUpConstants.java
+USEFUNCTIONALLOOP_CLEANUP = "cleanup.functionalloop"
+USEFUNCTIONALLOOP_TARGET_FORMAT = "cleanup.functionalloop.target_format"
+
+// Default values
+DefaultCleanUpOptionsInitializer: "stream"
+SaveActionCleanUpOptionsInitializer: "stream"
+```
+
+### User Experience
+
+**Before Phase 9**:
+- Single option: "Use functional call" (checkbox)
+- Always converts to Stream API
+
+**After Phase 9**:
+- Two options:
+  1. "Use functional call" (checkbox)
+  2. "Target format" (combo box: Stream / Classic for-loop / While-loop)
+- Currently only Stream format performs conversions
+- FOR_LOOP and WHILE_LOOP will be implemented in future updates
+
+### References
+
+- **TODO.md**: Phase 9 implementation roadmap
+- **README.md**: User-facing documentation
+- **LoopBidirectionalTransformationTest**: Disabled tests showing desired behavior for reverse transformations
+- **LoopTargetFormatTest**: Tests for format selection infrastructure
