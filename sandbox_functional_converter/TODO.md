@@ -140,13 +140,14 @@
    - Converts to: `collection.stream().forEach(item -> ...)`
 
 **Test Coverage** (Phase 7):
-- 14 tests in `IteratorLoopToStreamTest` covering iterator-to-stream forEach conversions
-  - Currently limited to forEach pattern; collect, map, filter, reduce, match patterns documented for future implementation
+- 14 tests in `IteratorLoopToStreamTest`: 7 enabled (3 forEach + 4 negative tests), 7 disabled (advanced patterns)
+  - Enabled: Basic forEach conversions and safety validation (iterator.remove(), break, side effects)
+  - Disabled: collect, map, filter, reduce patterns - waiting for advanced pattern implementation
 - 6 tests in `IteratorLoopConversionTest` for additional iterator variants
 - 5 tests in `LoopBidirectionalTransformationTest` (2 active, 3 future)
 - 9 tests in `AdditionalLoopPatternsTest` (6 active negative tests, 3 future)
 
-**Total Active Iterator Tests**: 20 tests enabled (forEach pattern functional, advanced patterns planned)
+**Total Active Iterator Tests**: 13 tests enabled (7 in IteratorLoopToStreamTest + 6 in IteratorLoopConversionTest), 7 disabled pending advanced pattern support
 
 ### Phase 8: V1 Deprecation (FUTURE)
 
