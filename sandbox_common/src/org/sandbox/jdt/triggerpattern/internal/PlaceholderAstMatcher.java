@@ -13,28 +13,37 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.internal;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jdt.core.dom.ASTMatcher;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.IExtendedModifier;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MemberValuePair;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.NormalAnnotation;
+import org.eclipse.jdt.core.dom.NumberLiteral;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.TypeLiteral;
 
 /**
- * An AST matcher that supports placeholder matching.
+ * An AST matcher that supports placeholder matching with multi-placeholder and type constraint support.
  * 
  * <p>Placeholders are identified by a {@code $} prefix in SimpleName nodes.
  * When a placeholder is encountered:</p>
  * <ul>
  *   <li>If it's the first occurrence, the placeholder is bound to the corresponding node</li>
  *   <li>If it's a subsequent occurrence, the node must match the previously bound node</li>
+ *   <li>Multi-placeholders (ending with $) match zero or more nodes and are stored as lists</li>
+ *   <li>Type constraints (e.g., $x:StringLiteral) validate the matched node's type</li>
  * </ul>
  * 
  * <p>Example: In pattern {@code "$x + $x"}, both occurrences of {@code $x} must match
@@ -44,7 +53,7 @@ import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
  */
 public class PlaceholderAstMatcher extends ASTMatcher {
 	
-	private final Map<String, ASTNode> bindings = new HashMap<>();
+	private final Map<String, Object> bindings = new HashMap<>();  // Object can be ASTNode or List<ASTNode>
 	private final ASTMatcher reusableMatcher = new ASTMatcher();
 	
 	/**
@@ -57,9 +66,9 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 	/**
 	 * Returns the placeholder bindings.
 	 * 
-	 * @return a map of placeholder names to bound AST nodes
+	 * @return a map of placeholder names to bound AST nodes or lists of AST nodes
 	 */
-	public Map<String, ASTNode> getBindings() {
+	public Map<String, Object> getBindings() {
 		return new HashMap<>(bindings);
 	}
 	
@@ -68,6 +77,62 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 	 */
 	public void clearBindings() {
 		bindings.clear();
+	}
+	
+	/**
+	 * Detects if a placeholder name represents a multi-placeholder (e.g., $args$).
+	 * 
+	 * @param name the placeholder name
+	 * @return true if this is a multi-placeholder
+	 */
+	private boolean isMultiPlaceholder(String name) {
+		return name.startsWith("$") && name.endsWith("$") && name.length() > 2; //$NON-NLS-1$ //$NON-NLS-2$
+	}
+	
+	/**
+	 * Parses placeholder information from a placeholder name.
+	 * Supports syntax: $name, $name$, $name:Type, $name$:Type
+	 * 
+	 * @param placeholderName the placeholder name (e.g., "$x", "$args$", "$msg:StringLiteral")
+	 * @return parsed placeholder information
+	 */
+	private PlaceholderInfo parsePlaceholder(String placeholderName) {
+		String name = placeholderName;
+		String typeConstraint = null;
+		
+		// Check for type constraint (e.g., $x:StringLiteral)
+		int colonIndex = name.indexOf(':');
+		if (colonIndex > 0) {
+			typeConstraint = name.substring(colonIndex + 1);
+			name = name.substring(0, colonIndex);
+		}
+		
+		boolean isMulti = isMultiPlaceholder(name);
+		return new PlaceholderInfo(name, typeConstraint, isMulti);
+	}
+	
+	/**
+	 * Validates that a node matches the specified type constraint.
+	 * 
+	 * @param node the AST node to validate
+	 * @param typeConstraint the type constraint (e.g., "StringLiteral"), null means any type
+	 * @return true if the node matches the constraint
+	 */
+	private boolean matchesTypeConstraint(ASTNode node, String typeConstraint) {
+		if (typeConstraint == null) {
+			return true;
+		}
+		
+		return switch (typeConstraint) {
+			case "StringLiteral" -> node instanceof StringLiteral; //$NON-NLS-1$
+			case "NumberLiteral" -> node instanceof NumberLiteral; //$NON-NLS-1$
+			case "TypeLiteral" -> node instanceof TypeLiteral; //$NON-NLS-1$
+			case "SimpleName" -> node instanceof SimpleName; //$NON-NLS-1$
+			case "MethodInvocation" -> node instanceof MethodInvocation; //$NON-NLS-1$
+			case "Expression" -> node instanceof Expression; //$NON-NLS-1$
+			case "Statement" -> node instanceof Statement; //$NON-NLS-1$
+			default -> node.getClass().getSimpleName().equals(typeConstraint);
+		};
 	}
 	
 	@Override
@@ -82,14 +147,30 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 		if (name != null && name.startsWith("$")) { //$NON-NLS-1$
 			ASTNode otherNode = (ASTNode) other;
 			
+			// Parse placeholder info (handles type constraints)
+			PlaceholderInfo placeholderInfo = parsePlaceholder(name);
+			
+			// Validate type constraint if specified
+			if (!matchesTypeConstraint(otherNode, placeholderInfo.typeConstraint())) {
+				return false;
+			}
+			
+			// Use the cleaned placeholder name (without type constraint) for binding
+			String placeholderName = placeholderInfo.name();
+			
 			// Check if this placeholder has been bound before
-			if (bindings.containsKey(name)) {
+			if (bindings.containsKey(placeholderName)) {
 				// Placeholder already bound - must match the previously bound node
-				ASTNode boundNode = bindings.get(name);
-				return boundNode.subtreeMatch(reusableMatcher, otherNode);
+				Object boundValue = bindings.get(placeholderName);
+				if (boundValue instanceof ASTNode) {
+					ASTNode boundNode = (ASTNode) boundValue;
+					return boundNode.subtreeMatch(reusableMatcher, otherNode);
+				}
+				// If it's a list binding, that's an error - shouldn't happen for SimpleName
+				return false;
 			} else {
 				// First occurrence - bind the placeholder to this node
-				bindings.put(name, otherNode);
+				bindings.put(placeholderName, otherNode);
 				return true;
 			}
 		}
@@ -304,5 +385,124 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 			return node2 == null;
 		}
 		return node1.subtreeMatch(this, node2);
+	}
+	
+	/**
+	 * Matches method invocations with support for multi-placeholder arguments.
+	 * 
+	 * @param patternNode the pattern method invocation
+	 * @param other the candidate node
+	 * @return {@code true} if the method invocations match
+	 * @since 1.3.1
+	 */
+	@Override
+	public boolean match(MethodInvocation patternNode, Object other) {
+		if (!(other instanceof MethodInvocation)) {
+			return false;
+		}
+		MethodInvocation otherInvocation = (MethodInvocation) other;
+		
+		// Match method name
+		if (!safeSubtreeMatch(patternNode.getName(), otherInvocation.getName())) {
+			return false;
+		}
+		
+		// Match expression (receiver)
+		if (!safeSubtreeMatch(patternNode.getExpression(), otherInvocation.getExpression())) {
+			return false;
+		}
+		
+		// Match type arguments if present
+		@SuppressWarnings("unchecked")
+		List<org.eclipse.jdt.core.dom.Type> patternTypeArgs = patternNode.typeArguments();
+		@SuppressWarnings("unchecked")
+		List<org.eclipse.jdt.core.dom.Type> otherTypeArgs = otherInvocation.typeArguments();
+		
+		if (patternTypeArgs.size() != otherTypeArgs.size()) {
+			return false;
+		}
+		
+		for (int i = 0; i < patternTypeArgs.size(); i++) {
+			if (!safeSubtreeMatch(patternTypeArgs.get(i), otherTypeArgs.get(i))) {
+				return false;
+			}
+		}
+		
+		// Match arguments with multi-placeholder support
+		@SuppressWarnings("unchecked")
+		List<Expression> patternArgs = patternNode.arguments();
+		@SuppressWarnings("unchecked")
+		List<Expression> otherArgs = otherInvocation.arguments();
+		
+		return matchArgumentsWithMultiPlaceholders(patternArgs, otherArgs);
+	}
+	
+	/**
+	 * Matches argument lists with support for multi-placeholders.
+	 * 
+	 * @param patternArgs the pattern arguments
+	 * @param otherArgs the candidate arguments
+	 * @return true if arguments match (considering multi-placeholders)
+	 */
+	private boolean matchArgumentsWithMultiPlaceholders(List<Expression> patternArgs, List<Expression> otherArgs) {
+		// Check if pattern has a single multi-placeholder argument
+		if (patternArgs.size() == 1 && patternArgs.get(0) instanceof SimpleName) {
+			SimpleName patternArg = (SimpleName) patternArgs.get(0);
+			String name = patternArg.getIdentifier();
+			
+			if (name != null && name.startsWith("$")) { //$NON-NLS-1$
+				PlaceholderInfo info = parsePlaceholder(name);
+				
+				if (info.isMulti()) {
+					// Multi-placeholder: bind to list of all arguments
+					String placeholderName = info.name();
+					
+					// Validate type constraints for all arguments if specified
+					if (info.typeConstraint() != null) {
+						for (Expression arg : otherArgs) {
+							if (!matchesTypeConstraint(arg, info.typeConstraint())) {
+								return false;
+							}
+						}
+					}
+					
+					// Check if already bound
+					if (bindings.containsKey(placeholderName)) {
+						Object boundValue = bindings.get(placeholderName);
+						if (boundValue instanceof List<?>) {
+							@SuppressWarnings("unchecked")
+							List<ASTNode> boundList = (List<ASTNode>) boundValue;
+							if (boundList.size() != otherArgs.size()) {
+								return false;
+							}
+							for (int i = 0; i < boundList.size(); i++) {
+								if (!boundList.get(i).subtreeMatch(reusableMatcher, otherArgs.get(i))) {
+									return false;
+								}
+							}
+							return true;
+						}
+						return false;
+					} else {
+						// First occurrence - bind to list
+						bindings.put(placeholderName, new ArrayList<>(otherArgs));
+						return true;
+					}
+				}
+			}
+		}
+		
+		// Standard matching: same number of arguments, each matching
+		if (patternArgs.size() != otherArgs.size()) {
+			return false;
+		}
+		
+		for (int i = 0; i < patternArgs.size(); i++) {
+			if (!safeSubtreeMatch(patternArgs.get(i), otherArgs.get(i))) {
+				return false;
+			}
+		}
+		
+		return true;
 	}
 }

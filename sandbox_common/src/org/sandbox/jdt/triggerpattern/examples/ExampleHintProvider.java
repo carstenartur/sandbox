@@ -53,7 +53,7 @@ public static IJavaCompletionProposal simplifyIncrement(HintContext ctx) {
 	InfixExpression infixExpr = (InfixExpression) matchedNode;
 
 	// Get the bound variable from placeholders
-	ASTNode xNode = ctx.getMatch().getBindings().get("$x"); //$NON-NLS-1$
+	ASTNode xNode = ctx.getMatch().getBinding("$x"); //$NON-NLS-1$
 	if (xNode == null || !(xNode instanceof Expression)) {
 	return null;
 	}
@@ -100,7 +100,7 @@ public static IJavaCompletionProposal simplifyDecrement(HintContext ctx) {
 	InfixExpression infixExpr = (InfixExpression) matchedNode;
 
 	// Get the bound variable
-	ASTNode xNode = ctx.getMatch().getBindings().get("$x"); //$NON-NLS-1$
+	ASTNode xNode = ctx.getMatch().getBinding("$x"); //$NON-NLS-1$
 	if (xNode == null || !(xNode instanceof Expression)) {
 	return null;
 	}

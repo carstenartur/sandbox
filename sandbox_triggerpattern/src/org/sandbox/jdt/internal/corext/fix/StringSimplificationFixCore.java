@@ -138,7 +138,7 @@ public class StringSimplificationFixCore {
 			InfixExpression infixExpr = (InfixExpression) matchedNode;
 			
 			// Get the bound variable from placeholders
-			ASTNode xNode = match.getBindings().get("$x"); //$NON-NLS-1$
+			ASTNode xNode = match.getBinding("$x"); //$NON-NLS-1$
 			if (xNode == null || !(xNode instanceof Expression)) {
 				return;
 			}
@@ -178,7 +178,7 @@ public class StringSimplificationFixCore {
 			ASTNode matchedNode = match.getMatchedNode();
 			
 			// Get the bound variable from placeholders
-			ASTNode strNode = match.getBindings().get("$str"); //$NON-NLS-1$
+			ASTNode strNode = match.getBinding("$str"); //$NON-NLS-1$
 			if (strNode == null || !(strNode instanceof Expression)) {
 				return;
 			}
@@ -224,7 +224,7 @@ public class StringSimplificationFixCore {
 			InfixExpression infixExpr = (InfixExpression) matchedNode;
 			
 			// Get the boolean variable
-			ASTNode xNode = match.getBindings().get("$x"); //$NON-NLS-1$
+			ASTNode xNode = match.getBinding("$x"); //$NON-NLS-1$
 			if (xNode == null || !(xNode instanceof Expression)) {
 				return;
 			}
@@ -277,7 +277,7 @@ public class StringSimplificationFixCore {
 			ConditionalExpression ternary = (ConditionalExpression) matchedNode;
 			
 			// Get the condition
-			ASTNode condNode = match.getBindings().get("$cond"); //$NON-NLS-1$
+			ASTNode condNode = match.getBinding("$cond"); //$NON-NLS-1$
 			if (condNode == null || !(condNode instanceof Expression)) {
 				return;
 			}

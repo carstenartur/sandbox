@@ -227,8 +227,11 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
     }
     
     // Regex pattern for parsing replacement patterns (compiled once for performance)
+    // Supports:
+    // - @AnnotationName or @AnnotationName($placeholder) or @AnnotationName($placeholder$)
+    // - MethodName.method($args) or MethodName.method($args$)
     private static final java.util.regex.Pattern REPLACEMENT_PATTERN = 
-        java.util.regex.Pattern.compile("@([A-Za-z_][A-Za-z0-9_]*)(?:\\(\\$([A-Za-z_][A-Za-z0-9_]*)\\))?");
+        java.util.regex.Pattern.compile("@?([A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*)(?:\\((.*)\\))?");
     
     /**
      * Provides default implementation of process2Rewrite using @RewriteRule annotation.
@@ -343,23 +346,26 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
     /**
      * Parses a replacement pattern to extract annotation name and placeholder information.
      * 
-     * <p><b>Pattern format:</b> {@code @AnnotationName} or {@code @AnnotationName($placeholder)}</p>
+     * <p><b>Pattern format:</b></p>
+     * <ul>
+     *   <li>{@code @AnnotationName} - marker annotation</li>
+     *   <li>{@code @AnnotationName($placeholder)} - single value annotation</li>
+     *   <li>{@code @AnnotationName($placeholder$)} - annotation with multi-placeholder</li>
+     *   <li>{@code ClassName.method($args$)} - method call with multi-placeholder</li>
+     * </ul>
      * 
-     * <p><b>Note:</b> This intentionally supports only simple (unqualified) annotation names without dots,
-     * e.g., "@BeforeEach" or "@Disabled($value)". Fully qualified names such as
-     * "@org.junit.jupiter.api.BeforeEach" are not supported here; resolution relies on imports.
-     * To support qualified names in the future, this regex (and related logic) must be updated.</p>
+     * <p><b>Note:</b> Now supports both simple and qualified names (e.g., "Assertions.assertEquals").</p>
      * 
-     * @param pattern the replacement pattern (e.g., "@BeforeEach", "@Disabled($value)")
+     * @param pattern the replacement pattern (e.g., "@BeforeEach", "@Disabled($value)", "Assertions.assertEquals($args$)")
      * @return parsed annotation replacement information
      */
     private AnnotationReplacementInfo parseReplacementPattern(String pattern) {
         java.util.regex.Matcher matcher = REPLACEMENT_PATTERN.matcher(pattern.trim());
         
         if (matcher.matches()) {
-            String annotationName = matcher.group(1);
-            String placeholderName = matcher.group(2); // null if no placeholder
-            return new AnnotationReplacementInfo(annotationName, placeholderName);
+            String name = matcher.group(1);
+            String placeholderPart = matcher.group(2); // null if no parentheses
+            return new AnnotationReplacementInfo(name, placeholderPart);
         }
         
         throw new IllegalArgumentException("Invalid replacement pattern: " + pattern);
@@ -370,7 +376,7 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
      */
     private static class AnnotationReplacementInfo {
         final String annotationName;
-        final String placeholderName; // null if no placeholder
+        final String placeholderName; // null if no placeholder, or could be "$args$" for multi-placeholders
         
         AnnotationReplacementInfo(String annotationName, String placeholderName) {
             this.annotationName = annotationName;
@@ -378,7 +384,11 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
         }
         
         boolean hasPlaceholders() {
-            return placeholderName != null;
+            return placeholderName != null && !placeholderName.isEmpty();
+        }
+        
+        boolean isMultiPlaceholder() {
+            return placeholderName != null && placeholderName.startsWith("$") && placeholderName.endsWith("$"); //$NON-NLS-1$ //$NON-NLS-2$
         }
     }
 }

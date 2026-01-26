@@ -63,8 +63,8 @@ public class JunitHolder {
 	/** Additional context information for complex transformations */
 	public Object additionalInfo;
 	
-	/** Placeholder bindings from TriggerPattern (e.g., "$x" -> ASTNode) */
-	public Map<String, ASTNode> bindings = new HashMap<>();
+	/** Placeholder bindings from TriggerPattern (e.g., "$x" -> ASTNode or "$args$" -> List<ASTNode>) */
+	public Map<String, Object> bindings = new HashMap<>();
 
 	/**
 	 * Gets the node as an Annotation.
@@ -110,21 +110,28 @@ public class JunitHolder {
 	 * Gets a placeholder binding as an Expression.
 	 * 
 	 * @param placeholder the placeholder name (e.g., "$x")
-	 * @return the bound expression, or null if not found
+	 * @return the bound expression, or null if not found or if it's a list binding
 	 */
 	public Expression getBindingAsExpression(String placeholder) {
-		ASTNode node = bindings.get(placeholder);
-		return node instanceof Expression ? (Expression) node : null;
+		Object value = bindings.get(placeholder);
+		if (value instanceof Expression) {
+			return (Expression) value;
+		}
+		return null;
 	}
 	
 	/**
 	 * Gets a placeholder binding.
 	 * 
 	 * @param placeholder the placeholder name (e.g., "$x")
-	 * @return the bound AST node, or null if not found
+	 * @return the bound AST node, or null if not found or if it's a list binding
 	 */
 	public ASTNode getBinding(String placeholder) {
-		return bindings.get(placeholder);
+		Object value = bindings.get(placeholder);
+		if (value instanceof ASTNode) {
+			return (ASTNode) value;
+		}
+		return null;
 	}
 	
 	/**

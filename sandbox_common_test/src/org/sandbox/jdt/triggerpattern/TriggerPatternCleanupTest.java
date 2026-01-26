@@ -97,11 +97,11 @@ class TriggerPatternCleanupTest {
 		assertEquals(1, matches.size(), "Should find one @Test annotation with expected parameter");
 		
 		Match match = matches.get(0);
-		Map<String, ASTNode> bindings = match.getBindings();
+		Map<String, Object> bindings = match.getBindings();
 		
 		assertTrue(bindings.containsKey("$ex"), "Should have binding for $ex");
 		
-		ASTNode boundNode = bindings.get("$ex");
+		ASTNode boundNode = match.getBinding("$ex");
 		assertTrue(boundNode instanceof TypeLiteral, "Bound node should be a TypeLiteral");
 	}
 	

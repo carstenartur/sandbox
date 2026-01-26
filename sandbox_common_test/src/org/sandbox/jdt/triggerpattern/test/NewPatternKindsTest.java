@@ -93,7 +93,7 @@ public class NewPatternKindsTest {
 		assertNotNull(match.getMatchedNode());
 		assertTrue(match.getMatchedNode() instanceof Annotation);
 		
-		Map<String, ASTNode> bindings = match.getBindings();
+		Map<String, Object> bindings = match.getBindings();
 		assertTrue(bindings.containsKey("$ex"), "Should have binding for $ex");
 	}
 	
@@ -144,7 +144,7 @@ public class NewPatternKindsTest {
 		assertNotNull(match.getMatchedNode());
 		assertTrue(match.getMatchedNode() instanceof MethodInvocation);
 		
-		Map<String, ASTNode> bindings = match.getBindings();
+		Map<String, Object> bindings = match.getBindings();
 		assertTrue(bindings.containsKey("$msg"), "Should have binding for $msg");
 	}
 	
@@ -167,7 +167,7 @@ public class NewPatternKindsTest {
 		assertEquals(1, matches.size(), "Should find one assertEquals call with 3 arguments");
 		
 		Match match = matches.get(0);
-		Map<String, ASTNode> bindings = match.getBindings();
+		Map<String, Object> bindings = match.getBindings();
 		assertEquals(3, bindings.size(), "Should have 3 bindings");
 		assertTrue(bindings.containsKey("$msg"));
 		assertTrue(bindings.containsKey("$expected"));
@@ -193,7 +193,7 @@ public class NewPatternKindsTest {
 		assertEquals(2, matches.size(), "Should find two toString() calls");
 		
 		for (Match match : matches) {
-			Map<String, ASTNode> bindings = match.getBindings();
+			Map<String, Object> bindings = match.getBindings();
 			assertTrue(bindings.containsKey("$obj"), "Should have binding for $obj");
 		}
 	}
@@ -280,9 +280,9 @@ public class NewPatternKindsTest {
 		assertNotNull(match.getMatchedNode());
 		assertTrue(match.getMatchedNode() instanceof FieldDeclaration);
 		
-		Map<String, ASTNode> bindings = match.getBindings();
+		Map<String, Object> bindings = match.getBindings();
 		assertTrue(bindings.containsKey("$name"), "Should have binding for $name");
-		ASTNode nameNode = bindings.get("$name");
+		ASTNode nameNode = match.getBinding("$name");
 		assertTrue(nameNode instanceof SimpleName);
 		assertEquals("name", ((SimpleName) nameNode).getIdentifier());
 	}
@@ -304,7 +304,7 @@ public class NewPatternKindsTest {
 		assertEquals(1, matches.size(), "Should find one @Rule field");
 		
 		Match match = matches.get(0);
-		Map<String, ASTNode> bindings = match.getBindings();
+		Map<String, Object> bindings = match.getBindings();
 		assertTrue(bindings.containsKey("$name"), "Should have binding for $name");
 	}
 	
@@ -325,7 +325,7 @@ public class NewPatternKindsTest {
 		assertEquals(2, matches.size(), "Should find two public fields");
 		
 		for (Match match : matches) {
-			Map<String, ASTNode> bindings = match.getBindings();
+			Map<String, Object> bindings = match.getBindings();
 			assertTrue(bindings.containsKey("$type"), "Should have binding for $type");
 			assertTrue(bindings.containsKey("$name"), "Should have binding for $name");
 		}

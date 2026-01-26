@@ -164,6 +164,37 @@ Example:
 // Does NOT match: a + b (different variables)
 ```
 
+### Multi-Placeholders
+
+Multi-placeholders match zero or more AST nodes using the syntax `$name$` (starting and ending with `$`):
+
+```java
+@TriggerPattern(value = "Assert.assertEquals($args$)", kind = PatternKind.METHOD_CALL)
+// Matches: assertEquals() with any number of arguments
+// - Assert.assertEquals(a, b)           → $args$ = [a, b]
+// - Assert.assertEquals("msg", a, b)    → $args$ = ["msg", a, b]
+// - Assert.assertEquals("msg", a, b, 0.01) → $args$ = ["msg", a, b, 0.01]
+```
+
+**Use cases:**
+- Match method calls with variable argument counts
+- Simplify patterns that previously required multiple separate patterns
+- Enable more flexible code transformations
+
+**Accessing multi-placeholder bindings:**
+```java
+public static IJavaCompletionProposal myHint(HintContext ctx) {
+    // For single placeholders
+    ASTNode node = ctx.getMatch().getBinding("$x");
+    
+    // For multi-placeholders
+    List<ASTNode> args = ctx.getMatch().getListBinding("$args$");
+    for (ASTNode arg : args) {
+        // Process each argument
+    }
+}
+```
+
 ## API Reference
 
 ### Core Classes
@@ -181,7 +212,14 @@ Result of a successful pattern match.
 ```java
 Match match = ...;
 ASTNode matchedNode = match.getMatchedNode();
-Map<String, ASTNode> bindings = match.getBindings();
+
+// For single placeholders
+ASTNode node = match.getBinding("$x");
+Map<String, Object> bindings = match.getBindings();
+
+// For multi-placeholders
+List<ASTNode> nodes = match.getListBinding("$args$");
+
 int offset = match.getOffset();
 int length = match.getLength();
 ```
