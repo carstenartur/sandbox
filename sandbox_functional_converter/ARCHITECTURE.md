@@ -226,11 +226,11 @@ Issue [#450](https://github.com/carstenartur/sandbox/issues/450) introduced the 
 **Test Coverage** (Phase 7):
 | Test File | Tests | Status |
 |-----------|-------|--------|
-| `IteratorLoopToStreamTest` | 7 enabled, 7 disabled | ✅ forEach functional, advanced patterns disabled |
+| `IteratorLoopToStreamTest` | 6 enabled, 8 disabled | ✅ Simple forEach functional, advanced patterns disabled |
 | `IteratorLoopConversionTest` | 6 | ✅ Enabled |
 | `LoopBidirectionalTransformationTest` | 2 active, 3 future | ✅ New |
 | `AdditionalLoopPatternsTest` | 6 active, 3 future | ✅ New |
-| **Total Active** | **21** | **13 iterator + 8 new tests** |
+| **Total Active** | **20** | **12 iterator + 8 new tests** |
 
 **Key Decisions**:
 - Iterator loops convert to same stream operations as enhanced for-loops
