@@ -59,15 +59,14 @@ public class IteratorLoopConversionTest {
             """;
         
         String expected = """
-            package test;
-            import java.util.*;
-            public class E {
-                void foo(List<String> items) {
-                    items.stream()
-                        .forEach(item -> System.out.println(item));
-                }
-            }
-            """;
+package test;
+import java.util.*;
+public class E {
+    void foo(List<String> items) {
+        items.stream().forEach(item -> System.out.println(item));
+    }
+}
+""";
         
         ICompilationUnit cu = pack.createCompilationUnit("E.java", given, false, null);
         context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
@@ -94,15 +93,14 @@ public class IteratorLoopConversionTest {
             """;
         
         String expected = """
-            package test;
-            import java.util.*;
-            public class E {
-                void foo(List<String> items) {
-                    items.stream()
-                        .forEach(item -> System.out.println(item));
-                }
-            }
-            """;
+package test;
+import java.util.*;
+public class E {
+    void foo(List<String> items) {
+        items.stream().forEach(item -> System.out.println(item));
+    }
+}
+""";
         
         ICompilationUnit cu = pack.createCompilationUnit("E.java", given, false, null);
         context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
@@ -186,18 +184,17 @@ public class IteratorLoopConversionTest {
             """;
         
         String expected = """
-            package test;
-            import java.util.*;
-            public class E {
-                void foo(List<String> items) {
-                    items.stream()
-                        .forEach(item -> {
-                            String upper = item.toUpperCase();
-                            System.out.println(upper);
-                        });
-                }
-            }
-            """;
+package test;
+import java.util.*;
+public class E {
+    void foo(List<String> items) {
+        items.stream().forEach(item -> {
+			String upper = item.toUpperCase();
+			System.out.println(upper);
+		});
+    }
+}
+""";
         
         ICompilationUnit cu = pack.createCompilationUnit("E.java", given, false, null);
         context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);

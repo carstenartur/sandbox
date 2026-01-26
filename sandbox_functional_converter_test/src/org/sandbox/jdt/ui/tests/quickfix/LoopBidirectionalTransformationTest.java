@@ -87,7 +87,7 @@ public class LoopBidirectionalTransformationTest {
 				import java.util.*;
 				public class MyTest {
 					void process(List<String> items) {
-						items.stream().forEach(item -> System.out.println(item));
+						items.forEach(item -> System.out.println(item));
 					}
 				}
 				""";
