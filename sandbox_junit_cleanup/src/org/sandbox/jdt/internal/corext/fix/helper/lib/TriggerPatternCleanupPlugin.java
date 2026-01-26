@@ -390,6 +390,5 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
         boolean isMultiPlaceholder() {
             return placeholderName != null && placeholderName.startsWith("$") && placeholderName.endsWith("$"); //$NON-NLS-1$ //$NON-NLS-2$
         }
-        }
     }
 }
