@@ -48,18 +48,17 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 		final CheckboxPreference functional_call= createCheckboxPref(java1d8Group, numColumns, CleanUpMessages.JavaFeatureTabPage_CheckboxName_FunctionalCall, MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP, FALSE_TRUE);
 		intent(java1d8Group);
 		
-		// Add combo box for target format selection
-		final String[] formatValues = new String[] { "stream", "for", "while" };
-		final String[] formatLabels = new String[] {
-			CleanUpMessages.JavaFeatureTabPage_TargetFormat_Stream,
-			CleanUpMessages.JavaFeatureTabPage_TargetFormat_ForLoop,
-			CleanUpMessages.JavaFeatureTabPage_TargetFormat_WhileLoop
-		};
-		final ComboPreference targetFormat = createComboPref(java1d8Group, numColumns, 
-			CleanUpMessages.JavaFeatureTabPage_ComboName_TargetFormat, 
-			MYCleanUpConstants.USEFUNCTIONALLOOP_TARGET_FORMAT, 
-			formatValues, formatLabels);
-		registerSlavePreference(functional_call, new RadioPreference[] { targetFormat });
+		// Add radio buttons for target format selection
+		final RadioPreference streamFormat = createRadioPref(java1d8Group, 1, 
+			CleanUpMessages.JavaFeatureTabPage_TargetFormat_Stream, 
+			MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_STREAM, FALSE_TRUE);
+		final RadioPreference forLoopFormat = createRadioPref(java1d8Group, 1, 
+			CleanUpMessages.JavaFeatureTabPage_TargetFormat_ForLoop, 
+			MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_FOR, FALSE_TRUE);
+		final RadioPreference whileLoopFormat = createRadioPref(java1d8Group, 1, 
+			CleanUpMessages.JavaFeatureTabPage_TargetFormat_WhileLoop, 
+			MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_WHILE, FALSE_TRUE);
+		registerSlavePreference(functional_call, new RadioPreference[] { streamFormat, forLoopFormat, whileLoopFormat });
 		
 		registerPreference(functional_call);
 	}

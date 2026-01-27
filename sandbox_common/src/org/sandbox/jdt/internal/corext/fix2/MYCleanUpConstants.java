@@ -211,11 +211,19 @@ public class MYCleanUpConstants {
 	public static final String USEFUNCTIONALLOOP_CLEANUP_V2= "cleanup.use_functional_loop_v2"; //$NON-NLS-1$
 
 	/**
-	 * Target format for loop conversions (stream, for, while).
-	 * Values: "stream", "for", "while"
-	 * Default: "stream"
+	 * Target format for loop conversions: Stream (default)
 	 */
-	public static final String USEFUNCTIONALLOOP_TARGET_FORMAT= "cleanup.functionalloop.target_format"; //$NON-NLS-1$
+	public static final String USEFUNCTIONALLOOP_FORMAT_STREAM= "cleanup.functionalloop.format.stream"; //$NON-NLS-1$
+
+	/**
+	 * Target format for loop conversions: For-loop
+	 */
+	public static final String USEFUNCTIONALLOOP_FORMAT_FOR= "cleanup.functionalloop.format.for"; //$NON-NLS-1$
+
+	/**
+	 * Target format for loop conversions: While-loop
+	 */
+	public static final String USEFUNCTIONALLOOP_FORMAT_WHILE= "cleanup.functionalloop.format.while"; //$NON-NLS-1$
 
 	/**
 	 *

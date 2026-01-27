@@ -19,10 +19,14 @@ package org.sandbox.jdt.internal.corext.fix.helper;
  * <p>This enum defines the different formats that loops can be converted to:
  * <ul>
  *   <li>STREAM - Java 8+ Stream API (forEach, map, filter, reduce, etc.)</li>
- *   <li>FOR_LOOP - Classic for-loop (for initialization, condition, update)</li>
- *   <li>WHILE_LOOP - While loop (while condition)</li>
+ *   <li>FOR_LOOP - Enhanced for-loop (for-each style: for (T item : collection))</li>
+ *   <li>WHILE_LOOP - While loop with iterator</li>
  * </ul>
  * </p>
+ * 
+ * <p><b>Note:</b> This enum is retained for potential future use with combo box preferences,
+ * but the current implementation uses radio buttons with separate boolean constants in
+ * {@link org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants}.</p>
  */
 public enum LoopTargetFormat {
     /**
@@ -32,14 +36,17 @@ public enum LoopTargetFormat {
     STREAM("stream"),
     
     /**
-     * Convert to classic for-loop.
-     * Example: for (int i = 0; i < list.size(); i++) { ... }
+     * Convert to enhanced for-loop (for-each style).
+     * Example: for (String item : list) { System.out.println(item); }
+     * 
+     * <p><b>Note:</b> This targets the enhanced for-loop introduced in Java 5,
+     * not the classic indexed for-loop with initialization/condition/update.</p>
      */
     FOR_LOOP("for"),
     
     /**
-     * Convert to while loop.
-     * Example: int i = 0; while (i < list.size()) { ... i++; }
+     * Convert to while loop with iterator.
+     * Example: Iterator<String> it = list.iterator(); while (it.hasNext()) { String item = it.next(); ... }
      */
     WHILE_LOOP("while");
     

@@ -22,7 +22,6 @@ public class CleanUpMessages {
 	public static String JavaFeatureTabPage_RadioName_Keep_Behavior;
 	public static String JavaFeatureTabPage_RadioName_Insert_UTF8;
 	public static String JavaFeatureTabPage_RadioName_Aggregate_to_UTF8;
-	public static String JavaFeatureTabPage_ComboName_TargetFormat;
 	public static String JavaFeatureTabPage_TargetFormat_Stream;
 	public static String JavaFeatureTabPage_TargetFormat_ForLoop;
 	public static String JavaFeatureTabPage_TargetFormat_WhileLoop;

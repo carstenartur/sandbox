@@ -18,7 +18,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
-import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -71,11 +70,9 @@ public class LoopTargetFormatTest {
 
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", given, false, null);
 		
-		// Enable cleanup with STREAM format (default)
+		// Enable cleanup with STREAM format (default radio button selected)
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
-		CleanUpOptions options = new CleanUpOptions();
-		options.setOption(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP, CleanUpOptions.TRUE);
-		options.setOption(MYCleanUpConstants.USEFUNCTIONALLOOP_TARGET_FORMAT, LoopTargetFormat.STREAM.getId());
+		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_STREAM);
 		
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 	}
@@ -108,11 +105,9 @@ public class LoopTargetFormatTest {
 
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", given, false, null);
 		
-		// Enable cleanup with FOR_LOOP format
+		// Enable cleanup with FOR_LOOP format (radio button selected)
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
-		CleanUpOptions options = new CleanUpOptions();
-		options.setOption(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP, CleanUpOptions.TRUE);
-		options.setOption(MYCleanUpConstants.USEFUNCTIONALLOOP_TARGET_FORMAT, LoopTargetFormat.FOR_LOOP.getId());
+		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_FOR);
 		
 		// Should not transform (returns null from createFix)
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
@@ -146,11 +141,9 @@ public class LoopTargetFormatTest {
 
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", given, false, null);
 		
-		// Enable cleanup with WHILE_LOOP format
+		// Enable cleanup with WHILE_LOOP format (radio button selected)
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
-		CleanUpOptions options = new CleanUpOptions();
-		options.setOption(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP, CleanUpOptions.TRUE);
-		options.setOption(MYCleanUpConstants.USEFUNCTIONALLOOP_TARGET_FORMAT, LoopTargetFormat.WHILE_LOOP.getId());
+		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_WHILE);
 		
 		// Should not transform (returns null from createFix)
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);

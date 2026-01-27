@@ -13,10 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.Statement;
-import org.eclipse.jdt.core.dom.Expression;
-import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 
 /**
