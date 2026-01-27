@@ -40,6 +40,7 @@ public class LoopTargetFormatTest {
 
 	/**
 	 * Tests that STREAM format (default) converts enhanced for-loops to streams.
+	 * When neither FOR nor WHILE format is explicitly enabled, STREAM is used.
 	 */
 	@Test
 	@DisplayName("Target format STREAM: for → stream (default behavior)")
@@ -70,9 +71,8 @@ public class LoopTargetFormatTest {
 
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", given, false, null);
 		
-		// Enable cleanup with STREAM format (default radio button selected)
+		// Enable cleanup - STREAM format is default (no need to explicitly enable)
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
-		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_STREAM);
 		
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 	}
