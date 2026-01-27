@@ -55,6 +55,7 @@ public class MigrationRulesToExtensionsTest {
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETESTNAME);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETIMEOUT);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEERRORCOLLECTOR);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { testCase.expected }, null);
 	}
 
@@ -197,6 +198,79 @@ public class MigrationRulesToExtensionsTest {
 					@Test
 					public void testSomething() {
 						// Test code
+					}
+				}
+				"""
+		}, null);
+	}
+
+	@Test
+	public void migrates_errorCollector_multiple_test_methods() throws CoreException {
+		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
+				"""
+				package test;
+				import org.junit.Rule;
+				import org.junit.Test;
+				import org.junit.rules.ErrorCollector;
+				import static org.hamcrest.CoreMatchers.equalTo;
+				
+				public class MyTest {
+					@Rule
+					public ErrorCollector collector = new ErrorCollector();
+					
+					@Test
+					public void test1() {
+						collector.checkThat("a", equalTo("a"));
+						collector.checkThat("b", equalTo("b"));
+					}
+					
+					@Test
+					public void test2() {
+						collector.checkThat("x", equalTo("x"));
+					}
+					
+					@Test
+					public void test3() {
+						// This test doesn't use collector
+						System.out.println("No errors");
+					}
+				}
+				""", false, null);
+
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEERRORCOLLECTOR);
+
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+				"""
+				package test;
+				import static org.hamcrest.CoreMatchers.equalTo;
+				import static org.hamcrest.MatcherAssert.assertThat;
+				import static org.junit.jupiter.api.Assertions.assertAll;
+				
+				import org.junit.jupiter.api.Test;
+				
+				public class MyTest {
+					@Test
+					public void test1() {
+						assertAll(
+							() -> assertThat("a", equalTo("a")),
+							() -> assertThat("b", equalTo("b"))
+						);
+					}
+					
+					@Test
+					public void test2() {
+						assertAll(
+							() -> assertThat("x", equalTo("x"))
+						);
+					}
+					
+					@Test
+					public void test3() {
+						// This test doesn't use collector
+						System.out.println("No errors");
 					}
 				}
 				"""
@@ -537,6 +611,114 @@ public class MigrationRulesToExtensionsTest {
 				@Test
 				public void longRunningTest() {
 					// test code
+				}
+			}
+			"""),
+	ErrorCollectorBasic(
+			"""
+			package test;
+			import org.junit.Rule;
+			import org.junit.Test;
+			import org.junit.rules.ErrorCollector;
+			import static org.hamcrest.CoreMatchers.equalTo;
+			
+			public class MyTest {
+				@Rule
+				public ErrorCollector collector = new ErrorCollector();
+				
+				@Test
+				public void testMultipleErrors() {
+					collector.checkThat("value1", equalTo("expected1"));
+					collector.checkThat("value2", equalTo("expected2"));
+				}
+			}
+			""",
+			"""
+			package test;
+			import static org.hamcrest.CoreMatchers.equalTo;
+			import static org.hamcrest.MatcherAssert.assertThat;
+			import static org.junit.jupiter.api.Assertions.assertAll;
+			
+			import org.junit.jupiter.api.Test;
+			
+			public class MyTest {
+				@Test
+				public void testMultipleErrors() {
+					assertAll(
+						() -> assertThat("value1", equalTo("expected1")),
+						() -> assertThat("value2", equalTo("expected2"))
+					);
+				}
+			}
+			"""),
+	ErrorCollectorWithAddError(
+			"""
+			package test;
+			import org.junit.Rule;
+			import org.junit.Test;
+			import org.junit.rules.ErrorCollector;
+			
+			public class MyTest {
+				@Rule
+				public ErrorCollector collector = new ErrorCollector();
+				
+				@Test
+				public void testWithAddError() {
+					collector.addError(new Throwable("error message"));
+				}
+			}
+			""",
+			"""
+			package test;
+			import static org.junit.jupiter.api.Assertions.assertAll;
+			
+			import org.junit.jupiter.api.Test;
+			
+			public class MyTest {
+				@Test
+				public void testWithAddError() {
+					assertAll(
+						() -> { throw new Throwable("error message"); }
+					);
+				}
+			}
+			"""),
+	ErrorCollectorMixed(
+			"""
+			package test;
+			import org.junit.Rule;
+			import org.junit.Test;
+			import org.junit.rules.ErrorCollector;
+			import static org.hamcrest.CoreMatchers.equalTo;
+			
+			public class MyTest {
+				@Rule
+				public ErrorCollector collector = new ErrorCollector();
+				
+				@Test
+				public void testMixed() {
+					collector.checkThat("value1", equalTo("expected1"));
+					collector.addError(new AssertionError("Failed check"));
+					collector.checkThat("value2", equalTo("expected2"));
+				}
+			}
+			""",
+			"""
+			package test;
+			import static org.hamcrest.CoreMatchers.equalTo;
+			import static org.hamcrest.MatcherAssert.assertThat;
+			import static org.junit.jupiter.api.Assertions.assertAll;
+			
+			import org.junit.jupiter.api.Test;
+			
+			public class MyTest {
+				@Test
+				public void testMixed() {
+					assertAll(
+						() -> assertThat("value1", equalTo("expected1")),
+						() -> { throw new AssertionError("Failed check"); },
+						() -> assertThat("value2", equalTo("expected2"))
+					);
 				}
 			}
 			""");
