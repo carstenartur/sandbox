@@ -47,7 +47,20 @@ import org.sandbox.jdt.internal.ui.fix.UseFunctionalCallCleanUp;
 <span class="nc" id="L47">		Group java1d8Group= createGroup(numColumns, composite, CleanUpMessages.JavaFeatureTabPage_GroupName_Java1d8);</span>
 <span class="nc" id="L48">		final CheckboxPreference functional_call= createCheckboxPref(java1d8Group, numColumns, CleanUpMessages.JavaFeatureTabPage_CheckboxName_FunctionalCall, MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP, FALSE_TRUE);</span>
 <span class="nc" id="L49">		intent(java1d8Group);</span>
-<span class="nc" id="L50">		registerPreference(functional_call);</span>
-<span class="nc" id="L51">	}</span>
+		
+		// Add radio buttons for target format selection
+<span class="nc" id="L52">		final RadioPreference streamFormat = createRadioPref(java1d8Group, 1, </span>
+<span class="nc" id="L53">			CleanUpMessages.JavaFeatureTabPage_TargetFormat_Stream, </span>
+<span class="nc" id="L54">			MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_STREAM, FALSE_TRUE);</span>
+<span class="nc" id="L55">		final RadioPreference forLoopFormat = createRadioPref(java1d8Group, 1, </span>
+<span class="nc" id="L56">			CleanUpMessages.JavaFeatureTabPage_TargetFormat_ForLoop, </span>
+<span class="nc" id="L57">			MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_FOR, FALSE_TRUE);</span>
+<span class="nc" id="L58">		final RadioPreference whileLoopFormat = createRadioPref(java1d8Group, 1, </span>
+<span class="nc" id="L59">			CleanUpMessages.JavaFeatureTabPage_TargetFormat_WhileLoop, </span>
+<span class="nc" id="L60">			MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_WHILE, FALSE_TRUE);</span>
+<span class="nc" id="L61">		registerSlavePreference(functional_call, new RadioPreference[] { streamFormat, forLoopFormat, whileLoopFormat });</span>
+		
+<span class="nc" id="L63">		registerPreference(functional_call);</span>
+<span class="nc" id="L64">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

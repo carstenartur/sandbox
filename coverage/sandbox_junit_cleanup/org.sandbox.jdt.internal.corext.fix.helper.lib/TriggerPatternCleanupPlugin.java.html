@@ -69,10 +69,10 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
      */
     public Pattern getPattern() {
 <span class="fc" id="L71">        CleanupPattern annotation = this.getClass().getAnnotation(CleanupPattern.class);</span>
-<span class="pc bpc" id="L72" title="1 of 2 branches missed.">        if (annotation == null) {</span>
-<span class="nc" id="L73">            return null; // Subclass uses getPatterns() instead</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">        if (annotation == null) {</span>
+<span class="fc" id="L73">            return null; // Subclass uses getPatterns() instead</span>
         }
-<span class="pc bpc" id="L75" title="1 of 2 branches missed.">        String qualifiedType = annotation.qualifiedType().isEmpty() ? null : annotation.qualifiedType();</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">        String qualifiedType = annotation.qualifiedType().isEmpty() ? null : annotation.qualifiedType();</span>
 <span class="fc" id="L76">        return new Pattern(annotation.value(), annotation.kind(), qualifiedType);</span>
     }
     

@@ -23,6 +23,9 @@ import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 	public void setDefaultOptions(CleanUpOptions options) {
 <span class="fc" id="L24">		options.setOption(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP, CleanUpOptions.FALSE);</span>
 <span class="fc" id="L25">		options.setOption(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP_V2, CleanUpOptions.FALSE);</span>
-<span class="fc" id="L26">	}</span>
+<span class="fc" id="L26">		options.setOption(MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_STREAM, CleanUpOptions.TRUE); // default to Stream</span>
+<span class="fc" id="L27">		options.setOption(MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_FOR, CleanUpOptions.FALSE);</span>
+<span class="fc" id="L28">		options.setOption(MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_WHILE, CleanUpOptions.FALSE);</span>
+<span class="fc" id="L29">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
