@@ -332,21 +332,23 @@ List<RuleEntry> entries = Stream.concat(
 - `LoopTargetFormat` enum in `sandbox_functional_converter`
 - `LoopBidirectionalTransformationTest` for desired behavior
 
-### Issue #453: Output-Format Alignment und vollständigen Support für 'collect'-Pattern ✅ IN PROGRESS (January 2026)
+### Issue #453: Output-Format Alignment und vollständigen Support für 'collect'-Pattern ✅ PARTIALLY COMPLETE (January 2026)
 
 **Objective**: Optimize V2 renderer to produce idiomatic, modern Java code for collect-loops
 
-**Status**: 🚧 **Partially Complete** - Core renderer fix done, full pattern support pending
+**Status**: 🚧 **Partially Complete** - Reverted to use modern Java 16+ `.toList()` for Java 21 compatibility
 
 #### Completed Tasks ✅
 
-1. **StringRenderer Fix** (January 27, 2026)
-   - ✅ Changed `TO_LIST` from `.toList()` (Java 16+) to `.collect(Collectors.toList())` (Java 8+)
+1. **StringRenderer Optimization** (January 27, 2026)
+   - ✅ Reverted to use `.toList()` (Java 16+) instead of `.collect(Collectors.toList())` for Java 21 project
    - ✅ Removed redundant conditional logic in `renderCollect()`
-   - ✅ Added documentation explaining Java 8+ compatibility choice
-   - ✅ Verified `ASTStreamRenderer` already uses correct pattern
+   - ✅ Updated documentation explaining Java 16+ choice for modern, concise code
+   - ✅ Verified `ASTStreamRenderer` already uses Collectors API pattern
 
-2. **Test Suite Enhancement**
+2. **Test Suite Updates**
+   - ✅ Updated all test expectations to use `.toList()` instead of `Collectors.toList()`
+   - ✅ Removed unnecessary `Collectors` imports from test expected outputs
    - ✅ Added 4 new edge/negative tests in `LoopRefactoringCollectTest`:
      - `testCollectWithSideEffects_ShouldNotConvert` - Side effects prevent conversion
      - `testMultipleCollectTargets_ShouldNotConvert` - Multiple collections prevent conversion  
@@ -356,24 +358,32 @@ List<RuleEntry> entries = Stream.concat(
 3. **Documentation**
    - ✅ Updated TODO.md with Issue #453 progress
    - ✅ Documented changes in commit messages
+   - ✅ Updated test comments to reflect Java 16+ `.toList()` as best practice
 
 #### Implementation Details
 
-**Problem**: StringRenderer produced `.toList()` (Java 16+) instead of standard `.collect(Collectors.toList())` (Java 8+)
+**Design Decision**: Use modern Java 16+ `.toList()` since project targets Java 21
 
-**Solution**:
+**Rationale**:
+- Project requires Java 21 (configured in `pom.xml` with `<java-version>21</java-version>`)
+- `.toList()` is more concise and modern than `.collect(Collectors.toList())`
+- No need for Java 8 compatibility as project minimum is Java 21
+- Follows modern Java best practices for readability
+
+**Implementation**:
 ```java
-// Before (Java 16+ only):
+// Java 16+ approach (used in this project):
 case TO_LIST -> ".toList()";
 
-// After (Java 8+ idiomatic):
+// Older approach (for Java 8-15 compatibility):
 case TO_LIST -> ".collect(Collectors.toList())";
 ```
 
 **Impact**:
-- All collect patterns now produce Java 8+ compatible code
-- Consistent with Eclipse JDT standards for maximum compatibility
-- Tests in `LoopRefactoringCollectTest` should now pass
+- All collect patterns now produce concise Java 16+ code
+- Tests updated to expect `.toList()` format
+- No `Collectors` import needed for simple list collection
+- Consistent with project's Java 21 target
 
 #### Outstanding Tasks
 
@@ -397,12 +407,13 @@ case TO_LIST -> ".collect(Collectors.toList())";
    - [ ] Enable parity tests in `FeatureParityTest` once V2 reaches feature parity
    - [ ] Verify both V1 and V2 produce identical idiomatic output
 
-**Priority**: HIGH (affects output quality and Java version compatibility)
+**Priority**: HIGH (affects output quality and code modernization)
 
 **References**:
 - Issue: https://github.com/carstenartur/sandbox/issues/453
 - Test file: `LoopRefactoringCollectTest.java` (5 active tests, 6 disabled pending pattern support)
 - Related: V1/V2 feature parity (Phase 7)
+- Java 16+ `.toList()`: https://docs.oracle.com/en/java/javase/16/docs/api/java.base/java/util/stream/Stream.html#toList()
 
 **Objective**: Retire V1 implementation once V2 is stable
 

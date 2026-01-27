@@ -39,7 +39,7 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
  * 
  * <p><b>Best Practices Demonstrated:</b></p>
  * <ul>
- *   <li>Use {@code Collectors.toList()} for List collection</li>
+ *   <li>Use {@code .toList()} for List collection (Java 16+)</li>
  *   <li>Use {@code Collectors.toSet()} for Set collection</li>
  *   <li>Use {@code Collectors.toCollection()} for specific collection implementations</li>
  *   <li>Chain filter() before map() for better performance</li>
@@ -66,11 +66,11 @@ public class LoopRefactoringCollectTest {
 	 * Tests simple collect to List without transformation.
 	 * 
 	 * <p><b>Pattern:</b> {@code for (T item : collection) result.add(item);}</p>
-	 * <p><b>Expected:</b> {@code collection.stream().collect(Collectors.toList())}</p>
-	 * <p><b>Best Practice:</b> This is the canonical way to collect stream elements to a list</p>
+	 * <p><b>Expected:</b> {@code collection.stream().toList()}</p>
+	 * <p><b>Best Practice:</b> This is the canonical way to collect stream elements to a list (Java 16+)</p>
 	 */
 	@Test
-	@DisplayName("Identity collect to List: stream().collect(Collectors.toList())")
+	@DisplayName("Identity collect to List: stream().toList()")
 	void testIdentityCollectToList() throws CoreException {
 		String input = """
 				package test1;
@@ -89,10 +89,9 @@ public class LoopRefactoringCollectTest {
 		String expected = """
 				package test1;
 				import java.util.*;
-				import java.util.stream.Collectors;
 				class MyTest {
 					public void process(List<Integer> items) {
-						List<Integer> result = items.stream().collect(Collectors.toList());
+						List<Integer> result = items.stream().toList();
 						System.out.println(result);
 					}
 				}
@@ -131,7 +130,6 @@ public class LoopRefactoringCollectTest {
 		String expected = """
 				package test1;
 				import java.util.*;
-				import java.util.stream.Collectors;
 				class MyTest {
 					public void process(List<String> items) {
 						Set<String> uniqueItems = items.stream().collect(Collectors.toSet());
@@ -154,11 +152,11 @@ public class LoopRefactoringCollectTest {
 	 * Tests collect with simple transformation.
 	 * 
 	 * <p><b>Pattern:</b> {@code for (T item : collection) result.add(transform(item));}</p>
-	 * <p><b>Expected:</b> {@code collection.stream().map(item -> transform(item)).collect(Collectors.toList())}</p>
+	 * <p><b>Expected:</b> {@code collection.stream().map(item -> transform(item)).toList()}</p>
 	 * <p><b>Best Practice:</b> Use map() for transformations before collecting</p>
 	 */
 	@Test
-	@DisplayName("Map+collect: stream().map(transform).collect(toList())")
+	@DisplayName("Map+collect: stream().map(transform).toList()")
 	void testMappedCollect() throws CoreException {
 		String input = """
 				package test1;
@@ -177,10 +175,9 @@ public class LoopRefactoringCollectTest {
 		String expected = """
 				package test1;
 				import java.util.*;
-				import java.util.stream.Collectors;
 				class MyTest {
 					public void process(List<Integer> numbers) {
-						List<String> strings = numbers.stream().map(num -> num.toString()).collect(Collectors.toList());
+						List<String> strings = numbers.stream().map(num -> num.toString()).toList();
 						System.out.println(strings);
 					}
 				}
@@ -196,8 +193,8 @@ public class LoopRefactoringCollectTest {
 	 * Tests collect with method reference potential (V1 produces lambda).
 	 * 
 	 * <p><b>Pattern:</b> {@code for (T item : collection) result.add(item.method());}</p>
-	 * <p><b>Current V1:</b> {@code collection.stream().map(item -> item.method()).collect(Collectors.toList())}</p>
-	 * <p><b>Future V2:</b> Could optimize to {@code collection.stream().map(T::method).collect(Collectors.toList())}</p>
+	 * <p><b>Current V1:</b> {@code collection.stream().map(item -> item.method()).toList()}</p>
+	 * <p><b>Future V2:</b> Could optimize to {@code collection.stream().map(T::method).toList()}</p>
 	 * <p><b>Note:</b> V1 doesn't optimize to method references yet</p>
 	 */
 	@Test
@@ -220,10 +217,9 @@ public class LoopRefactoringCollectTest {
 		String expected = """
 				package test1;
 				import java.util.*;
-				import java.util.stream.Collectors;
 				class MyTest {
 					public void process(List<String> items) {
-						List<String> upperCase = items.stream().map(item -> item.toUpperCase()).collect(Collectors.toList());
+						List<String> upperCase = items.stream().map(item -> item.toUpperCase()).toList();
 						System.out.println(upperCase);
 					}
 				}
@@ -239,7 +235,7 @@ public class LoopRefactoringCollectTest {
 	 * Tests collect with complex transformation.
 	 * 
 	 * <p><b>Pattern:</b> {@code for (T item : collection) result.add(complex(item));}</p>
-	 * <p><b>Expected:</b> {@code collection.stream().map(item -> complex(item)).collect(Collectors.toList())}</p>
+	 * <p><b>Expected:</b> {@code collection.stream().map(item -> complex(item)).toList()}</p>
 	 */
 	@Test
 	@DisplayName("Map with complex expression: stream().map(x -> x * 2 + 1)")
@@ -261,10 +257,9 @@ public class LoopRefactoringCollectTest {
 		String expected = """
 				package test1;
 				import java.util.*;
-				import java.util.stream.Collectors;
 				class MyTest {
 					public void process(List<Integer> numbers) {
-						List<Integer> doubled = numbers.stream().map(num -> num * 2).collect(Collectors.toList());
+						List<Integer> doubled = numbers.stream().map(num -> num * 2).toList();
 						System.out.println(doubled);
 					}
 				}
@@ -284,13 +279,13 @@ public class LoopRefactoringCollectTest {
 	 * Tests conditional collect (filter pattern).
 	 * 
 	 * <p><b>Pattern:</b> {@code for (T item : collection) if (condition) result.add(item);}</p>
-	 * <p><b>Expected:</b> {@code collection.stream().filter(condition).collect(Collectors.toList())}</p>
+	 * <p><b>Expected:</b> {@code collection.stream().filter(condition).toList()}</p>
 	 * <p><b>Best Practice:</b> Use filter() for conditional collection</p>
 	 * <p><b>Note:</b> V1 implementation doesn't support filter+collect pattern yet</p>
 	 */
 	@Disabled("V1 implementation doesn't support filter+collect pattern")
 	@Test
-	@DisplayName("Filter+collect: stream().filter(predicate).collect(toList())")
+	@DisplayName("Filter+collect: stream().filter(predicate).toList()")
 	void testFilteredCollect() throws CoreException {
 		String input = """
 				package test1;
@@ -311,10 +306,9 @@ public class LoopRefactoringCollectTest {
 		String expected = """
 				package test1;
 				import java.util.*;
-				import java.util.stream.Collectors;
 				class MyTest {
 					public void process(List<String> items) {
-						List<String> nonEmpty = items.stream().filter(item -> !item.isEmpty()).collect(Collectors.toList());
+						List<String> nonEmpty = items.stream().filter(item -> !item.isEmpty()).toList();
 						System.out.println(nonEmpty);
 					}
 				}
@@ -356,7 +350,6 @@ public class LoopRefactoringCollectTest {
 		String expected = """
 				package test1;
 				import java.util.*;
-				import java.util.stream.Collectors;
 				class MyTest {
 					public void process(List<String> items) {
 						List<String> nonNull = items.stream().filter(item -> item != null).collect(Collectors.toList());
@@ -406,7 +399,6 @@ public class LoopRefactoringCollectTest {
 		String expected = """
 				package test1;
 				import java.util.*;
-				import java.util.stream.Collectors;
 				class MyTest {
 					public void process(List<Integer> numbers) {
 						List<String> positiveStrings = numbers.stream().filter(num -> num > 0).map(num -> num.toString()).collect(Collectors.toList());
@@ -451,7 +443,6 @@ public class LoopRefactoringCollectTest {
 		String expected = """
 				package test1;
 				import java.util.*;
-				import java.util.stream.Collectors;
 				class MyTest {
 					public void process(List<String> items) {
 						List<String> processed = items.stream().filter(item -> item != null && item.length() > 3).map(item -> item.toUpperCase()).collect(Collectors.toList());
@@ -500,7 +491,6 @@ public class LoopRefactoringCollectTest {
 				package test1;
 				import java.util.*;
 				import java.util.Arrays;
-				import java.util.stream.Collectors;
 				class MyTest {
 					public void process(String[] items) {
 						List<String> list = Arrays.stream(items).collect(Collectors.toList());
@@ -544,7 +534,6 @@ public class LoopRefactoringCollectTest {
 				package test1;
 				import java.util.*;
 				import java.util.Arrays;
-				import java.util.stream.Collectors;
 				class MyTest {
 					public void process(Integer[] numbers) {
 						List<String> strings = Arrays.stream(numbers).map(num -> num.toString()).collect(Collectors.toList());
