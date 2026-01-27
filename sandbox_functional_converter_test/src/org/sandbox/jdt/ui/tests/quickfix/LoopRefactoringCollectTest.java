@@ -324,7 +324,7 @@ public class LoopRefactoringCollectTest {
 	 * Tests null-filtering collect pattern.
 	 * 
 	 * <p><b>Pattern:</b> {@code for (T item : collection) if (item != null) result.add(item);}</p>
-	 * <p><b>Expected:</b> {@code collection.stream().filter(item -> item != null).collect(Collectors.toList())}</p>
+	 * <p><b>Expected:</b> {@code collection.stream().filter(item -> item != null).toList()}</p>
 	 * <p><b>Note:</b> V1 implementation doesn't support filter+collect pattern yet</p>
 	 */
 	@Disabled("V1 implementation doesn't support filter+collect pattern")
@@ -352,7 +352,7 @@ public class LoopRefactoringCollectTest {
 				import java.util.*;
 				class MyTest {
 					public void process(List<String> items) {
-						List<String> nonNull = items.stream().filter(item -> item != null).collect(Collectors.toList());
+						List<String> nonNull = items.stream().filter(item -> item != null).toList();
 						System.out.println(nonNull);
 					}
 				}
@@ -372,7 +372,7 @@ public class LoopRefactoringCollectTest {
 	 * Tests filter followed by map and collect.
 	 * 
 	 * <p><b>Pattern:</b> {@code for (T item : c) if (cond) result.add(transform(item));}</p>
-	 * <p><b>Expected:</b> {@code c.stream().filter(cond).map(transform).collect(Collectors.toList())}</p>
+	 * <p><b>Expected:</b> {@code c.stream().filter(cond).map(transform).toList()}</p>
 	 * <p><b>Best Practice:</b> Filter before map to reduce number of transformations</p>
 	 * <p><b>Note:</b> V1 implementation doesn't support filter+collect pattern yet</p>
 	 */
@@ -401,7 +401,7 @@ public class LoopRefactoringCollectTest {
 				import java.util.*;
 				class MyTest {
 					public void process(List<Integer> numbers) {
-						List<String> positiveStrings = numbers.stream().filter(num -> num > 0).map(num -> num.toString()).collect(Collectors.toList());
+						List<String> positiveStrings = numbers.stream().filter(num -> num > 0).map(num -> num.toString()).toList();
 						System.out.println(positiveStrings);
 					}
 				}
@@ -417,7 +417,7 @@ public class LoopRefactoringCollectTest {
 	 * Tests complex filter+map chain with multiple conditions.
 	 * 
 	 * <p><b>Pattern:</b> Complex filtering and transformation</p>
-	 * <p><b>Expected:</b> Chain of filter().map().collect() operations</p>
+	 * <p><b>Expected:</b> Chain of filter().map().toList() operations</p>
 	 * <p><b>Note:</b> V1 implementation doesn't support filter+collect pattern yet</p>
 	 */
 	@Disabled("V1 implementation doesn't support filter+collect pattern")
@@ -445,7 +445,7 @@ public class LoopRefactoringCollectTest {
 				import java.util.*;
 				class MyTest {
 					public void process(List<String> items) {
-						List<String> processed = items.stream().filter(item -> item != null && item.length() > 3).map(item -> item.toUpperCase()).collect(Collectors.toList());
+						List<String> processed = items.stream().filter(item -> item != null && item.length() > 3).map(item -> item.toUpperCase()).toList();
 						System.out.println(processed);
 					}
 				}
@@ -465,13 +465,13 @@ public class LoopRefactoringCollectTest {
 	 * Tests collect from array source.
 	 * 
 	 * <p><b>Pattern:</b> {@code for (T item : array) result.add(item);}</p>
-	 * <p><b>Expected:</b> {@code Arrays.stream(array).collect(Collectors.toList())}</p>
+	 * <p><b>Expected:</b> {@code Arrays.stream(array).toList()}</p>
 	 * <p><b>Best Practice:</b> Use Arrays.stream() for array sources</p>
 	 * <p><b>Note:</b> V1 requires Arrays import in input, doesn't add it automatically</p>
 	 */
 	@Disabled("V1 doesn't handle Arrays import with java.util.* - needs specific import setup")
 	@Test
-	@DisplayName("Array source collect: Arrays.stream(array).collect(toList())")
+	@DisplayName("Array source collect: Arrays.stream(array).toList()")
 	void testArraySourceCollect() throws CoreException {
 		String input = """
 				package test1;
@@ -493,7 +493,7 @@ public class LoopRefactoringCollectTest {
 				import java.util.Arrays;
 				class MyTest {
 					public void process(String[] items) {
-						List<String> list = Arrays.stream(items).collect(Collectors.toList());
+						List<String> list = Arrays.stream(items).toList();
 						System.out.println(list);
 					}
 				}
@@ -509,12 +509,12 @@ public class LoopRefactoringCollectTest {
 	 * Tests map+collect from array source.
 	 * 
 	 * <p><b>Pattern:</b> {@code for (T item : array) result.add(transform(item));}</p>
-	 * <p><b>Expected:</b> {@code Arrays.stream(array).map(transform).collect(Collectors.toList())}</p>
+	 * <p><b>Expected:</b> {@code Arrays.stream(array).map(transform).toList()}</p>
 	 * <p><b>Note:</b> V1 requires Arrays import in input, doesn't add it automatically</p>
 	 */
 	@Disabled("V1 doesn't handle Arrays import with java.util.* - needs specific import setup")
 	@Test
-	@DisplayName("Array map+collect: Arrays.stream(arr).map(f).collect(toList())")
+	@DisplayName("Array map+collect: Arrays.stream(arr).map(f).toList()")
 	void testArraySourceMapCollect() throws CoreException {
 		String input = """
 				package test1;
@@ -536,7 +536,7 @@ public class LoopRefactoringCollectTest {
 				import java.util.Arrays;
 				class MyTest {
 					public void process(Integer[] numbers) {
-						List<String> strings = Arrays.stream(numbers).map(num -> num.toString()).collect(Collectors.toList());
+						List<String> strings = Arrays.stream(numbers).map(num -> num.toString()).toList();
 						System.out.println(strings);
 					}
 				}
