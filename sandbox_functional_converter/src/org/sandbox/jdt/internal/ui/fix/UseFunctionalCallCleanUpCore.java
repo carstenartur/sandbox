@@ -14,6 +14,8 @@
 package org.sandbox.jdt.internal.ui.fix;
 
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_FOR;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_WHILE;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.FunctionalCallCleanUpFix_refactor;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.FunctionalCallCleanUp_description;
 
@@ -66,6 +68,16 @@ public class UseFunctionalCallCleanUpCore extends AbstractCleanUp {
 				) {
 			return null;
 		}
+		
+		// Check target format preference (STREAM, FOR_LOOP, WHILE_LOOP)
+		// Note: Currently only STREAM is fully implemented. FOR_LOOP and WHILE_LOOP
+		// support will be added in future phases.
+		// For backward compatibility, proceed with STREAM format unless FOR or WHILE is explicitly enabled
+		if (isEnabled(USEFUNCTIONALLOOP_FORMAT_FOR) || isEnabled(USEFUNCTIONALLOOP_FORMAT_WHILE)) {
+			// Not yet implemented - return null to skip transformation
+			return null;
+		}
+		
 		Set<CompilationUnitRewriteOperation> operations = new LinkedHashSet<>();
 		Set<ASTNode> nodesprocessed = new HashSet<>();
 		computeFixSet.forEach(i -> i.findOperations(compilationUnit, operations, nodesprocessed));
