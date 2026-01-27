@@ -558,4 +558,143 @@ public class LoopRefactoringCollectTest {
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 	}
+
+	// ===========================================
+	// NEGATIVE/EDGE CASES - DO NOT CONVERT
+	// ===========================================
+
+	/**
+	 * Tests that collect with side effects is NOT converted.
+	 * 
+	 * <p><b>Pattern:</b> Loop that has side effects in addition to collecting</p>
+	 * <p><b>Semantic Issue:</b> Side effects before/after add() cannot be safely converted</p>
+	 * <p><b>Expected:</b> No conversion - input equals output</p>
+	 * <p><b>Reason:</b> Stream operations would change execution order of side effects</p>
+	 */
+	@Test
+	@DisplayName("Side effects prevent collect conversion")
+	void testCollectWithSideEffects_ShouldNotConvert() throws CoreException {
+		String input = """
+				package test1;
+				import java.util.*;
+				class MyTest {
+					private int counter = 0;
+					public void process(List<Integer> items) {
+						List<Integer> result = new ArrayList<>();
+						for (Integer item : items) {
+							counter++;  // Side effect
+							result.add(item);
+						}
+						System.out.println(result);
+					}
+				}
+				""";
+
+		// Should NOT convert - input = expected
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
+		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { input }, null);
+	}
+
+	/**
+	 * Tests that collect with multiple operations to different collections is NOT converted.
+	 * 
+	 * <p><b>Pattern:</b> Loop that adds to multiple collections</p>
+	 * <p><b>Semantic Issue:</b> Cannot collect to multiple targets in a single stream</p>
+	 * <p><b>Expected:</b> No conversion - input equals output</p>
+	 */
+	@Test
+	@DisplayName("Multiple collect targets prevent conversion")
+	void testMultipleCollectTargets_ShouldNotConvert() throws CoreException {
+		String input = """
+				package test1;
+				import java.util.*;
+				class MyTest {
+					public void process(List<Integer> items) {
+						List<Integer> positives = new ArrayList<>();
+						List<Integer> negatives = new ArrayList<>();
+						for (Integer item : items) {
+							if (item > 0) {
+								positives.add(item);
+							} else {
+								negatives.add(item);
+							}
+						}
+						System.out.println(positives);
+						System.out.println(negatives);
+					}
+				}
+				""";
+
+		// Should NOT convert - input = expected
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
+		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { input }, null);
+	}
+
+	/**
+	 * Tests that collect with early loop exit (break) is NOT converted.
+	 * 
+	 * <p><b>Pattern:</b> Loop that breaks based on condition after collecting</p>
+	 * <p><b>Semantic Issue:</b> Break cannot be represented in stream collect</p>
+	 * <p><b>Expected:</b> No conversion - input equals output</p>
+	 * <p><b>Note:</b> While takeWhile() exists, it doesn't handle break-after-collect semantics</p>
+	 */
+	@Test
+	@DisplayName("Break statement prevents collect conversion")
+	void testCollectWithBreak_ShouldNotConvert() throws CoreException {
+		String input = """
+				package test1;
+				import java.util.*;
+				class MyTest {
+					public void process(List<Integer> items) {
+						List<Integer> result = new ArrayList<>();
+						for (Integer item : items) {
+							result.add(item);
+							if (item > 10) break;
+						}
+						System.out.println(result);
+					}
+				}
+				""";
+
+		// Should NOT convert - input = expected
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
+		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { input }, null);
+	}
+
+	/**
+	 * Tests that collect where collection is read during iteration is NOT converted.
+	 * 
+	 * <p><b>Pattern:</b> Loop that reads from the target collection while adding</p>
+	 * <p><b>Semantic Issue:</b> Reading intermediate collection state cannot be done in collect</p>
+	 * <p><b>Expected:</b> No conversion - input equals output</p>
+	 */
+	@Test
+	@DisplayName("Reading collection during iteration prevents conversion")
+	void testCollectWithIntermediateRead_ShouldNotConvert() throws CoreException {
+		String input = """
+				package test1;
+				import java.util.*;
+				class MyTest {
+					public void process(List<Integer> items) {
+						List<Integer> result = new ArrayList<>();
+						for (Integer item : items) {
+							result.add(item);
+							System.out.println("Current size: " + result.size());  // Read during iteration
+						}
+					}
+				}
+				""";
+
+		// Should NOT convert - input = expected
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
+		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { input }, null);
+	}
 }
