@@ -188,7 +188,9 @@ public class MYCleanUpConstants {
 	 * 
 	 */
 	public static final String JUNIT_CLEANUP_4_RULETIMEOUT= "cleanup.junitcleanup_4_ruletimeout"; //$NON-NLS-1$
-	
+	/**
+	 * Migrate JUnit 4 @Rule ErrorCollector to JUnit 5 assertAll() pattern
+	 */
 	public static final String JUNIT_CLEANUP_4_RULEERRORCOLLECTOR= "cleanup.junitcleanup_4_ruleerrorcollector"; //$NON-NLS-1$
 	/**
 	 * Find and fix "lost" JUnit 3 tests that were not properly migrated
