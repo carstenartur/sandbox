@@ -15,26 +15,6 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
-/*-
- * #%L
- * Sandbox junit cleanup
- * %%
- * Copyright (C) 2024 hammer
- * %%
- * This program and the accompanying materials are made available under the
- * terms of the Eclipse Public License 2.0 which is available at
- * http://www.eclipse.org/legal/epl-2.0.
- * 
- * This Source Code may also be made available under the following Secondary
- * Licenses when the conditions for such availability set forth in the Eclipse
- * Public License, v. 2.0 are satisfied: GNU General Public License, version 2
- * with the GNU Classpath Exception which is
- * available at https://www.gnu.org/software/classpath/license.html.
- * 
- * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
- * #L%
- */
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -185,34 +165,39 @@ public class RuleErrorCollectorJUnitPlugin extends AbstractTool<ReferenceHolder<
 	private List<ErrorCollectorCall> findErrorCollectorCalls(List<Statement> statements, String fieldName) {
 		List<ErrorCollectorCall> calls = new ArrayList<>();
 		
+		// Use ASTVisitor to find all ErrorCollector calls, including nested ones
 		for (Statement stmt : statements) {
-			if (!(stmt instanceof ExpressionStatement)) {
-				continue;
-			}
-
-			Expression expr = ((ExpressionStatement) stmt).getExpression();
-			if (!(expr instanceof MethodInvocation)) {
-				continue;
-			}
-
-			MethodInvocation invocation = (MethodInvocation) expr;
-			Expression expression = invocation.getExpression();
-			if (expression == null || !(expression instanceof SimpleName)) {
-				continue;
-			}
-
-			SimpleName receiver = (SimpleName) expression;
-			if (!fieldName.equals(receiver.getIdentifier())) {
-				continue;
-			}
-
-			String methodName = invocation.getName().getIdentifier();
-			if ("checkThat".equals(methodName) || "addError".equals(methodName) || "checkSucceeds".equals(methodName)) {
-				calls.add(new ErrorCollectorCall(stmt, invocation, methodName));
-			}
+			stmt.accept(new ASTVisitor() {
+				@Override
+				public boolean visit(MethodInvocation invocation) {
+					Expression expression = invocation.getExpression();
+					if (expression instanceof SimpleName) {
+						SimpleName receiver = (SimpleName) expression;
+						if (fieldName.equals(receiver.getIdentifier())) {
+							String methodName = invocation.getName().getIdentifier();
+							if ("checkThat".equals(methodName) || "addError".equals(methodName) || "checkSucceeds".equals(methodName)) {
+								// Find the parent statement that contains this invocation
+								Statement parentStmt = findParentStatement(invocation);
+								if (parentStmt != null) {
+									calls.add(new ErrorCollectorCall(parentStmt, invocation, methodName));
+								}
+							}
+						}
+					}
+					return super.visit(invocation);
+				}
+			});
 		}
 
 		return calls;
+	}
+
+	private Statement findParentStatement(ASTNode node) {
+		ASTNode current = node;
+		while (current != null && !(current instanceof Statement)) {
+			current = current.getParent();
+		}
+		return (Statement) current;
 	}
 
 	private LambdaExpression createLambdaForErrorCollectorCall(ErrorCollectorCall call, AST ast, ImportRewrite importRewriter) {
@@ -224,9 +209,7 @@ public class RuleErrorCollectorJUnitPlugin extends AbstractTool<ReferenceHolder<
 
 		if ("checkThat".equals(methodName)) {
 			// checkThat(actual, matcher) → () -> assertThat(actual, matcher)
-			// For now, we'll transform to assertEquals if it's a simple equality matcher
-			// Otherwise keep the Hamcrest matcher
-			Block lambdaBody = ast.newBlock();
+			// Use expression-body lambda for single-expression case
 			
 			// Create assertThat call with the same arguments
 			MethodInvocation assertThatCall = ast.newMethodInvocation();
@@ -237,15 +220,14 @@ public class RuleErrorCollectorJUnitPlugin extends AbstractTool<ReferenceHolder<
 				assertThatCall.arguments().add(ASTNode.copySubtree(ast, (ASTNode) arg));
 			}
 			
-			ExpressionStatement assertStatement = ast.newExpressionStatement(assertThatCall);
-			lambdaBody.statements().add(assertStatement);
-			
-			lambda.setBody(lambdaBody);
+			// Set expression body directly (no block)
+			lambda.setBody(assertThatCall);
 			
 			// Add Hamcrest imports for assertThat
 			importRewriter.addStaticImport("org.hamcrest.MatcherAssert", "assertThat", false);
 		} else if ("addError".equals(methodName)) {
 			// addError(throwable) → () -> { throw throwable; }
+			// This requires a block body since throw is a statement, not an expression
 			Block lambdaBody = ast.newBlock();
 			
 			ThrowStatement throwStmt = ast.newThrowStatement();
@@ -257,7 +239,7 @@ public class RuleErrorCollectorJUnitPlugin extends AbstractTool<ReferenceHolder<
 			lambda.setBody(lambdaBody);
 		} else if ("checkSucceeds".equals(methodName)) {
 			// checkSucceeds(callable) → () -> callable.call()
-			Block lambdaBody = ast.newBlock();
+			// Use expression-body lambda for single-expression case
 			
 			// Create callable.call() invocation
 			Expression callableArg = (Expression) invocation.arguments().get(0);
@@ -265,10 +247,8 @@ public class RuleErrorCollectorJUnitPlugin extends AbstractTool<ReferenceHolder<
 			callInvocation.setExpression((Expression) ASTNode.copySubtree(ast, callableArg));
 			callInvocation.setName(ast.newSimpleName("call"));
 			
-			ExpressionStatement callStatement = ast.newExpressionStatement(callInvocation);
-			lambdaBody.statements().add(callStatement);
-			
-			lambda.setBody(lambdaBody);
+			// Set expression body directly (no block)
+			lambda.setBody(callInvocation);
 		}
 
 		return lambda;
