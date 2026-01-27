@@ -288,7 +288,7 @@ import org.sandbox.jdt.internal.corext.util.NamingUtils;
 	 * @param operations the set of operations to add to
 	 * @param node the AST node that was found
 	 * @param dataHolder the reference holder for storing data
-	 * @return false to continue visiting
+	 * @return true to continue processing other nodes (fluent API semantics)
 	 */
 	protected boolean addStandardRewriteOperation(JUnitCleanUpFixCore fixcore,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, ASTNode node,
@@ -297,7 +297,7 @@ import org.sandbox.jdt.internal.corext.util.NamingUtils;
 <span class="fc" id="L297">		mh.minv = node;</span>
 <span class="fc" id="L298">		dataHolder.put(dataHolder.size(), mh);</span>
 <span class="fc" id="L299">		operations.add(fixcore.rewrite(dataHolder));</span>
-<span class="fc" id="L300">		return false;</span>
+<span class="fc" id="L300">		return true;</span>
 	}
 
 	/**

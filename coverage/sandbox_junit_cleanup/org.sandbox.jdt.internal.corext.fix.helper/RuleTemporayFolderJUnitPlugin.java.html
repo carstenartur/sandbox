@@ -68,205 +68,209 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
 <span class="fc" id="L70">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder= new ReferenceHolder&lt;&gt;();</span>
-<span class="fc" id="L71">		HelperVisitor.callFieldDeclarationVisitor(ORG_JUNIT_RULE, ORG_JUNIT_RULES_TEMPORARY_FOLDER, compilationUnit,</span>
-<span class="fc" id="L72">				dataHolder, nodesprocessed,</span>
-<span class="fc" id="L73">				(visited, aholder) -&gt; processFoundNode(fixcore, operations, visited, aholder));</span>
-<span class="fc" id="L74">	}</span>
+<span class="fc" id="L71">		HelperVisitor.forField()</span>
+<span class="fc" id="L72">			.withAnnotation(ORG_JUNIT_RULE)</span>
+<span class="fc" id="L73">			.ofType(ORG_JUNIT_RULES_TEMPORARY_FOLDER)</span>
+<span class="fc" id="L74">			.in(compilationUnit)</span>
+<span class="fc" id="L75">			.excluding(nodesprocessed)</span>
+<span class="fc" id="L76">			.processEach(dataHolder, (visited, aholder) -&gt; processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));</span>
+<span class="fc" id="L77">	}</span>
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, FieldDeclaration node,
 			ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder) {
-<span class="fc" id="L79">		JunitHolder mh= new JunitHolder();</span>
-<span class="fc" id="L80">		VariableDeclarationFragment fragment= (VariableDeclarationFragment) node.fragments().get(0);</span>
-<span class="fc" id="L81">		ITypeBinding binding= fragment.resolveBinding().getType();</span>
-<span class="pc bpc" id="L82" title="2 of 4 branches missed.">		if (binding != null &amp;&amp; ORG_JUNIT_RULES_TEMPORARY_FOLDER.equals(binding.getQualifiedName())) {</span>
-<span class="fc" id="L83">			mh.minv= node;</span>
-<span class="fc" id="L84">			dataHolder.put(dataHolder.size(), mh);</span>
-<span class="fc" id="L85">			operations.add(fixcore.rewrite(dataHolder));</span>
+<span class="fc" id="L82">		JunitHolder mh= new JunitHolder();</span>
+<span class="fc" id="L83">		VariableDeclarationFragment fragment= (VariableDeclarationFragment) node.fragments().get(0);</span>
+<span class="fc" id="L84">		ITypeBinding binding= fragment.resolveBinding().getType();</span>
+<span class="pc bpc" id="L85" title="2 of 4 branches missed.">		if (binding != null &amp;&amp; ORG_JUNIT_RULES_TEMPORARY_FOLDER.equals(binding.getQualifiedName())) {</span>
+<span class="fc" id="L86">			mh.minv= node;</span>
+<span class="fc" id="L87">			dataHolder.put(dataHolder.size(), mh);</span>
+<span class="fc" id="L88">			operations.add(fixcore.rewrite(dataHolder));</span>
 		}
-<span class="fc" id="L87">		return false;</span>
+		// Return true to continue processing other fields
+<span class="fc" id="L91">		return true;</span>
 	}
 	
 	@Override
 	protected
 	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
-<span class="fc" id="L94">		FieldDeclaration field= junitHolder.getFieldDeclaration();</span>
-<span class="fc" id="L95">		rewriter.remove(field, group);</span>
-<span class="fc" id="L96">		TypeDeclaration parentClass= ASTNodes.getParent(field, TypeDeclaration.class);</span>
+<span class="fc" id="L98">		FieldDeclaration field= junitHolder.getFieldDeclaration();</span>
+<span class="fc" id="L99">		rewriter.remove(field, group);</span>
+<span class="fc" id="L100">		TypeDeclaration parentClass= ASTNodes.getParent(field, TypeDeclaration.class);</span>
 
-<span class="fc" id="L98">		VariableDeclarationFragment originalFragment= (VariableDeclarationFragment) field.fragments().get(0);</span>
-<span class="fc" id="L99">		String originalName= originalFragment.getName().getIdentifier();</span>
+<span class="fc" id="L102">		VariableDeclarationFragment originalFragment= (VariableDeclarationFragment) field.fragments().get(0);</span>
+<span class="fc" id="L103">		String originalName= originalFragment.getName().getIdentifier();</span>
 
 		// Check which methods are being called to determine if Files import is needed
-<span class="fc" id="L102">		final boolean[] needsFilesImport = {false};</span>
-<span class="fc bfc" id="L103" title="All 2 branches covered.">		for (MethodDeclaration method : parentClass.getMethods()) {</span>
-<span class="fc" id="L104">			method.accept(new ASTVisitor() {</span>
+<span class="fc" id="L106">		final boolean[] needsFilesImport = {false};</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">		for (MethodDeclaration method : parentClass.getMethods()) {</span>
+<span class="fc" id="L108">			method.accept(new ASTVisitor() {</span>
 				@Override
 				public boolean visit(MethodInvocation node) {
-<span class="pc bpc" id="L107" title="1 of 2 branches missed.">					if (node.getExpression() == null) {</span>
-<span class="nc" id="L108">						return super.visit(node);</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">					if (node.getExpression() == null) {</span>
+<span class="nc" id="L112">						return super.visit(node);</span>
 					}
-<span class="fc" id="L110">					String expressionName = node.getExpression().toString();</span>
-<span class="fc bfc" id="L111" title="All 2 branches covered.">					if (!originalName.equals(expressionName)) {</span>
-<span class="fc" id="L112">						return super.visit(node);</span>
+<span class="fc" id="L114">					String expressionName = node.getExpression().toString();</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">					if (!originalName.equals(expressionName)) {</span>
+<span class="fc" id="L116">						return super.visit(node);</span>
 					}
-<span class="fc" id="L114">					String methodName = node.getName().getIdentifier();</span>
-<span class="fc bfc" id="L115" title="All 4 branches covered.">					if (&quot;newFile&quot;.equals(methodName) || &quot;newFolder&quot;.equals(methodName)) {</span>
-<span class="fc" id="L116">						needsFilesImport[0] = true;</span>
+<span class="fc" id="L118">					String methodName = node.getName().getIdentifier();</span>
+<span class="fc bfc" id="L119" title="All 4 branches covered.">					if (&quot;newFile&quot;.equals(methodName) || &quot;newFolder&quot;.equals(methodName)) {</span>
+<span class="fc" id="L120">						needsFilesImport[0] = true;</span>
 					}
-<span class="fc" id="L118">					return super.visit(node);</span>
+<span class="fc" id="L122">					return super.visit(node);</span>
 				}
 			});
 		}
 
 		// Add JUnit 5 imports and remove JUnit 4 imports
-<span class="fc" id="L124">		importRewriter.addImport(ORG_JUNIT_JUPITER_API_IO_TEMP_DIR);</span>
-<span class="fc" id="L125">		importRewriter.addImport(&quot;java.nio.file.Path&quot;);</span>
-<span class="fc bfc" id="L126" title="All 2 branches covered.">		if (needsFilesImport[0]) {</span>
-<span class="fc" id="L127">			importRewriter.addImport(&quot;java.nio.file.Files&quot;);</span>
+<span class="fc" id="L128">		importRewriter.addImport(ORG_JUNIT_JUPITER_API_IO_TEMP_DIR);</span>
+<span class="fc" id="L129">		importRewriter.addImport(&quot;java.nio.file.Path&quot;);</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">		if (needsFilesImport[0]) {</span>
+<span class="fc" id="L131">			importRewriter.addImport(&quot;java.nio.file.Files&quot;);</span>
 		}
-<span class="fc" id="L129">		importRewriter.removeImport(ORG_JUNIT_RULE);</span>
-<span class="fc" id="L130">		importRewriter.removeImport(ORG_JUNIT_RULES_TEMPORARY_FOLDER);</span>
+<span class="fc" id="L133">		importRewriter.removeImport(ORG_JUNIT_RULE);</span>
+<span class="fc" id="L134">		importRewriter.removeImport(ORG_JUNIT_RULES_TEMPORARY_FOLDER);</span>
 
 		// Create new field: @TempDir Path fieldName;
-<span class="fc" id="L133">		VariableDeclarationFragment tempDirFragment= ast.newVariableDeclarationFragment();</span>
-<span class="fc" id="L134">		tempDirFragment.setName(ast.newSimpleName(originalName));</span>
+<span class="fc" id="L137">		VariableDeclarationFragment tempDirFragment= ast.newVariableDeclarationFragment();</span>
+<span class="fc" id="L138">		tempDirFragment.setName(ast.newSimpleName(originalName));</span>
 
-<span class="fc" id="L136">		FieldDeclaration tempDirField= ast.newFieldDeclaration(tempDirFragment);</span>
-<span class="fc" id="L137">		tempDirField.setType(ast.newSimpleType(ast.newName(&quot;Path&quot;)));</span>
+<span class="fc" id="L140">		FieldDeclaration tempDirField= ast.newFieldDeclaration(tempDirFragment);</span>
+<span class="fc" id="L141">		tempDirField.setType(ast.newSimpleType(ast.newName(&quot;Path&quot;)));</span>
 
-<span class="fc" id="L139">		MarkerAnnotation tempDirAnnotation= ast.newMarkerAnnotation();</span>
-<span class="fc" id="L140">		tempDirAnnotation.setTypeName(ast.newName(&quot;TempDir&quot;));</span>
-<span class="fc" id="L141">		rewriter.getListRewrite(tempDirField, FieldDeclaration.MODIFIERS2_PROPERTY).insertFirst(tempDirAnnotation,</span>
-<span class="fc" id="L142">				group);</span>
+<span class="fc" id="L143">		MarkerAnnotation tempDirAnnotation= ast.newMarkerAnnotation();</span>
+<span class="fc" id="L144">		tempDirAnnotation.setTypeName(ast.newName(&quot;TempDir&quot;));</span>
+<span class="fc" id="L145">		rewriter.getListRewrite(tempDirField, FieldDeclaration.MODIFIERS2_PROPERTY).insertFirst(tempDirAnnotation,</span>
+<span class="fc" id="L146">				group);</span>
 
-<span class="fc" id="L144">		rewriter.getListRewrite(parentClass, TypeDeclaration.BODY_DECLARATIONS_PROPERTY).insertFirst(tempDirField,</span>
-<span class="fc" id="L145">				group);</span>
+<span class="fc" id="L148">		rewriter.getListRewrite(parentClass, TypeDeclaration.BODY_DECLARATIONS_PROPERTY).insertFirst(tempDirField,</span>
+<span class="fc" id="L149">				group);</span>
 
 		// Transform method invocations
-<span class="fc bfc" id="L148" title="All 2 branches covered.">		for (MethodDeclaration method : parentClass.getMethods()) {</span>
-<span class="fc" id="L149">			method.accept(new ASTVisitor() {</span>
+<span class="fc bfc" id="L152" title="All 2 branches covered.">		for (MethodDeclaration method : parentClass.getMethods()) {</span>
+<span class="fc" id="L153">			method.accept(new ASTVisitor() {</span>
 				@Override
 				public boolean visit(MethodInvocation node) {
-<span class="pc bpc" id="L152" title="1 of 2 branches missed.">					if (node.getExpression() == null) {</span>
-<span class="nc" id="L153">						return super.visit(node);</span>
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">					if (node.getExpression() == null) {</span>
+<span class="nc" id="L157">						return super.visit(node);</span>
 					}
 					
-<span class="fc" id="L156">					String expressionName = node.getExpression().toString();</span>
-<span class="fc bfc" id="L157" title="All 2 branches covered.">					if (!originalName.equals(expressionName)) {</span>
-<span class="fc" id="L158">						return super.visit(node);</span>
+<span class="fc" id="L160">					String expressionName = node.getExpression().toString();</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">					if (!originalName.equals(expressionName)) {</span>
+<span class="fc" id="L162">						return super.visit(node);</span>
 					}
 
-<span class="fc" id="L161">					String methodName = node.getName().getIdentifier();</span>
+<span class="fc" id="L165">					String methodName = node.getName().getIdentifier();</span>
 					
 					// Handle newFile() and newFile(String)
-<span class="fc bfc" id="L164" title="All 2 branches covered.">					if (&quot;newFile&quot;.equals(methodName)) {</span>
-<span class="fc bfc" id="L165" title="All 2 branches covered.">						if (node.arguments().isEmpty()) {</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">					if (&quot;newFile&quot;.equals(methodName)) {</span>
+<span class="fc bfc" id="L169" title="All 2 branches covered.">						if (node.arguments().isEmpty()) {</span>
 							// newFile() with no args -&gt; Files.createTempFile(tempDir, &quot;&quot;, null).toFile()
-<span class="fc" id="L167">							MethodInvocation createTempFileInvocation= ast.newMethodInvocation();</span>
-<span class="fc" id="L168">							createTempFileInvocation.setExpression(ast.newName(&quot;Files&quot;));</span>
-<span class="fc" id="L169">							createTempFileInvocation.setName(ast.newSimpleName(&quot;createTempFile&quot;));</span>
-<span class="fc" id="L170">							createTempFileInvocation.arguments().add(ast.newSimpleName(originalName));</span>
-<span class="fc" id="L171">							createTempFileInvocation.arguments().add(ast.newStringLiteral());</span>
-<span class="fc" id="L172">							createTempFileInvocation.arguments().add(ast.newNullLiteral());</span>
+<span class="fc" id="L171">							MethodInvocation createTempFileInvocation= ast.newMethodInvocation();</span>
+<span class="fc" id="L172">							createTempFileInvocation.setExpression(ast.newName(&quot;Files&quot;));</span>
+<span class="fc" id="L173">							createTempFileInvocation.setName(ast.newSimpleName(&quot;createTempFile&quot;));</span>
+<span class="fc" id="L174">							createTempFileInvocation.arguments().add(ast.newSimpleName(originalName));</span>
+<span class="fc" id="L175">							createTempFileInvocation.arguments().add(ast.newStringLiteral());</span>
+<span class="fc" id="L176">							createTempFileInvocation.arguments().add(ast.newNullLiteral());</span>
 							
-<span class="fc" id="L174">							MethodInvocation toFileInvocation= ast.newMethodInvocation();</span>
-<span class="fc" id="L175">							toFileInvocation.setExpression(createTempFileInvocation);</span>
-<span class="fc" id="L176">							toFileInvocation.setName(ast.newSimpleName(&quot;toFile&quot;));</span>
+<span class="fc" id="L178">							MethodInvocation toFileInvocation= ast.newMethodInvocation();</span>
+<span class="fc" id="L179">							toFileInvocation.setExpression(createTempFileInvocation);</span>
+<span class="fc" id="L180">							toFileInvocation.setName(ast.newSimpleName(&quot;toFile&quot;));</span>
 							
-<span class="fc" id="L178">							rewriter.replace(node, toFileInvocation, group);</span>
-<span class="fc" id="L179">						} else {</span>
+<span class="fc" id="L182">							rewriter.replace(node, toFileInvocation, group);</span>
+<span class="fc" id="L183">						} else {</span>
 							// newFile(String) -&gt; Files.createFile(tempDir.resolve(...)).toFile()
-<span class="fc" id="L181">							MethodInvocation createFileInvocation= ast.newMethodInvocation();</span>
-<span class="fc" id="L182">							createFileInvocation.setExpression(ast.newName(&quot;Files&quot;));</span>
-<span class="fc" id="L183">							createFileInvocation.setName(ast.newSimpleName(&quot;createFile&quot;));</span>
+<span class="fc" id="L185">							MethodInvocation createFileInvocation= ast.newMethodInvocation();</span>
+<span class="fc" id="L186">							createFileInvocation.setExpression(ast.newName(&quot;Files&quot;));</span>
+<span class="fc" id="L187">							createFileInvocation.setName(ast.newSimpleName(&quot;createFile&quot;));</span>
 							
-<span class="fc" id="L185">							MethodInvocation resolveInvocation= ast.newMethodInvocation();</span>
-<span class="fc" id="L186">							resolveInvocation.setExpression(ast.newSimpleName(originalName));</span>
-<span class="fc" id="L187">							resolveInvocation.setName(ast.newSimpleName(&quot;resolve&quot;));</span>
+<span class="fc" id="L189">							MethodInvocation resolveInvocation= ast.newMethodInvocation();</span>
+<span class="fc" id="L190">							resolveInvocation.setExpression(ast.newSimpleName(originalName));</span>
+<span class="fc" id="L191">							resolveInvocation.setName(ast.newSimpleName(&quot;resolve&quot;));</span>
 							// newFile only takes a single String argument
-<span class="fc" id="L189">							resolveInvocation.arguments().add(ASTNode.copySubtree(ast, (ASTNode) node.arguments().get(0)));</span>
+<span class="fc" id="L193">							resolveInvocation.arguments().add(ASTNode.copySubtree(ast, (ASTNode) node.arguments().get(0)));</span>
 							
-<span class="fc" id="L191">							createFileInvocation.arguments().add(resolveInvocation);</span>
+<span class="fc" id="L195">							createFileInvocation.arguments().add(resolveInvocation);</span>
 							
-<span class="fc" id="L193">							MethodInvocation toFileInvocation= ast.newMethodInvocation();</span>
-<span class="fc" id="L194">							toFileInvocation.setExpression(createFileInvocation);</span>
-<span class="fc" id="L195">							toFileInvocation.setName(ast.newSimpleName(&quot;toFile&quot;));</span>
+<span class="fc" id="L197">							MethodInvocation toFileInvocation= ast.newMethodInvocation();</span>
+<span class="fc" id="L198">							toFileInvocation.setExpression(createFileInvocation);</span>
+<span class="fc" id="L199">							toFileInvocation.setName(ast.newSimpleName(&quot;toFile&quot;));</span>
 							
-<span class="fc" id="L197">							rewriter.replace(node, toFileInvocation, group);</span>
+<span class="fc" id="L201">							rewriter.replace(node, toFileInvocation, group);</span>
 						}
-<span class="fc" id="L199">					}</span>
+<span class="fc" id="L203">					}</span>
 					// Handle newFolder() and newFolder(String...)
-<span class="fc bfc" id="L201" title="All 2 branches covered.">					else if (&quot;newFolder&quot;.equals(methodName)) {</span>
-<span class="fc bfc" id="L202" title="All 2 branches covered.">						if (node.arguments().isEmpty()) {</span>
+<span class="fc bfc" id="L205" title="All 2 branches covered.">					else if (&quot;newFolder&quot;.equals(methodName)) {</span>
+<span class="fc bfc" id="L206" title="All 2 branches covered.">						if (node.arguments().isEmpty()) {</span>
 							// newFolder() with no args -&gt; Files.createTempDirectory(tempDir, &quot;&quot;).toFile()
-<span class="fc" id="L204">							MethodInvocation createTempDirInvocation= ast.newMethodInvocation();</span>
-<span class="fc" id="L205">							createTempDirInvocation.setExpression(ast.newName(&quot;Files&quot;));</span>
-<span class="fc" id="L206">							createTempDirInvocation.setName(ast.newSimpleName(&quot;createTempDirectory&quot;));</span>
-<span class="fc" id="L207">							createTempDirInvocation.arguments().add(ast.newSimpleName(originalName));</span>
-<span class="fc" id="L208">							createTempDirInvocation.arguments().add(ast.newStringLiteral());</span>
+<span class="fc" id="L208">							MethodInvocation createTempDirInvocation= ast.newMethodInvocation();</span>
+<span class="fc" id="L209">							createTempDirInvocation.setExpression(ast.newName(&quot;Files&quot;));</span>
+<span class="fc" id="L210">							createTempDirInvocation.setName(ast.newSimpleName(&quot;createTempDirectory&quot;));</span>
+<span class="fc" id="L211">							createTempDirInvocation.arguments().add(ast.newSimpleName(originalName));</span>
+<span class="fc" id="L212">							createTempDirInvocation.arguments().add(ast.newStringLiteral());</span>
 							
-<span class="fc" id="L210">							MethodInvocation toFileInvocation= ast.newMethodInvocation();</span>
-<span class="fc" id="L211">							toFileInvocation.setExpression(createTempDirInvocation);</span>
-<span class="fc" id="L212">							toFileInvocation.setName(ast.newSimpleName(&quot;toFile&quot;));</span>
+<span class="fc" id="L214">							MethodInvocation toFileInvocation= ast.newMethodInvocation();</span>
+<span class="fc" id="L215">							toFileInvocation.setExpression(createTempDirInvocation);</span>
+<span class="fc" id="L216">							toFileInvocation.setName(ast.newSimpleName(&quot;toFile&quot;));</span>
 							
-<span class="fc" id="L214">							rewriter.replace(node, toFileInvocation, group);</span>
-<span class="fc" id="L215">						} else {</span>
+<span class="fc" id="L218">							rewriter.replace(node, toFileInvocation, group);</span>
+<span class="fc" id="L219">						} else {</span>
 							// newFolder(String...) -&gt; Files.createDirectories(tempDir.resolve(...).resolve(...)).toFile()
 							// For multiple arguments, chain resolve() calls
-<span class="fc" id="L218">							MethodInvocation createDirInvocation= ast.newMethodInvocation();</span>
-<span class="fc" id="L219">							createDirInvocation.setExpression(ast.newName(&quot;Files&quot;));</span>
-<span class="fc" id="L220">							createDirInvocation.setName(ast.newSimpleName(&quot;createDirectories&quot;));</span>
+<span class="fc" id="L222">							MethodInvocation createDirInvocation= ast.newMethodInvocation();</span>
+<span class="fc" id="L223">							createDirInvocation.setExpression(ast.newName(&quot;Files&quot;));</span>
+<span class="fc" id="L224">							createDirInvocation.setName(ast.newSimpleName(&quot;createDirectories&quot;));</span>
 							
 							// Build chained resolve() calls for multiple arguments
 							// Start with tempFolder.resolve(&quot;a&quot;)
-<span class="fc" id="L224">							Object firstArg = node.arguments().get(0);</span>
-<span class="fc" id="L225">							MethodInvocation chainedResolve = ast.newMethodInvocation();</span>
-<span class="fc" id="L226">							chainedResolve.setExpression(ast.newSimpleName(originalName));</span>
-<span class="fc" id="L227">							chainedResolve.setName(ast.newSimpleName(&quot;resolve&quot;));</span>
-<span class="fc" id="L228">							chainedResolve.arguments().add(ASTNode.copySubtree(ast, (ASTNode) firstArg));</span>
+<span class="fc" id="L228">							Object firstArg = node.arguments().get(0);</span>
+<span class="fc" id="L229">							MethodInvocation chainedResolve = ast.newMethodInvocation();</span>
+<span class="fc" id="L230">							chainedResolve.setExpression(ast.newSimpleName(originalName));</span>
+<span class="fc" id="L231">							chainedResolve.setName(ast.newSimpleName(&quot;resolve&quot;));</span>
+<span class="fc" id="L232">							chainedResolve.arguments().add(ASTNode.copySubtree(ast, (ASTNode) firstArg));</span>
 							
 							// Chain additional resolve() calls for subsequent arguments
 							// .resolve(&quot;b&quot;).resolve(&quot;c&quot;)...
-<span class="pc bpc" id="L232" title="1 of 2 branches missed.">							for (int i = 1; i &lt; node.arguments().size(); i++) {</span>
-<span class="nc" id="L233">								Object arg = node.arguments().get(i);</span>
-<span class="nc" id="L234">								MethodInvocation nextResolve = ast.newMethodInvocation();</span>
-<span class="nc" id="L235">								nextResolve.setExpression(chainedResolve);</span>
-<span class="nc" id="L236">								nextResolve.setName(ast.newSimpleName(&quot;resolve&quot;));</span>
-<span class="nc" id="L237">								nextResolve.arguments().add(ASTNode.copySubtree(ast, (ASTNode) arg));</span>
-<span class="nc" id="L238">								chainedResolve = nextResolve;</span>
+<span class="pc bpc" id="L236" title="1 of 2 branches missed.">							for (int i = 1; i &lt; node.arguments().size(); i++) {</span>
+<span class="nc" id="L237">								Object arg = node.arguments().get(i);</span>
+<span class="nc" id="L238">								MethodInvocation nextResolve = ast.newMethodInvocation();</span>
+<span class="nc" id="L239">								nextResolve.setExpression(chainedResolve);</span>
+<span class="nc" id="L240">								nextResolve.setName(ast.newSimpleName(&quot;resolve&quot;));</span>
+<span class="nc" id="L241">								nextResolve.arguments().add(ASTNode.copySubtree(ast, (ASTNode) arg));</span>
+<span class="nc" id="L242">								chainedResolve = nextResolve;</span>
 							}
 							
-<span class="fc" id="L241">							createDirInvocation.arguments().add(chainedResolve);</span>
+<span class="fc" id="L245">							createDirInvocation.arguments().add(chainedResolve);</span>
 							
-<span class="fc" id="L243">							MethodInvocation toFileInvocation= ast.newMethodInvocation();</span>
-<span class="fc" id="L244">							toFileInvocation.setExpression(createDirInvocation);</span>
-<span class="fc" id="L245">							toFileInvocation.setName(ast.newSimpleName(&quot;toFile&quot;));</span>
+<span class="fc" id="L247">							MethodInvocation toFileInvocation= ast.newMethodInvocation();</span>
+<span class="fc" id="L248">							toFileInvocation.setExpression(createDirInvocation);</span>
+<span class="fc" id="L249">							toFileInvocation.setName(ast.newSimpleName(&quot;toFile&quot;));</span>
 							
-<span class="fc" id="L247">							rewriter.replace(node, toFileInvocation, group);</span>
+<span class="fc" id="L251">							rewriter.replace(node, toFileInvocation, group);</span>
 						}
-<span class="fc" id="L249">					}</span>
+<span class="fc" id="L253">					}</span>
 					// Handle getRoot()
-<span class="pc bpc" id="L251" title="1 of 2 branches missed.">					else if (&quot;getRoot&quot;.equals(methodName)) {</span>
+<span class="pc bpc" id="L255" title="1 of 2 branches missed.">					else if (&quot;getRoot&quot;.equals(methodName)) {</span>
 						// tempDir.toFile()
-<span class="fc" id="L253">						MethodInvocation toFileInvocation= ast.newMethodInvocation();</span>
-<span class="fc" id="L254">						toFileInvocation.setExpression(ast.newSimpleName(originalName));</span>
-<span class="fc" id="L255">						toFileInvocation.setName(ast.newSimpleName(&quot;toFile&quot;));</span>
+<span class="fc" id="L257">						MethodInvocation toFileInvocation= ast.newMethodInvocation();</span>
+<span class="fc" id="L258">						toFileInvocation.setExpression(ast.newSimpleName(originalName));</span>
+<span class="fc" id="L259">						toFileInvocation.setName(ast.newSimpleName(&quot;toFile&quot;));</span>
 						
-<span class="fc" id="L257">						rewriter.replace(node, toFileInvocation, group);</span>
+<span class="fc" id="L261">						rewriter.replace(node, toFileInvocation, group);</span>
 					}
 					
-<span class="fc" id="L260">					return super.visit(node);</span>
+<span class="fc" id="L264">					return super.visit(node);</span>
 				}
 			});
 		}
-<span class="fc" id="L264">	}</span>
+<span class="fc" id="L268">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L268" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L269">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L272" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L273">			return &quot;&quot;&quot;</span>
 						@TempDir
 						Path tempFolder;
 
@@ -276,7 +280,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 						}
 					&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L279">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L283">		return &quot;&quot;&quot;</span>
 					@Rule
 					public TemporaryFolder tempFolder = new TemporaryFolder();
 
@@ -289,7 +293,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 	@Override
 	public String toString() {
-<span class="fc" id="L292">		return &quot;RuleTemporaryFolder&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L296">		return &quot;RuleTemporaryFolder&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

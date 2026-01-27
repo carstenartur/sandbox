@@ -1,5 +1,5 @@
 GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
-sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.api,Match,75,28,13,1,12,8,12,3,5,3
+sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.api,Match,101,28,17,1,20,8,16,3,7,3
 sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.api,Pattern,99,49,16,0,16,14,14,6,6,6
 sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.api,TriggerPatternEngine.new ASTVisitor() {...},47,70,12,12,4,10,8,6,0,2
 sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.api,PatternKind,0,64,0,0,0,13,0,1,0,1
@@ -10,7 +10,8 @@ sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.ui,TriggerPattern
 sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.internal,HintRegistry,331,0,50,0,76,0,31,0,6,0
 sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.internal,PatternParser,279,147,48,14,76,39,34,5,4,4
 sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.internal,HintRegistry.HintDescriptor,63,0,2,0,17,0,8,0,7,0
-sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.internal,PlaceholderAstMatcher,176,190,46,22,50,45,29,14,2,7
+sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.internal,PlaceholderInfo,36,21,7,3,8,4,6,1,1,1
+sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.internal,PlaceholderAstMatcher,329,356,86,48,85,84,58,26,2,12
 sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.corext.util,ASTNavigationUtils.new ASTVisitor() {...},12,34,1,3,2,7,3,4,2,3
 sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.corext.util,ExpressionHelper,53,97,19,17,15,33,16,8,0,6
 sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.corext.util,AnnotationUtils,30,59,2,6,5,10,5,8,3,6
@@ -21,23 +22,23 @@ sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.corext.util,NamingUtils
 sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.corext.fix2,MYCleanUpConstants,3,0,0,0,1,0,1,0,1,0
 sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.common,StatementDispatcher.HandlerEntry,36,0,6,0,7,0,6,0,3,0
 sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.common,ReferenceHolder,13,10,0,0,6,4,4,3,4,3
-sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.common,LambdaASTVisitor,3300,1561,415,215,633,396,360,170,79,136
-sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.common,AnnotationVisitorBuilder,284,0,60,0,70,0,37,0,7,0
+sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.common,LambdaASTVisitor,3252,1609,407,223,619,410,356,174,77,138
+sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.common,AnnotationVisitorBuilder,88,140,30,14,26,34,25,4,3,4
 sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.common,StatementDispatcher.HandlerBuilder,70,0,0,0,16,0,11,0,11,0
 sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.common,ImportVisitorBuilder,22,0,0,0,6,0,3,0,3,0
 sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.common,AstProcessorBuilder,1514,210,28,0,225,50,226,29,212,29
 sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.common,StatementDispatcher,93,0,8,0,21,0,14,0,10,0
 sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.common,ASTProcessor.NodeHolder,9,27,0,0,3,9,1,2,1,2
-sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.common,HelperVisitorBuilder,58,0,2,0,22,0,9,0,8,0
+sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.common,HelperVisitorBuilder,34,24,1,1,12,10,4,5,3,5
 sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.common,ASTProcessor,2197,499,4,8,360,92,204,44,201,41
-sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.common,MethodCallVisitorBuilder,93,0,4,0,22,0,11,0,9,0
+sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.common,MethodCallVisitorBuilder,0,93,0,4,0,22,0,11,0,9
 sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.common,LibStandardNames,3,0,0,0,1,0,1,0,1,0
 sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.common,StatementContext,317,0,40,0,68,0,48,0,28,0
 sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.common,NodeMatcher,569,0,134,0,139,0,104,0,37,0
 sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.common,VisitorEnum,13,1178,0,0,3,216,3,3,3,3
-sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.common,FieldVisitorBuilder,49,0,4,0,14,0,8,0,6,0
-sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.common,HelperVisitor,7912,556,0,0,1850,110,650,33,650,33
-sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.examples,ExampleHintProvider,139,0,12,0,43,0,9,0,3,0
+sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.common,FieldVisitorBuilder,9,40,2,2,3,11,2,6,0,6
+sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.common,HelperVisitor,7851,617,0,0,1839,121,644,39,644,39
+sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.examples,ExampleHintProvider,135,0,12,0,43,0,9,0,3,0
 sandbox_coverage/sandbox_encoding_quickfix,org.sandbox.jdt.internal.ui.preferences.cleanup,CleanUpMessages,7,0,0,0,3,0,2,0,2,0
 sandbox_coverage/sandbox_encoding_quickfix,org.sandbox.jdt.internal.ui.preferences.cleanup,SaveActionCleanUpOptionsInitializer,20,0,0,0,6,0,2,0,2,0
 sandbox_coverage/sandbox_encoding_quickfix,org.sandbox.jdt.internal.ui.preferences.cleanup,DefaultCleanUpOptionsInitializer,0,20,0,0,0,6,0,2,0,2
@@ -91,17 +92,17 @@ sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.ui.prefer
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.ui.preferences.cleanup,DefaultCleanUpOptionsInitializer,0,12,0,0,0,4,0,2,0,2
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix,UseFunctionalCallFixCore.new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation() {...},0,43,0,0,0,5,0,2,0,2
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix,UseFunctionalCallFixCore.new TargetSourceRangeComputer() {...},0,21,0,2,0,4,0,3,0,2
-sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix,UseFunctionalCallFixCore,5,57,0,0,1,11,1,4,1,4
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix,UseFunctionalCallFixCore,5,70,0,0,1,13,1,4,1,4
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.ui.fix,MultiFixMessages,3,4,0,0,1,2,1,1,1,1
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.ui.fix,UseFunctionalCallCleanUpCoreV2,50,96,3,9,9,23,6,10,3,7
-sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.ui.fix,UseFunctionalCallCleanUpCore,50,96,3,9,9,23,6,10,3,7
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.ui.fix,UseFunctionalCallCleanUpCore,50,100,3,9,9,24,6,10,3,7
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.ui.fix,UseFunctionalCallCleanUpV2,0,11,0,0,0,4,0,2,0,2
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.ui.fix,UseFunctionalCallCleanUp,0,11,0,0,0,4,0,2,0,2
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,CollectorType,18,81,7,9,6,21,7,7,2,4
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,FunctionalHolder,17,0,0,0,8,0,5,0,5,0
-sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IteratorPatternDetector.IteratorPattern,18,0,0,0,7,0,1,0,1,0
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IteratorPatternDetector.IteratorPattern,0,18,0,0,0,7,0,1,0,1
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,LoopBodyParser.ParseResult,0,40,0,0,0,13,0,7,0,7
-sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IteratorLoopBodyParser.ParsedBody,12,0,0,0,5,0,1,0,1,0
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IteratorLoopBodyParser.ParsedBody,0,12,0,0,0,5,0,1,0,1
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,OperationType.new OperationType() {...},15,32,3,5,4,7,3,3,0,2
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,OperationType.new OperationType() {...},2,16,1,1,1,3,1,2,0,2
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,OperationType.new OperationType() {...},2,77,2,8,1,15,2,5,0,2
@@ -109,12 +110,12 @@ sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fi
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,OperationType.new OperationType() {...},2,16,1,1,1,3,1,2,0,2
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,OperationType.new OperationType() {...},2,10,0,0,1,2,1,2,1,2
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,OperationType.new OperationType() {...},2,16,1,1,1,3,1,2,0,2
-sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,Refactorer,43,203,17,21,12,54,16,9,2,4
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,Refactorer,41,205,16,22,11,55,15,10,2,4
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IfStatementAnalyzer,96,451,47,93,30,129,42,42,1,12
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,OperationType.new OperationType() {...},2,10,0,0,1,2,1,2,1,2
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,StatementHandlerContext,0,15,0,0,0,6,0,3,0,3
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,StatementHandlerType,2,77,1,3,1,14,1,3,0,2
-sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IteratorLoopToFunctional.new ASTVisitor() {...},132,0,14,0,30,0,10,0,3,0
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IteratorLoopToFunctional.new ASTVisitor() {...},8,124,4,10,4,26,4,6,0,3
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,PreconditionsChecker,530,263,104,18,145,73,92,12,34,9
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,JdtLoopExtractor,83,149,24,12,18,42,16,7,0,5
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,SideEffectChecker,21,64,8,12,6,20,6,8,0,4
@@ -127,16 +128,16 @@ sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fi
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ProspectiveOperation,183,383,47,19,32,110,35,26,5,23
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,JdtLoopExtractor.ExtractedLoop,0,9,0,0,0,4,0,1,0,1
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,PipelineAssembler,20,504,12,44,6,119,12,35,0,19
-sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IteratorLoopAnalyzer,59,0,8,0,16,0,6,0,2,0
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IteratorLoopAnalyzer,8,51,1,7,2,14,1,5,0,2
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ReducerType,155,203,27,11,35,47,25,12,6,8
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,StatementHandlerType.new StatementHandlerType() {...},39,283,15,29,11,66,14,14,0,6
-sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IteratorLoopToFunctional,235,0,22,0,62,0,17,0,6,0
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IteratorLoopToFunctional,29,206,9,13,11,51,9,8,1,5
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,StreamPipelineBuilder,117,357,40,46,28,80,33,26,3,13
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ReducerType.new ReducerType() {...},0,18,0,0,0,4,0,4,0,4
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ReducerType.new ReducerType() {...},12,5,0,0,3,1,3,1,3,1
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ReducerType.new ReducerType() {...},0,13,0,0,0,3,0,3,0,3
-sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ProspectiveOperation.new ASTVisitor() {...},23,86,7,21,6,22,6,10,0,2
-sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,CollectPatternDetector,32,179,15,21,14,51,16,9,1,6
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ProspectiveOperation.new ASTVisitor() {...},19,90,6,22,5,23,5,11,0,2
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,CollectPatternDetector,28,183,13,23,12,53,14,11,1,6
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ReducerType.new ReducerType() {...},3,9,0,0,1,2,1,2,1,2
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ReducerType.new ReducerType() {...},0,19,0,2,0,5,0,4,0,3
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ReducerType.new ReducerType() {...},0,13,0,0,0,3,0,3,0,3
@@ -144,21 +145,21 @@ sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fi
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ReducerType.new ReducerType() {...},0,13,0,0,0,3,0,3,0,3
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ReducerType.new ReducerType() {...},5,5,0,0,2,1,2,1,2,1
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,OperationType.LambdaBodyContext,23,12,2,0,5,1,3,1,2,1
-sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IteratorLoopAnalyzer.SafetyAnalysis,41,0,0,0,10,0,3,0,3,0
-sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IteratorPatternDetector,266,0,48,0,78,0,32,0,8,0
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IteratorLoopAnalyzer.SafetyAnalysis,0,41,0,0,0,10,0,3,0,3
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IteratorPatternDetector,34,232,19,29,17,61,19,13,0,8
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,LoopBodyParser,178,513,48,80,42,137,38,37,2,9
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IfStatementAnalyzer.MatchPatternType,0,44,0,0,0,9,0,1,0,1
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ReducerType.MapExpressionContext,0,18,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,JdtLoopExtractor.LoopBodyAnalyzer,3,64,4,4,1,19,4,9,0,9
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,LambdaGenerator,69,126,4,14,16,35,5,11,1,6
-sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IteratorLoopAnalyzer.IteratorUsageVisitor,88,0,12,0,29,0,14,0,8,0
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IteratorLoopAnalyzer.IteratorUsageVisitor,16,72,2,10,7,22,6,8,5,3
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ReducePatternDetector,224,539,67,83,66,157,53,36,2,12
-sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IteratorLoopBodyParser,143,0,20,0,36,0,14,0,4,0
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IteratorLoopBodyParser,16,127,8,12,8,28,8,6,0,4
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,OperationType,6,136,0,0,2,26,2,5,2,5
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,LoopToFunctionalV2,22,162,10,17,7,39,10,13,1,8
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,PreconditionsChecker.new ASTVisitor() {...},21,0,2,0,4,0,3,0,2,0
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,PreconditionsChecker.new ASTVisitor() {...},0,61,0,14,0,18,0,9,0,2
-sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ASTStreamRenderer,360,781,37,46,81,177,32,38,3,21
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ASTStreamRenderer,360,827,39,49,81,183,34,39,3,21
 sandbox_coverage/sandbox_tools,org.sandbox.jdt.internal.corext.fix,UseIteratorToForLoopFixCore.new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange() {...},5,44,1,1,2,9,1,2,0,2
 sandbox_coverage/sandbox_tools,org.sandbox.jdt.internal.corext.fix,UseIteratorToForLoopFixCore,5,40,0,0,1,8,1,4,1,4
 sandbox_coverage/sandbox_tools,org.sandbox.jdt.internal.ui.fix,MultiFixMessages,3,4,0,0,1,2,1,1,1,1
@@ -196,36 +197,37 @@ sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helpe
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper.lib,AssertionRefactorer,7,136,1,13,2,22,2,9,1,2
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper.lib,ImportHelper,9,97,5,11,2,21,6,6,1,3
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper.lib,JUnitConstants,7,39,0,0,2,8,1,1,1,1
-sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper.lib,TriggerPatternCleanupPlugin,31,185,12,18,9,42,12,14,0,11
+sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper.lib,TriggerPatternCleanupPlugin,130,314,27,27,31,66,22,18,0,13
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper.lib,TestNameRefactorer.new ASTVisitor() {...},0,38,1,3,0,6,1,3,0,2
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper.lib,TestNameRefactorer.new ASTVisitor() {...},37,0,2,0,4,0,3,0,2,0
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper.lib,LifecycleMethodAdapter.new ASTVisitor() {...},39,3,14,0,8,1,8,1,1,1
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper.lib,TestNameRefactorer,59,303,10,10,13,72,10,11,1,10
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper.lib,LifecycleMethodAdapter.new ASTVisitor() {...},0,49,1,1,0,5,1,2,0,2
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper.lib,ExternalResourceRefactorer.CallbackConfig,0,15,0,0,0,6,0,1,0,1
-sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper.lib,JunitHolder,25,28,2,0,4,7,4,6,3,6
+sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper.lib,JunitHolder,31,28,4,0,9,7,5,6,3,6
+sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper.lib,TriggerPatternCleanupPlugin.AnnotationReplacementInfo,23,14,9,1,1,5,6,2,1,2
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper.lib,ExternalResourceRefactorer,122,700,47,69,32,177,47,38,3,24
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper.lib,AbstractTool,72,188,22,6,18,46,14,17,2,15
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,TestJUnit3Plugin.new ASTVisitor() {...},71,0,6,0,8,0,5,0,2,0
-sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,AssumeJUnitPlugin,57,317,23,29,13,68,21,21,2,14
-sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,RuleTemporayFolderJUnitPlugin,6,209,4,8,3,42,4,9,1,6
-sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,AssertJUnitPlugin,87,138,9,5,17,30,6,13,1,11
+sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,AssumeJUnitPlugin,50,277,23,29,13,63,20,18,1,11
+sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,RuleTemporayFolderJUnitPlugin,6,215,4,8,3,45,4,9,1,6
+sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,AssertJUnitPlugin,87,91,9,5,17,25,6,9,1,7
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,TestExpectedJUnitPluginV2,158,0,12,0,41,0,11,0,5,0
-sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,AfterJUnitPluginV2,6,36,2,0,3,11,2,4,1,4
+sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,AfterJUnitPluginV2,6,5,2,0,3,2,2,2,1,2
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,IgnoreJUnitPluginV2,11,133,3,9,4,37,3,8,0,5
-sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,AssertOptimizationJUnitPlugin,224,861,102,118,50,205,90,42,5,17
-sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,ParameterizedTestJUnitPlugin,81,780,51,79,14,177,45,31,1,10
-sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,RuleTimeoutJUnitPlugin,51,344,25,23,17,85,23,12,2,9
+sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,AssertOptimizationJUnitPlugin,245,888,111,121,62,223,96,42,5,17
+sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,ParameterizedTestJUnitPlugin,83,787,52,80,15,181,46,31,1,10
+sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,RuleTimeoutJUnitPlugin,52,355,25,23,17,91,23,12,2,9
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,ExternalResourceJUnitPlugin,13,109,6,8,4,25,5,9,1,6
-sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,TestTimeoutJUnitPlugin,14,257,10,14,7,66,10,9,1,6
+sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,TestTimeoutJUnitPlugin,16,264,11,15,8,70,11,9,1,6
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,AssumeOptimizationJUnitPlugin,27,185,10,16,7,43,12,11,3,7
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,RunWithJUnitPlugin,154,244,27,17,40,62,21,10,1,8
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,RuleExpectedExceptionJUnitPlugin.ExpectedExceptionInfo,0,9,0,0,0,3,0,1,0,1
-sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,BeforeJUnitPluginV2,0,42,0,2,0,14,0,6,0,5
-sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,TestExpectedJUnitPlugin,15,266,12,18,9,63,12,10,1,6
+sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,BeforeJUnitPluginV2,0,11,0,2,0,5,0,4,0,3
+sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,TestExpectedJUnitPlugin,17,273,13,19,10,67,13,10,1,6
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,TestJUnit3Plugin,399,3,64,0,86,1,47,1,14,1
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,BeforeClassJUnitPluginV2,6,36,2,0,3,11,2,4,1,4
-sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,CategoryJUnitPlugin,14,237,12,18,4,57,12,12,1,8
+sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,CategoryJUnitPlugin,16,244,13,19,5,60,13,12,1,8
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,FixMethodOrderJUnitPlugin,35,0,2,0,11,0,8,0,7,0
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,RuleExternalResourceJUnitPlugin,6,141,5,7,3,32,5,9,1,7
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,LostTestFinderJUnitPlugin,44,416,25,67,13,98,19,40,1,12
@@ -234,7 +236,7 @@ sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helpe
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,RuleTemporayFolderJUnitPlugin.new ASTVisitor() {...},34,351,3,13,7,65,3,7,0,2
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,AfterClassJUnitPluginV2,6,36,2,0,3,11,2,4,1,4
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,LostTestFinderJUnitPlugin.new ASTVisitor() {...},0,32,0,2,0,4,0,3,0,2
-sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,RuleExpectedExceptionJUnitPlugin,110,589,45,53,39,133,36,26,2,11
+sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,RuleExpectedExceptionJUnitPlugin,110,595,45,53,39,136,36,26,2,11
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,TestJUnitPluginV2,6,36,2,0,3,11,2,4,1,4
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,RuleTimeoutJUnitPlugin.TimeoutInfo,0,9,0,0,0,4,0,1,0,1
 sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.ui.preferences.cleanup,CleanUpMessages,7,0,0,0,3,0,2,0,2,0
@@ -288,15 +290,15 @@ sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.ui.preferences.
 sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.ui.preferences.cleanup,SaveActionCleanUpOptionsInitializer,8,0,0,0,3,0,2,0,2,0
 sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.ui.preferences.cleanup,DefaultCleanUpOptionsInitializer,0,8,0,0,0,3,0,2,0,2
 sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.ui.preferences.cleanup,SandboxCodeTabPage,46,0,0,0,14,0,4,0,4,0
-sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.corext.fix,StringSimplificationFixCore.IsEmptyOperation,62,0,4,0,17,0,4,0,2,0
-sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.corext.fix,StringSimplificationFixCore.SimplifyBooleanOperation,81,0,8,0,25,0,6,0,2,0
-sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.corext.fix,StringSimplificationFixCore.StringValueOfOperation,75,0,6,0,21,0,5,0,2,0
+sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.corext.fix,StringSimplificationFixCore.IsEmptyOperation,60,0,4,0,17,0,4,0,2,0
+sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.corext.fix,StringSimplificationFixCore.SimplifyBooleanOperation,79,0,8,0,25,0,6,0,2,0
+sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.corext.fix,StringSimplificationFixCore.StringValueOfOperation,73,0,6,0,21,0,5,0,2,0
 sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.corext.fix,StringSimplificationFixCore,253,0,16,0,35,0,11,0,3,0
-sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.corext.fix,StringSimplificationFixCore.SimplifyTernaryOperation,81,0,8,0,25,0,6,0,2,0
+sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.corext.fix,StringSimplificationFixCore.SimplifyTernaryOperation,79,0,8,0,25,0,6,0,2,0
 sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.ui.fix,StringSimplificationCleanUpCore,84,0,10,0,28,0,12,0,7,0
 sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.ui.fix,MultiFixMessages,4,0,0,0,2,0,1,0,1,0
 sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.ui.fix,StringSimplificationCleanUp,11,0,0,0,4,0,2,0,2,0
-sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.triggerpattern.string,StringSimplificationHintProvider,1079,0,92,0,316,0,61,0,15,0
+sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.triggerpattern.string,StringSimplificationHintProvider,1047,0,92,0,316,0,61,0,15,0
 sandbox_coverage/sandbox_usage_view,org.sandbox.jdt.ui.helper.views.preferences,UsageViewPreferencePage,22,0,0,0,10,0,3,0,3,0
 sandbox_coverage/sandbox_usage_view,org.sandbox.jdt.ui.helper.views,VarVisitor,0,37,0,2,0,11,0,5,0,4
 sandbox_coverage/sandbox_usage_view,org.sandbox.jdt.ui.helper.views,JHViewContentProvider,110,96,16,10,26,25,15,7,4,5

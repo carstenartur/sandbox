@@ -65,59 +65,54 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
 <span class="fc" id="L67">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder= new ReferenceHolder&lt;&gt;();</span>
-<span class="fc" id="L68">		ALL_ASSERTION_METHODS.forEach(assertionmethod -&gt; {</span>
-<span class="fc" id="L69">			HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSERT, assertionmethod, compilationUnit, dataHolder,</span>
-<span class="fc" id="L70">					nodesprocessed, (visited, aholder) -&gt; processFoundNode(fixcore, operations, visited, aholder));</span>
-<span class="fc" id="L71">		});</span>
-<span class="fc" id="L72">		ALL_ASSERTION_METHODS.forEach(assertionmethod -&gt; {</span>
-<span class="fc" id="L73">			HelperVisitor.callImportDeclarationVisitor(ORG_JUNIT_ASSERT + &quot;.&quot; + assertionmethod, compilationUnit,</span>
-<span class="fc" id="L74">					dataHolder, nodesprocessed,</span>
-<span class="fc" id="L75">					(visited, aholder) -&gt; processFoundNode(fixcore, operations, visited, aholder));</span>
-<span class="fc" id="L76">		});</span>
-<span class="fc" id="L77">		HelperVisitor.callImportDeclarationVisitor(ORG_JUNIT_ASSERT, compilationUnit, dataHolder, nodesprocessed,</span>
-<span class="fc" id="L78">				(visited, aholder) -&gt; processFoundNode(fixcore, operations, visited, aholder));</span>
-<span class="fc" id="L79">	}</span>
+<span class="fc" id="L68">		HelperVisitor.forMethodCalls(ORG_JUNIT_ASSERT, ALL_ASSERTION_METHODS)</span>
+<span class="fc" id="L69">			.andStaticImports()</span>
+<span class="fc" id="L70">			.andImportsOf(ORG_JUNIT_ASSERT)</span>
+<span class="fc" id="L71">			.in(compilationUnit)</span>
+<span class="fc" id="L72">			.excluding(nodesprocessed)</span>
+<span class="fc" id="L73">			.processEach(dataHolder, (visited, aholder) -&gt; processFoundNode(fixcore, operations, visited, aholder));</span>
+<span class="fc" id="L74">	}</span>
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, ASTNode node,
 			ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder) {
-<span class="fc" id="L84">		return addStandardRewriteOperation(fixcore, operations, node, dataHolder);</span>
+<span class="fc" id="L79">		return addStandardRewriteOperation(fixcore, operations, node, dataHolder);</span>
 	}
 
 	@Override
 	protected
 	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
-<span class="fc bfc" id="L91" title="All 2 branches covered.">		if (junitHolder.minv instanceof MethodInvocation) {</span>
-<span class="fc" id="L92">			MethodInvocation node= junitHolder.getMethodInvocation();</span>
-<span class="fc" id="L93">			Expression assertexpression= node.getExpression();</span>
-<span class="pc bpc" id="L94" title="1 of 2 branches missed.">			if (&quot;assertThat&quot;.equals(node.getName().getIdentifier()) &amp;&amp;</span>
-<span class="nc bnc" id="L95" title="All 2 branches missed.">					assertexpression instanceof SimpleName &amp;&amp;</span>
-<span class="nc bnc" id="L96" title="All 2 branches missed.">					&quot;Assert&quot;.equals(((SimpleName) assertexpression).getIdentifier())) {</span>
-<span class="nc" id="L97">				rewriter.set(node, MethodInvocation.EXPRESSION_PROPERTY, null, group);</span>
-<span class="nc" id="L98">				importRewriter.addStaticImport(&quot;org.hamcrest.MatcherAssert&quot;, &quot;assertThat&quot;, false);</span>
-<span class="nc" id="L99">				importRewriter.removeImport(&quot;org.junit.Assert&quot;);</span>
-<span class="nc bnc" id="L100" title="All 2 branches missed.">				if (node.arguments().size() == 3) {</span>
-<span class="nc" id="L101">					Expression errorMessage = (Expression) node.arguments().get(0);</span>
-<span class="nc" id="L102">					Expression actualValue = (Expression) node.arguments().get(1);</span>
-<span class="nc" id="L103">					Expression matcher = (Expression) node.arguments().get(2);</span>
-<span class="nc" id="L104">					ListRewrite argumentRewrite = rewriter.getListRewrite(node, MethodInvocation.ARGUMENTS_PROPERTY);</span>
-<span class="nc" id="L105">					argumentRewrite.replace((ASTNode) node.arguments().get(0), errorMessage, group);</span>
-<span class="nc" id="L106">					argumentRewrite.replace((ASTNode) node.arguments().get(1), actualValue, group);</span>
-<span class="nc" id="L107">					argumentRewrite.replace((ASTNode) node.arguments().get(2), matcher, group);</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">		if (junitHolder.minv instanceof MethodInvocation) {</span>
+<span class="fc" id="L87">			MethodInvocation node= junitHolder.getMethodInvocation();</span>
+<span class="fc" id="L88">			Expression assertexpression= node.getExpression();</span>
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">			if (&quot;assertThat&quot;.equals(node.getName().getIdentifier()) &amp;&amp;</span>
+<span class="nc bnc" id="L90" title="All 2 branches missed.">					assertexpression instanceof SimpleName &amp;&amp;</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">					&quot;Assert&quot;.equals(((SimpleName) assertexpression).getIdentifier())) {</span>
+<span class="nc" id="L92">				rewriter.set(node, MethodInvocation.EXPRESSION_PROPERTY, null, group);</span>
+<span class="nc" id="L93">				importRewriter.addStaticImport(&quot;org.hamcrest.MatcherAssert&quot;, &quot;assertThat&quot;, false);</span>
+<span class="nc" id="L94">				importRewriter.removeImport(&quot;org.junit.Assert&quot;);</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">				if (node.arguments().size() == 3) {</span>
+<span class="nc" id="L96">					Expression errorMessage = (Expression) node.arguments().get(0);</span>
+<span class="nc" id="L97">					Expression actualValue = (Expression) node.arguments().get(1);</span>
+<span class="nc" id="L98">					Expression matcher = (Expression) node.arguments().get(2);</span>
+<span class="nc" id="L99">					ListRewrite argumentRewrite = rewriter.getListRewrite(node, MethodInvocation.ARGUMENTS_PROPERTY);</span>
+<span class="nc" id="L100">					argumentRewrite.replace((ASTNode) node.arguments().get(0), errorMessage, group);</span>
+<span class="nc" id="L101">					argumentRewrite.replace((ASTNode) node.arguments().get(1), actualValue, group);</span>
+<span class="nc" id="L102">					argumentRewrite.replace((ASTNode) node.arguments().get(2), matcher, group);</span>
 				}
-<span class="nc" id="L109">			} else {</span>
-<span class="fc" id="L110">				reorderParameters(node, rewriter, group, ONEPARAM_ASSERTIONS, TWOPARAM_ASSERTIONS);</span>
-<span class="fc" id="L111">				SimpleName newQualifier= ast.newSimpleName(ASSERTIONS);</span>
-<span class="fc" id="L112">				Expression expression= assertexpression;</span>
-<span class="fc bfc" id="L113" title="All 2 branches covered.">				if (expression != null) {</span>
-<span class="fc" id="L114">					ASTNodes.replaceButKeepComment(rewriter, expression, newQualifier, group);</span>
+<span class="nc" id="L104">			} else {</span>
+<span class="fc" id="L105">				reorderParameters(node, rewriter, group, ONEPARAM_ASSERTIONS, TWOPARAM_ASSERTIONS);</span>
+<span class="fc" id="L106">				SimpleName newQualifier= ast.newSimpleName(ASSERTIONS);</span>
+<span class="fc" id="L107">				Expression expression= assertexpression;</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">				if (expression != null) {</span>
+<span class="fc" id="L109">					ASTNodes.replaceButKeepComment(rewriter, expression, newQualifier, group);</span>
 				}
 			}
-<span class="fc" id="L117">		} else {</span>
-<span class="fc" id="L118">			changeImportDeclaration(junitHolder.getImportDeclaration(), importRewriter, group);</span>
+<span class="fc" id="L112">		} else {</span>
+<span class="fc" id="L113">			changeImportDeclaration(junitHolder.getImportDeclaration(), importRewriter, group);</span>
 		}
-<span class="fc" id="L120">	}</span>
+<span class="fc" id="L115">	}</span>
 	
 	/**
 	 * Changes import declarations for JUnit 4 Assert to JUnit 5 Assertions.
@@ -128,18 +123,18 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 	 * @param group text edit group (unused - import rewrites are tracked separately)
 	 */
 	public void changeImportDeclaration(ImportDeclaration node, ImportRewrite importRewriter, TextEditGroup group) {
-<span class="fc" id="L131">		changeImportDeclaration(node, importRewriter, ORG_JUNIT_ASSERT, ORG_JUNIT_JUPITER_API_ASSERTIONS);</span>
-<span class="fc" id="L132">	}</span>
+<span class="fc" id="L126">		changeImportDeclaration(node, importRewriter, ORG_JUNIT_ASSERT, ORG_JUNIT_JUPITER_API_ASSERTIONS);</span>
+<span class="fc" id="L127">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L136" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L137">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L132">			return &quot;&quot;&quot;</span>
 					Assertions.assertNotEquals(5,result, &quot;failuremessage&quot;);  // expected = 5, actual = result
 					Assertions.assertTrue(false,&quot;failuremessage&quot;);
 					&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L142">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L137">		return &quot;&quot;&quot;</span>
 				Assert.assertNotEquals(&quot;failuremessage&quot;,5, result);  // expected = 5, actual = result
 				Assert.assertTrue(&quot;failuremessage&quot;,false);
 				&quot;&quot;&quot;; //$NON-NLS-1$
@@ -147,7 +142,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 	@Override
 	public String toString() {
-<span class="fc" id="L150">		return &quot;Assert&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L145">		return &quot;Assert&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

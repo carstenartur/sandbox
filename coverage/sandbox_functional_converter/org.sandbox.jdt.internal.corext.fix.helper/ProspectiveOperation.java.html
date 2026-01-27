@@ -242,8 +242,8 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 				}
 				
 				// Skip if this is the type name in a constructor invocation (e.g., &quot;MyClass&quot; in &quot;new MyClass()&quot;)
-<span class="pc bpc" id="L245" title="1 of 2 branches missed.">				if (parent instanceof org.eclipse.jdt.core.dom.ClassInstanceCreation) {</span>
-<span class="nc" id="L246">					return super.visit(node);</span>
+<span class="fc bfc" id="L245" title="All 2 branches covered.">				if (parent instanceof org.eclipse.jdt.core.dom.ClassInstanceCreation) {</span>
+<span class="fc" id="L246">					return super.visit(node);</span>
 				}
 				
 				// Skip if this is the name of a type declaration (e.g., class or interface name)

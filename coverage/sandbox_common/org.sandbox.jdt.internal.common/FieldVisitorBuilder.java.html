@@ -38,7 +38,7 @@ import org.eclipse.jdt.core.dom.FieldDeclaration;
  * @author Carsten Hammer
  * @since 1.15
  */
-<span class="nc" id="L41">public class FieldVisitorBuilder extends HelperVisitorBuilder&lt;FieldDeclaration&gt; {</span>
+<span class="fc" id="L41">public class FieldVisitorBuilder extends HelperVisitorBuilder&lt;FieldDeclaration&gt; {</span>
     
     private String annotationFQN;
     private String typeFQN;
@@ -50,8 +50,8 @@ import org.eclipse.jdt.core.dom.FieldDeclaration;
      * @return this builder for chaining
      */
     public FieldVisitorBuilder withAnnotation(String annotationFQN) {
-<span class="nc" id="L53">        this.annotationFQN = annotationFQN;</span>
-<span class="nc" id="L54">        return this;</span>
+<span class="fc" id="L53">        this.annotationFQN = annotationFQN;</span>
+<span class="fc" id="L54">        return this;</span>
     }
     
     /**
@@ -61,25 +61,25 @@ import org.eclipse.jdt.core.dom.FieldDeclaration;
      * @return this builder for chaining
      */
     public FieldVisitorBuilder ofType(String typeFQN) {
-<span class="nc" id="L64">        this.typeFQN = typeFQN;</span>
-<span class="nc" id="L65">        return this;</span>
+<span class="fc" id="L64">        this.typeFQN = typeFQN;</span>
+<span class="fc" id="L65">        return this;</span>
     }
     
     @Override
     protected void validateState() {
-<span class="nc" id="L70">        super.validateState();</span>
-<span class="nc bnc" id="L71" title="All 4 branches missed.">        if (annotationFQN == null || typeFQN == null) {</span>
+<span class="fc" id="L70">        super.validateState();</span>
+<span class="pc bpc" id="L71" title="2 of 4 branches missed.">        if (annotationFQN == null || typeFQN == null) {</span>
 <span class="nc" id="L72">            throw new IllegalStateException(</span>
 <span class="nc" id="L73">                &quot;FieldVisitorBuilder requires both withAnnotation(...) and ofType(...) to be configured &quot; //$NON-NLS-1$</span>
 <span class="nc" id="L74">                + &quot;before processing. annotationFQN=&quot; + annotationFQN + &quot;, typeFQN=&quot; + typeFQN); //$NON-NLS-1$ //$NON-NLS-2$</span>
         }
-<span class="nc" id="L76">    }</span>
+<span class="fc" id="L76">    }</span>
     
     @Override
     protected &lt;V, H&gt; void executeVisitors(ReferenceHolder&lt;V, H&gt; holder, 
             BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, H&gt;&gt; processor) {
-<span class="nc" id="L81">        HelperVisitor.callFieldDeclarationVisitor(annotationFQN, typeFQN, compilationUnit,</span>
-<span class="nc" id="L82">                holder, nodesprocessed, (node, h) -&gt; processor.test(node, h));</span>
-<span class="nc" id="L83">    }</span>
+<span class="fc" id="L81">        HelperVisitor.callFieldDeclarationVisitor(annotationFQN, typeFQN, compilationUnit,</span>
+<span class="fc" id="L82">                holder, nodesprocessed, (node, h) -&gt; processor.test(node, h));</span>
+<span class="fc" id="L83">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -182,8 +182,8 @@ public final class CollectPatternDetector {
 	 * @return the variable name if it's an empty collection initialization, null otherwise
 	 */
 	public static String isEmptyCollectionDeclaration(Statement stmt) {
-<span class="pc bpc" id="L185" title="1 of 2 branches missed.">		if (!(stmt instanceof VariableDeclarationStatement)) {</span>
-<span class="nc" id="L186">			return null;</span>
+<span class="fc bfc" id="L185" title="All 2 branches covered.">		if (!(stmt instanceof VariableDeclarationStatement)) {</span>
+<span class="fc" id="L186">			return null;</span>
 		}
 
 <span class="fc" id="L189">		VariableDeclarationStatement varDecl = (VariableDeclarationStatement) stmt;</span>
@@ -202,8 +202,8 @@ public final class CollectPatternDetector {
 <span class="fc" id="L202">		ClassInstanceCreation creation = (ClassInstanceCreation) initializer;</span>
 		
 		// Check that no arguments are passed (empty collection)
-<span class="pc bpc" id="L205" title="1 of 2 branches missed.">		if (!creation.arguments().isEmpty()) {</span>
-<span class="nc" id="L206">			return null;</span>
+<span class="fc bfc" id="L205" title="All 2 branches covered.">		if (!creation.arguments().isEmpty()) {</span>
+<span class="fc" id="L206">			return null;</span>
 		}
 
 <span class="fc" id="L209">		ITypeBinding typeBinding = creation.resolveTypeBinding();</span>

@@ -28,7 +28,6 @@ import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.TriggerPatternCleanupPlugin;
 import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
-import org.sandbox.jdt.triggerpattern.api.Match;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
@@ -38,8 +37,10 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
  * &lt;p&gt;This plugin handles both marker and single-member annotations, preserving
  * the ignore reason when present.&lt;/p&gt;
  * 
- * &lt;p&gt;This refactored version replaces the earlier IgnoreJUnitPlugin implementation and
- * uses the TriggerPattern-based declarative architecture to reduce boilerplate.&lt;/p&gt;
+ * &lt;p&gt;This refactored version uses the TriggerPattern-based declarative architecture.
+ * Note: @RewriteRule cannot be used here because we need to handle three different
+ * annotation patterns (marker, single-member, and normal), so we keep the custom
+ * process2Rewrite() implementation.&lt;/p&gt;
  * 
  * &lt;p&gt;&lt;b&gt;Before:&lt;/b&gt;&lt;/p&gt;
  * &lt;pre&gt;
@@ -81,79 +82,79 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
     description = &quot;Migrate @Ignore to @Disabled&quot;,
     displayName = &quot;JUnit 4 @Ignore → JUnit 5 @Disabled&quot;
 )
-<span class="fc" id="L84">public class IgnoreJUnitPluginV2 extends TriggerPatternCleanupPlugin {</span>
+<span class="fc" id="L85">public class IgnoreJUnitPluginV2 extends TriggerPatternCleanupPlugin {</span>
 
 	@Override
 	protected List&lt;Pattern&gt; getPatterns() {
-		// Need to explicitly match all three annotation types like the old V1 plugin did
-<span class="fc" id="L89">		return List.of(</span>
+		// Need to explicitly match all three annotation types
+<span class="fc" id="L90">		return List.of(</span>
 			// Match @Ignore (MarkerAnnotation)
-<span class="fc" id="L91">			new Pattern(&quot;@Ignore&quot;, PatternKind.ANNOTATION, ORG_JUNIT_IGNORE),</span>
+<span class="fc" id="L92">			new Pattern(&quot;@Ignore&quot;, PatternKind.ANNOTATION, ORG_JUNIT_IGNORE),</span>
 			// Match @Ignore(&quot;reason&quot;) (SingleMemberAnnotation) 
-<span class="fc" id="L93">			new Pattern(&quot;@Ignore($value)&quot;, PatternKind.ANNOTATION, ORG_JUNIT_IGNORE),</span>
+<span class="fc" id="L94">			new Pattern(&quot;@Ignore($value)&quot;, PatternKind.ANNOTATION, ORG_JUNIT_IGNORE),</span>
 			// Match @Ignore(value=&quot;reason&quot;) (NormalAnnotation)
-<span class="fc" id="L95">			new Pattern(&quot;@Ignore(value=$value)&quot;, PatternKind.ANNOTATION, ORG_JUNIT_IGNORE)</span>
+<span class="fc" id="L96">			new Pattern(&quot;@Ignore(value=$value)&quot;, PatternKind.ANNOTATION, ORG_JUNIT_IGNORE)</span>
 		);
 	}
 
 	@Override
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
 			ImportRewrite importRewriter, JunitHolder junitHolder) {
-<span class="fc" id="L102">		Annotation annotation = junitHolder.getAnnotation();</span>
+<span class="fc" id="L103">		Annotation annotation = junitHolder.getAnnotation();</span>
 		Annotation newAnnotation;
 		
 		// Preserve ignore reason if present
-<span class="fc bfc" id="L106" title="All 2 branches covered.">		if (annotation instanceof SingleMemberAnnotation) {</span>
-<span class="fc" id="L107">			SingleMemberAnnotation oldAnnotation = (SingleMemberAnnotation) annotation;</span>
-<span class="fc" id="L108">			SingleMemberAnnotation newSingleMemberAnnotation = ast.newSingleMemberAnnotation();</span>
-<span class="fc" id="L109">			newSingleMemberAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_DISABLED));</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">		if (annotation instanceof SingleMemberAnnotation) {</span>
+<span class="fc" id="L108">			SingleMemberAnnotation oldAnnotation = (SingleMemberAnnotation) annotation;</span>
+<span class="fc" id="L109">			SingleMemberAnnotation newSingleMemberAnnotation = ast.newSingleMemberAnnotation();</span>
+<span class="fc" id="L110">			newSingleMemberAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_DISABLED));</span>
 			// Move the value (reason) from old to new annotation
-<span class="fc" id="L111">			newSingleMemberAnnotation.setValue(ASTNodes.createMoveTarget(rewriter, oldAnnotation.getValue()));</span>
-<span class="fc" id="L112">			newAnnotation = newSingleMemberAnnotation;</span>
-<span class="fc bfc" id="L113" title="All 2 branches covered.">		} else if (annotation instanceof org.eclipse.jdt.core.dom.NormalAnnotation) {</span>
+<span class="fc" id="L112">			newSingleMemberAnnotation.setValue(ASTNodes.createMoveTarget(rewriter, oldAnnotation.getValue()));</span>
+<span class="fc" id="L113">			newAnnotation = newSingleMemberAnnotation;</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">		} else if (annotation instanceof org.eclipse.jdt.core.dom.NormalAnnotation) {</span>
 			// Handle NormalAnnotation (e.g., @Ignore(value=&quot;reason&quot;))
 			// Convert to SingleMemberAnnotation for @Disabled
-<span class="fc" id="L116">			org.eclipse.jdt.core.dom.NormalAnnotation oldAnnotation = (org.eclipse.jdt.core.dom.NormalAnnotation) annotation;</span>
+<span class="fc" id="L117">			org.eclipse.jdt.core.dom.NormalAnnotation oldAnnotation = (org.eclipse.jdt.core.dom.NormalAnnotation) annotation;</span>
 			@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L118">			java.util.List&lt;org.eclipse.jdt.core.dom.MemberValuePair&gt; values = oldAnnotation.values();</span>
+<span class="fc" id="L119">			java.util.List&lt;org.eclipse.jdt.core.dom.MemberValuePair&gt; values = oldAnnotation.values();</span>
 			
 			// Find the &quot;value&quot; member specifically
-<span class="fc" id="L121">			org.eclipse.jdt.core.dom.MemberValuePair valuePair = null;</span>
-<span class="pc bpc" id="L122" title="1 of 2 branches missed.">			for (org.eclipse.jdt.core.dom.MemberValuePair pair : values) {</span>
-<span class="pc bpc" id="L123" title="1 of 2 branches missed.">				if (&quot;value&quot;.equals(pair.getName().getIdentifier())) {</span>
-<span class="fc" id="L124">					valuePair = pair;</span>
-<span class="fc" id="L125">					break;</span>
+<span class="fc" id="L122">			org.eclipse.jdt.core.dom.MemberValuePair valuePair = null;</span>
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">			for (org.eclipse.jdt.core.dom.MemberValuePair pair : values) {</span>
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">				if (&quot;value&quot;.equals(pair.getName().getIdentifier())) {</span>
+<span class="fc" id="L125">					valuePair = pair;</span>
+<span class="fc" id="L126">					break;</span>
 				}
 			}
 			
-<span class="pc bpc" id="L129" title="1 of 2 branches missed.">			if (valuePair != null) {</span>
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">			if (valuePair != null) {</span>
 				// If there's a value attribute, extract it and create SingleMemberAnnotation
-<span class="fc" id="L131">				SingleMemberAnnotation newSingleMemberAnnotation = ast.newSingleMemberAnnotation();</span>
-<span class="fc" id="L132">				newSingleMemberAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_DISABLED));</span>
-<span class="fc" id="L133">				newSingleMemberAnnotation.setValue(ASTNodes.createMoveTarget(rewriter, valuePair.getValue()));</span>
-<span class="fc" id="L134">				newAnnotation = newSingleMemberAnnotation;</span>
-<span class="fc" id="L135">			} else {</span>
+<span class="fc" id="L132">				SingleMemberAnnotation newSingleMemberAnnotation = ast.newSingleMemberAnnotation();</span>
+<span class="fc" id="L133">				newSingleMemberAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_DISABLED));</span>
+<span class="fc" id="L134">				newSingleMemberAnnotation.setValue(ASTNodes.createMoveTarget(rewriter, valuePair.getValue()));</span>
+<span class="fc" id="L135">				newAnnotation = newSingleMemberAnnotation;</span>
+<span class="fc" id="L136">			} else {</span>
 				// No value, treat as marker
-<span class="nc" id="L137">				MarkerAnnotation newMarkerAnnotation = ast.newMarkerAnnotation();</span>
-<span class="nc" id="L138">				newMarkerAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_DISABLED));</span>
-<span class="nc" id="L139">				newAnnotation = newMarkerAnnotation;</span>
+<span class="nc" id="L138">				MarkerAnnotation newMarkerAnnotation = ast.newMarkerAnnotation();</span>
+<span class="nc" id="L139">				newMarkerAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_DISABLED));</span>
+<span class="nc" id="L140">				newAnnotation = newMarkerAnnotation;</span>
 			}
-<span class="nc" id="L141">		} else {</span>
+<span class="nc" id="L142">		} else {</span>
 			// MarkerAnnotation - no reason to preserve
-<span class="fc" id="L143">			MarkerAnnotation newMarkerAnnotation = ast.newMarkerAnnotation();</span>
-<span class="fc" id="L144">			newMarkerAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_DISABLED));</span>
-<span class="fc" id="L145">			newAnnotation = newMarkerAnnotation;</span>
+<span class="fc" id="L144">			MarkerAnnotation newMarkerAnnotation = ast.newMarkerAnnotation();</span>
+<span class="fc" id="L145">			newMarkerAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_DISABLED));</span>
+<span class="fc" id="L146">			newAnnotation = newMarkerAnnotation;</span>
 		}
 		
-<span class="fc" id="L148">		ASTNodes.replaceButKeepComment(rewriter, annotation, newAnnotation, group);</span>
-<span class="fc" id="L149">		importRewriter.removeImport(ORG_JUNIT_IGNORE);</span>
-<span class="fc" id="L150">		importRewriter.addImport(ORG_JUNIT_JUPITER_DISABLED);</span>
-<span class="fc" id="L151">	}</span>
+<span class="fc" id="L149">		ASTNodes.replaceButKeepComment(rewriter, annotation, newAnnotation, group);</span>
+<span class="fc" id="L150">		importRewriter.removeImport(ORG_JUNIT_IGNORE);</span>
+<span class="fc" id="L151">		importRewriter.addImport(ORG_JUNIT_JUPITER_DISABLED);</span>
+<span class="fc" id="L152">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="fc bfc" id="L155" title="All 2 branches covered.">		if (afterRefactoring) {</span>
-<span class="fc" id="L156">			return &quot;&quot;&quot;</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">		if (afterRefactoring) {</span>
+<span class="fc" id="L157">			return &quot;&quot;&quot;</span>
 				@Disabled(&quot;not implemented&quot;)
 				@Test
 				public void test() {
@@ -161,7 +162,7 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 				}
 				&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="fc" id="L164">		return &quot;&quot;&quot;</span>
+<span class="fc" id="L165">		return &quot;&quot;&quot;</span>
 			@Ignore(&quot;not implemented&quot;)
 			@Test
 			public void test() {
@@ -172,7 +173,7 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
 	@Override
 	public String toString() {
-<span class="fc" id="L175">		return &quot;Ignore (TriggerPattern)&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L176">		return &quot;Ignore (TriggerPattern)&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

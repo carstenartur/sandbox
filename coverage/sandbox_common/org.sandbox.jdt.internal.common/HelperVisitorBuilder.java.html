@@ -43,7 +43,7 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
  * @author Carsten Hammer
  * @since 1.15
  */
-<span class="nc" id="L46">public abstract class HelperVisitorBuilder&lt;T extends ASTNode&gt; {</span>
+<span class="fc" id="L46">public abstract class HelperVisitorBuilder&lt;T extends ASTNode&gt; {</span>
     
     /**
      * The compilation unit to visit.
@@ -62,8 +62,8 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
      * @return this builder for chaining
      */
     public HelperVisitorBuilder&lt;T&gt; in(CompilationUnit cu) {
-<span class="nc" id="L65">        this.compilationUnit = cu;</span>
-<span class="nc" id="L66">        return this;</span>
+<span class="fc" id="L65">        this.compilationUnit = cu;</span>
+<span class="fc" id="L66">        return this;</span>
     }
     
     /**
@@ -73,8 +73,8 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
      * @return this builder for chaining
      */
     public HelperVisitorBuilder&lt;T&gt; excluding(Set&lt;ASTNode&gt; processed) {
-<span class="nc" id="L76">        this.nodesprocessed = processed;</span>
-<span class="nc" id="L77">        return this;</span>
+<span class="fc" id="L76">        this.nodesprocessed = processed;</span>
+<span class="fc" id="L77">        return this;</span>
     }
     
     /**
@@ -106,9 +106,9 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
      * @throws IllegalStateException if the compilation unit was not configured via {@code in(...)}
      */
     public &lt;V, H&gt; void processEach(ReferenceHolder&lt;V, H&gt; holder, BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, H&gt;&gt; processor) {
-<span class="nc" id="L109">        validateState();</span>
-<span class="nc" id="L110">        executeVisitors(holder, processor);</span>
-<span class="nc" id="L111">    }</span>
+<span class="fc" id="L109">        validateState();</span>
+<span class="fc" id="L110">        executeVisitors(holder, processor);</span>
+<span class="fc" id="L111">    }</span>
     
     /**
      * Terminal operation that collects all found nodes into a list.
@@ -134,11 +134,11 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
      * @throws IllegalStateException if the compilation unit was not set
      */
     protected void validateState() {
-<span class="nc bnc" id="L137" title="All 2 branches missed.">        if (compilationUnit == null) {</span>
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">        if (compilationUnit == null) {</span>
 <span class="nc" id="L138">            throw new IllegalStateException(</span>
 <span class="nc" id="L139">                &quot;Compilation unit must be configured via in(...) before calling processEach() or collect()&quot;); //$NON-NLS-1$</span>
         }
-<span class="nc" id="L141">    }</span>
+<span class="fc" id="L141">    }</span>
     
     /**
      * Executes the configured visitors on the compilation unit.

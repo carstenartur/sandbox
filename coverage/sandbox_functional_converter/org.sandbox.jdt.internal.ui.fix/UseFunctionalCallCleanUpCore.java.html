@@ -98,10 +98,11 @@ public class UseFunctionalCallCleanUpCore extends AbstractCleanUp {
 <span class="fc" id="L98">		EnumSet&lt;UseFunctionalCallFixCore&gt; fixSet = EnumSet.noneOf(UseFunctionalCallFixCore.class);</span>
 
 <span class="fc bfc" id="L100" title="All 2 branches covered.">		if (isEnabled(USEFUNCTIONALLOOP_CLEANUP)) {</span>
-			// Only add LOOP (V1) to avoid inadvertently running V2 conversions
+			// Add LOOP (V1) and ITERATOR_LOOP (Phase 7) for comprehensive loop conversions
 <span class="fc" id="L102">			fixSet.add(UseFunctionalCallFixCore.LOOP);</span>
+<span class="fc" id="L103">			fixSet.add(UseFunctionalCallFixCore.ITERATOR_LOOP);</span>
 		}
-<span class="fc" id="L104">		return fixSet;</span>
+<span class="fc" id="L105">		return fixSet;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

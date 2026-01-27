@@ -82,66 +82,113 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
 <span class="fc" id="L83">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder = new ReferenceHolder&lt;&gt;();</span>
 		
-		// Find assertTrue calls for optimization
-<span class="fc" id="L86">		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSERT, &quot;assertTrue&quot;, compilationUnit, dataHolder,</span>
-<span class="pc" id="L87">				nodesprocessed, (visited, aholder) -&gt; processAssertion(fixcore, operations, visited, aholder, true));</span>
-<span class="fc" id="L88">		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_JUPITER_API_ASSERTIONS, &quot;assertTrue&quot;, compilationUnit, dataHolder,</span>
-<span class="fc" id="L89">				nodesprocessed, (visited, aholder) -&gt; processAssertion(fixcore, operations, visited, aholder, true));</span>
+		// Find assertTrue calls for optimization (JUnit 4)
+<span class="fc" id="L86">		HelperVisitor.forMethodCall(ORG_JUNIT_ASSERT, &quot;assertTrue&quot;)</span>
+<span class="fc" id="L87">			.in(compilationUnit)</span>
+<span class="fc" id="L88">			.excluding(nodesprocessed)</span>
+<span class="fc" id="L89">			.processEach(dataHolder, (visited, aholder) -&gt; {</span>
+<span class="nc bnc" id="L90" title="All 2 branches missed.">				if (visited instanceof MethodInvocation) {</span>
+<span class="nc" id="L91">					return processAssertion(fixcore, operations, visited, aholder, true);</span>
+				}
+<span class="nc" id="L93">				return true;</span>
+			});
 		
-		// Find assertFalse calls for optimization
-<span class="fc" id="L92">		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSERT, &quot;assertFalse&quot;, compilationUnit, dataHolder,</span>
-<span class="pc" id="L93">				nodesprocessed, (visited, aholder) -&gt; processAssertion(fixcore, operations, visited, aholder, false));</span>
-<span class="fc" id="L94">		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_JUPITER_API_ASSERTIONS, &quot;assertFalse&quot;, compilationUnit, dataHolder,</span>
-<span class="fc" id="L95">				nodesprocessed, (visited, aholder) -&gt; processAssertion(fixcore, operations, visited, aholder, false));</span>
+		// Find assertTrue calls for optimization (JUnit 5)
+<span class="fc" id="L97">		HelperVisitor.forMethodCall(ORG_JUNIT_JUPITER_API_ASSERTIONS, &quot;assertTrue&quot;)</span>
+<span class="fc" id="L98">			.in(compilationUnit)</span>
+<span class="fc" id="L99">			.excluding(nodesprocessed)</span>
+<span class="fc" id="L100">			.processEach(dataHolder, (visited, aholder) -&gt; {</span>
+<span class="pc bpc" id="L101" title="1 of 2 branches missed.">				if (visited instanceof MethodInvocation) {</span>
+<span class="fc" id="L102">					return processAssertion(fixcore, operations, visited, aholder, true);</span>
+				}
+<span class="nc" id="L104">				return true;</span>
+			});
+		
+		// Find assertFalse calls for optimization (JUnit 4)
+<span class="fc" id="L108">		HelperVisitor.forMethodCall(ORG_JUNIT_ASSERT, &quot;assertFalse&quot;)</span>
+<span class="fc" id="L109">			.in(compilationUnit)</span>
+<span class="fc" id="L110">			.excluding(nodesprocessed)</span>
+<span class="fc" id="L111">			.processEach(dataHolder, (visited, aholder) -&gt; {</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">				if (visited instanceof MethodInvocation) {</span>
+<span class="nc" id="L113">					return processAssertion(fixcore, operations, visited, aholder, false);</span>
+				}
+<span class="nc" id="L115">				return true;</span>
+			});
+		
+		// Find assertFalse calls for optimization (JUnit 5)
+<span class="fc" id="L119">		HelperVisitor.forMethodCall(ORG_JUNIT_JUPITER_API_ASSERTIONS, &quot;assertFalse&quot;)</span>
+<span class="fc" id="L120">			.in(compilationUnit)</span>
+<span class="fc" id="L121">			.excluding(nodesprocessed)</span>
+<span class="fc" id="L122">			.processEach(dataHolder, (visited, aholder) -&gt; {</span>
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">				if (visited instanceof MethodInvocation) {</span>
+<span class="fc" id="L124">					return processAssertion(fixcore, operations, visited, aholder, false);</span>
+				}
+<span class="nc" id="L126">				return true;</span>
+			});
 		
 		// Find assertion calls with expected/actual parameters for parameter order correction
-<span class="fc" id="L98">		METHODS_WITH_EXPECTED_ACTUAL.forEach(methodName -&gt; {</span>
-<span class="fc" id="L99">			HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSERT, methodName, compilationUnit, dataHolder,</span>
-<span class="pc" id="L100">					nodesprocessed, (visited, aholder) -&gt; processParameterOrder(fixcore, operations, visited, aholder));</span>
-<span class="fc" id="L101">			HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_JUPITER_API_ASSERTIONS, methodName, compilationUnit, dataHolder,</span>
-<span class="fc" id="L102">					nodesprocessed, (visited, aholder) -&gt; processParameterOrder(fixcore, operations, visited, aholder));</span>
-<span class="fc" id="L103">		});</span>
-<span class="fc" id="L104">	}</span>
+<span class="fc" id="L130">		METHODS_WITH_EXPECTED_ACTUAL.forEach(methodName -&gt; {</span>
+<span class="fc" id="L131">			HelperVisitor.forMethodCall(ORG_JUNIT_ASSERT, methodName)</span>
+<span class="fc" id="L132">				.in(compilationUnit)</span>
+<span class="fc" id="L133">				.excluding(nodesprocessed)</span>
+<span class="fc" id="L134">				.processEach(dataHolder, (visited, aholder) -&gt; {</span>
+<span class="nc bnc" id="L135" title="All 2 branches missed.">					if (visited instanceof MethodInvocation) {</span>
+<span class="nc" id="L136">						return processParameterOrder(fixcore, operations, visited, aholder);</span>
+					}
+<span class="nc" id="L138">					return true;</span>
+				});
+			
+<span class="fc" id="L141">			HelperVisitor.forMethodCall(ORG_JUNIT_JUPITER_API_ASSERTIONS, methodName)</span>
+<span class="fc" id="L142">				.in(compilationUnit)</span>
+<span class="fc" id="L143">				.excluding(nodesprocessed)</span>
+<span class="fc" id="L144">				.processEach(dataHolder, (visited, aholder) -&gt; {</span>
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">					if (visited instanceof MethodInvocation) {</span>
+<span class="fc" id="L146">						return processParameterOrder(fixcore, operations, visited, aholder);</span>
+					}
+<span class="nc" id="L148">					return true;</span>
+				});
+<span class="fc" id="L150">		});</span>
+<span class="fc" id="L151">	}</span>
 
 	private boolean processAssertion(JUnitCleanUpFixCore fixcore,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, ASTNode node,
 			ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder, boolean isTrue) {
 		
-<span class="pc bpc" id="L110" title="1 of 2 branches missed.">		if (!(node instanceof MethodInvocation)) {</span>
-<span class="nc" id="L111">			return false;</span>
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">		if (!(node instanceof MethodInvocation)) {</span>
+<span class="nc" id="L158">			return true; // Continue processing other nodes</span>
 		}
 		
-<span class="fc" id="L114">		MethodInvocation mi = (MethodInvocation) node;</span>
-<span class="fc" id="L115">		List&lt;?&gt; arguments = mi.arguments();</span>
+<span class="fc" id="L161">		MethodInvocation mi = (MethodInvocation) node;</span>
+<span class="fc" id="L162">		List&lt;?&gt; arguments = mi.arguments();</span>
 		
-<span class="pc bpc" id="L117" title="1 of 2 branches missed.">		if (arguments.isEmpty()) {</span>
-<span class="nc" id="L118">			return false;</span>
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">		if (arguments.isEmpty()) {</span>
+<span class="nc" id="L165">			return true; // Continue processing other nodes</span>
 		}
 		
 		// Get the condition expression (may be first or second argument depending on whether message is present)
-<span class="fc" id="L122">		Expression condition = null;</span>
-<span class="fc" id="L123">		Expression message = null;</span>
+<span class="fc" id="L169">		Expression condition = null;</span>
+<span class="fc" id="L170">		Expression message = null;</span>
 		
-<span class="fc bfc" id="L125" title="All 2 branches covered.">		if (arguments.size() == 1) {</span>
-<span class="fc" id="L126">			condition = (Expression) arguments.get(0);</span>
-<span class="pc bpc" id="L127" title="1 of 2 branches missed.">		} else if (arguments.size() == 2) {</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">		if (arguments.size() == 1) {</span>
+<span class="fc" id="L173">			condition = (Expression) arguments.get(0);</span>
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">		} else if (arguments.size() == 2) {</span>
 			// Check if first argument is String (message), otherwise it's condition
-<span class="fc" id="L129">			Expression firstArg = (Expression) arguments.get(0);</span>
-<span class="fc" id="L130">			ITypeBinding firstArgType = firstArg.resolveTypeBinding();</span>
-<span class="pc bpc" id="L131" title="2 of 4 branches missed.">			if (firstArgType != null &amp;&amp; &quot;java.lang.String&quot;.equals(firstArgType.getQualifiedName())) {</span>
-<span class="nc" id="L132">				message = firstArg;</span>
-<span class="nc" id="L133">				condition = (Expression) arguments.get(1);</span>
-<span class="nc" id="L134">			} else {</span>
-<span class="fc" id="L135">				condition = firstArg;</span>
-<span class="fc" id="L136">				message = (Expression) arguments.get(1);</span>
+<span class="fc" id="L176">			Expression firstArg = (Expression) arguments.get(0);</span>
+<span class="fc" id="L177">			ITypeBinding firstArgType = firstArg.resolveTypeBinding();</span>
+<span class="pc bpc" id="L178" title="2 of 4 branches missed.">			if (firstArgType != null &amp;&amp; &quot;java.lang.String&quot;.equals(firstArgType.getQualifiedName())) {</span>
+<span class="nc" id="L179">				message = firstArg;</span>
+<span class="nc" id="L180">				condition = (Expression) arguments.get(1);</span>
+<span class="nc" id="L181">			} else {</span>
+<span class="fc" id="L182">				condition = firstArg;</span>
+<span class="fc" id="L183">				message = (Expression) arguments.get(1);</span>
 			}
 		}
 		
-<span class="pc bpc" id="L140" title="2 of 4 branches missed.">		if (condition == null || !canOptimize(condition)) {</span>
-<span class="nc" id="L141">			return false;</span>
+<span class="pc bpc" id="L187" title="2 of 4 branches missed.">		if (condition == null || !canOptimize(condition)) {</span>
+<span class="nc" id="L188">			return true; // Continue processing other nodes</span>
 		}
 		
-<span class="fc" id="L144">		return addStandardRewriteOperation(fixcore, operations, node, dataHolder);</span>
+<span class="fc" id="L191">		return addStandardRewriteOperation(fixcore, operations, node, dataHolder);</span>
 	}
 
 	/**
@@ -152,45 +199,45 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, ASTNode node,
 			ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder) {
 		
-<span class="pc bpc" id="L155" title="1 of 2 branches missed.">		if (!(node instanceof MethodInvocation)) {</span>
-<span class="nc" id="L156">			return false;</span>
+<span class="pc bpc" id="L202" title="1 of 2 branches missed.">		if (!(node instanceof MethodInvocation)) {</span>
+<span class="nc" id="L203">			return true; // Continue processing other nodes</span>
 		}
 		
-<span class="fc" id="L159">		MethodInvocation mi = (MethodInvocation) node;</span>
-<span class="fc" id="L160">		List&lt;?&gt; arguments = mi.arguments();</span>
+<span class="fc" id="L206">		MethodInvocation mi = (MethodInvocation) node;</span>
+<span class="fc" id="L207">		List&lt;?&gt; arguments = mi.arguments();</span>
 		
 		// Need at least 2 arguments (expected, actual) or 3 with message
-<span class="pc bpc" id="L163" title="1 of 2 branches missed.">		if (arguments.size() &lt; 2) {</span>
-<span class="nc" id="L164">			return false;</span>
+<span class="pc bpc" id="L210" title="1 of 2 branches missed.">		if (arguments.size() &lt; 2) {</span>
+<span class="nc" id="L211">			return true; // Continue processing other nodes</span>
 		}
 		
 		// Get first two arguments (they might be expected/actual or message/expected depending on JUnit version)
-<span class="fc" id="L168">		Expression first = (Expression) arguments.get(0);</span>
-<span class="fc" id="L169">		Expression second = (Expression) arguments.get(1);</span>
+<span class="fc" id="L215">		Expression first = (Expression) arguments.get(0);</span>
+<span class="fc" id="L216">		Expression second = (Expression) arguments.get(1);</span>
 		
 		// Check if first argument is a String message (JUnit 4 style)
-<span class="fc" id="L172">		ITypeBinding firstType = first.resolveTypeBinding();</span>
-<span class="pc bpc" id="L173" title="1 of 4 branches missed.">		boolean firstIsMessage = firstType != null &amp;&amp; &quot;java.lang.String&quot;.equals(firstType.getQualifiedName());</span>
+<span class="fc" id="L219">		ITypeBinding firstType = first.resolveTypeBinding();</span>
+<span class="pc bpc" id="L220" title="1 of 4 branches missed.">		boolean firstIsMessage = firstType != null &amp;&amp; &quot;java.lang.String&quot;.equals(firstType.getQualifiedName());</span>
 		
 		Expression expectedParam;
 		Expression actualParam;
 		
-<span class="pc bpc" id="L178" title="1 of 4 branches missed.">		if (firstIsMessage &amp;&amp; arguments.size() &gt;= 3) {</span>
+<span class="pc bpc" id="L225" title="1 of 4 branches missed.">		if (firstIsMessage &amp;&amp; arguments.size() &gt;= 3) {</span>
 			// JUnit 4: message, expected, actual
-<span class="nc" id="L180">			expectedParam = (Expression) arguments.get(1);</span>
-<span class="nc" id="L181">			actualParam = (Expression) arguments.get(2);</span>
-<span class="nc" id="L182">		} else {</span>
+<span class="nc" id="L227">			expectedParam = (Expression) arguments.get(1);</span>
+<span class="nc" id="L228">			actualParam = (Expression) arguments.get(2);</span>
+<span class="nc" id="L229">		} else {</span>
 			// JUnit 5: expected, actual [, message]
-<span class="fc" id="L184">			expectedParam = first;</span>
-<span class="fc" id="L185">			actualParam = second;</span>
+<span class="fc" id="L231">			expectedParam = first;</span>
+<span class="fc" id="L232">			actualParam = second;</span>
 		}
 		
 		// If expected is not constant but actual is constant, we need to swap
-<span class="pc bpc" id="L189" title="2 of 4 branches missed.">		if (!isConstantExpression(expectedParam) &amp;&amp; isConstantExpression(actualParam)) {</span>
-<span class="fc" id="L190">			return addStandardRewriteOperation(fixcore, operations, node, dataHolder);</span>
+<span class="pc bpc" id="L236" title="2 of 4 branches missed.">		if (!isConstantExpression(expectedParam) &amp;&amp; isConstantExpression(actualParam)) {</span>
+<span class="fc" id="L237">			return addStandardRewriteOperation(fixcore, operations, node, dataHolder);</span>
 		}
 		
-<span class="nc" id="L193">		return false;</span>
+<span class="nc" id="L240">		return true; // Continue processing other nodes</span>
 	}
 
 	/**
@@ -199,352 +246,352 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 	 * and collection factory methods with constant arguments.
 	 */
 	private boolean isConstantExpression(Expression expr) {
-<span class="pc bpc" id="L202" title="1 of 2 branches missed.">		if (expr == null) {</span>
-<span class="nc" id="L203">			return false;</span>
+<span class="pc bpc" id="L249" title="1 of 2 branches missed.">		if (expr == null) {</span>
+<span class="nc" id="L250">			return false;</span>
 		}
 		
 		// Literals
-<span class="fc bfc" id="L207" title="All 4 branches covered.">		if (expr instanceof NumberLiteral || expr instanceof StringLiteral || </span>
-<span class="pc bpc" id="L208" title="2 of 4 branches missed.">			expr instanceof BooleanLiteral || expr instanceof CharacterLiteral ||</span>
-<span class="pc bpc" id="L209" title="2 of 4 branches missed.">			expr instanceof NullLiteral || expr instanceof TypeLiteral) {</span>
-<span class="fc" id="L210">			return true;</span>
+<span class="fc bfc" id="L254" title="All 4 branches covered.">		if (expr instanceof NumberLiteral || expr instanceof StringLiteral || </span>
+<span class="pc bpc" id="L255" title="2 of 4 branches missed.">			expr instanceof BooleanLiteral || expr instanceof CharacterLiteral ||</span>
+<span class="pc bpc" id="L256" title="2 of 4 branches missed.">			expr instanceof NullLiteral || expr instanceof TypeLiteral) {</span>
+<span class="fc" id="L257">			return true;</span>
 		}
 		
 		// Final fields and enum constants
-<span class="fc bfc" id="L214" title="All 2 branches covered.">		if (expr instanceof SimpleName) {</span>
-<span class="fc" id="L215">			SimpleName name = (SimpleName) expr;</span>
-<span class="fc" id="L216">			IVariableBinding binding = (IVariableBinding) name.resolveBinding();</span>
-<span class="pc bpc" id="L217" title="2 of 4 branches missed.">			if (binding != null &amp;&amp; binding.isField()) {</span>
-<span class="fc" id="L218">				int modifiers = binding.getModifiers();</span>
-<span class="pc bpc" id="L219" title="5 of 6 branches missed.">				return Modifier.isFinal(modifiers) || Modifier.isStatic(modifiers) || binding.isEnumConstant();</span>
+<span class="fc bfc" id="L261" title="All 2 branches covered.">		if (expr instanceof SimpleName) {</span>
+<span class="fc" id="L262">			SimpleName name = (SimpleName) expr;</span>
+<span class="fc" id="L263">			IVariableBinding binding = (IVariableBinding) name.resolveBinding();</span>
+<span class="pc bpc" id="L264" title="2 of 4 branches missed.">			if (binding != null &amp;&amp; binding.isField()) {</span>
+<span class="fc" id="L265">				int modifiers = binding.getModifiers();</span>
+<span class="pc bpc" id="L266" title="5 of 6 branches missed.">				return Modifier.isFinal(modifiers) || Modifier.isStatic(modifiers) || binding.isEnumConstant();</span>
 			}
 		}
 		
 		// Qualified names (e.g., MyClass.CONSTANT)
-<span class="pc bpc" id="L224" title="1 of 2 branches missed.">		if (expr instanceof QualifiedName) {</span>
-<span class="nc" id="L225">			QualifiedName qname = (QualifiedName) expr;</span>
-<span class="nc" id="L226">			IVariableBinding binding = (IVariableBinding) qname.resolveBinding();</span>
-<span class="nc bnc" id="L227" title="All 4 branches missed.">			if (binding != null &amp;&amp; binding.isField()) {</span>
-<span class="nc" id="L228">				int modifiers = binding.getModifiers();</span>
-<span class="nc bnc" id="L229" title="All 6 branches missed.">				return Modifier.isFinal(modifiers) || Modifier.isStatic(modifiers) || binding.isEnumConstant();</span>
+<span class="pc bpc" id="L271" title="1 of 2 branches missed.">		if (expr instanceof QualifiedName) {</span>
+<span class="nc" id="L272">			QualifiedName qname = (QualifiedName) expr;</span>
+<span class="nc" id="L273">			IVariableBinding binding = (IVariableBinding) qname.resolveBinding();</span>
+<span class="nc bnc" id="L274" title="All 4 branches missed.">			if (binding != null &amp;&amp; binding.isField()) {</span>
+<span class="nc" id="L275">				int modifiers = binding.getModifiers();</span>
+<span class="nc bnc" id="L276" title="All 6 branches missed.">				return Modifier.isFinal(modifiers) || Modifier.isStatic(modifiers) || binding.isEnumConstant();</span>
 			}
 		}
 		
 		// Field access (e.g., Status.ACTIVE)
-<span class="pc bpc" id="L234" title="1 of 2 branches missed.">		if (expr instanceof FieldAccess) {</span>
-<span class="nc" id="L235">			FieldAccess fieldAccess = (FieldAccess) expr;</span>
-<span class="nc" id="L236">			IVariableBinding binding = fieldAccess.resolveFieldBinding();</span>
-<span class="nc bnc" id="L237" title="All 2 branches missed.">			if (binding != null) {</span>
-<span class="nc" id="L238">				int modifiers = binding.getModifiers();</span>
-<span class="nc bnc" id="L239" title="All 6 branches missed.">				return Modifier.isFinal(modifiers) || Modifier.isStatic(modifiers) || binding.isEnumConstant();</span>
+<span class="pc bpc" id="L281" title="1 of 2 branches missed.">		if (expr instanceof FieldAccess) {</span>
+<span class="nc" id="L282">			FieldAccess fieldAccess = (FieldAccess) expr;</span>
+<span class="nc" id="L283">			IVariableBinding binding = fieldAccess.resolveFieldBinding();</span>
+<span class="nc bnc" id="L284" title="All 2 branches missed.">			if (binding != null) {</span>
+<span class="nc" id="L285">				int modifiers = binding.getModifiers();</span>
+<span class="nc bnc" id="L286" title="All 6 branches missed.">				return Modifier.isFinal(modifiers) || Modifier.isStatic(modifiers) || binding.isEnumConstant();</span>
 			}
 		}
 		
 		// Array creation with initializer containing only constants
-<span class="fc bfc" id="L244" title="All 2 branches covered.">		if (expr instanceof ArrayCreation) {</span>
-<span class="fc" id="L245">			ArrayCreation arrayCreation = (ArrayCreation) expr;</span>
-<span class="fc" id="L246">			ArrayInitializer initializer = arrayCreation.getInitializer();</span>
-<span class="pc bpc" id="L247" title="1 of 2 branches missed.">			if (initializer != null) {</span>
-<span class="fc" id="L248">				List&lt;?&gt; expressions = initializer.expressions();</span>
-<span class="fc" id="L249">				return expressions.stream().allMatch(e -&gt; isConstantExpression((Expression) e));</span>
+<span class="fc bfc" id="L291" title="All 2 branches covered.">		if (expr instanceof ArrayCreation) {</span>
+<span class="fc" id="L292">			ArrayCreation arrayCreation = (ArrayCreation) expr;</span>
+<span class="fc" id="L293">			ArrayInitializer initializer = arrayCreation.getInitializer();</span>
+<span class="pc bpc" id="L294" title="1 of 2 branches missed.">			if (initializer != null) {</span>
+<span class="fc" id="L295">				List&lt;?&gt; expressions = initializer.expressions();</span>
+<span class="fc" id="L296">				return expressions.stream().allMatch(e -&gt; isConstantExpression((Expression) e));</span>
 			}
 		}
 		
 		// Array initializer
-<span class="pc bpc" id="L254" title="1 of 2 branches missed.">		if (expr instanceof ArrayInitializer) {</span>
-<span class="nc" id="L255">			ArrayInitializer initializer = (ArrayInitializer) expr;</span>
-<span class="nc" id="L256">			List&lt;?&gt; expressions = initializer.expressions();</span>
-<span class="nc" id="L257">			return expressions.stream().allMatch(e -&gt; isConstantExpression((Expression) e));</span>
+<span class="pc bpc" id="L301" title="1 of 2 branches missed.">		if (expr instanceof ArrayInitializer) {</span>
+<span class="nc" id="L302">			ArrayInitializer initializer = (ArrayInitializer) expr;</span>
+<span class="nc" id="L303">			List&lt;?&gt; expressions = initializer.expressions();</span>
+<span class="nc" id="L304">			return expressions.stream().allMatch(e -&gt; isConstantExpression((Expression) e));</span>
 		}
 		
 		// Collection factory methods: List.of(...), Set.of(...), Arrays.asList(...), Map.of(...)
-<span class="pc bpc" id="L261" title="1 of 2 branches missed.">		if (expr instanceof MethodInvocation) {</span>
-<span class="fc" id="L262">			MethodInvocation mi = (MethodInvocation) expr;</span>
-<span class="fc" id="L263">			String methodName = mi.getName().getIdentifier();</span>
-<span class="fc" id="L264">			Expression receiver = mi.getExpression();</span>
+<span class="pc bpc" id="L308" title="1 of 2 branches missed.">		if (expr instanceof MethodInvocation) {</span>
+<span class="fc" id="L309">			MethodInvocation mi = (MethodInvocation) expr;</span>
+<span class="fc" id="L310">			String methodName = mi.getName().getIdentifier();</span>
+<span class="fc" id="L311">			Expression receiver = mi.getExpression();</span>
 			
-<span class="pc bpc" id="L266" title="1 of 4 branches missed.">			if (methodName.equals(&quot;of&quot;) || methodName.equals(&quot;asList&quot;)) {</span>
-<span class="pc bpc" id="L267" title="1 of 2 branches missed.">				if (receiver instanceof SimpleName) {</span>
-<span class="fc" id="L268">					String receiverName = ((SimpleName) receiver).getIdentifier();</span>
-<span class="pc bpc" id="L269" title="3 of 4 branches missed.">					if (receiverName.equals(&quot;List&quot;) || receiverName.equals(&quot;Set&quot;) || </span>
-<span class="nc bnc" id="L270" title="All 4 branches missed.">						receiverName.equals(&quot;Arrays&quot;) || receiverName.equals(&quot;Map&quot;)) {</span>
-<span class="fc" id="L271">						List&lt;?&gt; arguments = mi.arguments();</span>
-<span class="fc" id="L272">						return arguments.stream().allMatch(arg -&gt; isConstantExpression((Expression) arg));</span>
+<span class="pc bpc" id="L313" title="1 of 4 branches missed.">			if (methodName.equals(&quot;of&quot;) || methodName.equals(&quot;asList&quot;)) {</span>
+<span class="pc bpc" id="L314" title="1 of 2 branches missed.">				if (receiver instanceof SimpleName) {</span>
+<span class="fc" id="L315">					String receiverName = ((SimpleName) receiver).getIdentifier();</span>
+<span class="pc bpc" id="L316" title="3 of 4 branches missed.">					if (receiverName.equals(&quot;List&quot;) || receiverName.equals(&quot;Set&quot;) || </span>
+<span class="nc bnc" id="L317" title="All 4 branches missed.">						receiverName.equals(&quot;Arrays&quot;) || receiverName.equals(&quot;Map&quot;)) {</span>
+<span class="fc" id="L318">						List&lt;?&gt; arguments = mi.arguments();</span>
+<span class="fc" id="L319">						return arguments.stream().allMatch(arg -&gt; isConstantExpression((Expression) arg));</span>
 					}
 				}
 			}
 			
 			// Method call on string literal: &quot;test&quot;.getBytes()
-<span class="fc bfc" id="L278" title="All 2 branches covered.">			if (receiver instanceof StringLiteral) {</span>
-<span class="fc" id="L279">				return true;</span>
+<span class="fc bfc" id="L325" title="All 2 branches covered.">			if (receiver instanceof StringLiteral) {</span>
+<span class="fc" id="L326">				return true;</span>
 			}
 		}
 		
-<span class="fc" id="L283">		return false;</span>
+<span class="fc" id="L330">		return false;</span>
 	}
 
 	private boolean canOptimize(Expression condition) {
 		// Check for prefix expression (!condition)
-<span class="fc bfc" id="L288" title="All 2 branches covered.">		if (condition instanceof PrefixExpression) {</span>
-<span class="fc" id="L289">			PrefixExpression prefix = (PrefixExpression) condition;</span>
-<span class="pc bpc" id="L290" title="1 of 2 branches missed.">			return prefix.getOperator() == PrefixExpression.Operator.NOT;</span>
+<span class="fc bfc" id="L335" title="All 2 branches covered.">		if (condition instanceof PrefixExpression) {</span>
+<span class="fc" id="L336">			PrefixExpression prefix = (PrefixExpression) condition;</span>
+<span class="pc bpc" id="L337" title="1 of 2 branches missed.">			return prefix.getOperator() == PrefixExpression.Operator.NOT;</span>
 		}
 		
 		// Check for infix expression (==, !=)
-<span class="fc bfc" id="L294" title="All 2 branches covered.">		if (condition instanceof InfixExpression) {</span>
-<span class="fc" id="L295">			InfixExpression infix = (InfixExpression) condition;</span>
-<span class="fc" id="L296">			InfixExpression.Operator op = infix.getOperator();</span>
-<span class="pc bpc" id="L297" title="1 of 4 branches missed.">			return op == InfixExpression.Operator.EQUALS || op == InfixExpression.Operator.NOT_EQUALS;</span>
+<span class="fc bfc" id="L341" title="All 2 branches covered.">		if (condition instanceof InfixExpression) {</span>
+<span class="fc" id="L342">			InfixExpression infix = (InfixExpression) condition;</span>
+<span class="fc" id="L343">			InfixExpression.Operator op = infix.getOperator();</span>
+<span class="pc bpc" id="L344" title="1 of 4 branches missed.">			return op == InfixExpression.Operator.EQUALS || op == InfixExpression.Operator.NOT_EQUALS;</span>
 		}
 		
 		// Check for .equals() method call
-<span class="pc bpc" id="L301" title="1 of 2 branches missed.">		if (condition instanceof MethodInvocation) {</span>
-<span class="fc" id="L302">			MethodInvocation methodInv = (MethodInvocation) condition;</span>
-<span class="pc bpc" id="L303" title="2 of 4 branches missed.">			return &quot;equals&quot;.equals(methodInv.getName().getIdentifier()) &amp;&amp; methodInv.arguments().size() == 1;</span>
+<span class="pc bpc" id="L348" title="1 of 2 branches missed.">		if (condition instanceof MethodInvocation) {</span>
+<span class="fc" id="L349">			MethodInvocation methodInv = (MethodInvocation) condition;</span>
+<span class="pc bpc" id="L350" title="2 of 4 branches missed.">			return &quot;equals&quot;.equals(methodInv.getName().getIdentifier()) &amp;&amp; methodInv.arguments().size() == 1;</span>
 		}
 		
-<span class="nc" id="L306">		return false;</span>
+<span class="nc" id="L353">		return false;</span>
 	}
 
 	@Override
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
-<span class="pc bpc" id="L312" title="1 of 2 branches missed.">		if (!(junitHolder.minv instanceof MethodInvocation)) {</span>
-<span class="nc" id="L313">			return;</span>
+<span class="pc bpc" id="L359" title="1 of 2 branches missed.">		if (!(junitHolder.minv instanceof MethodInvocation)) {</span>
+<span class="nc" id="L360">			return;</span>
 		}
 		
-<span class="fc" id="L316">		MethodInvocation mi = junitHolder.getMethodInvocation();</span>
-<span class="fc" id="L317">		List&lt;?&gt; arguments = mi.arguments();</span>
+<span class="fc" id="L363">		MethodInvocation mi = junitHolder.getMethodInvocation();</span>
+<span class="fc" id="L364">		List&lt;?&gt; arguments = mi.arguments();</span>
 		
-<span class="pc bpc" id="L319" title="1 of 2 branches missed.">		if (arguments.isEmpty()) {</span>
-<span class="nc" id="L320">			return;</span>
+<span class="pc bpc" id="L366" title="1 of 2 branches missed.">		if (arguments.isEmpty()) {</span>
+<span class="nc" id="L367">			return;</span>
 		}
 		
-<span class="fc" id="L323">		String methodName = mi.getName().getIdentifier();</span>
+<span class="fc" id="L370">		String methodName = mi.getName().getIdentifier();</span>
 		
 		// Check if this is a parameter order correction case
-<span class="fc bfc" id="L326" title="All 2 branches covered.">		if (METHODS_WITH_EXPECTED_ACTUAL.contains(methodName)) {</span>
-<span class="fc" id="L327">			swapParametersIfNeeded(mi, rewriter, group);</span>
-<span class="fc" id="L328">			return;</span>
+<span class="fc bfc" id="L373" title="All 2 branches covered.">		if (METHODS_WITH_EXPECTED_ACTUAL.contains(methodName)) {</span>
+<span class="fc" id="L374">			swapParametersIfNeeded(mi, rewriter, group);</span>
+<span class="fc" id="L375">			return;</span>
 		}
 		
 		// Handle assertTrue/assertFalse optimization
-<span class="fc" id="L332">		boolean isTrue = &quot;assertTrue&quot;.equals(methodName);</span>
+<span class="fc" id="L379">		boolean isTrue = &quot;assertTrue&quot;.equals(methodName);</span>
 		
 		// Get the condition and message
-<span class="fc" id="L335">		Expression condition = null;</span>
-<span class="fc" id="L336">		Expression message = null;</span>
+<span class="fc" id="L382">		Expression condition = null;</span>
+<span class="fc" id="L383">		Expression message = null;</span>
 		
-<span class="fc bfc" id="L338" title="All 2 branches covered.">		if (arguments.size() == 1) {</span>
-<span class="fc" id="L339">			condition = (Expression) arguments.get(0);</span>
-<span class="pc bpc" id="L340" title="1 of 2 branches missed.">		} else if (arguments.size() == 2) {</span>
-<span class="fc" id="L341">			Expression firstArg = (Expression) arguments.get(0);</span>
-<span class="fc" id="L342">			ITypeBinding firstArgType = firstArg.resolveTypeBinding();</span>
-<span class="pc bpc" id="L343" title="2 of 4 branches missed.">			if (firstArgType != null &amp;&amp; &quot;java.lang.String&quot;.equals(firstArgType.getQualifiedName())) {</span>
-<span class="nc" id="L344">				message = firstArg;</span>
-<span class="nc" id="L345">				condition = (Expression) arguments.get(1);</span>
-<span class="nc" id="L346">			} else {</span>
-<span class="fc" id="L347">				condition = firstArg;</span>
-<span class="fc" id="L348">				message = (Expression) arguments.get(1);</span>
+<span class="fc bfc" id="L385" title="All 2 branches covered.">		if (arguments.size() == 1) {</span>
+<span class="fc" id="L386">			condition = (Expression) arguments.get(0);</span>
+<span class="pc bpc" id="L387" title="1 of 2 branches missed.">		} else if (arguments.size() == 2) {</span>
+<span class="fc" id="L388">			Expression firstArg = (Expression) arguments.get(0);</span>
+<span class="fc" id="L389">			ITypeBinding firstArgType = firstArg.resolveTypeBinding();</span>
+<span class="pc bpc" id="L390" title="2 of 4 branches missed.">			if (firstArgType != null &amp;&amp; &quot;java.lang.String&quot;.equals(firstArgType.getQualifiedName())) {</span>
+<span class="nc" id="L391">				message = firstArg;</span>
+<span class="nc" id="L392">				condition = (Expression) arguments.get(1);</span>
+<span class="nc" id="L393">			} else {</span>
+<span class="fc" id="L394">				condition = firstArg;</span>
+<span class="fc" id="L395">				message = (Expression) arguments.get(1);</span>
 			}
 		}
 		
-<span class="pc bpc" id="L352" title="1 of 2 branches missed.">		if (condition == null) {</span>
-<span class="nc" id="L353">			return;</span>
+<span class="pc bpc" id="L399" title="1 of 2 branches missed.">		if (condition == null) {</span>
+<span class="nc" id="L400">			return;</span>
 		}
 		
 		// Handle prefix expression: assertTrue(!x) → assertFalse(x)
-<span class="fc bfc" id="L357" title="All 2 branches covered.">		if (condition instanceof PrefixExpression) {</span>
-<span class="fc" id="L358">			PrefixExpression prefix = (PrefixExpression) condition;</span>
-<span class="pc bpc" id="L359" title="1 of 2 branches missed.">			if (prefix.getOperator() == PrefixExpression.Operator.NOT) {</span>
+<span class="fc bfc" id="L404" title="All 2 branches covered.">		if (condition instanceof PrefixExpression) {</span>
+<span class="fc" id="L405">			PrefixExpression prefix = (PrefixExpression) condition;</span>
+<span class="pc bpc" id="L406" title="1 of 2 branches missed.">			if (prefix.getOperator() == PrefixExpression.Operator.NOT) {</span>
 				// Flip assertTrue/assertFalse and remove negation
-<span class="pc bpc" id="L361" title="1 of 2 branches missed.">				String newMethodName = isTrue ? &quot;assertFalse&quot; : &quot;assertTrue&quot;;</span>
-<span class="fc" id="L362">				rewriter.set(mi, MethodInvocation.NAME_PROPERTY, ast.newSimpleName(newMethodName), group);</span>
+<span class="pc bpc" id="L408" title="1 of 2 branches missed.">				String newMethodName = isTrue ? &quot;assertFalse&quot; : &quot;assertTrue&quot;;</span>
+<span class="fc" id="L409">				rewriter.set(mi, MethodInvocation.NAME_PROPERTY, ast.newSimpleName(newMethodName), group);</span>
 				
 				// Replace condition with the operand (removing the !)
-<span class="fc" id="L365">				ListRewrite argsRewrite = rewriter.getListRewrite(mi, MethodInvocation.ARGUMENTS_PROPERTY);</span>
-<span class="fc" id="L366">				argsRewrite.replace((ASTNode) condition, rewriter.createCopyTarget(prefix.getOperand()), group);</span>
+<span class="fc" id="L412">				ListRewrite argsRewrite = rewriter.getListRewrite(mi, MethodInvocation.ARGUMENTS_PROPERTY);</span>
+<span class="fc" id="L413">				argsRewrite.replace((ASTNode) condition, rewriter.createCopyTarget(prefix.getOperand()), group);</span>
 			}
-<span class="fc" id="L368">			return;</span>
+<span class="fc" id="L415">			return;</span>
 		}
 		
 		// Handle infix expression: ==, !=
-<span class="fc bfc" id="L372" title="All 2 branches covered.">		if (condition instanceof InfixExpression) {</span>
-<span class="fc" id="L373">			InfixExpression infix = (InfixExpression) condition;</span>
-<span class="fc" id="L374">			InfixExpression.Operator op = infix.getOperator();</span>
-<span class="fc" id="L375">			Expression left = infix.getLeftOperand();</span>
-<span class="fc" id="L376">			Expression right = infix.getRightOperand();</span>
+<span class="fc bfc" id="L419" title="All 2 branches covered.">		if (condition instanceof InfixExpression) {</span>
+<span class="fc" id="L420">			InfixExpression infix = (InfixExpression) condition;</span>
+<span class="fc" id="L421">			InfixExpression.Operator op = infix.getOperator();</span>
+<span class="fc" id="L422">			Expression left = infix.getLeftOperand();</span>
+<span class="fc" id="L423">			Expression right = infix.getRightOperand();</span>
 			
 			// Check for null comparisons
-<span class="fc" id="L379">			boolean leftIsNull = left instanceof NullLiteral;</span>
-<span class="fc" id="L380">			boolean rightIsNull = right instanceof NullLiteral;</span>
+<span class="fc" id="L426">			boolean leftIsNull = left instanceof NullLiteral;</span>
+<span class="fc" id="L427">			boolean rightIsNull = right instanceof NullLiteral;</span>
 			
-<span class="pc bpc" id="L382" title="1 of 4 branches missed.">			if (leftIsNull || rightIsNull) {</span>
-<span class="pc bpc" id="L383" title="1 of 2 branches missed.">				Expression nonNullExpr = leftIsNull ? right : left;</span>
-<span class="fc" id="L384">				String newMethodName = null;</span>
+<span class="pc bpc" id="L429" title="1 of 4 branches missed.">			if (leftIsNull || rightIsNull) {</span>
+<span class="pc bpc" id="L430" title="1 of 2 branches missed.">				Expression nonNullExpr = leftIsNull ? right : left;</span>
+<span class="fc" id="L431">				String newMethodName = null;</span>
 				
-<span class="fc bfc" id="L386" title="All 2 branches covered.">				if (op == InfixExpression.Operator.EQUALS) {</span>
+<span class="fc bfc" id="L433" title="All 2 branches covered.">				if (op == InfixExpression.Operator.EQUALS) {</span>
 					// assertTrue(x == null) → assertNull(x)
 					// assertFalse(x == null) → assertNotNull(x)
-<span class="pc bpc" id="L389" title="1 of 2 branches missed.">					newMethodName = isTrue ? &quot;assertNull&quot; : &quot;assertNotNull&quot;;</span>
-<span class="pc bpc" id="L390" title="1 of 2 branches missed.">				} else if (op == InfixExpression.Operator.NOT_EQUALS) {</span>
+<span class="pc bpc" id="L436" title="1 of 2 branches missed.">					newMethodName = isTrue ? &quot;assertNull&quot; : &quot;assertNotNull&quot;;</span>
+<span class="pc bpc" id="L437" title="1 of 2 branches missed.">				} else if (op == InfixExpression.Operator.NOT_EQUALS) {</span>
 					// assertTrue(x != null) → assertNotNull(x)
 					// assertFalse(x != null) → assertNull(x)
-<span class="pc bpc" id="L393" title="1 of 2 branches missed.">					newMethodName = isTrue ? &quot;assertNotNull&quot; : &quot;assertNull&quot;;</span>
+<span class="pc bpc" id="L440" title="1 of 2 branches missed.">					newMethodName = isTrue ? &quot;assertNotNull&quot; : &quot;assertNull&quot;;</span>
 				}
 				
-<span class="pc bpc" id="L396" title="1 of 2 branches missed.">				if (newMethodName != null) {</span>
-<span class="fc" id="L397">					rewriter.set(mi, MethodInvocation.NAME_PROPERTY, ast.newSimpleName(newMethodName), group);</span>
-<span class="fc" id="L398">					ListRewrite argsRewrite = rewriter.getListRewrite(mi, MethodInvocation.ARGUMENTS_PROPERTY);</span>
+<span class="pc bpc" id="L443" title="1 of 2 branches missed.">				if (newMethodName != null) {</span>
+<span class="fc" id="L444">					rewriter.set(mi, MethodInvocation.NAME_PROPERTY, ast.newSimpleName(newMethodName), group);</span>
+<span class="fc" id="L445">					ListRewrite argsRewrite = rewriter.getListRewrite(mi, MethodInvocation.ARGUMENTS_PROPERTY);</span>
 					
 					// Create new argument list
-<span class="fc" id="L401">					argsRewrite.remove((ASTNode) condition, group);</span>
-<span class="pc bpc" id="L402" title="1 of 2 branches missed.">					if (message != null) {</span>
-<span class="nc" id="L403">						argsRewrite.insertLast(rewriter.createCopyTarget(nonNullExpr), group);</span>
-<span class="nc" id="L404">					} else {</span>
-<span class="fc" id="L405">						argsRewrite.insertFirst(rewriter.createCopyTarget(nonNullExpr), group);</span>
+<span class="fc" id="L448">					argsRewrite.remove((ASTNode) condition, group);</span>
+<span class="pc bpc" id="L449" title="1 of 2 branches missed.">					if (message != null) {</span>
+<span class="nc" id="L450">						argsRewrite.insertLast(rewriter.createCopyTarget(nonNullExpr), group);</span>
+<span class="nc" id="L451">					} else {</span>
+<span class="fc" id="L452">						argsRewrite.insertFirst(rewriter.createCopyTarget(nonNullExpr), group);</span>
 					}
 				}
-<span class="fc" id="L408">			} else {</span>
+<span class="fc" id="L455">			} else {</span>
 				// Handle equality checks between non-null values
-<span class="fc" id="L410">				boolean isPrimitiveComparison = isPrimitiveComparison(left, right);</span>
-<span class="fc" id="L411">				String newMethodName = null;</span>
+<span class="fc" id="L457">				boolean isPrimitiveComparison = isPrimitiveComparison(left, right);</span>
+<span class="fc" id="L458">				String newMethodName = null;</span>
 				
-<span class="fc bfc" id="L413" title="All 2 branches covered.">				if (op == InfixExpression.Operator.EQUALS) {</span>
-<span class="fc bfc" id="L414" title="All 2 branches covered.">					if (isPrimitiveComparison) {</span>
+<span class="fc bfc" id="L460" title="All 2 branches covered.">				if (op == InfixExpression.Operator.EQUALS) {</span>
+<span class="fc bfc" id="L461" title="All 2 branches covered.">					if (isPrimitiveComparison) {</span>
 						// assertTrue(a == b) → assertEquals(a, b)
 						// assertFalse(a == b) → assertNotEquals(a, b)
-<span class="fc bfc" id="L417" title="All 2 branches covered.">						newMethodName = isTrue ? &quot;assertEquals&quot; : &quot;assertNotEquals&quot;;</span>
-<span class="fc" id="L418">					} else {</span>
+<span class="fc bfc" id="L464" title="All 2 branches covered.">						newMethodName = isTrue ? &quot;assertEquals&quot; : &quot;assertNotEquals&quot;;</span>
+<span class="fc" id="L465">					} else {</span>
 						// Objects: assertTrue(obj1 == obj2) → assertSame(obj1, obj2)
 						// assertFalse(obj1 == obj2) → assertNotSame(obj1, obj2)
-<span class="pc bpc" id="L421" title="1 of 2 branches missed.">						newMethodName = isTrue ? &quot;assertSame&quot; : &quot;assertNotSame&quot;;</span>
+<span class="pc bpc" id="L468" title="1 of 2 branches missed.">						newMethodName = isTrue ? &quot;assertSame&quot; : &quot;assertNotSame&quot;;</span>
 					}
-<span class="pc bpc" id="L423" title="1 of 2 branches missed.">				} else if (op == InfixExpression.Operator.NOT_EQUALS) {</span>
-<span class="pc bpc" id="L424" title="1 of 2 branches missed.">					if (isPrimitiveComparison) {</span>
+<span class="pc bpc" id="L470" title="1 of 2 branches missed.">				} else if (op == InfixExpression.Operator.NOT_EQUALS) {</span>
+<span class="pc bpc" id="L471" title="1 of 2 branches missed.">					if (isPrimitiveComparison) {</span>
 						// assertTrue(a != b) → assertNotEquals(a, b)
 						// assertFalse(a != b) → assertEquals(a, b)
-<span class="pc bpc" id="L427" title="1 of 2 branches missed.">						newMethodName = isTrue ? &quot;assertNotEquals&quot; : &quot;assertEquals&quot;;</span>
-<span class="fc" id="L428">					} else {</span>
+<span class="pc bpc" id="L474" title="1 of 2 branches missed.">						newMethodName = isTrue ? &quot;assertNotEquals&quot; : &quot;assertEquals&quot;;</span>
+<span class="fc" id="L475">					} else {</span>
 						// Objects: assertTrue(obj1 != obj2) → assertNotSame(obj1, obj2)
 						// assertFalse(obj1 != obj2) → assertSame(obj1, obj2)
-<span class="nc bnc" id="L431" title="All 2 branches missed.">						newMethodName = isTrue ? &quot;assertNotSame&quot; : &quot;assertSame&quot;;</span>
+<span class="nc bnc" id="L478" title="All 2 branches missed.">						newMethodName = isTrue ? &quot;assertNotSame&quot; : &quot;assertSame&quot;;</span>
 					}
 				}
 				
-<span class="pc bpc" id="L435" title="1 of 2 branches missed.">				if (newMethodName != null) {</span>
-<span class="fc" id="L436">					rewriter.set(mi, MethodInvocation.NAME_PROPERTY, ast.newSimpleName(newMethodName), group);</span>
-<span class="fc" id="L437">					ListRewrite argsRewrite = rewriter.getListRewrite(mi, MethodInvocation.ARGUMENTS_PROPERTY);</span>
+<span class="pc bpc" id="L482" title="1 of 2 branches missed.">				if (newMethodName != null) {</span>
+<span class="fc" id="L483">					rewriter.set(mi, MethodInvocation.NAME_PROPERTY, ast.newSimpleName(newMethodName), group);</span>
+<span class="fc" id="L484">					ListRewrite argsRewrite = rewriter.getListRewrite(mi, MethodInvocation.ARGUMENTS_PROPERTY);</span>
 					
 					// Replace condition with two separate arguments
-<span class="fc" id="L440">					argsRewrite.remove((ASTNode) condition, group);</span>
-<span class="fc bfc" id="L441" title="All 2 branches covered.">					if (message != null) {</span>
+<span class="fc" id="L487">					argsRewrite.remove((ASTNode) condition, group);</span>
+<span class="fc bfc" id="L488" title="All 2 branches covered.">					if (message != null) {</span>
 						// Message comes last in JUnit 5
-<span class="fc" id="L443">						argsRewrite.insertBefore(rewriter.createCopyTarget(left), (ASTNode) message, group);</span>
-<span class="fc" id="L444">						argsRewrite.insertBefore(rewriter.createCopyTarget(right), (ASTNode) message, group);</span>
-<span class="fc" id="L445">					} else {</span>
-<span class="fc" id="L446">						argsRewrite.insertFirst(rewriter.createCopyTarget(left), group);</span>
-<span class="fc" id="L447">						argsRewrite.insertLast(rewriter.createCopyTarget(right), group);</span>
+<span class="fc" id="L490">						argsRewrite.insertBefore(rewriter.createCopyTarget(left), (ASTNode) message, group);</span>
+<span class="fc" id="L491">						argsRewrite.insertBefore(rewriter.createCopyTarget(right), (ASTNode) message, group);</span>
+<span class="fc" id="L492">					} else {</span>
+<span class="fc" id="L493">						argsRewrite.insertFirst(rewriter.createCopyTarget(left), group);</span>
+<span class="fc" id="L494">						argsRewrite.insertLast(rewriter.createCopyTarget(right), group);</span>
 					}
 				}
 			}
-<span class="fc" id="L451">			return;</span>
+<span class="fc" id="L498">			return;</span>
 		}
 		
 		// Handle .equals() method call
-<span class="pc bpc" id="L455" title="1 of 2 branches missed.">		if (condition instanceof MethodInvocation) {</span>
-<span class="fc" id="L456">			MethodInvocation methodInv = (MethodInvocation) condition;</span>
-<span class="pc bpc" id="L457" title="2 of 4 branches missed.">			if (&quot;equals&quot;.equals(methodInv.getName().getIdentifier()) &amp;&amp; methodInv.arguments().size() == 1) {</span>
-<span class="fc" id="L458">				Expression receiver = methodInv.getExpression();</span>
-<span class="fc" id="L459">				Expression argument = (Expression) methodInv.arguments().get(0);</span>
+<span class="pc bpc" id="L502" title="1 of 2 branches missed.">		if (condition instanceof MethodInvocation) {</span>
+<span class="fc" id="L503">			MethodInvocation methodInv = (MethodInvocation) condition;</span>
+<span class="pc bpc" id="L504" title="2 of 4 branches missed.">			if (&quot;equals&quot;.equals(methodInv.getName().getIdentifier()) &amp;&amp; methodInv.arguments().size() == 1) {</span>
+<span class="fc" id="L505">				Expression receiver = methodInv.getExpression();</span>
+<span class="fc" id="L506">				Expression argument = (Expression) methodInv.arguments().get(0);</span>
 				
 				// assertTrue(a.equals(b)) → assertEquals(b, a)
 				// assertFalse(a.equals(b)) → assertNotEquals(b, a)
-<span class="pc bpc" id="L463" title="1 of 2 branches missed.">				String newMethodName = isTrue ? &quot;assertEquals&quot; : &quot;assertNotEquals&quot;;</span>
-<span class="fc" id="L464">				rewriter.set(mi, MethodInvocation.NAME_PROPERTY, ast.newSimpleName(newMethodName), group);</span>
+<span class="pc bpc" id="L510" title="1 of 2 branches missed.">				String newMethodName = isTrue ? &quot;assertEquals&quot; : &quot;assertNotEquals&quot;;</span>
+<span class="fc" id="L511">				rewriter.set(mi, MethodInvocation.NAME_PROPERTY, ast.newSimpleName(newMethodName), group);</span>
 				
-<span class="fc" id="L466">				ListRewrite argsRewrite = rewriter.getListRewrite(mi, MethodInvocation.ARGUMENTS_PROPERTY);</span>
-<span class="fc" id="L467">				argsRewrite.remove((ASTNode) condition, group);</span>
+<span class="fc" id="L513">				ListRewrite argsRewrite = rewriter.getListRewrite(mi, MethodInvocation.ARGUMENTS_PROPERTY);</span>
+<span class="fc" id="L514">				argsRewrite.remove((ASTNode) condition, group);</span>
 				
-<span class="pc bpc" id="L469" title="1 of 2 branches missed.">				if (message != null) {</span>
+<span class="pc bpc" id="L516" title="1 of 2 branches missed.">				if (message != null) {</span>
 					// JUnit 5: expected, actual, message
-<span class="nc" id="L471">					argsRewrite.insertBefore(rewriter.createCopyTarget(argument), (ASTNode) message, group);</span>
-<span class="nc bnc" id="L472" title="All 2 branches missed.">					if (receiver != null) {</span>
-<span class="nc" id="L473">						argsRewrite.insertBefore(rewriter.createCopyTarget(receiver), (ASTNode) message, group);</span>
+<span class="nc" id="L518">					argsRewrite.insertBefore(rewriter.createCopyTarget(argument), (ASTNode) message, group);</span>
+<span class="nc bnc" id="L519" title="All 2 branches missed.">					if (receiver != null) {</span>
+<span class="nc" id="L520">						argsRewrite.insertBefore(rewriter.createCopyTarget(receiver), (ASTNode) message, group);</span>
 					}
-<span class="nc" id="L475">				} else {</span>
-<span class="fc" id="L476">					argsRewrite.insertFirst(rewriter.createCopyTarget(argument), group);</span>
-<span class="pc bpc" id="L477" title="1 of 2 branches missed.">					if (receiver != null) {</span>
-<span class="fc" id="L478">						argsRewrite.insertLast(rewriter.createCopyTarget(receiver), group);</span>
+<span class="nc" id="L522">				} else {</span>
+<span class="fc" id="L523">					argsRewrite.insertFirst(rewriter.createCopyTarget(argument), group);</span>
+<span class="pc bpc" id="L524" title="1 of 2 branches missed.">					if (receiver != null) {</span>
+<span class="fc" id="L525">						argsRewrite.insertLast(rewriter.createCopyTarget(receiver), group);</span>
 					}
 				}
 			}
 		}
-<span class="fc" id="L483">	}</span>
+<span class="fc" id="L530">	}</span>
 
 	/**
 	 * Swaps expected/actual parameters if they are in the wrong order.
 	 * Expected (constant) should come first, actual (computed) should come second.
 	 */
 	private void swapParametersIfNeeded(MethodInvocation mi, ASTRewrite rewriter, TextEditGroup group) {
-<span class="fc" id="L490">		List&lt;?&gt; arguments = mi.arguments();</span>
+<span class="fc" id="L537">		List&lt;?&gt; arguments = mi.arguments();</span>
 		
-<span class="pc bpc" id="L492" title="1 of 2 branches missed.">		if (arguments.size() &lt; 2) {</span>
-<span class="nc" id="L493">			return;</span>
+<span class="pc bpc" id="L539" title="1 of 2 branches missed.">		if (arguments.size() &lt; 2) {</span>
+<span class="nc" id="L540">			return;</span>
 		}
 		
-<span class="fc" id="L496">		Expression first = (Expression) arguments.get(0);</span>
-<span class="fc" id="L497">		Expression second = (Expression) arguments.get(1);</span>
+<span class="fc" id="L543">		Expression first = (Expression) arguments.get(0);</span>
+<span class="fc" id="L544">		Expression second = (Expression) arguments.get(1);</span>
 		
 		// Check if first argument is a String message (JUnit 4 style)
-<span class="fc" id="L500">		ITypeBinding firstType = first.resolveTypeBinding();</span>
-<span class="pc bpc" id="L501" title="1 of 4 branches missed.">		boolean firstIsMessage = firstType != null &amp;&amp; &quot;java.lang.String&quot;.equals(firstType.getQualifiedName());</span>
+<span class="fc" id="L547">		ITypeBinding firstType = first.resolveTypeBinding();</span>
+<span class="pc bpc" id="L548" title="1 of 4 branches missed.">		boolean firstIsMessage = firstType != null &amp;&amp; &quot;java.lang.String&quot;.equals(firstType.getQualifiedName());</span>
 		
 		Expression expectedParam;
 		Expression actualParam;
 		int expectedIndex;
 		int actualIndex;
 		
-<span class="pc bpc" id="L508" title="1 of 4 branches missed.">		if (firstIsMessage &amp;&amp; arguments.size() &gt;= 3) {</span>
+<span class="pc bpc" id="L555" title="1 of 4 branches missed.">		if (firstIsMessage &amp;&amp; arguments.size() &gt;= 3) {</span>
 			// JUnit 4: message, expected, actual
-<span class="nc" id="L510">			expectedParam = (Expression) arguments.get(1);</span>
-<span class="nc" id="L511">			actualParam = (Expression) arguments.get(2);</span>
-<span class="nc" id="L512">			expectedIndex = 1;</span>
-<span class="nc" id="L513">			actualIndex = 2;</span>
-<span class="nc" id="L514">		} else {</span>
+<span class="nc" id="L557">			expectedParam = (Expression) arguments.get(1);</span>
+<span class="nc" id="L558">			actualParam = (Expression) arguments.get(2);</span>
+<span class="nc" id="L559">			expectedIndex = 1;</span>
+<span class="nc" id="L560">			actualIndex = 2;</span>
+<span class="nc" id="L561">		} else {</span>
 			// JUnit 5: expected, actual [, message]
-<span class="fc" id="L516">			expectedParam = first;</span>
-<span class="fc" id="L517">			actualParam = second;</span>
-<span class="fc" id="L518">			expectedIndex = 0;</span>
-<span class="fc" id="L519">			actualIndex = 1;</span>
+<span class="fc" id="L563">			expectedParam = first;</span>
+<span class="fc" id="L564">			actualParam = second;</span>
+<span class="fc" id="L565">			expectedIndex = 0;</span>
+<span class="fc" id="L566">			actualIndex = 1;</span>
 		}
 		
 		// If expected is not constant but actual is constant, swap them
-<span class="pc bpc" id="L523" title="2 of 4 branches missed.">		if (!isConstantExpression(expectedParam) &amp;&amp; isConstantExpression(actualParam)) {</span>
-<span class="fc" id="L524">			ListRewrite argsRewrite = rewriter.getListRewrite(mi, MethodInvocation.ARGUMENTS_PROPERTY);</span>
-<span class="fc" id="L525">			Expression newExpected = (Expression) rewriter.createCopyTarget(actualParam);</span>
-<span class="fc" id="L526">			Expression newActual = (Expression) rewriter.createCopyTarget(expectedParam);</span>
-<span class="fc" id="L527">			argsRewrite.replace((ASTNode) arguments.get(expectedIndex), newExpected, group);</span>
-<span class="fc" id="L528">			argsRewrite.replace((ASTNode) arguments.get(actualIndex), newActual, group);</span>
+<span class="pc bpc" id="L570" title="2 of 4 branches missed.">		if (!isConstantExpression(expectedParam) &amp;&amp; isConstantExpression(actualParam)) {</span>
+<span class="fc" id="L571">			ListRewrite argsRewrite = rewriter.getListRewrite(mi, MethodInvocation.ARGUMENTS_PROPERTY);</span>
+<span class="fc" id="L572">			Expression newExpected = (Expression) rewriter.createCopyTarget(actualParam);</span>
+<span class="fc" id="L573">			Expression newActual = (Expression) rewriter.createCopyTarget(expectedParam);</span>
+<span class="fc" id="L574">			argsRewrite.replace((ASTNode) arguments.get(expectedIndex), newExpected, group);</span>
+<span class="fc" id="L575">			argsRewrite.replace((ASTNode) arguments.get(actualIndex), newActual, group);</span>
 		}
-<span class="fc" id="L530">	}</span>
+<span class="fc" id="L577">	}</span>
 
 	private boolean isPrimitiveComparison(Expression left, Expression right) {
-<span class="fc" id="L533">		ITypeBinding leftType = left.resolveTypeBinding();</span>
-<span class="fc" id="L534">		ITypeBinding rightType = right.resolveTypeBinding();</span>
-<span class="pc bpc" id="L535" title="3 of 8 branches missed.">		return (leftType != null &amp;&amp; leftType.isPrimitive()) || (rightType != null &amp;&amp; rightType.isPrimitive());</span>
+<span class="fc" id="L580">		ITypeBinding leftType = left.resolveTypeBinding();</span>
+<span class="fc" id="L581">		ITypeBinding rightType = right.resolveTypeBinding();</span>
+<span class="pc bpc" id="L582" title="3 of 8 branches missed.">		return (leftType != null &amp;&amp; leftType.isPrimitive()) || (rightType != null &amp;&amp; rightType.isPrimitive());</span>
 	}
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L540" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L541">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L587" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L588">			return &quot;&quot;&quot;</span>
 					Assertions.assertEquals(5, result);
 					Assertions.assertNull(obj);
 					Assertions.assertFalse(condition);
 					&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L547">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L594">		return &quot;&quot;&quot;</span>
 				Assertions.assertTrue(result == 5);
 				Assertions.assertTrue(obj == null);
 				Assertions.assertTrue(!condition);
@@ -553,7 +600,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 	@Override
 	public String toString() {
-<span class="fc" id="L556">		return &quot;AssertOptimization&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L603">		return &quot;AssertOptimization&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

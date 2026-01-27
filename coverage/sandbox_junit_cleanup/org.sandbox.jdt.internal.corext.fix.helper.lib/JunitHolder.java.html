@@ -63,8 +63,8 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	/** Additional context information for complex transformations */
 	public Object additionalInfo;
 	
-	/** Placeholder bindings from TriggerPattern (e.g., &quot;$x&quot; -&gt; ASTNode) */
-<span class="fc" id="L67">	public Map&lt;String, ASTNode&gt; bindings = new HashMap&lt;&gt;();</span>
+	/** Placeholder bindings from TriggerPattern (e.g., &quot;$x&quot; -&gt; ASTNode or &quot;$args$&quot; -&gt; List&lt;ASTNode&gt;) */
+<span class="fc" id="L67">	public Map&lt;String, Object&gt; bindings = new HashMap&lt;&gt;();</span>
 
 	/**
 	 * Gets the node as an Annotation.
@@ -110,21 +110,28 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	 * Gets a placeholder binding as an Expression.
 	 * 
 	 * @param placeholder the placeholder name (e.g., &quot;$x&quot;)
-	 * @return the bound expression, or null if not found
+	 * @return the bound expression, or null if not found or if it's a list binding
 	 */
 	public Expression getBindingAsExpression(String placeholder) {
-<span class="nc" id="L116">		ASTNode node = bindings.get(placeholder);</span>
-<span class="nc bnc" id="L117" title="All 2 branches missed.">		return node instanceof Expression ? (Expression) node : null;</span>
+<span class="nc" id="L116">		Object value = bindings.get(placeholder);</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">		if (value instanceof Expression) {</span>
+<span class="nc" id="L118">			return (Expression) value;</span>
+		}
+<span class="nc" id="L120">		return null;</span>
 	}
 	
 	/**
 	 * Gets a placeholder binding.
 	 * 
 	 * @param placeholder the placeholder name (e.g., &quot;$x&quot;)
-	 * @return the bound AST node, or null if not found
+	 * @return the bound AST node, or null if not found or if it's a list binding
 	 */
 	public ASTNode getBinding(String placeholder) {
-<span class="nc" id="L127">		return bindings.get(placeholder);</span>
+<span class="nc" id="L130">		Object value = bindings.get(placeholder);</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">		if (value instanceof ASTNode) {</span>
+<span class="nc" id="L132">			return (ASTNode) value;</span>
+		}
+<span class="nc" id="L134">		return null;</span>
 	}
 	
 	/**
@@ -134,7 +141,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	 * @return true if the binding exists
 	 */
 	public boolean hasBinding(String placeholder) {
-<span class="nc" id="L137">		return bindings.containsKey(placeholder);</span>
+<span class="nc" id="L144">		return bindings.containsKey(placeholder);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

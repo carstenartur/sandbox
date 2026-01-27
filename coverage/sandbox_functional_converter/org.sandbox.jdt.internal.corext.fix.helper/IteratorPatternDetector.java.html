@@ -24,7 +24,7 @@ import org.eclipse.jdt.core.dom.*;
  *   &lt;li&gt;for-loop-iterator: {@code for (Iterator&lt;T&gt; it = collection.iterator(); it.hasNext(); ) { T item = it.next(); ... }}&lt;/li&gt;
  * &lt;/ul&gt;
  */
-<span class="nc" id="L27">public class IteratorPatternDetector {</span>
+<span class="fc" id="L27">public class IteratorPatternDetector {</span>
     
     /**
      * Result of pattern detection.
@@ -36,14 +36,14 @@ import org.eclipse.jdt.core.dom.*;
         public final Statement loopBody;
         public final boolean isForLoop; // true for for-loop pattern, false for while pattern
         
-<span class="nc" id="L39">        public IteratorPattern(Expression collectionExpression, String iteratorVariableName, </span>
+<span class="fc" id="L39">        public IteratorPattern(Expression collectionExpression, String iteratorVariableName, </span>
                                String elementType, Statement loopBody, boolean isForLoop) {
-<span class="nc" id="L41">            this.collectionExpression = collectionExpression;</span>
-<span class="nc" id="L42">            this.iteratorVariableName = iteratorVariableName;</span>
-<span class="nc" id="L43">            this.elementType = elementType;</span>
-<span class="nc" id="L44">            this.loopBody = loopBody;</span>
-<span class="nc" id="L45">            this.isForLoop = isForLoop;</span>
-<span class="nc" id="L46">        }</span>
+<span class="fc" id="L41">            this.collectionExpression = collectionExpression;</span>
+<span class="fc" id="L42">            this.iteratorVariableName = iteratorVariableName;</span>
+<span class="fc" id="L43">            this.elementType = elementType;</span>
+<span class="fc" id="L44">            this.loopBody = loopBody;</span>
+<span class="fc" id="L45">            this.isForLoop = isForLoop;</span>
+<span class="fc" id="L46">        }</span>
     }
     
     /**
@@ -60,39 +60,39 @@ import org.eclipse.jdt.core.dom.*;
      */
     public IteratorPattern detectWhilePattern(WhileStatement whileStmt, Statement previousStatement) {
         // Check condition: it.hasNext()
-<span class="nc" id="L63">        Expression condition = whileStmt.getExpression();</span>
-<span class="nc" id="L64">        String iteratorVar = extractIteratorFromHasNext(condition);</span>
-<span class="nc bnc" id="L65" title="All 2 branches missed.">        if (iteratorVar == null) {</span>
-<span class="nc" id="L66">            return null;</span>
+<span class="fc" id="L63">        Expression condition = whileStmt.getExpression();</span>
+<span class="fc" id="L64">        String iteratorVar = extractIteratorFromHasNext(condition);</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">        if (iteratorVar == null) {</span>
+<span class="fc" id="L66">            return null;</span>
         }
         
         // Check previous statement: Iterator&lt;T&gt; it = collection.iterator();
-<span class="nc bnc" id="L70" title="All 4 branches missed.">        if (previousStatement == null || !(previousStatement instanceof VariableDeclarationStatement)) {</span>
+<span class="pc bpc" id="L70" title="2 of 4 branches missed.">        if (previousStatement == null || !(previousStatement instanceof VariableDeclarationStatement)) {</span>
 <span class="nc" id="L71">            return null;</span>
         }
         
-<span class="nc" id="L74">        VariableDeclarationStatement varDecl = (VariableDeclarationStatement) previousStatement;</span>
-<span class="nc bnc" id="L75" title="All 2 branches missed.">        if (varDecl.fragments().size() != 1) {</span>
+<span class="fc" id="L74">        VariableDeclarationStatement varDecl = (VariableDeclarationStatement) previousStatement;</span>
+<span class="pc bpc" id="L75" title="1 of 2 branches missed.">        if (varDecl.fragments().size() != 1) {</span>
 <span class="nc" id="L76">            return null;</span>
         }
         
-<span class="nc" id="L79">        VariableDeclarationFragment fragment = (VariableDeclarationFragment) varDecl.fragments().get(0);</span>
-<span class="nc bnc" id="L80" title="All 2 branches missed.">        if (!fragment.getName().getIdentifier().equals(iteratorVar)) {</span>
+<span class="fc" id="L79">        VariableDeclarationFragment fragment = (VariableDeclarationFragment) varDecl.fragments().get(0);</span>
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">        if (!fragment.getName().getIdentifier().equals(iteratorVar)) {</span>
 <span class="nc" id="L81">            return null;</span>
         }
         
         // Check initializer: collection.iterator()
-<span class="nc" id="L85">        Expression initializer = fragment.getInitializer();</span>
-<span class="nc" id="L86">        Expression collectionExpr = extractCollectionFromIteratorCall(initializer);</span>
-<span class="nc bnc" id="L87" title="All 2 branches missed.">        if (collectionExpr == null) {</span>
+<span class="fc" id="L85">        Expression initializer = fragment.getInitializer();</span>
+<span class="fc" id="L86">        Expression collectionExpr = extractCollectionFromIteratorCall(initializer);</span>
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">        if (collectionExpr == null) {</span>
 <span class="nc" id="L88">            return null;</span>
         }
         
         // Extract element type from Iterator&lt;T&gt;
-<span class="nc" id="L92">        String elementType = extractElementType(varDecl.getType());</span>
+<span class="fc" id="L92">        String elementType = extractElementType(varDecl.getType());</span>
         
-<span class="nc" id="L94">        return new IteratorPattern(collectionExpr, iteratorVar, elementType, </span>
-<span class="nc" id="L95">                                    whileStmt.getBody(), false);</span>
+<span class="fc" id="L94">        return new IteratorPattern(collectionExpr, iteratorVar, elementType, </span>
+<span class="fc" id="L95">                                    whileStmt.getBody(), false);</span>
     }
     
     /**
@@ -108,47 +108,47 @@ import org.eclipse.jdt.core.dom.*;
      */
     public IteratorPattern detectForLoopPattern(ForStatement forStmt) {
         // Check initializers: Iterator&lt;T&gt; it = collection.iterator();
-<span class="nc bnc" id="L111" title="All 2 branches missed.">        if (forStmt.initializers().size() != 1) {</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">        if (forStmt.initializers().size() != 1) {</span>
 <span class="nc" id="L112">            return null;</span>
         }
         
-<span class="nc" id="L115">        Object init = forStmt.initializers().get(0);</span>
-<span class="nc bnc" id="L116" title="All 2 branches missed.">        if (!(init instanceof VariableDeclarationExpression)) {</span>
+<span class="fc" id="L115">        Object init = forStmt.initializers().get(0);</span>
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">        if (!(init instanceof VariableDeclarationExpression)) {</span>
 <span class="nc" id="L117">            return null;</span>
         }
         
-<span class="nc" id="L120">        VariableDeclarationExpression varDeclExpr = (VariableDeclarationExpression) init;</span>
-<span class="nc bnc" id="L121" title="All 2 branches missed.">        if (varDeclExpr.fragments().size() != 1) {</span>
+<span class="fc" id="L120">        VariableDeclarationExpression varDeclExpr = (VariableDeclarationExpression) init;</span>
+<span class="pc bpc" id="L121" title="1 of 2 branches missed.">        if (varDeclExpr.fragments().size() != 1) {</span>
 <span class="nc" id="L122">            return null;</span>
         }
         
-<span class="nc" id="L125">        VariableDeclarationFragment fragment = (VariableDeclarationFragment) varDeclExpr.fragments().get(0);</span>
-<span class="nc" id="L126">        String iteratorVar = fragment.getName().getIdentifier();</span>
+<span class="fc" id="L125">        VariableDeclarationFragment fragment = (VariableDeclarationFragment) varDeclExpr.fragments().get(0);</span>
+<span class="fc" id="L126">        String iteratorVar = fragment.getName().getIdentifier();</span>
         
         // Check initializer: collection.iterator()
-<span class="nc" id="L129">        Expression initializer = fragment.getInitializer();</span>
-<span class="nc" id="L130">        Expression collectionExpr = extractCollectionFromIteratorCall(initializer);</span>
-<span class="nc bnc" id="L131" title="All 2 branches missed.">        if (collectionExpr == null) {</span>
-<span class="nc" id="L132">            return null;</span>
+<span class="fc" id="L129">        Expression initializer = fragment.getInitializer();</span>
+<span class="fc" id="L130">        Expression collectionExpr = extractCollectionFromIteratorCall(initializer);</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">        if (collectionExpr == null) {</span>
+<span class="fc" id="L132">            return null;</span>
         }
         
         // Check condition: it.hasNext()
-<span class="nc" id="L136">        Expression condition = forStmt.getExpression();</span>
-<span class="nc" id="L137">        String conditionIteratorVar = extractIteratorFromHasNext(condition);</span>
-<span class="nc bnc" id="L138" title="All 4 branches missed.">        if (conditionIteratorVar == null || !conditionIteratorVar.equals(iteratorVar)) {</span>
+<span class="fc" id="L136">        Expression condition = forStmt.getExpression();</span>
+<span class="fc" id="L137">        String conditionIteratorVar = extractIteratorFromHasNext(condition);</span>
+<span class="pc bpc" id="L138" title="2 of 4 branches missed.">        if (conditionIteratorVar == null || !conditionIteratorVar.equals(iteratorVar)) {</span>
 <span class="nc" id="L139">            return null;</span>
         }
         
         // Updaters should be empty (no updaters in this pattern)
-<span class="nc bnc" id="L143" title="All 2 branches missed.">        if (!forStmt.updaters().isEmpty()) {</span>
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">        if (!forStmt.updaters().isEmpty()) {</span>
 <span class="nc" id="L144">            return null;</span>
         }
         
         // Extract element type from Iterator&lt;T&gt;
-<span class="nc" id="L148">        String elementType = extractElementType(varDeclExpr.getType());</span>
+<span class="fc" id="L148">        String elementType = extractElementType(varDeclExpr.getType());</span>
         
-<span class="nc" id="L150">        return new IteratorPattern(collectionExpr, iteratorVar, elementType, </span>
-<span class="nc" id="L151">                                    forStmt.getBody(), true);</span>
+<span class="fc" id="L150">        return new IteratorPattern(collectionExpr, iteratorVar, elementType, </span>
+<span class="fc" id="L151">                                    forStmt.getBody(), true);</span>
     }
     
     /**
@@ -157,21 +157,21 @@ import org.eclipse.jdt.core.dom.*;
      * @return iterator variable name or null if pattern doesn't match
      */
     private String extractIteratorFromHasNext(Expression expr) {
-<span class="nc bnc" id="L160" title="All 2 branches missed.">        if (!(expr instanceof MethodInvocation)) {</span>
-<span class="nc" id="L161">            return null;</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">        if (!(expr instanceof MethodInvocation)) {</span>
+<span class="fc" id="L161">            return null;</span>
         }
         
-<span class="nc" id="L164">        MethodInvocation methodInv = (MethodInvocation) expr;</span>
-<span class="nc bnc" id="L165" title="All 2 branches missed.">        if (!&quot;hasNext&quot;.equals(methodInv.getName().getIdentifier())) {</span>
+<span class="fc" id="L164">        MethodInvocation methodInv = (MethodInvocation) expr;</span>
+<span class="pc bpc" id="L165" title="1 of 2 branches missed.">        if (!&quot;hasNext&quot;.equals(methodInv.getName().getIdentifier())) {</span>
 <span class="nc" id="L166">            return null;</span>
         }
         
-<span class="nc" id="L169">        Expression iteratorExpr = methodInv.getExpression();</span>
-<span class="nc bnc" id="L170" title="All 2 branches missed.">        if (!(iteratorExpr instanceof SimpleName)) {</span>
+<span class="fc" id="L169">        Expression iteratorExpr = methodInv.getExpression();</span>
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">        if (!(iteratorExpr instanceof SimpleName)) {</span>
 <span class="nc" id="L171">            return null;</span>
         }
         
-<span class="nc" id="L174">        return ((SimpleName) iteratorExpr).getIdentifier();</span>
+<span class="fc" id="L174">        return ((SimpleName) iteratorExpr).getIdentifier();</span>
     }
     
     /**
@@ -180,21 +180,21 @@ import org.eclipse.jdt.core.dom.*;
      * @return collection expression or null if pattern doesn't match
      */
     private Expression extractCollectionFromIteratorCall(Expression expr) {
-<span class="nc bnc" id="L183" title="All 2 branches missed.">        if (!(expr instanceof MethodInvocation)) {</span>
-<span class="nc" id="L184">            return null;</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">        if (!(expr instanceof MethodInvocation)) {</span>
+<span class="fc" id="L184">            return null;</span>
         }
         
-<span class="nc" id="L187">        MethodInvocation methodInv = (MethodInvocation) expr;</span>
-<span class="nc bnc" id="L188" title="All 2 branches missed.">        if (!&quot;iterator&quot;.equals(methodInv.getName().getIdentifier())) {</span>
+<span class="fc" id="L187">        MethodInvocation methodInv = (MethodInvocation) expr;</span>
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">        if (!&quot;iterator&quot;.equals(methodInv.getName().getIdentifier())) {</span>
 <span class="nc" id="L189">            return null;</span>
         }
         
         // Arguments should be empty
-<span class="nc bnc" id="L193" title="All 2 branches missed.">        if (!methodInv.arguments().isEmpty()) {</span>
+<span class="pc bpc" id="L193" title="1 of 2 branches missed.">        if (!methodInv.arguments().isEmpty()) {</span>
 <span class="nc" id="L194">            return null;</span>
         }
         
-<span class="nc" id="L197">        return methodInv.getExpression();</span>
+<span class="fc" id="L197">        return methodInv.getExpression();</span>
     }
     
     /**
@@ -203,17 +203,17 @@ import org.eclipse.jdt.core.dom.*;
      * @return element type as string or &quot;Object&quot; if not determinable
      */
     private String extractElementType(Type type) {
-<span class="nc bnc" id="L206" title="All 2 branches missed.">        if (!(type instanceof ParameterizedType)) {</span>
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">        if (!(type instanceof ParameterizedType)) {</span>
 <span class="nc" id="L207">            return &quot;Object&quot;;</span>
         }
         
-<span class="nc" id="L210">        ParameterizedType paramType = (ParameterizedType) type;</span>
-<span class="nc bnc" id="L211" title="All 2 branches missed.">        if (paramType.typeArguments().isEmpty()) {</span>
+<span class="fc" id="L210">        ParameterizedType paramType = (ParameterizedType) type;</span>
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">        if (paramType.typeArguments().isEmpty()) {</span>
 <span class="nc" id="L212">            return &quot;Object&quot;;</span>
         }
         
-<span class="nc" id="L215">        Type typeArg = (Type) paramType.typeArguments().get(0);</span>
-<span class="nc" id="L216">        return typeArg.toString();</span>
+<span class="fc" id="L215">        Type typeArg = (Type) paramType.typeArguments().get(0);</span>
+<span class="fc" id="L216">        return typeArg.toString();</span>
     }
     
     /**
@@ -224,17 +224,17 @@ import org.eclipse.jdt.core.dom.*;
      * @return the previous statement or null if not found or first statement
      */
     public static Statement findPreviousStatement(Block block, Statement statement) {
-<span class="nc bnc" id="L227" title="All 2 branches missed.">        if (block == null) {</span>
+<span class="pc bpc" id="L227" title="1 of 2 branches missed.">        if (block == null) {</span>
 <span class="nc" id="L228">            return null;</span>
         }
         
-<span class="nc" id="L231">        Statement previous = null;</span>
-<span class="nc bnc" id="L232" title="All 2 branches missed.">        for (Object obj : block.statements()) {</span>
-<span class="nc" id="L233">            Statement stmt = (Statement) obj;</span>
-<span class="nc bnc" id="L234" title="All 2 branches missed.">            if (stmt == statement) {</span>
-<span class="nc" id="L235">                return previous;</span>
+<span class="fc" id="L231">        Statement previous = null;</span>
+<span class="pc bpc" id="L232" title="1 of 2 branches missed.">        for (Object obj : block.statements()) {</span>
+<span class="fc" id="L233">            Statement stmt = (Statement) obj;</span>
+<span class="fc bfc" id="L234" title="All 2 branches covered.">            if (stmt == statement) {</span>
+<span class="fc" id="L235">                return previous;</span>
             }
-<span class="nc" id="L237">            previous = stmt;</span>
+<span class="fc" id="L237">            previous = stmt;</span>
         }
         
 <span class="nc" id="L240">        return null;</span>
@@ -244,8 +244,8 @@ import org.eclipse.jdt.core.dom.*;
      * Checks if a statement is part of a block (required for while-iterator pattern detection).
      */
     public static boolean isStatementInBlock(Statement statement) {
-<span class="nc" id="L247">        ASTNode parent = statement.getParent();</span>
-<span class="nc" id="L248">        return parent instanceof Block;</span>
+<span class="fc" id="L247">        ASTNode parent = statement.getParent();</span>
+<span class="fc" id="L248">        return parent instanceof Block;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

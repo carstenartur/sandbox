@@ -14,6 +14,7 @@
 package org.sandbox.jdt.triggerpattern.api;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -26,6 +27,7 @@ import org.eclipse.jdt.core.dom.ASTNode;
  * &lt;ul&gt;
  *   &lt;li&gt;The matched AST node&lt;/li&gt;
  *   &lt;li&gt;A map of placeholder bindings (e.g., {@code &quot;$x&quot; -&gt; InfixExpression})&lt;/li&gt;
+ *   &lt;li&gt;A map of multi-placeholder bindings (e.g., {@code &quot;$args$&quot; -&gt; List&lt;Expression&gt;})&lt;/li&gt;
  *   &lt;li&gt;Source location (offset and length)&lt;/li&gt;
  * &lt;/ul&gt;
  * 
@@ -33,7 +35,7 @@ import org.eclipse.jdt.core.dom.ASTNode;
  */
 public final class Match {
 	private final ASTNode matchedNode;
-	private final Map&lt;String, ASTNode&gt; bindings;
+	private final Map&lt;String, Object&gt; bindings;  // Changed to Object to support both ASTNode and List&lt;ASTNode&gt;
 	private final int offset;
 	private final int length;
 	
@@ -41,16 +43,16 @@ public final class Match {
 	 * Creates a new match.
 	 * 
 	 * @param matchedNode the AST node that matched the pattern
-	 * @param bindings map of placeholder names to their bound AST nodes
+	 * @param bindings map of placeholder names to their bound AST nodes or lists of AST nodes
 	 * @param offset the character offset of the match in the source
 	 * @param length the character length of the match in the source
 	 */
-<span class="fc" id="L48">	public Match(ASTNode matchedNode, Map&lt;String, ASTNode&gt; bindings, int offset, int length) {</span>
-<span class="fc" id="L49">		this.matchedNode = Objects.requireNonNull(matchedNode, &quot;Matched node cannot be null&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L50" title="1 of 2 branches missed.">		this.bindings = bindings != null ? Collections.unmodifiableMap(bindings) : Collections.emptyMap();</span>
-<span class="fc" id="L51">		this.offset = offset;</span>
-<span class="fc" id="L52">		this.length = length;</span>
-<span class="fc" id="L53">	}</span>
+<span class="fc" id="L50">	public Match(ASTNode matchedNode, Map&lt;String, Object&gt; bindings, int offset, int length) {</span>
+<span class="fc" id="L51">		this.matchedNode = Objects.requireNonNull(matchedNode, &quot;Matched node cannot be null&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L52" title="1 of 2 branches missed.">		this.bindings = bindings != null ? Collections.unmodifiableMap(bindings) : Collections.emptyMap();</span>
+<span class="fc" id="L53">		this.offset = offset;</span>
+<span class="fc" id="L54">		this.length = length;</span>
+<span class="fc" id="L55">	}</span>
 	
 	/**
 	 * Returns the matched AST node.
@@ -58,16 +60,45 @@ public final class Match {
 	 * @return the matched node
 	 */
 	public ASTNode getMatchedNode() {
-<span class="fc" id="L61">		return matchedNode;</span>
+<span class="fc" id="L63">		return matchedNode;</span>
 	}
 	
 	/**
 	 * Returns the placeholder bindings.
 	 * 
-	 * @return an unmodifiable map of placeholder names to AST nodes
+	 * @return an unmodifiable map of placeholder names to AST nodes or lists of AST nodes
 	 */
-	public Map&lt;String, ASTNode&gt; getBindings() {
-<span class="fc" id="L70">		return bindings;</span>
+	public Map&lt;String, Object&gt; getBindings() {
+<span class="fc" id="L72">		return bindings;</span>
+	}
+	
+	/**
+	 * Gets a single-placeholder binding as an AST node.
+	 * 
+	 * @param placeholderName the placeholder name including $ marker (e.g., &quot;$x&quot;)
+	 * @return the bound AST node, or null if not found or if it's a multi-placeholder binding
+	 */
+	public ASTNode getBinding(String placeholderName) {
+<span class="nc" id="L82">		Object binding = bindings.get(placeholderName);</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">		if (binding instanceof ASTNode) {</span>
+<span class="nc" id="L84">			return (ASTNode) binding;</span>
+		}
+<span class="nc" id="L86">		return null;</span>
+	}
+	
+	/**
+	 * Gets a multi-placeholder binding as a list of nodes.
+	 * 
+	 * @param placeholderName the placeholder name including $ markers (e.g., &quot;$args$&quot;)
+	 * @return the list of matched nodes, or empty list if not found or if it's a single-placeholder binding
+	 */
+	@SuppressWarnings(&quot;unchecked&quot;)
+	public List&lt;ASTNode&gt; getListBinding(String placeholderName) {
+<span class="nc" id="L97">		Object binding = bindings.get(placeholderName);</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">		if (binding instanceof List&lt;?&gt;) {</span>
+<span class="nc" id="L99">			return (List&lt;ASTNode&gt;) binding;</span>
+		}
+<span class="nc" id="L101">		return Collections.emptyList();</span>
 	}
 	
 	/**
@@ -76,7 +107,7 @@ public final class Match {
 	 * @return the offset
 	 */
 	public int getOffset() {
-<span class="nc" id="L79">		return offset;</span>
+<span class="nc" id="L110">		return offset;</span>
 	}
 	
 	/**
@@ -85,31 +116,31 @@ public final class Match {
 	 * @return the length
 	 */
 	public int getLength() {
-<span class="nc" id="L88">		return length;</span>
+<span class="nc" id="L119">		return length;</span>
 	}
 	
 	@Override
 	public boolean equals(Object obj) {
-<span class="nc bnc" id="L93" title="All 2 branches missed.">		if (this == obj) {</span>
-<span class="nc" id="L94">			return true;</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">		if (this == obj) {</span>
+<span class="nc" id="L125">			return true;</span>
 		}
-<span class="nc bnc" id="L96" title="All 4 branches missed.">		if (obj == null || getClass() != obj.getClass()) {</span>
-<span class="nc" id="L97">			return false;</span>
+<span class="nc bnc" id="L127" title="All 4 branches missed.">		if (obj == null || getClass() != obj.getClass()) {</span>
+<span class="nc" id="L128">			return false;</span>
 		}
-<span class="nc" id="L99">		Match other = (Match) obj;</span>
-<span class="nc bnc" id="L100" title="All 2 branches missed.">		return offset == other.offset </span>
-<span class="nc bnc" id="L101" title="All 2 branches missed.">				&amp;&amp; length == other.length</span>
-<span class="nc bnc" id="L102" title="All 2 branches missed.">				&amp;&amp; Objects.equals(matchedNode, other.matchedNode);</span>
+<span class="nc" id="L130">		Match other = (Match) obj;</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">		return offset == other.offset </span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">				&amp;&amp; length == other.length</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">				&amp;&amp; Objects.equals(matchedNode, other.matchedNode);</span>
 	}
 	
 	@Override
 	public int hashCode() {
-<span class="nc" id="L107">		return Objects.hash(matchedNode, offset, length);</span>
+<span class="nc" id="L138">		return Objects.hash(matchedNode, offset, length);</span>
 	}
 	
 	@Override
 	public String toString() {
-<span class="nc" id="L112">		return &quot;Match[offset=&quot; + offset + &quot;, length=&quot; + length + &quot;, bindings=&quot; + bindings.keySet() + &quot;]&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+<span class="nc" id="L143">		return &quot;Match[offset=&quot; + offset + &quot;, length=&quot; + length + &quot;, bindings=&quot; + bindings.keySet() + &quot;]&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

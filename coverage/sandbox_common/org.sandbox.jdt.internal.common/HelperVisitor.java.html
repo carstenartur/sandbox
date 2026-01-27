@@ -118,7 +118,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @since 1.15
 	 */
 	public static AnnotationVisitorBuilder forAnnotation(String annotationFQN) {
-<span class="nc" id="L121">		return new AnnotationVisitorBuilder(annotationFQN);</span>
+<span class="fc" id="L121">		return new AnnotationVisitorBuilder(annotationFQN);</span>
 	}
 
 	/**
@@ -143,7 +143,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @since 1.15
 	 */
 	public static MethodCallVisitorBuilder forMethodCalls(String typeFQN, Set&lt;String&gt; methodNames) {
-<span class="nc" id="L146">		return new MethodCallVisitorBuilder(typeFQN, methodNames);</span>
+<span class="fc" id="L146">		return new MethodCallVisitorBuilder(typeFQN, methodNames);</span>
 	}
 
 	/**
@@ -166,7 +166,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @since 1.15
 	 */
 	public static MethodCallVisitorBuilder forMethodCall(String typeFQN, String methodName) {
-<span class="nc" id="L169">		return new MethodCallVisitorBuilder(typeFQN, Set.of(methodName));</span>
+<span class="fc" id="L169">		return new MethodCallVisitorBuilder(typeFQN, Set.of(methodName));</span>
 	}
 
 	/**
@@ -189,7 +189,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @since 1.15
 	 */
 	public static FieldVisitorBuilder forField() {
-<span class="nc" id="L192">		return new FieldVisitorBuilder();</span>
+<span class="fc" id="L192">		return new FieldVisitorBuilder();</span>
 	}
 
 	/**
@@ -832,10 +832,10 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiPredicate assigned for nodetype
 	 */
 	public BiPredicate&lt;? extends ASTNode, E&gt; addMarkerAnnotation(String name, BiPredicate&lt;MarkerAnnotation, E&gt; bs) {
-<span class="nc" id="L835">		predicatedata.put(VisitorEnum.MarkerAnnotation, Map.ofEntries(</span>
-<span class="nc" id="L836">				new AbstractMap.SimpleEntry&lt;&gt;(ANNOTATIONNAME, name)</span>
+<span class="fc" id="L835">		predicatedata.put(VisitorEnum.MarkerAnnotation, Map.ofEntries(</span>
+<span class="fc" id="L836">				new AbstractMap.SimpleEntry&lt;&gt;(ANNOTATIONNAME, name)</span>
 				));
-<span class="nc" id="L838">		return predicatemap.put(VisitorEnum.MarkerAnnotation, bs);</span>
+<span class="fc" id="L838">		return predicatemap.put(VisitorEnum.MarkerAnnotation, bs);</span>
 	}
 
 	/**
@@ -4500,10 +4500,10 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	public static &lt;V, T&gt; void callMarkerAnnotationVisitor(String name, ASTNode node, ReferenceHolder&lt;V, T&gt; dataholder, Set&lt;ASTNode&gt; nodesprocessed,
 			BiPredicate&lt;MarkerAnnotation, ReferenceHolder&lt;V, T&gt;&gt; bs) {
 
-<span class="nc" id="L4503">		HelperVisitor&lt;ReferenceHolder&lt;V, T&gt;,V,T&gt; hv= new HelperVisitor&lt;&gt;(nodesprocessed, dataholder);</span>
-<span class="nc" id="L4504">		hv.addMarkerAnnotation(name, bs);</span>
-<span class="nc" id="L4505">		hv.build(node);</span>
-<span class="nc" id="L4506">	}</span>
+<span class="fc" id="L4503">		HelperVisitor&lt;ReferenceHolder&lt;V, T&gt;,V,T&gt; hv= new HelperVisitor&lt;&gt;(nodesprocessed, dataholder);</span>
+<span class="fc" id="L4504">		hv.addMarkerAnnotation(name, bs);</span>
+<span class="fc" id="L4505">		hv.build(node);</span>
+<span class="fc" id="L4506">	}</span>
 
 	/**
 	 *

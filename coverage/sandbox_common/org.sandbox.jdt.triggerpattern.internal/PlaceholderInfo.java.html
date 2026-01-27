@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>PlaceholderInfo.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.internal</a> &gt; <span class="el_source">PlaceholderInfo.java</span></div><h1>PlaceholderInfo.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.internal;
+
+/**
+ * Holds parsed information about a placeholder in a pattern.
+ * 
+ * &lt;p&gt;Supports both single placeholders (e.g., {@code $x}) and multi-placeholders 
+ * (e.g., {@code $args$}) with optional type constraints (e.g., {@code $msg:StringLiteral}).&lt;/p&gt;
+ * 
+ * @param name the placeholder name including $ markers (e.g., &quot;$x&quot;, &quot;$args$&quot;)
+ * @param typeConstraint optional type constraint (e.g., &quot;StringLiteral&quot;), null if none
+ * @param isMulti true if this is a multi-placeholder ($x$ style) that matches zero or more nodes
+ * 
+ * @since 1.3.1
+ */
+public record PlaceholderInfo(
+    String name,
+    String typeConstraint,
+    boolean isMulti
+) {
+    /**
+     * Creates a placeholder info with parsed components.
+     * 
+     * @param name the placeholder name including $ markers
+     * @param typeConstraint optional type constraint, null if none
+     * @param isMulti true for multi-placeholders ($x$ style)
+     */
+<span class="fc" id="L40">    public PlaceholderInfo {</span>
+<span class="pc bpc" id="L41" title="2 of 4 branches missed.">        if (name == null || name.isEmpty()) {</span>
+<span class="nc" id="L42">            throw new IllegalArgumentException(&quot;Placeholder name cannot be null or empty&quot;); //$NON-NLS-1$</span>
+        }
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">        if (!name.startsWith(&quot;$&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L45">            throw new IllegalArgumentException(&quot;Placeholder name must start with $: &quot; + name); //$NON-NLS-1$</span>
+        }
+<span class="fc" id="L47">    }</span>
+    
+    /**
+     * Returns the placeholder name without the $ markers.
+     * For single placeholders: &quot;$x&quot; returns &quot;x&quot;
+     * For multi-placeholders: &quot;$args$&quot; returns &quot;args&quot;
+     * 
+     * @return the bare placeholder name
+     */
+    public String getBareName() {
+<span class="nc" id="L57">        String result = name;</span>
+<span class="nc bnc" id="L58" title="All 2 branches missed.">        if (result.startsWith(&quot;$&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L59">            result = result.substring(1);</span>
+        }
+<span class="nc bnc" id="L61" title="All 2 branches missed.">        if (result.endsWith(&quot;$&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L62">            result = result.substring(0, result.length() - 1);</span>
+        }
+<span class="nc" id="L64">        return result;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

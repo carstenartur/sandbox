@@ -49,72 +49,81 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
 <span class="fc" id="L51">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder = new ReferenceHolder&lt;&gt;();</span>
-<span class="fc" id="L52">		HelperVisitor.callNormalAnnotationVisitor(ORG_JUNIT_TEST, compilationUnit, dataHolder, nodesprocessed,</span>
-<span class="fc" id="L53">				(visited, aholder) -&gt; processFoundNode(fixcore, operations, visited, aholder));</span>
-<span class="fc" id="L54">	}</span>
+<span class="fc" id="L52">		HelperVisitor.forAnnotation(ORG_JUNIT_TEST)</span>
+<span class="fc" id="L53">			.in(compilationUnit)</span>
+<span class="fc" id="L54">			.excluding(nodesprocessed)</span>
+<span class="fc" id="L55">			.processEach(dataHolder, (visited, aholder) -&gt; {</span>
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">				if (visited instanceof NormalAnnotation) {</span>
+<span class="fc" id="L57">					return processFoundNode(fixcore, operations, (NormalAnnotation) visited, aholder);</span>
+				}
+<span class="nc" id="L59">				return true;</span>
+			});
+<span class="fc" id="L61">	}</span>
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, NormalAnnotation node,
 			ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder) {
 		
 		// Check if this @Test annotation has a timeout parameter
-<span class="fc" id="L61">		Long timeoutValue = null;</span>
-<span class="fc" id="L62">		MemberValuePair timeoutPair = null;</span>
+<span class="fc" id="L68">		Long timeoutValue = null;</span>
+<span class="fc" id="L69">		MemberValuePair timeoutPair = null;</span>
 		
 		@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L65">		List&lt;MemberValuePair&gt; values = node.values();</span>
-<span class="pc bpc" id="L66" title="1 of 2 branches missed.">		for (MemberValuePair pair : values) {</span>
-<span class="fc bfc" id="L67" title="All 2 branches covered.">			if (&quot;timeout&quot;.equals(pair.getName().getIdentifier())) {</span>
-<span class="fc" id="L68">				timeoutPair = pair;</span>
-<span class="fc" id="L69">				Expression value = pair.getValue();</span>
-<span class="pc bpc" id="L70" title="1 of 2 branches missed.">				if (value instanceof NumberLiteral) {</span>
+<span class="fc" id="L72">		List&lt;MemberValuePair&gt; values = node.values();</span>
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">		for (MemberValuePair pair : values) {</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">			if (&quot;timeout&quot;.equals(pair.getName().getIdentifier())) {</span>
+<span class="fc" id="L75">				timeoutPair = pair;</span>
+<span class="fc" id="L76">				Expression value = pair.getValue();</span>
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">				if (value instanceof NumberLiteral) {</span>
 					try {
-<span class="fc" id="L72">						timeoutValue = Long.parseLong(((NumberLiteral) value).getToken());</span>
-<span class="pc" id="L73">					} catch (NumberFormatException e) {</span>
+<span class="fc" id="L79">						timeoutValue = Long.parseLong(((NumberLiteral) value).getToken());</span>
+<span class="pc" id="L80">					} catch (NumberFormatException e) {</span>
 						// Skip invalid timeout values
-<span class="nc" id="L75">						return false;</span>
+<span class="nc" id="L82">						return false;</span>
 					}
 				} else {
 					// Timeout value is not a simple number literal (could be a constant or expression)
 					// Skip this case as it requires more complex analysis
-<span class="nc" id="L80">					return false;</span>
+<span class="nc" id="L87">					return false;</span>
 				}
 				break;
 			}
 		}
 		
 		// Only process if we found a timeout parameter with a valid numeric value
-<span class="pc bpc" id="L87" title="2 of 4 branches missed.">		if (timeoutValue != null &amp;&amp; timeoutPair != null) {</span>
-<span class="fc" id="L88">			JunitHolder mh = new JunitHolder();</span>
-<span class="fc" id="L89">			mh.minv = node;</span>
-<span class="fc" id="L90">			mh.minvname = node.getTypeName().getFullyQualifiedName();</span>
-<span class="fc" id="L91">			mh.value = String.valueOf(timeoutValue);</span>
-<span class="fc" id="L92">			mh.additionalInfo = timeoutPair; // Store the timeout pair for removal</span>
-<span class="fc" id="L93">			dataHolder.put(dataHolder.size(), mh);</span>
-<span class="fc" id="L94">			operations.add(fixcore.rewrite(dataHolder));</span>
+<span class="pc bpc" id="L94" title="2 of 4 branches missed.">		if (timeoutValue != null &amp;&amp; timeoutPair != null) {</span>
+<span class="fc" id="L95">			JunitHolder mh = new JunitHolder();</span>
+<span class="fc" id="L96">			mh.minv = node;</span>
+<span class="fc" id="L97">			mh.minvname = node.getTypeName().getFullyQualifiedName();</span>
+<span class="fc" id="L98">			mh.value = String.valueOf(timeoutValue);</span>
+<span class="fc" id="L99">			mh.additionalInfo = timeoutPair; // Store the timeout pair for removal</span>
+<span class="fc" id="L100">			dataHolder.put(dataHolder.size(), mh);</span>
+<span class="fc" id="L101">			operations.add(fixcore.rewrite(dataHolder));</span>
 		}
 		
-<span class="fc" id="L97">		return false;</span>
+		// Return true to continue processing other annotations
+		// The fluent API interprets false as &quot;stop processing all nodes&quot;
+<span class="fc" id="L106">		return true;</span>
 	}
 
 	@Override
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
-<span class="fc" id="L103">		NormalAnnotation testAnnotation = (NormalAnnotation) junitHolder.getAnnotation();</span>
-<span class="fc" id="L104">		MemberValuePair timeoutPair = (MemberValuePair) junitHolder.additionalInfo;</span>
+<span class="fc" id="L112">		NormalAnnotation testAnnotation = (NormalAnnotation) junitHolder.getAnnotation();</span>
+<span class="fc" id="L113">		MemberValuePair timeoutPair = (MemberValuePair) junitHolder.additionalInfo;</span>
 		
-<span class="fc" id="L106">		String timeoutString = junitHolder.value;</span>
-<span class="pc bpc" id="L107" title="1 of 2 branches missed.">		if (timeoutString == null) {</span>
+<span class="fc" id="L115">		String timeoutString = junitHolder.value;</span>
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">		if (timeoutString == null) {</span>
 			// Cannot determine timeout value, skip refactoring for this method
-<span class="nc" id="L109">			return;</span>
+<span class="nc" id="L118">			return;</span>
 		}
 		
 		final long timeoutMillis;
 		try {
-<span class="fc" id="L114">			timeoutMillis = Long.parseLong(timeoutString);</span>
-<span class="pc" id="L115">		} catch (NumberFormatException e) {</span>
+<span class="fc" id="L123">			timeoutMillis = Long.parseLong(timeoutString);</span>
+<span class="pc" id="L124">		} catch (NumberFormatException e) {</span>
 			// Malformed timeout value, skip refactoring for this method
-<span class="nc" id="L117">			return;</span>
+<span class="nc" id="L126">			return;</span>
 		}
 		
 		// Determine the best time unit (optimize for readability)
@@ -122,67 +131,67 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 		// This makes the timeout more readable (e.g., &quot;5 seconds&quot; vs &quot;5000 milliseconds&quot;)
 		long timeoutValue;
 		String timeUnit;
-<span class="pc bpc" id="L125" title="1 of 4 branches missed.">		if (timeoutMillis % 1000 == 0 &amp;&amp; timeoutMillis &gt;= 1000) {</span>
+<span class="pc bpc" id="L134" title="1 of 4 branches missed.">		if (timeoutMillis % 1000 == 0 &amp;&amp; timeoutMillis &gt;= 1000) {</span>
 			// Use SECONDS for better readability (e.g., 1 second instead of 1000 milliseconds)
-<span class="fc" id="L127">			timeoutValue = timeoutMillis / 1000;</span>
-<span class="fc" id="L128">			timeUnit = &quot;SECONDS&quot;;</span>
-<span class="fc" id="L129">		} else {</span>
+<span class="fc" id="L136">			timeoutValue = timeoutMillis / 1000;</span>
+<span class="fc" id="L137">			timeUnit = &quot;SECONDS&quot;;</span>
+<span class="fc" id="L138">		} else {</span>
 			// Use MILLISECONDS for values &lt; 1000ms or not evenly divisible by 1000
-<span class="fc" id="L131">			timeoutValue = timeoutMillis;</span>
-<span class="fc" id="L132">			timeUnit = &quot;MILLISECONDS&quot;;</span>
+<span class="fc" id="L140">			timeoutValue = timeoutMillis;</span>
+<span class="fc" id="L141">			timeUnit = &quot;MILLISECONDS&quot;;</span>
 		}
 		
 		// Add @Timeout annotation
-<span class="fc" id="L136">		NormalAnnotation timeoutAnnotation = ast.newNormalAnnotation();</span>
-<span class="fc" id="L137">		timeoutAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_TIMEOUT));</span>
+<span class="fc" id="L145">		NormalAnnotation timeoutAnnotation = ast.newNormalAnnotation();</span>
+<span class="fc" id="L146">		timeoutAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_TIMEOUT));</span>
 		
 		// Add value parameter
-<span class="fc" id="L140">		MemberValuePair valuePair = ast.newMemberValuePair();</span>
-<span class="fc" id="L141">		valuePair.setName(ast.newSimpleName(&quot;value&quot;));</span>
-<span class="fc" id="L142">		valuePair.setValue(ast.newNumberLiteral(String.valueOf(timeoutValue)));</span>
-<span class="fc" id="L143">		timeoutAnnotation.values().add(valuePair);</span>
+<span class="fc" id="L149">		MemberValuePair valuePair = ast.newMemberValuePair();</span>
+<span class="fc" id="L150">		valuePair.setName(ast.newSimpleName(&quot;value&quot;));</span>
+<span class="fc" id="L151">		valuePair.setValue(ast.newNumberLiteral(String.valueOf(timeoutValue)));</span>
+<span class="fc" id="L152">		timeoutAnnotation.values().add(valuePair);</span>
 		
 		// Add unit parameter
-<span class="fc" id="L146">		MemberValuePair unitPair = ast.newMemberValuePair();</span>
-<span class="fc" id="L147">		unitPair.setName(ast.newSimpleName(&quot;unit&quot;));</span>
-<span class="fc" id="L148">		QualifiedName timeUnitName = ast.newQualifiedName(</span>
-<span class="fc" id="L149">			ast.newSimpleName(&quot;TimeUnit&quot;),</span>
-<span class="fc" id="L150">			ast.newSimpleName(timeUnit)</span>
+<span class="fc" id="L155">		MemberValuePair unitPair = ast.newMemberValuePair();</span>
+<span class="fc" id="L156">		unitPair.setName(ast.newSimpleName(&quot;unit&quot;));</span>
+<span class="fc" id="L157">		QualifiedName timeUnitName = ast.newQualifiedName(</span>
+<span class="fc" id="L158">			ast.newSimpleName(&quot;TimeUnit&quot;),</span>
+<span class="fc" id="L159">			ast.newSimpleName(timeUnit)</span>
 		);
-<span class="fc" id="L152">		unitPair.setValue(timeUnitName);</span>
-<span class="fc" id="L153">		timeoutAnnotation.values().add(unitPair);</span>
+<span class="fc" id="L161">		unitPair.setValue(timeUnitName);</span>
+<span class="fc" id="L162">		timeoutAnnotation.values().add(unitPair);</span>
 		
 		// Add the @Timeout annotation to the method (after @Test)
-<span class="fc" id="L156">		MethodDeclaration method = ASTNodes.getParent(testAnnotation, MethodDeclaration.class);</span>
-<span class="pc bpc" id="L157" title="1 of 2 branches missed.">		if (method != null) {</span>
-<span class="fc" id="L158">			ListRewrite listRewrite = rewriter.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);</span>
-<span class="fc" id="L159">			listRewrite.insertAfter(timeoutAnnotation, testAnnotation, group);</span>
+<span class="fc" id="L165">		MethodDeclaration method = ASTNodes.getParent(testAnnotation, MethodDeclaration.class);</span>
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">		if (method != null) {</span>
+<span class="fc" id="L167">			ListRewrite listRewrite = rewriter.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);</span>
+<span class="fc" id="L168">			listRewrite.insertAfter(timeoutAnnotation, testAnnotation, group);</span>
 		}
 		
 		// Remove the timeout parameter from @Test annotation
 		// If the timeout is the only parameter, replace the NormalAnnotation with a MarkerAnnotation
 		// to avoid leaving an empty @Test() annotation.
 		@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L166">		List&lt;MemberValuePair&gt; testValues = testAnnotation.values();</span>
-<span class="pc bpc" id="L167" title="1 of 4 branches missed.">		if (testValues.size() == 1 &amp;&amp; testValues.get(0) == timeoutPair) {</span>
-<span class="fc" id="L168">			MarkerAnnotation markerTestAnnotation = ast.newMarkerAnnotation();</span>
-<span class="fc" id="L169">			markerTestAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_TEST));</span>
-<span class="fc" id="L170">			ASTNodes.replaceButKeepComment(rewriter, testAnnotation, markerTestAnnotation, group);</span>
-<span class="fc" id="L171">		} else {</span>
-<span class="fc" id="L172">			rewriter.remove(timeoutPair, group);</span>
+<span class="fc" id="L175">		List&lt;MemberValuePair&gt; testValues = testAnnotation.values();</span>
+<span class="pc bpc" id="L176" title="1 of 4 branches missed.">		if (testValues.size() == 1 &amp;&amp; testValues.get(0) == timeoutPair) {</span>
+<span class="fc" id="L177">			MarkerAnnotation markerTestAnnotation = ast.newMarkerAnnotation();</span>
+<span class="fc" id="L178">			markerTestAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_TEST));</span>
+<span class="fc" id="L179">			ASTNodes.replaceButKeepComment(rewriter, testAnnotation, markerTestAnnotation, group);</span>
+<span class="fc" id="L180">		} else {</span>
+<span class="fc" id="L181">			rewriter.remove(timeoutPair, group);</span>
 		}
 		
 		// Add imports - order matters: remove old import first, then add new imports
-<span class="fc" id="L176">		importRewriter.removeImport(ORG_JUNIT_TEST);</span>
-<span class="fc" id="L177">		importRewriter.addImport(ORG_JUNIT_JUPITER_TEST);</span>
-<span class="fc" id="L178">		importRewriter.addImport(ORG_JUNIT_JUPITER_API_TIMEOUT);</span>
-<span class="fc" id="L179">		importRewriter.addImport(&quot;java.util.concurrent.TimeUnit&quot;);</span>
-<span class="fc" id="L180">	}</span>
+<span class="fc" id="L185">		importRewriter.removeImport(ORG_JUNIT_TEST);</span>
+<span class="fc" id="L186">		importRewriter.addImport(ORG_JUNIT_JUPITER_TEST);</span>
+<span class="fc" id="L187">		importRewriter.addImport(ORG_JUNIT_JUPITER_API_TIMEOUT);</span>
+<span class="fc" id="L188">		importRewriter.addImport(&quot;java.util.concurrent.TimeUnit&quot;);</span>
+<span class="fc" id="L189">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L184" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L185">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L193" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L194">			return &quot;&quot;&quot;</span>
 					import org.junit.jupiter.api.Test;
 					import org.junit.jupiter.api.Timeout;
 					import java.util.concurrent.TimeUnit;
@@ -194,7 +203,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 					}
 					&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L197">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L206">		return &quot;&quot;&quot;</span>
 				import org.junit.Test;
 				
 				@Test(timeout = 1000)
@@ -206,7 +215,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 	@Override
 	public String toString() {
-<span class="fc" id="L209">		return &quot;TestTimeout&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L218">		return &quot;TestTimeout&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

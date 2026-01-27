@@ -138,7 +138,7 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
 <span class="nc" id="L138">			InfixExpression infixExpr = (InfixExpression) matchedNode;</span>
 			
 			// Get the bound variable from placeholders
-<span class="nc" id="L141">			ASTNode xNode = match.getBindings().get(&quot;$x&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L141">			ASTNode xNode = match.getBinding(&quot;$x&quot;); //$NON-NLS-1$</span>
 <span class="nc bnc" id="L142" title="All 4 branches missed.">			if (xNode == null || !(xNode instanceof Expression)) {</span>
 <span class="nc" id="L143">				return;</span>
 			}
@@ -178,7 +178,7 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
 <span class="nc" id="L178">			ASTNode matchedNode = match.getMatchedNode();</span>
 			
 			// Get the bound variable from placeholders
-<span class="nc" id="L181">			ASTNode strNode = match.getBindings().get(&quot;$str&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L181">			ASTNode strNode = match.getBinding(&quot;$str&quot;); //$NON-NLS-1$</span>
 <span class="nc bnc" id="L182" title="All 4 branches missed.">			if (strNode == null || !(strNode instanceof Expression)) {</span>
 <span class="nc" id="L183">				return;</span>
 			}
@@ -224,7 +224,7 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
 <span class="nc" id="L224">			InfixExpression infixExpr = (InfixExpression) matchedNode;</span>
 			
 			// Get the boolean variable
-<span class="nc" id="L227">			ASTNode xNode = match.getBindings().get(&quot;$x&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L227">			ASTNode xNode = match.getBinding(&quot;$x&quot;); //$NON-NLS-1$</span>
 <span class="nc bnc" id="L228" title="All 4 branches missed.">			if (xNode == null || !(xNode instanceof Expression)) {</span>
 <span class="nc" id="L229">				return;</span>
 			}
@@ -277,7 +277,7 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
 <span class="nc" id="L277">			ConditionalExpression ternary = (ConditionalExpression) matchedNode;</span>
 			
 			// Get the condition
-<span class="nc" id="L280">			ASTNode condNode = match.getBindings().get(&quot;$cond&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L280">			ASTNode condNode = match.getBinding(&quot;$cond&quot;); //$NON-NLS-1$</span>
 <span class="nc bnc" id="L281" title="All 4 branches missed.">			if (condNode == null || !(condNode instanceof Expression)) {</span>
 <span class="nc" id="L282">				return;</span>
 			}

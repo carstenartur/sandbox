@@ -73,7 +73,7 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
 <span class="nc" id="L73">		InfixExpression infixExpr = (InfixExpression) matchedNode;</span>
 
 		// Get the bound variable from placeholders
-<span class="nc" id="L76">		ASTNode xNode = ctx.getMatch().getBindings().get(&quot;$x&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L76">		ASTNode xNode = ctx.getMatch().getBinding(&quot;$x&quot;); //$NON-NLS-1$</span>
 <span class="nc bnc" id="L77" title="All 4 branches missed.">		if (xNode == null || !(xNode instanceof Expression)) {</span>
 <span class="nc" id="L78">			return null;</span>
 		}
@@ -126,7 +126,7 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
 <span class="nc" id="L126">		InfixExpression infixExpr = (InfixExpression) matchedNode;</span>
 
 		// Get the bound variable
-<span class="nc" id="L129">		ASTNode xNode = ctx.getMatch().getBindings().get(&quot;$x&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L129">		ASTNode xNode = ctx.getMatch().getBinding(&quot;$x&quot;); //$NON-NLS-1$</span>
 <span class="nc bnc" id="L130" title="All 4 branches missed.">		if (xNode == null || !(xNode instanceof Expression)) {</span>
 <span class="nc" id="L131">			return null;</span>
 		}
@@ -178,7 +178,7 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
 <span class="nc" id="L178">		InfixExpression infixExpr = (InfixExpression) matchedNode;</span>
 
 		// Get the string expression
-<span class="nc" id="L181">		ASTNode strNode = ctx.getMatch().getBindings().get(&quot;$str&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L181">		ASTNode strNode = ctx.getMatch().getBinding(&quot;$str&quot;); //$NON-NLS-1$</span>
 <span class="nc bnc" id="L182" title="All 4 branches missed.">		if (strNode == null || !(strNode instanceof Expression)) {</span>
 <span class="nc" id="L183">			return null;</span>
 		}
@@ -229,7 +229,7 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
 <span class="nc" id="L229">		MethodInvocation methodInvocation = (MethodInvocation) matchedNode;</span>
 
 		// Get the string expression
-<span class="nc" id="L232">		ASTNode strNode = ctx.getMatch().getBindings().get(&quot;$str&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L232">		ASTNode strNode = ctx.getMatch().getBinding(&quot;$str&quot;); //$NON-NLS-1$</span>
 <span class="nc bnc" id="L233" title="All 4 branches missed.">		if (strNode == null || !(strNode instanceof Expression)) {</span>
 <span class="nc" id="L234">			return null;</span>
 		}
@@ -280,7 +280,7 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
 <span class="nc" id="L280">		InfixExpression infixExpr = (InfixExpression) matchedNode;</span>
 
 		// Get the boolean variable
-<span class="nc" id="L283">		ASTNode xNode = ctx.getMatch().getBindings().get(&quot;$x&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L283">		ASTNode xNode = ctx.getMatch().getBinding(&quot;$x&quot;); //$NON-NLS-1$</span>
 <span class="nc bnc" id="L284" title="All 4 branches missed.">		if (xNode == null || !(xNode instanceof Expression)) {</span>
 <span class="nc" id="L285">			return null;</span>
 		}
@@ -328,7 +328,7 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
 <span class="nc" id="L328">		InfixExpression infixExpr = (InfixExpression) matchedNode;</span>
 
 		// Get the boolean variable
-<span class="nc" id="L331">		ASTNode xNode = ctx.getMatch().getBindings().get(&quot;$x&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L331">		ASTNode xNode = ctx.getMatch().getBinding(&quot;$x&quot;); //$NON-NLS-1$</span>
 <span class="nc bnc" id="L332" title="All 4 branches missed.">		if (xNode == null || !(xNode instanceof Expression)) {</span>
 <span class="nc" id="L333">			return null;</span>
 		}
@@ -378,7 +378,7 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
 <span class="nc" id="L378">		ConditionalExpression ternary = (ConditionalExpression) matchedNode;</span>
 
 		// Get the condition
-<span class="nc" id="L381">		ASTNode condNode = ctx.getMatch().getBindings().get(&quot;$cond&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L381">		ASTNode condNode = ctx.getMatch().getBinding(&quot;$cond&quot;); //$NON-NLS-1$</span>
 <span class="nc bnc" id="L382" title="All 4 branches missed.">		if (condNode == null || !(condNode instanceof Expression)) {</span>
 <span class="nc" id="L383">			return null;</span>
 		}
@@ -426,7 +426,7 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
 <span class="nc" id="L426">		ConditionalExpression ternary = (ConditionalExpression) matchedNode;</span>
 
 		// Get the condition
-<span class="nc" id="L429">		ASTNode condNode = ctx.getMatch().getBindings().get(&quot;$cond&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L429">		ASTNode condNode = ctx.getMatch().getBinding(&quot;$cond&quot;); //$NON-NLS-1$</span>
 <span class="nc bnc" id="L430" title="All 4 branches missed.">		if (condNode == null || !(condNode instanceof Expression)) {</span>
 <span class="nc" id="L431">			return null;</span>
 		}
@@ -477,7 +477,7 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
 <span class="nc" id="L477">		InfixExpression infixExpr = (InfixExpression) matchedNode;</span>
 
 		// Get the collection expression
-<span class="nc" id="L480">		ASTNode listNode = ctx.getMatch().getBindings().get(&quot;$list&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L480">		ASTNode listNode = ctx.getMatch().getBinding(&quot;$list&quot;); //$NON-NLS-1$</span>
 <span class="nc bnc" id="L481" title="All 4 branches missed.">		if (listNode == null || !(listNode instanceof Expression)) {</span>
 <span class="nc" id="L482">			return null;</span>
 		}
@@ -528,7 +528,7 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
 <span class="nc" id="L528">		InfixExpression infixExpr = (InfixExpression) matchedNode;</span>
 
 		// Get the collection expression
-<span class="nc" id="L531">		ASTNode listNode = ctx.getMatch().getBindings().get(&quot;$list&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L531">		ASTNode listNode = ctx.getMatch().getBinding(&quot;$list&quot;); //$NON-NLS-1$</span>
 <span class="nc bnc" id="L532" title="All 4 branches missed.">		if (listNode == null || !(listNode instanceof Expression)) {</span>
 <span class="nc" id="L533">			return null;</span>
 		}
@@ -587,7 +587,7 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
 <span class="nc" id="L587">		MethodInvocation methodInvocation = (MethodInvocation) matchedNode;</span>
 
 		// Get the appended value
-<span class="nc" id="L590">		ASTNode xNode = ctx.getMatch().getBindings().get(&quot;$x&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L590">		ASTNode xNode = ctx.getMatch().getBinding(&quot;$x&quot;); //$NON-NLS-1$</span>
 <span class="nc bnc" id="L591" title="All 4 branches missed.">		if (xNode == null || !(xNode instanceof Expression)) {</span>
 <span class="nc" id="L592">			return null;</span>
 		}
@@ -642,7 +642,7 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
 <span class="nc" id="L642">		MethodInvocation methodInvocation = (MethodInvocation) matchedNode;</span>
 
 		// Get the formatted value
-<span class="nc" id="L645">		ASTNode xNode = ctx.getMatch().getBindings().get(&quot;$x&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L645">		ASTNode xNode = ctx.getMatch().getBinding(&quot;$x&quot;); //$NON-NLS-1$</span>
 <span class="nc bnc" id="L646" title="All 4 branches missed.">		if (xNode == null || !(xNode instanceof Expression)) {</span>
 <span class="nc" id="L647">			return null;</span>
 		}
@@ -697,8 +697,8 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
 <span class="nc" id="L697">		MethodInvocation methodInvocation = (MethodInvocation) matchedNode;</span>
 
 		// Get both expressions
-<span class="nc" id="L700">		ASTNode xNode = ctx.getMatch().getBindings().get(&quot;$x&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L701">		ASTNode yNode = ctx.getMatch().getBindings().get(&quot;$y&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L700">		ASTNode xNode = ctx.getMatch().getBinding(&quot;$x&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L701">		ASTNode yNode = ctx.getMatch().getBinding(&quot;$y&quot;); //$NON-NLS-1$</span>
 		
 <span class="nc bnc" id="L703" title="All 4 branches missed.">		if (xNode == null || !(xNode instanceof Expression) ||</span>
 <span class="nc bnc" id="L704" title="All 4 branches missed.">		    yNode == null || !(yNode instanceof Expression)) {</span>
@@ -767,8 +767,8 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
 <span class="nc" id="L767">		ConditionalExpression ternary = (ConditionalExpression) matchedNode;</span>
 
 		// Get the expressions
-<span class="nc" id="L770">		ASTNode xNode = ctx.getMatch().getBindings().get(&quot;$x&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L771">		ASTNode defaultNode = ctx.getMatch().getBindings().get(&quot;$default&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L770">		ASTNode xNode = ctx.getMatch().getBinding(&quot;$x&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L771">		ASTNode defaultNode = ctx.getMatch().getBinding(&quot;$default&quot;); //$NON-NLS-1$</span>
 		
 <span class="nc bnc" id="L773" title="All 4 branches missed.">		if (xNode == null || !(xNode instanceof Expression) ||</span>
 <span class="nc bnc" id="L774" title="All 4 branches missed.">		    defaultNode == null || !(defaultNode instanceof Expression)) {</span>
