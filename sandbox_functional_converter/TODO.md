@@ -332,6 +332,78 @@ List<RuleEntry> entries = Stream.concat(
 - `LoopTargetFormat` enum in `sandbox_functional_converter`
 - `LoopBidirectionalTransformationTest` for desired behavior
 
+### Issue #453: Output-Format Alignment und vollständigen Support für 'collect'-Pattern ✅ IN PROGRESS (January 2026)
+
+**Objective**: Optimize V2 renderer to produce idiomatic, modern Java code for collect-loops
+
+**Status**: 🚧 **Partially Complete** - Core renderer fix done, full pattern support pending
+
+#### Completed Tasks ✅
+
+1. **StringRenderer Fix** (January 27, 2026)
+   - ✅ Changed `TO_LIST` from `.toList()` (Java 16+) to `.collect(Collectors.toList())` (Java 8+)
+   - ✅ Removed redundant conditional logic in `renderCollect()`
+   - ✅ Added documentation explaining Java 8+ compatibility choice
+   - ✅ Verified `ASTStreamRenderer` already uses correct pattern
+
+2. **Test Suite Enhancement**
+   - ✅ Added 4 new edge/negative tests in `LoopRefactoringCollectTest`:
+     - `testCollectWithSideEffects_ShouldNotConvert` - Side effects prevent conversion
+     - `testMultipleCollectTargets_ShouldNotConvert` - Multiple collections prevent conversion  
+     - `testCollectWithBreak_ShouldNotConvert` - Break statements prevent conversion
+     - `testCollectWithIntermediateRead_ShouldNotConvert` - Reading collection during iteration prevents conversion
+
+3. **Documentation**
+   - ✅ Updated TODO.md with Issue #453 progress
+   - ✅ Documented changes in commit messages
+
+#### Implementation Details
+
+**Problem**: StringRenderer produced `.toList()` (Java 16+) instead of standard `.collect(Collectors.toList())` (Java 8+)
+
+**Solution**:
+```java
+// Before (Java 16+ only):
+case TO_LIST -> ".toList()";
+
+// After (Java 8+ idiomatic):
+case TO_LIST -> ".collect(Collectors.toList())";
+```
+
+**Impact**:
+- All collect patterns now produce Java 8+ compatible code
+- Consistent with Eclipse JDT standards for maximum compatibility
+- Tests in `LoopRefactoringCollectTest` should now pass
+
+#### Outstanding Tasks
+
+1. **Enable Disabled Tests** (Priority: HIGH)
+   - [ ] Enable filter+collect tests once V1 pattern detection supports them:
+     - `testFilteredCollect()` - Filter before collect
+     - `testNullFilteredCollect()` - Null filtering
+     - `testFilterMapCollect()` - Combined filter+map+collect
+     - `testComplexFilterMapCollect()` - Complex conditions
+   - [ ] Enable array source tests once import handling is fixed:
+     - `testArraySourceCollect()` - Arrays.stream() support
+     - `testArraySourceMapCollect()` - Array map+collect
+
+2. **Pattern Detection Enhancement** (Priority: MEDIUM)
+   - [ ] Implement filter+collect pattern detection in V1
+   - [ ] Implement conditional collection patterns
+   - [ ] Add support for `Collectors.toCollection()` for specific collection types
+
+3. **V2 Feature Parity** (Priority: MEDIUM)
+   - [ ] Update V2 to match V1 collect pattern support
+   - [ ] Enable parity tests in `FeatureParityTest` once V2 reaches feature parity
+   - [ ] Verify both V1 and V2 produce identical idiomatic output
+
+**Priority**: HIGH (affects output quality and Java version compatibility)
+
+**References**:
+- Issue: https://github.com/carstenartur/sandbox/issues/453
+- Test file: `LoopRefactoringCollectTest.java` (5 active tests, 6 disabled pending pattern support)
+- Related: V1/V2 feature parity (Phase 7)
+
 **Objective**: Retire V1 implementation once V2 is stable
 
 **Planned Tasks**:
