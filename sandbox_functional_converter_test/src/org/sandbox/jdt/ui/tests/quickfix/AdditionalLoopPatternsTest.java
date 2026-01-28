@@ -500,6 +500,11 @@ public class AdditionalLoopPatternsTest {
 	 * relied upon. The converted code is semantically wrong - it overwrites the list
 	 * instead of accumulating entries from both loops.</p>
 	 * 
+	 * <p><b>Additional Issue - Mutability:</b> Even if the overwrite bug were fixed,
+	 * using {@code Collectors.toList()} followed by {@code Collections.sort()} is risky
+	 * because {@code Collectors.toList()} does not guarantee a mutable list. See
+	 * {@link #testLoopWithSubsequentSort_convertsToStream()} for details.</p>
+	 * 
 	 * <p><b>When this test FAILS:</b> It means the bug has been fixed! Update the
 	 * test above ({@code testMultipleLoopsPopulatingList_streamConcat}) to be enabled
 	 * and delete this test.</p>
@@ -600,24 +605,35 @@ public class AdditionalLoopPatternsTest {
 	/**
 	 * Tests single for-each loop adding to list followed by sort.
 	 * 
-	 * <p><b>Note:</b> This IS convertible because the list starts empty and only one loop
-	 * populates it. The subsequent {@code Collections.sort()} is independent and still works.</p>
+	 * <p><b>IMPORTANT - Mutability Issue:</b> The original code uses {@code new ArrayList<>()} 
+	 * which is mutable, and then calls {@code Collections.sort(result)} which requires a mutable list.
+	 * The cleanup should NOT convert this pattern because:
+	 * <ul>
+	 *   <li>{@code Stream.toList()} (Java 16+) returns an <b>unmodifiable</b> list</li>
+	 *   <li>{@code Collectors.toList()} has <b>unspecified mutability</b> - it may or may not be mutable</li>
+	 *   <li>Calling {@code Collections.sort()} on an unmodifiable list throws {@code UnsupportedOperationException}</li>
+	 * </ul>
 	 * 
-	 * <p><b>Conversion:</b></p>
-	 * <pre>{@code
-	 * List<String> result = new ArrayList<>();
-	 * for (String item : items) { result.add(item.toUpperCase()); }
-	 * }</pre>
-	 * <p>becomes:</p>
-	 * <pre>{@code
-	 * List<String> result = items.stream().map(item -> item.toUpperCase()).collect(Collectors.toList());
-	 * }</pre>
+	 * <p><b>Safe Alternatives:</b></p>
+	 * <ul>
+	 *   <li>Use {@code Collectors.toCollection(ArrayList::new)} for guaranteed mutable list</li>
+	 *   <li>Use {@code .sorted().toList()} to sort within the stream (returns immutable)</li>
+	 *   <li>Use {@code .sorted().collect(Collectors.toCollection(ArrayList::new))} for sorted mutable list</li>
+	 * </ul>
 	 * 
-	 * <p><b>Future Enhancement:</b> Could theoretically be converted to include sort:
+	 * <p><b>Current Behavior:</b> The cleanup converts to {@code Collectors.toList()} which is 
+	 * technically risky but works in practice with most JVM implementations. This test documents
+	 * the current behavior, but ideally the cleanup should either:
+	 * <ul>
+	 *   <li>NOT convert when subsequent mutation is detected</li>
+	 *   <li>Use {@code Collectors.toCollection(ArrayList::new)} when mutability is required</li>
+	 * </ul>
+	 * 
+	 * <p><b>Future Enhancement:</b> Could detect {@code Collections.sort()} and integrate it:
 	 * {@code return items.stream().map(String::toUpperCase).sorted().toList();}</p>
 	 */
 	@Test
-	@DisplayName("For-each loop adding to empty list followed by sort converts to stream")
+	@DisplayName("For-each loop adding to empty list followed by sort - CAUTION: mutability issue")
 	public void testLoopWithSubsequentSort_convertsToStream() throws CoreException {
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 
@@ -638,6 +654,10 @@ public class AdditionalLoopPatternsTest {
 				}
 				""";
 
+		// WARNING: This expected output is semantically risky!
+		// Collectors.toList() has unspecified mutability - the subsequent Collections.sort()
+		// may throw UnsupportedOperationException depending on the JVM implementation.
+		// A safer conversion would use Collectors.toCollection(ArrayList::new).
 		String expected = """
 				package test1;
 				import java.util.*;

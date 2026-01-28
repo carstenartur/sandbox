@@ -68,6 +68,7 @@ public class PipelineAssembler {
 	private ReducePatternDetector reduceDetector;
 	private CollectPatternDetector collectDetector;
 	private boolean needsArraysImport = false;
+	private boolean usesDirectToList = false;
 
 	/**
 	 * Creates a new PipelineAssembler.
@@ -103,6 +104,23 @@ public class PipelineAssembler {
 	public boolean needsArraysImport() {
 		return needsArraysImport;
 	}
+	
+	/**
+	 * Returns whether the pipeline needs the java.util.stream.Collectors import.
+	 * This is true when using .collect(Collectors.toList()) or .collect(Collectors.toSet()),
+	 * but false when using Java 16+ .toList() directly.
+	 * 
+	 * @return true if Collectors import is needed
+	 */
+	public boolean needsCollectorsImport() {
+		// If using direct .toList(), no Collectors import is needed
+		if (usesDirectToList) {
+			return false;
+		}
+		// Check if any operation is a COLLECT operation
+		return operations.stream()
+				.anyMatch(op -> op.getOperationType() == OperationType.COLLECT);
+	}
 
 	/**
 	 * Sets the reduce pattern detector (for accumulator variable access).
@@ -120,6 +138,16 @@ public class PipelineAssembler {
 	 */
 	public void setCollectDetector(CollectPatternDetector detector) {
 		this.collectDetector = detector;
+	}
+
+	/**
+	 * Sets whether the pipeline uses Java 16+ direct .toList() method.
+	 * When true, no Collectors import is needed.
+	 * 
+	 * @param usesDirectToList true if using .toList() instead of .collect(Collectors.toList())
+	 */
+	public void setUsesDirectToList(boolean usesDirectToList) {
+		this.usesDirectToList = usesDirectToList;
 	}
 
 	/**
@@ -171,7 +199,7 @@ public class PipelineAssembler {
 
 		return pipeline;
 	}
-
+	
 	/**
 	 * Builds a direct forEach without .stream() for collections, 
 	 * or Arrays.stream().forEach() for arrays.

@@ -210,6 +210,13 @@ public class StreamPipelineBuilder {
 			convertible = false;
 			return false;
 		}
+		
+		// Check for unsafe collect pattern: if collecting to a variable that is 
+		// also read during iteration, we cannot convert
+		if (hasUnsafeCollectPattern(loopBody)) {
+			convertible = false;
+			return false;
+		}
 
 		// Validate variable scoping
 		if (!validateVariableScope(operations, loopVariableName)) {
@@ -281,7 +288,8 @@ public class StreamPipelineBuilder {
 
 	/**
 	 * Returns whether the pipeline needs the java.util.stream.Collectors import.
-	 * This is true when using collect operations (toList, toSet, etc.).
+	 * This is true when using collect operations (toList, toSet, etc.), but false
+	 * when using Java 16+ .toList() directly.
 	 * 
 	 * <p>This method should be called after {@link #buildPipeline()} to determine
 	 * if an import needs to be added.</p>
@@ -289,12 +297,67 @@ public class StreamPipelineBuilder {
 	 * @return true if Collectors import is needed
 	 */
 	public boolean needsCollectorsImport() {
-		// Check if any operation is a COLLECT operation
+		// Delegate to PipelineAssembler which knows if .toList() is being used
+		if (pipelineAssembler != null) {
+			return pipelineAssembler.needsCollectorsImport();
+		}
+		// Fallback: check if any operation is a COLLECT operation
 		if (operations == null) {
 			return false;
 		}
 		return operations.stream()
 				.anyMatch(op -> op.getOperationType() == OperationType.COLLECT);
+	}
+	
+	/**
+	 * Returns whether the pipeline is a COLLECT operation.
+	 * This is true for any collect operation, regardless of whether it uses
+	 * Collectors.toList() or Java 16+ .toList().
+	 * 
+	 * <p>Used to determine if declaration merging should be applied.</p>
+	 * 
+	 * @return true if this is a collect operation
+	 */
+	public boolean isCollectOperation() {
+		if (operations == null) {
+			return false;
+		}
+		return operations.stream()
+				.anyMatch(op -> op.getOperationType() == OperationType.COLLECT);
+	}
+	
+	/**
+	 * Checks if the loop has an unsafe COLLECT pattern.
+	 * 
+	 * <p>A COLLECT pattern is unsafe if the target collection variable is 
+	 * read (not just written to) during the iteration. For example:</p>
+	 * <pre>{@code
+	 * for (Integer item : items) {
+	 *     result.add(item);
+	 *     System.out.println("Size: " + result.size());  // Unsafe - reading result
+	 * }
+	 * }</pre>
+	 * 
+	 * @param loopBody the loop body to check
+	 * @return true if an unsafe collect pattern is detected
+	 */
+	private boolean hasUnsafeCollectPattern(Statement loopBody) {
+		// Check if there's a COLLECT operation
+		boolean hasCollect = operations.stream()
+				.anyMatch(op -> op.getOperationType() == OperationType.COLLECT);
+		
+		if (!hasCollect) {
+			return false;
+		}
+		
+		// Find the target variable from the COLLECT operation
+		String collectTarget = collectDetector.getTargetVariable();
+		if (collectTarget == null) {
+			return false;
+		}
+		
+		// Check if the target variable is read during iteration
+		return collectDetector.isTargetReadDuringIteration(loopBody, collectTarget);
 	}
 
 	/**

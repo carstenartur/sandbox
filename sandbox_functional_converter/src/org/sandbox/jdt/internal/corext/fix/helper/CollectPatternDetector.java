@@ -14,6 +14,7 @@
 package org.sandbox.jdt.internal.corext.fix.helper;
 
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
@@ -243,5 +244,70 @@ public final class CollectPatternDetector {
 		}
 
 		return null;
+	}
+
+	/**
+	 * Checks if the target collection variable is read (not just written to) 
+	 * within the loop body. Reading the collection during iteration prevents 
+	 * safe conversion to stream collect.
+	 * 
+	 * <p><b>Example of unsafe read:</b></p>
+	 * <pre>{@code
+	 * for (Integer item : items) {
+	 *     result.add(item);
+	 *     System.out.println("Size: " + result.size());  // Read prevents conversion
+	 * }
+	 * }</pre>
+	 * 
+	 * @param loopBody the loop body statement
+	 * @param collectTargetVar the name of the collection variable being collected to
+	 * @return true if the target variable is read during iteration
+	 */
+	public boolean isTargetReadDuringIteration(Statement loopBody, String collectTargetVar) {
+		if (loopBody == null || collectTargetVar == null) {
+			return false;
+		}
+		
+		final boolean[] hasRead = {false};
+		
+		loopBody.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(MethodInvocation node) {
+				Expression receiver = node.getExpression();
+				if (receiver instanceof SimpleName) {
+					String varName = ((SimpleName) receiver).getIdentifier();
+					if (varName.equals(collectTargetVar)) {
+						String methodName = node.getName().getIdentifier();
+						// "add" is a write operation, anything else is a read
+						if (!"add".equals(methodName)) {
+							hasRead[0] = true;
+						}
+					}
+				}
+				return true;
+			}
+			
+			@Override
+			public boolean visit(SimpleName node) {
+				// Check if this is a direct reference to the target variable
+				// that is not part of a method invocation on that variable
+				if (node.getIdentifier().equals(collectTargetVar)) {
+					// Check if parent is a method invocation where this is the receiver
+					ASTNode parent = node.getParent();
+					if (parent instanceof MethodInvocation) {
+						MethodInvocation parentMethod = (MethodInvocation) parent;
+						if (parentMethod.getExpression() == node) {
+							// This is the receiver of a method call - handled above
+							return true;
+						}
+					}
+					// Direct reference to the variable (e.g., passing it to a method) is a read
+					hasRead[0] = true;
+				}
+				return true;
+			}
+		});
+		
+		return hasRead[0];
 	}
 }
