@@ -18,6 +18,8 @@ import java.util.List;
 import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.PostfixExpression;
+import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Statement;
 
@@ -76,6 +78,28 @@ public class SideEffectChecker {
 		// Check for assignments
 		if (expr instanceof Assignment) {
 			return isAssignmentSafe((Assignment) expr, currentVarName, operations);
+		}
+		
+		// Check for postfix increment/decrement (counter++, counter--)
+		// These modify external state and are unsafe
+		if (expr instanceof PostfixExpression) {
+			PostfixExpression postfix = (PostfixExpression) expr;
+			PostfixExpression.Operator op = postfix.getOperator();
+			if (op == PostfixExpression.Operator.INCREMENT || op == PostfixExpression.Operator.DECREMENT) {
+				// Modifying a variable is a side effect
+				return false;
+			}
+		}
+		
+		// Check for prefix increment/decrement (++counter, --counter)
+		// These modify external state and are unsafe
+		if (expr instanceof PrefixExpression) {
+			PrefixExpression prefix = (PrefixExpression) expr;
+			PrefixExpression.Operator op = prefix.getOperator();
+			if (op == PrefixExpression.Operator.INCREMENT || op == PrefixExpression.Operator.DECREMENT) {
+				// Modifying a variable is a side effect
+				return false;
+			}
 		}
 
 		// Method calls and other expressions are generally safe

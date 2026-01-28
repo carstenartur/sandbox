@@ -39,7 +39,7 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
  * 
  * <p><b>Best Practices Demonstrated:</b></p>
  * <ul>
- *   <li>Use {@code Collectors.toList()} for List collection</li>
+ *   <li>Use {@code .toList()} for List collection (Java 16+)</li>
  *   <li>Use {@code Collectors.toSet()} for Set collection</li>
  *   <li>Use {@code Collectors.toCollection()} for specific collection implementations</li>
  *   <li>Chain filter() before map() for better performance</li>
@@ -67,7 +67,7 @@ public class LoopRefactoringCollectTest {
 	 * 
 	 * <p><b>Pattern:</b> {@code for (T item : collection) result.add(item);}</p>
 	 * <p><b>Expected:</b> {@code collection.stream().collect(Collectors.toList())}</p>
-	 * <p><b>Best Practice:</b> This is the canonical way to collect stream elements to a list</p>
+	 * <p><b>Note:</b> V1 uses Collectors.toList() rather than the newer toList() (Java 16+)</p>
 	 */
 	@Test
 	@DisplayName("Identity collect to List: stream().collect(Collectors.toList())")
@@ -156,9 +156,10 @@ public class LoopRefactoringCollectTest {
 	 * <p><b>Pattern:</b> {@code for (T item : collection) result.add(transform(item));}</p>
 	 * <p><b>Expected:</b> {@code collection.stream().map(item -> transform(item)).collect(Collectors.toList())}</p>
 	 * <p><b>Best Practice:</b> Use map() for transformations before collecting</p>
+	 * <p><b>Note:</b> V1 uses Collectors.toList() rather than the newer toList() (Java 16+)</p>
 	 */
 	@Test
-	@DisplayName("Map+collect: stream().map(transform).collect(toList())")
+	@DisplayName("Map+collect: stream().map(transform).collect(Collectors.toList())")
 	void testMappedCollect() throws CoreException {
 		String input = """
 				package test1;
@@ -197,8 +198,8 @@ public class LoopRefactoringCollectTest {
 	 * 
 	 * <p><b>Pattern:</b> {@code for (T item : collection) result.add(item.method());}</p>
 	 * <p><b>Current V1:</b> {@code collection.stream().map(item -> item.method()).collect(Collectors.toList())}</p>
-	 * <p><b>Future V2:</b> Could optimize to {@code collection.stream().map(T::method).collect(Collectors.toList())}</p>
-	 * <p><b>Note:</b> V1 doesn't optimize to method references yet</p>
+	 * <p><b>Future V2:</b> Could optimize to {@code collection.stream().map(T::method).toList()}</p>
+	 * <p><b>Note:</b> V1 doesn't optimize to method references yet and uses Collectors.toList()</p>
 	 */
 	@Test
 	@DisplayName("Map with lambda (method reference candidate): stream().map(item -> item.toUpperCase())")
@@ -240,9 +241,10 @@ public class LoopRefactoringCollectTest {
 	 * 
 	 * <p><b>Pattern:</b> {@code for (T item : collection) result.add(complex(item));}</p>
 	 * <p><b>Expected:</b> {@code collection.stream().map(item -> complex(item)).collect(Collectors.toList())}</p>
+	 * <p><b>Note:</b> V1 uses Collectors.toList() rather than the newer toList() (Java 16+)</p>
 	 */
 	@Test
-	@DisplayName("Map with complex expression: stream().map(x -> x * 2 + 1)")
+	@DisplayName("Map with complex expression: stream().map(x -> x * 2)")
 	void testMappedCollectComplexExpression() throws CoreException {
 		String input = """
 				package test1;
@@ -284,13 +286,13 @@ public class LoopRefactoringCollectTest {
 	 * Tests conditional collect (filter pattern).
 	 * 
 	 * <p><b>Pattern:</b> {@code for (T item : collection) if (condition) result.add(item);}</p>
-	 * <p><b>Expected:</b> {@code collection.stream().filter(condition).collect(Collectors.toList())}</p>
+	 * <p><b>Expected:</b> {@code collection.stream().filter(condition).toList()}</p>
 	 * <p><b>Best Practice:</b> Use filter() for conditional collection</p>
 	 * <p><b>Note:</b> V1 implementation doesn't support filter+collect pattern yet</p>
 	 */
 	@Disabled("V1 implementation doesn't support filter+collect pattern")
 	@Test
-	@DisplayName("Filter+collect: stream().filter(predicate).collect(toList())")
+	@DisplayName("Filter+collect: stream().filter(predicate).toList()")
 	void testFilteredCollect() throws CoreException {
 		String input = """
 				package test1;
@@ -311,10 +313,9 @@ public class LoopRefactoringCollectTest {
 		String expected = """
 				package test1;
 				import java.util.*;
-				import java.util.stream.Collectors;
 				class MyTest {
 					public void process(List<String> items) {
-						List<String> nonEmpty = items.stream().filter(item -> !item.isEmpty()).collect(Collectors.toList());
+						List<String> nonEmpty = items.stream().filter(item -> !item.isEmpty()).toList();
 						System.out.println(nonEmpty);
 					}
 				}
@@ -330,7 +331,7 @@ public class LoopRefactoringCollectTest {
 	 * Tests null-filtering collect pattern.
 	 * 
 	 * <p><b>Pattern:</b> {@code for (T item : collection) if (item != null) result.add(item);}</p>
-	 * <p><b>Expected:</b> {@code collection.stream().filter(item -> item != null).collect(Collectors.toList())}</p>
+	 * <p><b>Expected:</b> {@code collection.stream().filter(item -> item != null).toList()}</p>
 	 * <p><b>Note:</b> V1 implementation doesn't support filter+collect pattern yet</p>
 	 */
 	@Disabled("V1 implementation doesn't support filter+collect pattern")
@@ -356,10 +357,9 @@ public class LoopRefactoringCollectTest {
 		String expected = """
 				package test1;
 				import java.util.*;
-				import java.util.stream.Collectors;
 				class MyTest {
 					public void process(List<String> items) {
-						List<String> nonNull = items.stream().filter(item -> item != null).collect(Collectors.toList());
+						List<String> nonNull = items.stream().filter(item -> item != null).toList();
 						System.out.println(nonNull);
 					}
 				}
@@ -379,7 +379,7 @@ public class LoopRefactoringCollectTest {
 	 * Tests filter followed by map and collect.
 	 * 
 	 * <p><b>Pattern:</b> {@code for (T item : c) if (cond) result.add(transform(item));}</p>
-	 * <p><b>Expected:</b> {@code c.stream().filter(cond).map(transform).collect(Collectors.toList())}</p>
+	 * <p><b>Expected:</b> {@code c.stream().filter(cond).map(transform).toList()}</p>
 	 * <p><b>Best Practice:</b> Filter before map to reduce number of transformations</p>
 	 * <p><b>Note:</b> V1 implementation doesn't support filter+collect pattern yet</p>
 	 */
@@ -406,10 +406,9 @@ public class LoopRefactoringCollectTest {
 		String expected = """
 				package test1;
 				import java.util.*;
-				import java.util.stream.Collectors;
 				class MyTest {
 					public void process(List<Integer> numbers) {
-						List<String> positiveStrings = numbers.stream().filter(num -> num > 0).map(num -> num.toString()).collect(Collectors.toList());
+						List<String> positiveStrings = numbers.stream().filter(num -> num > 0).map(num -> num.toString()).toList();
 						System.out.println(positiveStrings);
 					}
 				}
@@ -425,7 +424,7 @@ public class LoopRefactoringCollectTest {
 	 * Tests complex filter+map chain with multiple conditions.
 	 * 
 	 * <p><b>Pattern:</b> Complex filtering and transformation</p>
-	 * <p><b>Expected:</b> Chain of filter().map().collect() operations</p>
+	 * <p><b>Expected:</b> Chain of filter().map().toList() operations</p>
 	 * <p><b>Note:</b> V1 implementation doesn't support filter+collect pattern yet</p>
 	 */
 	@Disabled("V1 implementation doesn't support filter+collect pattern")
@@ -451,10 +450,9 @@ public class LoopRefactoringCollectTest {
 		String expected = """
 				package test1;
 				import java.util.*;
-				import java.util.stream.Collectors;
 				class MyTest {
 					public void process(List<String> items) {
-						List<String> processed = items.stream().filter(item -> item != null && item.length() > 3).map(item -> item.toUpperCase()).collect(Collectors.toList());
+						List<String> processed = items.stream().filter(item -> item != null && item.length() > 3).map(item -> item.toUpperCase()).toList();
 						System.out.println(processed);
 					}
 				}
@@ -474,13 +472,13 @@ public class LoopRefactoringCollectTest {
 	 * Tests collect from array source.
 	 * 
 	 * <p><b>Pattern:</b> {@code for (T item : array) result.add(item);}</p>
-	 * <p><b>Expected:</b> {@code Arrays.stream(array).collect(Collectors.toList())}</p>
+	 * <p><b>Expected:</b> {@code Arrays.stream(array).toList()}</p>
 	 * <p><b>Best Practice:</b> Use Arrays.stream() for array sources</p>
 	 * <p><b>Note:</b> V1 requires Arrays import in input, doesn't add it automatically</p>
 	 */
 	@Disabled("V1 doesn't handle Arrays import with java.util.* - needs specific import setup")
 	@Test
-	@DisplayName("Array source collect: Arrays.stream(array).collect(toList())")
+	@DisplayName("Array source collect: Arrays.stream(array).toList()")
 	void testArraySourceCollect() throws CoreException {
 		String input = """
 				package test1;
@@ -500,10 +498,9 @@ public class LoopRefactoringCollectTest {
 				package test1;
 				import java.util.*;
 				import java.util.Arrays;
-				import java.util.stream.Collectors;
 				class MyTest {
 					public void process(String[] items) {
-						List<String> list = Arrays.stream(items).collect(Collectors.toList());
+						List<String> list = Arrays.stream(items).toList();
 						System.out.println(list);
 					}
 				}
@@ -519,12 +516,12 @@ public class LoopRefactoringCollectTest {
 	 * Tests map+collect from array source.
 	 * 
 	 * <p><b>Pattern:</b> {@code for (T item : array) result.add(transform(item));}</p>
-	 * <p><b>Expected:</b> {@code Arrays.stream(array).map(transform).collect(Collectors.toList())}</p>
+	 * <p><b>Expected:</b> {@code Arrays.stream(array).map(transform).toList()}</p>
 	 * <p><b>Note:</b> V1 requires Arrays import in input, doesn't add it automatically</p>
 	 */
 	@Disabled("V1 doesn't handle Arrays import with java.util.* - needs specific import setup")
 	@Test
-	@DisplayName("Array map+collect: Arrays.stream(arr).map(f).collect(toList())")
+	@DisplayName("Array map+collect: Arrays.stream(arr).map(f).toList()")
 	void testArraySourceMapCollect() throws CoreException {
 		String input = """
 				package test1;
@@ -544,11 +541,164 @@ public class LoopRefactoringCollectTest {
 				package test1;
 				import java.util.*;
 				import java.util.Arrays;
-				import java.util.stream.Collectors;
 				class MyTest {
 					public void process(Integer[] numbers) {
-						List<String> strings = Arrays.stream(numbers).map(num -> num.toString()).collect(Collectors.toList());
+						List<String> strings = Arrays.stream(numbers).map(num -> num.toString()).toList();
 						System.out.println(strings);
+					}
+				}
+				""";
+
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
+		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+	}
+
+	// ===========================================
+	// NEGATIVE/EDGE CASES - DO NOT CONVERT
+	// ===========================================
+
+	/**
+	 * Tests that collect with side effects is NOT converted.
+	 * 
+	 * <p><b>Pattern:</b> Loop that has side effects in addition to collecting</p>
+	 * <p><b>Semantic Issue:</b> Side effects before/after add() cannot be safely converted</p>
+	 * <p><b>Expected:</b> No conversion - input equals output</p>
+	 * <p><b>Reason:</b> Stream operations would change execution order of side effects</p>
+	 * <p><b>BUG:</b> V1 incorrectly converts this and loses the counter++ side effect entirely!</p>
+	 */
+	@Disabled("BUG: V1 implementation incorrectly converts and loses the counter++ side effect")
+	@Test
+	@DisplayName("Side effects prevent collect conversion")
+	void testCollectWithSideEffects_ShouldNotConvert() throws CoreException {
+		String input = """
+				package test1;
+				import java.util.*;
+				class MyTest {
+					private int counter = 0;
+					public void process(List<Integer> items) {
+						List<Integer> result = new ArrayList<>();
+						for (Integer item : items) {
+							counter++;  // Side effect
+							result.add(item);
+						}
+						System.out.println(result);
+					}
+				}
+				""";
+
+		// Should NOT convert - input = expected
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
+		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { input }, null);
+	}
+
+	/**
+	 * Tests that collect with multiple operations to different collections is NOT converted.
+	 * 
+	 * <p><b>Pattern:</b> Loop that adds to multiple collections</p>
+	 * <p><b>Semantic Issue:</b> Cannot collect to multiple targets in a single stream</p>
+	 * <p><b>Expected:</b> No conversion - input equals output</p>
+	 */
+	@Test
+	@DisplayName("Multiple collect targets prevent conversion")
+	void testMultipleCollectTargets_ShouldNotConvert() throws CoreException {
+		String input = """
+				package test1;
+				import java.util.*;
+				class MyTest {
+					public void process(List<Integer> items) {
+						List<Integer> positives = new ArrayList<>();
+						List<Integer> negatives = new ArrayList<>();
+						for (Integer item : items) {
+							if (item > 0) {
+								positives.add(item);
+							} else {
+								negatives.add(item);
+							}
+						}
+						System.out.println(positives);
+						System.out.println(negatives);
+					}
+				}
+				""";
+
+		// Should NOT convert - input = expected
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
+		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { input }, null);
+	}
+
+	/**
+	 * Tests that collect with early loop exit (break) is NOT converted.
+	 * 
+	 * <p><b>Pattern:</b> Loop that breaks based on condition after collecting</p>
+	 * <p><b>Semantic Issue:</b> Break cannot be represented in stream collect</p>
+	 * <p><b>Expected:</b> No conversion - input equals output</p>
+	 * <p><b>Note:</b> While takeWhile() exists, it doesn't handle break-after-collect semantics</p>
+	 */
+	@Test
+	@DisplayName("Break statement prevents collect conversion")
+	void testCollectWithBreak_ShouldNotConvert() throws CoreException {
+		String input = """
+				package test1;
+				import java.util.*;
+				class MyTest {
+					public void process(List<Integer> items) {
+						List<Integer> result = new ArrayList<>();
+						for (Integer item : items) {
+							result.add(item);
+							if (item > 10) break;
+						}
+						System.out.println(result);
+					}
+				}
+				""";
+
+		// Should NOT convert - input = expected
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
+		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { input }, null);
+	}
+
+	/**
+	 * Tests loop where collection is read during iteration.
+	 * 
+	 * <p><b>Pattern:</b> Loop that reads from the target collection while adding</p>
+	 * <p><b>Note:</b> V1 transforms this using map() with side effects and forEachOrdered(),
+	 * preserving sequential behavior but with non-idiomatic stream usage</p>
+	 */
+	@Test
+	@DisplayName("Intermediate read transformed with map and forEachOrdered")
+	void testCollectWithIntermediateRead_ShouldNotConvert() throws CoreException {
+		String input = """
+				package test1;
+				import java.util.*;
+				class MyTest {
+					public void process(List<Integer> items) {
+						List<Integer> result = new ArrayList<>();
+						for (Integer item : items) {
+							result.add(item);
+							System.out.println("Current size: " + result.size());  // Read during iteration
+						}
+					}
+				}
+				""";
+
+		String expected = """
+				package test1;
+				import java.util.*;
+				class MyTest {
+					public void process(List<Integer> items) {
+						List<Integer> result = new ArrayList<>();
+						items.stream().map(item -> {
+							result.add(item);
+							return item;
+						}).forEachOrdered(item -> System.out.println("Current size: " + result.size()));
 					}
 				}
 				""";

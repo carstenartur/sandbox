@@ -102,8 +102,10 @@ public class StringRenderer implements StreamPipelineRenderer<String> {
     
     @Override
     public String renderCollect(String pipeline, CollectTerminal terminal, String variableName) {
+        // Use modern Java 16+ .toList() for conciseness (project targets Java 21)
+        // For other collectors, use Collectors API
         String collector = switch (terminal.collectorType()) {
-            case TO_LIST -> ".toList()";  // Java 16+
+            case TO_LIST -> ".toList()";  // Java 16+ - more concise than Collectors.toList()
             case TO_SET -> ".collect(Collectors.toSet())";
             case TO_MAP -> ".collect(Collectors.toMap(...))";
             case JOINING -> ".collect(Collectors.joining())";
@@ -111,10 +113,6 @@ public class StringRenderer implements StreamPipelineRenderer<String> {
             case CUSTOM -> ".collect(...)";
         };
         
-        // Use direct .toList() for TO_LIST, otherwise .collect(...)
-        if (terminal.collectorType() == CollectTerminal.CollectorType.TO_LIST) {
-            return pipeline + collector;
-        }
         return pipeline + collector;
     }
     
