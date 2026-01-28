@@ -1,8 +1,72 @@
-# Test Report Generator
+# Scripts for Sandbox Automation
 
-This directory contains scripts for generating test overview reports for the sandbox project.
+This directory contains utility scripts used by GitHub Actions workflows in the sandbox project.
 
 ## Scripts
+
+### fix-nls.sh
+
+Automatically adds missing `//$NON-NLS-n$` comments to string literals in Java files.
+
+**Purpose:**
+- Fixes Eclipse internationalization (i18n) warnings
+- Required for proper Eclipse plugin development
+- Automatically marks strings that don't need translation
+
+**Usage:**
+
+```bash
+# Run from repository root
+.github/scripts/fix-nls.sh
+```
+
+**What it does:**
+- Scans all plugin source directories (`sandbox_*/src/`)
+- Skips test modules (directories ending with `_test`)
+- Finds Java files with string literals missing NLS comments
+- Adds `//$NON-NLS-n$` comments where needed
+- Numbers multiple strings on the same line sequentially
+
+**Directories processed:**
+- ✅ All `sandbox_*/src/` directories (plugin modules)
+- ❌ Excludes `*_test/` (test modules)
+- ❌ Excludes `sandbox_test_commons/` (test infrastructure)
+- ❌ Excludes `sandbox_web/`, `sandbox_target/`, `sandbox_coverage/`
+
+**Examples:**
+
+```java
+// Before:
+return "Hello World";
+
+// After:
+return "Hello World"; //$NON-NLS-1$
+
+// Multiple strings:
+String msg = "First" + "Second";
+// After:
+String msg = "First" + "Second"; //$NON-NLS-1$ //$NON-NLS-2$
+```
+
+**Features:**
+- ✅ Preserves existing NLS comments (no duplicates)
+- ✅ Skips comment lines
+- ✅ Handles multiple strings per line
+- ✅ Only processes lines ending with `;`, `)`, or `}`
+- ✅ Safe to run multiple times (idempotent)
+
+**GitHub Actions Integration:**
+
+The script is automatically run by the `Fix NLS Comments` workflow (`.github/workflows/fix-nls.yml`):
+- Runs on PRs from GitHub Copilot
+- Or when PR is labeled with `auto-fix-nls`
+- Automatically commits changes back to the PR
+
+**Limitations:**
+- Uses simple quote counting (may not handle all edge cases with escape sequences like `\"` or `\\`)
+- Only processes lines ending with `;`, `)`, or `}`
+- Multi-line string concatenations are **not** fully supported; only the final line is processed if it contains string literals and ends with a terminator
+- Does not handle Java 15+ text blocks
 
 ### generate_test_report.py
 
