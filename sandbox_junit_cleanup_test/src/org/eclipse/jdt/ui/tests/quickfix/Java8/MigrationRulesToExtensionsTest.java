@@ -244,35 +244,30 @@ public class MigrationRulesToExtensionsTest {
 
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
 				"""
-				package test;
-				import static org.hamcrest.CoreMatchers.equalTo;
-				import static org.hamcrest.MatcherAssert.assertThat;
-				import static org.junit.jupiter.api.Assertions.assertAll;
-				
-				import org.junit.jupiter.api.Test;
-				
-				public class MyTest {
-					@Test
-					public void test1() {
-						assertAll(
-							() -> assertThat("a", equalTo("a")),
-							() -> assertThat("b", equalTo("b"))
-						);
-					}
-					
-					@Test
-					public void test2() {
-						assertAll(
-							() -> assertThat("x", equalTo("x"))
-						);
-					}
-					
-					@Test
-					public void test3() {
-						// This test doesn't use collector
-						System.out.println("No errors");
-					}
-				}
+package test;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertAll;
+
+import org.junit.jupiter.api.Test;
+
+public class MyTest {
+	@Test
+	public void test1() {
+		assertAll(() -> assertThat("a", equalTo("a")), () -> assertThat("b", equalTo("b")));
+	}
+
+	@Test
+	public void test2() {
+		assertAll(() -> assertThat("x", equalTo("x")));
+	}
+
+	@Test
+	public void test3() {
+		// This test doesn't use collector
+		System.out.println("No errors");
+	}
+}
 				"""
 		}, null);
 	}
@@ -634,22 +629,19 @@ public class MigrationRulesToExtensionsTest {
 			}
 			""",
 			"""
-			package test;
-			import static org.hamcrest.CoreMatchers.equalTo;
-			import static org.hamcrest.MatcherAssert.assertThat;
-			import static org.junit.jupiter.api.Assertions.assertAll;
-			
-			import org.junit.jupiter.api.Test;
-			
-			public class MyTest {
-				@Test
-				public void testMultipleErrors() {
-					assertAll(
-						() -> assertThat("value1", equalTo("expected1")),
-						() -> assertThat("value2", equalTo("expected2"))
-					);
-				}
-			}
+package test;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertAll;
+
+import org.junit.jupiter.api.Test;
+
+public class MyTest {
+	@Test
+	public void testMultipleErrors() {
+		assertAll(() -> assertThat("value1", equalTo("expected1")), () -> assertThat("value2", equalTo("expected2")));
+	}
+}
 			"""),
 	ErrorCollectorWithAddError(
 			"""
@@ -669,19 +661,19 @@ public class MigrationRulesToExtensionsTest {
 			}
 			""",
 			"""
-			package test;
-			import static org.junit.jupiter.api.Assertions.assertAll;
-			
-			import org.junit.jupiter.api.Test;
-			
-			public class MyTest {
-				@Test
-				public void testWithAddError() {
-					assertAll(
-						() -> { throw new Throwable("error message"); }
-					);
-				}
-			}
+package test;
+import static org.junit.jupiter.api.Assertions.assertAll;
+
+import org.junit.jupiter.api.Test;
+
+public class MyTest {
+	@Test
+	public void testWithAddError() {
+		assertAll(() -> {
+			throw new Throwable("error message");
+		});
+	}
+}
 			"""),
 	ErrorCollectorMixed(
 			"""
@@ -704,23 +696,21 @@ public class MigrationRulesToExtensionsTest {
 			}
 			""",
 			"""
-			package test;
-			import static org.hamcrest.CoreMatchers.equalTo;
-			import static org.hamcrest.MatcherAssert.assertThat;
-			import static org.junit.jupiter.api.Assertions.assertAll;
-			
-			import org.junit.jupiter.api.Test;
-			
-			public class MyTest {
-				@Test
-				public void testMixed() {
-					assertAll(
-						() -> assertThat("value1", equalTo("expected1")),
-						() -> { throw new AssertionError("Failed check"); },
-						() -> assertThat("value2", equalTo("expected2"))
-					);
-				}
-			}
+package test;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertAll;
+
+import org.junit.jupiter.api.Test;
+
+public class MyTest {
+	@Test
+	public void testMixed() {
+		assertAll(() -> assertThat("value1", equalTo("expected1")), () -> {
+			throw new AssertionError("Failed check");
+		}, () -> assertThat("value2", equalTo("expected2")));
+	}
+}
 			""");
 
 		final String given;
