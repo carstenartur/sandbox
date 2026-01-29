@@ -18,6 +18,8 @@ import java.util.List;
 import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.PostfixExpression;
+import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Statement;
 
@@ -45,7 +47,7 @@ import org.eclipse.jdt.core.dom.Statement;
  * @see LoopBodyParser
  * @see ProspectiveOperation
  */
-<span class="fc" id="L48">public class SideEffectChecker {</span>
+<span class="fc" id="L50">public class SideEffectChecker {</span>
 
 	/**
 	 * Checks if a statement is a safe side-effect.
@@ -58,28 +60,50 @@ import org.eclipse.jdt.core.dom.Statement;
 	public boolean isSafeSideEffect(Statement stmt, String currentVarName, 
 			List&lt;ProspectiveOperation&gt; operations) {
 		
-<span class="fc bfc" id="L61" title="All 2 branches covered.">		if (stmt == null) {</span>
-<span class="fc" id="L62">			return false;</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">		if (stmt == null) {</span>
+<span class="fc" id="L64">			return false;</span>
 		}
 
-<span class="fc bfc" id="L65" title="All 2 branches covered.">		if (!(stmt instanceof ExpressionStatement)) {</span>
-<span class="fc" id="L66">			return false;</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">		if (!(stmt instanceof ExpressionStatement)) {</span>
+<span class="fc" id="L68">			return false;</span>
 		}
 
-<span class="fc" id="L69">		ExpressionStatement exprStmt = (ExpressionStatement) stmt;</span>
-<span class="fc" id="L70">		Expression expr = exprStmt.getExpression();</span>
+<span class="fc" id="L71">		ExpressionStatement exprStmt = (ExpressionStatement) stmt;</span>
+<span class="fc" id="L72">		Expression expr = exprStmt.getExpression();</span>
 
-<span class="pc bpc" id="L72" title="1 of 2 branches missed.">		if (expr == null) {</span>
-<span class="nc" id="L73">			return false;</span>
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">		if (expr == null) {</span>
+<span class="nc" id="L75">			return false;</span>
 		}
 
 		// Check for assignments
-<span class="fc bfc" id="L77" title="All 2 branches covered.">		if (expr instanceof Assignment) {</span>
-<span class="fc" id="L78">			return isAssignmentSafe((Assignment) expr, currentVarName, operations);</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">		if (expr instanceof Assignment) {</span>
+<span class="fc" id="L80">			return isAssignmentSafe((Assignment) expr, currentVarName, operations);</span>
+		}
+		
+		// Check for postfix increment/decrement (counter++, counter--)
+		// These modify external state and are unsafe
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">		if (expr instanceof PostfixExpression) {</span>
+<span class="nc" id="L86">			PostfixExpression postfix = (PostfixExpression) expr;</span>
+<span class="nc" id="L87">			PostfixExpression.Operator op = postfix.getOperator();</span>
+<span class="nc bnc" id="L88" title="All 4 branches missed.">			if (op == PostfixExpression.Operator.INCREMENT || op == PostfixExpression.Operator.DECREMENT) {</span>
+				// Modifying a variable is a side effect
+<span class="nc" id="L90">				return false;</span>
+			}
+		}
+		
+		// Check for prefix increment/decrement (++counter, --counter)
+		// These modify external state and are unsafe
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">		if (expr instanceof PrefixExpression) {</span>
+<span class="nc" id="L97">			PrefixExpression prefix = (PrefixExpression) expr;</span>
+<span class="nc" id="L98">			PrefixExpression.Operator op = prefix.getOperator();</span>
+<span class="nc bnc" id="L99" title="All 4 branches missed.">			if (op == PrefixExpression.Operator.INCREMENT || op == PrefixExpression.Operator.DECREMENT) {</span>
+				// Modifying a variable is a side effect
+<span class="nc" id="L101">				return false;</span>
+			}
 		}
 
 		// Method calls and other expressions are generally safe
-<span class="fc" id="L82">		return true;</span>
+<span class="fc" id="L106">		return true;</span>
 	}
 
 	/**
@@ -88,43 +112,43 @@ import org.eclipse.jdt.core.dom.Statement;
 	private boolean isAssignmentSafe(Assignment assignment, String currentVarName,
 			List&lt;ProspectiveOperation&gt; operations) {
 		
-<span class="fc" id="L91">		Expression lhs = assignment.getLeftHandSide();</span>
+<span class="fc" id="L115">		Expression lhs = assignment.getLeftHandSide();</span>
 
 		// Only validate SimpleName assignments (simple variables)
 		// Array access and field access are conservatively allowed
-<span class="pc bpc" id="L95" title="1 of 2 branches missed.">		if (lhs instanceof SimpleName) {</span>
-<span class="fc" id="L96">			String varName = ((SimpleName) lhs).getIdentifier();</span>
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">		if (lhs instanceof SimpleName) {</span>
+<span class="fc" id="L120">			String varName = ((SimpleName) lhs).getIdentifier();</span>
 
 			// Assignment to current pipeline variable is unsafe
-<span class="fc bfc" id="L99" title="All 2 branches covered.">			if (varName.equals(currentVarName)) {</span>
-<span class="fc" id="L100">				return false;</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">			if (varName.equals(currentVarName)) {</span>
+<span class="fc" id="L124">				return false;</span>
 			}
 
 			// Assignment to accumulator variables is handled by REDUCE
-<span class="pc bpc" id="L104" title="1 of 2 branches missed.">			if (isAccumulatorVariable(varName, operations)) {</span>
-<span class="nc" id="L105">				return false;</span>
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">			if (isAccumulatorVariable(varName, operations)) {</span>
+<span class="nc" id="L129">				return false;</span>
 			}
 
 			// Other assignments to external variables are unsafe
-<span class="fc" id="L109">			return false;</span>
+<span class="fc" id="L133">			return false;</span>
 		}
 
 		// Non-SimpleName assignments (array access, field access) are allowed
-<span class="nc" id="L113">		return true;</span>
+<span class="nc" id="L137">		return true;</span>
 	}
 
 	/**
 	 * Checks if a variable is an accumulator variable in any REDUCE operation.
 	 */
 	private boolean isAccumulatorVariable(String varName, List&lt;ProspectiveOperation&gt; operations) {
-<span class="pc bpc" id="L120" title="1 of 2 branches missed.">		for (ProspectiveOperation op : operations) {</span>
-<span class="nc bnc" id="L121" title="All 2 branches missed.">				if (op.getOperationType() == OperationType.REDUCE) {</span>
-<span class="nc bnc" id="L122" title="All 2 branches missed.">				if (varName.equals(op.getAccumulatorVariableName())) {</span>
-<span class="nc" id="L123">					return true;</span>
+<span class="pc bpc" id="L144" title="1 of 2 branches missed.">		for (ProspectiveOperation op : operations) {</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">				if (op.getOperationType() == OperationType.REDUCE) {</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">				if (varName.equals(op.getAccumulatorVariableName())) {</span>
+<span class="nc" id="L147">					return true;</span>
 				}
 			}
 		}
-<span class="fc" id="L127">		return false;</span>
+<span class="fc" id="L151">		return false;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -192,7 +192,7 @@ public class Refactorer {
 	private Statement tryMergeWithPrecedingDeclaration(StreamPipelineBuilder builder, 
 			MethodInvocation pipeline, Statement replacement) {
 		// Only apply to COLLECT operations
-<span class="fc bfc" id="L195" title="All 2 branches covered.">		if (!builder.needsCollectorsImport()) {</span>
+<span class="fc bfc" id="L195" title="All 2 branches covered.">		if (!builder.isCollectOperation()) {</span>
 <span class="fc" id="L196">			return null;</span>
 		}
 		

@@ -210,21 +210,28 @@ import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 <span class="fc" id="L210">			convertible = false;</span>
 <span class="fc" id="L211">			return false;</span>
 		}
+		
+		// Check for unsafe collect pattern: if collecting to a variable that is 
+		// also read during iteration, we cannot convert
+<span class="pc bpc" id="L216" title="1 of 2 branches missed.">		if (hasUnsafeCollectPattern(loopBody)) {</span>
+<span class="nc" id="L217">			convertible = false;</span>
+<span class="nc" id="L218">			return false;</span>
+		}
 
 		// Validate variable scoping
-<span class="pc bpc" id="L215" title="1 of 2 branches missed.">		if (!validateVariableScope(operations, loopVariableName)) {</span>
-<span class="nc" id="L216">			convertible = false;</span>
-<span class="nc" id="L217">			return false;</span>
+<span class="pc bpc" id="L222" title="1 of 2 branches missed.">		if (!validateVariableScope(operations, loopVariableName)) {</span>
+<span class="nc" id="L223">			convertible = false;</span>
+<span class="nc" id="L224">			return false;</span>
 		}
 
 		// Initialize the pipeline assembler for building the final pipeline
-<span class="fc" id="L221">		pipelineAssembler = new PipelineAssembler(forLoop, operations, loopVariableName);</span>
-<span class="fc" id="L222">		pipelineAssembler.setUsedVariableNames(getUsedVariableNames(forLoop));</span>
-<span class="fc" id="L223">		pipelineAssembler.setReduceDetector(reduceDetector);</span>
-<span class="fc" id="L224">		pipelineAssembler.setCollectDetector(collectDetector);</span>
+<span class="fc" id="L228">		pipelineAssembler = new PipelineAssembler(forLoop, operations, loopVariableName);</span>
+<span class="fc" id="L229">		pipelineAssembler.setUsedVariableNames(getUsedVariableNames(forLoop));</span>
+<span class="fc" id="L230">		pipelineAssembler.setReduceDetector(reduceDetector);</span>
+<span class="fc" id="L231">		pipelineAssembler.setCollectDetector(collectDetector);</span>
 
-<span class="fc" id="L226">		convertible = true;</span>
-<span class="fc" id="L227">		return true;</span>
+<span class="fc" id="L233">		convertible = true;</span>
+<span class="fc" id="L234">		return true;</span>
 	}
 
 	/**
@@ -260,10 +267,10 @@ import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 	 * @see PipelineAssembler
 	 */
 	public MethodInvocation buildPipeline() {
-<span class="pc bpc" id="L263" title="3 of 6 branches missed.">		if (!analyzed || !convertible || pipelineAssembler == null) {</span>
-<span class="nc" id="L264">			return null;</span>
+<span class="pc bpc" id="L270" title="3 of 6 branches missed.">		if (!analyzed || !convertible || pipelineAssembler == null) {</span>
+<span class="nc" id="L271">			return null;</span>
 		}
-<span class="fc" id="L266">		return pipelineAssembler.buildPipeline();</span>
+<span class="fc" id="L273">		return pipelineAssembler.buildPipeline();</span>
 	}
 	
 	/**
@@ -276,12 +283,13 @@ import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 	 * @return true if Arrays import is needed
 	 */
 	public boolean needsArraysImport() {
-<span class="pc bpc" id="L279" title="1 of 4 branches missed.">		return pipelineAssembler != null &amp;&amp; pipelineAssembler.needsArraysImport();</span>
+<span class="pc bpc" id="L286" title="1 of 4 branches missed.">		return pipelineAssembler != null &amp;&amp; pipelineAssembler.needsArraysImport();</span>
 	}
 
 	/**
 	 * Returns whether the pipeline needs the java.util.stream.Collectors import.
-	 * This is true when using collect operations (toList, toSet, etc.).
+	 * This is true when using collect operations (toList, toSet, etc.), but false
+	 * when using Java 16+ .toList() directly.
 	 * 
 	 * &lt;p&gt;This method should be called after {@link #buildPipeline()} to determine
 	 * if an import needs to be added.&lt;/p&gt;
@@ -289,12 +297,67 @@ import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 	 * @return true if Collectors import is needed
 	 */
 	public boolean needsCollectorsImport() {
-		// Check if any operation is a COLLECT operation
-<span class="pc bpc" id="L293" title="1 of 2 branches missed.">		if (operations == null) {</span>
-<span class="nc" id="L294">			return false;</span>
+		// Delegate to PipelineAssembler which knows if .toList() is being used
+<span class="pc bpc" id="L301" title="1 of 2 branches missed.">		if (pipelineAssembler != null) {</span>
+<span class="fc" id="L302">			return pipelineAssembler.needsCollectorsImport();</span>
 		}
-<span class="fc" id="L296">		return operations.stream()</span>
-<span class="fc bfc" id="L297" title="All 2 branches covered.">				.anyMatch(op -&gt; op.getOperationType() == OperationType.COLLECT);</span>
+		// Fallback: check if any operation is a COLLECT operation
+<span class="nc bnc" id="L305" title="All 2 branches missed.">		if (operations == null) {</span>
+<span class="nc" id="L306">			return false;</span>
+		}
+<span class="nc" id="L308">		return operations.stream()</span>
+<span class="nc bnc" id="L309" title="All 2 branches missed.">				.anyMatch(op -&gt; op.getOperationType() == OperationType.COLLECT);</span>
+	}
+	
+	/**
+	 * Returns whether the pipeline is a COLLECT operation.
+	 * This is true for any collect operation, regardless of whether it uses
+	 * Collectors.toList() or Java 16+ .toList().
+	 * 
+	 * &lt;p&gt;Used to determine if declaration merging should be applied.&lt;/p&gt;
+	 * 
+	 * @return true if this is a collect operation
+	 */
+	public boolean isCollectOperation() {
+<span class="pc bpc" id="L322" title="1 of 2 branches missed.">		if (operations == null) {</span>
+<span class="nc" id="L323">			return false;</span>
+		}
+<span class="fc" id="L325">		return operations.stream()</span>
+<span class="fc bfc" id="L326" title="All 2 branches covered.">				.anyMatch(op -&gt; op.getOperationType() == OperationType.COLLECT);</span>
+	}
+	
+	/**
+	 * Checks if the loop has an unsafe COLLECT pattern.
+	 * 
+	 * &lt;p&gt;A COLLECT pattern is unsafe if the target collection variable is 
+	 * read (not just written to) during the iteration. For example:&lt;/p&gt;
+	 * &lt;pre&gt;{@code
+	 * for (Integer item : items) {
+	 *     result.add(item);
+	 *     System.out.println(&quot;Size: &quot; + result.size());  // Unsafe - reading result
+	 * }
+	 * }&lt;/pre&gt;
+	 * 
+	 * @param loopBody the loop body to check
+	 * @return true if an unsafe collect pattern is detected
+	 */
+	private boolean hasUnsafeCollectPattern(Statement loopBody) {
+		// Check if there's a COLLECT operation
+<span class="fc" id="L346">		boolean hasCollect = operations.stream()</span>
+<span class="fc bfc" id="L347" title="All 2 branches covered.">				.anyMatch(op -&gt; op.getOperationType() == OperationType.COLLECT);</span>
+		
+<span class="fc bfc" id="L349" title="All 2 branches covered.">		if (!hasCollect) {</span>
+<span class="fc" id="L350">			return false;</span>
+		}
+		
+		// Find the target variable from the COLLECT operation
+<span class="fc" id="L354">		String collectTarget = collectDetector.getTargetVariable();</span>
+<span class="pc bpc" id="L355" title="1 of 2 branches missed.">		if (collectTarget == null) {</span>
+<span class="nc" id="L356">			return false;</span>
+		}
+		
+		// Check if the target variable is read during iteration
+<span class="fc" id="L360">		return collectDetector.isTargetReadDuringIteration(loopBody, collectTarget);</span>
 	}
 
 	/**
@@ -316,10 +379,10 @@ import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 	 * @see PipelineAssembler
 	 */
 	public Statement wrapPipeline(MethodInvocation pipeline) {
-<span class="pc bpc" id="L319" title="1 of 2 branches missed.">		if (pipelineAssembler == null) {</span>
-<span class="nc" id="L320">			return null;</span>
+<span class="pc bpc" id="L382" title="1 of 2 branches missed.">		if (pipelineAssembler == null) {</span>
+<span class="nc" id="L383">			return null;</span>
 		}
-<span class="fc" id="L322">		return pipelineAssembler.wrapPipeline(pipeline);</span>
+<span class="fc" id="L385">		return pipelineAssembler.wrapPipeline(pipeline);</span>
 	}
 
 	/**
@@ -354,7 +417,7 @@ import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 	 * @return a list of {@link ProspectiveOperation} objects
 	 */
 	private List&lt;ProspectiveOperation&gt; parseLoopBody(Statement body, String loopVarName) {
-<span class="fc" id="L357">		return loopBodyParser.parse(body, loopVarName);</span>
+<span class="fc" id="L420">		return loopBodyParser.parse(body, loopVarName);</span>
 	}
 
 	/**
@@ -404,73 +467,73 @@ import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 	 * @throws IllegalArgumentException if operations or loopVarName is null
 	 */
 	private boolean validateVariableScope(List&lt;ProspectiveOperation&gt; operations, String loopVarName) {
-<span class="pc bpc" id="L407" title="1 of 2 branches missed.">		if (operations == null) {</span>
-<span class="nc" id="L408">			throw new IllegalArgumentException(&quot;operations cannot be null&quot;);</span>
+<span class="pc bpc" id="L470" title="1 of 2 branches missed.">		if (operations == null) {</span>
+<span class="nc" id="L471">			throw new IllegalArgumentException(&quot;operations cannot be null&quot;);</span>
 		}
-<span class="pc bpc" id="L410" title="1 of 2 branches missed.">		if (loopVarName == null) {</span>
-<span class="nc" id="L411">			throw new IllegalArgumentException(&quot;loopVarName cannot be null&quot;);</span>
+<span class="pc bpc" id="L473" title="1 of 2 branches missed.">		if (loopVarName == null) {</span>
+<span class="nc" id="L474">			throw new IllegalArgumentException(&quot;loopVarName cannot be null&quot;);</span>
 		}
 
-<span class="fc" id="L414">		Set&lt;String&gt; availableVars = new HashSet&lt;&gt;();</span>
-<span class="fc" id="L415">		availableVars.add(loopVarName);</span>
+<span class="fc" id="L477">		Set&lt;String&gt; availableVars = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L478">		availableVars.add(loopVarName);</span>
 		
 		// Add all variables from outer scope (method parameters, fields, etc.)
 		// These are always available in lambdas
-<span class="fc" id="L419">		Collection&lt;String&gt; outerScopeVars = getUsedVariableNames(forLoop);</span>
-<span class="fc" id="L420">		availableVars.addAll(outerScopeVars);</span>
+<span class="fc" id="L482">		Collection&lt;String&gt; outerScopeVars = getUsedVariableNames(forLoop);</span>
+<span class="fc" id="L483">		availableVars.addAll(outerScopeVars);</span>
 		
 		// Track if we've moved past the loop variable to a mapped variable
-<span class="fc" id="L423">		boolean loopVarConsumed = false;</span>
+<span class="fc" id="L486">		boolean loopVarConsumed = false;</span>
 
-<span class="fc bfc" id="L425" title="All 2 branches covered.">		for (ProspectiveOperation op : operations) {</span>
-<span class="pc bpc" id="L426" title="1 of 2 branches missed.">			if (op == null) {</span>
-<span class="nc" id="L427">				throw new IllegalStateException(&quot;Encountered null ProspectiveOperation in operations list&quot;);</span>
+<span class="fc bfc" id="L488" title="All 2 branches covered.">		for (ProspectiveOperation op : operations) {</span>
+<span class="pc bpc" id="L489" title="1 of 2 branches missed.">			if (op == null) {</span>
+<span class="nc" id="L490">				throw new IllegalStateException(&quot;Encountered null ProspectiveOperation in operations list&quot;);</span>
 			}
 
 			// Check consumed variables are available
-<span class="fc" id="L431">			Set&lt;String&gt; consumed = op.getConsumedVariables();</span>
-<span class="fc bfc" id="L432" title="All 2 branches covered.">			for (String var : consumed) {</span>
+<span class="fc" id="L494">			Set&lt;String&gt; consumed = op.getConsumedVariables();</span>
+<span class="fc bfc" id="L495" title="All 2 branches covered.">			for (String var : consumed) {</span>
 				// Accumulator variables are in outer scope, always available
-<span class="fc bfc" id="L434" title="All 2 branches covered.">				if (isAccumulatorVariable(var, operations)) {</span>
-<span class="fc" id="L435">					continue;</span>
+<span class="fc bfc" id="L497" title="All 2 branches covered.">				if (isAccumulatorVariable(var, operations)) {</span>
+<span class="fc" id="L498">					continue;</span>
 				}
 				
 				// Variables from outer scope (method parameters, fields, etc.) are always available
-<span class="fc bfc" id="L439" title="All 2 branches covered.">				if (outerScopeVars.contains(var)) {</span>
-<span class="fc" id="L440">					continue;</span>
+<span class="fc bfc" id="L502" title="All 2 branches covered.">				if (outerScopeVars.contains(var)) {</span>
+<span class="fc" id="L503">					continue;</span>
 				}
 				
 				// After a MAP produces a new variable, the loop variable should not be used
 				// unless it's the current operation that consumes it
-<span class="pc bpc" id="L445" title="1 of 2 branches missed.">				if (var.equals(loopVarName)) {</span>
-<span class="pc bpc" id="L446" title="1 of 4 branches missed.">					if (loopVarConsumed &amp;&amp; op.getProducedVariableName() != null) {</span>
+<span class="pc bpc" id="L508" title="1 of 2 branches missed.">				if (var.equals(loopVarName)) {</span>
+<span class="pc bpc" id="L509" title="1 of 4 branches missed.">					if (loopVarConsumed &amp;&amp; op.getProducedVariableName() != null) {</span>
 						// Loop variable used after it's been replaced by a MAP - scope violation
-<span class="nc" id="L448">						return false;</span>
+<span class="nc" id="L511">						return false;</span>
 					}
 				} else {
 					// Non-loop, non-accumulator, non-outer-scope variable - must be in availableVars
-<span class="nc bnc" id="L452" title="All 2 branches missed.">					if (!availableVars.contains(var)) {</span>
+<span class="nc bnc" id="L515" title="All 2 branches missed.">					if (!availableVars.contains(var)) {</span>
 						// Variable used before it's defined - this is a scope violation
-<span class="nc" id="L454">						return false;</span>
+<span class="nc" id="L517">						return false;</span>
 					}
 				}
 			}
 
 			// Add produced variables to available set and mark loop var as consumed if applicable
-<span class="fc" id="L460">			String produced = op.getProducedVariableName();</span>
-<span class="pc bpc" id="L461" title="1 of 4 branches missed.">			if (produced != null &amp;&amp; !produced.isEmpty()) {</span>
-<span class="fc" id="L462">				availableVars.add(produced);</span>
+<span class="fc" id="L523">			String produced = op.getProducedVariableName();</span>
+<span class="pc bpc" id="L524" title="1 of 4 branches missed.">			if (produced != null &amp;&amp; !produced.isEmpty()) {</span>
+<span class="fc" id="L525">				availableVars.add(produced);</span>
 				
 				// If this MAP operation consumed the loop variable, mark it as consumed
-<span class="fc bfc" id="L465" title="All 2 branches covered.">				if (consumed.contains(loopVarName)) {</span>
-<span class="fc" id="L466">					loopVarConsumed = true;</span>
+<span class="fc bfc" id="L528" title="All 2 branches covered.">				if (consumed.contains(loopVarName)) {</span>
+<span class="fc" id="L529">					loopVarConsumed = true;</span>
 					// Remove loop variable from available vars - it's now been replaced
-<span class="fc" id="L468">					availableVars.remove(loopVarName);</span>
+<span class="fc" id="L531">					availableVars.remove(loopVarName);</span>
 				}
 			}
 		}
 
-<span class="fc" id="L473">		return true;</span>
+<span class="fc" id="L536">		return true;</span>
 	}
 
 	/**
@@ -481,14 +544,14 @@ import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 	 * @return true if the variable is an accumulator, false otherwise
 	 */
 	private boolean isAccumulatorVariable(String varName, List&lt;ProspectiveOperation&gt; operations) {
-<span class="fc bfc" id="L484" title="All 2 branches covered.">		for (ProspectiveOperation op : operations) {</span>
-<span class="fc bfc" id="L485" title="All 2 branches covered.">					if (op.getOperationType() == OperationType.REDUCE) {</span>
-<span class="fc bfc" id="L486" title="All 2 branches covered.">				if (varName.equals(op.getAccumulatorVariableName())) {</span>
-<span class="fc" id="L487">					return true;</span>
+<span class="fc bfc" id="L547" title="All 2 branches covered.">		for (ProspectiveOperation op : operations) {</span>
+<span class="fc bfc" id="L548" title="All 2 branches covered.">					if (op.getOperationType() == OperationType.REDUCE) {</span>
+<span class="fc bfc" id="L549" title="All 2 branches covered.">				if (varName.equals(op.getAccumulatorVariableName())) {</span>
+<span class="fc" id="L550">					return true;</span>
 				}
 			}
 		}
-<span class="fc" id="L491">		return false;</span>
+<span class="fc" id="L554">		return false;</span>
 	}
 
 	/**
@@ -500,8 +563,8 @@ import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 	 * @return collection of variable names used in the node's scope
 	 */
 	private static Collection&lt;String&gt; getUsedVariableNames(ASTNode node) {
-<span class="fc" id="L503">		CompilationUnit root = (CompilationUnit) node.getRoot();</span>
-<span class="fc" id="L504">		return new ScopeAnalyzer(root).getUsedVariableNames(node.getStartPosition(), node.getLength());</span>
+<span class="fc" id="L566">		CompilationUnit root = (CompilationUnit) node.getRoot();</span>
+<span class="fc" id="L567">		return new ScopeAnalyzer(root).getUsedVariableNames(node.getStartPosition(), node.getLength());</span>
 	}
 	
 	/**
@@ -510,11 +573,11 @@ import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 	 * @return true if there is a REDUCE operation, false otherwise
 	 */
 	public boolean hasReduceOperation() {
-<span class="nc bnc" id="L513" title="All 4 branches missed.">		if (!analyzed || !convertible) {</span>
-<span class="nc" id="L514">			return false;</span>
+<span class="nc bnc" id="L576" title="All 4 branches missed.">		if (!analyzed || !convertible) {</span>
+<span class="nc" id="L577">			return false;</span>
 		}
-<span class="nc" id="L516">		return operations.stream()</span>
-<span class="nc bnc" id="L517" title="All 2 branches missed.">				.anyMatch(op -&gt; op.getOperationType() == OperationType.REDUCE);</span>
+<span class="nc" id="L579">		return operations.stream()</span>
+<span class="nc bnc" id="L580" title="All 2 branches missed.">				.anyMatch(op -&gt; op.getOperationType() == OperationType.REDUCE);</span>
 	}
 	
 	/**
@@ -523,15 +586,15 @@ import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 	 * @return the accumulator variable name, or null if no REDUCE operation exists
 	 */
 	public String getAccumulatorVariableName() {
-<span class="nc bnc" id="L526" title="All 4 branches missed.">		if (!analyzed || !convertible) {</span>
-<span class="nc" id="L527">			return null;</span>
+<span class="nc bnc" id="L589" title="All 4 branches missed.">		if (!analyzed || !convertible) {</span>
+<span class="nc" id="L590">			return null;</span>
 		}
-<span class="nc bnc" id="L529" title="All 2 branches missed.">		for (ProspectiveOperation op : operations) {</span>
-<span class="nc bnc" id="L530" title="All 2 branches missed.">			if (op.getOperationType() == OperationType.REDUCE) {</span>
-<span class="nc" id="L531">				return op.getAccumulatorVariableName();</span>
+<span class="nc bnc" id="L592" title="All 2 branches missed.">		for (ProspectiveOperation op : operations) {</span>
+<span class="nc bnc" id="L593" title="All 2 branches missed.">			if (op.getOperationType() == OperationType.REDUCE) {</span>
+<span class="nc" id="L594">				return op.getAccumulatorVariableName();</span>
 			}
 		}
-<span class="nc" id="L534">		return null;</span>
+<span class="nc" id="L597">		return null;</span>
 	}
 	
 	/**
@@ -540,10 +603,10 @@ import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 	 * @return the target variable name, or null if no COLLECT operation exists
 	 */
 	public String getCollectTargetVariable() {
-<span class="pc bpc" id="L543" title="3 of 6 branches missed.">		if (!analyzed || !convertible || collectDetector == null) {</span>
-<span class="nc" id="L544">			return null;</span>
+<span class="pc bpc" id="L606" title="3 of 6 branches missed.">		if (!analyzed || !convertible || collectDetector == null) {</span>
+<span class="nc" id="L607">			return null;</span>
 		}
-<span class="fc" id="L546">		return collectDetector.getTargetVariable();</span>
+<span class="fc" id="L609">		return collectDetector.getTargetVariable();</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

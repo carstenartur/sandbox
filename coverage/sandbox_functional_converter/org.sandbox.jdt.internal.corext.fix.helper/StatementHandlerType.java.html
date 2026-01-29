@@ -345,8 +345,8 @@ import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
 <span class="fc" id="L345">			String loopVarName = context.getLoopVariableName();</span>
 
 			// IF with else cannot be converted
-<span class="pc bpc" id="L348" title="1 of 2 branches missed.">			if (ifStmt.getElseStatement() != null) {</span>
-<span class="nc" id="L349">				return new LoopBodyParser.ParseResult(currentVarName);</span>
+<span class="fc bfc" id="L348" title="All 2 branches covered.">			if (ifStmt.getElseStatement() != null) {</span>
+<span class="fc" id="L349">				return new LoopBodyParser.ParseResult(currentVarName);</span>
 			}
 
 			// Check for unconvertible patterns first

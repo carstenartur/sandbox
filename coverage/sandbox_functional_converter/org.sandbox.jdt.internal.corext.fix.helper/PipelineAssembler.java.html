@@ -68,6 +68,7 @@ public class PipelineAssembler {
 	private ReducePatternDetector reduceDetector;
 	private CollectPatternDetector collectDetector;
 <span class="fc" id="L70">	private boolean needsArraysImport = false;</span>
+<span class="fc" id="L71">	private boolean usesDirectToList = false;</span>
 
 	/**
 	 * Creates a new PipelineAssembler.
@@ -76,14 +77,14 @@ public class PipelineAssembler {
 	 * @param operations       the list of operations to assemble
 	 * @param loopVariableName the loop variable name
 	 */
-<span class="fc" id="L79">	public PipelineAssembler(EnhancedForStatement forLoop, </span>
+<span class="fc" id="L80">	public PipelineAssembler(EnhancedForStatement forLoop, </span>
 			List&lt;ProspectiveOperation&gt; operations,
 			String loopVariableName) {
-<span class="fc" id="L82">		this.forLoop = forLoop;</span>
-<span class="fc" id="L83">		this.ast = forLoop.getAST();</span>
-<span class="fc" id="L84">		this.operations = operations;</span>
-<span class="fc" id="L85">		this.loopVariableName = loopVariableName;</span>
-<span class="fc" id="L86">	}</span>
+<span class="fc" id="L83">		this.forLoop = forLoop;</span>
+<span class="fc" id="L84">		this.ast = forLoop.getAST();</span>
+<span class="fc" id="L85">		this.operations = operations;</span>
+<span class="fc" id="L86">		this.loopVariableName = loopVariableName;</span>
+<span class="fc" id="L87">	}</span>
 
 	/**
 	 * Sets the collection of variable names in use (for unique name generation).
@@ -91,8 +92,8 @@ public class PipelineAssembler {
 	 * @param usedNames the used variable names
 	 */
 	public void setUsedVariableNames(Collection&lt;String&gt; usedNames) {
-<span class="fc" id="L94">		this.usedVariableNames = usedNames;</span>
-<span class="fc" id="L95">	}</span>
+<span class="fc" id="L95">		this.usedVariableNames = usedNames;</span>
+<span class="fc" id="L96">	}</span>
 	
 	/**
 	 * Returns whether the pipeline needs the java.util.Arrays import.
@@ -101,7 +102,24 @@ public class PipelineAssembler {
 	 * @return true if Arrays import is needed
 	 */
 	public boolean needsArraysImport() {
-<span class="fc" id="L104">		return needsArraysImport;</span>
+<span class="fc" id="L105">		return needsArraysImport;</span>
+	}
+	
+	/**
+	 * Returns whether the pipeline needs the java.util.stream.Collectors import.
+	 * This is true when using .collect(Collectors.toList()) or .collect(Collectors.toSet()),
+	 * but false when using Java 16+ .toList() directly.
+	 * 
+	 * @return true if Collectors import is needed
+	 */
+	public boolean needsCollectorsImport() {
+		// If using direct .toList(), no Collectors import is needed
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">		if (usesDirectToList) {</span>
+<span class="nc" id="L118">			return false;</span>
+		}
+		// Check if any operation is a COLLECT operation
+<span class="fc" id="L121">		return operations.stream()</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">				.anyMatch(op -&gt; op.getOperationType() == OperationType.COLLECT);</span>
 	}
 
 	/**
@@ -110,8 +128,8 @@ public class PipelineAssembler {
 	 * @param detector the reduce pattern detector
 	 */
 	public void setReduceDetector(ReducePatternDetector detector) {
-<span class="fc" id="L113">		this.reduceDetector = detector;</span>
-<span class="fc" id="L114">	}</span>
+<span class="fc" id="L131">		this.reduceDetector = detector;</span>
+<span class="fc" id="L132">	}</span>
 
 	/**
 	 * Sets the collect pattern detector (for target variable access).
@@ -119,8 +137,18 @@ public class PipelineAssembler {
 	 * @param detector the collect pattern detector
 	 */
 	public void setCollectDetector(CollectPatternDetector detector) {
-<span class="fc" id="L122">		this.collectDetector = detector;</span>
-<span class="fc" id="L123">	}</span>
+<span class="fc" id="L140">		this.collectDetector = detector;</span>
+<span class="fc" id="L141">	}</span>
+
+	/**
+	 * Sets whether the pipeline uses Java 16+ direct .toList() method.
+	 * When true, no Collectors import is needed.
+	 * 
+	 * @param usesDirectToList true if using .toList() instead of .collect(Collectors.toList())
+	 */
+	public void setUsesDirectToList(boolean usesDirectToList) {
+<span class="nc" id="L150">		this.usesDirectToList = usesDirectToList;</span>
+<span class="nc" id="L151">	}</span>
 
 	/**
 	 * Builds the stream pipeline method invocation chain.
@@ -128,16 +156,16 @@ public class PipelineAssembler {
 	 * @return the assembled pipeline, or null if operations are empty
 	 */
 	public MethodInvocation buildPipeline() {
-<span class="pc bpc" id="L131" title="1 of 2 branches missed.">		if (operations.isEmpty()) {</span>
-<span class="nc" id="L132">			return null;</span>
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">		if (operations.isEmpty()) {</span>
+<span class="nc" id="L160">			return null;</span>
 		}
 
-<span class="fc" id="L135">		boolean needsStream = requiresStreamPrefix();</span>
+<span class="fc" id="L163">		boolean needsStream = requiresStreamPrefix();</span>
 
-<span class="fc bfc" id="L137" title="All 2 branches covered.">		if (needsStream) {</span>
-<span class="fc" id="L138">			return buildStreamPipeline();</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">		if (needsStream) {</span>
+<span class="fc" id="L166">			return buildStreamPipeline();</span>
 		} else {
-<span class="fc" id="L140">			return buildDirectForEach();</span>
+<span class="fc" id="L168">			return buildDirectForEach();</span>
 		}
 	}
 
@@ -146,65 +174,65 @@ public class PipelineAssembler {
 	 */
 	private MethodInvocation buildStreamPipeline() {
 		// Start with .stream() or Arrays.stream() for arrays
-<span class="fc" id="L149">		MethodInvocation pipeline = createStreamSource();</span>
+<span class="fc" id="L177">		MethodInvocation pipeline = createStreamSource();</span>
 
 		// Chain each operation
-<span class="fc bfc" id="L152" title="All 2 branches covered.">		for (int i = 0; i &lt; operations.size(); i++) {</span>
-<span class="fc" id="L153">			ProspectiveOperation op = operations.get(i);</span>
+<span class="fc bfc" id="L180" title="All 2 branches covered.">		for (int i = 0; i &lt; operations.size(); i++) {</span>
+<span class="fc" id="L181">			ProspectiveOperation op = operations.get(i);</span>
 			
-<span class="pc bpc" id="L155" title="1 of 2 branches missed.">			if (usedVariableNames != null) {</span>
-<span class="fc" id="L156">				op.setUsedVariableNames(usedVariableNames);</span>
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">			if (usedVariableNames != null) {</span>
+<span class="fc" id="L184">				op.setUsedVariableNames(usedVariableNames);</span>
 			}
 
-<span class="fc" id="L159">			MethodInvocation next = ast.newMethodInvocation();</span>
-<span class="fc" id="L160">			next.setExpression(pipeline);</span>
-<span class="fc" id="L161">			next.setName(ast.newSimpleName(op.getOperationType().getMethodName()));</span>
+<span class="fc" id="L187">			MethodInvocation next = ast.newMethodInvocation();</span>
+<span class="fc" id="L188">			next.setExpression(pipeline);</span>
+<span class="fc" id="L189">			next.setName(ast.newSimpleName(op.getOperationType().getMethodName()));</span>
 
-<span class="fc" id="L163">			String paramName = getVariableNameFromPreviousOp(i);</span>
-<span class="fc" id="L164">			List&lt;Expression&gt; args = op.getArguments(ast, paramName);</span>
+<span class="fc" id="L191">			String paramName = getVariableNameFromPreviousOp(i);</span>
+<span class="fc" id="L192">			List&lt;Expression&gt; args = op.getArguments(ast, paramName);</span>
 			
-<span class="fc bfc" id="L166" title="All 2 branches covered.">			for (Expression arg : args) {</span>
-<span class="fc" id="L167">				next.arguments().add(arg);</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">			for (Expression arg : args) {</span>
+<span class="fc" id="L195">				next.arguments().add(arg);</span>
 			}
-<span class="fc" id="L169">			pipeline = next;</span>
+<span class="fc" id="L197">			pipeline = next;</span>
 		}
 
-<span class="fc" id="L172">		return pipeline;</span>
+<span class="fc" id="L200">		return pipeline;</span>
 	}
-
+	
 	/**
 	 * Builds a direct forEach without .stream() for collections, 
 	 * or Arrays.stream().forEach() for arrays.
 	 */
 	private MethodInvocation buildDirectForEach() {
-<span class="fc" id="L180">		ProspectiveOperation op = operations.get(0);</span>
+<span class="fc" id="L208">		ProspectiveOperation op = operations.get(0);</span>
 		
-<span class="pc bpc" id="L182" title="1 of 2 branches missed.">		if (usedVariableNames != null) {</span>
-<span class="fc" id="L183">			op.setUsedVariableNames(usedVariableNames);</span>
+<span class="pc bpc" id="L210" title="1 of 2 branches missed.">		if (usedVariableNames != null) {</span>
+<span class="fc" id="L211">			op.setUsedVariableNames(usedVariableNames);</span>
 		}
 
 		MethodInvocation pipeline;
 		
 		// Arrays need Arrays.stream(items).forEach() since arrays don't have forEach
-<span class="fc bfc" id="L189" title="All 2 branches covered.">		if (isArrayIteration()) {</span>
+<span class="fc bfc" id="L217" title="All 2 branches covered.">		if (isArrayIteration()) {</span>
 			// Create Arrays.stream(items).forEach(...)
-<span class="fc" id="L191">			MethodInvocation streamSource = createStreamSource();</span>
-<span class="fc" id="L192">			pipeline = ast.newMethodInvocation();</span>
-<span class="fc" id="L193">			pipeline.setExpression(streamSource);</span>
-<span class="fc" id="L194">			pipeline.setName(ast.newSimpleName(StreamConstants.FOR_EACH_METHOD));</span>
-<span class="fc" id="L195">		} else {</span>
+<span class="fc" id="L219">			MethodInvocation streamSource = createStreamSource();</span>
+<span class="fc" id="L220">			pipeline = ast.newMethodInvocation();</span>
+<span class="fc" id="L221">			pipeline.setExpression(streamSource);</span>
+<span class="fc" id="L222">			pipeline.setName(ast.newSimpleName(StreamConstants.FOR_EACH_METHOD));</span>
+<span class="fc" id="L223">		} else {</span>
 			// Create collection.forEach(...)
-<span class="fc" id="L197">			pipeline = ast.newMethodInvocation();</span>
-<span class="fc" id="L198">			pipeline.setExpression((Expression) ASTNode.copySubtree(ast, forLoop.getExpression()));</span>
-<span class="fc" id="L199">			pipeline.setName(ast.newSimpleName(StreamConstants.FOR_EACH_METHOD));</span>
+<span class="fc" id="L225">			pipeline = ast.newMethodInvocation();</span>
+<span class="fc" id="L226">			pipeline.setExpression((Expression) ASTNode.copySubtree(ast, forLoop.getExpression()));</span>
+<span class="fc" id="L227">			pipeline.setName(ast.newSimpleName(StreamConstants.FOR_EACH_METHOD));</span>
 		}
 		
-<span class="fc" id="L202">		List&lt;Expression&gt; args = op.getArguments(ast, loopVariableName);</span>
-<span class="fc bfc" id="L203" title="All 2 branches covered.">		for (Expression arg : args) {</span>
-<span class="fc" id="L204">			pipeline.arguments().add(arg);</span>
+<span class="fc" id="L230">		List&lt;Expression&gt; args = op.getArguments(ast, loopVariableName);</span>
+<span class="fc bfc" id="L231" title="All 2 branches covered.">		for (Expression arg : args) {</span>
+<span class="fc" id="L232">			pipeline.arguments().add(arg);</span>
 		}
 
-<span class="fc" id="L207">		return pipeline;</span>
+<span class="fc" id="L235">		return pipeline;</span>
 	}
 	
 	/**
@@ -215,21 +243,21 @@ public class PipelineAssembler {
 	 * @return the stream source MethodInvocation
 	 */
 	private MethodInvocation createStreamSource() {
-<span class="fc" id="L218">		MethodInvocation streamSource = ast.newMethodInvocation();</span>
+<span class="fc" id="L246">		MethodInvocation streamSource = ast.newMethodInvocation();</span>
 		
-<span class="fc bfc" id="L220" title="All 2 branches covered.">		if (isArrayIteration()) {</span>
+<span class="fc bfc" id="L248" title="All 2 branches covered.">		if (isArrayIteration()) {</span>
 			// Arrays.stream(items)
-<span class="fc" id="L222">			needsArraysImport = true;</span>
-<span class="fc" id="L223">			streamSource.setExpression(ast.newSimpleName(StreamConstants.ARRAYS_CLASS_NAME));</span>
-<span class="fc" id="L224">			streamSource.setName(ast.newSimpleName(StreamConstants.STREAM_METHOD));</span>
-<span class="fc" id="L225">			streamSource.arguments().add(ASTNode.copySubtree(ast, forLoop.getExpression()));</span>
-<span class="fc" id="L226">		} else {</span>
+<span class="fc" id="L250">			needsArraysImport = true;</span>
+<span class="fc" id="L251">			streamSource.setExpression(ast.newSimpleName(StreamConstants.ARRAYS_CLASS_NAME));</span>
+<span class="fc" id="L252">			streamSource.setName(ast.newSimpleName(StreamConstants.STREAM_METHOD));</span>
+<span class="fc" id="L253">			streamSource.arguments().add(ASTNode.copySubtree(ast, forLoop.getExpression()));</span>
+<span class="fc" id="L254">		} else {</span>
 			// collection.stream()
-<span class="fc" id="L228">			streamSource.setExpression((Expression) ASTNode.copySubtree(ast, forLoop.getExpression()));</span>
-<span class="fc" id="L229">			streamSource.setName(ast.newSimpleName(StreamConstants.STREAM_METHOD));</span>
+<span class="fc" id="L256">			streamSource.setExpression((Expression) ASTNode.copySubtree(ast, forLoop.getExpression()));</span>
+<span class="fc" id="L257">			streamSource.setName(ast.newSimpleName(StreamConstants.STREAM_METHOD));</span>
 		}
 		
-<span class="fc" id="L232">		return streamSource;</span>
+<span class="fc" id="L260">		return streamSource;</span>
 	}
 	
 	/**
@@ -238,14 +266,14 @@ public class PipelineAssembler {
 	 * @return true if the loop expression is an array type
 	 */
 	private boolean isArrayIteration() {
-<span class="fc" id="L241">		Expression expr = forLoop.getExpression();</span>
-<span class="pc bpc" id="L242" title="1 of 2 branches missed.">		if (expr != null) {</span>
-<span class="fc" id="L243">			ITypeBinding typeBinding = expr.resolveTypeBinding();</span>
-<span class="pc bpc" id="L244" title="1 of 2 branches missed.">			if (typeBinding != null) {</span>
-<span class="fc" id="L245">				return typeBinding.isArray();</span>
+<span class="fc" id="L269">		Expression expr = forLoop.getExpression();</span>
+<span class="pc bpc" id="L270" title="1 of 2 branches missed.">		if (expr != null) {</span>
+<span class="fc" id="L271">			ITypeBinding typeBinding = expr.resolveTypeBinding();</span>
+<span class="pc bpc" id="L272" title="1 of 2 branches missed.">			if (typeBinding != null) {</span>
+<span class="fc" id="L273">				return typeBinding.isArray();</span>
 			}
 		}
-<span class="nc" id="L248">		return false;</span>
+<span class="nc" id="L276">		return false;</span>
 	}
 
 	/**
@@ -255,86 +283,86 @@ public class PipelineAssembler {
 	 * @return the wrapped statement
 	 */
 	public Statement wrapPipeline(MethodInvocation pipeline) {
-<span class="pc bpc" id="L258" title="1 of 2 branches missed.">		if (pipeline == null) {</span>
-<span class="nc" id="L259">			return null;</span>
+<span class="pc bpc" id="L286" title="1 of 2 branches missed.">		if (pipeline == null) {</span>
+<span class="nc" id="L287">			return null;</span>
 		}
 
 		// Check for match operations
-<span class="fc bfc" id="L263" title="All 2 branches covered.">		if (hasOperationType(OperationType.ANYMATCH)) {</span>
-<span class="fc" id="L264">			return wrapAnyMatch(pipeline);</span>
+<span class="fc bfc" id="L291" title="All 2 branches covered.">		if (hasOperationType(OperationType.ANYMATCH)) {</span>
+<span class="fc" id="L292">			return wrapAnyMatch(pipeline);</span>
 		}
-<span class="fc bfc" id="L266" title="All 2 branches covered.">		if (hasOperationType(OperationType.NONEMATCH)) {</span>
-<span class="fc" id="L267">			return wrapNegatedMatch(pipeline, false);</span>
+<span class="fc bfc" id="L294" title="All 2 branches covered.">		if (hasOperationType(OperationType.NONEMATCH)) {</span>
+<span class="fc" id="L295">			return wrapNegatedMatch(pipeline, false);</span>
 		}
-<span class="fc bfc" id="L269" title="All 2 branches covered.">		if (hasOperationType(OperationType.ALLMATCH)) {</span>
-<span class="fc" id="L270">			return wrapNegatedMatch(pipeline, false);</span>
+<span class="fc bfc" id="L297" title="All 2 branches covered.">		if (hasOperationType(OperationType.ALLMATCH)) {</span>
+<span class="fc" id="L298">			return wrapNegatedMatch(pipeline, false);</span>
 		}
 
 		// Check for REDUCE operation
-<span class="fc bfc" id="L274" title="All 2 branches covered.">		if (hasOperationType(OperationType.REDUCE)) {</span>
-<span class="fc" id="L275">			return wrapReduce(pipeline);</span>
+<span class="fc bfc" id="L302" title="All 2 branches covered.">		if (hasOperationType(OperationType.REDUCE)) {</span>
+<span class="fc" id="L303">			return wrapReduce(pipeline);</span>
 		}
 
 		// Check for COLLECT operation
-<span class="fc bfc" id="L279" title="All 2 branches covered.">		if (hasOperationType(OperationType.COLLECT)) {</span>
-<span class="fc" id="L280">			return wrapCollect(pipeline);</span>
+<span class="fc bfc" id="L307" title="All 2 branches covered.">		if (hasOperationType(OperationType.COLLECT)) {</span>
+<span class="fc" id="L308">			return wrapCollect(pipeline);</span>
 		}
 
 		// Default: wrap in ExpressionStatement
-<span class="fc" id="L284">		return ast.newExpressionStatement(pipeline);</span>
+<span class="fc" id="L312">		return ast.newExpressionStatement(pipeline);</span>
 	}
 
 	/**
 	 * Wraps in: if (stream.anyMatch(...)) { return true; }
 	 */
 	private IfStatement wrapAnyMatch(MethodInvocation pipeline) {
-<span class="fc" id="L291">		IfStatement ifStmt = ast.newIfStatement();</span>
-<span class="fc" id="L292">		ifStmt.setExpression(pipeline);</span>
+<span class="fc" id="L319">		IfStatement ifStmt = ast.newIfStatement();</span>
+<span class="fc" id="L320">		ifStmt.setExpression(pipeline);</span>
 
-<span class="fc" id="L294">		Block thenBlock = ast.newBlock();</span>
-<span class="fc" id="L295">		ReturnStatement returnStmt = ast.newReturnStatement();</span>
-<span class="fc" id="L296">		returnStmt.setExpression(ast.newBooleanLiteral(true));</span>
-<span class="fc" id="L297">		thenBlock.statements().add(returnStmt);</span>
-<span class="fc" id="L298">		ifStmt.setThenStatement(thenBlock);</span>
+<span class="fc" id="L322">		Block thenBlock = ast.newBlock();</span>
+<span class="fc" id="L323">		ReturnStatement returnStmt = ast.newReturnStatement();</span>
+<span class="fc" id="L324">		returnStmt.setExpression(ast.newBooleanLiteral(true));</span>
+<span class="fc" id="L325">		thenBlock.statements().add(returnStmt);</span>
+<span class="fc" id="L326">		ifStmt.setThenStatement(thenBlock);</span>
 
-<span class="fc" id="L300">		return ifStmt;</span>
+<span class="fc" id="L328">		return ifStmt;</span>
 	}
 
 	/**
 	 * Wraps in: if (!stream.noneMatch/allMatch(...)) { return returnValue; }
 	 */
 	private IfStatement wrapNegatedMatch(MethodInvocation pipeline, boolean returnValue) {
-<span class="fc" id="L307">		IfStatement ifStmt = ast.newIfStatement();</span>
+<span class="fc" id="L335">		IfStatement ifStmt = ast.newIfStatement();</span>
 
-<span class="fc" id="L309">		PrefixExpression negation = ast.newPrefixExpression();</span>
-<span class="fc" id="L310">		negation.setOperator(PrefixExpression.Operator.NOT);</span>
-<span class="fc" id="L311">		negation.setOperand(pipeline);</span>
-<span class="fc" id="L312">		ifStmt.setExpression(negation);</span>
+<span class="fc" id="L337">		PrefixExpression negation = ast.newPrefixExpression();</span>
+<span class="fc" id="L338">		negation.setOperator(PrefixExpression.Operator.NOT);</span>
+<span class="fc" id="L339">		negation.setOperand(pipeline);</span>
+<span class="fc" id="L340">		ifStmt.setExpression(negation);</span>
 
-<span class="fc" id="L314">		Block thenBlock = ast.newBlock();</span>
-<span class="fc" id="L315">		ReturnStatement returnStmt = ast.newReturnStatement();</span>
-<span class="fc" id="L316">		returnStmt.setExpression(ast.newBooleanLiteral(returnValue));</span>
-<span class="fc" id="L317">		thenBlock.statements().add(returnStmt);</span>
-<span class="fc" id="L318">		ifStmt.setThenStatement(thenBlock);</span>
+<span class="fc" id="L342">		Block thenBlock = ast.newBlock();</span>
+<span class="fc" id="L343">		ReturnStatement returnStmt = ast.newReturnStatement();</span>
+<span class="fc" id="L344">		returnStmt.setExpression(ast.newBooleanLiteral(returnValue));</span>
+<span class="fc" id="L345">		thenBlock.statements().add(returnStmt);</span>
+<span class="fc" id="L346">		ifStmt.setThenStatement(thenBlock);</span>
 
-<span class="fc" id="L320">		return ifStmt;</span>
+<span class="fc" id="L348">		return ifStmt;</span>
 	}
 
 	/**
 	 * Wraps in: accumulatorVariable = stream.reduce(...);
 	 */
 	private Statement wrapReduce(MethodInvocation pipeline) {
-<span class="pc bpc" id="L327" title="1 of 2 branches missed.">		String accumulatorVariable = reduceDetector != null ? reduceDetector.getAccumulatorVariable() : null;</span>
+<span class="pc bpc" id="L355" title="1 of 2 branches missed.">		String accumulatorVariable = reduceDetector != null ? reduceDetector.getAccumulatorVariable() : null;</span>
 		
-<span class="pc bpc" id="L329" title="1 of 2 branches missed.">		if (accumulatorVariable != null) {</span>
-<span class="fc" id="L330">			Assignment assignment = ast.newAssignment();</span>
-<span class="fc" id="L331">			assignment.setLeftHandSide(ast.newSimpleName(accumulatorVariable));</span>
-<span class="fc" id="L332">			assignment.setOperator(Assignment.Operator.ASSIGN);</span>
-<span class="fc" id="L333">			assignment.setRightHandSide(pipeline);</span>
-<span class="fc" id="L334">			return ast.newExpressionStatement(assignment);</span>
+<span class="pc bpc" id="L357" title="1 of 2 branches missed.">		if (accumulatorVariable != null) {</span>
+<span class="fc" id="L358">			Assignment assignment = ast.newAssignment();</span>
+<span class="fc" id="L359">			assignment.setLeftHandSide(ast.newSimpleName(accumulatorVariable));</span>
+<span class="fc" id="L360">			assignment.setOperator(Assignment.Operator.ASSIGN);</span>
+<span class="fc" id="L361">			assignment.setRightHandSide(pipeline);</span>
+<span class="fc" id="L362">			return ast.newExpressionStatement(assignment);</span>
 		}
 		
-<span class="nc" id="L337">		return ast.newExpressionStatement(pipeline);</span>
+<span class="nc" id="L365">		return ast.newExpressionStatement(pipeline);</span>
 	}
 
 	/**
@@ -342,49 +370,49 @@ public class PipelineAssembler {
 	 * Example: result = stream.collect(Collectors.toList());
 	 */
 	private Statement wrapCollect(MethodInvocation pipeline) {
-<span class="pc bpc" id="L345" title="1 of 2 branches missed.">		String targetVariable = collectDetector != null ? collectDetector.getTargetVariable() : null;</span>
+<span class="pc bpc" id="L373" title="1 of 2 branches missed.">		String targetVariable = collectDetector != null ? collectDetector.getTargetVariable() : null;</span>
 		
-<span class="pc bpc" id="L347" title="1 of 2 branches missed.">		if (targetVariable != null) {</span>
-<span class="fc" id="L348">			Assignment assignment = ast.newAssignment();</span>
-<span class="fc" id="L349">			assignment.setLeftHandSide(ast.newSimpleName(targetVariable));</span>
-<span class="fc" id="L350">			assignment.setOperator(Assignment.Operator.ASSIGN);</span>
-<span class="fc" id="L351">			assignment.setRightHandSide(pipeline);</span>
-<span class="fc" id="L352">			return ast.newExpressionStatement(assignment);</span>
+<span class="pc bpc" id="L375" title="1 of 2 branches missed.">		if (targetVariable != null) {</span>
+<span class="fc" id="L376">			Assignment assignment = ast.newAssignment();</span>
+<span class="fc" id="L377">			assignment.setLeftHandSide(ast.newSimpleName(targetVariable));</span>
+<span class="fc" id="L378">			assignment.setOperator(Assignment.Operator.ASSIGN);</span>
+<span class="fc" id="L379">			assignment.setRightHandSide(pipeline);</span>
+<span class="fc" id="L380">			return ast.newExpressionStatement(assignment);</span>
 		}
 		
-<span class="nc" id="L355">		return ast.newExpressionStatement(pipeline);</span>
+<span class="nc" id="L383">		return ast.newExpressionStatement(pipeline);</span>
 	}
 
 	/**
 	 * Determines if .stream() prefix is required.
 	 */
 	private boolean requiresStreamPrefix() {
-<span class="pc bpc" id="L362" title="1 of 2 branches missed.">		if (operations.isEmpty()) {</span>
-<span class="nc" id="L363">			return true;</span>
+<span class="pc bpc" id="L390" title="1 of 2 branches missed.">		if (operations.isEmpty()) {</span>
+<span class="nc" id="L391">			return true;</span>
 		}
-<span class="fc bfc" id="L365" title="All 2 branches covered.">		return operations.size() &gt; 1</span>
-<span class="fc bfc" id="L366" title="All 2 branches covered.">				|| operations.get(0).getOperationType() != OperationType.FOREACH;</span>
+<span class="fc bfc" id="L393" title="All 2 branches covered.">		return operations.size() &gt; 1</span>
+<span class="fc bfc" id="L394" title="All 2 branches covered.">				|| operations.get(0).getOperationType() != OperationType.FOREACH;</span>
 	}
 
 	/**
 	 * Gets the variable name to use for the current operation.
 	 */
 	private String getVariableNameFromPreviousOp(int currentIndex) {
-<span class="fc bfc" id="L373" title="All 2 branches covered.">		for (int i = currentIndex - 1; i &gt;= 0; i--) {</span>
-<span class="fc" id="L374">			ProspectiveOperation op = operations.get(i);</span>
-<span class="pc bpc" id="L375" title="1 of 4 branches missed.">			if (op != null &amp;&amp; op.getProducedVariableName() != null) {</span>
-<span class="fc" id="L376">				return op.getProducedVariableName();</span>
+<span class="fc bfc" id="L401" title="All 2 branches covered.">		for (int i = currentIndex - 1; i &gt;= 0; i--) {</span>
+<span class="fc" id="L402">			ProspectiveOperation op = operations.get(i);</span>
+<span class="pc bpc" id="L403" title="1 of 4 branches missed.">			if (op != null &amp;&amp; op.getProducedVariableName() != null) {</span>
+<span class="fc" id="L404">				return op.getProducedVariableName();</span>
 			}
 		}
-<span class="fc" id="L379">		return loopVariableName;</span>
+<span class="fc" id="L407">		return loopVariableName;</span>
 	}
 
 	/**
 	 * Checks if any operation has the given type.
 	 */
 	private boolean hasOperationType(OperationType type) {
-<span class="fc" id="L386">		return operations.stream()</span>
-<span class="fc bfc" id="L387" title="All 2 branches covered.">				.anyMatch(op -&gt; op.getOperationType() == type);</span>
+<span class="fc" id="L414">		return operations.stream()</span>
+<span class="fc bfc" id="L415" title="All 2 branches covered.">				.anyMatch(op -&gt; op.getOperationType() == type);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

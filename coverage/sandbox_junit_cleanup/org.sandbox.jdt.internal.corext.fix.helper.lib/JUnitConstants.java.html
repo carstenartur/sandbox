@@ -76,6 +76,7 @@ public final class JUnitConstants {
 	public static final String ORG_JUNIT_RULES_EXTERNAL_RESOURCE = &quot;org.junit.rules.ExternalResource&quot;;
 	public static final String ORG_JUNIT_RULES_EXPECTED_EXCEPTION = &quot;org.junit.rules.ExpectedException&quot;;
 	public static final String ORG_JUNIT_RULES_TIMEOUT = &quot;org.junit.rules.Timeout&quot;;
+	public static final String ORG_JUNIT_RULES_ERROR_COLLECTOR = &quot;org.junit.rules.ErrorCollector&quot;;
 	public static final String ORG_JUNIT_RUNWITH = &quot;org.junit.runner.RunWith&quot;;
 	public static final String ORG_JUNIT_SUITE = &quot;org.junit.runners.Suite&quot;;
 	public static final String ORG_JUNIT_SUITE_SUITECLASSES = &quot;org.junit.runners.Suite.SuiteClasses&quot;;
@@ -144,13 +145,13 @@ public final class JUnitConstants {
 
 	// ===== Assertion Method Sets =====
 
-<span class="fc" id="L147">	public static final Set&lt;String&gt; TWOPARAM_ASSERTIONS = Set.of(&quot;assertEquals&quot;, &quot;assertNotEquals&quot;, &quot;assertArrayEquals&quot;,</span>
-<span class="fc" id="L148">			&quot;assertSame&quot;, &quot;assertNotSame&quot;, &quot;assertThat&quot;);</span>
-<span class="fc" id="L149">	public static final Set&lt;String&gt; ONEPARAM_ASSERTIONS = Set.of(&quot;assertTrue&quot;, &quot;assertFalse&quot;, &quot;assertNull&quot;, &quot;assertNotNull&quot;);</span>
-<span class="fc" id="L150">	public static final Set&lt;String&gt; NOPARAM_ASSERTIONS = Set.of(&quot;fail&quot;);</span>
-<span class="fc" id="L151">	public static final Set&lt;String&gt; ALL_ASSERTION_METHODS = Stream</span>
-<span class="fc" id="L152">			.of(TWOPARAM_ASSERTIONS, ONEPARAM_ASSERTIONS, NOPARAM_ASSERTIONS)</span>
-<span class="fc" id="L153">			.flatMap(Set::stream)</span>
-<span class="fc" id="L154">			.collect(Collectors.toSet());</span>
+<span class="fc" id="L148">	public static final Set&lt;String&gt; TWOPARAM_ASSERTIONS = Set.of(&quot;assertEquals&quot;, &quot;assertNotEquals&quot;, &quot;assertArrayEquals&quot;,</span>
+<span class="fc" id="L149">			&quot;assertSame&quot;, &quot;assertNotSame&quot;, &quot;assertThat&quot;);</span>
+<span class="fc" id="L150">	public static final Set&lt;String&gt; ONEPARAM_ASSERTIONS = Set.of(&quot;assertTrue&quot;, &quot;assertFalse&quot;, &quot;assertNull&quot;, &quot;assertNotNull&quot;);</span>
+<span class="fc" id="L151">	public static final Set&lt;String&gt; NOPARAM_ASSERTIONS = Set.of(&quot;fail&quot;);</span>
+<span class="fc" id="L152">	public static final Set&lt;String&gt; ALL_ASSERTION_METHODS = Stream</span>
+<span class="fc" id="L153">			.of(TWOPARAM_ASSERTIONS, ONEPARAM_ASSERTIONS, NOPARAM_ASSERTIONS)</span>
+<span class="fc" id="L154">			.flatMap(Set::stream)</span>
+<span class="fc" id="L155">			.collect(Collectors.toSet());</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
