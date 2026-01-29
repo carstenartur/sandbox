@@ -69,7 +69,7 @@ public class LoopToFunctionalV2Test {
             import java.util.List;
             public class Test {
                 public void method(List<String> items) {
-                    items.stream().forEach(item -> System.out.println(item));
+                    items.forEach(item -> System.out.println(item));
                 }
             }
             """;

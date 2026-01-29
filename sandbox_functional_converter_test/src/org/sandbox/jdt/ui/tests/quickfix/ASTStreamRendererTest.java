@@ -464,6 +464,77 @@ public class ASTStreamRendererTest {
     }
     
     @Test
+    void testRenderDirectForEach_Collection() {
+        // Test direct forEach on collections: items.forEach(item -> System.out.println(item))
+        SourceDescriptor source = new SourceDescriptor(
+            SourceType.COLLECTION, "items", "String");
+        
+        Expression result = renderer.renderDirectForEach(source, 
+            java.util.List.of("System.out.println(item)"), "item", false);
+        
+        assertNotNull(result);
+        assertTrue(result instanceof MethodInvocation);
+        MethodInvocation mi = (MethodInvocation) result;
+        assertEquals("forEach", mi.getName().getIdentifier());
+        
+        // Verify it's called directly on the collection (not on a stream)
+        assertNotNull(mi.getExpression());
+        assertTrue(mi.getExpression() instanceof SimpleName);
+        assertEquals("items", ((SimpleName) mi.getExpression()).getIdentifier());
+        
+        // Verify lambda
+        assertEquals(1, mi.arguments().size());
+        assertTrue(mi.arguments().get(0) instanceof LambdaExpression);
+        LambdaExpression lambda = (LambdaExpression) mi.arguments().get(0);
+        assertEquals(1, lambda.parameters().size());
+    }
+    
+    @Test
+    void testRenderDirectForEach_Iterable() {
+        // Test direct forEach on iterables: iterable.forEach(item -> process(item))
+        SourceDescriptor source = new SourceDescriptor(
+            SourceType.ITERABLE, "iterable", "String");
+        
+        Expression result = renderer.renderDirectForEach(source, 
+            java.util.List.of("process(item)"), "item", false);
+        
+        assertNotNull(result);
+        assertTrue(result instanceof MethodInvocation);
+        MethodInvocation mi = (MethodInvocation) result;
+        assertEquals("forEach", mi.getName().getIdentifier());
+        
+        // Verify it's called directly on the iterable (not on a stream)
+        assertNotNull(mi.getExpression());
+        assertTrue(mi.getExpression() instanceof SimpleName);
+        assertEquals("iterable", ((SimpleName) mi.getExpression()).getIdentifier());
+    }
+    
+    @Test
+    void testRenderDirectForEach_Array_FallbackToStream() {
+        // Arrays don't have forEach method, so should fall back to Arrays.stream().forEach()
+        SourceDescriptor source = new SourceDescriptor(
+            SourceType.ARRAY, "arr", "int");
+        
+        Expression result = renderer.renderDirectForEach(source, 
+            java.util.List.of("System.out.println(item)"), "item", false);
+        
+        assertNotNull(result);
+        assertTrue(result instanceof MethodInvocation);
+        MethodInvocation forEach = (MethodInvocation) result;
+        assertEquals("forEach", forEach.getName().getIdentifier());
+        
+        // Verify it's called on a stream (not directly on the array)
+        assertNotNull(forEach.getExpression());
+        assertTrue(forEach.getExpression() instanceof MethodInvocation, 
+            "Should be Arrays.stream(arr).forEach()");
+        MethodInvocation stream = (MethodInvocation) forEach.getExpression();
+        assertEquals("stream", stream.getName().getIdentifier());
+        assertNotNull(stream.getExpression());
+        assertTrue(stream.getExpression() instanceof SimpleName);
+        assertEquals("Arrays", ((SimpleName) stream.getExpression()).getIdentifier());
+    }
+    
+    @Test
     void testComplexPipeline() {
         // items.stream().filter(x -> x != null).map(x -> x.toUpperCase()).forEach(x -> System.out.println(x))
         SourceDescriptor source = new SourceDescriptor(

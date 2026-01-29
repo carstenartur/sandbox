@@ -95,6 +95,7 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
         ASTStreamRenderer renderer = new ASTStreamRenderer(ast, rewrite, compilationUnit, extracted.originalBody);
         
         Expression streamExpression;
+        boolean usedDirectForEach = false;
         
         // Check if we can use direct forEach (no intermediate operations, ForEachTerminal)
         if (canUseDirectForEach(extracted.model)) {
@@ -110,6 +111,7 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
                 varName, 
                 terminal.ordered()
             );
+            usedDirectForEach = true;
         } else {
             // Use standard stream-based transformation
             LoopModelTransformer<Expression> transformer = new LoopModelTransformer<>(renderer);
@@ -123,8 +125,15 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
             // Replace the for statement
             rewrite.replace(visited, newStatement, group);
             
-            // Add necessary imports
-            addImports(cuRewrite, extracted.model);
+            // Add necessary imports (only for stream-based transformations)
+            if (!usedDirectForEach) {
+                addImports(cuRewrite, extracted.model);
+            } else {
+                // For direct forEach on arrays, we still need Arrays import
+                if (extracted.model.getSource().type() == SourceDescriptor.SourceType.ARRAY) {
+                    cuRewrite.getImportRewrite().addImport("java.util.Arrays");
+                }
+            }
         }
     }
     
@@ -167,8 +176,8 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
         }
         
         // Source must be COLLECTION or ITERABLE
-        // Arrays don't have a forEach method, so they still need Arrays.stream().forEach()
-        // Note: renderDirectForEach handles arrays by falling back to stream-based approach
+        // Arrays don't have a forEach method, so they still need a stream-based forEach path
+        // and are intentionally handled outside of this direct-forEach optimization.
         SourceDescriptor.SourceType sourceType = model.getSource().type();
         return sourceType == SourceDescriptor.SourceType.COLLECTION 
             || sourceType == SourceDescriptor.SourceType.ITERABLE;
