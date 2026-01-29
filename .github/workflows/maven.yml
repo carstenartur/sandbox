@@ -88,11 +88,25 @@ jobs:
               cp .github/junit-report-config.xml "$module/target/site/" || echo "Config file not found, using defaults"
               
               # Combine all TEST-*.xml files into one testsuites document
+              # Use deduplication to avoid duplicate test suites
               echo '<?xml version="1.0" encoding="UTF-8"?>' > "$module/target/site/combined-tests.xml"
               echo '<testsuites>' >> "$module/target/site/combined-tests.xml"
+              
+              # Track seen test suites to avoid duplicates
+              declare -A seen_suites
               for xml in $xml_files; do
-                # Extract the testsuite element (skip XML declaration)
-                sed -n '/<testsuite/,/<\/testsuite>/p' "$xml" >> "$module/target/site/combined-tests.xml"
+                # Extract the testsuite name attribute
+                suite_name=$(grep -o 'name="[^"]*"' "$xml" | head -1 | sed 's/name="//;s/"//')
+                
+                # Only include this testsuite if we haven't seen it before
+                if [[ -n "$suite_name" && -z "${seen_suites[$suite_name]}" ]]; then
+                  seen_suites[$suite_name]=1
+                  # Extract the testsuite element (skip XML declaration)
+                  sed -n '/<testsuite/,/<\/testsuite>/p' "$xml" >> "$module/target/site/combined-tests.xml"
+                  echo "  Including testsuite: $suite_name"
+                else
+                  echo "  Skipping duplicate testsuite: $suite_name"
+                fi
               done
               echo '</testsuites>' >> "$module/target/site/combined-tests.xml"
               
