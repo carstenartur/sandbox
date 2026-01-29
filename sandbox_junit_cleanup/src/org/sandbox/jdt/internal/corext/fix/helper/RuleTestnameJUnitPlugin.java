@@ -62,9 +62,12 @@ public class RuleTestnameJUnitPlugin extends AbstractTool<ReferenceHolder<Intege
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder= new ReferenceHolder<>();
-		HelperVisitor.callFieldDeclarationVisitor(ORG_JUNIT_RULE, ORG_JUNIT_RULES_TEST_NAME, compilationUnit,
-				dataHolder, nodesprocessed,
-				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+		HelperVisitor.forField()
+			.withAnnotation(ORG_JUNIT_RULE)
+			.ofType(ORG_JUNIT_RULES_TEST_NAME)
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(dataHolder, (visited, aholder) -> processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
@@ -78,7 +81,8 @@ public class RuleTestnameJUnitPlugin extends AbstractTool<ReferenceHolder<Intege
 			dataHolder.put(dataHolder.size(), mh);
 			operations.add(fixcore.rewrite(dataHolder));
 		}
-		return false;
+		// Return true to continue processing other fields
+		return true;
 	}
 
 	@Override

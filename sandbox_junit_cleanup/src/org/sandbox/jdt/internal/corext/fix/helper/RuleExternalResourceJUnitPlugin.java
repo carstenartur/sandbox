@@ -63,12 +63,22 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder= new ReferenceHolder<>();
-		HelperVisitor.callFieldDeclarationVisitor(ORG_JUNIT_RULE, ORG_JUNIT_RULES_EXTERNAL_RESOURCE, compilationUnit,
-				dataHolder, nodesprocessed,
-				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
-		HelperVisitor.callFieldDeclarationVisitor(ORG_JUNIT_CLASS_RULE, ORG_JUNIT_RULES_EXTERNAL_RESOURCE,
-				compilationUnit, dataHolder, nodesprocessed,
-				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+		
+		// Find @Rule fields with ExternalResource type
+		HelperVisitor.forField()
+			.withAnnotation(ORG_JUNIT_RULE)
+			.ofType(ORG_JUNIT_RULES_EXTERNAL_RESOURCE)
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(dataHolder, (visited, aholder) -> processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));
+		
+		// Find @ClassRule fields with ExternalResource type
+		HelperVisitor.forField()
+			.withAnnotation(ORG_JUNIT_CLASS_RULE)
+			.ofType(ORG_JUNIT_RULES_EXTERNAL_RESOURCE)
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(dataHolder, (visited, aholder) -> processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
@@ -80,12 +90,13 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 		if (
 		(binding == null) || ORG_JUNIT_RULES_TEST_NAME.equals(binding.getQualifiedName())
 				|| ORG_JUNIT_RULES_TEMPORARY_FOLDER.equals(binding.getQualifiedName())) {
-			return false;
+			return true; // Continue processing other fields
 		}
 		mh.minv= node;
 		dataHolder.put(dataHolder.size(), mh);
 		operations.add(fixcore.rewrite(dataHolder));
-		return false;
+		// Return true to continue processing other fields
+		return true;
 	}
 
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
