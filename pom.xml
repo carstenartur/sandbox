@@ -361,6 +361,11 @@ See README.md for more information.
 			</dependency>
 			<dependency>
 				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_cleanup_application_test</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_common</artifactId>
 				<version>${project.version}</version>
 			</dependency>
