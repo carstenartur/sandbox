@@ -1569,7 +1569,7 @@
     <xsl:param name="package"/>
     <xsl:param name="class"/>
     
-    <xsl:if test="$show-coverage-links = 'true'">
+    <xsl:if test="$show-coverage-links = 'true' and string-length($test-module) > 0">
         <xsl:variable name="source-module">
             <xsl:call-template name="get-source-module">
                 <xsl:with-param name="test-module" select="$test-module"/>
@@ -1597,7 +1597,8 @@
         </xsl:variable>
         
         <xsl:text> </xsl:text>
-        <a class="coverage-link" title="View coverage for {$source-class}">
+        <a class="coverage-link">
+            <xsl:attribute name="title">View coverage for <xsl:value-of select="$source-class"/></xsl:attribute>
             <xsl:attribute name="href"><xsl:value-of select="$coverage-url"/></xsl:attribute>
             <xsl:attribute name="target">_blank</xsl:attribute>
             📊

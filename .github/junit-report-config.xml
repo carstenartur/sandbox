@@ -1,23 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <junit-report-config>
-    <!-- Projekt-Informationen -->
+    <!-- Project Information -->
     <project>
         <name>Sandbox</name>
         <repository-url>https://github.com/carstenartur/sandbox</repository-url>
         <github-pages-base>https://carstenartur.github.io/sandbox</github-pages-base>
     </project>
     
-    <!-- Pfade zu den Reports -->
+    <!-- Paths to Reports -->
     <paths>
         <tests-base>/tests</tests-base>
         <coverage-base>/coverage</coverage-base>
     </paths>
     
-    <!-- Test-zu-Coverage Mapping -->
+    <!-- Test-to-Coverage Mapping -->
     <mapping>
-        <!-- Suffix der Testklassen (z.B. FooTest testet Foo) -->
+        <!-- Test class suffix (e.g. FooTest tests Foo) -->
         <test-class-suffix>Test</test-class-suffix>
-        <!-- Test-Modul zu Source-Modul Mapping -->
+        <!-- Test Module to Source Module Mapping -->
         <module-mapping>
             <map test="sandbox_cleanup_application_test" source="sandbox_cleanup_application"/>
             <map test="sandbox_common_test" source="sandbox_common"/>
@@ -35,7 +35,7 @@
         </module-mapping>
     </mapping>
     
-    <!-- UI Einstellungen -->
+    <!-- UI Settings -->
     <ui>
         <show-coverage-links>true</show-coverage-links>
         <show-repository-link>true</show-repository-link>
