@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<junit-report-config>
+    <!-- Project Information -->
+    <project>
+        <name>Sandbox</name>
+        <repository-url>https://github.com/carstenartur/sandbox</repository-url>
+        <github-pages-base>https://carstenartur.github.io/sandbox</github-pages-base>
+    </project>
+    
+    <!-- Paths to Reports -->
+    <paths>
+        <tests-base>/tests</tests-base>
+        <coverage-base>/coverage</coverage-base>
+    </paths>
+    
+    <!-- Test-to-Coverage Mapping -->
+    <mapping>
+        <!-- Test class suffix (e.g. FooTest tests Foo) -->
+        <test-class-suffix>Test</test-class-suffix>
+        <!-- Test Module to Source Module Mapping -->
+        <module-mapping>
+            <map test="sandbox_cleanup_application_test" source="sandbox_cleanup_application"/>
+            <map test="sandbox_common_test" source="sandbox_common"/>
+            <map test="sandbox_encoding_quickfix_test" source="sandbox_encoding_quickfix"/>
+            <map test="sandbox_functional_converter_test" source="sandbox_functional_converter"/>
+            <map test="sandbox_jface_cleanup_test" source="sandbox_jface_cleanup"/>
+            <map test="sandbox_junit_cleanup_test" source="sandbox_junit_cleanup"/>
+            <map test="sandbox_method_reuse_test" source="sandbox_method_reuse"/>
+            <map test="sandbox_platform_helper_test" source="sandbox_platform_helper"/>
+            <map test="sandbox_tools_test" source="sandbox_tools"/>
+            <map test="sandbox_triggerpattern_string_test" source="sandbox_triggerpattern_string"/>
+            <map test="sandbox_triggerpattern_test" source="sandbox_triggerpattern"/>
+            <map test="sandbox_usage_view_test" source="sandbox_usage_view"/>
+            <map test="sandbox_xml_cleanup_test" source="sandbox_xml_cleanup"/>
+        </module-mapping>
+    </mapping>
+    
+    <!-- UI Settings -->
+    <ui>
+        <show-coverage-links>true</show-coverage-links>
+        <show-repository-link>true</show-repository-link>
+        <default-theme>auto</default-theme> <!-- auto, light, dark -->
+    </ui>
+</junit-report-config>

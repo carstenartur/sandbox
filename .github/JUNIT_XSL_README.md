@@ -46,13 +46,70 @@ This XSLT stylesheet transforms JUnit XML test results into modern, interactive 
   - `Ctrl+,` - Jump to previous error/failure
 - **Properties Display**: Click "Properties »" to view test environment properties in a styled popup window
 
+### Coverage Integration
+- **Coverage Links**: 📊 icon next to each test class name linking to coverage report
+  - Automatic test class to source class mapping (removes "Test" suffix)
+  - Test module to source module mapping from configuration
+  - Opens coverage report in new tab for easy analysis
+- **Cross-Report Navigation**: Header and footer links to navigate between test and coverage reports
+- **Configurable**: Coverage links can be enabled/disabled via configuration file
+
 ## Usage
+
+### Configuration File
+
+The stylesheet can be configured using an external configuration file (`.github/junit-report-config.xml`):
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<junit-report-config>
+    <project>
+        <name>Sandbox</name>
+        <repository-url>https://github.com/carstenartur/sandbox</repository-url>
+        <github-pages-base>https://carstenartur.github.io/sandbox</github-pages-base>
+    </project>
+    <paths>
+        <tests-base>/tests</tests-base>
+        <coverage-base>/coverage</coverage-base>
+    </paths>
+    <mapping>
+        <test-class-suffix>Test</test-class-suffix>
+        <module-mapping>
+            <map test="sandbox_common_test" source="sandbox_common"/>
+            <!-- Add more module mappings -->
+        </module-mapping>
+    </mapping>
+    <ui>
+        <show-coverage-links>true</show-coverage-links>
+        <show-repository-link>true</show-repository-link>
+    </ui>
+</junit-report-config>
+```
+
+**Configuration Elements:**
+- **project**: Project name, repository URL, and GitHub Pages base URL
+- **paths**: Base paths for test reports and coverage reports
+- **mapping**: Test-to-source module mapping and test class suffix
+- **ui**: UI settings for showing coverage and repository links
+
+If the configuration file is not found, the stylesheet uses sensible defaults.
 
 ### From Command Line
 
+Basic usage:
 ```bash
 xsltproc \
   --stringparam TITLE "Test Results - Module Name" \
+  .github/JUNIT.XSL \
+  path/to/combined-tests.xml \
+  > output.html
+```
+
+With configuration file:
+```bash
+xsltproc \
+  --stringparam TITLE "Test Results - sandbox_common_test" \
+  --stringparam CONFIG_FILE "path/to/junit-report-config.xml" \
   .github/JUNIT.XSL \
   path/to/combined-tests.xml \
   > output.html
@@ -74,13 +131,22 @@ xsltproc \
 
 When `GITHUB_REPO` is provided, stacktrace references like `at org.example.Test.method(Test.java:42)` become clickable links pointing to `https://github.com/owner/repository/blob/main/src/test/java/org/example/Test.java#L42`.
 
+### Coverage Links
+
+When a configuration file is provided and `show-coverage-links` is enabled, the report includes:
+- **📊 Coverage Icon**: Next to each test class name, linking to the corresponding source class coverage report
+- **Smart Mapping**: Automatically removes test class suffix (e.g., "ExpressionHelperTest" → "ExpressionHelper")
+- **Module Mapping**: Maps test modules to source modules based on configuration
+- **Navigation**: Header and footer links to coverage reports and test report index
+
 ### In GitHub Actions Workflow
 
 The stylesheet is automatically used in `.github/workflows/maven.yml`:
 
 1. Combines individual `TEST-*.xml` files into a single `combined-tests.xml`
-2. Transforms to HTML using `xsltproc`
-3. Deploys to GitHub Pages
+2. Copies configuration file to each module's target directory
+3. Transforms to HTML using `xsltproc` with CONFIG_FILE parameter
+4. Deploys to GitHub Pages
 
 ## Input Format
 
