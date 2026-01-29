@@ -149,6 +149,59 @@
 
 **Total Active Iterator Tests**: 11 tests enabled (5 in IteratorLoopToStreamTest + 6 in IteratorLoopConversionTest), 9 disabled (1 safety bug + 8 pending advanced pattern support)
 
+### Phase 7.5: Direct forEach Optimization ✅ COMPLETED (January 2026)
+
+**Objective**: Generate idiomatic `collection.forEach(...)` for simple forEach patterns
+
+**Problem Statement**:
+V2 initially generated `collection.stream().forEach(...)` for all forEach operations, while V1 optimized simple cases to direct `collection.forEach(...)`. This created output differences between V1 and V2 for the simplest forEach patterns, failing feature parity requirements.
+
+**Completed Tasks**:
+- ✅ Added `canUseDirectForEach()` method to `LoopToFunctionalV2`
+  - Detects simple forEach patterns (no intermediate operations, ForEachTerminal, COLLECTION/ITERABLE source)
+  - Returns `false` for arrays (no forEach method available)
+- ✅ Implemented `renderDirectForEach()` in `ASTStreamRenderer`
+  - Generates direct `collection.forEach(item -> ...)` for collections/iterables
+  - Falls back to `Arrays.stream(array).forEach(...)` for arrays
+  - Preserves AST binding information from original loop body
+- ✅ Optimized import management for direct forEach path
+  - Skips stream-related imports (`StreamSupport`, `Collectors`) when using direct forEach
+  - Only adds `Arrays` import when array requires stream-based forEach
+- ✅ Updated test expectations:
+  - Fixed `LoopToFunctionalV2Test.test_SimpleForEach_V2`: Now expects `items.forEach(...)`
+  - Re-enabled `FeatureParityTest.parity_SimpleForEachConversion`: Validates V1/V2 produce identical output
+- ✅ Added comprehensive test coverage:
+  - 3 new tests in `ASTStreamRendererTest` for renderDirectForEach
+  - Tests cover COLLECTION, ITERABLE, and ARRAY fallback scenarios
+- ✅ Updated documentation:
+  - Added Phase 7.5 section to ARCHITECTURE.md
+  - Updated TODO.md with Phase 7.5 completion
+  - Comprehensive JavaDoc on immutability safety
+
+**Implementation Details**:
+```java
+// Simple forEach (no intermediate ops) - uses direct forEach:
+list.forEach(item -> System.out.println(item));
+
+// Complex pipeline (has filter) - uses stream:
+list.stream().filter(x -> x != null).forEach(item -> System.out.println(item));
+
+// Arrays always use stream (no forEach method):
+Arrays.stream(array).forEach(item -> System.out.println(item));
+```
+
+**Immutability Safety**:
+- Direct forEach works with both mutable and immutable collections
+- Immutable collections (List.of, Collections.unmodifiableList) support forEach
+- forEach is read-only on collection structure (doesn't modify)
+- Lambda body side effects are user's responsibility
+
+**Success Criteria** ✅:
+- V1 and V2 generate identical code for simple forEach patterns
+- `FeatureParityTest.parity_SimpleForEachConversion` passes
+- No unused imports for direct forEach (e.g., no StreamSupport for ITERABLE)
+- Array handling correctly uses stream fallback
+
 ### Phase 8: Multiple Loops to Stream.concat() (PLANNED)
 
 **Objective**: Support conversion of multiple consecutive for-loops adding to the same list

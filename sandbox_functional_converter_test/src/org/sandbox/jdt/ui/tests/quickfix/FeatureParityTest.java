@@ -81,14 +81,11 @@ public class FeatureParityTest {
 	}
 
 	/**
-	 * Simple forEach test - DISABLED because V2 produces different output than V1.
+	 * Simple forEach test - verifies that V1 and V2 both produce direct forEach output.
 	 * 
-	 * <p>V1 uses direct {@code list.forEach()} while V2 uses {@code list.stream().forEach()}.</p>
-	 * <p>This will be enabled once V2 is configured to produce identical output to V1.</p>
-	 * 
-	 * @see <a href="https://github.com/carstenartur/sandbox/issues/453">Issue #453 Phase 7</a>
+	 * <p>Both V1 and V2 now use direct {@code list.forEach()} for simple forEach patterns
+	 * without intermediate operations, generating more idiomatic code.</p>
 	 */
-	@org.junit.jupiter.api.Disabled("V2 produces stream-based output while V1 uses direct forEach - parity in Phase 7")
 	@Test
 	void parity_SimpleForEachConversion() throws CoreException {
 		String input = """

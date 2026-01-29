@@ -288,6 +288,107 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         return forEachCall;
     }
     
+    /**
+     * Renders a direct forEach call without stream prefix (e.g., list.forEach(...) instead of list.stream().forEach(...)).
+     * 
+     * <p>This method is used for simple forEach patterns with no intermediate operations.
+     * It generates more idiomatic code by avoiding the unnecessary .stream() call.</p>
+     * 
+     * <p><b>Examples:</b></p>
+     * <ul>
+     *   <li>Collections: {@code list.forEach(item -> System.out.println(item))}</li>
+     *   <li>Arrays: {@code Arrays.stream(array).forEach(item -> ...)} (arrays don't have forEach method)</li>
+     * </ul>
+     * 
+     * <p><b>Immutability Considerations:</b></p>
+     * <p>This method is safe for both mutable and immutable collections:
+     * <ul>
+     *   <li>Immutable collections (List.of, Collections.unmodifiableList, etc.) support forEach</li>
+     *   <li>forEach only reads elements, doesn't modify the collection structure</li>
+     *   <li>Side effects in the lambda body are the user's responsibility</li>
+     * </ul>
+     * </p>
+     * 
+     * @param source the source descriptor (must be COLLECTION or ITERABLE for direct forEach)
+     * @param bodyStatements the body statements to execute for each element
+     * @param variableName the loop variable name
+     * @param ordered whether to use forEachOrdered (only relevant for streams)
+     * @return the direct forEach invocation
+     */
+    public Expression renderDirectForEach(SourceDescriptor source, List<String> bodyStatements, 
+                                           String variableName, boolean ordered) {
+        // For arrays, we must use Arrays.stream().forEach() since arrays don't have a forEach method
+        if (source.type() == SourceDescriptor.SourceType.ARRAY) {
+            Expression streamSource = renderSource(source);
+            return renderForEach(streamSource, bodyStatements, variableName, ordered);
+        }
+        
+        // For collections and iterables, use direct forEach
+        MethodInvocation forEachCall = ast.newMethodInvocation();
+        forEachCall.setExpression(createExpression(source.expression()));
+        forEachCall.setName(ast.newSimpleName("forEach"));
+        
+        LambdaExpression lambda = ast.newLambdaExpression();
+        VariableDeclarationFragment param = ast.newVariableDeclarationFragment();
+        param.setName(ast.newSimpleName(variableName));
+        lambda.parameters().add(param);
+        lambda.setParentheses(false);
+        
+        // Use original body if available (production), otherwise fall back to string parsing (tests)
+        if (originalBody != null) {
+            // Production path: Use copySubtree from original body to preserve binding information
+            if (originalBody instanceof Block) {
+                Block block = (Block) originalBody;
+                if (block.statements().size() == 1) {
+                    // Single statement - extract as expression
+                    Statement stmt = (Statement) block.statements().get(0);
+                    if (stmt instanceof ExpressionStatement) {
+                        ExpressionStatement exprStmt = (ExpressionStatement) stmt;
+                        lambda.setBody((Expression) ASTNode.copySubtree(ast, exprStmt.getExpression()));
+                    } else {
+                        // Not an expression statement, copy the whole statement as block
+                        Block lambdaBlock = ast.newBlock();
+                        lambdaBlock.statements().add(ASTNode.copySubtree(ast, stmt));
+                        lambda.setBody(lambdaBlock);
+                    }
+                } else {
+                    // Multiple statements - copy all into a block
+                    Block lambdaBlock = ast.newBlock();
+                    for (Object stmt : block.statements()) {
+                        lambdaBlock.statements().add(ASTNode.copySubtree(ast, (Statement) stmt));
+                    }
+                    lambda.setBody(lambdaBlock);
+                }
+            } else {
+                // Body is a single statement (not a block)
+                if (originalBody instanceof ExpressionStatement) {
+                    ExpressionStatement exprStmt = (ExpressionStatement) originalBody;
+                    lambda.setBody((Expression) ASTNode.copySubtree(ast, exprStmt.getExpression()));
+                } else {
+                    // Not an expression statement, wrap in block
+                    Block lambdaBlock = ast.newBlock();
+                    lambdaBlock.statements().add(ASTNode.copySubtree(ast, originalBody));
+                    lambda.setBody(lambdaBlock);
+                }
+            }
+        } else {
+            // Test/fallback path: Use bodyStatements strings (for unit tests)
+            if (bodyStatements.size() == 1) {
+                Expression bodyExpr = createExpression(bodyStatements.get(0));
+                lambda.setBody(bodyExpr);
+            } else {
+                Block lambdaBlock = ast.newBlock();
+                for (String stmt : bodyStatements) {
+                    lambdaBlock.statements().add(createStatement(stmt));
+                }
+                lambda.setBody(lambdaBlock);
+            }
+        }
+        
+        forEachCall.arguments().add(lambda);
+        return forEachCall;
+    }
+    
     @Override
     public Expression renderFilterWithPredicate(Expression pipeline, Supplier<Expression> predicateSupplier,
                                                  String variableName) {

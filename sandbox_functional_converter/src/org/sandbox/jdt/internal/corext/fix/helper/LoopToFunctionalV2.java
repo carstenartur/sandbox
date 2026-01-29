@@ -23,6 +23,7 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.functional.core.model.LoopMetadata;
 import org.sandbox.functional.core.model.LoopModel;
+import org.sandbox.functional.core.model.SourceDescriptor;
 import org.sandbox.functional.core.transformer.LoopModelTransformer;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
@@ -92,10 +93,30 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
         
         // Create renderer with original body for AST node access
         ASTStreamRenderer renderer = new ASTStreamRenderer(ast, rewrite, compilationUnit, extracted.originalBody);
-        LoopModelTransformer<Expression> transformer = new LoopModelTransformer<>(renderer);
         
-        // Transform the model to JDT Expression
-        Expression streamExpression = transformer.transform(extracted.model);
+        Expression streamExpression;
+        boolean usedDirectForEach = false;
+        
+        // Check if we can use direct forEach (no intermediate operations, ForEachTerminal)
+        if (canUseDirectForEach(extracted.model)) {
+            // Use direct forEach rendering (e.g., list.forEach(...) instead of list.stream().forEach(...))
+            org.sandbox.functional.core.terminal.ForEachTerminal terminal = 
+                (org.sandbox.functional.core.terminal.ForEachTerminal) extracted.model.getTerminal();
+            String varName = extracted.model.getElement() != null 
+                ? extracted.model.getElement().variableName() 
+                : "x";
+            streamExpression = renderer.renderDirectForEach(
+                extracted.model.getSource(), 
+                terminal.bodyStatements(), 
+                varName, 
+                terminal.ordered()
+            );
+            usedDirectForEach = true;
+        } else {
+            // Use standard stream-based transformation
+            LoopModelTransformer<Expression> transformer = new LoopModelTransformer<>(renderer);
+            streamExpression = transformer.transform(extracted.model);
+        }
         
         if (streamExpression != null) {
             // Create the replacement statement
@@ -104,9 +125,62 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
             // Replace the for statement
             rewrite.replace(visited, newStatement, group);
             
-            // Add necessary imports
-            addImports(cuRewrite, extracted.model);
+            // Add necessary imports (only for stream-based transformations)
+            if (!usedDirectForEach) {
+                addImports(cuRewrite, extracted.model);
+            } else {
+                // For direct forEach on arrays, we still need Arrays import
+                if (extracted.model.getSource().type() == SourceDescriptor.SourceType.ARRAY) {
+                    cuRewrite.getImportRewrite().addImport("java.util.Arrays");
+                }
+            }
         }
+    }
+    
+    /**
+     * Checks if the loop model can use direct forEach (without .stream() prefix).
+     * 
+     * <p>Direct forEach is used for the simplest forEach patterns to generate more idiomatic code:</p>
+     * <ul>
+     *   <li>No intermediate operations (no filter, map, etc.)</li>
+     *   <li>Terminal operation is ForEachTerminal</li>
+     *   <li>Source is COLLECTION or ITERABLE (arrays need Arrays.stream().forEach())</li>
+     * </ul>
+     * 
+     * <p><b>Immutability Considerations:</b></p>
+     * <p>Direct forEach is safe for both mutable and immutable collections:
+     * <ul>
+     *   <li>Immutable collections (List.of, Collections.unmodifiableList, etc.) support forEach</li>
+     *   <li>forEach is a terminal operation that only reads elements</li>
+     *   <li>No structural modifications are made to the collection</li>
+     *   <li>Side effects within the lambda body are the user's responsibility</li>
+     * </ul>
+     * </p>
+     * 
+     * @param model the loop model to check
+     * @return true if direct forEach can be used
+     */
+    private boolean canUseDirectForEach(LoopModel model) {
+        if (model == null || model.getTerminal() == null) {
+            return false;
+        }
+        
+        // Must have no intermediate operations
+        if (!model.getOperations().isEmpty()) {
+            return false;
+        }
+        
+        // Terminal must be ForEachTerminal
+        if (!(model.getTerminal() instanceof org.sandbox.functional.core.terminal.ForEachTerminal)) {
+            return false;
+        }
+        
+        // Source must be COLLECTION or ITERABLE
+        // Arrays don't have a forEach method, so they still need a stream-based forEach path
+        // and are intentionally handled outside of this direct-forEach optimization.
+        SourceDescriptor.SourceType sourceType = model.getSource().type();
+        return sourceType == SourceDescriptor.SourceType.COLLECTION 
+            || sourceType == SourceDescriptor.SourceType.ITERABLE;
     }
     
     private boolean isConvertible(LoopModel model) {
@@ -145,7 +219,7 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
     @Override
     public String getPreview(boolean afterRefactoring) {
         if (afterRefactoring) {
-            return "items.stream().forEach(item -> System.out.println(item));\n"; //$NON-NLS-1$
+            return "items.forEach(item -> System.out.println(item));\n"; //$NON-NLS-1$
         }
         return "for (String item : items)\n    System.out.println(item);\n"; //$NON-NLS-1$
     }
