@@ -25,6 +25,8 @@
  -->
 
 <xsl:param name="TITLE">Unit Test Results</xsl:param>
+<xsl:param name="GITHUB_REPO"/>
+<xsl:param name="GITHUB_BRANCH">main</xsl:param>
 
 <!--
  Sample stylesheet to be used with Ant JUnitReport output.
@@ -557,6 +559,8 @@
       <script type="text/javascript" language="JavaScript">
         var TestCases = new Array();
         var cur;
+        var GITHUB_REPO = '<xsl:value-of select="$GITHUB_REPO"/>';
+        var GITHUB_BRANCH = '<xsl:value-of select="$GITHUB_BRANCH"/>';
         <xsl:for-each select="./testsuite">
             <xsl:apply-templates select="properties"/>
         </xsl:for-each>
@@ -567,7 +571,7 @@
           var win = window.open('','JUnitSystemProperties','scrollbars=1,resizable=1');
           var doc = win.document;
           doc.open();
-          doc.write("<html><head><title>Properties of " + name + "</title>");
+          doc.write("<html><head><title>Properties of " + escapeHtml(name) + "</title>");
           doc.write("<style>")
           doc.write("body {font-family: system-ui, sans-serif; font-size: 16px; color:#2c3e50; background:#f8f9fa; padding:20px; }");
           doc.write("table.properties { border-collapse:collapse; width:100%; background:white; border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.1); }");
@@ -585,17 +589,24 @@
           doc.write("}");
           doc.write("</style>");
           doc.write("</head><body>");
-          doc.write("<h3>Properties of " + name + "</h3>");
+          doc.write("<h3>Properties of " + escapeHtml(name) + "</h3>");
           doc.write("<div align=\"right\"><a href=\"javascript:window.close();\">Close</a></div>");
           doc.write("<table class='properties'>");
           doc.write("<tr><th>Name</th><th>Value</th></tr>");
           for (prop in TestCases[name]) {
-            doc.write("<tr><td>" + prop + "</td><td>" + TestCases[name][prop] + "</td></tr>");
+            doc.write("<tr><td>" + escapeHtml(prop) + "</td><td>" + escapeHtml(TestCases[name][prop]) + "</td></tr>");
           }
           doc.write("</table>");
           doc.write("</body></html>");
           doc.close();
           win.focus();
+        }
+        
+        // HTML escape function to prevent XSS
+        function escapeHtml(text) {
+          var div = document.createElement('div');
+          div.textContent = text;
+          return div.innerHTML;
         }
         
         // Jump to next/previous error or failure
@@ -640,7 +651,8 @@
         
         function filterTests(filterType) {
           currentFilter = filterType;
-          var allRows = document.querySelectorAll('table.details tbody tr');
+          // Only filter test-row elements, not summary/package rows
+          var allRows = document.querySelectorAll('tr.test-row');
           var buttons = document.querySelectorAll('.filter-buttons button');
           
           // Update button states
@@ -812,6 +824,44 @@
           });
         }
         
+        // Add GitHub links to stacktraces
+        function addGitHubLinks() {
+          var githubRepo = GITHUB_REPO;
+          var githubBranch = GITHUB_BRANCH;
+          
+          if (!githubRepo) return;
+          
+          // Find all code elements in stacktraces
+          var codeElements = document.querySelectorAll('.stacktrace-content code');
+          codeElements.forEach(function(codeEl) {
+            var text = codeEl.innerHTML;
+            // Match patterns like "at org.example.Test.method(Test.java:42)"
+            var pattern = /at\s+([\w.$]+)\(([\w.]+):(\d+)\)/g;
+            var newHtml = text.replace(pattern, function(match, fullClass, fileName, lineNum) {
+              // Extract package from class name (e.g., org.example.Test -> org/example)
+              var parts = fullClass.split('.');
+              var className = parts[parts.length - 1];
+              var packagePath = parts.slice(0, -1).join('/');
+              
+              // Try to construct a reasonable file path
+              // Assumes standard Maven/Gradle structure
+              var possiblePaths = [
+                'src/test/java/' + packagePath + '/' + fileName,
+                'src/main/java/' + packagePath + '/' + fileName,
+                packagePath + '/' + fileName,
+                fileName
+              ];
+              
+              // Use the first path (most likely for tests)
+              var filePath = possiblePaths[0];
+              var url = 'https://github.com/' + githubRepo + '/blob/' + githubBranch + '/' + filePath + '#L' + lineNum;
+              
+              return 'at ' + fullClass + '(<a href="' + url + '" target="_blank" style="color:#58a6ff;text-decoration:underline;">' + fileName + ':' + lineNum + '</a>)';
+            });
+            codeEl.innerHTML = newHtml;
+          });
+        }
+        
         // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {
           // Ctrl+. (period) - next error
@@ -829,6 +879,7 @@
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
           initSortableTables();
+          addGitHubLinks();
           
           // Scroll to hash target if present
           if (window.location.hash) {
@@ -1238,24 +1289,35 @@
                 <strong><xsl:value-of select="@message"/></strong>
             </xsl:otherwise>
         </xsl:choose>
-        <!-- Collapsible stacktrace -->
-        <xsl:if test="normalize-space(.)">
-            <div class="stacktrace-container">
-                <button class="stacktrace-toggle">
-                    <xsl:attribute name="id">toggle-<xsl:value-of select="$testId"/></xsl:attribute>
-                    <xsl:attribute name="onclick">toggleStacktrace('<xsl:value-of select="$testId"/>')</xsl:attribute>
-                    Show Details
-                </button>
-                <div class="stacktrace-content">
-                    <xsl:attribute name="id">stacktrace-<xsl:value-of select="$testId"/></xsl:attribute>
-                    <code>
-                        <xsl:call-template name="br-replace">
-                            <xsl:with-param name="word" select="."/>
-                        </xsl:call-template>
-                    </code>
+        <!-- Collapsible stacktrace - only if testId is provided -->
+        <xsl:choose>
+            <xsl:when test="normalize-space(.) and $testId">
+                <div class="stacktrace-container">
+                    <button class="stacktrace-toggle">
+                        <xsl:attribute name="id">toggle-<xsl:value-of select="$testId"/></xsl:attribute>
+                        <xsl:attribute name="onclick">toggleStacktrace('<xsl:value-of select="$testId"/>')</xsl:attribute>
+                        Show Details
+                    </button>
+                    <div class="stacktrace-content">
+                        <xsl:attribute name="id">stacktrace-<xsl:value-of select="$testId"/></xsl:attribute>
+                        <code>
+                            <xsl:call-template name="br-replace">
+                                <xsl:with-param name="word" select="."/>
+                            </xsl:call-template>
+                        </code>
+                    </div>
                 </div>
-            </div>
-        </xsl:if>
+            </xsl:when>
+            <xsl:when test="normalize-space(.)">
+                <!-- For class-level errors without testId, show stacktrace directly -->
+                <code>
+                    <br/><br/>
+                    <xsl:call-template name="br-replace">
+                        <xsl:with-param name="word" select="."/>
+                    </xsl:call-template>
+                </code>
+            </xsl:when>
+        </xsl:choose>
     </div>
 </xsl:template>
 

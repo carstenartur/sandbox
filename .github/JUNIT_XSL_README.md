@@ -21,7 +21,7 @@ This XSLT stylesheet transforms JUnit XML test results into modern, interactive 
 ### Interactive Features
 - **Collapsible Stacktraces**: Error details are hidden by default, click "Show Details" to expand
   - Clean monospace formatting with dark background
-  - Syntax highlighting for better readability
+  - Improved readability with preserved line breaks
 - **Sortable Tables**: Click any column header to sort ascending/descending
   - Visual sort indicators (▲/▼)
   - Works with text, numbers, and dates
@@ -34,6 +34,10 @@ This XSLT stylesheet transforms JUnit XML test results into modern, interactive 
   - Click to copy direct link to clipboard
   - Hash-based navigation to specific tests
   - Target highlighting when navigating via permalink
+- **GitHub Code Links** (optional): When configured with repository information
+  - Stacktrace file references become clickable links to GitHub
+  - Links point directly to the source code line that caused the failure
+  - Opens in new tab for easy investigation
 
 ### Navigation
 - **Navigation Buttons**: Fixed buttons in top-right corner to jump between failures/errors
@@ -53,6 +57,22 @@ xsltproc \
   path/to/combined-tests.xml \
   > output.html
 ```
+
+#### Optional: Enable GitHub Code Links
+
+To enable clickable links to source code in stacktraces:
+
+```bash
+xsltproc \
+  --stringparam TITLE "Test Results - Module Name" \
+  --stringparam GITHUB_REPO "owner/repository" \
+  --stringparam GITHUB_BRANCH "main" \
+  .github/JUNIT.XSL \
+  path/to/combined-tests.xml \
+  > output.html
+```
+
+When `GITHUB_REPO` is provided, stacktrace references like `at org.example.Test.method(Test.java:42)` become clickable links pointing to `https://github.com/owner/repository/blob/main/src/test/java/org/example/Test.java#L42`.
 
 ### In GitHub Actions Workflow
 
