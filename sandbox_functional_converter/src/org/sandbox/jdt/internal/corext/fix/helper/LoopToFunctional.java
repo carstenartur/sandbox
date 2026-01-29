@@ -13,11 +13,14 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
 
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -27,6 +30,7 @@ import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
+import org.sandbox.jdt.internal.corext.fix.helper.ConsecutiveLoopGroupDetector.ConsecutiveLoopGroup;
 
 /**
  * Converts enhanced for-loops to functional stream operations.
@@ -91,10 +95,54 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 	@Override
 	public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed) {
+		
+		// PHASE 8: Pre-process to detect consecutive loops adding to same collection
+		// This must happen before individual loop processing to avoid incorrect overwrites
+		detectAndProcessConsecutiveLoops(fixcore, compilationUnit, operations, nodesprocessed);
+		
+		// Continue with individual loop processing for non-grouped loops
 		ReferenceHolder<Integer, FunctionalHolder> dataHolder= new ReferenceHolder<>();
 		ReferenceHolder<ASTNode, Object> sharedDataHolder = new ReferenceHolder<>();
 		HelperVisitor.callEnhancedForStatementVisitor(compilationUnit, dataHolder, nodesprocessed,
 				(visited, aholder) -> processFoundNode(fixcore, operations, nodesprocessed, visited, aholder, sharedDataHolder),(visited, aholder) -> {});
+	}
+	
+	/**
+	 * Detects and processes consecutive loops that add to the same collection.
+	 * 
+	 * <p>Phase 8 feature: Multiple consecutive for-loops adding to the same list
+	 * are converted to Stream.concat() instead of being converted individually
+	 * (which would cause overwrites).</p>
+	 * 
+	 * @param fixcore the fix core instance
+	 * @param compilationUnit the compilation unit to scan
+	 * @param operations the set to add operations to
+	 * @param nodesprocessed the set of already processed nodes
+	 */
+	private void detectAndProcessConsecutiveLoops(UseFunctionalCallFixCore fixcore, 
+			CompilationUnit compilationUnit,
+			Set<CompilationUnitRewriteOperation> operations, 
+			Set<ASTNode> nodesprocessed) {
+		
+		// Visit all blocks to find consecutive loop groups
+		compilationUnit.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(Block block) {
+				List<ConsecutiveLoopGroup> groups = ConsecutiveLoopGroupDetector.detectGroups(block);
+				
+				for (ConsecutiveLoopGroup group : groups) {
+					// Create a rewrite operation for this group
+					operations.add(fixcore.rewriteConsecutiveLoops(group));
+					
+					// Mark all loops in the group as processed to prevent individual conversion
+					for (EnhancedForStatement loop : group.getLoops()) {
+						nodesprocessed.add(loop);
+					}
+				}
+				
+				return true; // Continue visiting nested blocks
+			}
+		});
 	}
 
 	private boolean processFoundNode(UseFunctionalCallFixCore fixcore,
