@@ -239,6 +239,76 @@ Issue [#450](https://github.com/carstenartur/sandbox/issues/450) introduced the 
 - Negative tests document patterns that should NOT convert (do-while, classic while, etc.)
 - Future tests document desired bidirectional transformations (Stream → for, etc.)
 
+### Phase 7.5: Direct forEach Optimization (COMPLETED - January 2026)
+**Goal**: Generate idiomatic `collection.forEach(...)` instead of `collection.stream().forEach(...)` for simple forEach patterns
+
+**Status**: ✅ Complete - V2 now matches V1's idiomatic output for simple forEach
+
+**Motivation**:
+V2 initially generated `collection.stream().forEach(...)` for all forEach operations, while V1 optimized simple cases to use `collection.forEach(...)` directly. This phase aligns V2 with V1 to produce more idiomatic Java code for the simplest forEach patterns.
+
+**Completed Deliverables**:
+1. **Direct forEach Detection** (`LoopToFunctionalV2.canUseDirectForEach()`):
+   - Checks if loop has NO intermediate operations (no filter, map, etc.)
+   - Verifies terminal operation is `ForEachTerminal`
+   - Confirms source is COLLECTION or ITERABLE (arrays excluded - they lack forEach method)
+   - Returns `true` for simple forEach patterns eligible for direct rendering
+
+2. **Direct forEach Rendering** (`ASTStreamRenderer.renderDirectForEach()`):
+   - Generates `collection.forEach(item -> ...)` for collections/iterables
+   - Falls back to `Arrays.stream(array).forEach(...)` for arrays (arrays lack forEach method)
+   - Preserves original AST body to maintain binding information
+   - Supports both single-statement and block lambda bodies
+
+3. **Import Management Optimization**:
+   - Direct forEach path skips stream-related imports (`StreamSupport`, etc.)
+   - Only adds necessary imports based on actual code generation
+   - Arrays still require `java.util.Arrays` import for `Arrays.stream()`
+
+4. **Test Coverage**:
+   - Added 3 tests in `ASTStreamRendererTest`:
+     - `testRenderDirectForEach_Collection`: Validates direct forEach on collections
+     - `testRenderDirectForEach_Iterable`: Validates direct forEach on iterables
+     - `testRenderDirectForEach_Array_FallbackToStream`: Validates array fallback to stream
+   - Updated `LoopToFunctionalV2Test.test_SimpleForEach_V2`: Now expects `items.forEach(...)` instead of `items.stream().forEach(...)`
+   - Re-enabled `FeatureParityTest.parity_SimpleForEachConversion`: Validates V1/V2 parity for simple forEach
+
+5. **Documentation**:
+   - Comprehensive JavaDoc on immutability safety (direct forEach works with both mutable and immutable collections)
+   - Comments explaining array exclusion from direct forEach optimization
+
+**Implementation Details**:
+```java
+// Before (Phase 6):
+list.stream().forEach(item -> System.out.println(item));
+
+// After (Phase 7.5):
+list.forEach(item -> System.out.println(item));
+
+// Arrays still use stream (no forEach method):
+Arrays.stream(array).forEach(item -> System.out.println(item));
+```
+
+**Immutability Considerations**:
+- Direct forEach is safe for both mutable and immutable collections
+- Immutable collections (List.of, Collections.unmodifiableList, etc.) support forEach
+- forEach only reads elements, doesn't modify collection structure
+- Side effects within lambda body are user's responsibility
+
+**Decision Logic**:
+```
+if (no intermediate operations && terminal is forEach && source is COLLECTION/ITERABLE)
+    → use direct forEach: collection.forEach(...)
+else
+    → use stream pipeline: collection.stream().filter(...).forEach(...)
+```
+
+**Success Criteria** ✅:
+- V1 and V2 generate identical output for simple forEach patterns
+- `FeatureParityTest.parity_SimpleForEachConversion` passes
+- No unused imports added for direct forEach path
+- Array handling correctly falls back to stream-based approach
+
 ### Phase 8: V1 Deprecation and Cleanup (FUTURE)
 **Goal**: Make ULR the primary implementation and retire legacy code
 
