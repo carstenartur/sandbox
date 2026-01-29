@@ -16,12 +16,9 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
 import java.util.List;
-import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
-import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ITypeBinding;
@@ -37,69 +34,79 @@ import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
-import org.sandbox.jdt.internal.common.HelperVisitor;
-import org.sandbox.jdt.internal.common.ReferenceHolder;
-import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
-import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.TriggerPatternCleanupPlugin;
+import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
+import org.sandbox.jdt.triggerpattern.api.Match;
+import org.sandbox.jdt.triggerpattern.api.Pattern;
+import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
 /**
  * Plugin to migrate JUnit 4 @Rule Timeout to JUnit 5 @Timeout at class level.
+ * 
+ * <p>This plugin uses a hybrid approach combining TriggerPattern detection with custom transformation logic:</p>
+ * <ul>
+ *   <li>TriggerPattern detects @Rule and @ClassRule Timeout fields declaratively</li>
+ *   <li>Custom process2Rewrite() handles complex transformation (extracting timeout values, adding class annotation)</li>
+ * </ul>
  */
-public class RuleTimeoutJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
+@CleanupPattern(
+    value = "@Rule public Timeout $name",
+    kind = PatternKind.FIELD,
+    qualifiedType = ORG_JUNIT_RULES_TIMEOUT,
+    cleanupId = "cleanup.junit.ruletimeout",
+    description = "Migrate @Rule Timeout to @Timeout class annotation"
+)
+public class RuleTimeoutJUnitPlugin extends TriggerPatternCleanupPlugin {
 
+	/**
+	 * Override getPatterns() to match both @Rule and @ClassRule variants.
+	 * Cannot be expressed with a single pattern, so we provide multiple patterns.
+	 */
 	@Override
-	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataHolder = new ReferenceHolder<>();
-		
-		// Look for @Rule Timeout fields
-		HelperVisitor.forField()
-			.withAnnotation(ORG_JUNIT_RULE)
-			.ofType(ORG_JUNIT_RULES_TIMEOUT)
-			.in(compilationUnit)
-			.excluding(nodesprocessed)
-			.processEach(dataHolder, (visited, aholder) -> processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));
-		
-		// Also look for @ClassRule Timeout fields (static fields)
-		HelperVisitor.forField()
-			.withAnnotation(ORG_JUNIT_CLASS_RULE)
-			.ofType(ORG_JUNIT_RULES_TIMEOUT)
-			.in(compilationUnit)
-			.excluding(nodesprocessed)
-			.processEach(dataHolder, (visited, aholder) -> processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));
+	protected List<Pattern> getPatterns() {
+		return List.of(
+			new Pattern("@Rule public Timeout $name", PatternKind.FIELD, ORG_JUNIT_RULES_TIMEOUT),
+			new Pattern("@ClassRule public Timeout $name", PatternKind.FIELD, ORG_JUNIT_RULES_TIMEOUT),
+			// Also match static fields for @ClassRule (these may have static modifier)
+			new Pattern("@ClassRule public static Timeout $name", PatternKind.FIELD, ORG_JUNIT_RULES_TIMEOUT)
+		);
 	}
 
-	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, FieldDeclaration node,
-			ReferenceHolder<Integer, JunitHolder> dataHolder) {
-		// Note: Only processes the first fragment. Multiple timeout fields in one declaration
-		// (e.g., @Rule public Timeout t1 = ..., t2 = ...;) are not supported but are extremely rare.
-		VariableDeclarationFragment fragment = (VariableDeclarationFragment) node.fragments().get(0);
-		if (fragment.resolveBinding() == null) {
-			// Return true to continue processing other fields
-			return true;
-		}
-		ITypeBinding binding = fragment.resolveBinding().getType();
+	/**
+	 * Creates a JunitHolder from the matched field, extracting timeout information.
+	 */
+	@Override
+	protected JunitHolder createHolder(Match match) {
+		FieldDeclaration fieldDecl = (FieldDeclaration) match.getMatchedNode();
 		
-		if (binding != null && ORG_JUNIT_RULES_TIMEOUT.equals(binding.getQualifiedName())) {
-			Expression initializer = fragment.getInitializer();
-			if (initializer != null) {
-				TimeoutInfo info = extractTimeoutInfo(initializer);
-				if (info != null) {
-					JunitHolder mh = new JunitHolder();
-					mh.minv = node;
-					mh.value = String.valueOf(info.value);
-					mh.minvname = info.unit;
-					dataHolder.put(dataHolder.size(), mh);
-					operations.add(fixcore.rewrite(dataHolder));
-				}
-			}
+		// Get the first fragment (multiple timeout fields in one declaration are not supported)
+		VariableDeclarationFragment fragment = (VariableDeclarationFragment) fieldDecl.fragments().get(0);
+		if (fragment.resolveBinding() == null) {
+			return null; // Skip if binding is unavailable
 		}
-		// Return true to continue processing other fields
-		return true;
+		
+		ITypeBinding binding = fragment.resolveBinding().getType();
+		if (binding == null || !ORG_JUNIT_RULES_TIMEOUT.equals(binding.getQualifiedName())) {
+			return null; // Type doesn't match
+		}
+		
+		Expression initializer = fragment.getInitializer();
+		if (initializer == null) {
+			return null; // No initializer to extract timeout from
+		}
+		
+		TimeoutInfo info = extractTimeoutInfo(initializer);
+		if (info == null) {
+			return null; // Cannot determine timeout value
+		}
+		
+		JunitHolder holder = new JunitHolder();
+		holder.minv = fieldDecl;
+		holder.value = String.valueOf(info.value);
+		holder.minvname = info.unit;
+		return holder;
 	}
 
 	/**
