@@ -407,7 +407,7 @@ Issue #453 requests:
    - ✅ Created `ISSUE_453_ANALYSIS.md` with detailed status of all loop variants
    - ✅ Analyzed do-while semantics (correctly not convertible)
    - ✅ Analyzed nested loop detection (conservative, safe approach)
-   - ✅ Identified 12 @Disabled tests and categorized them
+   - ✅ Identified 15 @Disabled tests (11 remaining after attempting to enable 4 filter+collect tests)
    - ✅ Documented test enablement potential for each category
 
 2. **do-while Loops** (January 29, 2026)
@@ -425,48 +425,48 @@ Issue #453 requests:
    - **Conclusion:** Status quo is appropriate - requires multi-pass architecture to enable
    
 4. **Test Enablement - filter+collect patterns** (January 29, 2026)
-   - ✅ Enabled 4 filter+collect tests in `LoopRefactoringCollectTest.java`:
-     - `testFilteredCollect()` - Basic filter + collect
-     - `testNullFilteredCollect()` - Null filtering + collect  
-     - `testFilterMapCollect()` - Filter + map + collect chain
-     - `testComplexFilterMapCollect()` - Complex filter conditions + map + collect
-   - ✅ Updated test comments to reference Issue #453
-   - **Hypothesis:** These should work with current V1/V2 implementation
-   - **Next:** Validate via test execution
+   - ⚠️ Attempted to enable 4 filter+collect tests in `LoopRefactoringCollectTest.java`
+   - ❌ CI validation failed - tests do not pass with current implementation
+   - ✅ Re-disabled tests with clear reason: "CI validation failed"
+   - **Conclusion:** filter+collect pattern requires implementation work before enabling
 
 #### Outstanding Tasks
 
 1. **Test Validation** (Priority: HIGH - January 29, 2026)
-   - [ ] Run enabled filter+collect tests to verify they pass
-   - [ ] If tests fail: Analyze failure and either fix or re-disable with clear reason
-   - [ ] If tests pass: Document successful pattern support
+   - ✅ Ran filter+collect tests - validation FAILED
+   - ❌ Tests do not pass - filter+collect pattern not yet implemented
+   - ✅ Re-disabled tests with updated comments
+   - **Conclusion:** Implementation work required before these tests can be enabled
 
-2. **Side-Effect Bug Fix** (Priority: HIGH)
+2. **Implementation Enhancement** (Priority: HIGH)
+   - [ ] Implement filter+collect pattern detection in V1
+   - [ ] Ensure IF statement with COLLECT inside creates filter().toList() pipeline
+   - [ ] Enable 4 filter+collect tests once implementation complete
    - [ ] Fix critical bug in `testCollectWithSideEffects_ShouldNotConvert`
    - [ ] Ensure side effects (like `counter++`) prevent conversion
    - [ ] Enable test once bug is fixed
 
-3. **Array Source Tests** (Priority: MEDIUM)
+3. **Side-Effect Bug Fix** (Priority: HIGH)
    - [ ] Fix import handling for `Arrays.stream()` with wildcard imports
    - [ ] Enable `testArraySourceCollect()` and `testArraySourceMapCollect()`
    
-4. **Iterator Pipeline Tests** (Priority: MEDIUM)
+4. **Array Source Tests** (Priority: MEDIUM)
    - [ ] Evaluate feasibility of extending `IteratorLoopToFunctional` for pipelines
    - [ ] If feasible: Enable 6 iterator pipeline tests (collect, map, filter, reduce)
    - [ ] If not: Document as future enhancement
 
-5. **Nested Loop Decision** (Priority: LOW)
+5. **Iterator Pipeline Tests** (Priority: MEDIUM)
    - [ ] Decide: Implement multi-pass architecture OR document status quo
    - [ ] If status quo: Mark 2 nested loop tests as "won't fix" with clear documentation
    - [ ] If multi-pass: Create separate issue for architectural change
 
-6. **Final Documentation** (Priority: HIGH)
+6. **Nested Loop Decision** (Priority: LOW)
    - [ ] Update ARCHITECTURE.md with Issue #453 findings
    - [ ] Update README.md with supported/unsupported patterns
    - [ ] Create comprehensive Issue #453 comment with examples and results
    - [ ] Link to `ISSUE_453_ANALYSIS.md` from main documentation
 
-#### Implementation Summary
+7. **Final Documentation** (Priority: HIGH)
 
 **do-while Loops:**
 ```java
@@ -494,15 +494,16 @@ for (List<Integer> row : matrix) {
 
 **filter+collect patterns:**
 ```java
-// PATTERN DETECTION - Should work, now enabled for testing
+// PATTERN DETECTION - Attempted to enable, but CI validation failed
 for (String item : items) {
     if (!item.isEmpty()) {       // ← FILTER detected
         result.add(item);         // ← COLLECT detected
     }
 }
 // Expected: items.stream().filter(item -> !item.isEmpty()).toList()
+// Actual: Pattern not yet supported - implementation work needed
 ```
-**Status:** 🧪 Experimental - tests enabled, validation pending
+**Status:** ❌ Not yet implemented - tests re-disabled after CI failure
 
 #### Test Statistics
 
@@ -510,14 +511,14 @@ for (String item : items) {
 |----------|-------|---------|----------|-------|
 | do-while (negative) | 2 | 2 | 0 | ✅ Working correctly |
 | Nested loops | 2 | 0 | 2 | ⚠️ Requires multi-pass |
-| filter+collect | 4 | 4 | 0 | 🧪 Recently enabled |
+| filter+collect | 4 | 0 | 4 | ❌ CI validation failed |
 | Array source | 2 | 0 | 2 | 📝 Import handling needed |
 | Iterator pipeline | 6 | 0 | 6 | 📝 Pipeline extension needed |
 | Side-effect bug | 1 | 0 | 1 | 🐛 Bug fix required |
 
 **Total:** 17 tests related to Issue #453
-- ✅ 6 working (do-while negative tests, recently enabled filter+collect)
-- 🔴 11 disabled (nested loops, array source, iterator, bug)
+- ✅ 2 working (do-while negative tests)
+- 🔴 15 disabled (nested loops, filter+collect, array source, iterator, bug)
 
 #### References
 
@@ -530,7 +531,7 @@ for (String item : items) {
   - `IteratorLoopToStreamTest.java` (iterator patterns)
 - **Implementation:**
   - `PreconditionsChecker.java` (nested loop detection, lines 286-305)
-  - `LoopBodyParser.java` (filter+collect parsing, lines 209-252)
+  - `LoopBodyParser.java` (filter+collect parsing: `parseIfStatement()` handles IF/FILTER logic, `parseSingleStatement()` detects COLLECT patterns)
   - `PipelineAssembler.java` (collect wrapping, lines 368-384)
 
 

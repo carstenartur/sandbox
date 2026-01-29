@@ -342,8 +342,6 @@ These patterns are intentionally **excluded from transformation** to maintain se
 - Reading from collection during iteration
 - Complex control flow that cannot be safely modeled
 
-These patterns are intentionally **excluded from transformation** to maintain semantic correctness and safety.
-
 ## Java Version Compatibility
 
 | API Used                      | Requires Java |

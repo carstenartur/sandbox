@@ -293,28 +293,29 @@ matrix.stream()
 | 1 | do-while Schleifen | ✅ | Korrekt als nicht-konvertierbar implementiert |
 | 2 | Verschachtelte Schleifen | ✅ | Status quo dokumentiert, sichere Implementierung |
 | 3 | Semantik erhalten | ✅ | Umfangreiche negative Tests vorhanden |
-| 4 | Tests aktivieren | 🟡 | 4 aktiviert, 11 dokumentiert als pending |
-| 5 | collect/filter/reduce/match | 🟡 | Grundmuster vorhanden, Kombinationen experimentell |
+| 4 | Tests aktivieren | ❌ | 0 aktiviert (CI failed), 15 dokumentiert als disabled |
+| 5 | collect/filter/reduce/match | 🟡 | Grundmuster vorhanden, filter+collect benötigt Implementierung |
 | 6 | Dokumentation | ✅ | 4 Dateien erstellt/aktualisiert |
 
 ### Statistiken
 
 **Tests bezogen auf Issue #453**:
-- ✅ **6 working**: do-while (2), filter+collect (4 neu aktiviert)
-- 🔴 **11 disabled**: nested (2), array (2), iterator (6), bug (1)
+- ✅ **2 working**: do-while (2 negative tests)
+- 🔴 **15 disabled**: nested (2), filter+collect (4), array (2), iterator (6), bug (1)
 - **Total**: 17 Tests identifiziert und dokumentiert
 
 **Code-Änderungen**:
-- 2 Dateien modifiziert: `LoopRefactoringCollectTest.java`, `ISSUE_453_ANALYSIS.md` (neu)
+- 1 Datei modifiziert: `LoopRefactoringCollectTest.java` (tests re-disabled after CI failure)
 - 3 Dokumentations-Dateien aktualisiert: `TODO.md`, `ARCHITECTURE.md`, `README.md`
+- 2 Analyse-Dateien erstellt: `ISSUE_453_ANALYSIS.md`, `ISSUE_453_GITHUB_COMMENT.md`
 - Keine Implementierungs-Änderungen erforderlich (do-while und nested bereits korrekt)
 
 ### Nächste Schritte
 
-1. **CI-Validierung** (HIGH Priority)
-   - 4 aktivierte filter+collect Tests durch CI laufen lassen
-   - Bei Success: In Issue dokumentieren
-   - Bei Failure: Analysieren und entweder fixen oder re-disablen
+1. **Implementiere filter+collect Pattern** (HIGH Priority)
+   - Pattern-Erkennung für IF mit COLLECT inside
+   - Pipeline-Generierung: `.filter(...).toList()`
+   - 4 Tests aktivieren nach Implementierung
 
 2. **Side-Effect Bug** (HIGH Priority)
    - Kritischen Bug in `testCollectWithSideEffects_ShouldNotConvert` analysieren
@@ -390,11 +391,11 @@ matrix.stream()
 
 ---
 
-### filter+collect Pattern 🧪
+### filter+collect Pattern ❌
 
 **Anforderung**: Erste Anbindung für collect/filter Patterns
 
-**Ergebnis**: 4 filter+collect Tests experimentell aktiviert - Validierung durch CI pending
+**Ergebnis**: 4 filter+collect Tests wurden experimentell aktiviert, aber CI-Validierung schlug fehl - Tests wurden re-disabled
 
 ```java
 // Pattern: filter + collect
@@ -408,7 +409,7 @@ for (String item : items) {
 result = items.stream().filter(item -> !item.isEmpty()).toList();
 ```
 
-**Status**: Tests aktiviert, warten auf CI-Validierung
+**Status**: ❌ Nicht implementiert - Implementierungsarbeit erforderlich bevor Tests aktiviert werden können
 
 ---
 
@@ -417,7 +418,7 @@ result = items.stream().filter(item -> !item.isEmpty()).toList();
 - **Haupt-Analyse**: [ISSUE_453_ANALYSIS.md](./ISSUE_453_ANALYSIS.md)
 - **Implementation**: 
   - `PreconditionsChecker.java` (Zeilen 286-305: nested loop detection)
-  - `LoopBodyParser.java` (Zeilen 209-252: filter+collect parsing)
+  - `LoopBodyParser.java` (Parsing-Logik für filter+collect Patterns)
   - `PipelineAssembler.java` (Zeilen 368-384: collect wrapping)
 - **Tests**:
   - `AdditionalLoopPatternsTest.java` (do-while negative tests)

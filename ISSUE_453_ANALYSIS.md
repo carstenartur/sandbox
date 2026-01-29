@@ -102,10 +102,10 @@ public boolean visit(EnhancedForStatement node) {
 
 **Analyse:**
 ```java
-// LoopBodyParser.java - Das Pattern SOLLTE funktionieren:
+// LoopBodyParser.java - Das Pattern SOLLTE funktionieren, erfordert aber noch Implementierung:
 
 parseIfStatement():
-  - Zeile 224-226: Erstellt FILTER operation
+  - Zeilen 220-226: In parseIfStatement() wird die FILTER-Operation für IF-Bedingungen erstellt
   - Zeile 228: Parst nested block rekursiv
   - Zeile 229: Fügt nested operations hinzu
 
@@ -118,9 +118,9 @@ PipelineAssembler.wrapCollect():
   - Zeile 372-384: Wrapped COLLECT in Assignment
 ```
 
-**Hypothese:** Die Tests könnten bereits funktionieren, sind aber aus historischen Gründen disabled.
+**Hypothese**: Die Tests sind disabled weil die Pipeline-Generierung für filter+collect noch implementiert werden muss.
 
-**Aktion:** Tests aktivieren und validieren
+**Aktion:** Tests wurden aktiviert, CI-Validierung schlug fehl, Tests re-disabled
 
 ### 3.2 Iterator Pattern Tests
 
@@ -228,8 +228,8 @@ result = items.stream().toList();  // counter++ fehlt!
 | Status | Anzahl | Kategorie |
 |--------|--------|-----------|
 | ✅ Aktiviert | ~45 | Basis-Funktionalität |
-| 🔴 @Disabled | 12 | Filter+collect (4) + Iterator (6) + Nested (2) |
-| 🟢 Potentiell aktivierbar | 4-6 | Filter+collect Tests |
+| 🔴 @Disabled | 15 | Filter+collect (4) + Iterator (6) + Nested (2) + Array (2) + Bug (1) |
+| 🟢 Potentiell aktivierbar | 0 | filter+collect tests require implementation work |
 | ⚠️ Bug-Blockiert | 1 | Side-Effect Detection |
 
 **Abdeckung:** Gute Test-Abdeckung für unterstützte Patterns, klare Markierung für nicht-unterstützte Patterns.
