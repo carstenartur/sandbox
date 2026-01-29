@@ -73,7 +73,7 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 			.excluding(nodesprocessed)
 			.processEach(dataHolder, (visited, aholder) -> {
 				if (visited instanceof SingleMemberAnnotation) {
-					return processFoundNodeRunWith(fixcore, operations, visited, aholder);
+					return processFoundNodeRunWith(fixcore, operations, (Annotation) visited, aholder);
 				}
 				return true;
 			});
@@ -84,7 +84,7 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 			.excluding(nodesprocessed)
 			.processEach(dataHolder, (visited, aholder) -> {
 				if (visited instanceof SingleMemberAnnotation) {
-					return processFoundNodeSuite(fixcore, operations, visited, aholder);
+					return processFoundNodeSuite(fixcore, operations, (Annotation) visited, aholder);
 				}
 				return true;
 			});
