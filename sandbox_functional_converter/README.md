@@ -281,16 +281,66 @@ int sum = list.stream()
 
 ## Not Yet Supported
 
-The following patterns are currently **not supported** and are marked `@Disabled` in the test suite:
+The following patterns are **not supported** for transformation. Some are by design (semantic incompatibility), others are planned for future releases.
 
-| Pattern Description                                 | Reason / Required Feature                          |
-|-----------------------------------------------------|-----------------------------------------------------|
-| `Map.put(...)` inside loop                          | Needs `Collectors.toMap(...)` support               |
-| Early `break` inside loop body                      | Requires stream short-circuit modeling (`findFirst()`) |
-| Labeled `continue` or `break` (`label:`)            | Not expressible via Stream API                     |
-| Complex `if-else-return` branches                   | Requires flow graph and branching preservation      |
-| `throw` inside loop                                 | Non-convertible – not compatible with Stream flow  |
-| Multiple accumulators in one loop                   | State mutation not easily transferable              |
+### Semantically Incompatible (Will NOT Support)
+
+These patterns cannot be safely converted due to fundamental semantic differences with streams:
+
+| Pattern | Reason | Test Validation |
+|---------|--------|-----------------|
+| **do-while loops** | Guarantees ≥1 execution even when false; streams execute 0 times on empty | `AdditionalLoopPatternsTest` (2 tests) |
+| **Classic while loops** (non-iterator) | No clear collection iteration pattern to stream over | `AdditionalLoopPatternsTest` |
+| Labeled `continue` or `break` (`label:`) | No stream equivalent for labeled control flow | Prevented by PreconditionsChecker |
+| `throw` inside loop | Exception handling in lambdas is complex and error-prone | Prevented by PreconditionsChecker |
+
+**Example - do-while incompatibility:**
+```java
+// do-while executes at least once
+do {
+    System.out.println("Executed");
+} while (false);  // Prints once
+
+// Stream on empty collection does NOT execute
+Stream.empty().forEach(x -> System.out.println("Never"));  // Nothing
+```
+
+### Currently Not Supported (Future Enhancement Possible)
+
+| Pattern Description                                 | Reason / Required Feature                          | Status |
+|-----------------------------------------------------|-----------------------------------------------------|--------|
+| **Nested loops** | Requires multi-pass conversion or flatMap support | Blocked for safety (2 @Disabled tests) |
+| `Map.put(...)` inside loop                          | Needs `Collectors.toMap(...)` support               | Planned |
+| Early `break` inside loop body                      | Requires stream short-circuit modeling (`findFirst()`, `limit()`) | Planned |
+| Complex `if-else-return` branches                   | Requires flow graph and branching preservation      | Complex |
+| Multiple accumulators in one loop                   | State mutation not easily transferable              | Complex |
+| filter+collect with complex expressions             | Pattern detection enhancement needed | 4 tests recently enabled |
+| Iterator loops → pipelines (map/filter/reduce)      | Iterator pipeline support needs extension | 6 @Disabled tests |
+
+**Example - Nested loops (blocked):**
+```java
+// Currently NOT converted (conservative safety measure)
+for (List<Integer> row : matrix) {
+    for (Integer cell : row) {  // ← Nested loop detected
+        System.out.println(cell);
+    }
+}
+
+// Could potentially become (future):
+matrix.stream()
+    .flatMap(row -> row.stream())
+    .forEach(cell -> System.out.println(cell));
+```
+
+### Intentional Safety Exclusions
+
+These patterns are intentionally **excluded from transformation** to maintain semantic correctness:
+
+- Side effects (modifying external variables)
+- Multiple collection targets (ambiguous accumulation)
+- Break statements (early termination without clear stream equivalent)
+- Reading from collection during iteration
+- Complex control flow that cannot be safely modeled
 
 These patterns are intentionally **excluded from transformation** to maintain semantic correctness and safety.
 

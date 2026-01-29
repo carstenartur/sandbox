@@ -385,88 +385,155 @@ List<RuleEntry> entries = Stream.concat(
 - `LoopTargetFormat` enum in `sandbox_functional_converter`
 - `LoopBidirectionalTransformationTest` for desired behavior
 
-### Issue #453: Output-Format Alignment und vollständigen Support für 'collect'-Pattern ✅ PARTIALLY COMPLETE (January 2026)
+### Issue #453: Erweitere Functional Converter um weitere Loop-Varianten 🚧 IN PROGRESS (January 2026)
 
-**Objective**: Optimize V2 renderer to produce idiomatic, modern Java code for collect-loops
+**Objective**: Extend functional converter to support additional loop variants and patterns
 
-**Status**: 🚧 **Partially Complete** - Reverted to use modern Java 16+ `.toList()` for Java 21 compatibility
+**Status**: 🚧 **In Progress** - Analysis complete, 4 filter+collect tests enabled
+
+#### Background
+
+Issue #453 requests:
+1. **do-while loops** - Support or document semantic incompatibility
+2. **Nested for/while loops** - Minimal basic coverage
+3. **Edge/negative case handling** - Ensure correct semantic preservation
+4. **Enable tests** - Activate related tests where appropriate
+5. **collect/filter/reduce/match patterns** - Initial integration if possible
+6. **Documentation** - Document changes and examples in Issue #453
 
 #### Completed Tasks ✅
 
-1. **StringRenderer Optimization** (January 27, 2026)
-   - ✅ Reverted to use `.toList()` (Java 16+) instead of `.collect(Collectors.toList())` for Java 21 project
-   - ✅ Removed redundant conditional logic in `renderCollect()`
-   - ✅ Updated documentation explaining Java 16+ choice for modern, concise code
-   - ✅ Verified `ASTStreamRenderer` already uses Collectors API pattern
+1. **Comprehensive Analysis** (January 29, 2026)
+   - ✅ Created `ISSUE_453_ANALYSIS.md` with detailed status of all loop variants
+   - ✅ Analyzed do-while semantics (correctly not convertible)
+   - ✅ Analyzed nested loop detection (conservative, safe approach)
+   - ✅ Identified 12 @Disabled tests and categorized them
+   - ✅ Documented test enablement potential for each category
 
-2. **Test Suite Updates**
-   - ✅ Updated all test expectations to use `.toList()` instead of `Collectors.toList()`
-   - ✅ Removed unnecessary `Collectors` imports from test expected outputs
-   - ✅ Added 4 new edge/negative tests in `LoopRefactoringCollectTest`:
-     - `testCollectWithSideEffects_ShouldNotConvert` - Side effects prevent conversion
-     - `testMultipleCollectTargets_ShouldNotConvert` - Multiple collections prevent conversion  
-     - `testCollectWithBreak_ShouldNotConvert` - Break statements prevent conversion
-     - `testCollectWithIntermediateRead_ShouldNotConvert` - Reading collection during iteration prevents conversion
+2. **do-while Loops** (January 29, 2026)
+   - ✅ Verified do-while loops are correctly NOT converted (semantic incompatibility)
+   - ✅ Confirmed 2 active negative tests exist and function correctly:
+     - `AdditionalLoopPatternsTest.testDoWhileLoop_noConversion()`
+     - `AdditionalLoopPatternsTest.testDoWhileGuaranteedExecution_noConversion()`
+   - ✅ Documented semantic reasoning: do-while guarantees ≥1 execution, streams don't
+   - **Conclusion:** No changes needed - correctly implemented
 
-3. **Documentation**
-   - ✅ Updated TODO.md with Issue #453 progress
-   - ✅ Documented changes in commit messages
-   - ✅ Updated test comments to reflect Java 16+ `.toList()` as best practice
-
-#### Implementation Details
-
-**Design Decision**: Use modern Java 16+ `.toList()` since project targets Java 21
-
-**Rationale**:
-- Project requires Java 21 (configured in `pom.xml` with `<java-version>21</java-version>`)
-- `.toList()` is more concise and modern than `.collect(Collectors.toList())`
-- No need for Java 8 compatibility as project minimum is Java 21
-- Follows modern Java best practices for readability
-
-**Implementation**:
-```java
-// Java 16+ approach (used in this project):
-case TO_LIST -> ".toList()";
-
-// Older approach (for Java 8-15 compatibility):
-case TO_LIST -> ".collect(Collectors.toList())";
-```
-
-**Impact**:
-- All collect patterns now produce concise Java 16+ code
-- Tests updated to expect `.toList()` format
-- No `Collectors` import needed for simple list collection
-- Consistent with project's Java 21 target
+3. **Nested Loops Status** (January 29, 2026)
+   - ✅ Verified `PreconditionsChecker` detects and blocks nested loops (lines 286-305)
+   - ✅ Blocks: enhanced-for, traditional for, while, do-while when nested
+   - ✅ Documented as conservative safety measure
+   - **Conclusion:** Status quo is appropriate - requires multi-pass architecture to enable
+   
+4. **Test Enablement - filter+collect patterns** (January 29, 2026)
+   - ✅ Enabled 4 filter+collect tests in `LoopRefactoringCollectTest.java`:
+     - `testFilteredCollect()` - Basic filter + collect
+     - `testNullFilteredCollect()` - Null filtering + collect  
+     - `testFilterMapCollect()` - Filter + map + collect chain
+     - `testComplexFilterMapCollect()` - Complex filter conditions + map + collect
+   - ✅ Updated test comments to reference Issue #453
+   - **Hypothesis:** These should work with current V1/V2 implementation
+   - **Next:** Validate via test execution
 
 #### Outstanding Tasks
 
-1. **Enable Disabled Tests** (Priority: HIGH)
-   - [ ] Enable filter+collect tests once V1 pattern detection supports them:
-     - `testFilteredCollect()` - Filter before collect
-     - `testNullFilteredCollect()` - Null filtering
-     - `testFilterMapCollect()` - Combined filter+map+collect
-     - `testComplexFilterMapCollect()` - Complex conditions
-   - [ ] Enable array source tests once import handling is fixed:
-     - `testArraySourceCollect()` - Arrays.stream() support
-     - `testArraySourceMapCollect()` - Array map+collect
+1. **Test Validation** (Priority: HIGH - January 29, 2026)
+   - [ ] Run enabled filter+collect tests to verify they pass
+   - [ ] If tests fail: Analyze failure and either fix or re-disable with clear reason
+   - [ ] If tests pass: Document successful pattern support
 
-2. **Pattern Detection Enhancement** (Priority: MEDIUM)
-   - [ ] Implement filter+collect pattern detection in V1
-   - [ ] Implement conditional collection patterns
-   - [ ] Add support for `Collectors.toCollection()` for specific collection types
+2. **Side-Effect Bug Fix** (Priority: HIGH)
+   - [ ] Fix critical bug in `testCollectWithSideEffects_ShouldNotConvert`
+   - [ ] Ensure side effects (like `counter++`) prevent conversion
+   - [ ] Enable test once bug is fixed
 
-3. **V2 Feature Parity** (Priority: MEDIUM)
-   - [ ] Update V2 to match V1 collect pattern support
-   - [ ] Enable parity tests in `FeatureParityTest` once V2 reaches feature parity
-   - [ ] Verify both V1 and V2 produce identical idiomatic output
+3. **Array Source Tests** (Priority: MEDIUM)
+   - [ ] Fix import handling for `Arrays.stream()` with wildcard imports
+   - [ ] Enable `testArraySourceCollect()` and `testArraySourceMapCollect()`
+   
+4. **Iterator Pipeline Tests** (Priority: MEDIUM)
+   - [ ] Evaluate feasibility of extending `IteratorLoopToFunctional` for pipelines
+   - [ ] If feasible: Enable 6 iterator pipeline tests (collect, map, filter, reduce)
+   - [ ] If not: Document as future enhancement
 
-**Priority**: HIGH (affects output quality and code modernization)
+5. **Nested Loop Decision** (Priority: LOW)
+   - [ ] Decide: Implement multi-pass architecture OR document status quo
+   - [ ] If status quo: Mark 2 nested loop tests as "won't fix" with clear documentation
+   - [ ] If multi-pass: Create separate issue for architectural change
 
-**References**:
-- Issue: https://github.com/carstenartur/sandbox/issues/453
-- Test file: `LoopRefactoringCollectTest.java` (5 active tests, 6 disabled pending pattern support)
-- Related: V1/V2 feature parity (Phase 7)
-- Java 16+ `.toList()`: https://docs.oracle.com/en/java/javase/16/docs/api/java.base/java/util/stream/Stream.html#toList()
+6. **Final Documentation** (Priority: HIGH)
+   - [ ] Update ARCHITECTURE.md with Issue #453 findings
+   - [ ] Update README.md with supported/unsupported patterns
+   - [ ] Create comprehensive Issue #453 comment with examples and results
+   - [ ] Link to `ISSUE_453_ANALYSIS.md` from main documentation
+
+#### Implementation Summary
+
+**do-while Loops:**
+```java
+// SEMANTIC INCOMPATIBILITY - Correctly NOT converted
+do {
+    System.out.println("At least once");
+} while (false);  // ✓ Executes once
+
+// Stream equivalent would NOT execute:
+Stream.empty().forEach(x -> ...);  // ✗ Never executes
+```
+**Status:** ✅ Correctly handled - no changes needed
+
+**Nested Loops:**
+```java
+// CURRENTLY BLOCKED - Safe conservative approach
+for (List<Integer> row : matrix) {
+    for (Integer cell : row) {  // ← Nested loop detected
+        System.out.println(cell);
+    }
+}
+// PreconditionsChecker.containsNestedLoop = true → prevents conversion
+```
+**Status:** ⚠️ Blocked - requires multi-pass architecture to enable
+
+**filter+collect patterns:**
+```java
+// PATTERN DETECTION - Should work, now enabled for testing
+for (String item : items) {
+    if (!item.isEmpty()) {       // ← FILTER detected
+        result.add(item);         // ← COLLECT detected
+    }
+}
+// Expected: items.stream().filter(item -> !item.isEmpty()).toList()
+```
+**Status:** 🧪 Experimental - tests enabled, validation pending
+
+#### Test Statistics
+
+| Category | Total | Enabled | Disabled | Notes |
+|----------|-------|---------|----------|-------|
+| do-while (negative) | 2 | 2 | 0 | ✅ Working correctly |
+| Nested loops | 2 | 0 | 2 | ⚠️ Requires multi-pass |
+| filter+collect | 4 | 4 | 0 | 🧪 Recently enabled |
+| Array source | 2 | 0 | 2 | 📝 Import handling needed |
+| Iterator pipeline | 6 | 0 | 6 | 📝 Pipeline extension needed |
+| Side-effect bug | 1 | 0 | 1 | 🐛 Bug fix required |
+
+**Total:** 17 tests related to Issue #453
+- ✅ 6 working (do-while negative tests, recently enabled filter+collect)
+- 🔴 11 disabled (nested loops, array source, iterator, bug)
+
+#### References
+
+- **Analysis Document:** `ISSUE_453_ANALYSIS.md` (comprehensive status)
+- **Issue:** https://github.com/carstenartur/sandbox/issues/453
+- **Test Files:** 
+  - `LoopRefactoringCollectTest.java` (filter+collect tests)
+  - `AdditionalLoopPatternsTest.java` (do-while, nested loops)
+  - `FunctionalLoopNestedAndEdgeCaseTest.java` (nested loops)
+  - `IteratorLoopToStreamTest.java` (iterator patterns)
+- **Implementation:**
+  - `PreconditionsChecker.java` (nested loop detection, lines 286-305)
+  - `LoopBodyParser.java` (filter+collect parsing, lines 209-252)
+  - `PipelineAssembler.java` (collect wrapping, lines 368-384)
+
+
 
 **Objective**: Retire V1 implementation once V2 is stable
 

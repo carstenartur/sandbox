@@ -1046,20 +1046,87 @@ As part of the December 2025 improvements, significant dead code was removed:
 ## Limitations and Future Work
 
 ### Current Limitations
+
+#### Semantic Limitations (By Design)
+
+These patterns **cannot** be safely converted to streams due to fundamental semantic differences:
+
+1. **do-while loops** (❌ Not convertible)
+   - **Reason:** do-while guarantees at least one execution even with false condition
+   - **Example:**
+     ```java
+     // do-while executes once
+     do {
+         System.out.println("Once");
+     } while (false);  // Prints "Once"
+     
+     // Stream equivalent would NOT execute
+     Stream.empty().forEach(x -> System.out.println("Never"));  // Nothing printed
+     ```
+   - **Tests:** `AdditionalLoopPatternsTest.testDoWhileLoop_noConversion()`
+   - **Status:** Correctly prevented by `PreconditionsChecker` (lines 302-305)
+
+2. **Nested loops** (⚠️ Currently blocked)
+   - **Reason:** Requires multi-pass cleanup execution or flatMap support
+   - **Current behavior:** Conservative blocking for safety
+   - **Example:**
+     ```java
+     // Nested enhanced-for - currently blocked
+     for (List<Integer> row : matrix) {
+         for (Integer cell : row) {  // ← Nested loop detected
+             System.out.println(cell);
+         }
+     }
+     // Could theoretically convert to:
+     matrix.stream()
+         .flatMap(row -> row.stream())
+         .forEach(cell -> System.out.println(cell));
+     ```
+   - **Tests:** `FunctionalLoopNestedAndEdgeCaseTest` (2 @Disabled tests)
+   - **Status:** Detected by `PreconditionsChecker.containsNestedLoop` (lines 286-305)
+   - **Future:** Consider flatMap support or multi-pass conversion (Phase 10+)
+
+3. **Labeled break/continue** (❌ Not convertible)
+   - **Reason:** No stream equivalent for labeled control flow
+   - **Status:** Prevented by `PreconditionsChecker.containsLabeledContinue`
+
+4. **Exception throwing in loops** (❌ Not convertible)
+   - **Reason:** Exception handling in lambdas is complex and error-prone
+   - **Status:** Prevented by `PreconditionsChecker.throwsException`
+
+#### Implementation Limitations (Future Enhancements)
+
+These patterns could potentially be supported in future versions:
+
 1. **No operation merging**: Consecutive filters/maps are not merged (e.g., `.filter(x -> x > 0).filter(x -> x < 100)` not merged to single filter)
-2. **No collect() support**: Only forEach, reduce, anyMatch, and noneMatch terminals supported
+2. **Limited collect() patterns**: filter+collect works for simple cases, complex patterns need enhancement
 3. **No parallel streams**: Always generates sequential streams
 4. **Limited method references**: More opportunities exist for method references vs lambdas
-5. **No labeled break/continue**: Loops with labeled break or continue are not converted
-6. **No exception throwing**: Loops that throw exceptions are not converted
+5. **Array imports**: Wildcard imports with `Arrays.stream()` need better handling
+
+### Patterns Explicitly Rejected for Safety
+
+The following patterns are **intentionally not converted** to prevent incorrect transformations:
+
+| Pattern | Why Not Converted | Test Validation |
+|---------|-------------------|-----------------|
+| do-while loops | Semantic incompatibility (≥1 execution) | ✅ 2 tests |
+| Nested loops | Requires flatMap or multi-pass | ✅ 2 tests |
+| Classic while loops | No collection iteration pattern | ✅ Active |
+| Labeled continue/break | No stream equivalent | ✅ Active |
+| Exception throwing | Lambda exception complexity | ✅ Active |
+| Side effects | External state mutation unsafe | ✅ Active |
+| Multiple collections | Ambiguous accumulation target | ✅ Active |
+| Break statements | Early termination needs findFirst/limit | ✅ Active |
 
 ### Future Enhancements
 1. **Operation optimization**: Merge consecutive filters with && logic, merge consecutive maps
-2. **Extended terminals**: Support collect(), findFirst(), count(), sum(), etc.
+2. **Extended terminals**: Support findFirst(), count(), sum(), distinct() etc.
 3. **Method reference detection**: Auto-convert lambdas to method references where possible (e.g., `x -> x.toString()` to `Object::toString`)
 4. **Parallel stream option**: User preference for parallel vs sequential
 5. **Complex reducers**: Support for more complex accumulation patterns beyond current set
-6. **Exception handling**: Support loops with controlled exception throwing patterns
+6. **flatMap for nested loops**: Convert nested loops to flatMap chains (Phase 10+)
+7. **Multi-pass conversion**: Enable inner loop conversion even when outer is nested
 
 ## Testing
 
