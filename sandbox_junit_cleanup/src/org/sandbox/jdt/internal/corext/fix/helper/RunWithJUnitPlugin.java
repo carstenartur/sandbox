@@ -66,10 +66,28 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder= new ReferenceHolder<>();
-		HelperVisitor.callSingleMemberAnnotationVisitor(ORG_JUNIT_RUNWITH, compilationUnit, dataHolder, nodesprocessed,
-				(visited, aholder) -> processFoundNodeRunWith(fixcore, operations, visited, aholder));
-		HelperVisitor.callSingleMemberAnnotationVisitor(ORG_JUNIT_SUITE_SUITECLASSES, compilationUnit, dataHolder,
-				nodesprocessed, (visited, aholder) -> processFoundNodeSuite(fixcore, operations, visited, aholder));
+		
+		// Find @RunWith annotations
+		HelperVisitor.forAnnotation(ORG_JUNIT_RUNWITH)
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(dataHolder, (visited, aholder) -> {
+				if (visited instanceof SingleMemberAnnotation) {
+					return processFoundNodeRunWith(fixcore, operations, (Annotation) visited, aholder);
+				}
+				return true;
+			});
+		
+		// Find @Suite.SuiteClasses annotations
+		HelperVisitor.forAnnotation(ORG_JUNIT_SUITE_SUITECLASSES)
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(dataHolder, (visited, aholder) -> {
+				if (visited instanceof SingleMemberAnnotation) {
+					return processFoundNodeSuite(fixcore, operations, (Annotation) visited, aholder);
+				}
+				return true;
+			});
 	}
 
 	private boolean processFoundNodeRunWith(JUnitCleanUpFixCore fixcore,
@@ -120,7 +138,7 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 					mh.value= ORG_JUNIT_RUNWITH;
 					dataHolder.put(dataHolder.size(), mh);
 					operations.add(fixcore.rewrite(dataHolder));
-					return false;
+					return true; // Continue processing other annotations
 				}
 				
 				// Handle Mockito runners - only check qualified names to avoid false positives
@@ -129,7 +147,7 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 					mh.value= ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER;
 					dataHolder.put(dataHolder.size(), mh);
 					operations.add(fixcore.rewrite(dataHolder));
-					return false;
+					return true; // Continue processing other annotations
 				}
 				
 				// Handle Spring runners - only check qualified names to avoid false positives
@@ -138,11 +156,12 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 					mh.value= ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER;
 					dataHolder.put(dataHolder.size(), mh);
 					operations.add(fixcore.rewrite(dataHolder));
-					return false;
+					return true; // Continue processing other annotations
 				}
 			}
 		}
-		return false;
+		// Return true to continue processing other annotations
+		return true;
 	}
 
 	private boolean processFoundNodeSuite(JUnitCleanUpFixCore fixcore,
@@ -154,7 +173,8 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 		mh.value= ORG_JUNIT_SUITE_SUITECLASSES;
 		dataHolder.put(dataHolder.size(), mh);
 		operations.add(fixcore.rewrite(dataHolder));
-		return false;
+		// Return true to continue processing other annotations
+		return true;
 	}
 
 	@Override

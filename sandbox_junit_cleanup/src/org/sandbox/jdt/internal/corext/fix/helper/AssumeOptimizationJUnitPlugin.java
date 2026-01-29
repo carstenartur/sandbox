@@ -52,17 +52,17 @@ public class AssumeOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder = new ReferenceHolder<>();
 		
-		// Find assumeTrue calls
-		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSUME, "assumeTrue", compilationUnit, dataHolder,
-				nodesprocessed, (visited, aholder) -> processAssumption(fixcore, operations, visited, aholder));
-		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_JUPITER_API_ASSUMPTIONS, "assumeTrue", compilationUnit, dataHolder,
-				nodesprocessed, (visited, aholder) -> processAssumption(fixcore, operations, visited, aholder));
+		// Find assumeTrue and assumeFalse calls in JUnit 4
+		HelperVisitor.forMethodCalls(ORG_JUNIT_ASSUME, Set.of("assumeTrue", "assumeFalse"))
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(dataHolder, (visited, aholder) -> processAssumption(fixcore, operations, visited, aholder));
 		
-		// Find assumeFalse calls
-		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSUME, "assumeFalse", compilationUnit, dataHolder,
-				nodesprocessed, (visited, aholder) -> processAssumption(fixcore, operations, visited, aholder));
-		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_JUPITER_API_ASSUMPTIONS, "assumeFalse", compilationUnit, dataHolder,
-				nodesprocessed, (visited, aholder) -> processAssumption(fixcore, operations, visited, aholder));
+		// Find assumeTrue and assumeFalse calls in JUnit 5
+		HelperVisitor.forMethodCalls(ORG_JUNIT_JUPITER_API_ASSUMPTIONS, Set.of("assumeTrue", "assumeFalse"))
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(dataHolder, (visited, aholder) -> processAssumption(fixcore, operations, visited, aholder));
 	}
 
 	private boolean processAssumption(JUnitCleanUpFixCore fixcore,
