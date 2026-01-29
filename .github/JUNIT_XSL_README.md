@@ -2,18 +2,49 @@
 
 ## Overview
 
-This XSLT stylesheet transforms JUnit XML test results into HTML reports. It is used by the CI/CD workflow to generate test reports without requiring Maven's surefire-report plugin, which can fail in Tycho projects due to target platform resolution issues.
+This XSLT stylesheet transforms JUnit XML test results into modern, interactive HTML reports. It is used by the CI/CD workflow to generate test reports without requiring Maven's surefire-report plugin, which can fail in Tycho projects due to target platform resolution issues.
 
 ## Features
 
-- **Summary Section**: Shows total tests, failures, errors, skipped, and success rate
-- **Package View**: Lists all packages with their test statistics
-- **Test Details**: Shows individual test cases with their status (Success, Failure, Error, Skipped)
-- **Navigation Buttons**: Fixed buttons to jump between failures/errors
+### Modern Design
+- **HTML5**: Updated to modern HTML5 standard
+- **Responsive Design**: Works seamlessly on desktop, tablet, and mobile devices
+- **Modern Typography**: Clean, readable fonts with proper hierarchy using system-ui font stack
+- **Beautiful UI**: Gradient headers, rounded corners, shadows, and smooth animations
+- **Dark Mode**: Automatic dark theme support based on system preferences (`prefers-color-scheme: dark`)
+
+### Visual Progress Bar
+- **Success Rate Visualization**: Animated progress bar showing test results at a glance
+- **Color-Coded Segments**: Green for success, red for errors/failures, orange for skipped tests
+- **Percentage Display**: Shows exact percentages within each segment
+
+### Interactive Features
+- **Collapsible Stacktraces**: Error details are hidden by default, click "Show Details" to expand
+  - Clean monospace formatting with dark background
+  - Improved readability with preserved line breaks
+- **Sortable Tables**: Click any column header to sort ascending/descending
+  - Visual sort indicators (▲/▼)
+  - Works with text, numbers, and dates
+- **Filter Buttons**: Quickly focus on specific test results
+  - 📊 Show All - Display all tests
+  - ❌ Errors/Failures Only - Show only failed tests
+  - ⏭ Skipped Only - Show only skipped tests
+  - ✅ Success Only - Show only successful tests
+- **Permalinks**: Each test has a unique link icon (🔗)
+  - Click to copy direct link to clipboard
+  - Hash-based navigation to specific tests
+  - Target highlighting when navigating via permalink
+- **GitHub Code Links** (optional): When configured with repository information
+  - Stacktrace file references become clickable links to GitHub
+  - Links point directly to the source code line that caused the failure
+  - Opens in new tab for easy investigation
+
+### Navigation
+- **Navigation Buttons**: Fixed buttons in top-right corner to jump between failures/errors
 - **Keyboard Shortcuts**:
   - `Ctrl+.` - Jump to next error/failure
   - `Ctrl+,` - Jump to previous error/failure
-- **Properties Display**: Click "Properties »" to view test environment properties in a popup
+- **Properties Display**: Click "Properties »" to view test environment properties in a styled popup window
 
 ## Usage
 
@@ -26,6 +57,22 @@ xsltproc \
   path/to/combined-tests.xml \
   > output.html
 ```
+
+#### Optional: Enable GitHub Code Links
+
+To enable clickable links to source code in stacktraces:
+
+```bash
+xsltproc \
+  --stringparam TITLE "Test Results - Module Name" \
+  --stringparam GITHUB_REPO "owner/repository" \
+  --stringparam GITHUB_BRANCH "main" \
+  .github/JUNIT.XSL \
+  path/to/combined-tests.xml \
+  > output.html
+```
+
+When `GITHUB_REPO` is provided, stacktrace references like `at org.example.Test.method(Test.java:42)` become clickable links pointing to `https://github.com/owner/repository/blob/main/src/test/java/org/example/Test.java#L42`.
 
 ### In GitHub Actions Workflow
 

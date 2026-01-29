@@ -3,7 +3,7 @@
         xmlns:lxslt="http://xml.apache.org/xslt"
         xmlns:string="xalan://java.lang.String">
 <xsl:output method="html" indent="yes" encoding="UTF-8"
-  doctype-public="-//W3C//DTD HTML 4.01 Transitional//EN" />
+  doctype-system="about:legacy-compat" />
 <xsl:decimal-format decimal-separator="." grouping-separator="," />
 <!--
    Licensed to the Apache Software Foundation (ASF) under one or more
@@ -25,6 +25,8 @@
  -->
 
 <xsl:param name="TITLE">Unit Test Results</xsl:param>
+<xsl:param name="GITHUB_REPO"/>
+<xsl:param name="GITHUB_BRANCH">main</xsl:param>
 
 <!--
  Sample stylesheet to be used with Ant JUnitReport output.
@@ -42,76 +44,523 @@
         <head>
             <title><xsl:value-of select="$TITLE"/></title>
     <style type="text/css">
+      /* Modern CSS Reset and Base Styles */
+      * {
+        box-sizing: border-box;
+      }
+      
       body {
-        font:normal 68% verdana,arial,helvetica;
-        color:#000000;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        font-size: 16px;
+        line-height: 1.6;
+        color: #2c3e50;
+        background-color: #f8f9fa;
+        margin: 0;
+        padding: 20px;
+        transition: background-color 0.3s, color 0.3s;
       }
-      table tr td, table tr th {
-          font-size: 68%;
-      }
-      table.details tr th{
-        font-weight: bold;
-        text-align:left;
-        background:#a6caf0;
-      }
-      table.details tr td{
-        background:#eeeee0;
-      }
-
-      p {
-        line-height:1.5em;
-        margin-top:0.5em; margin-bottom:1.0em;
-      }
+      
+      /* Modern Typography */
       h1 {
-        margin: 0px 0px 5px; font: 165% verdana,arial,helvetica
+        margin: 0 0 20px;
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #1a1a1a;
       }
+      
       h2 {
-        margin-top: 1em; margin-bottom: 0.5em; font: bold 125% verdana,arial,helvetica
+        margin: 2rem 0 1rem;
+        font-size: 1.8rem;
+        font-weight: 600;
+        color: #2c3e50;
       }
+      
       h3 {
-        margin-bottom: 0.5em; font: bold 115% verdana,arial,helvetica
+        margin: 1.5rem 0 0.8rem;
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: #34495e;
       }
-      h4 {
-        margin-bottom: 0.5em; font: bold 100% verdana,arial,helvetica
+      
+      h4, h5, h6 {
+        margin: 1rem 0 0.5rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #34495e;
       }
-      h5 {
-        margin-bottom: 0.5em; font: bold 100% verdana,arial,helvetica
+      
+      p {
+        line-height: 1.6;
+        margin: 0.8em 0;
       }
-      h6 {
-        margin-bottom: 0.5em; font: bold 100% verdana,arial,helvetica
+      
+      a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.2s;
       }
+      
+      a:hover {
+        color: #2980b9;
+        text-decoration: underline;
+      }
+      
+      hr {
+        border: none;
+        border-top: 2px solid #e1e4e8;
+        margin: 2rem 0;
+      }
+      
+      /* Modern Table Styling */
+      table.details {
+        width: 100%;
+        max-width: 100%;
+        border-collapse: collapse;
+        background-color: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        margin: 1rem 0;
+      }
+      
+      table.details th {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        font-weight: 600;
+        text-align: left;
+        padding: 14px 16px;
+        font-size: 0.95rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        cursor: pointer;
+        user-select: none;
+        position: relative;
+      }
+      
+      table.details th:hover {
+        background: linear-gradient(135deg, #5568d3 0%, #6a3f92 100%);
+      }
+      
+      table.details th.sortable::after {
+        content: ' ⇅';
+        opacity: 0.5;
+        font-size: 0.8em;
+      }
+      
+      table.details th.sort-asc::after {
+        content: ' ▲';
+        opacity: 1;
+      }
+      
+      table.details th.sort-desc::after {
+        content: ' ▼';
+        opacity: 1;
+      }
+      
+      table.details td {
+        padding: 12px 16px;
+        border-bottom: 1px solid #e1e4e8;
+        font-size: 0.95rem;
+      }
+      
+      table.details tr:last-child td {
+        border-bottom: none;
+      }
+      
+      table.details tr:hover td {
+        background-color: #f8f9fa;
+      }
+      
+      /* Status Colors */
       .Error {
-        font-weight:bold; color:red;
+        background-color: #fee;
+        font-weight: 600;
+        color: #c92a2a;
       }
+      
       .Failure {
-        font-weight:bold; color:purple;
+        background-color: #fef3cd;
+        font-weight: 600;
+        color: #856404;
       }
-      .Properties {
-        text-align:right;
+      
+      .Skipped {
+        background-color: #e8f4fd;
+        color: #0969da;
       }
-      /* Navigation buttons styling */
+      
+      .Success {
+        background-color: #e6ffe6;
+      }
+      
+      /* Progress Bar */
+      .progress-bar-container {
+        width: 100%;
+        height: 40px;
+        background-color: #e1e4e8;
+        border-radius: 20px;
+        overflow: hidden;
+        margin: 1.5rem 0;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        position: relative;
+      }
+      
+      .progress-bar {
+        display: flex;
+        height: 100%;
+        transition: all 0.5s ease;
+      }
+      
+      .progress-segment {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        transition: all 0.3s ease;
+      }
+      
+      .progress-success {
+        background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+      }
+      
+      .progress-error {
+        background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+      }
+      
+      .progress-skipped {
+        background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+      }
+      
+      /* Navigation and Filter Buttons */
       .nav-buttons {
         position: fixed;
-        top: 8px;
-        right: 8px;
+        top: 20px;
+        right: 20px;
         z-index: 1000;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        max-width: 300px;
       }
-      .nav-buttons button {
-        font-size: 16px;
-        padding: 5px 10px;
-        margin-left: 5px;
+      
+      .nav-buttons button,
+      .filter-buttons button {
+        font-size: 14px;
+        padding: 10px 16px;
         cursor: pointer;
-        background-color: #f0f0f0;
-        border: 1px solid #ccc;
-        border-radius: 3px;
+        background: white;
+        color: #2c3e50;
+        border: 2px solid #3498db;
+        border-radius: 6px;
+        font-weight: 600;
+        transition: all 0.2s;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       }
-      .nav-buttons button:hover {
-        background-color: #e0e0e0;
+      
+      .nav-buttons button:hover,
+      .filter-buttons button:hover {
+        background: #3498db;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+      }
+      
+      .nav-buttons button:active,
+      .filter-buttons button:active {
+        transform: translateY(0);
+      }
+      
+      .filter-buttons {
+        display: flex;
+        gap: 10px;
+        margin: 1.5rem 0;
+        flex-wrap: wrap;
+      }
+      
+      .filter-buttons button.active {
+        background: #3498db;
+        color: white;
+      }
+      
+      /* Collapsible Stacktraces */
+      .stacktrace-container {
+        margin-top: 10px;
+      }
+      
+      .stacktrace-toggle {
+        background: #3498db;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        font-weight: 600;
+        transition: all 0.2s;
+      }
+      
+      .stacktrace-toggle:hover {
+        background: #2980b9;
+      }
+      
+      .stacktrace-content {
+        display: none;
+        margin-top: 10px;
+        padding: 12px;
+        background: #1e1e1e;
+        color: #d4d4d4;
+        border-radius: 6px;
+        font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        font-size: 0.85rem;
+        line-height: 1.5;
+        overflow-x: auto;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+      }
+      
+      .stacktrace-content.show {
+        display: block;
+      }
+      
+      .stacktrace-content code {
+        color: #d4d4d4;
+      }
+      
+      .stacktrace-line {
+        white-space: pre;
+      }
+      
+      .stacktrace-line-number {
+        color: #858585;
+        margin-right: 10px;
+      }
+      
+      /* Permalink functionality */
+      .test-row {
+        scroll-margin-top: 80px;
+      }
+      
+      .permalink {
+        margin-left: 8px;
+        opacity: 0;
+        transition: opacity 0.2s;
+        font-size: 0.8em;
+        cursor: pointer;
+      }
+      
+      .test-row:hover .permalink,
+      .test-row:target .permalink {
+        opacity: 1;
+      }
+      
+      .test-row:target td {
+        background-color: #fff3cd !important;
+        animation: highlight-fade 2s ease-out;
+      }
+      
+      @keyframes highlight-fade {
+        0% { background-color: #ffeb3b; }
+        100% { background-color: #fff3cd; }
+      }
+      
+      /* Properties styling */
+      .Properties {
+        text-align: right;
+        margin: 1rem 0;
+      }
+      
+      /* Responsive Design */
+      @media (max-width: 768px) {
+        body {
+          padding: 10px;
+          font-size: 14px;
+        }
+        
+        h1 {
+          font-size: 1.8rem;
+        }
+        
+        h2 {
+          font-size: 1.4rem;
+        }
+        
+        h3 {
+          font-size: 1.2rem;
+        }
+        
+        .nav-buttons {
+          position: static;
+          margin-bottom: 20px;
+          max-width: 100%;
+        }
+        
+        table.details {
+          font-size: 0.85rem;
+          display: block;
+          overflow-x: auto;
+          white-space: nowrap;
+        }
+        
+        table.details th,
+        table.details td {
+          padding: 8px 10px;
+        }
+        
+        .progress-bar-container {
+          height: 30px;
+        }
+        
+        .progress-segment {
+          font-size: 0.75rem;
+        }
+      }
+      
+      @media (max-width: 480px) {
+        body {
+          font-size: 13px;
+        }
+        
+        h1 {
+          font-size: 1.5rem;
+        }
+        
+        .filter-buttons button,
+        .nav-buttons button {
+          font-size: 12px;
+          padding: 8px 12px;
+        }
+      }
+      
+      /* Dark Mode Support */
+      @media (prefers-color-scheme: dark) {
+        body {
+          background-color: #1a1a1a;
+          color: #e1e4e8;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+          color: #e1e4e8;
+        }
+        
+        a {
+          color: #58a6ff;
+        }
+        
+        a:hover {
+          color: #79b8ff;
+        }
+        
+        hr {
+          border-top-color: #30363d;
+        }
+        
+        table.details {
+          background-color: #161b22;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+        
+        table.details th {
+          background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+        }
+        
+        table.details th:hover {
+          background: linear-gradient(135deg, #3a4555 0%, #1d2738 100%);
+        }
+        
+        table.details td {
+          border-bottom-color: #30363d;
+        }
+        
+        table.details tr:hover td {
+          background-color: #21262d;
+        }
+        
+        .Error {
+          background-color: #3d1616;
+          color: #ff6b6b;
+        }
+        
+        .Failure {
+          background-color: #3d3416;
+          color: #ffc078;
+        }
+        
+        .Skipped {
+          background-color: #16293d;
+          color: #79b8ff;
+        }
+        
+        .Success {
+          background-color: #163d16;
+        }
+        
+        .progress-bar-container {
+          background-color: #30363d;
+        }
+        
+        .nav-buttons button,
+        .filter-buttons button {
+          background: #21262d;
+          color: #e1e4e8;
+          border-color: #58a6ff;
+        }
+        
+        .nav-buttons button:hover,
+        .filter-buttons button:hover {
+          background: #58a6ff;
+          color: #0d1117;
+        }
+        
+        .filter-buttons button.active {
+          background: #58a6ff;
+          color: #0d1117;
+        }
+        
+        .stacktrace-toggle {
+          background: #58a6ff;
+          color: #0d1117;
+        }
+        
+        .stacktrace-toggle:hover {
+          background: #79b8ff;
+        }
+      }
+      
+      /* Print Styles */
+      @media print {
+        body {
+          background: white;
+          color: black;
+        }
+        
+        .nav-buttons,
+        .filter-buttons,
+        .stacktrace-toggle {
+          display: none;
+        }
+        
+        .stacktrace-content {
+          display: block !important;
+        }
+        
+        table.details {
+          box-shadow: none;
+          border: 1px solid #ddd;
+        }
+      }
+      
+      /* Hidden class for filtering */
+      .hidden {
+        display: none !important;
       }
       </style>
       <script type="text/javascript" language="JavaScript">
         var TestCases = new Array();
         var cur;
+        var GITHUB_REPO = '<xsl:value-of select="$GITHUB_REPO"/>';
+        var GITHUB_BRANCH = '<xsl:value-of select="$GITHUB_BRANCH"/>';
         <xsl:for-each select="./testsuite">
             <xsl:apply-templates select="properties"/>
         </xsl:for-each>
@@ -122,27 +571,42 @@
           var win = window.open('','JUnitSystemProperties','scrollbars=1,resizable=1');
           var doc = win.document;
           doc.open();
-          doc.write("<html><head><title>Properties of " + name + "</title>");
+          doc.write("<html><head><title>Properties of " + escapeHtml(name) + "</title>");
           doc.write("<style>")
-          doc.write("body {font:normal 68% verdana,arial,helvetica; color:#000000; }");
-          doc.write("table tr td, table tr th { font-size: 68%; }");
-          doc.write("table.properties { border-collapse:collapse; border-left:solid 1 #cccccc; border-top:solid 1 #cccccc; padding:5px; }");
-          doc.write("table.properties th { text-align:left; border-right:solid 1 #cccccc; border-bottom:solid 1 #cccccc; background-color:#eeeeee; }");
-          doc.write("table.properties td { font:normal; text-align:left; border-right:solid 1 #cccccc; border-bottom:solid 1 #cccccc; background-color:#fffffff; }");
-          doc.write("h3 { margin-bottom: 0.5em; font: bold 115% verdana,arial,helvetica }");
+          doc.write("body {font-family: system-ui, sans-serif; font-size: 16px; color:#2c3e50; background:#f8f9fa; padding:20px; }");
+          doc.write("table.properties { border-collapse:collapse; width:100%; background:white; border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.1); }");
+          doc.write("table.properties th { text-align:left; padding:12px; background:#667eea; color:white; font-weight:600; }");
+          doc.write("table.properties td { padding:12px; border-bottom:1px solid #e1e4e8; }");
+          doc.write("h3 { margin-bottom: 1rem; font-size:1.4rem; font-weight:600; }");
+          doc.write("a { color:#3498db; text-decoration:none; }");
+          doc.write("a:hover { text-decoration:underline; }");
+          doc.write("@media (prefers-color-scheme: dark) {");
+          doc.write("  body { background:#1a1a1a; color:#e1e4e8; }");
+          doc.write("  table.properties { background:#161b22; }");
+          doc.write("  table.properties th { background:#4a5568; }");
+          doc.write("  table.properties td { border-bottom-color:#30363d; }");
+          doc.write("  a { color:#58a6ff; }");
+          doc.write("}");
           doc.write("</style>");
           doc.write("</head><body>");
-          doc.write("<h3>Properties of " + name + "</h3>");
+          doc.write("<h3>Properties of " + escapeHtml(name) + "</h3>");
           doc.write("<div align=\"right\"><a href=\"javascript:window.close();\">Close</a></div>");
           doc.write("<table class='properties'>");
           doc.write("<tr><th>Name</th><th>Value</th></tr>");
           for (prop in TestCases[name]) {
-            doc.write("<tr><th>" + prop + "</th><td>" + TestCases[name][prop] + "</td></tr>");
+            doc.write("<tr><td>" + escapeHtml(prop) + "</td><td>" + escapeHtml(TestCases[name][prop]) + "</td></tr>");
           }
           doc.write("</table>");
           doc.write("</body></html>");
           doc.close();
           win.focus();
+        }
+        
+        // HTML escape function to prevent XSS
+        function escapeHtml(text) {
+          var div = document.createElement('div');
+          div.textContent = text;
+          return div.innerHTML;
         }
         
         // Jump to next/previous error or failure
@@ -182,6 +646,222 @@
           }
         }
         
+        // Filter functionality
+        var currentFilter = 'all';
+        
+        function filterTests(filterType) {
+          currentFilter = filterType;
+          // Only filter test-row elements, not summary/package rows
+          var allRows = document.querySelectorAll('tr.test-row');
+          var buttons = document.querySelectorAll('.filter-buttons button');
+          
+          // Update button states
+          buttons.forEach(function(btn) {
+            if (btn.getAttribute('data-filter') === filterType) {
+              btn.classList.add('active');
+            } else {
+              btn.classList.remove('active');
+            }
+          });
+          
+          // Filter rows
+          allRows.forEach(function(row) {
+            if (filterType === 'all') {
+              row.classList.remove('hidden');
+            } else if (filterType === 'errors') {
+              if (row.classList.contains('Error') || row.classList.contains('Failure')) {
+                row.classList.remove('hidden');
+              } else {
+                row.classList.add('hidden');
+              }
+            } else if (filterType === 'skipped') {
+              if (row.classList.contains('Skipped')) {
+                row.classList.remove('hidden');
+              } else {
+                row.classList.add('hidden');
+              }
+            } else if (filterType === 'success') {
+              if (!row.classList.contains('Error') && !row.classList.contains('Failure') && !row.classList.contains('Skipped')) {
+                row.classList.remove('hidden');
+              } else {
+                row.classList.add('hidden');
+              }
+            }
+          });
+        }
+        
+        // Toggle stacktrace visibility
+        function toggleStacktrace(testId) {
+          var content = document.getElementById('stacktrace-' + testId);
+          var button = document.getElementById('toggle-' + testId);
+          if (content && button) {
+            content.classList.toggle('show');
+            if (content.classList.contains('show')) {
+              button.textContent = 'Hide Details';
+            } else {
+              button.textContent = 'Show Details';
+            }
+          }
+        }
+        
+        // Copy permalink to clipboard
+        function copyPermalink(testId) {
+          var url = window.location.href.split('#')[0] + '#test-' + testId;
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(function() {
+              showTooltip('Link copied!');
+            });
+          } else {
+            // Fallback for older browsers
+            var input = document.createElement('input');
+            input.value = url;
+            document.body.appendChild(input);
+            input.select();
+            document.execCommand('copy');
+            document.body.removeChild(input);
+            showTooltip('Link copied!');
+          }
+          window.location.hash = '#test-' + testId;
+        }
+        
+        function showTooltip(message) {
+          var tooltip = document.createElement('div');
+          tooltip.textContent = message;
+          tooltip.style.position = 'fixed';
+          tooltip.style.top = '50%';
+          tooltip.style.left = '50%';
+          tooltip.style.transform = 'translate(-50%, -50%)';
+          tooltip.style.background = '#4caf50';
+          tooltip.style.color = 'white';
+          tooltip.style.padding = '12px 24px';
+          tooltip.style.borderRadius = '8px';
+          tooltip.style.fontSize = '16px';
+          tooltip.style.fontWeight = '600';
+          tooltip.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+          tooltip.style.zIndex = '10000';
+          tooltip.style.animation = 'fadeInOut 2s ease';
+          document.body.appendChild(tooltip);
+          setTimeout(function() {
+            document.body.removeChild(tooltip);
+          }, 2000);
+        }
+        
+        // Table sorting functionality
+        function sortTable(tableId, columnIndex) {
+          var table = document.getElementById(tableId);
+          if (!table) return;
+          
+          var tbody = table.querySelector('tbody');
+          if (!tbody) {
+            tbody = table;
+          }
+          
+          var rows = Array.from(tbody.querySelectorAll('tr'));
+          var header = table.querySelector('thead th:nth-child(' + (columnIndex + 1) + ')');
+          if (!header) {
+            header = table.querySelector('th:nth-child(' + (columnIndex + 1) + ')');
+          }
+          
+          if (!header) return;
+          
+          var isAsc = header.classList.contains('sort-asc');
+          var isDesc = header.classList.contains('sort-desc');
+          
+          // Remove sorting classes from all headers
+          var allHeaders = table.querySelectorAll('th');
+          allHeaders.forEach(function(h) {
+            h.classList.remove('sort-asc', 'sort-desc');
+          });
+          
+          // Determine new sort direction
+          var ascending = !isAsc;
+          if (isDesc) ascending = true;
+          
+          // Apply new sort class
+          header.classList.add(ascending ? 'sort-asc' : 'sort-desc');
+          
+          // Sort rows
+          rows.sort(function(a, b) {
+            var aCell = a.cells[columnIndex];
+            var bCell = b.cells[columnIndex];
+            if (!aCell || !bCell) return 0;
+            
+            var aValue = aCell.textContent.trim();
+            var bValue = bCell.textContent.trim();
+            
+            // Try to parse as number
+            var aNum = parseFloat(aValue);
+            var bNum = parseFloat(bValue);
+            
+            if (!isNaN(aNum) && !isNaN(bNum)) {
+              return ascending ? aNum - bNum : bNum - aNum;
+            }
+            
+            // String comparison
+            return ascending ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+          });
+          
+          // Re-append rows in sorted order
+          rows.forEach(function(row) {
+            tbody.appendChild(row);
+          });
+        }
+        
+        // Initialize sortable tables
+        function initSortableTables() {
+          var tables = document.querySelectorAll('table.details');
+          tables.forEach(function(table, tableIdx) {
+            var tableId = 'sortable-table-' + tableIdx;
+            table.id = tableId;
+            
+            var headers = table.querySelectorAll('th');
+            headers.forEach(function(header, colIdx) {
+              header.classList.add('sortable');
+              header.onclick = function() {
+                sortTable(tableId, colIdx);
+              };
+            });
+          });
+        }
+        
+        // Add GitHub links to stacktraces
+        function addGitHubLinks() {
+          var githubRepo = GITHUB_REPO;
+          var githubBranch = GITHUB_BRANCH;
+          
+          if (!githubRepo) return;
+          
+          // Find all code elements in stacktraces
+          var codeElements = document.querySelectorAll('.stacktrace-content code');
+          codeElements.forEach(function(codeEl) {
+            var text = codeEl.innerHTML;
+            // Match patterns like "at org.example.Test.method(Test.java:42)"
+            var pattern = /at\s+([\w.$]+)\(([\w.]+):(\d+)\)/g;
+            var newHtml = text.replace(pattern, function(match, fullClass, fileName, lineNum) {
+              // Extract package from class name (e.g., org.example.Test -> org/example)
+              var parts = fullClass.split('.');
+              var className = parts[parts.length - 1];
+              var packagePath = parts.slice(0, -1).join('/');
+              
+              // Try to construct a reasonable file path
+              // Assumes standard Maven/Gradle structure
+              var possiblePaths = [
+                'src/test/java/' + packagePath + '/' + fileName,
+                'src/main/java/' + packagePath + '/' + fileName,
+                packagePath + '/' + fileName,
+                fileName
+              ];
+              
+              // Use the first path (most likely for tests)
+              var filePath = possiblePaths[0];
+              var url = 'https://github.com/' + githubRepo + '/blob/' + githubBranch + '/' + filePath + '#L' + lineNum;
+              
+              return 'at ' + fullClass + '(<a href="' + url + '" target="_blank" style="color:#58a6ff;text-decoration:underline;">' + fileName + ':' + lineNum + '</a>)';
+            });
+            codeEl.innerHTML = newHtml;
+          });
+        }
+        
         // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {
           // Ctrl+. (period) - next error
@@ -195,6 +875,27 @@
             jumpToNextError(false);
           }
         });
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+          initSortableTables();
+          addGitHubLinks();
+          
+          // Scroll to hash target if present
+          if (window.location.hash) {
+            var target = document.getElementById(window.location.hash.substring(1));
+            if (target) {
+              setTimeout(function() {
+                target.scrollIntoView({behavior: 'smooth', block: 'center'});
+              }, 100);
+            }
+          }
+        });
+        
+        // CSS animation for tooltip
+        var style = document.createElement('style');
+        style.textContent = '@keyframes fadeInOut { 0% { opacity: 0; transform: translate(-50%, -60%); } 10% { opacity: 1; transform: translate(-50%, -50%); } 90% { opacity: 1; transform: translate(-50%, -50%); } 100% { opacity: 0; transform: translate(-50%, -40%); } }';
+        document.head.appendChild(style);
       ]]>
       </script>
         </head>
@@ -332,7 +1033,41 @@
         <xsl:variable name="failureCount" select="sum(testsuite/@failures)"/>
         <xsl:variable name="skippedCount" select="sum(testsuite/@skipped)" />
         <xsl:variable name="timeCount" select="sum(testsuite/@time)"/>
-        <xsl:variable name="successRate" select="($testCount - $failureCount - $errorCount) div $testCount"/>
+        <xsl:variable name="successCount" select="$testCount - $failureCount - $errorCount - $skippedCount"/>
+        <xsl:variable name="successRate" select="$successCount div $testCount"/>
+        <xsl:variable name="errorRate" select="($failureCount + $errorCount) div $testCount"/>
+        <xsl:variable name="skippedRate" select="$skippedCount div $testCount"/>
+        
+        <!-- Progress Bar -->
+        <div class="progress-bar-container">
+            <div class="progress-bar">
+                <xsl:if test="$successCount &gt; 0">
+                    <div class="progress-segment progress-success">
+                        <xsl:attribute name="style">width: <xsl:value-of select="$successRate * 100"/>%;</xsl:attribute>
+                        <xsl:if test="$successRate &gt; 0.15">
+                            <xsl:value-of select="format-number($successRate, '0.0%')"/>
+                        </xsl:if>
+                    </div>
+                </xsl:if>
+                <xsl:if test="($failureCount + $errorCount) &gt; 0">
+                    <div class="progress-segment progress-error">
+                        <xsl:attribute name="style">width: <xsl:value-of select="$errorRate * 100"/>%;</xsl:attribute>
+                        <xsl:if test="$errorRate &gt; 0.08">
+                            <xsl:value-of select="format-number($errorRate, '0.0%')"/>
+                        </xsl:if>
+                    </div>
+                </xsl:if>
+                <xsl:if test="$skippedCount &gt; 0">
+                    <div class="progress-segment progress-skipped">
+                        <xsl:attribute name="style">width: <xsl:value-of select="$skippedRate * 100"/>%;</xsl:attribute>
+                        <xsl:if test="$skippedRate &gt; 0.08">
+                            <xsl:value-of select="format-number($skippedRate, '0.0%')"/>
+                        </xsl:if>
+                    </div>
+                </xsl:if>
+            </div>
+        </div>
+        
         <table class="details" border="0" cellpadding="5" cellspacing="2" width="95%">
         <tr valign="top">
             <th>Tests</th>
@@ -347,6 +1082,7 @@
                 <xsl:choose>
                     <xsl:when test="$failureCount &gt; 0">Failure</xsl:when>
                     <xsl:when test="$errorCount &gt; 0">Error</xsl:when>
+                    <xsl:otherwise>Success</xsl:otherwise>
                 </xsl:choose>
             </xsl:attribute>
             <td><xsl:value-of select="$testCount"/></td>
@@ -391,8 +1127,8 @@
 <xsl:template name="pageHeader">
     <h1><xsl:value-of select="$TITLE"/></h1>
     <div class="nav-buttons">
-        <button title="Scroll to previous failure/error (Ctrl+,)" onclick="javascript:jumpToNextError(false);">&#x25B2;</button>
-        <button title="Scroll to next failure/error (Ctrl+.)" onclick="javascript:jumpToNextError(true);">&#x25BC;</button>
+        <button title="Scroll to previous failure/error (Ctrl+,)" onclick="javascript:jumpToNextError(false);">⬆ Prev Error</button>
+        <button title="Scroll to next failure/error (Ctrl+.)" onclick="javascript:jumpToNextError(true);">⬇ Next Error</button>
     </div>
     <table width="100%">
     <tr>
@@ -404,6 +1140,12 @@
     </tr>
     </table>
     <hr size="1"/>
+    <div class="filter-buttons">
+        <button data-filter="all" class="active" onclick="filterTests('all')">📊 Show All</button>
+        <button data-filter="errors" onclick="filterTests('errors')">❌ Errors/Failures Only</button>
+        <button data-filter="skipped" onclick="filterTests('skipped')">⏭ Skipped Only</button>
+        <button data-filter="success" onclick="filterTests('success')">✅ Success Only</button>
+    </div>
 </xsl:template>
 
 <xsl:template match="testsuite" mode="header">
@@ -470,25 +1212,37 @@
 </xsl:template>
 
 <xsl:template match="testcase" mode="print.test">
-    <tr valign="top">
+    <xsl:variable name="testId" select="generate-id()"/>
+    <tr valign="top" class="test-row">
+        <xsl:attribute name="id">test-<xsl:value-of select="$testId"/></xsl:attribute>
         <xsl:attribute name="class">
+            <xsl:text>test-row </xsl:text>
             <xsl:choose>
-                <xsl:when test="failure | error">Error</xsl:when>
+                <xsl:when test="failure">Failure</xsl:when>
+                <xsl:when test="error">Error</xsl:when>
+                <xsl:when test="skipped">Skipped</xsl:when>
+                <xsl:otherwise>Success</xsl:otherwise>
             </xsl:choose>
         </xsl:attribute>
-        <td><xsl:value-of select="@name"/></td>
+        <td>
+            <xsl:value-of select="@name"/>
+            <span class="permalink" title="Copy link to this test">
+                <xsl:attribute name="onclick">copyPermalink('<xsl:value-of select="$testId"/>')</xsl:attribute>
+                🔗
+            </span>
+        </td>
         <xsl:choose>
             <xsl:when test="failure">
                 <td>Failure</td>
-                <td><xsl:apply-templates select="failure"/></td>
+                <td><xsl:apply-templates select="failure"><xsl:with-param name="testId" select="$testId"/></xsl:apply-templates></td>
             </xsl:when>
             <xsl:when test="error">
                 <td>Error</td>
-                <td><xsl:apply-templates select="error"/></td>
+                <td><xsl:apply-templates select="error"><xsl:with-param name="testId" select="$testId"/></xsl:apply-templates></td>
             </xsl:when>
             <xsl:when test="skipped">
             	<td>Skipped</td>
-            	<td><xsl:apply-templates select="skipped"/></td>
+            	<td><xsl:apply-templates select="skipped"><xsl:with-param name="testId" select="$testId"/></xsl:apply-templates></td>
             </xsl:when>
             <xsl:otherwise>
                 <td>Success</td>
@@ -505,34 +1259,66 @@
 
 
 <xsl:template match="failure">
-    <xsl:call-template name="display-failures"/>
+    <xsl:param name="testId"/>
+    <xsl:call-template name="display-failures">
+        <xsl:with-param name="testId" select="$testId"/>
+    </xsl:call-template>
 </xsl:template>
 
 <xsl:template match="error">
-    <xsl:call-template name="display-failures"/>
+    <xsl:param name="testId"/>
+    <xsl:call-template name="display-failures">
+        <xsl:with-param name="testId" select="$testId"/>
+    </xsl:call-template>
 </xsl:template>
 
 <xsl:template match="skipped">
-    <xsl:call-template name="display-failures"/>
+    <xsl:param name="testId"/>
+    <xsl:call-template name="display-failures">
+        <xsl:with-param name="testId" select="$testId"/>
+    </xsl:call-template>
 </xsl:template>
 
 <!-- Style for the error, failure and skipped in the testcase template -->
 <xsl:template name="display-failures">
-    <xsl:choose>
-        <xsl:when test="not(@message)">N/A</xsl:when>
-        <xsl:otherwise>
-            <xsl:value-of select="@message"/>
-        </xsl:otherwise>
-    </xsl:choose>
-    <!-- display the stacktrace -->
-    <code>
-        <br/><br/>
-        <xsl:call-template name="br-replace">
-            <xsl:with-param name="word" select="."/>
-        </xsl:call-template>
-    </code>
-    <!-- the later is better but might be problematic for non-21" monitors... -->
-    <!--pre><xsl:value-of select="."/></pre-->
+    <xsl:param name="testId"/>
+    <div>
+        <xsl:choose>
+            <xsl:when test="not(@message)">N/A</xsl:when>
+            <xsl:otherwise>
+                <strong><xsl:value-of select="@message"/></strong>
+            </xsl:otherwise>
+        </xsl:choose>
+        <!-- Collapsible stacktrace - only if testId is provided -->
+        <xsl:choose>
+            <xsl:when test="normalize-space(.) and $testId">
+                <div class="stacktrace-container">
+                    <button class="stacktrace-toggle">
+                        <xsl:attribute name="id">toggle-<xsl:value-of select="$testId"/></xsl:attribute>
+                        <xsl:attribute name="onclick">toggleStacktrace('<xsl:value-of select="$testId"/>')</xsl:attribute>
+                        Show Details
+                    </button>
+                    <div class="stacktrace-content">
+                        <xsl:attribute name="id">stacktrace-<xsl:value-of select="$testId"/></xsl:attribute>
+                        <code>
+                            <xsl:call-template name="br-replace">
+                                <xsl:with-param name="word" select="."/>
+                            </xsl:call-template>
+                        </code>
+                    </div>
+                </div>
+            </xsl:when>
+            <xsl:when test="normalize-space(.)">
+                <!-- For class-level errors without testId, show stacktrace directly -->
+                <code>
+                    <br/><br/>
+                    <xsl:call-template name="br-replace">
+                        <xsl:with-param name="word" select="."/>
+                    </xsl:call-template>
+                </code>
+            </xsl:when>
+        </xsl:choose>
+    </div>
 </xsl:template>
 
 <xsl:template name="JS-escape">
