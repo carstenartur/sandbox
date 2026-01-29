@@ -22,24 +22,13 @@ jobs:
       with:
         fetch-depth: 0  # Required for jgit timestamp provider
 
-    - name: Download Update Site Artifact
-      if: github.event_name == 'workflow_run'
-      uses: actions/download-artifact@v7
-      with:
-        name: update-site-repository
-        path: sandbox_updatesite/target/repository/
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        run-id: ${{ github.event.workflow_run.id }}
-
     - name: Set up JDK 21
-      if: github.event_name == 'workflow_dispatch'
       uses: actions/setup-java@v5
       with:
         java-version: '21'
         distribution: 'temurin'
 
     - name: Cache Maven dependencies
-      if: github.event_name == 'workflow_dispatch'
       uses: actions/cache@v5
       with:
         path: ~/.m2/repository
@@ -47,7 +36,6 @@ jobs:
         restore-keys: ${{ runner.os }}-maven-
 
     - name: Build Update Site
-      if: github.event_name == 'workflow_dispatch'
       run: mvn -Pproduct,repo -T 1C clean verify -DskipTests
 
     - name: Prepare snapshot directory
