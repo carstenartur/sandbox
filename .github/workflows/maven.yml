@@ -84,6 +84,9 @@ jobs:
               # Create a combined testsuites XML file
               mkdir -p "$module/target/site"
               
+              # Copy config file to the target directory
+              cp .github/junit-report-config.xml "$module/target/site/" || echo "Config file not found, using defaults"
+              
               # Combine all TEST-*.xml files into one testsuites document
               echo '<?xml version="1.0" encoding="UTF-8"?>' > "$module/target/site/combined-tests.xml"
               echo '<testsuites>' >> "$module/target/site/combined-tests.xml"
@@ -96,6 +99,7 @@ jobs:
               # Transform to HTML using xsltproc
               xsltproc \
                 --stringparam TITLE "Test Results - $module" \
+                --stringparam CONFIG_FILE "$module/target/site/junit-report-config.xml" \
                 .github/JUNIT.XSL \
                 "$module/target/site/combined-tests.xml" \
                 > "$module/target/site/surefire-report.html"
