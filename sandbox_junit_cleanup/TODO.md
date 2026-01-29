@@ -24,6 +24,49 @@ This file was missing from the sandbox_junit_cleanup plugin. It has been created
 ### In Progress
 - None currently
 
+### Recent Code Quality Improvements
+
+#### HelperVisitor Fluent API Migration (✅ COMPLETED - January 2026)
+**Priority**: Medium  
+**Effort**: 2-3 hours  
+**Status**: ✅ **COMPLETED**
+
+Migrated all remaining plugins to use the modern HelperVisitor Fluent API, eliminating verbose static method patterns:
+
+**Plugins Migrated**:
+- ✅ `AssumeOptimizationJUnitPlugin` - Migrated from `callMethodInvocationVisitor()` to `forMethodCalls()`
+- ✅ `AssertOptimizationJUnitPlugin` - Consolidated multiple `forMethodCall()` to `forMethodCalls()`
+- ✅ `RuleTestnameJUnitPlugin` - Migrated from `callFieldDeclarationVisitor()` to `forField()`
+- ✅ `RuleExternalResourceJUnitPlugin` - Migrated from `callFieldDeclarationVisitor()` to `forField()`
+- ✅ `RunWithJUnitPlugin` - Migrated from `callSingleMemberAnnotationVisitor()` to `forAnnotation()`
+
+**Already Using Fluent API** (no changes needed):
+- ✅ `AssertJUnitPlugin` - Uses `forMethodCalls().andStaticImports().andImportsOf()`
+- ✅ `AssumeJUnitPlugin` - Uses `forMethodCalls().andStaticImports().andImportsOf()`
+- ✅ `RuleTemporayFolderJUnitPlugin` - Uses `forField().withAnnotation().ofType()`
+- ✅ `CategoryJUnitPlugin` - Uses `forAnnotation()`
+- ✅ `TestExpectedJUnitPlugin` - Uses `forAnnotation()`
+
+**Benefits**:
+- Reduced code duplication by consolidating multiple visitor calls
+- Improved code readability with fluent method chaining
+- Consistent API usage across all plugins
+- Easier to understand and maintain
+- Reduced from 4-8 separate visitor calls to 1-2 consolidated Fluent API chains per plugin
+
+**Migration Pattern**:
+```java
+// Old verbose pattern
+HelperVisitor.callMethodInvocationVisitor(CLASS, "method1", cu, holder, processed, callback);
+HelperVisitor.callMethodInvocationVisitor(CLASS, "method2", cu, holder, processed, callback);
+
+// New Fluent API
+HelperVisitor.forMethodCalls(CLASS, Set.of("method1", "method2"))
+    .in(cu)
+    .excluding(processed)
+    .processEach(holder, callback);
+```
+
 ### Pending
 - [ ] @Rule Timeout migration (constant exists but RuleTimeoutJUnitPlugin not implemented)
 - [ ] @Rule ErrorCollector migration to multiple assertions
