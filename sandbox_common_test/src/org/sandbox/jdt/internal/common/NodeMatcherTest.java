@@ -65,7 +65,13 @@ public class NodeMatcherTest {
 		@Test
 		@DisplayName("on() creates NodeMatcher instance")
 		void testOn_createsNodeMatcher() {
-			String source = "public class Test { int x = 5; }";
+			String source = """
+				public class Test {
+					void test() {
+						int x = 5;
+					}
+				}
+				""";
 			cu = parseSource(source);
 			
 			Statement stmt = extractFirstStatement(cu);
@@ -78,7 +84,13 @@ public class NodeMatcherTest {
 		@Test
 		@DisplayName("isHandled() returns false initially")
 		void testIsHandled_returnsFalseInitially() {
-			String source = "public class Test { int x = 5; }";
+			String source = """
+				public class Test {
+					void test() {
+						int x = 5;
+					}
+				}
+				""";
 			cu = parseSource(source);
 			
 			Statement stmt = extractFirstStatement(cu);
@@ -592,7 +604,13 @@ public class NodeMatcherTest {
 		@Test
 		@DisplayName("orElse executes when no matcher handled")
 		void testOrElse_executesWhenNotHandled() {
-			String source = "public class Test { int x = 5; }";
+			String source = """
+				public class Test {
+					void test() {
+						int x = 5;
+					}
+				}
+				""";
 			cu = parseSource(source);
 			
 			Statement stmt = extractFirstStatement(cu);
@@ -632,7 +650,13 @@ public class NodeMatcherTest {
 		@Test
 		@DisplayName("orElseDo executes runnable when not handled")
 		void testOrElseDo_executesWhenNotHandled() {
-			String source = "public class Test { int x = 5; }";
+			String source = """
+				public class Test {
+					void test() {
+						int x = 5;
+					}
+				}
+				""";
 			cu = parseSource(source);
 			
 			Statement stmt = extractFirstStatement(cu);
@@ -648,7 +672,13 @@ public class NodeMatcherTest {
 		@Test
 		@DisplayName("orElseGet returns Optional when not handled")
 		void testOrElseGet_returnsOptionalWhenNotHandled() {
-			String source = "public class Test { int x = 5; }";
+			String source = """
+				public class Test {
+					void test() {
+						int x = 5;
+					}
+				}
+				""";
 			cu = parseSource(source);
 			
 			Statement stmt = extractFirstStatement(cu);
@@ -948,8 +978,9 @@ public class NodeMatcherTest {
 
 	private Statement extractFirstStatement(CompilationUnit cu) {
 		TypeDeclaration type = (TypeDeclaration) cu.types().get(0);
-		FieldDeclaration field = (FieldDeclaration) type.bodyDeclarations().get(0);
-		return field;
+		MethodDeclaration method = (MethodDeclaration) type.bodyDeclarations().get(0);
+		Block body = method.getBody();
+		return (Statement) body.statements().get(0);
 	}
 
 	@SuppressWarnings("unchecked")
