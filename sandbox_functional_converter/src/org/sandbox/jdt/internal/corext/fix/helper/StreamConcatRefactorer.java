@@ -221,42 +221,50 @@ public class StreamConcatRefactorer {
 			return null;
 		}
 
-		// Build the pipeline but remove the terminal collect operation
+		// Build the pipeline - it will include .collect() for COLLECT operations
 		MethodInvocation fullPipeline = builder.buildPipeline();
 		if (fullPipeline == null) {
 			return null;
 		}
 
-		// If the pipeline ends with .collect(), remove it
-		// Pipeline structure: source.stream().map(...).collect(...)
+		// For COLLECT operations, we need to remove the .collect() and return just the stream
+		// The pipeline structure is: source.stream().map(...).collect(Collectors.toList())
 		// We want: source.stream().map(...)
-		return removeCollectTerminal(fullPipeline);
+		if (builder.isCollectOperation()) {
+			return removeTerminalCollect(fullPipeline);
+		}
+
+		// For non-collect operations, return the full pipeline
+		// (this shouldn't happen for our use case, but handle it gracefully)
+		return fullPipeline;
 	}
 
 	/**
 	 * Removes the terminal .collect() operation from a pipeline.
 	 * 
-	 * <p>Traverses the method invocation chain to find and remove the collect call.</p>
+	 * <p>Finds the .collect() call at the end of the chain and returns the expression
+	 * before it.</p>
 	 * 
 	 * @param pipeline the complete pipeline with collect
 	 * @return the pipeline without collect, or the original if no collect found
 	 */
-	private MethodInvocation removeCollectTerminal(MethodInvocation pipeline) {
+	private MethodInvocation removeTerminalCollect(MethodInvocation pipeline) {
 		if (pipeline == null) {
 			return null;
 		}
 
-		// If this is the collect call itself, return its receiver
+		// Check if this is the collect call
 		if ("collect".equals(pipeline.getName().getIdentifier())) {
-			Expression receiver = pipeline.getExpression();
-			if (receiver instanceof MethodInvocation) {
-				return (MethodInvocation) receiver;
+			// Return the expression this collect is called on
+			// e.g., "source.stream().map(...).collect(...)" -> return "source.stream().map(...)"
+			if (pipeline.getExpression() instanceof MethodInvocation) {
+				return (MethodInvocation) pipeline.getExpression();
 			}
+			// If expression is not a method invocation, something is wrong - return original
+			return pipeline;
 		}
 
-		// The pipeline might be: source.stream().map(...).collect(...)
-		// We need to find the collect and return everything before it
-		// For simplicity, assume collect is the last operation
+		// Not a collect call - return as is
 		return pipeline;
 	}
 

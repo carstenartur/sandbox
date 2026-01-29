@@ -404,7 +404,6 @@ public class AdditionalLoopPatternsTest {
 	 * ).collect(Collectors.toList());
 	 * }</pre>
 	 */
-	@Disabled("FEATURE: Stream.concat() for multiple loops adding to same list not yet implemented")
 	@Test
 	@DisplayName("Multiple for-each loops populating same list should use Stream.concat()")
 	public void testMultipleLoopsPopulatingList_streamConcat() throws CoreException {
@@ -509,6 +508,7 @@ public class AdditionalLoopPatternsTest {
 	 * test above ({@code testMultipleLoopsPopulatingList_streamConcat}) to be enabled
 	 * and delete this test.</p>
 	 */
+	@Disabled("FIXED: Bug has been fixed - multiple loops now use Stream.concat()")
 	@Test
 	@DisplayName("BUGGY BEHAVIOR: Multiple loops overwrite list instead of accumulating")
 	public void testMultipleLoopsPopulatingList_currentBuggyBehavior() throws CoreException {
