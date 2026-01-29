@@ -1,79 +1,526 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!DOCTYPE html>
 <html xmlns:lxslt="http://xml.apache.org/xslt" xmlns:string="xalan://java.lang.String">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <title>Test Results - sandbox-functional-converter-core</title>
 <style type="text/css">
+      /* Modern CSS Reset and Base Styles */
+      * {
+        box-sizing: border-box;
+      }
+      
       body {
-        font:normal 68% verdana,arial,helvetica;
-        color:#000000;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        font-size: 16px;
+        line-height: 1.6;
+        color: #2c3e50;
+        background-color: #f8f9fa;
+        margin: 0;
+        padding: 20px;
+        transition: background-color 0.3s, color 0.3s;
       }
-      table tr td, table tr th {
-          font-size: 68%;
-      }
-      table.details tr th{
-        font-weight: bold;
-        text-align:left;
-        background:#a6caf0;
-      }
-      table.details tr td{
-        background:#eeeee0;
-      }
-
-      p {
-        line-height:1.5em;
-        margin-top:0.5em; margin-bottom:1.0em;
-      }
+      
+      /* Modern Typography */
       h1 {
-        margin: 0px 0px 5px; font: 165% verdana,arial,helvetica
+        margin: 0 0 20px;
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #1a1a1a;
       }
+      
       h2 {
-        margin-top: 1em; margin-bottom: 0.5em; font: bold 125% verdana,arial,helvetica
+        margin: 2rem 0 1rem;
+        font-size: 1.8rem;
+        font-weight: 600;
+        color: #2c3e50;
       }
+      
       h3 {
-        margin-bottom: 0.5em; font: bold 115% verdana,arial,helvetica
+        margin: 1.5rem 0 0.8rem;
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: #34495e;
       }
-      h4 {
-        margin-bottom: 0.5em; font: bold 100% verdana,arial,helvetica
+      
+      h4, h5, h6 {
+        margin: 1rem 0 0.5rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #34495e;
       }
-      h5 {
-        margin-bottom: 0.5em; font: bold 100% verdana,arial,helvetica
+      
+      p {
+        line-height: 1.6;
+        margin: 0.8em 0;
       }
-      h6 {
-        margin-bottom: 0.5em; font: bold 100% verdana,arial,helvetica
+      
+      a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.2s;
       }
+      
+      a:hover {
+        color: #2980b9;
+        text-decoration: underline;
+      }
+      
+      hr {
+        border: none;
+        border-top: 2px solid #e1e4e8;
+        margin: 2rem 0;
+      }
+      
+      /* Modern Table Styling */
+      table.details {
+        width: 100%;
+        max-width: 100%;
+        border-collapse: collapse;
+        background-color: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        margin: 1rem 0;
+      }
+      
+      table.details th {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        font-weight: 600;
+        text-align: left;
+        padding: 14px 16px;
+        font-size: 0.95rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        cursor: pointer;
+        user-select: none;
+        position: relative;
+      }
+      
+      table.details th:hover {
+        background: linear-gradient(135deg, #5568d3 0%, #6a3f92 100%);
+      }
+      
+      table.details th.sortable::after {
+        content: ' ⇅';
+        opacity: 0.5;
+        font-size: 0.8em;
+      }
+      
+      table.details th.sort-asc::after {
+        content: ' ▲';
+        opacity: 1;
+      }
+      
+      table.details th.sort-desc::after {
+        content: ' ▼';
+        opacity: 1;
+      }
+      
+      table.details td {
+        padding: 12px 16px;
+        border-bottom: 1px solid #e1e4e8;
+        font-size: 0.95rem;
+      }
+      
+      table.details tr:last-child td {
+        border-bottom: none;
+      }
+      
+      table.details tr:hover td {
+        background-color: #f8f9fa;
+      }
+      
+      /* Status Colors */
       .Error {
-        font-weight:bold; color:red;
+        background-color: #fee;
+        font-weight: 600;
+        color: #c92a2a;
       }
+      
       .Failure {
-        font-weight:bold; color:purple;
+        background-color: #fef3cd;
+        font-weight: 600;
+        color: #856404;
       }
-      .Properties {
-        text-align:right;
+      
+      .Skipped {
+        background-color: #e8f4fd;
+        color: #0969da;
       }
-      /* Navigation buttons styling */
+      
+      .Success {
+        background-color: #e6ffe6;
+      }
+      
+      /* Progress Bar */
+      .progress-bar-container {
+        width: 100%;
+        height: 40px;
+        background-color: #e1e4e8;
+        border-radius: 20px;
+        overflow: hidden;
+        margin: 1.5rem 0;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        position: relative;
+      }
+      
+      .progress-bar {
+        display: flex;
+        height: 100%;
+        transition: all 0.5s ease;
+      }
+      
+      .progress-segment {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        transition: all 0.3s ease;
+      }
+      
+      .progress-success {
+        background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+      }
+      
+      .progress-error {
+        background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+      }
+      
+      .progress-skipped {
+        background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+      }
+      
+      /* Navigation and Filter Buttons */
       .nav-buttons {
         position: fixed;
-        top: 8px;
-        right: 8px;
+        top: 20px;
+        right: 20px;
         z-index: 1000;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        max-width: 300px;
       }
-      .nav-buttons button {
-        font-size: 16px;
-        padding: 5px 10px;
-        margin-left: 5px;
+      
+      .nav-buttons button,
+      .filter-buttons button {
+        font-size: 14px;
+        padding: 10px 16px;
         cursor: pointer;
-        background-color: #f0f0f0;
-        border: 1px solid #ccc;
-        border-radius: 3px;
+        background: white;
+        color: #2c3e50;
+        border: 2px solid #3498db;
+        border-radius: 6px;
+        font-weight: 600;
+        transition: all 0.2s;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       }
-      .nav-buttons button:hover {
-        background-color: #e0e0e0;
+      
+      .nav-buttons button:hover,
+      .filter-buttons button:hover {
+        background: #3498db;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+      }
+      
+      .nav-buttons button:active,
+      .filter-buttons button:active {
+        transform: translateY(0);
+      }
+      
+      .filter-buttons {
+        display: flex;
+        gap: 10px;
+        margin: 1.5rem 0;
+        flex-wrap: wrap;
+      }
+      
+      .filter-buttons button.active {
+        background: #3498db;
+        color: white;
+      }
+      
+      /* Collapsible Stacktraces */
+      .stacktrace-container {
+        margin-top: 10px;
+      }
+      
+      .stacktrace-toggle {
+        background: #3498db;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        font-weight: 600;
+        transition: all 0.2s;
+      }
+      
+      .stacktrace-toggle:hover {
+        background: #2980b9;
+      }
+      
+      .stacktrace-content {
+        display: none;
+        margin-top: 10px;
+        padding: 12px;
+        background: #1e1e1e;
+        color: #d4d4d4;
+        border-radius: 6px;
+        font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        font-size: 0.85rem;
+        line-height: 1.5;
+        overflow-x: auto;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+      }
+      
+      .stacktrace-content.show {
+        display: block;
+      }
+      
+      .stacktrace-content code {
+        color: #d4d4d4;
+      }
+      
+      .stacktrace-line {
+        white-space: pre;
+      }
+      
+      .stacktrace-line-number {
+        color: #858585;
+        margin-right: 10px;
+      }
+      
+      /* Permalink functionality */
+      .test-row {
+        scroll-margin-top: 80px;
+      }
+      
+      .permalink {
+        margin-left: 8px;
+        opacity: 0;
+        transition: opacity 0.2s;
+        font-size: 0.8em;
+        cursor: pointer;
+      }
+      
+      .test-row:hover .permalink,
+      .test-row:target .permalink {
+        opacity: 1;
+      }
+      
+      .test-row:target td {
+        background-color: #fff3cd !important;
+        animation: highlight-fade 2s ease-out;
+      }
+      
+      @keyframes highlight-fade {
+        0% { background-color: #ffeb3b; }
+        100% { background-color: #fff3cd; }
+      }
+      
+      /* Properties styling */
+      .Properties {
+        text-align: right;
+        margin: 1rem 0;
+      }
+      
+      /* Responsive Design */
+      @media (max-width: 768px) {
+        body {
+          padding: 10px;
+          font-size: 14px;
+        }
+        
+        h1 {
+          font-size: 1.8rem;
+        }
+        
+        h2 {
+          font-size: 1.4rem;
+        }
+        
+        h3 {
+          font-size: 1.2rem;
+        }
+        
+        .nav-buttons {
+          position: static;
+          margin-bottom: 20px;
+          max-width: 100%;
+        }
+        
+        table.details {
+          font-size: 0.85rem;
+          display: block;
+          overflow-x: auto;
+          white-space: nowrap;
+        }
+        
+        table.details th,
+        table.details td {
+          padding: 8px 10px;
+        }
+        
+        .progress-bar-container {
+          height: 30px;
+        }
+        
+        .progress-segment {
+          font-size: 0.75rem;
+        }
+      }
+      
+      @media (max-width: 480px) {
+        body {
+          font-size: 13px;
+        }
+        
+        h1 {
+          font-size: 1.5rem;
+        }
+        
+        .filter-buttons button,
+        .nav-buttons button {
+          font-size: 12px;
+          padding: 8px 12px;
+        }
+      }
+      
+      /* Dark Mode Support */
+      @media (prefers-color-scheme: dark) {
+        body {
+          background-color: #1a1a1a;
+          color: #e1e4e8;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+          color: #e1e4e8;
+        }
+        
+        a {
+          color: #58a6ff;
+        }
+        
+        a:hover {
+          color: #79b8ff;
+        }
+        
+        hr {
+          border-top-color: #30363d;
+        }
+        
+        table.details {
+          background-color: #161b22;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+        
+        table.details th {
+          background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+        }
+        
+        table.details th:hover {
+          background: linear-gradient(135deg, #3a4555 0%, #1d2738 100%);
+        }
+        
+        table.details td {
+          border-bottom-color: #30363d;
+        }
+        
+        table.details tr:hover td {
+          background-color: #21262d;
+        }
+        
+        .Error {
+          background-color: #3d1616;
+          color: #ff6b6b;
+        }
+        
+        .Failure {
+          background-color: #3d3416;
+          color: #ffc078;
+        }
+        
+        .Skipped {
+          background-color: #16293d;
+          color: #79b8ff;
+        }
+        
+        .Success {
+          background-color: #163d16;
+        }
+        
+        .progress-bar-container {
+          background-color: #30363d;
+        }
+        
+        .nav-buttons button,
+        .filter-buttons button {
+          background: #21262d;
+          color: #e1e4e8;
+          border-color: #58a6ff;
+        }
+        
+        .nav-buttons button:hover,
+        .filter-buttons button:hover {
+          background: #58a6ff;
+          color: #0d1117;
+        }
+        
+        .filter-buttons button.active {
+          background: #58a6ff;
+          color: #0d1117;
+        }
+        
+        .stacktrace-toggle {
+          background: #58a6ff;
+          color: #0d1117;
+        }
+        
+        .stacktrace-toggle:hover {
+          background: #79b8ff;
+        }
+      }
+      
+      /* Print Styles */
+      @media print {
+        body {
+          background: white;
+          color: black;
+        }
+        
+        .nav-buttons,
+        .filter-buttons,
+        .stacktrace-toggle {
+          display: none;
+        }
+        
+        .stacktrace-content {
+          display: block !important;
+        }
+        
+        table.details {
+          box-shadow: none;
+          border: 1px solid #ddd;
+        }
+      }
+      
+      /* Hidden class for filtering */
+      .hidden {
+        display: none !important;
       }
       </style>
 <script type="text/javascript" language="JavaScript">
         var TestCases = new Array();
         var cur;
+        var GITHUB_REPO = '';
+        var GITHUB_BRANCH = 'main';
         
     cur = TestCases['.org.sandbox.functional.core.model.LoopModelTest'] = new Array();
     
@@ -160,7 +607,7 @@
     
         cur['sun.io.unicode.encoding'] = 'UnicodeLittle';
     
-        cur['sun.java.command'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260129195035765_3.jar /home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire 2026-01-29T19-50-35_709-jvmRun1 surefire-20260129195035765_1tmp surefire_0-20260129195035765_2tmp';
+        cur['sun.java.command'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260129200624798_3.jar /home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire 2026-01-29T20-06-24_717-jvmRun1 surefire-20260129200624798_1tmp surefire_0-20260129200624798_2tmp';
     
         cur['sun.java.launcher'] = 'SUN_STANDARD';
     
@@ -168,7 +615,7 @@
     
         cur['sun.management.compiler'] = 'HotSpot 64-Bit Tiered Compilers';
     
-        cur['surefire.real.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260129195035765_3.jar';
+        cur['surefire.real.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260129200624798_3.jar';
     
         cur['surefire.test.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/test-classes:/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/classes:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter/6.0.2/junit-jupiter-6.0.2.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-api/6.0.2/junit-jupiter-api-6.0.2.jar:/home/runner/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-commons/6.0.2/junit-platform-commons-6.0.2.jar:/home/runner/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/home/runner/.m2/repository/org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-params/6.0.2/junit-jupiter-params-6.0.2.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-engine/6.0.2/junit-jupiter-engine-6.0.2.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-engine/6.0.2/junit-platform-engine-6.0.2.jar:/home/runner/.m2/repository/org/assertj/assertj-core/3.27.7/assertj-core-3.27.7.jar:/home/runner/.m2/repository/net/bytebuddy/byte-buddy/1.18.3/byte-buddy-1.18.3.jar:';
     
@@ -267,7 +714,7 @@
     
         cur['sun.io.unicode.encoding'] = 'UnicodeLittle';
     
-        cur['sun.java.command'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260129195035765_3.jar /home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire 2026-01-29T19-50-35_709-jvmRun1 surefire-20260129195035765_1tmp surefire_0-20260129195035765_2tmp';
+        cur['sun.java.command'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260129200624798_3.jar /home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire 2026-01-29T20-06-24_717-jvmRun1 surefire-20260129200624798_1tmp surefire_0-20260129200624798_2tmp';
     
         cur['sun.java.launcher'] = 'SUN_STANDARD';
     
@@ -275,7 +722,7 @@
     
         cur['sun.management.compiler'] = 'HotSpot 64-Bit Tiered Compilers';
     
-        cur['surefire.real.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260129195035765_3.jar';
+        cur['surefire.real.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260129200624798_3.jar';
     
         cur['surefire.test.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/test-classes:/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/classes:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter/6.0.2/junit-jupiter-6.0.2.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-api/6.0.2/junit-jupiter-api-6.0.2.jar:/home/runner/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-commons/6.0.2/junit-platform-commons-6.0.2.jar:/home/runner/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/home/runner/.m2/repository/org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-params/6.0.2/junit-jupiter-params-6.0.2.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-engine/6.0.2/junit-jupiter-engine-6.0.2.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-engine/6.0.2/junit-platform-engine-6.0.2.jar:/home/runner/.m2/repository/org/assertj/assertj-core/3.27.7/assertj-core-3.27.7.jar:/home/runner/.m2/repository/net/bytebuddy/byte-buddy/1.18.3/byte-buddy-1.18.3.jar:';
     
@@ -374,7 +821,7 @@
     
         cur['sun.io.unicode.encoding'] = 'UnicodeLittle';
     
-        cur['sun.java.command'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260129195035765_3.jar /home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire 2026-01-29T19-50-35_709-jvmRun1 surefire-20260129195035765_1tmp surefire_0-20260129195035765_2tmp';
+        cur['sun.java.command'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260129200624798_3.jar /home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire 2026-01-29T20-06-24_717-jvmRun1 surefire-20260129200624798_1tmp surefire_0-20260129200624798_2tmp';
     
         cur['sun.java.launcher'] = 'SUN_STANDARD';
     
@@ -382,7 +829,7 @@
     
         cur['sun.management.compiler'] = 'HotSpot 64-Bit Tiered Compilers';
     
-        cur['surefire.real.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260129195035765_3.jar';
+        cur['surefire.real.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260129200624798_3.jar';
     
         cur['surefire.test.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/test-classes:/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/classes:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter/6.0.2/junit-jupiter-6.0.2.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-api/6.0.2/junit-jupiter-api-6.0.2.jar:/home/runner/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-commons/6.0.2/junit-platform-commons-6.0.2.jar:/home/runner/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/home/runner/.m2/repository/org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-params/6.0.2/junit-jupiter-params-6.0.2.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-engine/6.0.2/junit-jupiter-engine-6.0.2.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-engine/6.0.2/junit-platform-engine-6.0.2.jar:/home/runner/.m2/repository/org/assertj/assertj-core/3.27.7/assertj-core-3.27.7.jar:/home/runner/.m2/repository/net/bytebuddy/byte-buddy/1.18.3/byte-buddy-1.18.3.jar:';
     
@@ -481,7 +928,7 @@
     
         cur['sun.io.unicode.encoding'] = 'UnicodeLittle';
     
-        cur['sun.java.command'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260129195035765_3.jar /home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire 2026-01-29T19-50-35_709-jvmRun1 surefire-20260129195035765_1tmp surefire_0-20260129195035765_2tmp';
+        cur['sun.java.command'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260129200624798_3.jar /home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire 2026-01-29T20-06-24_717-jvmRun1 surefire-20260129200624798_1tmp surefire_0-20260129200624798_2tmp';
     
         cur['sun.java.launcher'] = 'SUN_STANDARD';
     
@@ -489,7 +936,7 @@
     
         cur['sun.management.compiler'] = 'HotSpot 64-Bit Tiered Compilers';
     
-        cur['surefire.real.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260129195035765_3.jar';
+        cur['surefire.real.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260129200624798_3.jar';
     
         cur['surefire.test.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/test-classes:/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/classes:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter/6.0.2/junit-jupiter-6.0.2.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-api/6.0.2/junit-jupiter-api-6.0.2.jar:/home/runner/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-commons/6.0.2/junit-platform-commons-6.0.2.jar:/home/runner/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/home/runner/.m2/repository/org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-params/6.0.2/junit-jupiter-params-6.0.2.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-engine/6.0.2/junit-jupiter-engine-6.0.2.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-engine/6.0.2/junit-platform-engine-6.0.2.jar:/home/runner/.m2/repository/org/assertj/assertj-core/3.27.7/assertj-core-3.27.7.jar:/home/runner/.m2/repository/net/bytebuddy/byte-buddy/1.18.3/byte-buddy-1.18.3.jar:';
     
@@ -588,7 +1035,7 @@
     
         cur['sun.io.unicode.encoding'] = 'UnicodeLittle';
     
-        cur['sun.java.command'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260129195035765_3.jar /home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire 2026-01-29T19-50-35_709-jvmRun1 surefire-20260129195035765_1tmp surefire_0-20260129195035765_2tmp';
+        cur['sun.java.command'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260129200624798_3.jar /home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire 2026-01-29T20-06-24_717-jvmRun1 surefire-20260129200624798_1tmp surefire_0-20260129200624798_2tmp';
     
         cur['sun.java.launcher'] = 'SUN_STANDARD';
     
@@ -596,7 +1043,7 @@
     
         cur['sun.management.compiler'] = 'HotSpot 64-Bit Tiered Compilers';
     
-        cur['surefire.real.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260129195035765_3.jar';
+        cur['surefire.real.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260129200624798_3.jar';
     
         cur['surefire.test.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/test-classes:/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/classes:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter/6.0.2/junit-jupiter-6.0.2.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-api/6.0.2/junit-jupiter-api-6.0.2.jar:/home/runner/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-commons/6.0.2/junit-platform-commons-6.0.2.jar:/home/runner/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/home/runner/.m2/repository/org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-params/6.0.2/junit-jupiter-params-6.0.2.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-engine/6.0.2/junit-jupiter-engine-6.0.2.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-engine/6.0.2/junit-platform-engine-6.0.2.jar:/home/runner/.m2/repository/org/assertj/assertj-core/3.27.7/assertj-core-3.27.7.jar:/home/runner/.m2/repository/net/bytebuddy/byte-buddy/1.18.3/byte-buddy-1.18.3.jar:';
     
@@ -695,7 +1142,7 @@
     
         cur['sun.io.unicode.encoding'] = 'UnicodeLittle';
     
-        cur['sun.java.command'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260129195035765_3.jar /home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire 2026-01-29T19-50-35_709-jvmRun1 surefire-20260129195035765_1tmp surefire_0-20260129195035765_2tmp';
+        cur['sun.java.command'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260129200624798_3.jar /home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire 2026-01-29T20-06-24_717-jvmRun1 surefire-20260129200624798_1tmp surefire_0-20260129200624798_2tmp';
     
         cur['sun.java.launcher'] = 'SUN_STANDARD';
     
@@ -703,7 +1150,7 @@
     
         cur['sun.management.compiler'] = 'HotSpot 64-Bit Tiered Compilers';
     
-        cur['surefire.real.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260129195035765_3.jar';
+        cur['surefire.real.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260129200624798_3.jar';
     
         cur['surefire.test.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/test-classes:/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/classes:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter/6.0.2/junit-jupiter-6.0.2.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-api/6.0.2/junit-jupiter-api-6.0.2.jar:/home/runner/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-commons/6.0.2/junit-platform-commons-6.0.2.jar:/home/runner/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/home/runner/.m2/repository/org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-params/6.0.2/junit-jupiter-params-6.0.2.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-engine/6.0.2/junit-jupiter-engine-6.0.2.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-engine/6.0.2/junit-platform-engine-6.0.2.jar:/home/runner/.m2/repository/org/assertj/assertj-core/3.27.7/assertj-core-3.27.7.jar:/home/runner/.m2/repository/net/bytebuddy/byte-buddy/1.18.3/byte-buddy-1.18.3.jar:';
     
@@ -802,7 +1249,7 @@
     
         cur['sun.io.unicode.encoding'] = 'UnicodeLittle';
     
-        cur['sun.java.command'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260129195035765_3.jar /home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire 2026-01-29T19-50-35_709-jvmRun1 surefire-20260129195035765_1tmp surefire_0-20260129195035765_2tmp';
+        cur['sun.java.command'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260129200624798_3.jar /home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire 2026-01-29T20-06-24_717-jvmRun1 surefire-20260129200624798_1tmp surefire_0-20260129200624798_2tmp';
     
         cur['sun.java.launcher'] = 'SUN_STANDARD';
     
@@ -810,7 +1257,7 @@
     
         cur['sun.management.compiler'] = 'HotSpot 64-Bit Tiered Compilers';
     
-        cur['surefire.real.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260129195035765_3.jar';
+        cur['surefire.real.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260129200624798_3.jar';
     
         cur['surefire.test.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/test-classes:/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/classes:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter/6.0.2/junit-jupiter-6.0.2.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-api/6.0.2/junit-jupiter-api-6.0.2.jar:/home/runner/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-commons/6.0.2/junit-platform-commons-6.0.2.jar:/home/runner/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/home/runner/.m2/repository/org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-params/6.0.2/junit-jupiter-params-6.0.2.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-engine/6.0.2/junit-jupiter-engine-6.0.2.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-engine/6.0.2/junit-platform-engine-6.0.2.jar:/home/runner/.m2/repository/org/assertj/assertj-core/3.27.7/assertj-core-3.27.7.jar:/home/runner/.m2/repository/net/bytebuddy/byte-buddy/1.18.3/byte-buddy-1.18.3.jar:';
     
@@ -909,7 +1356,7 @@
     
         cur['sun.io.unicode.encoding'] = 'UnicodeLittle';
     
-        cur['sun.java.command'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260129195035765_3.jar /home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire 2026-01-29T19-50-35_709-jvmRun1 surefire-20260129195035765_1tmp surefire_0-20260129195035765_2tmp';
+        cur['sun.java.command'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260129200624798_3.jar /home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire 2026-01-29T20-06-24_717-jvmRun1 surefire-20260129200624798_1tmp surefire_0-20260129200624798_2tmp';
     
         cur['sun.java.launcher'] = 'SUN_STANDARD';
     
@@ -917,7 +1364,7 @@
     
         cur['sun.management.compiler'] = 'HotSpot 64-Bit Tiered Compilers';
     
-        cur['surefire.real.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260129195035765_3.jar';
+        cur['surefire.real.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/surefire/surefirebooter-20260129200624798_3.jar';
     
         cur['surefire.test.class.path'] = '/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/test-classes:/home/runner/work/sandbox/sandbox/sandbox-functional-converter-core/target/classes:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter/6.0.2/junit-jupiter-6.0.2.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-api/6.0.2/junit-jupiter-api-6.0.2.jar:/home/runner/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-commons/6.0.2/junit-platform-commons-6.0.2.jar:/home/runner/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/home/runner/.m2/repository/org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-params/6.0.2/junit-jupiter-params-6.0.2.jar:/home/runner/.m2/repository/org/junit/jupiter/junit-jupiter-engine/6.0.2/junit-jupiter-engine-6.0.2.jar:/home/runner/.m2/repository/org/junit/platform/junit-platform-engine/6.0.2/junit-platform-engine-6.0.2.jar:/home/runner/.m2/repository/org/assertj/assertj-core/3.27.7/assertj-core-3.27.7.jar:/home/runner/.m2/repository/net/bytebuddy/byte-buddy/1.18.3/byte-buddy-1.18.3.jar:';
     
@@ -935,27 +1382,42 @@
           var win = window.open('','JUnitSystemProperties','scrollbars=1,resizable=1');
           var doc = win.document;
           doc.open();
-          doc.write("<html><head><title>Properties of " + name + "</title>");
+          doc.write("<html><head><title>Properties of " + escapeHtml(name) + "</title>");
           doc.write("<style>")
-          doc.write("body {font:normal 68% verdana,arial,helvetica; color:#000000; }");
-          doc.write("table tr td, table tr th { font-size: 68%; }");
-          doc.write("table.properties { border-collapse:collapse; border-left:solid 1 #cccccc; border-top:solid 1 #cccccc; padding:5px; }");
-          doc.write("table.properties th { text-align:left; border-right:solid 1 #cccccc; border-bottom:solid 1 #cccccc; background-color:#eeeeee; }");
-          doc.write("table.properties td { font:normal; text-align:left; border-right:solid 1 #cccccc; border-bottom:solid 1 #cccccc; background-color:#fffffff; }");
-          doc.write("h3 { margin-bottom: 0.5em; font: bold 115% verdana,arial,helvetica }");
+          doc.write("body {font-family: system-ui, sans-serif; font-size: 16px; color:#2c3e50; background:#f8f9fa; padding:20px; }");
+          doc.write("table.properties { border-collapse:collapse; width:100%; background:white; border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.1); }");
+          doc.write("table.properties th { text-align:left; padding:12px; background:#667eea; color:white; font-weight:600; }");
+          doc.write("table.properties td { padding:12px; border-bottom:1px solid #e1e4e8; }");
+          doc.write("h3 { margin-bottom: 1rem; font-size:1.4rem; font-weight:600; }");
+          doc.write("a { color:#3498db; text-decoration:none; }");
+          doc.write("a:hover { text-decoration:underline; }");
+          doc.write("@media (prefers-color-scheme: dark) {");
+          doc.write("  body { background:#1a1a1a; color:#e1e4e8; }");
+          doc.write("  table.properties { background:#161b22; }");
+          doc.write("  table.properties th { background:#4a5568; }");
+          doc.write("  table.properties td { border-bottom-color:#30363d; }");
+          doc.write("  a { color:#58a6ff; }");
+          doc.write("}");
           doc.write("</style>");
           doc.write("</head><body>");
-          doc.write("<h3>Properties of " + name + "</h3>");
+          doc.write("<h3>Properties of " + escapeHtml(name) + "</h3>");
           doc.write("<div align=\"right\"><a href=\"javascript:window.close();\">Close</a></div>");
           doc.write("<table class='properties'>");
           doc.write("<tr><th>Name</th><th>Value</th></tr>");
           for (prop in TestCases[name]) {
-            doc.write("<tr><th>" + prop + "</th><td>" + TestCases[name][prop] + "</td></tr>");
+            doc.write("<tr><td>" + escapeHtml(prop) + "</td><td>" + escapeHtml(TestCases[name][prop]) + "</td></tr>");
           }
           doc.write("</table>");
           doc.write("</body></html>");
           doc.close();
           win.focus();
+        }
+        
+        // HTML escape function to prevent XSS
+        function escapeHtml(text) {
+          var div = document.createElement('div');
+          div.textContent = text;
+          return div.innerHTML;
         }
         
         // Jump to next/previous error or failure
@@ -995,6 +1457,222 @@
           }
         }
         
+        // Filter functionality
+        var currentFilter = 'all';
+        
+        function filterTests(filterType) {
+          currentFilter = filterType;
+          // Only filter test-row elements, not summary/package rows
+          var allRows = document.querySelectorAll('tr.test-row');
+          var buttons = document.querySelectorAll('.filter-buttons button');
+          
+          // Update button states
+          buttons.forEach(function(btn) {
+            if (btn.getAttribute('data-filter') === filterType) {
+              btn.classList.add('active');
+            } else {
+              btn.classList.remove('active');
+            }
+          });
+          
+          // Filter rows
+          allRows.forEach(function(row) {
+            if (filterType === 'all') {
+              row.classList.remove('hidden');
+            } else if (filterType === 'errors') {
+              if (row.classList.contains('Error') || row.classList.contains('Failure')) {
+                row.classList.remove('hidden');
+              } else {
+                row.classList.add('hidden');
+              }
+            } else if (filterType === 'skipped') {
+              if (row.classList.contains('Skipped')) {
+                row.classList.remove('hidden');
+              } else {
+                row.classList.add('hidden');
+              }
+            } else if (filterType === 'success') {
+              if (!row.classList.contains('Error') && !row.classList.contains('Failure') && !row.classList.contains('Skipped')) {
+                row.classList.remove('hidden');
+              } else {
+                row.classList.add('hidden');
+              }
+            }
+          });
+        }
+        
+        // Toggle stacktrace visibility
+        function toggleStacktrace(testId) {
+          var content = document.getElementById('stacktrace-' + testId);
+          var button = document.getElementById('toggle-' + testId);
+          if (content && button) {
+            content.classList.toggle('show');
+            if (content.classList.contains('show')) {
+              button.textContent = 'Hide Details';
+            } else {
+              button.textContent = 'Show Details';
+            }
+          }
+        }
+        
+        // Copy permalink to clipboard
+        function copyPermalink(testId) {
+          var url = window.location.href.split('#')[0] + '#test-' + testId;
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(function() {
+              showTooltip('Link copied!');
+            });
+          } else {
+            // Fallback for older browsers
+            var input = document.createElement('input');
+            input.value = url;
+            document.body.appendChild(input);
+            input.select();
+            document.execCommand('copy');
+            document.body.removeChild(input);
+            showTooltip('Link copied!');
+          }
+          window.location.hash = '#test-' + testId;
+        }
+        
+        function showTooltip(message) {
+          var tooltip = document.createElement('div');
+          tooltip.textContent = message;
+          tooltip.style.position = 'fixed';
+          tooltip.style.top = '50%';
+          tooltip.style.left = '50%';
+          tooltip.style.transform = 'translate(-50%, -50%)';
+          tooltip.style.background = '#4caf50';
+          tooltip.style.color = 'white';
+          tooltip.style.padding = '12px 24px';
+          tooltip.style.borderRadius = '8px';
+          tooltip.style.fontSize = '16px';
+          tooltip.style.fontWeight = '600';
+          tooltip.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+          tooltip.style.zIndex = '10000';
+          tooltip.style.animation = 'fadeInOut 2s ease';
+          document.body.appendChild(tooltip);
+          setTimeout(function() {
+            document.body.removeChild(tooltip);
+          }, 2000);
+        }
+        
+        // Table sorting functionality
+        function sortTable(tableId, columnIndex) {
+          var table = document.getElementById(tableId);
+          if (!table) return;
+          
+          var tbody = table.querySelector('tbody');
+          if (!tbody) {
+            tbody = table;
+          }
+          
+          var rows = Array.from(tbody.querySelectorAll('tr'));
+          var header = table.querySelector('thead th:nth-child(' + (columnIndex + 1) + ')');
+          if (!header) {
+            header = table.querySelector('th:nth-child(' + (columnIndex + 1) + ')');
+          }
+          
+          if (!header) return;
+          
+          var isAsc = header.classList.contains('sort-asc');
+          var isDesc = header.classList.contains('sort-desc');
+          
+          // Remove sorting classes from all headers
+          var allHeaders = table.querySelectorAll('th');
+          allHeaders.forEach(function(h) {
+            h.classList.remove('sort-asc', 'sort-desc');
+          });
+          
+          // Determine new sort direction
+          var ascending = !isAsc;
+          if (isDesc) ascending = true;
+          
+          // Apply new sort class
+          header.classList.add(ascending ? 'sort-asc' : 'sort-desc');
+          
+          // Sort rows
+          rows.sort(function(a, b) {
+            var aCell = a.cells[columnIndex];
+            var bCell = b.cells[columnIndex];
+            if (!aCell || !bCell) return 0;
+            
+            var aValue = aCell.textContent.trim();
+            var bValue = bCell.textContent.trim();
+            
+            // Try to parse as number
+            var aNum = parseFloat(aValue);
+            var bNum = parseFloat(bValue);
+            
+            if (!isNaN(aNum) && !isNaN(bNum)) {
+              return ascending ? aNum - bNum : bNum - aNum;
+            }
+            
+            // String comparison
+            return ascending ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+          });
+          
+          // Re-append rows in sorted order
+          rows.forEach(function(row) {
+            tbody.appendChild(row);
+          });
+        }
+        
+        // Initialize sortable tables
+        function initSortableTables() {
+          var tables = document.querySelectorAll('table.details');
+          tables.forEach(function(table, tableIdx) {
+            var tableId = 'sortable-table-' + tableIdx;
+            table.id = tableId;
+            
+            var headers = table.querySelectorAll('th');
+            headers.forEach(function(header, colIdx) {
+              header.classList.add('sortable');
+              header.onclick = function() {
+                sortTable(tableId, colIdx);
+              };
+            });
+          });
+        }
+        
+        // Add GitHub links to stacktraces
+        function addGitHubLinks() {
+          var githubRepo = GITHUB_REPO;
+          var githubBranch = GITHUB_BRANCH;
+          
+          if (!githubRepo) return;
+          
+          // Find all code elements in stacktraces
+          var codeElements = document.querySelectorAll('.stacktrace-content code');
+          codeElements.forEach(function(codeEl) {
+            var text = codeEl.innerHTML;
+            // Match patterns like "at org.example.Test.method(Test.java:42)"
+            var pattern = /at\s+([\w.$]+)\(([\w.]+):(\d+)\)/g;
+            var newHtml = text.replace(pattern, function(match, fullClass, fileName, lineNum) {
+              // Extract package from class name (e.g., org.example.Test -> org/example)
+              var parts = fullClass.split('.');
+              var className = parts[parts.length - 1];
+              var packagePath = parts.slice(0, -1).join('/');
+              
+              // Try to construct a reasonable file path
+              // Assumes standard Maven/Gradle structure
+              var possiblePaths = [
+                'src/test/java/' + packagePath + '/' + fileName,
+                'src/main/java/' + packagePath + '/' + fileName,
+                packagePath + '/' + fileName,
+                fileName
+              ];
+              
+              // Use the first path (most likely for tests)
+              var filePath = possiblePaths[0];
+              var url = 'https://github.com/' + githubRepo + '/blob/' + githubBranch + '/' + filePath + '#L' + lineNum;
+              
+              return 'at ' + fullClass + '(<a href="' + url + '" target="_blank" style="color:#58a6ff;text-decoration:underline;">' + fileName + ':' + lineNum + '</a>)';
+            });
+            codeEl.innerHTML = newHtml;
+          });
+        }
+        
         // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {
           // Ctrl+. (period) - next error
@@ -1008,13 +1686,34 @@
             jumpToNextError(false);
           }
         });
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+          initSortableTables();
+          addGitHubLinks();
+          
+          // Scroll to hash target if present
+          if (window.location.hash) {
+            var target = document.getElementById(window.location.hash.substring(1));
+            if (target) {
+              setTimeout(function() {
+                target.scrollIntoView({behavior: 'smooth', block: 'center'});
+              }, 100);
+            }
+          }
+        });
+        
+        // CSS animation for tooltip
+        var style = document.createElement('style');
+        style.textContent = '@keyframes fadeInOut { 0% { opacity: 0; transform: translate(-50%, -60%); } 10% { opacity: 1; transform: translate(-50%, -50%); } 90% { opacity: 1; transform: translate(-50%, -50%); } 100% { opacity: 0; transform: translate(-50%, -40%); } }';
+        document.head.appendChild(style);
       
       </script>
 </head>
 <body>
 <a name="top"></a><h1>Test Results - sandbox-functional-converter-core</h1>
 <div class="nav-buttons">
-<button title="Scroll to previous failure/error (Ctrl+,)" onclick="javascript:jumpToNextError(false);">▲</button><button title="Scroll to next failure/error (Ctrl+.)" onclick="javascript:jumpToNextError(true);">▼</button>
+<button title="Scroll to previous failure/error (Ctrl+,)" onclick="javascript:jumpToNextError(false);">⬆ Prev Error</button><button title="Scroll to next failure/error (Ctrl+.)" onclick="javascript:jumpToNextError(true);">⬇ Next Error</button>
 </div>
 <table width="100%"><tr>
 <td align="left">
@@ -1024,7 +1723,11 @@
 <td align="right">Designed for use with <a href="http://junit.org/">JUnit</a>.</td>
 </tr></table>
 <hr size="1">
+<div class="filter-buttons">
+<button data-filter="all" class="active" onclick="filterTests('all')">📊 Show All</button><button data-filter="errors" onclick="filterTests('errors')">❌ Errors/Failures Only</button><button data-filter="skipped" onclick="filterTests('skipped')">⏭ Skipped Only</button><button data-filter="success" onclick="filterTests('success')">✅ Success Only</button>
+</div>
 <h2>Summary</h2>
+<div class="progress-bar-container"><div class="progress-bar"><div class="progress-segment progress-success" style="width: 100%;">100.0%</div></div></div>
 <table class="details" border="0" cellpadding="5" cellspacing="2" width="95%">
 <tr valign="top">
 <th>Tests</th>
@@ -1034,7 +1737,7 @@
 <th>Success rate</th>
 <th>Time</th>
 </tr>
-<tr valign="top" class="">
+<tr valign="top" class="Success">
 <td>147</td>
 <td>0</td>
 <td>0</td>
@@ -1255,95 +1958,140 @@
 <th width="80%">Type</th>
 <th nowrap>Time(s)</th>
 </tr>
-<tr valign="top" class="">
-<td>testAllOperationTypes</td>
+<tr valign="top" class="test-row Success" id="test-id1">
+<td>testAllOperationTypes<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id1')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id2">
+<td>testMapWithoutTargetType<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id2')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.000</td>
 </tr>
-<tr valign="top" class="">
-<td>testMapWithoutTargetType</td>
-<td>Success</td>
-<td></td>
-<td>0.003</td>
-</tr>
-<tr valign="top" class="">
-<td>testExplicitRangeWithFilter</td>
+<tr valign="top" class="test-row Success" id="test-id3">
+<td>testExplicitRangeWithFilter<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id3')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.000</td>
 </tr>
-<tr valign="top" class="">
-<td>testValidation</td>
+<tr valign="top" class="test-row Success" id="test-id4">
+<td>testValidation<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id4')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.000</td>
 </tr>
-<tr valign="top" class="">
-<td>testElementWithDescriptor</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testSortedWithComparator</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testBuildSimpleForEach</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testConvertibilityCheckNoMetadata</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testConvertibilityCheckWithoutProblems</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testExplicitRangeSource</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testSourceWithDescriptor</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testConvertibilityCheckWithReturn</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testAllTerminalTypes</td>
+<tr valign="top" class="test-row Success" id="test-id5">
+<td>testElementWithDescriptor<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id5')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.000</td>
 </tr>
-<tr valign="top" class="">
-<td>testBuildFilterMapPipeline</td>
+<tr valign="top" class="test-row Success" id="test-id6">
+<td>testSortedWithComparator<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id6')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id7">
+<td>testBuildSimpleForEach<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id7')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id8">
+<td>testConvertibilityCheckNoMetadata<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id8')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.000</td>
 </tr>
-<tr valign="top" class="">
-<td>testConvertibilityCheck</td>
+<tr valign="top" class="test-row Success" id="test-id9">
+<td>testConvertibilityCheckWithoutProblems<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id9')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id10">
+<td>testExplicitRangeSource<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id10')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id11">
+<td>testSourceWithDescriptor<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id11')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id12">
+<td>testConvertibilityCheckWithReturn<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id12')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id13">
+<td>testAllTerminalTypes<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id13')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id14">
+<td>testBuildFilterMapPipeline<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id14')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id15">
+<td>testConvertibilityCheck<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id15')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
 </tr>
 </table>
 <div class="Properties"><a href="javascript:displayProperties('.org.sandbox.functional.core.builder.LoopModelBuilderTest');">
@@ -1358,206 +2106,308 @@
 <th width="80%">Type</th>
 <th nowrap>Time(s)</th>
 </tr>
-<tr valign="top" class="">
-<td>testFilterMapForEach</td>
+<tr valign="top" class="test-row Success" id="test-id16">
+<td>testFilterMapForEach<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id16')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
-<td>0.036</td>
+<td>0.038</td>
 </tr>
-<tr valign="top" class="">
-<td>testIntRangeSource</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testPeekOperation</td>
-<td>Success</td>
-<td></td>
-<td>0.005</td>
-</tr>
-<tr valign="top" class="">
-<td>testCanBuildWithValidModel</td>
+<tr valign="top" class="test-row Success" id="test-id17">
+<td>testIntRangeSource<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id17')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
 </tr>
-<tr valign="top" class="">
-<td>testSkipOperation</td>
-<td>Success</td>
-<td></td>
-<td>0.007</td>
-</tr>
-<tr valign="top" class="">
-<td>testCollectToSet</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testExplicitRangeSourceImport</td>
-<td>Success</td>
-<td></td>
-<td>0.003</td>
-</tr>
-<tr valign="top" class="">
-<td>testRequiredImports</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testCollectTerminal</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testFlatMapOperation</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testLimitOperation</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testSimpleForEach</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testIterableSourceImport</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testCanBuildWithNullModel</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testSortedWithComparator</td>
-<td>Success</td>
-<td></td>
-<td>0.005</td>
-</tr>
-<tr valign="top" class="">
-<td>testStreamSource</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testCountTerminal</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testSortedOperation</td>
-<td>Success</td>
-<td></td>
-<td>0.005</td>
-</tr>
-<tr valign="top" class="">
-<td>testAllMatchTerminal</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testCanBuildWithNullSource</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testArraySource</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testCanBuildWithBreak</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testExplicitRangeSource</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testExplicitRangeSourceWithVariables</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testReduceTerminal</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testAnyMatchTerminal</td>
+<tr valign="top" class="test-row Success" id="test-id18">
+<td>testPeekOperation<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id18')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.004</td>
 </tr>
-<tr valign="top" class="">
-<td>testComplexPipeline</td>
+<tr valign="top" class="test-row Success" id="test-id19">
+<td>testCanBuildWithValidModel<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id19')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
 </tr>
-<tr valign="top" class="">
-<td>testNoneMatchTerminal</td>
+<tr valign="top" class="test-row Success" id="test-id20">
+<td>testSkipOperation<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id20')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
-<td>0.000</td>
+<td>0.012</td>
 </tr>
-<tr valign="top" class="">
-<td>testIntRangeSourceImport</td>
+<tr valign="top" class="test-row Success" id="test-id21">
+<td>testCollectToSet<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id21')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id22">
+<td>testExplicitRangeSourceImport<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id22')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id23">
+<td>testRequiredImports<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id23')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id24">
+<td>testCollectTerminal<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id24')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.004</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id25">
+<td>testFlatMapOperation<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id25')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id26">
+<td>testLimitOperation<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id26')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id27">
+<td>testSimpleForEach<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id27')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id28">
+<td>testIterableSourceImport<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id28')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id29">
+<td>testCanBuildWithNullModel<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id29')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id30">
+<td>testSortedWithComparator<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id30')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.005</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id31">
+<td>testStreamSource<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id31')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.003</td>
 </tr>
-<tr valign="top" class="">
-<td>testFindFirstTerminal</td>
+<tr valign="top" class="test-row Success" id="test-id32">
+<td>testCountTerminal<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id32')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
 </tr>
-<tr valign="top" class="">
-<td>testMultipleStatementsInForEach</td>
+<tr valign="top" class="test-row Success" id="test-id33">
+<td>testSortedOperation<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id33')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
 </tr>
-<tr valign="top" class="">
-<td>testIterableSource</td>
+<tr valign="top" class="test-row Success" id="test-id34">
+<td>testAllMatchTerminal<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id34')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.002</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id35">
+<td>testCanBuildWithNullSource<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id35')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id36">
+<td>testArraySource<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id36')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
 </tr>
-<tr valign="top" class="">
-<td>testDistinctOperation</td>
+<tr valign="top" class="test-row Success" id="test-id37">
+<td>testCanBuildWithBreak<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id37')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
 </tr>
-<tr valign="top" class="">
-<td>testFindAnyTerminal</td>
+<tr valign="top" class="test-row Success" id="test-id38">
+<td>testExplicitRangeSource<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id38')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id39">
+<td>testExplicitRangeSourceWithVariables<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id39')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id40">
+<td>testReduceTerminal<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id40')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id41">
+<td>testAnyMatchTerminal<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id41')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id42">
+<td>testComplexPipeline<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id42')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id43">
+<td>testNoneMatchTerminal<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id43')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id44">
+<td>testIntRangeSourceImport<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id44')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id45">
+<td>testFindFirstTerminal<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id45')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id46">
+<td>testMultipleStatementsInForEach<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id46')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id47">
+<td>testIterableSource<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id47')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.003</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id48">
+<td>testDistinctOperation<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id48')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id49">
+<td>testFindAnyTerminal<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id49')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
@@ -1575,119 +2425,176 @@
 <th width="80%">Type</th>
 <th nowrap>Time(s)</th>
 </tr>
-<tr valign="top" class="">
-<td>testEqualsIncludesOperationsAndTerminal</td>
+<tr valign="top" class="test-row Success" id="test-id50">
+<td>testEqualsIncludesOperationsAndTerminal<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id50')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
-<td>0.096</td>
+<td>0.171</td>
 </tr>
-<tr valign="top" class="">
-<td>testBuildCompleteModel</td>
+<tr valign="top" class="test-row Success" id="test-id51">
+<td>testBuildCompleteModel<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id51')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
-<td>0.012</td>
+<td>0.019</td>
 </tr>
-<tr valign="top" class="">
-<td>testExplicitRangeWithFilterAndMap</td>
-<td>Success</td>
-<td></td>
-<td>0.002</td>
-</tr>
-<tr valign="top" class="">
-<td>testEmptyPipeline</td>
-<td>Success</td>
-<td></td>
-<td>0.005</td>
-</tr>
-<tr valign="top" class="">
-<td>testWithTerminalRejectsNull</td>
-<td>Success</td>
-<td></td>
-<td>0.010</td>
-</tr>
-<tr valign="top" class="">
-<td>testFluentApiMetadataReturnsThis</td>
-<td>Success</td>
-<td></td>
-<td>0.024</td>
-</tr>
-<tr valign="top" class="">
-<td>testAddOperationRejectsNull</td>
+<tr valign="top" class="test-row Success" id="test-id52">
+<td>testExplicitRangeWithFilterAndMap<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id52')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.002</td>
 </tr>
-<tr valign="top" class="">
-<td>testExplicitRangeWithForEach</td>
-<td>Success</td>
-<td></td>
-<td>0.005</td>
-</tr>
-<tr valign="top" class="">
-<td>testFluentApiElementReturnsThis</td>
-<td>Success</td>
-<td></td>
-<td>0.009</td>
-</tr>
-<tr valign="top" class="">
-<td>testAddMultipleOperations</td>
-<td>Success</td>
-<td></td>
-<td>0.005</td>
-</tr>
-<tr valign="top" class="">
-<td>testOperationsAreIndependent</td>
+<tr valign="top" class="test-row Success" id="test-id53">
+<td>testEmptyPipeline<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id53')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
 </tr>
-<tr valign="top" class="">
-<td>testAddOperationsClearedByCreatingNewModel</td>
+<tr valign="top" class="test-row Success" id="test-id54">
+<td>testWithTerminalRejectsNull<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id54')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
-<td>0.004</td>
+<td>0.008</td>
 </tr>
-<tr valign="top" class="">
-<td>testSetTerminal</td>
+<tr valign="top" class="test-row Success" id="test-id55">
+<td>testFluentApiMetadataReturnsThis<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id55')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
-<td>0.001</td>
+<td>0.015</td>
 </tr>
-<tr valign="top" class="">
-<td>testHashCodeIncludesOperationsAndTerminal</td>
-<td>Success</td>
-<td></td>
-<td>0.007</td>
-</tr>
-<tr valign="top" class="">
-<td>testToStringIncludesOperationsAndTerminal</td>
-<td>Success</td>
-<td></td>
-<td>0.023</td>
-</tr>
-<tr valign="top" class="">
-<td>testFluentApiWithTerminalReturnsThis</td>
-<td>Success</td>
-<td></td>
-<td>0.004</td>
-</tr>
-<tr valign="top" class="">
-<td>testFluentApiSourceReturnsThis</td>
+<tr valign="top" class="test-row Success" id="test-id56">
+<td>testAddOperationRejectsNull<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id56')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
 </tr>
-<tr valign="top" class="">
-<td>testGetOperationsReturnsUnmodifiableList</td>
+<tr valign="top" class="test-row Success" id="test-id57">
+<td>testExplicitRangeWithForEach<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id57')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.008</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id58">
+<td>testFluentApiElementReturnsThis<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id58')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.006</td>
 </tr>
-<tr valign="top" class="">
-<td>testFluentApiAddOperationReturnsThis</td>
+<tr valign="top" class="test-row Success" id="test-id59">
+<td>testAddMultipleOperations<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id59')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id60">
+<td>testOperationsAreIndependent<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id60')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.004</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id61">
+<td>testAddOperationsClearedByCreatingNewModel<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id61')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id62">
+<td>testSetTerminal<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id62')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id63">
+<td>testHashCodeIncludesOperationsAndTerminal<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id63')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.004</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id64">
+<td>testToStringIncludesOperationsAndTerminal<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id64')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.016</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id65">
+<td>testFluentApiWithTerminalReturnsThis<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id65')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id66">
+<td>testFluentApiSourceReturnsThis<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id66')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.004</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id67">
+<td>testGetOperationsReturnsUnmodifiableList<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id67')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id68">
+<td>testFluentApiAddOperationReturnsThis<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id68')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.004</td>
 </tr>
 </table>
 <div class="Properties"><a href="javascript:displayProperties('.org.sandbox.functional.core.model.LoopModelPipelineTest');">
@@ -1702,41 +2609,59 @@
 <th width="80%">Type</th>
 <th nowrap>Time(s)</th>
 </tr>
-<tr valign="top" class="">
-<td>testLoopMetadata</td>
-<td>Success</td>
-<td></td>
-<td>0.006</td>
-</tr>
-<tr valign="top" class="">
-<td>testLoopModelToString</td>
+<tr valign="top" class="test-row Success" id="test-id69">
+<td>testLoopMetadata<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id69')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
 </tr>
-<tr valign="top" class="">
-<td>testLoopModelWithComponents</td>
+<tr valign="top" class="test-row Success" id="test-id70">
+<td>testLoopModelToString<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id70')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
-<td>0.003</td>
+<td>0.004</td>
 </tr>
-<tr valign="top" class="">
-<td>testElementDescriptor</td>
+<tr valign="top" class="test-row Success" id="test-id71">
+<td>testLoopModelWithComponents<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id71')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
 </tr>
-<tr valign="top" class="">
-<td>testLoopModelCanBeInstantiated</td>
+<tr valign="top" class="test-row Success" id="test-id72">
+<td>testElementDescriptor<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id72')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
 </tr>
-<tr valign="top" class="">
-<td>testSourceDescriptor</td>
+<tr valign="top" class="test-row Success" id="test-id73">
+<td>testLoopModelCanBeInstantiated<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id73')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id74">
+<td>testSourceDescriptor<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id74')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.004</td>
 </tr>
 </table>
 <div class="Properties"><a href="javascript:displayProperties('.org.sandbox.functional.core.model.LoopModelTest');">
@@ -1751,68 +2676,101 @@
 <th width="80%">Type</th>
 <th nowrap>Time(s)</th>
 </tr>
-<tr valign="top" class="">
-<td>testMapOpSingleArg</td>
-<td>Success</td>
-<td></td>
-<td>0.006</td>
-</tr>
-<tr valign="top" class="">
-<td>testSortOpWithComparator</td>
+<tr valign="top" class="test-row Success" id="test-id75">
+<td>testMapOpSingleArg<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id75')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.000</td>
 </tr>
-<tr valign="top" class="">
-<td>testMapOp</td>
+<tr valign="top" class="test-row Success" id="test-id76">
+<td>testSortOpWithComparator<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id76')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.000</td>
 </tr>
-<tr valign="top" class="">
-<td>testFlatMapOp</td>
+<tr valign="top" class="test-row Success" id="test-id77">
+<td>testMapOp<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id77')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.000</td>
 </tr>
-<tr valign="top" class="">
-<td>testSortOpNatural</td>
+<tr valign="top" class="test-row Success" id="test-id78">
+<td>testFlatMapOp<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id78')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id79">
+<td>testSortOpNatural<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id79')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
 </tr>
-<tr valign="top" class="">
-<td>testLimitOp</td>
+<tr valign="top" class="test-row Success" id="test-id80">
+<td>testLimitOp<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id80')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
 </tr>
-<tr valign="top" class="">
-<td>testFilterOp</td>
+<tr valign="top" class="test-row Success" id="test-id81">
+<td>testFilterOp<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id81')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
 </tr>
-<tr valign="top" class="">
-<td>testMapOpWithTargetType</td>
+<tr valign="top" class="test-row Success" id="test-id82">
+<td>testMapOpWithTargetType<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id82')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
 </tr>
-<tr valign="top" class="">
-<td>testPeekOp</td>
+<tr valign="top" class="test-row Success" id="test-id83">
+<td>testPeekOp<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id83')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
 </tr>
-<tr valign="top" class="">
-<td>testSkipOp</td>
+<tr valign="top" class="test-row Success" id="test-id84">
+<td>testSkipOp<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id84')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
 </tr>
-<tr valign="top" class="">
-<td>testDistinctOp</td>
+<tr valign="top" class="test-row Success" id="test-id85">
+<td>testDistinctOp<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id85')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
@@ -1830,215 +2788,320 @@
 <th width="80%">Type</th>
 <th nowrap>Time(s)</th>
 </tr>
-<tr valign="top" class="">
-<td>testRenderSourceCollection</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testRenderMap</td>
+<tr valign="top" class="test-row Success" id="test-id86">
+<td>testRenderSourceCollection<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id86')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.000</td>
 </tr>
-<tr valign="top" class="">
-<td>testRenderSourceExplicitRangeInvalidMultipleCommas</td>
+<tr valign="top" class="test-row Success" id="test-id87">
+<td>testRenderMap<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id87')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id88">
+<td>testRenderSourceExplicitRangeInvalidMultipleCommas<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id88')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.002</td>
 </tr>
-<tr valign="top" class="">
-<td>testRenderSourceIterable</td>
-<td>Success</td>
-<td></td>
-<td>0.000</td>
-</tr>
-<tr valign="top" class="">
-<td>testRenderSourceStream</td>
-<td>Success</td>
-<td></td>
-<td>0.000</td>
-</tr>
-<tr valign="top" class="">
-<td>testRenderFindFirst</td>
-<td>Success</td>
-<td></td>
-<td>0.000</td>
-</tr>
-<tr valign="top" class="">
-<td>testRenderAllMatch</td>
-<td>Success</td>
-<td></td>
-<td>0.000</td>
-</tr>
-<tr valign="top" class="">
-<td>testRenderSourceExplicitRangeInvalidOnlyComma</td>
-<td>Success</td>
-<td></td>
-<td>0.000</td>
-</tr>
-<tr valign="top" class="">
-<td>testRenderCollectToSet</td>
+<tr valign="top" class="test-row Success" id="test-id89">
+<td>testRenderSourceIterable<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id89')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
 </tr>
-<tr valign="top" class="">
-<td>testRenderSortedWithComparator</td>
+<tr valign="top" class="test-row Success" id="test-id90">
+<td>testRenderSourceStream<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id90')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
 </tr>
-<tr valign="top" class="">
-<td>testRenderNoneMatch</td>
+<tr valign="top" class="test-row Success" id="test-id91">
+<td>testRenderFindFirst<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id91')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id92">
+<td>testRenderAllMatch<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id92')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id93">
+<td>testRenderSourceExplicitRangeInvalidOnlyComma<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id93')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id94">
+<td>testRenderCollectToSet<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id94')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id95">
+<td>testRenderSortedWithComparator<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id95')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id96">
+<td>testRenderNoneMatch<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id96')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id97">
+<td>testRenderSourceExplicitRangeInvalidEmptyEnd<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id97')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id98">
+<td>testRenderForEachOrdered<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id98')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id99">
+<td>testRenderSourceExplicitRangeInvalidNoComma<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id99')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id100">
+<td>testRenderFindAny<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id100')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id101">
+<td>testRenderForEachMultipleStatements<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id101')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id102">
+<td>testRenderFlatMap<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id102')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id103">
+<td>testRenderForEach<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id103')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id104">
+<td>testRenderPeek<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id104')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id105">
+<td>testRenderSkip<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id105')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id106">
+<td>testRenderSourceArray<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id106')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id107">
+<td>testRenderSourceExplicitRangeInvalidWhitespaceOnly<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id107')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id108">
+<td>testRenderAnyMatch<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id108')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id109">
+<td>testRenderSourceExplicitRangeWithVariables<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id109')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id110">
+<td>testRenderSourceExplicitRange<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id110')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.003</td>
 </tr>
-<tr valign="top" class="">
-<td>testRenderSourceExplicitRangeInvalidEmptyEnd</td>
+<tr valign="top" class="test-row Success" id="test-id111">
+<td>testRenderFilter<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id111')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
 </tr>
-<tr valign="top" class="">
-<td>testRenderForEachOrdered</td>
+<tr valign="top" class="test-row Success" id="test-id112">
+<td>testRenderSourceExplicitRangeInvalidEmptyStart<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id112')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id113">
+<td>testRenderDistinct<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id113')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id114">
+<td>testRenderSortedWithoutComparator<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id114')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.000</td>
 </tr>
-<tr valign="top" class="">
-<td>testRenderSourceExplicitRangeInvalidNoComma</td>
+<tr valign="top" class="test-row Success" id="test-id115">
+<td>testRenderCollectToList<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id115')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
-<td>0.002</td>
+<td>0.000</td>
 </tr>
-<tr valign="top" class="">
-<td>testRenderFindAny</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testRenderForEachMultipleStatements</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testRenderFlatMap</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testRenderForEach</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testRenderPeek</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testRenderSkip</td>
+<tr valign="top" class="test-row Success" id="test-id116">
+<td>testRenderReduce<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id116')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.004</td>
 </tr>
-<tr valign="top" class="">
-<td>testRenderSourceArray</td>
+<tr valign="top" class="test-row Success" id="test-id117">
+<td>testRenderSourceExplicitRangeWithExpression<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id117')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
 </tr>
-<tr valign="top" class="">
-<td>testRenderSourceExplicitRangeInvalidWhitespaceOnly</td>
+<tr valign="top" class="test-row Success" id="test-id118">
+<td>testRenderCount<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id118')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
 </tr>
-<tr valign="top" class="">
-<td>testRenderAnyMatch</td>
+<tr valign="top" class="test-row Success" id="test-id119">
+<td>testRenderLimit<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id119')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id120">
+<td>testRenderSourceIntRange<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id120')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.000</td>
-</tr>
-<tr valign="top" class="">
-<td>testRenderSourceExplicitRangeWithVariables</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testRenderSourceExplicitRange</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testRenderFilter</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testRenderSourceExplicitRangeInvalidEmptyStart</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testRenderDistinct</td>
-<td>Success</td>
-<td></td>
-<td>0.003</td>
-</tr>
-<tr valign="top" class="">
-<td>testRenderSortedWithoutComparator</td>
-<td>Success</td>
-<td></td>
-<td>0.000</td>
-</tr>
-<tr valign="top" class="">
-<td>testRenderCollectToList</td>
-<td>Success</td>
-<td></td>
-<td>0.000</td>
-</tr>
-<tr valign="top" class="">
-<td>testRenderReduce</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testRenderSourceExplicitRangeWithExpression</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testRenderCount</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testRenderLimit</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testRenderSourceIntRange</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
 </tr>
 </table>
 <div class="Properties"><a href="javascript:displayProperties('.org.sandbox.functional.core.renderer.StringRendererTest');">
@@ -2053,71 +3116,104 @@
 <th width="80%">Type</th>
 <th nowrap>Time(s)</th>
 </tr>
-<tr valign="top" class="">
-<td>testCollectTerminal</td>
+<tr valign="top" class="test-row Success" id="test-id121">
+<td>testCollectTerminal<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id121')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id122">
+<td>testForEachOrderedTerminal<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id122')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.003</td>
 </tr>
-<tr valign="top" class="">
-<td>testForEachOrderedTerminal</td>
+<tr valign="top" class="test-row Success" id="test-id123">
+<td>testForEachTerminal<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id123')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.003</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id124">
+<td>testMatchTerminalAnyMatch<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id124')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.005</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id125">
+<td>testCountTerminal<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id125')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
 </tr>
-<tr valign="top" class="">
-<td>testForEachTerminal</td>
+<tr valign="top" class="test-row Success" id="test-id126">
+<td>testReduceTerminal<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id126')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
-<td>0.002</td>
+<td>0.004</td>
 </tr>
-<tr valign="top" class="">
-<td>testMatchTerminalAnyMatch</td>
+<tr valign="top" class="test-row Success" id="test-id127">
+<td>testMatchTerminalNoneMatch<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id127')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
 </tr>
-<tr valign="top" class="">
-<td>testCountTerminal</td>
+<tr valign="top" class="test-row Success" id="test-id128">
+<td>testFindFirstTerminal<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id128')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
 </tr>
-<tr valign="top" class="">
-<td>testReduceTerminal</td>
+<tr valign="top" class="test-row Success" id="test-id129">
+<td>testForEachTerminalSingleArg<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id129')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
-<td>0.002</td>
+<td>0.003</td>
 </tr>
-<tr valign="top" class="">
-<td>testMatchTerminalNoneMatch</td>
+<tr valign="top" class="test-row Success" id="test-id130">
+<td>testMatchTerminalAllMatch<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id130')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
-<td>0.001</td>
+<td>0.000</td>
 </tr>
-<tr valign="top" class="">
-<td>testFindFirstTerminal</td>
+<tr valign="top" class="test-row Success" id="test-id131">
+<td>testFindAnyTerminal<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id131')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testForEachTerminalSingleArg</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testMatchTerminalAllMatch</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testFindAnyTerminal</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
+<td>0.000</td>
 </tr>
 </table>
 <div class="Properties"><a href="javascript:displayProperties('.org.sandbox.functional.core.terminal.TerminalOperationTest');">
@@ -2132,101 +3228,149 @@
 <th width="80%">Type</th>
 <th nowrap>Time(s)</th>
 </tr>
-<tr valign="top" class="">
-<td>testPeekOperation</td>
+<tr valign="top" class="test-row Success" id="test-id132">
+<td>testPeekOperation<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id132')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.004</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id133">
+<td>testSkipOperation<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id133')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id134">
+<td>testTransformThrowsOnNullSource<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id134')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id135">
+<td>testCollectTerminal<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id135')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id136">
+<td>testTransformThrowsOnNullModel<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id136')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.003</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id137">
+<td>testSimpleForEach<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id137')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id138">
+<td>testDefaultVariableNameWhenElementIsNull<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id138')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.000</td>
 </tr>
-<tr valign="top" class="">
-<td>testSkipOperation</td>
-<td>Success</td>
-<td></td>
-<td>0.005</td>
-</tr>
-<tr valign="top" class="">
-<td>testTransformThrowsOnNullSource</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testCollectTerminal</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testTransformThrowsOnNullModel</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testSimpleForEach</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testDefaultVariableNameWhenElementIsNull</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testCanTransformValidModel</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testCountTerminal</td>
-<td>Success</td>
-<td></td>
-<td>0.001</td>
-</tr>
-<tr valign="top" class="">
-<td>testArraySource</td>
+<tr valign="top" class="test-row Success" id="test-id139">
+<td>testCanTransformValidModel<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id139')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.000</td>
 </tr>
-<tr valign="top" class="">
-<td>testCanTransformWithNullSource</td>
+<tr valign="top" class="test-row Success" id="test-id140">
+<td>testCountTerminal<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id140')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.000</td>
 </tr>
-<tr valign="top" class="">
-<td>testFilterMapPipeline</td>
+<tr valign="top" class="test-row Success" id="test-id141">
+<td>testArraySource<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id141')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
 </tr>
-<tr valign="top" class="">
-<td>testComplexPipeline</td>
+<tr valign="top" class="test-row Success" id="test-id142">
+<td>testCanTransformWithNullSource<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id142')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id143">
+<td>testFilterMapPipeline<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id143')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
 </tr>
-<tr valign="top" class="">
-<td>testCanTransformWithNullModel</td>
+<tr valign="top" class="test-row Success" id="test-id144">
+<td>testComplexPipeline<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id144')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
 </tr>
-<tr valign="top" class="">
-<td>testFindFirstTerminal</td>
+<tr valign="top" class="test-row Success" id="test-id145">
+<td>testCanTransformWithNullModel<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id145')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
 </tr>
-<tr valign="top" class="">
-<td>testCanTransformWithBreak</td>
+<tr valign="top" class="test-row Success" id="test-id146">
+<td>testFindFirstTerminal<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id146')">
+                🔗
+            </span>
+</td>
 <td>Success</td>
 <td></td>
 <td>0.001</td>
+</tr>
+<tr valign="top" class="test-row Success" id="test-id147">
+<td>testCanTransformWithBreak<span class="permalink" title="Copy link to this test" onclick="copyPermalink('id147')">
+                🔗
+            </span>
+</td>
+<td>Success</td>
+<td></td>
+<td>0.000</td>
 </tr>
 </table>
 <div class="Properties"><a href="javascript:displayProperties('.org.sandbox.functional.core.transformer.LoopModelTransformerTest');">
