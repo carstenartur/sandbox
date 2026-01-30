@@ -290,6 +290,94 @@ public class MyTest {
 		// JUnitMigrationCleanUpTest.testJUnitCleanupSelectedCase using JUnitCleanupCases.RuleNestedExternalResource
 	}
 
+	@Test
+	public void migrates_timeout_rule_with_seconds() throws CoreException {
+		IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
+				"""
+				package test;
+				import org.junit.Rule;
+				import org.junit.Test;
+				import org.junit.rules.Timeout;
+				
+				public class MyTest {
+					@Rule
+					public Timeout timeout = Timeout.seconds(5);
+					
+					@Test
+					public void testWithTimeout() {
+						// Test code
+					}
+				}
+				""", false, null);
+
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETIMEOUT);
+
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+				"""
+				package test;
+				import java.util.concurrent.TimeUnit;
+				
+				import org.junit.jupiter.api.Test;
+				import org.junit.jupiter.api.Timeout;
+				
+				@Timeout(value = 5, unit = TimeUnit.SECONDS)
+				public class MyTest {
+					@Test
+					public void testWithTimeout() {
+						// Test code
+					}
+				}
+				"""
+		}, null);
+	}
+
+	@Test
+	public void migrates_timeout_rule_with_millis() throws CoreException {
+		IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
+				"""
+				package test;
+				import org.junit.Rule;
+				import org.junit.Test;
+				import org.junit.rules.Timeout;
+				
+				public class MyTest {
+					@Rule
+					public Timeout timeout = Timeout.millis(500);
+					
+					@Test
+					public void testWithTimeout() {
+						// Test code
+					}
+				}
+				""", false, null);
+
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETIMEOUT);
+
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+				"""
+				package test;
+				import java.util.concurrent.TimeUnit;
+				
+				import org.junit.jupiter.api.Test;
+				import org.junit.jupiter.api.Timeout;
+				
+				@Timeout(value = 500, unit = TimeUnit.MILLISECONDS)
+				public class MyTest {
+					@Test
+					public void testWithTimeout() {
+						// Test code
+					}
+				}
+				"""
+		}, null);
+	}
+
 	enum RuleCases {
 		TemporaryFolderBasic(
 				"""

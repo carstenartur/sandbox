@@ -116,8 +116,62 @@ Tests for complex scenarios combining multiple migration features.
 - **Coverage**:
   - Full test class with all lifecycle methods, assertions, and `@Ignore`
   - `TemporaryFolder` + `TestName` rules combined
+  - `TemporaryFolder` + `TestName` + `Timeout` rules combined
   - Suite with assertions and lifecycle methods
+  - Rules combined with lifecycle methods and assertions
 - **Purpose**: Validate that combinations of migrations work correctly together
+
+#### `MigrationAssertOptimizationTest.java`
+**Location**: `src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationAssertOptimizationTest.java`
+
+Tests for Assert optimization during JUnit 4→5 migration.
+- **Coverage**: Combines migration with optimization transformations
+- **Key scenarios**:
+  - Parameter swapping: `assertEquals(actualValue, expectedValue)` → `assertEquals(expectedValue, actualValue)`
+  - Negation removal: `assertTrue(!condition)` → `assertFalse(condition)`
+  - `assertFalse(!condition)` → `assertTrue(condition)`
+  - Message parameter reordering in JUnit 4→5 migration
+  - Multiple assertions with optimizations
+  - Wildcard static imports with optimizations
+
+#### `MigrationAssumeOptimizationTest.java`
+**Location**: `src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationAssumeOptimizationTest.java`
+
+Tests for Assume optimization during JUnit 4→5 migration.
+- **Coverage**: Combines migration with optimization transformations
+- **Key scenarios**:
+  - `assumeTrue(!condition)` → `assumeFalse(condition)`
+  - `assumeFalse(!condition)` → `assumeTrue(condition)`
+  - Negation removal with message parameters
+  - Multiple assumptions with optimizations
+
+#### `MigrationEdgeCasesTest.java`
+**Location**: `src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationEdgeCasesTest.java`
+
+Tests for edge cases in JUnit 4→5 migration.
+- **Coverage**: Special scenarios and corner cases
+- **Key scenarios**:
+  - Combined `@Test` parameters: `@Test(expected=..., timeout=...)`
+  - Comments preservation during migration
+  - `@Ignore(value="reason")` → `@Disabled("reason")`
+  - Wildcard static imports (`import static org.junit.Assert.*`)
+  - Multiple assertions in one method
+  - Empty test methods
+  - Mixed JUnit 4 annotation and JUnit 3 naming patterns
+
+#### `TriggerPatternPluginTest.java`
+**Location**: `src/org/eclipse/jdt/ui/tests/quickfix/Java8/TriggerPatternPluginTest.java`
+
+Tests for V2 TriggerPattern-based JUnit migration plugins.
+- **Coverage**: V2 plugin implementations using declarative @RewriteRule annotations
+- **Tested plugins**:
+  - `BeforeJUnitPluginV2` - @Before → @BeforeEach
+  - `AfterJUnitPluginV2` - @After → @AfterEach
+  - `TestJUnitPluginV2` - @Test migration
+  - `BeforeClassJUnitPluginV2` - @BeforeClass → @BeforeAll
+  - `AfterClassJUnitPluginV2` - @AfterClass → @AfterAll
+  - `IgnoreJUnitPluginV2` - @Ignore → @Disabled (with and without reason)
+- **Purpose**: Verify that V2 TriggerPattern implementations produce correct migrations
 
 ## Legacy Test Files
 
