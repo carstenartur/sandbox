@@ -16,7 +16,7 @@ The plugin successfully handles most common JUnit 4 to JUnit 5 migrations:
 - **Assertions**: All standard assertions with correct parameter reordering
 - **Assumptions**: Basic assumptions and Hamcrest assumeThat
 - **Rules**: TestName → TestInfo, ExternalResource extension pattern
-- **Runners**: MockitoJUnitRunner → MockitoExtension, SpringRunner → SpringExtension, Suite → @Suite with @SelectClasses
+- **Runners**: MockitoJUnitRunner → MockitoExtension, SpringRunner → SpringExtension, Suite → @Suite with @SelectClasses, Enclosed → @Nested, Theories → @ParameterizedTest, Categories → @Suite with @IncludeTags/@ExcludeTags
 
 ### What's Not Working ❌
 Complex transformations that require code body changes:
@@ -24,8 +24,8 @@ Complex transformations that require code body changes:
 - **TemporaryFolder**: Rule field migration incomplete
 
 ### Migration Coverage
-- **~75% of common patterns** are fully supported
-- **~20% are complex** and require AST body transformations
+- **~80% of common patterns** are fully supported
+- **~15% are complex** and require AST body transformations
 - **~5% are simple** but not yet implemented
 
 
@@ -123,7 +123,122 @@ public class MyTestSuite {
 
 ## 🟡 Medium Priority Issues
 
-### 3. assumeThat with Hamcrest - Unused Import
+### 3. @RunWith(Enclosed.class) → @Nested Migration
+**Status:** ✅ **IMPLEMENTED**  
+**Priority:** Medium  
+**Affected Tests:**
+- `MigrationRunnersAdvancedTest.migrates_runWith_enclosed_to_nested` (enabled)
+
+**Description:**
+The cleanup migrates JUnit 4's `@RunWith(Enclosed.class)` to JUnit 5's `@Nested`:
+
+```java
+// JUnit 4
+@RunWith(Enclosed.class)
+public class EnclosedTest {
+    public static class WhenConditionA {
+        @Test
+        public void shouldDoSomething() {
+        }
+    }
+}
+
+// JUnit 5
+public class EnclosedTest {
+    @Nested
+    class WhenConditionA {
+        @Test
+        void shouldDoSomething() {
+        }
+    }
+}
+```
+
+**Implementation:**
+- Removes `@RunWith(Enclosed.class)` from outer class
+- Removes `static` and optionally `public` modifiers from inner classes
+- Adds `@Nested` annotation to inner classes
+- Updates imports accordingly
+
+---
+
+### 4. @RunWith(Theories.class) → @ParameterizedTest Migration
+**Status:** ✅ **IMPLEMENTED**  
+**Priority:** Medium  
+**Affected Tests:**
+- `MigrationRunnersAdvancedTest.migrates_runWith_theories_to_parameterizedTest` (enabled)
+
+**Description:**
+The cleanup migrates JUnit 4's `@RunWith(Theories.class)` with `@DataPoints` to JUnit 5's `@ParameterizedTest`:
+
+```java
+// JUnit 4
+@RunWith(Theories.class)
+public class TheoriesTest {
+    @DataPoints
+    public static int[] values = {1, 2, 3, 4, 5};
+    
+    @Theory
+    public void testPositiveNumbers(int value) {
+        assertTrue(value > 0);
+    }
+}
+
+// JUnit 5
+public class TheoriesTest {
+    @ParameterizedTest
+    @ValueSource(ints = {1, 2, 3, 4, 5})
+    void testPositiveNumbers(int value) {
+        assertTrue(value > 0);
+    }
+}
+```
+
+**Implementation:**
+- Removes `@RunWith(Theories.class)` from class
+- Removes `@DataPoints` field
+- Replaces `@Theory` method with `@ParameterizedTest` and `@ValueSource`
+- Updates imports accordingly
+
+---
+
+### 5. @RunWith(Categories.class) → @Suite with @IncludeTags/@ExcludeTags Migration
+**Status:** ✅ **IMPLEMENTED**  
+**Priority:** Medium  
+**Affected Tests:**
+- `MigrationRunnersAdvancedTest.migrates_runWith_categories_to_suite_with_tags` (enabled)
+
+**Description:**
+The cleanup migrates JUnit 4's `@RunWith(Categories.class)` to JUnit 5's `@Suite` with tag-based filtering:
+
+```java
+// JUnit 4
+@RunWith(Categories.class)
+@IncludeCategory(FastTests.class)
+@ExcludeCategory(SlowTests.class)
+@SuiteClasses({TestA.class, TestB.class})
+public class FastTestSuite {
+}
+
+// JUnit 5
+@Suite
+@IncludeTags("FastTests")
+@ExcludeTags("SlowTests")
+@SelectClasses({TestA.class, TestB.class})
+public class FastTestSuite {
+}
+```
+
+**Implementation:**
+- Replaces `@RunWith(Categories.class)` with `@Suite`
+- Transforms `@IncludeCategory(X.class)` to `@IncludeTags("X")`
+- Transforms `@ExcludeCategory(X.class)` to `@ExcludeTags("X")`
+- Transforms `@SuiteClasses` to `@SelectClasses`
+- Updates imports accordingly
+
+---
+
+### 6. assumeThat with Hamcrest - Unused Import
 **Status:** Bug in Cleanup  
 **Priority:** Medium  
 **Affected Tests:**
