@@ -1596,26 +1596,20 @@
     <xsl:param name="package"/>
     <xsl:param name="class"/>
     
-    <xsl:if test="$show-coverage-links = 'true' and string-length($test-module) > 0">
-        <xsl:variable name="source-module">
-            <xsl:call-template name="get-source-module">
-                <xsl:with-param name="test-module" select="$test-module"/>
-            </xsl:call-template>
-        </xsl:variable>
-        
+    <!-- Only show coverage links for source packages (org.sandbox), not test-only packages -->
+    <xsl:if test="$show-coverage-links = 'true' and string-length($test-module) > 0 and starts-with($package, 'org.sandbox')">
         <xsl:variable name="source-class">
             <xsl:call-template name="get-source-class">
                 <xsl:with-param name="test-class" select="$class"/>
             </xsl:call-template>
         </xsl:variable>
         
-        <!-- Generate link: {github-pages-base}{coverage-base}/{source-module}/{package-path}/{ClassName}.html -->
+        <!-- Generate link: {github-pages-base}{coverage-base}/{package-path}/{ClassName}.html -->
+        <!-- Note: JaCoCo aggregate reports do not include module names in the path -->
         <xsl:variable name="package-path" select="translate($package, '.', '/')"/>
         <xsl:variable name="coverage-url">
             <xsl:value-of select="$github-pages-base"/>
             <xsl:value-of select="$coverage-base"/>
-            <xsl:text>/</xsl:text>
-            <xsl:value-of select="$source-module"/>
             <xsl:text>/</xsl:text>
             <xsl:value-of select="$package-path"/>
             <xsl:text>/</xsl:text>
