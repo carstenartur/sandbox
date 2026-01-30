@@ -159,6 +159,7 @@ public class EnclosedTest {
 - Removes `static` and optionally `public` modifiers from inner classes
 - Adds `@Nested` annotation to inner classes
 - Updates imports accordingly
+- **Note:** Only transforms static inner classes that contain test methods (methods annotated with @Test)
 
 ---
 
@@ -199,6 +200,10 @@ public class TheoriesTest {
 - Removes `@DataPoints` field
 - Replaces `@Theory` method with `@ParameterizedTest` and `@ValueSource`
 - Updates imports accordingly
+- **Limitations:** 
+  - Only handles a single `@Theory` method (multiple theory methods are not fully supported)
+  - Only handles a single `@DataPoints` field
+  - Supports int[], String[], double[], long[], short[], byte[], float[], char[], boolean[], and Class[] arrays
 
 ---
 
@@ -235,6 +240,7 @@ public class FastTestSuite {
 - Transforms `@ExcludeCategory(X.class)` to `@ExcludeTags("X")`
 - Transforms `@SuiteClasses` to `@SelectClasses`
 - Updates imports accordingly
+- **Note:** Category class hierarchies are converted to plain string tags, losing type safety and hierarchy support
 
 ---
 
