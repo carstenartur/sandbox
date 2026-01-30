@@ -26,9 +26,11 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.fix.helper.AbstractFunctionalCall;
+import org.sandbox.jdt.internal.corext.fix.helper.ConsecutiveLoopGroupDetector.ConsecutiveLoopGroup;
 import org.sandbox.jdt.internal.corext.fix.helper.IteratorLoopToFunctional;
 import org.sandbox.jdt.internal.corext.fix.helper.LoopToFunctional;
 import org.sandbox.jdt.internal.corext.fix.helper.LoopToFunctionalV2;
+import org.sandbox.jdt.internal.corext.fix.helper.StreamConcatRefactorer;
 import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
 public enum UseFunctionalCallFixCore {
@@ -82,6 +84,41 @@ public enum UseFunctionalCallFixCore {
 				TextEditGroup group= createTextEditGroup(Messages.format(MultiFixMessages.FunctionalCallCleanUp_description,new Object[] {UseFunctionalCallFixCore.this.toString()}), cuRewrite);
 				cuRewrite.getASTRewrite().setTargetSourceRangeComputer(computer);
 				functionalcall.rewrite(UseFunctionalCallFixCore.this, visited, cuRewrite, group, data);
+			}
+		};
+	}
+
+	/**
+	 * Creates a rewrite operation for a group of consecutive loops that should be
+	 * converted to Stream.concat().
+	 * 
+	 * <p>Phase 8 feature: Multiple consecutive for-loops adding to the same list
+	 * are converted to Stream.concat() instead of being converted individually.</p>
+	 * 
+	 * @param group the group of consecutive loops
+	 * @return the rewrite operation for the group
+	 */
+	public CompilationUnitRewriteOperation rewriteConsecutiveLoops(final ConsecutiveLoopGroup group) {
+		return new CompilationUnitRewriteOperation() {
+			@Override
+			public void rewriteAST(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel) throws CoreException {
+				TextEditGroup editGroup = createTextEditGroup(
+					Messages.format(MultiFixMessages.FunctionalCallCleanUp_description,
+						new Object[] { "Stream.concat() for consecutive loops" }),
+					cuRewrite);
+				cuRewrite.getASTRewrite().setTargetSourceRangeComputer(computer);
+				
+				// Create and execute the StreamConcatRefactorer
+				StreamConcatRefactorer refactorer = new StreamConcatRefactorer(
+					group, 
+					cuRewrite.getASTRewrite(), 
+					editGroup, 
+					cuRewrite
+				);
+				
+				if (refactorer.canRefactor()) {
+					refactorer.refactor();
+				}
 			}
 		};
 	}
