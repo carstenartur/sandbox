@@ -19,7 +19,7 @@ import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
  * #%L
  * Sandbox junit cleanup
  * %%
- * Copyright (C) 2024 hammer
+ * Copyright (C) 2026 hammer
  * %%
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
@@ -103,19 +103,6 @@ public class FixMethodOrderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 		// Return true to continue processing other @FixMethodOrder annotations
 		return true;
 	}
-
-//	@Override
-//	public void rewrite(JUnitCleanUpFixCore upp, final ReferenceHolder<Integer, JunitHolder> hit,
-//			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
-////		ASTRewrite rewrite= cuRewrite.getASTRewrite();
-////		AST ast= cuRewrite.getRoot().getAST();
-////		ImportRewrite importrewriter= cuRewrite.getImportRewrite();
-////		for (Entry<Integer, JunitHolder> entry : hit.entrySet()) {
-//			//JunitHolder mh= entry.getValue();
-////			@SuppressWarnings("unused")
-////			Annotation minv= mh.getAnnotation();
-////		}
-//	}
 	
 	@Override
 	protected
