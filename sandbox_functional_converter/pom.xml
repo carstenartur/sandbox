@@ -11,6 +11,13 @@
 	<artifactId>sandbox_functional_converter</artifactId>
 	<name>Sandbox functional converter</name>
 	<packaging>eclipse-plugin</packaging>
+	<dependencies>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox-functional-converter-core</artifactId>
+			<version>1.0.0-SNAPSHOT</version>
+		</dependency>
+	</dependencies>
 	<build>
 		<sourceDirectory>${project.basedir}/src</sourceDirectory>
 	</build>
