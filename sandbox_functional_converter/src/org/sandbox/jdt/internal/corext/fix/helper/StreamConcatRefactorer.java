@@ -148,6 +148,13 @@ public class StreamConcatRefactorer {
 	 * </ul>
 	 */
 	public void refactor() {
+		// Check if refactoring is possible before proceeding
+		if (!canRefactor()) {
+			// Silently skip if refactoring is not possible
+			// This can happen if loops don't match the expected pattern
+			return;
+		}
+		
 		List<EnhancedForStatement> loops = group.getLoops();
 		if (loops.size() < 2) {
 			return;

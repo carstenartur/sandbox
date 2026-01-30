@@ -148,6 +148,11 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 	private boolean processFoundNode(UseFunctionalCallFixCore fixcore,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, EnhancedForStatement visited,
 			ReferenceHolder<Integer, FunctionalHolder> dataHolder, ReferenceHolder<ASTNode, Object> sharedDataHolder) {
+		// Skip loops that have already been processed (e.g., as part of a consecutive loop group)
+		if (nodesprocessed.contains(visited)) {
+			return false; // Don't visit children of already-processed loops
+		}
+		
 		PreconditionsChecker pc = new PreconditionsChecker(visited, (CompilationUnit) visited.getRoot());
 		if (!pc.isSafeToRefactor()) {
 			// Loop cannot be safely refactored to functional style
