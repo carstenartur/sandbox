@@ -36,6 +36,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.BeforeClassJUnitPluginV2;
 import org.sandbox.jdt.internal.corext.fix.helper.BeforeJUnitPluginV2;
 import org.sandbox.jdt.internal.corext.fix.helper.CategoryJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.ExternalResourceJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.FixMethodOrderJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.IgnoreJUnitPluginV2;
 import org.sandbox.jdt.internal.corext.fix.helper.ParameterizedTestJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleErrorCollectorJUnitPlugin;
@@ -66,6 +67,7 @@ public enum JUnitCleanUpFixCore {
 	AFTERCLASS(new AfterClassJUnitPluginV2()),
 	IGNORE(new IgnoreJUnitPluginV2()),
 	CATEGORY(new CategoryJUnitPlugin()),
+	FIX_METHOD_ORDER(new FixMethodOrderJUnitPlugin()),
 	RUNWITH(new RunWithJUnitPlugin()),
 	ASSERT(new AssertJUnitPlugin()),
 	ASSERT_OPTIMIZATION(new AssertOptimizationJUnitPlugin()),
