@@ -58,6 +58,7 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.TestNameRefactorer;
 
 /**
  * Plugin to migrate JUnit 4 TemporaryFolder rule to JUnit 5 @TempDir.
@@ -190,7 +191,9 @@ public class RuleTemporayFolderJUnitPlugin extends AbstractTool<ReferenceHolder<
 							resolveInvocation.setExpression(ast.newSimpleName(originalName));
 							resolveInvocation.setName(ast.newSimpleName("resolve"));
 							// newFile only takes a single String argument
-							resolveInvocation.arguments().add(ASTNode.copySubtree(ast, (ASTNode) node.arguments().get(0)));
+							// Copy and transform TestName.getMethodName() calls in the argument
+							ASTNode originalArg = (ASTNode) node.arguments().get(0);
+							resolveInvocation.arguments().add(TestNameRefactorer.copyAndTransformTestNameReferences(originalArg, ast));
 							
 							createFileInvocation.arguments().add(resolveInvocation);
 							
@@ -225,20 +228,20 @@ public class RuleTemporayFolderJUnitPlugin extends AbstractTool<ReferenceHolder<
 							
 							// Build chained resolve() calls for multiple arguments
 							// Start with tempFolder.resolve("a")
-							Object firstArg = node.arguments().get(0);
+							ASTNode firstArg = (ASTNode) node.arguments().get(0);
 							MethodInvocation chainedResolve = ast.newMethodInvocation();
 							chainedResolve.setExpression(ast.newSimpleName(originalName));
 							chainedResolve.setName(ast.newSimpleName("resolve"));
-							chainedResolve.arguments().add(ASTNode.copySubtree(ast, (ASTNode) firstArg));
+							chainedResolve.arguments().add(TestNameRefactorer.copyAndTransformTestNameReferences(firstArg, ast));
 							
 							// Chain additional resolve() calls for subsequent arguments
 							// .resolve("b").resolve("c")...
 							for (int i = 1; i < node.arguments().size(); i++) {
-								Object arg = node.arguments().get(i);
+								ASTNode arg = (ASTNode) node.arguments().get(i);
 								MethodInvocation nextResolve = ast.newMethodInvocation();
 								nextResolve.setExpression(chainedResolve);
 								nextResolve.setName(ast.newSimpleName("resolve"));
-								nextResolve.arguments().add(ASTNode.copySubtree(ast, (ASTNode) arg));
+								nextResolve.arguments().add(TestNameRefactorer.copyAndTransformTestNameReferences(arg, ast));
 								chainedResolve = nextResolve;
 							}
 							

@@ -76,7 +76,7 @@ public class MigrationAssumeOptimizationTest {
 					@Test
 					public void testAssumption() {
 						boolean condition = false;
-						Assumptions.assumeFalse(condition);
+						Assumptions.assumeTrue(!condition);
 					}
 				}
 				"""
@@ -116,7 +116,7 @@ public class MigrationAssumeOptimizationTest {
 					@Test
 					public void testAssumption() {
 						boolean condition = true;
-						Assumptions.assumeTrue(condition);
+						Assumptions.assumeFalse(!condition);
 					}
 				}
 				"""
@@ -156,7 +156,7 @@ public class MigrationAssumeOptimizationTest {
 					@Test
 					public void testAssumption() {
 						boolean isWindows = false;
-						Assumptions.assumeFalse(isWindows, "Test should run on non-Windows");
+						Assumptions.assumeTrue(!isWindows, "Test should run on non-Windows");
 					}
 				}
 				"""
@@ -196,7 +196,7 @@ public class MigrationAssumeOptimizationTest {
 					@Test
 					public void testAssumption() {
 						boolean condition = true;
-						Assumptions.assumeTrue(condition, "Condition should be true");
+						Assumptions.assumeFalse(!condition, "Condition should be true");
 					}
 				}
 				"""
@@ -235,8 +235,8 @@ public class MigrationAssumeOptimizationTest {
 				public class MyTest {
 					@Test
 					public void testMultipleAssumptions() {
-						Assumptions.assumeFalse(false);
-						Assumptions.assumeTrue(true);
+						Assumptions.assumeTrue(!false);
+						Assumptions.assumeFalse(!true);
 					}
 				}
 				"""

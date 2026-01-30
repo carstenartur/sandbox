@@ -324,17 +324,17 @@ public class MyTest {
 				public class MyTest {
 					@TempDir
 					Path tempFolder;
-					
-					TestInfo testName;
-					
+
+					private String testName;
+
 					@BeforeEach
-					void initTestName(TestInfo testInfo) {
-						this.testName = testInfo;
+					void init(TestInfo testInfo) {
+						this.testName = testInfo.getDisplayName();
 					}
 					
 					@Test
 					public void testWithMultipleRules() throws Exception {
-						File file = Files.createFile(tempFolder.resolve(testName.getDisplayName() + ".txt")).toFile();
+						File file = Files.createFile(tempFolder.resolve(testName + ".txt")).toFile();
 						// Test code
 					}
 				}
@@ -396,7 +396,7 @@ public class MyTest {
 				"""
 				package test;
 				import static org.junit.jupiter.api.Assertions.*;
-				
+
 				import org.junit.jupiter.api.AfterEach;
 				import org.junit.jupiter.api.BeforeEach;
 				import org.junit.jupiter.api.Disabled;
@@ -404,21 +404,21 @@ public class MyTest {
 				import org.junit.jupiter.api.TestInfo;
 				
 				public class MyTest {
-					TestInfo testName;
-					
+					private String testName;
+
 					@BeforeEach
-					void initTestName(TestInfo testInfo) {
-						this.testName = testInfo;
+					void init(TestInfo testInfo) {
+						this.testName = testInfo.getDisplayName();
 					}
 					
 					@BeforeEach
 					public void setUp() {
-						System.out.println("Setting up: " + testName.getDisplayName());
+						System.out.println("Setting up: " + testName);
 					}
 					
 					@AfterEach
 					public void tearDown() {
-						System.out.println("Tearing down: " + testName.getDisplayName());
+						System.out.println("Tearing down: " + testName);
 					}
 					
 					@Test

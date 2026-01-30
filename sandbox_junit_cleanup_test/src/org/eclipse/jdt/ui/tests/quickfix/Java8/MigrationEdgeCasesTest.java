@@ -70,12 +70,12 @@ public class MigrationEdgeCasesTest {
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
 				"""
 				package test;
+				import static org.junit.jupiter.api.Assertions.assertThrows;
+
 				import java.util.concurrent.TimeUnit;
-				
+
 				import org.junit.jupiter.api.Test;
 				import org.junit.jupiter.api.Timeout;
-				
-				import static org.junit.jupiter.api.Assertions.assertThrows;
 				
 				public class MyTest {
 					@Test
@@ -205,6 +205,7 @@ public class MigrationEdgeCasesTest {
 				"""
 				package test;
 				import static org.junit.jupiter.api.Assertions.*;
+
 				import org.junit.jupiter.api.Test;
 				
 				public class MyTest {

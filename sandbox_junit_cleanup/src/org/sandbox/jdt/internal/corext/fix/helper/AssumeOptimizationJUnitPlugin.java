@@ -52,13 +52,11 @@ public class AssumeOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder = new ReferenceHolder<>();
 		
-		// Find assumeTrue and assumeFalse calls in JUnit 4
-		HelperVisitor.forMethodCalls(ORG_JUNIT_ASSUME, Set.of("assumeTrue", "assumeFalse"))
-			.in(compilationUnit)
-			.excluding(nodesprocessed)
-			.processEach(dataHolder, (visited, aholder) -> processAssumption(fixcore, operations, visited, aholder));
+		// NOTE: We only process JUnit 5 (Assumptions) calls here.
+		// JUnit 4 (Assume) calls are handled by AssumeJUnitPlugin which does migration.
+		// Processing JUnit 4 here would conflict with the migration rewrites.
 		
-		// Find assumeTrue and assumeFalse calls in JUnit 5
+		// Find assumeTrue and assumeFalse calls in JUnit 5 only
 		HelperVisitor.forMethodCalls(ORG_JUNIT_JUPITER_API_ASSUMPTIONS, Set.of("assumeTrue", "assumeFalse"))
 			.in(compilationUnit)
 			.excluding(nodesprocessed)

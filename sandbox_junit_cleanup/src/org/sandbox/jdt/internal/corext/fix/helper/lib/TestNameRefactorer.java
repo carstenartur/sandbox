@@ -22,6 +22,7 @@ import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.ITypeHierarchy;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Block;
@@ -36,6 +37,7 @@ import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.PrimitiveType;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.StructuralPropertyDescriptor;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -178,14 +180,145 @@ public final class TestNameRefactorer {
 				method.getBody().accept(new ASTVisitor() {
 					@Override
 					public boolean visit(MethodInvocation node) {
-						if (node.getExpression() != null && ORG_JUNIT_RULES_TEST_NAME
-								.equals(node.getExpression().resolveTypeBinding().getQualifiedName())) {
-							SimpleName newFieldAccess = ast.newSimpleName(TEST_NAME);
-							rewriter.replace(node, newFieldAccess, group);
+						if (node.getExpression() != null) {
+							ITypeBinding typeBinding = node.getExpression().resolveTypeBinding();
+							if (typeBinding != null && ORG_JUNIT_RULES_TEST_NAME.equals(typeBinding.getQualifiedName())) {
+								SimpleName newFieldAccess = ast.newSimpleName(TEST_NAME);
+								rewriter.replace(node, newFieldAccess, group);
+							}
 						}
 						return super.visit(node);
 					}
 				});
+			}
+		}
+	}
+
+	/**
+	 * Copies an AST subtree and transforms TestName.getMethodName() calls to just the field name.
+	 * This is useful when copying arguments that may contain TestName usages, such as in TemporaryFolder migration.
+	 * 
+	 * The method checks the ORIGINAL node for type bindings (which are available on the original AST),
+	 * and applies transformations to the copy.
+	 * 
+	 * @param originalNode the original AST node to copy and transform
+	 * @param ast the target AST instance for creating the copy
+	 * @return the transformed copy of the node
+	 */
+	public static ASTNode copyAndTransformTestNameReferences(ASTNode originalNode, AST ast) {
+		if (originalNode == null || ast == null) {
+			return originalNode;
+		}
+		
+		// First, find all TestName.getMethodName() calls in the original and record their positions
+		final java.util.Set<MethodInvocation> testNameCalls = new java.util.HashSet<>();
+		originalNode.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(MethodInvocation node) {
+				if (node.getExpression() != null && "getMethodName".equals(node.getName().getIdentifier())) {
+					ITypeBinding typeBinding = node.getExpression().resolveTypeBinding();
+					if (typeBinding != null && ORG_JUNIT_RULES_TEST_NAME.equals(typeBinding.getQualifiedName())) {
+						testNameCalls.add(node);
+					}
+				}
+				return super.visit(node);
+			}
+		});
+		
+		// If no TestName calls found, just return a simple copy
+		if (testNameCalls.isEmpty()) {
+			return ASTNode.copySubtree(ast, originalNode);
+		}
+		
+		// Create the copy and transform TestName references
+		ASTNode copiedNode = ASTNode.copySubtree(ast, originalNode);
+		
+		// Now transform the copy - we need to find the corresponding nodes in the copy
+		// by matching the pattern (since we know from the original which ones need transformation)
+		copiedNode.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(MethodInvocation node) {
+				if (node.getExpression() != null && "getMethodName".equals(node.getName().getIdentifier())) {
+					// In the copy, we can't check type bindings, but we know from the original
+					// that getMethodName() calls on SimpleName expressions should be transformed
+					if (node.getExpression() instanceof SimpleName) {
+						SimpleName replacement = ast.newSimpleName(TEST_NAME);
+						replaceInParent(node, replacement);
+					}
+				}
+				return super.visit(node);
+			}
+		});
+		
+		return copiedNode;
+	}
+	
+	/**
+	 * Transforms a copied AST subtree by replacing TestName.getMethodName() calls with just the field name.
+	 * This is useful when copying arguments that may contain TestName usages, such as in TemporaryFolder migration.
+	 * 
+	 * Note: Copied AST nodes from ASTNode.copySubtree may not have resolved type bindings, so this method
+	 * also checks by pattern (SimpleName expression + "getMethodName" method name).
+	 * 
+	 * @param copiedNode the copied AST node to transform
+	 * @param ast the AST instance
+	 * @return the transformed node (same reference as input, modified in place)
+	 * @deprecated Use {@link #copyAndTransformTestNameReferences(ASTNode, AST)} instead which checks bindings on the original
+	 */
+	@Deprecated
+	public static ASTNode transformTestNameReferencesInCopy(ASTNode copiedNode, AST ast) {
+		if (copiedNode == null || ast == null) {
+			return copiedNode;
+		}
+		
+		copiedNode.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(MethodInvocation node) {
+				// Check if this is a getMethodName() call on a TestName-typed expression
+				if (node.getExpression() != null && "getMethodName".equals(node.getName().getIdentifier())) {
+					ITypeBinding typeBinding = node.getExpression().resolveTypeBinding();
+					boolean isTestNameType = typeBinding != null && ORG_JUNIT_RULES_TEST_NAME.equals(typeBinding.getQualifiedName());
+					
+					// Also check by pattern: if expression is a SimpleName, it might be a TestName field
+					// This handles copied nodes where type bindings are not resolved
+					boolean isTestNamePattern = node.getExpression() instanceof SimpleName;
+					
+					if (isTestNameType || isTestNamePattern) {
+						// Replace the entire method invocation with just the field name
+						SimpleName replacement = ast.newSimpleName(TEST_NAME);
+						// We need to replace node in its parent
+						replaceInParent(node, replacement);
+					}
+				}
+				return super.visit(node);
+			}
+		});
+		
+		return copiedNode;
+	}
+	
+	/**
+	 * Replaces a node in its parent with a replacement node.
+	 * Handles common parent types like InfixExpression, MethodInvocation arguments, etc.
+	 * 
+	 * @param oldNode the node to replace
+	 * @param newNode the replacement node
+	 */
+	@SuppressWarnings("unchecked")
+	private static void replaceInParent(ASTNode oldNode, ASTNode newNode) {
+		ASTNode parent = oldNode.getParent();
+		if (parent == null) {
+			return;
+		}
+		
+		StructuralPropertyDescriptor location = oldNode.getLocationInParent();
+		if (location.isChildProperty()) {
+			parent.setStructuralProperty(location, newNode);
+		} else if (location.isChildListProperty()) {
+			List<ASTNode> list = (List<ASTNode>) parent.getStructuralProperty(location);
+			int index = list.indexOf(oldNode);
+			if (index >= 0) {
+				list.set(index, newNode);
 			}
 		}
 	}
