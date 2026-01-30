@@ -66,6 +66,7 @@ public class MigrationFixMethodOrderTest {
 
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_FIX_METHOD_ORDER);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
 
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
 				"""
@@ -116,6 +117,7 @@ public class MigrationFixMethodOrderTest {
 
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_FIX_METHOD_ORDER);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
 
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
 				"""
@@ -166,6 +168,7 @@ public class MigrationFixMethodOrderTest {
 
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_FIX_METHOD_ORDER);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
 
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
 				"""
