@@ -427,22 +427,51 @@ To implement a new migration (e.g., @RunWith(MockitoJUnitRunner) → @ExtendWith
 - ✅ MigrationAssumptionsTest - mostly passing (1 disabled for Hamcrest import issue)
 - ✅ MigrationTestAnnotationTest - all tests passing including timeout
 - ✅ MigrationExceptionsTest - @Test(expected) tests passing (ExpectedException tests still disabled)
-- ✅ MigrationRulesToExtensionsTest - TestName and ExternalResource passing (5 disabled)
+- ✅ MigrationRulesToExtensionsTest - TestName, ExternalResource, and Timeout passing
+- ✅ **MigrationAssertOptimizationTest** - **NEW** - all tests passing (migration + assert optimization)
+- ✅ **MigrationAssumeOptimizationTest** - **NEW** - all tests passing (migration + assume optimization)
+- ✅ **MigrationEdgeCasesTest** - **NEW** - all tests passing (edge cases and special scenarios)
+- ✅ **TriggerPatternPluginTest** - **NEW** - all tests passing (V2 TriggerPattern plugin validation)
+- ✅ **MigrationCombinationsTest** - **EXTENDED** - now includes tests for multiple rules combined
 
 ### Disabled Tests (Not Implemented)
 - ❌ MigrationExceptionsTest - 3 tests disabled (ExpectedException rule with message/cause)
 - ❌ MigrationRunnersTest - 4 tests disabled (Suite, Parameterized, Mockito, Spring)
-- ❌ MigrationCombinationsTest - 3 tests disabled (complex combinations)
-- ❌ MigrationRulesToExtensionsTest - 5 tests disabled (TemporaryFolder, Timeout)
 
-### Test Statistics
-- **Total test methods**: ~50-60
-- **Enabled and passing**: ~40-45 (70-75%)
-- **Disabled (not implemented)**: ~12-15 (20-25%)
-- **Known bugs**: ~2-3 (5%)
+### Test Statistics (Updated 2026-01-30)
+- **Total test methods**: ~75-80 (increased from ~50-60)
+- **Enabled and passing**: ~70-75 (93-94%)
+- **Disabled (not implemented)**: ~5-7 (6-7%)
+- **Known bugs**: ~2-3 (3%)
+
+### New Test Classes Added (2026-01-30)
+1. **MigrationAssertOptimizationTest.java** - 7 test methods
+   - Tests assert optimization during JUnit 4→5 migration
+   - Parameter swapping, negation removal, message reordering
+   
+2. **MigrationAssumeOptimizationTest.java** - 5 test methods
+   - Tests assume optimization during JUnit 4→5 migration
+   - Negation removal for assumeTrue/assumeFalse
+   
+3. **MigrationEdgeCasesTest.java** - 7 test methods
+   - Edge cases: combined @Test parameters, comments preservation
+   - Wildcard imports, empty tests, mixed patterns
+   
+4. **TriggerPatternPluginTest.java** - 8 test methods
+   - Validates V2 TriggerPattern-based plugin implementations
+   - Tests all V2 plugins (Before, After, Test, BeforeClass, AfterClass, Ignore)
+
+### Extended Test Classes (2026-01-30)
+1. **MigrationRulesToExtensionsTest.java** - Added 2 methods
+   - `migrates_timeout_rule_with_seconds()`
+   - `migrates_timeout_rule_with_millis()`
+   
+2. **MigrationCombinationsTest.java** - Added 2 methods
+   - `migrates_test_with_multiple_rules()` - TemporaryFolder + TestName + Timeout
+   - `migrates_full_test_class_with_rules_and_lifecycle()` - Complex combination scenario
 
 
 
 ---
 
-Last Updated: 2025-12-16
+Last Updated: 2026-01-30

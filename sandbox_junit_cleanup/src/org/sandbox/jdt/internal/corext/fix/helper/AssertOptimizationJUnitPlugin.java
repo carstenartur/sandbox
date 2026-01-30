@@ -82,17 +82,9 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder = new ReferenceHolder<>();
 		
-		// Find assertTrue and assertFalse calls for optimization (JUnit 4)
-		HelperVisitor.forMethodCalls(ORG_JUNIT_ASSERT, Set.of("assertTrue", "assertFalse"))
-			.in(compilationUnit)
-			.excluding(nodesprocessed)
-			.processEach(dataHolder, (visited, aholder) -> {
-				if (visited instanceof MethodInvocation mi) {
-					boolean isTrue = "assertTrue".equals(mi.getName().getIdentifier());
-					return processAssertion(fixcore, operations, visited, aholder, isTrue);
-				}
-				return true;
-			});
+		// NOTE: We only process JUnit 5 (Assertions) calls here.
+		// JUnit 4 (Assert) calls are handled by AssertJUnitPlugin which does migration.
+		// The optimization for JUnit 4 assertions should be done within the migration itself.
 		
 		// Find assertTrue and assertFalse calls for optimization (JUnit 5)
 		HelperVisitor.forMethodCalls(ORG_JUNIT_JUPITER_API_ASSERTIONS, Set.of("assertTrue", "assertFalse"))
@@ -102,17 +94,6 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 				if (visited instanceof MethodInvocation mi) {
 					boolean isTrue = "assertTrue".equals(mi.getName().getIdentifier());
 					return processAssertion(fixcore, operations, visited, aholder, isTrue);
-				}
-				return true;
-			});
-		
-		// Find assertion calls with expected/actual parameters for parameter order correction (JUnit 4)
-		HelperVisitor.forMethodCalls(ORG_JUNIT_ASSERT, METHODS_WITH_EXPECTED_ACTUAL)
-			.in(compilationUnit)
-			.excluding(nodesprocessed)
-			.processEach(dataHolder, (visited, aholder) -> {
-				if (visited instanceof MethodInvocation) {
-					return processParameterOrder(fixcore, operations, visited, aholder);
 				}
 				return true;
 			});
