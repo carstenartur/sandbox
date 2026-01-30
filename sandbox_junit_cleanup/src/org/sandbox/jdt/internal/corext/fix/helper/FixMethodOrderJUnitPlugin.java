@@ -138,14 +138,14 @@ public class FixMethodOrderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 					ast.newSimpleName("MethodOrderer"),
 					ast.newSimpleName("MethodName")
 				)));
-				importRewriter.addImport(ORG_JUNIT_JUPITER_API_METHOD_ORDERER_METHOD_NAME);
+				importRewriter.addImport(ORG_JUNIT_JUPITER_API_METHOD_ORDERER);
 			} else { // "JVM"
 				// MethodOrderer.Random.class
 				typeLiteral.setType(ast.newSimpleType(ast.newQualifiedName(
 					ast.newSimpleName("MethodOrderer"),
 					ast.newSimpleName("Random")
 				)));
-				importRewriter.addImport(ORG_JUNIT_JUPITER_API_METHOD_ORDERER_RANDOM);
+				importRewriter.addImport(ORG_JUNIT_JUPITER_API_METHOD_ORDERER);
 			}
 			
 			newAnnotation.setValue(typeLiteral);
