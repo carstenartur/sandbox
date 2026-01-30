@@ -632,6 +632,12 @@
       .hidden {
         display: none !important;
       }
+      
+      /* Style for default package indication */
+      .default-package {
+        font-style: italic;
+        color: #888;
+      }
       </style>
       <script type="text/javascript" language="JavaScript">
         var TestCases = new Array();
@@ -1056,7 +1062,18 @@
                             <xsl:when test="$errorCount &gt; 0">Error</xsl:when>
                         </xsl:choose>
                     </xsl:attribute>
-                    <td><a href="#{@package}"><xsl:value-of select="@package"/></a></td>
+                    <td>
+                        <a href="#{@package}">
+                            <xsl:choose>
+                                <xsl:when test="normalize-space(@package)">
+                                    <xsl:value-of select="@package"/>
+                                </xsl:when>
+                                <xsl:otherwise>
+                                    <span class="default-package">(default package)</span>
+                                </xsl:otherwise>
+                            </xsl:choose>
+                        </a>
+                    </td>
                     <td><xsl:value-of select="$testCount"/></td>
                     <td><xsl:value-of select="$errorCount"/></td>
                     <td><xsl:value-of select="$failureCount"/></td>
@@ -1084,7 +1101,17 @@
         <xsl:for-each select="/testsuites/testsuite[not(./@package = preceding-sibling::testsuite/@package)]">
             <xsl:sort select="@package"/>
                 <a name="{@package}"></a>
-                <h3>Package <xsl:value-of select="@package"/></h3>
+                <h3>
+                    <xsl:text>Package </xsl:text>
+                    <xsl:choose>
+                        <xsl:when test="normalize-space(@package)">
+                            <xsl:value-of select="@package"/>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <span class="default-package">(default package)</span>
+                        </xsl:otherwise>
+                    </xsl:choose>
+                </h3>
 
                 <table class="details" border="0" cellpadding="5" cellspacing="2" width="95%">
                     <xsl:call-template name="testsuite.test.header"/>
