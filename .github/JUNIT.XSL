@@ -1597,7 +1597,7 @@
     <xsl:param name="class"/>
     
     <!-- Only show coverage links for source packages (org.sandbox), not test-only packages -->
-    <xsl:if test="$show-coverage-links = 'true' and string-length($test-module) > 0 and starts-with($package, 'org.sandbox')">
+    <xsl:if test="$show-coverage-links = 'true' and string-length($test-module) > 0 and starts-with(concat($package, '.'), 'org.sandbox.')">
         <xsl:variable name="source-class">
             <xsl:call-template name="get-source-class">
                 <xsl:with-param name="test-class" select="$class"/>
