@@ -95,8 +95,14 @@ jobs:
               # Track seen test suites to avoid duplicates
               declare -A seen_suites
               for xml in $xml_files; do
-                # Extract the testsuite name attribute
-                suite_name=$(grep -o 'name="[^"]*"' "$xml" | head -1 | sed 's/name="//;s/"//')
+                # Extract name attribute specifically from the testsuite element
+                # This handles both single-line and multi-line testsuite tags
+                suite_name=$(sed -n '/<testsuite/,/>/{/<testsuite/,/>/{p}}' "$xml" | tr -d '\n' | grep -o '<testsuite[^>]*' | grep -o 'name="[^"]*"' | sed 's/name="//;s/"//' || true)
+                
+                # Fallback: use the XML filename as identifier if name extraction failed
+                if [[ -z "$suite_name" ]]; then
+                  suite_name=$(basename "$xml" .xml)
+                fi
                 
                 # Only include this testsuite if we haven't seen it before
                 if [[ -n "$suite_name" && -z "${seen_suites[$suite_name]}" ]]; then
