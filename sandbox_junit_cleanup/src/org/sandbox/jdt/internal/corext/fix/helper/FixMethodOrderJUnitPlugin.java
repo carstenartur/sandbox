@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021 Carsten Hammer.
+ * Copyright (c) 2026 Carsten Hammer.
  *
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
@@ -94,10 +94,11 @@ public class FixMethodOrderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 		if (value instanceof QualifiedName qn) {
 			String methodSorter= qn.getName().getIdentifier(); // "NAME_ASCENDING", "JVM", "DEFAULT"
 			mh.additionalInfo= methodSorter;
+			
+			dataHolder.put(dataHolder.size(), mh);
+			operations.add(fixcore.rewrite(dataHolder));
 		}
-		
-		dataHolder.put(dataHolder.size(), mh);
-		operations.add(fixcore.rewrite(dataHolder));
+		// If value is not a QualifiedName, skip this annotation (invalid format)
 		
 		// Return true to continue processing other @FixMethodOrder annotations
 		return true;
@@ -124,10 +125,19 @@ public class FixMethodOrderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 		Annotation oldAnnotation= junitHolder.getAnnotation();
 		String methodSorter= (String) junitHolder.additionalInfo;
 		
+		// Validate methodSorter is not null
+		if (methodSorter == null) {
+			// Invalid or unsupported format, just remove the annotation
+			rewriter.remove(oldAnnotation, group);
+			importRewriter.removeImport(ORG_JUNIT_FIX_METHOD_ORDER);
+			importRewriter.removeImport(ORG_JUNIT_RUNNERS_METHOD_SORTERS);
+			return;
+		}
+		
 		if ("DEFAULT".equals(methodSorter)) {
 			// DEFAULT: Simply remove the annotation (JUnit 5 has no explicit default)
 			rewriter.remove(oldAnnotation, group);
-		} else {
+		} else if ("NAME_ASCENDING".equals(methodSorter) || "JVM".equals(methodSorter)) {
 			// NAME_ASCENDING or JVM: Create new @TestMethodOrder annotation
 			SingleMemberAnnotation newAnnotation= ast.newSingleMemberAnnotation();
 			newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_TEST_METHOD_ORDER));
@@ -142,7 +152,7 @@ public class FixMethodOrderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 					ast.newSimpleName("MethodName")
 				)));
 				importRewriter.addImport(ORG_JUNIT_JUPITER_API_METHOD_ORDERER_METHOD_NAME);
-			} else if ("JVM".equals(methodSorter)) {
+			} else { // "JVM"
 				// MethodOrderer.Random.class
 				typeLiteral.setType(ast.newSimpleType(ast.newQualifiedName(
 					ast.newSimpleName("MethodOrderer"),
@@ -156,6 +166,9 @@ public class FixMethodOrderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 			// Replace old annotation with new one
 			rewriter.replace(oldAnnotation, newAnnotation, group);
 			importRewriter.addImport(ORG_JUNIT_JUPITER_API_TEST_METHOD_ORDER);
+		} else {
+			// Unrecognized methodSorter value, just remove the annotation
+			rewriter.remove(oldAnnotation, group);
 		}
 		
 		// Remove old imports
