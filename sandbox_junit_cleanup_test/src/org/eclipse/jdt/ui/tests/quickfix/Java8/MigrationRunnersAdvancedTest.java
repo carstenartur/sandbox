@@ -76,28 +76,26 @@ public class MigrationRunnersAdvancedTest {
 
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
 				"""
-				package test;
-				import org.junit.jupiter.api.Nested;
-				import org.junit.jupiter.api.Test;
-				
-				public class EnclosedTest {
-				    
-				    @Nested
-				    class WhenConditionA {
-				        @Test
-				        void shouldDoSomething() {
-				            // test
-				        }
-				    }
-				    
-				    @Nested
-				    class WhenConditionB {
-				        @Test
-				        void shouldDoSomethingElse() {
-				            // test
-				        }
-				    }
-				}
+package test;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+
+public class EnclosedTest {
+
+    @Nested class WhenConditionA {
+        @Test
+        public void shouldDoSomething() {
+            // test
+        }
+    }
+
+    @Nested class WhenConditionB {
+        @Test
+        public void shouldDoSomethingElse() {
+            // test
+        }
+    }
+}
 				"""
 		}, null);
 	}
@@ -129,23 +127,25 @@ public class MigrationRunnersAdvancedTest {
 
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
 
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
 				"""
-				package test;
-				import static org.junit.jupiter.api.Assertions.assertTrue;
-				
-				import org.junit.jupiter.params.ParameterizedTest;
-				import org.junit.jupiter.params.provider.ValueSource;
-				
-				public class TheoriesTest {
-				    
-				    @ParameterizedTest
-				    @ValueSource(ints = {1, 2, 3, 4, 5})
-				    void testPositiveNumbers(int value) {
-				        assertTrue(value > 0);
-				    }
-				}
+package test;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+
+public class TheoriesTest {
+
+    @ParameterizedTest
+	@ValueSource(ints = { 1, 2, 3, 4, 5 })
+    public void testPositiveNumbers(int value) {
+        assertTrue(value > 0);
+    }
+}
 				"""
 		}, null);
 	}
