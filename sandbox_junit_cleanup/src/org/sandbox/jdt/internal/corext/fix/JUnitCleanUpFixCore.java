@@ -45,6 +45,9 @@ import org.sandbox.jdt.internal.corext.fix.helper.RuleTemporayFolderJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleTestnameJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleTimeoutJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RunWithJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.RunWithEnclosedJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.RunWithTheoriesJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.RunWithCategoriesJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.TestJUnit3Plugin;
 import org.sandbox.jdt.internal.corext.fix.helper.TestJUnitPluginV2;
 import org.sandbox.jdt.internal.corext.fix.helper.TestTimeoutJUnitPlugin;
@@ -67,6 +70,9 @@ public enum JUnitCleanUpFixCore {
 	IGNORE(new IgnoreJUnitPluginV2()),
 	CATEGORY(new CategoryJUnitPlugin()),
 	RUNWITH(new RunWithJUnitPlugin()),
+	RUNWITH_ENCLOSED(new RunWithEnclosedJUnitPlugin()),
+	RUNWITH_THEORIES(new RunWithTheoriesJUnitPlugin()),
+	RUNWITH_CATEGORIES(new RunWithCategoriesJUnitPlugin()),
 	ASSERT(new AssertJUnitPlugin()),
 	ASSERT_OPTIMIZATION(new AssertOptimizationJUnitPlugin()),
 	ASSUME(new AssumeJUnitPlugin()),
