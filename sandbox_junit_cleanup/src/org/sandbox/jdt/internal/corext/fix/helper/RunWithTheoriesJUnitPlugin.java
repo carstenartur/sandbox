@@ -15,6 +15,26 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
+/*-
+ * #%L
+ * Sandbox junit cleanup
+ * %%
+ * Copyright (C) 2026 hammer
+ * %%
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0.
+ * 
+ * This Source Code may also be made available under the following Secondary
+ * Licenses when the conditions for such availability set forth in the Eclipse
+ * Public License, v. 2.0 are satisfied: GNU General Public License, version 2
+ * with the GNU Classpath Exception which is
+ * available at https://www.gnu.org/software/classpath/license.html.
+ * 
+ * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+ * #L%
+ */
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -103,9 +123,11 @@ public class RunWithTheoriesJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 			parent = parent.getParent();
 		}
 		
-		if (!(parent instanceof TypeDeclaration typeDecl)) {
+		if (parent == null || !(parent instanceof TypeDeclaration)) {
 			return true;
 		}
+		
+		TypeDeclaration typeDecl = (TypeDeclaration) parent;
 		
 		// Find @DataPoints field and @Theory methods
 		TheoriesData theoriesData = new TheoriesData();
@@ -253,9 +275,10 @@ public class RunWithTheoriesJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 		NormalAnnotation valueSource = ast.newNormalAnnotation();
 		valueSource.setTypeName(ast.newSimpleName(ANNOTATION_VALUE_SOURCE));
 		
-		// Create the value pair (e.g., ints = {...})
+		// Determine the array type and use appropriate member name
+		String memberName = determineValueSourceMember(theoriesData.dataPointsField);
 		MemberValuePair valuePair = ast.newMemberValuePair();
-		valuePair.setName(ast.newSimpleName("ints")); // Assuming int[] for now
+		valuePair.setName(ast.newSimpleName(memberName));
 		
 		// Copy the array initializer from @DataPoints
 		if (theoriesData.dataPointsArray != null) {
@@ -265,6 +288,53 @@ public class RunWithTheoriesJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 		
 		valueSource.values().add(valuePair);
 		return valueSource;
+	}
+	
+	/**
+	 * Determine the appropriate @ValueSource member name based on the array type.
+	 */
+	private String determineValueSourceMember(FieldDeclaration field) {
+		if (field == null) {
+			return "ints"; // default fallback
+		}
+		
+		Type fieldType = field.getType();
+		if (fieldType == null) {
+			return "ints";
+		}
+		
+		String typeName = fieldType.toString();
+		
+		// Handle array types
+		if (typeName.endsWith("[]")) {
+			String baseType = typeName.substring(0, typeName.length() - 2);
+			switch (baseType) {
+				case "int":
+					return "ints";
+				case "String":
+					return "strings";
+				case "double":
+					return "doubles";
+				case "long":
+					return "longs";
+				case "short":
+					return "shorts";
+				case "byte":
+					return "bytes";
+				case "float":
+					return "floats";
+				case "char":
+					return "chars";
+				case "boolean":
+					return "booleans";
+				case "Class":
+					return "classes";
+				default:
+					return "ints"; // fallback
+			}
+		}
+		
+		return "ints"; // default fallback
 	}
 	
 	@Override

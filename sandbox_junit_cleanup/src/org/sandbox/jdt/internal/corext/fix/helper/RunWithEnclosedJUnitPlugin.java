@@ -15,6 +15,26 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
+/*-
+ * #%L
+ * Sandbox junit cleanup
+ * %%
+ * Copyright (C) 2026 hammer
+ * %%
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0.
+ * 
+ * This Source Code may also be made available under the following Secondary
+ * Licenses when the conditions for such availability set forth in the Eclipse
+ * Public License, v. 2.0 are satisfied: GNU General Public License, version 2
+ * with the GNU Classpath Exception which is
+ * available at https://www.gnu.org/software/classpath/license.html.
+ * 
+ * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+ * #L%
+ */
+
 import java.util.List;
 import java.util.Set;
 
@@ -132,15 +152,17 @@ public class RunWithEnclosedJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 			parent = parent.getParent();
 		}
 		
-		if (!(parent instanceof TypeDeclaration outerClass)) {
+		if (parent == null || !(parent instanceof TypeDeclaration)) {
 			return;
 		}
+		
+		TypeDeclaration outerClass = (TypeDeclaration) parent;
 		
 		// Transform inner static classes to @Nested classes
 		TypeDeclaration[] innerTypes = outerClass.getTypes();
 		for (TypeDeclaration innerType : innerTypes) {
-			// Check if it's a static class
-			if (Modifier.isStatic(innerType.getModifiers())) {
+			// Check if it's a static class and contains test methods
+			if (Modifier.isStatic(innerType.getModifiers()) && hasTestMethods(innerType)) {
 				// Remove static modifier
 				ListRewrite modifiersRewrite = rewriter.getListRewrite(innerType, TypeDeclaration.MODIFIERS2_PROPERTY);
 				List<?> modifiers = innerType.modifiers();
@@ -165,6 +187,26 @@ public class RunWithEnclosedJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 		importRewriter.addImport(ORG_JUNIT_JUPITER_API_NESTED);
 		importRewriter.removeImport(ORG_JUNIT_EXPERIMENTAL_RUNNERS_ENCLOSED);
 		importRewriter.removeImport(ORG_JUNIT_RUNWITH);
+	}
+	
+	/**
+	 * Check if a type declaration contains methods annotated with @Test.
+	 */
+	private boolean hasTestMethods(TypeDeclaration typeDecl) {
+		for (MethodDeclaration method : typeDecl.getMethods()) {
+			List<?> modifiers = method.modifiers();
+			for (Object modifier : modifiers) {
+				if (modifier instanceof Annotation annotation) {
+					String annotationName = annotation.getTypeName().getFullyQualifiedName();
+					if ("Test".equals(annotationName) || 
+							ORG_JUNIT_TEST.equals(annotationName) || 
+							ORG_JUNIT_JUPITER_TEST.equals(annotationName)) {
+						return true;
+					}
+				}
+			}
+		}
+		return false;
 	}
 	
 	@Override
