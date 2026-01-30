@@ -188,6 +188,12 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_CATEGORY, MYCleanUpConstants.JUNIT_CLEANUP_4_CATEGORY,
 				FALSE_TRUE);
 		
+		// Add FixMethodOrder checkbox
+		intent(junitGroup);
+		final CheckboxPreference junit_fixmethodorder= createCheckboxPref(junitGroup, numColumns-1,
+				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_FIX_METHOD_ORDER, MYCleanUpConstants.JUNIT_CLEANUP_4_FIX_METHOD_ORDER,
+				FALSE_TRUE);
+		
 		// Add Rule Timeout checkbox
 		intent(junitGroup);
 		final CheckboxPreference junit_ruletimeout= createCheckboxPref(junitGroup, numColumns-1,
@@ -216,6 +222,7 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				junit_ruletimeout,
 				junit_runwith,
 				junit_category,
+				junit_fixmethodorder,
 				junit_lost_tests});
 		
 		// Add nested dependencies for @Test parameters

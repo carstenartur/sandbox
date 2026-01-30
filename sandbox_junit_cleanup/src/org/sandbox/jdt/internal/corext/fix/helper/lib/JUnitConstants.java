@@ -42,6 +42,7 @@ public final class JUnitConstants {
 	public static final String ANNOTATION_SELECT_CLASSES = "SelectClasses";
 	public static final String ANNOTATION_SUITE = "Suite";
 	public static final String ANNOTATION_TAG = "Tag";
+	public static final String ANNOTATION_TEST_METHOD_ORDER = "TestMethodOrder";
 	public static final String MOCKITO_EXTENSION = "MockitoExtension";
 	public static final String SPRING_EXTENSION = "SpringExtension";
 	public static final String ANNOTATION_NESTED = "Nested";
@@ -92,6 +93,8 @@ public final class JUnitConstants {
 	public static final String ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORY = "org.junit.experimental.categories.Category";
 
 	// ===== JUnit 4 Runner Fully Qualified References =====
+	
+	public static final String ORG_JUNIT_RUNNERS_METHOD_SORTERS = "org.junit.runners.MethodSorters";
 
 	public static final String ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER = "org.mockito.junit.MockitoJUnitRunner";
 	public static final String ORG_MOCKITO_RUNNERS_MOCKITO_JUNIT_RUNNER = "org.mockito.runners.MockitoJUnitRunner";
@@ -130,6 +133,10 @@ public final class JUnitConstants {
 	public static final String ORG_JUNIT_JUPITER_API_ASSUMPTIONS = "org.junit.jupiter.api.Assumptions";
 	public static final String ORG_JUNIT_JUPITER_API_TAG = "org.junit.jupiter.api.Tag";
 	public static final String ORG_JUNIT_JUPITER_API_NESTED = "org.junit.jupiter.api.Nested";
+	public static final String ORG_JUNIT_JUPITER_API_TEST_METHOD_ORDER = "org.junit.jupiter.api.TestMethodOrder";
+	public static final String ORG_JUNIT_JUPITER_API_METHOD_ORDERER = "org.junit.jupiter.api.MethodOrderer";
+	public static final String ORG_JUNIT_JUPITER_API_METHOD_ORDERER_METHOD_NAME = "org.junit.jupiter.api.MethodOrderer.MethodName";
+	public static final String ORG_JUNIT_JUPITER_API_METHOD_ORDERER_RANDOM = "org.junit.jupiter.api.MethodOrderer.Random";
 	
 	// ===== JUnit 5 Parameterized Fully Qualified References =====
 	

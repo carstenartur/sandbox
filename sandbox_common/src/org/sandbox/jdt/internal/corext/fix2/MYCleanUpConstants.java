@@ -147,6 +147,10 @@ public class MYCleanUpConstants {
 	/**
 	 * 
 	 */
+	public static final String JUNIT_CLEANUP_4_FIX_METHOD_ORDER= "cleanup.junitcleanup_4_fix_method_order"; //$NON-NLS-1$
+	/**
+	 * 
+	 */
 	public static final String JUNIT_CLEANUP_4_TEST= "cleanup.junitcleanup_4_test"; //$NON-NLS-1$
 	/**
 	 * 
