@@ -246,7 +246,7 @@ public class StreamConcatRefactorer {
 	 * before it.</p>
 	 * 
 	 * @param pipeline the complete pipeline with collect
-	 * @return the pipeline without collect, or the original if no collect found
+	 * @return the pipeline without collect, or null if structure is unexpected
 	 */
 	private MethodInvocation removeTerminalCollect(MethodInvocation pipeline) {
 		if (pipeline == null) {
@@ -260,8 +260,8 @@ public class StreamConcatRefactorer {
 			if (pipeline.getExpression() instanceof MethodInvocation) {
 				return (MethodInvocation) pipeline.getExpression();
 			}
-			// If expression is not a method invocation, something is wrong - return original
-			return pipeline;
+			// Unexpected structure - return null to fail safely
+			return null;
 		}
 
 		// Not a collect call - return as is
@@ -335,7 +335,7 @@ public class StreamConcatRefactorer {
 	 * 
 	 * <p>Pattern:</p>
 	 * <pre>{@code
-	 * List<Entry> entries = new ArrayList<>();  // Preceding declaration
+	 * List<Entry> entries = new ArrayList<>();  // Preceding declaration (with or without size)
 	 * for (Type1 item : list1) { entries.add(...); }
 	 * for (Type2 item : list2) { entries.add(...); }
 	 * 
@@ -374,8 +374,9 @@ public class StreamConcatRefactorer {
 
 		Statement precedingStmt = (Statement) statements.get(forLoopIndex - 1);
 
-		// Check if the preceding statement is an empty collection declaration for the target variable
-		String declaredVar = CollectPatternDetector.isEmptyCollectionDeclaration(precedingStmt);
+		// Check if the preceding statement is a collection declaration for the target variable
+		// We accept both empty collections and collections with size hints
+		String declaredVar = getCollectionDeclarationVariable(precedingStmt);
 		if (declaredVar == null || !declaredVar.equals(group.getTargetVariable())) {
 			return null;
 		}
@@ -403,5 +404,53 @@ public class StreamConcatRefactorer {
 		rewrite.remove(precedingStmt, editGroup);
 
 		return newDecl;
+	}
+
+	/**
+	 * Gets the variable name from a collection declaration statement.
+	 * Accepts both empty collections and collections with constructor arguments (e.g., size hints).
+	 * 
+	 * @param stmt the statement to check
+	 * @return the variable name if it's a collection declaration, null otherwise
+	 */
+	private String getCollectionDeclarationVariable(Statement stmt) {
+		// Try the standard empty collection check first
+		String emptyVar = CollectPatternDetector.isEmptyCollectionDeclaration(stmt);
+		if (emptyVar != null) {
+			return emptyVar;
+		}
+
+		// Also accept collections with constructor arguments (e.g., new ArrayList<>(size))
+		if (!(stmt instanceof VariableDeclarationStatement)) {
+			return null;
+		}
+
+		VariableDeclarationStatement varDecl = (VariableDeclarationStatement) stmt;
+		if (varDecl.fragments().size() != 1) {
+			return null;
+		}
+
+		VariableDeclarationFragment fragment = (VariableDeclarationFragment) varDecl.fragments().get(0);
+		Expression initializer = fragment.getInitializer();
+
+		if (!(initializer instanceof org.eclipse.jdt.core.dom.ClassInstanceCreation)) {
+			return null;
+		}
+
+		org.eclipse.jdt.core.dom.ClassInstanceCreation creation = 
+			(org.eclipse.jdt.core.dom.ClassInstanceCreation) initializer;
+		
+		org.eclipse.jdt.core.dom.ITypeBinding typeBinding = creation.resolveTypeBinding();
+		if (typeBinding == null) {
+			return null;
+		}
+
+		// Check if it's a supported collection type
+		String qualifiedName = typeBinding.getErasure().getQualifiedName();
+		if (CollectorType.fromCollectionType(qualifiedName) != null) {
+			return fragment.getName().getIdentifier();
+		}
+
+		return null;
 	}
 }
