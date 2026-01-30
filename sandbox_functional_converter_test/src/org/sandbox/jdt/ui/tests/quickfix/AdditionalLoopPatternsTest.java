@@ -450,41 +450,42 @@ public class AdditionalLoopPatternsTest {
 				""";
 
 		String expected = """
-				package test1;
-				import java.util.*;
-				import java.util.stream.Collectors;
-				import java.util.stream.Stream;
-				public class RuleChainBuilder {
-					private List<MethodRule> methodRules = new ArrayList<>();
-					private List<TestRule> testRules = new ArrayList<>();
-					private Map<Object, Integer> orderValues = new HashMap<>();
-					private static final Comparator<RuleEntry> ENTRY_COMPARATOR = Comparator.comparingInt(e -> e.order);
+package test1;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+public class RuleChainBuilder {
+	private List<MethodRule> methodRules = new ArrayList<>();
+	private List<TestRule> testRules = new ArrayList<>();
+	private Map<Object, Integer> orderValues = new HashMap<>();
+	private static final Comparator<RuleEntry> ENTRY_COMPARATOR = Comparator.comparingInt(e -> e.order);
 
-					private List<RuleEntry> getSortedEntries() {
-						List<RuleEntry> ruleEntries = Stream.concat(
-								methodRules.stream().map(rule -> new RuleEntry(rule, RuleEntry.TYPE_METHOD_RULE, orderValues.get(rule))),
-								testRules.stream().map(rule -> new RuleEntry(rule, RuleEntry.TYPE_TEST_RULE, orderValues.get(rule)))
-						).collect(Collectors.toList());
-						Collections.sort(ruleEntries, ENTRY_COMPARATOR);
-						return ruleEntries;
-					}
+	private List<RuleEntry> getSortedEntries() {
+		List<RuleEntry> ruleEntries = Stream.concat(
+				methodRules.stream()
+						.map(rule -> new RuleEntry(rule, RuleEntry.TYPE_METHOD_RULE, orderValues.get(rule))),
+				testRules.stream().map(rule -> new RuleEntry(rule, RuleEntry.TYPE_TEST_RULE, orderValues.get(rule))))
+				.collect(Collectors.toList());
+		Collections.sort(ruleEntries, ENTRY_COMPARATOR);
+		return ruleEntries;
+	}
 
-					interface MethodRule {}
-					interface TestRule {}
+	interface MethodRule {}
+	interface TestRule {}
 
-					static class RuleEntry {
-						static final int TYPE_METHOD_RULE = 1;
-						static final int TYPE_TEST_RULE = 2;
-						Object rule;
-						int type;
-						int order;
-						RuleEntry(Object rule, int type, Integer order) {
-							this.rule = rule;
-							this.type = type;
-							this.order = order != null ? order : 0;
-						}
-					}
-				}
+	static class RuleEntry {
+		static final int TYPE_METHOD_RULE = 1;
+		static final int TYPE_TEST_RULE = 2;
+		Object rule;
+		int type;
+		int order;
+		RuleEntry(Object rule, int type, Integer order) {
+			this.rule = rule;
+			this.type = type;
+			this.order = order != null ? order : 0;
+		}
+	}
+}
 				""";
 
 		ICompilationUnit cu = pack.createCompilationUnit("RuleChainBuilder.java", given, false, null);
