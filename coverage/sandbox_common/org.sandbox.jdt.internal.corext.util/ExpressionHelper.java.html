@@ -82,18 +82,18 @@ public final class ExpressionHelper {
 	 * @see #needsParentheses(Expression)
 	 */
 	public static Expression createNegatedExpression(AST ast, Expression condition) {
-<span class="pc bpc" id="L85" title="1 of 2 branches missed.">		if (ast == null) {</span>
-<span class="nc" id="L86">			throw new IllegalArgumentException(&quot;ast cannot be null&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">		if (ast == null) {</span>
+<span class="fc" id="L86">			throw new IllegalArgumentException(&quot;ast cannot be null&quot;); //$NON-NLS-1$</span>
 		}
-<span class="pc bpc" id="L88" title="1 of 2 branches missed.">		if (condition == null) {</span>
-<span class="nc" id="L89">			throw new IllegalArgumentException(&quot;condition cannot be null&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L88" title="All 2 branches covered.">		if (condition == null) {</span>
+<span class="fc" id="L89">			throw new IllegalArgumentException(&quot;condition cannot be null&quot;); //$NON-NLS-1$</span>
 		}
 
 <span class="fc" id="L92">		Expression operand = (Expression) ASTNode.copySubtree(ast, condition);</span>
 
 		// Wrap binary expressions and other complex expressions in parentheses
 		// to ensure correct operator precedence
-<span class="pc bpc" id="L96" title="1 of 2 branches missed.">		if (needsParentheses(condition)) {</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">		if (needsParentheses(condition)) {</span>
 <span class="fc" id="L97">			ParenthesizedExpression parenthesized = ast.newParenthesizedExpression();</span>
 <span class="fc" id="L98">			parenthesized.setExpression(operand);</span>
 <span class="fc" id="L99">			operand = parenthesized;</span>
@@ -135,28 +135,28 @@ public final class ExpressionHelper {
 	 * @throws IllegalArgumentException if expr is null
 	 */
 	public static boolean needsParentheses(Expression expr) {
-<span class="pc bpc" id="L138" title="1 of 2 branches missed.">		if (expr == null) {</span>
-<span class="nc" id="L139">			throw new IllegalArgumentException(&quot;expr cannot be null&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">		if (expr == null) {</span>
+<span class="fc" id="L139">			throw new IllegalArgumentException(&quot;expr cannot be null&quot;); //$NON-NLS-1$</span>
 		}
 
 		// Binary expressions (==, !=, &lt;, &gt;, &lt;=, &gt;=, &amp;&amp;, ||, etc.) need parentheses
-<span class="pc bpc" id="L143" title="1 of 2 branches missed.">		if (expr instanceof InfixExpression) {</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">		if (expr instanceof InfixExpression) {</span>
 <span class="fc" id="L144">			return true;</span>
 		}
 		// Conditional expressions (ternary operator) need parentheses
-<span class="nc bnc" id="L147" title="All 2 branches missed.">		if (expr instanceof ConditionalExpression) {</span>
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">		if (expr instanceof ConditionalExpression) {</span>
 <span class="nc" id="L148">			return true;</span>
 		}
 		// instanceof expressions need parentheses
-<span class="nc bnc" id="L151" title="All 2 branches missed.">		if (expr instanceof InstanceofExpression) {</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">		if (expr instanceof InstanceofExpression) {</span>
 <span class="nc" id="L152">			return true;</span>
 		}
 		// Assignment expressions need parentheses
-<span class="nc bnc" id="L155" title="All 2 branches missed.">		if (expr instanceof Assignment) {</span>
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">		if (expr instanceof Assignment) {</span>
 <span class="nc" id="L156">			return true;</span>
 		}
 		// Simple names, literals, method calls, field access, etc. don't need parentheses
-<span class="nc" id="L159">		return false;</span>
+<span class="fc" id="L159">		return false;</span>
 	}
 
 	/**
@@ -189,7 +189,7 @@ public final class ExpressionHelper {
 <span class="nc" id="L189">			throw new IllegalArgumentException(&quot;expression cannot be null&quot;); //$NON-NLS-1$</span>
 		}
 
-<span class="pc bpc" id="L192" title="1 of 4 branches missed.">		if (expression instanceof SimpleName &amp;&amp; varName != null) {</span>
+<span class="fc bfc" id="L192" title="All 4 branches covered.">		if (expression instanceof SimpleName &amp;&amp; varName != null) {</span>
 <span class="fc" id="L193">			SimpleName simpleName = (SimpleName) expression;</span>
 <span class="fc" id="L194">			return simpleName.getIdentifier().equals(varName);</span>
 		}
@@ -232,7 +232,7 @@ public final class ExpressionHelper {
 <span class="fc" id="L232">		Expression unwrapped = ASTNodes.getUnparenthesedExpression(expr);</span>
 
 		// Check if it's a negated expression
-<span class="pc bpc" id="L235" title="1 of 2 branches missed.">		if (unwrapped instanceof PrefixExpression) {</span>
+<span class="fc bfc" id="L235" title="All 2 branches covered.">		if (unwrapped instanceof PrefixExpression) {</span>
 <span class="fc" id="L236">			PrefixExpression prefixExpr = (PrefixExpression) unwrapped;</span>
 <span class="pc bpc" id="L237" title="1 of 2 branches missed.">			if (prefixExpr.getOperator() == PrefixExpression.Operator.NOT) {</span>
 				// Return the operand without the NOT
@@ -241,7 +241,7 @@ public final class ExpressionHelper {
 		}
 
 		// Not a negated expression, return as-is
-<span class="nc" id="L244">		return expr;</span>
+<span class="fc" id="L244">		return expr;</span>
 	}
 
 	/**
@@ -291,7 +291,7 @@ public final class ExpressionHelper {
 		// Check if it's a negated expression
 <span class="fc bfc" id="L292" title="All 2 branches covered.">		if (unwrapped instanceof PrefixExpression) {</span>
 <span class="fc" id="L293">			PrefixExpression prefixExpr = (PrefixExpression) unwrapped;</span>
-<span class="pc bpc" id="L294" title="1 of 2 branches missed.">			return prefixExpr.getOperator() == PrefixExpression.Operator.NOT;</span>
+<span class="fc bfc" id="L294" title="All 2 branches covered.">			return prefixExpr.getOperator() == PrefixExpression.Operator.NOT;</span>
 		}
 
 <span class="fc" id="L297">		return false;</span>

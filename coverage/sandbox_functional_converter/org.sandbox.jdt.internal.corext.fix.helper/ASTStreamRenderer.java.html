@@ -288,197 +288,298 @@ public class ASTStreamRenderer implements ASTAwareRenderer&lt;Expression, Statem
 <span class="nc" id="L288">        return forEachCall;</span>
     }
     
+    /**
+     * Renders a direct forEach call without stream prefix (e.g., list.forEach(...) instead of list.stream().forEach(...)).
+     * 
+     * &lt;p&gt;This method is used for simple forEach patterns with no intermediate operations.
+     * It generates more idiomatic code by avoiding the unnecessary .stream() call.&lt;/p&gt;
+     * 
+     * &lt;p&gt;&lt;b&gt;Examples:&lt;/b&gt;&lt;/p&gt;
+     * &lt;ul&gt;
+     *   &lt;li&gt;Collections: {@code list.forEach(item -&gt; System.out.println(item))}&lt;/li&gt;
+     *   &lt;li&gt;Arrays: {@code Arrays.stream(array).forEach(item -&gt; ...)} (arrays don't have forEach method)&lt;/li&gt;
+     * &lt;/ul&gt;
+     * 
+     * &lt;p&gt;&lt;b&gt;Immutability Considerations:&lt;/b&gt;&lt;/p&gt;
+     * &lt;p&gt;This method is safe for both mutable and immutable collections:
+     * &lt;ul&gt;
+     *   &lt;li&gt;Immutable collections (List.of, Collections.unmodifiableList, etc.) support forEach&lt;/li&gt;
+     *   &lt;li&gt;forEach only reads elements, doesn't modify the collection structure&lt;/li&gt;
+     *   &lt;li&gt;Side effects in the lambda body are the user's responsibility&lt;/li&gt;
+     * &lt;/ul&gt;
+     * &lt;/p&gt;
+     * 
+     * @param source the source descriptor (must be COLLECTION or ITERABLE for direct forEach)
+     * @param bodyStatements the body statements to execute for each element
+     * @param variableName the loop variable name
+     * @param ordered whether to use forEachOrdered (only relevant for streams)
+     * @return the direct forEach invocation
+     */
+    public Expression renderDirectForEach(SourceDescriptor source, List&lt;String&gt; bodyStatements, 
+                                           String variableName, boolean ordered) {
+        // For arrays, we must use Arrays.stream().forEach() since arrays don't have a forEach method
+<span class="fc bfc" id="L321" title="All 2 branches covered.">        if (source.type() == SourceDescriptor.SourceType.ARRAY) {</span>
+<span class="fc" id="L322">            Expression streamSource = renderSource(source);</span>
+<span class="fc" id="L323">            return renderForEach(streamSource, bodyStatements, variableName, ordered);</span>
+        }
+        
+        // For collections and iterables, use direct forEach
+<span class="fc" id="L327">        MethodInvocation forEachCall = ast.newMethodInvocation();</span>
+<span class="fc" id="L328">        forEachCall.setExpression(createExpression(source.expression()));</span>
+<span class="fc" id="L329">        forEachCall.setName(ast.newSimpleName(&quot;forEach&quot;));</span>
+        
+<span class="fc" id="L331">        LambdaExpression lambda = ast.newLambdaExpression();</span>
+<span class="fc" id="L332">        VariableDeclarationFragment param = ast.newVariableDeclarationFragment();</span>
+<span class="fc" id="L333">        param.setName(ast.newSimpleName(variableName));</span>
+<span class="fc" id="L334">        lambda.parameters().add(param);</span>
+<span class="fc" id="L335">        lambda.setParentheses(false);</span>
+        
+        // Use original body if available (production), otherwise fall back to string parsing (tests)
+<span class="fc bfc" id="L338" title="All 2 branches covered.">        if (originalBody != null) {</span>
+            // Production path: Use copySubtree from original body to preserve binding information
+<span class="pc bpc" id="L340" title="1 of 2 branches missed.">            if (originalBody instanceof Block) {</span>
+<span class="fc" id="L341">                Block block = (Block) originalBody;</span>
+<span class="pc bpc" id="L342" title="1 of 2 branches missed.">                if (block.statements().size() == 1) {</span>
+                    // Single statement - extract as expression
+<span class="fc" id="L344">                    Statement stmt = (Statement) block.statements().get(0);</span>
+<span class="pc bpc" id="L345" title="1 of 2 branches missed.">                    if (stmt instanceof ExpressionStatement) {</span>
+<span class="fc" id="L346">                        ExpressionStatement exprStmt = (ExpressionStatement) stmt;</span>
+<span class="fc" id="L347">                        lambda.setBody((Expression) ASTNode.copySubtree(ast, exprStmt.getExpression()));</span>
+<span class="fc" id="L348">                    } else {</span>
+                        // Not an expression statement, copy the whole statement as block
+<span class="nc" id="L350">                        Block lambdaBlock = ast.newBlock();</span>
+<span class="nc" id="L351">                        lambdaBlock.statements().add(ASTNode.copySubtree(ast, stmt));</span>
+<span class="nc" id="L352">                        lambda.setBody(lambdaBlock);</span>
+                    }
+<span class="nc" id="L354">                } else {</span>
+                    // Multiple statements - copy all into a block
+<span class="nc" id="L356">                    Block lambdaBlock = ast.newBlock();</span>
+<span class="nc bnc" id="L357" title="All 2 branches missed.">                    for (Object stmt : block.statements()) {</span>
+<span class="nc" id="L358">                        lambdaBlock.statements().add(ASTNode.copySubtree(ast, (Statement) stmt));</span>
+                    }
+<span class="nc" id="L360">                    lambda.setBody(lambdaBlock);</span>
+                }
+<span class="nc" id="L362">            } else {</span>
+                // Body is a single statement (not a block)
+<span class="nc bnc" id="L364" title="All 2 branches missed.">                if (originalBody instanceof ExpressionStatement) {</span>
+<span class="nc" id="L365">                    ExpressionStatement exprStmt = (ExpressionStatement) originalBody;</span>
+<span class="nc" id="L366">                    lambda.setBody((Expression) ASTNode.copySubtree(ast, exprStmt.getExpression()));</span>
+<span class="nc" id="L367">                } else {</span>
+                    // Not an expression statement, wrap in block
+<span class="nc" id="L369">                    Block lambdaBlock = ast.newBlock();</span>
+<span class="nc" id="L370">                    lambdaBlock.statements().add(ASTNode.copySubtree(ast, originalBody));</span>
+<span class="nc" id="L371">                    lambda.setBody(lambdaBlock);</span>
+                }
+            }
+<span class="nc" id="L374">        } else {</span>
+            // Test/fallback path: Use bodyStatements strings (for unit tests)
+<span class="pc bpc" id="L376" title="1 of 2 branches missed.">            if (bodyStatements.size() == 1) {</span>
+<span class="fc" id="L377">                Expression bodyExpr = createExpression(bodyStatements.get(0));</span>
+<span class="fc" id="L378">                lambda.setBody(bodyExpr);</span>
+<span class="fc" id="L379">            } else {</span>
+<span class="nc" id="L380">                Block lambdaBlock = ast.newBlock();</span>
+<span class="nc bnc" id="L381" title="All 2 branches missed.">                for (String stmt : bodyStatements) {</span>
+<span class="nc" id="L382">                    lambdaBlock.statements().add(createStatement(stmt));</span>
+                }
+<span class="nc" id="L384">                lambda.setBody(lambdaBlock);</span>
+            }
+        }
+        
+<span class="fc" id="L388">        forEachCall.arguments().add(lambda);</span>
+<span class="fc" id="L389">        return forEachCall;</span>
+    }
+    
     @Override
     public Expression renderFilterWithPredicate(Expression pipeline, Supplier&lt;Expression&gt; predicateSupplier,
                                                  String variableName) {
         // Similar to renderFilter but uses the supplier
-<span class="nc" id="L295">        MethodInvocation filterCall = ast.newMethodInvocation();</span>
-<span class="nc" id="L296">        filterCall.setExpression(pipeline);</span>
-<span class="nc" id="L297">        filterCall.setName(ast.newSimpleName(&quot;filter&quot;));</span>
+<span class="nc" id="L396">        MethodInvocation filterCall = ast.newMethodInvocation();</span>
+<span class="nc" id="L397">        filterCall.setExpression(pipeline);</span>
+<span class="nc" id="L398">        filterCall.setName(ast.newSimpleName(&quot;filter&quot;));</span>
         
-<span class="nc" id="L299">        LambdaExpression lambda = ast.newLambdaExpression();</span>
-<span class="nc" id="L300">        VariableDeclarationFragment param = ast.newVariableDeclarationFragment();</span>
-<span class="nc" id="L301">        param.setName(ast.newSimpleName(variableName));</span>
-<span class="nc" id="L302">        lambda.parameters().add(param);</span>
-<span class="nc" id="L303">        lambda.setParentheses(false);</span>
+<span class="nc" id="L400">        LambdaExpression lambda = ast.newLambdaExpression();</span>
+<span class="nc" id="L401">        VariableDeclarationFragment param = ast.newVariableDeclarationFragment();</span>
+<span class="nc" id="L402">        param.setName(ast.newSimpleName(variableName));</span>
+<span class="nc" id="L403">        lambda.parameters().add(param);</span>
+<span class="nc" id="L404">        lambda.setParentheses(false);</span>
         
         // Get the predicate from the supplier (AST-aware)
-<span class="nc" id="L306">        Expression predicate = predicateSupplier.get();</span>
-<span class="nc bnc" id="L307" title="All 2 branches missed.">        if (predicate != null) {</span>
-<span class="nc" id="L308">            lambda.setBody((Expression) ASTNode.copySubtree(ast, predicate));</span>
-<span class="nc" id="L309">        } else {</span>
+<span class="nc" id="L407">        Expression predicate = predicateSupplier.get();</span>
+<span class="nc bnc" id="L408" title="All 2 branches missed.">        if (predicate != null) {</span>
+<span class="nc" id="L409">            lambda.setBody((Expression) ASTNode.copySubtree(ast, predicate));</span>
+<span class="nc" id="L410">        } else {</span>
             // Fallback to true literal
-<span class="nc" id="L311">            lambda.setBody(ast.newBooleanLiteral(true));</span>
+<span class="nc" id="L412">            lambda.setBody(ast.newBooleanLiteral(true));</span>
         }
         
-<span class="nc" id="L314">        filterCall.arguments().add(lambda);</span>
-<span class="nc" id="L315">        return filterCall;</span>
+<span class="nc" id="L415">        filterCall.arguments().add(lambda);</span>
+<span class="nc" id="L416">        return filterCall;</span>
     }
     
     @Override
     public Expression renderMapWithMapper(Expression pipeline, Supplier&lt;Expression&gt; mapperSupplier,
                                            String variableName, String targetType) {
         // Similar to renderMap but uses the supplier
-<span class="nc" id="L322">        MethodInvocation mapCall = ast.newMethodInvocation();</span>
-<span class="nc" id="L323">        mapCall.setExpression(pipeline);</span>
-<span class="nc" id="L324">        mapCall.setName(ast.newSimpleName(&quot;map&quot;));</span>
+<span class="nc" id="L423">        MethodInvocation mapCall = ast.newMethodInvocation();</span>
+<span class="nc" id="L424">        mapCall.setExpression(pipeline);</span>
+<span class="nc" id="L425">        mapCall.setName(ast.newSimpleName(&quot;map&quot;));</span>
         
-<span class="nc" id="L326">        LambdaExpression lambda = ast.newLambdaExpression();</span>
-<span class="nc" id="L327">        VariableDeclarationFragment param = ast.newVariableDeclarationFragment();</span>
-<span class="nc" id="L328">        param.setName(ast.newSimpleName(variableName));</span>
-<span class="nc" id="L329">        lambda.parameters().add(param);</span>
-<span class="nc" id="L330">        lambda.setParentheses(false);</span>
+<span class="nc" id="L427">        LambdaExpression lambda = ast.newLambdaExpression();</span>
+<span class="nc" id="L428">        VariableDeclarationFragment param = ast.newVariableDeclarationFragment();</span>
+<span class="nc" id="L429">        param.setName(ast.newSimpleName(variableName));</span>
+<span class="nc" id="L430">        lambda.parameters().add(param);</span>
+<span class="nc" id="L431">        lambda.setParentheses(false);</span>
         
         // Get the mapper from the supplier (AST-aware)
-<span class="nc" id="L333">        Expression mapper = mapperSupplier.get();</span>
-<span class="nc bnc" id="L334" title="All 2 branches missed.">        if (mapper != null) {</span>
-<span class="nc" id="L335">            lambda.setBody((Expression) ASTNode.copySubtree(ast, mapper));</span>
-<span class="nc" id="L336">        } else {</span>
+<span class="nc" id="L434">        Expression mapper = mapperSupplier.get();</span>
+<span class="nc bnc" id="L435" title="All 2 branches missed.">        if (mapper != null) {</span>
+<span class="nc" id="L436">            lambda.setBody((Expression) ASTNode.copySubtree(ast, mapper));</span>
+<span class="nc" id="L437">        } else {</span>
             // Fallback to the variable itself (identity mapper)
-<span class="nc" id="L338">            lambda.setBody(ast.newSimpleName(variableName));</span>
+<span class="nc" id="L439">            lambda.setBody(ast.newSimpleName(variableName));</span>
         }
         
-<span class="nc" id="L341">        mapCall.arguments().add(lambda);</span>
-<span class="nc" id="L342">        return mapCall;</span>
+<span class="nc" id="L442">        mapCall.arguments().add(lambda);</span>
+<span class="nc" id="L443">        return mapCall;</span>
     }
     
     
     @Override
     public Expression renderCollect(Expression pipeline, CollectTerminal terminal, String variableName) {
         // pipeline.collect(Collectors.toList()) etc.
-<span class="fc" id="L349">        MethodInvocation collectCall = ast.newMethodInvocation();</span>
-<span class="fc" id="L350">        collectCall.setExpression(pipeline);</span>
-<span class="fc" id="L351">        collectCall.setName(ast.newSimpleName(&quot;collect&quot;));</span>
+<span class="fc" id="L450">        MethodInvocation collectCall = ast.newMethodInvocation();</span>
+<span class="fc" id="L451">        collectCall.setExpression(pipeline);</span>
+<span class="fc" id="L452">        collectCall.setName(ast.newSimpleName(&quot;collect&quot;));</span>
         
-<span class="fc" id="L353">        MethodInvocation collector = ast.newMethodInvocation();</span>
-<span class="fc" id="L354">        collector.setExpression(ast.newSimpleName(&quot;Collectors&quot;));</span>
+<span class="fc" id="L454">        MethodInvocation collector = ast.newMethodInvocation();</span>
+<span class="fc" id="L455">        collector.setExpression(ast.newSimpleName(&quot;Collectors&quot;));</span>
         
-<span class="pc bpc" id="L356" title="4 of 6 branches missed.">        switch (terminal.collectorType()) {</span>
+<span class="pc bpc" id="L457" title="4 of 6 branches missed.">        switch (terminal.collectorType()) {</span>
             case TO_LIST:
-<span class="fc" id="L358">                collector.setName(ast.newSimpleName(&quot;toList&quot;));</span>
-<span class="fc" id="L359">                break;</span>
+<span class="fc" id="L459">                collector.setName(ast.newSimpleName(&quot;toList&quot;));</span>
+<span class="fc" id="L460">                break;</span>
             case TO_SET:
-<span class="fc" id="L361">                collector.setName(ast.newSimpleName(&quot;toSet&quot;));</span>
-<span class="fc" id="L362">                break;</span>
+<span class="fc" id="L462">                collector.setName(ast.newSimpleName(&quot;toSet&quot;));</span>
+<span class="fc" id="L463">                break;</span>
             case TO_MAP:
-<span class="nc" id="L364">                collector.setName(ast.newSimpleName(&quot;toMap&quot;));</span>
+<span class="nc" id="L465">                collector.setName(ast.newSimpleName(&quot;toMap&quot;));</span>
                 // Key and value mappers würden hier hinzugefügt
-<span class="nc" id="L366">                break;</span>
+<span class="nc" id="L467">                break;</span>
             case JOINING:
-<span class="nc" id="L368">                collector.setName(ast.newSimpleName(&quot;joining&quot;));</span>
-<span class="nc" id="L369">                break;</span>
+<span class="nc" id="L469">                collector.setName(ast.newSimpleName(&quot;joining&quot;));</span>
+<span class="nc" id="L470">                break;</span>
             case GROUPING_BY:
-<span class="nc" id="L371">                collector.setName(ast.newSimpleName(&quot;groupingBy&quot;));</span>
-<span class="nc" id="L372">                break;</span>
+<span class="nc" id="L472">                collector.setName(ast.newSimpleName(&quot;groupingBy&quot;));</span>
+<span class="nc" id="L473">                break;</span>
             case CUSTOM:
             default:
-<span class="nc" id="L375">                collector.setName(ast.newSimpleName(&quot;toList&quot;));</span>
+<span class="nc" id="L476">                collector.setName(ast.newSimpleName(&quot;toList&quot;));</span>
         }
         
-<span class="fc" id="L378">        collectCall.arguments().add(collector);</span>
-<span class="fc" id="L379">        return collectCall;</span>
+<span class="fc" id="L479">        collectCall.arguments().add(collector);</span>
+<span class="fc" id="L480">        return collectCall;</span>
     }
     
     @Override
     public Expression renderReduce(Expression pipeline, ReduceTerminal terminal, String variableName) {
         // pipeline.reduce(identity, accumulator) etc.
-<span class="fc" id="L385">        MethodInvocation reduceCall = ast.newMethodInvocation();</span>
-<span class="fc" id="L386">        reduceCall.setExpression(pipeline);</span>
-<span class="fc" id="L387">        reduceCall.setName(ast.newSimpleName(&quot;reduce&quot;));</span>
+<span class="fc" id="L486">        MethodInvocation reduceCall = ast.newMethodInvocation();</span>
+<span class="fc" id="L487">        reduceCall.setExpression(pipeline);</span>
+<span class="fc" id="L488">        reduceCall.setName(ast.newSimpleName(&quot;reduce&quot;));</span>
         
-<span class="fc bfc" id="L389" title="All 2 branches covered.">        if (terminal.identity() != null) {</span>
-<span class="fc" id="L390">            reduceCall.arguments().add(createExpression(terminal.identity()));</span>
+<span class="fc bfc" id="L490" title="All 2 branches covered.">        if (terminal.identity() != null) {</span>
+<span class="fc" id="L491">            reduceCall.arguments().add(createExpression(terminal.identity()));</span>
         }
-<span class="fc" id="L392">        reduceCall.arguments().add(createExpression(terminal.accumulator()));</span>
+<span class="fc" id="L493">        reduceCall.arguments().add(createExpression(terminal.accumulator()));</span>
         
-<span class="fc" id="L394">        return reduceCall;</span>
+<span class="fc" id="L495">        return reduceCall;</span>
     }
     
     @Override
     public Expression renderCount(Expression pipeline) {
         // pipeline.count()
-<span class="fc" id="L400">        MethodInvocation countCall = ast.newMethodInvocation();</span>
-<span class="fc" id="L401">        countCall.setExpression(pipeline);</span>
-<span class="fc" id="L402">        countCall.setName(ast.newSimpleName(&quot;count&quot;));</span>
-<span class="fc" id="L403">        return countCall;</span>
+<span class="fc" id="L501">        MethodInvocation countCall = ast.newMethodInvocation();</span>
+<span class="fc" id="L502">        countCall.setExpression(pipeline);</span>
+<span class="fc" id="L503">        countCall.setName(ast.newSimpleName(&quot;count&quot;));</span>
+<span class="fc" id="L504">        return countCall;</span>
     }
     
     @Override
     public Expression renderFind(Expression pipeline, boolean findFirst) {
         // pipeline.findFirst() oder pipeline.findAny()
-<span class="fc" id="L409">        MethodInvocation findCall = ast.newMethodInvocation();</span>
-<span class="fc" id="L410">        findCall.setExpression(pipeline);</span>
-<span class="fc bfc" id="L411" title="All 2 branches covered.">        findCall.setName(ast.newSimpleName(findFirst ? &quot;findFirst&quot; : &quot;findAny&quot;));</span>
-<span class="fc" id="L412">        return findCall;</span>
+<span class="fc" id="L510">        MethodInvocation findCall = ast.newMethodInvocation();</span>
+<span class="fc" id="L511">        findCall.setExpression(pipeline);</span>
+<span class="fc bfc" id="L512" title="All 2 branches covered.">        findCall.setName(ast.newSimpleName(findFirst ? &quot;findFirst&quot; : &quot;findAny&quot;));</span>
+<span class="fc" id="L513">        return findCall;</span>
     }
     
     @Override
     public Expression renderMatch(Expression pipeline, MatchTerminal terminal, String variableName) {
         // pipeline.anyMatch/allMatch/noneMatch(var -&gt; predicate)
-<span class="fc" id="L418">        MethodInvocation matchCall = ast.newMethodInvocation();</span>
-<span class="fc" id="L419">        matchCall.setExpression(pipeline);</span>
+<span class="fc" id="L519">        MethodInvocation matchCall = ast.newMethodInvocation();</span>
+<span class="fc" id="L520">        matchCall.setExpression(pipeline);</span>
         
-<span class="pc bpc" id="L421" title="1 of 4 branches missed.">        switch (terminal.matchType()) {</span>
+<span class="pc bpc" id="L522" title="1 of 4 branches missed.">        switch (terminal.matchType()) {</span>
             case ANY_MATCH:
-<span class="fc" id="L423">                matchCall.setName(ast.newSimpleName(&quot;anyMatch&quot;));</span>
-<span class="fc" id="L424">                break;</span>
+<span class="fc" id="L524">                matchCall.setName(ast.newSimpleName(&quot;anyMatch&quot;));</span>
+<span class="fc" id="L525">                break;</span>
             case ALL_MATCH:
-<span class="fc" id="L426">                matchCall.setName(ast.newSimpleName(&quot;allMatch&quot;));</span>
-<span class="fc" id="L427">                break;</span>
+<span class="fc" id="L527">                matchCall.setName(ast.newSimpleName(&quot;allMatch&quot;));</span>
+<span class="fc" id="L528">                break;</span>
             case NONE_MATCH:
-<span class="fc" id="L429">                matchCall.setName(ast.newSimpleName(&quot;noneMatch&quot;));</span>
-<span class="fc" id="L430">                break;</span>
+<span class="fc" id="L530">                matchCall.setName(ast.newSimpleName(&quot;noneMatch&quot;));</span>
+<span class="fc" id="L531">                break;</span>
             default:
-<span class="nc" id="L432">                throw new IllegalArgumentException(&quot;Unknown match type: &quot; + terminal.matchType());</span>
+<span class="nc" id="L533">                throw new IllegalArgumentException(&quot;Unknown match type: &quot; + terminal.matchType());</span>
         }
         
-<span class="fc" id="L435">        matchCall.arguments().add(createLambda(variableName, terminal.predicate()));</span>
-<span class="fc" id="L436">        return matchCall;</span>
+<span class="fc" id="L536">        matchCall.arguments().add(createLambda(variableName, terminal.predicate()));</span>
+<span class="fc" id="L537">        return matchCall;</span>
     }
     
     // Helper methods
     
     private LambdaExpression createLambda(String paramName, String bodyExpression) {
-<span class="fc" id="L442">        LambdaExpression lambda = ast.newLambdaExpression();</span>
-<span class="fc" id="L443">        VariableDeclarationFragment param = ast.newVariableDeclarationFragment();</span>
-<span class="fc" id="L444">        param.setName(ast.newSimpleName(paramName));</span>
-<span class="fc" id="L445">        lambda.parameters().add(param);</span>
-<span class="fc" id="L446">        lambda.setBody(createExpression(bodyExpression));</span>
-<span class="fc" id="L447">        return lambda;</span>
+<span class="fc" id="L543">        LambdaExpression lambda = ast.newLambdaExpression();</span>
+<span class="fc" id="L544">        VariableDeclarationFragment param = ast.newVariableDeclarationFragment();</span>
+<span class="fc" id="L545">        param.setName(ast.newSimpleName(paramName));</span>
+<span class="fc" id="L546">        lambda.parameters().add(param);</span>
+<span class="fc" id="L547">        lambda.setBody(createExpression(bodyExpression));</span>
+<span class="fc" id="L548">        return lambda;</span>
     }
     
     private Expression createExpression(String expressionText) {
         // Parse expression string to AST node
-<span class="pc bpc" id="L452" title="2 of 4 branches missed.">        if (expressionText == null || expressionText.isEmpty()) {</span>
-<span class="nc" id="L453">            return ast.newNullLiteral();</span>
+<span class="pc bpc" id="L553" title="2 of 4 branches missed.">        if (expressionText == null || expressionText.isEmpty()) {</span>
+<span class="nc" id="L554">            return ast.newNullLiteral();</span>
         }
         
         // Check for simple identifiers using Java's identifier validation
-<span class="fc bfc" id="L457" title="All 2 branches covered.">        if (isValidJavaIdentifier(expressionText)) {</span>
-<span class="fc" id="L458">            return ast.newSimpleName(expressionText);</span>
+<span class="fc bfc" id="L558" title="All 2 branches covered.">        if (isValidJavaIdentifier(expressionText)) {</span>
+<span class="fc" id="L559">            return ast.newSimpleName(expressionText);</span>
         }
         
         // For complex expressions: use ASTParser with binding resolution
-<span class="fc" id="L462">        ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
-<span class="fc" id="L463">        parser.setKind(ASTParser.K_EXPRESSION);</span>
-<span class="fc" id="L464">        parser.setSource(expressionText.toCharArray());</span>
-<span class="fc" id="L465">        parser.setResolveBindings(true);  // Enable binding resolution</span>
-<span class="fc" id="L466">        parser.setBindingsRecovery(true);  // Recover from binding errors</span>
+<span class="fc" id="L563">        ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L564">        parser.setKind(ASTParser.K_EXPRESSION);</span>
+<span class="fc" id="L565">        parser.setSource(expressionText.toCharArray());</span>
+<span class="fc" id="L566">        parser.setResolveBindings(true);  // Enable binding resolution</span>
+<span class="fc" id="L567">        parser.setBindingsRecovery(true);  // Recover from binding errors</span>
         
         // Set up the environment from our compilation unit
-<span class="pc bpc" id="L469" title="3 of 4 branches missed.">        if (compilationUnit != null &amp;&amp; compilationUnit.getJavaElement() != null) {</span>
-<span class="nc" id="L470">            parser.setProject(compilationUnit.getJavaElement().getJavaProject());</span>
-<span class="nc" id="L471">            parser.setUnitName(&quot;__expression.java&quot;);  // Virtual file name</span>
+<span class="pc bpc" id="L570" title="3 of 4 branches missed.">        if (compilationUnit != null &amp;&amp; compilationUnit.getJavaElement() != null) {</span>
+<span class="nc" id="L571">            parser.setProject(compilationUnit.getJavaElement().getJavaProject());</span>
+<span class="nc" id="L572">            parser.setUnitName(&quot;__expression.java&quot;);  // Virtual file name</span>
         }
         
-<span class="fc" id="L474">        ASTNode result = parser.createAST(null);</span>
+<span class="fc" id="L575">        ASTNode result = parser.createAST(null);</span>
         
-<span class="pc bpc" id="L476" title="1 of 2 branches missed.">        if (result instanceof Expression) {</span>
-<span class="fc" id="L477">            return (Expression) ASTNode.copySubtree(ast, result);</span>
+<span class="pc bpc" id="L577" title="1 of 2 branches missed.">        if (result instanceof Expression) {</span>
+<span class="fc" id="L578">            return (Expression) ASTNode.copySubtree(ast, result);</span>
         }
         
         // Expression could not be parsed; fail fast instead of silently mangling it
-<span class="nc" id="L481">        throw new IllegalArgumentException(&quot;Unable to parse expression: &quot; + expressionText);</span>
+<span class="nc" id="L582">        throw new IllegalArgumentException(&quot;Unable to parse expression: &quot; + expressionText);</span>
     }
     
     /**
@@ -486,57 +587,57 @@ public class ASTStreamRenderer implements ASTAwareRenderer&lt;Expression, Statem
      * Supports Unicode identifiers, underscores, and dollar signs.
      */
     private boolean isValidJavaIdentifier(String str) {
-<span class="pc bpc" id="L489" title="2 of 4 branches missed.">        if (str == null || str.isEmpty()) {</span>
-<span class="nc" id="L490">            return false;</span>
+<span class="pc bpc" id="L590" title="2 of 4 branches missed.">        if (str == null || str.isEmpty()) {</span>
+<span class="nc" id="L591">            return false;</span>
         }
-<span class="fc bfc" id="L492" title="All 2 branches covered.">        if (!Character.isJavaIdentifierStart(str.charAt(0))) {</span>
-<span class="fc" id="L493">            return false;</span>
+<span class="fc bfc" id="L593" title="All 2 branches covered.">        if (!Character.isJavaIdentifierStart(str.charAt(0))) {</span>
+<span class="fc" id="L594">            return false;</span>
         }
-<span class="fc bfc" id="L495" title="All 2 branches covered.">        for (int i = 1; i &lt; str.length(); i++) {</span>
-<span class="fc bfc" id="L496" title="All 2 branches covered.">            if (!Character.isJavaIdentifierPart(str.charAt(i))) {</span>
-<span class="fc" id="L497">                return false;</span>
+<span class="fc bfc" id="L596" title="All 2 branches covered.">        for (int i = 1; i &lt; str.length(); i++) {</span>
+<span class="fc bfc" id="L597" title="All 2 branches covered.">            if (!Character.isJavaIdentifierPart(str.charAt(i))) {</span>
+<span class="fc" id="L598">                return false;</span>
             }
         }
-<span class="fc" id="L500">        return true;</span>
+<span class="fc" id="L601">        return true;</span>
     }
     
     private Statement createStatement(String statementText) {
         // Ensure statement ends with semicolon for proper parsing
-<span class="fc" id="L505">        String normalizedStatement = statementText.trim();</span>
-<span class="pc bpc" id="L506" title="1 of 2 branches missed.">        if (!normalizedStatement.endsWith(&quot;;&quot;)) {</span>
-<span class="fc" id="L507">            normalizedStatement += &quot;;&quot;;</span>
+<span class="fc" id="L606">        String normalizedStatement = statementText.trim();</span>
+<span class="pc bpc" id="L607" title="1 of 2 branches missed.">        if (!normalizedStatement.endsWith(&quot;;&quot;)) {</span>
+<span class="fc" id="L608">            normalizedStatement += &quot;;&quot;;</span>
         }
         
-<span class="fc" id="L510">        ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
-<span class="fc" id="L511">        parser.setKind(ASTParser.K_STATEMENTS);</span>
-<span class="fc" id="L512">        parser.setSource(normalizedStatement.toCharArray());</span>
-<span class="fc" id="L513">        parser.setResolveBindings(true);  // Enable binding resolution</span>
-<span class="fc" id="L514">        parser.setBindingsRecovery(true);  // Recover from binding errors</span>
+<span class="fc" id="L611">        ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L612">        parser.setKind(ASTParser.K_STATEMENTS);</span>
+<span class="fc" id="L613">        parser.setSource(normalizedStatement.toCharArray());</span>
+<span class="fc" id="L614">        parser.setResolveBindings(true);  // Enable binding resolution</span>
+<span class="fc" id="L615">        parser.setBindingsRecovery(true);  // Recover from binding errors</span>
         
         // Set up the environment from our compilation unit
-<span class="pc bpc" id="L517" title="3 of 4 branches missed.">        if (compilationUnit != null &amp;&amp; compilationUnit.getJavaElement() != null) {</span>
-<span class="nc" id="L518">            parser.setProject(compilationUnit.getJavaElement().getJavaProject());</span>
-<span class="nc" id="L519">            parser.setUnitName(&quot;__statement.java&quot;);  // Virtual file name</span>
+<span class="pc bpc" id="L618" title="3 of 4 branches missed.">        if (compilationUnit != null &amp;&amp; compilationUnit.getJavaElement() != null) {</span>
+<span class="nc" id="L619">            parser.setProject(compilationUnit.getJavaElement().getJavaProject());</span>
+<span class="nc" id="L620">            parser.setUnitName(&quot;__statement.java&quot;);  // Virtual file name</span>
         }
         
-<span class="fc" id="L522">        ASTNode result = parser.createAST(null);</span>
+<span class="fc" id="L623">        ASTNode result = parser.createAST(null);</span>
         
-<span class="pc bpc" id="L524" title="1 of 2 branches missed.">        if (result instanceof Block) {</span>
-<span class="fc" id="L525">            Block block = (Block) result;</span>
-<span class="pc bpc" id="L526" title="1 of 2 branches missed.">            if (!block.statements().isEmpty()) {</span>
-<span class="fc" id="L527">                return (Statement) ASTNode.copySubtree(ast, (Statement) block.statements().get(0));</span>
+<span class="pc bpc" id="L625" title="1 of 2 branches missed.">        if (result instanceof Block) {</span>
+<span class="fc" id="L626">            Block block = (Block) result;</span>
+<span class="pc bpc" id="L627" title="1 of 2 branches missed.">            if (!block.statements().isEmpty()) {</span>
+<span class="fc" id="L628">                return (Statement) ASTNode.copySubtree(ast, (Statement) block.statements().get(0));</span>
             }
         }
         
         // Statement could not be parsed; fail fast
-<span class="nc" id="L532">        throw new IllegalArgumentException(&quot;Unable to parse statement: &quot; + statementText);</span>
+<span class="nc" id="L633">        throw new IllegalArgumentException(&quot;Unable to parse statement: &quot; + statementText);</span>
     }
     
     /**
      * Returns the AST used by this renderer.
      */
     public AST getAST() {
-<span class="fc" id="L539">        return ast;</span>
+<span class="fc" id="L640">        return ast;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

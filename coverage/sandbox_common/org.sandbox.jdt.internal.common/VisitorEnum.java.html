@@ -587,7 +587,7 @@ public enum VisitorEnum {
 	 * @return Stream of VisitorEnum values
 	 */
 	public static Stream&lt;VisitorEnum&gt; stream() {
-<span class="nc" id="L590">		return Stream.of(VisitorEnum.values());</span>
+<span class="fc" id="L590">		return Stream.of(VisitorEnum.values());</span>
 	}
 
 <span class="fc" id="L593">	static final Map&lt;Integer, VisitorEnum&gt; values = Arrays.stream(values())</span>
@@ -599,7 +599,7 @@ public enum VisitorEnum {
 	 * @return VisitorEnum for nodetype
 	 */
 	public static VisitorEnum fromNodetype(final int nodetype) {
-<span class="nc" id="L602">		return values.get(nodetype);</span>
+<span class="fc" id="L602">		return values.get(nodetype);</span>
 	}
 
 	/**
@@ -608,7 +608,7 @@ public enum VisitorEnum {
 	 * @return VisitorEnum for node
 	 */
 	public static VisitorEnum fromNode(ASTNode node) {
-<span class="nc" id="L611">		return fromNodetype(node.getNodeType());</span>
+<span class="fc" id="L611">		return fromNodetype(node.getNodeType());</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

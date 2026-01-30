@@ -73,12 +73,12 @@ import org.sandbox.jdt.triggerpattern.internal.PlaceholderAstMatcher;
 <span class="nc" id="L73">					checkMatch(node, patternNode, matches);</span>
 <span class="pc bfc" id="L74" title="All 4 branches covered.">				} else if (pattern.getKind() == PatternKind.ANNOTATION &amp;&amp; node instanceof Annotation) {</span>
 <span class="fc" id="L75">					checkMatch(node, patternNode, matches);</span>
-<span class="pc bpc" id="L76" title="3 of 4 branches missed.">				} else if (pattern.getKind() == PatternKind.METHOD_CALL &amp;&amp; node instanceof MethodInvocation) {</span>
-<span class="nc" id="L77">					checkMatch(node, patternNode, matches);</span>
-<span class="pc bpc" id="L78" title="3 of 4 branches missed.">				} else if (pattern.getKind() == PatternKind.IMPORT &amp;&amp; node instanceof ImportDeclaration) {</span>
-<span class="nc" id="L79">					checkMatch(node, patternNode, matches);</span>
-<span class="pc bpc" id="L80" title="3 of 4 branches missed.">				} else if (pattern.getKind() == PatternKind.FIELD &amp;&amp; node instanceof FieldDeclaration) {</span>
-<span class="nc" id="L81">					checkMatch(node, patternNode, matches);</span>
+<span class="fc bfc" id="L76" title="All 4 branches covered.">				} else if (pattern.getKind() == PatternKind.METHOD_CALL &amp;&amp; node instanceof MethodInvocation) {</span>
+<span class="fc" id="L77">					checkMatch(node, patternNode, matches);</span>
+<span class="fc bfc" id="L78" title="All 4 branches covered.">				} else if (pattern.getKind() == PatternKind.IMPORT &amp;&amp; node instanceof ImportDeclaration) {</span>
+<span class="fc" id="L79">					checkMatch(node, patternNode, matches);</span>
+<span class="fc bfc" id="L80" title="All 4 branches covered.">				} else if (pattern.getKind() == PatternKind.FIELD &amp;&amp; node instanceof FieldDeclaration) {</span>
+<span class="fc" id="L81">					checkMatch(node, patternNode, matches);</span>
 				}
 <span class="fc" id="L83">			}</span>
 		});

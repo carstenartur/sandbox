@@ -211,7 +211,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @since 1.15
 	 */
 	public static ImportVisitorBuilder forImport(String importFQN) {
-<span class="nc" id="L214">		return new ImportVisitorBuilder(importFQN);</span>
+<span class="fc" id="L214">		return new ImportVisitorBuilder(importFQN);</span>
 	}
 
 	ASTVisitor astvisitor;
@@ -338,7 +338,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned to key
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addEnd(VisitorEnum key, BiConsumer&lt;? extends ASTNode, E&gt; bc) {
-<span class="nc" id="L341">		return consumermap.put(key, bc);</span>
+<span class="fc" id="L341">		return consumermap.put(key, bc);</span>
 	}
 
 	/**
@@ -348,18 +348,18 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void add(VisitorEnum key, BiPredicate&lt;ASTNode, E&gt; bs, BiConsumer&lt;? extends ASTNode, E&gt; bc) {
-<span class="nc" id="L351">		predicatemap.put(key, bs);</span>
-<span class="nc" id="L352">		consumermap.put(key, bc);</span>
-<span class="nc" id="L353">	}</span>
+<span class="fc" id="L351">		predicatemap.put(key, bs);</span>
+<span class="fc" id="L352">		consumermap.put(key, bc);</span>
+<span class="fc" id="L353">	}</span>
 
 	/**
 	 *
 	 * @param ve
 	 */
 	public void removeVisitor(VisitorEnum ve) {
-<span class="nc" id="L360">		this.predicatemap.remove(ve);</span>
-<span class="nc" id="L361">		this.consumermap.remove(ve);</span>
-<span class="nc" id="L362">	}</span>
+<span class="fc" id="L360">		this.predicatemap.remove(ve);</span>
+<span class="fc" id="L361">		this.consumermap.remove(ve);</span>
+<span class="fc" id="L362">	}</span>
 
 	/**
 	 *
@@ -689,7 +689,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiPredicate assigned for nodetype
 	 */
 	public BiPredicate&lt;? extends ASTNode, E&gt; addFieldDeclaration(BiPredicate&lt;FieldDeclaration, E&gt; bs) {
-<span class="nc" id="L692">		return predicatemap.put(VisitorEnum.FieldDeclaration, bs);</span>
+<span class="fc" id="L692">		return predicatemap.put(VisitorEnum.FieldDeclaration, bs);</span>
 	}
 
 	/**
@@ -900,10 +900,10 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 	public BiPredicate&lt;? extends ASTNode, E&gt; addMethodInvocation(String methodname,
 			BiPredicate&lt;MethodInvocation, E&gt; bs) {
-<span class="nc" id="L903">		predicatedata.put(VisitorEnum.MethodInvocation, Map.ofEntries(</span>
-<span class="nc" id="L904">				new AbstractMap.SimpleEntry&lt;&gt;(METHODNAME, methodname)</span>
+<span class="fc" id="L903">		predicatedata.put(VisitorEnum.MethodInvocation, Map.ofEntries(</span>
+<span class="fc" id="L904">				new AbstractMap.SimpleEntry&lt;&gt;(METHODNAME, methodname)</span>
 				));
-<span class="nc" id="L906">		return predicatemap.put(VisitorEnum.MethodInvocation, bs);</span>
+<span class="fc" id="L906">		return predicatemap.put(VisitorEnum.MethodInvocation, bs);</span>
 	}
 
 	/**
@@ -1211,7 +1211,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 	public BiPredicate&lt;? extends ASTNode, E&gt; addSingleVariableDeclaration(
 			BiPredicate&lt;SingleVariableDeclaration, E&gt; bs) {
-<span class="nc" id="L1214">		return predicatemap.put(VisitorEnum.SingleVariableDeclaration, bs);</span>
+<span class="fc" id="L1214">		return predicatemap.put(VisitorEnum.SingleVariableDeclaration, bs);</span>
 	}
 
 	/**
@@ -1467,7 +1467,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 	public BiPredicate&lt;? extends ASTNode, E&gt; addVariableDeclarationFragment(
 			BiPredicate&lt;VariableDeclarationFragment, E&gt; bs) {
-<span class="nc" id="L1470">		return predicatemap.put(VisitorEnum.VariableDeclarationFragment, bs);</span>
+<span class="fc" id="L1470">		return predicatemap.put(VisitorEnum.VariableDeclarationFragment, bs);</span>
 	}
 
 	/**
@@ -1954,7 +1954,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addMethodInvocation(BiConsumer&lt;MethodInvocation, E&gt; bc) {
-<span class="nc" id="L1957">		return consumermap.put(VisitorEnum.MethodInvocation, bc);</span>
+<span class="fc" id="L1957">		return consumermap.put(VisitorEnum.MethodInvocation, bc);</span>
 	}
 
 	/**
@@ -2456,7 +2456,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addWhileStatement(BiConsumer&lt;WhileStatement, E&gt; bc) {
-<span class="nc" id="L2459">		return consumermap.put(VisitorEnum.WhileStatement, bc);</span>
+<span class="fc" id="L2459">		return consumermap.put(VisitorEnum.WhileStatement, bc);</span>
 	}
 
 	/**
@@ -3663,12 +3663,12 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	public static &lt;V, T&gt; void callVisitor(ASTNode cu, EnumSet&lt;VisitorEnum&gt; myset, ReferenceHolder&lt;V, T&gt; dataholder, Set&lt;ASTNode&gt; nodesprocessed,
 			BiConsumer&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt; bc) {
 
-<span class="nc" id="L3666">		HelperVisitor&lt;ReferenceHolder&lt;V, T&gt;,V,T&gt; hv= new HelperVisitor&lt;&gt;(nodesprocessed, dataholder);</span>
-<span class="nc" id="L3667">		myset.forEach(ve -&gt; {</span>
-<span class="nc" id="L3668">			hv.addEnd(ve, bc);</span>
-<span class="nc" id="L3669">		});</span>
-<span class="nc" id="L3670">		hv.build(cu);</span>
-<span class="nc" id="L3671">	}</span>
+<span class="fc" id="L3666">		HelperVisitor&lt;ReferenceHolder&lt;V, T&gt;,V,T&gt; hv= new HelperVisitor&lt;&gt;(nodesprocessed, dataholder);</span>
+<span class="fc" id="L3667">		myset.forEach(ve -&gt; {</span>
+<span class="fc" id="L3668">			hv.addEnd(ve, bc);</span>
+<span class="fc" id="L3669">		});</span>
+<span class="fc" id="L3670">		hv.build(cu);</span>
+<span class="fc" id="L3671">	}</span>
 
 	/**
 	 *
@@ -4620,10 +4620,10 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	public static &lt;V, T&gt; void callMethodInvocationVisitor(String methodname, ASTNode node, ReferenceHolder&lt;V, T&gt; dataholder, Set&lt;ASTNode&gt; nodesprocessed,
 			BiPredicate&lt;MethodInvocation, ReferenceHolder&lt;V, T&gt;&gt; bs) {
 
-<span class="nc" id="L4623">		HelperVisitor&lt;ReferenceHolder&lt;V, T&gt;,V,T&gt; hv= new HelperVisitor&lt;&gt;(nodesprocessed, dataholder);</span>
-<span class="nc" id="L4624">		hv.addMethodInvocation(methodname, bs);</span>
-<span class="nc" id="L4625">		hv.build(node);</span>
-<span class="nc" id="L4626">	}</span>
+<span class="fc" id="L4623">		HelperVisitor&lt;ReferenceHolder&lt;V, T&gt;,V,T&gt; hv= new HelperVisitor&lt;&gt;(nodesprocessed, dataholder);</span>
+<span class="fc" id="L4624">		hv.addMethodInvocation(methodname, bs);</span>
+<span class="fc" id="L4625">		hv.build(node);</span>
+<span class="fc" id="L4626">	}</span>
 
 	/**
 	 * @param &lt;V&gt;

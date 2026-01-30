@@ -52,17 +52,17 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
 <span class="fc" id="L53">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder = new ReferenceHolder&lt;&gt;();</span>
 		
-		// Find assumeTrue calls
-<span class="fc" id="L56">		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSUME, &quot;assumeTrue&quot;, compilationUnit, dataHolder,</span>
-<span class="pc" id="L57">				nodesprocessed, (visited, aholder) -&gt; processAssumption(fixcore, operations, visited, aholder));</span>
-<span class="fc" id="L58">		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_JUPITER_API_ASSUMPTIONS, &quot;assumeTrue&quot;, compilationUnit, dataHolder,</span>
-<span class="fc" id="L59">				nodesprocessed, (visited, aholder) -&gt; processAssumption(fixcore, operations, visited, aholder));</span>
+		// Find assumeTrue and assumeFalse calls in JUnit 4
+<span class="fc" id="L56">		HelperVisitor.forMethodCalls(ORG_JUNIT_ASSUME, Set.of(&quot;assumeTrue&quot;, &quot;assumeFalse&quot;))</span>
+<span class="fc" id="L57">			.in(compilationUnit)</span>
+<span class="fc" id="L58">			.excluding(nodesprocessed)</span>
+<span class="pc" id="L59">			.processEach(dataHolder, (visited, aholder) -&gt; processAssumption(fixcore, operations, visited, aholder));</span>
 		
-		// Find assumeFalse calls
-<span class="fc" id="L62">		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSUME, &quot;assumeFalse&quot;, compilationUnit, dataHolder,</span>
-<span class="pc" id="L63">				nodesprocessed, (visited, aholder) -&gt; processAssumption(fixcore, operations, visited, aholder));</span>
-<span class="fc" id="L64">		HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_JUPITER_API_ASSUMPTIONS, &quot;assumeFalse&quot;, compilationUnit, dataHolder,</span>
-<span class="fc" id="L65">				nodesprocessed, (visited, aholder) -&gt; processAssumption(fixcore, operations, visited, aholder));</span>
+		// Find assumeTrue and assumeFalse calls in JUnit 5
+<span class="fc" id="L62">		HelperVisitor.forMethodCalls(ORG_JUNIT_JUPITER_API_ASSUMPTIONS, Set.of(&quot;assumeTrue&quot;, &quot;assumeFalse&quot;))</span>
+<span class="fc" id="L63">			.in(compilationUnit)</span>
+<span class="fc" id="L64">			.excluding(nodesprocessed)</span>
+<span class="fc" id="L65">			.processEach(dataHolder, (visited, aholder) -&gt; processAssumption(fixcore, operations, visited, aholder));</span>
 <span class="fc" id="L66">	}</span>
 
 	private boolean processAssumption(JUnitCleanUpFixCore fixcore,

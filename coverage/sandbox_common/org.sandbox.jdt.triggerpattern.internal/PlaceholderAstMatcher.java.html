@@ -86,7 +86,7 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 	 * @return true if this is a multi-placeholder
 	 */
 	private boolean isMultiPlaceholder(String name) {
-<span class="pc bpc" id="L89" title="4 of 6 branches missed.">		return name.startsWith(&quot;$&quot;) &amp;&amp; name.endsWith(&quot;$&quot;) &amp;&amp; name.length() &gt; 2; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L89" title="2 of 6 branches missed.">		return name.startsWith(&quot;$&quot;) &amp;&amp; name.endsWith(&quot;$&quot;) &amp;&amp; name.length() &gt; 2; //$NON-NLS-1$ //$NON-NLS-2$</span>
 	}
 	
 	/**
@@ -294,95 +294,95 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 	 */
 	@Override
 	public boolean match(FieldDeclaration patternNode, Object other) {
-<span class="nc bnc" id="L297" title="All 2 branches missed.">		if (!(other instanceof FieldDeclaration)) {</span>
+<span class="pc bpc" id="L297" title="1 of 2 branches missed.">		if (!(other instanceof FieldDeclaration)) {</span>
 <span class="nc" id="L298">			return false;</span>
 		}
-<span class="nc" id="L300">		FieldDeclaration otherField = (FieldDeclaration) other;</span>
+<span class="fc" id="L300">		FieldDeclaration otherField = (FieldDeclaration) other;</span>
 		
 		// Match modifiers (including annotations)
 		@SuppressWarnings(&quot;unchecked&quot;)
-<span class="nc" id="L304">		List&lt;IExtendedModifier&gt; patternModifiers = patternNode.modifiers();</span>
+<span class="fc" id="L304">		List&lt;IExtendedModifier&gt; patternModifiers = patternNode.modifiers();</span>
 		@SuppressWarnings(&quot;unchecked&quot;)
-<span class="nc" id="L306">		List&lt;IExtendedModifier&gt; otherModifiers = otherField.modifiers();</span>
+<span class="fc" id="L306">		List&lt;IExtendedModifier&gt; otherModifiers = otherField.modifiers();</span>
 		
 		// Match each modifier/annotation in the pattern
-<span class="nc bnc" id="L309" title="All 2 branches missed.">		for (IExtendedModifier patternMod : patternModifiers) {</span>
-<span class="nc bnc" id="L310" title="All 2 branches missed.">			if (patternMod.isAnnotation()) {</span>
+<span class="fc bfc" id="L309" title="All 2 branches covered.">		for (IExtendedModifier patternMod : patternModifiers) {</span>
+<span class="fc bfc" id="L310" title="All 2 branches covered.">			if (patternMod.isAnnotation()) {</span>
 				// Find matching annotation in other field
-<span class="nc" id="L312">				boolean found = false;</span>
-<span class="nc bnc" id="L313" title="All 2 branches missed.">				for (IExtendedModifier otherMod : otherModifiers) {</span>
-<span class="nc bnc" id="L314" title="All 2 branches missed.">					if (otherMod.isAnnotation()) {</span>
-<span class="nc bnc" id="L315" title="All 2 branches missed.">						if (safeSubtreeMatch((ASTNode) patternMod, (ASTNode) otherMod)) {</span>
-<span class="nc" id="L316">							found = true;</span>
-<span class="nc" id="L317">							break;</span>
+<span class="fc" id="L312">				boolean found = false;</span>
+<span class="fc bfc" id="L313" title="All 2 branches covered.">				for (IExtendedModifier otherMod : otherModifiers) {</span>
+<span class="fc bfc" id="L314" title="All 2 branches covered.">					if (otherMod.isAnnotation()) {</span>
+<span class="fc bfc" id="L315" title="All 2 branches covered.">						if (safeSubtreeMatch((ASTNode) patternMod, (ASTNode) otherMod)) {</span>
+<span class="fc" id="L316">							found = true;</span>
+<span class="fc" id="L317">							break;</span>
 						}
 					}
 				}
-<span class="nc bnc" id="L321" title="All 2 branches missed.">				if (!found) {</span>
-<span class="nc" id="L322">					return false;</span>
+<span class="fc bfc" id="L321" title="All 2 branches covered.">				if (!found) {</span>
+<span class="fc" id="L322">					return false;</span>
 				}
-<span class="nc bnc" id="L324" title="All 2 branches missed.">			} else if (patternMod.isModifier()) {</span>
+<span class="pc bpc" id="L324" title="1 of 2 branches missed.">			} else if (patternMod.isModifier()) {</span>
 				// Check if other has the same modifier
-<span class="nc" id="L326">				boolean found = false;</span>
-<span class="nc bnc" id="L327" title="All 2 branches missed.">				for (IExtendedModifier otherMod : otherModifiers) {</span>
-<span class="nc bnc" id="L328" title="All 2 branches missed.">					if (otherMod.isModifier()) {</span>
-<span class="nc bnc" id="L329" title="All 2 branches missed.">						if (safeSubtreeMatch((ASTNode) patternMod, (ASTNode) otherMod)) {</span>
-<span class="nc" id="L330">							found = true;</span>
-<span class="nc" id="L331">							break;</span>
+<span class="fc" id="L326">				boolean found = false;</span>
+<span class="fc bfc" id="L327" title="All 2 branches covered.">				for (IExtendedModifier otherMod : otherModifiers) {</span>
+<span class="fc bfc" id="L328" title="All 2 branches covered.">					if (otherMod.isModifier()) {</span>
+<span class="fc bfc" id="L329" title="All 2 branches covered.">						if (safeSubtreeMatch((ASTNode) patternMod, (ASTNode) otherMod)) {</span>
+<span class="fc" id="L330">							found = true;</span>
+<span class="fc" id="L331">							break;</span>
 						}
 					}
 				}
-<span class="nc bnc" id="L335" title="All 2 branches missed.">				if (!found) {</span>
-<span class="nc" id="L336">					return false;</span>
+<span class="fc bfc" id="L335" title="All 2 branches covered.">				if (!found) {</span>
+<span class="fc" id="L336">					return false;</span>
 				}
 			}
 		}
 		
 		// Match type
-<span class="nc bnc" id="L342" title="All 2 branches missed.">		if (!safeSubtreeMatch(patternNode.getType(), otherField.getType())) {</span>
-<span class="nc" id="L343">			return false;</span>
+<span class="fc bfc" id="L342" title="All 2 branches covered.">		if (!safeSubtreeMatch(patternNode.getType(), otherField.getType())) {</span>
+<span class="fc" id="L343">			return false;</span>
 		}
 		
 		// Match fragments (variable names) - need special handling for placeholders
 		@SuppressWarnings(&quot;unchecked&quot;)
-<span class="nc" id="L348">		List&lt;Object&gt; patternFragments = patternNode.fragments();</span>
+<span class="fc" id="L348">		List&lt;Object&gt; patternFragments = patternNode.fragments();</span>
 		@SuppressWarnings(&quot;unchecked&quot;)
-<span class="nc" id="L350">		List&lt;Object&gt; otherFragments = otherField.fragments();</span>
+<span class="fc" id="L350">		List&lt;Object&gt; otherFragments = otherField.fragments();</span>
 		
-<span class="nc bnc" id="L352" title="All 2 branches missed.">		if (patternFragments.size() != otherFragments.size()) {</span>
+<span class="pc bpc" id="L352" title="1 of 2 branches missed.">		if (patternFragments.size() != otherFragments.size()) {</span>
 <span class="nc" id="L353">			return false;</span>
 		}
 		
 		// For each fragment, we only need to match the variable name (not the initializer)
 		// because the pattern might have placeholder names like $name
-<span class="nc bnc" id="L358" title="All 2 branches missed.">		for (int i = 0; i &lt; patternFragments.size(); i++) {</span>
-<span class="nc" id="L359">			org.eclipse.jdt.core.dom.VariableDeclarationFragment patternFrag = </span>
-<span class="nc" id="L360">					(org.eclipse.jdt.core.dom.VariableDeclarationFragment) patternFragments.get(i);</span>
-<span class="nc" id="L361">			org.eclipse.jdt.core.dom.VariableDeclarationFragment otherFrag = </span>
-<span class="nc" id="L362">					(org.eclipse.jdt.core.dom.VariableDeclarationFragment) otherFragments.get(i);</span>
+<span class="fc bfc" id="L358" title="All 2 branches covered.">		for (int i = 0; i &lt; patternFragments.size(); i++) {</span>
+<span class="fc" id="L359">			org.eclipse.jdt.core.dom.VariableDeclarationFragment patternFrag = </span>
+<span class="fc" id="L360">					(org.eclipse.jdt.core.dom.VariableDeclarationFragment) patternFragments.get(i);</span>
+<span class="fc" id="L361">			org.eclipse.jdt.core.dom.VariableDeclarationFragment otherFrag = </span>
+<span class="fc" id="L362">					(org.eclipse.jdt.core.dom.VariableDeclarationFragment) otherFragments.get(i);</span>
 			
 			// Match the variable name (this handles placeholders via SimpleName matching)
-<span class="nc bnc" id="L365" title="All 2 branches missed.">			if (!safeSubtreeMatch(patternFrag.getName(), otherFrag.getName())) {</span>
+<span class="pc bpc" id="L365" title="1 of 2 branches missed.">			if (!safeSubtreeMatch(patternFrag.getName(), otherFrag.getName())) {</span>
 <span class="nc" id="L366">				return false;</span>
 			}
 			
 			// Only check initializers if pattern has one
-<span class="nc bnc" id="L370" title="All 2 branches missed.">			if (patternFrag.getInitializer() != null) {</span>
+<span class="pc bpc" id="L370" title="1 of 2 branches missed.">			if (patternFrag.getInitializer() != null) {</span>
 <span class="nc bnc" id="L371" title="All 2 branches missed.">				if (!safeSubtreeMatch(patternFrag.getInitializer(), otherFrag.getInitializer())) {</span>
 <span class="nc" id="L372">					return false;</span>
 				}
 			}
 		}
 		
-<span class="nc" id="L377">		return true;</span>
+<span class="fc" id="L377">		return true;</span>
 	}
 	
 	/**
 	 * Helper method to perform subtree matching using this matcher.
 	 */
 	private boolean safeSubtreeMatch(ASTNode node1, ASTNode node2) {
-<span class="pc bpc" id="L384" title="1 of 2 branches missed.">		if (node1 == null) {</span>
-<span class="nc bnc" id="L385" title="All 2 branches missed.">			return node2 == null;</span>
+<span class="fc bfc" id="L384" title="All 2 branches covered.">		if (node1 == null) {</span>
+<span class="pc bpc" id="L385" title="1 of 2 branches missed.">			return node2 == null;</span>
 		}
 <span class="fc" id="L387">		return node1.subtreeMatch(this, node2);</span>
 	}
@@ -453,12 +453,12 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 <span class="pc bpc" id="L453" title="2 of 4 branches missed.">			if (name != null &amp;&amp; name.startsWith(&quot;$&quot;)) { //$NON-NLS-1$</span>
 <span class="fc" id="L454">				PlaceholderInfo info = parsePlaceholder(name);</span>
 				
-<span class="pc bpc" id="L456" title="1 of 2 branches missed.">				if (info.isMulti()) {</span>
+<span class="fc bfc" id="L456" title="All 2 branches covered.">				if (info.isMulti()) {</span>
 					// Multi-placeholder: bind to list of all arguments
-<span class="nc" id="L458">					String placeholderName = info.name();</span>
+<span class="fc" id="L458">					String placeholderName = info.name();</span>
 					
 					// Validate type constraints for all arguments if specified
-<span class="nc bnc" id="L461" title="All 2 branches missed.">					if (info.typeConstraint() != null) {</span>
+<span class="pc bpc" id="L461" title="1 of 2 branches missed.">					if (info.typeConstraint() != null) {</span>
 <span class="nc bnc" id="L462" title="All 2 branches missed.">						for (Expression arg : otherArgs) {</span>
 <span class="nc bnc" id="L463" title="All 2 branches missed.">							if (!matchesTypeConstraint(arg, info.typeConstraint())) {</span>
 <span class="nc" id="L464">								return false;</span>
@@ -467,13 +467,13 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 					}
 					
 					// Check if already bound
-<span class="nc bnc" id="L470" title="All 2 branches missed.">					if (bindings.containsKey(placeholderName)) {</span>
-<span class="nc" id="L471">						Object boundValue = bindings.get(placeholderName);</span>
-<span class="nc bnc" id="L472" title="All 2 branches missed.">						if (boundValue instanceof List&lt;?&gt;) {</span>
+<span class="fc bfc" id="L470" title="All 2 branches covered.">					if (bindings.containsKey(placeholderName)) {</span>
+<span class="fc" id="L471">						Object boundValue = bindings.get(placeholderName);</span>
+<span class="pc bpc" id="L472" title="1 of 2 branches missed.">						if (boundValue instanceof List&lt;?&gt;) {</span>
 							@SuppressWarnings(&quot;unchecked&quot;)
-<span class="nc" id="L474">							List&lt;ASTNode&gt; boundList = (List&lt;ASTNode&gt;) boundValue;</span>
-<span class="nc bnc" id="L475" title="All 2 branches missed.">							if (boundList.size() != otherArgs.size()) {</span>
-<span class="nc" id="L476">								return false;</span>
+<span class="fc" id="L474">							List&lt;ASTNode&gt; boundList = (List&lt;ASTNode&gt;) boundValue;</span>
+<span class="pc bpc" id="L475" title="1 of 2 branches missed.">							if (boundList.size() != otherArgs.size()) {</span>
+<span class="fc" id="L476">								return false;</span>
 							}
 <span class="nc bnc" id="L478" title="All 2 branches missed.">							for (int i = 0; i &lt; boundList.size(); i++) {</span>
 <span class="nc bnc" id="L479" title="All 2 branches missed.">								if (!boundList.get(i).subtreeMatch(reusableMatcher, otherArgs.get(i))) {</span>
@@ -485,8 +485,8 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 <span class="nc" id="L485">						return false;</span>
 					} else {
 						// First occurrence - bind to list
-<span class="nc" id="L488">						bindings.put(placeholderName, new ArrayList&lt;&gt;(otherArgs));</span>
-<span class="nc" id="L489">						return true;</span>
+<span class="fc" id="L488">						bindings.put(placeholderName, new ArrayList&lt;&gt;(otherArgs));</span>
+<span class="fc" id="L489">						return true;</span>
 					}
 				}
 			}

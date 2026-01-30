@@ -88,10 +88,10 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
      * @throws IllegalStateException if the compilation unit was not configured via {@code in(...)}
      */
     public &lt;V, H&gt; void processEach(BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, H&gt;&gt; processor) {
-<span class="nc" id="L91">        validateState();</span>
-<span class="nc" id="L92">        ReferenceHolder&lt;V, H&gt; holder = new ReferenceHolder&lt;&gt;();</span>
-<span class="nc" id="L93">        executeVisitors(holder, processor);</span>
-<span class="nc" id="L94">    }</span>
+<span class="fc" id="L91">        validateState();</span>
+<span class="fc" id="L92">        ReferenceHolder&lt;V, H&gt; holder = new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L93">        executeVisitors(holder, processor);</span>
+<span class="fc" id="L94">    }</span>
     
     /**
      * Terminal operation that processes each found node with the given processor,
@@ -119,13 +119,13 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
      * @throws IllegalStateException if the compilation unit was not configured via {@code in(...)}
      */
     public List&lt;ASTNode&gt; collect() {
-<span class="nc" id="L122">        validateState();</span>
-<span class="nc" id="L123">        List&lt;ASTNode&gt; results = new ArrayList&lt;&gt;();</span>
-<span class="nc" id="L124">        processEach((node, holder) -&gt; {</span>
-<span class="nc" id="L125">            results.add(node);</span>
-<span class="nc" id="L126">            return true; // Continue visiting</span>
+<span class="fc" id="L122">        validateState();</span>
+<span class="fc" id="L123">        List&lt;ASTNode&gt; results = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L124">        processEach((node, holder) -&gt; {</span>
+<span class="fc" id="L125">            results.add(node);</span>
+<span class="fc" id="L126">            return true; // Continue visiting</span>
         });
-<span class="nc" id="L128">        return results;</span>
+<span class="fc" id="L128">        return results;</span>
     }
     
     /**
@@ -134,9 +134,9 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
      * @throws IllegalStateException if the compilation unit was not set
      */
     protected void validateState() {
-<span class="pc bpc" id="L137" title="1 of 2 branches missed.">        if (compilationUnit == null) {</span>
-<span class="nc" id="L138">            throw new IllegalStateException(</span>
-<span class="nc" id="L139">                &quot;Compilation unit must be configured via in(...) before calling processEach() or collect()&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">        if (compilationUnit == null) {</span>
+<span class="fc" id="L138">            throw new IllegalStateException(</span>
+<span class="fc" id="L139">                &quot;Compilation unit must be configured via in(...) before calling processEach() or collect()&quot;); //$NON-NLS-1$</span>
         }
 <span class="fc" id="L141">    }</span>
     

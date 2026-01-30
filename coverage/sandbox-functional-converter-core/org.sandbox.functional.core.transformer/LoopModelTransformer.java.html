@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>LoopModelTransformer.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-functional-converter-core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.functional.core.transformer</a> &gt; <span class="el_source">LoopModelTransformer.java</span></div><h1>LoopModelTransformer.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.functional.core.transformer;
+
+import org.sandbox.functional.core.model.*;
+import org.sandbox.functional.core.operation.*;
+import org.sandbox.functional.core.renderer.StreamPipelineRenderer;
+import org.sandbox.functional.core.terminal.*;
+
+/**
+ * Transforms a LoopModel into a stream pipeline using a renderer.
+ * 
+ * &lt;p&gt;This class is the central transformation engine. It iterates through
+ * the LoopModel's operations and terminals, delegating rendering to the
+ * provided {@link StreamPipelineRenderer}.&lt;/p&gt;
+ * 
+ * @param &lt;T&gt; the output type (e.g., String for StringRenderer, Expression for ASTRenderer)
+ */
+public class LoopModelTransformer&lt;T&gt; {
+    
+    private final StreamPipelineRenderer&lt;T&gt; renderer;
+    
+<span class="fc" id="L34">    public LoopModelTransformer(StreamPipelineRenderer&lt;T&gt; renderer) {</span>
+<span class="fc" id="L35">        this.renderer = renderer;</span>
+<span class="fc" id="L36">    }</span>
+    
+    /**
+     * Transforms the given LoopModel into the target representation.
+     * 
+     * @param model the loop model to transform
+     * @return the transformed result
+     */
+    public T transform(LoopModel model) {
+<span class="fc bfc" id="L45" title="All 4 branches covered.">        if (model == null || model.getSource() == null) {</span>
+<span class="fc" id="L46">            throw new IllegalArgumentException(&quot;LoopModel and source must not be null&quot;);</span>
+        }
+        
+<span class="fc bfc" id="L49" title="All 2 branches covered.">        String varName = model.getElement() != null </span>
+<span class="fc" id="L50">            ? model.getElement().variableName() </span>
+<span class="fc" id="L51">            : &quot;x&quot;;</span>
+        
+        // Start with source
+<span class="fc" id="L54">        T pipeline = renderer.renderSource(model.getSource());</span>
+        
+        // Apply operations
+<span class="fc bfc" id="L57" title="All 2 branches covered.">        for (Operation op : model.getOperations()) {</span>
+<span class="fc" id="L58">            pipeline = applyOperation(pipeline, op, varName);</span>
+<span class="fc" id="L59">        }</span>
+        
+        // Apply terminal
+<span class="pc bpc" id="L62" title="1 of 2 branches missed.">        if (model.getTerminal() != null) {</span>
+<span class="fc" id="L63">            pipeline = applyTerminal(pipeline, model.getTerminal(), varName);</span>
+        }
+        
+<span class="fc" id="L66">        return pipeline;</span>
+    }
+    
+    private T applyOperation(T pipeline, Operation op, String varName) {
+<span class="fc bfc" id="L70" title="All 8 branches covered.">        return switch (op) {</span>
+<span class="fc" id="L71">            case FilterOp f -&gt; renderer.renderFilter(pipeline, f.expression(), varName);</span>
+<span class="fc" id="L72">            case MapOp m -&gt; renderer.renderMap(pipeline, m.expression(), varName, m.targetType());</span>
+<span class="fc" id="L73">            case FlatMapOp fm -&gt; renderer.renderFlatMap(pipeline, fm.expression(), varName);</span>
+<span class="fc" id="L74">            case PeekOp p -&gt; renderer.renderPeek(pipeline, p.expression(), varName);</span>
+<span class="fc" id="L75">            case DistinctOp d -&gt; renderer.renderDistinct(pipeline);</span>
+<span class="fc" id="L76">            case SortOp s -&gt; renderer.renderSorted(pipeline, s.expression());</span>
+<span class="fc" id="L77">            case LimitOp l -&gt; renderer.renderLimit(pipeline, l.maxSize());</span>
+<span class="fc" id="L78">            case SkipOp sk -&gt; renderer.renderSkip(pipeline, sk.count());</span>
+        };
+    }
+    
+    private T applyTerminal(T pipeline, TerminalOperation terminal, String varName) {
+<span class="fc bfc" id="L83" title="All 6 branches covered.">        return switch (terminal) {</span>
+<span class="fc" id="L84">            case ForEachTerminal fe -&gt; renderer.renderForEach(</span>
+<span class="fc" id="L85">                pipeline, fe.bodyStatements(), varName, fe.ordered());</span>
+<span class="fc" id="L86">            case CollectTerminal c -&gt; renderer.renderCollect(pipeline, c, varName);</span>
+<span class="fc" id="L87">            case ReduceTerminal r -&gt; renderer.renderReduce(pipeline, r, varName);</span>
+<span class="fc" id="L88">            case CountTerminal ct -&gt; renderer.renderCount(pipeline);</span>
+<span class="fc" id="L89">            case FindTerminal f -&gt; renderer.renderFind(pipeline, f.findFirst());</span>
+<span class="fc" id="L90">            case MatchTerminal m -&gt; renderer.renderMatch(pipeline, m, varName);</span>
+        };
+    }
+    
+    /**
+     * Checks if the model can be transformed.
+     */
+    public boolean canTransform(LoopModel model) {
+<span class="fc bfc" id="L98" title="All 4 branches covered.">        if (model == null || model.getSource() == null) return false;</span>
+<span class="fc" id="L99">        return model.isConvertible();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

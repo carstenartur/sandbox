@@ -1,0 +1,360 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>CodeCleanupApplication.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_cleanup_application</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.core.cleanupapp</a> &gt; <span class="el_source">CodeCleanupApplication.java</span></div><h1>CodeCleanupApplication.java</h1><pre class="source lang-java linenums">package org.sandbox.jdt.core.cleanupapp;
+
+/*-
+ * #%L
+ * Sandbox cleanup application
+ * %%
+ * Copyright (C) 2024 hammer
+ * %%
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0.
+ * 
+ * This Source Code may also be made available under the following Secondary
+ * Licenses when the conditions for such availability set forth in the Eclipse
+ * Public License, v. 2.0 are satisfied: GNU General Public License, version 2
+ * with the GNU Classpath Exception which is
+ * available at https://www.gnu.org/software/classpath/license.html.
+ * 
+ * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+ * #L%
+ */
+
+
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.Path;
+import org.eclipse.equinox.app.IApplication;
+import org.eclipse.equinox.app.IApplicationContext;
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.internal.core.util.Util;
+import org.eclipse.jdt.internal.corext.fix.CleanUpRefactoring;
+import org.eclipse.jdt.internal.ui.JavaPlugin;
+import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
+import org.eclipse.jdt.ui.cleanup.ICleanUp;
+import org.eclipse.ltk.core.refactoring.Change;
+import org.eclipse.ltk.core.refactoring.RefactoringStatus;
+
+<span class="fc" id="L50">public class CodeCleanupApplication implements IApplication {</span>
+<span class="fc" id="L51">	private static final File[] FILES = new File[0];</span>
+
+	private static final String ARG_CONFIG = &quot;-config&quot;; //$NON-NLS-1$
+
+	private static final String ARG_HELP = &quot;-help&quot;; //$NON-NLS-1$
+
+	private static final String ARG_QUIET = &quot;-quiet&quot;; //$NON-NLS-1$
+
+	private static final String ARG_VERBOSE = &quot;-verbose&quot;; //$NON-NLS-1$
+
+	private String configName;
+
+<span class="fc" id="L63">	private Map&lt;String, String&gt; options = null;</span>
+
+	private static final String PDE_LAUNCH = &quot;-pdelaunch&quot;; //$NON-NLS-1$
+
+<span class="fc" id="L67">	private boolean quiet = false;</span>
+
+<span class="fc" id="L69">	private boolean verbose = false;</span>
+
+	private static final  int INITIALSIZE = 1;
+
+	private static final int DEFAULT_MODE = 0;
+
+<span class="fc" id="L75">	private static final int CONFIG_MODE = 1;</span>
+
+
+	/**
+	 * Clean up the given Java source file.
+	 */
+	private void cleanFile(final File file) {
+		try {
+			// Verbose output
+<span class="fc bfc" id="L84" title="All 2 branches covered.">			if (this.verbose) {</span>
+<span class="fc" id="L85">				System.out.println(Messages.bind(Messages.CommandLineCleaning, file.getAbsolutePath()));</span>
+			}
+
+			// Convert file to workspace IFile
+<span class="fc" id="L89">			IPath filePath = Path.fromOSString(file.getAbsolutePath());</span>
+<span class="fc" id="L90">			IFile iFile = ResourcesPlugin.getWorkspace().getRoot().getFileForLocation(filePath);</span>
+			
+<span class="pc bpc" id="L92" title="3 of 4 branches missed.">			if (iFile == null || !iFile.exists()) {</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">				if (!this.quiet) {</span>
+<span class="fc" id="L94">					System.err.println(Messages.bind(Messages.FileOutsideWorkspace, file.getAbsolutePath()));</span>
+				}
+<span class="fc" id="L96">				return;</span>
+			}
+
+			// Get the compilation unit
+<span class="nc" id="L100">			ICompilationUnit cu = JavaCore.createCompilationUnitFrom(iFile);</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">			if (cu == null) {</span>
+<span class="nc bnc" id="L102" title="All 2 branches missed.">				if (!this.quiet) {</span>
+<span class="nc" id="L103">					System.err.println(Messages.bind(Messages.CleanupProblem, file.getAbsolutePath()));</span>
+				}
+<span class="nc" id="L105">				return;</span>
+			}
+
+			// Create and configure the cleanup refactoring
+<span class="nc" id="L109">			CleanUpRefactoring refactoring = new CleanUpRefactoring();</span>
+<span class="nc" id="L110">			refactoring.addCompilationUnit(cu);</span>
+			
+			// Get all registered cleanups and configure with options if provided
+<span class="nc" id="L113">			ICleanUp[] cleanUps = JavaPlugin.getDefault().getCleanUpRegistry().createCleanUps();</span>
+<span class="nc bnc" id="L114" title="All 4 branches missed.">			if (this.options != null &amp;&amp; cleanUps.length &gt; 0) {</span>
+				// Create CleanUpOptions from the provided options map
+<span class="nc" id="L116">				CleanUpOptions cleanUpOptions = new CleanUpOptions();</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">				for (Map.Entry&lt;String, String&gt; entry : this.options.entrySet()) {</span>
+<span class="nc" id="L118">					cleanUpOptions.setOption(entry.getKey(), entry.getValue());</span>
+				}
+				// Set options on each cleanup
+<span class="nc bnc" id="L121" title="All 2 branches missed.">				for (ICleanUp cleanUp : cleanUps) {</span>
+<span class="nc" id="L122">					cleanUp.setOptions(cleanUpOptions);</span>
+<span class="nc" id="L123">					refactoring.addCleanUp(cleanUp);</span>
+				}
+<span class="nc" id="L125">			} else {</span>
+				// Use default options from profile
+<span class="nc" id="L127">				refactoring.setUseOptionsFromProfile(true);</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">				for (ICleanUp cleanUp : cleanUps) {</span>
+<span class="nc" id="L129">					refactoring.addCleanUp(cleanUp);</span>
+				}
+			}
+
+			// Check conditions
+<span class="nc" id="L134">			RefactoringStatus status = refactoring.checkAllConditions(new NullProgressMonitor());</span>
+<span class="nc bnc" id="L135" title="All 2 branches missed.">			if (status.hasFatalError()) {</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">				if (!this.quiet) {</span>
+<span class="nc" id="L137">					System.err.println(Messages.bind(Messages.CleanupFatalError, file.getAbsolutePath(), status.getMessageMatchingSeverity(RefactoringStatus.FATAL)));</span>
+				}
+<span class="nc" id="L139">				return;</span>
+			}
+
+			// Create and perform the change
+<span class="nc" id="L143">			Change change = refactoring.createChange(new NullProgressMonitor());</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">			if (change != null) {</span>
+<span class="nc" id="L145">				change.perform(new NullProgressMonitor());</span>
+<span class="nc" id="L146">				cu.save(new NullProgressMonitor(), true);</span>
+<span class="nc" id="L147">				iFile.refreshLocal(1, new NullProgressMonitor());</span>
+			}
+
+<span class="nc" id="L150">		} catch (CoreException e) {</span>
+<span class="nc" id="L151">			final String errorMessage = Messages.bind(Messages.CaughtException, &quot;CoreException&quot;, e.getLocalizedMessage()); //$NON-NLS-1$</span>
+<span class="nc" id="L152">			Util.log(e, errorMessage);</span>
+<span class="nc" id="L153">			System.err.println(Messages.bind(Messages.ExceptionSkip, errorMessage));</span>
+<span class="nc" id="L154">		} catch (Exception e) {</span>
+<span class="nc" id="L155">			final String errorMessage = Messages.bind(Messages.CaughtException, e.getClass().getSimpleName(), e.getLocalizedMessage());</span>
+<span class="nc" id="L156">			Util.log(e, errorMessage);</span>
+<span class="nc" id="L157">			System.err.println(Messages.bind(Messages.ExceptionSkip, errorMessage));</span>
+		}
+<span class="nc" id="L159">	}</span>
+
+	private File[] processCommandLine(final String[] argsArray) {
+
+<span class="fc" id="L163">		int index = 0;</span>
+<span class="fc" id="L164">		final int argCount = argsArray.length;</span>
+
+<span class="fc" id="L166">		int mode = DEFAULT_MODE;</span>
+		
+<span class="fc" id="L168">		int fileCounter = 0;</span>
+
+<span class="fc" id="L170">		File[] filesToCleanup = new File[INITIALSIZE];</span>
+
+<span class="fc bfc" id="L172" title="All 2 branches covered.">		loop: while (index &lt; argCount) {</span>
+<span class="fc" id="L173">			final String currentArg = argsArray[index++];</span>
+
+<span class="pc bpc" id="L175" title="1 of 3 branches missed.">			switch(mode) {</span>
+				default:
+<span class="nc" id="L177">					break;</span>
+				case DEFAULT_MODE :
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">					if (PDE_LAUNCH.equals(currentArg)) {</span>
+<span class="nc" id="L180">						continue loop;</span>
+					}
+<span class="fc bfc" id="L182" title="All 2 branches covered.">					if (ARG_HELP.equals(currentArg)) {</span>
+<span class="fc" id="L183">						displayHelp();</span>
+<span class="fc" id="L184">						return FILES;</span>
+					}
+<span class="fc bfc" id="L186" title="All 2 branches covered.">					if (ARG_VERBOSE.equals(currentArg)) {</span>
+<span class="fc" id="L187">						this.verbose = true;</span>
+<span class="fc" id="L188">						continue loop;</span>
+					}
+<span class="fc bfc" id="L190" title="All 2 branches covered.">					if (ARG_QUIET.equals(currentArg)) {</span>
+<span class="fc" id="L191">						this.quiet = true;</span>
+<span class="fc" id="L192">						continue loop;</span>
+					}
+<span class="fc bfc" id="L194" title="All 2 branches covered.">					if (ARG_CONFIG.equals(currentArg)) {</span>
+<span class="fc" id="L195">						mode = CONFIG_MODE;</span>
+<span class="fc" id="L196">						continue loop;</span>
+					}
+					// the current arg should be a file or a directory name
+<span class="fc" id="L199">					final File file = new File(currentArg);</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">					if (file.exists()) {</span>
+<span class="fc bfc" id="L201" title="All 2 branches covered.">						if (filesToCleanup.length == fileCounter) {</span>
+<span class="fc" id="L202">							System.arraycopy(filesToCleanup, 0, filesToCleanup = new File[fileCounter * 2], 0, fileCounter);</span>
+						}
+<span class="fc" id="L204">						filesToCleanup[fileCounter++] = file;</span>
+<span class="fc" id="L205">					} else {</span>
+						String canonicalPath;
+						try {
+<span class="fc" id="L208">							canonicalPath = file.getCanonicalPath();</span>
+<span class="pc" id="L209">						} catch(IOException e2) {</span>
+<span class="nc" id="L210">							canonicalPath = file.getAbsolutePath();</span>
+						}
+<span class="pc bpc" id="L212" title="1 of 2 branches missed.">						final String errorMsg = file.isAbsolute()?</span>
+<span class="fc" id="L213">										  Messages.bind(Messages.CommandLineErrorFile, canonicalPath):</span>
+<span class="nc" id="L214">										  Messages.bind(Messages.CommandLineErrorFileTryFullPath, canonicalPath);</span>
+<span class="fc" id="L215">						displayHelp(errorMsg);</span>
+<span class="fc" id="L216">						return FILES;</span>
+					}
+					break;
+				case CONFIG_MODE :
+<span class="fc" id="L220">					this.configName = currentArg;</span>
+<span class="fc" id="L221">					this.options = readConfig(currentArg);</span>
+<span class="fc bfc" id="L222" title="All 2 branches covered.">					if (this.options == null) {</span>
+<span class="fc" id="L223">						displayHelp(Messages.bind(Messages.CommandLineErrorConfig, currentArg));</span>
+<span class="fc" id="L224">						return FILES;</span>
+					}
+<span class="fc" id="L226">					mode = DEFAULT_MODE;</span>
+					continue loop;
+			}
+		}
+
+<span class="pc bpc" id="L231" title="1 of 4 branches missed.">		if (mode == CONFIG_MODE || this.options == null) {</span>
+<span class="fc" id="L232">			displayHelp(Messages.bind(Messages.CommandLineErrorNoConfigFile));</span>
+<span class="fc" id="L233">			return null;</span>
+		}
+<span class="fc bfc" id="L235" title="All 4 branches covered.">		if (this.quiet &amp;&amp; this.verbose) {</span>
+<span class="fc" id="L236">			displayHelp(</span>
+<span class="fc" id="L237">				Messages.bind(</span>
+<span class="fc" id="L238">					Messages.CommandLineErrorQuietVerbose,</span>
+<span class="fc" id="L239">					new String[] { ARG_QUIET, ARG_VERBOSE }</span>
+				));
+<span class="fc" id="L241">			return null;</span>
+		}
+<span class="fc bfc" id="L243" title="All 2 branches covered.">		if (fileCounter == 0) {</span>
+<span class="fc" id="L244">			displayHelp(Messages.bind(Messages.CommandLineErrorFileDir));</span>
+<span class="fc" id="L245">			return null;</span>
+		}
+<span class="pc bpc" id="L247" title="1 of 2 branches missed.">		if (filesToCleanup.length != fileCounter) {</span>
+<span class="nc" id="L248">			System.arraycopy(filesToCleanup, 0, filesToCleanup = new File[fileCounter], 0, fileCounter);</span>
+		}
+<span class="fc" id="L250">		return filesToCleanup;</span>
+	}
+
+	/**
+	 * Return a Java Properties file representing the options that are in the
+	 * specified configuration file.
+	 */
+	private static Map&lt;String, String&gt; readConfig(final String filename) {
+<span class="fc" id="L258">		final File configFile = new File(filename);</span>
+<span class="fc" id="L259">		try (BufferedInputStream stream = new BufferedInputStream(new FileInputStream(configFile));){</span>
+<span class="fc" id="L260">			final Properties formatterOptions = new Properties();</span>
+<span class="fc" id="L261">			formatterOptions.load(stream);</span>
+			// Convert Properties to Map&lt;String, String&gt;
+<span class="fc" id="L263">			Map&lt;String, String&gt; options = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L264" title="All 2 branches covered.">			for (String key : formatterOptions.stringPropertyNames()) {</span>
+<span class="fc" id="L265">				options.put(key, formatterOptions.getProperty(key));</span>
+			}
+<span class="fc" id="L267">			return options;</span>
+<span class="fc" id="L268">		} catch (IOException e) {</span>
+<span class="fc" id="L269">			String canonicalPath = null;</span>
+			try {
+<span class="fc" id="L271">				canonicalPath = configFile.getCanonicalPath();</span>
+<span class="pc" id="L272">			} catch(IOException e2) {</span>
+<span class="nc" id="L273">				canonicalPath = configFile.getAbsolutePath();</span>
+			}
+			final String errorMessage;
+<span class="pc bpc" id="L276" title="2 of 4 branches missed.">			if (!configFile.exists() &amp;&amp; !configFile.isAbsolute()) {</span>
+<span class="nc" id="L277">				errorMessage = Messages.bind(Messages.ConfigFileNotFoundErrorTryFullPath, new Object[] {</span>
+<span class="nc" id="L278">					canonicalPath,</span>
+<span class="nc" id="L279">					System.getProperty(&quot;user.dir&quot;) //$NON-NLS-1$</span>
+				});
+
+<span class="nc" id="L282">			} else {</span>
+<span class="fc" id="L283">				errorMessage = Messages.bind(Messages.ConfigFileReadingError, canonicalPath);</span>
+			}
+<span class="fc" id="L285">			Util.log(e, errorMessage);</span>
+<span class="fc" id="L286">			System.err.println(errorMessage);</span>
+		}
+<span class="fc" id="L288">		return null;</span>
+	}
+
+	/**
+	 * Runs the Java code cleanup application
+	 */
+	@Override
+	public Object start(final IApplicationContext context) throws Exception {
+<span class="fc" id="L296">		final File[] filesToCleanup = processCommandLine((String[]) context.getArguments().get(IApplicationContext.APPLICATION_ARGS));</span>
+
+<span class="fc bfc" id="L298" title="All 2 branches covered.">		if (filesToCleanup == null) {</span>
+<span class="fc" id="L299">			return IApplication.EXIT_OK;</span>
+		}
+
+<span class="fc bfc" id="L302" title="All 2 branches covered.">		if (!this.quiet) {</span>
+<span class="fc bfc" id="L303" title="All 2 branches covered.">			if (this.configName != null) {</span>
+<span class="fc" id="L304">				System.out.println(Messages.bind(Messages.CommandLineConfigFile, this.configName));</span>
+			}
+<span class="fc" id="L306">			System.out.println(Messages.bind(Messages.CommandLineStart));</span>
+		}
+
+		// clean up the list of files and/or directories
+<span class="fc bfc" id="L310" title="All 2 branches covered.">		for (final File file : filesToCleanup) {</span>
+<span class="pc bpc" id="L311" title="1 of 2 branches missed.">			if (file.isDirectory()) {</span>
+<span class="nc" id="L312">				cleanDirTree(file);</span>
+<span class="pc bpc" id="L313" title="1 of 2 branches missed.">			} else if (Util.isJavaLikeFileName(file.getPath())) {</span>
+<span class="fc" id="L314">				cleanFile(file);</span>
+			}
+		}
+<span class="fc bfc" id="L317" title="All 2 branches covered.">		if (!this.quiet) {</span>
+<span class="fc" id="L318">			System.out.println(Messages.bind(Messages.CommandLineDone));</span>
+		}
+
+<span class="fc" id="L321">		return IApplication.EXIT_OK;</span>
+	}
+	@Override
+	public void stop() {
+		// do nothing
+<span class="nc" id="L326">	}</span>
+
+	/**
+	 * Display the command line usage message.
+	 */
+	private static void displayHelp() {
+<span class="fc" id="L332">		System.out.println(Messages.bind(Messages.CommandLineUsage));</span>
+<span class="fc" id="L333">	}</span>
+
+	private static void displayHelp(final String message) {
+<span class="fc" id="L336">		System.err.println(message);</span>
+<span class="fc" id="L337">		System.out.println();</span>
+<span class="fc" id="L338">		displayHelp();</span>
+<span class="fc" id="L339">	}</span>
+	/**
+	 * Recursively clean up the Java source code that is contained in the
+	 * directory rooted at dir.
+	 */
+	private void cleanDirTree(final File dir) {
+
+<span class="nc" id="L346">		final File[] files = dir.listFiles();</span>
+<span class="nc bnc" id="L347" title="All 2 branches missed.">		if (files == null) {</span>
+<span class="nc" id="L348">			return;</span>
+		}
+
+<span class="nc bnc" id="L351" title="All 2 branches missed.">		for (final File file : files) {</span>
+<span class="nc bnc" id="L352" title="All 2 branches missed.">			if (file.isDirectory()) {</span>
+<span class="nc" id="L353">				cleanDirTree(file);</span>
+<span class="nc bnc" id="L354" title="All 2 branches missed.">			} else if (Util.isJavaLikeFileName(file.getPath())) {</span>
+<span class="nc" id="L355">				cleanFile(file);</span>
+			}
+		}
+<span class="nc" id="L358">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

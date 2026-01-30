@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>LoopModelBuilder.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-functional-converter-core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.functional.core.builder</a> &gt; <span class="el_source">LoopModelBuilder.java</span></div><h1>LoopModelBuilder.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.functional.core.builder;
+
+import java.util.ArrayList;
+import java.util.List;
+import org.sandbox.functional.core.model.*;
+import org.sandbox.functional.core.operation.*;
+import org.sandbox.functional.core.terminal.*;
+
+/**
+ * Fluent builder for constructing LoopModel instances.
+ * 
+ * &lt;p&gt;This builder is AST-independent and works with abstract data.
+ * JDT-specific extraction is handled by JdtLoopExtractor in the
+ * sandbox_functional_converter module.&lt;/p&gt;
+ * 
+ * &lt;p&gt;Example usage:&lt;/p&gt;
+ * &lt;pre&gt;
+ * LoopModel model = new LoopModelBuilder()
+ *     .source(SourceType.COLLECTION, &quot;list&quot;, &quot;String&quot;)
+ *     .element(&quot;item&quot;, &quot;String&quot;, false)
+ *     .metadata(false, false, false, false, true)
+ *     .filter(&quot;item != null&quot;)
+ *     .map(&quot;item.toUpperCase()&quot;, &quot;String&quot;)
+ *     .forEach(List.of(&quot;System.out.println(item)&quot;), false)
+ *     .build();
+ * &lt;/pre&gt;
+ */
+public class LoopModelBuilder {
+    
+    private SourceDescriptor source;
+    private ElementDescriptor element;
+    private LoopMetadata metadata;
+<span class="fc" id="L46">    private final List&lt;Operation&gt; operations = new ArrayList&lt;&gt;();</span>
+    private TerminalOperation terminal;
+    
+<span class="fc" id="L49">    public LoopModelBuilder() {}</span>
+    
+    // Source configuration
+    public LoopModelBuilder source(SourceDescriptor.SourceType type, 
+                                   String expression, 
+                                   String elementTypeName) {
+<span class="fc" id="L55">        this.source = new SourceDescriptor(type, expression, elementTypeName);</span>
+<span class="fc" id="L56">        return this;</span>
+    }
+    
+    public LoopModelBuilder source(SourceDescriptor source) {
+<span class="fc" id="L60">        this.source = source;</span>
+<span class="fc" id="L61">        return this;</span>
+    }
+    
+    // Element configuration
+    public LoopModelBuilder element(String variableName, 
+                                    String typeName, 
+                                    boolean isFinal) {
+<span class="fc" id="L68">        this.element = new ElementDescriptor(variableName, typeName, isFinal);</span>
+<span class="fc" id="L69">        return this;</span>
+    }
+    
+    public LoopModelBuilder element(ElementDescriptor element) {
+<span class="fc" id="L73">        this.element = element;</span>
+<span class="fc" id="L74">        return this;</span>
+    }
+    
+    // Metadata configuration
+    public LoopModelBuilder metadata(boolean hasBreak, 
+                                     boolean hasContinue, 
+                                     boolean hasReturn,
+                                     boolean modifiesCollection, 
+                                     boolean requiresOrdering) {
+<span class="fc" id="L83">        this.metadata = new LoopMetadata(hasBreak, hasContinue, hasReturn, </span>
+                                         modifiesCollection, requiresOrdering);
+<span class="fc" id="L85">        return this;</span>
+    }
+    
+    public LoopModelBuilder metadata(LoopMetadata metadata) {
+<span class="nc" id="L89">        this.metadata = metadata;</span>
+<span class="nc" id="L90">        return this;</span>
+    }
+    
+    // Operation shortcuts
+    public LoopModelBuilder filter(String expression) {
+<span class="fc" id="L95">        this.operations.add(new FilterOp(expression));</span>
+<span class="fc" id="L96">        return this;</span>
+    }
+    
+    public LoopModelBuilder map(String expression, String targetType) {
+<span class="fc" id="L100">        this.operations.add(new MapOp(expression, targetType));</span>
+<span class="fc" id="L101">        return this;</span>
+    }
+    
+    public LoopModelBuilder map(String expression) {
+<span class="fc" id="L105">        this.operations.add(new MapOp(expression, null));</span>
+<span class="fc" id="L106">        return this;</span>
+    }
+    
+    public LoopModelBuilder flatMap(String expression) {
+<span class="fc" id="L110">        this.operations.add(new FlatMapOp(expression));</span>
+<span class="fc" id="L111">        return this;</span>
+    }
+    
+    public LoopModelBuilder peek(String expression) {
+<span class="fc" id="L115">        this.operations.add(new PeekOp(expression));</span>
+<span class="fc" id="L116">        return this;</span>
+    }
+    
+    public LoopModelBuilder distinct() {
+<span class="fc" id="L120">        this.operations.add(new DistinctOp());</span>
+<span class="fc" id="L121">        return this;</span>
+    }
+    
+    public LoopModelBuilder sorted() {
+<span class="fc" id="L125">        this.operations.add(new SortOp(null));</span>
+<span class="fc" id="L126">        return this;</span>
+    }
+    
+    public LoopModelBuilder sorted(String comparatorExpression) {
+<span class="fc" id="L130">        this.operations.add(new SortOp(comparatorExpression));</span>
+<span class="fc" id="L131">        return this;</span>
+    }
+    
+    public LoopModelBuilder limit(long maxSize) {
+<span class="fc" id="L135">        this.operations.add(new LimitOp(maxSize));</span>
+<span class="fc" id="L136">        return this;</span>
+    }
+    
+    public LoopModelBuilder skip(long count) {
+<span class="fc" id="L140">        this.operations.add(new SkipOp(count));</span>
+<span class="fc" id="L141">        return this;</span>
+    }
+    
+    public LoopModelBuilder operation(Operation op) {
+<span class="nc" id="L145">        this.operations.add(op);</span>
+<span class="nc" id="L146">        return this;</span>
+    }
+    
+    // Terminal shortcuts
+    public LoopModelBuilder forEach(List&lt;String&gt; bodyStatements, boolean ordered) {
+<span class="fc" id="L151">        this.terminal = new ForEachTerminal(bodyStatements, ordered);</span>
+<span class="fc" id="L152">        return this;</span>
+    }
+    
+    public LoopModelBuilder forEach(List&lt;String&gt; bodyStatements) {
+<span class="fc" id="L156">        return forEach(bodyStatements, false);</span>
+    }
+    
+    public LoopModelBuilder collect(CollectTerminal.CollectorType type, 
+                                    String targetVariable) {
+<span class="fc" id="L161">        this.terminal = new CollectTerminal(type, targetVariable);</span>
+<span class="fc" id="L162">        return this;</span>
+    }
+    
+    public LoopModelBuilder reduce(String identity, 
+                                   String accumulator, 
+                                   String combiner,
+                                   ReduceTerminal.ReduceType type) {
+<span class="fc" id="L169">        this.terminal = new ReduceTerminal(identity, accumulator, combiner, type);</span>
+<span class="fc" id="L170">        return this;</span>
+    }
+    
+    public LoopModelBuilder count() {
+<span class="fc" id="L174">        this.terminal = new CountTerminal();</span>
+<span class="fc" id="L175">        return this;</span>
+    }
+    
+    public LoopModelBuilder findFirst() {
+<span class="fc" id="L179">        this.terminal = new FindTerminal(true);</span>
+<span class="fc" id="L180">        return this;</span>
+    }
+    
+    public LoopModelBuilder findAny() {
+<span class="fc" id="L184">        this.terminal = new FindTerminal(false);</span>
+<span class="fc" id="L185">        return this;</span>
+    }
+    
+    public LoopModelBuilder anyMatch(String predicate) {
+<span class="fc" id="L189">        this.terminal = new MatchTerminal(MatchTerminal.MatchType.ANY_MATCH, predicate);</span>
+<span class="fc" id="L190">        return this;</span>
+    }
+    
+    public LoopModelBuilder allMatch(String predicate) {
+<span class="fc" id="L194">        this.terminal = new MatchTerminal(MatchTerminal.MatchType.ALL_MATCH, predicate);</span>
+<span class="fc" id="L195">        return this;</span>
+    }
+    
+    public LoopModelBuilder noneMatch(String predicate) {
+<span class="fc" id="L199">        this.terminal = new MatchTerminal(MatchTerminal.MatchType.NONE_MATCH, predicate);</span>
+<span class="fc" id="L200">        return this;</span>
+    }
+    
+    public LoopModelBuilder terminal(TerminalOperation terminal) {
+<span class="nc" id="L204">        this.terminal = terminal;</span>
+<span class="nc" id="L205">        return this;</span>
+    }
+    
+    // Build
+    public LoopModel build() {
+<span class="fc" id="L210">        LoopModel model = new LoopModel(source, element, metadata);</span>
+<span class="fc" id="L211">        operations.forEach(model::addOperation);</span>
+<span class="fc bfc" id="L212" title="All 2 branches covered.">        if (terminal != null) {</span>
+<span class="fc" id="L213">            model.withTerminal(terminal);</span>
+        }
+<span class="fc" id="L215">        return model;</span>
+    }
+    
+    // Validation
+    public boolean isValid() {
+<span class="pc bpc" id="L220" title="1 of 4 branches missed.">        return source != null &amp;&amp; element != null;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

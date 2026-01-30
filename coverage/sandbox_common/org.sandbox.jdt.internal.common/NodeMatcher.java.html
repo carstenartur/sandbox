@@ -90,11 +90,11 @@ import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 public final class NodeMatcher&lt;N extends ASTNode&gt; {
 
 	private final N node;
-<span class="nc" id="L93">	private boolean handled = false;</span>
+<span class="fc" id="L93">	private boolean handled = false;</span>
 
-<span class="nc" id="L95">	private NodeMatcher(N node) {</span>
-<span class="nc" id="L96">		this.node = node;</span>
-<span class="nc" id="L97">	}</span>
+<span class="fc" id="L95">	private NodeMatcher(N node) {</span>
+<span class="fc" id="L96">		this.node = node;</span>
+<span class="fc" id="L97">	}</span>
 
 	/**
 	 * Creates a new NodeMatcher for the given AST node.
@@ -104,7 +104,7 @@ public final class NodeMatcher&lt;N extends ASTNode&gt; {
 	 * @return a new NodeMatcher instance
 	 */
 	public static &lt;N extends ASTNode&gt; NodeMatcher&lt;N&gt; on(N node) {
-<span class="nc" id="L107">		return new NodeMatcher&lt;&gt;(node);</span>
+<span class="fc" id="L107">		return new NodeMatcher&lt;&gt;(node);</span>
 	}
 
 	/**
@@ -113,7 +113,7 @@ public final class NodeMatcher&lt;N extends ASTNode&gt; {
 	 * @return the AST node
 	 */
 	public N getNode() {
-<span class="nc" id="L116">		return node;</span>
+<span class="fc" id="L116">		return node;</span>
 	}
 
 	/**
@@ -122,7 +122,7 @@ public final class NodeMatcher&lt;N extends ASTNode&gt; {
 	 * @return true if handled
 	 */
 	public boolean isHandled() {
-<span class="nc" id="L125">		return handled;</span>
+<span class="fc" id="L125">		return handled;</span>
 	}
 
 	// ========== Statement Type Matchers ==========
@@ -131,11 +131,11 @@ public final class NodeMatcher&lt;N extends ASTNode&gt; {
 	 * Executes the consumer if the node is a VariableDeclarationStatement.
 	 */
 	public NodeMatcher&lt;N&gt; ifVariableDeclaration(Consumer&lt;VariableDeclarationStatement&gt; consumer) {
-<span class="nc bnc" id="L134" title="All 4 branches missed.">		if (!handled &amp;&amp; node instanceof VariableDeclarationStatement) {</span>
-<span class="nc" id="L135">			consumer.accept((VariableDeclarationStatement) node);</span>
-<span class="nc" id="L136">			handled = true;</span>
+<span class="pc bpc" id="L134" title="1 of 4 branches missed.">		if (!handled &amp;&amp; node instanceof VariableDeclarationStatement) {</span>
+<span class="fc" id="L135">			consumer.accept((VariableDeclarationStatement) node);</span>
+<span class="fc" id="L136">			handled = true;</span>
 		}
-<span class="nc" id="L138">		return this;</span>
+<span class="fc" id="L138">		return this;</span>
 	}
 
 	/**
@@ -144,25 +144,25 @@ public final class NodeMatcher&lt;N extends ASTNode&gt; {
 	public NodeMatcher&lt;N&gt; ifVariableDeclarationMatching(
 			Predicate&lt;VariableDeclarationStatement&gt; predicate,
 			Consumer&lt;VariableDeclarationStatement&gt; consumer) {
-<span class="nc bnc" id="L147" title="All 4 branches missed.">		if (!handled &amp;&amp; node instanceof VariableDeclarationStatement) {</span>
-<span class="nc" id="L148">			VariableDeclarationStatement varDecl = (VariableDeclarationStatement) node;</span>
-<span class="nc bnc" id="L149" title="All 2 branches missed.">			if (predicate.test(varDecl)) {</span>
-<span class="nc" id="L150">				consumer.accept(varDecl);</span>
-<span class="nc" id="L151">				handled = true;</span>
+<span class="pc bpc" id="L147" title="2 of 4 branches missed.">		if (!handled &amp;&amp; node instanceof VariableDeclarationStatement) {</span>
+<span class="fc" id="L148">			VariableDeclarationStatement varDecl = (VariableDeclarationStatement) node;</span>
+<span class="pc bpc" id="L149" title="1 of 2 branches missed.">			if (predicate.test(varDecl)) {</span>
+<span class="fc" id="L150">				consumer.accept(varDecl);</span>
+<span class="fc" id="L151">				handled = true;</span>
 			}
 		}
-<span class="nc" id="L154">		return this;</span>
+<span class="fc" id="L154">		return this;</span>
 	}
 
 	/**
 	 * Executes the consumer if the node is an IfStatement.
 	 */
 	public NodeMatcher&lt;N&gt; ifIfStatement(Consumer&lt;IfStatement&gt; consumer) {
-<span class="nc bnc" id="L161" title="All 4 branches missed.">		if (!handled &amp;&amp; node instanceof IfStatement) {</span>
-<span class="nc" id="L162">			consumer.accept((IfStatement) node);</span>
-<span class="nc" id="L163">			handled = true;</span>
+<span class="pc bpc" id="L161" title="2 of 4 branches missed.">		if (!handled &amp;&amp; node instanceof IfStatement) {</span>
+<span class="fc" id="L162">			consumer.accept((IfStatement) node);</span>
+<span class="fc" id="L163">			handled = true;</span>
 		}
-<span class="nc" id="L165">		return this;</span>
+<span class="fc" id="L165">		return this;</span>
 	}
 
 	/**
@@ -171,39 +171,39 @@ public final class NodeMatcher&lt;N extends ASTNode&gt; {
 	public NodeMatcher&lt;N&gt; ifIfStatementMatching(
 			Predicate&lt;IfStatement&gt; predicate,
 			Consumer&lt;IfStatement&gt; consumer) {
-<span class="nc bnc" id="L174" title="All 4 branches missed.">		if (!handled &amp;&amp; node instanceof IfStatement) {</span>
-<span class="nc" id="L175">			IfStatement ifStmt = (IfStatement) node;</span>
-<span class="nc bnc" id="L176" title="All 2 branches missed.">			if (predicate.test(ifStmt)) {</span>
-<span class="nc" id="L177">				consumer.accept(ifStmt);</span>
-<span class="nc" id="L178">				handled = true;</span>
+<span class="pc bpc" id="L174" title="2 of 4 branches missed.">		if (!handled &amp;&amp; node instanceof IfStatement) {</span>
+<span class="fc" id="L175">			IfStatement ifStmt = (IfStatement) node;</span>
+<span class="pc bpc" id="L176" title="1 of 2 branches missed.">			if (predicate.test(ifStmt)) {</span>
+<span class="fc" id="L177">				consumer.accept(ifStmt);</span>
+<span class="fc" id="L178">				handled = true;</span>
 			}
 		}
-<span class="nc" id="L181">		return this;</span>
+<span class="fc" id="L181">		return this;</span>
 	}
 
 	/**
 	 * Executes the consumer if the node is an IfStatement without an else branch.
 	 */
 	public NodeMatcher&lt;N&gt; ifIfStatementWithoutElse(Consumer&lt;IfStatement&gt; consumer) {
-<span class="nc bnc" id="L188" title="All 2 branches missed.">		return ifIfStatementMatching(ifStmt -&gt; ifStmt.getElseStatement() == null, consumer);</span>
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">		return ifIfStatementMatching(ifStmt -&gt; ifStmt.getElseStatement() == null, consumer);</span>
 	}
 
 	/**
 	 * Executes the consumer if the node is an IfStatement with an else branch.
 	 */
 	public NodeMatcher&lt;N&gt; ifIfStatementWithElse(Consumer&lt;IfStatement&gt; consumer) {
-<span class="nc bnc" id="L195" title="All 2 branches missed.">		return ifIfStatementMatching(ifStmt -&gt; ifStmt.getElseStatement() != null, consumer);</span>
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">		return ifIfStatementMatching(ifStmt -&gt; ifStmt.getElseStatement() != null, consumer);</span>
 	}
 
 	/**
 	 * Executes the consumer if the node is an ExpressionStatement.
 	 */
 	public NodeMatcher&lt;N&gt; ifExpressionStatement(Consumer&lt;ExpressionStatement&gt; consumer) {
-<span class="nc bnc" id="L202" title="All 4 branches missed.">		if (!handled &amp;&amp; node instanceof ExpressionStatement) {</span>
-<span class="nc" id="L203">			consumer.accept((ExpressionStatement) node);</span>
-<span class="nc" id="L204">			handled = true;</span>
+<span class="pc bpc" id="L202" title="2 of 4 branches missed.">		if (!handled &amp;&amp; node instanceof ExpressionStatement) {</span>
+<span class="fc" id="L203">			consumer.accept((ExpressionStatement) node);</span>
+<span class="fc" id="L204">			handled = true;</span>
 		}
-<span class="nc" id="L206">		return this;</span>
+<span class="fc" id="L206">		return this;</span>
 	}
 
 	/**
@@ -226,55 +226,55 @@ public final class NodeMatcher&lt;N extends ASTNode&gt; {
 	 * Executes the consumer if the node is a ReturnStatement.
 	 */
 	public NodeMatcher&lt;N&gt; ifReturnStatement(Consumer&lt;ReturnStatement&gt; consumer) {
-<span class="nc bnc" id="L229" title="All 4 branches missed.">		if (!handled &amp;&amp; node instanceof ReturnStatement) {</span>
-<span class="nc" id="L230">			consumer.accept((ReturnStatement) node);</span>
-<span class="nc" id="L231">			handled = true;</span>
+<span class="pc bpc" id="L229" title="1 of 4 branches missed.">		if (!handled &amp;&amp; node instanceof ReturnStatement) {</span>
+<span class="fc" id="L230">			consumer.accept((ReturnStatement) node);</span>
+<span class="fc" id="L231">			handled = true;</span>
 		}
-<span class="nc" id="L233">		return this;</span>
+<span class="fc" id="L233">		return this;</span>
 	}
 
 	/**
 	 * Executes the consumer if the node is a ContinueStatement.
 	 */
 	public NodeMatcher&lt;N&gt; ifContinueStatement(Consumer&lt;ContinueStatement&gt; consumer) {
-<span class="nc bnc" id="L240" title="All 4 branches missed.">		if (!handled &amp;&amp; node instanceof ContinueStatement) {</span>
-<span class="nc" id="L241">			consumer.accept((ContinueStatement) node);</span>
-<span class="nc" id="L242">			handled = true;</span>
+<span class="pc bpc" id="L240" title="2 of 4 branches missed.">		if (!handled &amp;&amp; node instanceof ContinueStatement) {</span>
+<span class="fc" id="L241">			consumer.accept((ContinueStatement) node);</span>
+<span class="fc" id="L242">			handled = true;</span>
 		}
-<span class="nc" id="L244">		return this;</span>
+<span class="fc" id="L244">		return this;</span>
 	}
 
 	/**
 	 * Executes the consumer if the node is a BreakStatement.
 	 */
 	public NodeMatcher&lt;N&gt; ifBreakStatement(Consumer&lt;BreakStatement&gt; consumer) {
-<span class="nc bnc" id="L251" title="All 4 branches missed.">		if (!handled &amp;&amp; node instanceof BreakStatement) {</span>
-<span class="nc" id="L252">			consumer.accept((BreakStatement) node);</span>
-<span class="nc" id="L253">			handled = true;</span>
+<span class="pc bpc" id="L251" title="2 of 4 branches missed.">		if (!handled &amp;&amp; node instanceof BreakStatement) {</span>
+<span class="fc" id="L252">			consumer.accept((BreakStatement) node);</span>
+<span class="fc" id="L253">			handled = true;</span>
 		}
-<span class="nc" id="L255">		return this;</span>
+<span class="fc" id="L255">		return this;</span>
 	}
 
 	/**
 	 * Executes the consumer if the node is a ThrowStatement.
 	 */
 	public NodeMatcher&lt;N&gt; ifThrowStatement(Consumer&lt;ThrowStatement&gt; consumer) {
-<span class="nc bnc" id="L262" title="All 4 branches missed.">		if (!handled &amp;&amp; node instanceof ThrowStatement) {</span>
-<span class="nc" id="L263">			consumer.accept((ThrowStatement) node);</span>
-<span class="nc" id="L264">			handled = true;</span>
+<span class="pc bpc" id="L262" title="2 of 4 branches missed.">		if (!handled &amp;&amp; node instanceof ThrowStatement) {</span>
+<span class="fc" id="L263">			consumer.accept((ThrowStatement) node);</span>
+<span class="fc" id="L264">			handled = true;</span>
 		}
-<span class="nc" id="L266">		return this;</span>
+<span class="fc" id="L266">		return this;</span>
 	}
 
 	/**
 	 * Executes the consumer if the node is a Block.
 	 */
 	public NodeMatcher&lt;N&gt; ifBlock(Consumer&lt;Block&gt; consumer) {
-<span class="nc bnc" id="L273" title="All 4 branches missed.">		if (!handled &amp;&amp; node instanceof Block) {</span>
-<span class="nc" id="L274">			consumer.accept((Block) node);</span>
-<span class="nc" id="L275">			handled = true;</span>
+<span class="pc bpc" id="L273" title="2 of 4 branches missed.">		if (!handled &amp;&amp; node instanceof Block) {</span>
+<span class="fc" id="L274">			consumer.accept((Block) node);</span>
+<span class="fc" id="L275">			handled = true;</span>
 		}
-<span class="nc" id="L277">		return this;</span>
+<span class="fc" id="L277">		return this;</span>
 	}
 
 	// ========== Expression Type Matchers ==========
@@ -283,11 +283,11 @@ public final class NodeMatcher&lt;N extends ASTNode&gt; {
 	 * Executes the consumer if the node is an Assignment.
 	 */
 	public NodeMatcher&lt;N&gt; ifAssignment(Consumer&lt;Assignment&gt; consumer) {
-<span class="nc bnc" id="L286" title="All 4 branches missed.">		if (!handled &amp;&amp; node instanceof Assignment) {</span>
-<span class="nc" id="L287">			consumer.accept((Assignment) node);</span>
-<span class="nc" id="L288">			handled = true;</span>
+<span class="pc bpc" id="L286" title="2 of 4 branches missed.">		if (!handled &amp;&amp; node instanceof Assignment) {</span>
+<span class="fc" id="L287">			consumer.accept((Assignment) node);</span>
+<span class="fc" id="L288">			handled = true;</span>
 		}
-<span class="nc" id="L290">		return this;</span>
+<span class="fc" id="L290">		return this;</span>
 	}
 
 	/**
@@ -296,102 +296,102 @@ public final class NodeMatcher&lt;N extends ASTNode&gt; {
 	public NodeMatcher&lt;N&gt; ifAssignmentWithOperator(
 			Assignment.Operator operator,
 			Consumer&lt;Assignment&gt; consumer) {
-<span class="nc bnc" id="L299" title="All 4 branches missed.">		if (!handled &amp;&amp; node instanceof Assignment) {</span>
-<span class="nc" id="L300">			Assignment assignment = (Assignment) node;</span>
-<span class="nc bnc" id="L301" title="All 2 branches missed.">			if (assignment.getOperator() == operator) {</span>
-<span class="nc" id="L302">				consumer.accept(assignment);</span>
-<span class="nc" id="L303">				handled = true;</span>
+<span class="pc bpc" id="L299" title="2 of 4 branches missed.">		if (!handled &amp;&amp; node instanceof Assignment) {</span>
+<span class="fc" id="L300">			Assignment assignment = (Assignment) node;</span>
+<span class="pc bpc" id="L301" title="1 of 2 branches missed.">			if (assignment.getOperator() == operator) {</span>
+<span class="fc" id="L302">				consumer.accept(assignment);</span>
+<span class="fc" id="L303">				handled = true;</span>
 			}
 		}
-<span class="nc" id="L306">		return this;</span>
+<span class="fc" id="L306">		return this;</span>
 	}
 
 	/**
 	 * Executes the consumer if the node is a MethodInvocation.
 	 */
 	public NodeMatcher&lt;N&gt; ifMethodInvocation(Consumer&lt;MethodInvocation&gt; consumer) {
-<span class="nc bnc" id="L313" title="All 4 branches missed.">		if (!handled &amp;&amp; node instanceof MethodInvocation) {</span>
-<span class="nc" id="L314">			consumer.accept((MethodInvocation) node);</span>
-<span class="nc" id="L315">			handled = true;</span>
+<span class="pc bpc" id="L313" title="2 of 4 branches missed.">		if (!handled &amp;&amp; node instanceof MethodInvocation) {</span>
+<span class="fc" id="L314">			consumer.accept((MethodInvocation) node);</span>
+<span class="fc" id="L315">			handled = true;</span>
 		}
-<span class="nc" id="L317">		return this;</span>
+<span class="fc" id="L317">		return this;</span>
 	}
 
 	/**
 	 * Executes the consumer if the node is a MethodInvocation with the specified method name.
 	 */
 	public NodeMatcher&lt;N&gt; ifMethodInvocationNamed(String methodName, Consumer&lt;MethodInvocation&gt; consumer) {
-<span class="nc bnc" id="L324" title="All 4 branches missed.">		if (!handled &amp;&amp; node instanceof MethodInvocation) {</span>
-<span class="nc" id="L325">			MethodInvocation mi = (MethodInvocation) node;</span>
-<span class="nc bnc" id="L326" title="All 2 branches missed.">			if (methodName.equals(mi.getName().getIdentifier())) {</span>
-<span class="nc" id="L327">				consumer.accept(mi);</span>
-<span class="nc" id="L328">				handled = true;</span>
+<span class="pc bpc" id="L324" title="2 of 4 branches missed.">		if (!handled &amp;&amp; node instanceof MethodInvocation) {</span>
+<span class="fc" id="L325">			MethodInvocation mi = (MethodInvocation) node;</span>
+<span class="pc bpc" id="L326" title="1 of 2 branches missed.">			if (methodName.equals(mi.getName().getIdentifier())) {</span>
+<span class="fc" id="L327">				consumer.accept(mi);</span>
+<span class="fc" id="L328">				handled = true;</span>
 			}
 		}
-<span class="nc" id="L331">		return this;</span>
+<span class="fc" id="L331">		return this;</span>
 	}
 
 	/**
 	 * Executes the consumer if the node is a PostfixExpression.
 	 */
 	public NodeMatcher&lt;N&gt; ifPostfixExpression(Consumer&lt;PostfixExpression&gt; consumer) {
-<span class="nc bnc" id="L338" title="All 4 branches missed.">		if (!handled &amp;&amp; node instanceof PostfixExpression) {</span>
-<span class="nc" id="L339">			consumer.accept((PostfixExpression) node);</span>
-<span class="nc" id="L340">			handled = true;</span>
+<span class="pc bpc" id="L338" title="2 of 4 branches missed.">		if (!handled &amp;&amp; node instanceof PostfixExpression) {</span>
+<span class="fc" id="L339">			consumer.accept((PostfixExpression) node);</span>
+<span class="fc" id="L340">			handled = true;</span>
 		}
-<span class="nc" id="L342">		return this;</span>
+<span class="fc" id="L342">		return this;</span>
 	}
 
 	/**
 	 * Executes the consumer if the node is a PostfixExpression with increment or decrement.
 	 */
 	public NodeMatcher&lt;N&gt; ifPostfixIncrementOrDecrement(Consumer&lt;PostfixExpression&gt; consumer) {
-<span class="nc bnc" id="L349" title="All 4 branches missed.">		if (!handled &amp;&amp; node instanceof PostfixExpression) {</span>
-<span class="nc" id="L350">			PostfixExpression postfix = (PostfixExpression) node;</span>
-<span class="nc bnc" id="L351" title="All 2 branches missed.">			if (postfix.getOperator() == PostfixExpression.Operator.INCREMENT</span>
+<span class="pc bpc" id="L349" title="2 of 4 branches missed.">		if (!handled &amp;&amp; node instanceof PostfixExpression) {</span>
+<span class="fc" id="L350">			PostfixExpression postfix = (PostfixExpression) node;</span>
+<span class="pc bpc" id="L351" title="1 of 2 branches missed.">			if (postfix.getOperator() == PostfixExpression.Operator.INCREMENT</span>
 <span class="nc bnc" id="L352" title="All 2 branches missed.">					|| postfix.getOperator() == PostfixExpression.Operator.DECREMENT) {</span>
-<span class="nc" id="L353">				consumer.accept(postfix);</span>
-<span class="nc" id="L354">				handled = true;</span>
+<span class="fc" id="L353">				consumer.accept(postfix);</span>
+<span class="fc" id="L354">				handled = true;</span>
 			}
 		}
-<span class="nc" id="L357">		return this;</span>
+<span class="fc" id="L357">		return this;</span>
 	}
 
 	/**
 	 * Executes the consumer if the node is a PrefixExpression.
 	 */
 	public NodeMatcher&lt;N&gt; ifPrefixExpression(Consumer&lt;PrefixExpression&gt; consumer) {
-<span class="nc bnc" id="L364" title="All 4 branches missed.">		if (!handled &amp;&amp; node instanceof PrefixExpression) {</span>
-<span class="nc" id="L365">			consumer.accept((PrefixExpression) node);</span>
-<span class="nc" id="L366">			handled = true;</span>
+<span class="pc bpc" id="L364" title="2 of 4 branches missed.">		if (!handled &amp;&amp; node instanceof PrefixExpression) {</span>
+<span class="fc" id="L365">			consumer.accept((PrefixExpression) node);</span>
+<span class="fc" id="L366">			handled = true;</span>
 		}
-<span class="nc" id="L368">		return this;</span>
+<span class="fc" id="L368">		return this;</span>
 	}
 
 	/**
 	 * Executes the consumer if the node is a PrefixExpression with increment or decrement.
 	 */
 	public NodeMatcher&lt;N&gt; ifPrefixIncrementOrDecrement(Consumer&lt;PrefixExpression&gt; consumer) {
-<span class="nc bnc" id="L375" title="All 4 branches missed.">		if (!handled &amp;&amp; node instanceof PrefixExpression) {</span>
-<span class="nc" id="L376">			PrefixExpression prefix = (PrefixExpression) node;</span>
-<span class="nc bnc" id="L377" title="All 2 branches missed.">			if (prefix.getOperator() == PrefixExpression.Operator.INCREMENT</span>
-<span class="nc bnc" id="L378" title="All 2 branches missed.">					|| prefix.getOperator() == PrefixExpression.Operator.DECREMENT) {</span>
-<span class="nc" id="L379">				consumer.accept(prefix);</span>
-<span class="nc" id="L380">				handled = true;</span>
+<span class="pc bpc" id="L375" title="2 of 4 branches missed.">		if (!handled &amp;&amp; node instanceof PrefixExpression) {</span>
+<span class="fc" id="L376">			PrefixExpression prefix = (PrefixExpression) node;</span>
+<span class="pc bpc" id="L377" title="1 of 2 branches missed.">			if (prefix.getOperator() == PrefixExpression.Operator.INCREMENT</span>
+<span class="pc bpc" id="L378" title="1 of 2 branches missed.">					|| prefix.getOperator() == PrefixExpression.Operator.DECREMENT) {</span>
+<span class="fc" id="L379">				consumer.accept(prefix);</span>
+<span class="fc" id="L380">				handled = true;</span>
 			}
 		}
-<span class="nc" id="L383">		return this;</span>
+<span class="fc" id="L383">		return this;</span>
 	}
 
 	/**
 	 * Executes the consumer if the node is a SimpleName.
 	 */
 	public NodeMatcher&lt;N&gt; ifSimpleName(Consumer&lt;SimpleName&gt; consumer) {
-<span class="nc bnc" id="L390" title="All 4 branches missed.">		if (!handled &amp;&amp; node instanceof SimpleName) {</span>
-<span class="nc" id="L391">			consumer.accept((SimpleName) node);</span>
-<span class="nc" id="L392">			handled = true;</span>
+<span class="pc bpc" id="L390" title="2 of 4 branches missed.">		if (!handled &amp;&amp; node instanceof SimpleName) {</span>
+<span class="fc" id="L391">			consumer.accept((SimpleName) node);</span>
+<span class="fc" id="L392">			handled = true;</span>
 		}
-<span class="nc" id="L394">		return this;</span>
+<span class="fc" id="L394">		return this;</span>
 	}
 
 	// ========== Generic Type Matcher ==========
@@ -405,11 +405,11 @@ public final class NodeMatcher&lt;N extends ASTNode&gt; {
 	 * @return this matcher for chaining
 	 */
 	public &lt;T extends ASTNode&gt; NodeMatcher&lt;N&gt; ifType(Class&lt;T&gt; nodeClass, Consumer&lt;T&gt; consumer) {
-<span class="nc bnc" id="L408" title="All 4 branches missed.">		if (!handled &amp;&amp; nodeClass.isInstance(node)) {</span>
-<span class="nc" id="L409">			consumer.accept(nodeClass.cast(node));</span>
-<span class="nc" id="L410">			handled = true;</span>
+<span class="pc bpc" id="L408" title="2 of 4 branches missed.">		if (!handled &amp;&amp; nodeClass.isInstance(node)) {</span>
+<span class="fc" id="L409">			consumer.accept(nodeClass.cast(node));</span>
+<span class="fc" id="L410">			handled = true;</span>
 		}
-<span class="nc" id="L412">		return this;</span>
+<span class="fc" id="L412">		return this;</span>
 	}
 
 	/**
@@ -419,14 +419,14 @@ public final class NodeMatcher&lt;N extends ASTNode&gt; {
 			Class&lt;T&gt; nodeClass,
 			Predicate&lt;T&gt; predicate,
 			Consumer&lt;T&gt; consumer) {
-<span class="nc bnc" id="L422" title="All 4 branches missed.">		if (!handled &amp;&amp; nodeClass.isInstance(node)) {</span>
-<span class="nc" id="L423">			T typedNode = nodeClass.cast(node);</span>
-<span class="nc bnc" id="L424" title="All 2 branches missed.">			if (predicate.test(typedNode)) {</span>
-<span class="nc" id="L425">				consumer.accept(typedNode);</span>
-<span class="nc" id="L426">				handled = true;</span>
+<span class="pc bpc" id="L422" title="2 of 4 branches missed.">		if (!handled &amp;&amp; nodeClass.isInstance(node)) {</span>
+<span class="fc" id="L423">			T typedNode = nodeClass.cast(node);</span>
+<span class="pc bpc" id="L424" title="1 of 2 branches missed.">			if (predicate.test(typedNode)) {</span>
+<span class="fc" id="L425">				consumer.accept(typedNode);</span>
+<span class="fc" id="L426">				handled = true;</span>
 			}
 		}
-<span class="nc" id="L429">		return this;</span>
+<span class="fc" id="L429">		return this;</span>
 	}
 
 	// ========== Terminal Operations ==========
@@ -437,10 +437,10 @@ public final class NodeMatcher&lt;N extends ASTNode&gt; {
 	 * @param consumer the consumer to execute
 	 */
 	public void orElse(Consumer&lt;N&gt; consumer) {
-<span class="nc bnc" id="L440" title="All 2 branches missed.">		if (!handled) {</span>
-<span class="nc" id="L441">			consumer.accept(node);</span>
+<span class="fc bfc" id="L440" title="All 2 branches covered.">		if (!handled) {</span>
+<span class="fc" id="L441">			consumer.accept(node);</span>
 		}
-<span class="nc" id="L443">	}</span>
+<span class="fc" id="L443">	}</span>
 
 	/**
 	 * Executes the runnable if no previous matcher handled the node.
@@ -448,10 +448,10 @@ public final class NodeMatcher&lt;N extends ASTNode&gt; {
 	 * @param runnable the runnable to execute
 	 */
 	public void orElseDo(Runnable runnable) {
-<span class="nc bnc" id="L451" title="All 2 branches missed.">		if (!handled) {</span>
-<span class="nc" id="L452">			runnable.run();</span>
+<span class="pc bpc" id="L451" title="1 of 2 branches missed.">		if (!handled) {</span>
+<span class="fc" id="L452">			runnable.run();</span>
 		}
-<span class="nc" id="L454">	}</span>
+<span class="fc" id="L454">	}</span>
 
 	/**
 	 * Returns an Optional containing the result of the function if no matcher handled the node.
@@ -461,10 +461,10 @@ public final class NodeMatcher&lt;N extends ASTNode&gt; {
 	 * @return an Optional with the result
 	 */
 	public &lt;R&gt; Optional&lt;R&gt; orElseGet(Function&lt;N, R&gt; function) {
-<span class="nc bnc" id="L464" title="All 2 branches missed.">		if (!handled) {</span>
-<span class="nc" id="L465">			return Optional.ofNullable(function.apply(node));</span>
+<span class="fc bfc" id="L464" title="All 2 branches covered.">		if (!handled) {</span>
+<span class="fc" id="L465">			return Optional.ofNullable(function.apply(node));</span>
 		}
-<span class="nc" id="L467">		return Optional.empty();</span>
+<span class="fc" id="L467">		return Optional.empty();</span>
 	}
 
 	// ========== Utility Methods ==========
@@ -476,10 +476,10 @@ public final class NodeMatcher&lt;N extends ASTNode&gt; {
 	 * @return true if the node is an unconvertible control flow statement
 	 */
 	public boolean isControlFlowStatement() {
-<span class="nc bnc" id="L479" title="All 2 branches missed.">		return node instanceof ReturnStatement</span>
-<span class="nc bnc" id="L480" title="All 2 branches missed.">				|| node instanceof ContinueStatement</span>
-<span class="nc bnc" id="L481" title="All 2 branches missed.">				|| node instanceof BreakStatement</span>
-<span class="nc bnc" id="L482" title="All 2 branches missed.">				|| node instanceof ThrowStatement;</span>
+<span class="fc bfc" id="L479" title="All 2 branches covered.">		return node instanceof ReturnStatement</span>
+<span class="fc bfc" id="L480" title="All 2 branches covered.">				|| node instanceof ContinueStatement</span>
+<span class="fc bfc" id="L481" title="All 2 branches covered.">				|| node instanceof BreakStatement</span>
+<span class="fc bfc" id="L482" title="All 2 branches covered.">				|| node instanceof ThrowStatement;</span>
 	}
 
 	/**
@@ -488,10 +488,10 @@ public final class NodeMatcher&lt;N extends ASTNode&gt; {
 	 * @return true if the node is an assignment statement
 	 */
 	public boolean isAssignmentStatement() {
-<span class="nc bnc" id="L491" title="All 2 branches missed.">		if (node instanceof ExpressionStatement) {</span>
-<span class="nc" id="L492">			return ((ExpressionStatement) node).getExpression() instanceof Assignment;</span>
+<span class="fc bfc" id="L491" title="All 2 branches covered.">		if (node instanceof ExpressionStatement) {</span>
+<span class="fc" id="L492">			return ((ExpressionStatement) node).getExpression() instanceof Assignment;</span>
 		}
-<span class="nc" id="L494">		return false;</span>
+<span class="fc" id="L494">		return false;</span>
 	}
 
 	/**
@@ -500,13 +500,13 @@ public final class NodeMatcher&lt;N extends ASTNode&gt; {
 	 * @return Optional containing the Assignment, or empty if not an assignment statement
 	 */
 	public Optional&lt;Assignment&gt; getAssignment() {
-<span class="nc bnc" id="L503" title="All 2 branches missed.">		if (node instanceof ExpressionStatement) {</span>
-<span class="nc" id="L504">			Expression expr = ((ExpressionStatement) node).getExpression();</span>
-<span class="nc bnc" id="L505" title="All 2 branches missed.">			if (expr instanceof Assignment) {</span>
-<span class="nc" id="L506">				return Optional.of((Assignment) expr);</span>
+<span class="fc bfc" id="L503" title="All 2 branches covered.">		if (node instanceof ExpressionStatement) {</span>
+<span class="fc" id="L504">			Expression expr = ((ExpressionStatement) node).getExpression();</span>
+<span class="pc bpc" id="L505" title="1 of 2 branches missed.">			if (expr instanceof Assignment) {</span>
+<span class="fc" id="L506">				return Optional.of((Assignment) expr);</span>
 			}
 		}
-<span class="nc" id="L509">		return Optional.empty();</span>
+<span class="fc" id="L509">		return Optional.empty();</span>
 	}
 
 	/**
@@ -515,10 +515,10 @@ public final class NodeMatcher&lt;N extends ASTNode&gt; {
 	 * @return Optional containing the Expression, or empty if not an ExpressionStatement
 	 */
 	public Optional&lt;Expression&gt; getExpression() {
-<span class="nc bnc" id="L518" title="All 2 branches missed.">		if (node instanceof ExpressionStatement) {</span>
-<span class="nc" id="L519">			return Optional.of(((ExpressionStatement) node).getExpression());</span>
+<span class="fc bfc" id="L518" title="All 2 branches covered.">		if (node instanceof ExpressionStatement) {</span>
+<span class="fc" id="L519">			return Optional.of(((ExpressionStatement) node).getExpression());</span>
 		}
-<span class="nc" id="L521">		return Optional.empty();</span>
+<span class="fc" id="L521">		return Optional.empty();</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

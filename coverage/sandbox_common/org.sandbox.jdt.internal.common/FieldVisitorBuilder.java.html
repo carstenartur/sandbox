@@ -68,10 +68,10 @@ import org.eclipse.jdt.core.dom.FieldDeclaration;
     @Override
     protected void validateState() {
 <span class="fc" id="L70">        super.validateState();</span>
-<span class="pc bpc" id="L71" title="2 of 4 branches missed.">        if (annotationFQN == null || typeFQN == null) {</span>
-<span class="nc" id="L72">            throw new IllegalStateException(</span>
-<span class="nc" id="L73">                &quot;FieldVisitorBuilder requires both withAnnotation(...) and ofType(...) to be configured &quot; //$NON-NLS-1$</span>
-<span class="nc" id="L74">                + &quot;before processing. annotationFQN=&quot; + annotationFQN + &quot;, typeFQN=&quot; + typeFQN); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L71" title="All 4 branches covered.">        if (annotationFQN == null || typeFQN == null) {</span>
+<span class="fc" id="L72">            throw new IllegalStateException(</span>
+<span class="fc" id="L73">                &quot;FieldVisitorBuilder requires both withAnnotation(...) and ofType(...) to be configured &quot; //$NON-NLS-1$</span>
+<span class="fc" id="L74">                + &quot;before processing. annotationFQN=&quot; + annotationFQN + &quot;, typeFQN=&quot; + typeFQN); //$NON-NLS-1$ //$NON-NLS-2$</span>
         }
 <span class="fc" id="L76">    }</span>
     

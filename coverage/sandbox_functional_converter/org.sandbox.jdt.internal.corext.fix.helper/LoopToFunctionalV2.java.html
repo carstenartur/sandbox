@@ -23,6 +23,7 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.functional.core.model.LoopMetadata;
 import org.sandbox.functional.core.model.LoopModel;
+import org.sandbox.functional.core.model.SourceDescriptor;
 import org.sandbox.functional.core.transformer.LoopModelTransformer;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
@@ -38,19 +39,19 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
  * @see ASTStreamRenderer
  * @see LoopModelTransformer
  */
-<span class="fc" id="L41">public class LoopToFunctionalV2 extends AbstractFunctionalCall&lt;EnhancedForStatement&gt; {</span>
+<span class="fc" id="L42">public class LoopToFunctionalV2 extends AbstractFunctionalCall&lt;EnhancedForStatement&gt; {</span>
     
-<span class="fc" id="L43">    private final JdtLoopExtractor extractor = new JdtLoopExtractor();</span>
+<span class="fc" id="L44">    private final JdtLoopExtractor extractor = new JdtLoopExtractor();</span>
     
     @Override
     public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
                      Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
         
-<span class="fc" id="L49">        ReferenceHolder&lt;ASTNode, Object&gt; dataHolder = new ReferenceHolder&lt;&gt;();</span>
-<span class="fc" id="L50">        HelperVisitor.callEnhancedForStatementVisitor(compilationUnit, dataHolder, nodesprocessed,</span>
-<span class="fc" id="L51">                (visited, holder) -&gt; processFoundNode(fixcore, operations, nodesprocessed, visited, holder),</span>
-<span class="fc" id="L52">                (visited, holder) -&gt; {});</span>
-<span class="fc" id="L53">    }</span>
+<span class="fc" id="L50">        ReferenceHolder&lt;ASTNode, Object&gt; dataHolder = new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L51">        HelperVisitor.callEnhancedForStatementVisitor(compilationUnit, dataHolder, nodesprocessed,</span>
+<span class="fc" id="L52">                (visited, holder) -&gt; processFoundNode(fixcore, operations, nodesprocessed, visited, holder),</span>
+<span class="fc" id="L53">                (visited, holder) -&gt; {});</span>
+<span class="fc" id="L54">    }</span>
     
     private boolean processFoundNode(UseFunctionalCallFixCore fixcore,
                                       Set&lt;CompilationUnitRewriteOperation&gt; operations,
@@ -59,19 +60,19 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
                                       ReferenceHolder&lt;ASTNode, Object&gt; holder) {
         
         // Extract LoopModel AND original body from AST
-<span class="fc" id="L62">        JdtLoopExtractor.ExtractedLoop extracted = extractor.extract(visited);</span>
+<span class="fc" id="L63">        JdtLoopExtractor.ExtractedLoop extracted = extractor.extract(visited);</span>
         
         // Check if convertible using the model's metadata
-<span class="fc bfc" id="L65" title="All 2 branches covered.">        if (!isConvertible(extracted.model)) {</span>
-<span class="fc" id="L66">            return false;</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        if (!isConvertible(extracted.model)) {</span>
+<span class="fc" id="L67">            return false;</span>
         }
         
         // Store extracted loop (model + body) for later rewrite in the shared holder
-<span class="fc" id="L70">        holder.put(visited, extracted);</span>
-<span class="fc" id="L71">        operations.add(fixcore.rewrite(visited, holder));</span>
-<span class="fc" id="L72">        nodesprocessed.add(visited);</span>
+<span class="fc" id="L71">        holder.put(visited, extracted);</span>
+<span class="fc" id="L72">        operations.add(fixcore.rewrite(visited, holder));</span>
+<span class="fc" id="L73">        nodesprocessed.add(visited);</span>
         
-<span class="fc" id="L74">        return false;</span>
+<span class="fc" id="L75">        return false;</span>
     }
     
     @Override
@@ -80,74 +81,147 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
                         ReferenceHolder&lt;ASTNode, Object&gt; data) throws CoreException {
         
         // Get the extracted loop from the holder (passed from find())
-<span class="fc" id="L83">        JdtLoopExtractor.ExtractedLoop extracted = (JdtLoopExtractor.ExtractedLoop) data.get(visited);</span>
+<span class="fc" id="L84">        JdtLoopExtractor.ExtractedLoop extracted = (JdtLoopExtractor.ExtractedLoop) data.get(visited);</span>
         
-<span class="pc bpc" id="L85" title="2 of 4 branches missed.">        if (extracted == null || !isConvertible(extracted.model)) {</span>
-<span class="nc" id="L86">            return;</span>
+<span class="pc bpc" id="L86" title="2 of 4 branches missed.">        if (extracted == null || !isConvertible(extracted.model)) {</span>
+<span class="nc" id="L87">            return;</span>
         }
         
-<span class="fc" id="L89">        AST ast = cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L90">        ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
-<span class="fc" id="L91">        CompilationUnit compilationUnit = cuRewrite.getRoot();</span>
+<span class="fc" id="L90">        AST ast = cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L91">        ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L92">        CompilationUnit compilationUnit = cuRewrite.getRoot();</span>
         
         // Create renderer with original body for AST node access
-<span class="fc" id="L94">        ASTStreamRenderer renderer = new ASTStreamRenderer(ast, rewrite, compilationUnit, extracted.originalBody);</span>
-<span class="fc" id="L95">        LoopModelTransformer&lt;Expression&gt; transformer = new LoopModelTransformer&lt;&gt;(renderer);</span>
+<span class="fc" id="L95">        ASTStreamRenderer renderer = new ASTStreamRenderer(ast, rewrite, compilationUnit, extracted.originalBody);</span>
         
-        // Transform the model to JDT Expression
-<span class="fc" id="L98">        Expression streamExpression = transformer.transform(extracted.model);</span>
+        Expression streamExpression;
+<span class="fc" id="L98">        boolean usedDirectForEach = false;</span>
         
-<span class="pc bpc" id="L100" title="1 of 2 branches missed.">        if (streamExpression != null) {</span>
+        // Check if we can use direct forEach (no intermediate operations, ForEachTerminal)
+<span class="fc bfc" id="L101" title="All 2 branches covered.">        if (canUseDirectForEach(extracted.model)) {</span>
+            // Use direct forEach rendering (e.g., list.forEach(...) instead of list.stream().forEach(...))
+<span class="fc" id="L103">            org.sandbox.functional.core.terminal.ForEachTerminal terminal = </span>
+<span class="fc" id="L104">                (org.sandbox.functional.core.terminal.ForEachTerminal) extracted.model.getTerminal();</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">            String varName = extracted.model.getElement() != null </span>
+<span class="fc" id="L106">                ? extracted.model.getElement().variableName() </span>
+<span class="nc" id="L107">                : &quot;x&quot;;</span>
+<span class="fc" id="L108">            streamExpression = renderer.renderDirectForEach(</span>
+<span class="fc" id="L109">                extracted.model.getSource(), </span>
+<span class="fc" id="L110">                terminal.bodyStatements(), </span>
+<span class="fc" id="L111">                varName, </span>
+<span class="fc" id="L112">                terminal.ordered()</span>
+            );
+<span class="fc" id="L114">            usedDirectForEach = true;</span>
+<span class="fc" id="L115">        } else {</span>
+            // Use standard stream-based transformation
+<span class="fc" id="L117">            LoopModelTransformer&lt;Expression&gt; transformer = new LoopModelTransformer&lt;&gt;(renderer);</span>
+<span class="fc" id="L118">            streamExpression = transformer.transform(extracted.model);</span>
+        }
+        
+<span class="pc bpc" id="L121" title="1 of 2 branches missed.">        if (streamExpression != null) {</span>
             // Create the replacement statement
-<span class="fc" id="L102">            ExpressionStatement newStatement = ast.newExpressionStatement(streamExpression);</span>
+<span class="fc" id="L123">            ExpressionStatement newStatement = ast.newExpressionStatement(streamExpression);</span>
             
             // Replace the for statement
-<span class="fc" id="L105">            rewrite.replace(visited, newStatement, group);</span>
+<span class="fc" id="L126">            rewrite.replace(visited, newStatement, group);</span>
             
-            // Add necessary imports
-<span class="fc" id="L108">            addImports(cuRewrite, extracted.model);</span>
+            // Add necessary imports (only for stream-based transformations)
+<span class="fc bfc" id="L129" title="All 2 branches covered.">            if (!usedDirectForEach) {</span>
+<span class="fc" id="L130">                addImports(cuRewrite, extracted.model);</span>
+<span class="fc" id="L131">            } else {</span>
+                // For direct forEach on arrays, we still need Arrays import
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">                if (extracted.model.getSource().type() == SourceDescriptor.SourceType.ARRAY) {</span>
+<span class="nc" id="L134">                    cuRewrite.getImportRewrite().addImport(&quot;java.util.Arrays&quot;);</span>
+                }
+            }
         }
-<span class="fc" id="L110">    }</span>
+<span class="fc" id="L138">    }</span>
+    
+    /**
+     * Checks if the loop model can use direct forEach (without .stream() prefix).
+     * 
+     * &lt;p&gt;Direct forEach is used for the simplest forEach patterns to generate more idiomatic code:&lt;/p&gt;
+     * &lt;ul&gt;
+     *   &lt;li&gt;No intermediate operations (no filter, map, etc.)&lt;/li&gt;
+     *   &lt;li&gt;Terminal operation is ForEachTerminal&lt;/li&gt;
+     *   &lt;li&gt;Source is COLLECTION or ITERABLE (arrays need Arrays.stream().forEach())&lt;/li&gt;
+     * &lt;/ul&gt;
+     * 
+     * &lt;p&gt;&lt;b&gt;Immutability Considerations:&lt;/b&gt;&lt;/p&gt;
+     * &lt;p&gt;Direct forEach is safe for both mutable and immutable collections:
+     * &lt;ul&gt;
+     *   &lt;li&gt;Immutable collections (List.of, Collections.unmodifiableList, etc.) support forEach&lt;/li&gt;
+     *   &lt;li&gt;forEach is a terminal operation that only reads elements&lt;/li&gt;
+     *   &lt;li&gt;No structural modifications are made to the collection&lt;/li&gt;
+     *   &lt;li&gt;Side effects within the lambda body are the user's responsibility&lt;/li&gt;
+     * &lt;/ul&gt;
+     * &lt;/p&gt;
+     * 
+     * @param model the loop model to check
+     * @return true if direct forEach can be used
+     */
+    private boolean canUseDirectForEach(LoopModel model) {
+<span class="pc bpc" id="L164" title="2 of 4 branches missed.">        if (model == null || model.getTerminal() == null) {</span>
+<span class="nc" id="L165">            return false;</span>
+        }
+        
+        // Must have no intermediate operations
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">        if (!model.getOperations().isEmpty()) {</span>
+<span class="nc" id="L170">            return false;</span>
+        }
+        
+        // Terminal must be ForEachTerminal
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">        if (!(model.getTerminal() instanceof org.sandbox.functional.core.terminal.ForEachTerminal)) {</span>
+<span class="nc" id="L175">            return false;</span>
+        }
+        
+        // Source must be COLLECTION or ITERABLE
+        // Arrays don't have a forEach method, so they still need a stream-based forEach path
+        // and are intentionally handled outside of this direct-forEach optimization.
+<span class="fc" id="L181">        SourceDescriptor.SourceType sourceType = model.getSource().type();</span>
+<span class="fc bfc" id="L182" title="All 2 branches covered.">        return sourceType == SourceDescriptor.SourceType.COLLECTION </span>
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">            || sourceType == SourceDescriptor.SourceType.ITERABLE;</span>
+    }
     
     private boolean isConvertible(LoopModel model) {
-<span class="pc bpc" id="L113" title="1 of 2 branches missed.">        if (model == null) return false;</span>
+<span class="pc bpc" id="L187" title="1 of 2 branches missed.">        if (model == null) return false;</span>
         
-<span class="fc" id="L115">        LoopMetadata metadata = model.getMetadata();</span>
-<span class="pc bpc" id="L116" title="1 of 2 branches missed.">        if (metadata == null) return true; // No metadata = assume convertible</span>
+<span class="fc" id="L189">        LoopMetadata metadata = model.getMetadata();</span>
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">        if (metadata == null) return true; // No metadata = assume convertible</span>
         
         // Don't convert if has break, continue, or return
-<span class="fc bfc" id="L119" title="All 2 branches covered.">        return !metadata.hasBreak() &amp;&amp; </span>
-<span class="fc bfc" id="L120" title="All 2 branches covered.">               !metadata.hasContinue() &amp;&amp; </span>
-<span class="fc bfc" id="L121" title="All 2 branches covered.">               !metadata.hasReturn() &amp;&amp;</span>
-<span class="pc bpc" id="L122" title="1 of 2 branches missed.">               !metadata.modifiesCollection();</span>
+<span class="fc bfc" id="L193" title="All 2 branches covered.">        return !metadata.hasBreak() &amp;&amp; </span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">               !metadata.hasContinue() &amp;&amp; </span>
+<span class="fc bfc" id="L195" title="All 2 branches covered.">               !metadata.hasReturn() &amp;&amp;</span>
+<span class="pc bpc" id="L196" title="1 of 2 branches missed.">               !metadata.modifiesCollection();</span>
     }
     
     private void addImports(CompilationUnitRewrite cuRewrite, LoopModel model) {
         // Add necessary imports based on source type
-<span class="pc bpc" id="L127" title="1 of 3 branches missed.">        switch (model.getSource().type()) {</span>
+<span class="pc bpc" id="L201" title="2 of 3 branches missed.">        switch (model.getSource().type()) {</span>
             case ARRAY:
-<span class="fc" id="L129">                cuRewrite.getImportRewrite().addImport(&quot;java.util.Arrays&quot;);</span>
-<span class="fc" id="L130">                break;</span>
+<span class="fc" id="L203">                cuRewrite.getImportRewrite().addImport(&quot;java.util.Arrays&quot;);</span>
+<span class="fc" id="L204">                break;</span>
             case ITERABLE:
-<span class="nc" id="L132">                cuRewrite.getImportRewrite().addImport(&quot;java.util.stream.StreamSupport&quot;);</span>
-<span class="nc" id="L133">                break;</span>
+<span class="nc" id="L206">                cuRewrite.getImportRewrite().addImport(&quot;java.util.stream.StreamSupport&quot;);</span>
+<span class="nc" id="L207">                break;</span>
             default:
                 // No additional imports needed for Collection.stream()
                 break;
         }
         
         // Add Collectors import if using collect terminal
-<span class="pc bpc" id="L140" title="1 of 2 branches missed.">        if (model.getTerminal() instanceof org.sandbox.functional.core.terminal.CollectTerminal) {</span>
-<span class="nc" id="L141">            cuRewrite.getImportRewrite().addImport(&quot;java.util.stream.Collectors&quot;);</span>
+<span class="pc bpc" id="L214" title="1 of 2 branches missed.">        if (model.getTerminal() instanceof org.sandbox.functional.core.terminal.CollectTerminal) {</span>
+<span class="nc" id="L215">            cuRewrite.getImportRewrite().addImport(&quot;java.util.stream.Collectors&quot;);</span>
         }
-<span class="fc" id="L143">    }</span>
+<span class="fc" id="L217">    }</span>
     
     @Override
     public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L147" title="All 2 branches missed.">        if (afterRefactoring) {</span>
-<span class="nc" id="L148">            return &quot;items.stream().forEach(item -&gt; System.out.println(item));\n&quot;; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L221" title="All 2 branches missed.">        if (afterRefactoring) {</span>
+<span class="nc" id="L222">            return &quot;items.forEach(item -&gt; System.out.println(item));\n&quot;; //$NON-NLS-1$</span>
         }
-<span class="nc" id="L150">        return &quot;for (String item : items)\n    System.out.println(item);\n&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L224">        return &quot;for (String item : items)\n    System.out.println(item);\n&quot;; //$NON-NLS-1$</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

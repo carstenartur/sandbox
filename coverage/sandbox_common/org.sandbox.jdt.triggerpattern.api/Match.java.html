@@ -79,9 +79,9 @@ public final class Match {
 	 * @return the bound AST node, or null if not found or if it's a multi-placeholder binding
 	 */
 	public ASTNode getBinding(String placeholderName) {
-<span class="nc" id="L82">		Object binding = bindings.get(placeholderName);</span>
-<span class="nc bnc" id="L83" title="All 2 branches missed.">		if (binding instanceof ASTNode) {</span>
-<span class="nc" id="L84">			return (ASTNode) binding;</span>
+<span class="fc" id="L82">		Object binding = bindings.get(placeholderName);</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">		if (binding instanceof ASTNode) {</span>
+<span class="fc" id="L84">			return (ASTNode) binding;</span>
 		}
 <span class="nc" id="L86">		return null;</span>
 	}
@@ -107,7 +107,7 @@ public final class Match {
 	 * @return the offset
 	 */
 	public int getOffset() {
-<span class="nc" id="L110">		return offset;</span>
+<span class="fc" id="L110">		return offset;</span>
 	}
 	
 	/**
@@ -116,7 +116,7 @@ public final class Match {
 	 * @return the length
 	 */
 	public int getLength() {
-<span class="nc" id="L119">		return length;</span>
+<span class="fc" id="L119">		return length;</span>
 	}
 	
 	@Override

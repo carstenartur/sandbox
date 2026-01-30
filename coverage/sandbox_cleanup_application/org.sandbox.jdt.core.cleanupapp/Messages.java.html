@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>Messages.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_cleanup_application</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.core.cleanupapp</a> &gt; <span class="el_source">Messages.java</span></div><h1>Messages.java</h1><pre class="source lang-java linenums">package org.sandbox.jdt.core.cleanupapp;
+
+import java.text.MessageFormat;
+
+import org.eclipse.osgi.util.NLS;
+
+/**
+ * Deals with the messages in the properties file (cut n' pasted from a generated class).
+ */
+<span class="nc" id="L10">final class Messages extends NLS {</span>
+	private static final String BUNDLE_NAME = &quot;org.sandbox.jdt.core.cleanupapp.messages&quot;;//$NON-NLS-1$
+
+	public static String CommandLineCleaning;
+
+	public static String CleanupProblem;
+
+	public static String CaughtException;
+
+	public static String ExceptionSkip;
+
+	public static String CommandLineErrorFile;
+
+	public static String CommandLineErrorFileTryFullPath;
+
+	public static String CommandLineErrorConfig;
+
+	public static String CommandLineErrorNoConfigFile;
+
+	public static String CommandLineErrorQuietVerbose;
+
+	public static String CommandLineErrorFileDir;
+
+	public static String ConfigFileNotFoundErrorTryFullPath;
+
+	public static String ConfigFileReadingError;
+
+	public static String CommandLineConfigFile;
+
+	public static String CommandLineStart;
+
+	public static String CommandLineDone;
+
+	public static String FileOutsideWorkspace;
+
+	public static String CleanupFatalError;
+
+	public static String CommandLineUsage;
+	static {
+<span class="fc" id="L49">		NLS.initializeMessages(BUNDLE_NAME, Messages.class);</span>
+<span class="fc" id="L50">	}</span>
+
+	/**
+	 * Bind the given message's substitution locations with the given string values.
+	 *
+	 * @param message
+	 *            the message to be manipulated
+	 * @return the manipulated String
+	 */
+	public static String bind(final String message) {
+<span class="fc" id="L60">		return bind(message, (Object[]) null);</span>
+	}
+
+	/**
+	 * Bind the given message's substitution locations with the given string values.
+	 *
+	 * @param message
+	 *            the message to be manipulated
+	 * @param binding
+	 *            the object to be inserted into the message
+	 * @return the manipulated String
+	 */
+	public static String bind(final String message, final Object binding) {
+<span class="fc" id="L73">		return bind(message, new Object[] { binding });</span>
+	}
+
+	/**
+	 * Bind the given message's substitution locations with the given string values.
+	 *
+	 * @param message
+	 *            the message to be manipulated
+	 * @param binding1
+	 *            An object to be inserted into the message
+	 * @param binding2
+	 *            A second object to be inserted into the message
+	 * @return the manipulated String
+	 */
+	public static String bind(final String message, final Object binding1, final Object binding2) {
+<span class="nc" id="L88">		return bind(message, new Object[] { binding1, binding2 });</span>
+	}
+
+	/**
+	 * Bind the given message's substitution locations with the given string values.
+	 *
+	 * @param message
+	 *            the message to be manipulated
+	 * @param bindings
+	 *            An array of objects to be inserted into the message
+	 * @return the manipulated String
+	 */
+	public static String bind(final String message, final Object[] bindings) {
+<span class="fc" id="L101">		return MessageFormat.format(message, bindings);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

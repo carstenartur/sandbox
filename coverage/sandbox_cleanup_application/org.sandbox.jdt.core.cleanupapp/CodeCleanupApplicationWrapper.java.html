@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>CodeCleanupApplicationWrapper.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_cleanup_application</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.core.cleanupapp</a> &gt; <span class="el_source">CodeCleanupApplicationWrapper.java</span></div><h1>CodeCleanupApplicationWrapper.java</h1><pre class="source lang-java linenums">package org.sandbox.jdt.core.cleanupapp;
+
+/*-
+ * #%L
+ * Sandbox cleanup application
+ * %%
+ * Copyright (C) 2024 hammer
+ * %%
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0.
+ * 
+ * This Source Code may also be made available under the following Secondary
+ * Licenses when the conditions for such availability set forth in the Eclipse
+ * Public License, v. 2.0 are satisfied: GNU General Public License, version 2
+ * with the GNU Classpath Exception which is
+ * available at https://www.gnu.org/software/classpath/license.html.
+ * 
+ * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+ * #L%
+ */
+
+
+import java.text.MessageFormat;
+import java.util.Arrays;
+import java.util.List;
+
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.equinox.app.IApplication;
+import org.eclipse.equinox.app.IApplicationContext;
+import org.eclipse.osgi.util.NLS;
+import org.osgi.framework.BundleException;
+
+<span class="nc" id="L34">public class CodeCleanupApplicationWrapper implements IApplication {</span>
+
+	/**
+	 * Deals with the messages in the properties file (cut n' pasted from a generated class).
+	 */
+	private final static class Messages extends NLS {
+		private static final String BUNDLE_NAME = &quot;org.sandbox.jdt.core.cleanupapp.messages&quot;;//$NON-NLS-1$
+
+		public static String CommandLineUsage;
+		public static String WorkspaceRequired;
+
+		static {
+<span class="nc" id="L46">			NLS.initializeMessages(BUNDLE_NAME, Messages.class);</span>
+<span class="nc" id="L47">		}</span>
+
+		/**
+		 * Bind the given message's substitution locations with the given string values.
+		 *
+		 * @param message
+		 *            the message to be manipulated
+		 * @return the manipulated String
+		 */
+		public static String bind(final String message) {
+<span class="nc" id="L57">			return bind(message, null);</span>
+		}
+
+		/**
+		 * Bind the given message's substitution locations with the given string values.
+		 *
+		 * @param message
+		 *            the message to be manipulated
+		 * @param binding
+		 *            the object to be inserted into the message
+		 * @return the manipulated String
+		 */
+		public static String bind(final String message, final Object binding) {
+<span class="nc" id="L70">			return bind(message, new Object[] { binding });</span>
+		}
+
+		/**
+		 * Bind the given message's substitution locations with the given string values.
+		 *
+		 * @param message
+		 *            the message to be manipulated
+		 * @param binding1
+		 *            An object to be inserted into the message
+		 * @param binding2
+		 *            A second object to be inserted into the message
+		 * @return the manipulated String
+		 */
+		public static String bind(final String message, final Object binding1, final Object binding2) {
+<span class="nc" id="L85">			return bind(message, new Object[] { binding1, binding2 });</span>
+		}
+
+		/**
+		 * Bind the given message's substitution locations with the given string values.
+		 *
+		 * @param message
+		 *            the message to be manipulated
+		 * @param bindings
+		 *            An array of objects to be inserted into the message
+		 * @return the manipulated String
+		 */
+		public static String bind(final String message, final Object[] bindings) {
+<span class="nc" id="L98">			return MessageFormat.format(message, bindings);</span>
+		}
+	}
+	@Override
+	public Object start(final IApplicationContext context) throws NoClassDefFoundError, Exception {
+<span class="nc" id="L103">		final String[] arguments = (String[]) context.getArguments().get(IApplicationContext.APPLICATION_ARGS);</span>
+<span class="nc" id="L104">		final List&lt;String&gt; args = Arrays.asList(arguments);</span>
+<span class="nc bnc" id="L105" title="All 6 branches missed.">		if (args.isEmpty() || args.contains(&quot;-help&quot;) || args.contains(&quot;--help&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L106">			System.out.println(Messages.bind(Messages.CommandLineUsage));</span>
+<span class="nc" id="L107">			return IApplication.EXIT_OK;</span>
+		}
+		try {
+			// Try to see if the workspace is available. If it is not available we'll
+			// get a NoClassDefFoundError wrapping a ClassNotFoundException which
+			// has a BundleException in it, whose cause was the original
+			// IllegalStateException raised by
+			// org.eclipse.core.internal.runtime.DataArea.assertLocationInitialized()
+<span class="nc" id="L115">			ResourcesPlugin.getWorkspace();</span>
+<span class="nc" id="L116">		} catch (NoClassDefFoundError noClassError) {</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">			if (noClassError.getCause() instanceof ClassNotFoundException) {</span>
+<span class="nc" id="L118">				final ClassNotFoundException classNotFoundException = (ClassNotFoundException) noClassError.getCause();</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">				if (classNotFoundException.getException() instanceof BundleException) {</span>
+<span class="nc" id="L120">					final BundleException bundleException = (BundleException) classNotFoundException.getException();</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">					if (bundleException.getCause() instanceof IllegalStateException) {</span>
+<span class="nc" id="L122">						System.err.println(Messages.bind(Messages.WorkspaceRequired));</span>
+<span class="nc" id="L123">						System.out.println(Messages.bind(Messages.CommandLineUsage));</span>
+<span class="nc" id="L124">						return 1;</span>
+					}
+				}
+			}
+<span class="nc" id="L128">			throw noClassError;</span>
+		}
+
+		// Workspace is available, so launch the  Code Cleanup Application
+<span class="nc" id="L132">				return new CodeCleanupApplication().start(context);</span>
+//		return null;
+	}
+
+	@Override
+	public void stop() {
+		// TODO Auto-generated method stub
+
+<span class="nc" id="L140">	}</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

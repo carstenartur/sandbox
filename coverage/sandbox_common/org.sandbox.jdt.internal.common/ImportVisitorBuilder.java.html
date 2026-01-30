@@ -42,15 +42,15 @@ public class ImportVisitorBuilder extends HelperVisitorBuilder&lt;ImportDeclarat
      * 
      * @param importFQN the fully qualified name of the import to find
      */
-<span class="nc" id="L45">    public ImportVisitorBuilder(String importFQN) {</span>
-<span class="nc" id="L46">        this.importFQN = importFQN;</span>
-<span class="nc" id="L47">    }</span>
+<span class="fc" id="L45">    public ImportVisitorBuilder(String importFQN) {</span>
+<span class="fc" id="L46">        this.importFQN = importFQN;</span>
+<span class="fc" id="L47">    }</span>
     
     @Override
     protected &lt;V, H&gt; void executeVisitors(ReferenceHolder&lt;V, H&gt; holder, 
             BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, H&gt;&gt; processor) {
-<span class="nc" id="L52">        HelperVisitor.callImportDeclarationVisitor(importFQN, compilationUnit,</span>
-<span class="nc" id="L53">                holder, nodesprocessed, (node, h) -&gt; processor.test(node, h));</span>
-<span class="nc" id="L54">    }</span>
+<span class="fc" id="L52">        HelperVisitor.callImportDeclarationVisitor(importFQN, compilationUnit,</span>
+<span class="fc" id="L53">                holder, nodesprocessed, (node, h) -&gt; processor.test(node, h));</span>
+<span class="fc" id="L54">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
