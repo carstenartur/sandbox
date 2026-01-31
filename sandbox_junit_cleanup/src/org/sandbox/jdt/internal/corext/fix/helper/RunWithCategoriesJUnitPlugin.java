@@ -115,16 +115,19 @@ public class RunWithCategoriesJUnitPlugin extends AbstractTool<ReferenceHolder<I
 		}
 		
 		// Find the enclosing TypeDeclaration
+		TypeDeclaration typeDecl = null;
 		ASTNode parent = node.getParent();
-		while (parent != null && !(parent instanceof TypeDeclaration)) {
+		while (parent != null) {
+			if (parent instanceof TypeDeclaration) {
+				typeDecl = (TypeDeclaration) parent;
+				break;
+			}
 			parent = parent.getParent();
 		}
 		
-		if (parent == null || !(parent instanceof TypeDeclaration)) {
+		if (typeDecl == null) {
 			return true;
 		}
-		
-		TypeDeclaration typeDecl = (TypeDeclaration) parent;
 		
 		// Find @IncludeCategory, @ExcludeCategory, and @SuiteClasses annotations
 		CategoriesData categoriesData = new CategoriesData();

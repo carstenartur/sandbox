@@ -148,16 +148,19 @@ public class RunWithEnclosedJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 		rewriter.remove(runWithAnnotation, group);
 		
 		// Find the enclosing TypeDeclaration
+		TypeDeclaration outerClass = null;
 		ASTNode parent = runWithAnnotation.getParent();
-		while (parent != null && !(parent instanceof TypeDeclaration)) {
+		while (parent != null) {
+			if (parent instanceof TypeDeclaration) {
+				outerClass = (TypeDeclaration) parent;
+				break;
+			}
 			parent = parent.getParent();
 		}
 		
-		if (parent == null || !(parent instanceof TypeDeclaration)) {
+		if (outerClass == null) {
 			return;
 		}
-		
-		TypeDeclaration outerClass = (TypeDeclaration) parent;
 		
 		// Transform inner static classes to @Nested classes
 		TypeDeclaration[] innerTypes = outerClass.getTypes();
