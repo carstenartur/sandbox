@@ -234,8 +234,8 @@ public class Refactorer {
 		
 		// Check if the preceding statement is an empty collection declaration for the same variable
 <span class="fc" id="L236">		String declaredVar = CollectPatternDetector.isEmptyCollectionDeclaration(precedingStmt);</span>
-<span class="pc bpc" id="L237" title="1 of 4 branches missed.">		if (declaredVar == null || !declaredVar.equals(targetVariable)) {</span>
-<span class="fc" id="L238">			return null;</span>
+<span class="pc bpc" id="L237" title="2 of 4 branches missed.">		if (declaredVar == null || !declaredVar.equals(targetVariable)) {</span>
+<span class="nc" id="L238">			return null;</span>
 		}
 		
 		// We have a match! Create a merged VariableDeclarationStatement

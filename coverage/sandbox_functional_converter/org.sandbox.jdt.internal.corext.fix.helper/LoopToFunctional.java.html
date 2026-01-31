@@ -13,11 +13,14 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
 
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -27,6 +30,7 @@ import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
+import org.sandbox.jdt.internal.corext.fix.helper.ConsecutiveLoopGroupDetector.ConsecutiveLoopGroup;
 
 /**
  * Converts enhanced for-loops to functional stream operations.
@@ -86,58 +90,107 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
  * @see PreconditionsChecker
  * @see Refactorer
  */
-<span class="fc" id="L89">public class LoopToFunctional extends AbstractFunctionalCall&lt;EnhancedForStatement&gt; {</span>
+<span class="fc" id="L93">public class LoopToFunctional extends AbstractFunctionalCall&lt;EnhancedForStatement&gt; {</span>
 
 	@Override
 	public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="fc" id="L94">		ReferenceHolder&lt;Integer, FunctionalHolder&gt; dataHolder= new ReferenceHolder&lt;&gt;();</span>
-<span class="fc" id="L95">		ReferenceHolder&lt;ASTNode, Object&gt; sharedDataHolder = new ReferenceHolder&lt;&gt;();</span>
-<span class="fc" id="L96">		HelperVisitor.callEnhancedForStatementVisitor(compilationUnit, dataHolder, nodesprocessed,</span>
-<span class="fc" id="L97">				(visited, aholder) -&gt; processFoundNode(fixcore, operations, nodesprocessed, visited, aholder, sharedDataHolder),(visited, aholder) -&gt; {});</span>
-<span class="fc" id="L98">	}</span>
+		
+		// PHASE 8: Pre-process to detect consecutive loops adding to same collection
+		// This must happen before individual loop processing to avoid incorrect overwrites
+<span class="fc" id="L101">		detectAndProcessConsecutiveLoops(fixcore, compilationUnit, operations, nodesprocessed);</span>
+		
+		// Continue with individual loop processing for non-grouped loops
+<span class="fc" id="L104">		ReferenceHolder&lt;Integer, FunctionalHolder&gt; dataHolder= new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L105">		ReferenceHolder&lt;ASTNode, Object&gt; sharedDataHolder = new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L106">		HelperVisitor.callEnhancedForStatementVisitor(compilationUnit, dataHolder, nodesprocessed,</span>
+<span class="fc" id="L107">				(visited, aholder) -&gt; processFoundNode(fixcore, operations, nodesprocessed, visited, aholder, sharedDataHolder),(visited, aholder) -&gt; {});</span>
+<span class="fc" id="L108">	}</span>
+	
+	/**
+	 * Detects and processes consecutive loops that add to the same collection.
+	 * 
+	 * &lt;p&gt;Phase 8 feature: Multiple consecutive for-loops adding to the same list
+	 * are converted to Stream.concat() instead of being converted individually
+	 * (which would cause overwrites).&lt;/p&gt;
+	 * 
+	 * @param fixcore the fix core instance
+	 * @param compilationUnit the compilation unit to scan
+	 * @param operations the set to add operations to
+	 * @param nodesprocessed the set of already processed nodes
+	 */
+	private void detectAndProcessConsecutiveLoops(UseFunctionalCallFixCore fixcore, 
+			CompilationUnit compilationUnit,
+			Set&lt;CompilationUnitRewriteOperation&gt; operations, 
+			Set&lt;ASTNode&gt; nodesprocessed) {
+		
+		// Visit all blocks to find consecutive loop groups
+<span class="fc" id="L128">		compilationUnit.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(Block block) {
+<span class="fc" id="L131">				List&lt;ConsecutiveLoopGroup&gt; groups = ConsecutiveLoopGroupDetector.detectGroups(block);</span>
+				
+<span class="fc bfc" id="L133" title="All 2 branches covered.">				for (ConsecutiveLoopGroup group : groups) {</span>
+					// Create a rewrite operation for this group
+<span class="fc" id="L135">					operations.add(fixcore.rewriteConsecutiveLoops(group));</span>
+					
+					// Mark all loops in the group as processed to prevent individual conversion
+<span class="fc bfc" id="L138" title="All 2 branches covered.">					for (EnhancedForStatement loop : group.getLoops()) {</span>
+<span class="fc" id="L139">						nodesprocessed.add(loop);</span>
+					}
+				}
+				
+<span class="fc" id="L143">				return true; // Continue visiting nested blocks</span>
+			}
+		});
+<span class="fc" id="L146">	}</span>
 
 	private boolean processFoundNode(UseFunctionalCallFixCore fixcore,
 			Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesprocessed, EnhancedForStatement visited,
 			ReferenceHolder&lt;Integer, FunctionalHolder&gt; dataHolder, ReferenceHolder&lt;ASTNode, Object&gt; sharedDataHolder) {
-<span class="fc" id="L103">		PreconditionsChecker pc = new PreconditionsChecker(visited, (CompilationUnit) visited.getRoot());</span>
-<span class="pc bpc" id="L104" title="1 of 2 branches missed.">		if (!pc.isSafeToRefactor()) {</span>
+		// Skip loops that have already been processed (e.g., as part of a consecutive loop group)
+<span class="fc bfc" id="L152" title="All 2 branches covered.">		if (nodesprocessed.contains(visited)) {</span>
+<span class="fc" id="L153">			return false; // Don't visit children of already-processed loops</span>
+		}
+		
+<span class="fc" id="L156">		PreconditionsChecker pc = new PreconditionsChecker(visited, (CompilationUnit) visited.getRoot());</span>
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">		if (!pc.isSafeToRefactor()) {</span>
 			// Loop cannot be safely refactored to functional style
 			// Return true to continue visiting children - inner loops may still be convertible
-<span class="nc" id="L107">			return false;</span>
+<span class="nc" id="L160">			return false;</span>
 		}
 		// Check if the loop can be analyzed for stream conversion
-<span class="fc" id="L110">		StreamPipelineBuilder builder = new StreamPipelineBuilder(visited, pc);</span>
-<span class="fc bfc" id="L111" title="All 2 branches covered.">		if (!builder.analyze()) {</span>
+<span class="fc" id="L163">		StreamPipelineBuilder builder = new StreamPipelineBuilder(visited, pc);</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">		if (!builder.analyze()) {</span>
 			// Cannot convert this loop to functional style
 			// Return true to continue visiting children - inner loops may still be convertible
-<span class="fc" id="L114">			return false;</span>
+<span class="fc" id="L167">			return false;</span>
 		}
 		// V1 doesn't need to store data in the holder, but we pass it to maintain signature compatibility
-<span class="fc" id="L117">		operations.add(fixcore.rewrite(visited, sharedDataHolder));</span>
-<span class="fc" id="L118">		nodesprocessed.add(visited);</span>
+<span class="fc" id="L170">		operations.add(fixcore.rewrite(visited, sharedDataHolder));</span>
+<span class="fc" id="L171">		nodesprocessed.add(visited);</span>
 		// Return false to prevent visiting children since this loop was converted
 		// (children are now part of the lambda expression)
-<span class="fc" id="L121">		return false;</span>
+<span class="fc" id="L174">		return false;</span>
 	}
 
 	@Override
 	public void rewrite(UseFunctionalCallFixCore upp, final EnhancedForStatement visited,
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group, 
 			org.sandbox.jdt.internal.common.ReferenceHolder&lt;ASTNode, Object&gt; data) throws CoreException {
-<span class="fc" id="L128">		ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
-<span class="fc" id="L129">		PreconditionsChecker pc = new PreconditionsChecker(visited, (CompilationUnit) visited.getRoot());</span>
-<span class="fc" id="L130">		Refactorer refactorer = new Refactorer(visited, rewrite, pc, group, cuRewrite);</span>
+<span class="fc" id="L181">		ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L182">		PreconditionsChecker pc = new PreconditionsChecker(visited, (CompilationUnit) visited.getRoot());</span>
+<span class="fc" id="L183">		Refactorer refactorer = new Refactorer(visited, rewrite, pc, group, cuRewrite);</span>
 		// Preconditions already checked in find(), but refactorer.refactor() handles edge cases
-<span class="fc" id="L132">		refactorer.refactor();</span>
-<span class="fc" id="L133">	}</span>
+<span class="fc" id="L185">		refactorer.refactor();</span>
+<span class="fc" id="L186">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L137" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L138">			return &quot;ls.forEach(l -&gt; {\n	System.out.println(l);\n});\n&quot;; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L190" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L191">			return &quot;ls.forEach(l -&gt; {\n	System.out.println(l);\n});\n&quot;; //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L140">		return &quot;for (Integer l : ls)\n	System.out.println(l);\n\n&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L193">		return &quot;for (Integer l : ls)\n	System.out.println(l);\n\n&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

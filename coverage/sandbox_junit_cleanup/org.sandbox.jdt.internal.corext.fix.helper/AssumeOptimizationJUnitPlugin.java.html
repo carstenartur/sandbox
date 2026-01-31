@@ -52,106 +52,104 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
 <span class="fc" id="L53">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder = new ReferenceHolder&lt;&gt;();</span>
 		
-		// Find assumeTrue and assumeFalse calls in JUnit 4
-<span class="fc" id="L56">		HelperVisitor.forMethodCalls(ORG_JUNIT_ASSUME, Set.of(&quot;assumeTrue&quot;, &quot;assumeFalse&quot;))</span>
-<span class="fc" id="L57">			.in(compilationUnit)</span>
-<span class="fc" id="L58">			.excluding(nodesprocessed)</span>
-<span class="pc" id="L59">			.processEach(dataHolder, (visited, aholder) -&gt; processAssumption(fixcore, operations, visited, aholder));</span>
+		// NOTE: We only process JUnit 5 (Assumptions) calls here.
+		// JUnit 4 (Assume) calls are handled by AssumeJUnitPlugin which does migration.
+		// Processing JUnit 4 here would conflict with the migration rewrites.
 		
-		// Find assumeTrue and assumeFalse calls in JUnit 5
-<span class="fc" id="L62">		HelperVisitor.forMethodCalls(ORG_JUNIT_JUPITER_API_ASSUMPTIONS, Set.of(&quot;assumeTrue&quot;, &quot;assumeFalse&quot;))</span>
-<span class="fc" id="L63">			.in(compilationUnit)</span>
-<span class="fc" id="L64">			.excluding(nodesprocessed)</span>
-<span class="fc" id="L65">			.processEach(dataHolder, (visited, aholder) -&gt; processAssumption(fixcore, operations, visited, aholder));</span>
-<span class="fc" id="L66">	}</span>
+		// Find assumeTrue and assumeFalse calls in JUnit 5 only
+<span class="fc" id="L60">		HelperVisitor.forMethodCalls(ORG_JUNIT_JUPITER_API_ASSUMPTIONS, Set.of(&quot;assumeTrue&quot;, &quot;assumeFalse&quot;))</span>
+<span class="fc" id="L61">			.in(compilationUnit)</span>
+<span class="fc" id="L62">			.excluding(nodesprocessed)</span>
+<span class="fc" id="L63">			.processEach(dataHolder, (visited, aholder) -&gt; processAssumption(fixcore, operations, visited, aholder));</span>
+<span class="fc" id="L64">	}</span>
 
 	private boolean processAssumption(JUnitCleanUpFixCore fixcore,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, ASTNode node,
 			ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder) {
 		
-<span class="pc bpc" id="L72" title="1 of 2 branches missed.">		if (!(node instanceof MethodInvocation)) {</span>
-<span class="nc" id="L73">			return false;</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">		if (!(node instanceof MethodInvocation)) {</span>
+<span class="nc" id="L71">			return false;</span>
 		}
 		
-<span class="fc" id="L76">		MethodInvocation mi = (MethodInvocation) node;</span>
-<span class="fc" id="L77">		List&lt;?&gt; arguments = mi.arguments();</span>
+<span class="fc" id="L74">		MethodInvocation mi = (MethodInvocation) node;</span>
+<span class="fc" id="L75">		List&lt;?&gt; arguments = mi.arguments();</span>
 		
-<span class="pc bpc" id="L79" title="1 of 2 branches missed.">		if (arguments.isEmpty()) {</span>
-<span class="nc" id="L80">			return false;</span>
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">		if (arguments.isEmpty()) {</span>
+<span class="nc" id="L78">			return false;</span>
 		}
 		
 		// Get the condition expression (first or last argument depending on message presence)
-<span class="fc" id="L84">		Expression condition = null;</span>
+<span class="fc" id="L82">		Expression condition = null;</span>
 		
 		// For assumptions, the condition can be in different positions
 		// assumeTrue(condition) or assumeTrue(condition, message) or assumeTrue(condition, messageSupplier)
-<span class="fc bfc" id="L88" title="All 2 branches covered.">		for (Object arg : arguments) {</span>
-<span class="fc" id="L89">			Expression expr = (Expression) arg;</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">		for (Object arg : arguments) {</span>
+<span class="fc" id="L87">			Expression expr = (Expression) arg;</span>
 			// Check if this is a negated condition
-<span class="fc bfc" id="L91" title="All 2 branches covered.">			if (expr instanceof PrefixExpression) {</span>
-<span class="fc" id="L92">				PrefixExpression prefix = (PrefixExpression) expr;</span>
-<span class="pc bpc" id="L93" title="1 of 2 branches missed.">				if (prefix.getOperator() == PrefixExpression.Operator.NOT) {</span>
-<span class="fc" id="L94">					condition = expr;</span>
-<span class="fc" id="L95">					break;</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">			if (expr instanceof PrefixExpression) {</span>
+<span class="fc" id="L90">				PrefixExpression prefix = (PrefixExpression) expr;</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">				if (prefix.getOperator() == PrefixExpression.Operator.NOT) {</span>
+<span class="fc" id="L92">					condition = expr;</span>
+<span class="fc" id="L93">					break;</span>
 				}
 			}
 		}
 		
-<span class="fc bfc" id="L100" title="All 2 branches covered.">		if (condition == null) {</span>
-<span class="fc" id="L101">			return false;</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">		if (condition == null) {</span>
+<span class="fc" id="L99">			return false;</span>
 		}
 		
-<span class="fc" id="L104">		return addStandardRewriteOperation(fixcore, operations, node, dataHolder);</span>
+<span class="fc" id="L102">		return addStandardRewriteOperation(fixcore, operations, node, dataHolder);</span>
 	}
 
 	@Override
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
-<span class="pc bpc" id="L110" title="1 of 2 branches missed.">		if (!(junitHolder.minv instanceof MethodInvocation)) {</span>
-<span class="nc" id="L111">			return;</span>
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">		if (!(junitHolder.minv instanceof MethodInvocation)) {</span>
+<span class="nc" id="L109">			return;</span>
 		}
 		
-<span class="fc" id="L114">		MethodInvocation mi = junitHolder.getMethodInvocation();</span>
-<span class="fc" id="L115">		List&lt;?&gt; arguments = mi.arguments();</span>
+<span class="fc" id="L112">		MethodInvocation mi = junitHolder.getMethodInvocation();</span>
+<span class="fc" id="L113">		List&lt;?&gt; arguments = mi.arguments();</span>
 		
-<span class="pc bpc" id="L117" title="1 of 2 branches missed.">		if (arguments.isEmpty()) {</span>
-<span class="nc" id="L118">			return;</span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">		if (arguments.isEmpty()) {</span>
+<span class="nc" id="L116">			return;</span>
 		}
 		
 		// Determine if this is assumeTrue or assumeFalse
-<span class="fc" id="L122">		String methodName = mi.getName().getIdentifier();</span>
+<span class="fc" id="L120">		String methodName = mi.getName().getIdentifier();</span>
 		
 		// Find the negated condition
-<span class="pc bpc" id="L125" title="1 of 2 branches missed.">		for (int i = 0; i &lt; arguments.size(); i++) {</span>
-<span class="fc" id="L126">			Expression arg = (Expression) arguments.get(i);</span>
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">		for (int i = 0; i &lt; arguments.size(); i++) {</span>
+<span class="fc" id="L124">			Expression arg = (Expression) arguments.get(i);</span>
 			
-<span class="pc bpc" id="L128" title="1 of 2 branches missed.">			if (arg instanceof PrefixExpression) {</span>
-<span class="fc" id="L129">				PrefixExpression prefix = (PrefixExpression) arg;</span>
-<span class="pc bpc" id="L130" title="1 of 2 branches missed.">				if (prefix.getOperator() == PrefixExpression.Operator.NOT) {</span>
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">			if (arg instanceof PrefixExpression) {</span>
+<span class="fc" id="L127">				PrefixExpression prefix = (PrefixExpression) arg;</span>
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">				if (prefix.getOperator() == PrefixExpression.Operator.NOT) {</span>
 					// Flip assumeTrue/assumeFalse and remove negation
-<span class="fc bfc" id="L132" title="All 2 branches covered.">					String newMethodName = &quot;assumeTrue&quot;.equals(methodName) ? &quot;assumeFalse&quot; : &quot;assumeTrue&quot;;</span>
-<span class="fc" id="L133">					rewriter.set(mi, MethodInvocation.NAME_PROPERTY, ast.newSimpleName(newMethodName), group);</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">					String newMethodName = &quot;assumeTrue&quot;.equals(methodName) ? &quot;assumeFalse&quot; : &quot;assumeTrue&quot;;</span>
+<span class="fc" id="L131">					rewriter.set(mi, MethodInvocation.NAME_PROPERTY, ast.newSimpleName(newMethodName), group);</span>
 					
 					// Replace the negated condition with its operand
-<span class="fc" id="L136">					ListRewrite argsRewrite = rewriter.getListRewrite(mi, MethodInvocation.ARGUMENTS_PROPERTY);</span>
-<span class="fc" id="L137">					argsRewrite.replace((ASTNode) arg, rewriter.createCopyTarget(prefix.getOperand()), group);</span>
+<span class="fc" id="L134">					ListRewrite argsRewrite = rewriter.getListRewrite(mi, MethodInvocation.ARGUMENTS_PROPERTY);</span>
+<span class="fc" id="L135">					argsRewrite.replace((ASTNode) arg, rewriter.createCopyTarget(prefix.getOperand()), group);</span>
 					
 					// Only process the first negated condition found
-<span class="fc" id="L140">					break;</span>
+<span class="fc" id="L138">					break;</span>
 				}
 			}
 		}
-<span class="fc" id="L144">	}</span>
+<span class="fc" id="L142">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L148" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L149">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L147">			return &quot;&quot;&quot;</span>
 					Assumptions.assumeFalse(condition);
 					Assumptions.assumeTrue(condition, &quot;message&quot;);
 					&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L154">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L152">		return &quot;&quot;&quot;</span>
 				Assumptions.assumeTrue(!condition);
 				Assumptions.assumeFalse(!condition, &quot;message&quot;);
 				&quot;&quot;&quot;; //$NON-NLS-1$
@@ -159,7 +157,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 	@Override
 	public String toString() {
-<span class="fc" id="L162">		return &quot;AssumeOptimization&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L160">		return &quot;AssumeOptimization&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

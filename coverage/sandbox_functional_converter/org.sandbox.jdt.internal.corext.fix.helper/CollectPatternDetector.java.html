@@ -183,8 +183,8 @@ public final class CollectPatternDetector {
 	 * @return the variable name if it's an empty collection initialization, null otherwise
 	 */
 	public static String isEmptyCollectionDeclaration(Statement stmt) {
-<span class="fc bfc" id="L186" title="All 2 branches covered.">		if (!(stmt instanceof VariableDeclarationStatement)) {</span>
-<span class="fc" id="L187">			return null;</span>
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">		if (!(stmt instanceof VariableDeclarationStatement)) {</span>
+<span class="nc" id="L187">			return null;</span>
 		}
 
 <span class="fc" id="L190">		VariableDeclarationStatement varDecl = (VariableDeclarationStatement) stmt;</span>

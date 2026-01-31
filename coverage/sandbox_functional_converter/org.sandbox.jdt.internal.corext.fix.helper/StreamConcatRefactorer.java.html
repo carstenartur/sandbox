@@ -1,0 +1,463 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>StreamConcatRefactorer.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_functional_converter</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">StreamConcatRefactorer.java</span></div><h1>StreamConcatRefactorer.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import java.util.List;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.EnhancedForStatement;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.corext.fix.helper.ConsecutiveLoopGroupDetector.ConsecutiveLoopGroup;
+
+/**
+ * Refactors consecutive loops adding to same collection into Stream.concat().
+ * 
+ * &lt;p&gt;This class handles the transformation of multiple consecutive for-loops that
+ * all add elements to the same collection variable. It converts them into a single
+ * Stream.concat() expression.&lt;/p&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Transformation Example (2 loops):&lt;/b&gt;&lt;/p&gt;
+ * &lt;pre&gt;{@code
+ * // Before:
+ * List&lt;Entry&gt; entries = new ArrayList&lt;&gt;();
+ * for (Type1 item : list1) {
+ *     entries.add(transform1(item));
+ * }
+ * for (Type2 item : list2) {
+ *     entries.add(transform2(item));
+ * }
+ * 
+ * // After:
+ * List&lt;Entry&gt; entries = Stream.concat(
+ *     list1.stream().map(item -&gt; transform1(item)),
+ *     list2.stream().map(item -&gt; transform2(item))
+ * ).collect(Collectors.toList());
+ * }&lt;/pre&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Transformation Example (3+ loops):&lt;/b&gt;&lt;/p&gt;
+ * &lt;pre&gt;{@code
+ * // Before: 3 consecutive loops
+ * for (Type1 item : list1) { entries.add(new Entry(item)); }
+ * for (Type2 item : list2) { entries.add(new Entry(item)); }
+ * for (Type3 item : list3) { entries.add(new Entry(item)); }
+ * 
+ * // After: Nested Stream.concat()
+ * entries = Stream.concat(
+ *     Stream.concat(
+ *         list1.stream().map(item -&gt; new Entry(item)),
+ *         list2.stream().map(item -&gt; new Entry(item))
+ *     ),
+ *     list3.stream().map(item -&gt; new Entry(item))
+ * ).collect(Collectors.toList());
+ * }&lt;/pre&gt;
+ * 
+ * @see ConsecutiveLoopGroupDetector
+ * @see StreamPipelineBuilder
+ * @see Refactorer
+ */
+public class StreamConcatRefactorer {
+
+	private static final String JAVA_UTIL_STREAM_COLLECTORS = StreamConstants.COLLECTORS_CLASS;
+	private static final String JAVA_UTIL_STREAM_STREAM = &quot;java.util.stream.Stream&quot;;
+
+	private final ConsecutiveLoopGroup group;
+	private final ASTRewrite rewrite;
+	private final TextEditGroup editGroup;
+	private final CompilationUnitRewrite cuRewrite;
+
+	/**
+	 * Creates a new StreamConcatRefactorer.
+	 * 
+	 * @param group      the group of consecutive loops to refactor
+	 * @param rewrite    the AST rewrite to use
+	 * @param editGroup  the text edit group for tracking changes
+	 * @param cuRewrite  the compilation unit rewrite for import management
+	 */
+<span class="fc" id="L100">	public StreamConcatRefactorer(ConsecutiveLoopGroup group, ASTRewrite rewrite,</span>
+			TextEditGroup editGroup, CompilationUnitRewrite cuRewrite) {
+<span class="fc" id="L102">		this.group = group;</span>
+<span class="fc" id="L103">		this.rewrite = rewrite;</span>
+<span class="fc" id="L104">		this.editGroup = editGroup;</span>
+<span class="fc" id="L105">		this.cuRewrite = cuRewrite;</span>
+<span class="fc" id="L106">	}</span>
+
+	/**
+	 * Checks if this group can be refactored to Stream.concat().
+	 * 
+	 * @return true if refactoring is possible
+	 */
+	public boolean canRefactor() {
+<span class="fc" id="L114">		List&lt;EnhancedForStatement&gt; loops = group.getLoops();</span>
+
+		// Must have at least 2 loops
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">		if (loops.size() &lt; 2) {</span>
+<span class="nc" id="L118">			return false;</span>
+		}
+
+		// Check that each loop can be converted individually
+<span class="fc bfc" id="L122" title="All 2 branches covered.">		for (EnhancedForStatement loop : loops) {</span>
+<span class="fc" id="L123">			PreconditionsChecker pc = new PreconditionsChecker(loop, (CompilationUnit) loop.getRoot());</span>
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">			if (!pc.isSafeToRefactor()) {</span>
+<span class="nc" id="L125">				return false;</span>
+			}
+
+<span class="fc" id="L128">			StreamPipelineBuilder builder = new StreamPipelineBuilder(loop, pc);</span>
+<span class="pc bpc" id="L129" title="2 of 4 branches missed.">			if (!builder.analyze() || !builder.isCollectOperation()) {</span>
+<span class="nc" id="L130">				return false;</span>
+			}
+		}
+
+<span class="fc" id="L134">		return true;</span>
+	}
+
+	/**
+	 * Performs the refactoring to Stream.concat().
+	 * 
+	 * &lt;p&gt;This method:&lt;/p&gt;
+	 * &lt;ul&gt;
+	 * &lt;li&gt;Builds individual stream pipelines for each loop (without .collect())&lt;/li&gt;
+	 * &lt;li&gt;Combines them using nested Stream.concat() calls&lt;/li&gt;
+	 * &lt;li&gt;Adds .collect(Collectors.toList()) at the end&lt;/li&gt;
+	 * &lt;li&gt;Removes all loops except the first, replacing it with the combined expression&lt;/li&gt;
+	 * &lt;li&gt;Attempts to merge with preceding empty collection declaration&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 */
+	public void refactor() {
+		// Check if refactoring is possible before proceeding
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">		if (!canRefactor()) {</span>
+			// Silently skip if refactoring is not possible
+			// This can happen if loops don't match the expected pattern
+<span class="nc" id="L154">			return;</span>
+		}
+		
+<span class="fc" id="L157">		List&lt;EnhancedForStatement&gt; loops = group.getLoops();</span>
+<span class="pc bpc" id="L158" title="1 of 2 branches missed.">		if (loops.size() &lt; 2) {</span>
+<span class="nc" id="L159">			return;</span>
+		}
+
+<span class="fc" id="L162">		EnhancedForStatement firstLoop = loops.get(0);</span>
+<span class="fc" id="L163">		AST ast = firstLoop.getAST();</span>
+
+		// Build stream expressions for each loop (without terminal collect)
+<span class="fc" id="L166">		MethodInvocation[] streamExpressions = new MethodInvocation[loops.size()];</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">		for (int i = 0; i &lt; loops.size(); i++) {</span>
+<span class="fc" id="L168">			streamExpressions[i] = buildStreamExpression(loops.get(i));</span>
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">			if (streamExpressions[i] == null) {</span>
+<span class="nc" id="L170">				return; // Cannot build pipeline for this loop</span>
+			}
+		}
+
+		// Build nested Stream.concat() calls
+<span class="fc" id="L175">		MethodInvocation concatExpression = buildConcatExpression(ast, streamExpressions);</span>
+
+		// Add .collect(Collectors.toList()) terminal operation
+<span class="fc" id="L178">		MethodInvocation collectCall = ast.newMethodInvocation();</span>
+<span class="fc" id="L179">		collectCall.setExpression(concatExpression);</span>
+<span class="fc" id="L180">		collectCall.setName(ast.newSimpleName(&quot;collect&quot;));</span>
+
+		// Collectors.toList() argument
+<span class="fc" id="L183">		MethodInvocation toListCall = ast.newMethodInvocation();</span>
+<span class="fc" id="L184">		toListCall.setExpression(ast.newName(&quot;Collectors&quot;));</span>
+<span class="fc" id="L185">		toListCall.setName(ast.newSimpleName(&quot;toList&quot;));</span>
+<span class="fc" id="L186">		collectCall.arguments().add(toListCall);</span>
+
+		// Add necessary imports
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">		if (cuRewrite != null) {</span>
+<span class="fc" id="L190">			cuRewrite.getImportRewrite().addImport(JAVA_UTIL_STREAM_STREAM);</span>
+<span class="fc" id="L191">			cuRewrite.getImportRewrite().addImport(JAVA_UTIL_STREAM_COLLECTORS);</span>
+		}
+
+		// Try to merge with preceding empty collection declaration
+<span class="fc" id="L195">		Statement replacement = tryMergeWithPrecedingDeclaration(firstLoop, collectCall);</span>
+
+<span class="pc bpc" id="L197" title="1 of 2 branches missed.">		if (replacement == null) {</span>
+			// No merge possible - create assignment statement
+			// targetVar = Stream.concat(...).collect(Collectors.toList());
+<span class="nc" id="L200">			ExpressionStatement assignStmt = ast.newExpressionStatement(</span>
+<span class="nc" id="L201">					createAssignment(ast, group.getTargetVariable(), collectCall));</span>
+<span class="nc" id="L202">			replacement = assignStmt;</span>
+		}
+
+		// Replace first loop with combined expression
+<span class="fc" id="L206">		ASTNodes.replaceButKeepComment(rewrite, firstLoop, replacement, editGroup);</span>
+
+		// Remove all subsequent loops in the group
+<span class="fc bfc" id="L209" title="All 2 branches covered.">		for (int i = 1; i &lt; loops.size(); i++) {</span>
+<span class="fc" id="L210">			rewrite.remove(loops.get(i), editGroup);</span>
+		}
+<span class="fc" id="L212">	}</span>
+
+	/**
+	 * Builds a stream expression for a single loop (without terminal collect).
+	 * 
+	 * &lt;p&gt;For example: {@code list.stream().map(item -&gt; new Entry(item))}&lt;/p&gt;
+	 * 
+	 * @param loop the loop to convert
+	 * @return the stream pipeline expression, or null if cannot convert
+	 */
+	private MethodInvocation buildStreamExpression(EnhancedForStatement loop) {
+<span class="fc" id="L223">		PreconditionsChecker pc = new PreconditionsChecker(loop, (CompilationUnit) loop.getRoot());</span>
+<span class="fc" id="L224">		StreamPipelineBuilder builder = new StreamPipelineBuilder(loop, pc);</span>
+
+<span class="pc bpc" id="L226" title="1 of 2 branches missed.">		if (!builder.analyze()) {</span>
+<span class="nc" id="L227">			return null;</span>
+		}
+
+		// Build the pipeline - it will include .collect() for COLLECT operations
+<span class="fc" id="L231">		MethodInvocation fullPipeline = builder.buildPipeline();</span>
+<span class="pc bpc" id="L232" title="1 of 2 branches missed.">		if (fullPipeline == null) {</span>
+<span class="nc" id="L233">			return null;</span>
+		}
+
+		// For COLLECT operations, we need to remove the .collect() and return just the stream
+		// The pipeline structure is: source.stream().map(...).collect(Collectors.toList())
+		// We want: source.stream().map(...)
+<span class="pc bpc" id="L239" title="1 of 2 branches missed.">		if (builder.isCollectOperation()) {</span>
+<span class="fc" id="L240">			return removeTerminalCollect(fullPipeline);</span>
+		}
+
+		// For non-collect operations, return the full pipeline
+		// (this shouldn't happen for our use case, but handle it gracefully)
+<span class="nc" id="L245">		return fullPipeline;</span>
+	}
+
+	/**
+	 * Removes the terminal .collect() operation from a pipeline.
+	 * 
+	 * &lt;p&gt;Finds the .collect() call at the end of the chain and returns the expression
+	 * before it.&lt;/p&gt;
+	 * 
+	 * @param pipeline the complete pipeline with collect
+	 * @return the pipeline without collect, or null if structure is unexpected
+	 */
+	private MethodInvocation removeTerminalCollect(MethodInvocation pipeline) {
+<span class="pc bpc" id="L258" title="1 of 2 branches missed.">		if (pipeline == null) {</span>
+<span class="nc" id="L259">			return null;</span>
+		}
+
+		// Check if this is the collect call
+<span class="pc bpc" id="L263" title="1 of 2 branches missed.">		if (&quot;collect&quot;.equals(pipeline.getName().getIdentifier())) {</span>
+			// Return the expression this collect is called on
+			// e.g., &quot;source.stream().map(...).collect(...)&quot; -&gt; return &quot;source.stream().map(...)&quot;
+<span class="pc bpc" id="L266" title="1 of 2 branches missed.">			if (pipeline.getExpression() instanceof MethodInvocation) {</span>
+<span class="fc" id="L267">				return (MethodInvocation) pipeline.getExpression();</span>
+			}
+			// Unexpected structure - return null to fail safely
+<span class="nc" id="L270">			return null;</span>
+		}
+
+		// Not a collect call - return as is
+<span class="nc" id="L274">		return pipeline;</span>
+	}
+
+	/**
+	 * Builds nested Stream.concat() calls to combine multiple streams.
+	 * 
+	 * &lt;p&gt;For 2 streams: {@code Stream.concat(stream1, stream2)}&lt;/p&gt;
+	 * &lt;p&gt;For 3+ streams: {@code Stream.concat(Stream.concat(stream1, stream2), stream3)}&lt;/p&gt;
+	 * 
+	 * @param ast               the AST to use
+	 * @param streamExpressions the individual stream expressions
+	 * @return the combined concat expression
+	 */
+	private MethodInvocation buildConcatExpression(AST ast, MethodInvocation[] streamExpressions) {
+<span class="pc bpc" id="L288" title="1 of 2 branches missed.">		if (streamExpressions.length &lt; 2) {</span>
+<span class="nc" id="L289">			throw new IllegalArgumentException(&quot;Need at least 2 streams to concat&quot;);</span>
+		}
+
+		// Start with the first two streams
+<span class="fc" id="L293">		MethodInvocation result = createConcatCall(ast,</span>
+<span class="fc" id="L294">				(MethodInvocation) ASTNode.copySubtree(ast, streamExpressions[0]),</span>
+<span class="fc" id="L295">				(MethodInvocation) ASTNode.copySubtree(ast, streamExpressions[1]));</span>
+
+		// Add remaining streams using nested concat
+<span class="pc bpc" id="L298" title="1 of 2 branches missed.">		for (int i = 2; i &lt; streamExpressions.length; i++) {</span>
+<span class="nc" id="L299">			result = createConcatCall(ast, result,</span>
+<span class="nc" id="L300">					(MethodInvocation) ASTNode.copySubtree(ast, streamExpressions[i]));</span>
+		}
+
+<span class="fc" id="L303">		return result;</span>
+	}
+
+	/**
+	 * Creates a single Stream.concat(stream1, stream2) call.
+	 * 
+	 * @param ast     the AST to use
+	 * @param stream1 the first stream
+	 * @param stream2 the second stream
+	 * @return the concat method invocation
+	 */
+	private MethodInvocation createConcatCall(AST ast, Expression stream1, Expression stream2) {
+<span class="fc" id="L315">		MethodInvocation concatCall = ast.newMethodInvocation();</span>
+<span class="fc" id="L316">		concatCall.setExpression(ast.newName(&quot;Stream&quot;));</span>
+<span class="fc" id="L317">		concatCall.setName(ast.newSimpleName(&quot;concat&quot;));</span>
+<span class="fc" id="L318">		concatCall.arguments().add(stream1);</span>
+<span class="fc" id="L319">		concatCall.arguments().add(stream2);</span>
+<span class="fc" id="L320">		return concatCall;</span>
+	}
+
+	/**
+	 * Creates an assignment expression: {@code targetVar = expression}.
+	 * 
+	 * @param ast         the AST to use
+	 * @param targetVar   the target variable name
+	 * @param expression  the expression to assign
+	 * @return the assignment expression
+	 */
+	private Expression createAssignment(AST ast, String targetVar, Expression expression) {
+<span class="nc" id="L332">		org.eclipse.jdt.core.dom.Assignment assignment = ast.newAssignment();</span>
+<span class="nc" id="L333">		assignment.setLeftHandSide(ast.newSimpleName(targetVar));</span>
+<span class="nc" id="L334">		assignment.setOperator(org.eclipse.jdt.core.dom.Assignment.Operator.ASSIGN);</span>
+<span class="nc" id="L335">		assignment.setRightHandSide(expression);</span>
+<span class="nc" id="L336">		return assignment;</span>
+	}
+
+	/**
+	 * Attempts to merge the concat expression with a preceding empty collection declaration.
+	 * 
+	 * &lt;p&gt;Pattern:&lt;/p&gt;
+	 * &lt;pre&gt;{@code
+	 * List&lt;Entry&gt; entries = new ArrayList&lt;&gt;();  // Preceding declaration (with or without size)
+	 * for (Type1 item : list1) { entries.add(...); }
+	 * for (Type2 item : list2) { entries.add(...); }
+	 * 
+	 * // Becomes:
+	 * List&lt;Entry&gt; entries = Stream.concat(...).collect(Collectors.toList());
+	 * }&lt;/pre&gt;
+	 * 
+	 * @param firstLoop        the first loop in the group
+	 * @param concatExpression the Stream.concat() expression
+	 * @return the merged declaration, or null if merge not possible
+	 */
+	private Statement tryMergeWithPrecedingDeclaration(EnhancedForStatement firstLoop,
+			MethodInvocation concatExpression) {
+		// Get the parent block
+<span class="fc" id="L359">		ASTNode parent = firstLoop.getParent();</span>
+<span class="pc bpc" id="L360" title="1 of 2 branches missed.">		if (!(parent instanceof Block)) {</span>
+<span class="nc" id="L361">			return null;</span>
+		}
+
+<span class="fc" id="L364">		Block block = (Block) parent;</span>
+<span class="fc" id="L365">		List&lt;?&gt; statements = block.statements();</span>
+
+		// Find the index of the first loop
+<span class="fc" id="L368">		int forLoopIndex = -1;</span>
+<span class="pc bpc" id="L369" title="1 of 2 branches missed.">		for (int i = 0; i &lt; statements.size(); i++) {</span>
+<span class="fc bfc" id="L370" title="All 2 branches covered.">			if (statements.get(i) == firstLoop) {</span>
+<span class="fc" id="L371">				forLoopIndex = i;</span>
+<span class="fc" id="L372">				break;</span>
+			}
+		}
+
+		// Check if there's a statement before the first loop
+<span class="pc bpc" id="L377" title="1 of 2 branches missed.">		if (forLoopIndex &lt;= 0) {</span>
+<span class="nc" id="L378">			return null;</span>
+		}
+
+<span class="fc" id="L381">		Statement precedingStmt = (Statement) statements.get(forLoopIndex - 1);</span>
+
+		// Check if the preceding statement is a collection declaration for the target variable
+		// We accept both empty collections and collections with size hints
+<span class="fc" id="L385">		String declaredVar = getCollectionDeclarationVariable(precedingStmt);</span>
+<span class="pc bpc" id="L386" title="2 of 4 branches missed.">		if (declaredVar == null || !declaredVar.equals(group.getTargetVariable())) {</span>
+<span class="nc" id="L387">			return null;</span>
+		}
+
+		// We have a match! Create a merged VariableDeclarationStatement
+<span class="fc" id="L391">		VariableDeclarationStatement originalDecl = (VariableDeclarationStatement) precedingStmt;</span>
+<span class="fc" id="L392">		VariableDeclarationFragment originalFragment = (VariableDeclarationFragment) originalDecl.fragments().get(0);</span>
+
+<span class="fc" id="L394">		AST ast = firstLoop.getAST();</span>
+
+		// Create new VariableDeclarationFragment with the concat expression as initializer
+<span class="fc" id="L397">		VariableDeclarationFragment newFragment = ast.newVariableDeclarationFragment();</span>
+<span class="fc" id="L398">		newFragment.setName(ast.newSimpleName(group.getTargetVariable()));</span>
+<span class="fc" id="L399">		newFragment.setInitializer((MethodInvocation) ASTNode.copySubtree(ast, concatExpression));</span>
+
+		// Create new VariableDeclarationStatement with the same type
+<span class="fc" id="L402">		VariableDeclarationStatement newDecl = ast.newVariableDeclarationStatement(newFragment);</span>
+<span class="fc" id="L403">		Type originalType = originalDecl.getType();</span>
+<span class="fc" id="L404">		newDecl.setType((Type) ASTNode.copySubtree(ast, originalType));</span>
+
+		// Copy modifiers if any
+<span class="fc" id="L407">		newDecl.modifiers().addAll(ASTNode.copySubtrees(ast, originalDecl.modifiers()));</span>
+
+		// Remove the preceding declaration
+<span class="fc" id="L410">		rewrite.remove(precedingStmt, editGroup);</span>
+
+<span class="fc" id="L412">		return newDecl;</span>
+	}
+
+	/**
+	 * Gets the variable name from a collection declaration statement.
+	 * Accepts both empty collections and collections with constructor arguments (e.g., size hints).
+	 * 
+	 * @param stmt the statement to check
+	 * @return the variable name if it's a collection declaration, null otherwise
+	 */
+	private String getCollectionDeclarationVariable(Statement stmt) {
+		// Try the standard empty collection check first
+<span class="fc" id="L424">		String emptyVar = CollectPatternDetector.isEmptyCollectionDeclaration(stmt);</span>
+<span class="pc bpc" id="L425" title="1 of 2 branches missed.">		if (emptyVar != null) {</span>
+<span class="nc" id="L426">			return emptyVar;</span>
+		}
+
+		// Also accept collections with constructor arguments (e.g., new ArrayList&lt;&gt;(size))
+<span class="pc bpc" id="L430" title="1 of 2 branches missed.">		if (!(stmt instanceof VariableDeclarationStatement)) {</span>
+<span class="nc" id="L431">			return null;</span>
+		}
+
+<span class="fc" id="L434">		VariableDeclarationStatement varDecl = (VariableDeclarationStatement) stmt;</span>
+<span class="pc bpc" id="L435" title="1 of 2 branches missed.">		if (varDecl.fragments().size() != 1) {</span>
+<span class="nc" id="L436">			return null;</span>
+		}
+
+<span class="fc" id="L439">		VariableDeclarationFragment fragment = (VariableDeclarationFragment) varDecl.fragments().get(0);</span>
+<span class="fc" id="L440">		Expression initializer = fragment.getInitializer();</span>
+
+<span class="pc bpc" id="L442" title="1 of 2 branches missed.">		if (!(initializer instanceof org.eclipse.jdt.core.dom.ClassInstanceCreation)) {</span>
+<span class="nc" id="L443">			return null;</span>
+		}
+
+<span class="fc" id="L446">		org.eclipse.jdt.core.dom.ClassInstanceCreation creation = </span>
+<span class="fc" id="L447">			(org.eclipse.jdt.core.dom.ClassInstanceCreation) initializer;</span>
+		
+<span class="fc" id="L449">		org.eclipse.jdt.core.dom.ITypeBinding typeBinding = creation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L450" title="1 of 2 branches missed.">		if (typeBinding == null) {</span>
+<span class="nc" id="L451">			return null;</span>
+		}
+
+		// Check if it's a supported collection type
+<span class="fc" id="L455">		String qualifiedName = typeBinding.getErasure().getQualifiedName();</span>
+<span class="pc bpc" id="L456" title="1 of 2 branches missed.">		if (CollectorType.fromCollectionType(qualifiedName) != null) {</span>
+<span class="fc" id="L457">			return fragment.getName().getIdentifier();</span>
+		}
+
+<span class="nc" id="L460">		return null;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

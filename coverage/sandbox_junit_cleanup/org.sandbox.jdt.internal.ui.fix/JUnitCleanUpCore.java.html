@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
@@ -41,112 +42,117 @@ import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 
 public class JUnitCleanUpCore extends AbstractCleanUp {
 	public JUnitCleanUpCore(final Map&lt;String, String&gt; options) {
-<span class="nc" id="L44">		super(options);</span>
-<span class="nc" id="L45">	}</span>
+<span class="nc" id="L45">		super(options);</span>
+<span class="nc" id="L46">	}</span>
 
 	/**
 	 *
 	 */
-<span class="fc" id="L50">	public JUnitCleanUpCore() {</span>
-<span class="fc" id="L51">	}</span>
+<span class="fc" id="L51">	public JUnitCleanUpCore() {</span>
+<span class="fc" id="L52">	}</span>
 
 	@Override
 	public CleanUpRequirements getRequirements() {
-<span class="fc" id="L55">		return new CleanUpRequirements(requireAST(), false, false, null);</span>
+<span class="fc" id="L56">		return new CleanUpRequirements(requireAST(), false, false, null);</span>
 	}
 
 	public boolean requireAST() {
-<span class="pc bpc" id="L59" title="3 of 4 branches missed.">		return isEnabled(JUNIT_CLEANUP)||isEnabled(JUNIT3_CLEANUP);</span>
+<span class="pc bpc" id="L60" title="3 of 4 branches missed.">		return isEnabled(JUNIT_CLEANUP)||isEnabled(JUNIT3_CLEANUP);</span>
 	}
 
 	@Override
 	public ICleanUpFix createFix(final CleanUpContext context) throws CoreException {
-<span class="fc" id="L64">		CompilationUnit compilationUnit= context.getAST();</span>
-<span class="pc bpc" id="L65" title="1 of 2 branches missed.">		if (compilationUnit == null) {</span>
-<span class="nc" id="L66">			return null;</span>
+<span class="fc" id="L65">		CompilationUnit compilationUnit= context.getAST();</span>
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">		if (compilationUnit == null) {</span>
+<span class="nc" id="L67">			return null;</span>
 		}
-<span class="fc" id="L68">		EnumSet&lt;JUnitCleanUpFixCore&gt; computeFixSet= computeFixSet();</span>
-<span class="pc bpc" id="L69" title="4 of 6 branches missed.">		if (!(isEnabled(JUNIT_CLEANUP)||isEnabled(JUNIT3_CLEANUP)) || computeFixSet.isEmpty()</span>
+<span class="fc" id="L69">		EnumSet&lt;JUnitCleanUpFixCore&gt; computeFixSet= computeFixSet();</span>
+<span class="pc bpc" id="L70" title="4 of 6 branches missed.">		if (!(isEnabled(JUNIT_CLEANUP)||isEnabled(JUNIT3_CLEANUP)) || computeFixSet.isEmpty()</span>
 //				|| !JavaModelUtil.is1d8OrHigher(compilationUnit.getJavaElement().getJavaProject())
 				) {
-<span class="nc" id="L72">			return null;</span>
+<span class="nc" id="L73">			return null;</span>
 		}
-<span class="fc" id="L74">		Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations= new LinkedHashSet&lt;&gt;();</span>
-<span class="fc" id="L75">		computeFixSet.forEach(i -&gt; i.findOperations(compilationUnit, operations, new HashSet&lt;&gt;()));</span>
-<span class="fc bfc" id="L76" title="All 2 branches covered.">		if (operations.isEmpty()) {</span>
-<span class="fc" id="L77">			return null;</span>
+<span class="fc" id="L75">		Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations= new LinkedHashSet&lt;&gt;();</span>
+		// Share the nodesprocessed set between all plugins so they can coordinate
+		// and avoid processing the same nodes twice (prevents rewrite conflicts)
+<span class="fc" id="L78">		Set&lt;ASTNode&gt; sharedNodesProcessed = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L79">		computeFixSet.forEach(i -&gt; i.findOperations(compilationUnit, operations, sharedNodesProcessed));</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">		if (operations.isEmpty()) {</span>
+<span class="fc" id="L81">			return null;</span>
 		}
-<span class="fc" id="L79">		return new CompilationUnitRewriteOperationsFixCore(JUnitCleanUpFix_refactor, compilationUnit,</span>
-<span class="fc" id="L80">				operations.toArray(new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]));</span>
+<span class="fc" id="L83">		return new CompilationUnitRewriteOperationsFixCore(JUnitCleanUpFix_refactor, compilationUnit,</span>
+<span class="fc" id="L84">				operations.toArray(new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]));</span>
 	}
 
 	@Override
 	public String[] getStepDescriptions() {
-<span class="fc" id="L85">		List&lt;String&gt; result= new ArrayList&lt;&gt;();</span>
-<span class="pc bpc" id="L86" title="2 of 4 branches missed.">		if ((isEnabled(JUNIT_CLEANUP)||isEnabled(JUNIT3_CLEANUP))) {</span>
-<span class="nc" id="L87">			result.add(Messages.format(JUnitCleanUp_description, new Object[] { String.join(&quot;,&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L88">					computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collectors.toList())) }));</span>
+<span class="fc" id="L89">		List&lt;String&gt; result= new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L90" title="2 of 4 branches missed.">		if ((isEnabled(JUNIT_CLEANUP)||isEnabled(JUNIT3_CLEANUP))) {</span>
+<span class="nc" id="L91">			result.add(Messages.format(JUnitCleanUp_description, new Object[] { String.join(&quot;,&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L92">					computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collectors.toList())) }));</span>
 		}
-<span class="fc" id="L90">		return result.toArray(new String[0]);</span>
+<span class="fc" id="L94">		return result.toArray(new String[0]);</span>
 	}
 
 	@Override
 	public String getPreview() {
-<span class="nc" id="L95">		StringBuilder sb= new StringBuilder();</span>
-<span class="nc" id="L96">		EnumSet&lt;JUnitCleanUpFixCore&gt; computeFixSet= computeFixSet();</span>
-<span class="nc" id="L97">		allOfJunit4().forEach(e -&gt; sb.append(e.getPreview(computeFixSet.contains(e))));</span>
-<span class="nc" id="L98">		return sb.toString();</span>
+<span class="nc" id="L99">		StringBuilder sb= new StringBuilder();</span>
+<span class="nc" id="L100">		EnumSet&lt;JUnitCleanUpFixCore&gt; computeFixSet= computeFixSet();</span>
+<span class="nc" id="L101">		allOfJunit4().forEach(e -&gt; sb.append(e.getPreview(computeFixSet.contains(e))));</span>
+<span class="nc" id="L102">		return sb.toString();</span>
 	}
 
 	private EnumSet&lt;JUnitCleanUpFixCore&gt; computeFixSet() {
-<span class="pc bpc" id="L102" title="1 of 2 branches missed.">		EnumSet&lt;JUnitCleanUpFixCore&gt; fixSetJunit4 = isEnabled(JUNIT_CLEANUP)</span>
-<span class="fc" id="L103">				? allOfJunit4()</span>
-<span class="nc" id="L104">						: EnumSet.noneOf(JUnitCleanUpFixCore.class);</span>
-<span class="pc bpc" id="L105" title="1 of 2 branches missed.">		EnumSet&lt;JUnitCleanUpFixCore&gt; fixSetJunit3 = isEnabled(JUNIT3_CLEANUP)</span>
-<span class="nc" id="L106">				? allOfJunit3()</span>
-<span class="fc" id="L107">						: EnumSet.noneOf(JUnitCleanUpFixCore.class);</span>
-<span class="fc" id="L108">		Map&lt;String, JUnitCleanUpFixCore&gt; cleanupMappings = Map.ofEntries(</span>
-<span class="fc" id="L109">				   Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT, JUnitCleanUpFixCore.ASSERT),</span>
-<span class="fc" id="L110">				   Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT_OPTIMIZATION, JUnitCleanUpFixCore.ASSERT_OPTIMIZATION),</span>
-<span class="fc" id="L111">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME, JUnitCleanUpFixCore.ASSUME),</span>
-<span class="fc" id="L112">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME_OPTIMIZATION, JUnitCleanUpFixCore.ASSUME_OPTIMIZATION),</span>
-<span class="fc" id="L113">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTER, JUnitCleanUpFixCore.AFTER),</span>
-<span class="fc" id="L114">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORE, JUnitCleanUpFixCore.BEFORE),</span>
-<span class="fc" id="L115">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTERCLASS, JUnitCleanUpFixCore.AFTERCLASS),</span>
-<span class="fc" id="L116">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORECLASS, JUnitCleanUpFixCore.BEFORECLASS),</span>
-<span class="fc" id="L117">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST, JUnitCleanUpFixCore.TEST),</span>
-<span class="fc" id="L118">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_TIMEOUT, JUnitCleanUpFixCore.TEST_TIMEOUT),</span>
-<span class="fc" id="L119">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_EXPECTED, JUnitCleanUpFixCore.TEST_EXPECTED),</span>
-<span class="fc" id="L120">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_3_TEST, JUnitCleanUpFixCore.TEST3),</span>
-<span class="fc" id="L121">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_IGNORE, JUnitCleanUpFixCore.IGNORE),</span>
-<span class="fc" id="L122">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH, JUnitCleanUpFixCore.RUNWITH),</span>
-<span class="fc" id="L123">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_EXTERNALRESOURCE, JUnitCleanUpFixCore.EXTERNALRESOURCE),</span>
-<span class="fc" id="L124">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETEMPORARYFOLDER, JUnitCleanUpFixCore.RULETEMPORARYFOLDER),</span>
-<span class="fc" id="L125">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETESTNAME, JUnitCleanUpFixCore.RULETESTNAME),</span>
-<span class="fc" id="L126">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE, JUnitCleanUpFixCore.RULEEXTERNALRESOURCE),</span>
-<span class="fc" id="L127">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_LOST_TESTS, JUnitCleanUpFixCore.LOSTTESTS)</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">		EnumSet&lt;JUnitCleanUpFixCore&gt; fixSetJunit4 = isEnabled(JUNIT_CLEANUP)</span>
+<span class="fc" id="L107">				? allOfJunit4()</span>
+<span class="nc" id="L108">						: EnumSet.noneOf(JUnitCleanUpFixCore.class);</span>
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">		EnumSet&lt;JUnitCleanUpFixCore&gt; fixSetJunit3 = isEnabled(JUNIT3_CLEANUP)</span>
+<span class="nc" id="L110">				? allOfJunit3()</span>
+<span class="fc" id="L111">						: EnumSet.noneOf(JUnitCleanUpFixCore.class);</span>
+<span class="fc" id="L112">		Map&lt;String, JUnitCleanUpFixCore&gt; cleanupMappings = Map.ofEntries(</span>
+<span class="fc" id="L113">				   Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT, JUnitCleanUpFixCore.ASSERT),</span>
+<span class="fc" id="L114">				   Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT_OPTIMIZATION, JUnitCleanUpFixCore.ASSERT_OPTIMIZATION),</span>
+<span class="fc" id="L115">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME, JUnitCleanUpFixCore.ASSUME),</span>
+<span class="fc" id="L116">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME_OPTIMIZATION, JUnitCleanUpFixCore.ASSUME_OPTIMIZATION),</span>
+<span class="fc" id="L117">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTER, JUnitCleanUpFixCore.AFTER),</span>
+<span class="fc" id="L118">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORE, JUnitCleanUpFixCore.BEFORE),</span>
+<span class="fc" id="L119">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTERCLASS, JUnitCleanUpFixCore.AFTERCLASS),</span>
+<span class="fc" id="L120">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORECLASS, JUnitCleanUpFixCore.BEFORECLASS),</span>
+<span class="fc" id="L121">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST, JUnitCleanUpFixCore.TEST),</span>
+<span class="fc" id="L122">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_TIMEOUT, JUnitCleanUpFixCore.TEST_TIMEOUT),</span>
+<span class="fc" id="L123">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_EXPECTED, JUnitCleanUpFixCore.TEST_EXPECTED),</span>
+<span class="fc" id="L124">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_3_TEST, JUnitCleanUpFixCore.TEST3),</span>
+<span class="fc" id="L125">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_IGNORE, JUnitCleanUpFixCore.IGNORE),</span>
+<span class="fc" id="L126">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_CATEGORY, JUnitCleanUpFixCore.CATEGORY),</span>
+<span class="fc" id="L127">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_FIX_METHOD_ORDER, JUnitCleanUpFixCore.FIX_METHOD_ORDER),</span>
+<span class="fc" id="L128">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH, JUnitCleanUpFixCore.RUNWITH),</span>
+<span class="fc" id="L129">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_EXTERNALRESOURCE, JUnitCleanUpFixCore.EXTERNALRESOURCE),</span>
+<span class="fc" id="L130">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETEMPORARYFOLDER, JUnitCleanUpFixCore.RULETEMPORARYFOLDER),</span>
+<span class="fc" id="L131">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETESTNAME, JUnitCleanUpFixCore.RULETESTNAME),</span>
+<span class="fc" id="L132">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE, JUnitCleanUpFixCore.RULEEXTERNALRESOURCE),</span>
+<span class="fc" id="L133">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_LOST_TESTS, JUnitCleanUpFixCore.LOSTTESTS)</span>
 				);
-<span class="fc" id="L129">		EnumSet&lt;JUnitCleanUpFixCore&gt; fixSetcombined=EnumSet.copyOf(fixSetJunit4);</span>
-<span class="fc" id="L130">		fixSetcombined.addAll(fixSetJunit3);</span>
+<span class="fc" id="L135">		EnumSet&lt;JUnitCleanUpFixCore&gt; fixSetcombined=EnumSet.copyOf(fixSetJunit4);</span>
+<span class="fc" id="L136">		fixSetcombined.addAll(fixSetJunit3);</span>
 
-<span class="fc" id="L132">		cleanupMappings.forEach((config, fix) -&gt; {</span>
-<span class="fc bfc" id="L133" title="All 2 branches covered.">			if (!isEnabled(config)) {</span>
-<span class="fc" id="L134">				fixSetcombined.remove(fix);</span>
+<span class="fc" id="L138">		cleanupMappings.forEach((config, fix) -&gt; {</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">			if (!isEnabled(config)) {</span>
+<span class="fc" id="L140">				fixSetcombined.remove(fix);</span>
 			}
-<span class="fc" id="L136">		});</span>
-<span class="fc" id="L137">		return fixSetcombined;</span>
+<span class="fc" id="L142">		});</span>
+<span class="fc" id="L143">		return fixSetcombined;</span>
 	}
 
 	private EnumSet&lt;JUnitCleanUpFixCore&gt; allOfJunit4() {
-<span class="fc" id="L141">		EnumSet&lt;JUnitCleanUpFixCore&gt; allOf= EnumSet.allOf(JUnitCleanUpFixCore.class);</span>
-<span class="fc" id="L142">		allOf.remove(JUnitCleanUpFixCore.TEST3);</span>
-<span class="fc" id="L143">		return allOf;</span>
+<span class="fc" id="L147">		EnumSet&lt;JUnitCleanUpFixCore&gt; allOf= EnumSet.allOf(JUnitCleanUpFixCore.class);</span>
+<span class="fc" id="L148">		allOf.remove(JUnitCleanUpFixCore.TEST3);</span>
+<span class="fc" id="L149">		return allOf;</span>
 	}
 	
 	private EnumSet&lt;JUnitCleanUpFixCore&gt; allOfJunit3() {
-<span class="nc" id="L147">		EnumSet&lt;JUnitCleanUpFixCore&gt; allOf= EnumSet.noneOf(JUnitCleanUpFixCore.class);</span>
-<span class="nc" id="L148">		allOf.add(JUnitCleanUpFixCore.TEST3);</span>
-<span class="nc" id="L149">		return allOf;</span>
+<span class="nc" id="L153">		EnumSet&lt;JUnitCleanUpFixCore&gt; allOf= EnumSet.noneOf(JUnitCleanUpFixCore.class);</span>
+<span class="nc" id="L154">		allOf.add(JUnitCleanUpFixCore.TEST3);</span>
+<span class="nc" id="L155">		return allOf;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

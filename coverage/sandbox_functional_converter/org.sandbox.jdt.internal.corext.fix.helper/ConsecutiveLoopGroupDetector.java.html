@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ConsecutiveLoopGroupDetector.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_functional_converter</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">ConsecutiveLoopGroupDetector.java</span></div><h1>ConsecutiveLoopGroupDetector.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.EnhancedForStatement;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.Statement;
+
+/**
+ * Detects consecutive for-loops that add to the same collection variable.
+ * 
+ * &lt;p&gt;This detector identifies patterns where multiple consecutive enhanced for-loops
+ * all add elements to the same collection. These can be converted to Stream.concat()
+ * to preserve all elements instead of overwriting the collection.&lt;/p&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Pattern Example:&lt;/b&gt;&lt;/p&gt;
+ * &lt;pre&gt;{@code
+ * List&lt;RuleEntry&gt; entries = new ArrayList&lt;&gt;();
+ * for (MethodRule rule : methodRules) {
+ *     entries.add(new RuleEntry(rule, TYPE_METHOD));
+ * }
+ * for (TestRule rule : testRules) {
+ *     entries.add(new RuleEntry(rule, TYPE_TEST));
+ * }
+ * 
+ * // Should convert to:
+ * List&lt;RuleEntry&gt; entries = Stream.concat(
+ *     methodRules.stream().map(rule -&gt; new RuleEntry(rule, TYPE_METHOD)),
+ *     testRules.stream().map(rule -&gt; new RuleEntry(rule, TYPE_TEST))
+ * ).collect(Collectors.toList());
+ * }&lt;/pre&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Detection Requirements:&lt;/b&gt;&lt;/p&gt;
+ * &lt;ul&gt;
+ * &lt;li&gt;Loops must be consecutive (only comments allowed between them)&lt;/li&gt;
+ * &lt;li&gt;All loops must add to the same collection variable&lt;/li&gt;
+ * &lt;li&gt;The target collection must not be read between loops&lt;/li&gt;
+ * &lt;li&gt;Each loop body must contain only a simple add operation&lt;/li&gt;
+ * &lt;/ul&gt;
+ * 
+ * @see LoopToFunctional
+ * @see StreamPipelineBuilder
+ */
+<span class="nc" id="L61">public class ConsecutiveLoopGroupDetector {</span>
+
+	/**
+	 * Represents a group of consecutive loops adding to the same collection.
+	 */
+	public static class ConsecutiveLoopGroup {
+		private final String targetVariable;
+		private final List&lt;EnhancedForStatement&gt; loops;
+
+<span class="fc" id="L70">		public ConsecutiveLoopGroup(String targetVariable, List&lt;EnhancedForStatement&gt; loops) {</span>
+<span class="fc" id="L71">			this.targetVariable = targetVariable;</span>
+<span class="fc" id="L72">			this.loops = new ArrayList&lt;&gt;(loops);</span>
+<span class="fc" id="L73">		}</span>
+
+		public String getTargetVariable() {
+<span class="fc" id="L76">			return targetVariable;</span>
+		}
+
+		public List&lt;EnhancedForStatement&gt; getLoops() {
+<span class="fc" id="L80">			return new ArrayList&lt;&gt;(loops);</span>
+		}
+
+		public int size() {
+<span class="nc" id="L84">			return loops.size();</span>
+		}
+	}
+
+	/**
+	 * Detects all consecutive loop groups in the given block.
+	 * 
+	 * @param block the block to analyze
+	 * @return list of detected consecutive loop groups (size 2+)
+	 */
+	public static List&lt;ConsecutiveLoopGroup&gt; detectGroups(Block block) {
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">		if (block == null) {</span>
+<span class="nc" id="L96">			return new ArrayList&lt;&gt;();</span>
+		}
+
+<span class="fc" id="L99">		List&lt;ConsecutiveLoopGroup&gt; groups = new ArrayList&lt;&gt;();</span>
+		@SuppressWarnings(&quot;unchecked&quot;)
+<span class="fc" id="L101">		List&lt;Statement&gt; statements = block.statements();</span>
+
+<span class="fc" id="L103">		int i = 0;</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">		while (i &lt; statements.size()) {</span>
+<span class="fc" id="L105">			Statement stmt = statements.get(i);</span>
+
+			// Check if this is an EnhancedForStatement with simple add pattern
+<span class="fc bfc" id="L108" title="All 2 branches covered.">			if (stmt instanceof EnhancedForStatement) {</span>
+<span class="fc" id="L109">				EnhancedForStatement firstLoop = (EnhancedForStatement) stmt;</span>
+<span class="fc" id="L110">				String targetVar = getTargetAddVariable(firstLoop);</span>
+
+<span class="fc bfc" id="L112" title="All 2 branches covered.">				if (targetVar != null) {</span>
+					// Found a loop that adds to a variable - check for consecutive similar loops
+<span class="fc" id="L114">					List&lt;EnhancedForStatement&gt; group = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L115">					group.add(firstLoop);</span>
+
+					// Scan forward for consecutive loops adding to same variable
+<span class="fc" id="L118">					int j = i + 1;</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">					while (j &lt; statements.size()) {</span>
+<span class="fc" id="L120">						Statement nextStmt = statements.get(j);</span>
+
+<span class="fc bfc" id="L122" title="All 2 branches covered.">						if (nextStmt instanceof EnhancedForStatement) {</span>
+<span class="fc" id="L123">							EnhancedForStatement nextLoop = (EnhancedForStatement) nextStmt;</span>
+<span class="fc" id="L124">							String nextTargetVar = getTargetAddVariable(nextLoop);</span>
+
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">							if (targetVar.equals(nextTargetVar)) {</span>
+								// Same target variable - add to group
+<span class="fc" id="L128">								group.add(nextLoop);</span>
+<span class="fc" id="L129">								j++;</span>
+							} else {
+								// Different target or not an add pattern - stop group
+								break;
+							}
+						} else {
+							// Non-loop statement breaks the consecutive sequence
+							break;
+						}
+					}
+
+					// Only create a group if we found 2+ consecutive loops
+<span class="fc bfc" id="L141" title="All 2 branches covered.">					if (group.size() &gt;= 2) {</span>
+<span class="fc" id="L142">						groups.add(new ConsecutiveLoopGroup(targetVar, group));</span>
+<span class="fc" id="L143">						i = j; // Skip past all loops in this group</span>
+<span class="fc" id="L144">						continue;</span>
+					}
+				}
+			}
+
+<span class="fc" id="L149">			i++;</span>
+		}
+
+<span class="fc" id="L152">		return groups;</span>
+	}
+
+	/**
+	 * Extracts the target variable name if the loop body is a simple add pattern.
+	 * 
+	 * &lt;p&gt;Detects patterns like:&lt;/p&gt;
+	 * &lt;pre&gt;{@code
+	 * for (Type item : collection) {
+	 *     targetList.add(expression);
+	 * }
+	 * }&lt;/pre&gt;
+	 * 
+	 * @param loop the enhanced for-loop to check
+	 * @return the target variable name, or null if not a simple add pattern
+	 */
+	private static String getTargetAddVariable(EnhancedForStatement loop) {
+<span class="fc" id="L169">		Statement body = loop.getBody();</span>
+
+		// Handle both Block and single statement
+<span class="fc" id="L172">		List&lt;Statement&gt; bodyStatements = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">		if (body instanceof Block) {</span>
+			@SuppressWarnings(&quot;unchecked&quot;)
+<span class="fc" id="L175">			List&lt;Statement&gt; stmts = ((Block) body).statements();</span>
+<span class="fc" id="L176">			bodyStatements.addAll(stmts);</span>
+<span class="fc" id="L177">		} else {</span>
+<span class="fc" id="L178">			bodyStatements.add(body);</span>
+		}
+
+		// Must be exactly one statement
+<span class="fc bfc" id="L182" title="All 2 branches covered.">		if (bodyStatements.size() != 1) {</span>
+<span class="fc" id="L183">			return null;</span>
+		}
+
+<span class="fc" id="L186">		Statement stmt = bodyStatements.get(0);</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">		if (!(stmt instanceof ExpressionStatement)) {</span>
+<span class="fc" id="L188">			return null;</span>
+		}
+
+<span class="fc" id="L191">		ExpressionStatement exprStmt = (ExpressionStatement) stmt;</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">		if (!(exprStmt.getExpression() instanceof MethodInvocation)) {</span>
+<span class="fc" id="L193">			return null;</span>
+		}
+
+<span class="fc" id="L196">		MethodInvocation methodInv = (MethodInvocation) exprStmt.getExpression();</span>
+
+		// Check method name is &quot;add&quot;
+<span class="fc bfc" id="L199" title="All 2 branches covered.">		if (!&quot;add&quot;.equals(methodInv.getName().getIdentifier())) {</span>
+<span class="fc" id="L200">			return null;</span>
+		}
+
+		// Check invoked on a SimpleName (the collection variable)
+<span class="pc bpc" id="L204" title="1 of 2 branches missed.">		if (!(methodInv.getExpression() instanceof SimpleName)) {</span>
+<span class="nc" id="L205">			return null;</span>
+		}
+
+<span class="fc" id="L208">		SimpleName receiver = (SimpleName) methodInv.getExpression();</span>
+<span class="fc" id="L209">		return receiver.getIdentifier();</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

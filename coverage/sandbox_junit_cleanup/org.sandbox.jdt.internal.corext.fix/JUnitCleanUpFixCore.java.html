@@ -36,6 +36,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.BeforeClassJUnitPluginV2;
 import org.sandbox.jdt.internal.corext.fix.helper.BeforeJUnitPluginV2;
 import org.sandbox.jdt.internal.corext.fix.helper.CategoryJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.ExternalResourceJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.FixMethodOrderJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.IgnoreJUnitPluginV2;
 import org.sandbox.jdt.internal.corext.fix.helper.ParameterizedTestJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleErrorCollectorJUnitPlugin;
@@ -54,50 +55,51 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
-<span class="fc" id="L57">public enum JUnitCleanUpFixCore {</span>
+<span class="fc" id="L58">public enum JUnitCleanUpFixCore {</span>
 
-<span class="fc" id="L59">	BEFORE(new BeforeJUnitPluginV2()),</span>
-<span class="fc" id="L60">	AFTER(new AfterJUnitPluginV2()),</span>
-<span class="fc" id="L61">	TEST(new TestJUnitPluginV2()),</span>
-<span class="fc" id="L62">	TEST3(new TestJUnit3Plugin()),</span>
-<span class="fc" id="L63">	TEST_TIMEOUT(new TestTimeoutJUnitPlugin()),</span>
-<span class="fc" id="L64">	TEST_EXPECTED(new TestExpectedJUnitPlugin()),</span>
-<span class="fc" id="L65">	BEFORECLASS(new BeforeClassJUnitPluginV2()),</span>
-<span class="fc" id="L66">	AFTERCLASS(new AfterClassJUnitPluginV2()),</span>
-<span class="fc" id="L67">	IGNORE(new IgnoreJUnitPluginV2()),</span>
-<span class="fc" id="L68">	CATEGORY(new CategoryJUnitPlugin()),</span>
-<span class="fc" id="L69">	RUNWITH(new RunWithJUnitPlugin()),</span>
-<span class="fc" id="L70">	ASSERT(new AssertJUnitPlugin()),</span>
-<span class="fc" id="L71">	ASSERT_OPTIMIZATION(new AssertOptimizationJUnitPlugin()),</span>
-<span class="fc" id="L72">	ASSUME(new AssumeJUnitPlugin()),</span>
-<span class="fc" id="L73">	ASSUME_OPTIMIZATION(new AssumeOptimizationJUnitPlugin()),</span>
-<span class="fc" id="L74">	RULEEXTERNALRESOURCE(new RuleExternalResourceJUnitPlugin()),</span>
-<span class="fc" id="L75">	RULETESTNAME(new RuleTestnameJUnitPlugin()),</span>
-<span class="fc" id="L76">	RULETEMPORARYFOLDER(new RuleTemporayFolderJUnitPlugin()),</span>
-<span class="fc" id="L77">	RULETIMEOUT(new RuleTimeoutJUnitPlugin()),</span>
-<span class="fc" id="L78">	RULEEXPECTEDEXCEPTION(new RuleExpectedExceptionJUnitPlugin()),</span>
-<span class="fc" id="L79">	RULEERRORCOLLECTOR(new RuleErrorCollectorJUnitPlugin()),</span>
-<span class="fc" id="L80">	EXTERNALRESOURCE(new ExternalResourceJUnitPlugin()),</span>
-<span class="fc" id="L81">	LOSTTESTS(new LostTestFinderJUnitPlugin()),</span>
-<span class="fc" id="L82">	PARAMETERIZED(new ParameterizedTestJUnitPlugin());</span>
+<span class="fc" id="L60">	BEFORE(new BeforeJUnitPluginV2()),</span>
+<span class="fc" id="L61">	AFTER(new AfterJUnitPluginV2()),</span>
+<span class="fc" id="L62">	TEST(new TestJUnitPluginV2()),</span>
+<span class="fc" id="L63">	TEST3(new TestJUnit3Plugin()),</span>
+<span class="fc" id="L64">	TEST_TIMEOUT(new TestTimeoutJUnitPlugin()),</span>
+<span class="fc" id="L65">	TEST_EXPECTED(new TestExpectedJUnitPlugin()),</span>
+<span class="fc" id="L66">	BEFORECLASS(new BeforeClassJUnitPluginV2()),</span>
+<span class="fc" id="L67">	AFTERCLASS(new AfterClassJUnitPluginV2()),</span>
+<span class="fc" id="L68">	IGNORE(new IgnoreJUnitPluginV2()),</span>
+<span class="fc" id="L69">	CATEGORY(new CategoryJUnitPlugin()),</span>
+<span class="fc" id="L70">	FIX_METHOD_ORDER(new FixMethodOrderJUnitPlugin()),</span>
+<span class="fc" id="L71">	RUNWITH(new RunWithJUnitPlugin()),</span>
+<span class="fc" id="L72">	ASSERT(new AssertJUnitPlugin()),</span>
+<span class="fc" id="L73">	ASSERT_OPTIMIZATION(new AssertOptimizationJUnitPlugin()),</span>
+<span class="fc" id="L74">	ASSUME(new AssumeJUnitPlugin()),</span>
+<span class="fc" id="L75">	ASSUME_OPTIMIZATION(new AssumeOptimizationJUnitPlugin()),</span>
+<span class="fc" id="L76">	RULEEXTERNALRESOURCE(new RuleExternalResourceJUnitPlugin()),</span>
+<span class="fc" id="L77">	RULETESTNAME(new RuleTestnameJUnitPlugin()),</span>
+<span class="fc" id="L78">	RULETEMPORARYFOLDER(new RuleTemporayFolderJUnitPlugin()),</span>
+<span class="fc" id="L79">	RULETIMEOUT(new RuleTimeoutJUnitPlugin()),</span>
+<span class="fc" id="L80">	RULEEXPECTEDEXCEPTION(new RuleExpectedExceptionJUnitPlugin()),</span>
+<span class="fc" id="L81">	RULEERRORCOLLECTOR(new RuleErrorCollectorJUnitPlugin()),</span>
+<span class="fc" id="L82">	EXTERNALRESOURCE(new ExternalResourceJUnitPlugin()),</span>
+<span class="fc" id="L83">	LOSTTESTS(new LostTestFinderJUnitPlugin()),</span>
+<span class="fc" id="L84">	PARAMETERIZED(new ParameterizedTestJUnitPlugin());</span>
 
 	AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; junitfound;
 
 	@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L87">	JUnitCleanUpFixCore(AbstractTool&lt;? extends ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; junitprocess) {</span>
-<span class="fc" id="L88">		this.junitfound= (AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt;) junitprocess;</span>
-<span class="fc" id="L89">	}</span>
+<span class="fc" id="L89">	JUnitCleanUpFixCore(AbstractTool&lt;? extends ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; junitprocess) {</span>
+<span class="fc" id="L90">		this.junitfound= (AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt;) junitprocess;</span>
+<span class="fc" id="L91">	}</span>
 
 	public String getPreview(boolean i) {
-<span class="nc bnc" id="L92" title="All 2 branches missed.">		long countother= junitfound.getPreview(!i).lines().count();</span>
-<span class="nc" id="L93">		StringBuilder preview= new StringBuilder(junitfound.getPreview(i));</span>
-<span class="nc" id="L94">		long countnow= preview.toString().lines().count();</span>
-<span class="nc bnc" id="L95" title="All 2 branches missed.">		if(countnow&lt;countother) {</span>
-<span class="nc bnc" id="L96" title="All 2 branches missed.">			for (long ii=0;ii&lt;countother-countnow;ii++) {</span>
-<span class="nc" id="L97">				preview.append(System.lineSeparator());</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">		long countother= junitfound.getPreview(!i).lines().count();</span>
+<span class="nc" id="L95">		StringBuilder preview= new StringBuilder(junitfound.getPreview(i));</span>
+<span class="nc" id="L96">		long countnow= preview.toString().lines().count();</span>
+<span class="nc bnc" id="L97" title="All 2 branches missed.">		if(countnow&lt;countother) {</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">			for (long ii=0;ii&lt;countother-countnow;ii++) {</span>
+<span class="nc" id="L99">				preview.append(System.lineSeparator());</span>
 			}
 		}
-<span class="nc" id="L100">		return preview.toString();</span>
+<span class="nc" id="L102">		return preview.toString();</span>
 	}
 
 	/**
@@ -113,33 +115,33 @@ import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 	 */
 	public void findOperations(final CompilationUnit compilationUnit,
 			final Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, final Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="fc" id="L116">		junitfound.find(this, compilationUnit, operations, nodesprocessed);</span>
-<span class="fc" id="L117">	}</span>
+<span class="fc" id="L118">		junitfound.find(this, compilationUnit, operations, nodesprocessed);</span>
+<span class="fc" id="L119">	}</span>
 
 	public CompilationUnitRewriteOperationWithSourceRange rewrite(final ReferenceHolder&lt;Integer, JunitHolder&gt; hit) {
-<span class="fc" id="L120">		return new CompilationUnitRewriteOperationWithSourceRange() {</span>
+<span class="fc" id="L122">		return new CompilationUnitRewriteOperationWithSourceRange() {</span>
 			@Override
 			public void rewriteASTInternal(final CompilationUnitRewrite cuRewrite,
 					final LinkedProposalModelCore linkedModel) throws CoreException {
-<span class="fc" id="L124">				TextEditGroup group= createTextEditGroup(Messages.format(MultiFixMessages.JUnitCleanUp_description,</span>
-<span class="fc" id="L125">						new Object[] { JUnitCleanUpFixCore.this.toString() }), cuRewrite);</span>
+<span class="fc" id="L126">				TextEditGroup group= createTextEditGroup(Messages.format(MultiFixMessages.JUnitCleanUp_description,</span>
+<span class="fc" id="L127">						new Object[] { JUnitCleanUpFixCore.this.toString() }), cuRewrite);</span>
 				TightSourceRangeComputer rangeComputer;
-<span class="fc" id="L127">				ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
-<span class="pc bpc" id="L128" title="1 of 2 branches missed.">				if (rewrite.getExtendedSourceRangeComputer() instanceof TightSourceRangeComputer) {</span>
-<span class="nc" id="L129">					rangeComputer= (TightSourceRangeComputer) rewrite.getExtendedSourceRangeComputer();</span>
-<span class="nc" id="L130">				} else {</span>
-<span class="fc" id="L131">					rangeComputer= new TightSourceRangeComputer();</span>
+<span class="fc" id="L129">				ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">				if (rewrite.getExtendedSourceRangeComputer() instanceof TightSourceRangeComputer) {</span>
+<span class="nc" id="L131">					rangeComputer= (TightSourceRangeComputer) rewrite.getExtendedSourceRangeComputer();</span>
+<span class="nc" id="L132">				} else {</span>
+<span class="fc" id="L133">					rangeComputer= new TightSourceRangeComputer();</span>
 				}
-<span class="fc" id="L133">				rangeComputer.addTightSourceNode(hit.get(0).minv);</span>
-<span class="fc" id="L134">				rewrite.setTargetSourceRangeComputer(rangeComputer);</span>
-<span class="fc" id="L135">				junitfound.rewrite(JUnitCleanUpFixCore.this, hit, cuRewrite, group);</span>
-<span class="fc" id="L136">			}</span>
+<span class="fc" id="L135">				rangeComputer.addTightSourceNode(hit.get(0).minv);</span>
+<span class="fc" id="L136">				rewrite.setTargetSourceRangeComputer(rangeComputer);</span>
+<span class="fc" id="L137">				junitfound.rewrite(JUnitCleanUpFixCore.this, hit, cuRewrite, group);</span>
+<span class="fc" id="L138">			}</span>
 		};
 	}
 
 	@Override
 	public String toString() {
-<span class="fc" id="L142">		return junitfound.toString();</span>
+<span class="fc" id="L144">		return junitfound.toString();</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
