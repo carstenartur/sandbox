@@ -1146,6 +1146,11 @@
                     <xsl:with-param name="package" select="@package"/>
                     <xsl:with-param name="class" select="@name"/>
                 </xsl:call-template>
+                <xsl:call-template name="generate-github-test-link">
+                    <xsl:with-param name="test-module" select="$test-module"/>
+                    <xsl:with-param name="package" select="@package"/>
+                    <xsl:with-param name="class" select="@name"/>
+                </xsl:call-template>
             </h3>
 
             <table class="details" border="0" cellpadding="5" cellspacing="2" width="95%">
@@ -1623,6 +1628,39 @@
             <xsl:attribute name="href"><xsl:value-of select="$coverage-url"/></xsl:attribute>
             <xsl:attribute name="target">_blank</xsl:attribute>
             📊
+        </a>
+    </xsl:if>
+</xsl:template>
+
+<!-- Template to generate GitHub source link for a test class -->
+<xsl:template name="generate-github-test-link">
+    <xsl:param name="test-module"/>
+    <xsl:param name="package"/>
+    <xsl:param name="class"/>
+    
+    <!-- Only show GitHub links when repository URL and test module are available -->
+    <xsl:if test="string-length($repository-url) > 0 and string-length($test-module) > 0">
+        <!-- Generate link: {repository-url}/blob/main/{test-module}/src/{package-path}/{ClassName}.java -->
+        <xsl:variable name="package-path" select="translate($package, '.', '/')"/>
+        <xsl:variable name="github-source-url">
+            <xsl:value-of select="$repository-url"/>
+            <xsl:text>/blob/</xsl:text>
+            <xsl:value-of select="$GITHUB_BRANCH"/>
+            <xsl:text>/</xsl:text>
+            <xsl:value-of select="$test-module"/>
+            <xsl:text>/src/</xsl:text>
+            <xsl:value-of select="$package-path"/>
+            <xsl:text>/</xsl:text>
+            <xsl:value-of select="$class"/>
+            <xsl:text>.java</xsl:text>
+        </xsl:variable>
+        
+        <xsl:text> </xsl:text>
+        <a class="github-source-link">
+            <xsl:attribute name="title">View test source: <xsl:value-of select="$class"/>.java</xsl:attribute>
+            <xsl:attribute name="href"><xsl:value-of select="$github-source-url"/></xsl:attribute>
+            <xsl:attribute name="target">_blank</xsl:attribute>
+            🔗
         </a>
     </xsl:if>
 </xsl:template>
