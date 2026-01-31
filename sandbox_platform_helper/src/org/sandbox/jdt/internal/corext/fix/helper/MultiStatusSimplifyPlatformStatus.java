@@ -164,6 +164,9 @@ public class MultiStatusSimplifyPlatformStatus extends AbstractSimplifyPlatformS
 		
 		ASTNodes.replaceButKeepComment(rewrite, visited, newMultiStatus, group);
 		remover.registerRemovedNode(visited);
-		remover.applyRemoves(importRewrite);
+		// Note: Do NOT call remover.applyRemoves(importRewrite) here
+		// The transformation still uses MultiStatus and IStatus classes,
+		// so the imports should be preserved.
+		// ImportRewrite will automatically manage imports without explicit applyRemoves.
 	}
 }

@@ -163,6 +163,9 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 		
 		ASTNodes.replaceButKeepComment(rewrite, visited, staticCall, group);
 		remover.registerRemovedNode(visited);
-		remover.applyRemoves(importRewrite);
+		// Note: Do NOT call remover.applyRemoves(importRewrite) here
+		// The transformation replaces the constructor with a static method call that still
+		// uses the same Status class, so the imports should be preserved.
+		// ImportRewrite will automatically manage imports without explicit applyRemoves.
 	}
 }
