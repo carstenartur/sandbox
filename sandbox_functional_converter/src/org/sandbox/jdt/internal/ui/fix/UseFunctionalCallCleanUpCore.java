@@ -99,6 +99,9 @@ public class UseFunctionalCallCleanUpCore extends AbstractCleanUp {
 			result.add(Messages.format(FunctionalCallCleanUp_description, new Object[] { String.join(",", //$NON-NLS-1$
 					computeFixSet().stream().map(UseFunctionalCallFixCore::toString).collect(Collectors.toList())) }));
 		}
+		if (isEnabled(LOOP_CONVERSION_ENABLED)) {
+			result.add("Convert loops between different representations (Stream, Enhanced-for, Iterator-while)");
+		}
 		return result.toArray(new String[0]);
 	}
 
