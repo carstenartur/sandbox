@@ -136,7 +136,8 @@ When `GITHUB_REPO` is provided, stacktrace references like `at org.example.Test.
 When a configuration file is provided and `show-coverage-links` is enabled, the report includes:
 - **📊 Coverage Icon**: Next to each test class name, linking to the corresponding source class coverage report
 - **Smart Mapping**: Automatically removes test class suffix (e.g., "ExpressionHelperTest" → "ExpressionHelper")
-- **Module Mapping**: Maps test modules to source modules based on configuration
+- **JaCoCo Aggregate Structure**: Links point directly to the JaCoCo aggregate report structure without module names (e.g., `/coverage/org/sandbox/...` not `/coverage/sandbox_module/org/sandbox/...`)
+- **Filtered Display**: Coverage links only appear for source packages (e.g., `org.sandbox.*`), not for test-only packages (e.g., `org.eclipse.jdt.ui.tests.*`)
 - **Navigation**: Header and footer links to coverage reports and test report index
 
 ### In GitHub Actions Workflow
