@@ -25,6 +25,7 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.NullLiteral;
 import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
@@ -157,8 +158,9 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 		
 		// Add throwable argument if present (at position 4) and not null
 		ASTNode throwableArg= arguments.get(4);
-		ASTNode codeArg= arguments.get(2);
-		if (!throwableArg.toString().equals("null") && codeArg.toString().equals("IStatus.OK")) { //$NON-NLS-1$ //$NON-NLS-2$
+		// Add the exception parameter if it's not a null literal
+		// The code argument (position 2) was already validated as IStatus.OK in the find() method
+		if (!(throwableArg instanceof NullLiteral)) {
 			staticCallArguments.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(throwableArg)));
 		}
 		
