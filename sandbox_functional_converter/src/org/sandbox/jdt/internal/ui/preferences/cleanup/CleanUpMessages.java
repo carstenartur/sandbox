@@ -25,6 +25,18 @@ public class CleanUpMessages {
 	public static String JavaFeatureTabPage_TargetFormat_Stream;
 	public static String JavaFeatureTabPage_TargetFormat_ForLoop;
 	public static String JavaFeatureTabPage_TargetFormat_WhileLoop;
+	
+	// Bidirectional Loop Conversion (Phase 9)
+	public static String LoopConversion_GroupName;
+	public static String LoopConversion_Enable;
+	public static String LoopConversion_TargetFormat;
+	public static String LoopConversion_TargetFormat_Stream;
+	public static String LoopConversion_TargetFormat_EnhancedFor;
+	public static String LoopConversion_TargetFormat_IteratorWhile;
+	public static String LoopConversion_From_EnhancedFor;
+	public static String LoopConversion_From_IteratorWhile;
+	public static String LoopConversion_From_Stream;
+	public static String LoopConversion_From_ClassicFor;
 
 	static {
 		// initialize resource bundle

@@ -233,6 +233,78 @@ public class MYCleanUpConstants {
 	 */
 	public static final String USEFUNCTIONALLOOP_FORMAT_WHILE= "cleanup.functionalloop.format.while"; //$NON-NLS-1$
 
+	// ============================================================
+	// Bidirectional Loop Conversion Constants (Phase 9)
+	// ============================================================
+	
+	/**
+	 * Master switch for bidirectional loop conversions.
+	 * When enabled, allows converting between different loop representations
+	 * (Stream, Enhanced-for, Iterator-while) based on target format and source selections.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 * <p>
+	 * @see CleanUpOptionsCore#TRUE
+	 * @see CleanUpOptionsCore#FALSE
+	 */
+	public static final String LOOP_CONVERSION_ENABLED = "cleanup.loop_conversion.enabled"; //$NON-NLS-1$
+
+	/**
+	 * Target format for bidirectional loop conversions.
+	 * Specifies the desired output format for all enabled source formats.
+	 * <p>
+	 * Possible values: "stream", "enhanced_for", "iterator_while"
+	 * <p>
+	 * Default: "stream"
+	 */
+	public static final String LOOP_CONVERSION_TARGET_FORMAT = "cleanup.loop_conversion.target_format"; //$NON-NLS-1$
+
+	/**
+	 * Enable conversion FROM enhanced for-loops.
+	 * When enabled, enhanced for-loops will be converted to the target format.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 * <p>
+	 * @see CleanUpOptionsCore#TRUE
+	 * @see CleanUpOptionsCore#FALSE
+	 */
+	public static final String LOOP_CONVERSION_FROM_ENHANCED_FOR = "cleanup.loop_conversion.from.enhanced_for"; //$NON-NLS-1$
+
+	/**
+	 * Enable conversion FROM iterator while-loops.
+	 * When enabled, iterator-based while-loops will be converted to the target format.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 * <p>
+	 * @see CleanUpOptionsCore#TRUE
+	 * @see CleanUpOptionsCore#FALSE
+	 */
+	public static final String LOOP_CONVERSION_FROM_ITERATOR_WHILE = "cleanup.loop_conversion.from.iterator_while"; //$NON-NLS-1$
+
+	/**
+	 * Enable conversion FROM stream expressions.
+	 * When enabled, stream forEach expressions will be converted to the target format.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 * <p>
+	 * @see CleanUpOptionsCore#TRUE
+	 * @see CleanUpOptionsCore#FALSE
+	 */
+	public static final String LOOP_CONVERSION_FROM_STREAM = "cleanup.loop_conversion.from.stream"; //$NON-NLS-1$
+
+	/**
+	 * Enable conversion FROM classic index-based for-loops (experimental).
+	 * When enabled, classic for-loops will be converted to the target format.
+	 * <p>
+	 * Note: This is an experimental feature for future implementation.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 * <p>
+	 * @see CleanUpOptionsCore#TRUE
+	 * @see CleanUpOptionsCore#FALSE
+	 */
+	public static final String LOOP_CONVERSION_FROM_CLASSIC_FOR = "cleanup.loop_conversion.from.classic_for"; //$NON-NLS-1$
+
 	/**
 	 *
 	 */
