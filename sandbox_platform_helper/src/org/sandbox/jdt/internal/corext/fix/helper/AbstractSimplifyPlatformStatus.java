@@ -144,6 +144,10 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 		staticCall.setExpression(statusName);
 		staticCall.setName(ast.newSimpleName(methodName));
 		
+		// Add IStatus import explicitly - the variable declaration still uses IStatus type
+		// even though IStatus.WARNING/IStatus.OK references are removed by the transformation
+		addImport("org.eclipse.core.runtime.IStatus", cuRewrite, ast);
+		
 		List<ASTNode> arguments= visited.arguments();
 		List<ASTNode> staticCallArguments= staticCall.arguments();
 		
