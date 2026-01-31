@@ -139,14 +139,14 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 		/**
 		 * Create call to Status.warning(), Status.error(), or Status.info()
 		 */
+		// Add imports in alphabetical order to match expected test output
+		// IStatus comes before Status alphabetically
+		addImport("org.eclipse.core.runtime.IStatus", cuRewrite, ast);
+		
 		MethodInvocation staticCall= ast.newMethodInvocation();
 		Name statusName= addImport(Status.class.getName(), cuRewrite, ast);
 		staticCall.setExpression(statusName);
 		staticCall.setName(ast.newSimpleName(methodName));
-		
-		// Add IStatus import explicitly - the variable declaration still uses IStatus type
-		// even though IStatus.WARNING/IStatus.OK references are removed by the transformation
-		addImport("org.eclipse.core.runtime.IStatus", cuRewrite, ast);
 		
 		List<ASTNode> arguments= visited.arguments();
 		List<ASTNode> staticCallArguments= staticCall.arguments();
