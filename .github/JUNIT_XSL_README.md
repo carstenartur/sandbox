@@ -137,8 +137,16 @@ When a configuration file is provided and `show-coverage-links` is enabled, the 
 - **📊 Coverage Icon**: Next to each test class name, linking to the corresponding source class coverage report
 - **Smart Mapping**: Automatically removes test class suffix (e.g., "ExpressionHelperTest" → "ExpressionHelper")
 - **JaCoCo Aggregate Structure**: Links point directly to the JaCoCo aggregate report structure without module names (e.g., `/coverage/org/sandbox/...` not `/coverage/sandbox_module/org/sandbox/...`)
-- **Filtered Display**: Coverage links only appear for source packages (e.g., `org.sandbox.*`), not for test-only packages (e.g., `org.eclipse.jdt.ui.tests.*`)
+- **Universal Display**: Coverage links appear for all test classes when a test module is available
 - **Navigation**: Header and footer links to coverage reports and test report index
+
+### GitHub Test Source Links
+
+When a repository URL is configured, the report includes:
+- **🔗 GitHub Source Icon**: Next to each test class name, linking to the test source code in the GitHub repository
+- **Direct Navigation**: Links point directly to the test class file (e.g., `https://github.com/owner/repo/blob/main/module_test/src/org/example/TestClass.java`)
+- **Opens in New Tab**: Source links open in a new browser tab for easy code review
+- **Contextual Help**: Hover tooltip shows the test class name for confirmation
 
 ### In GitHub Actions Workflow
 
