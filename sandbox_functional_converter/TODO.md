@@ -444,6 +444,8 @@ The original Phase 9 target format selection using radio buttons (`USEFUNCTIONAL
 
 #### Backward Compatibility
 
+The legacy radio-button based target format selection remains supported in existing cleanup preferences so that current workspaces, exported preferences, and headless builds keep their behavior unchanged. V1 configuration keys and behavior are preserved; V2 bidirectional transformations are opt-in and must not alter the output for users who have not enabled the new options.
+
 ### Issue #453: Output-Format Alignment und vollständigen Support für 'collect'-Pattern ✅ PARTIALLY COMPLETE (January 2026)
 
 **Objective**: Optimize V2 renderer to produce idiomatic, modern Java code for collect-loops

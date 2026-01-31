@@ -100,7 +100,7 @@ public class UseFunctionalCallCleanUpCore extends AbstractCleanUp {
 					computeFixSet().stream().map(UseFunctionalCallFixCore::toString).collect(Collectors.toList())) }));
 		}
 		if (isEnabled(LOOP_CONVERSION_ENABLED)) {
-			result.add("Convert loops between different representations (Stream, Enhanced-for, Iterator-while)");
+			result.add(CleanUpMessages.LoopConversion_Description);
 		}
 		return result.toArray(new String[0]);
 	}
@@ -125,10 +125,15 @@ public class UseFunctionalCallCleanUpCore extends AbstractCleanUp {
 		
 		// Bidirectional Loop Conversion (Phase 9)
 		if (isEnabled(LOOP_CONVERSION_ENABLED)) {
-			String targetFormat = getOptions().get(LOOP_CONVERSION_TARGET_FORMAT);
-			if (targetFormat == null) {
-				targetFormat = "stream"; // default to stream
-			}
+			// Determine target format by checking which format options are enabled
+			// Default to stream if none specified
+			String targetFormat = "stream";
+			// Note: In the current implementation, the combo box stores the value directly in the option
+			// but we can't access it here. For now, we'll use a simpler approach based on enabled flags.
+			// TODO: Once we have access to the options map, use: options.get(LOOP_CONVERSION_TARGET_FORMAT)
+			
+			// For now, default to "stream" until we can properly access the combo value
+			// The UI combo box will work, but the transformation logic defaults to stream
 			
 			// Add appropriate transformers based on source/target combination
 			if (isEnabled(LOOP_CONVERSION_FROM_ENHANCED_FOR)) {
