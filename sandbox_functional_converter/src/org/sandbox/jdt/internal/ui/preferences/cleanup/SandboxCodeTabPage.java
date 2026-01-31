@@ -92,14 +92,13 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 			CleanUpMessages.LoopConversion_From_ClassicFor, MYCleanUpConstants.LOOP_CONVERSION_FROM_CLASSIC_FOR, FALSE_TRUE);
 		
 		// Register dependencies: enable/disable based on master checkbox
-		// Note: registerSlavePreference requires specific types, so we register each type separately
+		// Note: registerSlavePreference only supports specific preference types (CheckboxPreference, RadioPreference)
+		// ComboPreference needs to be registered independently
 		registerSlavePreference(loopConversionEnabled, new CheckboxPreference[] {
 			fromEnhancedFor, fromIteratorWhile, fromStream, fromClassicFor
 		});
-		registerSlavePreference(loopConversionEnabled, new ComboPreference[] {
-			targetFormat
-		});
 		
 		registerPreference(loopConversionEnabled);
+		registerPreference(targetFormat);
 	}
 }
