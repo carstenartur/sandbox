@@ -60,9 +60,7 @@ public enum UseFunctionalCallFixCore {
 	// Activated January 2026 - Phase 7: Iterator pattern support
 	ITERATOR_LOOP(new IteratorLoopToFunctional()),
 	
-	// ============================================================
 	// Bidirectional Loop Transformation Support (Phase 9)
-	// ============================================================
 	// New enum values for bidirectional loop transformations
 	// Related issues: https://github.com/carstenartur/sandbox/issues/453
 	//                 https://github.com/carstenartur/sandbox/issues/549

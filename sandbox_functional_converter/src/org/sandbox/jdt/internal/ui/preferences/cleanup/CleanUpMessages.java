@@ -37,6 +37,7 @@ public class CleanUpMessages {
 	public static String LoopConversion_From_IteratorWhile;
 	public static String LoopConversion_From_Stream;
 	public static String LoopConversion_From_ClassicFor;
+	public static String LoopConversion_Description;
 
 	static {
 		// initialize resource bundle

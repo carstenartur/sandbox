@@ -62,9 +62,7 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 		
 		registerPreference(functional_call);
 		
-		// ============================================================
 		// Bidirectional Loop Conversion (Phase 9)
-		// ============================================================
 		Group loopConversionGroup = createGroup(numColumns, composite, CleanUpMessages.LoopConversion_GroupName);
 		
 		// Master checkbox to enable loop conversions
@@ -94,8 +92,12 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 			CleanUpMessages.LoopConversion_From_ClassicFor, MYCleanUpConstants.LOOP_CONVERSION_FROM_CLASSIC_FOR, FALSE_TRUE);
 		
 		// Register dependencies: enable/disable based on master checkbox
-		registerSlavePreference(loopConversionEnabled, new Preference[] {
-			targetFormat, fromEnhancedFor, fromIteratorWhile, fromStream, fromClassicFor
+		// Note: registerSlavePreference requires specific types, so we register each type separately
+		registerSlavePreference(loopConversionEnabled, new CheckboxPreference[] {
+			fromEnhancedFor, fromIteratorWhile, fromStream, fromClassicFor
+		});
+		registerSlavePreference(loopConversionEnabled, new ComboPreference[] {
+			targetFormat
 		});
 		
 		registerPreference(loopConversionEnabled);

@@ -233,9 +233,7 @@ public class MYCleanUpConstants {
 	 */
 	public static final String USEFUNCTIONALLOOP_FORMAT_WHILE= "cleanup.functionalloop.format.while"; //$NON-NLS-1$
 
-	// ============================================================
 	// Bidirectional Loop Conversion Constants (Phase 9)
-	// ============================================================
 	
 	/**
 	 * Master switch for bidirectional loop conversions.
