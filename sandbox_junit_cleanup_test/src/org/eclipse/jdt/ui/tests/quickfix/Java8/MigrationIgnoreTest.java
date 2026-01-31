@@ -168,4 +168,41 @@ public class MigrationIgnoreTest {
 				"""
 		}, null);
 	}
+
+	@Test
+	public void migrates_ignore_with_explicit_value_attribute() throws CoreException {
+		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
+				"""
+				package test;
+				import org.junit.Ignore;
+				import org.junit.Test;
+				
+				public class MyTest {
+					@Ignore(value = "explicit value attribute")
+					@Test
+					public void ignoredTestWithExplicitValue() {
+					}
+				}
+				""", false, null);
+
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_IGNORE);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
+
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+				"""
+				package test;
+				import org.junit.jupiter.api.Disabled;
+				import org.junit.jupiter.api.Test;
+				
+				public class MyTest {
+					@Disabled("explicit value attribute")
+					@Test
+					public void ignoredTestWithExplicitValue() {
+					}
+				}
+				"""
+		}, null);
+	}
 }

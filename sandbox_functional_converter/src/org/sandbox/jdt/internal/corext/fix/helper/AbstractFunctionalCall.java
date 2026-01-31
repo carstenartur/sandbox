@@ -15,10 +15,9 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.Set;
 
-import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
@@ -32,23 +31,7 @@ public abstract class AbstractFunctionalCall<T extends ASTNode> {
 	public abstract void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed);
 
 	public abstract void rewrite(UseFunctionalCallFixCore useExplicitEncodingFixCore, T visited, CompilationUnitRewrite cuRewrite,
-			TextEditGroup group);
-
-	/**
-	 * Adds an import to the class. This method should be used for every class reference added to
-	 * the generated code.
-	 *
-	 * @param typeName a fully qualified name of a type
-	 * @param cuRewrite CompilationUnitRewrite
-	 * @param ast AST
-	 * @return simple name of a class if the import was added and fully qualified name if there was
-	 *         a conflict
-	 */
-	protected Name addImport(String typeName, final CompilationUnitRewrite cuRewrite, AST ast) {
-		String importedName= cuRewrite.getImportRewrite().addImport(typeName);
-		return ast.newName(importedName);
-	}
-
+			TextEditGroup group, org.sandbox.jdt.internal.common.ReferenceHolder<ASTNode, Object> data) throws CoreException;
 
 	public abstract String getPreview(boolean afterRefactoring);
 }

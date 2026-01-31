@@ -70,6 +70,149 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	 *
 	 */
 	public static final String PARAMTYPENAMES = "paramtypenames"; //$NON-NLS-1$
+	/**
+	 * Key used for matching the operator of expressions (for example,
+	 * {@link Assignment} and {@link InfixExpression}) when filtering nodes by
+	 * operator type.
+	 */
+	public static final String OPERATOR = "operator"; //$NON-NLS-1$
+	/**
+	 * Key used for matching the (fully qualified) name of a type associated with
+	 * a node when building or evaluating visitor predicates.
+	 */
+	public static final String TYPENAME = "typename"; //$NON-NLS-1$
+	/**
+	 * Key used for matching the type of an exception in constructs such as
+	 * {@code throws} declarations or {@link CatchClause} nodes.
+	 */
+	public static final String EXCEPTIONTYPE = "exceptiontype"; //$NON-NLS-1$
+
+	/**
+	 * Creates a fluent builder for visiting annotations of all types.
+	 * 
+	 * <p>This method matches <b>all annotation types</b> regardless of whether they have parameters:</p>
+	 * <ul>
+	 * <li>{@code MarkerAnnotation} - annotations without parameters (e.g., {@code @Override})</li>
+	 * <li>{@code SingleMemberAnnotation} - annotations with a single value (e.g., {@code @SuppressWarnings("unchecked")})</li>
+	 * <li>{@code NormalAnnotation} - annotations with named parameters (e.g., {@code @RequestMapping(path="/api", method=GET)})</li>
+	 * </ul>
+	 * 
+	 * <p><b>Note:</b> This differs from the underlying {@code callMarkerAnnotationVisitor()} method, 
+	 * which only matches {@code MarkerAnnotation} nodes. This fluent API provides a more intuitive 
+	 * interface by automatically handling all annotation types.</p>
+	 * 
+	 * <p><b>Example:</b></p>
+	 * <pre>
+	 * // Matches @Deprecated (MarkerAnnotation), @SuppressWarnings("unchecked") (SingleMemberAnnotation), etc.
+	 * HelperVisitor.forAnnotation("java.lang.Deprecated")
+	 *     .in(compilationUnit)
+	 *     .excluding(nodesprocessed)
+	 *     .processEach((node, holder) -&gt; {
+	 *         processNode(node, holder);
+	 *         return true;
+	 *     });
+	 * </pre>
+	 * 
+	 * @param annotationFQN the fully qualified name of the annotation to find
+	 * @return a fluent builder for annotation visitors that matches all annotation types
+	 * @since 1.15
+	 */
+	public static AnnotationVisitorBuilder forAnnotation(String annotationFQN) {
+		return new AnnotationVisitorBuilder(annotationFQN);
+	}
+
+	/**
+	 * Creates a fluent builder for visiting multiple method invocations.
+	 * 
+	 * <p><b>Example:</b></p>
+	 * <pre>
+	 * HelperVisitor.forMethodCalls("org.junit.Assert", ALL_ASSERTION_METHODS)
+	 *     .andStaticImports()
+	 *     .andImportsOf("org.junit.Assert")
+	 *     .in(compilationUnit)
+	 *     .excluding(nodesprocessed)
+	 *     .processEach((node, holder) -&gt; {
+	 *         processNode(node, holder);
+	 *         return true;
+	 *     });
+	 * </pre>
+	 * 
+	 * @param typeFQN the fully qualified name of the type containing the methods
+	 * @param methodNames the set of method names to find
+	 * @return a fluent builder for method invocation visitors
+	 * @since 1.15
+	 */
+	public static MethodCallVisitorBuilder forMethodCalls(String typeFQN, Set<String> methodNames) {
+		return new MethodCallVisitorBuilder(typeFQN, methodNames);
+	}
+
+	/**
+	 * Creates a fluent builder for visiting a single method invocation.
+	 * 
+	 * <p><b>Example:</b></p>
+	 * <pre>
+	 * HelperVisitor.forMethodCall("org.junit.Assert", "assertTrue")
+	 *     .in(compilationUnit)
+	 *     .excluding(nodesprocessed)
+	 *     .processEach((node, holder) -&gt; {
+	 *         processNode(node, holder);
+	 *         return true;
+	 *     });
+	 * </pre>
+	 * 
+	 * @param typeFQN the fully qualified name of the type containing the method
+	 * @param methodName the method name to find
+	 * @return a fluent builder for method invocation visitors
+	 * @since 1.15
+	 */
+	public static MethodCallVisitorBuilder forMethodCall(String typeFQN, String methodName) {
+		return new MethodCallVisitorBuilder(typeFQN, Set.of(methodName));
+	}
+
+	/**
+	 * Creates a fluent builder for visiting field declarations.
+	 * 
+	 * <p><b>Example:</b></p>
+	 * <pre>
+	 * HelperVisitor.forField()
+	 *     .withAnnotation("org.junit.Rule")
+	 *     .ofType("org.junit.rules.TemporaryFolder")
+	 *     .in(compilationUnit)
+	 *     .excluding(nodesprocessed)
+	 *     .processEach((node, holder) -&gt; {
+	 *         processNode(node, holder);
+	 *         return true;
+	 *     });
+	 * </pre>
+	 * 
+	 * @return a fluent builder for field declaration visitors
+	 * @since 1.15
+	 */
+	public static FieldVisitorBuilder forField() {
+		return new FieldVisitorBuilder();
+	}
+
+	/**
+	 * Creates a fluent builder for visiting import declarations.
+	 * 
+	 * <p><b>Example:</b></p>
+	 * <pre>
+	 * HelperVisitor.forImport("org.junit.Assert")
+	 *     .in(compilationUnit)
+	 *     .excluding(nodesprocessed)
+	 *     .processEach((node, holder) -&gt; {
+	 *         processNode(node, holder);
+	 *         return true;
+	 *     });
+	 * </pre>
+	 * 
+	 * @param importFQN the fully qualified name of the import to find
+	 * @return a fluent builder for import declaration visitors
+	 * @since 1.15
+	 */
+	public static ImportVisitorBuilder forImport(String importFQN) {
+		return new ImportVisitorBuilder(importFQN);
+	}
 
 	ASTVisitor astvisitor;
 

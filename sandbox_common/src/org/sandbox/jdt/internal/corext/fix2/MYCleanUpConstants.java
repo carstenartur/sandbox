@@ -105,9 +105,17 @@ public class MYCleanUpConstants {
 	 */
 	public static final String JUNIT_CLEANUP_4_ASSERT= "cleanup.junitcleanup_4_assert"; //$NON-NLS-1$
 	/**
+	 * Optimization of assertTrue/assertFalse to more specific assertions
+	 */
+	public static final String JUNIT_CLEANUP_4_ASSERT_OPTIMIZATION= "cleanup.junitcleanup_4_assert_optimization"; //$NON-NLS-1$
+	/**
 	 * 
 	 */
 	public static final String JUNIT_CLEANUP_4_ASSUME= "cleanup.junitcleanup_4_assume"; //$NON-NLS-1$
+	/**
+	 * Optimization of assumeTrue/assumeFalse to more specific assumptions
+	 */
+	public static final String JUNIT_CLEANUP_4_ASSUME_OPTIMIZATION= "cleanup.junitcleanup_4_assume_optimization"; //$NON-NLS-1$
 	/**
 	 * 
 	 */
@@ -132,6 +140,14 @@ public class MYCleanUpConstants {
 	 * 
 	 */
 	public static final String JUNIT_CLEANUP_4_IGNORE= "cleanup.junitcleanup_4_ignore"; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_CATEGORY= "cleanup.junitcleanup_4_category"; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_FIX_METHOD_ORDER= "cleanup.junitcleanup_4_fix_method_order"; //$NON-NLS-1$
 	/**
 	 * 
 	 */
@@ -161,6 +177,31 @@ public class MYCleanUpConstants {
 	 */
 	public static final String JUNIT_CLEANUP_4_RUNWITH= "cleanup.junitcleanup_4_runwith"; //$NON-NLS-1$
 	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_TEST_TIMEOUT= "cleanup.junitcleanup_4_test_timeout"; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_TEST_EXPECTED= "cleanup.junitcleanup_4_test_expected"; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_PARAMETERIZED= "cleanup.junitcleanup_4_parameterized"; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String JUNIT_CLEANUP_4_RULETIMEOUT= "cleanup.junitcleanup_4_ruletimeout"; //$NON-NLS-1$
+	/**
+	 * Migrate JUnit 4 @Rule ErrorCollector to JUnit 5 assertAll() pattern
+	 */
+	public static final String JUNIT_CLEANUP_4_RULEERRORCOLLECTOR= "cleanup.junitcleanup_4_ruleerrorcollector"; //$NON-NLS-1$
+	/**
+	 * Find and fix "lost" JUnit 3 tests that were not properly migrated
+	 * (methods starting with "test" but missing @Test annotation)
+	 */
+	public static final String JUNIT_CLEANUP_4_LOST_TESTS= "cleanup.junitcleanup_4_lost_tests"; //$NON-NLS-1$
+	/**
 	 *
 	 */
 	public static final String JFACE_CLEANUP= "cleanup.jfacecleanup"; //$NON-NLS-1$
@@ -169,6 +210,28 @@ public class MYCleanUpConstants {
 	 *
 	 */
 	public static final String USEFUNCTIONALLOOP_CLEANUP= "cleanup.functionalloop"; //$NON-NLS-1$
+
+	/**
+	 * NEU: V2 Konstante für parallele Implementierung (ULR-basiert)
+	 * 
+	 * @see <a href="https://github.com/carstenartur/sandbox/issues/450">Issue #450</a>
+	 */
+	public static final String USEFUNCTIONALLOOP_CLEANUP_V2= "cleanup.use_functional_loop_v2"; //$NON-NLS-1$
+
+	/**
+	 * Target format for loop conversions: Stream (default)
+	 */
+	public static final String USEFUNCTIONALLOOP_FORMAT_STREAM= "cleanup.functionalloop.format.stream"; //$NON-NLS-1$
+
+	/**
+	 * Target format for loop conversions: For-loop
+	 */
+	public static final String USEFUNCTIONALLOOP_FORMAT_FOR= "cleanup.functionalloop.format.for"; //$NON-NLS-1$
+
+	/**
+	 * Target format for loop conversions: While-loop
+	 */
+	public static final String USEFUNCTIONALLOOP_FORMAT_WHILE= "cleanup.functionalloop.format.while"; //$NON-NLS-1$
 
 	/**
 	 *
@@ -185,4 +248,18 @@ public class MYCleanUpConstants {
 	 * @see CleanUpOptionsCore#FALSE
 	 */
 	public static final String METHOD_REUSE_INLINE_SEQUENCES= "cleanup.method_reuse_inline_sequences"; //$NON-NLS-1$
+
+	/**
+	 * Enable string simplification cleanup using TriggerPattern hints.
+	 * <p>
+	 * Simplifies patterns like {@code "" + x} and {@code x + ""} to {@code String.valueOf(x)}.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 * <p>
+	 *
+	 * @see CleanUpOptionsCore#TRUE
+	 * @see CleanUpOptionsCore#FALSE
+	 * @since 1.2.2
+	 */
+	public static final String TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP= "cleanup.string_simplification"; //$NON-NLS-1$
 }

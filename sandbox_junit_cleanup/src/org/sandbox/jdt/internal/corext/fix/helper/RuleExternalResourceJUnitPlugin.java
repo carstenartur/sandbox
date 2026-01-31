@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
+
 /*-
  * #%L
  * Sandbox junit cleanup
@@ -49,8 +51,8 @@ import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
-
-import static org.sandbox.jdt.internal.corext.fix.helper.JUnitConstants.*;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 /**
  * Plugin to migrate JUnit 4 ExternalResource rules to JUnit 5 extensions.
@@ -61,12 +63,22 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder= new ReferenceHolder<>();
-		HelperVisitor.callFieldDeclarationVisitor(ORG_JUNIT_RULE, ORG_JUNIT_RULES_EXTERNAL_RESOURCE, compilationUnit,
-				dataHolder, nodesprocessed,
-				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
-		HelperVisitor.callFieldDeclarationVisitor(ORG_JUNIT_CLASS_RULE, ORG_JUNIT_RULES_EXTERNAL_RESOURCE,
-				compilationUnit, dataHolder, nodesprocessed,
-				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+		
+		// Find @Rule fields with ExternalResource type
+		HelperVisitor.forField()
+			.withAnnotation(ORG_JUNIT_RULE)
+			.ofType(ORG_JUNIT_RULES_EXTERNAL_RESOURCE)
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(dataHolder, (visited, aholder) -> processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));
+		
+		// Find @ClassRule fields with ExternalResource type
+		HelperVisitor.forField()
+			.withAnnotation(ORG_JUNIT_CLASS_RULE)
+			.ofType(ORG_JUNIT_RULES_EXTERNAL_RESOURCE)
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(dataHolder, (visited, aholder) -> processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
@@ -78,15 +90,16 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 		if (
 		(binding == null) || ORG_JUNIT_RULES_TEST_NAME.equals(binding.getQualifiedName())
 				|| ORG_JUNIT_RULES_TEMPORARY_FOLDER.equals(binding.getQualifiedName())) {
-			return false;
+			return true; // Continue processing other fields
 		}
 		mh.minv= node;
 		dataHolder.put(dataHolder.size(), mh);
 		operations.add(fixcore.rewrite(dataHolder));
-		return false;
+		// Return true to continue processing other fields
+		return true;
 	}
 
-	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
 		FieldDeclaration fieldDeclaration= junitHolder.getFieldDeclaration();
 		boolean fieldStatic= isFieldAnnotatedWith(fieldDeclaration, ORG_JUNIT_CLASS_RULE);

@@ -26,12 +26,35 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.fix.helper.AbstractFunctionalCall;
+import org.sandbox.jdt.internal.corext.fix.helper.ConsecutiveLoopGroupDetector.ConsecutiveLoopGroup;
+import org.sandbox.jdt.internal.corext.fix.helper.IteratorLoopToFunctional;
 import org.sandbox.jdt.internal.corext.fix.helper.LoopToFunctional;
+import org.sandbox.jdt.internal.corext.fix.helper.LoopToFunctionalV2;
+import org.sandbox.jdt.internal.corext.fix.helper.StreamConcatRefactorer;
 import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
 public enum UseFunctionalCallFixCore {
 
-	LOOP(new LoopToFunctional());
+	LOOP(new LoopToFunctional()),
+	// V2 - ULR-based implementation running in parallel to LOOP (V1).
+	// Phase 1 uses a delegation pattern: LOOP_V2 delegates to the existing implementation
+	// to maintain feature parity while introducing the new ULR infrastructure.
+	// Roadmap for future ULR phases:
+	//   - Phase 2: Gradually switch individual loop patterns to ULR-native implementations.
+	//   - Phase 3: Make ULR the primary implementation and retire legacy paths once stable.
+	// Documentation note (per coding guidelines):
+	// sandbox_functional_converter/ARCHITECTURE.md and sandbox_functional_converter/TODO.md
+	// have been reviewed and updated to describe:
+	//   (1) the V2 parallel implementation strategy,
+	//   (2) the Phase 1 delegation pattern,
+	//   (3) the roadmap for future ULR implementation phases.
+	// Related issues: https://github.com/carstenartur/sandbox/issues/450
+	//                 https://github.com/carstenartur/sandbox/issues/453
+	LOOP_V2(new LoopToFunctionalV2()),
+	// ITERATOR_LOOP - Iterator-based loop conversion (from PR #449)
+	// Converts while-iterator and for-loop-iterator patterns to stream operations.
+	// Activated January 2026 - Phase 7: Iterator pattern support
+	ITERATOR_LOOP(new IteratorLoopToFunctional());
 
 	AbstractFunctionalCall<ASTNode> functionalcall;
 
@@ -54,13 +77,48 @@ public enum UseFunctionalCallFixCore {
 		functionalcall.find(this, compilationUnit, operations, nodesprocessed);
 	}
 
-	public CompilationUnitRewriteOperation rewrite(final ASTNode visited) {
+	public CompilationUnitRewriteOperation rewrite(final ASTNode visited, final org.sandbox.jdt.internal.common.ReferenceHolder<ASTNode, Object> data) {
 		return new CompilationUnitRewriteOperation() {
 			@Override
 			public void rewriteAST(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel) throws CoreException {
 				TextEditGroup group= createTextEditGroup(Messages.format(MultiFixMessages.FunctionalCallCleanUp_description,new Object[] {UseFunctionalCallFixCore.this.toString()}), cuRewrite);
 				cuRewrite.getASTRewrite().setTargetSourceRangeComputer(computer);
-				functionalcall.rewrite(UseFunctionalCallFixCore.this, visited, cuRewrite, group);
+				functionalcall.rewrite(UseFunctionalCallFixCore.this, visited, cuRewrite, group, data);
+			}
+		};
+	}
+
+	/**
+	 * Creates a rewrite operation for a group of consecutive loops that should be
+	 * converted to Stream.concat().
+	 * 
+	 * <p>Phase 8 feature: Multiple consecutive for-loops adding to the same list
+	 * are converted to Stream.concat() instead of being converted individually.</p>
+	 * 
+	 * @param group the group of consecutive loops
+	 * @return the rewrite operation for the group
+	 */
+	public CompilationUnitRewriteOperation rewriteConsecutiveLoops(final ConsecutiveLoopGroup group) {
+		return new CompilationUnitRewriteOperation() {
+			@Override
+			public void rewriteAST(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel) throws CoreException {
+				TextEditGroup editGroup = createTextEditGroup(
+					Messages.format(MultiFixMessages.FunctionalCallCleanUp_description,
+						new Object[] { "Stream.concat() for consecutive loops" }),
+					cuRewrite);
+				cuRewrite.getASTRewrite().setTargetSourceRangeComputer(computer);
+				
+				// Create and execute the StreamConcatRefactorer
+				StreamConcatRefactorer refactorer = new StreamConcatRefactorer(
+					group, 
+					cuRewrite.getASTRewrite(), 
+					editGroup, 
+					cuRewrite
+				);
+				
+				if (refactorer.canRefactor()) {
+					refactorer.refactor();
+				}
 			}
 		};
 	}

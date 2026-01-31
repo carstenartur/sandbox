@@ -1294,6 +1294,170 @@ public final class AstProcessorBuilder<V, T> {
 		return this;
 	}
 
+	// ========== Convenience Methods for Common Patterns ==========
+
+	/**
+	 * Registers a visitor for IfStatement nodes that have no else branch.
+	 * This is a convenience method for a common pattern.
+	 *
+	 * @param predicate the predicate to test and process matching nodes
+	 * @return this builder for method chaining
+	 */
+	public AstProcessorBuilder<V, T> onIfStatementWithoutElse(BiPredicate<IfStatement, ReferenceHolder<V, T>> predicate) {
+		return onIfStatement((node, holder) -> {
+			if (node.getElseStatement() == null) {
+				return predicate.test(node, holder);
+			}
+			return true;
+		});
+	}
+
+	/**
+	 * Registers a visitor for IfStatement nodes that have an else branch.
+	 *
+	 * @param predicate the predicate to test and process matching nodes
+	 * @return this builder for method chaining
+	 */
+	public AstProcessorBuilder<V, T> onIfStatementWithElse(BiPredicate<IfStatement, ReferenceHolder<V, T>> predicate) {
+		return onIfStatement((node, holder) -> {
+			if (node.getElseStatement() != null) {
+				return predicate.test(node, holder);
+			}
+			return true;
+		});
+	}
+
+	/**
+	 * Registers a visitor for Assignment nodes with a compound operator (+=, -=, *=, etc.).
+	 * Excludes simple assignment (=).
+	 *
+	 * @param predicate the predicate to test and process matching nodes
+	 * @return this builder for method chaining
+	 */
+	public AstProcessorBuilder<V, T> onCompoundAssignment(BiPredicate<Assignment, ReferenceHolder<V, T>> predicate) {
+		return onAssignment((node, holder) -> {
+			if (node.getOperator() != Assignment.Operator.ASSIGN) {
+				return predicate.test(node, holder);
+			}
+			return true;
+		});
+	}
+
+	/**
+	 * Registers a visitor for Assignment nodes with a specific operator.
+	 *
+	 * @param operator the operator to match
+	 * @param predicate the predicate to test and process matching nodes
+	 * @return this builder for method chaining
+	 */
+	public AstProcessorBuilder<V, T> onAssignmentWithOperator(Assignment.Operator operator, BiPredicate<Assignment, ReferenceHolder<V, T>> predicate) {
+		return onAssignment((node, holder) -> {
+			if (node.getOperator() == operator) {
+				return predicate.test(node, holder);
+			}
+			return true;
+		});
+	}
+
+	/**
+	 * Registers a visitor for PostfixExpression nodes with increment (i++) or decrement (i--).
+	 *
+	 * @param predicate the predicate to test and process matching nodes
+	 * @return this builder for method chaining
+	 */
+	public AstProcessorBuilder<V, T> onPostfixIncrementOrDecrement(BiPredicate<PostfixExpression, ReferenceHolder<V, T>> predicate) {
+		return onPostfixExpression((node, holder) -> {
+			if (node.getOperator() == PostfixExpression.Operator.INCREMENT
+					|| node.getOperator() == PostfixExpression.Operator.DECREMENT) {
+				return predicate.test(node, holder);
+			}
+			return true;
+		});
+	}
+
+	/**
+	 * Registers a visitor for PrefixExpression nodes with increment (++i) or decrement (--i).
+	 *
+	 * @param predicate the predicate to test and process matching nodes
+	 * @return this builder for method chaining
+	 */
+	public AstProcessorBuilder<V, T> onPrefixIncrementOrDecrement(BiPredicate<PrefixExpression, ReferenceHolder<V, T>> predicate) {
+		return onPrefixExpression((node, holder) -> {
+			if (node.getOperator() == PrefixExpression.Operator.INCREMENT
+					|| node.getOperator() == PrefixExpression.Operator.DECREMENT) {
+				return predicate.test(node, holder);
+			}
+			return true;
+		});
+	}
+
+	/**
+	 * Registers a visitor for ContinueStatement nodes without a label.
+	 *
+	 * @param predicate the predicate to test and process matching nodes
+	 * @return this builder for method chaining
+	 */
+	public AstProcessorBuilder<V, T> onUnlabeledContinue(BiPredicate<ContinueStatement, ReferenceHolder<V, T>> predicate) {
+		return onContinueStatement((node, holder) -> {
+			if (node.getLabel() == null) {
+				return predicate.test(node, holder);
+			}
+			return true;
+		});
+	}
+
+	/**
+	 * Registers a visitor for ContinueStatement nodes with a label.
+	 *
+	 * @param predicate the predicate to test and process matching nodes
+	 * @return this builder for method chaining
+	 */
+	public AstProcessorBuilder<V, T> onLabeledContinue(BiPredicate<ContinueStatement, ReferenceHolder<V, T>> predicate) {
+		return onContinueStatement((node, holder) -> {
+			if (node.getLabel() != null) {
+				return predicate.test(node, holder);
+			}
+			return true;
+		});
+	}
+
+	/**
+	 * Registers a visitor for ReturnStatement nodes that return a BooleanLiteral.
+	 *
+	 * @param predicate the predicate to test and process matching nodes
+	 * @return this builder for method chaining
+	 */
+	public AstProcessorBuilder<V, T> onReturnBoolean(BiPredicate<ReturnStatement, ReferenceHolder<V, T>> predicate) {
+		return onReturnStatement((node, holder) -> {
+			if (node.getExpression() instanceof BooleanLiteral) {
+				return predicate.test(node, holder);
+			}
+			return true;
+		});
+	}
+
+	/**
+	 * Registers a visitor for MethodInvocation nodes on a specific class (e.g., Math.max).
+	 *
+	 * @param className the simple name of the class (e.g., "Math")
+	 * @param methodName the name of the method (e.g., "max")
+	 * @param predicate the predicate to test and process matching nodes
+	 * @return this builder for method chaining
+	 */
+	public AstProcessorBuilder<V, T> onStaticMethodInvocation(String className, String methodName, BiPredicate<MethodInvocation, ReferenceHolder<V, T>> predicate) {
+		return onMethodInvocation((node, holder) -> {
+			if (methodName.equals(node.getName().getIdentifier())) {
+				Expression expr = node.getExpression();
+				if (expr instanceof SimpleName) {
+					if (className.equals(((SimpleName) expr).getIdentifier())) {
+						return predicate.test(node, holder);
+					}
+				}
+			}
+			return true;
+		});
+	}
+
 	/**
 	 * Provides access to the underlying ASTProcessor for advanced configuration.
 	 * This allows using any of the existing ASTProcessor methods directly.

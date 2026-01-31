@@ -54,6 +54,8 @@ public class MigrationRulesToExtensionsTest {
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETEMPORARYFOLDER);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETESTNAME);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETIMEOUT);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEERRORCOLLECTOR);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { testCase.expected }, null);
 	}
 
@@ -156,7 +158,6 @@ public class MigrationRulesToExtensionsTest {
 		}, null);
 	}
 
-	@Disabled("Not yet implemented - Timeout rule migration")
 	@Test
 	public void migrates_timeout_rule() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
@@ -182,16 +183,19 @@ public class MigrationRulesToExtensionsTest {
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
 
+		// Note: JUnit 4's @Rule Timeout applies to all test methods in the class,
+		// so the correct JUnit 5 equivalent is a class-level @Timeout annotation
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
 				"""
 				package test;
-				import org.junit.jupiter.api.Test;
-				import org.junit.jupiter.api.Timeout;
 				import java.util.concurrent.TimeUnit;
 				
+				import org.junit.jupiter.api.Test;
+				import org.junit.jupiter.api.Timeout;
+				
+				@Timeout(value = 1000, unit = TimeUnit.MILLISECONDS)
 				public class MyTest {
 					@Test
-					@Timeout(value = 1000, unit = TimeUnit.MILLISECONDS)
 					public void testSomething() {
 						// Test code
 					}
@@ -200,22 +204,178 @@ public class MigrationRulesToExtensionsTest {
 		}, null);
 	}
 
-	@Disabled("Anonymous ExternalResource migration generates hash-based class names - covered by parameterized tests")
+	@Test
+	public void migrates_errorCollector_multiple_test_methods() throws CoreException {
+		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
+				"""
+				package test;
+				import org.junit.Rule;
+				import org.junit.Test;
+				import org.junit.rules.ErrorCollector;
+				import static org.hamcrest.CoreMatchers.equalTo;
+				
+				public class MyTest {
+					@Rule
+					public ErrorCollector collector = new ErrorCollector();
+					
+					@Test
+					public void test1() {
+						collector.checkThat("a", equalTo("a"));
+						collector.checkThat("b", equalTo("b"));
+					}
+					
+					@Test
+					public void test2() {
+						collector.checkThat("x", equalTo("x"));
+					}
+					
+					@Test
+					public void test3() {
+						// This test doesn't use collector
+						System.out.println("No errors");
+					}
+				}
+				""", false, null);
+
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEERRORCOLLECTOR);
+
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+				"""
+package test;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertAll;
+
+import org.junit.jupiter.api.Test;
+
+public class MyTest {
+	@Test
+	public void test1() {
+		assertAll(() -> assertThat("a", equalTo("a")), () -> assertThat("b", equalTo("b")));
+	}
+
+	@Test
+	public void test2() {
+		assertAll(() -> assertThat("x", equalTo("x")));
+	}
+
+	@Test
+	public void test3() {
+		// This test doesn't use collector
+		System.out.println("No errors");
+	}
+}
+				"""
+		}, null);
+	}
+
+	@Disabled("Anonymous ExternalResource migration generates hash-based class names - covered by JUnitMigrationCleanUpTest.testJUnitCleanupSelectedCase with JUnitCleanupCases.RuleAnonymousExternalResource")
 	@Test
 	public void migrates_externalResource_anonymous_class() throws CoreException {
 		// This test is disabled because the cleanup generates hash-based class names
-		// for anonymous ExternalResource instances (e.g., Resource_5b8b4).
+		// for anonymous ExternalResource instances (e.g., Er_5b8b4).
 		// The exact hash depends on the variable name and is tested in
-		// JUnitCleanupCases.RuleAnonymousExternalResource
+		// JUnitMigrationCleanUpTest.testJUnitCleanupSelectedCase using JUnitCleanupCases.RuleAnonymousExternalResource
 	}
 
-	@Disabled("ClassRule migration generates hash-based class names - covered by parameterized tests")
+	@Disabled("ClassRule migration generates hash-based class names - covered by JUnitMigrationCleanUpTest.testJUnitCleanupSelectedCase with JUnitCleanupCases.RuleNestedExternalResource")
 	@Test
 	public void migrates_classRule_to_static_extension() throws CoreException {
 		// This test is disabled because the cleanup generates hash-based class names
 		// for anonymous ExternalResource instances in ClassRule scenarios.
 		// The exact hash depends on the variable name and is tested in
-		// JUnitCleanupCases.RuleNestedExternalResource
+		// JUnitMigrationCleanUpTest.testJUnitCleanupSelectedCase using JUnitCleanupCases.RuleNestedExternalResource
+	}
+
+	@Test
+	public void migrates_timeout_rule_with_seconds() throws CoreException {
+		IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
+				"""
+				package test;
+				import org.junit.Rule;
+				import org.junit.Test;
+				import org.junit.rules.Timeout;
+				
+				public class MyTest {
+					@Rule
+					public Timeout timeout = Timeout.seconds(5);
+					
+					@Test
+					public void testWithTimeout() {
+						// Test code
+					}
+				}
+				""", false, null);
+
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETIMEOUT);
+
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+				"""
+				package test;
+				import java.util.concurrent.TimeUnit;
+				
+				import org.junit.jupiter.api.Test;
+				import org.junit.jupiter.api.Timeout;
+				
+				@Timeout(value = 5, unit = TimeUnit.SECONDS)
+				public class MyTest {
+					@Test
+					public void testWithTimeout() {
+						// Test code
+					}
+				}
+				"""
+		}, null);
+	}
+
+	@Test
+	public void migrates_timeout_rule_with_millis() throws CoreException {
+		IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
+				"""
+				package test;
+				import org.junit.Rule;
+				import org.junit.Test;
+				import org.junit.rules.Timeout;
+				
+				public class MyTest {
+					@Rule
+					public Timeout timeout = Timeout.millis(500);
+					
+					@Test
+					public void testWithTimeout() {
+						// Test code
+					}
+				}
+				""", false, null);
+
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETIMEOUT);
+
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+				"""
+				package test;
+				import java.util.concurrent.TimeUnit;
+				
+				import org.junit.jupiter.api.Test;
+				import org.junit.jupiter.api.Timeout;
+				
+				@Timeout(value = 500, unit = TimeUnit.MILLISECONDS)
+				public class MyTest {
+					@Test
+					public void testWithTimeout() {
+						// Test code
+					}
+				}
+				"""
+		}, null);
 	}
 
 	enum RuleCases {
@@ -397,7 +557,249 @@ public class MigrationRulesToExtensionsTest {
 						File dir = Files.createTempDirectory(folder, "").toFile();
 					}
 				}
-				""");
+				"""),
+	TimeoutSeconds(
+			"""
+			package test;
+			import org.junit.Rule;
+			import org.junit.Test;
+			import org.junit.rules.Timeout;
+			
+			public class MyTest {
+				@Rule
+				public Timeout globalTimeout = Timeout.seconds(10);
+				
+				@Test
+				public void test1() {
+					// test code
+				}
+				
+				@Test
+				public void test2() {
+					// test code
+				}
+			}
+			""",
+			"""
+			package test;
+			import java.util.concurrent.TimeUnit;
+			
+			import org.junit.jupiter.api.Test;
+			import org.junit.jupiter.api.Timeout;
+			
+			@Timeout(value = 10, unit = TimeUnit.SECONDS)
+			public class MyTest {
+				@Test
+				public void test1() {
+					// test code
+				}
+				
+				@Test
+				public void test2() {
+					// test code
+				}
+			}
+			"""),
+	TimeoutMillis(
+			"""
+			package test;
+			import org.junit.Rule;
+			import org.junit.Test;
+			import org.junit.rules.Timeout;
+			
+			public class MyTest {
+				@Rule
+				public Timeout timeout = Timeout.millis(5000);
+				
+				@Test
+				public void testMethod() {
+					// test code
+				}
+			}
+			""",
+			"""
+			package test;
+			import java.util.concurrent.TimeUnit;
+			
+			import org.junit.jupiter.api.Test;
+			import org.junit.jupiter.api.Timeout;
+			
+			@Timeout(value = 5000, unit = TimeUnit.MILLISECONDS)
+			public class MyTest {
+				@Test
+				public void testMethod() {
+					// test code
+				}
+			}
+			"""),
+	TimeoutConstructorMillis(
+			"""
+			package test;
+			import org.junit.Rule;
+			import org.junit.Test;
+			import org.junit.rules.Timeout;
+			
+			public class MyTest {
+				@Rule
+				public Timeout timeout = new Timeout(1000);
+				
+				@Test
+				public void testSomething() {
+					// test
+				}
+			}
+			""",
+			"""
+			package test;
+			import java.util.concurrent.TimeUnit;
+			
+			import org.junit.jupiter.api.Test;
+			import org.junit.jupiter.api.Timeout;
+			
+			@Timeout(value = 1000, unit = TimeUnit.MILLISECONDS)
+			public class MyTest {
+				@Test
+				public void testSomething() {
+					// test
+				}
+			}
+			"""),
+	TimeoutConstructorWithUnit(
+			"""
+			package test;
+			import java.util.concurrent.TimeUnit;
+			import org.junit.Rule;
+			import org.junit.Test;
+			import org.junit.rules.Timeout;
+			
+			public class MyTest {
+				@Rule
+				public Timeout timeout = new Timeout(30, TimeUnit.SECONDS);
+				
+				@Test
+				public void longRunningTest() {
+					// test code
+				}
+			}
+			""",
+			"""
+			package test;
+			import java.util.concurrent.TimeUnit;
+			
+			import org.junit.jupiter.api.Test;
+			import org.junit.jupiter.api.Timeout;
+			
+			@Timeout(value = 30, unit = TimeUnit.SECONDS)
+			public class MyTest {
+				@Test
+				public void longRunningTest() {
+					// test code
+				}
+			}
+			"""),
+	ErrorCollectorBasic(
+			"""
+			package test;
+			import org.junit.Rule;
+			import org.junit.Test;
+			import org.junit.rules.ErrorCollector;
+			import static org.hamcrest.CoreMatchers.equalTo;
+			
+			public class MyTest {
+				@Rule
+				public ErrorCollector collector = new ErrorCollector();
+				
+				@Test
+				public void testMultipleErrors() {
+					collector.checkThat("value1", equalTo("expected1"));
+					collector.checkThat("value2", equalTo("expected2"));
+				}
+			}
+			""",
+			"""
+package test;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertAll;
+
+import org.junit.jupiter.api.Test;
+
+public class MyTest {
+	@Test
+	public void testMultipleErrors() {
+		assertAll(() -> assertThat("value1", equalTo("expected1")), () -> assertThat("value2", equalTo("expected2")));
+	}
+}
+			"""),
+	ErrorCollectorWithAddError(
+			"""
+			package test;
+			import org.junit.Rule;
+			import org.junit.Test;
+			import org.junit.rules.ErrorCollector;
+			
+			public class MyTest {
+				@Rule
+				public ErrorCollector collector = new ErrorCollector();
+				
+				@Test
+				public void testWithAddError() {
+					collector.addError(new Throwable("error message"));
+				}
+			}
+			""",
+			"""
+package test;
+import static org.junit.jupiter.api.Assertions.assertAll;
+
+import org.junit.jupiter.api.Test;
+
+public class MyTest {
+	@Test
+	public void testWithAddError() {
+		assertAll(() -> {
+			throw new Throwable("error message");
+		});
+	}
+}
+			"""),
+	ErrorCollectorMixed(
+			"""
+			package test;
+			import org.junit.Rule;
+			import org.junit.Test;
+			import org.junit.rules.ErrorCollector;
+			import static org.hamcrest.CoreMatchers.equalTo;
+			
+			public class MyTest {
+				@Rule
+				public ErrorCollector collector = new ErrorCollector();
+				
+				@Test
+				public void testMixed() {
+					collector.checkThat("value1", equalTo("expected1"));
+					collector.addError(new AssertionError("Failed check"));
+					collector.checkThat("value2", equalTo("expected2"));
+				}
+			}
+			""",
+			"""
+package test;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertAll;
+
+import org.junit.jupiter.api.Test;
+
+public class MyTest {
+	@Test
+	public void testMixed() {
+		assertAll(() -> assertThat("value1", equalTo("expected1")), () -> {
+			throw new AssertionError("Failed check");
+		}, () -> assertThat("value2", equalTo("expected2")));
+	}
+}
+			""");
 
 		final String given;
 		final String expected;

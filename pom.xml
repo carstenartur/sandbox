@@ -10,7 +10,7 @@
 	<packaging>pom</packaging>
 	<properties>
 		<!-- Upgraded to Tycho 5.0.0 – resolves CodeQL autobuild TargetPlatformArtifactResolver injection error (mixed Tycho versions). -->
-		<tycho-version>5.0.1</tycho-version>
+		<tycho-version>5.0.2</tycho-version>
 		<rcp-version>eclipse</rcp-version>
 		<!-- <rcp-version>2021-03</rcp-version> -->
 		<jacoco-version>0.8.14</jacoco-version>
@@ -22,12 +22,16 @@
 		<bouncycastle.version>1.83</bouncycastle.version>
 	</properties>
 	<modules>
+		<module>sandbox-functional-converter-core</module>
 		<module>sandbox_target</module>
 		<module>sandbox_cleanup_application</module>
 		<module>sandbox_cleanup_application_feature</module>
 		<module>sandbox_cleanup_application_test</module>
 		<module>sandbox_common</module>
+		<module>sandbox_common_test</module>
 		<module>sandbox_test_commons</module>
+		<module>sandbox_css_cleanup</module>
+		<module>sandbox_css_cleanup_feature</module>
 		<module>sandbox_encoding_quickfix</module>
 		<module>sandbox_encoding_quickfix_feature</module>
 		<module>sandbox_encoding_quickfix_test</module>
@@ -42,6 +46,9 @@
 		<module>sandbox_tools</module>
 		<module>sandbox_tools_feature</module>
 		<module>sandbox_tools_test</module>
+		<module>sandbox_triggerpattern</module>
+		<module>sandbox_triggerpattern_feature</module>
+		<module>sandbox_triggerpattern_test</module>
 		<module>sandbox_xml_cleanup</module>
 		<module>sandbox_xml_cleanup_feature</module>
 		<module>sandbox_xml_cleanup_test</module>
@@ -56,7 +63,8 @@
 		<module>sandbox_method_reuse_test</module>
 		<module>sandbox_usage_view</module>
 		<module>sandbox_usage_view_feature</module>
-		<module>sandbox_product</module>
+		<module>sandbox_usage_view_test</module>
+		<!-- Heavy modules (sandbox_product, sandbox_updatesite) moved to profiles below -->
 	</modules>
 	<repositories>
 		<!-- 1. Eclipse SimRel Release Repository - upgraded to 2025-09 to resolve Bouncy Castle import conflicts -->
@@ -106,7 +114,7 @@
 		<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>license-maven-plugin</artifactId>
-				<version>2.7.0</version>
+				<version>2.7.1</version>
 				<configuration>
 					<licenseName>epl_v2</licenseName>
 					<organizationName>hammer</organizationName>
@@ -174,7 +182,7 @@ See README.md for more information.
 					<source>${java-version}</source>
 					<target>${java-version}</target>
           <targetPlatformConfiguration>
-          <pomDependencies>ignore</pomDependencies>
+          <pomDependencies>wrapAsBundle</pomDependencies>
           </targetPlatformConfiguration>
 				</configuration>
 			</plugin>
@@ -287,6 +295,18 @@ See README.md for more information.
 				</executions>
 			</plugin>
 			<plugin>
+				<groupId>com.diffplug.spotless</groupId>
+				<artifactId>spotless-maven-plugin</artifactId>
+				<version>2.43.0</version>
+				<configuration>
+					<java>
+						<eclipse>
+							<file>eclipse-formatter.xml</file>
+						</eclipse>
+					</java>
+				</configuration>
+			</plugin>
+			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
 				<artifactId>tycho-packaging-plugin</artifactId>
 				<version>${tycho-version}</version>
@@ -309,6 +329,15 @@ See README.md for more information.
 					<onlyAnalyze>org.sandbox.jdt.*</onlyAnalyze>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-report-plugin</artifactId>
+				<version>3.5.4</version>
+				<configuration>
+					<showSuccess>true</showSuccess>
+					<linkXRef>false</linkXRef>
+				</configuration>
+			</plugin>
 		</plugins>
 	</reporting>
 	<dependencyManagement>
@@ -316,7 +345,7 @@ See README.md for more information.
 <dependency>
       <groupId>org.junit</groupId>
       <artifactId>junit-bom</artifactId>
-      <version>6.0.1</version>
+      <version>6.0.2</version>
       <type>pom</type>
       <scope>import</scope>
     </dependency>
@@ -332,7 +361,17 @@ See README.md for more information.
 			</dependency>
 			<dependency>
 				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_cleanup_application_test</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_common</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_common_test</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
@@ -412,6 +451,21 @@ See README.md for more information.
 			</dependency>
 			<dependency>
 				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_triggerpattern</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_triggerpattern_feature</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_triggerpattern_test</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_xml_cleanup</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -482,7 +536,17 @@ See README.md for more information.
 			</dependency>
 			<dependency>
 				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_usage_view_test</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_product</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_updatesite</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
@@ -521,6 +585,37 @@ See README.md for more information.
 		</repository>
 	</distributionManagement>
 	<profiles>
+		<!-- Dev profile: Fast development build - excludes heavy product and updatesite modules -->
+		<profile>
+			<id>dev</id>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+		</profile>
+		
+		<!-- Product profile: Build Eclipse product with p2-director materialization -->
+		<profile>
+			<id>product</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+			<modules>
+				<module>sandbox_product</module>
+			</modules>
+		</profile>
+		
+		<!-- Repository profile: Build p2 update site repository -->
+		<profile>
+			<id>repo</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+			<modules>
+				<module>sandbox_updatesite</module>
+			</modules>
+		</profile>
+		
+		<!-- Web profile: Build WAR file with update site -->
 		<profile>
 			<id>web</id>
 			<activation>
@@ -530,9 +625,12 @@ See README.md for more information.
 				</property>
 			</activation>
 			<modules>
+				<module>sandbox_product</module>
 				<module>sandbox_web</module>
 			</modules>
 		</profile>
+		
+		<!-- JaCoCo profile: Enable code coverage -->
 		<profile>
 			<id>jacoco</id>
 			<activation>
@@ -553,6 +651,36 @@ See README.md for more information.
 								<goals>
 									<goal>prepare-agent</goal>
 								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		
+		<!-- Reports profile: Generate HTML test reports (without parallel build warning) -->
+		<profile>
+			<id>reports</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-surefire-report-plugin</artifactId>
+						<version>3.5.4</version>
+						<executions>
+							<execution>
+								<id>generate-test-report</id>
+								<phase>verify</phase>
+								<goals>
+									<goal>report-only</goal>
+								</goals>
+								<configuration>
+									<showSuccess>true</showSuccess>
+									<linkXRef>false</linkXRef>
+								</configuration>
 							</execution>
 						</executions>
 					</plugin>

@@ -11,6 +11,21 @@
             id="org.eclipse.jdt.ui.helper.views.JavaHelperView">
       </view>
    </extension>
+   <extension
+         point="org.eclipse.ui.preferencePages">
+      <page
+            name="JavaHelper View"
+            class="org.sandbox.jdt.ui.helper.views.preferences.UsageViewPreferencePage"
+            id="org.sandbox.jdt.ui.helper.views.preferences.UsageViewPreferencePage"
+            category="org.eclipse.jdt.ui.preferences.JavaBasePreferencePage">
+      </page>
+   </extension>
+   <extension
+         point="org.eclipse.ui.startup">
+      <startup
+            class="org.sandbox.jdt.ui.helper.views.UsageViewStartup">
+      </startup>
+   </extension>
   <extension
      point="org.eclipse.ui.bindings">
   <key

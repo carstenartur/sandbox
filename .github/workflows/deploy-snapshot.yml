@@ -1,0 +1,208 @@
+name: Deploy Snapshot to GitHub Pages
+
+on:
+  workflow_run:
+    workflows: ["Java CI with Maven"]
+    types:
+      - completed
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write  # Required to push to gh-pages branch
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    # Only run if maven workflow succeeded (for workflow_run trigger)
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0  # Required for jgit timestamp provider
+
+    - name: Set up JDK 21
+      uses: actions/setup-java@v5
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+
+    - name: Cache Maven dependencies
+      uses: actions/cache@v5
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml', 'sandbox_target/*.target') }}
+        restore-keys: ${{ runner.os }}-maven-
+
+    - name: Build Update Site
+      run: mvn -Pproduct,repo -T 1C clean verify -DskipTests
+
+    - name: Prepare snapshot directory
+      run: |
+        mkdir -p gh-pages-content/snapshots/latest
+        cp -r sandbox_updatesite/target/repository/* gh-pages-content/snapshots/latest/
+
+    - name: Create or update composite metadata
+      run: |
+        cd gh-pages-content/snapshots
+        
+        # Use current timestamp as fallback for manual triggers
+        TIMESTAMP="${{ github.event.head_commit.timestamp }}"
+        if [ -z "$TIMESTAMP" ]; then
+          TIMESTAMP="$(date +%s)000"
+        fi
+        
+        # Create compositeContent.xml
+        cat > compositeContent.xml << EOF
+        <?xml version='1.0' encoding='UTF-8'?>
+        <?compositeMetadataRepository version='1.0.0'?>
+        <repository name='Sandbox Snapshots'
+                    type='org.eclipse.equinox.internal.p2.metadata.repository.CompositeMetadataRepository'
+                    version='1.0.0'>
+          <properties size='1'>
+            <property name='p2.timestamp' value='$TIMESTAMP'/>
+          </properties>
+          <children size='1'>
+            <child location='latest'/>
+          </children>
+        </repository>
+        EOF
+        
+        # Create compositeArtifacts.xml
+        cat > compositeArtifacts.xml << EOF
+        <?xml version='1.0' encoding='UTF-8'?>
+        <?compositeArtifactRepository version='1.0.0'?>
+        <repository name='Sandbox Snapshots'
+                    type='org.eclipse.equinox.internal.p2.artifact.repository.CompositeArtifactRepository'
+                    version='1.0.0'>
+          <properties size='1'>
+            <property name='p2.timestamp' value='$TIMESTAMP'/>
+          </properties>
+          <children size='1'>
+            <child location='latest'/>
+          </children>
+        </repository>
+        EOF
+
+    - name: Create index.html if it doesn't exist
+      run: |
+        if [ ! -f gh-pages-content/index.html ]; then
+          cat > gh-pages-content/index.html << 'EOF'
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Sandbox - Eclipse JDT Cleanups and Tools</title>
+            <style>
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                    max-width: 800px;
+                    margin: 40px auto;
+                    padding: 0 20px;
+                    line-height: 1.6;
+                    color: #333;
+                }
+                h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+                h2 { color: #34495e; margin-top: 30px; }
+                code {
+                    background: #f4f4f4;
+                    padding: 2px 6px;
+                    border-radius: 3px;
+                    font-family: 'Courier New', monospace;
+                }
+                pre {
+                    background: #f4f4f4;
+                    padding: 15px;
+                    border-radius: 5px;
+                    overflow-x: auto;
+                }
+                .url-box {
+                    background: #e8f4f8;
+                    padding: 10px;
+                    border-left: 4px solid #3498db;
+                    margin: 10px 0;
+                    word-break: break-all;
+                }
+                a { color: #3498db; text-decoration: none; }
+                a:hover { text-decoration: underline; }
+                .note {
+                    background: #fff3cd;
+                    border-left: 4px solid #ffc107;
+                    padding: 10px;
+                    margin: 15px 0;
+                }
+            </style>
+        </head>
+        <body>
+            <h1>🛠️ Sandbox - Eclipse JDT Cleanups and Tools</h1>
+            
+            <p>Eclipse plugins for Java code cleanup, modernization, and automated refactoring.</p>
+            
+            <h2>📦 Installation</h2>
+            
+            <p>Add one of the following update sites to Eclipse:</p>
+            
+            <h3>Stable Release (Recommended)</h3>
+            <div class="url-box">
+                https://carstenartur.github.io/sandbox/releases/
+            </div>
+            
+            <h3>Latest Snapshot (Development)</h3>
+            <div class="url-box">
+                https://carstenartur.github.io/sandbox/snapshots/latest/
+            </div>
+            
+            <h2>📋 Installation Instructions</h2>
+            <ol>
+                <li>Open Eclipse IDE</li>
+                <li>Go to <strong>Help → Install New Software...</strong></li>
+                <li>Click <strong>Add...</strong></li>
+                <li>Enter a name (e.g., "Sandbox") and paste the update site URL</li>
+                <li>Select the features you want to install</li>
+                <li>Follow the installation wizard</li>
+                <li>Restart Eclipse when prompted</li>
+            </ol>
+            
+            <h2>🚀 Features</h2>
+            <ul>
+                <li><strong>Encoding Quickfix:</strong> Replace platform-dependent encoding with explicit StandardCharsets.UTF_8</li>
+                <li><strong>Platform Helper:</strong> Simplify Status object creation</li>
+                <li><strong>Functional Converter:</strong> Convert loops to Java 8 Streams</li>
+                <li><strong>JUnit Cleanup:</strong> Migrate JUnit 3/4 tests to JUnit 5</li>
+                <li><strong>XML Cleanup:</strong> XML formatting and validation fixes</li>
+                <li><strong>JFace Cleanup:</strong> JFace API modernization</li>
+                <li><strong>Method Reuse:</strong> Detect and refactor duplicate code</li>
+                <li><strong>Tools:</strong> While-to-For loop converter and more</li>
+            </ul>
+            
+            <div class="note">
+                <strong>Note:</strong> The snapshot update site is updated automatically on every commit to the main branch. 
+                Use it to test the latest features, but be aware it may be unstable.
+            </div>
+            
+            <h2>📚 Documentation</h2>
+            <p>For more information, visit the <a href="https://github.com/carstenartur/sandbox">GitHub repository</a>.</p>
+            
+            <h2>🐛 Issues</h2>
+            <p>Report issues on <a href="https://github.com/carstenartur/sandbox/issues">GitHub Issues</a>.</p>
+            
+            <footer style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 0.9em;">
+                <p>Eclipse Public License 2.0 | <a href="https://github.com/carstenartur/sandbox">Source Code</a></p>
+            </footer>
+        </body>
+        </html>
+        EOF
+        fi
+
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./gh-pages-content
+        publish_branch: gh-pages
+        keep_files: true  # Don't remove existing files (for releases)
+        user_name: 'github-actions[bot]'
+        user_email: 'github-actions[bot]@users.noreply.github.com'
+        commit_message: 'Deploy snapshot update site'

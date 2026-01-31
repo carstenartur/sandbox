@@ -19,7 +19,6 @@ import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.junit.JUnitCore;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
@@ -74,7 +73,6 @@ public class MigrationTestAnnotationTest {
 		}, null);
 	}
 
-	@Disabled("Not yet implemented - @Test(timeout) migration")
 	@Test
 	public void migrates_test_timeout_to_timeout_annotation() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
@@ -93,17 +91,19 @@ public class MigrationTestAnnotationTest {
 
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_TIMEOUT);
 
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
 				"""
 				package test;
+				import java.util.concurrent.TimeUnit;
+				
 				import org.junit.jupiter.api.Test;
 				import org.junit.jupiter.api.Timeout;
-				import java.util.concurrent.TimeUnit;
 				
 				public class MyTest {
 					@Test
-					@Timeout(value = 1000, unit = TimeUnit.MILLISECONDS)
+					@Timeout(value = 1, unit = TimeUnit.SECONDS)
 					public void testWithTimeout() {
 						// Test code
 					}
@@ -154,6 +154,186 @@ public class MigrationTestAnnotationTest {
 					
 					@Test
 					public void test3() {
+					}
+				}
+				"""
+		}, null);
+	}
+
+	@Test
+	public void migrates_test_timeout_with_milliseconds() throws CoreException {
+		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
+				"""
+				package test;
+				import org.junit.Test;
+				
+				public class MyTest {
+					@Test(timeout = 500)
+					public void testWithMilliseconds() {
+						// Test code
+					}
+				}
+				""", false, null);
+
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_TIMEOUT);
+
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+				"""
+				package test;
+				import java.util.concurrent.TimeUnit;
+				
+				import org.junit.jupiter.api.Test;
+				import org.junit.jupiter.api.Timeout;
+				
+				public class MyTest {
+					@Test
+					@Timeout(value = 500, unit = TimeUnit.MILLISECONDS)
+					public void testWithMilliseconds() {
+						// Test code
+					}
+				}
+				"""
+		}, null);
+	}
+
+	@Test
+	public void migrates_multiple_timeout_tests() throws CoreException {
+		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
+				"""
+				package test;
+				import org.junit.Test;
+				
+				public class MyTest {
+					@Test(timeout = 1000)
+					public void testOne() {
+					}
+					
+					@Test(timeout = 2000)
+					public void testTwo() {
+					}
+					
+					@Test(timeout = 500)
+					public void testThree() {
+					}
+				}
+				""", false, null);
+
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_TIMEOUT);
+
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+				"""
+				package test;
+				import java.util.concurrent.TimeUnit;
+				
+				import org.junit.jupiter.api.Test;
+				import org.junit.jupiter.api.Timeout;
+				
+				public class MyTest {
+					@Test
+					@Timeout(value = 1, unit = TimeUnit.SECONDS)
+					public void testOne() {
+					}
+					
+					@Test
+					@Timeout(value = 2, unit = TimeUnit.SECONDS)
+					public void testTwo() {
+					}
+					
+					@Test
+					@Timeout(value = 500, unit = TimeUnit.MILLISECONDS)
+					public void testThree() {
+					}
+				}
+				"""
+		}, null);
+	}
+
+	@Test
+	public void migrates_large_timeout_value() throws CoreException {
+		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
+				"""
+				package test;
+				import org.junit.Test;
+				
+				public class MyTest {
+					@Test(timeout = 60000)
+					public void testWithLargeTimeout() {
+						// Test code
+					}
+				}
+				""", false, null);
+
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_TIMEOUT);
+
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+				"""
+				package test;
+				import java.util.concurrent.TimeUnit;
+				
+				import org.junit.jupiter.api.Test;
+				import org.junit.jupiter.api.Timeout;
+				
+				public class MyTest {
+					@Test
+					@Timeout(value = 60, unit = TimeUnit.SECONDS)
+					public void testWithLargeTimeout() {
+						// Test code
+					}
+				}
+				"""
+		}, null);
+	}
+
+	@Test
+	public void migrates_test_timeout_with_other_parameters() throws CoreException {
+		// This test verifies that both timeout and expected parameters are migrated correctly.
+		// The timeout parameter is migrated to @Timeout annotation by TestTimeoutJUnitPlugin.
+		// The expected parameter is migrated to assertThrows() by TestExpectedJUnitPlugin.
+		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
+				"""
+				package test;
+				import org.junit.Test;
+				
+				public class MyTest {
+					@Test(expected = IllegalArgumentException.class, timeout = 2000)
+					public void testWithTimeoutAndExpected() {
+						throw new IllegalArgumentException("Expected exception");
+					}
+				}
+				""", false, null);
+
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_TIMEOUT);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_EXPECTED);
+
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+				"""
+				package test;
+				import static org.junit.jupiter.api.Assertions.assertThrows;
+				
+				import java.util.concurrent.TimeUnit;
+				
+				import org.junit.jupiter.api.Test;
+				import org.junit.jupiter.api.Timeout;
+				
+				public class MyTest {
+					@Test
+					@Timeout(value = 2, unit = TimeUnit.SECONDS)
+					public void testWithTimeoutAndExpected() {
+						assertThrows(IllegalArgumentException.class, () -> {
+							throw new IllegalArgumentException("Expected exception");
+						});
 					}
 				}
 				"""

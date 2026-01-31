@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+    <!-- Popup menu action for CSS files -->
+    <extension point="org.eclipse.ui.popupMenus">
+        <objectContribution
+            id="org.sandbox.css.cleanup.contribution"
+            objectClass="org.eclipse.core.resources.IFile"
+            nameFilter="*.css">
+            <action
+                id="org.sandbox.css.cleanup.format"
+                label="Format CSS with Prettier"
+                class="org.sandbox.jdt.internal.css.ui.CSSCleanupAction">
+            </action>
+        </objectContribution>
+        <objectContribution
+            id="org.sandbox.css.cleanup.scss.contribution"
+            objectClass="org.eclipse.core.resources.IFile"
+            nameFilter="*.scss">
+            <action
+                id="org.sandbox.css.cleanup.format.scss"
+                label="Format SCSS with Prettier"
+                class="org.sandbox.jdt.internal.css.ui.CSSCleanupAction">
+            </action>
+        </objectContribution>
+        <objectContribution
+            id="org.sandbox.css.cleanup.less.contribution"
+            objectClass="org.eclipse.core.resources.IFile"
+            nameFilter="*.less">
+            <action
+                id="org.sandbox.css.cleanup.format.less"
+                label="Format LESS with Prettier"
+                class="org.sandbox.jdt.internal.css.ui.CSSCleanupAction">
+            </action>
+        </objectContribution>
+    </extension>
+    
+    <!-- Preferences page -->
+    <extension point="org.eclipse.ui.preferencePages">
+        <page
+            id="org.sandbox.css.cleanup.preferences"
+            name="CSS Cleanup"
+            class="org.sandbox.jdt.internal.css.preferences.CSSPreferencePage">
+        </page>
+    </extension>
+</plugin>

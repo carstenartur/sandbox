@@ -12,7 +12,7 @@ on:
 jobs:
   build:
     permissions:
-      contents: read
+      contents: write
       checks: write
       pull-requests: write
     runs-on: ubuntu-latest
@@ -24,6 +24,13 @@ jobs:
     - uses: actions/checkout@v6
       with:
         fetch-depth: 0 # required for jgit timestamp provider to work
+    - name: Debug GitHub context
+      run: |
+        echo "event_name: ${{ github.event_name }}"
+        echo "ref: ${{ github.ref }}"
+        echo "ref_name: ${{ github.ref_name }}"
+        echo "head_ref: ${{ github.head_ref }}"
+        echo "base_ref: ${{ github.base_ref }}"
     - name: Set up JDK 21
       uses: actions/setup-java@v5
       with:
@@ -39,15 +46,17 @@ jobs:
       uses: actions/cache@v5
       with:
         path: ~/.m2/repository
-        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml', 'sandbox_target/*.target') }}
         restore-keys: ${{ runner.os }}-maven-
     - name: Set up Maven
       uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1 # v5
       with:
         maven-version: 3.9.9
     - name: Build with Maven
-      run: xvfb-run --auto-servernum mvn -e -V --batch-mode -Dtycho.localArtifacts=ignore -Pjacoco clean verify
-#       run: xvfb-run --auto-servernum mvn -e -V --batch-mode -Dtycho.localArtifacts=ignore -Pweb,jacoco clean verify
+      run: |
+        # Normal Maven/Tycho build without jacoco, product, repo profiles by default
+        # This ensures fast builds and test report generation on every commit
+        xvfb-run --auto-servernum mvn -e -V -T 1C --batch-mode -Dtycho.localArtifacts=ignore clean verify
     - name: Cleanup xvfb pidx build
       uses: bcomnes/cleanup-xvfb@v1
     - name: Publish Test Report
@@ -55,3 +64,166 @@ jobs:
       if: always() # always run even if the previous step fails
       with:
         report_paths: '**/target/surefire-reports/TEST-*.xml'
+        summary: true
+        include_passed: true
+        detailed_summary: true
+    - name: Install xsltproc
+      run: sudo apt-get update && sudo apt-get install -y xsltproc
+    - name: Generate HTML Test Reports
+      if: github.event_name == 'push' && github.ref_name == 'main'
+      run: |
+        echo "=== Generating HTML reports using XSLT ==="
+        
+        # For each test module, combine all TEST-*.xml files and transform to HTML
+        for module in sandbox_*_test sandbox-functional-converter-core; do
+          if [ -d "$module/target/surefire-reports" ]; then
+            xml_files=$(find "$module/target/surefire-reports" -name "TEST-*.xml" 2>/dev/null)
+            if [ -n "$xml_files" ]; then
+              echo "Processing $module..."
+              
+              # Create a combined testsuites XML file
+              mkdir -p "$module/target/site"
+              
+              # Copy config file to the target directory
+              cp .github/junit-report-config.xml "$module/target/site/" || echo "Config file not found, using defaults"
+              
+              # Combine all TEST-*.xml files into one testsuites document
+              # Use deduplication to avoid duplicate test suites
+              echo '<?xml version="1.0" encoding="UTF-8"?>' > "$module/target/site/combined-tests.xml"
+              echo '<testsuites>' >> "$module/target/site/combined-tests.xml"
+              
+              # Track seen test suites to avoid duplicates
+              declare -A seen_suites
+              for xml in $xml_files; do
+                # Extract name attribute specifically from the testsuite element
+                # This handles both single-line and multi-line testsuite tags
+                suite_name=$(sed -n '/<testsuite/,/>/{/<testsuite/,/>/{p}}' "$xml" | tr -d '\n' | grep -o '<testsuite[^>]*' | grep -o 'name="[^"]*"' | sed 's/name="//;s/"//' || true)
+                
+                # Fallback: use the XML filename as identifier if name extraction failed
+                if [[ -z "$suite_name" ]]; then
+                  suite_name=$(basename "$xml" .xml)
+                fi
+                
+                # Only include this testsuite if we haven't seen it before
+                if [[ -n "$suite_name" && -z "${seen_suites[$suite_name]}" ]]; then
+                  seen_suites[$suite_name]=1
+                  # Extract the testsuite element (skip XML declaration)
+                  sed -n '/<testsuite/,/<\/testsuite>/p' "$xml" >> "$module/target/site/combined-tests.xml"
+                  echo "  Including testsuite: $suite_name"
+                else
+                  echo "  Skipping duplicate testsuite: $suite_name"
+                fi
+              done
+              echo '</testsuites>' >> "$module/target/site/combined-tests.xml"
+              
+              # Transform to HTML using xsltproc
+              xsltproc \
+                --stringparam TITLE "Test Results - $module" \
+                --stringparam CONFIG_FILE "$module/target/site/junit-report-config.xml" \
+                .github/JUNIT.XSL \
+                "$module/target/site/combined-tests.xml" \
+                > "$module/target/site/surefire-report.html"
+              
+              echo "Generated $module/target/site/surefire-report.html"
+            fi
+          fi
+        done
+        
+        echo ""
+        echo "=== Generated HTML reports ==="
+        find . -name "surefire-report.html" -type f
+    - name: Prepare Test Reports for GitHub Pages
+      if: github.event_name == 'push' && github.ref_name == 'main'
+      run: |
+        mkdir -p /tmp/gh-pages/tests
+        found_reports=false
+        
+        # Create index.html header
+        cat > /tmp/gh-pages/tests/index.html << 'EOF'
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Sandbox Test Reports</title>
+          <style>
+            body { font-family: verdana, arial, helvetica; max-width: 1200px; margin: 0 auto; padding: 20px; }
+            h1 { color: #333; }
+            .module { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background: #f9f9f9; }
+            .module h2 { margin-top: 0; color: #0066cc; font-size: 1.2em; }
+            a { color: #0066cc; text-decoration: none; }
+            a:hover { text-decoration: underline; }
+            .description { color: #666; margin: 10px 0; }
+            .stats { color: #666; font-size: 0.9em; }
+            .no-reports { background: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; }
+          </style>
+        </head>
+        <body>
+          <h1>🧪 Sandbox Test Reports</h1>
+          <p class="description">
+            HTML test reports for all test modules. Click a module to see detailed results.
+          </p>
+          <div class="modules">
+        EOF
+        
+        # Copy test reports and add links to index
+        for module in sandbox_*_test sandbox-functional-converter-core; do
+          if [ -f "$module/target/site/surefire-report.html" ]; then
+            echo "Found report for $module"
+            found_reports=true
+            mkdir -p "/tmp/gh-pages/tests/$module"
+            cp "$module/target/site/surefire-report.html" "/tmp/gh-pages/tests/$module/"
+            
+            # Extract test counts from combined XML if available
+            tests="" errors="" failures=""
+            if [ -f "$module/target/site/combined-tests.xml" ]; then
+              # Sum up all tests, errors, failures from all testsuite elements
+              tests=$(grep -o 'tests="[0-9]*"' "$module/target/site/combined-tests.xml" | grep -o '[0-9]*' | awk '{s+=$1} END {print s}' || echo "")
+              errors=$(grep -o 'errors="[0-9]*"' "$module/target/site/combined-tests.xml" | grep -o '[0-9]*' | awk '{s+=$1} END {print s}' || echo "")
+              failures=$(grep -o 'failures="[0-9]*"' "$module/target/site/combined-tests.xml" | grep -o '[0-9]*' | awk '{s+=$1} END {print s}' || echo "")
+            fi
+            
+            cat >> /tmp/gh-pages/tests/index.html << EOF
+            <div class="module">
+              <h2><a href="${module}/surefire-report.html">${module}</a></h2>
+              <p class="stats">Tests: ${tests:-N/A} | Errors: ${errors:-0} | Failures: ${failures:-0}</p>
+            </div>
+        EOF
+          fi
+        done
+        
+        # If no reports found, add message
+        if [ "$found_reports" = false ]; then
+          cat >> /tmp/gh-pages/tests/index.html << 'EOF'
+            <div class="no-reports">
+              <strong>⚠️ No test reports available yet.</strong>
+              <p>Reports will appear after a successful build on main branch.</p>
+            </div>
+        EOF
+        fi
+        
+        # Close HTML
+        cat >> /tmp/gh-pages/tests/index.html << 'EOF'
+          </div>
+          <hr>
+          <p style="text-align: center; color: #666; margin-top: 30px;">
+            Generated by <a href="https://github.com/carstenartur/sandbox">Sandbox Project</a> | 
+            <a href="../coverage/">Coverage Reports</a>
+          </p>
+        </body>
+        </html>
+        EOF
+        
+        echo "=== Test reports prepared ==="
+        ls -la /tmp/gh-pages/tests/
+    - name: Deploy Test Reports to GitHub Pages
+      if: github.event_name == 'push' && github.ref_name == 'main'
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: /tmp/gh-pages/tests
+        destination_dir: tests
+        keep_files: true
+        user_name: 'github-actions[bot]'
+        user_email: 'github-actions[bot]@users.noreply.github.com'
+        commit_message: 'Deploy test reports'

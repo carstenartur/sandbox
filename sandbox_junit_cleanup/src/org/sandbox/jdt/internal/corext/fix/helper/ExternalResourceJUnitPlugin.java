@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
+
 /*-
  * #%L
  * Sandbox junit cleanup
@@ -47,8 +49,8 @@ import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
-
-import static org.sandbox.jdt.internal.corext.fix.helper.JUnitConstants.*;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 /**
  * Plugin to migrate JUnit 4 ExternalResource classes to JUnit 5 lifecycle callbacks.
@@ -112,6 +114,7 @@ public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<In
 	}
 
 	@Override
+	protected
 	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
 		TypeDeclaration node= junitHolder.getTypeDeclaration();

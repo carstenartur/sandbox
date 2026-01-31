@@ -1,5 +1,14 @@
 # JUnit Migration Test Suite Organization
 
+> **📍 This documentation has been moved!**  
+> Please see:
+> - [TESTING.md](../../../../../TESTING.md) in the module root for test organization
+> - [TODO_TESTING.md](../../../../../TODO_TESTING.md) for implementation tracking
+>
+> These files are kept for backward compatibility and will be removed in a future version.
+
+---
+
 This directory contains tests for the JUnit 4→5 migration cleanup feature. The test suite has been reorganized into focused, aspect-based test classes for better clarity and maintainability.
 
 ## Test Class Organization
@@ -108,13 +117,9 @@ The original test orchestrator that uses parameterized tests with enum-based tes
 ### `JUnitCleanupCases.java`
 Enum containing JUnit 4→5 migration test cases with given/expected pairs.
 - **Cases**:
-  - `PositiveCase`: Comprehensive migration with all features
-  - `AlreadyJunit5Case`: No changes needed
-  - `StaticImportCase`: Static import wildcard handling
-  - `StaticExplicitImportCase`: Explicit static imports
-  - `RuleAnonymousExternalResource`: Anonymous ExternalResource migration
-  - `RuleNestedExternalResource`: Complex nested rules scenario
-  - `TestnameRule`: Combined TemporaryFolder + TestName
+  - `RuleAnonymousExternalResource`: Anonymous ExternalResource migration with hash-based class names
+  - `RuleNestedExternalResource`: Complex nested rules scenario with multiple anonymous resources
+- **Note**: Most test cases have been migrated to focused test classes (MigrationAssertionsTest, MigrationLifecycleTest, etc.). Only cases testing hash-based class name generation remain in this enum.
 
 ### `JUnit3CleanupCases.java`
 Enum containing JUnit 3→5 migration test cases (currently disabled).

@@ -24,9 +24,17 @@
 				<groupId>org.eclipse.tycho</groupId>
 				<artifactId>tycho-surefire-plugin</artifactId>
 				<version>${tycho-version}</version>
+				<executions>
+					<execution>
+						<id>default-test</id>
+						<phase>test</phase>
+						<goals>
+							<goal>test</goal>
+						</goals>
+					</execution>
+				</executions>
 				<configuration>
 					<useJDK>BREE</useJDK>
-					<skip>true</skip>
 					<useUIHarness>true</useUIHarness>
 					<dependencies>
 						<dependency>

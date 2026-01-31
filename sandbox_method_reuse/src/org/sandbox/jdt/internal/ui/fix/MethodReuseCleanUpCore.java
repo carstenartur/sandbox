@@ -17,15 +17,22 @@ import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.METHOD_REU
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.METHOD_REUSE_INLINE_SEQUENCES;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
+import org.sandbox.jdt.internal.corext.fix.MethodReuseCleanUpFixCore;
 
 /**
  * Method Reuse Cleanup Core - Core cleanup logic
@@ -61,19 +68,20 @@ public class MethodReuseCleanUpCore extends AbstractCleanUp {
 			return null;
 		}
 		
-		// TODO: Implement method similarity detection
-		// This is a placeholder implementation
-		// Real implementation would:
-		// 1. Find all methods in the compilation unit
-		// 2. For each method, search for similar methods in the project
-		// 3. Create markers/warnings for detected duplicates
-		// 4. Optionally suggest refactoring
+		Set<CompilationUnitRewriteOperation> operations = new LinkedHashSet<>();
+		Set<ASTNode> nodesprocessed = new HashSet<>();
 		
-		// For inline sequences detection:
-		// This would be integrated with the MethodReuseFinder to detect
-		// inline code sequences that can be replaced with method calls
+		// For inline sequences detection
+		if (isEnabled(METHOD_REUSE_INLINE_SEQUENCES)) {
+			MethodReuseCleanUpFixCore.INLINE_SEQUENCES.findOperations(compilationUnit, operations, nodesprocessed);
+		}
 		
-		return null;
+		if (operations.isEmpty()) {
+			return null;
+		}
+		
+		return new CompilationUnitRewriteOperationsFixCore("Method Reuse Cleanup", compilationUnit,
+				operations.toArray(new CompilationUnitRewriteOperation[0]));
 	}
 
 	@Override

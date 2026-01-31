@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
+
 /*-
  * #%L
  * Sandbox junit cleanup
@@ -51,8 +53,8 @@ import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
-
-import static org.sandbox.jdt.internal.corext.fix.helper.JUnitConstants.*;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 /**
  * Migrates JUnit 4 Assert calls to JUnit 5 Assertions.
@@ -63,17 +65,12 @@ public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder= new ReferenceHolder<>();
-		ALL_ASSERTION_METHODS.forEach(assertionmethod -> {
-			HelperVisitor.callMethodInvocationVisitor(ORG_JUNIT_ASSERT, assertionmethod, compilationUnit, dataHolder,
-					nodesprocessed, (visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
-		});
-		ALL_ASSERTION_METHODS.forEach(assertionmethod -> {
-			HelperVisitor.callImportDeclarationVisitor(ORG_JUNIT_ASSERT + "." + assertionmethod, compilationUnit,
-					dataHolder, nodesprocessed,
-					(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
-		});
-		HelperVisitor.callImportDeclarationVisitor(ORG_JUNIT_ASSERT, compilationUnit, dataHolder, nodesprocessed,
-				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+		HelperVisitor.forMethodCalls(ORG_JUNIT_ASSERT, ALL_ASSERTION_METHODS)
+			.andStaticImports()
+			.andImportsOf(ORG_JUNIT_ASSERT)
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(dataHolder, (visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
@@ -83,6 +80,7 @@ public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Jun
 	}
 
 	@Override
+	protected
 	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
 		if (junitHolder.minv instanceof MethodInvocation) {

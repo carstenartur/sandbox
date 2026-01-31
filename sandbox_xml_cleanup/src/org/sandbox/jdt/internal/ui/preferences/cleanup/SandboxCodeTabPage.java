@@ -40,9 +40,21 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 	@Override
 	protected void doCreatePreferences(Composite composite, int numColumns) {
 		Group java1d8Group= createGroup(numColumns, composite, CleanUpMessages.JavaFeatureTabPage_GroupName_Java1d8);
+		
+		// Main XML cleanup checkbox
 		final CheckboxPreference xmlsimplify= createCheckboxPref(java1d8Group, numColumns,
 				CleanUpMessages.JavaFeatureTabPage_CheckboxName_XML_CLEANUP,
 				MYCleanUpConstants.XML_CLEANUP, FALSE_TRUE);
+		
+		// Indent sub-option (depends on main checkbox)
+		intent(java1d8Group);
+		final CheckboxPreference xmlIndent= createCheckboxPref(java1d8Group, numColumns - 1,
+				CleanUpMessages.JavaFeatureTabPage_CheckboxName_XML_INDENT,
+				MYCleanUpConstants.XML_CLEANUP_INDENT, FALSE_TRUE);
+		
+		// Register dependency
+		registerSlavePreference(xmlsimplify, new CheckboxPreference[] { xmlIndent });
+		
 		intent(java1d8Group);
 		registerPreference(xmlsimplify);
 	}

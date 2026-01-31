@@ -1,0 +1,48 @@
+/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.functional.core.terminal;
+
+/**
+ * Represents a reduce terminal operation.
+ */
+public record ReduceTerminal(
+    String identity,
+    String accumulator,
+    String combiner,
+    ReduceType reduceType
+) implements TerminalOperation {
+    
+    /**
+     * Types of reduce operations.
+     */
+    public enum ReduceType {
+        /** Sum reduction */
+        SUM, 
+        /** Count reduction */
+        COUNT, 
+        /** Minimum reduction */
+        MIN, 
+        /** Maximum reduction */
+        MAX, 
+        /** Product reduction */
+        PRODUCT, 
+        /** Custom reduction */
+        CUSTOM
+    }
+    
+    @Override
+    public String operationType() { 
+        return "reduce"; 
+    }
+}

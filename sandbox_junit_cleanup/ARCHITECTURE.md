@@ -1,8 +1,10 @@
 # JUnit Cleanup Plugin Architecture
 
+> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#junit_cleanup) | [TODO](TODO.md)
+
 ## Overview
 
-The JUnit cleanup plugin provides automated migration from JUnit 3/4 to JUnit 5 (Jupiter). This document describes the architecture after the refactoring that extracted helper classes from the monolithic `AbstractTool` class.
+The JUnit cleanup plugin provides automated migration from JUnit 3/4 to JUnit 5 (Jupiter). This document describes the architecture after the refactoring that extracted helper classes from the monolithic `AbstractTool` class, and the introduction of the declarative `@RewriteRule` annotation framework.
 
 ## Design Goals
 
@@ -11,6 +13,107 @@ The JUnit cleanup plugin provides automated migration from JUnit 3/4 to JUnit 5 
 3. **Reusability**: Helper classes can be used independently by different cleanup tools
 4. **Testability**: Smaller classes are easier to test in isolation
 5. **Backward Compatibility**: Public API remains unchanged
+6. **Declarative Transformations**: Simple annotation migrations use declarative patterns to eliminate boilerplate
+
+## TriggerPattern Framework with @RewriteRule
+
+### Overview
+
+The TriggerPattern framework provides a declarative approach to JUnit cleanup plugins, allowing developers to specify transformations using annotations instead of implementing complex AST manipulation code manually.
+
+**Key Components:**
+- `@CleanupPattern` - Defines what pattern to match (e.g., "@Before", "@Ignore($value)")
+- `@RewriteRule` - Defines how to transform the matched pattern (new annotation name, imports)
+- `TriggerPatternCleanupPlugin` - Base class that provides default implementation
+
+### @RewriteRule Annotation
+
+Introduced to eliminate boilerplate in simple annotation migration plugins. Instead of manually implementing `process2Rewrite()`, plugins can use `@RewriteRule` to declaratively specify:
+
+```java
+@CleanupPattern(
+    value = "@Before",
+    kind = PatternKind.ANNOTATION,
+    qualifiedType = "org.junit.Before"
+)
+@RewriteRule(
+    replaceWith = "@BeforeEach",
+    removeImports = {"org.junit.Before"},
+    addImports = {"org.junit.jupiter.api.BeforeEach"}
+)
+public class BeforeJUnitPluginV2 extends TriggerPatternCleanupPlugin {
+    // process2Rewrite() is now automatic!
+    // Only getPreview() needed
+}
+```
+
+**Benefits:**
+- Reduces plugin code by ~20-30 lines per plugin
+- Makes transformations self-documenting
+- Eliminates risk of copy-paste errors
+- Enables future tooling to auto-generate plugins
+
+**Supported Transformations:**
+- **Marker annotations** (no parameters): `@Before` → `@BeforeEach`
+- **Single-value annotations**: `@Ignore($value)` → `@Disabled($value)`
+
+**Current Limitations:**
+- Only simple (unqualified) annotation names supported (not `@org.junit.jupiter.api.BeforeEach`)
+- Only single placeholder patterns supported
+- Named parameters (NormalAnnotation like `@Ignore(value="reason")`) not supported
+- Plugins needing these features must override `process2Rewrite()` manually
+
+**Implementation Details:**
+- `TriggerPatternCleanupPlugin.process2Rewrite()` is no longer abstract - provides default implementation
+- Reads `@RewriteRule` annotation at runtime
+- Parses `replaceWith` pattern using cached regex (performance optimization)
+- Creates appropriate AST node (MarkerAnnotation or SingleMemberAnnotation)
+- Handles import/static import management automatically
+- Placeholder lookup adds "$" prefix to match TriggerPattern binding keys
+
+**Architectural Trade-off:**
+Changing `process2Rewrite()` from abstract to concrete is a **breaking change** in class contract:
+- **Before**: Compile-time enforcement - subclasses must implement method
+- **After**: Runtime enforcement - throws exception if neither `@RewriteRule` nor override present
+- **Benefit**: Significantly reduces boilerplate for simple cases
+- **Risk**: Plugin could forget both annotation and override, getting runtime error instead of compile error
+
+Alternative approaches considered but not implemented:
+- Separate `DeclarativeTriggerPatternCleanupPlugin` class for `@RewriteRule` users
+- Would preserve compile-time safety but add class hierarchy complexity
+
+**Plugins Using @RewriteRule:**
+- `BeforeJUnitPluginV2` - @Before → @BeforeEach
+- `AfterJUnitPluginV2` - @After → @AfterEach
+
+**Plugins Requiring Custom Implementation:**
+- `IgnoreJUnitPluginV2` - Handles three annotation types (marker, single-member, normal)
+- Any plugin dealing with NormalAnnotation with named parameters
+
+### Pattern Matching Engine
+
+The `TriggerPatternEngine` provides AST pattern matching with placeholder binding:
+
+```java
+Pattern pattern = new Pattern("@Ignore($value)", PatternKind.ANNOTATION, "org.junit.Ignore");
+List<Match> matches = engine.findMatches(compilationUnit, pattern);
+
+for (Match match : matches) {
+    Map<String, ASTNode> bindings = match.getBindings();
+    Expression value = (Expression) bindings.get("$value");
+    // Use the captured value...
+}
+```
+
+**Pattern Kinds:**
+- `ANNOTATION` - Matches annotation nodes
+- `STATEMENT` - Matches statement patterns
+- `EXPRESSION` - Matches expression patterns
+
+**Placeholder Rules:**
+- Placeholders use `$` prefix: `$value`, `$x`, `$name`
+- Stored in bindings map with `$` prefix as key
+- Can match any AST node type depending on context
 
 ## Architecture Diagram
 
@@ -263,14 +366,51 @@ Each plugin class extends `AbstractTool` and specializes for a specific JUnit mi
 - Reorders assertion parameters
 - Handles both instance and static imports
 
+### AssertOptimizationJUnitPlugin
+- Optimizes generic assertions to more specific ones
+- Converts `assertTrue(a == b)` to `assertEquals(a, b)` (primitives) or `assertSame(a, b)` (objects)
+- Converts `assertTrue(obj == null)` to `assertNull(obj)`
+- Converts `assertTrue(!condition)` to `assertFalse(condition)`
+- Converts `assertTrue(a.equals(b))` to `assertEquals(b, a)`
+- **New**: Detects and corrects swapped assertEquals/assertNotEquals parameters
+- Swaps parameters when constant is in second position: `assertEquals(result, "expected")` → `assertEquals("expected", result)`
+- Detects constants: literals, static final fields, enum values
+- Preserves message parameters and delta parameters in 3/4-argument versions
+- Handles both JUnit 4 (Assert) and JUnit 5 (Assertions) classes
+
 ### AssumeJUnitPlugin
 - Migrates `org.junit.Assume` to `org.junit.jupiter.api.Assumptions`
 - Reorders assumption parameters
 - Uses `MULTI_PARAM_ASSUMPTIONS` constant set
 
+### AssumeOptimizationJUnitPlugin
+- Optimizes generic assumptions by removing unnecessary negations
+- Converts `assumeTrue(!condition)` to `assumeFalse(condition)`
+- Converts `assumeFalse(!condition)` to `assumeTrue(condition)`
+- Preserves message parameters (both String and Supplier variants)
+- Handles both JUnit 4 (Assume) and JUnit 5 (Assumptions) classes
+- Note: Does not optimize null checks as JUnit 5 Assumptions lacks assumeNull/assumeNotNull
+
 ### ExternalResourceJUnitPlugin
 - Orchestrates `ExternalResourceRefactorer` for field-level transformations
 - Manages `@Rule` and `@ClassRule` to `@RegisterExtension` migration
+
+### LostTestFinderJUnitPlugin
+- Detects and fixes "lost" JUnit 3 tests that were not properly migrated to JUnit 4/5
+- Identifies methods starting with `test` that are missing `@Test` annotation
+- **Detection Criteria** (all must be met):
+  - Class or superclass contains existing `@Test` annotated methods
+  - Method name starts with "test"
+  - No `@Test` annotation present
+  - `public void` signature with no parameters
+  - Not annotated with lifecycle annotations (`@Before`, `@After`, `@BeforeEach`, `@AfterEach`, `@Ignore`, `@Disabled`, etc.)
+- **Version Awareness**: Determines correct `@Test` annotation based on existing imports
+  - JUnit 5 (`org.junit.jupiter.api.Test`) if JUnit 5 imports detected or no JUnit imports
+  - JUnit 4 (`org.junit.Test`) if JUnit 4 imports detected and no JUnit 5
+  - Supports wildcard imports (`import org.junit.*;`)
+- **Conservative Approach**: Only operates on classes that have already been partially migrated (contain `@Test` methods), avoiding false positives on classes with test-prefixed helper methods that were never intended as tests
+- **Disabled by Default**: As a heuristic feature, must be explicitly enabled by user
+- **Use Case**: Fixes test methods lost during manual regex-based JUnit 3 → 4/5 migrations
 
 ### TestJUnit3Plugin
 - Migrates JUnit 3 test cases (extending `TestCase`) to JUnit 5
@@ -411,6 +551,80 @@ Plugin tests in `JUnitMigrationCleanUpTest` validate end-to-end transformations 
 3. **ImportRewrite Efficiency**: Using ImportRewrite's built-in conflict detection avoids manual string manipulation
 
 4. **Selective Transformation**: The `find()` method identifies specific nodes to transform, avoiding unnecessary processing
+
+## User Interface Components
+
+### SandboxCodeTabPage (Preferences UI)
+
+**Location**: `org.sandbox.jdt.internal.ui.preferences.cleanup.SandboxCodeTabPage`
+
+**Responsibilities**:
+- Provides Eclipse preferences UI for configuring JUnit cleanup options
+- Extends Eclipse's `AbstractCleanUpTabPage` framework
+- Manages checkbox preferences for individual cleanup features
+- Implements Quick Select combo box for preset configurations
+
+**Key Features**:
+
+1. **Hierarchical Checkbox Organization**:
+   - Main "JUNIT_CLEANUP" checkbox enables/disables all sub-options
+   - Grouped checkboxes for related features (assertions, lifecycle, rules, etc.)
+   - Nested dependencies (e.g., @Test enables timeout and expected parameter options)
+
+2. **Quick Select Presets** (New):
+   - Combo box widget allowing users to select predefined groups of options
+   - Five preset configurations covering common migration scenarios
+   - Automatically enables the main JUNIT_CLEANUP checkbox when a preset is selected
+   - Individual checkboxes remain editable after preset application
+
+**Quick Select Presets**:
+
+| Preset | Description | Enabled Options |
+|--------|-------------|-----------------|
+| **Full Migration** | Complete JUnit 4→5 migration | All cleanup options except optimizations |
+| **Annotations Only** | Safe annotation migration | @Test, @Before, @After, @BeforeClass, @AfterClass, @Ignore |
+| **Lifecycle Only** | Lifecycle annotations only | @Before, @After, @BeforeClass, @AfterClass |
+| **Assertions Only** | Assertion migration | Assert → Assertions |
+| **Rules Only** | JUnit 4 Rules migration | TemporaryFolder, TestName, ExternalResource, Timeout |
+
+**Implementation Details**:
+```java
+// Combo widget is added after the main JUNIT_CLEANUP checkbox
+Combo quickSelectCombo = new Combo(junitGroup, SWT.READ_ONLY | SWT.DROP_DOWN);
+
+// Selection listener applies the chosen preset
+quickSelectCombo.addSelectionListener(new SelectionAdapter() {
+    @Override
+    public void widgetSelected(SelectionEvent e) {
+        int index = quickSelectCombo.getSelectionIndex();
+        applyQuickSelection(index, ...checkboxPreferences...);
+    }
+});
+
+// applyQuickSelection() method programmatically sets checkbox states
+private void applyQuickSelection(int selectionIndex, CheckboxPreference... prefs) {
+    // Enable main checkbox
+    junitcb.setChecked(true);
+    
+    // Reset all sub-options, then enable specific ones based on preset
+    switch (selectionIndex) {
+        case 1: // Full Migration - enable all
+        case 2: // Annotations Only - enable annotation options
+        // ... etc
+    }
+}
+```
+
+**Benefits**:
+- Reduces configuration time from 15+ checkbox clicks to 2 clicks
+- Prevents user errors when selecting related options
+- Provides guided migration paths for different use cases
+- Maintains flexibility for custom configurations
+
+**Internationalization**:
+- All UI strings are externalized in `CleanUpMessages.properties`
+- Combo box items use message constants (e.g., `JavaFeatureTabPage_QuickSelect_FullMigration`)
+- Supports future translations
 
 ## Future Improvements
 

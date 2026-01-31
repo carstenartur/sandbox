@@ -1,0 +1,103 @@
+# Manual Code Cleanup Workflow using Sandbox Cleanup Application
+# This workflow can be manually triggered to apply cleanup to any branch
+# Useful for running cleanup on-demand or on specific branches
+
+name: Manual Cleanup
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to apply cleanup to (leave empty for current branch)'
+        required: false
+        type: string
+      cleanup_profile:
+        description: 'Cleanup profile to use'
+        required: true
+        type: choice
+        default: 'standard'
+        options:
+          - minimal
+          - standard
+          - aggressive
+      source_dir:
+        description: 'Directory to clean (relative to repo root, default: .)'
+        required: false
+        type: string
+        default: '.'
+      commit_changes:
+        description: 'Commit and push changes'
+        required: true
+        type: boolean
+        default: true
+      verbose:
+        description: 'Enable verbose output'
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v6
+      with:
+        ref: ${{ inputs.branch || github.ref }}
+        fetch-depth: 0
+        
+    - name: Run Sandbox Cleanup
+      uses: ./.github/actions/cleanup-action
+      with:
+        config-file: '.github/cleanup-profiles/${{ inputs.cleanup_profile }}.properties'
+        source-dir: '${{ inputs.source_dir }}'
+        verbose: '${{ inputs.verbose }}'
+        
+    - name: Show changes
+      run: |
+        echo "=== Git Status ==="
+        git status
+        echo ""
+        echo "=== Changed Files ==="
+        git diff --name-only || echo "No changes"
+        echo ""
+        echo "=== Diff Summary ==="
+        git diff --stat || echo "No changes"
+        
+    - name: Commit and push changes
+      if: inputs.commit_changes
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "🔧 Apply ${{ inputs.cleanup_profile }} cleanup profile (Sandbox)
+
+          Cleanup profile: ${{ inputs.cleanup_profile }}
+          Source directory: ${{ inputs.source_dir }}
+          Manually triggered by: @${{ github.actor }}"
+          git push
+          echo "✅ Changes committed and pushed"
+        else
+          echo "ℹ️ No changes to commit"
+        fi
+        
+    - name: Summary
+      run: |
+        echo "### Cleanup Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- **Profile:** ${{ inputs.cleanup_profile }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Branch:** ${{ inputs.branch || github.ref }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Source Directory:** ${{ inputs.source_dir }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Commit changes:** ${{ inputs.commit_changes }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Triggered by:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "**Status:** ✅ Cleanup applied successfully" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "**Status:** ℹ️ No changes needed" >> $GITHUB_STEP_SUMMARY
+        fi

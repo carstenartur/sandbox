@@ -250,21 +250,29 @@ public class XMLPlugin extends AbstractTool<XMLCandidateHit> {
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {
 			return """
-				<?xml version="1.0" encoding="UTF-8"?>
-				<plugin>
-				<extension point="org.eclipse.ui.views">
-				<view id="my.view" name="My View" class="MyView"/>
-				</extension>
-				</plugin>
+				/* XML Cleanup - After:
+				 * - Empty elements collapsed to self-closing
+				 * - Whitespace optimized
+				 */
+				// <?xml version="1.0" encoding="UTF-8"?>
+				// <plugin>
+				// <extension point="org.eclipse.ui.views"/>
+				// <view id="my.view" name="My View"/>
+				// </plugin>
 				"""; //$NON-NLS-1$
 		}
 		return """
-			<?xml version="1.0" encoding="UTF-8"?>
-			<plugin>
-			    <extension point="org.eclipse.ui.views">
-			        <view id="my.view" name="My View" class="MyView" />
-			    </extension>
-			</plugin>
+			/* XML Cleanup - Before:
+			 * - Empty elements with closing tags
+			 * - Extra whitespace
+			 */
+			// <?xml version="1.0" encoding="UTF-8"?>
+			// <plugin>
+			//     <extension point="org.eclipse.ui.views">
+			//     </extension>
+			//     <view id="my.view" name="My View">
+			//     </view>
+			// </plugin>
 			"""; //$NON-NLS-1$
 	}
 }

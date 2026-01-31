@@ -22,5 +22,9 @@ public class DefaultCleanUpOptionsInitializer implements ICleanUpOptionsInitiali
 	@Override
 	public void setDefaultOptions(CleanUpOptions options) {
 		options.setOption(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP, CleanUpOptions.FALSE);
+		options.setOption(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP_V2, CleanUpOptions.FALSE);
+		options.setOption(MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_STREAM, CleanUpOptions.TRUE); // default to Stream
+		options.setOption(MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_FOR, CleanUpOptions.FALSE);
+		options.setOption(MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_WHILE, CleanUpOptions.FALSE);
 	}
 }

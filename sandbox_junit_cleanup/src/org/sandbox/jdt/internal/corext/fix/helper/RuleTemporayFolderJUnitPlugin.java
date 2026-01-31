@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
+
 /*-
  * #%L
  * Sandbox junit cleanup
@@ -54,8 +56,9 @@ import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
-
-import static org.sandbox.jdt.internal.corext.fix.helper.JUnitConstants.*;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.TestNameRefactorer;
 
 /**
  * Plugin to migrate JUnit 4 TemporaryFolder rule to JUnit 5 @TempDir.
@@ -66,9 +69,12 @@ public class RuleTemporayFolderJUnitPlugin extends AbstractTool<ReferenceHolder<
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder= new ReferenceHolder<>();
-		HelperVisitor.callFieldDeclarationVisitor(ORG_JUNIT_RULE, ORG_JUNIT_RULES_TEMPORARY_FOLDER, compilationUnit,
-				dataHolder, nodesprocessed,
-				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+		HelperVisitor.forField()
+			.withAnnotation(ORG_JUNIT_RULE)
+			.ofType(ORG_JUNIT_RULES_TEMPORARY_FOLDER)
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(dataHolder, (visited, aholder) -> processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
@@ -82,10 +88,12 @@ public class RuleTemporayFolderJUnitPlugin extends AbstractTool<ReferenceHolder<
 			dataHolder.put(dataHolder.size(), mh);
 			operations.add(fixcore.rewrite(dataHolder));
 		}
-		return false;
+		// Return true to continue processing other fields
+		return true;
 	}
 	
 	@Override
+	protected
 	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
 		FieldDeclaration field= junitHolder.getFieldDeclaration();
@@ -182,7 +190,10 @@ public class RuleTemporayFolderJUnitPlugin extends AbstractTool<ReferenceHolder<
 							MethodInvocation resolveInvocation= ast.newMethodInvocation();
 							resolveInvocation.setExpression(ast.newSimpleName(originalName));
 							resolveInvocation.setName(ast.newSimpleName("resolve"));
-							resolveInvocation.arguments().addAll(ASTNode.copySubtrees(ast, node.arguments()));
+							// newFile only takes a single String argument
+							// Copy and transform TestName.getMethodName() calls in the argument
+							ASTNode originalArg = (ASTNode) node.arguments().get(0);
+							resolveInvocation.arguments().add(TestNameRefactorer.copyAndTransformTestNameReferences(originalArg, ast));
 							
 							createFileInvocation.arguments().add(resolveInvocation);
 							
@@ -209,17 +220,32 @@ public class RuleTemporayFolderJUnitPlugin extends AbstractTool<ReferenceHolder<
 							
 							rewriter.replace(node, toFileInvocation, group);
 						} else {
-							// newFolder(String...) -> Files.createDirectories(tempDir.resolve(...)).toFile()
+							// newFolder(String...) -> Files.createDirectories(tempDir.resolve(...).resolve(...)).toFile()
+							// For multiple arguments, chain resolve() calls
 							MethodInvocation createDirInvocation= ast.newMethodInvocation();
 							createDirInvocation.setExpression(ast.newName("Files"));
 							createDirInvocation.setName(ast.newSimpleName("createDirectories"));
 							
-							MethodInvocation resolveInvocation= ast.newMethodInvocation();
-							resolveInvocation.setExpression(ast.newSimpleName(originalName));
-							resolveInvocation.setName(ast.newSimpleName("resolve"));
-							resolveInvocation.arguments().addAll(ASTNode.copySubtrees(ast, node.arguments()));
+							// Build chained resolve() calls for multiple arguments
+							// Start with tempFolder.resolve("a")
+							ASTNode firstArg = (ASTNode) node.arguments().get(0);
+							MethodInvocation chainedResolve = ast.newMethodInvocation();
+							chainedResolve.setExpression(ast.newSimpleName(originalName));
+							chainedResolve.setName(ast.newSimpleName("resolve"));
+							chainedResolve.arguments().add(TestNameRefactorer.copyAndTransformTestNameReferences(firstArg, ast));
 							
-							createDirInvocation.arguments().add(resolveInvocation);
+							// Chain additional resolve() calls for subsequent arguments
+							// .resolve("b").resolve("c")...
+							for (int i = 1; i < node.arguments().size(); i++) {
+								ASTNode arg = (ASTNode) node.arguments().get(i);
+								MethodInvocation nextResolve = ast.newMethodInvocation();
+								nextResolve.setExpression(chainedResolve);
+								nextResolve.setName(ast.newSimpleName("resolve"));
+								nextResolve.arguments().add(TestNameRefactorer.copyAndTransformTestNameReferences(arg, ast));
+								chainedResolve = nextResolve;
+							}
+							
+							createDirInvocation.arguments().add(chainedResolve);
 							
 							MethodInvocation toFileInvocation= ast.newMethodInvocation();
 							toFileInvocation.setExpression(createDirInvocation);

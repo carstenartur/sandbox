@@ -168,4 +168,107 @@ public class LibStandardNames {
 	 * Field name for {@link java.nio.charset.StandardCharsets#UTF_8}
 	 */
 	public static final String FIELD_UTF8= "UTF_8"; //$NON-NLS-1$
+	
+	// ========== Stream API Methods ==========
+	
+	/**
+	 * Method name for creating a stream from a collection.
+	 * {@link java.util.Collection#stream()}
+	 */
+	public static final String METHOD_STREAM = "stream"; //$NON-NLS-1$
+	
+	/**
+	 * Method name for intermediate filter operation.
+	 * {@link java.util.stream.Stream#filter(java.util.function.Predicate)}
+	 */
+	public static final String METHOD_FILTER = "filter"; //$NON-NLS-1$
+	
+	/**
+	 * Method name for intermediate map operation.
+	 * {@link java.util.stream.Stream#map(java.util.function.Function)}
+	 */
+	public static final String METHOD_MAP = "map"; //$NON-NLS-1$
+	
+	/**
+	 * Method name for terminal reduce operation.
+	 * {@link java.util.stream.Stream#reduce(Object, java.util.function.BinaryOperator)}
+	 */
+	public static final String METHOD_REDUCE = "reduce"; //$NON-NLS-1$
+	
+	/**
+	 * Method name for terminal forEachOrdered operation.
+	 * {@link java.util.stream.Stream#forEachOrdered(java.util.function.Consumer)}
+	 */
+	public static final String METHOD_FOR_EACH_ORDERED = "forEachOrdered"; //$NON-NLS-1$
+	
+	/**
+	 * Method name for terminal anyMatch operation.
+	 * {@link java.util.stream.Stream#anyMatch(java.util.function.Predicate)}
+	 */
+	public static final String METHOD_ANY_MATCH = "anyMatch"; //$NON-NLS-1$
+	
+	/**
+	 * Method name for terminal noneMatch operation.
+	 * {@link java.util.stream.Stream#noneMatch(java.util.function.Predicate)}
+	 */
+	public static final String METHOD_NONE_MATCH = "noneMatch"; //$NON-NLS-1$
+	
+	/**
+	 * Method name for terminal allMatch operation.
+	 * {@link java.util.stream.Stream#allMatch(java.util.function.Predicate)}
+	 */
+	public static final String METHOD_ALL_MATCH = "allMatch"; //$NON-NLS-1$
+	
+	// ========== Math Class Constants ==========
+	
+	/**
+	 * Method name for Math.max operation.
+	 * {@link Math#max(int, int)}
+	 */
+	public static final String METHOD_MAX = "max"; //$NON-NLS-1$
+	
+	/**
+	 * Method name for Math.min operation.
+	 * {@link Math#min(int, int)}
+	 */
+	public static final String METHOD_MIN = "min"; //$NON-NLS-1$
+	
+	/**
+	 * Method name for String concat operation.
+	 * {@link String#concat(String)}
+	 */
+	public static final String METHOD_CONCAT = "concat"; //$NON-NLS-1$
+	
+	/**
+	 * Method name for Integer/Long/Double sum operation.
+	 * {@link Integer#sum(int, int)}
+	 */
+	public static final String METHOD_SUM = "sum"; //$NON-NLS-1$
+	
+	// ========== Fully Qualified Type Names ==========
+	
+	/**
+	 * Fully qualified name of java.lang.Math class.
+	 */
+	public static final String JAVA_LANG_MATH = "java.lang.Math"; //$NON-NLS-1$
+	
+	/**
+	 * Fully qualified name of java.lang.String class.
+	 */
+	public static final String JAVA_LANG_STRING = "java.lang.String"; //$NON-NLS-1$
+	
+	/**
+	 * Fully qualified name of java.lang.Integer class.
+	 */
+	public static final String JAVA_LANG_INTEGER = "java.lang.Integer"; //$NON-NLS-1$
+	
+	/**
+	 * Fully qualified name of java.lang.Long class.
+	 */
+	public static final String JAVA_LANG_LONG = "java.lang.Long"; //$NON-NLS-1$
+	
+	/**
+	 * Fully qualified name of java.lang.Double class.
+	 */
+	public static final String JAVA_LANG_DOUBLE = "java.lang.Double"; //$NON-NLS-1$
 }

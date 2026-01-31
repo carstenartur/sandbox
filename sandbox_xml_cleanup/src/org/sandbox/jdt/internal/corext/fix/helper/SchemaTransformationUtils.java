@@ -71,8 +71,9 @@ public class SchemaTransformationUtils {
 			
 			Transformer transformer = factory.newTransformer(new StreamSource(xslStream));
 			
-			// Set indentation based on preference - default is "no" to reduce file size
-			transformer.setOutputProperty(OutputKeys.INDENT, enableIndent ? "yes" : "no");
+			// Set indentation to "yes" to get proper formatting that can be converted to tabs
+			// The enableIndent parameter controls whether the final output has tabs or spaces
+			transformer.setOutputProperty(OutputKeys.INDENT, "yes");
 
 			// Perform transformation
 			StreamSource source = new StreamSource(schemaPath.toFile());
@@ -85,7 +86,15 @@ public class SchemaTransformationUtils {
 				// Read transformed content
 				String transformed = Files.readString(tempOutput, StandardCharsets.UTF_8);
 				
-				// Post-process: normalize whitespace and convert leading spaces to tabs
+				// Post-processing for size reduction:
+				
+				// 1. Collapse empty elements to self-closing tags
+				transformed = collapseEmptyElements(transformed);
+				
+				// 2. Remove trailing whitespace from all lines
+				transformed = removeTrailingWhitespace(transformed);
+				
+				// 3. Normalize whitespace (convert leading spaces to tabs, reduce empty lines)
 				transformed = normalizeWhitespace(transformed);
 				
 				return transformed;
@@ -94,6 +103,52 @@ public class SchemaTransformationUtils {
 				Files.deleteIfExists(tempOutput);
 			}
 		}
+	}
+	
+	/**
+	 * Collapse empty XML elements to self-closing tags.
+	 * Converts: <element></element> or <element>   </element>
+	 * To: <element/>
+	 * 
+	 * @param content the XML content
+	 * @return content with empty elements collapsed
+	 */
+	private static String collapseEmptyElements(String content) {
+		// Pattern matches: <tagname attributes></tagname> or <tagname attributes>   </tagname>
+		// Captures the opening tag (without >) and ensures matching closing tag
+		// Supports namespaces (e.g., ns:element)
+		Pattern emptyElementPattern = Pattern.compile(
+			"<([\\w:]+)((?:\\s+[^>]*?)?)>\\s*</\\1>",
+			Pattern.MULTILINE
+		);
+		
+		Matcher matcher = emptyElementPattern.matcher(content);
+		StringBuffer sb = new StringBuffer();
+		
+		while (matcher.find()) {
+			String tagName = matcher.group(1);
+			String attributes = matcher.group(2);
+			// Replace with self-closing tag
+			String replacement = "<" + tagName + attributes + "/>";
+			matcher.appendReplacement(sb, Matcher.quoteReplacement(replacement));
+		}
+		matcher.appendTail(sb);
+		
+		return sb.toString();
+	}
+	
+	/**
+	 * Remove trailing whitespace from all lines.
+	 * Only removes spaces and tabs at the end of lines, not other whitespace.
+	 * 
+	 * @param content the XML content
+	 * @return content with trailing whitespace removed from each line
+	 */
+	private static String removeTrailingWhitespace(String content) {
+		// Remove trailing spaces/tabs from each line
+		// Pattern matches spaces or tabs at the end of lines (before newline or end of string)
+		// Using (?m) for MULTILINE mode to match end-of-line, not just end-of-string
+		return content.replaceAll("(?m)[ \\t]+$", "");
 	}
 	
 	/**

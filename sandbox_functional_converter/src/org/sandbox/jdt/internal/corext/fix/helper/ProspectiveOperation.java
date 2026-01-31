@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021 Alexandru Gyori and others.
+ * Copyright (c) 2025 Carsten Hammer and others.
  *
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
@@ -9,13 +9,12 @@
  * SPDX-License-Identifier: EPL-2.0
  *
  * Contributors:
- *     Alexandru Gyori original code
- *     Carsten Hammer initial port to Eclipse
+ *     Carsten Hammer
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -25,869 +24,629 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Expression;
-import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.LambdaExpression;
-import org.eclipse.jdt.core.dom.NumberLiteral;
-import org.eclipse.jdt.core.dom.ParenthesizedExpression;
-import org.eclipse.jdt.core.dom.ReturnStatement;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.SimpleName;
-import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
-import org.eclipse.jdt.core.dom.TypeMethodReference;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
-import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 
-public class ProspectiveOperation {
-    /**
-     * The original expression being analyzed or transformed.
-     * <p>
-     * This is set directly when the {@link ProspectiveOperation} is constructed with an {@link Expression}.
-     * If constructed with a {@link org.eclipse.jdt.core.dom.Statement}, this is set to the expression
-     * contained within the statement (if applicable, e.g., for {@link org.eclipse.jdt.core.dom.ExpressionStatement}).
-     */
-    private Expression originalExpression;
+/**
+ * Represents a prospective stream operation extracted from a loop body.
+ * 
+ * <p>
+ * This class encapsulates a single operation in a stream pipeline being
+ * constructed from an enhanced for-loop. Each operation corresponds to a
+ * stream method (filter, map, forEach, reduce, etc.) and maintains information
+ * about the expression to transform, variables consumed/produced, and any
+ * special handling required.
+ * </p>
+ * 
+ * <p><b>Operation Types:</b></p>
+ * <ul>
+ * <li><b>FILTER</b>: Conditional filtering ({@code .filter(predicate)})</li>
+ * <li><b>MAP</b>: Transformation ({@code .map(function)})</li>
+ * <li><b>FOREACH</b>: Terminal action ({@code .forEach(consumer)})</li>
+ * <li><b>REDUCE</b>: Aggregation ({@code .reduce(identity, accumulator)})</li>
+ * <li><b>ANYMATCH</b>: Short-circuit match ({@code .anyMatch(predicate)})</li>
+ * <li><b>NONEMATCH</b>: Short-circuit non-match ({@code .noneMatch(predicate)})</li>
+ * <li><b>ALLMATCH</b>: Short-circuit all-match ({@code .allMatch(predicate)})</li>
+ * </ul>
+ * 
+ * <p><b>Variable Tracking:</b></p>
+ * <p>
+ * The class tracks three types of variables:
+ * <ul>
+ * <li><b>Consumed variables</b>: Variables read by this operation</li>
+ * <li><b>Produced variable</b>: Variable created by MAP operations (e.g., {@code int x = ...})</li>
+ * <li><b>Accumulator variable</b>: Variable modified by REDUCE operations (e.g., {@code sum += ...})</li>
+ * </ul>
+ * This tracking enables proper scoping and validation in the stream pipeline.
+ * </p>
+ * 
+ * <p><b>Reducer Patterns:</b></p>
+ * <p>
+ * For REDUCE operations, this class supports various reducer types:
+ * <ul>
+ * <li>INCREMENT/DECREMENT: {@code i++}, {@code i--}</li>
+ * <li>SUM: {@code sum += x} → {@code .reduce(sum, Integer::sum)}</li>
+ * <li>PRODUCT: {@code product *= x} → {@code .reduce(product, (a,b) -> a*b)}</li>
+ * <li>MAX/MIN: {@code max = Math.max(max, x)} → {@code .reduce(max, Integer::max)}</li>
+ * <li>STRING_CONCAT: {@code str += s} → {@code .reduce(str, String::concat)} (when null-safe)</li>
+ * </ul>
+ * </p>
+ * 
+ * <p><b>Lambda Generation:</b></p>
+ * <p>
+ * The {@link #getArguments(AST, String)} method generates lambda expressions
+ * or method references appropriate for each operation type. It handles:
+ * <ul>
+ * <li>Parameter naming based on variable tracking</li>
+ * <li>Identity element generation for reducers</li>
+ * <li>Method reference optimization (e.g., Integer::sum vs explicit lambda)</li>
+ * <li>Expression copying and AST node creation</li>
+ * </ul>
+ * </p>
+ * 
+ * <p><b>Thread Safety:</b> This class is not thread-safe.</p>
+ * 
+ * <p>
+ * This class is final to prevent subclassing and potential finalizer attacks,
+ * since constructors call analysis methods that could potentially throw
+ * exceptions.
+ * </p>
+ * 
+ * @see StreamPipelineBuilder
+ * @see OperationType
+ * @see ReducerType
+ * @see StreamConstants
+ */
+public final class ProspectiveOperation {
+	/**
+	 * The original expression being analyzed or transformed.
+	 * <p>
+	 * This is set directly when the {@link ProspectiveOperation} is constructed
+	 * with an {@link Expression}. If constructed with a
+	 * {@link org.eclipse.jdt.core.dom.Statement}, this is set to the expression
+	 * contained within the statement (if applicable, e.g., for
+	 * {@link org.eclipse.jdt.core.dom.ExpressionStatement}).
+	 */
+	private Expression originalExpression;
 
-    /**
-     * The original statement being analyzed or transformed.
-     * <p>
-     * This is set when the {@link ProspectiveOperation} is constructed with a {@link org.eclipse.jdt.core.dom.Statement}.
-     * If the statement is an {@link org.eclipse.jdt.core.dom.ExpressionStatement}, its expression is also
-     * extracted and stored in {@link #originalExpression}.
-     * Otherwise, {@link #originalExpression} may be null.
-     */
-    private org.eclipse.jdt.core.dom.Statement originalStatement;
+	/**
+	 * The original statement being analyzed or transformed.
+	 * <p>
+	 * This is set when the {@link ProspectiveOperation} is constructed with a
+	 * {@link org.eclipse.jdt.core.dom.Statement}. If the statement is an
+	 * {@link org.eclipse.jdt.core.dom.ExpressionStatement}, its expression is also
+	 * extracted and stored in {@link #originalExpression}. Otherwise,
+	 * {@link #originalExpression} may be null.
+	 */
+	private org.eclipse.jdt.core.dom.Statement originalStatement;
 
-    private OperationType operationType;
-    private Set<String> neededVariables = new HashSet<>();
-    private Expression reducingVariable;
-    private boolean eager = false;
+	private OperationType operationType;
+	private Set<String> neededVariables = new HashSet<>();
+	/**
+	 * The name of the loop variable associated with this operation, if applicable.
+	 * <p>
+	 * This is set when the {@link ProspectiveOperation} is constructed with a
+	 * statement and a loop variable name. It is used to track the variable iterated
+	 * over in enhanced for-loops or similar constructs.
+	 */
+	private String loopVariableName;
 
-    /**
-     * The name of the loop variable associated with this operation, if applicable.
-     * <p>
-     * This is set when the {@link ProspectiveOperation} is constructed with a statement and a loop variable name.
-     * It is used to track the variable iterated over in enhanced for-loops or similar constructs.
-     */
-    private String loopVariableName;
-    
-    /**
-     * The name of the variable produced by this operation (for MAP operations).
-     * This is used to track variable names through the stream pipeline.
-     */
-    private String producedVariableName;
-    
-    /**
-     * The name of the accumulator variable for REDUCE operations.
-     * Used to track which variable is being accumulated (e.g., "i" in "i++").
-     */
-    private String accumulatorVariableName;
-    
-    /**
-     * The reducer type for REDUCE operations (INCREMENT, DECREMENT, SUM, etc.).
-     */
-    private ReducerType reducerType;
-    
-    /**
-     * Set of variables consumed by this operation.
-     * Used for tracking variable scope and preventing leaks.
-     */
-    private Set<String> consumedVariables = new HashSet<>();
+	/**
+	 * The name of the variable produced by this operation (for MAP operations).
+	 * This is used to track variable names through the stream pipeline.
+	 */
+	private String producedVariableName;
 
-    // Sammelt alle verwendeten Variablen
-    private void collectNeededVariables(Expression expression) {
-        if (expression == null) return;
-        expression.accept(new ASTVisitor() {
-            @Override
-            public boolean visit(SimpleName node) {
-                neededVariables.add(node.getIdentifier());
-                return super.visit(node);
-            }
-        });
-    }
-    
-    public ProspectiveOperation(Expression expression, OperationType operationType) {
-        this.originalExpression = expression;
-        this.operationType = operationType;
-        collectNeededVariables(expression);
-        updateConsumedVariables();
-    }
-    
-    /**
-     * Constructor for operations with a statement.
-     * 
-     * @param statement the statement to process
-     * @param operationType the type of operation (MAP, FOREACH, etc.)
-     * @param loopVarName the loop variable name; for side-effect MAP operations, this represents
-     *                    the variable to be returned in the lambda body (may be the current variable
-     *                    name in the pipeline, not necessarily the original loop variable)
-     */
-    public ProspectiveOperation(org.eclipse.jdt.core.dom.Statement statement, OperationType operationType, String loopVarName) {
-        this.originalStatement = statement;
-        this.operationType = operationType;
-        this.loopVariableName = loopVarName;
-        if (statement instanceof org.eclipse.jdt.core.dom.ExpressionStatement) {
-            this.originalExpression = ((org.eclipse.jdt.core.dom.ExpressionStatement) statement).getExpression();
-            collectNeededVariables(this.originalExpression);
-        }
-        updateConsumedVariables();
-    }
-    
-    /**
-     * Constructor for MAP operations with a produced variable name.
-     * Used when a variable declaration creates a new variable in the stream pipeline.
-     */
-    public ProspectiveOperation(Expression expression, OperationType operationType, String producedVarName) {
-        this.originalExpression = expression;
-        this.operationType = operationType;
-        this.producedVariableName = producedVarName;
-        collectNeededVariables(expression);
-        updateConsumedVariables();
-    }
-    
-    /**
-     * Constructor for REDUCE operations with accumulator variable and reducer type.
-     * Used when a reducer pattern (i++, sum += x, etc.) is detected.
-     * 
-     * @param statement the statement containing the reducer
-     * @param accumulatorVarName the name of the accumulator variable (e.g., "i", "sum")
-     * @param reducerType the type of reducer (INCREMENT, SUM, etc.)
-     */
-    public ProspectiveOperation(org.eclipse.jdt.core.dom.Statement statement, String accumulatorVarName, ReducerType reducerType) {
-        this.originalStatement = statement;
-        this.operationType = OperationType.REDUCE;
-        this.accumulatorVariableName = accumulatorVarName;
-        this.reducerType = reducerType;
-        if (statement instanceof org.eclipse.jdt.core.dom.ExpressionStatement) {
-            this.originalExpression = ((org.eclipse.jdt.core.dom.ExpressionStatement) statement).getExpression();
-            collectNeededVariables(this.originalExpression);
-        }
-        updateConsumedVariables();
-    }
+	/**
+	 * The name of the accumulator variable for REDUCE operations. Used to track
+	 * which variable is being accumulated (e.g., "i" in "i++").
+	 */
+	private String accumulatorVariableName;
 
-    /** (1) Gibt den ursprünglichen Ausdruck zurück */
-    public Expression getExpression() {
-        return this.originalExpression;
-    }
+	/**
+	 * The reducer type for REDUCE operations (INCREMENT, DECREMENT, SUM, etc.).
+	 */
+	private ReducerType reducerType;
 
-    /** (2) Gibt den Typ der Operation zurück */
-    public OperationType getOperationType() {
-        return this.operationType;
-    }
+	/**
+	 * The type of the accumulator variable for REDUCE operations (e.g., "int", "double", "long").
+	 * Used to generate the correct method reference (Integer::sum vs Double::sum).
+	 */
+	private String accumulatorType;
 
-    /** (3) Gibt die passende Stream-API Methode zurück */
-    public String getStreamOperation() {
-        return operationType == OperationType.MAP ? "map" :
-               operationType == OperationType.REDUCE ? "reduce" : "unknown";
-    }
-    
-    /** Returns the suitable stream method name for this operation type */
-    public String getSuitableMethod() {
-        switch (operationType) {
-            case MAP:
-                return "map";
-            case FILTER:
-                return "filter";
-            case FOREACH:
-                return "forEachOrdered";
-            case REDUCE:
-                return "reduce";
-            case ANYMATCH:
-                return "anyMatch";
-            case NONEMATCH:
-                return "noneMatch";
-            case ALLMATCH:
-                return "allMatch";
-            default:
-                return "unknown";
-        }
-    }
-    
-    /**
-     * Generate the lambda arguments for this operation
-     * Based on NetBeans ProspectiveOperation.getArguments()
-     */
-    public List<Expression> getArguments(AST ast, String paramName) {
-        List<Expression> args = new ArrayList<>();
-        
-        if (operationType == OperationType.REDUCE) {
-            return getArgumentsForReducer(ast);
-        }
-        
-        // Create lambda expression for MAP, FILTER, FOREACH, ANYMATCH, NONEMATCH
-        LambdaExpression lambda = ast.newLambdaExpression();
-        
-        // Create parameter
-        VariableDeclarationFragment param = ast.newVariableDeclarationFragment();
-        param.setName(ast.newSimpleName(paramName != null ? paramName : "item"));
-        lambda.parameters().add(param);
-        
-        // Create lambda body based on operation type
-        if (operationType == OperationType.MAP && originalExpression != null) {
-            // For MAP: lambda body is the expression
-            lambda.setBody(ASTNode.copySubtree(ast, originalExpression));
-        } else if (operationType == OperationType.MAP && originalStatement != null) {
-            // For MAP with statement: create block with statement and return
-            org.eclipse.jdt.core.dom.Block block = ast.newBlock();
-            block.statements().add(ASTNode.copySubtree(ast, originalStatement));
-            
-            // Add return statement if we have a loop variable to return
-            if (loopVariableName != null || paramName != null) {
-                ReturnStatement returnStmt = ast.newReturnStatement();
-                returnStmt.setExpression(ast.newSimpleName(loopVariableName != null ? loopVariableName : paramName));
-                block.statements().add(returnStmt);
-            }
-            
-            lambda.setBody(block);
-        } else if (operationType == OperationType.FILTER && originalExpression != null) {
-            // For FILTER: wrap condition in parentheses
-            ParenthesizedExpression parenExpr = ast.newParenthesizedExpression();
-            parenExpr.setExpression((Expression) ASTNode.copySubtree(ast, originalExpression));
-            lambda.setBody(parenExpr);
-        } else if (operationType == OperationType.FOREACH && originalStatement != null) {
-            // For FOREACH: lambda body is the statement (as block)
-            if (originalStatement instanceof org.eclipse.jdt.core.dom.Block) {
-                lambda.setBody(ASTNode.copySubtree(ast, originalStatement));
-            } else {
-                org.eclipse.jdt.core.dom.Block block = ast.newBlock();
-                block.statements().add(ASTNode.copySubtree(ast, originalStatement));
-                lambda.setBody(block);
-            }
-        } else if (originalExpression != null) {
-            // Default: use expression as body
-            lambda.setBody(ASTNode.copySubtree(ast, originalExpression));
-        } else {
-            // Defensive: neither originalExpression nor originalStatement is available
-            throw new IllegalStateException("Cannot create lambda: both originalExpression and originalStatement are null for operationType " + operationType);
-        }
-        
-        args.add(lambda);
-        return args;
-    }
-    
-    /**
-     * Sets whether this operation should be executed eagerly (e.g., forEachOrdered vs forEach).
-     * 
-     * @param eager true if the operation should be executed in order, false otherwise
-     */
-    public void setEager(boolean eager) {
-        this.eager = eager;
-    }
-    
-    /**
-     * Creates a lambda expression for this operation.
-     * 
-     * <p>Implementation details:
-     * <ul>
-     * <li>MAP: x -&gt; { &lt;stmt&gt;; return x; } or simpler form for expressions</li>
-     * <li>FILTER: x -&gt; (&lt;condition&gt;) with optional negation</li>
-     * <li>FOREACH: x -&gt; { &lt;stmt&gt; }</li>
-     * <li>REDUCE: Create map to constant, then reduce with accumulator function</li>
-     * <li>ANYMATCH: x -&gt; (&lt;condition&gt;)</li>
-     * <li>NONEMATCH: x -&gt; (&lt;condition&gt;)</li>
-     * </ul>
-     * 
-     * @param ast the AST to create nodes in
-     * @param loopVarName the name of the loop variable to use as lambda parameter
-     * @return a lambda expression representing this operation
-     */
-    public LambdaExpression createLambda(AST ast, String loopVarName) {
-        LambdaExpression lambda = ast.newLambdaExpression();
-        
-        // Create parameter using SingleVariableDeclaration (as per existing code pattern)
-        SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
-        param.setName(ast.newSimpleName(loopVarName != null ? loopVarName : "x"));
-        lambda.parameters().add(param);
-        
-        // Create lambda body based on operation type
-        switch (operationType) {
-            case MAP:
-                if (originalExpression != null) {
-                    // For MAP: use expression directly for simple cases
-                    lambda.setBody(ASTNode.copySubtree(ast, originalExpression));
-                } else if (originalStatement != null) {
-                    // For MAP with statement: create block
-                    org.eclipse.jdt.core.dom.Block block = ast.newBlock();
-                    block.statements().add(ASTNode.copySubtree(ast, originalStatement));
-                    lambda.setBody(block);
-                }
-                break;
-                
-            case FILTER:
-            case ANYMATCH:
-            case NONEMATCH:
-            case ALLMATCH:
-                // For FILTER/ANYMATCH/NONEMATCH/ALLMATCH: x -> (<condition>)
-                if (originalExpression != null) {
-                    lambda.setBody(ASTNode.copySubtree(ast, originalExpression));
-                }
-                break;
-                
-            case FOREACH:
-                // For FOREACH: x -> { <stmt> } (no return)
-                if (originalStatement != null) {
-                    if (originalStatement instanceof org.eclipse.jdt.core.dom.Block) {
-                        lambda.setBody(ASTNode.copySubtree(ast, originalStatement));
-                    } else {
-                        org.eclipse.jdt.core.dom.Block block = ast.newBlock();
-                        block.statements().add(ASTNode.copySubtree(ast, originalStatement));
-                        lambda.setBody(block);
-                    }
-                } else if (originalExpression != null) {
-                    org.eclipse.jdt.core.dom.Block block = ast.newBlock();
-                    org.eclipse.jdt.core.dom.ExpressionStatement exprStmt = ast.newExpressionStatement(
-                        (Expression) ASTNode.copySubtree(ast, originalExpression));
-                    block.statements().add(exprStmt);
-                    lambda.setBody(block);
-                }
-                break;
-                
-            case REDUCE:
-                // For REDUCE: accumulator lambda is created separately
-                // This returns the accumulator function, not a mapping function
-                return createAccumulatorLambda(ast);
-                
-            default:
-                throw new IllegalStateException("Unknown operation type: " + operationType);
-        }
-        
-        return lambda;
-    }
-    
-    /**
-     * Returns the stream method name for this operation.
-     * 
-     * <p>Mapping:
-     * <ul>
-     * <li>MAP → "map"</li>
-     * <li>FILTER → "filter"</li>
-     * <li>FOREACH → "forEach" or "forEachOrdered" (depending on eager flag)</li>
-     * <li>REDUCE → "reduce"</li>
-     * <li>ANYMATCH → "anyMatch"</li>
-     * <li>NONEMATCH → "noneMatch"</li>
-     * <li>ALLMATCH → "allMatch"</li>
-     * </ul>
-     * 
-     * @return the stream API method name for this operation
-     */
-    public String getStreamMethod() {
-        switch (operationType) {
-            case MAP:
-                return "map";
-            case FILTER:
-                return "filter";
-            case FOREACH:
-                return eager ? "forEachOrdered" : "forEach";
-            case REDUCE:
-                return "reduce";
-            case ANYMATCH:
-                return "anyMatch";
-            case NONEMATCH:
-                return "noneMatch";
-            case ALLMATCH:
-                return "allMatch";
-            default:
-                throw new IllegalStateException("Unknown operation type: " + operationType);
-        }
-    }
-    
-    /**
-     * Returns the arguments for the stream method call.
-     * 
-     * <p>For most operations (MAP, FILTER, FOREACH, ANYMATCH, NONEMATCH), 
-     * returns a list containing the lambda expression.</p>
-     * 
-     * <p>For REDUCE operations, returns a list with the identity value followed by 
-     * the accumulator lambda, or just the lambda if no identity value can be determined.</p>
-     * 
-     * @param ast the AST to create nodes in
-     * @param loopVarName the name of the loop variable to use as lambda parameter
-     * @return a list of expressions to pass as arguments to the stream method
-     */
-    public List<Expression> getStreamArguments(AST ast, String loopVarName) {
-        List<Expression> args = new ArrayList<>();
-        
-        if (operationType == OperationType.REDUCE) {
-            return getArgumentsForReducer(ast);
-        }
-        
-        // For other operations: create lambda
-        LambdaExpression lambda = createLambda(ast, loopVarName);
-        args.add(lambda);
-        return args;
-    }
-    
-    /**
-     * Returns the reducing variable expression for REDUCE operations.
-     * 
-     * @return the expression representing the variable being reduced
-     */
-    public Expression getReducingVariable() {
-        return reducingVariable;
-    }
-    
-    /**
-     * Returns the variable name produced by this operation (for MAP operations).
-     * This is used to track variable names through the stream pipeline.
-     */
-    public String getProducedVariableName() {
-        return producedVariableName;
-    }
-    
-    /**
-     * Returns the accumulator variable name for REDUCE operations.
-     * @return the accumulator variable name, or null if not a REDUCE operation
-     */
-    public String getAccumulatorVariableName() {
-        return accumulatorVariableName;
-    }
-    
-    /**
-     * Returns the reducer type for REDUCE operations.
-     * @return the reducer type, or null if not a REDUCE operation
-     */
-    public ReducerType getReducerType() {
-        return reducerType;
-    }
-    
-    /**
-     * Returns the set of variables consumed by this operation.
-     * This includes all SimpleName references in the operation's expression.
-     * 
-     * @return the set of consumed variable names
-     */
-    public Set<String> getConsumedVariables() {
-        return consumedVariables;
-    }
-    
-    /**
-     * Updates the consumed variables set by collecting all SimpleName references.
-     * This is called during operation construction to track variable usage.
-     */
-    private void updateConsumedVariables() {
-        consumedVariables.addAll(neededVariables);
-    }
+	/**
+	 * Indicates if this operation is null-safe (e.g., variables are annotated with @NotNull).
+	 * When true for STRING_CONCAT, String::concat method reference can be used safely.
+	 */
+	private boolean isNullSafe = false;
 
-    /** (4) Erstellt eine Lambda-Expression für Streams */
-    public LambdaExpression getLambdaExpression(AST ast) {
-        LambdaExpression lambda = ast.newLambdaExpression();
-        SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
-        param.setName(ast.newSimpleName("x"));
-        lambda.parameters().add(param);
-        lambda.setBody(ASTNode.copySubtree(ast, originalExpression));
-        return lambda;
-    }
+	/**
+	 * The collector type for COLLECT operations (TO_LIST, TO_SET, etc.).
+	 */
+	private CollectorType collectorType;
 
-    /** (5) Ermittelt die Argumente für `reduce()` */
-    private List<Expression> getArgumentsForReducer(AST ast) {
-        List<Expression> arguments = new ArrayList<>();
-        if (operationType == OperationType.REDUCE) {
-            // First argument: identity element (the accumulator variable reference)
-            if (accumulatorVariableName != null) {
-                arguments.add(ast.newSimpleName(accumulatorVariableName));
-            } else {
-                // Fallback to default identity
-                Expression identity = getIdentityElement(ast);
-                if (identity != null) arguments.add(identity);
-            }
-            
-            // Second argument: accumulator function (method reference or lambda)
-            Expression accumulator = createAccumulatorExpression(ast);
-            if (accumulator != null) arguments.add(accumulator);
-        }
-        return arguments;
-    }
-    
-    /**
-     * Creates the accumulator expression for REDUCE operations.
-     * Returns a method reference (e.g., Integer::sum) when possible, or a lambda otherwise.
-     */
-    private Expression createAccumulatorExpression(AST ast) {
-        if (reducerType == null) {
-            // Fallback to legacy behavior
-            return createAccumulatorLambda(ast);
-        }
-        
-        switch (reducerType) {
-            case INCREMENT:
-                // Use Integer::sum to sum the mapped 1's for counting
-                // Note: Assumes Integer type. For Double/Long, this may need enhancement.
-                return createMethodReference(ast, "Integer", "sum");
-            case SUM:
-                // Use Integer::sum method reference for sum += x
-                // Note: Assumes Integer type. For Double/Long, this may need enhancement.
-                return createMethodReference(ast, "Integer", "sum");
-            case DECREMENT:
-                // For i--, we need a different approach since we subtract
-                // We can't use a simple method reference for subtraction
-                return createCountingLambda(ast, InfixExpression.Operator.MINUS);
-            case PRODUCT:
-                // Use (accumulator, _item) -> accumulator * _item lambda
-                return createBinaryOperatorLambda(ast, InfixExpression.Operator.TIMES);
-            case STRING_CONCAT:
-                // Use (a, b) -> a + b lambda for string concatenation (null-safe)
-                return createBinaryOperatorLambda(ast, InfixExpression.Operator.PLUS);
-            case MAX:
-                // Use Math::max method reference for max accumulation
-                return createMathMethodReference(ast, "max");
-            case MIN:
-                // Use Math::min method reference for min accumulation
-                return createMathMethodReference(ast, "min");
-            case CUSTOM_AGGREGATE:
-                // For custom aggregation, use a generic accumulator lambda
-                return createAccumulatorLambda(ast);
-            default:
-                return createAccumulatorLambda(ast);
-        }
-    }
-    
-    /**
-     * Creates a method reference like Integer::sum.
-     */
-    private TypeMethodReference createMethodReference(AST ast, String typeName, String methodName) {
-        TypeMethodReference methodRef = ast.newTypeMethodReference();
-        methodRef.setType(ast.newSimpleType(ast.newSimpleName(typeName)));
-        methodRef.setName(ast.newSimpleName(methodName));
-        return methodRef;
-    }
-    
-    /**
-     * Creates a method reference like Math::max or Math::min.
-     * 
-     * @param ast the AST to create nodes in
-     * @param methodName the method name ("max" or "min")
-     * @return a TypeMethodReference for Math::methodName
-     */
-    private TypeMethodReference createMathMethodReference(AST ast, String methodName) {
-        TypeMethodReference methodRef = ast.newTypeMethodReference();
-        methodRef.setType(ast.newSimpleType(ast.newSimpleName("Math")));
-        methodRef.setName(ast.newSimpleName(methodName));
-        return methodRef;
-    }
-    
-    /**
-     * Creates a binary operator lambda like (accumulator, _item) -> accumulator + _item.
-     */
-    private LambdaExpression createBinaryOperatorLambda(AST ast, InfixExpression.Operator operator) {
-        LambdaExpression lambda = ast.newLambdaExpression();
-        
-        // Parameters: (accumulator, _item)
-        SingleVariableDeclaration param1 = ast.newSingleVariableDeclaration();
-        param1.setName(ast.newSimpleName("accumulator"));
-        SingleVariableDeclaration param2 = ast.newSingleVariableDeclaration();
-        param2.setName(ast.newSimpleName("_item"));
-        lambda.parameters().add(param1);
-        lambda.parameters().add(param2);
-        
-        // Body: accumulator + _item (or other operator)
-        InfixExpression operationExpr = ast.newInfixExpression();
-        operationExpr.setLeftOperand(ast.newSimpleName("accumulator"));
-        operationExpr.setRightOperand(ast.newSimpleName("_item"));
-        operationExpr.setOperator(operator);
-        lambda.setBody(operationExpr);
-        
-        return lambda;
-    }
-    
-    /**
-     * Creates a lambda like (accumulator, _item) -> accumulator - _item.
-     * Used only for DECREMENT (i--, i -= 1) operations.
-     */
-    private LambdaExpression createCountingLambda(AST ast, InfixExpression.Operator operator) {
-        LambdaExpression lambda = ast.newLambdaExpression();
-        
-        // Parameters: (accumulator, _item)
-        SingleVariableDeclaration param1 = ast.newSingleVariableDeclaration();
-        param1.setName(ast.newSimpleName("accumulator"));
-        SingleVariableDeclaration param2 = ast.newSingleVariableDeclaration();
-        param2.setName(ast.newSimpleName("_item"));
-        lambda.parameters().add(param1);
-        lambda.parameters().add(param2);
-        
-        // Body: accumulator - _item (where _item is mapped to 1)
-        InfixExpression operationExpr = ast.newInfixExpression();
-        operationExpr.setLeftOperand(ast.newSimpleName("accumulator"));
-        operationExpr.setRightOperand(ast.newSimpleName("_item"));
-        operationExpr.setOperator(operator);
-        lambda.setBody(operationExpr);
-        
-        return lambda;
-    }
+	/**
+	 * The name of the target collection variable for COLLECT operations (e.g., "result" in "result.add(item)").
+	 */
+	private String targetVariable;
 
-    /** (6) Ermittelt das Identitätselement (`0`, `1`) für `reduce()` */
-    private Expression getIdentityElement(AST ast) {
-        if (operationType == OperationType.REDUCE && originalExpression instanceof Assignment) {
-            Assignment assignment = (Assignment) originalExpression;
-            if (assignment.getOperator() == Assignment.Operator.PLUS_ASSIGN) {
-                return ast.newNumberLiteral("0");
-            } else if (assignment.getOperator() == Assignment.Operator.TIMES_ASSIGN) {
-                return ast.newNumberLiteral("1");
-            }
-        }
-        return null;
-    }
+	/**
+	 * Set of variables consumed by this operation. Used for tracking variable scope
+	 * and preventing leaks.
+	 */
+	private Set<String> consumedVariables = new HashSet<>();
 
-    /** (7) Erstellt eine Akkumulator-Funktion für `reduce()` */
-    private LambdaExpression createAccumulatorLambda(AST ast) {
-        LambdaExpression lambda = ast.newLambdaExpression();
-        SingleVariableDeclaration paramA = ast.newSingleVariableDeclaration();
-        paramA.setName(ast.newSimpleName("a"));
-        SingleVariableDeclaration paramB = ast.newSingleVariableDeclaration();
-        paramB.setName(ast.newSimpleName("b"));
-        lambda.parameters().add(paramA);
-        lambda.parameters().add(paramB);
+	/**
+	 * Collection of variable names already in use in the scope. Used to generate
+	 * unique lambda parameter names that don't clash with existing variables.
+	 */
+	private Collection<String> usedVariableNames = new HashSet<>();
 
-        InfixExpression operationExpr = ast.newInfixExpression();
-        operationExpr.setLeftOperand(ast.newSimpleName("a"));
-        operationExpr.setRightOperand(ast.newSimpleName("b"));
-        operationExpr.setOperator(InfixExpression.Operator.PLUS);
-        lambda.setBody(operationExpr);
+	// Collects all used/referenced variables
+	private void collectNeededVariables(Expression expression) {
+		if (expression == null)
+			return;
+		expression.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(SimpleName node) {
+				// Only collect SimpleName nodes that are actual variable references,
+				// not part of qualified names (e.g., System.out) or method/field names
+				ASTNode parent = node.getParent();
+				
+				// Skip if this is any part of a qualified name (e.g., "System" or "out" in "System.out")
+				if (parent instanceof org.eclipse.jdt.core.dom.QualifiedName) {
+					// Skip both qualifier and name parts of qualified names
+					return super.visit(node);
+				}
+				
+				// Skip if this is any part of a field access (e.g., explicit field accesses)
+				if (parent instanceof org.eclipse.jdt.core.dom.FieldAccess) {
+					// Skip both the expression (qualifier) and the name (field name)
+					return super.visit(node);
+				}
+				
+				// Skip if this is the name part of a method invocation (e.g., "println" in "out.println()")
+				if (parent instanceof MethodInvocation) {
+					MethodInvocation mi = (MethodInvocation) parent;
+					if (mi.getName() == node) {
+						return super.visit(node); // Skip method name
+					}
+					// Skip class names used as method invocation receivers (e.g., "Math" in "Math.max()")
+					// but NOT variable references (e.g., "list" in "list.forEach()")
+					if (mi.getExpression() == node) {
+						IBinding binding = node.resolveBinding();
+						// If it's a type binding (class name), skip it
+						// If it's a variable binding, we want to collect it
+						if (binding != null && !(binding instanceof IVariableBinding)) {
+							return super.visit(node); // Skip class name
+						}
+						// Fallback: If binding resolution failed, check if the name starts with uppercase
+						// (convention for class names in Java) and has no local variable conflict
+						if (binding == null) {
+							String name = node.getIdentifier();
+							if (name.length() > 0 && Character.isUpperCase(name.charAt(0))) {
+								// Likely a class name like Math, System, Integer, etc.
+								return super.visit(node);
+							}
+						}
+					}
+				}
+				
+				// Skip if this is part of a type reference (e.g., class names)
+				if (parent instanceof org.eclipse.jdt.core.dom.Type) {
+					return super.visit(node);
+				}
+				
+				// Skip if this is the type name in a constructor invocation (e.g., "MyClass" in "new MyClass()")
+				if (parent instanceof org.eclipse.jdt.core.dom.ClassInstanceCreation) {
+					return super.visit(node);
+				}
+				
+				// Skip if this is the name of a type declaration (e.g., class or interface name)
+				if (parent instanceof org.eclipse.jdt.core.dom.TypeDeclaration) {
+					org.eclipse.jdt.core.dom.TypeDeclaration typeDecl = (org.eclipse.jdt.core.dom.TypeDeclaration) parent;
+					if (typeDecl.getName() == node) {
+						return super.visit(node);
+					}
+				}
+				
+				// Otherwise, this is a variable reference - collect it
+				neededVariables.add(node.getIdentifier());
+				return super.visit(node);
+			}
+		});
+	}
 
-        return lambda;
-    }
+	/**
+	 * Constructor for operations with an expression.
+	 * 
+	 * @param expression    the expression to process (must not be null)
+	 * @param operationType the type of operation (must not be null)
+	 */
+	public ProspectiveOperation(Expression expression, OperationType operationType) {
+		assert expression != null : "expression cannot be null";
+		assert operationType != null : "operationType cannot be null";
 
-    /** (8) Erstellt eine Lambda-Funktion für `map()` */
-    private LambdaExpression createLambdaExpression(AST ast) {
-        LambdaExpression lambda = ast.newLambdaExpression();
-        SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
-        param.setName(ast.newSimpleName("x"));
-        lambda.parameters().add(param);
-        lambda.setBody(ASTNode.copySubtree(ast, originalExpression));
-        return lambda;
-    }
+		this.originalExpression = expression;
+		this.operationType = operationType;
+		collectNeededVariables(expression);
+		updateConsumedVariables();
+	}
 
-    /** (9) Prüft, ob eine bestimmte Variable verwendet wird */
-    public boolean usesVariable(String variableName) {
-        return neededVariables.contains(variableName);
-    }
+	/**
+	 * Constructor for operations with a statement.
+	 * 
+	 * @param statement     the statement to process (must not be null)
+	 * @param operationType the type of operation (MAP, FOREACH, etc.) (must not be
+	 *                      null)
+	 * @param loopVarName   the loop variable name; for side-effect MAP operations,
+	 *                      this represents the variable to be returned in the
+	 *                      lambda body (may be the current variable name in the
+	 *                      pipeline, not necessarily the original loop variable)
+	 */
+	public ProspectiveOperation(org.eclipse.jdt.core.dom.Statement statement, OperationType operationType,
+			String loopVarName) {
+		assert statement != null : "statement cannot be null";
+		assert operationType != null : "operationType cannot be null";
 
-    /** (10) Prüft, ob zwei `ProspectiveOperation`-Objekte kombinierbar sind */
-    public static boolean areComposable(ProspectiveOperation op1, ProspectiveOperation op2) {
-        return op1.getOperationType() == op2.getOperationType() &&
-               op1.getStreamOperation().equals(op2.getStreamOperation()) &&
-               Collections.disjoint(op1.getNeededVariables(), op2.getNeededVariables());
-    }
+		this.originalStatement = statement;
+		this.operationType = operationType;
+		this.loopVariableName = loopVarName;
+		if (statement instanceof org.eclipse.jdt.core.dom.ExpressionStatement) {
+			this.originalExpression = ((org.eclipse.jdt.core.dom.ExpressionStatement) statement).getExpression();
+			collectNeededVariables(this.originalExpression);
+		}
+		updateConsumedVariables();
+	}
 
-    /** (11) Kombiniert zwei `ProspectiveOperation`-Objekte */
-    public static ProspectiveOperation merge(ProspectiveOperation op1, ProspectiveOperation op2, AST ast) {
-        if (!areComposable(op1, op2)) return null;
-        LambdaExpression mergedLambda = ast.newLambdaExpression();
-        mergedLambda.parameters().addAll(op1.getLambdaExpression(ast).parameters());
+	/**
+	 * Constructor for MAP operations with a produced variable name. Used when a
+	 * variable declaration creates a new variable in the stream pipeline.
+	 * 
+	 * @param expression      the expression that produces the new variable (must
+	 *                        not be null)
+	 * @param operationType   the type of operation (should be MAP) (must not be
+	 *                        null)
+	 * @param producedVarName the name of the variable produced by this operation
+	 */
+	public ProspectiveOperation(Expression expression, OperationType operationType, String producedVarName) {
+		assert expression != null : "expression cannot be null";
+		assert operationType != null : "operationType cannot be null";
 
-        InfixExpression combinedExpr = ast.newInfixExpression();
-        combinedExpr.setLeftOperand((Expression) ASTNode.copySubtree(ast, op1.getLambdaExpression(ast).getBody()));
-        combinedExpr.setRightOperand((Expression) ASTNode.copySubtree(ast, op2.getLambdaExpression(ast).getBody()));
-        combinedExpr.setOperator(InfixExpression.Operator.PLUS);
+		this.originalExpression = expression;
+		this.operationType = operationType;
+		this.producedVariableName = producedVarName;
+		collectNeededVariables(expression);
+		updateConsumedVariables();
+	}
 
-        mergedLambda.setBody(combinedExpr);
-        return new ProspectiveOperation(mergedLambda, op1.getOperationType());
-    }
-    
-    public static List<ProspectiveOperation> mergeRecursivelyIntoComposableOperations(List<ProspectiveOperation> operations) {
-        List<ProspectiveOperation> mergedOperations = new ArrayList<>();
-        
-        for (ProspectiveOperation op : operations) {
-            boolean merged = false;
+	/**
+	 * Constructor for REDUCE operations with accumulator variable and reducer type.
+	 * Used when a reducer pattern (i++, sum += x, etc.) is detected.
+	 * 
+	 * @param statement          the statement containing the reducer (must not be
+	 *                           null)
+	 * @param accumulatorVarName the name of the accumulator variable (e.g., "i",
+	 *                           "sum") (must not be null)
+	 * @param reducerType        the type of reducer (INCREMENT, SUM, etc.) (must
+	 *                           not be null)
+	 */
+	public ProspectiveOperation(org.eclipse.jdt.core.dom.Statement statement, String accumulatorVarName,
+			ReducerType reducerType) {
+		assert statement != null : "statement cannot be null";
+		assert accumulatorVarName != null : "accumulatorVarName cannot be null";
+		assert reducerType != null : "reducerType cannot be null";
 
-            // Prüfen, ob die aktuelle Operation mit einer bestehenden verschmolzen werden kann
-            for (ProspectiveOperation existingOp : mergedOperations) {
-                if (canBeMerged(existingOp, op)) {
-                    mergeOperations(existingOp, op);
-                    merged = true;
-                    break;
-                }
-            }
+		this.originalStatement = statement;
+		this.operationType = OperationType.REDUCE;
+		this.accumulatorVariableName = accumulatorVarName;
+		this.reducerType = reducerType;
+		if (statement instanceof org.eclipse.jdt.core.dom.ExpressionStatement) {
+			this.originalExpression = ((org.eclipse.jdt.core.dom.ExpressionStatement) statement).getExpression();
+			collectNeededVariables(this.originalExpression);
+		}
+		updateConsumedVariables();
+	}
 
-            // Falls keine bestehende Operation kombiniert werden konnte, zur Liste hinzufügen
-            if (!merged) {
-                mergedOperations.add(op);
-            }
-        }
+	/** Returns the operation type. */
+	public OperationType getOperationType() {
+		return this.operationType;
+	}
 
-        return mergedOperations;
-    }
+	/**
+	 * Generate the lambda arguments for this operation Based on NetBeans
+	 * ProspectiveOperation.getArguments()
+	 * 
+	 * @param ast       the AST to create nodes in (must not be null)
+	 * @param paramName the parameter name to use for the lambda (may be null,
+	 *                  defaults to "item")
+	 * @return a list of expressions to use as arguments for the stream method
+	 * @throws IllegalArgumentException if ast is null
+	 */
+	public List<Expression> getArguments(AST ast, String paramName) {
+		if (ast == null) {
+			throw new IllegalArgumentException("ast cannot be null");
+		}
 
-    // Prüft, ob zwei Operationen verschmolzen werden können
-    private static boolean canBeMerged(ProspectiveOperation op1, ProspectiveOperation op2) {
-        return op1.getOperationType() == op2.getOperationType()
-                && op1.getStreamOperation().equals(op2.getStreamOperation());
-    }
+		List<Expression> args = new ArrayList<>();
 
-    // Kombiniert zwei `map()`- oder `reduce()`-Operationen zu einer einzigen
-    private static void mergeOperations(ProspectiveOperation target, ProspectiveOperation source) {
-        AST ast = target.getExpression().getAST();
+		// REDUCE and COLLECT have special argument handling
+		if (operationType.hasSpecialArgumentHandling()) {
+			if (operationType == OperationType.REDUCE) {
+				return getArgumentsForReducer(ast);
+			} else if (operationType == OperationType.COLLECT) {
+				return getArgumentsForCollector(ast);
+			}
+		}
 
-        LambdaExpression mergedLambda = ast.newLambdaExpression();
-        mergedLambda.parameters().addAll(target.getLambdaExpression(ast).parameters());
+		// Create lambda expression for MAP, FILTER, FOREACH, ANYMATCH, NONEMATCH, ALLMATCH
+		LambdaExpression lambda = ast.newLambdaExpression();
 
-        InfixExpression combinedExpression = ast.newInfixExpression();
-        combinedExpression.setLeftOperand((Expression) ASTNode.copySubtree(ast, target.getLambdaExpression(ast).getBody()));
-        combinedExpression.setRightOperand((Expression) ASTNode.copySubtree(ast, source.getLambdaExpression(ast).getBody()));
+		// Create parameter with defensive null check
+		// Use the provided paramName, or generate a unique default name
+		VariableDeclarationFragment param = ast.newVariableDeclarationFragment();
+		String effectiveParamName;
+		if (paramName != null && !paramName.isEmpty()) {
+			effectiveParamName = paramName;
+		} else {
+			// Generate a unique default name to avoid clashes
+			effectiveParamName = generateUniqueVariableName("item");
+		}
+		param.setName(ast.newSimpleName(effectiveParamName));
+		lambda.parameters().add(param);
+		
+		// For single parameter without type annotation, don't use parentheses
+		lambda.setParentheses(false);
 
-        if (source.getOperationType() == ProspectiveOperation.OperationType.MAP) {
-            combinedExpression.setOperator(InfixExpression.Operator.PLUS);
-        } else if (source.getOperationType() == ProspectiveOperation.OperationType.REDUCE) {
-            combinedExpression.setOperator(InfixExpression.Operator.TIMES);
-        }
+		// Create lambda body using OperationType delegation
+		OperationType.LambdaBodyContext context = new OperationType.LambdaBodyContext(
+				originalExpression, originalStatement, loopVariableName);
+		ASTNode lambdaBody = operationType.createLambdaBody(ast, context);
+		
+		if (lambdaBody != null) {
+			lambda.setBody(lambdaBody);
+		} else if (originalExpression != null) {
+			// Fallback: use expression as body
+			lambda.setBody(ASTNode.copySubtree(ast, originalExpression));
+		} else {
+			// Defensive: neither originalExpression nor originalStatement is available
+			throw new IllegalStateException(
+					"Cannot create lambda: both originalExpression and originalStatement are null for operationType "
+							+ operationType);
+		}
 
-        mergedLambda.setBody(combinedExpression);
-        target.replaceReducingVariable(mergedLambda);
-    }
-    
-    public void replaceReducingVariable(LambdaExpression lambda) {
-        lambda.accept(new ASTVisitor() {
-            @Override
-            public boolean visit(SimpleName node) {
-                if (node.getIdentifier().equals(reducingVariable.toString())) {
-                    node.setIdentifier("acc");
-                }
-                return super.visit(node);
-            }
-        });
-    }
+		args.add(lambda);
+		return args;
+	}
 
-    /** (14) Gibt die Menge der benötigten Variablen zurück */
-    public Set<String> getNeededVariables() {
-        return neededVariables;
-    }
+	/**
+	 * Returns the variable name produced by this operation (for MAP operations).
+	 * This is used to track variable names through the stream pipeline.
+	 */
+	public String getProducedVariableName() {
+		return producedVariableName;
+	}
 
-    // Sammelt alle verfügbaren Variablen im aktuellen Scope
-    private Set<String> getAvailableVariables(ASTNode node) {
-        Set<String> variables = new HashSet<>();
-        node.accept(new ASTVisitor() {
-            @Override
-            public boolean visit(VariableDeclarationFragment fragment) {
-                variables.add(fragment.getName().getIdentifier());
-                return super.visit(fragment);
-            }
+	/**
+	 * Returns the accumulator variable name for REDUCE operations.
+	 * 
+	 * @return the accumulator variable name, or null if not a REDUCE operation
+	 */
+	public String getAccumulatorVariableName() {
+		return accumulatorVariableName;
+	}
 
-            @Override
-            public boolean visit(SingleVariableDeclaration param) {
-                variables.add(param.getName().getIdentifier());
-                return super.visit(param);
-            }
-        });
-        return variables;
-    }
-    
-    /** (15) Prüft, ob alle benötigten Variablen existieren */
-    public boolean areAvailableVariables(Set<String> needed, ASTNode node) {
-        return getAvailableVariables(node).containsAll(needed);
-    }
+	/**
+	 * Returns the reducer type for REDUCE operations.
+	 * 
+	 * @return the reducer type, or null if not a REDUCE operation
+	 */
+	public ReducerType getReducerType() {
+		return reducerType;
+	}
 
-    /** (16) Gibt ein beliebiges Element aus einem Set zurück */
-    public static <T> T getOneFromSet(Set<T> set) {
-        return set.isEmpty() ? null : set.iterator().next();
-    }
+	/**
+	 * Sets whether this operation is null-safe.
+	 * 
+	 * @param isNullSafe true if the operation is null-safe
+	 */
+	public void setNullSafe(boolean isNullSafe) {
+		this.isNullSafe = isNullSafe;
+	}
 
-    /** (17) Optimiert redundanten Code */
-    public void beautify(AST ast, ASTRewrite rewrite, Expression expression) {
-        if (expression instanceof ParenthesizedExpression) {
-            // Entferne überflüssige Klammern: ((x + y)) → x + y
-            ParenthesizedExpression parenExpr = (ParenthesizedExpression) expression;
-            rewrite.replace(parenExpr, ASTNode.copySubtree(ast, parenExpr.getExpression()), null);
-        } else if (expression instanceof Assignment) {
-            // Optimierung von Zuweisungen: x = x + y → x += y
-            Assignment assignment = (Assignment) expression;
-            beautifyAssignment(ast, rewrite, assignment);
-        } else if (expression instanceof InfixExpression) {
-            // Optimierung mathematischer Ausdrücke
-            optimizeInfixExpression(ast, rewrite, (InfixExpression) expression);
-        }
-    }
-    
-    public void beautifyAssignment(AST ast, ASTRewrite rewrite, Assignment assignment) {
-        InfixExpression infixExpr = ast.newInfixExpression();
-        infixExpr.setLeftOperand((Expression) ASTNode.copySubtree(ast, assignment.getLeftHandSide()));
-        infixExpr.setRightOperand((Expression) ASTNode.copySubtree(ast, assignment.getRightHandSide()));
-        infixExpr.setOperator(InfixExpression.Operator.PLUS);
+	/**
+	 * Returns whether this operation is null-safe.
+	 * 
+	 * @return true if the operation is null-safe
+	 */
+	public boolean isNullSafe() {
+		return isNullSafe;
+	}
 
-        rewrite.replace(assignment, infixExpr, null);
-    }
-    // Methode zur Optimierung mathematischer Ausdrücke
-    private void optimizeInfixExpression(AST ast, ASTRewrite rewrite, InfixExpression infixExpr) {
-        Expression left = infixExpr.getLeftOperand();
-        Expression right = infixExpr.getRightOperand();
+	/**
+	 * Sets the collector type for COLLECT operations.
+	 * 
+	 * @param collectorType the collector type (TO_LIST, TO_SET, etc.)
+	 */
+	public void setCollectorType(CollectorType collectorType) {
+		this.collectorType = collectorType;
+	}
 
-        if (isZero(left) && infixExpr.getOperator() == InfixExpression.Operator.PLUS) {
-            // 0 + x → x
-            rewrite.replace(infixExpr, ASTNode.copySubtree(ast, right), null);
-        } else if (isZero(right) && infixExpr.getOperator() == InfixExpression.Operator.PLUS) {
-            // x + 0 → x
-            rewrite.replace(infixExpr, ASTNode.copySubtree(ast, left), null);
-        } else if (isOne(right) && infixExpr.getOperator() == InfixExpression.Operator.TIMES) {
-            // x * 1 → x
-            rewrite.replace(infixExpr, ASTNode.copySubtree(ast, left), null);
-        } else if (isOne(left) && infixExpr.getOperator() == InfixExpression.Operator.TIMES) {
-            // 1 * x → x
-            rewrite.replace(infixExpr, ASTNode.copySubtree(ast, right), null);
-        }
-    }
+	/**
+	 * Returns the collector type for COLLECT operations.
+	 * 
+	 * @return the collector type, or null if not a COLLECT operation
+	 */
+	public CollectorType getCollectorType() {
+		return collectorType;
+	}
 
-    // Prüft, ob eine Expression die Zahl 1 ist
-    private boolean isOne(Expression expr) {
-        return expr instanceof NumberLiteral && ((NumberLiteral) expr).getToken().equals("1");
-    }
+	/**
+	 * Sets the target collection variable for COLLECT operations.
+	 * 
+	 * @param targetVariable the target variable name (e.g., "result")
+	 */
+	public void setTargetVariable(String targetVariable) {
+		this.targetVariable = targetVariable;
+	}
 
-    /** (18) Führt risikoarme Code-Optimierungen durch */
-    public void beautifyLazy(AST ast, ASTRewrite rewrite, Expression expression) {
-        if (expression instanceof ParenthesizedExpression) {
-            // Entferne überflüssige Klammern NUR, wenn sie direkt einen Ausdruck umschließen: ((x)) → x
-            ParenthesizedExpression parenExpr = (ParenthesizedExpression) expression;
-            if (parenExpr.getExpression() instanceof SimpleName || parenExpr.getExpression() instanceof NumberLiteral) {
-                rewrite.replace(parenExpr, ASTNode.copySubtree(ast, parenExpr.getExpression()), null);
-            }
-        } else if (expression instanceof InfixExpression) {
-            // Nur einfache mathematische Optimierungen durchführen
-            optimizeLazyInfixExpression(ast, rewrite, (InfixExpression) expression);
-        }
-    }
-    
- // Vereinfachungen nur bei einfachen mathematischen Ausdrücken
-    private void optimizeLazyInfixExpression(AST ast, ASTRewrite rewrite, InfixExpression infixExpr) {
-        Expression left = infixExpr.getLeftOperand();
-        Expression right = infixExpr.getRightOperand();
+	/**
+	 * Returns the target collection variable for COLLECT operations.
+	 * 
+	 * @return the target variable name, or null if not a COLLECT operation
+	 */
+	public String getTargetVariable() {
+		return targetVariable;
+	}
 
-        if (isZero(left) && infixExpr.getOperator() == InfixExpression.Operator.PLUS) {
-            // 0 + x → x (nur einfache Zahlenoperationen)
-            rewrite.replace(infixExpr, ASTNode.copySubtree(ast, right), null);
-        } else if (isZero(right) && infixExpr.getOperator() == InfixExpression.Operator.PLUS) {
-            // x + 0 → x
-            rewrite.replace(infixExpr, ASTNode.copySubtree(ast, left), null);
-        }
-    }
+	/**
+	 * Sets the accumulator type for REDUCE operations.
+	 * This is used to generate the correct method reference (e.g., Integer::sum vs Double::sum).
+	 * 
+	 * @param accumulatorType the type of the accumulator variable (e.g., "int", "double", "long")
+	 */
+	public void setAccumulatorType(String accumulatorType) {
+		this.accumulatorType = accumulatorType;
+	}
 
-    // Prüft, ob eine Expression die Zahl 0 ist
-    private boolean isZero(Expression expr) {
-        return expr instanceof NumberLiteral && ((NumberLiteral) expr).getToken().equals("0");
-    }
+	/**
+	 * Returns the accumulator type for REDUCE operations.
+	 * 
+	 * @return the accumulator type (e.g., "int", "double", "long"), or null if not set
+	 */
+	public String getAccumulatorType() {
+		return accumulatorType;
+	}
 
-    /** (19) Wandelt einen Ausdruck in eine `return`-Anweisung um */
-    public void addReturn(AST ast, ASTRewrite rewrite, Expression expression) {
-        ReturnStatement returnStatement = ast.newReturnStatement();
-        returnStatement.setExpression((Expression) ASTNode.copySubtree(ast, expression));
-        rewrite.replace(expression, returnStatement, null);
-    }
-    
-    @Override
-    public String toString() {
-        return "ProspectiveOperation{" +
-               "expression=" + originalExpression +
-               ", operationType=" + operationType +
-               ", neededVariables=" + neededVariables +
-               '}';
-    }
+	/**
+	 * Sets the collection of variable names already in use in the current scope.
+	 * This is used to generate unique lambda parameter names that don't clash
+	 * with existing variables.
+	 * 
+	 * @param usedNames the collection of variable names in use (may be null)
+	 */
+	public void setUsedVariableNames(Collection<String> usedNames) {
+		if (usedNames != null) {
+			this.usedVariableNames = usedNames;
+		}
+	}
 
-    public enum OperationType {
-        MAP, FOREACH, FILTER, REDUCE, ANYMATCH, NONEMATCH, ALLMATCH
-    }
-    
-    public enum ReducerType {
-        INCREMENT,       // i++, ++i
-        DECREMENT,       // i--, --i, i -= 1
-        SUM,             // sum += x
-        PRODUCT,         // product *= x
-        STRING_CONCAT,   // s += string
-        MAX,             // max = Math.max(max, x)
-        MIN,             // min = Math.min(min, x)
-        CUSTOM_AGGREGATE // Custom aggregation patterns
-    }
+	/**
+	 * Generates a unique variable name that doesn't collide with existing variables in scope.
+	 * 
+	 * <p>This method ensures the generated lambda parameter name doesn't conflict with other
+	 * variables visible at the transformation point. If the base name is already in use,
+	 * a numeric suffix is appended (e.g., "a2", "a3", etc.).</p>
+	 * 
+	 * @param baseName the base name to use (e.g., "a", "_item", "accumulator")
+	 * @return a unique variable name that doesn't exist in the current scope
+	 */
+	private String generateUniqueVariableName(String baseName) {
+		// Combine neededVariables (from expression analysis) with usedVariableNames (from scope)
+		Set<String> allUsedNames = new HashSet<>(neededVariables);
+		allUsedNames.addAll(usedVariableNames);
+		
+		// If base name is not used, return it
+		if (!allUsedNames.contains(baseName)) {
+			return baseName;
+		}
+		
+		// Otherwise, append a number until we find an unused name
+		int counter = 2;
+		String candidate = baseName + counter;
+		while (allUsedNames.contains(candidate)) {
+			counter++;
+			candidate = baseName + counter;
+		}
+		return candidate;
+	}
+
+	/**
+	 * Returns the set of variables consumed by this operation. This includes all
+	 * SimpleName references in the operation's expression.
+	 * 
+	 * @return the set of consumed variable names
+	 */
+	public Set<String> getConsumedVariables() {
+		return consumedVariables;
+	}
+
+	/**
+	 * Updates the consumed variables set by collecting all SimpleName references.
+	 * This is called during operation construction to track variable usage.
+	 */
+	private void updateConsumedVariables() {
+		consumedVariables.addAll(neededVariables);
+	}
+
+	/** Determines the arguments for reduce() operation. */
+	private List<Expression> getArgumentsForReducer(AST ast) {
+		List<Expression> arguments = new ArrayList<>();
+		if (operationType == OperationType.REDUCE) {
+			// First argument: identity element (the accumulator variable reference)
+			if (accumulatorVariableName != null) {
+				arguments.add(ast.newSimpleName(accumulatorVariableName));
+			} else {
+				// Fallback to default identity
+				Expression identity = getIdentityElement(ast);
+				if (identity != null)
+					arguments.add(identity);
+			}
+
+			// Second argument: accumulator function (method reference or lambda)
+			Expression accumulator = createAccumulatorExpression(ast);
+			if (accumulator != null)
+				arguments.add(accumulator);
+		}
+		return arguments;
+	}
+
+	/**
+	 * Determines the arguments for collect() operation.
+	 * Returns a single argument: the Collectors method invocation (e.g., Collectors.toList()).
+	 */
+	private List<Expression> getArgumentsForCollector(AST ast) {
+		List<Expression> arguments = new ArrayList<>();
+		if (operationType == OperationType.COLLECT && collectorType != null) {
+			// Single argument: Collectors.toList() or Collectors.toSet()
+			Expression collector = collectorType.createCollectorExpression(ast);
+			arguments.add(collector);
+		}
+		return arguments;
+	}
+
+	/**
+	 * Creates the accumulator expression for REDUCE operations. Returns a method
+	 * reference (e.g., Integer::sum, Long::sum, Double::sum) when possible, or a lambda otherwise.
+	 * The method reference type is determined by the accumulator variable type.
+	 */
+	private Expression createAccumulatorExpression(AST ast) {
+		LambdaGenerator generator = new LambdaGenerator(ast);
+		generator.setNeededVariables(neededVariables);
+		generator.setUsedVariableNames(usedVariableNames);
+		return generator.createAccumulatorExpression(reducerType, accumulatorType, isNullSafe);
+	}
+
+	/** Determines the identity element (0, 1) for reduce() operation. */
+	private Expression getIdentityElement(AST ast) {
+		if (operationType == OperationType.REDUCE && originalExpression instanceof Assignment) {
+			Assignment assignment = (Assignment) originalExpression;
+			if (assignment.getOperator() == Assignment.Operator.PLUS_ASSIGN) {
+				return ast.newNumberLiteral("0");
+			} else if (assignment.getOperator() == Assignment.Operator.TIMES_ASSIGN) {
+				return ast.newNumberLiteral("1");
+			}
+		}
+		return null;
+	}
+
+	@Override
+	public String toString() {
+		return "ProspectiveOperation{" + "expression=" + originalExpression + ", operationType=" + operationType
+				+ ", neededVariables=" + neededVariables + '}';
+	}
 }

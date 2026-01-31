@@ -47,6 +47,19 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 		Group java1d8Group= createGroup(numColumns, composite, CleanUpMessages.JavaFeatureTabPage_GroupName_Java1d8);
 		final CheckboxPreference functional_call= createCheckboxPref(java1d8Group, numColumns, CleanUpMessages.JavaFeatureTabPage_CheckboxName_FunctionalCall, MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP, FALSE_TRUE);
 		intent(java1d8Group);
+		
+		// Add radio buttons for target format selection
+		final RadioPreference streamFormat = createRadioPref(java1d8Group, 1, 
+			CleanUpMessages.JavaFeatureTabPage_TargetFormat_Stream, 
+			MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_STREAM, FALSE_TRUE);
+		final RadioPreference forLoopFormat = createRadioPref(java1d8Group, 1, 
+			CleanUpMessages.JavaFeatureTabPage_TargetFormat_ForLoop, 
+			MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_FOR, FALSE_TRUE);
+		final RadioPreference whileLoopFormat = createRadioPref(java1d8Group, 1, 
+			CleanUpMessages.JavaFeatureTabPage_TargetFormat_WhileLoop, 
+			MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_WHILE, FALSE_TRUE);
+		registerSlavePreference(functional_call, new RadioPreference[] { streamFormat, forLoopFormat, whileLoopFormat });
+		
 		registerPreference(functional_call);
 	}
 }

@@ -1,5 +1,12 @@
 # JUnit Migration Test Suite - Implementation Tracking
 
+> **📍 This documentation has been moved!**  
+> Please see [TODO_TESTING.md](../../../../../TODO_TESTING.md) in the module root for the current documentation.
+>
+> This file is kept for backward compatibility and will be removed in a future version.
+
+---
+
 This document tracks missing features and bugs in the JUnit migration cleanup implementation that were discovered during test suite refactoring.
 
 ## 📋 Quick Summary (as of 2025-12-16)
@@ -7,23 +14,21 @@ This document tracks missing features and bugs in the JUnit migration cleanup im
 ### What's Working ✅
 The plugin successfully handles most common JUnit 4 to JUnit 5 migrations:
 - **Lifecycle annotations**: @Before/@After/@BeforeClass/@AfterClass → @BeforeEach/@AfterEach/@BeforeAll/@AfterAll
-- **Test annotations**: @Ignore → @Disabled, basic @Test migration
+- **Test annotations**: @Ignore → @Disabled, basic @Test migration, @Test(timeout) → @Timeout
+- **Exception testing**: @Test(expected) → assertThrows()
 - **Assertions**: All standard assertions with correct parameter reordering
 - **Assumptions**: Basic assumptions and Hamcrest assumeThat
 - **Rules**: TestName → TestInfo, ExternalResource extension pattern
-- **Runners**: MockitoJUnitRunner → MockitoExtension, SpringRunner → SpringExtension
+- **Runners**: MockitoJUnitRunner → MockitoExtension, SpringRunner → SpringExtension, Suite → @Suite with @SelectClasses
 
 ### What's Not Working ❌
 Complex transformations that require code body changes:
-- **Exception testing**: @Test(expected) and ExpectedException rule
 - **Parameterized tests**: @RunWith(Parameterized.class)
-- **Timeout handling**: @Test(timeout) and Timeout rule
 - **TemporaryFolder**: Rule field migration incomplete
-- **Suite migration**: @RunWith(Suite.class) (simple runner replacement works, but suite-specific migration incomplete)
 
 ### Migration Coverage
-- **~70% of common patterns** are fully supported
-- **~25% are complex** and require AST body transformations
+- **~75% of common patterns** are fully supported
+- **~20% are complex** and require AST body transformations
 - **~5% are simple** but not yet implemented
 
 
@@ -88,14 +93,14 @@ public void test() throws IOException {
 ---
 
 ### 2. @RunWith(Suite.class) → @Suite Migration
-**Status:** Not Implemented  
+**Status:** ✅ **IMPLEMENTED**  
 **Priority:** High  
 **Affected Tests:**
-- `MigrationRunnersTest.migrates_runWith_suite`
-- `MigrationCombinationsTest.migrates_suite_with_assertions_and_lifecycle`
+- `MigrationRunnersTest.migrates_runWith_suite` (enabled)
+- `MigrationCombinationsTest.migrates_suite_with_assertions_and_lifecycle` (enabled)
 
 **Description:**
-The cleanup should migrate JUnit 4's `@RunWith(Suite.class)` to JUnit 5's `@Suite`:
+The cleanup migrates JUnit 4's `@RunWith(Suite.class)` to JUnit 5's `@Suite`:
 
 ```java
 // JUnit 4
@@ -104,18 +109,18 @@ The cleanup should migrate JUnit 4's `@RunWith(Suite.class)` to JUnit 5's `@Suit
 public class MyTestSuite {
 }
 
-// Should become JUnit 5
+// Migrated to JUnit 5
 @Suite
 @SelectClasses({TestClass1.class, TestClass2.class})
 public class MyTestSuite {
 }
 ```
 
-**Implementation Notes:**
-- Remove `@RunWith(Suite.class)` annotation
-- Add `@Suite` annotation (from `org.junit.platform.suite.api.Suite`)
-- Replace `@Suite.SuiteClasses` with `@SelectClasses` (from `org.junit.platform.suite.api.SelectClasses`)
-- Update imports accordingly
+**Implementation:**
+- Implemented in `RunWithJUnitPlugin.java`
+- Removes `@RunWith(Suite.class)` annotation and adds `@Suite` (from `org.junit.platform.suite.api.Suite`)
+- Replaces `@Suite.SuiteClasses` with `@SelectClasses` (from `org.junit.platform.suite.api.SelectClasses`)
+- Correctly updates all imports
 
 ---
 
@@ -149,10 +154,10 @@ The `Assumptions` import should not be added when Hamcrest's `assumeThat` is use
 These features are documented as not yet implemented and have disabled tests:
 
 #### 4. @Test(expected=Exception.class) → assertThrows()
-**Status:** Not Implemented  
+**Status:** ✅ **IMPLEMENTED**  
 **Priority:** High  
 **Complexity:** High (requires wrapping method body in lambda)  
-**Tracked in:** `MigrationExceptionsTest` (all 5 tests disabled)
+**Tracked in:** `MigrationExceptionsTest` (tests enabled)
 
 **Description:**
 ```java
@@ -171,6 +176,16 @@ public void testException() {
 }
 ```
 
+**Implementation Notes:**
+- Implemented in TestExpectedJUnitPlugin
+- Detects @Test(expected=...) annotations via NormalAnnotation visitor
+- Extracts the exception TypeLiteral from the expected parameter
+- Creates lambda expression wrapping the entire method body
+- Generates assertThrows method invocation
+- Removes expected parameter from @Test (converts to marker annotation if only parameter)
+- Adds static import for assertThrows
+- Works alongside TestTimeoutJUnitPlugin for combined parameters
+
 #### 5. ExpectedException Rule → assertThrows()
 **Status:** Not Implemented  
 **Priority:** Medium  
@@ -178,10 +193,10 @@ public void testException() {
 **Tracked in:** `MigrationExceptionsTest` (disabled)
 
 #### 6. @Test(timeout=...) → @Timeout
-**Status:** Not Implemented  
+**Status:** ✅ **IMPLEMENTED**  
 **Priority:** Medium  
 **Complexity:** Medium  
-**Tracked in:** `MigrationTestAnnotationTest.migrates_test_timeout_parameter` (disabled)
+**Tracked in:** `MigrationTestAnnotationTest.migrates_test_timeout_to_timeout_annotation` (enabled)
 
 **Description:**
 ```java
@@ -195,6 +210,15 @@ public void testWithTimeout() { }
 public void testWithTimeout() { }
 ```
 
+**Implementation Notes:**
+- Implemented in TestTimeoutJUnitPlugin
+- Detects @Test(timeout=...) annotations
+- Extracts timeout value in milliseconds
+- Converts to optimal TimeUnit (SECONDS if divisible by 1000, otherwise MILLISECONDS)
+- Removes timeout parameter from @Test
+- Adds new @Timeout annotation
+- Updates imports appropriately
+
 #### 7. @Rule Timeout → @Timeout
 **Status:** Not Implemented  
 **Priority:** Low  
@@ -202,10 +226,10 @@ public void testWithTimeout() { }
 **Tracked in:** `MigrationRulesToExtensionsTest.migrates_timeout_rule` (disabled)
 
 #### 8. @RunWith(Parameterized.class) → @ParameterizedTest
-**Status:** Not Implemented  
+**Status:** ✅ **IMPLEMENTED**  
 **Priority:** High (commonly used pattern)  
 **Complexity:** Very High (requires major refactoring of test structure)  
-**Tracked in:** `MigrationRunnersTest.migrates_runWith_parameterized` (disabled)
+**Tracked in:** `MigrationRunnersTest.migrates_runWith_parameterized` (enabled)
 
 **Description:**
 This is a complex transformation requiring:
@@ -254,7 +278,14 @@ This is a complex transformation requiring:
   - Supports both marker annotation (@Ignore) and single-member annotation (@Ignore("reason"))
 - ✅ **@Test annotation migration** (TestJUnitPlugin)
   - Migrates basic @Test from JUnit 4 to JUnit 5
-  - Note: @Test(expected) and @Test(timeout) parameters not yet migrated (see below)
+- ✅ **@Test(expected=...) → assertThrows()** (TestExpectedJUnitPlugin)
+  - Migrates expected parameter to assertThrows wrapping method body
+  - Handles lambda expression creation
+  - Works with combined parameters (e.g., timeout + expected)
+- ✅ **@Test(timeout=...) → @Timeout** (TestTimeoutJUnitPlugin)
+  - Migrates timeout parameter to separate @Timeout annotation
+  - Optimizes TimeUnit (SECONDS vs MILLISECONDS)
+  - Handles multiple timeout tests in same class
 - ✅ **Assertions migration** (AssertJUnitPlugin)
   - assertEquals, assertTrue, assertFalse, assertNull, assertNotNull, etc.
   - Correctly reorders parameters (message parameter moves to last position in JUnit 5)
@@ -270,6 +301,7 @@ This is a complex transformation requiring:
 - ✅ **@RunWith runners migration** (RunWithJUnitPlugin)
   - @RunWith(MockitoJUnitRunner.class) → @ExtendWith(MockitoExtension.class)
   - @RunWith(SpringRunner.class) → @ExtendWith(SpringExtension.class)
+  - @RunWith(Suite.class) with @Suite.SuiteClasses → @Suite with @SelectClasses
   - Supports both old and new package names for Mockito runners
   - Supports both SpringRunner and SpringJUnit4ClassRunner
 
@@ -396,19 +428,20 @@ To implement a new migration (e.g., @RunWith(MockitoJUnitRunner) → @ExtendWith
 - ✅ MigrationIgnoreTest - all tests passing (except 5 known edge cases disabled)
 - ✅ MigrationAssertionsTest - all tests passing
 - ✅ MigrationAssumptionsTest - mostly passing (1 disabled for Hamcrest import issue)
-- ✅ MigrationTestAnnotationTest - basic @Test passing (1 disabled for timeout)
+- ✅ MigrationTestAnnotationTest - all tests passing including timeout
+- ✅ MigrationExceptionsTest - @Test(expected) tests passing (ExpectedException tests still disabled)
 - ✅ MigrationRulesToExtensionsTest - TestName and ExternalResource passing (5 disabled)
 
 ### Disabled Tests (Not Implemented)
-- ❌ MigrationExceptionsTest - 5 tests disabled (@Test(expected), ExpectedException)
+- ❌ MigrationExceptionsTest - 3 tests disabled (ExpectedException rule with message/cause)
 - ❌ MigrationRunnersTest - 4 tests disabled (Suite, Parameterized, Mockito, Spring)
 - ❌ MigrationCombinationsTest - 3 tests disabled (complex combinations)
 - ❌ MigrationRulesToExtensionsTest - 5 tests disabled (TemporaryFolder, Timeout)
 
 ### Test Statistics
 - **Total test methods**: ~50-60
-- **Enabled and passing**: ~35-40 (65-70%)
-- **Disabled (not implemented)**: ~15-20 (25-30%)
+- **Enabled and passing**: ~40-45 (70-75%)
+- **Disabled (not implemented)**: ~12-15 (20-25%)
 - **Known bugs**: ~2-3 (5%)
 
 

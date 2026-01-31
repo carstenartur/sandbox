@@ -19,7 +19,6 @@ import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.junit.JUnitCore;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
@@ -143,7 +142,7 @@ public class MigrationCombinationsTest {
 		}, null);
 	}
 
-	@Disabled("Not yet implemented - TemporaryFolder rule migration")
+//	@Disabled("Not yet implemented - TemporaryFolder rule migration")
 	@Test
 	public void migrates_test_with_temporaryFolder_and_testName() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
@@ -179,38 +178,38 @@ public class MigrationCombinationsTest {
 
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
 				"""
-				package test;
-				import java.io.File;
-				import java.io.IOException;
-				import java.nio.file.Path;
-				
-				import org.junit.jupiter.api.BeforeEach;
-				import org.junit.jupiter.api.Test;
-				import org.junit.jupiter.api.TestInfo;
-				import org.junit.jupiter.api.io.TempDir;
-				
-				public class MyTest {
-					@TempDir
-					Path tempFolder;
-					
-					private String testName;
-					
-					@BeforeEach
-					void init(TestInfo testInfo) {
-						this.testName = testInfo.getDisplayName();
-					}
-					
-					@Test
-					public void testWithBothRules() throws IOException {
-						System.out.println("Test name: " + testName);
-						File newFile = tempFolder.resolve("myfile.txt").toFile();
-					}
-				}
+package test;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.io.TempDir;
+
+public class MyTest {
+	@TempDir
+	Path tempFolder;
+
+	private String testName;
+
+	@BeforeEach
+	void init(TestInfo testInfo) {
+		this.testName = testInfo.getDisplayName();
+	}
+
+	@Test
+	public void testWithBothRules() throws IOException {
+		System.out.println("Test name: " + testName);
+		File newFile = Files.createFile(tempFolder.resolve("myfile.txt")).toFile();
+	}
+}
 				"""
 		}, null);
 	}
 
-	@Disabled("Not yet implemented - @RunWith(Suite.class) migration")
 	@Test
 	public void migrates_suite_with_assertions_and_lifecycle() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
@@ -264,6 +263,174 @@ public class MigrationCombinationsTest {
 					@Test
 					public void testSomething() {
 						assertEquals("expected", "actual");
+					}
+				}
+				"""
+		}, null);
+	}
+
+	@Test
+	public void migrates_test_with_multiple_rules() throws CoreException {
+		IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
+				"""
+				package test;
+				import java.io.File;
+				import org.junit.Rule;
+				import org.junit.Test;
+				import org.junit.rules.TemporaryFolder;
+				import org.junit.rules.TestName;
+				import org.junit.rules.Timeout;
+				
+				public class MyTest {
+					@Rule
+					public TemporaryFolder tempFolder = new TemporaryFolder();
+					
+					@Rule
+					public TestName testName = new TestName();
+					
+					@Rule
+					public Timeout timeout = Timeout.seconds(10);
+					
+					@Test
+					public void testWithMultipleRules() throws Exception {
+						File file = tempFolder.newFile(testName.getMethodName() + ".txt");
+						// Test code
+					}
+				}
+				""", false, null);
+
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETEMPORARYFOLDER);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETESTNAME);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETIMEOUT);
+
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+				"""
+				package test;
+				import java.io.File;
+				import java.nio.file.Files;
+				import java.nio.file.Path;
+				import java.util.concurrent.TimeUnit;
+				
+				import org.junit.jupiter.api.BeforeEach;
+				import org.junit.jupiter.api.Test;
+				import org.junit.jupiter.api.TestInfo;
+				import org.junit.jupiter.api.Timeout;
+				import org.junit.jupiter.api.io.TempDir;
+				
+				@Timeout(value = 10, unit = TimeUnit.SECONDS)
+				public class MyTest {
+					@TempDir
+					Path tempFolder;
+
+					private String testName;
+
+					@BeforeEach
+					void init(TestInfo testInfo) {
+						this.testName = testInfo.getDisplayName();
+					}
+					
+					@Test
+					public void testWithMultipleRules() throws Exception {
+						File file = Files.createFile(tempFolder.resolve(testName + ".txt")).toFile();
+						// Test code
+					}
+				}
+				"""
+		}, null);
+	}
+
+	@Test
+	public void migrates_full_test_class_with_rules_and_lifecycle() throws CoreException {
+		IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
+				"""
+				package test;
+				import static org.junit.Assert.*;
+				import org.junit.After;
+				import org.junit.Before;
+				import org.junit.Ignore;
+				import org.junit.Rule;
+				import org.junit.Test;
+				import org.junit.rules.TestName;
+				
+				public class MyTest {
+					@Rule
+					public TestName testName = new TestName();
+					
+					@Before
+					public void setUp() {
+						System.out.println("Setting up: " + testName.getMethodName());
+					}
+					
+					@After
+					public void tearDown() {
+						System.out.println("Tearing down: " + testName.getMethodName());
+					}
+					
+					@Test
+					public void testWithAssertions() {
+						assertEquals(42, 42);
+						assertTrue(true);
+					}
+					
+					@Ignore("Not ready")
+					@Test
+					public void testIgnored() {
+						fail("Should not run");
+					}
+				}
+				""", false, null);
+
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORE);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTER);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_IGNORE);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETESTNAME);
+
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+				"""
+				package test;
+				import static org.junit.jupiter.api.Assertions.*;
+
+				import org.junit.jupiter.api.AfterEach;
+				import org.junit.jupiter.api.BeforeEach;
+				import org.junit.jupiter.api.Disabled;
+				import org.junit.jupiter.api.Test;
+				import org.junit.jupiter.api.TestInfo;
+				
+				public class MyTest {
+					private String testName;
+
+					@BeforeEach
+					void init(TestInfo testInfo) {
+						this.testName = testInfo.getDisplayName();
+					}
+					
+					@BeforeEach
+					public void setUp() {
+						System.out.println("Setting up: " + testName);
+					}
+					
+					@AfterEach
+					public void tearDown() {
+						System.out.println("Tearing down: " + testName);
+					}
+					
+					@Test
+					public void testWithAssertions() {
+						assertEquals(42, 42);
+						assertTrue(true);
+					}
+					
+					@Disabled("Not ready")
+					@Test
+					public void testIgnored() {
+						fail("Should not run");
 					}
 				}
 				"""

@@ -1,24 +1,17 @@
+/*******************************************************************************
+ * Copyright (c) 2021 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix;
-
-/*-
- * #%L
- * Sandbox junit cleanup
- * %%
- * Copyright (C) 2024 hammer
- * %%
- * This program and the accompanying materials are made available under the
- * terms of the Eclipse Public License 2.0 which is available at
- * http://www.eclipse.org/legal/epl-2.0.
- * 
- * This Source Code may also be made available under the following Secondary
- * Licenses when the conditions for such availability set forth in the Eclipse
- * Public License, v. 2.0 are satisfied: GNU General Public License, version 2
- * with the GNU Classpath Exception which is
- * available at https://www.gnu.org/software/classpath/license.html.
- * 
- * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
- * #L%
- */
 
 import java.util.Set;
 
@@ -33,42 +26,68 @@ import org.eclipse.jdt.internal.corext.refactoring.util.TightSourceRangeComputer
 import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
-import org.sandbox.jdt.internal.corext.fix.helper.AbstractTool;
-import org.sandbox.jdt.internal.corext.fix.helper.AfterClassJUnitPlugin;
-import org.sandbox.jdt.internal.corext.fix.helper.AfterJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.AfterClassJUnitPluginV2;
+import org.sandbox.jdt.internal.corext.fix.helper.AfterJUnitPluginV2;
 import org.sandbox.jdt.internal.corext.fix.helper.AssertJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.AssertOptimizationJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.AssumeJUnitPlugin;
-import org.sandbox.jdt.internal.corext.fix.helper.BeforeClassJUnitPlugin;
-import org.sandbox.jdt.internal.corext.fix.helper.BeforeJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.AssumeOptimizationJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.BeforeClassJUnitPluginV2;
+import org.sandbox.jdt.internal.corext.fix.helper.BeforeJUnitPluginV2;
+import org.sandbox.jdt.internal.corext.fix.helper.CategoryJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.ExternalResourceJUnitPlugin;
-import org.sandbox.jdt.internal.corext.fix.helper.IgnoreJUnitPlugin;
-import org.sandbox.jdt.internal.corext.fix.helper.JunitHolder;
+import org.sandbox.jdt.internal.corext.fix.helper.FixMethodOrderJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.IgnoreJUnitPluginV2;
+import org.sandbox.jdt.internal.corext.fix.helper.ParameterizedTestJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.RuleErrorCollectorJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleExpectedExceptionJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleExternalResourceJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleTemporayFolderJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleTestnameJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.RuleTimeoutJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RunWithJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.RunWithEnclosedJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.RunWithTheoriesJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.RunWithCategoriesJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.TestJUnit3Plugin;
-import org.sandbox.jdt.internal.corext.fix.helper.TestJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.TestJUnitPluginV2;
+import org.sandbox.jdt.internal.corext.fix.helper.TestTimeoutJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.TestExpectedJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.LostTestFinderJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
 public enum JUnitCleanUpFixCore {
 
-	BEFORE(new BeforeJUnitPlugin()),
-	AFTER(new AfterJUnitPlugin()),
-	TEST(new TestJUnitPlugin()),
+	BEFORE(new BeforeJUnitPluginV2()),
+	AFTER(new AfterJUnitPluginV2()),
+	TEST(new TestJUnitPluginV2()),
 	TEST3(new TestJUnit3Plugin()),
-	BEFORECLASS(new BeforeClassJUnitPlugin()),
-	AFTERCLASS(new AfterClassJUnitPlugin()),
-	IGNORE(new IgnoreJUnitPlugin()),
+	TEST_TIMEOUT(new TestTimeoutJUnitPlugin()),
+	TEST_EXPECTED(new TestExpectedJUnitPlugin()),
+	BEFORECLASS(new BeforeClassJUnitPluginV2()),
+	AFTERCLASS(new AfterClassJUnitPluginV2()),
+	IGNORE(new IgnoreJUnitPluginV2()),
+	CATEGORY(new CategoryJUnitPlugin()),
+	RUNWITH_ENCLOSED(new RunWithEnclosedJUnitPlugin()),
+	RUNWITH_THEORIES(new RunWithTheoriesJUnitPlugin()),
+	RUNWITH_CATEGORIES(new RunWithCategoriesJUnitPlugin()),
+	FIX_METHOD_ORDER(new FixMethodOrderJUnitPlugin()),
 	RUNWITH(new RunWithJUnitPlugin()),
 	ASSERT(new AssertJUnitPlugin()),
+	ASSERT_OPTIMIZATION(new AssertOptimizationJUnitPlugin()),
 	ASSUME(new AssumeJUnitPlugin()),
+	ASSUME_OPTIMIZATION(new AssumeOptimizationJUnitPlugin()),
 	RULEEXTERNALRESOURCE(new RuleExternalResourceJUnitPlugin()),
 	RULETESTNAME(new RuleTestnameJUnitPlugin()),
 	RULETEMPORARYFOLDER(new RuleTemporayFolderJUnitPlugin()),
+	RULETIMEOUT(new RuleTimeoutJUnitPlugin()),
 	RULEEXPECTEDEXCEPTION(new RuleExpectedExceptionJUnitPlugin()),
-	EXTERNALRESOURCE(new ExternalResourceJUnitPlugin());
+	RULEERRORCOLLECTOR(new RuleErrorCollectorJUnitPlugin()),
+	EXTERNALRESOURCE(new ExternalResourceJUnitPlugin()),
+	LOSTTESTS(new LostTestFinderJUnitPlugin()),
+	PARAMETERIZED(new ParameterizedTestJUnitPlugin());
 
 	AbstractTool<ReferenceHolder<Integer, JunitHolder>> junitfound;
 

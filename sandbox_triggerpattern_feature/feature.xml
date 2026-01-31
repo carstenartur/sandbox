@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="sandbox_triggerpattern_feature"
+      label="Sandbox TriggerPattern Cleanups Feature"
+      version="1.2.2.qualifier"
+      provider-name="sandbox"
+      plugin="sandbox_triggerpattern">
+
+   <description>
+      %description
+   </description>
+
+   <copyright>
+      %copyright
+   </copyright>
+
+   <license url="%licenseURL">
+      %license
+   </license>
+
+   <requires>
+      <import plugin="org.eclipse.jdt.core"/>
+      <import plugin="org.eclipse.jdt.ui"/>
+      <import plugin="sandbox_common" version="1.2.2" match="greaterOrEqual"/>
+   </requires>
+
+   <plugin
+         id="sandbox_triggerpattern"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+</feature>

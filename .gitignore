@@ -78,3 +78,7 @@ jacoco*.xml
 .DS_Store
 Thumbs.db
 *.backup
+
+# Test reports
+test-report.md
+test-report.json

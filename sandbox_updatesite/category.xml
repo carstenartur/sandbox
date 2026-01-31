@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <feature id="sandbox_encoding_quickfix_feature">
+      <category name="Sandbox"/>
+   </feature>
+   <feature id="sandbox_platform_helper_feature">
+      <category name="Sandbox"/>
+   </feature>
+   <feature id="sandbox_functional_converter_feature">
+      <category name="Sandbox"/>
+   </feature>
+   <feature id="sandbox_tools_feature">
+      <category name="Sandbox"/>
+   </feature>
+   <feature id="sandbox_triggerpattern_feature">
+      <category name="Sandbox"/>
+   </feature>
+   <feature id="sandbox_xml_cleanup_feature">
+      <category name="Sandbox"/>
+   </feature>
+   <feature id="sandbox_jface_cleanup_feature">
+      <category name="Sandbox"/>
+   </feature>
+   <feature id="sandbox_junit_cleanup_feature">
+      <category name="Sandbox"/>
+   </feature>
+   <feature id="sandbox_method_reuse_feature">
+      <category name="Sandbox"/>
+   </feature>
+   <feature id="sandbox_usage_view_feature">
+      <category name="Sandbox"/>
+   </feature>
+   <feature id="sandbox_cleanup_application_feature">
+      <category name="Sandbox"/>
+   </feature>
+   <feature id="sandbox_css_cleanup_feature">
+      <category name="Sandbox"/>
+   </feature>
+   <feature id="sandbox_extra_search_feature">
+      <category name="Sandbox"/>
+   </feature>
+   <category-def name="Sandbox" label="Sandbox - Eclipse JDT Cleanups and Tools">
+      <description>
+         Sandbox features for Eclipse JDT cleanups and development tools. 
+         Includes encoding fixes, platform helpers, functional converters, JUnit migration, and more.
+      </description>
+   </category-def>
+</site>

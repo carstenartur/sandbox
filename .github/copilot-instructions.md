@@ -1,5 +1,38 @@
 # GitHub Copilot Instructions for Sandbox Project
 
+## Quick Reference - Common Issues
+
+⚠️ **Before doing ANYTHING**: Set Java 21
+```bash
+export JAVA_HOME=/usr/lib/jvm/temurin-21-jdk-amd64
+export PATH=$JAVA_HOME/bin:$PATH
+java -version  # Must show "21"
+```
+
+⚠️ **Test failures**: ALWAYS check CI logs first, never guess the expected output
+```bash
+# Download CI log (user will provide URL)
+curl -s "<log_url>" > /tmp/ci_log.txt
+grep -A 100 "expected:" /tmp/ci_log.txt
+```
+
+⚠️ **Running tests**: Must use xvfb-run and specify module
+```bash
+xvfb-run --auto-servernum mvn test -Dtest=TestClass -pl module_name_test
+```
+
+⚠️ **Class version errors**: You're using Java 17 instead of Java 21
+```
+UnsupportedClassVersionError: class file version 65.0
+→ Fix: Set JAVA_HOME to temurin-21-jdk-amd64
+```
+
+⚠️ **Fast builds**: Use profiles and parallel builds
+```bash
+mvn -T 1C verify                    # Standard (without Product/Updatesite)
+mvn -Pproduct,repo -T 1C verify     # Full build
+```
+
 ## Repository Overview
 
 This is a sandbox repository for experimenting with Eclipse JDT cleanups, build strategies, and various Eclipse plugins. The project contains multiple Eclipse plugin modules focused on code quality improvements and automated refactoring.
@@ -29,6 +62,43 @@ This is a sandbox repository for experimenting with Eclipse JDT cleanups, build 
 
 ## Build, Test, and Lint Instructions
 
+### Java Version Requirements
+
+**CRITICAL**: This project requires **Java 21** to build and test.
+
+- **CI Environment**: Uses Java 21 (Temurin) as configured in `.github/workflows/maven.yml`
+- **Local Development**: Must use Java 21 to match CI environment
+- **Target Platform**: Eclipse 2025-09 requires Java 21
+
+#### Setting Java Version Locally
+
+If you have multiple Java versions installed (common in GitHub Actions runners):
+
+```bash
+# Check available Java versions
+ls /usr/lib/jvm/
+
+# Available versions typically include:
+# - temurin-8-jdk-amd64
+# - temurin-11-jdk-amd64  
+# - temurin-17-jdk-amd64 (often the default)
+# - temurin-21-jdk-amd64 (REQUIRED for this project)
+# - temurin-25-jdk-amd64
+
+# Set JAVA_HOME to Java 21
+export JAVA_HOME=/usr/lib/jvm/temurin-21-jdk-amd64
+export PATH=$JAVA_HOME/bin:$PATH
+
+# Verify Java version
+java -version  # Should show "openjdk version "21..."
+```
+
+#### Why Java 21 is Required
+
+- **Tycho 5.0.1** requires Java 21 (class file version 65.0)
+- **Eclipse 2025-09** target platform requires Java 21
+- Running with Java 17 will cause: `UnsupportedClassVersionError: ...class file version 65.0, this version only recognizes up to 61.0`
+
 ### Building the Project
 
 ```bash
@@ -43,17 +113,59 @@ mvn -Dinclude=web -Pjacoco verify
 - Product: `sandbox_product/target`
 - WAR file: `sandbox_web/target`
 
+### Maven Profiles for Build Acceleration
+
+The project uses Maven profiles to optimize build times. The "heavy" modules (`sandbox_product`, `sandbox_updatesite`) are not included in the default build.
+
+| Profile | Description | Command |
+|---------|-------------|---------|
+| `dev` (default) | Fast development - without Product/Updatesite | `mvn verify` |
+| `product` | With Eclipse Product | `mvn -Pproduct verify` |
+| `repo` | With P2 Update Site | `mvn -Prepo verify` |
+| `jacoco` | With Code Coverage + sandbox_coverage module | `mvn -Pjacoco verify` |
+| `web` | With WAR file (sandbox_product + sandbox_web) | `mvn -Dinclude=web verify` |
+
+**Combined profiles for full build:**
+```bash
+mvn -Pproduct,repo,jacoco verify  # Build everything (like before)
+```
+
+**Parallel builds for faster iteration:**
+```bash
+mvn -T 1C verify              # Parallel build (1 thread per CPU core)
+mvn -T 1C -DskipTests verify  # Without tests for fast iteration
+```
+
+For detailed information see [BUILD_ACCELERATION.md](../BUILD_ACCELERATION.md).
+
 ### Running Tests
 
 Tests are Eclipse plugin tests that require X virtual framebuffer (Xvfb) on Linux:
 
 ```bash
+# IMPORTANT: Set Java 21 first!
+export JAVA_HOME=/usr/lib/jvm/temurin-21-jdk-amd64
+export PATH=$JAVA_HOME/bin:$PATH
+
 # Run tests with display server
 xvfb-run --auto-servernum mvn -Pjacoco verify
+
+# Run specific test class
+xvfb-run --auto-servernum mvn test -Dtest=Java22CleanUpTest -pl sandbox_functional_converter_test
+
+# Run specific test method
+xvfb-run --auto-servernum mvn test -Dtest=Java22CleanUpTest#testSimpleForEachConversion -pl sandbox_functional_converter_test
 
 # Tests are located in modules ending with `_test`
 # Test files use JUnit 5
 ```
+
+**Common Test Issues**:
+- **Java version mismatch**: Ensure Java 21 is active (`java -version` should show "21")
+- **Class version errors**: Usually means Java 17 or older is being used instead of Java 21
+- **Xvfb issues**: Tests need a display server; use `xvfb-run --auto-servernum`
+
+**When tests fail in CI**: Always check the CI logs to see the actual vs expected output. See [Accessing CI Logs](#accessing-ci-logs) section below.
 
 ### Linting and Code Quality
 
@@ -160,6 +272,18 @@ The project follows an Eclipse plugin structure with paired modules:
 2. **Feature Module** (`sandbox_*_feature`) - Eclipse feature packaging
 3. **Test Module** (`sandbox_*_test`) - JUnit 5 tests
 
+### Module Types
+
+The project contains different module types:
+
+1. **Eclipse Plugin Modules** (`sandbox_*`) - Tycho/Eclipse Plugin Packaging
+2. **Standard Java Modules** (`sandbox-*-core`) - Maven JAR Packaging without Eclipse dependencies
+3. **Feature Modules** (`sandbox_*_feature`) - Eclipse Feature for installation
+4. **Test Modules** (`sandbox_*_test`) - Eclipse Plugin Tests (require Xvfb)
+5. **Infrastructure Modules** - `sandbox_target`, `sandbox_coverage`, `sandbox_product`, `sandbox_updatesite`
+
+**Important**: Modules with `-` in the name (e.g., `sandbox-functional-converter-core`) are standard Maven modules and can be built and tested without an Eclipse environment.
+
 ### Key Modules
 
 #### sandbox_encoding_quickfix
@@ -178,6 +302,14 @@ Converts imperative loops to Java 8 Streams:
 - Enhanced for-loops → `forEach()`
 - Mapping/filtering → `stream().map().filter()`
 - Reductions → `reduce()`
+
+#### sandbox-functional-converter-core
+AST-independent core module for loop transformations (Unified Loop Representation - ULR):
+- **Packaging**: Standard Maven JAR (not Eclipse Plugin)
+- **Build**: Uses `maven-compiler-plugin` and `bnd-maven-plugin` for OSGi bundle generation
+- **Tests**: JUnit 5 with AssertJ - can run without Xvfb
+- **Purpose**: Reusable transformation logic without Eclipse dependencies
+- **Special Note**: This module can be used independently from the Tycho build
 
 #### sandbox_junit_cleanup
 Migrates JUnit 3/4 tests to JUnit 5:
@@ -241,6 +373,7 @@ When creating new cleanups:
 - **Note**: Java 7 is no longer supported by Eclipse and should not be targeted
 - Use parameterized tests with `@EnumSource` or `@ValueSource`
 - Include disabled tests (`@Disabled`) for future features
+- **When test expectations don't match cleanup output**: Check CI logs to see what the cleanup actually produces - never guess the expected formatting. Eclipse's formatter may add spaces, line breaks, or indentation differently than expected.
 
 ### Version Compatibility
 
@@ -344,6 +477,8 @@ All feature module directories (e.g., `sandbox_encoding_quickfix_feature`, `sand
 1. **Commits**: Write clear commit messages explaining the change
 2. **Testing**: Always run tests before committing
 3. **CI**: All checks must pass (Maven build, SpotBugs, CodeQL, Codacy)
+   - **On CI failures**: Download and analyze CI logs to understand actual vs expected behavior
+   - **Never assume**: Always verify what the code actually produces in CI environment
 4. **Pull Requests**: 
    - **Keep PRs small and focused**: Each PR should address a single aspect or concern
    - **Avoid mixing changes**: Don't combine formatting changes with logic changes, or multiple unrelated features
@@ -352,18 +487,38 @@ All feature module directories (e.g., `sandbox_encoding_quickfix_feature`, `sand
    - Include description of changes and test results
    - For backporting features, PRs may need to target multiple branches (see Multi-Version Support above)
    - **Plugin changes**: Confirm that `architecture.md` and `todo.md` were reviewed and updated as needed
+   - **Test failures**: If tests fail, access CI logs before attempting fixes
 
 ## Common Commands
 
 ```bash
+# IMPORTANT: Always set Java 21 first!
+export JAVA_HOME=/usr/lib/jvm/temurin-21-jdk-amd64
+export PATH=$JAVA_HOME/bin:$PATH
+
+# Verify Java version (should show "21")
+java -version
+
+# Fast development build (without Product/Updatesite)
+mvn -T 1C verify
+
+# Full release build
+mvn -Pproduct,repo,jacoco -T 1C verify
+
 # Full build with coverage
 mvn clean verify -Pjacoco
 
 # Skip tests
 mvn clean install -DskipTests
 
+# Only core modules test (without Xvfb)
+mvn test -pl sandbox-functional-converter-core
+
 # Run specific test
-mvn test -Dtest=ExplicitEncodingCleanUpTest
+xvfb-run --auto-servernum mvn test -Dtest=ExplicitEncodingCleanUpTest -pl sandbox_encoding_quickfix_test
+
+# Run specific test method
+xvfb-run --auto-servernum mvn test -Dtest=Java22CleanUpTest#testSimpleForEachConversion -pl sandbox_functional_converter_test
 
 # Update license headers (disabled by default)
 mvn license:update-file-header
@@ -373,13 +528,33 @@ mvn clean verify -Pjacoco
 # Output: sandbox_product/target/products/
 ```
 
+### Makefile Commands (Alternative to Maven)
+
+The project contains a `Makefile` for commonly used commands:
+
+```bash
+make dev         # Fast build with tests
+make dev-notests # Fast build without tests
+make product     # Build with Eclipse Product
+make repo        # Build with P2 Repository
+make release     # Full release build
+make test        # Tests with coverage
+make clean       # Clean artifacts
+```
+
 ## Troubleshooting
 
 ### Build Issues
 
 - **Tycho Resolution Errors**: Check target platform in `sandbox_target/sandbox_target.target`
 - **SpotBugs Failures**: Check exclusion file or add suppressions
+- **Java Version Errors**: 
+  - **Error**: `UnsupportedClassVersionError: class file version 65.0, this version only recognizes up to 61.0`
+  - **Cause**: Using Java 17 instead of Java 21
+  - **Fix**: Set `JAVA_HOME=/usr/lib/jvm/temurin-21-jdk-amd64` and update PATH
 - **Test Failures**: Ensure Xvfb is running for UI tests
+  - **If tests fail in CI but not locally**: Download and analyze the CI logs to see actual output
+  - **Formatting mismatches**: Eclipse formatter may produce different whitespace, line breaks, or indentation than expected
 
 ### Common Pitfalls
 
@@ -395,6 +570,51 @@ mvn clean verify -Pjacoco
 - [SpotBugs](https://spotbugs.github.io/)
 - [JUnit 5](https://junit.org/junit5/)
 
+## Accessing CI Logs
+
+When debugging test failures or CI issues, **ALWAYS** access the actual CI logs rather than relying on assumptions:
+
+### Why CI Logs Are Critical
+
+**YOU CANNOT RUN TESTS LOCALLY IN THE SANDBOX ENVIRONMENT** due to:
+- Java version issues (sandbox may have Java 17, but project needs Java 21)
+- Missing Eclipse runtime dependencies
+- Tycho/P2 repository resolution issues
+- Limited execution time for long-running builds
+
+**Therefore**: When tests fail, you **MUST** access CI logs to see actual output. Do not try to run tests locally first.
+
+### How to Access CI Logs
+
+1. **From PR comments**: When a user provides a CI log URL, download and analyze it:
+   ```bash
+   curl -s "<log_url>" > /tmp/ci_log.txt
+   grep -A 100 "<test_name>" /tmp/ci_log.txt
+   ```
+
+2. **Using GitHub Actions API**: Access workflow run logs programmatically:
+   ```bash
+   # List workflow runs for a branch
+   gh api repos/carstenartur/sandbox/actions/workflows/maven.yml/runs?branch=<branch_name>
+   
+   # Get job logs
+   gh api repos/carstenartur/sandbox/actions/jobs/<job_id>/logs
+   ```
+
+3. **Finding test failures in logs**: Look for comparison patterns:
+   ```bash
+   # Find "expected:" vs "but was:" sections
+   grep -B 5 -A 50 "expected:" /tmp/ci_log.txt
+   ```
+
+### Why This Matters
+
+- **Formatting differences**: Eclipse's formatter may produce different output than expected (e.g., line breaks, indentation, spaces around operators)
+- **Actual vs assumed behavior**: The cleanup code may behave differently than anticipated
+- **Exact whitespace**: Tests may fail due to tabs vs spaces, extra newlines, or indentation levels
+
+**CRITICAL**: Never guess the expected formatting. Always check the CI log to see what the cleanup actually produces, then update test expectations to match.
+
 ## Notes for AI Assistants
 
 - This is an Eclipse plugin project, not a standard Java project
@@ -403,3 +623,6 @@ mvn clean verify -Pjacoco
 - Maven dependencies are resolved via P2, not Maven Central
 - Code must be compatible with Eclipse plugin classloading
 - When adding new cleanups, follow the existing pattern in other modules
+- **When test failures occur, ALWAYS access CI logs to see actual vs expected output before making changes**
+- **ALWAYS use Java 21**: Set `JAVA_HOME=/usr/lib/jvm/temurin-21-jdk-amd64` before running any Maven commands
+- **Class version errors = wrong Java version**: If you see `UnsupportedClassVersionError`, you're not using Java 21

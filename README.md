@@ -14,120 +14,203 @@ This project provides:
 - **Eclipse Product Build**: A complete Eclipse product with bundled features
 - **P2 Update Site**: Installable plugins via Eclipse update mechanism
 - **Test Infrastructure**: JUnit 5-based tests for all cleanup implementations
+- **GitHub Actions Integration**: Automated code cleanup for pull requests ([See GITHUB_ACTIONS.md](GITHUB_ACTIONS.md))
 
 All plugins are work-in-progress and intended for experimentation and learning.
+
+## 🚀 Installation
+
+### Update Site URLs
+
+Add one of the following update sites to your Eclipse installation:
+
+#### Stable Releases (Recommended)
+```
+https://carstenartur.github.io/sandbox/releases/
+```
+Use this for stable, tested versions suitable for production use.
+
+#### Latest Snapshot (Development)
+```
+https://carstenartur.github.io/sandbox/snapshots/latest/
+```
+Use this to test the latest features. Updated automatically on every commit to `main`. May be unstable.
+
+### Installation Steps
+
+1. Open Eclipse IDE
+2. Go to **Help** → **Install New Software...**
+3. Click **Add...** button
+4. Enter:
+   - **Name**: `Sandbox` (or any name you prefer)
+   - **Location**: One of the update site URLs above
+5. Select the features you want to install from the available list
+6. Click **Next** and follow the installation wizard
+7. Restart Eclipse when prompted
+
+> **⚠️ Warning**: These plugins are experimental. Test them in a development environment before using in production.
+
+### Eclipse Marketplace
+
+The Sandbox plugins are also available on the [Eclipse Marketplace](https://marketplace.eclipse.org/content/sandbox).
+
+## 📦 Release Process
+
+The Sandbox project uses an **automated release workflow**:
+
+1. Navigate to **Actions** → **Release Workflow** → **Run workflow**
+2. Enter the release version (e.g., `1.2.2`)
+3. Enter the next SNAPSHOT version (e.g., `1.2.3-SNAPSHOT`)
+4. Click **Run workflow**
+
+The workflow automatically:
+- Updates all version files using `tycho-versions-plugin` (except `sandbox-functional-converter-core`)
+- Builds and verifies the release
+- Creates git tag and maintenance branch
+- Deploys to GitHub Pages
+- Generates release notes from closed issues
+- Creates GitHub release
+- Bumps to next SNAPSHOT version
+
+The new release will be available at `https://carstenartur.github.io/sandbox/releases/X.Y.Z/` within a few minutes.
 
 ## Table of Contents
 
 - [Overview](#overview)
+- [🚀 Installation](#-installation)
+  - [Update Site URLs](#update-site-urls)
+  - [Installation Steps](#installation-steps)
+  - [Eclipse Marketplace](#eclipse-marketplace)
+- [📦 Release Process](#-release-process)
+- [GitHub Actions Integration](#github-actions-integration)
+  - [Quick Start](#quick-start)
+  - [Features](#features)
 - [Build Instructions](#build-instructions)
+  - [Prerequisites](#prerequisites)
+  - [Building](#building)
+  - [Troubleshooting](#troubleshooting)
+    - [Build fails with `UnsupportedClassVersionError` or `TypeNotPresentException`](#build-fails-with-unsupportedclassversionerror-or-typenotpresentexception)
+    - [Build fails with `Unable to provision` errors](#build-fails-with-unable-to-provision-errors)
 - [Eclipse Version Configuration](#eclipse-version-configuration)
+  - [Files to Update](#files-to-update)
+  - [Version Consistency Guidelines](#version-consistency-guidelines)
+  - [Current Configuration](#current-configuration)
 - [Quickstart](#quickstart)
+  - [Using the Eclipse Product](#using-the-eclipse-product)
+  - [Using Cleanup Plugins via Command Line](#using-cleanup-plugins-via-command-line)
+  - [Installing as Eclipse Plugins](#installing-as-eclipse-plugins)
 - [CI Status](#ci-status)
+  - [main (2025-09)](#main-2025-09)
+  - [2022-09](#2022-09)
+  - [2022-06](#2022-06)
 - [What's Included](#whats-included)
+  - [Java Version by Branch](#java-version-by-branch)
+  - [Topics Covered](#topics-covered)
 - [Projects](#projects)
-  - [sandbox_cleanup_application](#1-sandbox_cleanup_application)
-  - [sandbox_encoding_quickfix](#2-sandbox_encoding_quickfix)
-    - [Encoding Cleanup – Replace Platform Encoding with Explicit Charset](#encoding-cleanup-replace-platform-encoding-with-explicit-charset)
-    - [Based on Test Coverage](#based-on-test-coverage)
-    - [Cleanup Strategies](#cleanup-strategies)
-    - [Java Version Awareness](#java-version-awareness)
-    - [Supported Classes and APIs](#supported-classes-and-apis)
-    - [Examples](#examples)
-      - [Example: FileReader Replacement](#example-filereader-replacement)
-      - [Example: Channels.newReader (Java 10+)](#example-channelsnewreader-java-10)
-      - [Example: Files.readAllLines (Java 10+)](#example-filesreadalllines-java-10)
-      - [Example: Scanner (Java 10+)](#example-scanner-java-10)
-      - [Example: SAX InputSource](#example-sax-inputsource)
-    - [Aggregation Mode Example](#aggregation-mode-example)
-    - [Additional Fixes](#additional-fixes)
-    - [Cleanup Mode × Java Version Matrix](#cleanup-mode-java-version-matrix)
-    - [Usage](#usage)
-    - [Encoding Cleanup – Strategy Variants](#encoding-cleanup-strategy-variants)
-      - [Strategy: Prefer UTF-8](#strategy-prefer-utf-8)
-      - [Strategy: Keep Behavior](#strategy-keep-behavior)
-      - [Strategy: Aggregate UTF-8](#strategy-aggregate-utf-8)
-      - [Summary Table](#summary-table)
-    - [Charset Literal Replacement Table](#charset-literal-replacement-table)
-    - [Limitations](#limitations)
-  - [sandbox_extra_search](#3-sandbox_extra_search)
-  - [sandbox_usage_view](#4-sandbox_usage_view)
-  - [sandbox_platform_helper](#5-sandbox_platform_helper)
-    - [Platform Status Cleanup – Simplification of `new Status(...)` Calls](#platform-status-cleanup-simplification-of-new-status-calls)
-    - [Motivation](#motivation)
-    - [Before/After Comparison](#beforeafter-comparison)
-    - [Examples](#examples-1)
-      - [Java 8: With `StatusHelper`](#java-8-with-statushelper)
-      - [Java 11+: With `Status.warning(...)`](#java-11-with-statuswarning)
-      - [With Exception](#with-exception)
-    - [Cleanup Strategy Selection](#cleanup-strategy-selection)
-    - [Requirements](#requirements)
-    - [Usage](#usage-1)
-    - [Limitations](#limitations-1)
-  - [sandbox_tools](#6-sandbox_tools)
-  - [sandbox_jface_cleanup](#7-sandbox_jface_cleanup)
-    - [JFace Cleanup – SubProgressMonitor to SubMonitor Migration](#jface-cleanup--subprogressmonitor-to-submonitor-migration)
-    - [Purpose](#purpose)
-    - [Migration Pattern](#migration-pattern)
-      - [Basic Transformation](#basic-transformation)
-      - [With Style Flags](#with-style-flags)
-    - [Unique Variable Name Handling](#unique-variable-name-handling)
-    - [Idempotence](#idempotence)
-    - [Official Eclipse Documentation](#official-eclipse-documentation)
-    - [Requirements](#requirements-2)
-    - [Cleanup Name & Activation](#cleanup-name-activation-1)
-    - [Limitations](#limitations-4)
-    - [Test Coverage](#test-coverage)
-  - [sandbox_functional_converter](#8-sandbox_functional_converter)
+  - [1. `sandbox_cleanup_application`](#1-sandbox_cleanup_application)
+  - [2. `sandbox_encoding_quickfix`](#2-sandbox_encoding_quickfix)
+  - [3. `sandbox_extra_search`](#3-sandbox_extra_search)
+  - [4. `sandbox_usage_view`](#4-sandbox_usage_view)
+  - [5. `sandbox_platform_helper`](#5-sandbox_platform_helper)
+  - [6. `sandbox_tools`](#6-sandbox_tools)
+  - [7. `sandbox_jface_cleanup`](#7-sandbox_jface_cleanup)
+  - [8. `sandbox_functional_converter`](#8-sandbox_functional_converter)
     - [Functional Converter Cleanup – Transform Imperative Loops into Functional Java 8 Streams](#functional-converter-cleanup-transform-imperative-loops-into-functional-java-8-streams)
     - [Source and Test Basis](#source-and-test-basis)
     - [Supported Transformations](#supported-transformations)
-    - [Examples](#examples-2)
+    - [Examples](#examples)
+      - [Simple forEach Conversion](#simple-foreach-conversion)
+      - [Filter + Map + forEach Chain](#filter-map-foreach-chain)
+      - [Null Safety with Objects::nonNull](#null-safety-with-objectsnonnull)
+      - [AnyMatch Pattern (Early Return)](#anymatch-pattern-early-return)
+      - [AllMatch Pattern (Check All Valid)](#allmatch-pattern-check-all-valid)
+      - [MAX/MIN Reduction](#maxmin-reduction)
+      - [MAX/MIN with Expression Mapping](#maxmin-with-expression-mapping)
+      - [Nested Conditional Filters](#nested-conditional-filters)
     - [Reductions (Accumulators)](#reductions-accumulators)
+      - [Increment Counter](#increment-counter)
+      - [Mapped Reduction](#mapped-reduction)
     - [Not Yet Supported (Disabled Tests)](#not-yet-supported-disabled-tests)
     - [Ignored Cases – No Cleanup Triggered](#ignored-cases-no-cleanup-triggered)
     - [Java Version Compatibility](#java-version-compatibility)
     - [Cleanup Name & Activation](#cleanup-name-activation)
-    - [Limitations](#limitations-2)
+    - [Limitations](#limitations)
     - [Summary](#summary)
-  - [sandbox_junit](#9-sandbox_junit)
-    - [JUnit Cleanup – Feature Overview](#junit-cleanup-feature-overview)
-    - [Migration Summary](#migration-summary)
-    - [JUnit 3 Classes and Methods](#junit-3-classes-and-methods)
-      - [JUnit 3 Migration Summary Table](#junit-3-migration-summary-table)
-      - [Class Structure Transformations](#class-structure-transformations)
-      - [Test Method Transformations](#test-method-transformations)
-      - [Setup and Teardown Methods](#setup-and-teardown-methods)
-      - [Test Suite Migration](#test-suite-migration)
-    - [JUnit 4 Annotations and Classes](#junit-4-annotations-and-classes)
-      - [JUnit 4 Migration Summary Table](#junit-4-migration-summary-table)
-      - [Lifecycle Annotations](#lifecycle-annotations)
-      - [Test Annotations](#test-annotations)
-      - [Test Suite Annotations](#test-suite-annotations)
-      - [Rule Annotations](#rule-annotations)
-    - [JUnit Assertion Migration – JUnit 3 and 4 to JUnit 5](#junit-assertion-migration-junit-3-and-4-to-junit-5)
-      - [Supported Assertion Methods](#supported-assertion-methods)
-      - [Parameter Order Differences](#parameter-order-differences)
-      - [Assertion Mapping Table](#assertion-mapping-table)
-      - [Example Transformations](#example-transformations)
-        - [Equality Check](#equality-check)
-        - [Null Check](#null-check)
-        - [Boolean Assertions](#boolean-assertions)
-        - [Identity Assertions](#identity-assertions)
-        - [NotNull Assertions](#notnull-assertions)
-        - [Fail Statements](#fail-statements)
-    - [JUnit Assumption Migration](#junit-assumption-migration)
-      - [Supported Assumption Methods](#supported-assumption-methods)
-      - [Assumption Mapping Table](#assumption-mapping-table)
-    - [Notes](#notes)
-    - [Limitations](#limitations-3)
-    - [Usage](#usage-2)
-  - [sandbox_method_reuse](#10-sandbox_method_reuse)
-  - [sandbox_xml_cleanup](#11-sandbox_xml_cleanup)
+  - [9. `sandbox_junit`](#9-sandbox_junit)
+  - [10. `sandbox_method_reuse`](#10-sandbox_method_reuse)
+    - [Method Reusability Finder – Code Duplication Detection](#method-reusability-finder-code-duplication-detection)
+    - [Purpose](#purpose)
+    - [Key Features](#key-features)
+      - [Similarity Analysis](#similarity-analysis)
+      - [Inline Code Detection](#inline-code-detection)
+      - [Safety Analysis](#safety-analysis)
+    - [Components](#components)
+    - [Configuration](#configuration)
+    - [Usage](#usage)
+    - [Implementation Status](#implementation-status)
+  - [11. `sandbox_xml_cleanup`](#11-sandbox_xml_cleanup)
+    - [XML Cleanup – PDE File Optimization](#xml-cleanup-pde-file-optimization)
+    - [Purpose](#purpose)
+    - [Supported XML Types (PDE Files Only)](#supported-xml-types-pde-files-only)
+    - [Transformation Process](#transformation-process)
+      - [1. XSLT Transformation](#1-xslt-transformation)
+      - [2. Whitespace Normalization](#2-whitespace-normalization)
+      - [3. Change Detection](#3-change-detection)
+    - [Configuration](#configuration)
+    - [Security Features](#security-features)
+    - [Tab Conversion Rule](#tab-conversion-rule)
+    - [Usage](#usage)
+    - [Limitations](#limitations)
+    - [Test Coverage](#test-coverage)
 - [Installation](#installation)
+- [Documentation](#documentation)
+  - [📚 Documentation Index](#documentation-index)
+    - [Getting Started](#getting-started)
+    - [Plugin-Specific Documentation](#plugin-specific-documentation)
+    - [Test Infrastructure Documentation](#test-infrastructure-documentation)
+    - [Project Governance](#project-governance)
+    - [Additional Resources](#additional-resources)
+  - [📖 Documentation Guidelines for Contributors](#documentation-guidelines-for-contributors)
+  - [🔍 Finding Documentation](#finding-documentation)
 - [Contributing](#contributing)
+  - [How to Contribute](#how-to-contribute)
+  - [Guidelines](#guidelines)
+  - [Reporting Issues](#reporting-issues)
 - [Release Process](#release-process)
+  - [Prerequisites](#prerequisites)
+  - [Release Steps](#release-steps)
+    - [1. Update Version Numbers](#1-update-version-numbers)
+    - [2. Verify the Build](#2-verify-the-build)
+    - [3. Commit Version Changes](#3-commit-version-changes)
+    - [4. Create a Git Tag](#4-create-a-git-tag)
+    - [5. Create GitHub Release](#5-create-github-release)
+    - [6. Automated Publishing](#6-automated-publishing)
+    - [7. Prepare for Next Development Iteration](#7-prepare-for-next-development-iteration)
+  - [Version Numbering](#version-numbering)
+  - [Release Artifacts](#release-artifacts)
+  - [Troubleshooting](#troubleshooting)
 - [License](#license)
+  - [Eclipse Public License 2.0](#eclipse-public-license-20)
+
+## GitHub Actions Integration
+
+This repository includes a **Docker-based GitHub Action** for automated code cleanup on pull requests. The action uses the sandbox cleanup application to apply Eclipse JDT cleanups directly in your GitHub workflows.
+
+### Quick Start
+
+- **Automatic PR Cleanup**: Already configured! Opens/updates to PRs with Java files trigger cleanup automatically
+- **Manual Cleanup**: Go to Actions → Manual Cleanup → Run workflow
+- **Custom Integration**: Use `./.github/actions/cleanup-action` in your workflows
+
+### Features
+
+✅ Automated cleanup on pull requests  
+✅ Configurable profiles (minimal/standard/aggressive)  
+✅ All sandbox + Eclipse JDT cleanups included  
+✅ Auto-commit changes to PR branch  
+✅ Manual trigger with customizable options  
+
+**[📖 Full Documentation](GITHUB_ACTIONS.md)** | **[Workflows Guide](.github/workflows/README.md)** | **[Action Details](.github/actions/cleanup-action/README.md)**
 
 ## Build Instructions
 
@@ -147,14 +230,129 @@ java -version  # Should show Java 21 or later
 
 ### Building
 
-To build the project, including a WAR file that contains the update site, run:
+#### Build Profiles
+
+The project supports Maven profiles to optimize build speed:
+
+| Profile | Modules Built | Use Case |
+|---------|---------------|----------|
+| `dev` (default) | All bundles, features, tests | Fast local development |
+| `product` | + Eclipse Product (`sandbox_product`) | Building distributable product |
+| `repo` | + P2 Update Site (`sandbox_updatesite`) | Building update site |
+| `jacoco` | + Coverage reports | CI/Coverage builds |
+| `reports` | + HTML test reports | CI/Test report builds |
+
+#### Build Commands
+
+| Command | Description |
+|---------|-------------|
+| `mvn -T 1C verify` | Quick dev build (fastest) |
+| `mvn -Pproduct -T 1C verify` | Build with Eclipse product |
+| `mvn -Prepo -T 1C verify` | Build with P2 update site |
+| `mvn -Pproduct,repo -T 1C verify` | Full release build |
+| `mvn -Pjacoco,product,repo -T 1C verify` | Full CI build with coverage |
+| `mvn -T 1C -DskipTests verify` | Skip tests for local iteration |
+
+The project supports different build profiles for different purposes. Choose the appropriate command based on your needs:
+
+#### Quick Development Build (Fastest)
+
+For rapid iteration during development, use the default build which excludes heavy product materialization and p2 repository assembly:
 
 ```bash
-mvn -Dinclude=web -Pjacoco verify
+mvn -T 1C verify
 ```
 
-- The product will be located in `sandbox_product/target`
+- **Builds**: All bundles, features, and tests
+- **Skips**: Product materialization (`sandbox_product`) and p2 repository assembly (`sandbox_updatesite`)
+- **Use case**: Fast feedback during development, testing code changes
+- **Time**: Significantly faster than full build
+
+You can skip tests for even faster iteration:
+
+```bash
+mvn -T 1C -DskipTests verify
+```
+
+#### Build with Eclipse Product
+
+To build the Eclipse product with p2-director materialization (creates installable Eclipse distributions):
+
+```bash
+mvn -Pproduct -T 1C verify
+```
+
+- **Builds**: Everything in default build + Eclipse product
+- **Output**: `sandbox_product/target/products/`
+- **Use case**: Testing the Eclipse product locally
+
+#### Build with P2 Update Site Repository
+
+To build the p2 update site repository (for plugin distribution):
+
+```bash
+mvn -Prepo -T 1C verify
+```
+
+- **Builds**: Everything in default build + p2 update site
+- **Output**: `sandbox_updatesite/target/repository/`
+- **Use case**: Creating update site for plugin distribution
+
+#### Full Release Build
+
+For complete builds including product, repository, and code coverage:
+
+```bash
+mvn -Pproduct,repo,jacoco -T 1C verify
+```
+
+- **Builds**: Everything (bundles, features, tests, product, repository, coverage)
+- **Output**: Complete release artifacts in respective module `target/` directories
+- **Coverage Report**: `sandbox_coverage/target/site/jacoco-aggregate/`
+- **Use case**: Release builds, CI main branch builds
+
+#### Build with WAR File (Legacy)
+
+To build a WAR file that contains the update site:
+
+```bash
+mvn -Dinclude=web -Pproduct,jacoco -T 1C verify
+```
+
 - The WAR file will be located in `sandbox_web/target`
+
+#### Using Make (Convenience)
+
+A Makefile is provided for easier build commands:
+
+```bash
+make dev       # Fast development build (skips tests)
+make product   # Build with product (requires xvfb for tests)
+make repo      # Build with repository (requires xvfb for tests)
+make release   # Full release build with coverage (requires xvfb for tests)
+make test      # Run tests with coverage (requires xvfb)
+make clean     # Clean all build artifacts
+make help      # Show all available targets
+```
+
+#### Build Flags
+
+- `-T 1C`: Enables parallel builds with 1 thread per CPU core (faster builds)
+- `-DskipTests`: Skips test execution (faster iteration)
+- `-Pjacoco`: Enables JaCoCo code coverage
+- `-Pproduct`: Includes Eclipse product build
+- `-Prepo`: Includes p2 repository build
+
+#### Understanding the Profiles
+
+- **Default (no profiles)**: Fast development build - bundles, features, and tests only
+- **`product`**: Adds Eclipse product materialization (heavy step, takes time)
+- **`repo`**: Adds p2 update site repository assembly (heavy step, takes time)
+- **`jacoco`**: Adds code coverage reporting (includes `sandbox_coverage` module)
+- **`reports`**: Adds HTML test report generation (use without `-T 1C` to avoid thread-safety warning)
+- **`web`**: Adds WAR file with update site (requires `-Dinclude=web` property, also builds `sandbox_product`)
+
+**Backward Compatibility**: The command `mvn -Pproduct,repo verify` produces the same result as the previous full build behavior.
 
 ### Troubleshooting
 
@@ -253,14 +451,15 @@ eclipse -nosplash -consolelog -debug \
 
 ### Installing as Eclipse Plugins
 
-You can install the cleanup plugins into your existing Eclipse installation using the P2 update site:
+You can install the cleanup plugins into your existing Eclipse installation using the P2 update site.
 
-1. In Eclipse, go to **Help** → **Install New Software...**
-2. Click **Add...** and enter the update site URL (see [Installation](#installation) section)
-3. Select the desired cleanup features
-4. Follow the installation wizard
+**See the [Installation](#-installation) section above for detailed instructions and update site URLs.**
 
-> **Warning**: Use only with a test Eclipse installation. These plugins are experimental and may affect your IDE stability.
+The update sites provide:
+- **Stable Releases**: `https://carstenartur.github.io/sandbox/releases/` - Tested, stable versions
+- **Latest Snapshots**: `https://carstenartur.github.io/sandbox/snapshots/latest/` - Latest development builds
+
+> **⚠️ Warning**: These plugins are experimental. Test them in a development environment before using in production.
 
 ---
 
@@ -270,6 +469,92 @@ You can install the cleanup plugins into your existing Eclipse installation usin
 
 [![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)  
 [![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)
+
+**Code Coverage Reports**: Available at [https://carstenartur.github.io/sandbox/coverage/](https://carstenartur.github.io/sandbox/coverage/) (updated daily via scheduled build when there are commits to main, or on manual trigger)
+
+**Test Results**: Available at [https://carstenartur.github.io/sandbox/tests/](https://carstenartur.github.io/sandbox/tests/) (updated on every push to main)
+
+### Report Details
+
+#### Coverage Reports
+The JaCoCo coverage reports show code coverage statistics for the entire codebase:
+- **Location**: `https://carstenartur.github.io/sandbox/coverage/`
+- **Content**: Line, branch, and method coverage for all modules
+- **Update Frequency**: Daily via scheduled build (only when there are commits in the last 24 hours) or manual trigger
+- **Build Profile**: Generated with full release build using `-Pjacoco,product,repo` profiles
+- **Local Generation**: Run `mvn -Pjacoco verify` to generate locally in `sandbox_coverage/target/site/jacoco-aggregate/`
+- **Note**: Coverage reports are NOT generated on normal push/PR builds to keep CI fast. They require the scheduled or manual coverage workflow.
+
+#### Test Results
+HTML test reports for all test modules, showing detailed test execution results:
+- **Location**: `https://carstenartur.github.io/sandbox/tests/`
+- **Content**: 
+  - Individual test module reports (e.g., `sandbox_encoding_quickfix_test`, `sandbox_functional_converter_test`)
+  - Test success/failure statistics
+  - Disabled tests (JUnit 5 `@Disabled` annotations)
+  - Detailed test execution information
+- **Update Frequency**: 
+  - **Primary**: Updated on every push to main branch (via normal CI build)
+  - **Secondary**: Also updated during scheduled coverage builds (includes full release build with all profiles)
+- **Build Profile**: 
+  - Normal builds (push/PR): No special profiles, fast build for quick feedback
+  - Scheduled builds: Uses `-Pjacoco,product,repo` profiles (full release build)
+- **Local Generation**: Run the full reactor build (`mvn verify`), and test reports will be automatically generated in each test module's `target/site/surefire-report.html` directory
+- **Structure**:
+  - Main index: Lists all test modules with links to their individual reports
+  - Module reports: Detailed test results for each module
+
+### CI Workflow Structure
+
+The project uses two distinct CI workflows for efficient publishing:
+
+#### 1. Normal Build Workflow (`maven.yml`)
+**Triggers**: On push/PR to main branch
+
+**Purpose**: Fast feedback and test result publishing
+
+**Build Command**: `mvn verify` (no jacoco, product, or repo profiles)
+
+**What it does**:
+- Runs standard Maven/Tycho build
+- Executes all tests
+- Generates Surefire/JUnit HTML reports automatically (via maven-surefire-report-plugin)
+- Collects test reports from all test modules
+- Deploys test reports to GitHub Pages at `/tests`
+
+**What it does NOT do**:
+- Does NOT generate code coverage (jacoco profile not active)
+- Does NOT build Eclipse product or P2 repository (kept lean for speed)
+
+**Update guarantee**: Test results are always current with the latest main branch commit
+
+#### 2. Scheduled Coverage Build Workflow (`coverage.yml`)
+**Triggers**: 
+- Daily at midnight UTC (only if there were commits in the last 24 hours)
+- Manual workflow dispatch
+
+**Purpose**: Full release build with comprehensive coverage metrics
+
+**Build Command**: `mvn -Pjacoco,product,repo verify`
+
+**What it does**:
+- Runs full release build with all profiles
+- Generates JaCoCo code coverage reports
+- Builds Eclipse product and P2 repository
+- Deploys coverage reports to GitHub Pages at `/coverage`
+- Deploys test reports to GitHub Pages at `/tests` (as backup)
+
+**Update guarantee**: Coverage reports are updated daily when there are new commits, but may be up to 24 hours behind the latest commit
+
+#### Why This Structure?
+
+**Performance**: Normal builds complete faster without heavy jacoco/product/repo profiles, providing quick feedback on PRs and commits
+
+**Separation of Concerns**: 
+- Test results = Always current (every commit)
+- Coverage metrics = Updated daily (comprehensive but not blocking fast feedback)
+
+**Resource Efficiency**: Full release builds with coverage are expensive; running them daily (instead of on every commit) reduces CI resource usage while still maintaining up-to-date coverage metrics
 
 ### 2022-09
 
@@ -324,296 +609,26 @@ See: https://bugs.eclipse.org/bugs/show_bug.cgi?id=75333
 
 ### 2. `sandbox_encoding_quickfix`
 
-#### Encoding Cleanup – Replace Platform Encoding with Explicit Charset
+Replaces platform-dependent or implicit encoding usage with explicit, safe alternatives using `StandardCharsets.UTF_8` or equivalent constants. Improves code portability and prevents encoding-related bugs across different platforms.
 
-The **Encoding Cleanup** replaces platform-dependent or implicit encoding usage with explicit, safe alternatives using `StandardCharsets.UTF_8` or equivalent constants.  
-It supports multiple strategies and is Java-version-aware.
+**Key Features:**
+- Three cleanup strategies: Prefer UTF-8, Keep Behavior, or Aggregate UTF-8
+- Java version-aware transformations (Java 7-21+)
+- Supports FileReader, FileWriter, Files methods, Scanner, PrintWriter, and more
+- Automatically adds imports and removes unnecessary exceptions
 
----
-
-#### Based on Test Coverage
-
-The cleanup logic is tested and verified by the following test files:
-
-- `Java22/ExplicitEncodingPatterns.java`
-- `Java10/ExplicitEncodingPatternsPreferUTF8.java`
-- `Java10/ExplicitEncodingPatternsKeepBehavior.java`
-- `Java10/ExplicitEncodingPatternsAggregateUTF8.java`
-- `Java10/ExplicitEncodingCleanUpTest.java`
-
----
-
-#### Cleanup Strategies
-
-| Strategy               | Description                                                                 |
-|------------------------|-----------------------------------------------------------------------------|
-| **Prefer UTF-8**       | Replace `"UTF-8"` and platform-default encodings with `StandardCharsets.UTF_8` |
-| **Keep Behavior**      | Only fix cases where behavior is guaranteed not to change (e.g. "UTF-8" literal) |
-| **Aggregate UTF-8**    | Replace all `"UTF-8"` usage with a shared `static final Charset UTF_8` field |
-
----
-
-#### Java Version Awareness
-
-| Java Version | Supported Transformations                                                             |
-|--------------|----------------------------------------------------------------------------------------|
-| Java < 7     | Cleanup is **disabled** – `StandardCharsets` not available                            |
-| Java 7–10    | Basic replacements using `StandardCharsets.UTF_8`, stream wrapping, and exception removal |
-| Java 11+     | Adds support for `Files.newBufferedReader(path, charset)` and `Channels.newReader(...)` |
-| Java 21+     | Enables usage of `Files.readString(...)` and `Files.writeString(...)` with charset     |
-
----
-
-#### Supported Classes and APIs
-
-The cleanup covers a wide range of encoding-sensitive classes:
-
-| Class / API                          | Encoding Behavior                      | Cleanup Action                                          |
-|-------------------------------------|----------------------------------------|---------------------------------------------------------|
-| `OutputStreamWriter`                | Requires explicit encoding             | Replace `"UTF-8"` or add missing `StandardCharsets.UTF_8` |
-| `InputStreamReader`                | Same                                   | Add `StandardCharsets.UTF_8` where missing              |
-| `FileReader` / `FileWriter`        | Implicit platform encoding             | Replace with stream + `InputStreamReader` + charset     |
-| `Scanner(InputStream)`             | Platform encoding                      | Add charset constructor if available (Java 10+)         |
-| `PrintWriter(OutputStream)`        | Platform encoding                      | Use new constructor with charset if possible            |
-| `Files.newBufferedReader(Path)`    | Platform encoding by default           | Use overload with charset                              |
-| `Files.newBufferedWriter(Path)`    | Same                                   | Use overload with charset                              |
-| `Files.readAllLines(Path)`         | Platform encoding                      | Use `readAllLines(path, charset)` if available          |
-| `Files.readString(Path)`           | Available since Java 11 / 21+          | Use with charset overload                               |
-| `Charset.forName("UTF-8")`         | Literal resolution                     | Replace with `StandardCharsets.UTF_8`                   |
-| `Channels.newReader(...)`          | Charset overload available since Java 11 | Use it when applicable                                  |
-| `InputSource.setEncoding(String)`  | Not a stream – SAX API                 | Replace string literal `"UTF-8"` with constant if possible |
-
----
-
-#### Examples
-
-##### Example: FileReader Replacement
-
-**Before:**
+**Quick Example:**
 ```java
+// Before
 Reader r = new FileReader(file);
-```
-
-**After:**
-```java
-Reader r = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8);
-```
-
----
-
-##### Example: Channels.newReader (Java 10+)
-
-**Before:**
-```java
-Reader r = Channels.newReader(channel, "UTF-8");
-```
-
-**After:**
-```java
-Reader r = Channels.newReader(channel, StandardCharsets.UTF_8);
-```
-
----
-
-##### Example: Files.readAllLines (Java 10+)
-
-**Before:**
-```java
 List<String> lines = Files.readAllLines(path);
-```
 
-**After:**
-```java
+// After
+Reader r = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8);
 List<String> lines = Files.readAllLines(path, StandardCharsets.UTF_8);
 ```
 
----
-
-##### Example: Scanner (Java 10+)
-
-**Before:**
-```java
-Scanner scanner = new Scanner(inputStream);
-```
-
-**After:**
-```java
-Scanner scanner = new Scanner(inputStream, StandardCharsets.UTF_8);
-```
-
----
-
-##### Example: SAX InputSource
-
-**Before:**
-```java
-InputSource source = new InputSource();
-source.setEncoding("UTF-8");
-```
-
-**After:**
-```java
-source.setEncoding(StandardCharsets.UTF_8.name());
-```
-
----
-
-#### Aggregation Mode Example
-
-If `Aggregate UTF-8` mode is enabled:
-
-```java
-private static final Charset UTF_8 = StandardCharsets.UTF_8;
-
-Reader r = new InputStreamReader(in, UTF_8);
-```
-
-All uses of `StandardCharsets.UTF_8` or `"UTF-8"` will be redirected to `UTF_8`.
-
----
-
-#### Additional Fixes
-
-- Adds required imports:
-  - `import java.nio.charset.StandardCharsets;`
-  - `import java.nio.charset.Charset;` (if aggregation is used)
-- Removes:
-  - `throws UnsupportedEncodingException` if replaced by standard charset
-  - `"UTF-8"` string constants if inlined
-
----
-
-#### Cleanup Mode × Java Version Matrix
-
-| Java Version | Prefer UTF-8 | Keep Behavior | Aggregate UTF-8 | Files.readString / Channels |
-|--------------|---------------|----------------|------------------|------------------------------|
-| Java 7       | ✅             | ✅              | ✅                | ❌                           |
-| Java 10      | ✅             | ✅              | ✅                | ❌                           |
-| Java 11–20   | ✅             | ✅              | ✅                | ✅                           |
-| Java 21+     | ✅             | ✅              | Optional         | ✅ (modern API encouraged)   |
-
----
-
-#### Usage
-
-- Via **Eclipse Clean Up...** under Encoding category
-- Via **JDT Batch tooling**, with properties:
-  - `encoding.strategy = PREFER_UTF8 | KEEP | AGGREGATE`
-  - `aggregate.charset.name = UTF_8`
-  - `min.java.version = 7 | 10 | 11 | 21`
-
-##### Encoding Cleanup – Strategy Variants
-
-The **Encoding Cleanup** supports multiple strategies depending on the selected configuration.
-Each strategy affects which code constructs are transformed and how safely defaults are preserved.
-
----
-
-##### Strategy: Prefer UTF-8
-
-Replaces all literal `"UTF-8"` occurrences and platform-default encodings with `StandardCharsets.UTF_8`.
-
-###### Example Transformations
-
-**Before:**
-```java
-new InputStreamReader(in);
-new FileReader(file);
-Charset.forName("UTF-8");
-```
-
-**After:**
-```java
-new InputStreamReader(in, StandardCharsets.UTF_8);
-new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8);
-StandardCharsets.UTF_8;
-```
-
----
-
-##### Strategy: Keep Behavior
-
-Only transforms code if `"UTF-8"` is explicitly used – avoids changing platform-default behaviors.
-
-###### Example Transformations
-
-**Before:**
-```java
-Charset charset = Charset.forName("UTF-8");
-new InputStreamReader(in);
-```
-
-**After:**
-```java
-Charset charset = StandardCharsets.UTF_8;
-new InputStreamReader(in); // left unchanged
-```
-
----
-
-##### Strategy: Aggregate UTF-8
-
-Replaces all `"UTF-8"` usage and `StandardCharsets.UTF_8` with a class-level constant.
-
-###### Example Transformations
-
-**Before:**
-```java
-new InputStreamReader(in, StandardCharsets.UTF_8);
-new FileReader(file);
-```
-
-**After:**
-```java
-private static final Charset UTF_8 = StandardCharsets.UTF_8;
-
-new InputStreamReader(in, UTF_8);
-new InputStreamReader(new FileInputStream(file), UTF_8);
-```
-
-Also supports dynamic replacement of:
-- `Charset.forName("UTF-8")`
-- `"UTF-8"` literals passed to methods like `setEncoding(...)`
-
----
-
-##### Summary Table
-
-| Strategy        | Platform Default Handling | Replaces `"UTF-8"` | Aggregates Constant |
-|----------------|----------------------------|---------------------|----------------------|
-| Prefer UTF-8   | Yes                        | Yes                 | No                   |
-| Keep Behavior  | No                         | Yes (only explicit) | No                   |
-| Aggregate UTF-8| Yes                        | Yes                 | Yes (`UTF_8`)        |
-
-> These strategies are controlled via cleanup preferences:  
-> `encoding.strategy = PREFER_UTF8 | KEEP | AGGREGATE`
-
-##### Charset Literal Replacement Table
-
-The cleanup recognizes common charset string literals and replaces them with the appropriate constants from `StandardCharsets`:
-
-| String Literal     | Replacement Constant              |
-|--------------------|------------------------------------|
-| `"UTF-8"`          | `StandardCharsets.UTF_8`           |
-| `"US-ASCII"`       | `StandardCharsets.US_ASCII`        |
-| `"ISO-8859-1"`     | `StandardCharsets.ISO_8859_1`      |
-| `"UTF-16"`         | `StandardCharsets.UTF_16`          |
-| `"UTF-16BE"`       | `StandardCharsets.UTF_16BE`        |
-| `"UTF-16LE"`       | `StandardCharsets.UTF_16LE`        |
-
----
-
-#### Limitations
-
-- Dynamic encodings (read from config or variables) are left untouched
-- Aggregation introduces class-level fields (may require conflict checks)
-- Cleanup logic avoids modifying non-I/O encoding usages
-
----
-
-This documentation is based on test-driven implementations in the `sandbox_encoding_quickfix_test` module and reflects support for modern and legacy encoding cleanup across Java 7 to 22.
-
-> **Reference**: [JEP 400: UTF-8 by Default](https://openjdk.java.net/jeps/400) – Partial implementation to highlight platform encoding usage via API changes.
+📖 **Full Documentation**: [Plugin README](sandbox_encoding_quickfix/README.md) | [Architecture](sandbox_encoding_quickfix/ARCHITECTURE.md) | [TODO](sandbox_encoding_quickfix/TODO.md)
 
 ### 3. `sandbox_extra_search`
 
@@ -625,129 +640,24 @@ Provides a table view of code objects, sorted by name, to detect inconsistent na
 
 ### 5. `sandbox_platform_helper`
 
-#### Platform Status Cleanup – Simplification of `new Status(...)` Calls
+Simplifies Eclipse Platform `Status` object creation by replacing verbose `new Status(...)` constructor calls with cleaner factory methods (Java 11+ / Eclipse 4.20+) or StatusHelper pattern (Java 8).
 
-This cleanup modernizes the usage of `org.eclipse.core.runtime.Status` in Eclipse-based projects by replacing verbose constructor calls with cleaner alternatives.  
-It supports two strategies, depending on the Java and Eclipse platform version:
+**Key Features:**
+- Java version-aware transformations
+- Reduces boilerplate in Status object creation
+- Automatic selection between StatusHelper or factory methods
+- Cleaner, more readable code
 
-- **Java 8 / Eclipse < 4.20**: Use a project-specific `StatusHelper` class.
-- **Java 11+ / Eclipse ≥ 4.20**: Use the static factory methods `Status.error(...)`, `Status.warning(...)`, `Status.info(...)`, etc.
-
-The cleanup logic is based on:
-
-- [`Java8CleanUpTest.java`](../sandbox_platform_helper_test/src/org/sandbox/jdt/ui/tests/quickfix/Java8CleanUpTest.java)
-- [`Java9CleanUpTest.java`](../sandbox_platform_helper_test/src/org/sandbox/jdt/ui/tests/quickfix/Java9CleanUpTest.java)
-
----
-
-#### Motivation
-
-Constructing `IStatus` instances via `new Status(...)` is verbose and error-prone. This cleanup provides more readable alternatives by:
-
-- Reducing boilerplate code
-- Unifying the way status objects are created
-- Encouraging use of centralized helpers or platform-provided factories
-
----
-
-#### Before/After Comparison
-
-| Case Type               | Legacy Code                                             | Cleanup Result (Java 8)                      | Cleanup Result (Java 11 / Eclipse ≥ 4.20)   |
-|-------------------------|---------------------------------------------------------|----------------------------------------------|---------------------------------------------|
-| Basic warning           | `new Status(IStatus.WARNING, id, msg)`                 | *(unchanged – concise)*                      | *(unchanged – concise)*                     |
-| With 4 arguments        | `new Status(IStatus.WARNING, id, msg, null)`           | `StatusHelper.warning(id, msg)`             | `Status.warning(msg)`                       |
-| With exception          | `new Status(IStatus.ERROR, id, msg, e)`                | `StatusHelper.error(id, msg, e)`            | `Status.error(msg, e)`                      |
-| INFO with 4 args        | `new Status(IStatus.INFO, id, code, msg, null)`        | `StatusHelper.info(id, msg)`                | `Status.info(msg)`                          |
-| OK status               | `new Status(IStatus.OK, id, "done")`                   | *(unchanged – already minimal)*             | *(unchanged – already minimal)*             |
-
----
-
-#### Examples
-
-##### Java 8: With `StatusHelper`
-
-**Before:**
+**Quick Example:**
 ```java
-IStatus status = new Status(IStatus.WARNING, "plugin.id", "Something happened", null);
+// Before
+IStatus status = new Status(IStatus.ERROR, "plugin.id", "Error message", exception);
+
+// After (Java 11+ / Eclipse 4.20+)
+IStatus status = Status.error("Error message", exception);
 ```
 
-**After:**
-```java
-IStatus status = StatusHelper.warning("plugin.id", "Something happened");
-```
-
----
-
-##### Java 11+: With `Status.warning(...)`
-
-**Before:**
-```java
-IStatus status = new Status(IStatus.WARNING, "plugin.id", IStatus.OK, "Something happened", null);
-```
-
-**After:**
-```java
-IStatus status = Status.warning("Something happened");
-```
-
----
-
-##### With Exception
-
-**Before:**
-```java
-IStatus status = new Status(IStatus.ERROR, "plugin.id", "Something bad happened", exception);
-```
-
-**After (Java 8):**
-```java
-IStatus status = StatusHelper.error("plugin.id", "Something bad happened", exception);
-```
-
-**After (Java 11+):**
-```java
-IStatus status = Status.error("Something bad happened", exception);
-```
-
----
-
-#### Cleanup Strategy Selection
-
-| Target Platform        | Strategy Used        |
-|------------------------|----------------------|
-| Eclipse < 4.20         | Insert `StatusHelper` method calls |
-| Eclipse 4.20 or newer  | Replace with `Status.error(...)`, `Status.warning(...)`, etc. |
-
----
-
-#### Requirements
-
-- For **Status factory methods**: Eclipse Platform 4.20+ and Java 11+
-- For **StatusHelper**: Either implement your own helper, or use a generated version
-- Static import of `org.eclipse.core.runtime.Status` is recommended
-
----
-
-#### Usage
-
-This cleanup is available as part of the JDT Clean Up framework. It can be run via:
-
-- **Eclipse UI** → Source → Clean Up
-- **Automated build tools** using Eclipse JDT APIs or Maven plugins
-
----
-
-#### Limitations
-
-- Only applies to direct calls to the `Status` constructor
-- Plugin ID handling is simplified – if it must be retained dynamically, manual changes may be needed
-- Custom `IStatus` subclasses or complex logic are not handled
-
----
-
-This documentation is based on the cleanup logic and test cases in `Java8CleanUpTest.java` and `Java9CleanUpTest.java`. Manual review is advised for edge cases or plugin-specific conventions.
-
-> **Reference**: [Eclipse 4.20 Platform ISV – Simpler Status Creation](https://www.eclipse.org/eclipse/news/4.20/platform_isv.php#simpler-status-creation) – PoC for a QuickFix to migrate code based on new platform features.
+📖 **Full Documentation**: [Plugin README](sandbox_platform_helper/README.md) | [Architecture](sandbox_platform_helper/ARCHITECTURE.md) | [TODO](sandbox_platform_helper/TODO.md)
 
 ### 6. `sandbox_tools`
 
@@ -755,173 +665,26 @@ This documentation is based on the cleanup logic and test cases in `Java8CleanUp
 
 ### 7. `sandbox_jface_cleanup`
 
-#### JFace Cleanup – SubProgressMonitor to SubMonitor Migration
+Automates migration from deprecated `SubProgressMonitor` to modern `SubMonitor` API. The cleanup is idempotent and handles variable name collisions.
 
-The **JFace Cleanup** automates the migration from the deprecated `SubProgressMonitor` API to the modern `SubMonitor` API introduced in Eclipse 3.4.
+**Key Features:**
+- Transforms `beginTask()` + `SubProgressMonitor` to `SubMonitor.convert()` + `split()`
+- Handles style flags and multiple monitor instances
+- Idempotent - safe to run multiple times
+- Automatic variable name conflict resolution
 
----
-
-#### Purpose
-
-`SubProgressMonitor` has been deprecated in favor of `SubMonitor`, which provides:
-- **Simpler API**: Fluent interface with method chaining
-- **Better null safety**: Built-in null handling for progress monitors
-- **Improved work allocation**: More intuitive split() semantics
-- **Idempotent transformations**: The cleanup can be run multiple times safely
-- **Forward compatibility**: SubMonitor is the recommended API since Eclipse 3.4+
-
-This cleanup is designed to be **idempotent** – already migrated code will not be transformed again, ensuring safe repeated application.
-
----
-
-#### Migration Pattern
-
-The cleanup transforms the classic `beginTask()` + `SubProgressMonitor` pattern into the modern `SubMonitor.convert()` + `split()` pattern.
-
-##### Basic Transformation
-
-**Before:**
+**Quick Example:**
 ```java
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubProgressMonitor;
+// Before
+monitor.beginTask("Task", 100);
+IProgressMonitor sub = new SubProgressMonitor(monitor, 60);
 
-public void doWork(IProgressMonitor monitor) {
-    monitor.beginTask("Main Task", 100);
-    IProgressMonitor sub1 = new SubProgressMonitor(monitor, 60);
-    IProgressMonitor sub2 = new SubProgressMonitor(monitor, 40);
-}
-```
-
-**After:**
-```java
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubMonitor;
-
-public void doWork(IProgressMonitor monitor) {
-    SubMonitor subMonitor = SubMonitor.convert(monitor, "Main Task", 100);
-    IProgressMonitor sub1 = subMonitor.split(60);
-    IProgressMonitor sub2 = subMonitor.split(40);
-}
-```
-
-##### With Style Flags
-
-The cleanup also handles `SubProgressMonitor` constructor calls with style flags:
-
-**Before:**
-```java
-IProgressMonitor sub = new SubProgressMonitor(monitor, 50, SubProgressMonitor.PREPEND_MAIN_LABEL_TO_SUBTASK);
-```
-
-**After:**
-```java
+// After
 SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
-IProgressMonitor sub = subMonitor.split(50, SubMonitor.PREPEND_MAIN_LABEL_TO_SUBTASK);
+IProgressMonitor sub = subMonitor.split(60);
 ```
 
----
-
-#### Unique Variable Name Handling
-
-If the scope already contains a variable named `subMonitor`, the cleanup generates a unique name:
-
-**Before:**
-```java
-public void doWork(IProgressMonitor monitor) {
-    String subMonitor = "test";  // Name collision
-    monitor.beginTask("Task", 100);
-    IProgressMonitor sub = new SubProgressMonitor(monitor, 50);
-}
-```
-
-**After:**
-```java
-public void doWork(IProgressMonitor monitor) {
-    String subMonitor = "test";
-    SubMonitor subMonitor2 = SubMonitor.convert(monitor, "Task", 100);
-    IProgressMonitor sub = subMonitor2.split(50);
-}
-```
-
----
-
-#### Idempotence
-
-The cleanup is **idempotent** – code that has already been migrated to `SubMonitor` will not be modified:
-
-**Input (Already Migrated):**
-```java
-public void doWork(IProgressMonitor monitor) {
-    SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
-    IProgressMonitor sub = subMonitor.split(50);
-    IProgressMonitor sub2 = subMonitor.split(30);
-}
-```
-
-**Output:**
-```java
-// No changes - code is already using SubMonitor pattern
-public void doWork(IProgressMonitor monitor) {
-    SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
-    IProgressMonitor sub = subMonitor.split(50);
-    IProgressMonitor sub2 = subMonitor.split(30);
-}
-```
-
----
-
-#### Official Eclipse Documentation
-
-- **SubMonitor API**: [SubMonitor JavaDoc](https://help.eclipse.org/latest/topic/org.eclipse.platform.doc.isv/reference/api/org/eclipse/core/runtime/SubMonitor.html)
-- **SubProgressMonitor (Deprecated)**: [SubProgressMonitor JavaDoc](https://help.eclipse.org/latest/topic/org.eclipse.platform.doc.isv/reference/api/org/eclipse/core/runtime/SubProgressMonitor.html)
-- **Eclipse 3.4 Migration Guide**: SubMonitor was introduced in Eclipse 3.4 as the preferred way to handle progress monitors
-
----
-
-#### Requirements
-
-- **Eclipse Version**: 3.4+ (for `SubMonitor` API availability)
-- **Java Version**: Compatible with Java 8+
-
----
-
-#### Cleanup Name & Activation
-
-| Eclipse Cleanup ID                   | Value                       |
-|--------------------------------------|-----------------------------|
-| `MYCleanUpConstants.JFACE_CLEANUP`   | `true` (enable this feature)|
-
-**Usage:**
-- Via **Eclipse Clean Up...** under the JFace category
-- Via **Save Actions** in Eclipse preferences
-- Via **JDT Batch tooling**
-
----
-
-#### Limitations
-
-- Only transforms code that follows the standard pattern of `monitor.beginTask()` followed by `new SubProgressMonitor()`
-- Does not handle cases where monitors are passed through multiple layers without the beginTask call
-- Name collision resolution uses simple numeric suffixes (subMonitor2, subMonitor3, etc.)
-
----
-
-#### Test Coverage
-
-The cleanup is thoroughly tested in:
-- `sandbox_jface_cleanup_test/src/org/sandbox/jdt/ui/tests/quickfix/Java8CleanUpTest.java`
-
-Test cases cover:
-- Basic transformation patterns
-- Multiple SubProgressMonitor instances per method
-- Style flags (2-arg and 3-arg constructors)
-- Variable name collisions
-- Idempotence verification
-- Mixed scenarios (some methods converted, others not)
-- Nested classes and inner classes
-- Import handling when SubProgressMonitor and SubMonitor imports coexist
-
----
+📖 **Full Documentation**: [Plugin README](sandbox_jface_cleanup/README.md) | [Architecture](sandbox_jface_cleanup/ARCHITECTURE.md) | [TODO](sandbox_jface_cleanup/TODO.md)
 
 ### 8. `sandbox_functional_converter`
 
@@ -1284,845 +1047,45 @@ The Functional Converter Cleanup:
 
 ### 9. `sandbox_junit`
 
-#### JUnit Cleanup – Feature Overview
+Automates migration of legacy tests from JUnit 3 and JUnit 4 to JUnit 5 (Jupiter). Transforms test classes, methods, annotations, assertions, and lifecycle hooks to use the modern JUnit 5 API.
 
-The **JUnit Cleanup** tool automates the migration of legacy tests from **JUnit 3** and **JUnit 4** to **JUnit 5**.  
-It is based on verified transformations from the following test files:
+**Key Features:**
+- JUnit 3 → 5: Remove `extends TestCase`, convert naming conventions to annotations
+- JUnit 4 → 5: Update annotations (`@Before` → `@BeforeEach`, `@Ignore` → `@Disabled`)
+- Assertion parameter reordering (message-last pattern)
+- Lifecycle method transformations
+- Rule migration (`@Rule` → `@RegisterExtension`)
+- Test suite conversion
 
-- `JUnit3CleanupCases.java`
-- `JUnitCleanupCases.java`
-
----
-
-#### Migration Summary
-
-The cleanup handles a comprehensive set of JUnit 3 and JUnit 4 constructs, including:
-
-- **Class structure**: `extends TestCase`, test method naming conventions
-- **Lifecycle methods**: Setup, teardown, class-level initialization
-- **Annotations**: Test markers, lifecycle annotations, ignore/disable markers
-- **Assertions**: All JUnit assertion methods with parameter reordering
-- **Assumptions**: Precondition checking methods
-- **Test suites**: Suite runners and configuration
-- **Rules**: `@Rule`, `@ClassRule`, including `TemporaryFolder`, `TestName`, `ExternalResource`
-
----
-
-#### JUnit 3 Classes and Methods
-
-The cleanup tool handles all major JUnit 3 constructs used in legacy test codebases.
-
-##### JUnit 3 Migration Summary Table
-
-| JUnit 3 Construct                 | Description                           | JUnit 5 Equivalent                         |
-|----------------------------------|---------------------------------------|--------------------------------------------|
-| `junit.framework.TestCase`       | Base class for tests                  | (removed) – no base class needed           |
-| `extends TestCase`               | Class inheritance                     | (removed) – use annotations instead        |
-| `public void testXxx()`          | Test method naming convention         | `@Test void xxx()` – descriptive names     |
-| `protected void setUp()`         | Setup before each test                | `@BeforeEach void setUp()`                 |
-| `protected void tearDown()`      | Cleanup after each test               | `@AfterEach void tearDown()`               |
-| `public static Test suite()`     | Test suite definition                 | `@TestMethodOrder` + `@Order` annotations  |
-| `TestSuite.addTest(...)`         | Adding tests to suite                 | Individual `@Test` methods with ordering   |
-| `junit.framework.Assert.*`       | Assertion methods                     | `org.junit.jupiter.api.Assertions.*`       |
-
----
-
-##### Class Structure Transformations
-
-The cleanup removes the `extends TestCase` inheritance and eliminates the need for JUnit 3's base class.
-
-**Before:**
+**Quick Example:**
 ```java
-import junit.framework.TestCase;
-
+// Before (JUnit 3)
 public class MyTest extends TestCase {
-    public MyTest(String name) {
-        super(name);
+    protected void setUp() throws Exception {
+        super.setUp();
+    }
+    
+    public void testSomething() {
+        assertEquals("message", expected, actual);
     }
 }
-```
 
-**After:**
-```java
-import org.junit.jupiter.api.Test;
-
+// After (JUnit 5)
 public class MyTest {
-    // Constructor removed - no longer needed
-}
-```
-
-**Changes Applied:**
-- Remove `extends TestCase` from class declaration
-- Remove constructor that calls `super(name)`
-- Remove `import junit.framework.TestCase`
-- Add appropriate JUnit 5 imports
-
----
-
-##### Test Method Transformations
-
-JUnit 3 uses naming conventions (`testXxx`) to identify test methods. JUnit 5 uses the `@Test` annotation.
-
-**Before:**
-```java
-public void testBasicAssertions() {
-    assertEquals("Values should match", 42, 42);
-    assertTrue("Condition should be true", true);
-}
-```
-
-**After:**
-```java
-@Test
-@Order(1)
-public void testBasicAssertions() {
-    assertEquals(42, 42, "Values should match");
-    assertTrue(true, "Condition should be true");
-}
-```
-
-**Changes Applied:**
-- Add `@Test` annotation
-- Add `@Order` annotation if part of a suite (maintains test execution order)
-- Reorder assertion parameters (message moves to last position)
-- Optionally rename to more descriptive names (removing `test` prefix)
-
----
-
-##### Setup and Teardown Methods
-
-JUnit 3 uses method name conventions for setup and teardown. JUnit 5 uses annotations.
-
-**Before:**
-```java
-@Override
-protected void setUp() throws Exception {
-    // Setup before each test
-}
-
-@Override
-protected void tearDown() throws Exception {
-    // Cleanup after each test
-}
-```
-
-**After:**
-```java
-@BeforeEach
-public void setUp() throws Exception {
-    // Setup before each test
-}
-
-@AfterEach
-public void tearDown() throws Exception {
-    // Cleanup after each test
-}
-```
-
-**Changes Applied:**
-- Replace implicit naming convention with `@BeforeEach` annotation
-- Replace implicit naming convention with `@AfterEach` annotation
-- Remove `@Override` annotation (no longer overriding from base class)
-- Methods can remain `protected` or become `public`
-
----
-
-##### Test Suite Migration
-
-JUnit 3 uses `suite()` methods and `TestSuite` class. JUnit 5 uses `@TestMethodOrder` with ordering annotations.
-
-**Before:**
-```java
-public static Test suite() {
-    TestSuite suite = new TestSuite();
-    suite.addTest(new MyTest("testBasicAssertions"));
-    suite.addTest(new MyTest("testArrayAssertions"));
-    suite.addTest(new MyTest("testWithAssume"));
-    return suite;
-}
-```
-
-**After:**
-```java
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class MyTest {
+    @BeforeEach
+    void setUp() {
+    }
+    
     @Test
-    @Order(1)
-    public void testBasicAssertions() { }
-
-    @Test
-    @Order(2)
-    public void testArrayAssertions() { }
-
-    @Test
-    @Order(3)
-    public void testWithAssume() { }
-}
-```
-
-**Changes Applied:**
-- Remove `suite()` method completely
-- Add `@TestMethodOrder(MethodOrderer.OrderAnnotation.class)` to class
-- Add `@Order(n)` annotations to maintain execution order
-- Add required imports:
-  - `org.junit.jupiter.api.TestMethodOrder`
-  - `org.junit.jupiter.api.MethodOrderer`
-  - `org.junit.jupiter.api.Order`
-
----
-
-#### JUnit 4 Annotations and Classes
-
-The cleanup tool handles all major JUnit 4 annotations, lifecycle methods, and special constructs.
-
-##### JUnit 4 Migration Summary Table
-
-| JUnit 4 Construct                 | Description                           | JUnit 5 Equivalent                         |
-|----------------------------------|---------------------------------------|--------------------------------------------|
-| `@Test`                          | Test method marker                    | `@Test` (from `org.junit.jupiter.api`)     |
-| `@Before`                        | Setup before each test                | `@BeforeEach`                              |
-| `@After`                         | Cleanup after each test               | `@AfterEach`                               |
-| `@BeforeClass`                   | Setup before all tests (static)       | `@BeforeAll`                               |
-| `@AfterClass`                    | Cleanup after all tests (static)      | `@AfterAll`                                |
-| `@Ignore`                        | Disable a test                        | `@Disabled`                                |
-| `@Ignore("reason")`              | Disable with message                  | `@Disabled("reason")`                      |
-| `@Test(expected = Ex.class)`     | Expected exception test               | `assertThrows(Ex.class, () -> {...})`      |
-| `@Test(timeout = ms)`            | Timeout test                          | `assertTimeout(Duration.ofMillis(ms), ...)` |
-| `@RunWith(Suite.class)`          | Suite runner                          | `@Suite`                                   |
-| `@Suite.SuiteClasses({...})`     | Suite configuration                   | `@SelectClasses({...})`                    |
-| `@Rule`                          | Test rule (instance-level)            | `@RegisterExtension`                       |
-| `@ClassRule`                     | Test rule (class-level, static)       | `@RegisterExtension` (static)              |
-| `@FixMethodOrder`                | Test method ordering                  | `@TestMethodOrder`                         |
-| `org.junit.Assert.*`             | Assertion methods                     | `org.junit.jupiter.api.Assertions.*`       |
-| `org.junit.Assume.*`             | Assumption methods                    | `org.junit.jupiter.api.Assumptions.*`      |
-
----
-
-##### Lifecycle Annotations
-
-JUnit 4 lifecycle annotations are replaced with JUnit 5 equivalents.
-
-**Before:**
-```java
-import org.junit.Before;
-import org.junit.After;
-import org.junit.BeforeClass;
-import org.junit.AfterClass;
-
-@BeforeClass
-public static void setUpBeforeClass() throws Exception {
-    // Setup before all tests
-}
-
-@AfterClass
-public static void tearDownAfterClass() throws Exception {
-    // Cleanup after all tests
-}
-
-@Before
-public void setUp() throws Exception {
-    // Setup before each test
-}
-
-@After
-public void tearDown() throws Exception {
-    // Cleanup after each test
-}
-```
-
-**After:**
-```java
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.AfterEach;
-
-@BeforeAll
-public static void setUpBeforeClass() throws Exception {
-    // Setup before all tests
-}
-
-@AfterAll
-public static void tearDownAfterClass() throws Exception {
-    // Cleanup after all tests
-}
-
-@BeforeEach
-public void setUp() throws Exception {
-    // Setup before each test
-}
-
-@AfterEach
-public void tearDown() throws Exception {
-    // Cleanup after each test
-}
-```
-
-**Changes Applied:**
-- `@Before` → `@BeforeEach`
-- `@After` → `@AfterEach`
-- `@BeforeClass` → `@BeforeAll`
-- `@AfterClass` → `@AfterAll`
-- Update imports accordingly
-
----
-
-##### Test Annotations
-
-**@Test Annotation:**
-
-Basic `@Test` annotation is migrated from JUnit 4 to JUnit 5:
-
-**Before:**
-```java
-import org.junit.Test;
-
-@Test
-public void myTest() {
-    // test code
-}
-```
-
-**After:**
-```java
-import org.junit.jupiter.api.Test;
-
-@Test
-public void myTest() {
-    // test code
-}
-```
-
-**@Ignore / @Disabled:**
-
-**Before:**
-```java
-import org.junit.Ignore;
-import org.junit.Test;
-
-@Ignore
-@Test
-public void ignoredTestWithoutMessage() {
-    fail("This test is ignored");
-}
-
-@Ignore("Ignored with message")
-@Test
-public void ignoredTestWithMessage() {
-    fail("This test is ignored with a message");
-}
-```
-
-**After:**
-```java
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-
-@Disabled
-@Test
-public void ignoredTestWithoutMessage() {
-    Assertions.fail("This test is ignored");
-}
-
-@Disabled("Ignored with message")
-@Test
-public void ignoredTestWithMessage() {
-    Assertions.fail("This test is ignored with a message");
-}
-```
-
-**Changes Applied:**
-- `@Ignore` → `@Disabled`
-- `@Ignore("reason")` → `@Disabled("reason")`
-- Update imports
-
----
-
-##### Test Suite Annotations
-
-**Before:**
-```java
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    MyTest.class,
-    OtherTest.class
-})
-public class MyTestSuite {
-}
-```
-
-**After:**
-```java
-import org.junit.platform.suite.api.Suite;
-import org.junit.platform.suite.api.SelectClasses;
-
-@Suite
-@SelectClasses({
-    MyTest.class,
-    OtherTest.class
-})
-public class MyTestSuite {
-}
-```
-
-**Changes Applied:**
-- `@RunWith(Suite.class)` → `@Suite`
-- `@Suite.SuiteClasses({...})` → `@SelectClasses({...})`
-- Update imports to JUnit Platform Suite API
-
----
-
-##### Rule Annotations
-
-JUnit 4 `@Rule` and `@ClassRule` are migrated to JUnit 5 `@RegisterExtension`.
-
-**TemporaryFolder Rule:**
-
-**Before:**
-```java
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
-
-@Rule
-public TemporaryFolder tempFolder = new TemporaryFolder();
-
-@Test
-public void test() throws IOException {
-    File newFile = tempFolder.newFile("myfile.txt");
-}
-```
-
-**After:**
-```java
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-
-@TempDir
-Path tempFolder;
-
-@Test
-public void test() throws IOException {
-    File newFile = tempFolder.resolve("myfile.txt").toFile();
-}
-```
-
-**TestName Rule:**
-
-**Before:**
-```java
-import org.junit.Rule;
-import org.junit.rules.TestName;
-
-@Rule
-public TestName tn = new TestName();
-
-@Test
-public void test() {
-    System.out.println("Test name: " + tn.getMethodName());
-}
-```
-
-**After:**
-```java
-import org.junit.jupiter.api.TestInfo;
-import org.junit.jupiter.api.BeforeEach;
-
-private String testName;
-
-@BeforeEach
-void init(TestInfo testInfo) {
-    this.testName = testInfo.getDisplayName();
-}
-
-@Test
-public void test() {
-    System.out.println("Test name: " + testName);
-}
-```
-
-**ExternalResource Rule:**
-
-**Before:**
-```java
-import org.junit.Rule;
-import org.junit.rules.ExternalResource;
-
-@Rule
-public ExternalResource er = new ExternalResource() {
-    @Override
-    protected void before() throws Throwable {
-        // setup
-    }
-
-    @Override
-    protected void after() {
-        // cleanup
-    }
-};
-```
-
-**After:**
-```java
-import org.junit.jupiter.api.extension.RegisterExtension;
-import org.junit.jupiter.api.extension.BeforeEachCallback;
-import org.junit.jupiter.api.extension.AfterEachCallback;
-import org.junit.jupiter.api.extension.ExtensionContext;
-
-@RegisterExtension
-public Er_5b8b4 er = new Er_5b8b4();
-
-class Er_5b8b4 implements BeforeEachCallback, AfterEachCallback {
-    public void beforeEach(ExtensionContext context) {
-        // setup
-    }
-
-    public void afterEach(ExtensionContext context) {
-        // cleanup
+    void testSomething() {
+        assertEquals(expected, actual, "message");
     }
 }
 ```
 
-**Changes Applied:**
-- `@Rule` → `@RegisterExtension`
-- `@ClassRule` (static) → `@RegisterExtension` (static)
-- `TemporaryFolder` → `@TempDir Path`
-- `TestName` → `TestInfo` parameter in `@BeforeEach`
-- `ExternalResource` → Custom extension implementing `BeforeEachCallback` / `AfterEachCallback`
-- For class rules: `BeforeAllCallback` / `AfterAllCallback`
+📖 **Full Documentation**: [Plugin README](sandbox_junit_cleanup/README.md) | [Architecture](sandbox_junit_cleanup/ARCHITECTURE.md) | [TODO](sandbox_junit_cleanup/TODO.md) | [Testing Guide](sandbox_junit_cleanup_test/TESTING.md)
 
 ---
-
-#### JUnit Assertion Migration – JUnit 3 and 4 to JUnit 5
-
-The **JUnit Cleanup** tool automates the migration of assertions from **JUnit 3** and **JUnit 4** to **JUnit 5**.  
-This includes:
-
-- Updating imports to `org.junit.jupiter.api.Assertions`
-- Reordering parameters: JUnit 5 places the message **last**
-- Safely transforming legacy assertion method calls
-- Handling special cases like `assertThat` with Hamcrest matchers
-
----
-
-##### Supported Assertion Methods
-
-The cleanup handles the following assertion methods from JUnit 3/4:
-
-| Assertion Method       | Parameter Count | Description                           |
-|------------------------|-----------------|---------------------------------------|
-| `assertEquals`         | 2 or 3          | Assert two values are equal           |
-| `assertNotEquals`      | 2 or 3          | Assert two values are not equal       |
-| `assertArrayEquals`    | 2 or 3          | Assert two arrays are equal           |
-| `assertSame`           | 2 or 3          | Assert two objects are the same       |
-| `assertNotSame`        | 2 or 3          | Assert two objects are not the same   |
-| `assertTrue`           | 1 or 2          | Assert condition is true              |
-| `assertFalse`          | 1 or 2          | Assert condition is false             |
-| `assertNull`           | 1 or 2          | Assert object is null                 |
-| `assertNotNull`        | 1 or 2          | Assert object is not null             |
-| `fail`                 | 0 or 1          | Explicitly fail the test              |
-| `assertThat`           | 2 or 3          | Assert with Hamcrest matcher          |
-
-**Note**: The parameter count includes the optional message parameter.
-
----
-
-##### Parameter Order Differences
-
-| Framework | Signature Format                            |
-|-----------|---------------------------------------------|
-| JUnit 3   | `assertEquals("message", expected, actual)` |
-| JUnit 4   | `assertEquals("message", expected, actual)` |
-| JUnit 5   | `assertEquals(expected, actual, "message")` |
-
-> **Note**: In JUnit 5, the message is always the **last** argument.  
-> The cleanup ensures correct reordering **only if it's safe** (i.e., the first argument is a String literal).
-
----
-
-##### Assertion Mapping Table
-
-| JUnit 3/4 Assertion                        | JUnit 5 Equivalent                         |
-|-------------------------------------------|--------------------------------------------|
-| `assertEquals(expected, actual)`          | `assertEquals(expected, actual)`           |
-| `assertEquals("msg", expected, actual)`   | `assertEquals(expected, actual, "msg")`    |
-| `assertSame(expected, actual)`            | `assertSame(expected, actual)`             |
-| `assertSame("msg", expected, actual)`     | `assertSame(expected, actual, "msg")`      |
-| `assertNotSame(expected, actual)`         | `assertNotSame(expected, actual)`          |
-| `assertNotSame("msg", expected, actual)`  | `assertNotSame(expected, actual, "msg")`   |
-| `assertTrue(condition)`                   | `assertTrue(condition)`                    |
-| `assertTrue("msg", condition)`            | `assertTrue(condition, "msg")`             |
-| `assertFalse(condition)`                  | `assertFalse(condition)`                   |
-| `assertFalse("msg", condition)`           | `assertFalse(condition, "msg")`            |
-| `assertNull(object)`                      | `assertNull(object)`                       |
-| `assertNull("msg", object)`               | `assertNull(object, "msg")`                |
-| `assertNotNull(object)`                   | `assertNotNull(object)`                    |
-| `assertNotNull("msg", object)`            | `assertNotNull(object, "msg")`             |
-| `fail()`                                  | `fail()`                                   |
-| `fail("msg")`                              | `fail("msg")`                               |
-| `assertArrayEquals("msg", expected, actual)` | `assertArrayEquals(expected, actual, "msg")` |
-| `assertNotEquals("msg", expected, actual)` | `assertNotEquals(expected, actual, "msg")` |
-
-**assertThat Special Handling:**
-
-| JUnit 4 Assertion                          | JUnit 5 Equivalent                         |
-|-------------------------------------------|--------------------------------------------|
-| `Assert.assertThat(value, matcher)`       | `assertThat(value, matcher)` (Hamcrest)    |
-| `Assert.assertThat("msg", value, matcher)`| `assertThat("msg", value, matcher)` (Hamcrest) |
-
-> **Note**: `assertThat` is migrated to use Hamcrest's `MatcherAssert.assertThat` with static import, not JUnit 5's Assertions.
-
----
-
-#### Example Transformations
-
-##### Equality Check
-
-**Before (JUnit 3/4):**
-```java
-assertEquals("Expected and actual differ", expected, actual);
-```
-
-**After (JUnit 5):**
-```java
-assertEquals(expected, actual, "Expected and actual differ");
-```
-
----
-
-##### Null Check
-
-**Before:**
-```java
-assertNull("Object must be null", obj);
-```
-
-**After:**
-```java
-assertNull(obj, "Object must be null");
-```
-
----
-
-##### Boolean Assertions
-
-**Before:**
-```java
-assertTrue("Must be true", condition);
-assertFalse("Must be false", condition);
-```
-
-**After:**
-```java
-assertTrue(condition, "Must be true");
-assertFalse(condition, "Must be false");
-```
-
----
-
-##### Identity Assertions
-
-**Before:**
-```java
-assertSame("Should be the same", expected, actual);
-assertNotSame("Should not be the same", expected, actual);
-```
-
-**After:**
-```java
-assertSame(expected, actual, "Should be the same");
-assertNotSame(expected, actual, "Should not be the same");
-```
-
----
-
-##### NotNull Assertions
-
-**Before:**
-```java
-assertNotNull("Should not be null", object);
-```
-
-**After:**
-```java
-assertNotNull(object, "Should not be null");
-```
-
----
-
-##### Fail Statements
-
-**Before:**
-```java
-fail("Unexpected state reached");
-```
-
-**After:**
-```java
-fail("Unexpected state reached");
-```
-
----
-
-#### JUnit Assumption Migration
-
-The cleanup also handles JUnit 4 assumption methods, which are used for conditional test execution.
-
-##### Supported Assumption Methods
-
-The cleanup handles the following assumption methods from JUnit 4:
-
-| Assumption Method  | Parameter Count | Description                              |
-|--------------------|-----------------|------------------------------------------|
-| `assumeTrue`       | 1 or 2          | Assume condition is true                 |
-| `assumeFalse`      | 1 or 2          | Assume condition is false                |
-| `assumeNotNull`    | 1 or 2          | Assume object is not null                |
-| `assumeThat`       | 2 or 3          | Assume with Hamcrest matcher             |
-
----
-
-##### Assumption Mapping Table
-
-| JUnit 4 Assumption                         | JUnit 5 Equivalent                         |
-|-------------------------------------------|--------------------------------------------|
-| `Assume.assumeTrue(condition)`            | `Assumptions.assumeTrue(condition)`        |
-| `Assume.assumeTrue("msg", condition)`     | `Assumptions.assumeTrue(condition, "msg")` |
-| `Assume.assumeFalse(condition)`           | `Assumptions.assumeFalse(condition)`       |
-| `Assume.assumeFalse("msg", condition)`    | `Assumptions.assumeFalse(condition, "msg")`|
-| `Assume.assumeNotNull(object)`            | `Assumptions.assumeNotNull(object)`        |
-| `Assume.assumeNotNull("msg", object)`     | `Assumptions.assumeNotNull(object, "msg")` |
-| `Assume.assumeThat(value, matcher)`       | `assumeThat(value, matcher)` (Hamcrest)    |
-| `Assume.assumeThat("msg", value, matcher)`| `assumeThat("msg", value, matcher)` (Hamcrest) |
-
-**Example:**
-
-**Before:**
-```java
-import org.junit.Assume;
-
-@Test
-public void testWithAssume() {
-    Assume.assumeTrue("Precondition failed", true);
-    Assume.assumeFalse("Precondition not met", false);
-    Assume.assumeNotNull("Value should not be null", new Object());
-}
-```
-
-**After:**
-```java
-import org.junit.jupiter.api.Assumptions;
-
-@Test
-public void testWithAssume() {
-    Assumptions.assumeTrue(true, "Precondition failed");
-    Assumptions.assumeFalse(false, "Precondition not met");
-    Assumptions.assumeNotNull(new Object(), "Value should not be null");
-}
-```
-
-**Changes Applied:**
-- `org.junit.Assume` → `org.junit.jupiter.api.Assumptions`
-- Parameter order changed (message moved to last position)
-- `assumeThat` uses Hamcrest's static import from `org.hamcrest.junit.MatcherAssume`
-
----
-
-#### Notes
-
-- The cleanup uses `org.junit.jupiter.api.Assertions` for all migrated assertions
-- The cleanup uses `org.junit.jupiter.api.Assumptions` for all migrated assumptions
-- Parameter reordering is applied conservatively, only if the first argument is a string literal
-- `assertThat` is migrated to use Hamcrest's `MatcherAssert.assertThat` with static import
-- `assumeThat` is migrated to use Hamcrest's `MatcherAssume.assumeThat` with static import
-- Import statements are updated automatically:
-  - `org.junit.*` → `org.junit.jupiter.api.*`
-  - `org.junit.runners.*` → `org.junit.platform.suite.api.*`
-  - Static imports are preserved with updated package names
-
----
-
-#### Limitations
-
-- **Custom Runners and Complex Rules**  
-  Tests using `@RunWith(...)` with custom runners, or sophisticated `@Rule` implementations may need manual migration.
-  
-- **Test Suites (JUnit 3)**  
-  Legacy `TestSuite` usage is automatically migrated using `@TestMethodOrder` and `@Order` annotations to preserve test execution order.
-
-- **Parameterized Tests**  
-  JUnit 4 parameterized tests (`@RunWith(Parameterized.class)`) are not automatically migrated and require manual conversion to JUnit 5's `@ParameterizedTest`.
-
-- **Theories**  
-  JUnit 4 theories (`@RunWith(Theories.class)`) are not automatically migrated.
-
-- **Expected Exceptions and Timeouts**  
-  The cleanup currently does not automatically migrate `@Test(expected=...)` and `@Test(timeout=...)` attributes. These require manual conversion to `assertThrows()` and `assertTimeout()`.
-
-- **Custom Matchers**  
-  Custom Hamcrest matchers should be reviewed after migration to ensure compatibility.
-
-- **Static Imports**  
-  Both wildcard (`import static org.junit.Assert.*`) and explicit static imports are handled, but code style may vary.
-
----
-
-#### Usage
-
-The JUnit Cleanup can be executed from within Eclipse using the Clean Up framework.
-
-**Via Eclipse UI:**
-
-1. Select Java files or packages in the Package Explorer
-2. Right-click → **Source** → **Clean Up...**
-3. Choose **Configure...** to customize cleanup settings
-4. Enable **JUnit Cleanup** options in the configuration
-5. Click **Finish** to apply the cleanup
-
-**Via Save Actions:**
-
-Configure automatic cleanup on save:
-
-1. **Window** → **Preferences** → **Java** → **Editor** → **Save Actions**
-2. Enable **Perform the selected actions on save**
-3. Enable **Additional actions** → **Configure...**
-4. Enable JUnit-related cleanup options
-5. Apply changes
-
-**Supported Cleanup Operations:**
-
-The JUnit Cleanup includes multiple sub-operations that can be enabled independently:
-
-- Migrate JUnit 3 test classes to JUnit 5
-- Migrate JUnit 4 annotations to JUnit 5
-- Update assertion method calls (parameter reordering)
-- Update assumption method calls (parameter reordering)
-- Migrate `@Rule` and `@ClassRule` to extensions
-- Update test suite configurations
-- Fix method ordering annotations
-
-**Note**: The cleanup is safe and non-destructive. It only transforms code that matches known patterns from JUnit 3/4 to JUnit 5 equivalents.
-
----
-
-This documentation is based on the test coverage provided in the JUnit 3 and 4 cleanup test cases. Manual adjustments may be necessary for advanced use cases or project-specific setups.
-
-**Test Coverage:**
-- `sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/JUnit3CleanupCases.java`
-- `sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/JUnitCleanupCases.java`
-- `sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/JUnitMigrationCleanUpTest.java`
-
-<a href="/marketplace-client-intro?mpc_install=6454408" class="drag" title="Drag to your running Eclipse* workspace. *Requires Eclipse Marketplace Client">
-<img style="width:80px;" typeof="foaf:Image" class="img-responsive" src="https://marketplace.eclipse.org/modules/custom/eclipsefdn/eclipsefdn_marketplace/images/btn-install.svg" alt="Drag to your running Eclipse* workspace. *Requires Eclipse Marketplace Client" />
-</a>
-
----
-
 ### 10. `sandbox_method_reuse`
 
 #### Method Reusability Finder – Code Duplication Detection
@@ -2358,6 +1321,108 @@ https://github.com/carstenartur/sandbox/raw/main
 > It may break your setup. Don’t say you weren’t warned...
 ---
 
+## Documentation
+
+This repository contains extensive documentation organized at multiple levels to help you understand, use, and contribute to the project.
+
+### 📚 Documentation Index
+
+#### Getting Started
+- **[README.md](README.md)** (this file) - Project overview, build instructions, and plugin descriptions
+- **[Build Instructions](#build-instructions)** - How to build the project with Maven/Tycho
+- **[Quickstart](#quickstart)** - Quick introduction to using the plugins
+- **[Installation](#installation)** - How to install plugins in Eclipse
+
+#### Plugin-Specific Documentation
+
+Each plugin has dedicated documentation in its module directory:
+
+| Plugin | README | Architecture | TODO | Test Docs |
+|--------|--------|--------------|------|-----------|
+| [Cleanup Application](sandbox_cleanup_application) | [README.md](sandbox_cleanup_application/README.md) | [ARCHITECTURE.md](sandbox_cleanup_application/ARCHITECTURE.md) | [TODO.md](sandbox_cleanup_application/TODO.md) | - |
+| [Common Infrastructure](sandbox_common) | [README.md](sandbox_common/README.md) | [ARCHITECTURE.md](sandbox_common/ARCHITECTURE.md) | [TODO.md](sandbox_common/TODO.md) | [TESTING.md](sandbox_common_test/TESTING.md) |
+| [Coverage](sandbox_coverage) | [README.md](sandbox_coverage/README.md) | [ARCHITECTURE.md](sandbox_coverage/ARCHITECTURE.md) | [TODO.md](sandbox_coverage/TODO.md) | - |
+| [Encoding Quickfix](sandbox_encoding_quickfix) | [README.md](sandbox_encoding_quickfix/README.md) | [ARCHITECTURE.md](sandbox_encoding_quickfix/ARCHITECTURE.md) | [TODO.md](sandbox_encoding_quickfix/TODO.md) | - |
+| [Extra Search](sandbox_extra_search) | [README.md](sandbox_extra_search/README.md) | [ARCHITECTURE.md](sandbox_extra_search/ARCHITECTURE.md) | [TODO.md](sandbox_extra_search/TODO.md) | - |
+| [Functional Converter](sandbox_functional_converter) | [README.md](sandbox_functional_converter/README.md) | [ARCHITECTURE.md](sandbox_functional_converter/ARCHITECTURE.md) | [TODO.md](sandbox_functional_converter/TODO.md) | - |
+| [JFace Cleanup](sandbox_jface_cleanup) | [README.md](sandbox_jface_cleanup/README.md) | [ARCHITECTURE.md](sandbox_jface_cleanup/ARCHITECTURE.md) | [TODO.md](sandbox_jface_cleanup/TODO.md) | - |
+| [JUnit Cleanup](sandbox_junit_cleanup) | [README.md](sandbox_junit_cleanup/README.md) | [ARCHITECTURE.md](sandbox_junit_cleanup/ARCHITECTURE.md) | [TODO.md](sandbox_junit_cleanup/TODO.md) | [TESTING.md](sandbox_junit_cleanup_test/TESTING.md) |
+| [Method Reuse](sandbox_method_reuse) | [README.md](sandbox_method_reuse/README.md) | [ARCHITECTURE.md](sandbox_method_reuse/ARCHITECTURE.md) | [TODO.md](sandbox_method_reuse/TODO.md) | - |
+| [Oomph Setup](sandbox_oomph) | [README.md](sandbox_oomph/README.md) | [ARCHITECTURE.md](sandbox_oomph/ARCHITECTURE.md) | [TODO.md](sandbox_oomph/TODO.md) | - |
+| [Platform Helper](sandbox_platform_helper) | [README.md](sandbox_platform_helper/README.md) | [ARCHITECTURE.md](sandbox_platform_helper/ARCHITECTURE.md) | [TODO.md](sandbox_platform_helper/TODO.md) | - |
+| [Product](sandbox_product) | [README.md](sandbox_product/README.md) | [ARCHITECTURE.md](sandbox_product/ARCHITECTURE.md) | [TODO.md](sandbox_product/TODO.md) | - |
+| [Target Platform](sandbox_target) | [README.md](sandbox_target/README.md) | [ARCHITECTURE.md](sandbox_target/ARCHITECTURE.md) | [TODO.md](sandbox_target/TODO.md) | - |
+| [Test Commons](sandbox_test_commons) | [README.md](sandbox_test_commons/README.md) | [ARCHITECTURE.md](sandbox_test_commons/ARCHITECTURE.md) | [TODO.md](sandbox_test_commons/TODO.md) | - |
+| [Tools](sandbox_tools) | [README.md](sandbox_tools/README.md) | [ARCHITECTURE.md](sandbox_tools/ARCHITECTURE.md) | [TODO.md](sandbox_tools/TODO.md) | - |
+| [Trigger Pattern](sandbox_triggerpattern) | [README.md](sandbox_triggerpattern/README.md) | [ARCHITECTURE.md](sandbox_triggerpattern/ARCHITECTURE.md) | [TODO.md](sandbox_triggerpattern/TODO.md) | - |
+| [Usage View](sandbox_usage_view) | [README.md](sandbox_usage_view/README.md) | [ARCHITECTURE.md](sandbox_usage_view/ARCHITECTURE.md) | [TODO.md](sandbox_usage_view/TODO.md) | - |
+| [Web (P2 Update Site)](sandbox_web) | [README.md](sandbox_web/README.md) | [ARCHITECTURE.md](sandbox_web/ARCHITECTURE.md) | [TODO.md](sandbox_web/TODO.md) | - |
+| [XML Cleanup](sandbox_xml_cleanup) | [README.md](sandbox_xml_cleanup/README.md) | [ARCHITECTURE.md](sandbox_xml_cleanup/ARCHITECTURE.md) | [TODO.md](sandbox_xml_cleanup/TODO.md) | - |
+
+**Documentation Structure per Plugin:**
+- **README.md** - Quick start guide, features overview, and usage examples
+- **ARCHITECTURE.md** - Design overview, implementation details, patterns used
+- **TODO.md** - Pending features, known issues, future enhancements
+- **TESTING.md** (where applicable) - Test organization, coverage, and running instructions
+
+#### Test Infrastructure Documentation
+
+- **[HelperVisitor API Test Suite](sandbox_common_test/TESTING.md)** - Comprehensive guide to testing with HelperVisitor API
+- **[JUnit Migration Test Suite](sandbox_junit_cleanup_test/TESTING.md)** - Test organization for JUnit 4→5 migration
+- **[JUnit Migration Implementation Tracking](sandbox_junit_cleanup_test/TODO_TESTING.md)** - Missing features and bugs in migration cleanup
+
+#### Project Governance
+- **[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)** - Community guidelines
+- **[SECURITY.md](SECURITY.md)** - Security policy and vulnerability reporting
+- **[CONTRIBUTING.md](#contributing)** - How to contribute to this project
+- **[LICENSE.txt](LICENSE.txt)** - Eclipse Public License 2.0
+
+#### Additional Resources
+- **[TRIGGERPATTERN.md](sandbox_common/TRIGGERPATTERN.md)** - Pattern matching engine documentation
+- **[Eclipse Version Configuration](#eclipse-version-configuration)** - How to update Eclipse versions
+- **[Release Process](#release-process)** - How to create releases
+
+### 📖 Documentation Guidelines for Contributors
+
+When contributing to this project, please maintain documentation quality:
+
+1. **Plugin Requirements**: All plugin directories SHOULD contain:
+   - `README.md` - Quick start guide with features and usage examples
+   - `ARCHITECTURE.md` - Design and implementation overview
+   - `TODO.md` - Open tasks and future work
+   
+2. **Navigation Headers**: All plugin documentation files include navigation headers linking to:
+   - Main README (this file)
+   - Plugin's own README (for ARCHITECTURE and TODO files)
+   - Sibling documentation files (README ↔ ARCHITECTURE ↔ TODO)
+
+3. **Update Documentation**: When making code changes:
+   - Update `README.md` if features or usage changes
+   - Update `ARCHITECTURE.md` if design changes
+   - Update `TODO.md` when completing tasks or identifying new ones
+   - Update main README if adding/removing plugins
+
+4. **Test Documentation**: Test modules with substantial test organization should include:
+   - `TESTING.md` - Test structure and organization
+   - `TODO_TESTING.md` (if applicable) - Implementation tracking for features being tested
+
+### 🔍 Finding Documentation
+
+**By Topic:**
+- **Building & Setup**: [Build Instructions](#build-instructions), [Eclipse Version Configuration](#eclipse-version-configuration)
+- **Code Coverage**: [Coverage Deployment](COVERAGE_DEPLOYMENT.md) - JaCoCo reports on GitHub Pages
+- **Plugin Usage**: See [Projects](#projects) section for detailed descriptions of each plugin
+- **Architecture**: Check `ARCHITECTURE.md` in each plugin directory
+- **Testing**: [HelperVisitor API](sandbox_common_test/TESTING.md), [JUnit Migration](sandbox_junit_cleanup_test/TESTING.md)
+- **Contributing**: [Contributing](#contributing), [Release Process](#release-process)
+
+**By File Location:**
+- **Root level**: Project-wide documentation (this README, CODE_OF_CONDUCT, SECURITY)
+- **Plugin directories** (`sandbox_*/`): Plugin-specific ARCHITECTURE.md and TODO.md
+- **Test directories** (`sandbox_*_test/`): Test-specific TESTING.md and TODO_TESTING.md
+
+---
+
 ## Contributing
 
 Contributions are welcome! This is an experimental sandbox project for testing Eclipse JDT cleanup implementations.
@@ -2402,90 +1467,88 @@ Found a bug or have a feature request? Please [open an issue](https://github.com
 
 ## Release Process
 
-This section describes how to create and publish a new release of the Sandbox project.
+This section describes how to create and publish a new release of the Sandbox project using the automated release workflow.
 
 ### Prerequisites
 
 - Write access to the repository
-- Local environment with Java 21 and Maven configured
 - All tests passing on the `main` branch
+- Decide on the release version number (e.g., `1.2.2`)
+- Decide on the next SNAPSHOT version (e.g., `1.2.3-SNAPSHOT`)
 
-### Release Steps
+### Automated Release Workflow
 
-#### 1. Update Version Numbers
+The release process is **fully automated** through GitHub Actions. To create a release:
 
-Update the version in all `pom.xml` files from `X.Y.Z-SNAPSHOT` to `X.Y.Z`:
+#### 1. Trigger the Release Workflow
 
-```bash
-# Example: Updating from 1.2.2-SNAPSHOT to 1.2.2
-mvn versions:set -DnewVersion=1.2.2
-mvn versions:commit
-```
+1. Go to the [GitHub Actions tab](https://github.com/carstenartur/sandbox/actions)
+2. Select **"Release Workflow"** from the workflows list
+3. Click **"Run workflow"** button
+4. Fill in the required inputs:
+   - **Release version**: The version to release (e.g., `1.2.2`)
+   - **Next SNAPSHOT version**: The next development version (e.g., `1.2.3-SNAPSHOT`)
+5. Click **"Run workflow"** to start the automated release process
 
-#### 2. Verify the Build
+#### 2. What the Workflow Does Automatically
 
-Ensure all tests pass and the build completes successfully:
+The workflow performs all release steps automatically:
 
-```bash
-# Run full build with tests and coverage
-mvn clean verify -Pjacoco
+1. ✅ **Validates inputs** to ensure release_version has no `-SNAPSHOT` suffix and next_snapshot_version includes it
+2. ✅ **Updates version** in all `pom.xml`, `MANIFEST.MF`, `feature.xml`, and `*.product` files using `tycho-versions-plugin` for all modules **except** `sandbox-functional-converter-core`, which maintains independent versioning
+3. ✅ **Verifies** that no SNAPSHOT references remain (except in `sandbox-functional-converter-core`)
+4. ✅ **Commits** the release version changes
+5. ✅ **Builds and verifies** the release
+6. ✅ **Creates and pushes git tag** (`vX.Y.Z`) immediately
+7. ✅ **Creates and pushes maintenance branch** (`maintenance/X.Y.x`) immediately for potential backports
+8. ✅ **Generates release notes** from closed issues since the last release
+9. ✅ **Creates GitHub release** with auto-generated notes
+10. ✅ **Deploys** the P2 update site to GitHub Pages at `https://carstenartur.github.io/sandbox/releases/X.Y.Z/`
+11. ✅ **Updates composite metadata** to include the new release
+12. ✅ **Bumps version** to the next SNAPSHOT version
+13. ✅ **Commits and pushes** the SNAPSHOT version back to `main`
+14. ✅ **Reminds** to update Eclipse Marketplace listing
 
-# Build with WAR file
-mvn -Dinclude=web -Pjacoco verify
-```
+#### 3. Post-Release Steps
 
-#### 3. Commit Version Changes
+After the workflow completes successfully:
 
-Commit the version updates:
+1. **Verify the release**:
+   - Check the [Releases page](https://github.com/carstenartur/sandbox/releases) for the new release
+   - Verify the update site is available at `https://carstenartur.github.io/sandbox/releases/X.Y.Z/`
 
-```bash
-git add .
-git commit -m "Release version 1.2.2"
-git push origin main
-```
+2. **Update Eclipse Marketplace** (if applicable):
+   - Go to [Eclipse Marketplace](https://marketplace.eclipse.org/)
+   - Update the listing with the new update site URL
 
-#### 4. Create a Git Tag
+3. **Test the release**:
+   - Install the plugins from the new update site in a clean Eclipse installation
+   - Verify core functionality works as expected
 
-Tag the release commit:
+### Workflow Inputs
 
-```bash
-git tag -a v1.2.2 -m "Release version 1.2.2"
-git push origin v1.2.2
-```
+The automated workflow requires two inputs:
 
-#### 5. Create GitHub Release
+- **`release_version`** (required): 
+  - The version number to release (e.g., `1.2.2`)
+  - Must NOT include `-SNAPSHOT` suffix
+  - Should follow [Semantic Versioning](https://semver.org/)
 
-1. Go to the [GitHub Releases page](https://github.com/carstenartur/sandbox/releases)
-2. Click **"Draft a new release"**
-3. Select the tag you just created (e.g., `v1.2.2`)
-4. Set the release title (e.g., `Release 1.2.2`)
-5. Add release notes describing:
-   - New features
-   - Bug fixes
-   - Breaking changes (if any)
-   - Known issues
-6. Click **"Publish release"**
+- **`next_snapshot_version`** (required):
+  - The next development version (e.g., `1.2.3-SNAPSHOT`)
+  - MUST include `-SNAPSHOT` suffix
+  - Typically the next patch, minor, or major version
 
-#### 6. Automated Publishing
+### Example Release
 
-When a GitHub release is created, the `maven-publish.yml` workflow automatically:
-- Builds the project with Maven
-- Publishes artifacts to GitHub Packages
-- Makes the P2 update site available
+To release version `1.2.2` and prepare for `1.2.3-SNAPSHOT`:
 
-#### 7. Prepare for Next Development Iteration
-
-Update versions to the next SNAPSHOT version:
-
-```bash
-# Example: Updating to 1.2.3-SNAPSHOT for next development cycle
-mvn versions:set -DnewVersion=1.2.3-SNAPSHOT
-mvn versions:commit
-
-git add .
-git commit -m "Prepare for next development iteration: 1.2.3-SNAPSHOT"
-git push origin main
-```
+1. Navigate to Actions → Release Workflow → Run workflow
+2. Enter `release_version`: `1.2.2`
+3. Enter `next_snapshot_version`: `1.2.3-SNAPSHOT`
+4. Click "Run workflow"
+5. Monitor the workflow progress in the Actions tab
+6. Once complete, the main branch will be at `1.2.3-SNAPSHOT`, ready for development
 
 ### Version Numbering
 

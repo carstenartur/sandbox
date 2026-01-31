@@ -40,7 +40,9 @@ public final class CleanUpMessages {
 	public static String JavaFeatureTabPage_GroupName_JUnit;
 	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP;
 	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_ASSERT;
+	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_ASSERT_OPTIMIZATION;
 	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_ASSUME;
+	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_ASSUME_OPTIMIZATION;
 	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_IGNORE;
 	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_TEST;
 	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_BEFORE;
@@ -52,9 +54,24 @@ public final class CleanUpMessages {
 	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_RULEEXTERNALRESOURCE;
 	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_EXTERNALRESOURCE;
 	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_RUNWITH;
+	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_SUITE;
+	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_TEST_TIMEOUT;
+	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_TEST_EXPECTED;
+	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_PARAMETERIZED;
+	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_CATEGORY;
+	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_FIX_METHOD_ORDER;
+	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_RULETIMEOUT;
+	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_LOST_TESTS;
 	public static String JavaFeatureTabPage_GroupName_JUnit3;
 	public static String JavaFeatureTabPage_CheckboxName_JUNIT3_CLEANUP;
 	public static String JavaFeatureTabPage_CheckboxName_JUNIT3_CLEANUP_TEST;
+	public static String JavaFeatureTabPage_QuickSelect_Label;
+	public static String JavaFeatureTabPage_QuickSelect_Empty;
+	public static String JavaFeatureTabPage_QuickSelect_FullMigration;
+	public static String JavaFeatureTabPage_QuickSelect_AnnotationsOnly;
+	public static String JavaFeatureTabPage_QuickSelect_LifecycleOnly;
+	public static String JavaFeatureTabPage_QuickSelect_AssertionsOnly;
+	public static String JavaFeatureTabPage_QuickSelect_RulesOnly;
 	
 
 	static {

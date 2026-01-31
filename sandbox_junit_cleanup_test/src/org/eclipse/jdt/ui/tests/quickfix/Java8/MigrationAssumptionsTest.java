@@ -19,7 +19,6 @@ import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.junit.JUnitCore;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
@@ -159,7 +158,6 @@ public class MigrationAssumptionsTest {
 		}, null);
 	}
 
-	@Disabled("Produces unused Assumptions import - needs cleanup fix")
 	@Test
 	public void migrates_assumeThat_with_hamcrest() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
