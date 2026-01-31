@@ -102,6 +102,8 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 
 	private IPartListener2 partListener;
 
+	private Object currentInput = null;
+
 	@Override
 	public void createPartControl(Composite parent) {
 		parent.setLayout(new GridLayout(1, false));
@@ -478,6 +480,10 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 		setInput(Collections.singletonList(iResource));
 	}
 
+	void setSingleInput(IJavaElement javaElement) {
+		setInput(Collections.singletonList(javaElement));
+	}
+
 	Object getElementOfInput(IEditorInput input) {
 		Object adapted= input.getAdapter(IClassFile.class);
 		if (adapted != null) {
@@ -619,11 +625,9 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 		}
 
 		IJavaElement javaElement = input.getAdapter(IJavaElement.class);
-		if (javaElement != null) {
-			IResource correspondingResource = javaElement.getResource();
-			if (correspondingResource != null) {
-				setSingleInput(correspondingResource);
-			}
+		if (javaElement != null && !javaElement.equals(currentInput)) {
+			currentInput = javaElement;
+			setSingleInput(javaElement);
 		}
 	}
 
