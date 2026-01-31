@@ -225,7 +225,7 @@ public class Java9CleanUpTest {
 	@ParameterizedTest
 	@EnumSource(MultiStatusPatterns.class)
 	public void testMultiStatusParametrized(MultiStatusPatterns test) throws CoreException {
-		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
 		ICompilationUnit cu= pack.createCompilationUnit("E1.java", test.given, false, null); //$NON-NLS-1$
 		context.enable(MYCleanUpConstants.SIMPLIFY_STATUS_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
@@ -253,7 +253,7 @@ public class Java9CleanUpTest {
 	@ParameterizedTest
 	@EnumSource(MultiStatusPatternsDontTouch.class)
 	public void testMultiStatusDontTouch(MultiStatusPatternsDontTouch test) throws CoreException {
-		IPackageFragment pack= context.getfSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
 		ICompilationUnit cu= pack.createCompilationUnit("E1.java", test.given, false, null); //$NON-NLS-1$
 		context.enable(MYCleanUpConstants.SIMPLIFY_STATUS_CLEANUP);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
