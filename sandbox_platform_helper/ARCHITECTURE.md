@@ -117,9 +117,9 @@ Experimental cleanup for Eclipse Platform code. The factory methods are part of 
 ## Known Limitations
 
 1. **Java 11+ Only**: Requires Java 11 or later (aligned with current Eclipse support)
-2. **Status Class Only**: Only handles `org.eclipse.core.runtime.Status`
+2. **Status Class Only**: Only handles `org.eclipse.core.runtime.Status` and `org.eclipse.core.runtime.MultiStatus`
 3. **Simple Cases**: Complex Status creation patterns may not be transformed
-4. **Plugin ID Removed**: Factory methods don't include plugin ID (uses default from context)
+4. **Plugin ID Not Preserved in Status Factory Methods**: The Eclipse Platform Status factory methods (error(), warning(), info()) only accept (message, exception) parameters and do not support plugin ID parameters
 
 ## Integration Points
 
@@ -131,11 +131,13 @@ The plugin integrates with Eclipse Platform APIs:
    - Factory methods available since Eclipse Platform 4.12 (2019-06)
    - Methods: `Status.error()`, `Status.warning()`, `Status.info()`, `Status.ok()`
    - Simplified API reduces boilerplate
+   - **Note**: Factory methods only accept (message, exception) parameters, not plugin ID
 
-2. **Bundle Context**: Plugin ID resolution
-   - Factory methods use implicit plugin ID from Bundle-SymbolicName
-   - Eliminates need for explicit plugin ID parameter
-   - Integrates with OSGi bundle framework
+2. **org.eclipse.core.runtime.MultiStatus**: Simplification support
+   - Normalizes status code to `IStatus.OK` in MultiStatus constructors
+   - Example: `new MultiStatus(pluginId, 123, "msg", e)` → `new MultiStatus(pluginId, IStatus.OK, "msg", e)`
+   - Rationale: MultiStatus overall status is determined by child statuses
+   - No factory methods available for MultiStatus
 
 3. **Eclipse Logging**: Status objects integrate with logging
    - ILog.log(IStatus) accepts Status objects

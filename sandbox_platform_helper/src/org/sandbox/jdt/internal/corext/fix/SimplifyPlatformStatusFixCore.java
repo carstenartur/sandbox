@@ -28,6 +28,7 @@ import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.helper.AbstractSimplifyPlatformStatus;
+import org.sandbox.jdt.internal.corext.fix.helper.MultiStatusSimplifyPlatformStatus;
 import org.sandbox.jdt.internal.corext.fix.helper.StatusErrorSimplifyPlatformStatus;
 import org.sandbox.jdt.internal.corext.fix.helper.StatusInfoSimplifyPlatformStatus;
 import org.sandbox.jdt.internal.corext.fix.helper.StatusWarningSimplifyPlatformStatus;
@@ -37,7 +38,8 @@ public enum SimplifyPlatformStatusFixCore {
 
 	STATUSWARNING(new StatusWarningSimplifyPlatformStatus()),
 	STATUSERROR(new StatusErrorSimplifyPlatformStatus()),
-	STATUSINFO(new StatusInfoSimplifyPlatformStatus());
+	STATUSINFO(new StatusInfoSimplifyPlatformStatus()),
+	MULTISTATUS(new MultiStatusSimplifyPlatformStatus());
 
 	AbstractSimplifyPlatformStatus<ASTNode> platformstatus;
 
@@ -63,10 +65,42 @@ public enum SimplifyPlatformStatusFixCore {
 	public void findOperations(final CompilationUnit compilationUnit,
 			final Set<CompilationUnitRewriteOperationWithSourceRange> operations, final Set<ASTNode> nodesprocessed)
 					throws CoreException {
-		platformstatus.find(this, compilationUnit, operations, nodesprocessed);
+		findOperations(compilationUnit, operations, nodesprocessed, false);
+	}
+
+	/**
+	 * Compute set of CompilationUnitRewriteOperation to refactor supported
+	 * situations using platform status instantiation
+	 *
+	 * @param compilationUnit unit to search in
+	 * @param operations      set of all CompilationUnitRewriteOperations created
+	 *                        already
+	 * @param nodesprocessed  list to remember nodes already processed
+	 * @param preservePluginId whether to preserve plugin ID in factory calls
+	 * @throws CoreException
+	 */
+	public void findOperations(final CompilationUnit compilationUnit,
+			final Set<CompilationUnitRewriteOperationWithSourceRange> operations, final Set<ASTNode> nodesprocessed,
+			boolean preservePluginId)
+					throws CoreException {
+		platformstatus.find(this, compilationUnit, operations, nodesprocessed, preservePluginId);
 	}
 
 	public CompilationUnitRewriteOperationWithSourceRange rewrite(final ClassInstanceCreation visited, ReferenceHolder<ASTNode, Object> holder) {
+		return rewrite(visited, holder, false);
+	}
+
+	/**
+	 * Creates a rewrite operation for the given Status or MultiStatus creation.
+	 *
+	 * @param visited the ClassInstanceCreation node to rewrite
+	 * @param holder reference holder for additional context
+	 * @param preservePluginId if true, preserves the plugin ID parameter in the transformation;
+	 *                         if false (default), omits the plugin ID
+	 * @return a CompilationUnitRewriteOperation for the transformation
+	 */
+	public CompilationUnitRewriteOperationWithSourceRange rewrite(final ClassInstanceCreation visited,
+			ReferenceHolder<ASTNode, Object> holder, boolean preservePluginId) {
 		return new CompilationUnitRewriteOperationWithSourceRange() {
 			@Override
 			public void rewriteASTInternal(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel)
@@ -76,7 +110,7 @@ public enum SimplifyPlatformStatusFixCore {
 								new Object[] { SimplifyPlatformStatusFixCore.this.toString() }),
 						cuRewrite);
 				cuRewrite.getASTRewrite().setTargetSourceRangeComputer(computer);
-				platformstatus.rewrite(SimplifyPlatformStatusFixCore.this, visited, cuRewrite, group, holder);
+				platformstatus.rewrite(SimplifyPlatformStatusFixCore.this, visited, cuRewrite, group, holder, preservePluginId);
 			}
 		};
 	}
