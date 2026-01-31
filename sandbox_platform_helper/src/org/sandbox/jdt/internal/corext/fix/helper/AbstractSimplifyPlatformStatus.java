@@ -139,7 +139,8 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 		 * Create call to Status.warning(), Status.error(), or Status.info()
 		 */
 		MethodInvocation staticCall= ast.newMethodInvocation();
-		staticCall.setExpression(ASTNodeFactory.newName(ast, Status.class.getSimpleName()));
+		Name statusName= addImport(Status.class.getName(), cuRewrite, ast);
+		staticCall.setExpression(statusName);
 		staticCall.setName(ast.newSimpleName(methodName));
 		
 		List<ASTNode> arguments= visited.arguments();
@@ -164,8 +165,7 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 		ASTNodes.replaceButKeepComment(rewrite, visited, staticCall, group);
 		remover.registerRemovedNode(visited);
 		// Note: Do NOT call remover.applyRemoves(importRewrite) here
-		// The transformation replaces the constructor with a static method call that still
-		// uses the same Status class, so the imports should be preserved.
-		// ImportRewrite will automatically manage imports without explicit applyRemoves.
+		// ImportRewrite automatically manages import removal/addition throughout the transformation.
+		// The Status import is explicitly added via addImport() above, and IStatus is preserved from the variable declaration.
 	}
 }
