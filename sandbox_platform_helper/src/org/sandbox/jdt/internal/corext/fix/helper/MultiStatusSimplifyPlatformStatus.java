@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.MultiStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.dom.AST;
@@ -137,6 +138,9 @@ public class MultiStatusSimplifyPlatformStatus extends AbstractSimplifyPlatformS
 		Name multiStatusName= addImport(MultiStatus.class.getName(), cuRewrite, ast);
 		newMultiStatus.setType(ast.newSimpleType(multiStatusName));
 		
+		// Add import for IStatus to support IStatus.OK reference
+		addImport(org.eclipse.core.runtime.IStatus.class.getName(), cuRewrite, ast);
+		
 		List<Expression> arguments= visited.arguments();
 		List<Expression> newArguments= newMultiStatus.arguments();
 		
@@ -160,6 +164,9 @@ public class MultiStatusSimplifyPlatformStatus extends AbstractSimplifyPlatformS
 		
 		ASTNodes.replaceButKeepComment(rewrite, visited, newMultiStatus, group);
 		remover.registerRemovedNode(visited);
-		remover.applyRemoves(importRewrite);
+		// Note: Do NOT call remover.applyRemoves(importRewrite) here
+		// The transformation still uses MultiStatus and IStatus classes,
+		// so the imports should be preserved.
+		// ImportRewrite will automatically manage imports without explicit applyRemoves.
 	}
 }
