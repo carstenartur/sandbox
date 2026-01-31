@@ -61,5 +61,43 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 		registerSlavePreference(functional_call, new RadioPreference[] { streamFormat, forLoopFormat, whileLoopFormat });
 		
 		registerPreference(functional_call);
+		
+		// ============================================================
+		// Bidirectional Loop Conversion (Phase 9)
+		// ============================================================
+		Group loopConversionGroup = createGroup(numColumns, composite, CleanUpMessages.LoopConversion_GroupName);
+		
+		// Master checkbox to enable loop conversions
+		final CheckboxPreference loopConversionEnabled = createCheckboxPref(loopConversionGroup, numColumns,
+			CleanUpMessages.LoopConversion_Enable, MYCleanUpConstants.LOOP_CONVERSION_ENABLED, FALSE_TRUE);
+		intent(loopConversionGroup);
+		
+		// Target format combo
+		final ComboPreference targetFormat = createComboPref(loopConversionGroup, numColumns,
+			CleanUpMessages.LoopConversion_TargetFormat,
+			MYCleanUpConstants.LOOP_CONVERSION_TARGET_FORMAT,
+			new String[] {
+				CleanUpMessages.LoopConversion_TargetFormat_Stream,
+				CleanUpMessages.LoopConversion_TargetFormat_EnhancedFor,
+				CleanUpMessages.LoopConversion_TargetFormat_IteratorWhile
+			},
+			new String[] { "stream", "enhanced_for", "iterator_while" });
+		
+		// Source format checkboxes
+		final CheckboxPreference fromEnhancedFor = createCheckboxPref(loopConversionGroup, numColumns,
+			CleanUpMessages.LoopConversion_From_EnhancedFor, MYCleanUpConstants.LOOP_CONVERSION_FROM_ENHANCED_FOR, FALSE_TRUE);
+		final CheckboxPreference fromIteratorWhile = createCheckboxPref(loopConversionGroup, numColumns,
+			CleanUpMessages.LoopConversion_From_IteratorWhile, MYCleanUpConstants.LOOP_CONVERSION_FROM_ITERATOR_WHILE, FALSE_TRUE);
+		final CheckboxPreference fromStream = createCheckboxPref(loopConversionGroup, numColumns,
+			CleanUpMessages.LoopConversion_From_Stream, MYCleanUpConstants.LOOP_CONVERSION_FROM_STREAM, FALSE_TRUE);
+		final CheckboxPreference fromClassicFor = createCheckboxPref(loopConversionGroup, numColumns,
+			CleanUpMessages.LoopConversion_From_ClassicFor, MYCleanUpConstants.LOOP_CONVERSION_FROM_CLASSIC_FOR, FALSE_TRUE);
+		
+		// Register dependencies: enable/disable based on master checkbox
+		registerSlavePreference(loopConversionEnabled, new Preference[] {
+			targetFormat, fromEnhancedFor, fromIteratorWhile, fromStream, fromClassicFor
+		});
+		
+		registerPreference(loopConversionEnabled);
 	}
 }
