@@ -23,6 +23,7 @@ import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.USEFUNCTIO
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_WHILE;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.FunctionalCallCleanUpFix_refactor;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.FunctionalCallCleanUp_description;
+import static org.sandbox.jdt.internal.ui.preferences.cleanup.CleanUpMessages.LoopConversion_Description;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -100,7 +101,7 @@ public class UseFunctionalCallCleanUpCore extends AbstractCleanUp {
 					computeFixSet().stream().map(UseFunctionalCallFixCore::toString).collect(Collectors.toList())) }));
 		}
 		if (isEnabled(LOOP_CONVERSION_ENABLED)) {
-			result.add(CleanUpMessages.LoopConversion_Description);
+			result.add(LoopConversion_Description);
 		}
 		return result.toArray(new String[0]);
 	}
