@@ -45,6 +45,10 @@ public final class JUnitConstants {
 	public static final String ANNOTATION_TEST_METHOD_ORDER = "TestMethodOrder";
 	public static final String MOCKITO_EXTENSION = "MockitoExtension";
 	public static final String SPRING_EXTENSION = "SpringExtension";
+	public static final String ANNOTATION_NESTED = "Nested";
+	public static final String ANNOTATION_VALUE_SOURCE = "ValueSource";
+	public static final String ANNOTATION_INCLUDE_TAGS = "IncludeTags";
+	public static final String ANNOTATION_EXCLUDE_TAGS = "ExcludeTags";
 
 	// ===== Method Names =====
 
@@ -98,6 +102,14 @@ public final class JUnitConstants {
 	public static final String ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_JUNIT4_CLASS_RUNNER = "org.springframework.test.context.junit4.SpringJUnit4ClassRunner";
 	public static final String ORG_JUNIT_RUNNERS_PARAMETERIZED = "org.junit.runners.Parameterized";
 	public static final String ORG_JUNIT_RUNNERS_PARAMETERIZED_PARAMETERS = "org.junit.runners.Parameterized.Parameters";
+	public static final String ORG_JUNIT_EXPERIMENTAL_RUNNERS_ENCLOSED = "org.junit.experimental.runners.Enclosed";
+	public static final String ORG_JUNIT_EXPERIMENTAL_THEORIES_THEORIES = "org.junit.experimental.theories.Theories";
+	public static final String ORG_JUNIT_EXPERIMENTAL_THEORIES_THEORY = "org.junit.experimental.theories.Theory";
+	public static final String ORG_JUNIT_EXPERIMENTAL_THEORIES_DATAPOINTS = "org.junit.experimental.theories.DataPoints";
+	public static final String ORG_JUNIT_EXPERIMENTAL_THEORIES_DATAPOINT = "org.junit.experimental.theories.DataPoint";
+	public static final String ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORIES = "org.junit.experimental.categories.Categories";
+	public static final String ORG_JUNIT_EXPERIMENTAL_CATEGORIES_INCLUDE_CATEGORY = "org.junit.experimental.categories.Categories.IncludeCategory";
+	public static final String ORG_JUNIT_EXPERIMENTAL_CATEGORIES_EXCLUDE_CATEGORY = "org.junit.experimental.categories.Categories.ExcludeCategory";
 
 	// ===== JUnit 5 / Jupiter Fully Qualified References =====
 
@@ -120,6 +132,7 @@ public final class JUnitConstants {
 	public static final String ORG_JUNIT_JUPITER_API_TIMEOUT = "org.junit.jupiter.api.Timeout";
 	public static final String ORG_JUNIT_JUPITER_API_ASSUMPTIONS = "org.junit.jupiter.api.Assumptions";
 	public static final String ORG_JUNIT_JUPITER_API_TAG = "org.junit.jupiter.api.Tag";
+	public static final String ORG_JUNIT_JUPITER_API_NESTED = "org.junit.jupiter.api.Nested";
 	public static final String ORG_JUNIT_JUPITER_API_TEST_METHOD_ORDER = "org.junit.jupiter.api.TestMethodOrder";
 	public static final String ORG_JUNIT_JUPITER_API_METHOD_ORDERER = "org.junit.jupiter.api.MethodOrderer";
 	public static final String ORG_JUNIT_JUPITER_API_METHOD_ORDERER_METHOD_NAME = "org.junit.jupiter.api.MethodOrderer.MethodName";
@@ -130,6 +143,7 @@ public final class JUnitConstants {
 	public static final String ORG_JUNIT_JUPITER_PARAMS_PARAMETERIZED_TEST = "org.junit.jupiter.params.ParameterizedTest";
 	public static final String ORG_JUNIT_JUPITER_PARAMS_PROVIDER_METHOD_SOURCE = "org.junit.jupiter.params.provider.MethodSource";
 	public static final String ORG_JUNIT_JUPITER_PARAMS_PROVIDER_ARGUMENTS = "org.junit.jupiter.params.provider.Arguments";
+	public static final String ORG_JUNIT_JUPITER_PARAMS_PROVIDER_VALUE_SOURCE = "org.junit.jupiter.params.provider.ValueSource";
 	public static final String ANNOTATION_PARAMETERIZED_TEST = "ParameterizedTest";
 	public static final String ANNOTATION_METHOD_SOURCE = "MethodSource";
 
@@ -142,6 +156,8 @@ public final class JUnitConstants {
 
 	public static final String ORG_JUNIT_JUPITER_SUITE = "org.junit.platform.suite.api.Suite";
 	public static final String ORG_JUNIT_PLATFORM_SUITE_API_SELECT_CLASSES = "org.junit.platform.suite.api.SelectClasses";
+	public static final String ORG_JUNIT_PLATFORM_SUITE_API_INCLUDE_TAGS = "org.junit.platform.suite.api.IncludeTags";
+	public static final String ORG_JUNIT_PLATFORM_SUITE_API_EXCLUDE_TAGS = "org.junit.platform.suite.api.ExcludeTags";
 
 	// ===== Callback Names =====
 

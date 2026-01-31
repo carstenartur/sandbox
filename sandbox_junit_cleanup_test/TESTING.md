@@ -91,6 +91,23 @@ Tests for `@RunWith` migrations.
   - Supports both old and new package names
 - **Note**: Parameterized migration is complex and pending implementation
 
+#### `MigrationRunnersAdvancedTest.java`
+**Location**: `src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationRunnersAdvancedTest.java`
+
+Tests for advanced `@RunWith` runner migrations.
+- **Coverage**:
+  - `@RunWith(Enclosed.class)` → `@Nested` classes ✅ **Implemented**
+  - `@RunWith(Theories.class)` → `@ParameterizedTest` with `@ValueSource` ✅ **Implemented**
+  - `@RunWith(Categories.class)` → `@Suite` with `@IncludeTags`/`@ExcludeTags` ✅ **Implemented**
+- **Key scenarios**:
+  - Nested test class organization
+  - Data-driven testing with theories
+  - Test categorization and filtering
+- **Implementation Notes**:
+  - Enclosed: Removes `static` modifier from inner classes and adds `@Nested`
+  - Theories: Transforms `@DataPoints` fields to `@ValueSource` annotations
+  - Categories: Transforms category classes to tag strings
+
 #### `MigrationExceptionsTest.java`
 **Location**: `src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationExceptionsTest.java`
 
