@@ -77,8 +77,10 @@ jobs:
     # 5. Set release version using tycho-versions-plugin
     - name: Set release version
       run: |
+        TYCHO_VERSION=$(mvn -q -DforceStdout help:evaluate -Dexpression=tycho-version)
+        echo "Using Tycho version ${TYCHO_VERSION} from pom.xml"
         echo "Setting version to ${{ inputs.release_version }}"
-        mvn org.eclipse.tycho:tycho-versions-plugin:5.0.2:set-version -DnewVersion=${{ inputs.release_version }}
+        mvn org.eclipse.tycho:tycho-versions-plugin:${TYCHO_VERSION}:set-version -DnewVersion=${{ inputs.release_version }}
 
     # 6. Verify version update - fail if any SNAPSHOT versions remain
     - name: Verify version update
@@ -235,8 +237,10 @@ jobs:
       run: |
         # Ensure we're in the main repository directory (not gh-pages-repo)
         cd $GITHUB_WORKSPACE
+        TYCHO_VERSION=$(mvn -q -DforceStdout help:evaluate -Dexpression=tycho-version)
+        echo "Using Tycho versions plugin ${TYCHO_VERSION}"
         echo "Bumping version to ${{ inputs.next_snapshot_version }}"
-        mvn org.eclipse.tycho:tycho-versions-plugin:5.0.2:set-version -DnewVersion=${{ inputs.next_snapshot_version }}
+        mvn org.eclipse.tycho:tycho-versions-plugin:${TYCHO_VERSION}:set-version -DnewVersion=${{ inputs.next_snapshot_version }}
 
     # 15. Commit and push SNAPSHOT version
     - name: Commit and push SNAPSHOT version
