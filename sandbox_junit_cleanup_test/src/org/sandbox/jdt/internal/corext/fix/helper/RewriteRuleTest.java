@@ -61,6 +61,30 @@ class RewriteRuleTest {
     }
     
     @Test
+    void testBeforeClassJUnitPluginV2_hasRewriteRuleAnnotation() {
+        BeforeClassJUnitPluginV2 plugin = new BeforeClassJUnitPluginV2();
+        
+        RewriteRule rewriteRule = plugin.getClass().getAnnotation(RewriteRule.class);
+        
+        assertNotNull(rewriteRule, "@RewriteRule annotation should be present");
+        assertEquals("@BeforeAll", rewriteRule.replaceWith());
+        assertArrayEquals(new String[]{"org.junit.BeforeClass"}, rewriteRule.removeImports());
+        assertArrayEquals(new String[]{"org.junit.jupiter.api.BeforeAll"}, rewriteRule.addImports());
+    }
+    
+    @Test
+    void testAfterClassJUnitPluginV2_hasRewriteRuleAnnotation() {
+        AfterClassJUnitPluginV2 plugin = new AfterClassJUnitPluginV2();
+        
+        RewriteRule rewriteRule = plugin.getClass().getAnnotation(RewriteRule.class);
+        
+        assertNotNull(rewriteRule, "@RewriteRule annotation should be present");
+        assertEquals("@AfterAll", rewriteRule.replaceWith());
+        assertArrayEquals(new String[]{"org.junit.AfterClass"}, rewriteRule.removeImports());
+        assertArrayEquals(new String[]{"org.junit.jupiter.api.AfterAll"}, rewriteRule.addImports());
+    }
+    
+    @Test
     void testRewriteRule_defaultValues() {
         // Test that default values are properly defined
         RewriteRule rewriteRule = BeforeJUnitPluginV2.class.getAnnotation(RewriteRule.class);
@@ -175,6 +199,104 @@ class RewriteRuleTest {
                     @AfterEach
                     public void tearDown() {
                         // Cleanup code
+                    }
+                    
+                    @Test
+                    public void testSomething() {
+                    }
+                }
+                """
+        }, null);
+    }
+    
+    /**
+     * Integration test: Verifies that @RewriteRule transforms @BeforeClass correctly.
+     */
+    @Test
+    void testRewriteRule_actualTransformation_BeforeClass() throws CoreException {
+        IPackageFragmentRoot fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+        IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
+        ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
+                """
+                package test;
+                import org.junit.BeforeClass;
+                import org.junit.Test;
+                
+                public class MyTest {
+                    @BeforeClass
+                    public static void setUpBeforeClass() {
+                        // One-time setup
+                    }
+                    
+                    @Test
+                    public void testSomething() {
+                    }
+                }
+                """, false, null);
+
+        context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+        context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORECLASS);
+        context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
+
+        context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+                """
+                package test;
+                import org.junit.jupiter.api.BeforeAll;
+                import org.junit.jupiter.api.Test;
+                
+                public class MyTest {
+                    @BeforeAll
+                    public static void setUpBeforeClass() {
+                        // One-time setup
+                    }
+                    
+                    @Test
+                    public void testSomething() {
+                    }
+                }
+                """
+        }, null);
+    }
+    
+    /**
+     * Integration test: Verifies that @RewriteRule transforms @AfterClass correctly.
+     */
+    @Test
+    void testRewriteRule_actualTransformation_AfterClass() throws CoreException {
+        IPackageFragmentRoot fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+        IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
+        ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
+                """
+                package test;
+                import org.junit.AfterClass;
+                import org.junit.Test;
+                
+                public class MyTest {
+                    @AfterClass
+                    public static void tearDownAfterClass() {
+                        // One-time cleanup
+                    }
+                    
+                    @Test
+                    public void testSomething() {
+                    }
+                }
+                """, false, null);
+
+        context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+        context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTERCLASS);
+        context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
+
+        context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+                """
+                package test;
+                import org.junit.jupiter.api.AfterAll;
+                import org.junit.jupiter.api.Test;
+                
+                public class MyTest {
+                    @AfterAll
+                    public static void tearDownAfterClass() {
+                        // One-time cleanup
                     }
                     
                     @Test
