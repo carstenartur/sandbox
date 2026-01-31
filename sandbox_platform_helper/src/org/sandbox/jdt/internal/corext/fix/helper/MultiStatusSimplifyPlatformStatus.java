@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.MultiStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.dom.AST;
@@ -136,6 +137,9 @@ public class MultiStatusSimplifyPlatformStatus extends AbstractSimplifyPlatformS
 		ClassInstanceCreation newMultiStatus= ast.newClassInstanceCreation();
 		Name multiStatusName= addImport(MultiStatus.class.getName(), cuRewrite, ast);
 		newMultiStatus.setType(ast.newSimpleType(multiStatusName));
+		
+		// Add import for IStatus to support IStatus.OK reference
+		addImport(org.eclipse.core.runtime.IStatus.class.getName(), cuRewrite, ast);
 		
 		List<Expression> arguments= visited.arguments();
 		List<Expression> newArguments= newMultiStatus.arguments();
