@@ -78,7 +78,7 @@ jobs:
     - name: Set release version
       run: |
         echo "Setting version to ${{ inputs.release_version }}"
-        mvn tycho-versions:set-version -DnewVersion=${{ inputs.release_version }}
+        mvn org.eclipse.tycho:tycho-versions-plugin:5.0.2:set-version -DnewVersion=${{ inputs.release_version }}
 
     # 6. Verify version update - fail if any SNAPSHOT versions remain
     - name: Verify version update
@@ -236,7 +236,7 @@ jobs:
         # Ensure we're in the main repository directory (not gh-pages-repo)
         cd $GITHUB_WORKSPACE
         echo "Bumping version to ${{ inputs.next_snapshot_version }}"
-        mvn tycho-versions:set-version -DnewVersion=${{ inputs.next_snapshot_version }}
+        mvn org.eclipse.tycho:tycho-versions-plugin:5.0.2:set-version -DnewVersion=${{ inputs.next_snapshot_version }}
 
     # 15. Commit and push SNAPSHOT version
     - name: Commit and push SNAPSHOT version
