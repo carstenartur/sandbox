@@ -272,30 +272,34 @@ public class JavaHelperViewTest {
 		
 		// This is the key fix: pass IJavaElement (ICompilationUnit) not IResource
 		JHViewContentProvider provider = new JHViewContentProvider();
-		Object[] elements = provider.getElements(Collections.singletonList(cu));
-		
-		assertNotNull(elements, "Elements should not be null");
-		assertTrue(elements.length > 0, "Should have found elements when IJavaElement is passed");
-		
-		// All elements should be IVariableBinding instances
-		for (Object element : elements) {
-			assertTrue(element instanceof IVariableBinding, 
-				"Elements should be IVariableBinding instances");
-		}
-		
-		// Verify we found at least one of the expected variables
-		boolean foundExpectedVariable = false;
-		for (Object element : elements) {
-			IVariableBinding binding = (IVariableBinding) element;
-			String varName = binding.getName();
-			if ("variable1".equals(varName) || "variable2".equals(varName)) {
-				foundExpectedVariable = true;
-				break;
+		try {
+			Object[] elements = provider.getElements(Collections.singletonList(cu));
+			
+			assertNotNull(elements, "Elements should not be null");
+			assertTrue(elements.length > 0, "Should have found elements when IJavaElement is passed");
+			
+			// All elements should be IVariableBinding instances
+			for (Object element : elements) {
+				assertTrue(element instanceof IVariableBinding, 
+					"Elements should be IVariableBinding instances");
 			}
+			
+			// Verify we found at least one of the expected variables
+			boolean foundExpectedVariable = false;
+			for (Object element : elements) {
+				IVariableBinding binding = (IVariableBinding) element;
+				String varName = binding.getName();
+				if ("variable1".equals(varName) || "variable2".equals(varName)) {
+					foundExpectedVariable = true;
+					break;
+				}
+			}
+			
+			assertTrue(foundExpectedVariable, 
+				"Should have found at least one expected variable when IJavaElement is passed");
+		} finally {
+			provider.dispose();
 		}
-		
-		assertTrue(foundExpectedVariable, 
-			"Should have found at least one expected variable when IJavaElement is passed");
 	}
 
 	// Helper methods

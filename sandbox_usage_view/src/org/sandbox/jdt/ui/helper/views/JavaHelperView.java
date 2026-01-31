@@ -102,7 +102,7 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 
 	private IPartListener2 partListener;
 
-	private Object currentInput = null;
+	private IJavaElement currentInput = null;
 
 	@Override
 	public void createPartControl(Composite parent) {
