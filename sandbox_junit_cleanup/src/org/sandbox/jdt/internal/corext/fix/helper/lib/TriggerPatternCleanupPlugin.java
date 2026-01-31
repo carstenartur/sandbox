@@ -391,4 +391,51 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
             return placeholderName != null && placeholderName.startsWith("$") && placeholderName.endsWith("$"); //$NON-NLS-1$ //$NON-NLS-2$
         }
     }
+    
+    /**
+     * Replaces a marker annotation with a new one and updates imports.
+     * This is a common operation for simple annotation migrations like
+     * {@code @Before → @BeforeEach}, {@code @After → @AfterEach}, etc.
+     * 
+     * <p>This helper method is useful for plugins that need to override {@code process2Rewrite()}
+     * for custom logic but still want to leverage a standardized approach for simple
+     * marker annotation replacements.</p>
+     * 
+     * <p><b>Example usage:</b></p>
+     * <pre>
+     * // Replace @BeforeClass with @BeforeAll
+     * replaceMarkerAnnotation(
+     *     group, rewriter, ast, importRewriter,
+     *     oldAnnotation,
+     *     "BeforeAll",
+     *     "org.junit.BeforeClass",
+     *     "org.junit.jupiter.api.BeforeAll"
+     * );
+     * </pre>
+     * 
+     * @param group the text edit group for tracking changes
+     * @param rewriter the AST rewriter
+     * @param ast the AST instance
+     * @param importRewriter the import rewriter
+     * @param oldAnnotation the annotation to replace
+     * @param newAnnotationName the simple name of the new annotation (e.g., "BeforeEach")
+     * @param removeImport the fully qualified import to remove (e.g., "org.junit.Before")
+     * @param addImport the fully qualified import to add (e.g., "org.junit.jupiter.api.BeforeEach")
+     */
+    protected void replaceMarkerAnnotation(
+            TextEditGroup group, 
+            ASTRewrite rewriter, 
+            AST ast,
+            ImportRewrite importRewriter, 
+            Annotation oldAnnotation,
+            String newAnnotationName, 
+            String removeImport, 
+            String addImport) {
+        
+        MarkerAnnotation newAnnotation = ast.newMarkerAnnotation();
+        newAnnotation.setTypeName(ast.newSimpleName(newAnnotationName));
+        ASTNodes.replaceButKeepComment(rewriter, oldAnnotation, newAnnotation, group);
+        importRewriter.removeImport(removeImport);
+        importRewriter.addImport(addImport);
+    }
 }

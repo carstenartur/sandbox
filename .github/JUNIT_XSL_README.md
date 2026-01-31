@@ -140,6 +140,14 @@ When a configuration file is provided and `show-coverage-links` is enabled, the 
 - **Filtered Display**: Coverage links only appear for source packages (e.g., `org.sandbox.*`), not for test-only packages (e.g., `org.eclipse.jdt.ui.tests.*`)
 - **Navigation**: Header and footer links to coverage reports and test report index
 
+### GitHub Test Source Links
+
+When a repository URL is configured, the report includes:
+- **🔗 GitHub Source Icon**: Next to each test class name, linking to the test source code in the GitHub repository
+- **Direct Navigation**: Links point directly to the test class file (e.g., `https://github.com/owner/repo/blob/main/module_test/src/org/example/TestClass.java`)
+- **Opens in New Tab**: Source links open in a new browser tab for easy code review
+- **Contextual Help**: Hover tooltip shows the test class name for confirmation
+
 ### In GitHub Actions Workflow
 
 The stylesheet is automatically used in `.github/workflows/maven.yml`:
