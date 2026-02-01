@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: Usage view tests
 Bundle-SymbolicName: sandbox_usage_view_test;singleton:=true
 Bundle-Vendor: sandbox
-Bundle-Version: 1.2.4
+Bundle-Version: 1.2.5.qualifier
 Fragment-Host: sandbox_usage_view
 Bundle-RequiredExecutionEnvironment: JavaSE-21
 Bundle-ActivationPolicy: lazy
