@@ -34,6 +34,206 @@ Use the `manual-cleanup.yml` workflow when you want to:
 
 ## Available Workflows
 
+### Release Workflow (`deploy-release.yml`)
+
+**Triggers**: Manual dispatch from GitHub Actions UI
+
+**What it does**:
+- Performs comprehensive preflight validation checks
+- Sets release version in all modules (pom.xml, MANIFEST.MF, feature.xml)
+- Builds and verifies the release
+- Creates Git tag and maintenance branch
+- Generates release notes from closed issues
+- Creates GitHub Release
+- Deploys to gh-pages
+- Automatically bumps to next SNAPSHOT version
+- Creates PR for next development iteration
+
+**Workflow Structure**:
+
+The workflow uses a **fail-fast approach** with two jobs:
+
+1. **Preflight Job** (runs first):
+   - Extracts current version from pom.xml
+   - Validates current version is a SNAPSHOT
+   - Calculates suggested release version (removes -SNAPSHOT)
+   - Calculates suggested next version (increments patch)
+   - Validates release version format (semver X.Y.Z)
+   - Checks if release tag already exists
+   - Checks for SNAPSHOT references in codebase
+   - Validates Maven configuration
+   - Shows summary in GitHub Actions UI
+
+2. **Release Job** (depends on preflight):
+   - Only runs if preflight succeeds
+   - Executes the actual release process
+   - Uses outputs from preflight job
+
+**Required Input**:
+- **release_version** (required): Release version in semver format (e.g., 1.2.2)
+  - Must match X.Y.Z format
+  - Must NOT contain -SNAPSHOT suffix
+  - Will show warning if different from suggested version
+
+**Optional Inputs**:
+- **skip_tests** (optional, default: false): Skip tests during release build
+  - Use when tests are known to pass and you want faster builds
+  - Not recommended for production releases
+
+- **dry_run** (optional, default: false): Validate everything without publishing
+  - Tests the entire workflow without side effects
+  - Skips: tag creation, branch creation, GitHub release, gh-pages deployment
+  - Still creates the PR for next version (to test full workflow)
+  - Perfect for testing workflow changes
+
+**How to Run**:
+
+1. Go to **Actions** tab in GitHub
+2. Select **Release Workflow**
+3. Click **Run workflow**
+4. Enter release version (e.g., `1.2.2`)
+5. Optionally enable `skip_tests` or `dry_run`
+6. Click **Run workflow**
+
+**Preflight Checks**:
+
+The preflight job validates:
+
+| Check | Purpose | Fails on |
+|-------|---------|----------|
+| Current Version | Ensures starting from SNAPSHOT | Non-SNAPSHOT version |
+| Version Format | Validates semver format | Invalid format (not X.Y.Z) |
+| Tag Existence | Prevents duplicate releases | Tag already exists |
+| SNAPSHOT References | Detects SNAPSHOT strings | N/A (informational) |
+| Maven Config | Validates project structure | Maven validation failure |
+
+**Outputs**:
+
+The preflight job provides these outputs to the release job:
+- `current_version`: Current version from pom.xml (e.g., 1.2.2-SNAPSHOT)
+- `suggested_release`: Suggested release version (e.g., 1.2.2)
+- `suggested_next`: Suggested next SNAPSHOT version (e.g., 1.2.3-SNAPSHOT)
+
+**Example Workflow Run**:
+
+```
+Current version: 1.2.2-SNAPSHOT
+Input version: 1.2.2
+Preflight checks: ✅ All passed
+Release version: 1.2.2
+Next version: 1.2.3-SNAPSHOT (automatic)
+```
+
+**What Happens**:
+
+1. **Preflight** (2-3 minutes):
+   - ✅ Validates all preconditions
+   - ✅ Calculates versions
+   - ✅ Shows summary in UI
+
+2. **Release** (15-20 minutes):
+   - Sets version to 1.2.2
+   - Builds and verifies
+   - Creates tag `v1.2.2`
+   - Creates maintenance branch `maintenance/1.2.x` (if new)
+   - Generates release notes
+   - Creates GitHub Release
+   - Deploys to gh-pages
+
+3. **Post-Release** (automatic):
+   - Bumps version to 1.2.3-SNAPSHOT
+   - Creates PR `release/prepare-next-1.2.3-SNAPSHOT`
+   - PR includes release notes
+
+**Dry Run Example**:
+
+Perfect for testing workflow changes without side effects:
+
+```
+Input: release_version=1.2.2, dry_run=true
+
+Preflight: ✅ All checks passed
+Build: ✅ Builds successfully
+Tag: ⏭️  Skipped (would create v1.2.2)
+Branch: ⏭️  Skipped (would create maintenance/1.2.x)
+Release: ⏭️  Skipped (would create GitHub Release)
+gh-pages: ⏭️  Skipped (would deploy)
+PR: ✅ Created (release/prepare-next-1.2.3-SNAPSHOT)
+
+Result: Workflow validated, nothing published
+```
+
+**Version Calculation Logic**:
+
+```bash
+Current: 1.2.2-SNAPSHOT
+  ↓
+Release: 1.2.2 (remove -SNAPSHOT)
+  ↓
+Next: 1.2.3-SNAPSHOT (increment patch)
+```
+
+**Protected Branch Handling**:
+
+The workflow is designed to work with protected main branches:
+- ✅ Does NOT push directly to main
+- ✅ Creates PR for version changes
+- ✅ Allows manual review before merging
+- ✅ Tag and maintenance branch are created directly (not on main)
+
+**Best Practices**:
+
+1. **Before Release**:
+   - Ensure all PRs for the release are merged
+   - Check that tests are passing
+   - Review CHANGELOG or release notes
+
+2. **Running Release**:
+   - Use suggested version from preflight output
+   - Don't skip tests for production releases
+   - Use dry_run first to validate workflow
+
+3. **After Release**:
+   - Merge the PR for next version promptly
+   - Update Eclipse Marketplace (reminder in workflow output)
+   - Announce release to users
+
+**Troubleshooting**:
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| "Tag already exists" | Release already created | Check existing releases, increment version |
+| "Current version is not SNAPSHOT" | Wrong starting version | Ensure pom.xml has -SNAPSHOT version |
+| "Invalid version format" | Wrong input format | Use X.Y.Z format (e.g., 1.2.2) |
+| Maven validation fails | Project structure issue | Fix Maven errors first |
+| Build fails | Code or dependency issue | Fix build issues before releasing |
+| PR creation fails | Branch already exists | Delete old branch or use different version |
+
+**Migration from Old Workflow**:
+
+The new workflow simplifies the release process:
+
+**Old**: Manual input of both versions
+```yaml
+Inputs:
+  - release_version: 1.2.2
+  - next_snapshot_version: 1.2.3-SNAPSHOT  # Manual
+```
+
+**New**: Automatic calculation
+```yaml
+Inputs:
+  - release_version: 1.2.2
+  # next_snapshot_version: Calculated automatically!
+```
+
+**Benefits**:
+- ✅ Less error-prone (no typos in next version)
+- ✅ Consistent version incrementing
+- ✅ Preflight catches issues early
+- ✅ Better visibility with summary output
+- ✅ Safer with dry-run mode
+
 ### 1. Fix NLS Comments (`fix-nls.yml`)
 
 **Triggers**: Automatically on PR opened/synchronized (on PRs that modify `.java` files)
