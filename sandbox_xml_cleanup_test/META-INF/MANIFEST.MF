@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: xml cleanup tests
 Bundle-SymbolicName: sandbox_xml_cleanup_test;singleton:=true
-Bundle-Version: 1.2.2.qualifier
+Bundle-Version: 1.2.4
 Fragment-Host: sandbox_xml_cleanup
 Bundle-RequiredExecutionEnvironment: JavaSE-21
 Require-Bundle: org.junit,

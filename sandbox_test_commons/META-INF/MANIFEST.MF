@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: sandbox test commons
 Bundle-SymbolicName: sandbox_test_commons;singleton:=true
-Bundle-Version: 1.2.2.qualifier
+Bundle-Version: 1.2.4
 Bundle-RequiredExecutionEnvironment: JavaSE-21
 Automatic-Module-Name: sandbox.test.commons.singleton.true
 Eclipse-BuddyPolicy: global
