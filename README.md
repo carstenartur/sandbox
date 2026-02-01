@@ -100,7 +100,7 @@ The new release will be available at `https://carstenartur.github.io/sandbox/rel
   - [Using Cleanup Plugins via Command Line](#using-cleanup-plugins-via-command-line)
   - [Installing as Eclipse Plugins](#installing-as-eclipse-plugins)
 - [CI Status](#ci-status)
-  - [main (2025-09)](#main-2025-09)
+  - [main (2025-12)](#main-2025-12)
   - [2022-09](#2022-09)
   - [2022-06](#2022-06)
 - [What's Included](#whats-included)
@@ -216,7 +216,7 @@ This repository includes a **Docker-based GitHub Action** for automated code cle
 
 ### Prerequisites
 
-**IMPORTANT**: This project (main branch, targeting Eclipse 2025-09) requires **Java 21** or later.
+**IMPORTANT**: This project (main branch, targeting Eclipse 2025-12) requires **Java 21** or later.
 
 The project uses Tycho 5.0.1 which requires Java 21. Building with Java 17 or earlier will fail with:
 ```
@@ -386,37 +386,37 @@ When migrating to a new Eclipse version, update the following files:
 
 1. **`pom.xml`** (root)
    - Repository URLs in the `<repositories>` section
-   - Example: `https://download.eclipse.org/releases/2025-09/`
-   - Also update Orbit repository URL: `https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2025-09/`
+   - Example: `https://download.eclipse.org/releases/2025-12/`
+   - Also update Orbit repository URL: `https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2025-12/`
 
 2. **`sandbox_target/eclipse.target`**
    - Primary Eclipse release repository URL in first `<location>` block
-   - Example: `<repository location="https://download.eclipse.org/releases/2025-09/"/>`
+   - Example: `<repository location="https://download.eclipse.org/releases/2025-12/"/>`
    - Also update Orbit repository URL
 
 3. **`sandbox_product/category.xml`**
    - Repository reference location
-   - Example: `<repository-reference location="https://download.eclipse.org/releases/2025-09/" .../>`
+   - Example: `<repository-reference location="https://download.eclipse.org/releases/2025-12/" .../>`
 
 4. **`sandbox_product/sandbox.product`**
    - Repository locations in `<repositories>` section
-   - Example: `<repository location="https://download.eclipse.org/releases/2025-09/" .../>`
+   - Example: `<repository location="https://download.eclipse.org/releases/2025-12/" .../>`
 
 5. **`sandbox_oomph/sandbox.setup`**
    - P2 repository URL in the version-specific `<setupTask>` block
-   - Example: `<repository url="https://download.eclipse.org/releases/2025-09"/>`
+   - Example: `<repository url="https://download.eclipse.org/releases/2025-12"/>`
 
 ### Version Consistency Guidelines
 
 - **Use HTTPS**: All Eclipse download URLs should use `https://` (not `http://`)
-- **Use explicit versions**: Prefer explicit version URLs (e.g., `2025-09`) over `latest` for reproducible builds
+- **Use explicit versions**: Prefer explicit version URLs (e.g., `2025-12`) over `latest` for reproducible builds
 - **Keep versions aligned**: All files should reference the same Eclipse SimRel version
 - **Git URLs**: Use HTTPS for git clone URLs (e.g., `https://github.com/...`, not `git://`)
 - **Main branch**: All Oomph setup files should reference the `main` branch, not `master`
 
 ### Current Configuration
 
-- **Eclipse Version**: 2025-09
+- **Eclipse Version**: 2025-12
 - **Java Version**: 21
 - **Tycho Version**: 5.0.1
 - **Default Branch**: `main`
@@ -465,7 +465,7 @@ The update sites provide:
 
 ## CI Status
 
-### main (2025-09)
+### main (2025-12)
 
 [![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)  
 [![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)
@@ -574,7 +574,7 @@ The project uses two distinct CI workflows for efficient publishing:
 
 | Branch          | Java Version | Tycho Version |
 |-----------------|--------------|---------------|
-| `main` (2025-09)| Java 21      | 5.0.1         |
+| `main` (2025-12)| Java 21      | 5.0.1         |
 | `2024-06`+      | Java 21      | 5.0.x         |
 | `2022-12`+      | Java 17      | 4.x           |
 | Up to `2022-06` | Java 11      | 3.x           |

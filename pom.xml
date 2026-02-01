@@ -67,18 +67,18 @@
 		<!-- Heavy modules (sandbox_product, sandbox_updatesite) moved to profiles below -->
 	</modules>
 	<repositories>
-		<!-- 1. Eclipse SimRel Release Repository - upgraded to 2025-09 to resolve Bouncy Castle import conflicts -->
+		<!-- 1. Eclipse SimRel Release Repository - upgraded to 2025-12 to resolve Bouncy Castle import conflicts -->
     <repository>
-        <id>eclipse-2025-09</id>
+        <id>eclipse-2025-12</id>
         <layout>p2</layout>
-        <url>https://download.eclipse.org/releases/2025-09/</url>
+        <url>https://download.eclipse.org/releases/2025-12/</url>
     </repository>
 
     <!-- 2. Eclipse Orbit (externe Abhängigkeiten wie Apache Commons) -->
     <repository>
         <id>orbit</id>
         <layout>p2</layout>
-        <url>https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2025-09/</url>
+        <url>https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2025-12/</url>
     </repository>
 
     <!-- 3. Eclipse Lizenzinformationen -->

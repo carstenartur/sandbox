@@ -58,7 +58,7 @@ This is a sandbox repository for experimenting with Eclipse JDT cleanups, build 
 - **CI/CD**: GitHub Actions
 - **Code Quality**: SpotBugs, Codacy, CodeQL
 - **Coverage**: JaCoCo
-- **Eclipse Version**: 2025-09 (main branch)
+- **Eclipse Version**: 2025-12 (main branch)
 
 ## Build, Test, and Lint Instructions
 
@@ -68,7 +68,7 @@ This is a sandbox repository for experimenting with Eclipse JDT cleanups, build 
 
 - **CI Environment**: Uses Java 21 (Temurin) as configured in `.github/workflows/maven.yml`
 - **Local Development**: Must use Java 21 to match CI environment
-- **Target Platform**: Eclipse 2025-09 requires Java 21
+- **Target Platform**: Eclipse 2025-12 requires Java 21
 
 #### Setting Java Version Locally
 
@@ -96,7 +96,7 @@ java -version  # Should show "openjdk version "21..."
 #### Why Java 21 is Required
 
 - **Tycho 5.0.1** requires Java 21 (class file version 65.0)
-- **Eclipse 2025-09** target platform requires Java 21
+- **Eclipse 2025-12** target platform requires Java 21
 - Running with Java 17 will cause: `UnsupportedClassVersionError: ...class file version 65.0, this version only recognizes up to 61.0`
 
 ### Building the Project
@@ -330,13 +330,13 @@ Search tool for critical classes during Eclipse/Java upgrades.
 
 - **Parent POM**: `/pom.xml` - Defines common configuration
 - **Target Platform**: `sandbox_target` module
-- **Repositories**: Eclipse 2025-09, Orbit, JustJ, EGit
+- **Repositories**: Eclipse 2025-12, Orbit, JustJ, EGit
 - **Tycho Configuration**: Version 5.0.1 with P2 repositories
 
 **Eclipse Target Platform Compilation**:
 
 The entire sandbox project, particularly the Eclipse plugins, is compiled against an Eclipse target platform defined in the `sandbox_target/eclipse.target` file. This target platform specifies:
-- Eclipse 2025-09 as the primary platform version
+- Eclipse 2025-12 as the primary platform version
 - Required Eclipse features (JDT, SDK, PDE, etc.)
 - External dependencies from Eclipse Orbit
 - Additional components (EGit, JustJ, license features)
@@ -388,7 +388,7 @@ Always consider Eclipse and Java version compatibility:
 The project aims to support building against multiple Eclipse versions for backporting:
 
 - **Goal**: Support the latest 3 Eclipse releases (e.g., 2025-09, 2024-12, 2024-09)
-- **Current State**: Main branch targets Eclipse 2025-09; multi-version CI workflows need enhancement
+- **Current State**: Main branch targets Eclipse 2025-12; multi-version CI workflows need enhancement
 - **Workflow Strategy**: GitHub Actions workflows in `.github/workflows/` should build against multiple Eclipse versions
 - **Backporting**: When backporting features, PRs should target the appropriate Eclipse version branches
 - **Future Enhancement**: Implement support for targeting multiple branches with a single PR for easier backporting
