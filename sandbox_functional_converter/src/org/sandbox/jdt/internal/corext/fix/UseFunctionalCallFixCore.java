@@ -27,10 +27,14 @@ import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.fix.helper.AbstractFunctionalCall;
 import org.sandbox.jdt.internal.corext.fix.helper.ConsecutiveLoopGroupDetector.ConsecutiveLoopGroup;
+import org.sandbox.jdt.internal.corext.fix.helper.EnhancedForToIteratorWhile;
 import org.sandbox.jdt.internal.corext.fix.helper.IteratorLoopToFunctional;
+import org.sandbox.jdt.internal.corext.fix.helper.IteratorWhileToEnhancedFor;
 import org.sandbox.jdt.internal.corext.fix.helper.LoopToFunctional;
 import org.sandbox.jdt.internal.corext.fix.helper.LoopToFunctionalV2;
 import org.sandbox.jdt.internal.corext.fix.helper.StreamConcatRefactorer;
+import org.sandbox.jdt.internal.corext.fix.helper.StreamToEnhancedFor;
+import org.sandbox.jdt.internal.corext.fix.helper.StreamToIteratorWhile;
 import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
 public enum UseFunctionalCallFixCore {
@@ -54,7 +58,36 @@ public enum UseFunctionalCallFixCore {
 	// ITERATOR_LOOP - Iterator-based loop conversion (from PR #449)
 	// Converts while-iterator and for-loop-iterator patterns to stream operations.
 	// Activated January 2026 - Phase 7: Iterator pattern support
-	ITERATOR_LOOP(new IteratorLoopToFunctional());
+	ITERATOR_LOOP(new IteratorLoopToFunctional()),
+	
+	// Bidirectional Loop Transformation Support (Phase 9)
+	// New enum values for bidirectional loop transformations
+	// Related issues: https://github.com/carstenartur/sandbox/issues/453
+	//                 https://github.com/carstenartur/sandbox/issues/549
+	
+	/**
+	 * Stream → Enhanced for-loop transformation.
+	 * Converts: {@code collection.forEach(item -> ...)} to {@code for (T item : collection) { ... }}
+	 */
+	STREAM_TO_FOR(new StreamToEnhancedFor()),
+	
+	/**
+	 * Stream → Iterator while-loop transformation.
+	 * Converts: {@code collection.forEach(item -> ...)} to {@code Iterator<T> it = c.iterator(); while (it.hasNext()) { T item = it.next(); ... }}
+	 */
+	STREAM_TO_ITERATOR(new StreamToIteratorWhile()),
+	
+	/**
+	 * Iterator while-loop → Enhanced for-loop transformation.
+	 * Converts: {@code Iterator<T> it = c.iterator(); while (it.hasNext()) { T item = it.next(); ... }} to {@code for (T item : collection) { ... }}
+	 */
+	ITERATOR_TO_FOR(new IteratorWhileToEnhancedFor()),
+	
+	/**
+	 * Enhanced for-loop → Iterator while-loop transformation.
+	 * Converts: {@code for (T item : collection) { ... }} to {@code Iterator<T> it = c.iterator(); while (it.hasNext()) { T item = it.next(); ... }}
+	 */
+	FOR_TO_ITERATOR(new EnhancedForToIteratorWhile());
 
 	AbstractFunctionalCall<ASTNode> functionalcall;
 

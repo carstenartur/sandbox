@@ -26,5 +26,13 @@ public class DefaultCleanUpOptionsInitializer implements ICleanUpOptionsInitiali
 		options.setOption(MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_STREAM, CleanUpOptions.TRUE); // default to Stream
 		options.setOption(MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_FOR, CleanUpOptions.FALSE);
 		options.setOption(MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_WHILE, CleanUpOptions.FALSE);
+		
+		// Bidirectional Loop Conversion defaults (Phase 9)
+		options.setOption(MYCleanUpConstants.LOOP_CONVERSION_ENABLED, CleanUpOptions.FALSE);
+		options.setOption(MYCleanUpConstants.LOOP_CONVERSION_TARGET_FORMAT, "stream"); // default target format
+		options.setOption(MYCleanUpConstants.LOOP_CONVERSION_FROM_ENHANCED_FOR, CleanUpOptions.TRUE);
+		options.setOption(MYCleanUpConstants.LOOP_CONVERSION_FROM_ITERATOR_WHILE, CleanUpOptions.TRUE);
+		options.setOption(MYCleanUpConstants.LOOP_CONVERSION_FROM_STREAM, CleanUpOptions.FALSE); // disabled by default (inverse transformation)
+		options.setOption(MYCleanUpConstants.LOOP_CONVERSION_FROM_CLASSIC_FOR, CleanUpOptions.FALSE); // experimental
 	}
 }

@@ -1322,3 +1322,262 @@ SaveActionCleanUpOptionsInitializer: "stream"
 - **README.md**: User-facing documentation
 - **LoopBidirectionalTransformationTest**: Disabled tests showing desired behavior for reverse transformations
 - **LoopTargetFormatTest**: Tests for format selection infrastructure
+
+
+## Phase 9: Bidirectional Loop Transformations (January 2026)
+
+### Overview
+Phase 9 extends the loop conversion system to support bidirectional transformations with a flexible GUI. Users can now:
+- Select a **target format** (Stream, Enhanced-for, or Iterator-while)
+- Enable/disable **source formats** individually (which loop types to convert)
+- Transform loops in multiple directions, not just to Stream API
+
+### Architecture Changes
+
+#### New Constants (MYCleanUpConstants)
+
+**Master Control**:
+- `LOOP_CONVERSION_ENABLED` - Master switch for bidirectional conversions
+- `LOOP_CONVERSION_TARGET_FORMAT` - Selected target format ("stream", "enhanced_for", "iterator_while")
+
+**Source Format Filters**:
+- `LOOP_CONVERSION_FROM_ENHANCED_FOR` - Convert FROM enhanced for-loops
+- `LOOP_CONVERSION_FROM_ITERATOR_WHILE` - Convert FROM iterator while-loops
+- `LOOP_CONVERSION_FROM_STREAM` - Convert FROM stream expressions
+- `LOOP_CONVERSION_FROM_CLASSIC_FOR` - Convert FROM classic for-loops (experimental)
+
+#### New Transformer Classes
+
+All extend `AbstractFunctionalCall<ASTNode>` and implement:
+- `find()` - Scan AST for transformable patterns
+- `rewrite()` - Perform the transformation
+- `getPreview()` - Generate before/after preview
+
+**Transformer Implementations** (Currently stubs):
+
+1. **StreamToEnhancedFor**
+   - Pattern: `collection.forEach(x -> statement)` or `collection.stream().forEach(x -> statement)`
+   - Output: `for (T x : collection) { statement; }`
+   
+2. **StreamToIteratorWhile**
+   - Pattern: `collection.forEach(x -> statement)`
+   - Output: `Iterator<T> it = c.iterator(); while (it.hasNext()) { T x = it.next(); statement; }`
+   
+3. **IteratorWhileToEnhancedFor**
+   - Pattern: `Iterator<T> it = c.iterator(); while (it.hasNext()) { T x = it.next(); ... }`
+   - Output: `for (T x : collection) { ... }`
+   - Challenge: Recovering collection reference from iterator
+   
+4. **EnhancedForToIteratorWhile**
+   - Pattern: `for (T x : collection) { ... }`
+   - Output: `Iterator<T> it = c.iterator(); while (it.hasNext()) { T x = it.next(); ... }`
+
+#### New Enum Values (UseFunctionalCallFixCore)
+
+Added to support bidirectional transformations:
+- `STREAM_TO_FOR` - Uses StreamToEnhancedFor
+- `STREAM_TO_ITERATOR` - Uses StreamToIteratorWhile
+- `ITERATOR_TO_FOR` - Uses IteratorWhileToEnhancedFor
+- `FOR_TO_ITERATOR` - Uses EnhancedForToIteratorWhile
+
+Existing enum values reused:
+- `LOOP` - Enhanced-for → Stream (V1 implementation)
+- `ITERATOR_LOOP` - Iterator-while → Stream
+
+### UI Design
+
+#### Cleanup Preferences Layout
+
+```
+┌─ Loop Conversion ─────────────────────────────────────────┐
+│                                                            │
+│ ☑ Enable bidirectional loop conversions                   │
+│                                                            │
+│   Target format: [Stream ▼]                               │
+│                                                            │
+│   Convert from:                                            │
+│   ☑ Enhanced for-loops (for-each)                         │
+│   ☑ Iterator while-loops                                  │
+│   ☐ Stream expressions (forEach, etc.)                    │
+│   ☐ Classic index-based for-loops (experimental)          │
+│                                                            │
+└────────────────────────────────────────────────────────────┘
+```
+
+**UI Components** (SandboxCodeTabPage):
+1. Master checkbox: Controls entire "Loop Conversion" group
+2. Target format combo: Three options (Stream, Enhanced for-loop, Iterator while-loop)
+3. Source format checkboxes: Four individual toggles
+4. Dependencies: All child controls disabled when master checkbox unchecked
+
+### Transformation Logic
+
+#### computeFixSet() Algorithm
+
+Located in `UseFunctionalCallCleanUpCore.java`:
+
+```java
+private EnumSet<UseFunctionalCallFixCore> computeFixSet() {
+    EnumSet<UseFunctionalCallFixCore> fixSet = EnumSet.noneOf(...);
+    
+    // Legacy mode (backward compatibility)
+    if (isEnabled(USEFUNCTIONALLOOP_CLEANUP)) {
+        fixSet.add(LOOP);
+        fixSet.add(ITERATOR_LOOP);
+    }
+    
+    // Bidirectional mode
+    if (isEnabled(LOOP_CONVERSION_ENABLED)) {
+        String targetFormat = getOptions().get(LOOP_CONVERSION_TARGET_FORMAT);
+        
+        // Enhanced-for as source
+        if (isEnabled(LOOP_CONVERSION_FROM_ENHANCED_FOR)) {
+            if ("stream".equals(targetFormat)) {
+                fixSet.add(LOOP); // Existing transformer
+            } else if ("iterator_while".equals(targetFormat)) {
+                fixSet.add(FOR_TO_ITERATOR); // New transformer
+            }
+        }
+        
+        // Iterator-while as source
+        if (isEnabled(LOOP_CONVERSION_FROM_ITERATOR_WHILE)) {
+            if ("stream".equals(targetFormat)) {
+                fixSet.add(ITERATOR_LOOP); // Existing transformer
+            } else if ("enhanced_for".equals(targetFormat)) {
+                fixSet.add(ITERATOR_TO_FOR); // New transformer
+            }
+        }
+        
+        // Stream as source
+        if (isEnabled(LOOP_CONVERSION_FROM_STREAM)) {
+            if ("enhanced_for".equals(targetFormat)) {
+                fixSet.add(STREAM_TO_FOR); // New transformer
+            } else if ("iterator_while".equals(targetFormat)) {
+                fixSet.add(STREAM_TO_ITERATOR); // New transformer
+            }
+        }
+    }
+    
+    return fixSet;
+}
+```
+
+#### Transformation Matrix
+
+| Source Format | Target: Stream | Target: Enhanced-for | Target: Iterator-while |
+|--------------|---------------|---------------------|----------------------|
+| Enhanced-for | LOOP (existing) | (no-op) | FOR_TO_ITERATOR (new) |
+| Iterator-while | ITERATOR_LOOP (existing) | ITERATOR_TO_FOR (new) | (no-op) |
+| Stream | (no-op) | STREAM_TO_FOR (new) | STREAM_TO_ITERATOR (new) |
+
+### Implementation Status
+
+#### Completed (January 31, 2026)
+- ✅ All constants defined
+- ✅ UI components created and wired
+- ✅ Default options configured
+- ✅ computeFixSet() logic implemented
+- ✅ Enum values added
+- ✅ Stub transformer classes created
+- ✅ Messages internationalized (English)
+
+#### Pending
+- ⏳ Transformer find() implementation
+- ⏳ Transformer rewrite() implementation
+- ⏳ Test enablement in LoopBidirectionalTransformationTest
+- ⏳ German translations (feature_de.properties)
+- ⏳ Stream.toList() immutability handling
+
+### Design Decisions
+
+#### Why Global Target + Source Filters?
+
+**Alternative Considered**: Individual toggle for each source-target pair (9 checkboxes)
+- **Rejected**: Too complex, overwhelming UI, hard to understand
+
+**Chosen Design**: Global target + source filters
+- **Advantages**: 
+  - Clear mental model: "Convert these things TO this format"
+  - Fewer UI elements (1 combo + 4 checkboxes vs 9 checkboxes)
+  - Easier to understand for users
+  - Scales well if more formats added
+
+#### Backward Compatibility
+
+**Legacy Mode**: `USEFUNCTIONALLOOP_CLEANUP` still works
+- Enables LOOP and ITERATOR_LOOP transformers
+- Uses old radio button UI (USEFUNCTIONALLOOP_FORMAT_*)
+- Can coexist with new mode (both can be enabled)
+
+**Migration Path**:
+- Users can continue using old cleanup
+- New cleanup offers more flexibility
+- Eventually, old cleanup can be deprecated
+
+#### Default Settings
+
+- `LOOP_CONVERSION_ENABLED` = FALSE (opt-in)
+- `LOOP_CONVERSION_FROM_ENHANCED_FOR` = TRUE (most common forward transformation)
+- `LOOP_CONVERSION_FROM_ITERATOR_WHILE` = TRUE (modernization)
+- `LOOP_CONVERSION_FROM_STREAM` = FALSE (inverse transformation, less common)
+- Target format = "stream" (modern Java style)
+
+### Known Limitations
+
+1. **Stub Implementations**: All 4 new transformers are empty stubs
+   - They compile but do nothing
+   - Tests cannot be enabled until implemented
+
+2. **Iterator → Enhanced-for Challenge**: 
+   - Pattern: `Iterator<T> it = collection.iterator(); while (...)`
+   - Problem: Need to recover `collection` reference from iterator
+   - Solution: Track variable through data flow analysis
+
+3. **Stream.toList() Immutability**:
+   - `stream.toList()` creates immutable list (Java 16+)
+   - If user later modifies list (.sort(), .add()), code breaks
+   - Solution needed: Usage analysis or fallback to Collectors.toList()
+
+4. **Complex Lambda Bodies**:
+   - Multi-statement lambdas harder to convert back to loops
+   - May need to create block statements
+   - Side effect analysis required
+
+### Testing Strategy
+
+#### Test Files
+- `LoopBidirectionalTransformationTest.java` - 3 disabled tests
+  - `testStreamToFor_forEach()` - Stream → for
+  - `testForToWhile_iterator()` - for → while
+  - `testWhileToFor_iterator()` - while → for
+
+#### Test Enablement Plan
+1. Implement StreamToEnhancedFor
+2. Enable testStreamToFor_forEach
+3. Fix any issues
+4. Repeat for other transformers
+
+### Future Enhancements
+
+1. **Classic For-Loop Support**: Index-based for loops
+   - Pattern: `for (int i = 0; i < n; i++) { ... }`
+   - Complex due to index variable usage analysis
+   
+2. **Multiple Quickfix Proposals**: 
+   - Offer all valid transformations as quickfix options
+   - User chooses at application time
+
+3. **Batch Transformation**:
+   - Transform all loops in file/project
+   - Statistical summary of transformations
+
+4. **Format-Aware Optimization**:
+   - Different optimization strategies per format
+   - Example: Stream might inline lambdas, for-loop might not
+
+### References
+
+- **Issues**: #453, #549
+- **Test File**: `sandbox_functional_converter_test/.../LoopBidirectionalTransformationTest.java`
+- **Design Spec**: `TODO.md` Phase 9 section
+
