@@ -324,6 +324,30 @@ public class Test {
 	}
 }
 """), //$NON-NLS-1$
+	// Test standalone SubProgressMonitor with flags (flags are dropped)
+	StandaloneSubProgressMonitorWithFlags(
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
+public class Test {
+	public void doWork(IProgressMonitor monitor) {
+		IProgressMonitor sub = new SubProgressMonitor(monitor, 50, SubProgressMonitor.SUPPRESS_SUBTASK_LABEL);
+		sub.worked(10);
+	}
+}
+""", //$NON-NLS-1$
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
+public class Test {
+	public void doWork(IProgressMonitor monitor) {
+		IProgressMonitor sub = SubMonitor.convert(monitor, 50);
+		sub.worked(10);
+	}
+}
+"""), //$NON-NLS-1$
 	// Test flag mapping: SUPPRESS_SUBTASK_LABEL -> SUPPRESS_SUBTASK
 	SuppressSubtaskLabelFlag(
 """

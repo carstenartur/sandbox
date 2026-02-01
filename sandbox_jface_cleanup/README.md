@@ -161,6 +161,8 @@ xvfb-run --auto-servernum mvn test -pl sandbox_jface_cleanup_test
 ## Limitations
 
 - Does not automatically remove `done()` calls (SubMonitor handles cleanup automatically)
+- When converting standalone `SubProgressMonitor` instances (created without a surrounding `beginTask`), any style flags are silently ignored, as `SubMonitor.convert()` does not support flags
+- Combined flag expressions using bitwise OR (e.g., `FLAG1 | FLAG2`) or numeric flag literals are not automatically mapped and require manual review
 - Custom SubProgressMonitor subclasses require manual review
 - Some rare edge cases may need manual adjustment
 

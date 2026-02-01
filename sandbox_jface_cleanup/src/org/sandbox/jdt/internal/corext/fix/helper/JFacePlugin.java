@@ -342,9 +342,10 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 					// Add work amount (second arg)
 					convertArgs.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression((Expression) arguments.get(1))));
 					
-					// Handle flags if present (third arg)
-					// Note: SubMonitor.convert() doesn't accept flags, so we ignore them for standalone conversion
-					// The flags would only be relevant for split() calls
+					// Note: SubMonitor.convert() doesn't accept flags (only split() does).
+					// For standalone SubProgressMonitor instances, any flags in the 3rd argument
+					// are intentionally ignored since there's no split() call to apply them to.
+					// This is a known limitation documented in README.md.
 					
 					ASTNodes.replaceButKeepComment(rewrite, submon, convertCall, group);
 					importRemover.removeImport(SubProgressMonitor.class.getCanonicalName());
@@ -493,6 +494,10 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 	 * <li>{@code SubProgressMonitor.PREPEND_MAIN_LABEL_TO_SUBTASK} → removed (no equivalent)</li>
 	 * </ul>
 	 * 
+	 * <p><b>Limitations:</b> This method only handles single flag constants. Combined flag expressions
+	 * using bitwise OR (e.g., {@code FLAG1 | FLAG2}) or numeric literals are not mapped and will be
+	 * passed through unchanged, which may result in incorrect behavior. Such cases require manual review.</p>
+	 * 
 	 * @param flagExpr the original flag expression from SubProgressMonitor constructor
 	 * @param ast the AST to create new nodes
 	 * @param cuRewrite the compilation unit rewrite context
@@ -516,7 +521,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 			}
 		}
 		
-		// Handle field access: SubProgressMonitor.SUPPRESS_SUBTASK_LABEL
+		// Handle FieldAccess syntax (e.g., expression.FIELD_NAME)
 		if (flagExpr instanceof FieldAccess) {
 			FieldAccess fa = (FieldAccess) flagExpr;
 			String fieldName = fa.getName().getIdentifier();
