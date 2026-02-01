@@ -93,12 +93,11 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 		
 		// Register dependencies: enable/disable based on master checkbox
 		// Note: registerSlavePreference only supports specific preference types (CheckboxPreference, RadioPreference)
-		// ComboPreference needs to be registered independently
+		// ComboPreference is created but not registered as a slave (it remains independently enabled)
 		registerSlavePreference(loopConversionEnabled, new CheckboxPreference[] {
 			fromEnhancedFor, fromIteratorWhile, fromStream, fromClassicFor
 		});
 		
 		registerPreference(loopConversionEnabled);
-		registerPreference(targetFormat);
 	}
 }
