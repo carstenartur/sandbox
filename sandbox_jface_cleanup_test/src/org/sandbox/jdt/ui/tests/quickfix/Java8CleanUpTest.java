@@ -298,6 +298,80 @@ public class Test {
 	}
 }
 """), //$NON-NLS-1$
+	// Test standalone SubProgressMonitor (without beginTask)
+	StandaloneSubProgressMonitor(
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
+public class Test {
+	public void doWork(IProgressMonitor monitor) {
+		IProgressMonitor sub = new SubProgressMonitor(monitor, 50);
+		// Use sub monitor
+		sub.worked(10);
+	}
+}
+""", //$NON-NLS-1$
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
+public class Test {
+	public void doWork(IProgressMonitor monitor) {
+		IProgressMonitor sub = SubMonitor.convert(monitor, 50);
+		// Use sub monitor
+		sub.worked(10);
+	}
+}
+"""), //$NON-NLS-1$
+	// Test flag mapping: SUPPRESS_SUBTASK_LABEL -> SUPPRESS_SUBTASK
+	SuppressSubtaskLabelFlag(
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
+public class Test {
+	public void doWork(IProgressMonitor monitor) {
+		monitor.beginTask("Task", 100);
+		IProgressMonitor sub = new SubProgressMonitor(monitor, 50, SubProgressMonitor.SUPPRESS_SUBTASK_LABEL);
+	}
+}
+""", //$NON-NLS-1$
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
+public class Test {
+	public void doWork(IProgressMonitor monitor) {
+		SubMonitor subMonitor=SubMonitor.convert(monitor,"Task",100);
+		IProgressMonitor sub = subMonitor.split(50, SubMonitor.SUPPRESS_SUBTASK);
+	}
+}
+"""), //$NON-NLS-1$
+	// Test PREPEND_MAIN_LABEL_TO_SUBTASK flag is dropped
+	PrependMainLabelToSubtaskFlag(
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
+public class Test {
+	public void doWork(IProgressMonitor monitor) {
+		monitor.beginTask("Task", 100);
+		IProgressMonitor sub = new SubProgressMonitor(monitor, 50, SubProgressMonitor.PREPEND_MAIN_LABEL_TO_SUBTASK);
+	}
+}
+""", //$NON-NLS-1$
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
+public class Test {
+	public void doWork(IProgressMonitor monitor) {
+		SubMonitor subMonitor=SubMonitor.convert(monitor,"Task",100);
+		IProgressMonitor sub = subMonitor.split(50);
+	}
+}
+"""), //$NON-NLS-1$
 	BothImportsCoexist(
 """
 package test;

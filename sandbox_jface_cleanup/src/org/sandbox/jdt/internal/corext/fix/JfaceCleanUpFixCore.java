@@ -75,7 +75,16 @@ public enum JfaceCleanUpFixCore {
 				} else {
 					rangeComputer= new TightSourceRangeComputer();
 				}
-				rangeComputer.addTightSourceNode( hit.get(0).minv);
+				
+				MonitorHolder mh = hit.get(0);
+				// For standalone SubProgressMonitor, use the ClassInstanceCreation node instead of minv
+				if (mh.minv != null) {
+					rangeComputer.addTightSourceNode(mh.minv);
+				} else if (!mh.setofcic.isEmpty()) {
+					// Use the first SubProgressMonitor creation for standalone case
+					rangeComputer.addTightSourceNode(mh.setofcic.iterator().next());
+				}
+				
 				rewrite.setTargetSourceRangeComputer(rangeComputer);
 				jfacefound.rewrite(JfaceCleanUpFixCore.this, hit, cuRewrite, group);
 			}

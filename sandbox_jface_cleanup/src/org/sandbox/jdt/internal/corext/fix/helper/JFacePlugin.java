@@ -33,8 +33,10 @@ import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -91,7 +93,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 	 * Tracks beginTask invocations and associated SubProgressMonitor instances.
 	 */
 	public static class MonitorHolder {
-		/** The beginTask method invocation to be converted */
+		/** The beginTask method invocation to be converted (null for standalone SubProgressMonitor) */
 		public MethodInvocation minv;
 		/** The monitor variable name from beginTask expression */
 		public String minvname;
@@ -99,6 +101,8 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 		public Set<ClassInstanceCreation> setofcic = new HashSet<>();
 		/** Nodes that have been processed to avoid duplicate transformations */
 		public Set<ASTNode> nodesprocessed;
+		/** Whether this is a standalone SubProgressMonitor (without beginTask) */
+		public boolean isStandalone = false;
 	}
 
 	/**
@@ -183,16 +187,12 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 					mh.minv = node;
 					mh.minvname = name;
 					mh.nodesprocessed = nodesprocessed;
+					mh.isStandalone = false;
 					holder.put(holder.size(), mh);
 				}
 				return true;
 			}, s -> ASTNodes.getTypedAncestor(s, Block.class))
 			.callClassInstanceCreationVisitor(SubProgressMonitor.class, (node, holder) -> {
-				// Guard against empty holder
-				if (holder.isEmpty()) {
-					return true;
-				}
-				MonitorHolder mh = holder.get(holder.size() - 1);
 				List<?> arguments = node.arguments();
 				if (arguments.isEmpty()) {
 					return true;
@@ -208,12 +208,34 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 					firstArgName = sn.getIdentifier();
 				}
 				
-				if (firstArgName == null || !mh.minvname.equals(firstArgName)) {
-					return true;
+				// Check if this SubProgressMonitor is associated with a beginTask
+				boolean matchedWithBeginTask = false;
+				if (!holder.isEmpty() && firstArgName != null) {
+					MonitorHolder mh = holder.get(holder.size() - 1);
+					if (mh.minvname.equals(firstArgName)) {
+						logDebug("Found SubProgressMonitor construction at position " + node.getStartPosition() + " for variable '" + firstArgName + "' with beginTask"); //$NON-NLS-1$ //$NON-NLS-2$
+						mh.setofcic.add(node);
+						operations.add(fixcore.rewrite(holder));
+						matchedWithBeginTask = true;
+					}
 				}
-				logDebug("Found SubProgressMonitor construction at position " + node.getStartPosition() + " for variable '" + firstArgName + "'"); //$NON-NLS-1$ //$NON-NLS-2$
-				mh.setofcic.add(node);
-				operations.add(fixcore.rewrite(holder));
+				
+				// If not matched with beginTask, treat as standalone SubProgressMonitor
+				if (!matchedWithBeginTask) {
+					logDebug("Found standalone SubProgressMonitor construction at position " + node.getStartPosition()); //$NON-NLS-1$
+					// Create a standalone holder for this
+					MonitorHolder mh = new MonitorHolder();
+					mh.minv = null; // No beginTask for standalone
+					mh.isStandalone = true;
+					mh.nodesprocessed = nodesprocessed;
+					mh.setofcic.add(node);
+					
+					// Create a holder with just this standalone monitor
+					ReferenceHolder<Integer, MonitorHolder> standaloneHolder = new ReferenceHolder<>();
+					standaloneHolder.put(0, mh);
+					operations.add(fixcore.rewrite(standaloneHolder));
+				}
+				
 				return true;
 			})
 			.build(compilationUnit);
@@ -263,6 +285,54 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 		for (Entry<Integer, MonitorHolder> entry : hit.entrySet()) {
 
 			MonitorHolder mh = entry.getValue();
+			
+			// Handle standalone SubProgressMonitor (without beginTask)
+			if (mh.isStandalone) {
+				for (ClassInstanceCreation submon : mh.setofcic) {
+					if (nodesprocessed.contains(submon)) {
+						continue;
+					}
+					nodesprocessed.add(submon);
+					
+					List<?> arguments = submon.arguments();
+					if (arguments.size() < 2) {
+						continue;
+					}
+					
+					logDebug("Rewriting standalone SubProgressMonitor at position " + submon.getStartPosition()); //$NON-NLS-1$
+					
+					/**
+					 * Convert standalone SubProgressMonitor to SubMonitor.convert:
+					 * 
+					 * new SubProgressMonitor(monitor, work)
+					 *   -> SubMonitor.convert(monitor, work)
+					 * 
+					 * new SubProgressMonitor(monitor, work, flags)
+					 *   -> SubMonitor.convert(monitor, work) with mapped flags
+					 */
+					MethodInvocation convertCall = ast.newMethodInvocation();
+					convertCall.setExpression(ASTNodeFactory.newName(ast, SubMonitor.class.getSimpleName()));
+					convertCall.setName(ast.newSimpleName("convert")); //$NON-NLS-1$
+					List<ASTNode> convertArgs = convertCall.arguments();
+					
+					// Add monitor argument (first arg)
+					convertArgs.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression((Expression) arguments.get(0))));
+					
+					// Add work amount (second arg)
+					convertArgs.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression((Expression) arguments.get(1))));
+					
+					// Handle flags if present (third arg)
+					// Note: SubMonitor.convert() doesn't accept flags, so we ignore them for standalone conversion
+					// The flags would only be relevant for split() calls
+					
+					ASTNodes.replaceButKeepComment(rewrite, submon, convertCall, group);
+					importRemover.removeImport(SubProgressMonitor.class.getCanonicalName());
+					addImport(SubMonitor.class.getCanonicalName(), cuRewrite, ast);
+				}
+				continue;
+			}
+			
+			// Handle beginTask + SubProgressMonitor pattern
 			MethodInvocation minv = mh.minv;
 			
 			// Generate unique identifier name for SubMonitor variable
@@ -312,6 +382,11 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 			}
 			
 			for (ClassInstanceCreation submon : mh.setofcic) {
+				if (nodesprocessed.contains(submon)) {
+					continue;
+				}
+				nodesprocessed.add(submon);
+				
 				List<?> arguments = submon.arguments();
 				if (arguments.size() < 2) {
 					continue;
@@ -327,7 +402,11 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				 *   -> subMonitor.split(work)
 				 *   
 				 * 3-arg: new SubProgressMonitor(monitor, work, flags)
-				 *   -> subMonitor.split(work, flags)
+				 *   -> subMonitor.split(work, mappedFlags)
+				 *   
+				 * Flag mapping:
+				 *   - SUPPRESS_SUBTASK_LABEL -> SUPPRESS_SUBTASK
+				 *   - PREPEND_MAIN_LABEL_TO_SUBTASK -> dropped (no equivalent)
 				 */
 				MethodInvocation newMethodInvocation2 = ast.newMethodInvocation();
 				newMethodInvocation2.setName(ast.newSimpleName("split")); //$NON-NLS-1$
@@ -340,8 +419,13 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				
 				// Check for 3-arg constructor (with flags)
 				if (arguments.size() >= 3) {
-					ASTNode flagsArg = (ASTNode) arguments.get(2);
-					splitCallArguments.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(flagsArg)));
+					Expression flagsArg = (Expression) arguments.get(2);
+					Expression mappedFlag = mapSubProgressMonitorFlags(flagsArg, ast, cuRewrite);
+					
+					// Only add the flag if it wasn't dropped (PREPEND_MAIN_LABEL_TO_SUBTASK is dropped)
+					if (mappedFlag != null) {
+						splitCallArguments.add(mappedFlag);
+					}
 				}
 				
 				ASTNodes.replaceButKeepComment(rewrite, submon, newMethodInvocation2, group);
@@ -377,6 +461,59 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 			candidate = baseName + counter;
 		}
 		return candidate;
+	}
+
+	/**
+	 * Maps SubProgressMonitor flags to SubMonitor flags.
+	 * 
+	 * <p>Flag mappings:</p>
+	 * <ul>
+	 * <li>{@code SubProgressMonitor.SUPPRESS_SUBTASK_LABEL} → {@code SubMonitor.SUPPRESS_SUBTASK}</li>
+	 * <li>{@code SubProgressMonitor.PREPEND_MAIN_LABEL_TO_SUBTASK} → removed (no equivalent)</li>
+	 * </ul>
+	 * 
+	 * @param flagExpr the original flag expression from SubProgressMonitor constructor
+	 * @param ast the AST to create new nodes
+	 * @param cuRewrite the compilation unit rewrite context
+	 * @return the mapped flag expression for SubMonitor, or null if flag should be dropped
+	 */
+	private Expression mapSubProgressMonitorFlags(Expression flagExpr, AST ast, CompilationUnitRewrite cuRewrite) {
+		// Handle field access: SubProgressMonitor.SUPPRESS_SUBTASK_LABEL
+		if (flagExpr instanceof QualifiedName) {
+			QualifiedName qn = (QualifiedName) flagExpr;
+			String fieldName = qn.getName().getIdentifier();
+			
+			if ("SUPPRESS_SUBTASK_LABEL".equals(fieldName)) { //$NON-NLS-1$
+				// Map to SubMonitor.SUPPRESS_SUBTASK
+				QualifiedName newFlag = ast.newQualifiedName(
+					ast.newSimpleName(SubMonitor.class.getSimpleName()),
+					ast.newSimpleName("SUPPRESS_SUBTASK")); //$NON-NLS-1$
+				return newFlag;
+			} else if ("PREPEND_MAIN_LABEL_TO_SUBTASK".equals(fieldName)) { //$NON-NLS-1$
+				// Drop this flag - no equivalent in SubMonitor
+				return null;
+			}
+		}
+		
+		// Handle field access: SubProgressMonitor.SUPPRESS_SUBTASK_LABEL
+		if (flagExpr instanceof FieldAccess) {
+			FieldAccess fa = (FieldAccess) flagExpr;
+			String fieldName = fa.getName().getIdentifier();
+			
+			if ("SUPPRESS_SUBTASK_LABEL".equals(fieldName)) { //$NON-NLS-1$
+				// Map to SubMonitor.SUPPRESS_SUBTASK
+				FieldAccess newFlag = ast.newFieldAccess();
+				newFlag.setExpression(ast.newSimpleName(SubMonitor.class.getSimpleName()));
+				newFlag.setName(ast.newSimpleName("SUPPRESS_SUBTASK")); //$NON-NLS-1$
+				return newFlag;
+			} else if ("PREPEND_MAIN_LABEL_TO_SUBTASK".equals(fieldName)) { //$NON-NLS-1$
+				// Drop this flag - no equivalent in SubMonitor
+				return null;
+			}
+		}
+		
+		// For other expressions (constants, variables), pass through unchanged
+		return ASTNodes.createMoveTarget(cuRewrite.getASTRewrite(), ASTNodes.getUnparenthesedExpression(flagExpr));
 	}
 
 	@Override
