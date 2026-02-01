@@ -9,7 +9,9 @@ The **JFace Cleanup** plugin modernizes Eclipse JFace code by migrating deprecat
 ## Key Features
 
 - 🔄 **SubProgressMonitor → SubMonitor** - Automatic migration to modern progress API
-- 🎯 **Style Flag Handling** - Properly converts `PREPEND_MAIN_LABEL_TO_SUBTASK` flag
+- 🎯 **Style Flag Mapping** - Maps `SUPPRESS_SUBTASK_LABEL` to `SUPPRESS_SUBTASK`
+- 🗑️ **Flag Dropping** - Removes `PREPEND_MAIN_LABEL_TO_SUBTASK` (no SubMonitor equivalent)
+- 🔧 **Standalone Conversion** - Handles SubProgressMonitor without preceding beginTask()
 - 📦 **Variable Name Management** - Generates unique variable names to avoid conflicts
 - ♻️ **Idempotent** - Running cleanup multiple times produces the same result
 - 🔌 **Eclipse Integration** - Works seamlessly with Eclipse RCP/JFace code
@@ -33,15 +35,28 @@ SubProgressMonitor subMonitor = new SubProgressMonitor(monitor, 100);
 SubMonitor subMonitor = SubMonitor.convert(monitor, 100);
 ```
 
-**With Style Flags:**
+**With SUPPRESS_SUBTASK_LABEL Flag:**
 ```java
 // Before
+monitor.beginTask("Task", 100);
+SubProgressMonitor sub = new SubProgressMonitor(
+    monitor, 50, SubProgressMonitor.SUPPRESS_SUBTASK_LABEL);
+
+// After
+SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
+IProgressMonitor sub = subMonitor.split(50, SubMonitor.SUPPRESS_SUBTASK);
+```
+
+**With PREPEND_MAIN_LABEL_TO_SUBTASK Flag (Dropped):**
+```java
+// Before
+monitor.beginTask("Task", 100);
 SubProgressMonitor sub = new SubProgressMonitor(
     monitor, 50, SubProgressMonitor.PREPEND_MAIN_LABEL_TO_SUBTASK);
 
-// After
-SubMonitor sub = SubMonitor.convert(monitor, 50)
-    .setWorkRemaining(50);
+// After - flag is dropped as there's no equivalent in SubMonitor
+SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
+IProgressMonitor sub = subMonitor.split(50);
 ```
 
 **Unique Variable Names:**
@@ -67,12 +82,20 @@ new SubProgressMonitor(monitor, ticks)
 SubMonitor.convert(monitor, ticks)
 ```
 
-With style flag `PREPEND_MAIN_LABEL_TO_SUBTASK`:
+With `SUPPRESS_SUBTASK_LABEL` flag:
+
+```
+new SubProgressMonitor(monitor, ticks, SubProgressMonitor.SUPPRESS_SUBTASK_LABEL)
+    ↓ (in beginTask context)
+subMonitor.split(ticks, SubMonitor.SUPPRESS_SUBTASK)
+```
+
+With `PREPEND_MAIN_LABEL_TO_SUBTASK` flag:
 
 ```
 new SubProgressMonitor(monitor, ticks, SubProgressMonitor.PREPEND_MAIN_LABEL_TO_SUBTASK)
-    ↓
-SubMonitor.convert(monitor, ticks).setWorkRemaining(ticks)
+    ↓ (flag is dropped - no equivalent in SubMonitor)
+subMonitor.split(ticks)
 ```
 
 ## Why Migrate?
@@ -137,7 +160,7 @@ xvfb-run --auto-servernum mvn test -pl sandbox_jface_cleanup_test
 
 ## Limitations
 
-- Does not handle complex style flag combinations (only `PREPEND_MAIN_LABEL_TO_SUBTASK`)
+- Does not automatically remove `done()` calls (SubMonitor handles cleanup automatically)
 - Custom SubProgressMonitor subclasses require manual review
 - Some rare edge cases may need manual adjustment
 
