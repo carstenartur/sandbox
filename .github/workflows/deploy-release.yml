@@ -86,19 +86,15 @@ jobs:
     - name: Update non-Tycho module versions
       run: |
         echo "Updating non-Tycho module versions to ${{ inputs.release_version }}..."
-        # Update sandbox-functional-converter-core
+        # sandbox-functional-converter-core now inherits version from parent, updated by Tycho
+        # Update sandbox-benchmarks (standalone module, only in benchmark profile)
         mvn versions:set -DnewVersion=${{ inputs.release_version }} \
-          -pl sandbox-functional-converter-core \
-          -DgenerateBackupPoms=false \
-          -DprocessAllModules=false
-        # Update sandbox-benchmarks (uses its own version scheme, sync with main version)
-        mvn versions:set -DnewVersion=${{ inputs.release_version }} \
-          -pl sandbox-benchmarks \
+          -pl sandbox-benchmarks -Pbenchmark \
           -DgenerateBackupPoms=false \
           -DprocessAllModules=false
         # Update dependency reference in sandbox-benchmarks
         mvn versions:use-dep-version \
-          -pl sandbox-benchmarks \
+          -pl sandbox-benchmarks -Pbenchmark \
           -Dincludes=org.sandbox:sandbox-functional-converter-core \
           -DdepVersion=${{ inputs.release_version }} \
           -DgenerateBackupPoms=false
@@ -270,16 +266,14 @@ jobs:
       run: |
         cd $GITHUB_WORKSPACE
         echo "Bumping non-Tycho module versions to ${{ inputs.next_snapshot_version }}..."
+        # sandbox-functional-converter-core now inherits version from parent, updated by Tycho
+        # Update sandbox-benchmarks (standalone module, only in benchmark profile)
         mvn versions:set -DnewVersion=${{ inputs.next_snapshot_version }} \
-          -pl sandbox-functional-converter-core \
-          -DgenerateBackupPoms=false \
-          -DprocessAllModules=false
-        mvn versions:set -DnewVersion=${{ inputs.next_snapshot_version }} \
-          -pl sandbox-benchmarks \
+          -pl sandbox-benchmarks -Pbenchmark \
           -DgenerateBackupPoms=false \
           -DprocessAllModules=false
         mvn versions:use-dep-version \
-          -pl sandbox-benchmarks \
+          -pl sandbox-benchmarks -Pbenchmark \
           -Dincludes=org.sandbox:sandbox-functional-converter-core \
           -DdepVersion=${{ inputs.next_snapshot_version }} \
           -DgenerateBackupPoms=false
