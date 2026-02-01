@@ -16,12 +16,10 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
 import java.util.List;
-import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Block;
-import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.LambdaExpression;
@@ -35,12 +33,8 @@ import org.eclipse.jdt.core.dom.TypeLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
-import org.sandbox.jdt.internal.common.HelperVisitor;
-import org.sandbox.jdt.internal.common.ReferenceHolder;
-import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
-import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTestAnnotationParameterPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 /**
@@ -64,54 +58,17 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
  * }
  * </pre>
  */
-public class TestExpectedJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
+public class TestExpectedJUnitPlugin extends AbstractTestAnnotationParameterPlugin {
 
 	@Override
-	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataHolder = new ReferenceHolder<>();
-		HelperVisitor.forAnnotation(ORG_JUNIT_TEST)
-			.in(compilationUnit)
-			.excluding(nodesprocessed)
-			.processEach(dataHolder, (visited, aholder) -> {
-				if (visited instanceof NormalAnnotation) {
-					return processFoundNode(fixcore, operations, (NormalAnnotation) visited, aholder);
-				}
-				return true;
-			});
+	protected String getParameterName() {
+		return "expected";
 	}
 
-	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, NormalAnnotation node,
-			ReferenceHolder<Integer, JunitHolder> dataHolder) {
-		
-		// Check if this @Test annotation has an "expected" parameter
-		MemberValuePair expectedPair = null;
-		Expression expectedValue = null;
-		
-		@SuppressWarnings("unchecked")
-		List<MemberValuePair> values = node.values();
-		for (MemberValuePair pair : values) {
-			if ("expected".equals(pair.getName().getIdentifier())) {
-				expectedPair = pair;
-				expectedValue = pair.getValue();
-				break;
-			}
-		}
-		
-		// Only process if we found an expected parameter
-		if (expectedPair != null && expectedValue != null) {
-			JunitHolder mh = new JunitHolder();
-			mh.minv = node;
-			mh.minvname = node.getTypeName().getFullyQualifiedName();
-			mh.additionalInfo = expectedPair; // Store the expected pair for removal
-			dataHolder.put(dataHolder.size(), mh);
-			operations.add(fixcore.rewrite(dataHolder));
-		}
-		
-		// Return true to continue processing other annotations
-		// The fluent API interprets false as "stop processing all nodes"
-		return true;
+	@Override
+	protected boolean validateParameter(MemberValuePair pair) {
+		// Only process TypeLiteral values (e.g., Exception.class)
+		return pair.getValue() instanceof TypeLiteral;
 	}
 
 	@Override
@@ -198,6 +155,18 @@ public class TestExpectedJUnitPlugin extends AbstractTool<ReferenceHolder<Intege
 		
 		if (remainingParams == 0) {
 			// No other meaningful parameters remain, convert to marker annotation @Test
+			MarkerAnnotation markerTestAnnotation = ast.newMarkerAnnotation();
+			markerTestAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_TEST));
+			ASTNodes.replaceButKeepComment(rewriter, testAnnotation, markerTestAnnotation, group);
+		} else {
+			rewriter.remove(expectedPair, group);
+		}
+		
+		// Add imports - order matters: remove old import first, then add new imports
+		importRewriter.removeImport(ORG_JUNIT_TEST);
+		importRewriter.addImport(ORG_JUNIT_JUPITER_TEST);
+		importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, METHOD_ASSERT_THROWS, false);
+	}
 			MarkerAnnotation markerTestAnnotation = ast.newMarkerAnnotation();
 			markerTestAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_TEST));
 			ASTNodes.replaceButKeepComment(rewriter, testAnnotation, markerTestAnnotation, group);
