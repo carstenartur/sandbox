@@ -68,7 +68,7 @@ jobs:
 
     - name: Build with Coverage
       if: github.event_name != 'schedule' || steps.check_commits.outputs.has_commits == 'true'
-      run: xvfb-run --auto-servernum mvn -e -V -T 1C --batch-mode -Dtycho.localArtifacts=ignore -Pjacoco,product,repo clean verify
+      run: xvfb-run --auto-servernum mvn -e -V -T 1C --batch-mode -Dtycho.localArtifacts=ignore -Pjacoco,product,repo,benchmark clean verify
 
     - name: Cleanup xvfb
       if: github.event_name != 'schedule' || steps.check_commits.outputs.has_commits == 'true'

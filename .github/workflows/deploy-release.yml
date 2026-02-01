@@ -80,8 +80,8 @@ jobs:
         TYCHO_VERSION=$(mvn -q -DforceStdout help:evaluate -Dexpression=tycho-version)
         echo "Using Tycho version ${TYCHO_VERSION} from pom.xml"
         echo "Setting version to ${{ inputs.release_version }}"
-        # Include benchmark profile to update sandbox-benchmarks which inherits version from parent
-        mvn org.eclipse.tycho:tycho-versions-plugin:${TYCHO_VERSION}:set-version -DnewVersion=${{ inputs.release_version }} -Pbenchmark
+        # Include benchmark and jacoco profiles to update all modules that inherit version from parent
+        mvn org.eclipse.tycho:tycho-versions-plugin:${TYCHO_VERSION}:set-version -DnewVersion=${{ inputs.release_version }} -Pbenchmark,jacoco
 
 
 
@@ -89,8 +89,9 @@ jobs:
     - name: Verify version update
       run: |
         echo "Checking for remaining SNAPSHOT references..."
-        # Check all version-related files for SNAPSHOT (no exclusions)
-        if grep -r "SNAPSHOT" --include="pom.xml" --include="MANIFEST.MF" --include="feature.xml" --include="*.product" .; then
+        # Check all version-related files for SNAPSHOT, excluding test resources
+        if grep -r "SNAPSHOT" --include="pom.xml" --include="MANIFEST.MF" --include="feature.xml" --include="*.product" \
+           --exclude-dir="src" .; then
           echo "ERROR: Found remaining SNAPSHOT references!"
           echo "All modules must be updated to release version."
           exit 1
@@ -245,8 +246,8 @@ jobs:
         TYCHO_VERSION=$(mvn -q -DforceStdout help:evaluate -Dexpression=tycho-version)
         echo "Using Tycho versions plugin ${TYCHO_VERSION}"
         echo "Bumping version to ${{ inputs.next_snapshot_version }}"
-        # Include benchmark profile to update sandbox-benchmarks which inherits version from parent
-        mvn org.eclipse.tycho:tycho-versions-plugin:${TYCHO_VERSION}:set-version -DnewVersion=${{ inputs.next_snapshot_version }} -Pbenchmark
+        # Include benchmark and jacoco profiles to update all modules that inherit version from parent
+        mvn org.eclipse.tycho:tycho-versions-plugin:${TYCHO_VERSION}:set-version -DnewVersion=${{ inputs.next_snapshot_version }} -Pbenchmark,jacoco
 
 
 
