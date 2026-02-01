@@ -2,7 +2,7 @@
 <feature
       id="sandbox_triggerpattern_feature"
       label="Sandbox TriggerPattern Cleanups Feature"
-      version="1.2.3"
+      version="1.2.3.qualifier"
       provider-name="sandbox"
       plugin="sandbox_triggerpattern">
 

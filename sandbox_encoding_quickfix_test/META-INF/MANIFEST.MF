@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: Tool tests
 Bundle-SymbolicName: sandbox_encoding_quickfix_test;singleton:=true
 Bundle-Vendor: sandbox
-Bundle-Version: 1.2.3
+Bundle-Version: 1.2.3.qualifier
 Fragment-Host: sandbox_encoding_quickfix
 Bundle-RequiredExecutionEnvironment: JavaSE-21
 Require-Bundle: org.junit,
