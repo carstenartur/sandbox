@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -247,6 +248,67 @@ public class JavaHelperViewTest {
 		assertTrue(foundX, "Should have found variable 'x'");
 		assertTrue(foundY, "Should have found variable 'y'");
 		assertTrue(foundZ, "Should have found variable 'z'");
+	}
+
+	/**
+	 * Regression test: Verify that passing IJavaElement (not IResource) to the content
+	 * provider correctly returns variable bindings. This tests the fix for the bug where
+	 * updateViewFromActiveEditor() was converting IJavaElement to IResource before passing
+	 * to the provider, causing variables not to display.
+	 */
+	@Test
+	public void testContentProviderWithIJavaElementVsIResource() throws Exception {
+		// Create a simple package and compilation unit
+		IPackageFragment pack = sourceFolder.createPackageFragment("test", false, null);
+		String testCode = """
+			package test;
+			public class TestJavaElement {
+				public void method() {
+					String variable1 = "test";
+					int variable2 = 100;
+				}
+			}
+			""";
+		
+		ICompilationUnit cu = pack.createCompilationUnit("TestJavaElement.java", testCode, false, null);
+		
+		JHViewContentProvider provider = new JHViewContentProvider();
+		try {
+			// Test 1: IJavaElement (ICompilationUnit) should return variable bindings
+			Object[] elementsFromJavaElement = provider.getElements(Collections.singletonList(cu));
+			
+			assertNotNull(elementsFromJavaElement, "Elements should not be null when IJavaElement is passed");
+			assertTrue(elementsFromJavaElement.length > 0, "Should find elements when IJavaElement is passed");
+			
+			// Verify we found variables from the IJavaElement
+			boolean foundVariableFromJavaElement = false;
+			for (Object element : elementsFromJavaElement) {
+				assertTrue(element instanceof IVariableBinding, 
+					"Elements should be IVariableBinding instances");
+				IVariableBinding binding = (IVariableBinding) element;
+				String varName = binding.getName();
+				if ("variable1".equals(varName) || "variable2".equals(varName)) {
+					foundVariableFromJavaElement = true;
+					break;
+				}
+			}
+			assertTrue(foundVariableFromJavaElement, 
+				"Should find variables when IJavaElement (ICompilationUnit) is passed");
+			
+			// Test 2: IResource should NOT return variable bindings (regression test)
+			// This was the bug: passing IResource instead of IJavaElement
+			IResource resource = cu.getResource();
+			assertNotNull(resource, "IResource should exist for the compilation unit");
+			
+			Object[] elementsFromResource = provider.getElements(Collections.singletonList(resource));
+			
+			// IResource input doesn't match the JavaElement instanceof check in the provider,
+			// so no variables should be returned
+			assertTrue(elementsFromResource.length == 0, 
+				"Should not find variable bindings when IResource is passed (this was the bug)");
+		} finally {
+			provider.dispose();
+		}
 	}
 
 	// Helper methods

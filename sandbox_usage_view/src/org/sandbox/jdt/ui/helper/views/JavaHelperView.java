@@ -102,6 +102,8 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 
 	private IPartListener2 partListener;
 
+	private IJavaElement currentInput = null;
+
 	@Override
 	public void createPartControl(Composite parent) {
 		parent.setLayout(new GridLayout(1, false));
@@ -478,6 +480,10 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 		setInput(Collections.singletonList(iResource));
 	}
 
+	void setSingleInput(IJavaElement javaElement) {
+		setInput(Collections.singletonList(javaElement));
+	}
+
 	Object getElementOfInput(IEditorInput input) {
 		Object adapted= input.getAdapter(IClassFile.class);
 		if (adapted != null) {
@@ -518,6 +524,19 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 		//		fInput = new JERoot(javaElementsOrResources);
 		//		tableViewer.setInput(fInput);
 		tableViewer.setInput(javaElementsOrResources);
+		
+		// Clear the editor input cache if the input is not a single IJavaElement
+		// This ensures the view will refresh when switching back to an editor after
+		// actions like reset() or fElementAtAction that set IResource inputs
+		if (javaElementsOrResources != null && javaElementsOrResources.size() == 1) {
+			Object input = javaElementsOrResources.get(0);
+			if (!(input instanceof IJavaElement)) {
+				currentInput = null;
+			}
+		} else {
+			currentInput = null;
+		}
+		
 		JHViewContentProvider tcp= (JHViewContentProvider) tableViewer.getContentProvider();
 		Object[] elements= tcp.getElements(javaElementsOrResources);
 		if (elements.length > 0) {
@@ -619,11 +638,9 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 		}
 
 		IJavaElement javaElement = input.getAdapter(IJavaElement.class);
-		if (javaElement != null) {
-			IResource correspondingResource = javaElement.getResource();
-			if (correspondingResource != null) {
-				setSingleInput(correspondingResource);
-			}
+		if (javaElement != null && !javaElement.equals(currentInput)) {
+			currentInput = javaElement;
+			setSingleInput(javaElement);
 		}
 	}
 
