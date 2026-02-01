@@ -687,6 +687,17 @@ See README.md for more information.
 				</plugins>
 			</build>
 		</profile>
+		
+		<!-- Benchmark profile: JMH performance benchmarks -->
+		<profile>
+			<id>benchmark</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+			<modules>
+				<module>sandbox-benchmarks</module>
+			</modules>
+		</profile>
 	</profiles>
 </project>
 
