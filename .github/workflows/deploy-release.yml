@@ -93,12 +93,12 @@ jobs:
           -DprocessAllModules=false
         # Update sandbox-benchmarks (uses its own version scheme, sync with main version)
         mvn versions:set -DnewVersion=${{ inputs.release_version }} \
-          -pl sandbox-benchmarks \
+          -pl sandbox-benchmarks -Pbenchmark \
           -DgenerateBackupPoms=false \
           -DprocessAllModules=false
         # Update dependency reference in sandbox-benchmarks
         mvn versions:use-dep-version \
-          -pl sandbox-benchmarks \
+          -pl sandbox-benchmarks -Pbenchmark \
           -Dincludes=org.sandbox:sandbox-functional-converter-core \
           -DdepVersion=${{ inputs.release_version }} \
           -DgenerateBackupPoms=false
@@ -275,11 +275,11 @@ jobs:
           -DgenerateBackupPoms=false \
           -DprocessAllModules=false
         mvn versions:set -DnewVersion=${{ inputs.next_snapshot_version }} \
-          -pl sandbox-benchmarks \
+          -pl sandbox-benchmarks -Pbenchmark \
           -DgenerateBackupPoms=false \
           -DprocessAllModules=false
         mvn versions:use-dep-version \
-          -pl sandbox-benchmarks \
+          -pl sandbox-benchmarks -Pbenchmark \
           -Dincludes=org.sandbox:sandbox-functional-converter-core \
           -DdepVersion=${{ inputs.next_snapshot_version }} \
           -DgenerateBackupPoms=false
