@@ -128,7 +128,7 @@ class VariableInfoTest {
 		TypeInfo stringType = TypeInfo.Builder.of("java.lang.String").build();
 		assertThatThrownBy(() -> new VariableInfo("", stringType, Set.of(), false, false))
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("Variable name cannot be null");
+			.hasMessageContaining("Variable name cannot be empty");
 	}
 	
 	@Test

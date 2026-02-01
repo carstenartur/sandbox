@@ -184,7 +184,7 @@ class TypeInfoTest {
 	void testValidation_emptyQualifiedName() {
 		assertThatThrownBy(() -> new TypeInfo("", "String", List.of(), false, false, 0))
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("Qualified name cannot be null");
+			.hasMessageContaining("Qualified name cannot be empty");
 	}
 	
 	@Test

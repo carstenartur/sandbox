@@ -16,6 +16,7 @@ package org.sandbox.ast.api.info;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Immutable record representing a Java type.
@@ -30,6 +31,38 @@ public record TypeInfo(
 	int arrayDimensions
 ) {
 	
+	private static final Set<String> COLLECTION_TYPES = Set.of(
+		"java.util.Collection",
+		"java.util.List",
+		"java.util.Set",
+		"java.util.Queue",
+		"java.util.Deque",
+		"java.util.ArrayList",
+		"java.util.LinkedList",
+		"java.util.HashSet",
+		"java.util.TreeSet"
+	);
+	
+	private static final Set<String> LIST_TYPES = Set.of(
+		"java.util.List",
+		"java.util.ArrayList",
+		"java.util.LinkedList"
+	);
+	
+	private static final Set<String> STREAM_TYPES = Set.of(
+		"java.util.stream.Stream",
+		"java.util.stream.IntStream",
+		"java.util.stream.LongStream",
+		"java.util.stream.DoubleStream"
+	);
+	
+	private static final Set<String> OPTIONAL_TYPES = Set.of(
+		"java.util.Optional",
+		"java.util.OptionalInt",
+		"java.util.OptionalLong",
+		"java.util.OptionalDouble"
+	);
+	
 	/**
 	 * Creates a TypeInfo record.
 	 * 
@@ -41,11 +74,17 @@ public record TypeInfo(
 	 * @param arrayDimensions number of array dimensions
 	 */
 	public TypeInfo {
-		if (qualifiedName == null || qualifiedName.isEmpty()) {
-			throw new IllegalArgumentException("Qualified name cannot be null or empty");
+		if (qualifiedName == null) {
+			throw new IllegalArgumentException("Qualified name cannot be null");
 		}
-		if (simpleName == null || simpleName.isEmpty()) {
-			throw new IllegalArgumentException("Simple name cannot be null or empty");
+		if (qualifiedName.isEmpty()) {
+			throw new IllegalArgumentException("Qualified name cannot be empty");
+		}
+		if (simpleName == null) {
+			throw new IllegalArgumentException("Simple name cannot be null");
+		}
+		if (simpleName.isEmpty()) {
+			throw new IllegalArgumentException("Simple name cannot be empty");
 		}
 		typeArguments = typeArguments == null ? List.of() : List.copyOf(typeArguments);
 		if (arrayDimensions < 0) {
@@ -79,15 +118,7 @@ public record TypeInfo(
 	 * @return true if collection type
 	 */
 	public boolean isCollection() {
-		return qualifiedName.equals("java.util.Collection") ||
-			   qualifiedName.equals("java.util.List") ||
-			   qualifiedName.equals("java.util.Set") ||
-			   qualifiedName.equals("java.util.Queue") ||
-			   qualifiedName.equals("java.util.Deque") ||
-			   qualifiedName.equals("java.util.ArrayList") ||
-			   qualifiedName.equals("java.util.LinkedList") ||
-			   qualifiedName.equals("java.util.HashSet") ||
-			   qualifiedName.equals("java.util.TreeSet");
+		return COLLECTION_TYPES.contains(qualifiedName);
 	}
 	
 	/**
@@ -96,9 +127,7 @@ public record TypeInfo(
 	 * @return true if List type
 	 */
 	public boolean isList() {
-		return qualifiedName.equals("java.util.List") ||
-			   qualifiedName.equals("java.util.ArrayList") ||
-			   qualifiedName.equals("java.util.LinkedList");
+		return LIST_TYPES.contains(qualifiedName);
 	}
 	
 	/**
@@ -107,10 +136,7 @@ public record TypeInfo(
 	 * @return true if Stream type
 	 */
 	public boolean isStream() {
-		return qualifiedName.equals("java.util.stream.Stream") ||
-			   qualifiedName.equals("java.util.stream.IntStream") ||
-			   qualifiedName.equals("java.util.stream.LongStream") ||
-			   qualifiedName.equals("java.util.stream.DoubleStream");
+		return STREAM_TYPES.contains(qualifiedName);
 	}
 	
 	/**
@@ -119,10 +145,7 @@ public record TypeInfo(
 	 * @return true if Optional type
 	 */
 	public boolean isOptional() {
-		return qualifiedName.equals("java.util.Optional") ||
-			   qualifiedName.equals("java.util.OptionalInt") ||
-			   qualifiedName.equals("java.util.OptionalLong") ||
-			   qualifiedName.equals("java.util.OptionalDouble");
+		return OPTIONAL_TYPES.contains(qualifiedName);
 	}
 	
 	/**
@@ -229,7 +252,7 @@ public record TypeInfo(
 	public static class Builder {
 		private String qualifiedName;
 		private String simpleName;
-		private List<TypeInfo> typeArguments = List.of();
+		private List<TypeInfo> typeArguments = new java.util.ArrayList<>();
 		private boolean isPrimitive;
 		private boolean isArray;
 		private int arrayDimensions;
@@ -290,11 +313,6 @@ public record TypeInfo(
 		 * @return this builder
 		 */
 		public Builder addTypeArgument(TypeInfo typeArgument) {
-			if (typeArguments.isEmpty()) {
-				typeArguments = new java.util.ArrayList<>();
-			} else if (!(typeArguments instanceof java.util.ArrayList)) {
-				typeArguments = new java.util.ArrayList<>(typeArguments);
-			}
 			typeArguments.add(typeArgument);
 			return this;
 		}

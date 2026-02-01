@@ -36,8 +36,11 @@ public record VariableInfo(
 	 * @param isParameter true if this is a parameter
 	 */
 	public VariableInfo {
-		if (name == null || name.isEmpty()) {
-			throw new IllegalArgumentException("Variable name cannot be null or empty");
+		if (name == null) {
+			throw new IllegalArgumentException("Variable name cannot be null");
+		}
+		if (name.isEmpty()) {
+			throw new IllegalArgumentException("Variable name cannot be empty");
 		}
 		if (type == null) {
 			throw new IllegalArgumentException("Variable type cannot be null");

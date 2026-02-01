@@ -52,7 +52,7 @@ public class PatternMatchingStyleBenchmark {
 		if (!methodName.equals("max")) {
 			return false;
 		}
-		if (declaringType == null || !declaringType.equals("java.lang.Math")) {
+		if (!declaringType.equals("java.lang.Math")) {
 			return false;
 		}
 		if (paramTypes.length != 2) {
@@ -141,6 +141,7 @@ public class PatternMatchingStyleBenchmark {
 	public boolean complexNewStyleCheck() {
 		// New style: fluent queries
 		TypeInfo type = TypeInfo.Builder.of("java.util.stream.Stream").build();
-		return type.isStream() && true; // Simplified for benchmark
+		String methodName = "filter";
+		return type.isStream() && "filter".equals(methodName);
 	}
 }

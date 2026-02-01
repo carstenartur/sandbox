@@ -40,8 +40,11 @@ public record MethodInfo(
 	 * @param modifiers set of modifiers
 	 */
 	public MethodInfo {
-		if (name == null || name.isEmpty()) {
-			throw new IllegalArgumentException("Method name cannot be null or empty");
+		if (name == null) {
+			throw new IllegalArgumentException("Method name cannot be null");
+		}
+		if (name.isEmpty()) {
+			throw new IllegalArgumentException("Method name cannot be empty");
 		}
 		if (returnType == null) {
 			throw new IllegalArgumentException("Return type cannot be null");
@@ -221,7 +224,7 @@ public record MethodInfo(
 		private String name;
 		private TypeInfo declaringType;
 		private TypeInfo returnType;
-		private List<ParameterInfo> parameters = List.of();
+		private List<ParameterInfo> parameters = new java.util.ArrayList<>();
 		private Set<Modifier> modifiers = Set.of();
 		
 		/**
@@ -276,11 +279,6 @@ public record MethodInfo(
 		 * @return this builder
 		 */
 		public Builder addParameter(ParameterInfo parameter) {
-			if (parameters.isEmpty()) {
-				parameters = new java.util.ArrayList<>();
-			} else if (!(parameters instanceof java.util.ArrayList)) {
-				parameters = new java.util.ArrayList<>(parameters);
-			}
 			parameters.add(parameter);
 			return this;
 		}

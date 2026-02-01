@@ -208,7 +208,7 @@ class MethodInfoTest {
 		TypeInfo voidType = TypeInfo.Builder.of("void").build();
 		assertThatThrownBy(() -> new MethodInfo("", null, voidType, null, null))
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("Method name cannot be null");
+			.hasMessageContaining("Method name cannot be empty");
 	}
 	
 	@Test
