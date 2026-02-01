@@ -145,6 +145,7 @@ When a configuration file is provided and `show-coverage-links` is enabled, the 
 When a repository URL is configured, the report includes:
 - **🔗 GitHub Source Icon**: Next to each test class name, linking to the test source code in the GitHub repository
 - **Direct Navigation**: Links point directly to the test class file (e.g., `https://github.com/owner/repo/blob/main/module_test/src/org/example/TestClass.java`)
+- **JUnit 5 @DisplayName Support**: Correctly handles tests using `@DisplayName` annotations by extracting the actual class name from the `classname` attribute instead of the display name
 - **Opens in New Tab**: Source links open in a new browser tab for easy code review
 - **Contextual Help**: Hover tooltip shows the test class name for confirmation
 
@@ -181,6 +182,8 @@ The stylesheet expects a `<testsuites>` root element containing one or more `<te
   <!-- more testsuites -->
 </testsuites>
 ```
+
+**Note on JUnit 5 @DisplayName**: When tests use `@DisplayName` annotations, the `<testsuite name="...">` attribute may contain the display name (e.g., "My Custom Test Name") instead of the actual class name. The stylesheet handles this by extracting the actual class name from the `<testcase classname="...">` attribute to ensure GitHub source links point to the correct file.
 
 ## License
 
