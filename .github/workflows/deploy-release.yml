@@ -13,8 +13,9 @@ on:
         type: string
 
 permissions:
-  contents: write  # Required to push to main branch, create tags, and push to gh-pages
-  issues: read     # Required to read issues for release notes
+  contents: write       # Required to push to main branch, create tags, and push to gh-pages
+  issues: read          # Required to read issues for release notes
+  pull-requests: write  # Required to create pull requests for next development iteration
 
 env:
   GH_TOKEN: ${{ github.token }}
@@ -251,14 +252,41 @@ jobs:
 
 
 
-    # 15. Commit and push SNAPSHOT version
-    - name: Commit and push SNAPSHOT version
+    # 15. Create PR for next SNAPSHOT version
+    - name: Create PR for next development iteration
       run: |
         # Ensure we're in the main repository directory
         cd $GITHUB_WORKSPACE
+        
+        # Create a branch for the next development iteration
+        NEXT_VERSION_BRANCH="release/prepare-next-${{ inputs.next_snapshot_version }}"
+        git checkout -b "${NEXT_VERSION_BRANCH}"
+        
+        # Commit all changes
         git add -A
         git commit -m "Prepare for next development iteration ${{ inputs.next_snapshot_version }}"
-        git push origin main
+        
+        # Push the branch
+        git push origin "${NEXT_VERSION_BRANCH}"
+        
+        # Create PR body with release notes
+        cat > /tmp/pr_body.md << 'EOF'
+        Automated PR to bump version to ${{ inputs.next_snapshot_version }} after release ${{ inputs.release_version }}
+        
+        ## Release Notes
+        
+        EOF
+        cat release_notes.md >> /tmp/pr_body.md
+        
+        # Create PR
+        echo "Creating PR for next development iteration..."
+        gh pr create \
+          --title "Prepare for next development iteration ${{ inputs.next_snapshot_version }}" \
+          --body-file /tmp/pr_body.md \
+          --base main \
+          --head "${NEXT_VERSION_BRANCH}"
+        
+        echo "✓ PR created successfully"
 
     # 16. Add Eclipse Marketplace reminder
     - name: Eclipse Marketplace reminder
