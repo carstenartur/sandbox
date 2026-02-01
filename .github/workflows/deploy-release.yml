@@ -80,24 +80,10 @@ jobs:
         TYCHO_VERSION=$(mvn -q -DforceStdout help:evaluate -Dexpression=tycho-version)
         echo "Using Tycho version ${TYCHO_VERSION} from pom.xml"
         echo "Setting version to ${{ inputs.release_version }}"
-        mvn org.eclipse.tycho:tycho-versions-plugin:${TYCHO_VERSION}:set-version -DnewVersion=${{ inputs.release_version }}
+        # Include benchmark profile to update sandbox-benchmarks which inherits version from parent
+        mvn org.eclipse.tycho:tycho-versions-plugin:${TYCHO_VERSION}:set-version -DnewVersion=${{ inputs.release_version }} -Pbenchmark
 
-    # 5b. Update non-Tycho module versions (standard Maven modules)
-    - name: Update non-Tycho module versions
-      run: |
-        echo "Updating non-Tycho module versions to ${{ inputs.release_version }}..."
-        # sandbox-functional-converter-core now inherits version from parent, updated by Tycho
-        # Update sandbox-benchmarks (standalone module, only in benchmark profile)
-        mvn versions:set -DnewVersion=${{ inputs.release_version }} \
-          -pl sandbox-benchmarks -Pbenchmark \
-          -DgenerateBackupPoms=false \
-          -DprocessAllModules=false
-        # Update dependency reference in sandbox-benchmarks
-        mvn versions:use-dep-version \
-          -pl sandbox-benchmarks -Pbenchmark \
-          -Dincludes=org.sandbox:sandbox-functional-converter-core \
-          -DdepVersion=${{ inputs.release_version }} \
-          -DgenerateBackupPoms=false
+
 
     # 6. Verify version update - fail if any SNAPSHOT versions remain
     - name: Verify version update
@@ -259,24 +245,10 @@ jobs:
         TYCHO_VERSION=$(mvn -q -DforceStdout help:evaluate -Dexpression=tycho-version)
         echo "Using Tycho versions plugin ${TYCHO_VERSION}"
         echo "Bumping version to ${{ inputs.next_snapshot_version }}"
-        mvn org.eclipse.tycho:tycho-versions-plugin:${TYCHO_VERSION}:set-version -DnewVersion=${{ inputs.next_snapshot_version }}
+        # Include benchmark profile to update sandbox-benchmarks which inherits version from parent
+        mvn org.eclipse.tycho:tycho-versions-plugin:${TYCHO_VERSION}:set-version -DnewVersion=${{ inputs.next_snapshot_version }} -Pbenchmark
 
-    # 14b. Bump non-Tycho modules to next SNAPSHOT version
-    - name: Bump non-Tycho module versions to SNAPSHOT
-      run: |
-        cd $GITHUB_WORKSPACE
-        echo "Bumping non-Tycho module versions to ${{ inputs.next_snapshot_version }}..."
-        # sandbox-functional-converter-core now inherits version from parent, updated by Tycho
-        # Update sandbox-benchmarks (standalone module, only in benchmark profile)
-        mvn versions:set -DnewVersion=${{ inputs.next_snapshot_version }} \
-          -pl sandbox-benchmarks -Pbenchmark \
-          -DgenerateBackupPoms=false \
-          -DprocessAllModules=false
-        mvn versions:use-dep-version \
-          -pl sandbox-benchmarks -Pbenchmark \
-          -Dincludes=org.sandbox:sandbox-functional-converter-core \
-          -DdepVersion=${{ inputs.next_snapshot_version }} \
-          -DgenerateBackupPoms=false
+
 
     # 15. Commit and push SNAPSHOT version
     - name: Commit and push SNAPSHOT version
