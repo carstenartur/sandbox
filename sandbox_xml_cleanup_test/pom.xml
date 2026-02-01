@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>org.sandbox</groupId>
 		<artifactId>central</artifactId>
-		<version>1.2.2-SNAPSHOT</version>
+		<version>1.2.3</version>
 	</parent>
 	<artifactId>sandbox_xml_cleanup_test</artifactId>
 	<name>Sandbox xml cleanup test</name>

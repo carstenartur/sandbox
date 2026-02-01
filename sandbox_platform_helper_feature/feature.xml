@@ -2,7 +2,7 @@
 <feature
       id="sandbox_platform_helper_feature"
       label="Sandbox platform helper feature"
-      version="1.2.2.qualifier"
+      version="1.2.3"
       provider-name="sandbox"
       plugin="sandbox_platform_helper">
 

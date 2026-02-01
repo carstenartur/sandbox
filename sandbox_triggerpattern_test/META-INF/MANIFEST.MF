@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: TriggerPattern Cleanups Tests
 Bundle-SymbolicName: sandbox_triggerpattern_test;singleton:=true
 Bundle-Vendor: sandbox
-Bundle-Version: 1.2.2.qualifier
+Bundle-Version: 1.2.3
 Fragment-Host: sandbox_triggerpattern
 Bundle-RequiredExecutionEnvironment: JavaSE-21
 Require-Bundle: org.junit,

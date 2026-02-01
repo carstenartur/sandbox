@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: Cleanup application tests
 Bundle-SymbolicName: sandbox_cleanup_application_test;singleton:=true
 Bundle-Vendor: sandbox
-Bundle-Version: 1.2.2.qualifier
+Bundle-Version: 1.2.3
 Fragment-Host: sandbox_cleanup_application
 Bundle-RequiredExecutionEnvironment: JavaSE-21
 Bundle-ActivationPolicy: lazy
