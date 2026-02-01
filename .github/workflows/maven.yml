@@ -68,9 +68,10 @@ jobs:
         include_passed: true
         detailed_summary: true
     - name: Install xsltproc
+      if: always()
       run: sudo apt-get update && sudo apt-get install -y xsltproc
     - name: Generate HTML Test Reports
-      if: github.event_name == 'push' && github.ref_name == 'main'
+      if: always()
       run: |
         echo "=== Generating HTML reports using XSLT ==="
         
@@ -132,6 +133,15 @@ jobs:
         echo ""
         echo "=== Generated HTML reports ==="
         find . -name "surefire-report.html" -type f
+    - name: Upload Test Reports Artifact
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: test-reports-${{ github.run_number }}
+        path: |
+          **/target/site/surefire-report.html
+          **/target/site/combined-tests.xml
+        retention-days: 30
     - name: Prepare Test Reports for GitHub Pages
       if: github.event_name == 'push' && github.ref_name == 'main'
       run: |
