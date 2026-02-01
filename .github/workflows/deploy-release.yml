@@ -210,7 +210,7 @@ jobs:
           TEST_FLAG="-DskipTests"
           echo "Skipping tests as requested"
         fi
-        mvn -Pproduct,repo -T 1C clean verify $TEST_FLAG
+        xvfb-run --auto-servernum mvn -Pproduct,repo -T 1C clean verify $TEST_FLAG
 
     # 9. Create and push Git tag
     - name: Create and push Git tag
