@@ -157,6 +157,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed,
 			boolean createForOnlyIfVarUsed) {
 		ReferenceHolder<Integer, MonitorHolder> dataholder = new ReferenceHolder<>();
+		Set<ClassInstanceCreation> allSubProgressMonitors = new HashSet<>();
 		
 		AstProcessorBuilder.with(dataholder, nodesprocessed)
 			.processor()
@@ -193,6 +194,8 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				return true;
 			}, s -> ASTNodes.getTypedAncestor(s, Block.class))
 			.callClassInstanceCreationVisitor(SubProgressMonitor.class, (node, holder) -> {
+				allSubProgressMonitors.add(node);
+				
 				List<?> arguments = node.arguments();
 				if (arguments.isEmpty()) {
 					return true;
@@ -215,30 +218,48 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 					if (mh.minvname.equals(firstArgName)) {
 						logDebug("Found SubProgressMonitor construction at position " + node.getStartPosition() + " for variable '" + firstArgName + "' with beginTask"); //$NON-NLS-1$ //$NON-NLS-2$
 						mh.setofcic.add(node);
-						operations.add(fixcore.rewrite(holder));
 						matchedWithBeginTask = true;
 					}
 				}
 				
-				// If not matched with beginTask, treat as standalone SubProgressMonitor
+				// If not matched with beginTask, track as standalone
 				if (!matchedWithBeginTask) {
 					logDebug("Found standalone SubProgressMonitor construction at position " + node.getStartPosition()); //$NON-NLS-1$
-					// Create a standalone holder for this
-					MonitorHolder mh = new MonitorHolder();
-					mh.minv = null; // No beginTask for standalone
-					mh.isStandalone = true;
-					mh.nodesprocessed = nodesprocessed;
-					mh.setofcic.add(node);
-					
-					// Create a holder with just this standalone monitor
-					ReferenceHolder<Integer, MonitorHolder> standaloneHolder = new ReferenceHolder<>();
-					standaloneHolder.put(0, mh);
-					operations.add(fixcore.rewrite(standaloneHolder));
 				}
 				
 				return true;
 			})
 			.build(compilationUnit);
+		
+		// Add operations for beginTask-associated monitors
+		if (!dataholder.isEmpty()) {
+			operations.add(fixcore.rewrite(dataholder));
+		}
+		
+		// Add operations for standalone monitors (those not associated with any beginTask)
+		for (ClassInstanceCreation submon : allSubProgressMonitors) {
+			boolean isStandalone = true;
+			// Check if this monitor was associated with any beginTask
+			for (MonitorHolder mh : dataholder.values()) {
+				if (mh.setofcic.contains(submon)) {
+					isStandalone = false;
+					break;
+				}
+			}
+			
+			if (isStandalone) {
+				// Create a standalone holder for this
+				MonitorHolder mh = new MonitorHolder();
+				mh.minv = null;
+				mh.isStandalone = true;
+				mh.nodesprocessed = nodesprocessed;
+				mh.setofcic.add(submon);
+				
+				ReferenceHolder<Integer, MonitorHolder> standaloneHolder = new ReferenceHolder<>();
+				standaloneHolder.put(0, mh);
+				operations.add(fixcore.rewrite(standaloneHolder));
+			}
+		}
 	}
 
 	/**
