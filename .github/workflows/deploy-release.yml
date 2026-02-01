@@ -124,17 +124,31 @@ jobs:
       
       - name: Summary of preflight checks
         run: |
+          # Calculate what the next SNAPSHOT version will be based on INPUT release version
+          INPUT_VERSION="${{ github.event.inputs.release_version }}"
+          IFS='.' read -r major minor patch <<< "$INPUT_VERSION"
+          NEXT_PATCH=$((patch + 1))
+          ACTUAL_NEXT="${major}.${minor}.${NEXT_PATCH}-SNAPSHOT"
+          
           echo "## Preflight Check Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| Current Version | ${{ steps.version.outputs.current }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Release Version | ${{ github.event.inputs.release_version }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Next Dev Version | ${{ steps.version.outputs.suggested_next }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Next Dev Version | ${ACTUAL_NEXT} |" >> $GITHUB_STEP_SUMMARY
           echo "| Tag exists | No ✅ |" >> $GITHUB_STEP_SUMMARY
           echo "| Maven valid | Yes ✅ |" >> $GITHUB_STEP_SUMMARY
           echo "| Dry run mode | ${{ github.event.inputs.dry_run }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Skip tests | ${{ github.event.inputs.skip_tests }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Add warning if release version differs from suggested version
+          SUGGESTED="${{ steps.version.outputs.suggested_release }}"
+          if [[ "$INPUT_VERSION" != "$SUGGESTED" ]]; then
+            echo "⚠️ **Warning:** Release version ($INPUT_VERSION) differs from suggested ($SUGGESTED)" >> $GITHUB_STEP_SUMMARY
+            echo "Next SNAPSHOT will be based on the release version: **${ACTUAL_NEXT}**" >> $GITHUB_STEP_SUMMARY
+          fi
 
   release:
     name: Build and Release
@@ -373,11 +387,18 @@ jobs:
       run: |
         # Ensure we're in the main repository directory (not gh-pages-repo)
         cd $GITHUB_WORKSPACE
+        
+        # Calculate next version based on the RELEASED version, not pom.xml
+        RELEASED_VERSION="${{ inputs.release_version }}"
+        IFS='.' read -r major minor patch <<< "$RELEASED_VERSION"
+        NEXT_PATCH=$((patch + 1))
+        NEXT_VERSION="${major}.${minor}.${NEXT_PATCH}-SNAPSHOT"
+        echo "Bumping version to ${NEXT_VERSION} (based on released version ${RELEASED_VERSION})"
+        
         TYCHO_VERSION=$(mvn -q -DforceStdout help:evaluate -Dexpression=tycho-version)
         echo "Using Tycho versions plugin ${TYCHO_VERSION}"
-        echo "Bumping version to ${{ needs.preflight.outputs.suggested_next }}"
         # Include benchmark and jacoco profiles to update all modules that inherit version from parent
-        mvn org.eclipse.tycho:tycho-versions-plugin:${TYCHO_VERSION}:set-version -DnewVersion=${{ needs.preflight.outputs.suggested_next }} -Pbenchmark,jacoco
+        mvn org.eclipse.tycho:tycho-versions-plugin:${TYCHO_VERSION}:set-version -DnewVersion=${NEXT_VERSION} -Pbenchmark,jacoco
 
 
 
@@ -387,23 +408,29 @@ jobs:
         # Ensure we're in the main repository directory
         cd $GITHUB_WORKSPACE
         
+        # Calculate next version based on the RELEASED version (same calculation as above)
+        RELEASED_VERSION="${{ inputs.release_version }}"
+        IFS='.' read -r major minor patch <<< "$RELEASED_VERSION"
+        NEXT_PATCH=$((patch + 1))
+        NEXT_VERSION="${major}.${minor}.${NEXT_PATCH}-SNAPSHOT"
+        
         # Create a branch for the next development iteration
-        NEXT_VERSION_BRANCH="release/prepare-next-${{ needs.preflight.outputs.suggested_next }}"
+        NEXT_VERSION_BRANCH="release/prepare-next-${NEXT_VERSION}"
         git checkout -b "${NEXT_VERSION_BRANCH}"
         
         # Commit all changes
         git add -A
-        git commit -m "Prepare for next development iteration ${{ needs.preflight.outputs.suggested_next }}"
+        git commit -m "Prepare for next development iteration ${NEXT_VERSION}"
         
         # Push the branch
         git push origin "${NEXT_VERSION_BRANCH}"
         
         # Create PR body with release notes
-        cat > /tmp/pr_body.md << 'EOF'
-        Automated PR to bump version to ${{ needs.preflight.outputs.suggested_next }} after release ${{ inputs.release_version }}
+        cat > /tmp/pr_body.md << EOF
+        Automated PR to bump version to ${NEXT_VERSION} after release ${RELEASED_VERSION}
         
         ## Changes
-        - Bump version to ${{ needs.preflight.outputs.suggested_next }}
+        - Bump version to ${NEXT_VERSION}
         - Update all pom.xml, MANIFEST.MF, feature.xml files
         
         ## Release Notes
@@ -414,7 +441,7 @@ jobs:
         # Create PR
         echo "Creating PR for next development iteration..."
         gh pr create \
-          --title "Prepare for next development iteration ${{ needs.preflight.outputs.suggested_next }}" \
+          --title "Prepare for next development iteration ${NEXT_VERSION}" \
           --body-file /tmp/pr_body.md \
           --base main \
           --head "${NEXT_VERSION_BRANCH}"
