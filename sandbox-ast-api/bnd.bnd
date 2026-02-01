@@ -1,0 +1,6 @@
+Bundle-Name: Sandbox AST API
+Bundle-SymbolicName: org.sandbox.ast.api
+Bundle-Version: 1.2.5.qualifier
+Bundle-Vendor: Sandbox Project
+Export-Package: org.sandbox.ast.api.info,\
+                org.sandbox.ast.api.core
