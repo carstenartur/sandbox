@@ -4,9 +4,14 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	
-	<groupId>org.sandbox</groupId>
+	<parent>
+		<groupId>org.sandbox</groupId>
+		<artifactId>central</artifactId>
+		<version>1.2.2-SNAPSHOT</version>
+		<relativePath>../pom.xml</relativePath>
+	</parent>
+	
 	<artifactId>sandbox-benchmarks</artifactId>
-	<version>1.2.2-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	
 	<name>Sandbox JMH Benchmarks</name>
@@ -41,7 +46,7 @@
 		<dependency>
 			<groupId>org.sandbox</groupId>
 			<artifactId>sandbox-functional-converter-core</artifactId>
-			<version>1.2.2-SNAPSHOT</version>
+			<version>${project.version}</version>
 		</dependency>
 		
 		<!-- Standalone Eclipse JDT Core for AST operations -->
