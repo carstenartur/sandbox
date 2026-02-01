@@ -269,15 +269,20 @@ jobs:
         # Push the branch
         git push origin "${NEXT_VERSION_BRANCH}"
         
-        # Create PR with release notes
+        # Create PR body with release notes
+        cat > /tmp/pr_body.md << 'EOF'
+        Automated PR to bump version to ${{ inputs.next_snapshot_version }} after release ${{ inputs.release_version }}
+        
+        ## Release Notes
+        
+        EOF
+        cat release_notes.md >> /tmp/pr_body.md
+        
+        # Create PR
         echo "Creating PR for next development iteration..."
         gh pr create \
           --title "Prepare for next development iteration ${{ inputs.next_snapshot_version }}" \
-          --body "Automated PR to bump version to ${{ inputs.next_snapshot_version }} after release ${{ inputs.release_version }}
-
-## Release Notes
-
-$(cat release_notes.md)" \
+          --body-file /tmp/pr_body.md \
           --base main \
           --head "${NEXT_VERSION_BRANCH}"
         
