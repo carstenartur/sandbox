@@ -103,6 +103,10 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 		public Set<ASTNode> nodesprocessed;
 		/** Whether this is a standalone SubProgressMonitor (without beginTask) */
 		public boolean isStandalone = false;
+		/** Set of done() method invocations to be removed (SubMonitor handles cleanup automatically) */
+		public Set<MethodInvocation> doneInvocations = new HashSet<>();
+		/** The SubMonitor variable name created during conversion (for tracking done() calls) */
+		public String subMonitorVarName;
 	}
 
 	/**
@@ -229,6 +233,29 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				
 				return true;
 			})
+			.callMethodInvocationVisitor(IProgressMonitor.class, "done", (node, holder) -> { //$NON-NLS-1$
+				// Find done() calls on monitor variables that will be converted
+				Expression expr = node.getExpression();
+				if (expr == null) {
+					return true;
+				}
+				SimpleName sn = ASTNodes.as(expr, SimpleName.class);
+				if (sn == null) {
+					return true;
+				}
+				String varName = sn.getIdentifier();
+				
+				// Check if this done() is on a monitor we're converting
+				if (!holder.isEmpty()) {
+					MonitorHolder mh = holder.get(holder.size() - 1);
+					if (mh.minvname != null && mh.minvname.equals(varName)) {
+						logDebug("Found done() call at position " + node.getStartPosition() + " on monitor '" + varName + "'"); //$NON-NLS-1$ //$NON-NLS-2$
+						mh.doneInvocations.add(node);
+					}
+				}
+				
+				return true;
+			}, s -> ASTNodes.getTypedAncestor(s, Block.class))
 			.build(compilationUnit);
 		
 		// Add operations for beginTask-associated monitors
@@ -452,6 +479,26 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				
 				ASTNodes.replaceButKeepComment(rewrite, submon, newMethodInvocation2, group);
 				importRemover.removeImport(SubProgressMonitor.class.getCanonicalName());
+			}
+			
+			// Remove redundant done() calls on the converted monitor
+			// SubMonitor handles cleanup automatically, so done() calls are not needed
+			for (MethodInvocation doneCall : mh.doneInvocations) {
+				if (nodesprocessed.contains(doneCall)) {
+					continue;
+				}
+				nodesprocessed.add(doneCall);
+				
+				// Check if the done() call is in an ExpressionStatement so we can remove the whole statement
+				ASTNode parent = doneCall.getParent();
+				if (parent instanceof ExpressionStatement) {
+					logDebug("Removing done() call at position " + doneCall.getStartPosition()); //$NON-NLS-1$
+					rewrite.remove(parent, group);
+				} else {
+					// If not in an ExpressionStatement, just remove the invocation
+					logDebug("Removing done() invocation at position " + doneCall.getStartPosition()); //$NON-NLS-1$
+					rewrite.remove(doneCall, group);
+				}
 			}
 		}
 	}
