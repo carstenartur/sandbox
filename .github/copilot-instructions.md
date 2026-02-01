@@ -387,7 +387,7 @@ Always consider Eclipse and Java version compatibility:
 
 The project aims to support building against multiple Eclipse versions for backporting:
 
-- **Goal**: Support the latest 3 Eclipse releases (e.g., 2025-09, 2024-12, 2024-09)
+- **Goal**: Support the latest 3 Eclipse releases (e.g., 2025-12, 2024-12, 2024-09)
 - **Current State**: Main branch targets Eclipse 2025-12; multi-version CI workflows need enhancement
 - **Workflow Strategy**: GitHub Actions workflows in `.github/workflows/` should build against multiple Eclipse versions
 - **Backporting**: When backporting features, PRs should target the appropriate Eclipse version branches

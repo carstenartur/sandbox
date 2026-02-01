@@ -2,7 +2,7 @@
 
 A collection of experimental Eclipse JDT (Java Development Tools) cleanup plugins and tools. This repository demonstrates how to build custom JDT cleanups, quick fixes, and related tooling for Eclipse-based Java development.
 
-**Main Technologies:** Eclipse JDT, Java 21, Maven/Tycho 5.0.1
+**Main Technologies:** Eclipse JDT, Java 21, Maven/Tycho 5.0.2
 
 **Status:** Work in Progress – All plugins are experimental and intended for testing purposes.
 
@@ -218,7 +218,7 @@ This repository includes a **Docker-based GitHub Action** for automated code cle
 
 **IMPORTANT**: This project (main branch, targeting Eclipse 2025-12) requires **Java 21** or later.
 
-The project uses Tycho 5.0.1 which requires Java 21. Building with Java 17 or earlier will fail with:
+The project uses Tycho 5.0.2 which requires Java 21. Building with Java 17 or earlier will fail with:
 ```
 UnsupportedClassVersionError: ... has been compiled by a more recent version of the Java Runtime (class file version 65.0)
 ```
@@ -418,7 +418,7 @@ When migrating to a new Eclipse version, update the following files:
 
 - **Eclipse Version**: 2025-12
 - **Java Version**: 21
-- **Tycho Version**: 5.0.1
+- **Tycho Version**: 5.0.2
 - **Default Branch**: `main`
 
 ---
@@ -574,7 +574,7 @@ The project uses two distinct CI workflows for efficient publishing:
 
 | Branch          | Java Version | Tycho Version |
 |-----------------|--------------|---------------|
-| `main` (2025-12)| Java 21      | 5.0.1         |
+| `main` (2025-12)| Java 21      | 5.0.2         |
 | `2024-06`+      | Java 21      | 5.0.x         |
 | `2022-12`+      | Java 17      | 4.x           |
 | Up to `2022-06` | Java 11      | 3.x           |
