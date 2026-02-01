@@ -16,11 +16,24 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.EnhancedForStatement;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.LambdaExpression;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.VariableDeclaration;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 
@@ -39,17 +52,121 @@ public class StreamToEnhancedFor extends AbstractFunctionalCall<ASTNode> {
 	@Override
 	public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed) {
-		// TODO: Implement in Phase 9
-		// Scan for stream forEach expressions that can be converted to enhanced for-loops
-		// Pattern: collection.forEach(x -> statement) or collection.stream().forEach(x -> statement)
+		ReferenceHolder<Integer, Object> dataHolder = new ReferenceHolder<>();
+		
+		// Find forEach method calls
+		HelperVisitor.callMethodInvocationVisitor("forEach", compilationUnit, dataHolder, nodesprocessed, //$NON-NLS-1$
+			(visited, aholder) -> {
+				// Check if this is collection.forEach(...) or collection.stream().forEach(...)
+				if (visited.arguments().size() != 1) {
+					return false;
+				}
+				
+				Object arg = visited.arguments().get(0);
+				if (!(arg instanceof LambdaExpression)) {
+					return false; // Only handle simple lambda expressions
+				}
+				
+				// Make sure parent is an ExpressionStatement (standalone forEach call)
+				if (!(visited.getParent() instanceof ExpressionStatement)) {
+					return false;
+				}
+				
+				operations.add(fixcore.rewrite(visited, new ReferenceHolder<>()));
+				nodesprocessed.add(visited);
+				return false;
+			});
 	}
 
 	@Override
 	public void rewrite(UseFunctionalCallFixCore useExplicitEncodingFixCore, ASTNode visited,
 			CompilationUnitRewrite cuRewrite, TextEditGroup group, ReferenceHolder<ASTNode, Object> data)
 			throws CoreException {
-		// TODO: Implement in Phase 9
-		// Convert forEach expression to enhanced for-loop
+		if (!(visited instanceof MethodInvocation)) {
+			return;
+		}
+		
+		MethodInvocation forEach = (MethodInvocation) visited;
+		
+		// Get the lambda expression
+		if (forEach.arguments().isEmpty() || !(forEach.arguments().get(0) instanceof LambdaExpression)) {
+			return;
+		}
+		
+		LambdaExpression lambda = (LambdaExpression) forEach.arguments().get(0);
+		
+		// Extract collection expression (either collection or collection.stream())
+		Expression collectionExpr = forEach.getExpression();
+		if (collectionExpr instanceof MethodInvocation) {
+			MethodInvocation methodInv = (MethodInvocation) collectionExpr;
+			if ("stream".equals(methodInv.getName().getIdentifier())) { //$NON-NLS-1$
+				// It's collection.stream().forEach(...), use the collection part
+				collectionExpr = methodInv.getExpression();
+			}
+		}
+		
+		if (collectionExpr == null) {
+			return;
+		}
+		
+		AST ast = cuRewrite.getAST();
+		ASTRewrite rewrite = cuRewrite.getASTRewrite();
+		
+		// Extract parameter name and type from lambda
+		if (lambda.parameters().isEmpty()) {
+			return;
+		}
+		
+		VariableDeclaration param = (VariableDeclaration) lambda.parameters().get(0);
+		SimpleName paramName = param.getName();
+		
+		// Determine parameter type (use var or infer from context)
+		org.eclipse.jdt.core.dom.Type paramType;
+		if (param instanceof SingleVariableDeclaration) {
+			SingleVariableDeclaration svd = (SingleVariableDeclaration) param;
+			if (svd.getType() != null) {
+				paramType = (org.eclipse.jdt.core.dom.Type) ASTNode.copySubtree(ast, svd.getType());
+			} else {
+				// Use String as fallback
+				paramType = ast.newSimpleType(ast.newName("String")); //$NON-NLS-1$
+			}
+		} else {
+			// Simple parameter, use String as fallback
+			paramType = ast.newSimpleType(ast.newName("String")); //$NON-NLS-1$
+		}
+		
+		// Create enhanced for parameter
+		SingleVariableDeclaration forParam = ast.newSingleVariableDeclaration();
+		forParam.setType(paramType);
+		forParam.setName((SimpleName) ASTNode.copySubtree(ast, paramName));
+		
+		// Create enhanced for-loop
+		EnhancedForStatement forStmt = ast.newEnhancedForStatement();
+		forStmt.setParameter(forParam);
+		forStmt.setExpression((Expression) ASTNode.copySubtree(ast, collectionExpr));
+		
+		// Extract lambda body
+		ASTNode lambdaBody = lambda.getBody();
+		Block forBody = ast.newBlock();
+		
+		if (lambdaBody instanceof Block) {
+			// Lambda has block body
+			Block lambdaBlock = (Block) lambdaBody;
+			for (Object stmt : lambdaBlock.statements()) {
+				forBody.statements().add(ASTNode.copySubtree(ast, (Statement) stmt));
+			}
+		} else if (lambdaBody instanceof Expression) {
+			// Lambda has expression body - wrap in expression statement
+			ExpressionStatement exprStmt = ast.newExpressionStatement(
+				(Expression) ASTNode.copySubtree(ast, (Expression) lambdaBody));
+			forBody.statements().add(exprStmt);
+		}
+		
+		forStmt.setBody(forBody);
+		
+		// Replace the forEach statement with the for-loop
+		ExpressionStatement forEachStmt = (ExpressionStatement) forEach.getParent();
+		rewrite.replace(forEachStmt, forStmt, group);
 	}
 
 	@Override
