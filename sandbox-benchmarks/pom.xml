@@ -49,6 +49,13 @@
 			<version>${project.version}</version>
 		</dependency>
 		
+		<!-- Sandbox AST API Dependency -->
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox-ast-api</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		
 		<!-- Standalone Eclipse JDT Core for AST operations -->
 		<dependency>
 			<groupId>org.eclipse.jdt</groupId>
