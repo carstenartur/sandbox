@@ -1,0 +1,2 @@
+- #434: Audit functional converter tests:  Ensure semantic equivalence and remove false positives
+- #229: ✨ Set up Copilot instructions

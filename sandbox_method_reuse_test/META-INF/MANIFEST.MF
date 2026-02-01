@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: Method reuse tests
 Bundle-SymbolicName: sandbox_method_reuse_test;singleton:=true
 Bundle-Vendor: sandbox
-Bundle-Version: 1.2.2.qualifier
+Bundle-Version: 1.2.5.qualifier
 Fragment-Host: sandbox_method_reuse
 Bundle-RequiredExecutionEnvironment: JavaSE-21
 Require-Bundle: sandbox_test_commons
