@@ -1141,15 +1141,30 @@
                         <xsl:otherwise></xsl:otherwise>
                     </xsl:choose>
                 </xsl:variable>
+                <!-- Get the actual class name from the first testcase's classname attribute -->
+                <!-- This handles JUnit 5 @DisplayName where @name may contain display name instead of class name -->
+                <xsl:variable name="actual-classname">
+                    <xsl:choose>
+                        <xsl:when test="testcase/@classname">
+                            <!-- Extract simple class name from fully qualified name -->
+                            <xsl:call-template name="get-simple-classname">
+                                <xsl:with-param name="fqn" select="testcase[1]/@classname"/>
+                            </xsl:call-template>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <xsl:value-of select="@name"/>
+                        </xsl:otherwise>
+                    </xsl:choose>
+                </xsl:variable>
                 <xsl:call-template name="generate-coverage-link">
                     <xsl:with-param name="test-module" select="$test-module"/>
                     <xsl:with-param name="package" select="@package"/>
-                    <xsl:with-param name="class" select="@name"/>
+                    <xsl:with-param name="class" select="$actual-classname"/>
                 </xsl:call-template>
                 <xsl:call-template name="generate-github-test-link">
                     <xsl:with-param name="test-module" select="$test-module"/>
                     <xsl:with-param name="package" select="@package"/>
-                    <xsl:with-param name="class" select="@name"/>
+                    <xsl:with-param name="class" select="$actual-classname"/>
                 </xsl:call-template>
             </h3>
 
@@ -1673,6 +1688,21 @@
 <xsl:template name="display-percent">
     <xsl:param name="value"/>
     <xsl:value-of select="format-number($value,'0.00%')"/>
+</xsl:template>
+
+<!-- Helper template to extract simple class name from fully qualified name -->
+<xsl:template name="get-simple-classname">
+    <xsl:param name="fqn"/>
+    <xsl:choose>
+        <xsl:when test="contains($fqn, '.')">
+            <xsl:call-template name="get-simple-classname">
+                <xsl:with-param name="fqn" select="substring-after($fqn, '.')"/>
+            </xsl:call-template>
+        </xsl:when>
+        <xsl:otherwise>
+            <xsl:value-of select="$fqn"/>
+        </xsl:otherwise>
+    </xsl:choose>
 </xsl:template>
 
 </xsl:stylesheet>
