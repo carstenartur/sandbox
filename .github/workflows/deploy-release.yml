@@ -427,7 +427,7 @@ jobs:
         
         # Create PR body with release notes
         cat > /tmp/pr_body.md << EOF
-        Automated PR to bump version to ${NEXT_VERSION} after release ${{ inputs.release_version }}
+        Automated PR to bump version to ${NEXT_VERSION} after release ${RELEASED_VERSION}
         
         ## Changes
         - Bump version to ${NEXT_VERSION}
