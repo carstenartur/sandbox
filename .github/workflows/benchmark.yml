@@ -37,6 +37,9 @@ jobs:
           distribution: 'temurin'
           cache: maven
           
+      - name: Install Parent POM
+        run: mvn install -N -DskipTests
+          
       - name: Build Core Module
         working-directory: sandbox-functional-converter-core
         run: mvn clean install -DskipTests
