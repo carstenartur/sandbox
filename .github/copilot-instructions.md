@@ -449,6 +449,46 @@ All plugin directories (e.g., `sandbox_encoding_quickfix`, `sandbox_junit_cleanu
 - Significant architectural changes **MUST** update `architecture.md`
 - New features or identified issues **MUST** update `todo.md`
 
+## Documentation Structure Guidelines
+
+This section establishes clear rules for documentation organization based on **target audience**.
+
+### Audience-Based Documentation
+
+| Audience | Document | Purpose |
+|----------|----------|---------|
+| **Project Users** | `README.md` | How to use/install the project, overview, FAQ, important links |
+| **Eclipse Developers** | `ARCHITECTURE.md` | Developer/maintainer guide, architecture, technical decisions, design patterns |
+| **GitHub Project Developers** | `.github/workflows/README.md` or `WORKFLOW.md` | Build, test, CI/CD details, contributing guidelines |
+| **Security Reporting** | `SECURITY.md` | Security policy, vulnerability reporting (GitHub standard) |
+
+### Top-Level Markdown File Policy
+
+- Keep top-level markdown files to a **minimum**
+- More than 3 top-level docs is allowed but **must be justified**
+- Prefer adding a **new section/chapter** to an existing document when the audience overlaps
+- New standalone files should only be created if:
+  - The content addresses a clearly distinct audience, AND
+  - Having a separate file significantly improves clarity and discoverability
+
+### Plugin-Specific Documentation
+
+- Plugin/module documentation **MUST** live inside the plugin folder (e.g., `sandbox_encoding_quickfix/README.md`)
+- Do **NOT** place plugin-specific docs at the repository root
+- Each plugin should have: `README.md`, `ARCHITECTURE.md`, `TODO.md`
+- See the "Plugin Documentation Requirements" section above for detailed requirements
+
+### Documentation Consolidation Principles
+
+- Split documentation by **audience**, not just by technical topic
+- Regularly review and consolidate documentation
+- For small topics, add chapters/sections to the most relevant existing document instead of creating new files
+- When adding new documentation:
+  1. First, check if an existing document already covers the target audience
+  2. If yes, add a new section to that document
+  3. If no, consider if the content is substantial enough to warrant a new file
+  4. Document the justification for new top-level files in the PR description
+
 ## Feature Module Documentation Requirements
 
 All feature module directories (e.g., `sandbox_encoding_quickfix_feature`, `sandbox_junit_cleanup_feature`) **MUST** contain internationalization property files:
