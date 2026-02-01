@@ -82,15 +82,38 @@ jobs:
         echo "Setting version to ${{ inputs.release_version }}"
         mvn org.eclipse.tycho:tycho-versions-plugin:${TYCHO_VERSION}:set-version -DnewVersion=${{ inputs.release_version }}
 
+    # 5b. Update non-Tycho module versions (standard Maven modules)
+    - name: Update non-Tycho module versions
+      run: |
+        echo "Updating non-Tycho module versions to ${{ inputs.release_version }}..."
+        # Update sandbox-functional-converter-core
+        mvn versions:set -DnewVersion=${{ inputs.release_version }} \
+          -pl sandbox-functional-converter-core \
+          -DgenerateBackupPoms=false \
+          -DprocessAllModules=false
+        # Update sandbox-benchmarks (uses its own version scheme, sync with main version)
+        mvn versions:set -DnewVersion=${{ inputs.release_version }} \
+          -pl sandbox-benchmarks \
+          -DgenerateBackupPoms=false \
+          -DprocessAllModules=false
+        # Update dependency reference in sandbox-benchmarks
+        mvn versions:use-dep-version \
+          -pl sandbox-benchmarks \
+          -Dincludes=org.sandbox:sandbox-functional-converter-core \
+          -DdepVersion=${{ inputs.release_version }} \
+          -DgenerateBackupPoms=false
+
     # 6. Verify version update - fail if any SNAPSHOT versions remain
     - name: Verify version update
       run: |
         echo "Checking for remaining SNAPSHOT references..."
-        if grep -r "SNAPSHOT" --include="pom.xml" --include="MANIFEST.MF" --include="feature.xml" --include="*.product" . | grep -v "sandbox-functional-converter-core" | grep -q .; then
-          echo "ERROR: Found remaining SNAPSHOT references (excluding sandbox-functional-converter-core)"
+        # Check all version-related files for SNAPSHOT (no exclusions)
+        if grep -r "SNAPSHOT" --include="pom.xml" --include="MANIFEST.MF" --include="feature.xml" --include="*.product" .; then
+          echo "ERROR: Found remaining SNAPSHOT references!"
+          echo "All modules must be updated to release version."
           exit 1
         fi
-        echo "Version verification passed - no unexpected SNAPSHOT references found"
+        echo "✓ Version verification passed - no SNAPSHOT references found"
 
     # 7. Commit version changes
     - name: Commit version changes
@@ -241,6 +264,25 @@ jobs:
         echo "Using Tycho versions plugin ${TYCHO_VERSION}"
         echo "Bumping version to ${{ inputs.next_snapshot_version }}"
         mvn org.eclipse.tycho:tycho-versions-plugin:${TYCHO_VERSION}:set-version -DnewVersion=${{ inputs.next_snapshot_version }}
+
+    # 14b. Bump non-Tycho modules to next SNAPSHOT version
+    - name: Bump non-Tycho module versions to SNAPSHOT
+      run: |
+        cd $GITHUB_WORKSPACE
+        echo "Bumping non-Tycho module versions to ${{ inputs.next_snapshot_version }}..."
+        mvn versions:set -DnewVersion=${{ inputs.next_snapshot_version }} \
+          -pl sandbox-functional-converter-core \
+          -DgenerateBackupPoms=false \
+          -DprocessAllModules=false
+        mvn versions:set -DnewVersion=${{ inputs.next_snapshot_version }} \
+          -pl sandbox-benchmarks \
+          -DgenerateBackupPoms=false \
+          -DprocessAllModules=false
+        mvn versions:use-dep-version \
+          -pl sandbox-benchmarks \
+          -Dincludes=org.sandbox:sandbox-functional-converter-core \
+          -DdepVersion=${{ inputs.next_snapshot_version }} \
+          -DgenerateBackupPoms=false
 
     # 15. Commit and push SNAPSHOT version
     - name: Commit and push SNAPSHOT version
