@@ -233,30 +233,31 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				
 				return true;
 			})
-			.callMethodInvocationVisitor(IProgressMonitor.class, "done", (node, holder) -> { //$NON-NLS-1$
-				// Find done() calls on monitor variables that will be converted
-				Expression expr = node.getExpression();
-				if (expr == null) {
-					return true;
-				}
-				SimpleName sn = ASTNodes.as(expr, SimpleName.class);
-				if (sn == null) {
-					return true;
-				}
-				String varName = sn.getIdentifier();
-				
-				// Check if this done() is on a monitor we're converting
-				// Search through all holders to find matching monitor
-				for (MonitorHolder mh : holder.values()) {
-					if (mh.minvname != null && mh.minvname.equals(varName)) {
-						logDebug("Found done() call at position " + node.getStartPosition() + " on monitor '" + varName + "'"); //$NON-NLS-1$ //$NON-NLS-2$
-						mh.doneInvocations.add(node);
-						break;
-					}
-				}
-				
-				return true;
-			}, s -> ASTNodes.getTypedAncestor(s, Block.class))
+			// TODO: Temporarily disabled done() removal to debug test failures
+			// .callMethodInvocationVisitor(IProgressMonitor.class, "done", (node, holder) -> { //$NON-NLS-1$
+			// 	// Find done() calls on monitor variables that will be converted
+			// 	Expression expr = node.getExpression();
+			// 	if (expr == null) {
+			// 		return true;
+			// 	}
+			// 	SimpleName sn = ASTNodes.as(expr, SimpleName.class);
+			// 	if (sn == null) {
+			// 		return true;
+			// 	}
+			// 	String varName = sn.getIdentifier();
+			// 	
+			// 	// Check if this done() is on a monitor we're converting
+			// 	// Search through all holders to find matching monitor
+			// 	for (MonitorHolder mh : holder.values()) {
+			// 		if (mh.minvname != null && mh.minvname.equals(varName)) {
+			// 			logDebug("Found done() call at position " + node.getStartPosition() + " on monitor '" + varName + "'"); //$NON-NLS-1$ //$NON-NLS-2$
+			// 			mh.doneInvocations.add(node);
+			// 			break;
+			// 		}
+			// 	}
+			// 	
+			// 	return true;
+			// }, s -> ASTNodes.getTypedAncestor(s, Block.class))
 			.build(compilationUnit);
 		
 		// Add operations for beginTask-associated monitors
@@ -482,25 +483,26 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				importRemover.removeImport(SubProgressMonitor.class.getCanonicalName());
 			}
 			
+			// TODO: Temporarily disabled done() removal to debug test failures
 			// Remove redundant done() calls on the converted monitor
 			// SubMonitor handles cleanup automatically, so done() calls are not needed
-			for (MethodInvocation doneCall : mh.doneInvocations) {
-				if (nodesprocessed.contains(doneCall)) {
-					continue;
-				}
-				nodesprocessed.add(doneCall);
-				
-				// Check if the done() call is in an ExpressionStatement so we can remove the whole statement
-				ASTNode parent = doneCall.getParent();
-				if (parent instanceof ExpressionStatement) {
-					logDebug("Removing done() call at position " + doneCall.getStartPosition()); //$NON-NLS-1$
-					rewrite.remove(parent, group);
-				} else {
-					// If not in an ExpressionStatement, just remove the invocation
-					logDebug("Removing done() invocation at position " + doneCall.getStartPosition()); //$NON-NLS-1$
-					rewrite.remove(doneCall, group);
-				}
-			}
+			// for (MethodInvocation doneCall : mh.doneInvocations) {
+			// 	if (nodesprocessed.contains(doneCall)) {
+			// 		continue;
+			// 	}
+			// 	nodesprocessed.add(doneCall);
+			// 	
+			// 	// Check if the done() call is in an ExpressionStatement so we can remove the whole statement
+			// 	ASTNode parent = doneCall.getParent();
+			// 	if (parent instanceof ExpressionStatement) {
+			// 		logDebug("Removing done() call at position " + doneCall.getStartPosition()); //$NON-NLS-1$
+			// 		rewrite.remove(parent, group);
+			// 	} else {
+			// 		// If not in an ExpressionStatement, just remove the invocation
+			// 		logDebug("Removing done() invocation at position " + doneCall.getStartPosition()); //$NON-NLS-1$
+			// 		rewrite.remove(doneCall, group);
+			// 	}
+			// }
 		}
 	}
 	
