@@ -35,61 +35,28 @@ import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
  * #L%
  */
 
-import java.util.Set;
-
 import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
-import org.eclipse.jdt.core.dom.ITypeBinding;
-import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
-import org.sandbox.jdt.internal.common.HelperVisitor;
-import org.sandbox.jdt.internal.common.ReferenceHolder;
-import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
-import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractRuleFieldPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 /**
  * Plugin to migrate JUnit 4 TestName rule to JUnit 5 TestInfo parameter.
  */
-public class RuleTestnameJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
+public class RuleTestnameJUnitPlugin extends AbstractRuleFieldPlugin {
 
 	@Override
-	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataHolder= new ReferenceHolder<>();
-		HelperVisitor.forField()
-			.withAnnotation(ORG_JUNIT_RULE)
-			.ofType(ORG_JUNIT_RULES_TEST_NAME)
-			.in(compilationUnit)
-			.excluding(nodesprocessed)
-			.processEach(dataHolder, (visited, aholder) -> processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));
-	}
-
-	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, FieldDeclaration node,
-			ReferenceHolder<Integer, JunitHolder> dataHolder) {
-		JunitHolder mh= new JunitHolder();
-		VariableDeclarationFragment fragment= (VariableDeclarationFragment) node.fragments().get(0);
-		ITypeBinding binding= fragment.resolveBinding().getType();
-		if (binding != null && ORG_JUNIT_RULES_TEST_NAME.equals(binding.getQualifiedName())) {
-			mh.minv= node;
-			dataHolder.put(dataHolder.size(), mh);
-			operations.add(fixcore.rewrite(dataHolder));
-		}
-		// Return true to continue processing other fields
-		return true;
+	protected String getRuleType() {
+		return ORG_JUNIT_RULES_TEST_NAME;
 	}
 
 	@Override
-	protected
-	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
-			JunitHolder junitHolder) {
-		FieldDeclaration node= junitHolder.getFieldDeclaration();
+	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
+			ImportRewrite importRewriter, JunitHolder junitHolder) {
+		FieldDeclaration node = junitHolder.getFieldDeclaration();
 		refactorTestnameInClassAndSubclasses(group, rewriter, ast, importRewriter, node);
 	}
 	
