@@ -12,6 +12,7 @@ The **JFace Cleanup** plugin modernizes Eclipse JFace code by migrating deprecat
 - 🎯 **Style Flag Mapping** - Maps `SUPPRESS_SUBTASK_LABEL` to `SUPPRESS_SUBTASK`
 - 🗑️ **Flag Dropping** - Removes `PREPEND_MAIN_LABEL_TO_SUBTASK` (no SubMonitor equivalent)
 - 🔧 **Standalone Conversion** - Handles SubProgressMonitor without preceding beginTask()
+- 🧹 **Automatic done() Removal** - Removes redundant done() calls (SubMonitor handles cleanup automatically)
 - 📦 **Variable Name Management** - Generates unique variable names to avoid conflicts
 - ♻️ **Idempotent** - Running cleanup multiple times produces the same result
 - 🔌 **Eclipse Integration** - Works seamlessly with Eclipse RCP/JFace code
@@ -70,6 +71,21 @@ SubProgressMonitor sub = new SubProgressMonitor(otherMonitor, 50);
 SubMonitor sub = SubMonitor.convert(monitor, 100);
 // ... later in code ...
 SubMonitor sub2 = SubMonitor.convert(otherMonitor, 50);  // Unique name generated
+```
+
+**Automatic done() Removal:**
+```java
+// Before
+monitor.beginTask("Task", 100);
+IProgressMonitor sub = new SubProgressMonitor(monitor, 50);
+sub.worked(10);
+monitor.done();  // Redundant with SubMonitor
+
+// After
+SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
+IProgressMonitor sub = subMonitor.split(50);
+sub.worked(10);
+// done() call removed - SubMonitor handles cleanup automatically
 ```
 
 ## Migration Pattern
@@ -160,7 +176,6 @@ xvfb-run --auto-servernum mvn test -pl sandbox_jface_cleanup_test
 
 ## Limitations
 
-- Does not automatically remove `done()` calls (SubMonitor handles cleanup automatically)
 - When converting standalone `SubProgressMonitor` instances (created without a surrounding `beginTask`), any style flags are silently ignored, as `SubMonitor.convert()` does not support flags
 - Combined flag expressions using bitwise OR (e.g., `FLAG1 | FLAG2`) or numeric flag literals are not automatically mapped and require manual review
 - Custom SubProgressMonitor subclasses require manual review
