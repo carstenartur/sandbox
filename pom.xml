@@ -23,6 +23,7 @@
 	</properties>
 	<modules>
 		<module>sandbox-functional-converter-core</module>
+		<module>sandbox-ast-api</module>
 		<module>sandbox_target</module>
 		<module>sandbox_cleanup_application</module>
 		<module>sandbox_cleanup_application_feature</module>
