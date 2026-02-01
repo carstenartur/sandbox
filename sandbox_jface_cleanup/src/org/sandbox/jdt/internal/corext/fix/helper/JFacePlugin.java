@@ -246,11 +246,12 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				String varName = sn.getIdentifier();
 				
 				// Check if this done() is on a monitor we're converting
-				if (!holder.isEmpty()) {
-					MonitorHolder mh = holder.get(holder.size() - 1);
+				// Search through all holders to find matching monitor
+				for (MonitorHolder mh : holder.values()) {
 					if (mh.minvname != null && mh.minvname.equals(varName)) {
 						logDebug("Found done() call at position " + node.getStartPosition() + " on monitor '" + varName + "'"); //$NON-NLS-1$ //$NON-NLS-2$
 						mh.doneInvocations.add(node);
+						break;
 					}
 				}
 				
