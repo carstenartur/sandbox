@@ -451,43 +451,41 @@ All plugin directories (e.g., `sandbox_encoding_quickfix`, `sandbox_junit_cleanu
 
 ## Documentation Structure Guidelines
 
-This section establishes clear rules for documentation organization based on **target audience**.
+To keep the project understandable and maintainable, follow these documentation organization principles:
 
-### Audience-Based Documentation
+### 1. Audience-Based Documentation
+
+Documentation should be split by **target audience**, not just by technical topic:
 
 | Audience | Document | Purpose |
 |----------|----------|---------|
 | **Project Users** | `README.md` | How to use/install the project, overview, FAQ, important links |
 | **Eclipse Developers** | `ARCHITECTURE.md` | Developer/maintainer guide, architecture, technical decisions, design patterns |
-| **GitHub Project Developers** | `.github/workflows/README.md` or `WORKFLOW.md` | Build, test, CI/CD details, contributing guidelines |
-| **Security Reporting** | `SECURITY.md` | Security policy, vulnerability reporting (GitHub standard) |
+| **GitHub Project Developers** | `.github/workflows/README.md` or workflow docs | Build, test, CI/CD details, contributing guidelines |
+| **Security/Legal** | `SECURITY.md`, `LICENSE.txt`, `CODE_OF_CONDUCT.md` | Required GitHub standard files |
 
-### Top-Level Markdown File Policy
+### 2. Top-Level Markdown File Policy
 
 - Keep top-level markdown files to a **minimum**
-- More than 3 top-level docs is allowed but **must be justified**
+- More than 3 primary docs is allowed but **must be justified**
 - Prefer adding a **new section/chapter** to an existing document when the audience overlaps
 - New standalone files should only be created if:
   - The content addresses a clearly distinct audience, AND
   - Having a separate file significantly improves clarity and discoverability
+- When proposing a new top-level doc, ask: "Can this be a section in README.md, ARCHITECTURE.md, or another existing file?"
 
-### Plugin-Specific Documentation
+### 3. Plugin-Specific Documentation
 
 - Plugin/module documentation **MUST** live inside the plugin folder (e.g., `sandbox_encoding_quickfix/README.md`)
 - Do **NOT** place plugin-specific docs at the repository root
-- Each plugin should have: `README.md`, `ARCHITECTURE.md`, `TODO.md`
-- See the "Plugin Documentation Requirements" section above for detailed requirements
+- Each plugin should have: `README.md`, `ARCHITECTURE.md`, `TODO.md` (as already documented in Plugin Documentation Requirements)
 
-### Documentation Consolidation Principles
+### 4. Documentation Consolidation Principles
 
 - Split documentation by **audience**, not just by technical topic
 - Regularly review and consolidate documentation
 - For small topics, add chapters/sections to the most relevant existing document instead of creating new files
-- When adding new documentation:
-  1. First, check if an existing document already covers the target audience
-  2. If yes, add a new section to that document
-  3. If no, consider if the content is substantial enough to warrant a new file
-  4. Document the justification for new top-level files in the PR description
+- Consider whether future maintainers will easily find the information
 
 ## Feature Module Documentation Requirements
 
