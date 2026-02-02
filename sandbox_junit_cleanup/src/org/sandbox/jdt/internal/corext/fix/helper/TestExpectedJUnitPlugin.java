@@ -167,19 +167,6 @@ public class TestExpectedJUnitPlugin extends AbstractTestAnnotationParameterPlug
 		importRewriter.addImport(ORG_JUNIT_JUPITER_TEST);
 		importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, METHOD_ASSERT_THROWS, false);
 	}
-			MarkerAnnotation markerTestAnnotation = ast.newMarkerAnnotation();
-			markerTestAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_TEST));
-			ASTNodes.replaceButKeepComment(rewriter, testAnnotation, markerTestAnnotation, group);
-		} else {
-			// There are other parameters that need to be kept, just remove expected
-			rewriter.remove(expectedPair, group);
-		}
-		
-		// Update imports
-		importRewriter.removeImport(ORG_JUNIT_TEST);
-		importRewriter.addImport(ORG_JUNIT_JUPITER_TEST);
-		importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, METHOD_ASSERT_THROWS, false);
-	}
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
