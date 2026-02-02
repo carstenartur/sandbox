@@ -45,6 +45,10 @@ public final class JUnitConstants {
 	public static final String ANNOTATION_TEST_METHOD_ORDER = &quot;TestMethodOrder&quot;;
 	public static final String MOCKITO_EXTENSION = &quot;MockitoExtension&quot;;
 	public static final String SPRING_EXTENSION = &quot;SpringExtension&quot;;
+	public static final String ANNOTATION_NESTED = &quot;Nested&quot;;
+	public static final String ANNOTATION_VALUE_SOURCE = &quot;ValueSource&quot;;
+	public static final String ANNOTATION_INCLUDE_TAGS = &quot;IncludeTags&quot;;
+	public static final String ANNOTATION_EXCLUDE_TAGS = &quot;ExcludeTags&quot;;
 
 	// ===== Method Names =====
 
@@ -98,6 +102,14 @@ public final class JUnitConstants {
 	public static final String ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_JUNIT4_CLASS_RUNNER = &quot;org.springframework.test.context.junit4.SpringJUnit4ClassRunner&quot;;
 	public static final String ORG_JUNIT_RUNNERS_PARAMETERIZED = &quot;org.junit.runners.Parameterized&quot;;
 	public static final String ORG_JUNIT_RUNNERS_PARAMETERIZED_PARAMETERS = &quot;org.junit.runners.Parameterized.Parameters&quot;;
+	public static final String ORG_JUNIT_EXPERIMENTAL_RUNNERS_ENCLOSED = &quot;org.junit.experimental.runners.Enclosed&quot;;
+	public static final String ORG_JUNIT_EXPERIMENTAL_THEORIES_THEORIES = &quot;org.junit.experimental.theories.Theories&quot;;
+	public static final String ORG_JUNIT_EXPERIMENTAL_THEORIES_THEORY = &quot;org.junit.experimental.theories.Theory&quot;;
+	public static final String ORG_JUNIT_EXPERIMENTAL_THEORIES_DATAPOINTS = &quot;org.junit.experimental.theories.DataPoints&quot;;
+	public static final String ORG_JUNIT_EXPERIMENTAL_THEORIES_DATAPOINT = &quot;org.junit.experimental.theories.DataPoint&quot;;
+	public static final String ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORIES = &quot;org.junit.experimental.categories.Categories&quot;;
+	public static final String ORG_JUNIT_EXPERIMENTAL_CATEGORIES_INCLUDE_CATEGORY = &quot;org.junit.experimental.categories.Categories.IncludeCategory&quot;;
+	public static final String ORG_JUNIT_EXPERIMENTAL_CATEGORIES_EXCLUDE_CATEGORY = &quot;org.junit.experimental.categories.Categories.ExcludeCategory&quot;;
 
 	// ===== JUnit 5 / Jupiter Fully Qualified References =====
 
@@ -120,6 +132,7 @@ public final class JUnitConstants {
 	public static final String ORG_JUNIT_JUPITER_API_TIMEOUT = &quot;org.junit.jupiter.api.Timeout&quot;;
 	public static final String ORG_JUNIT_JUPITER_API_ASSUMPTIONS = &quot;org.junit.jupiter.api.Assumptions&quot;;
 	public static final String ORG_JUNIT_JUPITER_API_TAG = &quot;org.junit.jupiter.api.Tag&quot;;
+	public static final String ORG_JUNIT_JUPITER_API_NESTED = &quot;org.junit.jupiter.api.Nested&quot;;
 	public static final String ORG_JUNIT_JUPITER_API_TEST_METHOD_ORDER = &quot;org.junit.jupiter.api.TestMethodOrder&quot;;
 	public static final String ORG_JUNIT_JUPITER_API_METHOD_ORDERER = &quot;org.junit.jupiter.api.MethodOrderer&quot;;
 	public static final String ORG_JUNIT_JUPITER_API_METHOD_ORDERER_METHOD_NAME = &quot;org.junit.jupiter.api.MethodOrderer.MethodName&quot;;
@@ -130,6 +143,7 @@ public final class JUnitConstants {
 	public static final String ORG_JUNIT_JUPITER_PARAMS_PARAMETERIZED_TEST = &quot;org.junit.jupiter.params.ParameterizedTest&quot;;
 	public static final String ORG_JUNIT_JUPITER_PARAMS_PROVIDER_METHOD_SOURCE = &quot;org.junit.jupiter.params.provider.MethodSource&quot;;
 	public static final String ORG_JUNIT_JUPITER_PARAMS_PROVIDER_ARGUMENTS = &quot;org.junit.jupiter.params.provider.Arguments&quot;;
+	public static final String ORG_JUNIT_JUPITER_PARAMS_PROVIDER_VALUE_SOURCE = &quot;org.junit.jupiter.params.provider.ValueSource&quot;;
 	public static final String ANNOTATION_PARAMETERIZED_TEST = &quot;ParameterizedTest&quot;;
 	public static final String ANNOTATION_METHOD_SOURCE = &quot;MethodSource&quot;;
 
@@ -142,6 +156,8 @@ public final class JUnitConstants {
 
 	public static final String ORG_JUNIT_JUPITER_SUITE = &quot;org.junit.platform.suite.api.Suite&quot;;
 	public static final String ORG_JUNIT_PLATFORM_SUITE_API_SELECT_CLASSES = &quot;org.junit.platform.suite.api.SelectClasses&quot;;
+	public static final String ORG_JUNIT_PLATFORM_SUITE_API_INCLUDE_TAGS = &quot;org.junit.platform.suite.api.IncludeTags&quot;;
+	public static final String ORG_JUNIT_PLATFORM_SUITE_API_EXCLUDE_TAGS = &quot;org.junit.platform.suite.api.ExcludeTags&quot;;
 
 	// ===== Callback Names =====
 
@@ -152,13 +168,13 @@ public final class JUnitConstants {
 
 	// ===== Assertion Method Sets =====
 
-<span class="fc" id="L155">	public static final Set&lt;String&gt; TWOPARAM_ASSERTIONS = Set.of(&quot;assertEquals&quot;, &quot;assertNotEquals&quot;, &quot;assertArrayEquals&quot;,</span>
-<span class="fc" id="L156">			&quot;assertSame&quot;, &quot;assertNotSame&quot;, &quot;assertThat&quot;);</span>
-<span class="fc" id="L157">	public static final Set&lt;String&gt; ONEPARAM_ASSERTIONS = Set.of(&quot;assertTrue&quot;, &quot;assertFalse&quot;, &quot;assertNull&quot;, &quot;assertNotNull&quot;);</span>
-<span class="fc" id="L158">	public static final Set&lt;String&gt; NOPARAM_ASSERTIONS = Set.of(&quot;fail&quot;);</span>
-<span class="fc" id="L159">	public static final Set&lt;String&gt; ALL_ASSERTION_METHODS = Stream</span>
-<span class="fc" id="L160">			.of(TWOPARAM_ASSERTIONS, ONEPARAM_ASSERTIONS, NOPARAM_ASSERTIONS)</span>
-<span class="fc" id="L161">			.flatMap(Set::stream)</span>
-<span class="fc" id="L162">			.collect(Collectors.toSet());</span>
+<span class="fc" id="L171">	public static final Set&lt;String&gt; TWOPARAM_ASSERTIONS = Set.of(&quot;assertEquals&quot;, &quot;assertNotEquals&quot;, &quot;assertArrayEquals&quot;,</span>
+<span class="fc" id="L172">			&quot;assertSame&quot;, &quot;assertNotSame&quot;, &quot;assertThat&quot;);</span>
+<span class="fc" id="L173">	public static final Set&lt;String&gt; ONEPARAM_ASSERTIONS = Set.of(&quot;assertTrue&quot;, &quot;assertFalse&quot;, &quot;assertNull&quot;, &quot;assertNotNull&quot;);</span>
+<span class="fc" id="L174">	public static final Set&lt;String&gt; NOPARAM_ASSERTIONS = Set.of(&quot;fail&quot;);</span>
+<span class="fc" id="L175">	public static final Set&lt;String&gt; ALL_ASSERTION_METHODS = Stream</span>
+<span class="fc" id="L176">			.of(TWOPARAM_ASSERTIONS, ONEPARAM_ASSERTIONS, NOPARAM_ASSERTIONS)</span>
+<span class="fc" id="L177">			.flatMap(Set::stream)</span>
+<span class="fc" id="L178">			.collect(Collectors.toSet());</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -69,46 +69,49 @@ public class SimplifyPlatformStatusCleanUpCore extends AbstractCleanUp {
 		}
 <span class="fc" id="L70">		Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations= new LinkedHashSet&lt;&gt;();</span>
 <span class="fc" id="L71">		Set&lt;ASTNode&gt; nodesprocessed= new HashSet&lt;&gt;();</span>
-<span class="fc bfc" id="L72" title="All 2 branches covered.">		for (var i : computeFixSet) {</span>
-<span class="fc" id="L73">			i.findOperations(compilationUnit, operations, nodesprocessed);</span>
+		// Note: preservePluginId is always false because Eclipse Platform Status factory methods
+		// don't support plugin ID parameters
+<span class="fc" id="L74">		boolean preservePluginId= false;</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">		for (var i : computeFixSet) {</span>
+<span class="fc" id="L76">			i.findOperations(compilationUnit, operations, nodesprocessed, preservePluginId);</span>
 		}
-<span class="fc bfc" id="L75" title="All 2 branches covered.">		if (operations.isEmpty()) {</span>
-<span class="fc" id="L76">			return null;</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">		if (operations.isEmpty()) {</span>
+<span class="fc" id="L79">			return null;</span>
 		}
-<span class="fc" id="L78">		return new CompilationUnitRewriteOperationsFixCore(PlatformStatusCleanUpFix_refactor, compilationUnit,</span>
-<span class="fc" id="L79">				operations.toArray(new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange[0]));</span>
+<span class="fc" id="L81">		return new CompilationUnitRewriteOperationsFixCore(PlatformStatusCleanUpFix_refactor, compilationUnit,</span>
+<span class="fc" id="L82">				operations.toArray(new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange[0]));</span>
 	}
 
 	@Override
 	public String[] getStepDescriptions() {
-<span class="fc" id="L84">		List&lt;String&gt; result= new ArrayList&lt;&gt;();</span>
-<span class="pc bpc" id="L85" title="1 of 2 branches missed.">		if (isEnabled(SIMPLIFY_STATUS_CLEANUP)) {</span>
-<span class="nc" id="L86">			String with= &quot;&quot;; //$NON-NLS-1$</span>
-<span class="nc" id="L87">			result.add(</span>
-<span class="nc" id="L88">					Messages.format(PlatformStatusCleanUp_description,</span>
-<span class="nc" id="L89">							new Object[] { String.join(&quot;,&quot;, computeFixSet().stream() //$NON-NLS-1$</span>
-<span class="nc" id="L90">									.map(SimplifyPlatformStatusFixCore::toString).collect(Collectors.toList())),</span>
-<span class="nc" id="L91">									with }));</span>
+<span class="fc" id="L87">		List&lt;String&gt; result= new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">		if (isEnabled(SIMPLIFY_STATUS_CLEANUP)) {</span>
+<span class="nc" id="L89">			String with= &quot;&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L90">			result.add(</span>
+<span class="nc" id="L91">					Messages.format(PlatformStatusCleanUp_description,</span>
+<span class="nc" id="L92">							new Object[] { String.join(&quot;,&quot;, computeFixSet().stream() //$NON-NLS-1$</span>
+<span class="nc" id="L93">									.map(SimplifyPlatformStatusFixCore::toString).collect(Collectors.toList())),</span>
+<span class="nc" id="L94">									with }));</span>
 		}
-<span class="fc" id="L93">		return result.toArray(new String[0]);</span>
+<span class="fc" id="L96">		return result.toArray(new String[0]);</span>
 	}
 
 	@Override
 	public String getPreview() {
-<span class="nc" id="L98">		StringBuilder sb= new StringBuilder();</span>
-<span class="nc" id="L99">		EnumSet&lt;SimplifyPlatformStatusFixCore&gt; computeFixSet= computeFixSet();</span>
-<span class="nc" id="L100">		EnumSet.allOf(SimplifyPlatformStatusFixCore.class)</span>
-<span class="nc" id="L101">		.forEach(e -&gt; sb.append(e.getPreview(computeFixSet.contains(e))));</span>
-<span class="nc" id="L102">		return sb.toString();</span>
+<span class="nc" id="L101">		StringBuilder sb= new StringBuilder();</span>
+<span class="nc" id="L102">		EnumSet&lt;SimplifyPlatformStatusFixCore&gt; computeFixSet= computeFixSet();</span>
+<span class="nc" id="L103">		EnumSet.allOf(SimplifyPlatformStatusFixCore.class)</span>
+<span class="nc" id="L104">		.forEach(e -&gt; sb.append(e.getPreview(computeFixSet.contains(e))));</span>
+<span class="nc" id="L105">		return sb.toString();</span>
 	}
 
 	private EnumSet&lt;SimplifyPlatformStatusFixCore&gt; computeFixSet() {
-<span class="fc" id="L106">		EnumSet&lt;SimplifyPlatformStatusFixCore&gt; fixSet= EnumSet.noneOf(SimplifyPlatformStatusFixCore.class);</span>
+<span class="fc" id="L109">		EnumSet&lt;SimplifyPlatformStatusFixCore&gt; fixSet= EnumSet.noneOf(SimplifyPlatformStatusFixCore.class);</span>
 
-<span class="pc bpc" id="L108" title="1 of 2 branches missed.">		if (isEnabled(SIMPLIFY_STATUS_CLEANUP)) {</span>
-<span class="fc" id="L109">			fixSet= EnumSet.allOf(SimplifyPlatformStatusFixCore.class);</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">		if (isEnabled(SIMPLIFY_STATUS_CLEANUP)) {</span>
+<span class="fc" id="L112">			fixSet= EnumSet.allOf(SimplifyPlatformStatusFixCore.class);</span>
 		}
-<span class="fc" id="L111">		return fixSet;</span>
+<span class="fc" id="L114">		return fixSet;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

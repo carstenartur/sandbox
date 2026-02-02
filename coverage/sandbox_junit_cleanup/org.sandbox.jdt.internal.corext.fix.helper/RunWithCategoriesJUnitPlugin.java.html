@@ -1,0 +1,330 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>RunWithCategoriesJUnitPlugin.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">RunWithCategoriesJUnitPlugin.java</span></div><h1>RunWithCategoriesJUnitPlugin.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
+
+/*-
+ * #%L
+ * Sandbox junit cleanup
+ * %%
+ * Copyright (C) 2026 hammer
+ * %%
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0.
+ * 
+ * This Source Code may also be made available under the following Secondary
+ * Licenses when the conditions for such availability set forth in the Eclipse
+ * Public License, v. 2.0 are satisfied: GNU General Public License, version 2
+ * with the GNU Classpath Exception which is
+ * available at https://www.gnu.org/software/classpath/license.html.
+ * 
+ * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+ * #L%
+ */
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.MarkerAnnotation;
+import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
+import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.TypeLiteral;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
+
+/**
+ * Plugin to migrate JUnit 4 @RunWith(Categories.class) to JUnit 5 @Suite with @IncludeTags/@ExcludeTags.
+ */
+<span class="fc" id="L69">public class RunWithCategoriesJUnitPlugin extends AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; {</span>
+
+<span class="fc" id="L71">	private static class CategoriesData {</span>
+		Annotation runWithAnnotation;
+		TypeDeclaration typeDeclaration;
+<span class="fc" id="L74">		List&lt;Annotation&gt; includeCategories = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L75">		List&lt;Annotation&gt; excludeCategories = new ArrayList&lt;&gt;();</span>
+		Annotation suiteClasses;
+	}
+
+	@Override
+	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
+			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
+<span class="fc" id="L82">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder= new ReferenceHolder&lt;&gt;();</span>
+		
+		// Find @RunWith(Categories.class) annotations
+<span class="fc" id="L85">		HelperVisitor.forAnnotation(ORG_JUNIT_RUNWITH)</span>
+<span class="fc" id="L86">			.in(compilationUnit)</span>
+<span class="fc" id="L87">			.excluding(nodesprocessed)</span>
+<span class="fc" id="L88">			.processEach(dataHolder, (visited, aholder) -&gt; {</span>
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">				if (visited instanceof SingleMemberAnnotation) {</span>
+<span class="fc" id="L90">					return processFoundNode(fixcore, operations, (Annotation) visited, aholder, nodesprocessed);</span>
+				}
+<span class="nc" id="L92">				return true;</span>
+			});
+<span class="fc" id="L94">	}</span>
+
+	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
+			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Annotation node,
+			ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder, Set&lt;ASTNode&gt; nodesprocessed) {
+		
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">		if (!(node instanceof SingleMemberAnnotation mynode)) {</span>
+<span class="nc" id="L101">			return true;</span>
+		}
+		
+<span class="fc" id="L104">		Expression value= mynode.getValue();</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">		if (!(value instanceof TypeLiteral myvalue)) {</span>
+<span class="nc" id="L106">			return true;</span>
+		}
+		
+		// Check if it's Categories.class
+<span class="fc" id="L110">		String runnerQualifiedName = getRunnerQualifiedName(myvalue);</span>
+		
+		// Only handle Categories runner
+<span class="fc bfc" id="L113" title="All 2 branches covered.">		if (!ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORIES.equals(runnerQualifiedName)) {</span>
+<span class="fc" id="L114">			return true;</span>
+		}
+		
+		// Find the enclosing TypeDeclaration
+<span class="fc" id="L118">		TypeDeclaration typeDecl = null;</span>
+<span class="fc" id="L119">		ASTNode parent = node.getParent();</span>
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">		while (parent != null) {</span>
+<span class="pc bpc" id="L121" title="1 of 2 branches missed.">			if (parent instanceof TypeDeclaration) {</span>
+<span class="fc" id="L122">				typeDecl = (TypeDeclaration) parent;</span>
+<span class="fc" id="L123">				break;</span>
+			}
+<span class="nc" id="L125">			parent = parent.getParent();</span>
+		}
+		
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">		if (typeDecl == null) {</span>
+<span class="nc" id="L129">			return true;</span>
+		}
+		
+		// Find @IncludeCategory, @ExcludeCategory, and @SuiteClasses annotations
+<span class="fc" id="L133">		CategoriesData categoriesData = new CategoriesData();</span>
+<span class="fc" id="L134">		categoriesData.runWithAnnotation = node;</span>
+<span class="fc" id="L135">		categoriesData.typeDeclaration = typeDecl;</span>
+<span class="fc" id="L136">		findCategoryAnnotations(typeDecl, categoriesData);</span>
+		
+		// Mark for transformation
+<span class="fc" id="L139">		nodesprocessed.add(node);</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">		for (Annotation annotation : categoriesData.includeCategories) {</span>
+<span class="fc" id="L141">			nodesprocessed.add(annotation);</span>
+		}
+<span class="fc bfc" id="L143" title="All 2 branches covered.">		for (Annotation annotation : categoriesData.excludeCategories) {</span>
+<span class="fc" id="L144">			nodesprocessed.add(annotation);</span>
+		}
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">		if (categoriesData.suiteClasses != null) {</span>
+<span class="fc" id="L147">			nodesprocessed.add(categoriesData.suiteClasses);</span>
+		}
+		
+<span class="fc" id="L150">		JunitHolder mh= new JunitHolder();</span>
+<span class="fc" id="L151">		mh.minv= node;</span>
+<span class="fc" id="L152">		mh.minvname= node.getTypeName().getFullyQualifiedName();</span>
+<span class="fc" id="L153">		mh.value= ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORIES;</span>
+<span class="fc" id="L154">		mh.additionalInfo= categoriesData;</span>
+<span class="fc" id="L155">		dataHolder.put(dataHolder.size(), mh);</span>
+<span class="fc" id="L156">		operations.add(fixcore.rewrite(dataHolder));</span>
+		
+<span class="fc" id="L158">		return true;</span>
+	}
+
+	private String getRunnerQualifiedName(TypeLiteral myvalue) {
+<span class="fc" id="L162">		ITypeBinding classBinding= myvalue.resolveTypeBinding();</span>
+<span class="fc" id="L163">		String runnerQualifiedName = null;</span>
+		
+<span class="pc bpc" id="L165" title="1 of 2 branches missed.">		if (classBinding != null) {</span>
+<span class="fc" id="L166">			Type type = myvalue.getType();</span>
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">			if (type != null) {</span>
+<span class="fc" id="L168">				ITypeBinding typeBinding = type.resolveBinding();</span>
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">				if (typeBinding != null) {</span>
+<span class="fc" id="L170">					runnerQualifiedName = typeBinding.getQualifiedName();</span>
+				}
+			}
+		}
+		
+		// Fallback to AST name if binding resolution failed
+<span class="pc bpc" id="L176" title="2 of 4 branches missed.">		if (runnerQualifiedName == null || runnerQualifiedName.isEmpty()) {</span>
+<span class="nc" id="L177">			Type runnerType = myvalue.getType();</span>
+<span class="nc bnc" id="L178" title="All 2 branches missed.">			if (runnerType != null) {</span>
+<span class="nc" id="L179">				String typeName = runnerType.toString();</span>
+<span class="nc bnc" id="L180" title="All 2 branches missed.">				if (&quot;Categories&quot;.equals(typeName)) {</span>
+<span class="nc" id="L181">					runnerQualifiedName = ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORIES;</span>
+				}
+			}
+		}
+		
+<span class="fc" id="L186">		return runnerQualifiedName;</span>
+	}
+
+	private void findCategoryAnnotations(TypeDeclaration typeDecl, CategoriesData data) {
+<span class="fc" id="L190">		List&lt;?&gt; modifiers = typeDecl.modifiers();</span>
+<span class="fc bfc" id="L191" title="All 2 branches covered.">		for (Object modifier : modifiers) {</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">			if (modifier instanceof Annotation annotation) {</span>
+<span class="fc" id="L193">				String annotationName = annotation.getTypeName().getFullyQualifiedName();</span>
+				
+				// Check for @IncludeCategory
+<span class="fc bfc" id="L196" title="All 2 branches covered.">				if (&quot;IncludeCategory&quot;.equals(annotationName) || </span>
+<span class="pc bpc" id="L197" title="1 of 2 branches missed.">						ORG_JUNIT_EXPERIMENTAL_CATEGORIES_INCLUDE_CATEGORY.equals(annotationName) ||</span>
+<span class="pc bpc" id="L198" title="1 of 2 branches missed.">						&quot;Categories.IncludeCategory&quot;.equals(annotationName)) {</span>
+<span class="fc" id="L199">					data.includeCategories.add(annotation);</span>
+<span class="fc" id="L200">				}</span>
+				// Check for @ExcludeCategory
+<span class="fc bfc" id="L202" title="All 2 branches covered.">				else if (&quot;ExcludeCategory&quot;.equals(annotationName) || </span>
+<span class="pc bpc" id="L203" title="1 of 2 branches missed.">						ORG_JUNIT_EXPERIMENTAL_CATEGORIES_EXCLUDE_CATEGORY.equals(annotationName) ||</span>
+<span class="pc bpc" id="L204" title="1 of 2 branches missed.">						&quot;Categories.ExcludeCategory&quot;.equals(annotationName)) {</span>
+<span class="fc" id="L205">					data.excludeCategories.add(annotation);</span>
+<span class="fc" id="L206">				}</span>
+				// Check for @SuiteClasses
+<span class="fc bfc" id="L208" title="All 2 branches covered.">				else if (&quot;SuiteClasses&quot;.equals(annotationName) || </span>
+<span class="pc bpc" id="L209" title="1 of 2 branches missed.">						ORG_JUNIT_SUITE_SUITECLASSES.equals(annotationName) ||</span>
+<span class="pc bpc" id="L210" title="1 of 2 branches missed.">						&quot;Suite.SuiteClasses&quot;.equals(annotationName)) {</span>
+<span class="fc" id="L211">					data.suiteClasses = annotation;</span>
+				}
+			}
+		}
+<span class="fc" id="L215">	}</span>
+
+	@Override
+	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+			JunitHolder junitHolder) {
+<span class="fc" id="L220">		CategoriesData categoriesData = (CategoriesData) junitHolder.additionalInfo;</span>
+<span class="fc" id="L221">		TypeDeclaration typeDecl = categoriesData.typeDeclaration;</span>
+<span class="fc" id="L222">		ListRewrite modifiersRewrite = rewriter.getListRewrite(typeDecl, TypeDeclaration.MODIFIERS2_PROPERTY);</span>
+		
+		// Replace @RunWith(Categories.class) with @Suite
+<span class="fc" id="L225">		MarkerAnnotation suiteAnnotation = ast.newMarkerAnnotation();</span>
+<span class="fc" id="L226">		suiteAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_SUITE));</span>
+<span class="fc" id="L227">		modifiersRewrite.replace(categoriesData.runWithAnnotation, suiteAnnotation, group);</span>
+		
+		// Transform @IncludeCategory annotations
+<span class="fc bfc" id="L230" title="All 2 branches covered.">		for (Annotation includeCategory : categoriesData.includeCategories) {</span>
+<span class="fc" id="L231">			SingleMemberAnnotation includeTagsAnnotation = createIncludeTagsAnnotation(ast, includeCategory);</span>
+<span class="fc" id="L232">			modifiersRewrite.replace(includeCategory, includeTagsAnnotation, group);</span>
+		}
+		
+		// Transform @ExcludeCategory annotations
+<span class="fc bfc" id="L236" title="All 2 branches covered.">		for (Annotation excludeCategory : categoriesData.excludeCategories) {</span>
+<span class="fc" id="L237">			SingleMemberAnnotation excludeTagsAnnotation = createExcludeTagsAnnotation(ast, excludeCategory);</span>
+<span class="fc" id="L238">			modifiersRewrite.replace(excludeCategory, excludeTagsAnnotation, group);</span>
+		}
+		
+		// Transform @SuiteClasses to @SelectClasses
+<span class="pc bpc" id="L242" title="2 of 4 branches missed.">		if (categoriesData.suiteClasses != null &amp;&amp; categoriesData.suiteClasses instanceof SingleMemberAnnotation suiteClassesAnnotation) {</span>
+<span class="fc" id="L243">			SingleMemberAnnotation selectClassesAnnotation = ast.newSingleMemberAnnotation();</span>
+<span class="fc" id="L244">			selectClassesAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_SELECT_CLASSES));</span>
+<span class="fc" id="L245">			selectClassesAnnotation.setValue(ASTNodes.createMoveTarget(rewriter, suiteClassesAnnotation.getValue()));</span>
+<span class="fc" id="L246">			modifiersRewrite.replace(categoriesData.suiteClasses, selectClassesAnnotation, group);</span>
+		}
+		
+		// Update imports
+<span class="fc" id="L250">		importRewriter.addImport(ORG_JUNIT_JUPITER_SUITE);</span>
+<span class="fc" id="L251">		importRewriter.addImport(ORG_JUNIT_PLATFORM_SUITE_API_INCLUDE_TAGS);</span>
+<span class="fc" id="L252">		importRewriter.addImport(ORG_JUNIT_PLATFORM_SUITE_API_EXCLUDE_TAGS);</span>
+<span class="fc" id="L253">		importRewriter.addImport(ORG_JUNIT_PLATFORM_SUITE_API_SELECT_CLASSES);</span>
+<span class="fc" id="L254">		importRewriter.removeImport(ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORIES);</span>
+<span class="fc" id="L255">		importRewriter.removeImport(ORG_JUNIT_EXPERIMENTAL_CATEGORIES_INCLUDE_CATEGORY);</span>
+<span class="fc" id="L256">		importRewriter.removeImport(ORG_JUNIT_EXPERIMENTAL_CATEGORIES_EXCLUDE_CATEGORY);</span>
+<span class="fc" id="L257">		importRewriter.removeImport(ORG_JUNIT_SUITE_SUITECLASSES);</span>
+<span class="fc" id="L258">		importRewriter.removeImport(ORG_JUNIT_RUNWITH);</span>
+<span class="fc" id="L259">	}</span>
+
+	private SingleMemberAnnotation createIncludeTagsAnnotation(AST ast, Annotation includeCategory) {
+<span class="fc" id="L262">		SingleMemberAnnotation includeTagsAnnotation = ast.newSingleMemberAnnotation();</span>
+<span class="fc" id="L263">		includeTagsAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_INCLUDE_TAGS));</span>
+		
+		// Extract category class name and convert to string tag
+<span class="pc bpc" id="L266" title="1 of 2 branches missed.">		if (includeCategory instanceof SingleMemberAnnotation categoryAnnotation) {</span>
+<span class="fc" id="L267">			Expression value = categoryAnnotation.getValue();</span>
+<span class="fc" id="L268">			String tagName = extractTagNameFromValue(value);</span>
+<span class="fc" id="L269">			StringLiteral tagLiteral = ast.newStringLiteral();</span>
+<span class="fc" id="L270">			tagLiteral.setLiteralValue(tagName);</span>
+<span class="fc" id="L271">			includeTagsAnnotation.setValue(tagLiteral);</span>
+		}
+		
+<span class="fc" id="L274">		return includeTagsAnnotation;</span>
+	}
+
+	private SingleMemberAnnotation createExcludeTagsAnnotation(AST ast, Annotation excludeCategory) {
+<span class="fc" id="L278">		SingleMemberAnnotation excludeTagsAnnotation = ast.newSingleMemberAnnotation();</span>
+<span class="fc" id="L279">		excludeTagsAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_EXCLUDE_TAGS));</span>
+		
+		// Extract category class name and convert to string tag
+<span class="pc bpc" id="L282" title="1 of 2 branches missed.">		if (excludeCategory instanceof SingleMemberAnnotation categoryAnnotation) {</span>
+<span class="fc" id="L283">			Expression value = categoryAnnotation.getValue();</span>
+<span class="fc" id="L284">			String tagName = extractTagNameFromValue(value);</span>
+<span class="fc" id="L285">			StringLiteral tagLiteral = ast.newStringLiteral();</span>
+<span class="fc" id="L286">			tagLiteral.setLiteralValue(tagName);</span>
+<span class="fc" id="L287">			excludeTagsAnnotation.setValue(tagLiteral);</span>
+		}
+		
+<span class="fc" id="L290">		return excludeTagsAnnotation;</span>
+	}
+
+	private String extractTagNameFromValue(Expression value) {
+<span class="pc bpc" id="L294" title="1 of 2 branches missed.">		if (value instanceof TypeLiteral typeLiteral) {</span>
+<span class="fc" id="L295">			Type type = typeLiteral.getType();</span>
+<span class="pc bpc" id="L296" title="1 of 2 branches missed.">			if (type != null) {</span>
+<span class="fc" id="L297">				return type.toString();</span>
+			}
+		}
+<span class="nc" id="L300">		return &quot;Unknown&quot;;</span>
+	}
+	
+	@Override
+	public String getPreview(boolean afterRefactoring) {
+<span class="nc bnc" id="L305" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L306">			return &quot;&quot;&quot;</span>
+					@Suite
+					@IncludeTags(&quot;FastTests&quot;)
+					@ExcludeTags(&quot;SlowTests&quot;)
+					@SelectClasses({TestA.class, TestB.class})
+					public class FastTestSuite {
+					}
+					&quot;&quot;&quot;; //$NON-NLS-1$
+		}
+<span class="nc" id="L315">		return &quot;&quot;&quot;</span>
+				@RunWith(Categories.class)
+				@IncludeCategory(FastTests.class)
+				@ExcludeCategory(SlowTests.class)
+				@SuiteClasses({TestA.class, TestB.class})
+				public class FastTestSuite {
+				}
+				&quot;&quot;&quot;; //$NON-NLS-1$
+	}
+
+	@Override
+	public String toString() {
+<span class="fc" id="L327">		return &quot;RunWithCategories&quot;; //$NON-NLS-1$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

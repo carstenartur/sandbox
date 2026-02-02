@@ -13,11 +13,17 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.fix;
 
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.LOOP_CONVERSION_ENABLED;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.LOOP_CONVERSION_FROM_ENHANCED_FOR;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.LOOP_CONVERSION_FROM_ITERATOR_WHILE;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.LOOP_CONVERSION_FROM_STREAM;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.LOOP_CONVERSION_TARGET_FORMAT;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_FOR;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_WHILE;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.FunctionalCallCleanUpFix_refactor;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.FunctionalCallCleanUp_description;
+import static org.sandbox.jdt.internal.ui.preferences.cleanup.CleanUpMessages.LoopConversion_Description;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -42,79 +48,129 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 
 public class UseFunctionalCallCleanUpCore extends AbstractCleanUp {
 	public UseFunctionalCallCleanUpCore(final Map&lt;String, String&gt; options) {
-<span class="nc" id="L45">		super(options);</span>
-<span class="nc" id="L46">	}</span>
+<span class="nc" id="L51">		super(options);</span>
+<span class="nc" id="L52">	}</span>
 
-<span class="fc" id="L48">	public UseFunctionalCallCleanUpCore() {</span>
-<span class="fc" id="L49">	}</span>
+<span class="fc" id="L54">	public UseFunctionalCallCleanUpCore() {</span>
+<span class="fc" id="L55">	}</span>
 
 	@Override
 	public CleanUpRequirements getRequirements() {
-<span class="fc" id="L53">		return new CleanUpRequirements(requireAST(), false, false, null);</span>
+<span class="fc" id="L59">		return new CleanUpRequirements(requireAST(), false, false, null);</span>
 	}
 
 	public boolean requireAST() {
-<span class="fc" id="L57">		return isEnabled(USEFUNCTIONALLOOP_CLEANUP);</span>
+<span class="pc bpc" id="L63" title="1 of 4 branches missed.">		return isEnabled(USEFUNCTIONALLOOP_CLEANUP) || isEnabled(LOOP_CONVERSION_ENABLED);</span>
 	}
 
 	@Override
 	public ICleanUpFix createFix(final CleanUpContext context) throws CoreException {
-<span class="fc" id="L62">		CompilationUnit compilationUnit = context.getAST();</span>
-<span class="pc bpc" id="L63" title="1 of 2 branches missed.">		if (compilationUnit == null) {</span>
-<span class="nc" id="L64">			return null;</span>
+<span class="fc" id="L68">		CompilationUnit compilationUnit = context.getAST();</span>
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">		if (compilationUnit == null) {</span>
+<span class="nc" id="L70">			return null;</span>
 		}
-<span class="fc" id="L66">		EnumSet&lt;UseFunctionalCallFixCore&gt; computeFixSet = computeFixSet();</span>
-<span class="pc bpc" id="L67" title="1 of 4 branches missed.">		if (!isEnabled(USEFUNCTIONALLOOP_CLEANUP) || computeFixSet.isEmpty()</span>
-				) {
-<span class="fc" id="L69">			return null;</span>
+<span class="fc" id="L72">		EnumSet&lt;UseFunctionalCallFixCore&gt; computeFixSet = computeFixSet();</span>
+<span class="pc bpc" id="L73" title="2 of 6 branches missed.">		if ((!isEnabled(USEFUNCTIONALLOOP_CLEANUP) &amp;&amp; !isEnabled(LOOP_CONVERSION_ENABLED)) || computeFixSet.isEmpty()) {</span>
+<span class="fc" id="L74">			return null;</span>
 		}
 		
 		// Check target format preference (STREAM, FOR_LOOP, WHILE_LOOP)
 		// Note: Currently only STREAM is fully implemented. FOR_LOOP and WHILE_LOOP
 		// support will be added in future phases.
 		// For backward compatibility, proceed with STREAM format unless FOR or WHILE is explicitly enabled
-<span class="fc bfc" id="L76" title="All 4 branches covered.">		if (isEnabled(USEFUNCTIONALLOOP_FORMAT_FOR) || isEnabled(USEFUNCTIONALLOOP_FORMAT_WHILE)) {</span>
+<span class="fc bfc" id="L81" title="All 4 branches covered.">		if (isEnabled(USEFUNCTIONALLOOP_FORMAT_FOR) || isEnabled(USEFUNCTIONALLOOP_FORMAT_WHILE)) {</span>
 			// Not yet implemented - return null to skip transformation
-<span class="fc" id="L78">			return null;</span>
+<span class="fc" id="L83">			return null;</span>
 		}
 		
-<span class="fc" id="L81">		Set&lt;CompilationUnitRewriteOperation&gt; operations = new LinkedHashSet&lt;&gt;();</span>
-<span class="fc" id="L82">		Set&lt;ASTNode&gt; nodesprocessed = new HashSet&lt;&gt;();</span>
-<span class="fc" id="L83">		computeFixSet.forEach(i -&gt; i.findOperations(compilationUnit, operations, nodesprocessed));</span>
-<span class="fc bfc" id="L84" title="All 2 branches covered.">		if (operations.isEmpty()) {</span>
-<span class="fc" id="L85">			return null;</span>
+<span class="fc" id="L86">		Set&lt;CompilationUnitRewriteOperation&gt; operations = new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L87">		Set&lt;ASTNode&gt; nodesprocessed = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L88">		computeFixSet.forEach(i -&gt; i.findOperations(compilationUnit, operations, nodesprocessed));</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">		if (operations.isEmpty()) {</span>
+<span class="fc" id="L90">			return null;</span>
 		}
-<span class="fc" id="L87">		return new CompilationUnitRewriteOperationsFixCore(FunctionalCallCleanUpFix_refactor, compilationUnit,</span>
-<span class="fc" id="L88">				operations.toArray(new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]));</span>
+<span class="fc" id="L92">		return new CompilationUnitRewriteOperationsFixCore(FunctionalCallCleanUpFix_refactor, compilationUnit,</span>
+<span class="fc" id="L93">				operations.toArray(new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]));</span>
 	}
 
 	@Override
 	public String[] getStepDescriptions() {
-<span class="fc" id="L93">		List&lt;String&gt; result = new ArrayList&lt;&gt;();</span>
-<span class="pc bpc" id="L94" title="1 of 2 branches missed.">		if (isEnabled(USEFUNCTIONALLOOP_CLEANUP)) {</span>
-<span class="nc" id="L95">			result.add(Messages.format(FunctionalCallCleanUp_description, new Object[] { String.join(&quot;,&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L96">					computeFixSet().stream().map(UseFunctionalCallFixCore::toString).collect(Collectors.toList())) }));</span>
+<span class="fc" id="L98">		List&lt;String&gt; result = new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">		if (isEnabled(USEFUNCTIONALLOOP_CLEANUP)) {</span>
+<span class="nc" id="L100">			result.add(Messages.format(FunctionalCallCleanUp_description, new Object[] { String.join(&quot;,&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L101">					computeFixSet().stream().map(UseFunctionalCallFixCore::toString).collect(Collectors.toList())) }));</span>
 		}
-<span class="fc" id="L98">		return result.toArray(new String[0]);</span>
+<span class="pc bpc" id="L103" title="1 of 2 branches missed.">		if (isEnabled(LOOP_CONVERSION_ENABLED)) {</span>
+<span class="nc" id="L104">			result.add(LoopConversion_Description);</span>
+		}
+<span class="fc" id="L106">		return result.toArray(new String[0]);</span>
 	}
 
 	@Override
 	public String getPreview() {
-<span class="nc" id="L103">		StringBuilder sb = new StringBuilder();</span>
-<span class="nc" id="L104">		EnumSet&lt;UseFunctionalCallFixCore&gt; computeFixSet = computeFixSet();</span>
-<span class="nc" id="L105">		EnumSet.allOf(UseFunctionalCallFixCore.class).forEach(e -&gt; sb.append(e.getPreview(computeFixSet.contains(e))));</span>
-<span class="nc" id="L106">		return sb.toString();</span>
+<span class="nc" id="L111">		StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L112">		EnumSet&lt;UseFunctionalCallFixCore&gt; computeFixSet = computeFixSet();</span>
+<span class="nc" id="L113">		EnumSet.allOf(UseFunctionalCallFixCore.class).forEach(e -&gt; sb.append(e.getPreview(computeFixSet.contains(e))));</span>
+<span class="nc" id="L114">		return sb.toString();</span>
 	}
 
 	private EnumSet&lt;UseFunctionalCallFixCore&gt; computeFixSet() {
-<span class="fc" id="L110">		EnumSet&lt;UseFunctionalCallFixCore&gt; fixSet = EnumSet.noneOf(UseFunctionalCallFixCore.class);</span>
+<span class="fc" id="L118">		EnumSet&lt;UseFunctionalCallFixCore&gt; fixSet = EnumSet.noneOf(UseFunctionalCallFixCore.class);</span>
 
-<span class="fc bfc" id="L112" title="All 2 branches covered.">		if (isEnabled(USEFUNCTIONALLOOP_CLEANUP)) {</span>
+		// Legacy functional loop cleanup (backward compatibility)
+<span class="fc bfc" id="L121" title="All 2 branches covered.">		if (isEnabled(USEFUNCTIONALLOOP_CLEANUP)) {</span>
 			// Add LOOP (V1) and ITERATOR_LOOP (Phase 7) for comprehensive loop conversions
-<span class="fc" id="L114">			fixSet.add(UseFunctionalCallFixCore.LOOP);</span>
-<span class="fc" id="L115">			fixSet.add(UseFunctionalCallFixCore.ITERATOR_LOOP);</span>
+<span class="fc" id="L123">			fixSet.add(UseFunctionalCallFixCore.LOOP);</span>
+<span class="fc" id="L124">			fixSet.add(UseFunctionalCallFixCore.ITERATOR_LOOP);</span>
 		}
-<span class="fc" id="L117">		return fixSet;</span>
+		
+		// Bidirectional Loop Conversion (Phase 9)
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">		if (isEnabled(LOOP_CONVERSION_ENABLED)) {</span>
+			// Determine target format by checking which format options are enabled
+			// Default to stream if none specified
+<span class="nc" id="L131">			String targetFormat = &quot;stream&quot;;</span>
+			// Note: In the current implementation, the combo box stores the value directly in the option
+			// but we can't access it here. For now, we'll use a simpler approach based on enabled flags.
+			// TODO: Once we have access to the options map, use: options.get(LOOP_CONVERSION_TARGET_FORMAT)
+			
+			// For now, default to &quot;stream&quot; until we can properly access the combo value
+			// The UI combo box will work, but the transformation logic defaults to stream
+			
+			// Add appropriate transformers based on source/target combination
+<span class="nc bnc" id="L140" title="All 2 branches missed.">			if (isEnabled(LOOP_CONVERSION_FROM_ENHANCED_FOR)) {</span>
+<span class="nc bnc" id="L141" title="All 2 branches missed.">				if (&quot;stream&quot;.equals(targetFormat)) {</span>
+<span class="nc" id="L142">					fixSet.add(UseFunctionalCallFixCore.LOOP); // existing: enhanced-for → stream</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">				} else if (&quot;iterator_while&quot;.equals(targetFormat)) {</span>
+<span class="nc" id="L144">					fixSet.add(UseFunctionalCallFixCore.FOR_TO_ITERATOR); // new: enhanced-for → iterator-while</span>
+				}
+				// enhanced-for → enhanced-for is no-op, skip
+			}
+			
+<span class="nc bnc" id="L149" title="All 2 branches missed.">			if (isEnabled(LOOP_CONVERSION_FROM_ITERATOR_WHILE)) {</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">				if (&quot;stream&quot;.equals(targetFormat)) {</span>
+<span class="nc" id="L151">					fixSet.add(UseFunctionalCallFixCore.ITERATOR_LOOP); // existing: iterator-while → stream</span>
+<span class="nc bnc" id="L152" title="All 2 branches missed.">				} else if (&quot;enhanced_for&quot;.equals(targetFormat)) {</span>
+<span class="nc" id="L153">					fixSet.add(UseFunctionalCallFixCore.ITERATOR_TO_FOR); // new: iterator-while → enhanced-for</span>
+				}
+				// iterator-while → iterator-while is no-op, skip
+			}
+			
+<span class="nc bnc" id="L158" title="All 2 branches missed.">			if (isEnabled(LOOP_CONVERSION_FROM_STREAM)) {</span>
+<span class="nc bnc" id="L159" title="All 2 branches missed.">				if (&quot;enhanced_for&quot;.equals(targetFormat)) {</span>
+<span class="nc" id="L160">					fixSet.add(UseFunctionalCallFixCore.STREAM_TO_FOR); // new: stream → enhanced-for</span>
+<span class="nc bnc" id="L161" title="All 2 branches missed.">				} else if (&quot;iterator_while&quot;.equals(targetFormat)) {</span>
+<span class="nc" id="L162">					fixSet.add(UseFunctionalCallFixCore.STREAM_TO_ITERATOR); // new: stream → iterator-while</span>
+				}
+				// stream → stream is no-op, skip
+			}
+			
+			// Classic for-loop conversion (experimental, not yet implemented)
+			// if (isEnabled(LOOP_CONVERSION_FROM_CLASSIC_FOR)) {
+			//     // TODO: Implement in future phase
+			// }
+		}
+		
+<span class="fc" id="L173">		return fixSet;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

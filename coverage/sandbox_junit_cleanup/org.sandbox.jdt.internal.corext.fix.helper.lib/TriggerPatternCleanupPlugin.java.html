@@ -391,5 +391,52 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
 <span class="nc bnc" id="L391" title="All 6 branches missed.">            return placeholderName != null &amp;&amp; placeholderName.startsWith(&quot;$&quot;) &amp;&amp; placeholderName.endsWith(&quot;$&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
         }
     }
+    
+    /**
+     * Replaces a marker annotation with a new one and updates imports.
+     * This is a common operation for simple annotation migrations like
+     * {@code @Before → @BeforeEach}, {@code @After → @AfterEach}, etc.
+     * 
+     * &lt;p&gt;This helper method is useful for plugins that need to override {@code process2Rewrite()}
+     * for custom logic but still want to leverage a standardized approach for simple
+     * marker annotation replacements.&lt;/p&gt;
+     * 
+     * &lt;p&gt;&lt;b&gt;Example usage:&lt;/b&gt;&lt;/p&gt;
+     * &lt;pre&gt;
+     * // Replace @BeforeClass with @BeforeAll
+     * replaceMarkerAnnotation(
+     *     group, rewriter, ast, importRewriter,
+     *     oldAnnotation,
+     *     &quot;BeforeAll&quot;,
+     *     &quot;org.junit.BeforeClass&quot;,
+     *     &quot;org.junit.jupiter.api.BeforeAll&quot;
+     * );
+     * &lt;/pre&gt;
+     * 
+     * @param group the text edit group for tracking changes
+     * @param rewriter the AST rewriter
+     * @param ast the AST instance
+     * @param importRewriter the import rewriter
+     * @param oldAnnotation the annotation to replace
+     * @param newAnnotationName the simple name of the new annotation (e.g., &quot;BeforeEach&quot;)
+     * @param removeImport the fully qualified import to remove (e.g., &quot;org.junit.Before&quot;)
+     * @param addImport the fully qualified import to add (e.g., &quot;org.junit.jupiter.api.BeforeEach&quot;)
+     */
+    protected void replaceMarkerAnnotation(
+            TextEditGroup group, 
+            ASTRewrite rewriter, 
+            AST ast,
+            ImportRewrite importRewriter, 
+            Annotation oldAnnotation,
+            String newAnnotationName, 
+            String removeImport, 
+            String addImport) {
+        
+<span class="nc" id="L435">        MarkerAnnotation newAnnotation = ast.newMarkerAnnotation();</span>
+<span class="nc" id="L436">        newAnnotation.setTypeName(ast.newSimpleName(newAnnotationName));</span>
+<span class="nc" id="L437">        ASTNodes.replaceButKeepComment(rewriter, oldAnnotation, newAnnotation, group);</span>
+<span class="nc" id="L438">        importRewriter.removeImport(removeImport);</span>
+<span class="nc" id="L439">        importRewriter.addImport(addImport);</span>
+<span class="nc" id="L440">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

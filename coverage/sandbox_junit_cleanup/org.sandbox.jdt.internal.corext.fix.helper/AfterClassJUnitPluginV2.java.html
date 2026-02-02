@@ -15,18 +15,10 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
-import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.Annotation;
-import org.eclipse.jdt.core.dom.MarkerAnnotation;
-import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
-import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
-import org.eclipse.jdt.internal.corext.dom.ASTNodes;
-import org.eclipse.text.edits.TextEditGroup;
-import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.TriggerPatternCleanupPlugin;
 import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
-import org.sandbox.jdt.triggerpattern.api.Match;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
+import org.sandbox.jdt.triggerpattern.api.RewriteRule;
 
 /**
  * Migrates JUnit 4 @AfterClass annotations to JUnit 5 @AfterAll.
@@ -64,37 +56,23 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
     description = &quot;Migrate @AfterClass to @AfterAll&quot;,
     displayName = &quot;JUnit 4 @AfterClass → JUnit 5 @AfterAll&quot;
 )
-<span class="fc" id="L67">public class AfterClassJUnitPluginV2 extends TriggerPatternCleanupPlugin {</span>
-
-	@Override
-	protected JunitHolder createHolder(Match match) {
-		// Call parent implementation to get holder with bindings set
-<span class="fc" id="L72">		JunitHolder holder = super.createHolder(match);</span>
-		// No additional customization needed for @AfterClass (no placeholders)
-<span class="fc" id="L74">		return holder;</span>
-	}
-
-	@Override
-	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
-			ImportRewrite importRewriter, JunitHolder junitHolder) {
-<span class="fc" id="L80">		Annotation annotation = junitHolder.getAnnotation();</span>
-<span class="fc" id="L81">		MarkerAnnotation newAnnotation = ast.newMarkerAnnotation();</span>
-<span class="fc" id="L82">		newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_AFTER_ALL));</span>
-<span class="fc" id="L83">		ASTNodes.replaceButKeepComment(rewriter, annotation, newAnnotation, group);</span>
-<span class="fc" id="L84">		importRewriter.removeImport(ORG_JUNIT_AFTERCLASS);</span>
-<span class="fc" id="L85">		importRewriter.addImport(ORG_JUNIT_JUPITER_API_AFTER_ALL);</span>
-<span class="fc" id="L86">	}</span>
+@RewriteRule(
+    replaceWith = &quot;@AfterAll&quot;,
+    removeImports = {ORG_JUNIT_AFTERCLASS},
+    addImports = {ORG_JUNIT_JUPITER_API_AFTER_ALL}
+)
+<span class="fc" id="L64">public class AfterClassJUnitPluginV2 extends TriggerPatternCleanupPlugin {</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L90" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L91">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L69">			return &quot;&quot;&quot;</span>
 				@AfterAll
 				public static void tearDownAfterClass() {
 				}
 				&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L97">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L75">		return &quot;&quot;&quot;</span>
 			@AfterClass
 			public static void tearDownAfterClass() {
 			}
@@ -103,7 +81,7 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
 	@Override
 	public String toString() {
-<span class="fc" id="L106">		return &quot;AfterClass (TriggerPattern)&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L84">		return &quot;AfterClass (TriggerPattern)&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

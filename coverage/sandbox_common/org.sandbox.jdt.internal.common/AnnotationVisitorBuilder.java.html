@@ -126,8 +126,8 @@ public class AnnotationVisitorBuilder extends HelperVisitorBuilder&lt;Annotation
         
 <span class="fc" id="L127">        BiPredicate&lt;SingleMemberAnnotation, ReferenceHolder&lt;V, H&gt;&gt; singleMemberAdapter = (SingleMemberAnnotation node, ReferenceHolder&lt;V, H&gt; h) -&gt; {</span>
             // Check if already processed (excluded)
-<span class="pc bpc" id="L129" title="2 of 4 branches missed.">            if (nodesprocessed != null &amp;&amp; nodesprocessed.contains(node)) {</span>
-<span class="nc" id="L130">                return true; // Skip this node but continue processing others</span>
+<span class="pc bpc" id="L129" title="1 of 4 branches missed.">            if (nodesprocessed != null &amp;&amp; nodesprocessed.contains(node)) {</span>
+<span class="fc" id="L130">                return true; // Skip this node but continue processing others</span>
             }
 <span class="pc bpc" id="L132" title="1 of 2 branches missed.">            if (!shouldContinue[0]) {</span>
 <span class="nc" id="L133">                return false;</span>

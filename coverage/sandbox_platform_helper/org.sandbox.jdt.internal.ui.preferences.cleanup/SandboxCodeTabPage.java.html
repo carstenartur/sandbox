@@ -40,11 +40,10 @@ import org.sandbox.jdt.internal.ui.fix.SimplifyPlatformStatusCleanUp;
 	@Override
 	protected void doCreatePreferences(Composite composite, int numColumns) {
 <span class="nc" id="L42">		Group java1d8Group= createGroup(numColumns, composite, CleanUpMessages.JavaFeatureTabPage_GroupName_Java1d8);</span>
-<span class="nc" id="L43">		final CheckboxPreference explicit_encoding= createCheckboxPref(java1d8Group, numColumns,</span>
+<span class="nc" id="L43">		final CheckboxPreference simplify_status= createCheckboxPref(java1d8Group, numColumns,</span>
 <span class="nc" id="L44">				CleanUpMessages.JavaFeatureTabPage_CheckboxName_SimplifyPlatformStatus,</span>
 <span class="nc" id="L45">				MYCleanUpConstants.SIMPLIFY_STATUS_CLEANUP, FALSE_TRUE);</span>
-<span class="nc" id="L46">		intent(java1d8Group);</span>
-<span class="nc" id="L47">		registerPreference(explicit_encoding);</span>
-<span class="nc" id="L48">	}</span>
+<span class="nc" id="L46">		registerPreference(simplify_status);</span>
+<span class="nc" id="L47">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

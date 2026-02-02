@@ -102,113 +102,115 @@ import org.sandbox.jdt.ui.helper.views.colum.QualifiednameColumn;
 
 	private IPartListener2 partListener;
 
+<span class="fc" id="L105">	private IJavaElement currentInput = null;</span>
+
 	@Override
 	public void createPartControl(Composite parent) {
-<span class="fc" id="L107">		parent.setLayout(new GridLayout(1, false));</span>
+<span class="fc" id="L109">		parent.setLayout(new GridLayout(1, false));</span>
 
-<span class="fc" id="L109">		tableViewer= new TableViewer(parent, SWT.BORDER | SWT.FULL_SELECTION);</span>
-<span class="fc" id="L110">		tableViewer.setColumnProperties(new String[] {});</span>
-<span class="fc" id="L111">		tableViewer.setUseHashlookup(true);</span>
-<span class="fc" id="L112">		table= tableViewer.getTable();</span>
-<span class="fc" id="L113">		table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));</span>
-<span class="fc" id="L114">		table.setHeaderVisible(true);</span>
-<span class="fc" id="L115">		table.setHeaderBackground(parent.getDisplay().getSystemColor(SWT.COLOR_TITLE_BACKGROUND));</span>
-<span class="fc" id="L116">		table.setLinesVisible(true);</span>
-<span class="fc" id="L117">		tableViewer.setContentProvider(new JHViewContentProvider());</span>
+<span class="fc" id="L111">		tableViewer= new TableViewer(parent, SWT.BORDER | SWT.FULL_SELECTION);</span>
+<span class="fc" id="L112">		tableViewer.setColumnProperties(new String[] {});</span>
+<span class="fc" id="L113">		tableViewer.setUseHashlookup(true);</span>
+<span class="fc" id="L114">		table= tableViewer.getTable();</span>
+<span class="fc" id="L115">		table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));</span>
+<span class="fc" id="L116">		table.setHeaderVisible(true);</span>
+<span class="fc" id="L117">		table.setHeaderBackground(parent.getDisplay().getSystemColor(SWT.COLOR_TITLE_BACKGROUND));</span>
+<span class="fc" id="L118">		table.setLinesVisible(true);</span>
+<span class="fc" id="L119">		tableViewer.setContentProvider(new JHViewContentProvider());</span>
 		// This will create the columns for the table
-<span class="fc" id="L119">		AbstractColumn.addColumn(tableViewer, new NameColumn());</span>
-<span class="fc" id="L120">		AbstractColumn.addColumn(tableViewer, new QualifiednameColumn());</span>
-<span class="fc" id="L121">		AbstractColumn.addColumn(tableViewer, new PackageColumn());</span>
-<span class="fc" id="L122">		AbstractColumn.addColumn(tableViewer, new DeprecatedColumn());</span>
-<span class="fc" id="L123">		AbstractColumn.addColumn(tableViewer, new DeclaringMethodColumn());</span>
+<span class="fc" id="L121">		AbstractColumn.addColumn(tableViewer, new NameColumn());</span>
+<span class="fc" id="L122">		AbstractColumn.addColumn(tableViewer, new QualifiednameColumn());</span>
+<span class="fc" id="L123">		AbstractColumn.addColumn(tableViewer, new PackageColumn());</span>
+<span class="fc" id="L124">		AbstractColumn.addColumn(tableViewer, new DeprecatedColumn());</span>
+<span class="fc" id="L125">		AbstractColumn.addColumn(tableViewer, new DeclaringMethodColumn());</span>
 
-<span class="fc" id="L125">		tableViewer.setComparator(AbstractColumn.getComparator());</span>
-<span class="fc" id="L126">		reset();</span>
-<span class="fc" id="L127">		makeActions();</span>
-<span class="fc" id="L128">		hookContextMenu();</span>
-<span class="fc" id="L129">		getSite().setSelectionProvider(new JHViewSelectionProvider(tableViewer));</span>
-<span class="fc" id="L130">		contributeToActionBars();</span>
+<span class="fc" id="L127">		tableViewer.setComparator(AbstractColumn.getComparator());</span>
+<span class="fc" id="L128">		reset();</span>
+<span class="fc" id="L129">		makeActions();</span>
+<span class="fc" id="L130">		hookContextMenu();</span>
+<span class="fc" id="L131">		getSite().setSelectionProvider(new JHViewSelectionProvider(tableViewer));</span>
+<span class="fc" id="L132">		contributeToActionBars();</span>
 		// tableViewer.addSelectionChangedListener(event -&gt; fCopyAction.setEnabled(!
 		// event.getSelection().isEmpty()));
 		// tableViewer.addSelectionChangedListener(event -&gt; fCopyAction.setEnabled(!
 		// event.getSelection().isEmpty()));
 		
 		// Add part listener to track editor changes
-<span class="fc" id="L137">		addPartListener();</span>
-<span class="fc" id="L138">	}</span>
+<span class="fc" id="L139">		addPartListener();</span>
+<span class="fc" id="L140">	}</span>
 
 	private void contributeToActionBars() {
-<span class="fc" id="L141">		IActionBars bars= getViewSite().getActionBars();</span>
-<span class="fc" id="L142">		fillLocalPullDown(bars.getMenuManager());</span>
-<span class="fc" id="L143">		fillLocalToolBar(bars.getToolBarManager());</span>
-<span class="fc" id="L144">		bars.setGlobalActionHandler(ActionFactory.REFRESH.getId(), fRefreshAction);</span>
+<span class="fc" id="L143">		IActionBars bars= getViewSite().getActionBars();</span>
+<span class="fc" id="L144">		fillLocalPullDown(bars.getMenuManager());</span>
+<span class="fc" id="L145">		fillLocalToolBar(bars.getToolBarManager());</span>
+<span class="fc" id="L146">		bars.setGlobalActionHandler(ActionFactory.REFRESH.getId(), fRefreshAction);</span>
 		// bars.setGlobalActionHandler(ActionFactory.COPY.getId(), fCopyAction);
-<span class="fc" id="L146">		bars.setGlobalActionHandler(ActionFactory.PROPERTIES.getId(), fPropertiesAction);</span>
-<span class="fc" id="L147">	}</span>
+<span class="fc" id="L148">		bars.setGlobalActionHandler(ActionFactory.PROPERTIES.getId(), fPropertiesAction);</span>
+<span class="fc" id="L149">	}</span>
 
 	private void fillLocalToolBar(IToolBarManager manager) {
-<span class="fc" id="L150">		manager.add(fCodeSelectAction);</span>
-<span class="fc" id="L151">		manager.add(fElementAtAction);</span>
-<span class="fc" id="L152">		manager.add(fResetAction);</span>
-<span class="fc" id="L153">		manager.add(fRefreshAction);</span>
-<span class="fc" id="L154">		manager.add(new Separator());</span>
+<span class="fc" id="L152">		manager.add(fCodeSelectAction);</span>
+<span class="fc" id="L153">		manager.add(fElementAtAction);</span>
+<span class="fc" id="L154">		manager.add(fResetAction);</span>
+<span class="fc" id="L155">		manager.add(fRefreshAction);</span>
+<span class="fc" id="L156">		manager.add(new Separator());</span>
 		// fDrillDownAdapter.addNavigationActions(manager);
-<span class="fc" id="L156">	}</span>
+<span class="fc" id="L158">	}</span>
 
 	private void fillLocalPullDown(IMenuManager manager) {
-<span class="fc" id="L159">		manager.add(fCodeSelectAction);</span>
-<span class="fc" id="L160">		manager.add(fElementAtAction);</span>
+<span class="fc" id="L161">		manager.add(fCodeSelectAction);</span>
+<span class="fc" id="L162">		manager.add(fElementAtAction);</span>
 		// manager.add(fCreateFromHandleAction);
-<span class="fc" id="L162">		manager.add(fResetAction);</span>
+<span class="fc" id="L164">		manager.add(fResetAction);</span>
 		// manager.add(fLogDeltasAction);
-<span class="fc" id="L164">		manager.add(new Separator());</span>
-<span class="fc" id="L165">		manager.add(fRefreshAction);</span>
-<span class="fc" id="L166">	}</span>
+<span class="fc" id="L166">		manager.add(new Separator());</span>
+<span class="fc" id="L167">		manager.add(fRefreshAction);</span>
+<span class="fc" id="L168">	}</span>
 
 	private void makeActions() {
-<span class="fc" id="L169">		fCodeSelectAction= new Action(&quot;Set Input from Editor (&amp;codeSelect)&quot;, JHPluginImages.IMG_SET_FOCUS_CODE_SELECT) { //$NON-NLS-1$</span>
+<span class="fc" id="L171">		fCodeSelectAction= new Action(&quot;Set Input from Editor (&amp;codeSelect)&quot;, JHPluginImages.IMG_SET_FOCUS_CODE_SELECT) { //$NON-NLS-1$</span>
 			@Override
 			public void run() {
-<span class="nc" id="L172">				IEditorPart editor= getSite().getPage().getActiveEditor();</span>
-<span class="nc bnc" id="L173" title="All 2 branches missed.">				if (editor == null) {</span>
-<span class="nc" id="L174">					setEmptyInput();</span>
-<span class="nc" id="L175">					return;</span>
+<span class="nc" id="L174">				IEditorPart editor= getSite().getPage().getActiveEditor();</span>
+<span class="nc bnc" id="L175" title="All 2 branches missed.">				if (editor == null) {</span>
+<span class="nc" id="L176">					setEmptyInput();</span>
+<span class="nc" id="L177">					return;</span>
 				}
-<span class="nc" id="L177">				IEditorInput input= editor.getEditorInput();</span>
-<span class="nc" id="L178">				ISelectionProvider selectionProvider= editor.getSite().getSelectionProvider();</span>
-<span class="nc bnc" id="L179" title="All 4 branches missed.">				if (input == null || selectionProvider == null) {</span>
-<span class="nc" id="L180">					setEmptyInput();</span>
-<span class="nc" id="L181">					return;</span>
+<span class="nc" id="L179">				IEditorInput input= editor.getEditorInput();</span>
+<span class="nc" id="L180">				ISelectionProvider selectionProvider= editor.getSite().getSelectionProvider();</span>
+<span class="nc bnc" id="L181" title="All 4 branches missed.">				if (input == null || selectionProvider == null) {</span>
+<span class="nc" id="L182">					setEmptyInput();</span>
+<span class="nc" id="L183">					return;</span>
 				}
-<span class="nc" id="L183">				ISelection selection= selectionProvider.getSelection();</span>
-<span class="nc bnc" id="L184" title="All 2 branches missed.">				if (!(selection instanceof ITextSelection)) {</span>
-<span class="nc" id="L185">					setEmptyInput();</span>
-<span class="nc" id="L186">					return;</span>
+<span class="nc" id="L185">				ISelection selection= selectionProvider.getSelection();</span>
+<span class="nc bnc" id="L186" title="All 2 branches missed.">				if (!(selection instanceof ITextSelection)) {</span>
+<span class="nc" id="L187">					setEmptyInput();</span>
+<span class="nc" id="L188">					return;</span>
 				}
-<span class="nc" id="L188">				IJavaElement javaElement= input.getAdapter(IJavaElement.class);</span>
-<span class="nc bnc" id="L189" title="All 2 branches missed.">				if (javaElement == null) {</span>
-<span class="nc" id="L190">					setEmptyInput();</span>
-<span class="nc" id="L191">					return;</span>
+<span class="nc" id="L190">				IJavaElement javaElement= input.getAdapter(IJavaElement.class);</span>
+<span class="nc bnc" id="L191" title="All 2 branches missed.">				if (javaElement == null) {</span>
+<span class="nc" id="L192">					setEmptyInput();</span>
+<span class="nc" id="L193">					return;</span>
 				}
 
 				IJavaElement[] resolved;
 				try {
-<span class="nc" id="L196">					resolved= codeResolve(javaElement, (ITextSelection) selection);</span>
-<span class="nc" id="L197">				} catch (JavaModelException e) {</span>
-<span class="nc" id="L198">					setEmptyInput();</span>
-<span class="nc" id="L199">					return;</span>
+<span class="nc" id="L198">					resolved= codeResolve(javaElement, (ITextSelection) selection);</span>
+<span class="nc" id="L199">				} catch (JavaModelException e) {</span>
+<span class="nc" id="L200">					setEmptyInput();</span>
+<span class="nc" id="L201">					return;</span>
 				}
-<span class="nc bnc" id="L201" title="All 2 branches missed.">				if (resolved.length == 0) {</span>
-<span class="nc" id="L202">					setEmptyInput();</span>
-<span class="nc" id="L203">					return;</span>
+<span class="nc bnc" id="L203" title="All 2 branches missed.">				if (resolved.length == 0) {</span>
+<span class="nc" id="L204">					setEmptyInput();</span>
+<span class="nc" id="L205">					return;</span>
 				}
 
-<span class="nc" id="L206">				List&lt;IJavaElement&gt; asList= Arrays.asList(resolved);</span>
+<span class="nc" id="L208">				List&lt;IJavaElement&gt; asList= Arrays.asList(resolved);</span>
 
-<span class="nc" id="L208">				setInput(asList);</span>
-<span class="nc" id="L209">			}</span>
+<span class="nc" id="L210">				setInput(asList);</span>
+<span class="nc" id="L211">			}</span>
 		};
-<span class="fc" id="L211">		fCodeSelectAction.setToolTipText(&quot;Set input from current editor's selection (codeSelect)&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L213">		fCodeSelectAction.setToolTipText(&quot;Set input from current editor's selection (codeSelect)&quot;); //$NON-NLS-1$</span>
 		//		fFocusAction = new Action() {
 		//			@Override
 		//			public void run() {
@@ -221,116 +223,116 @@ import org.sandbox.jdt.ui.helper.views.colum.QualifiednameColumn;
 		//			}
 		//		};
 		//		fFocusAction.setToolTipText(&quot;Focus on Selection&quot;);
-<span class="fc" id="L224">		fPropertiesAction= new Action(&quot;&amp;Properties&quot;, JHPluginImages.IMG_PROPERTIES) { //$NON-NLS-1$</span>
+<span class="fc" id="L226">		fPropertiesAction= new Action(&quot;&amp;Properties&quot;, JHPluginImages.IMG_PROPERTIES) { //$NON-NLS-1$</span>
 			@Override
 			public void run() {
-<span class="nc" id="L227">				String viewId= IPageLayout.ID_PROP_SHEET;</span>
-<span class="nc" id="L228">				IWorkbenchPage page= getViewSite().getPage();</span>
+<span class="nc" id="L229">				String viewId= IPageLayout.ID_PROP_SHEET;</span>
+<span class="nc" id="L230">				IWorkbenchPage page= getViewSite().getPage();</span>
 				IViewPart view;
 				try {
-<span class="nc" id="L231">					view= page.showView(viewId);</span>
-<span class="nc" id="L232">					page.activate(JavaHelperView.this);</span>
-<span class="nc" id="L233">					page.bringToTop(view);</span>
-<span class="nc" id="L234">				} catch (PartInitException e) {</span>
-<span class="nc" id="L235">					logger.error(e, &quot;could not find Properties view&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L233">					view= page.showView(viewId);</span>
+<span class="nc" id="L234">					page.activate(JavaHelperView.this);</span>
+<span class="nc" id="L235">					page.bringToTop(view);</span>
+<span class="nc" id="L236">				} catch (PartInitException e) {</span>
+<span class="nc" id="L237">					logger.error(e, &quot;could not find Properties view&quot;); //$NON-NLS-1$</span>
 				}
-<span class="nc" id="L237">			}</span>
+<span class="nc" id="L239">			}</span>
 		};
-<span class="fc" id="L239">		fPropertiesAction.setActionDefinitionId(IWorkbenchCommandConstants.FILE_PROPERTIES);</span>
-<span class="fc" id="L240">		fResetAction= new Action(&quot;&amp;Reset View&quot;, getJavaModelImageDescriptor()) { //$NON-NLS-1$</span>
+<span class="fc" id="L241">		fPropertiesAction.setActionDefinitionId(IWorkbenchCommandConstants.FILE_PROPERTIES);</span>
+<span class="fc" id="L242">		fResetAction= new Action(&quot;&amp;Reset View&quot;, getJavaModelImageDescriptor()) { //$NON-NLS-1$</span>
 			@Override
 			public void run() {
-<span class="nc" id="L243">				reset();</span>
-<span class="nc" id="L244">			}</span>
+<span class="nc" id="L245">				reset();</span>
+<span class="nc" id="L246">			}</span>
 		};
-<span class="fc" id="L246">		fResetAction.setToolTipText(&quot;Reset View to JavaModel&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L247">		fRefreshAction= new Action(&quot;Re&amp;fresh&quot;, JHPluginImages.IMG_REFRESH) { //$NON-NLS-1$</span>
+<span class="fc" id="L248">		fResetAction.setToolTipText(&quot;Reset View to JavaModel&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L249">		fRefreshAction= new Action(&quot;Re&amp;fresh&quot;, JHPluginImages.IMG_REFRESH) { //$NON-NLS-1$</span>
 			@Override
 			public void run() {
-<span class="nc" id="L250">				BusyIndicator.showWhile(getSite().getShell().getDisplay(), () -&gt; tableViewer.refresh());</span>
-<span class="nc" id="L251">			}</span>
+<span class="nc" id="L252">				BusyIndicator.showWhile(getSite().getShell().getDisplay(), () -&gt; tableViewer.refresh());</span>
+<span class="nc" id="L253">			}</span>
 		};
-<span class="fc" id="L253">		fRefreshAction.setToolTipText(&quot;Refresh&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L254">		fRefreshAction.setActionDefinitionId(&quot;org.eclipse.ui.file.refresh&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L255">		fElementAtAction= new Action(&quot;Set Input from Editor location (&amp;getElementAt)&quot;, JHPluginImages.IMG_SET_FOCUS) { //$NON-NLS-1$</span>
+<span class="fc" id="L255">		fRefreshAction.setToolTipText(&quot;Refresh&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L256">		fRefreshAction.setActionDefinitionId(&quot;org.eclipse.ui.file.refresh&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L257">		fElementAtAction= new Action(&quot;Set Input from Editor location (&amp;getElementAt)&quot;, JHPluginImages.IMG_SET_FOCUS) { //$NON-NLS-1$</span>
 			@Override
 			public void run() {
-<span class="nc" id="L258">				IEditorPart editor= getSite().getPage().getActiveEditor();</span>
-<span class="nc bnc" id="L259" title="All 2 branches missed.">				if (editor == null) {</span>
-<span class="nc" id="L260">					setEmptyInput();</span>
-<span class="nc" id="L261">					return;</span>
+<span class="nc" id="L260">				IEditorPart editor= getSite().getPage().getActiveEditor();</span>
+<span class="nc bnc" id="L261" title="All 2 branches missed.">				if (editor == null) {</span>
+<span class="nc" id="L262">					setEmptyInput();</span>
+<span class="nc" id="L263">					return;</span>
 				}
-<span class="nc" id="L263">				IEditorInput input= editor.getEditorInput();</span>
-<span class="nc" id="L264">				ISelectionProvider selectionProvider= editor.getSite().getSelectionProvider();</span>
-<span class="nc bnc" id="L265" title="All 4 branches missed.">				if (input == null || selectionProvider == null) {</span>
-<span class="nc" id="L266">					setEmptyInput();</span>
-<span class="nc" id="L267">					return;</span>
+<span class="nc" id="L265">				IEditorInput input= editor.getEditorInput();</span>
+<span class="nc" id="L266">				ISelectionProvider selectionProvider= editor.getSite().getSelectionProvider();</span>
+<span class="nc bnc" id="L267" title="All 4 branches missed.">				if (input == null || selectionProvider == null) {</span>
+<span class="nc" id="L268">					setEmptyInput();</span>
+<span class="nc" id="L269">					return;</span>
 				}
-<span class="nc" id="L269">				ISelection selection= selectionProvider.getSelection();</span>
-<span class="nc bnc" id="L270" title="All 2 branches missed.">				if (!(selection instanceof ITextSelection)) {</span>
-<span class="nc" id="L271">					setEmptyInput();</span>
-<span class="nc" id="L272">					return;</span>
+<span class="nc" id="L271">				ISelection selection= selectionProvider.getSelection();</span>
+<span class="nc bnc" id="L272" title="All 2 branches missed.">				if (!(selection instanceof ITextSelection)) {</span>
+<span class="nc" id="L273">					setEmptyInput();</span>
+<span class="nc" id="L274">					return;</span>
 				}
-<span class="nc" id="L274">				IJavaElement javaElement= input.getAdapter(IJavaElement.class);</span>
-<span class="nc bnc" id="L275" title="All 2 branches missed.">				if (javaElement == null) {</span>
-<span class="nc" id="L276">					setEmptyInput();</span>
-<span class="nc" id="L277">					return;</span>
+<span class="nc" id="L276">				IJavaElement javaElement= input.getAdapter(IJavaElement.class);</span>
+<span class="nc bnc" id="L277" title="All 2 branches missed.">				if (javaElement == null) {</span>
+<span class="nc" id="L278">					setEmptyInput();</span>
+<span class="nc" id="L279">					return;</span>
 				}
 
 				IJavaElement resolved;
 				try {
-<span class="nc" id="L282">					resolved= getElementAtOffset(javaElement, (ITextSelection) selection);</span>
-<span class="nc" id="L283">				} catch (JavaModelException e) {</span>
-<span class="nc" id="L284">					setEmptyInput();</span>
-<span class="nc" id="L285">					return;</span>
+<span class="nc" id="L284">					resolved= getElementAtOffset(javaElement, (ITextSelection) selection);</span>
+<span class="nc" id="L285">				} catch (JavaModelException e) {</span>
+<span class="nc" id="L286">					setEmptyInput();</span>
+<span class="nc" id="L287">					return;</span>
 				}
-<span class="nc bnc" id="L287" title="All 2 branches missed.">				if (resolved == null) {</span>
-<span class="nc" id="L288">					setEmptyInput();</span>
-<span class="nc" id="L289">					return;</span>
+<span class="nc bnc" id="L289" title="All 2 branches missed.">				if (resolved == null) {</span>
+<span class="nc" id="L290">					setEmptyInput();</span>
+<span class="nc" id="L291">					return;</span>
 				}
 
-<span class="nc" id="L292">				IResource correspondingResource= resolved.getResource();</span>
-<span class="nc" id="L293">				setSingleInput(correspondingResource);</span>
+<span class="nc" id="L294">				IResource correspondingResource= resolved.getResource();</span>
+<span class="nc" id="L295">				setSingleInput(correspondingResource);</span>
 
-<span class="nc" id="L295">			}</span>
+<span class="nc" id="L297">			}</span>
 
 		};
-<span class="fc" id="L298">		fElementAtAction.setToolTipText(&quot;Set input from current editor's selection location (getElementAt)&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L299">	}</span>
+<span class="fc" id="L300">		fElementAtAction.setToolTipText(&quot;Set input from current editor's selection location (getElementAt)&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L301">	}</span>
 
 	void setEmptyInput() {
-<span class="nc" id="L302">		setInput(Collections.&lt;IJavaModel&gt;emptyList());</span>
-<span class="nc" id="L303">	}</span>
+<span class="nc" id="L304">		setInput(Collections.&lt;IJavaModel&gt;emptyList());</span>
+<span class="nc" id="L305">	}</span>
 
 	static IJavaElement[] codeResolve(IJavaElement input, ITextSelection selection) throws JavaModelException {
-<span class="nc bnc" id="L306" title="All 2 branches missed.">		if (input instanceof ICodeAssist) {</span>
-<span class="nc bnc" id="L307" title="All 2 branches missed.">			if (input instanceof ICompilationUnit) {</span>
-<span class="nc" id="L308">				reconcile((ICompilationUnit) input);</span>
+<span class="nc bnc" id="L308" title="All 2 branches missed.">		if (input instanceof ICodeAssist) {</span>
+<span class="nc bnc" id="L309" title="All 2 branches missed.">			if (input instanceof ICompilationUnit) {</span>
+<span class="nc" id="L310">				reconcile((ICompilationUnit) input);</span>
 			}
-<span class="nc" id="L310">			IJavaElement[] elements= ((ICodeAssist) input).codeSelect(selection.getOffset(), selection.getLength());</span>
-<span class="nc bnc" id="L311" title="All 4 branches missed.">			if (elements != null &amp;&amp; elements.length &gt; 0) {</span>
-<span class="nc" id="L312">				return elements;</span>
+<span class="nc" id="L312">			IJavaElement[] elements= ((ICodeAssist) input).codeSelect(selection.getOffset(), selection.getLength());</span>
+<span class="nc bnc" id="L313" title="All 4 branches missed.">			if (elements != null &amp;&amp; elements.length &gt; 0) {</span>
+<span class="nc" id="L314">				return elements;</span>
 			}
 		}
-<span class="nc" id="L315">		return new IJavaElement[0];</span>
+<span class="nc" id="L317">		return new IJavaElement[0];</span>
 	}
 
 	static IJavaElement getElementAtOffset(IJavaElement input, ITextSelection selection) throws JavaModelException {
-<span class="nc bnc" id="L319" title="All 2 branches missed.">		if (input instanceof ICompilationUnit cunit) {</span>
-<span class="nc" id="L320">			reconcile(cunit);</span>
-<span class="nc" id="L321">			IJavaElement ref= cunit.getElementAt(selection.getOffset());</span>
-<span class="nc bnc" id="L322" title="All 2 branches missed.">			if (ref == null) {</span>
-<span class="nc" id="L323">				return input;</span>
+<span class="nc bnc" id="L321" title="All 2 branches missed.">		if (input instanceof ICompilationUnit cunit) {</span>
+<span class="nc" id="L322">			reconcile(cunit);</span>
+<span class="nc" id="L323">			IJavaElement ref= cunit.getElementAt(selection.getOffset());</span>
+<span class="nc bnc" id="L324" title="All 2 branches missed.">			if (ref == null) {</span>
+<span class="nc" id="L325">				return input;</span>
 			}
-<span class="nc" id="L325">			return ref;</span>
+<span class="nc" id="L327">			return ref;</span>
 		}
-<span class="nc bnc" id="L327" title="All 2 branches missed.">		if (input instanceof IClassFile) {</span>
-<span class="nc" id="L328">			IJavaElement ref= ((IClassFile) input).getElementAt(selection.getOffset());</span>
-<span class="nc bnc" id="L329" title="All 2 branches missed.">			if (ref != null) {</span>
-<span class="nc" id="L330">				return ref;</span>
+<span class="nc bnc" id="L329" title="All 2 branches missed.">		if (input instanceof IClassFile) {</span>
+<span class="nc" id="L330">			IJavaElement ref= ((IClassFile) input).getElementAt(selection.getOffset());</span>
+<span class="nc bnc" id="L331" title="All 2 branches missed.">			if (ref != null) {</span>
+<span class="nc" id="L332">				return ref;</span>
 			}
 		}
-<span class="nc" id="L333">		return input;</span>
+<span class="nc" id="L335">		return input;</span>
 	}
 
 	//	private void addFocusActionOrNot(IMenuManager manager) {
@@ -359,80 +361,80 @@ import org.sandbox.jdt.ui.helper.views.colum.QualifiednameColumn;
 
 	/* see JavaModelUtil.reconcile((ICompilationUnit) input) */
 	static void reconcile(ICompilationUnit unit) throws JavaModelException {
-<span class="nc" id="L362">		synchronized (unit) {</span>
-<span class="nc" id="L363">			unit.reconcile(ICompilationUnit.NO_AST, false /* don't force problem detection */,</span>
-<span class="nc" id="L364">					null /* use primary owner */, null /* no progress monitor */);</span>
+<span class="nc" id="L364">		synchronized (unit) {</span>
+<span class="nc" id="L365">			unit.reconcile(ICompilationUnit.NO_AST, false /* don't force problem detection */,</span>
+<span class="nc" id="L366">					null /* use primary owner */, null /* no progress monitor */);</span>
 		}
-<span class="nc" id="L366">	}</span>
+<span class="nc" id="L368">	}</span>
 
 	private ImageDescriptor getJavaModelImageDescriptor() {
-<span class="fc" id="L369">		JavaElementLabelProvider lp= new JavaElementLabelProvider(JavaElementLabelProvider.SHOW_SMALL_ICONS);</span>
-<span class="fc" id="L370">		Image modelImage= lp.getImage(getJavaModel());</span>
-<span class="fc" id="L371">		ImageDescriptor modelImageDescriptor= ImageDescriptor.createFromImage(modelImage);</span>
-<span class="fc" id="L372">		lp.dispose();</span>
-<span class="fc" id="L373">		return modelImageDescriptor;</span>
+<span class="fc" id="L371">		JavaElementLabelProvider lp= new JavaElementLabelProvider(JavaElementLabelProvider.SHOW_SMALL_ICONS);</span>
+<span class="fc" id="L372">		Image modelImage= lp.getImage(getJavaModel());</span>
+<span class="fc" id="L373">		ImageDescriptor modelImageDescriptor= ImageDescriptor.createFromImage(modelImage);</span>
+<span class="fc" id="L374">		lp.dispose();</span>
+<span class="fc" id="L375">		return modelImageDescriptor;</span>
 	}
 
 	void reset() {
-<span class="fc" id="L377">		setSingleInput(getJavaModel());</span>
-<span class="fc" id="L378">	}</span>
+<span class="fc" id="L379">		setSingleInput(getJavaModel());</span>
+<span class="fc" id="L380">	}</span>
 
 	private IResource getJavaModel() {
 		//		return JavaCore.create(ResourcesPlugin.getWorkspace().getRoot());
-<span class="fc" id="L382">		return ResourcesPlugin.getWorkspace().getRoot();</span>
+<span class="fc" id="L384">		return ResourcesPlugin.getWorkspace().getRoot();</span>
 		//		return null;
 	}
 
 	private void hookContextMenu() {
-<span class="fc" id="L387">		MenuManager menuMgr= new MenuManager(&quot;#PopupMenu&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L388">		menuMgr.setRemoveAllWhenShown(true);</span>
-<span class="fc" id="L389">		menuMgr.addMenuListener(this::fillContextMenu);</span>
-<span class="fc" id="L390">		Menu menu= menuMgr.createContextMenu(tableViewer.getControl());</span>
-<span class="fc" id="L391">		tableViewer.getControl().setMenu(menu);</span>
-<span class="fc" id="L392">		getSite().registerContextMenu(menuMgr, tableViewer);</span>
-<span class="fc" id="L393">	}</span>
+<span class="fc" id="L389">		MenuManager menuMgr= new MenuManager(&quot;#PopupMenu&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L390">		menuMgr.setRemoveAllWhenShown(true);</span>
+<span class="fc" id="L391">		menuMgr.addMenuListener(this::fillContextMenu);</span>
+<span class="fc" id="L392">		Menu menu= menuMgr.createContextMenu(tableViewer.getControl());</span>
+<span class="fc" id="L393">		tableViewer.getControl().setMenu(menu);</span>
+<span class="fc" id="L394">		getSite().registerContextMenu(menuMgr, tableViewer);</span>
+<span class="fc" id="L395">	}</span>
 
 	void fillContextMenu(IMenuManager manager) {
 		//		addFocusActionOrNot(manager);
-<span class="nc" id="L397">		manager.add(fResetAction);</span>
-<span class="nc" id="L398">		manager.add(fRefreshAction);</span>
-<span class="nc" id="L399">		manager.add(new Separator());</span>
+<span class="nc" id="L399">		manager.add(fResetAction);</span>
+<span class="nc" id="L400">		manager.add(fRefreshAction);</span>
+<span class="nc" id="L401">		manager.add(new Separator());</span>
 
-<span class="nc bnc" id="L401" title="All 2 branches missed.">		if (!getSite().getSelectionProvider().getSelection().isEmpty()) {</span>
-<span class="nc" id="L402">			MenuManager showInSubMenu= new MenuManager(getShowInMenuLabel());</span>
-<span class="nc" id="L403">			IWorkbenchWindow workbenchWindow= getSite().getWorkbenchWindow();</span>
-<span class="nc" id="L404">			showInSubMenu.add(ContributionItemFactory.VIEWS_SHOW_IN.create(workbenchWindow));</span>
-<span class="nc" id="L405">			manager.add(showInSubMenu);</span>
+<span class="nc bnc" id="L403" title="All 2 branches missed.">		if (!getSite().getSelectionProvider().getSelection().isEmpty()) {</span>
+<span class="nc" id="L404">			MenuManager showInSubMenu= new MenuManager(getShowInMenuLabel());</span>
+<span class="nc" id="L405">			IWorkbenchWindow workbenchWindow= getSite().getWorkbenchWindow();</span>
+<span class="nc" id="L406">			showInSubMenu.add(ContributionItemFactory.VIEWS_SHOW_IN.create(workbenchWindow));</span>
+<span class="nc" id="L407">			manager.add(showInSubMenu);</span>
 		}
 		// addElementActionsOrNot(manager);
-<span class="nc" id="L408">		manager.add(new Separator());</span>
+<span class="nc" id="L410">		manager.add(new Separator());</span>
 
 		// manager.add(fCopyAction);
-<span class="nc" id="L411">		manager.add(new Separator());</span>
+<span class="nc" id="L413">		manager.add(new Separator());</span>
 
 		// fDrillDownAdapter.addNavigationActions(manager);
-<span class="nc" id="L414">		manager.add(new Separator());</span>
+<span class="nc" id="L416">		manager.add(new Separator());</span>
 		// Other plug-ins can contribute there actions here
-<span class="nc" id="L416">		manager.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));</span>
-<span class="nc" id="L417">		manager.add(new Separator());</span>
+<span class="nc" id="L418">		manager.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));</span>
+<span class="nc" id="L419">		manager.add(new Separator());</span>
 		// addCompareActionOrNot(manager);
-<span class="nc" id="L419">		manager.add(fPropertiesAction);</span>
-<span class="nc" id="L420">	}</span>
+<span class="nc" id="L421">		manager.add(fPropertiesAction);</span>
+<span class="nc" id="L422">	}</span>
 
 	private String getShowInMenuLabel() {
-<span class="nc" id="L423">		String keyBinding= null;</span>
+<span class="nc" id="L425">		String keyBinding= null;</span>
 
-<span class="nc" id="L425">		IBindingService bindingService= PlatformUI.getWorkbench().getAdapter(IBindingService.class);</span>
-<span class="nc bnc" id="L426" title="All 2 branches missed.">		if (bindingService != null) {</span>
-<span class="nc" id="L427">			keyBinding= bindingService</span>
-<span class="nc" id="L428">					.getBestActiveBindingFormattedFor(IWorkbenchCommandConstants.NAVIGATE_SHOW_IN_QUICK_MENU);</span>
+<span class="nc" id="L427">		IBindingService bindingService= PlatformUI.getWorkbench().getAdapter(IBindingService.class);</span>
+<span class="nc bnc" id="L428" title="All 2 branches missed.">		if (bindingService != null) {</span>
+<span class="nc" id="L429">			keyBinding= bindingService</span>
+<span class="nc" id="L430">					.getBestActiveBindingFormattedFor(IWorkbenchCommandConstants.NAVIGATE_SHOW_IN_QUICK_MENU);</span>
 		}
 
-<span class="nc bnc" id="L431" title="All 2 branches missed.">		if (keyBinding == null) {</span>
-<span class="nc" id="L432">			keyBinding= &quot;&quot;; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L433" title="All 2 branches missed.">		if (keyBinding == null) {</span>
+<span class="nc" id="L434">			keyBinding= &quot;&quot;; //$NON-NLS-1$</span>
 		}
 
-<span class="nc" id="L435">		return &quot;Sho&amp;w In&quot; + '\t' + keyBinding; //$NON-NLS-1$</span>
+<span class="nc" id="L437">		return &quot;Sho&amp;w In&quot; + '\t' + keyBinding; //$NON-NLS-1$</span>
 	}
 
 	/**
@@ -440,101 +442,118 @@ import org.sandbox.jdt.ui.helper.views.colum.QualifiednameColumn;
 	 */
 	@Override
 	public void setFocus() {
-<span class="fc" id="L443">		tableViewer.getControl().setFocus();</span>
-<span class="fc" id="L444">	}</span>
+<span class="fc" id="L445">		tableViewer.getControl().setFocus();</span>
+<span class="fc" id="L446">	}</span>
 
 	@Override
 	public boolean show(ShowInContext context) {
-<span class="nc" id="L448">		ISelection selection= context.getSelection();</span>
-<span class="nc bnc" id="L449" title="All 2 branches missed.">		if (selection instanceof IStructuredSelection structuredSelection) {</span>
-<span class="nc bnc" id="L450" title="All 2 branches missed.">			if (structuredSelection.size() &gt;= 1) {</span>
-<span class="nc" id="L451">				List&lt;Object&gt; input= new ArrayList&lt;&gt;();</span>
-<span class="nc bnc" id="L452" title="All 2 branches missed.">				for (Object item : structuredSelection) {</span>
-<span class="nc bnc" id="L453" title="All 4 branches missed.">					if (item instanceof IJavaElement || item instanceof IResource</span>
-<span class="nc bnc" id="L454" title="All 2 branches missed.">							|| item instanceof IJarEntryResource) {</span>
-<span class="nc" id="L455">						input.add(item);</span>
+<span class="nc" id="L450">		ISelection selection= context.getSelection();</span>
+<span class="nc bnc" id="L451" title="All 2 branches missed.">		if (selection instanceof IStructuredSelection structuredSelection) {</span>
+<span class="nc bnc" id="L452" title="All 2 branches missed.">			if (structuredSelection.size() &gt;= 1) {</span>
+<span class="nc" id="L453">				List&lt;Object&gt; input= new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L454" title="All 2 branches missed.">				for (Object item : structuredSelection) {</span>
+<span class="nc bnc" id="L455" title="All 4 branches missed.">					if (item instanceof IJavaElement || item instanceof IResource</span>
+<span class="nc bnc" id="L456" title="All 2 branches missed.">							|| item instanceof IJarEntryResource) {</span>
+<span class="nc" id="L457">						input.add(item);</span>
 					}
 				}
-<span class="nc bnc" id="L458" title="All 2 branches missed.">				if (!input.isEmpty()) {</span>
-<span class="nc" id="L459">					setInput(input);</span>
-<span class="nc" id="L460">					return true;</span>
+<span class="nc bnc" id="L460" title="All 2 branches missed.">				if (!input.isEmpty()) {</span>
+<span class="nc" id="L461">					setInput(input);</span>
+<span class="nc" id="L462">					return true;</span>
 				}
 			}
 		}
 
-<span class="nc" id="L465">		Object input= context.getInput();</span>
-<span class="nc bnc" id="L466" title="All 2 branches missed.">		if (input instanceof IEditorInput) {</span>
-<span class="nc" id="L467">			SourceType elementOfInput= (SourceType) getElementOfInput((IEditorInput) context.getInput());</span>
-<span class="nc bnc" id="L468" title="All 2 branches missed.">			if (elementOfInput != null) {</span>
+<span class="nc" id="L467">		Object input= context.getInput();</span>
+<span class="nc bnc" id="L468" title="All 2 branches missed.">		if (input instanceof IEditorInput) {</span>
+<span class="nc" id="L469">			SourceType elementOfInput= (SourceType) getElementOfInput((IEditorInput) context.getInput());</span>
+<span class="nc bnc" id="L470" title="All 2 branches missed.">			if (elementOfInput != null) {</span>
 				//				setSingleInput(elementOfInput);
-<span class="nc" id="L470">				return true;</span>
+<span class="nc" id="L472">				return true;</span>
 			}
 		}
 
-<span class="nc" id="L474">		return false;</span>
+<span class="nc" id="L476">		return false;</span>
 	}
 
 	void setSingleInput(IResource iResource) {
-<span class="fc" id="L478">		setInput(Collections.singletonList(iResource));</span>
-<span class="fc" id="L479">	}</span>
+<span class="fc" id="L480">		setInput(Collections.singletonList(iResource));</span>
+<span class="fc" id="L481">	}</span>
+
+	void setSingleInput(IJavaElement javaElement) {
+<span class="nc" id="L484">		setInput(Collections.singletonList(javaElement));</span>
+<span class="nc" id="L485">	}</span>
 
 	Object getElementOfInput(IEditorInput input) {
-<span class="nc" id="L482">		Object adapted= input.getAdapter(IClassFile.class);</span>
-<span class="nc bnc" id="L483" title="All 2 branches missed.">		if (adapted != null) {</span>
-<span class="nc" id="L484">			return adapted;</span>
+<span class="nc" id="L488">		Object adapted= input.getAdapter(IClassFile.class);</span>
+<span class="nc bnc" id="L489" title="All 2 branches missed.">		if (adapted != null) {</span>
+<span class="nc" id="L490">			return adapted;</span>
 		}
 
-<span class="nc bnc" id="L487" title="All 2 branches missed.">		if (input instanceof IFileEditorInput) {</span>
-<span class="nc" id="L488">			IFile file= ((IFileEditorInput) input).getFile();</span>
-<span class="nc" id="L489">			IJavaElement javaElement= JavaCore.create(file);</span>
-<span class="nc bnc" id="L490" title="All 2 branches missed.">			if (javaElement != null) {</span>
-<span class="nc" id="L491">				return javaElement;</span>
+<span class="nc bnc" id="L493" title="All 2 branches missed.">		if (input instanceof IFileEditorInput) {</span>
+<span class="nc" id="L494">			IFile file= ((IFileEditorInput) input).getFile();</span>
+<span class="nc" id="L495">			IJavaElement javaElement= JavaCore.create(file);</span>
+<span class="nc bnc" id="L496" title="All 2 branches missed.">			if (javaElement != null) {</span>
+<span class="nc" id="L497">				return javaElement;</span>
 			}
-<span class="nc" id="L493">			return file;</span>
+<span class="nc" id="L499">			return file;</span>
 		}
-<span class="nc bnc" id="L495" title="All 2 branches missed.">		if (input instanceof IStorageEditorInput) {</span>
+<span class="nc bnc" id="L501" title="All 2 branches missed.">		if (input instanceof IStorageEditorInput) {</span>
 			try {
-<span class="nc" id="L497">				return ((IStorageEditorInput) input).getStorage();</span>
-<span class="nc" id="L498">			} catch (CoreException e) {</span>
+<span class="nc" id="L503">				return ((IStorageEditorInput) input).getStorage();</span>
+<span class="nc" id="L504">			} catch (CoreException e) {</span>
 			}
 		}
-<span class="nc" id="L501">		return null;</span>
+<span class="nc" id="L507">		return null;</span>
 	}
 
 	@Override
 	public ShowInContext getShowInContext() {
-<span class="fc" id="L506">		IWorkbenchPartSite site= getSite();</span>
-<span class="pc bpc" id="L507" title="1 of 2 branches missed.">		if (site == null) {</span>
-<span class="nc" id="L508">			return null;</span>
+<span class="fc" id="L512">		IWorkbenchPartSite site= getSite();</span>
+<span class="pc bpc" id="L513" title="1 of 2 branches missed.">		if (site == null) {</span>
+<span class="nc" id="L514">			return null;</span>
 		}
-<span class="fc" id="L510">		ISelectionProvider selectionProvider= site.getSelectionProvider();</span>
-<span class="pc bpc" id="L511" title="1 of 2 branches missed.">		if (selectionProvider == null) {</span>
-<span class="nc" id="L512">			return null;</span>
+<span class="fc" id="L516">		ISelectionProvider selectionProvider= site.getSelectionProvider();</span>
+<span class="pc bpc" id="L517" title="1 of 2 branches missed.">		if (selectionProvider == null) {</span>
+<span class="nc" id="L518">			return null;</span>
 		}
-<span class="fc" id="L514">		return new ShowInContext(null, selectionProvider.getSelection());</span>
+<span class="fc" id="L520">		return new ShowInContext(null, selectionProvider.getSelection());</span>
 	}
 
 	void setInput(List&lt;?&gt; javaElementsOrResources) {
 		//		fInput = new JERoot(javaElementsOrResources);
 		//		tableViewer.setInput(fInput);
-<span class="fc" id="L520">		tableViewer.setInput(javaElementsOrResources);</span>
-<span class="fc" id="L521">		JHViewContentProvider tcp= (JHViewContentProvider) tableViewer.getContentProvider();</span>
-<span class="fc" id="L522">		Object[] elements= tcp.getElements(javaElementsOrResources);</span>
-<span class="pc bpc" id="L523" title="1 of 2 branches missed.">		if (elements.length &gt; 0) {</span>
-<span class="nc" id="L524">			tableViewer.setSelection(new StructuredSelection(elements[0]));</span>
+<span class="fc" id="L526">		tableViewer.setInput(javaElementsOrResources);</span>
+		
+		// Clear the editor input cache if the input is not a single IJavaElement
+		// This ensures the view will refresh when switching back to an editor after
+		// actions like reset() or fElementAtAction that set IResource inputs
+<span class="pc bpc" id="L531" title="2 of 4 branches missed.">		if (javaElementsOrResources != null &amp;&amp; javaElementsOrResources.size() == 1) {</span>
+<span class="fc" id="L532">			Object input = javaElementsOrResources.get(0);</span>
+<span class="pc bpc" id="L533" title="1 of 2 branches missed.">			if (!(input instanceof IJavaElement)) {</span>
+<span class="fc" id="L534">				currentInput = null;</span>
+			}
+<span class="fc" id="L536">		} else {</span>
+<span class="nc" id="L537">			currentInput = null;</span>
+		}
+		
+<span class="fc" id="L540">		JHViewContentProvider tcp= (JHViewContentProvider) tableViewer.getContentProvider();</span>
+<span class="fc" id="L541">		Object[] elements= tcp.getElements(javaElementsOrResources);</span>
+<span class="pc bpc" id="L542" title="1 of 2 branches missed.">		if (elements.length &gt; 0) {</span>
+<span class="nc" id="L543">			tableViewer.setSelection(new StructuredSelection(elements[0]));</span>
 			// if (elements.length == 1) {
 			// tableViewer.setExpandedState(elements[0], true);
 			// }
 		}
 		// fDrillDownAdapter.reset();
-<span class="fc" id="L530">	}</span>
+<span class="fc" id="L549">	}</span>
 
 	@Override
 	public &lt;T&gt; T getAdapter(Class&lt;T&gt; adapter) {
 		// if (adapter == IPropertySheetPage.class) {
 		// return (T) getPropertySheetPage();
 		// }
-<span class="fc" id="L537">		return super.getAdapter(adapter);</span>
+<span class="fc" id="L556">		return super.getAdapter(adapter);</span>
 	}
 
 	/**
@@ -543,107 +562,105 @@ import org.sandbox.jdt.ui.helper.views.colum.QualifiednameColumn;
 	 */
 	private void addPartListener() {
 		// Check if listener is already registered to prevent duplicates
-<span class="pc bpc" id="L546" title="1 of 2 branches missed.">		if (partListener != null) {</span>
-<span class="nc" id="L547">			return;</span>
+<span class="pc bpc" id="L565" title="1 of 2 branches missed.">		if (partListener != null) {</span>
+<span class="nc" id="L566">			return;</span>
 		}
 		
-<span class="fc" id="L550">		partListener = new IPartListener2() {</span>
+<span class="fc" id="L569">		partListener = new IPartListener2() {</span>
 			@Override
 			public void partActivated(IWorkbenchPartReference partRef) {
-<span class="pc bpc" id="L553" title="1 of 2 branches missed.">				if (partRef.getPart(false) instanceof IEditorPart) {</span>
+<span class="pc bpc" id="L572" title="1 of 2 branches missed.">				if (partRef.getPart(false) instanceof IEditorPart) {</span>
 					// Update the view when an editor is activated
 					// Ensure UI updates happen on the UI thread
-<span class="nc" id="L556">					getSite().getShell().getDisplay().asyncExec(() -&gt; updateViewFromActiveEditor());</span>
+<span class="nc" id="L575">					getSite().getShell().getDisplay().asyncExec(() -&gt; updateViewFromActiveEditor());</span>
 				}
-<span class="fc" id="L558">			}</span>
+<span class="fc" id="L577">			}</span>
 
 			@Override
 			public void partBroughtToTop(IWorkbenchPartReference partRef) {
 				// Not needed
-<span class="fc" id="L563">			}</span>
+<span class="fc" id="L582">			}</span>
 
 			@Override
 			public void partClosed(IWorkbenchPartReference partRef) {
 				// Not needed
-<span class="fc" id="L568">			}</span>
+<span class="fc" id="L587">			}</span>
 
 			@Override
 			public void partDeactivated(IWorkbenchPartReference partRef) {
 				// Not needed
-<span class="fc" id="L573">			}</span>
+<span class="fc" id="L592">			}</span>
 
 			@Override
 			public void partOpened(IWorkbenchPartReference partRef) {
-<span class="pc bpc" id="L577" title="1 of 2 branches missed.">				if (partRef.getPart(false) instanceof IEditorPart) {</span>
+<span class="pc bpc" id="L596" title="1 of 2 branches missed.">				if (partRef.getPart(false) instanceof IEditorPart) {</span>
 					// Update the view when an editor is opened
 					// Ensure UI updates happen on the UI thread
-<span class="nc" id="L580">					getSite().getShell().getDisplay().asyncExec(() -&gt; updateViewFromActiveEditor());</span>
+<span class="nc" id="L599">					getSite().getShell().getDisplay().asyncExec(() -&gt; updateViewFromActiveEditor());</span>
 				}
-<span class="fc" id="L582">			}</span>
+<span class="fc" id="L601">			}</span>
 
 			@Override
 			public void partHidden(IWorkbenchPartReference partRef) {
 				// Not needed
-<span class="fc" id="L587">			}</span>
+<span class="fc" id="L606">			}</span>
 
 			@Override
 			public void partVisible(IWorkbenchPartReference partRef) {
 				// Not needed
-<span class="fc" id="L592">			}</span>
+<span class="fc" id="L611">			}</span>
 
 			@Override
 			public void partInputChanged(IWorkbenchPartReference partRef) {
-<span class="nc bnc" id="L596" title="All 2 branches missed.">				if (partRef.getPart(false) instanceof IEditorPart) {</span>
+<span class="nc bnc" id="L615" title="All 2 branches missed.">				if (partRef.getPart(false) instanceof IEditorPart) {</span>
 					// Update the view when editor input changes
 					// Ensure UI updates happen on the UI thread
-<span class="nc" id="L599">					getSite().getShell().getDisplay().asyncExec(() -&gt; updateViewFromActiveEditor());</span>
+<span class="nc" id="L618">					getSite().getShell().getDisplay().asyncExec(() -&gt; updateViewFromActiveEditor());</span>
 				}
-<span class="nc" id="L601">			}</span>
+<span class="nc" id="L620">			}</span>
 		};
 
-<span class="fc" id="L604">		getSite().getPage().addPartListener(partListener);</span>
-<span class="fc" id="L605">	}</span>
+<span class="fc" id="L623">		getSite().getPage().addPartListener(partListener);</span>
+<span class="fc" id="L624">	}</span>
 
 	/**
 	 * Updates the view content based on the currently active editor.
 	 */
 	private void updateViewFromActiveEditor() {
-<span class="nc" id="L611">		IEditorPart editor = getSite().getPage().getActiveEditor();</span>
-<span class="nc bnc" id="L612" title="All 2 branches missed.">		if (editor == null) {</span>
-<span class="nc" id="L613">			return;</span>
+<span class="nc" id="L630">		IEditorPart editor = getSite().getPage().getActiveEditor();</span>
+<span class="nc bnc" id="L631" title="All 2 branches missed.">		if (editor == null) {</span>
+<span class="nc" id="L632">			return;</span>
 		}
 		
-<span class="nc" id="L616">		IEditorInput input = editor.getEditorInput();</span>
-<span class="nc bnc" id="L617" title="All 2 branches missed.">		if (input == null) {</span>
-<span class="nc" id="L618">			return;</span>
+<span class="nc" id="L635">		IEditorInput input = editor.getEditorInput();</span>
+<span class="nc bnc" id="L636" title="All 2 branches missed.">		if (input == null) {</span>
+<span class="nc" id="L637">			return;</span>
 		}
 
-<span class="nc" id="L621">		IJavaElement javaElement = input.getAdapter(IJavaElement.class);</span>
-<span class="nc bnc" id="L622" title="All 2 branches missed.">		if (javaElement != null) {</span>
-<span class="nc" id="L623">			IResource correspondingResource = javaElement.getResource();</span>
-<span class="nc bnc" id="L624" title="All 2 branches missed.">			if (correspondingResource != null) {</span>
-<span class="nc" id="L625">				setSingleInput(correspondingResource);</span>
-			}
+<span class="nc" id="L640">		IJavaElement javaElement = input.getAdapter(IJavaElement.class);</span>
+<span class="nc bnc" id="L641" title="All 4 branches missed.">		if (javaElement != null &amp;&amp; !javaElement.equals(currentInput)) {</span>
+<span class="nc" id="L642">			currentInput = javaElement;</span>
+<span class="nc" id="L643">			setSingleInput(javaElement);</span>
 		}
-<span class="nc" id="L628">	}</span>
+<span class="nc" id="L645">	}</span>
 
 	@Override
 	public void dispose() {
 		// Remove part listener when view is disposed
-<span class="pc bpc" id="L633" title="1 of 2 branches missed.">		if (partListener != null) {</span>
+<span class="pc bpc" id="L650" title="1 of 2 branches missed.">		if (partListener != null) {</span>
 			// Check if page is still available to prevent errors during workbench shutdown
 			try {
-<span class="fc" id="L636">				IWorkbenchPage page = getSite().getPage();</span>
-<span class="pc bpc" id="L637" title="1 of 2 branches missed.">				if (page != null) {</span>
-<span class="fc" id="L638">					page.removePartListener(partListener);</span>
+<span class="fc" id="L653">				IWorkbenchPage page = getSite().getPage();</span>
+<span class="pc bpc" id="L654" title="1 of 2 branches missed.">				if (page != null) {</span>
+<span class="fc" id="L655">					page.removePartListener(partListener);</span>
 				}
-<span class="pc" id="L640">			} catch (Exception e) {</span>
+<span class="pc" id="L657">			} catch (Exception e) {</span>
 				// Ignore errors during shutdown
 			}
-<span class="fc" id="L643">			partListener = null;</span>
+<span class="fc" id="L660">			partListener = null;</span>
 		}
-<span class="fc" id="L645">		super.dispose();</span>
-<span class="fc" id="L646">	}</span>
+<span class="fc" id="L662">		super.dispose();</span>
+<span class="fc" id="L663">	}</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
