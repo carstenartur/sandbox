@@ -1927,6 +1927,117 @@ public class E1 {
        }
     }
 }
+"""),
+	FILES_NEWBUFFEREDREADER("""
+package test1;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.io.BufferedReader;
+
+public class E1 {
+    void method() throws Exception {
+        Path path = Paths.get("file.txt");
+        BufferedReader reader = Files.newBufferedReader(path);
+        BufferedReader reader2 = Files.newBufferedReader(path, java.nio.charset.StandardCharsets.UTF_8);
+    }
+}
+""",
+"""
+package test1;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.io.BufferedReader;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+
+public class E1 {
+
+    private static final Charset UTF_8 = StandardCharsets.UTF_8;
+
+    void method() throws Exception {
+        Path path = Paths.get("file.txt");
+        BufferedReader reader = Files.newBufferedReader(path, E1.UTF_8);
+        BufferedReader reader2 = Files.newBufferedReader(path, E1.UTF_8);
+    }
+}
+"""),
+	FILES_NEWBUFFEREDWRITER("""
+package test1;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.io.BufferedWriter;
+
+public class E1 {
+    void method() throws Exception {
+        Path path = Paths.get("file.txt");
+        BufferedWriter writer = Files.newBufferedWriter(path);
+        BufferedWriter writer2 = Files.newBufferedWriter(path, java.nio.charset.StandardCharsets.UTF_8);
+    }
+}
+""",
+"""
+package test1;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.io.BufferedWriter;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+
+public class E1 {
+
+    private static final Charset UTF_8 = StandardCharsets.UTF_8;
+
+    void method() throws Exception {
+        Path path = Paths.get("file.txt");
+        BufferedWriter writer = Files.newBufferedWriter(path, E1.UTF_8);
+        BufferedWriter writer2 = Files.newBufferedWriter(path, E1.UTF_8);
+    }
+}
+"""),
+	FILES_READALLLINES("""
+package test1;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+
+public class E1 {
+    void method() throws Exception {
+        Path path = Paths.get("file.txt");
+        List<String> lines = Files.readAllLines(path);
+        List<String> lines2 = Files.readAllLines(path, java.nio.charset.StandardCharsets.UTF_8);
+    }
+}
+""",
+"""
+package test1;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+
+public class E1 {
+
+    private static final Charset UTF_8 = StandardCharsets.UTF_8;
+
+    void method() throws Exception {
+        Path path = Paths.get("file.txt");
+        List<String> lines = Files.readAllLines(path, E1.UTF_8);
+        List<String> lines2 = Files.readAllLines(path, E1.UTF_8);
+    }
+}
 """);
 
 		String given;
