@@ -90,6 +90,64 @@ jobs:
         # Zeigt fehlgeschlagene Tests mit Details
         check_run_annotations: 'all tests, skipped tests'
         check_run_annotations_branch: '*'
+    
+    # Option 3: Detaillierte Fehlermeldungen als PR-Kommentar (für Copilot)
+    - name: Extract Test Failures
+      if: always() && github.event_name == 'pull_request'
+      id: extract-failures
+      run: |
+        python3 .github/scripts/extract_test_failures.py > test-failures.md
+        echo "has_failures=$([ -s test-failures.md ] && grep -q '❌' test-failures.md && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+        
+    - name: Post Test Failures as PR Comment
+      if: always() && github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          
+          // Read the failures markdown
+          let body;
+          try {
+            body = fs.readFileSync('test-failures.md', 'utf8');
+          } catch (e) {
+            body = '## ✅ All Tests Passed\n\nNo test failures detected.';
+          }
+          
+          // Add header and footer
+          const commentBody = `${body}\n\n---\n*This comment is automatically updated with test failure details for each commit.*`;
+          
+          // Find existing comment
+          const comments = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+          });
+          
+          const botComment = comments.data.find(comment => 
+            comment.user.type === 'Bot' && 
+            (comment.body.includes('❌ Failed Tests Details') || comment.body.includes('✅ All Tests Passed'))
+          );
+          
+          if (botComment) {
+            // Update existing comment
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: botComment.id,
+              body: commentBody
+            });
+            console.log('Updated existing test failures comment');
+          } else {
+            // Create new comment
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: commentBody
+            });
+            console.log('Created new test failures comment');
+          }
     - name: Install xsltproc
       if: always()
       run: sudo apt-get update && sudo apt-get install -y xsltproc
