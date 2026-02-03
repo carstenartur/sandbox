@@ -41,7 +41,7 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
  * 
  * <p><strong>Java 8+</strong></p>
  * 
- * <p><strong>Find:</strong> {@code Files.newBufferedReader(path)} - uses platform default charset</p>
+ * <p><strong>Find:</strong> {@code Files.newBufferedReader(path)} - uses UTF-8 implicitly</p>
  * 
  * <p><strong>Rewrite (KEEP_BEHAVIOR):</strong> {@code Files.newBufferedReader(path, StandardCharsets.UTF_8)}</p>
  * <p><strong>Rewrite (ENFORCE_UTF8):</strong> {@code Files.newBufferedReader(path, StandardCharsets.UTF_8)}</p>
