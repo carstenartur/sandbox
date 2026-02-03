@@ -33,6 +33,11 @@ import org.sandbox.jdt.internal.corext.fix.helper.ChannelsNewWriterExplicitEncod
 import org.sandbox.jdt.internal.corext.fix.helper.CharsetForNameExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.FileReaderExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.FileWriterExplicitEncoding;
+import org.sandbox.jdt.internal.corext.fix.helper.FilesNewBufferedReaderExplicitEncoding;
+import org.sandbox.jdt.internal.corext.fix.helper.FilesNewBufferedWriterExplicitEncoding;
+import org.sandbox.jdt.internal.corext.fix.helper.FilesReadAllLinesExplicitEncoding;
+import org.sandbox.jdt.internal.corext.fix.helper.FilesReadStringExplicitEncoding;
+import org.sandbox.jdt.internal.corext.fix.helper.FilesWriteStringExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.FormatterExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.InputStreamReaderExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.OutputStreamWriterExplicitEncoding;
@@ -65,7 +70,12 @@ public enum UseExplicitEncodingFixCore {
 	URLDECODER(new URLDecoderDecodeExplicitEncoding()),
 	URLENCODER(new URLEncoderEncodeExplicitEncoding()),
 	SCANNER(new ScannerExplicitEncoding()),
-	PROPERTIES_STORETOXML(new PropertiesStoreToXMLExplicitEncoding());
+	PROPERTIES_STORETOXML(new PropertiesStoreToXMLExplicitEncoding()),
+	FILES_NEWBUFFEREDREADER(new FilesNewBufferedReaderExplicitEncoding()),
+	FILES_NEWBUFFEREDWRITER(new FilesNewBufferedWriterExplicitEncoding()),
+	FILES_READALLLINES(new FilesReadAllLinesExplicitEncoding()),
+	FILES_READSTRING(new FilesReadStringExplicitEncoding()),
+	FILES_WRITESTRING(new FilesWriteStringExplicitEncoding());
 
 	AbstractExplicitEncoding<ASTNode> explicitencoding;
 
