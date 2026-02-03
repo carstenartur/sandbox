@@ -149,6 +149,12 @@ public abstract class AbstractMethodMigrationPlugin extends AbstractTool<Referen
 
 	/**
 	 * Processes an import declaration, replacing the source import with target import.
+	 * 
+	 * <p>Handles both specific and wildcard imports:</p>
+	 * <ul>
+	 *   <li>Wildcard: import static org.junit.Assert.* → import static org.junit.jupiter.api.Assertions.*</li>
+	 *   <li>Specific: import static org.junit.Assert.assertEquals → import static org.junit.jupiter.api.Assertions.assertEquals</li>
+	 * </ul>
 	 */
 	protected void processImportDeclaration(TextEditGroup group, ASTRewrite rewriter, AST ast,
 			ImportRewrite importRewriter, ImportDeclaration importDecl) {
@@ -156,18 +162,21 @@ public abstract class AbstractMethodMigrationPlugin extends AbstractTool<Referen
 		String importName = importDecl.getName().getFullyQualifiedName();
 		
 		if (importDecl.isStatic()) {
-			// Handle static imports: import static org.junit.Assert.assertEquals
-			// → import static org.junit.jupiter.api.Assertions.assertEquals
-			if (importName.startsWith(getSourceClass())) {
-				String methodPart = importName.substring(getSourceClass().length());
-				if (methodPart.startsWith(".")) {
-					String methodName = methodPart.substring(1);
+			// Handle static imports
+			if (importDecl.isOnDemand()) {
+				// Wildcard import: import static org.junit.Assert.*
+				// Note: importName is "org.junit.Assert" (without .*)
+				if (getSourceClass().equals(importName)) {
+					importRewriter.removeStaticImport(importName + ".*");
+					importRewriter.addStaticImport(getTargetClass(), "*", false);
+				}
+			} else {
+				// Specific import: import static org.junit.Assert.assertEquals
+				// Note: importName is "org.junit.Assert.assertEquals"
+				if (importName.startsWith(getSourceClass() + ".")) {
+					String methodName = importName.substring(getSourceClass().length() + 1);
 					importRewriter.removeStaticImport(importName);
-					if ("*".equals(methodName)) {
-						importRewriter.addStaticImport(getTargetClass(), "*", false);
-					} else {
-						importRewriter.addStaticImport(getTargetClass(), methodName, false);
-					}
+					importRewriter.addStaticImport(getTargetClass(), methodName, false);
 				}
 			}
 		} else {
