@@ -22,13 +22,14 @@ import java.util.Set;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
-import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
@@ -72,13 +73,7 @@ public class FilesNewBufferedWriterExplicitEncoding extends AbstractExplicitEnco
 		// The charset is the second parameter
 		if (arguments.size() >= 2) {
 			ASTNode encodingArg = arguments.get(1);
-			String encodingValue = null;
-			
-			if (encodingArg instanceof StringLiteral literal) {
-				encodingValue = literal.getLiteralValue().toUpperCase(java.util.Locale.ROOT);
-			} else if (encodingArg instanceof SimpleName simpleName) {
-				encodingValue = findVariableValue(simpleName, visited);
-			}
+			String encodingValue = getEncodingValue(encodingArg, visited);
 			
 			if (encodingValue != null && ENCODINGS.contains(encodingValue)) {
 				NodeData nd = new NodeData(true, encodingArg, ENCODING_MAP.get(encodingValue));
@@ -86,11 +81,13 @@ public class FilesNewBufferedWriterExplicitEncoding extends AbstractExplicitEnco
 				operations.add(fixcore.rewrite(visited, cb, holder));
 				return false;
 			}
+			// If we have 2+ arguments and second is a charset (even if not recognized), don't add another
+			return false;
 		}
 		
-		// Handle Files.newBufferedWriter(Path) or Files.newBufferedWriter(Path, OpenOption...) - add charset parameter
+		// Handle Files.newBufferedWriter(Path) - only 1 argument, add charset parameter
 		// We need to insert the charset as the second parameter
-		if (arguments.size() >= 1) {
+		if (arguments.size() == 1) {
 			// Files.newBufferedWriter(Path) uses UTF-8 by default since Java 8
 			// In all modes, we should use UTF-8 to preserve the original behavior
 			String encoding = "UTF_8"; //$NON-NLS-1$
@@ -101,6 +98,54 @@ public class FilesNewBufferedWriterExplicitEncoding extends AbstractExplicitEnco
 		}
 		
 		return false;
+	}
+
+	/**
+	 * Extracts the encoding value from various AST node types representing charset arguments.
+	 * 
+	 * @param encodingArg the AST node representing the charset argument
+	 * @param context the method invocation context for variable resolution
+	 * @return the uppercase encoding string (e.g., "UTF-8"), or null if not determinable
+	 */
+	private static String getEncodingValue(ASTNode encodingArg, MethodInvocation context) {
+		if (encodingArg instanceof StringLiteral literal) {
+			return literal.getLiteralValue().toUpperCase(java.util.Locale.ROOT);
+		} else if (encodingArg instanceof SimpleName simpleName) {
+			return findVariableValue(simpleName, context);
+		} else if (encodingArg instanceof QualifiedName qualifiedName) {
+			// Handle StandardCharsets.UTF_8 pattern
+			return extractStandardCharsetName(qualifiedName);
+		} else if (encodingArg instanceof FieldAccess fieldAccess) {
+			// Handle java.nio.charset.StandardCharsets.UTF_8 pattern
+			return extractStandardCharsetName(fieldAccess);
+		}
+		return null;
+	}
+
+	/**
+	 * Extracts charset name from QualifiedName like StandardCharsets.UTF_8.
+	 */
+	private static String extractStandardCharsetName(QualifiedName qualifiedName) {
+		String qualifier = qualifiedName.getQualifier().toString();
+		if ("StandardCharsets".equals(qualifier) || qualifier.endsWith(".StandardCharsets")) {
+			String fieldName = qualifiedName.getName().getIdentifier();
+			// Convert field name format (UTF_8) to charset name format (UTF-8)
+			return fieldName.replace('_', '-');
+		}
+		return null;
+	}
+
+	/**
+	 * Extracts charset name from FieldAccess like StandardCharsets.UTF_8.
+	 */
+	private static String extractStandardCharsetName(FieldAccess fieldAccess) {
+		String expression = fieldAccess.getExpression().toString();
+		if ("StandardCharsets".equals(expression) || expression.endsWith(".StandardCharsets")) {
+			String fieldName = fieldAccess.getName().getIdentifier();
+			// Convert field name format (UTF_8) to charset name format (UTF-8)
+			return fieldName.replace('_', '-');
+		}
+		return null;
 	}
 
 	@Override
