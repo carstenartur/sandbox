@@ -59,14 +59,28 @@ jobs:
         xvfb-run --auto-servernum mvn -e -V -T 1C --batch-mode -Dtycho.localArtifacts=ignore clean verify
     - name: Cleanup xvfb pidx build
       uses: bcomnes/cleanup-xvfb@v1
-    - name: Publish Test Report
+    # Option 1: Check Annotations (schöne UI in GitHub Checks)
+    - name: Publish Test Report (Annotations)
       uses: mikepenz/action-junit-report@v6
       if: always() # always run even if the previous step fails
       with:
         report_paths: '**/target/surefire-reports/TEST-*.xml'
         summary: true
-        include_passed: true
+        include_passed: false
         detailed_summary: true
+        
+    # Option 2: PR-Kommentar (für Copilot und API-Zugriff)
+    - name: Publish Test Results (PR Comment)
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always() # always run even if the previous step fails
+      with:
+        files: '**/target/surefire-reports/TEST-*.xml'
+        comment_mode: always
+        check_name: 'Test Results'
+        comment_title: 'Test Results'
+        fail_on: 'nothing'
+        report_individual_runs: true
+        deduplicate_classes_by_file_name: true
     - name: Install xsltproc
       if: always()
       run: sudo apt-get update && sudo apt-get install -y xsltproc
