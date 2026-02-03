@@ -66,11 +66,17 @@ def extract_failures(reports_dir="."):
                         truncated_stacktrace = stacktrace[:5000]
                         if len(stacktrace) > 5000:
                             truncated_stacktrace += "\n... (truncated)"
+                        
+                        # If message doesn't have newlines but stacktrace does,
+                        # prefer parsing from stacktrace for better formatting
+                        parse_source = truncated_stacktrace if '\n' in stacktrace else truncated_message
+                        
                         failures.append({
                             "class": class_name,
                             "test": test_name,
                             "message": truncated_message,
-                            "stacktrace": truncated_stacktrace
+                            "stacktrace": truncated_stacktrace,
+                            "parse_source": parse_source
                         })
                     
                     # Check for error
@@ -85,11 +91,17 @@ def extract_failures(reports_dir="."):
                         truncated_stacktrace = stacktrace[:5000]
                         if len(stacktrace) > 5000:
                             truncated_stacktrace += "\n... (truncated)"
+                        
+                        # If message doesn't have newlines but stacktrace does,
+                        # prefer parsing from stacktrace for better formatting
+                        parse_source = truncated_stacktrace if '\n' in stacktrace else truncated_message
+                        
                         failures.append({
                             "class": class_name,
                             "test": test_name,
                             "message": truncated_message,
-                            "stacktrace": truncated_stacktrace
+                            "stacktrace": truncated_stacktrace,
+                            "parse_source": parse_source
                         })
         except ET.ParseError as e:
             print(f"Warning: Could not parse {xml_path}: {e}", file=sys.stderr)
@@ -152,8 +164,9 @@ def format_as_markdown(failures):
             ""
         ])
         
-        # Try to parse expected/actual from message
-        parsed = parse_assertion_error(f["message"])
+        # Try to parse expected/actual from parse_source (prefers stacktrace with newlines)
+        parse_source = f.get("parse_source", f["message"])
+        parsed = parse_assertion_error(parse_source)
         if parsed:
             lines.extend([
                 "**Expected:**",
