@@ -94,14 +94,12 @@ jobs:
     # Option 3: Detaillierte Fehlermeldungen als PR-Kommentar (für Copilot)
     - name: Extract Test Failures
       if: always() && github.event_name == 'pull_request'
-      id: extract-failures
       run: |
         python3 .github/scripts/extract_test_failures.py > test-failures.md
-        echo "has_failures=$([ -s test-failures.md ] && grep -q '❌' test-failures.md && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
         
     - name: Post Test Failures as PR Comment
       if: always() && github.event_name == 'pull_request'
-      uses: actions/github-script@v7
+      uses: actions/github-script@v8
       with:
         script: |
           const fs = require('fs');
@@ -111,13 +109,15 @@ jobs:
           try {
             body = fs.readFileSync('test-failures.md', 'utf8');
           } catch (e) {
-            body = '## ✅ All Tests Passed\n\nNo test failures detected.';
+            // If file doesn't exist or can't be read, check if previous step failed
+            console.error('Could not read test-failures.md:', e.message);
+            body = '## ⚠️ Test Failure Extraction Error\n\n<!-- test-failures-comment -->\nCould not extract test failures. Check workflow logs for details.';
           }
           
           // Add header and footer
           const commentBody = `${body}\n\n---\n*This comment is automatically updated with test failure details for each commit.*`;
           
-          // Find existing comment
+          // Find existing comment using unique marker
           const comments = await github.rest.issues.listComments({
             owner: context.repo.owner,
             repo: context.repo.repo,
@@ -126,7 +126,7 @@ jobs:
           
           const botComment = comments.data.find(comment => 
             comment.user.type === 'Bot' && 
-            (comment.body.includes('❌ Failed Tests Details') || comment.body.includes('✅ All Tests Passed'))
+            comment.body.includes('<!-- test-failures-comment -->')
           );
           
           if (botComment) {
