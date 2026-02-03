@@ -43,6 +43,7 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -119,6 +120,45 @@ public class AssumeJUnitPlugin extends AbstractMethodMigrationPlugin {
 			super.processMethodInvocation(group, rewriter, ast, importRewriter, minv);
 			// Add import for Assumptions class (needed for qualified method calls)
 			importRewriter.addImport(ORG_JUNIT_JUPITER_API_ASSUMPTIONS);
+		}
+	}
+
+	@Override
+	protected void processImportDeclaration(TextEditGroup group, ASTRewrite rewriter, AST ast,
+			ImportRewrite importRewriter, ImportDeclaration importDecl) {
+		
+		String importName = importDecl.getName().getFullyQualifiedName();
+		
+		// Special handling for org.junit.Assume imports when using Hamcrest
+		if (importDecl.isStatic()) {
+			// Handle static imports
+			if (importDecl.isOnDemand()) {
+				// Wildcard import: import static org.junit.Assume.*
+				if (ORG_JUNIT_ASSUME.equals(importName)) {
+					importRewriter.removeStaticImport(importName + ".*");
+					importRewriter.addStaticImport(getTargetClass(), "*", false);
+				}
+			} else {
+				// Specific static import: import static org.junit.Assume.assumeThat
+				if (importName.startsWith(ORG_JUNIT_ASSUME + ".")) {
+					String methodName = importName.substring(ORG_JUNIT_ASSUME.length() + 1);
+					// Remove the JUnit 4 static import - the method handler will add the correct one
+					importRewriter.removeStaticImport(importName);
+					// For assumeThat, the processMethodInvocation will add the correct import (Hamcrest or JUnit 5)
+					// For other methods, add JUnit 5 static import
+					if (!"assumeThat".equals(methodName)) {
+						importRewriter.addStaticImport(getTargetClass(), methodName, false);
+					}
+				}
+			}
+		} else {
+			// Handle regular imports: import org.junit.Assume
+			if (ORG_JUNIT_ASSUME.equals(importName)) {
+				// Always remove the JUnit 4 import
+				importRewriter.removeImport(ORG_JUNIT_ASSUME);
+				// Only add JUnit 5 Assumptions import if needed (will be added by processMethodInvocation for non-Hamcrest methods)
+				// Don't unconditionally add it here, as Hamcrest-only usage doesn't need it
+			}
 		}
 	}
 
