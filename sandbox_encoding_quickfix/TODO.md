@@ -27,9 +27,9 @@ The plugin now supports transformations for the following APIs:
 15. ✅ `URLEncoder.encode(s, "UTF-8")` → `URLEncoder.encode(s, StandardCharsets.UTF_8)` (Java 10+)
 16. ✅ `new Scanner(file, "UTF-8")` → `new Scanner(file, StandardCharsets.UTF_8)`
 17. ✅ `Properties.storeToXML(os, comment, "UTF-8")` → `Properties.storeToXML(os, comment, StandardCharsets.UTF_8)` (Java 10+)
-18. ✅ `Files.newBufferedReader(path)` → `Files.newBufferedReader(path, Charset.defaultCharset())` or with explicit encoding (Java 8+)
-19. ✅ `Files.newBufferedWriter(path)` → `Files.newBufferedWriter(path, Charset.defaultCharset())` or with explicit encoding (Java 8+)
-20. ✅ `Files.readAllLines(path)` → `Files.readAllLines(path, Charset.defaultCharset())` or with explicit encoding (Java 8+)
+18. ✅ `Files.newBufferedReader(path)` → `Files.newBufferedReader(path, StandardCharsets.UTF_8)` (Java 8+)
+19. ✅ `Files.newBufferedWriter(path)` → `Files.newBufferedWriter(path, StandardCharsets.UTF_8)` (Java 8+)
+20. ✅ `Files.readAllLines(path)` → `Files.readAllLines(path, StandardCharsets.UTF_8)` (Java 8+)
 21. ✅ `Files.readString(path)` → `Files.readString(path, StandardCharsets.UTF_8)` (Java 11+)
 22. ✅ `Files.writeString(path, content)` → `Files.writeString(path, content, StandardCharsets.UTF_8)` (Java 11+)
 
