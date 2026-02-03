@@ -39,91 +39,63 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
-import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
-import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
-import org.sandbox.jdt.internal.common.HelperVisitor;
-import org.sandbox.jdt.internal.common.ReferenceHolder;
-import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
-import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
-import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractMethodMigrationPlugin;
 
 /**
  * Migrates JUnit 4 Assert calls to JUnit 5 Assertions.
+ * 
+ * <p>Special handling:</p>
+ * <ul>
+ *   <li>assertThat → Hamcrest MatcherAssert.assertThat</li>
+ *   <li>Other assertions → JUnit 5 Assertions with parameter reordering</li>
+ * </ul>
  */
-public class AssertJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
+public class AssertJUnitPlugin extends AbstractMethodMigrationPlugin {
 
 	@Override
-	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataHolder= new ReferenceHolder<>();
-		HelperVisitor.forMethodCalls(ORG_JUNIT_ASSERT, ALL_ASSERTION_METHODS)
-			.andStaticImports()
-			.andImportsOf(ORG_JUNIT_ASSERT)
-			.in(compilationUnit)
-			.excluding(nodesprocessed)
-			.processEach(dataHolder, (visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
-	}
-
-	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, ASTNode node,
-			ReferenceHolder<Integer, JunitHolder> dataHolder) {
-		return addStandardRewriteOperation(fixcore, operations, node, dataHolder);
+	protected String getSourceClass() {
+		return ORG_JUNIT_ASSERT;
 	}
 
 	@Override
-	protected
-	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
-			JunitHolder junitHolder) {
-		if (junitHolder.minv instanceof MethodInvocation) {
-			MethodInvocation node= junitHolder.getMethodInvocation();
-			Expression assertexpression= node.getExpression();
-			if ("assertThat".equals(node.getName().getIdentifier()) &&
-					assertexpression instanceof SimpleName &&
-					"Assert".equals(((SimpleName) assertexpression).getIdentifier())) {
-				rewriter.set(node, MethodInvocation.EXPRESSION_PROPERTY, null, group);
-				importRewriter.addStaticImport("org.hamcrest.MatcherAssert", "assertThat", false);
-				importRewriter.removeImport("org.junit.Assert");
-				if (node.arguments().size() == 3) {
-					Expression errorMessage = (Expression) node.arguments().get(0);
-					Expression actualValue = (Expression) node.arguments().get(1);
-					Expression matcher = (Expression) node.arguments().get(2);
-					ListRewrite argumentRewrite = rewriter.getListRewrite(node, MethodInvocation.ARGUMENTS_PROPERTY);
-					argumentRewrite.replace((ASTNode) node.arguments().get(0), errorMessage, group);
-					argumentRewrite.replace((ASTNode) node.arguments().get(1), actualValue, group);
-					argumentRewrite.replace((ASTNode) node.arguments().get(2), matcher, group);
-				}
-			} else {
-				reorderParameters(node, rewriter, group, ONEPARAM_ASSERTIONS, TWOPARAM_ASSERTIONS);
-				SimpleName newQualifier= ast.newSimpleName(ASSERTIONS);
-				Expression expression= assertexpression;
-				if (expression != null) {
-					ASTNodes.replaceButKeepComment(rewriter, expression, newQualifier, group);
-				}
-			}
+	protected String getTargetClass() {
+		return ORG_JUNIT_JUPITER_API_ASSERTIONS;
+	}
+
+	@Override
+	protected String getTargetSimpleName() {
+		return ASSERTIONS;
+	}
+
+	@Override
+	protected Set<String> getMethodNames() {
+		return ALL_ASSERTION_METHODS;
+	}
+
+	@Override
+	protected void processMethodInvocation(TextEditGroup group, ASTRewrite rewriter, AST ast,
+			ImportRewrite importRewriter, MethodInvocation node) {
+		
+		Expression assertexpression = node.getExpression();
+		
+		// Special handling for assertThat - delegate to Hamcrest
+		if ("assertThat".equals(node.getName().getIdentifier()) &&
+				assertexpression instanceof SimpleName &&
+				"Assert".equals(((SimpleName) assertexpression).getIdentifier())) {
+			rewriter.set(node, MethodInvocation.EXPRESSION_PROPERTY, null, group);
+			importRewriter.addStaticImport("org.hamcrest.MatcherAssert", "assertThat", false);
+			importRewriter.removeImport("org.junit.Assert");
 		} else {
-			changeImportDeclaration(junitHolder.getImportDeclaration(), importRewriter, group);
+			// Standard assertion handling - use base class behavior
+			super.processMethodInvocation(group, rewriter, ast, importRewriter, node);
 		}
-	}
-	
-	/**
-	 * Changes import declarations for JUnit 4 Assert to JUnit 5 Assertions.
-	 * Delegates to base class implementation.
-	 * 
-	 * @param node the import declaration to change
-	 * @param importRewriter the import rewriter to use
-	 * @param group text edit group (unused - import rewrites are tracked separately)
-	 */
-	public void changeImportDeclaration(ImportDeclaration node, ImportRewrite importRewriter, TextEditGroup group) {
-		changeImportDeclaration(node, importRewriter, ORG_JUNIT_ASSERT, ORG_JUNIT_JUPITER_API_ASSERTIONS);
 	}
 
 	@Override
