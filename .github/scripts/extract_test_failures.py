@@ -66,11 +66,17 @@ def extract_failures(reports_dir="."):
                         truncated_stacktrace = stacktrace[:5000]
                         if len(stacktrace) > 5000:
                             truncated_stacktrace += "\n... (truncated)"
+                        
+                        # If message doesn't have newlines but stacktrace does,
+                        # prefer parsing from stacktrace for better formatting
+                        parse_source = truncated_stacktrace if '\n' in stacktrace else truncated_message
+                        
                         failures.append({
                             "class": class_name,
                             "test": test_name,
                             "message": truncated_message,
-                            "stacktrace": truncated_stacktrace
+                            "stacktrace": truncated_stacktrace,
+                            "parse_source": parse_source
                         })
                     
                     # Check for error
@@ -85,11 +91,17 @@ def extract_failures(reports_dir="."):
                         truncated_stacktrace = stacktrace[:5000]
                         if len(stacktrace) > 5000:
                             truncated_stacktrace += "\n... (truncated)"
+                        
+                        # If message doesn't have newlines but stacktrace does,
+                        # prefer parsing from stacktrace for better formatting
+                        parse_source = truncated_stacktrace if '\n' in stacktrace else truncated_message
+                        
                         failures.append({
                             "class": class_name,
                             "test": test_name,
                             "message": truncated_message,
-                            "stacktrace": truncated_stacktrace
+                            "stacktrace": truncated_stacktrace,
+                            "parse_source": parse_source
                         })
         except ET.ParseError as e:
             print(f"Warning: Could not parse {xml_path}: {e}", file=sys.stderr)
@@ -98,19 +110,35 @@ def extract_failures(reports_dir="."):
     
     return failures
 
-def escape_markdown(text):
-    """Escape special markdown characters for use in tables."""
-    # Replace characters that could break markdown table formatting
-    return (text
-        .replace("\\", "\\\\")
-        .replace("|", "\\|")
-        .replace("\n", " ")
-        .replace("\r", "")
-        .replace("`", "\\`")
-        .replace("*", "\\*")
-        .replace("_", "\\_")
-        .replace("[", "\\[")
-        .replace("]", "\\]"))
+def parse_assertion_error(message):
+    """Parse expected/actual from assertion error message.
+    
+    Handles AssertionFailedError messages like:
+    - "expected: <...> but was: <...>"
+    - "Expected: ... Actual: ..."
+    
+    Returns:
+        dict with 'expected' and 'actual' keys, or None if not parseable
+    """
+    import re
+    
+    # Pattern 1: "expected: <...> but was: <...>"
+    match = re.search(r'expected:\s*<(.*)>\s*but was:\s*<(.*)>', message, re.DOTALL | re.IGNORECASE)
+    if match:
+        return {
+            'expected': match.group(1).strip(),
+            'actual': match.group(2).strip()
+        }
+    
+    # Pattern 2: "Expected: ... Actual: ..."
+    match = re.search(r'Expected:\s*(.*?)\s*Actual:\s*(.*)', message, re.DOTALL | re.IGNORECASE)
+    if match:
+        return {
+            'expected': match.group(1).strip(),
+            'actual': match.group(2).strip()
+        }
+    
+    return None
 
 def format_as_markdown(failures):
     """Format failures as Markdown for PR comment."""
@@ -122,48 +150,58 @@ def format_as_markdown(failures):
         "",
         "<!-- test-failures-comment -->",
         "",
-        f"**{len(failures)} test(s) failed:**",
-        "",
-        "| Test | Class | Message |",
-        "|------|-------|---------|"
+        f"**{len(failures)} test(s) failed**",
+        ""
     ]
     
-    for f in failures:
-        # Escape special characters for markdown safety
-        message = escape_markdown(f["message"])
-        test = escape_markdown(f["test"])
-        full_class = f["class"]
-        short_class = full_class.split(".")[-1]
+    for i, f in enumerate(failures, 1):
+        short_class = f["class"].split(".")[-1]
         
-        # Escape characters for safe use in HTML title attribute
-        class_title = (
-            full_class.replace("&", "&amp;")
-            .replace('"', "&quot;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-        )
-        class_cell = f'<span title="{class_title}">`{escape_markdown(short_class)}`</span>'
-        lines.append(f"| `{test}` | {class_cell} | {message} |")
-    
-    # Add stacktraces in collapsible section
-    lines.extend([
-        "",
-        "<details>",
-        "<summary>📋 Stack Traces (click to expand)</summary>",
-        ""
-    ])
-    
-    for f in failures:
         lines.extend([
-            f"### {f['class']}.{f['test']}",
+            "---",
+            "",
+            f"### {i}. {short_class}.{f['test']}",
+            ""
+        ])
+        
+        # Try to parse expected/actual from parse_source (prefers stacktrace with newlines)
+        parse_source = f.get("parse_source", f["message"])
+        parsed = parse_assertion_error(parse_source)
+        if parsed:
+            lines.extend([
+                "**Expected:**",
+                "```java",
+                parsed['expected'],
+                "```",
+                "",
+                "**Actual:**",
+                "```java",
+                parsed['actual'],
+                "```",
+                ""
+            ])
+        else:
+            # Fallback: show message as-is in code block
+            lines.extend([
+                "**Message:**",
+                "```",
+                f["message"],
+                "```",
+                ""
+            ])
+        
+        # Stack trace in collapsible section
+        lines.extend([
+            "<details>",
+            "<summary>📋 Full Stack Trace</summary>",
             "",
             "```",
             f["stacktrace"],
             "```",
+            "",
+            "</details>",
             ""
         ])
-    
-    lines.append("</details>")
     
     return "\n".join(lines)
 
