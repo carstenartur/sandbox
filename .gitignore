@@ -82,3 +82,8 @@ Thumbs.db
 # Test reports
 test-report.md
 test-report.json
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
