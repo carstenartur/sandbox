@@ -4,26 +4,130 @@
 
 ## Status Summary
 
-**Current State**: Stable implementation with comprehensive test coverage
+**Current State**: Stable implementation with comprehensive test coverage for 17 different encoding-related API transformations
 
-### Completed
-- ✅ FileReader/FileWriter transformation (Java 11+)
-- ✅ Files.readAllLines() transformation
-- ✅ Files.readString()/writeString() transformation (Java 11+)
-- ✅ Scanner constructor transformation
-- ✅ PrintWriter constructor transformation
-- ✅ InputStreamReader/OutputStreamWriter transformation
-- ✅ Java version detection and compatibility checks
-- ✅ Comprehensive test suite
+### Completed - All 17 Implemented Transformations
+
+The plugin now supports transformations for the following APIs:
+
+1. ✅ `Charset.forName("UTF-8")` → `StandardCharsets.UTF_8` (Java 18+)
+2. ✅ `Channels.newReader(ch, "UTF-8")` → `Channels.newReader(ch, StandardCharsets.UTF_8)` (Java 10+)
+3. ✅ `Channels.newWriter(ch, "UTF-8")` → `Channels.newWriter(ch, StandardCharsets.UTF_8)` (Java 10+)
+4. ✅ `String.getBytes()` → `String.getBytes(Charset.defaultCharset())` or with explicit encoding
+5. ✅ `new String(byte[], "UTF-8")` → `new String(byte[], StandardCharsets.UTF_8)` (Java 10+)
+6. ✅ `new InputStreamReader(is)` → `new InputStreamReader(is, Charset.defaultCharset())`
+7. ✅ `new OutputStreamWriter(os)` → `new OutputStreamWriter(os, Charset.defaultCharset())`
+8. ✅ `new FileReader(file)` → `new InputStreamReader(new FileInputStream(file), Charset.defaultCharset())`
+9. ✅ `new FileWriter(file)` → `new OutputStreamWriter(new FileOutputStream(file), Charset.defaultCharset())`
+10. ✅ `new PrintWriter(filename)` → `new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filename), Charset.defaultCharset()))`
+11. ✅ `new PrintStream(file, "UTF-8")` → `new PrintStream(file, StandardCharsets.UTF_8)`
+12. ✅ `ba.toString()` → `ba.toString(Charset.defaultCharset())` (Java 10+)
+13. ✅ `new Formatter(file, "UTF-8")` → `new Formatter(file, StandardCharsets.UTF_8)`
+14. ✅ `URLDecoder.decode(s, "UTF-8")` → `URLDecoder.decode(s, StandardCharsets.UTF_8)` (Java 10+)
+15. ✅ `URLEncoder.encode(s, "UTF-8")` → `URLEncoder.encode(s, StandardCharsets.UTF_8)` (Java 10+)
+16. ✅ `new Scanner(file, "UTF-8")` → `new Scanner(file, StandardCharsets.UTF_8)`
+17. ✅ `Properties.storeToXML(os, comment, "UTF-8")` → `Properties.storeToXML(os, comment, StandardCharsets.UTF_8)` (Java 10+)
 
 ### In Progress
 - None currently
 
-### Pending
+### Cleanup Behavior Modes
+
+The plugin supports three different modes for handling encoding transformations:
+
+#### 1. KEEP_BEHAVIOR Mode
+Replaces explicit `"UTF-8"` string literals with `StandardCharsets.UTF_8`, but leaves platform-default encodings as `Charset.defaultCharset()` to preserve existing behavior.
+
+**Example:**
+```java
+// Before
+new InputStreamReader(in);              // Uses platform default
+Charset.forName("UTF-8");               // Explicit UTF-8
+
+// After
+new InputStreamReader(in, Charset.defaultCharset());  // Explicit default preserved
+StandardCharsets.UTF_8;                               // Replaced
+```
+
+**Use Case**: Conservative approach for codebases that may rely on platform-specific encoding behavior.
+
+#### 2. ENFORCE_UTF8 Mode
+Replaces all implicit platform-default encodings and explicit `"UTF-8"` strings with `StandardCharsets.UTF_8`.
+
+**Example:**
+```java
+// Before
+new InputStreamReader(in);              // Uses platform default
+new FileReader(file);                   // Uses platform default
+Charset.forName("UTF-8");               // Explicit UTF-8
+
+// After
+new InputStreamReader(in, StandardCharsets.UTF_8);
+new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8);
+StandardCharsets.UTF_8;
+```
+
+**Use Case**: Standardize entire codebase on UTF-8 for consistent behavior across all platforms.
+
+#### 3. ENFORCE_UTF8_AGGREGATE Mode
+Similar to ENFORCE_UTF8, but creates a class-level constant for UTF-8 and references it throughout the class to reduce repetition.
+
+**Example:**
+```java
+// Before
+new InputStreamReader(in, StandardCharsets.UTF_8);
+new FileReader(file);
+
+// After
+private static final Charset UTF_8 = StandardCharsets.UTF_8;
+
+new InputStreamReader(in, UTF_8);
+new InputStreamReader(new FileInputStream(file), UTF_8);
+```
+
+**Use Case**: Reduce repetition and create a single point of configuration for the encoding constant.
+
+### Java Version Requirements
+
+The cleanup is Java-version-aware and only applies transformations compatible with the project's Java version:
+
+| Java Version | Capability | Details |
+|--------------|------------|---------|
+| **< Java 7** | ❌ Disabled | `StandardCharsets` not available |
+| **Java 7-9** | ✅ Basic | `StandardCharsets.UTF_8` replacements, `Charset.defaultCharset()` |
+| **Java 10+** | ✅ Extended | Most transformations including `Channels.newReader()`, `ByteArrayOutputStream.toString()`, `URLEncoder/URLDecoder` |
+| **Java 18+** | ✅ Complete | `Charset.forName()` transformation support |
+
+**Key Points:**
+- Basic transformations using `Charset.defaultCharset()` are available since Java 1.5
+- Most API transformations require Java 10+ for method overloads accepting `Charset`
+- The cleanup automatically detects the Java version and only applies compatible transformations
+
+### Pending Enhancements
 - [ ] Configurable charset selection (allow charsets other than UTF-8)
-- [ ] Detection of existing charset parameters
-- [ ] Additional encoding-related API support
+- [ ] Detection of existing charset parameters to avoid duplicate transformation
 - [ ] Performance optimization for large codebases
+
+## Potential Future API Coverage
+
+The following APIs could potentially be added to the cleanup in future versions:
+
+### Files API Methods
+These methods already have charset overloads in Java NIO:
+
+- `Files.newBufferedReader(path)` - Add charset parameter
+- `Files.newBufferedWriter(path)` - Add charset parameter  
+- `Files.readAllLines(path)` - Add charset parameter (already implemented)
+- `Files.write(path, lines)` - Add charset parameter
+
+**Note**: Some of these may already be partially implemented. Review the codebase before adding new implementations.
+
+### Stream-based APIs
+Additional stream-related encoding APIs that could be considered:
+
+- `PrintStream` constructors with file/filename
+- `Console.reader()` / `Console.writer()` (though these are typically system-dependent)
+- `ProcessBuilder` encoding settings
 
 ## Priority Tasks
 
@@ -54,18 +158,6 @@ FileReader r = new FileReader("file.txt", StandardCharsets.ISO_8859_1);
 - Check method invocation arguments before transformation
 - Only transform if charset parameter is missing
 - Add test cases for existing charset scenarios
-
-### 3. Expand API Coverage
-**Priority**: Low  
-**Effort**: 6-8 hours
-
-Support additional encoding-related APIs:
-- `ByteArrayOutputStream.toString()` → `toString(StandardCharsets.UTF_8)`
-- `String.getBytes()` → `getBytes(StandardCharsets.UTF_8)`
-- `URLDecoder.decode()/URLEncoder.encode()` methods
-- `Channels.newReader()/newWriter()` methods
-
-**Note**: Evaluate each API for compatibility with supported Java versions.
 
 ## Known Issues
 
