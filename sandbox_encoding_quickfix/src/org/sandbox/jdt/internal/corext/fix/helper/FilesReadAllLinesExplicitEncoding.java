@@ -43,11 +43,11 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
  * 
  * <p><strong>Find:</strong> {@code Files.readAllLines(path)} - uses UTF-8 by default but should be explicit</p>
  * 
- * <p><strong>Rewrite (KEEP_BEHAVIOR):</strong> {@code Files.readAllLines(path, Charset.defaultCharset())}</p>
+ * <p><strong>Rewrite (KEEP_BEHAVIOR):</strong> {@code Files.readAllLines(path, StandardCharsets.UTF_8)}</p>
  * <p><strong>Rewrite (ENFORCE_UTF8):</strong> {@code Files.readAllLines(path, StandardCharsets.UTF_8)}</p>
  * 
  * <p>The single-parameter {@code readAllLines(Path)} method uses {@code StandardCharsets.UTF_8} 
- * by default (since Java 8), but this transformation makes the encoding explicit for clarity
+ * by default (since Java 8). This transformation makes the encoding explicit for clarity
  * and consistency.</p>
  */
 public class FilesReadAllLinesExplicitEncoding extends AbstractExplicitEncoding<MethodInvocation> {
@@ -87,10 +87,9 @@ public class FilesReadAllLinesExplicitEncoding extends AbstractExplicitEncoding<
 		
 		// Handle Files.readAllLines(Path) - add charset parameter
 		if (arguments.size() == 1) {
-			String encoding = switch (cb) {
-				case KEEP_BEHAVIOR -> null;
-				case ENFORCE_UTF8, ENFORCE_UTF8_AGGREGATE -> "UTF_8"; //$NON-NLS-1$
-			};
+			// Files.readAllLines(Path) uses UTF-8 by default since Java 8
+			// In all modes, we should use UTF-8 to preserve the original behavior
+			String encoding = "UTF_8"; //$NON-NLS-1$
 			NodeData nd = new NodeData(false, visited, encoding);
 			holder.put(visited, nd);
 			operations.add(fixcore.rewrite(visited, cb, holder));

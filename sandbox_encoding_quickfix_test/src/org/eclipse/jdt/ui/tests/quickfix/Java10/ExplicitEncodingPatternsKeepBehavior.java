@@ -1886,13 +1886,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.io.BufferedReader;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 public class E1 {
     void method() throws Exception {
         Path path = Paths.get("file.txt");
-        BufferedReader reader = Files.newBufferedReader(path, Charset.defaultCharset());
+        BufferedReader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8);
         BufferedReader reader2 = Files.newBufferedReader(path, StandardCharsets.UTF_8);
     }
 }
@@ -1920,13 +1919,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.io.BufferedWriter;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 public class E1 {
     void method() throws Exception {
         Path path = Paths.get("file.txt");
-        BufferedWriter writer = Files.newBufferedWriter(path, Charset.defaultCharset());
+        BufferedWriter writer = Files.newBufferedWriter(path, StandardCharsets.UTF_8);
         BufferedWriter writer2 = Files.newBufferedWriter(path, StandardCharsets.UTF_8);
     }
 }
@@ -1954,13 +1952,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 public class E1 {
     void method() throws Exception {
         Path path = Paths.get("file.txt");
-        List<String> lines = Files.readAllLines(path, Charset.defaultCharset());
+        List<String> lines = Files.readAllLines(path, StandardCharsets.UTF_8);
         List<String> lines2 = Files.readAllLines(path, StandardCharsets.UTF_8);
     }
 }

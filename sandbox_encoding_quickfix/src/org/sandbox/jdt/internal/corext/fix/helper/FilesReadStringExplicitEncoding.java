@@ -44,7 +44,7 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
  * 
  * <p><strong>Find:</strong> {@code Files.readString(path)} - uses UTF-8 implicitly</p>
  * 
- * <p><strong>Rewrite (KEEP_BEHAVIOR):</strong> {@code Files.readString(path, Charset.defaultCharset())}</p>
+ * <p><strong>Rewrite (KEEP_BEHAVIOR):</strong> {@code Files.readString(path, StandardCharsets.UTF_8)}</p>
  * <p><strong>Rewrite (ENFORCE_UTF8):</strong> {@code Files.readString(path, StandardCharsets.UTF_8)}</p>
  * 
  * <p>The {@code readString(Path)} method was introduced in Java 11 and uses {@code StandardCharsets.UTF_8} 
@@ -91,10 +91,9 @@ public class FilesReadStringExplicitEncoding extends AbstractExplicitEncoding<Me
 		
 		// Handle Files.readString(Path) - add charset parameter
 		if (arguments.size() == 1) {
-			String encoding = switch (cb) {
-				case KEEP_BEHAVIOR -> null;
-				case ENFORCE_UTF8, ENFORCE_UTF8_AGGREGATE -> "UTF_8"; //$NON-NLS-1$
-			};
+			// Files.readString(Path) uses UTF-8 by default since Java 11
+			// In all modes, we should use UTF-8 to preserve the original behavior
+			String encoding = "UTF_8"; //$NON-NLS-1$
 			NodeData nd = new NodeData(false, visited, encoding);
 			holder.put(visited, nd);
 			operations.add(fixcore.rewrite(visited, cb, holder));

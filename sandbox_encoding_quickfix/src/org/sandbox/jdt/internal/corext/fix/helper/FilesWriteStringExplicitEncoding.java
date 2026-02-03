@@ -44,7 +44,7 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
  * 
  * <p><strong>Find:</strong> {@code Files.writeString(path, content)} - uses UTF-8 implicitly</p>
  * 
- * <p><strong>Rewrite (KEEP_BEHAVIOR):</strong> {@code Files.writeString(path, content, Charset.defaultCharset())}</p>
+ * <p><strong>Rewrite (KEEP_BEHAVIOR):</strong> {@code Files.writeString(path, content, StandardCharsets.UTF_8)}</p>
  * <p><strong>Rewrite (ENFORCE_UTF8):</strong> {@code Files.writeString(path, content, StandardCharsets.UTF_8)}</p>
  * 
  * <p>The {@code writeString(Path, CharSequence)} method was introduced in Java 11 and uses 
@@ -96,10 +96,9 @@ public class FilesWriteStringExplicitEncoding extends AbstractExplicitEncoding<M
 		// Handle Files.writeString(Path, CharSequence) or Files.writeString(Path, CharSequence, OpenOption...)
 		// Add charset parameter as third parameter
 		if (arguments.size() >= 2) {
-			String encoding = switch (cb) {
-				case KEEP_BEHAVIOR -> null;
-				case ENFORCE_UTF8, ENFORCE_UTF8_AGGREGATE -> "UTF_8"; //$NON-NLS-1$
-			};
+			// Files.writeString(Path, CharSequence) uses UTF-8 by default since Java 11
+			// In all modes, we should use UTF-8 to preserve the original behavior
+			String encoding = "UTF_8"; //$NON-NLS-1$
 			NodeData nd = new NodeData(false, visited, encoding);
 			holder.put(visited, nd);
 			operations.add(fixcore.rewrite(visited, cb, holder));

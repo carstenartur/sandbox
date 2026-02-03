@@ -43,11 +43,11 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
  * 
  * <p><strong>Find:</strong> {@code Files.newBufferedWriter(path)} - uses platform default charset</p>
  * 
- * <p><strong>Rewrite (KEEP_BEHAVIOR):</strong> {@code Files.newBufferedWriter(path, Charset.defaultCharset())}</p>
+ * <p><strong>Rewrite (KEEP_BEHAVIOR):</strong> {@code Files.newBufferedWriter(path, StandardCharsets.UTF_8)}</p>
  * <p><strong>Rewrite (ENFORCE_UTF8):</strong> {@code Files.newBufferedWriter(path, StandardCharsets.UTF_8)}</p>
  * 
  * <p>The single-parameter {@code newBufferedWriter(Path)} method uses {@code StandardCharsets.UTF_8} 
- * by default (since Java 8), but this transformation makes the encoding explicit for clarity.</p>
+ * by default (since Java 8). This transformation makes the encoding explicit for clarity.</p>
  * 
  * <p>Note: The method can also accept OpenOption varargs as additional parameters. This transformation
  * inserts the charset parameter in the correct position (second parameter).</p>
@@ -91,10 +91,9 @@ public class FilesNewBufferedWriterExplicitEncoding extends AbstractExplicitEnco
 		// Handle Files.newBufferedWriter(Path) or Files.newBufferedWriter(Path, OpenOption...) - add charset parameter
 		// We need to insert the charset as the second parameter
 		if (arguments.size() >= 1) {
-			String encoding = switch (cb) {
-				case KEEP_BEHAVIOR -> null;
-				case ENFORCE_UTF8, ENFORCE_UTF8_AGGREGATE -> "UTF_8"; //$NON-NLS-1$
-			};
+			// Files.newBufferedWriter(Path) uses UTF-8 by default since Java 8
+			// In all modes, we should use UTF-8 to preserve the original behavior
+			String encoding = "UTF_8"; //$NON-NLS-1$
 			NodeData nd = new NodeData(false, visited, encoding);
 			holder.put(visited, nd);
 			operations.add(fixcore.rewrite(visited, cb, holder));
