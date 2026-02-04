@@ -39,102 +39,74 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
-import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
-import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
-import org.sandbox.jdt.internal.common.HelperVisitor;
-import org.sandbox.jdt.internal.common.ReferenceHolder;
-import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
-import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
-import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractMethodMigrationPlugin;
 
 /**
  * Migrates JUnit 4 Assert calls to JUnit 5 Assertions.
+ * 
+ * &lt;p&gt;Special handling:&lt;/p&gt;
+ * &lt;ul&gt;
+ *   &lt;li&gt;assertThat → Hamcrest MatcherAssert.assertThat&lt;/li&gt;
+ *   &lt;li&gt;Other assertions → JUnit 5 Assertions with parameter reordering&lt;/li&gt;
+ * &lt;/ul&gt;
  */
-<span class="fc" id="L62">public class AssertJUnitPlugin extends AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; {</span>
+<span class="fc" id="L60">public class AssertJUnitPlugin extends AbstractMethodMigrationPlugin {</span>
 
 	@Override
-	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
-			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="fc" id="L67">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder= new ReferenceHolder&lt;&gt;();</span>
-<span class="fc" id="L68">		HelperVisitor.forMethodCalls(ORG_JUNIT_ASSERT, ALL_ASSERTION_METHODS)</span>
-<span class="fc" id="L69">			.andStaticImports()</span>
-<span class="fc" id="L70">			.andImportsOf(ORG_JUNIT_ASSERT)</span>
-<span class="fc" id="L71">			.in(compilationUnit)</span>
-<span class="fc" id="L72">			.excluding(nodesprocessed)</span>
-<span class="fc" id="L73">			.processEach(dataHolder, (visited, aholder) -&gt; processFoundNode(fixcore, operations, visited, aholder));</span>
-<span class="fc" id="L74">	}</span>
-
-	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
-			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, ASTNode node,
-			ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder) {
-<span class="fc" id="L79">		return addStandardRewriteOperation(fixcore, operations, node, dataHolder);</span>
+	protected String getSourceClass() {
+<span class="fc" id="L64">		return ORG_JUNIT_ASSERT;</span>
 	}
 
 	@Override
-	protected
-	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
-			JunitHolder junitHolder) {
-<span class="fc bfc" id="L86" title="All 2 branches covered.">		if (junitHolder.minv instanceof MethodInvocation) {</span>
-<span class="fc" id="L87">			MethodInvocation node= junitHolder.getMethodInvocation();</span>
-<span class="fc" id="L88">			Expression assertexpression= node.getExpression();</span>
-<span class="pc bpc" id="L89" title="1 of 2 branches missed.">			if (&quot;assertThat&quot;.equals(node.getName().getIdentifier()) &amp;&amp;</span>
-<span class="nc bnc" id="L90" title="All 2 branches missed.">					assertexpression instanceof SimpleName &amp;&amp;</span>
-<span class="nc bnc" id="L91" title="All 2 branches missed.">					&quot;Assert&quot;.equals(((SimpleName) assertexpression).getIdentifier())) {</span>
-<span class="nc" id="L92">				rewriter.set(node, MethodInvocation.EXPRESSION_PROPERTY, null, group);</span>
-<span class="nc" id="L93">				importRewriter.addStaticImport(&quot;org.hamcrest.MatcherAssert&quot;, &quot;assertThat&quot;, false);</span>
-<span class="nc" id="L94">				importRewriter.removeImport(&quot;org.junit.Assert&quot;);</span>
-<span class="nc bnc" id="L95" title="All 2 branches missed.">				if (node.arguments().size() == 3) {</span>
-<span class="nc" id="L96">					Expression errorMessage = (Expression) node.arguments().get(0);</span>
-<span class="nc" id="L97">					Expression actualValue = (Expression) node.arguments().get(1);</span>
-<span class="nc" id="L98">					Expression matcher = (Expression) node.arguments().get(2);</span>
-<span class="nc" id="L99">					ListRewrite argumentRewrite = rewriter.getListRewrite(node, MethodInvocation.ARGUMENTS_PROPERTY);</span>
-<span class="nc" id="L100">					argumentRewrite.replace((ASTNode) node.arguments().get(0), errorMessage, group);</span>
-<span class="nc" id="L101">					argumentRewrite.replace((ASTNode) node.arguments().get(1), actualValue, group);</span>
-<span class="nc" id="L102">					argumentRewrite.replace((ASTNode) node.arguments().get(2), matcher, group);</span>
-				}
-<span class="nc" id="L104">			} else {</span>
-<span class="fc" id="L105">				reorderParameters(node, rewriter, group, ONEPARAM_ASSERTIONS, TWOPARAM_ASSERTIONS);</span>
-<span class="fc" id="L106">				SimpleName newQualifier= ast.newSimpleName(ASSERTIONS);</span>
-<span class="fc" id="L107">				Expression expression= assertexpression;</span>
-<span class="fc bfc" id="L108" title="All 2 branches covered.">				if (expression != null) {</span>
-<span class="fc" id="L109">					ASTNodes.replaceButKeepComment(rewriter, expression, newQualifier, group);</span>
-				}
-			}
-<span class="fc" id="L112">		} else {</span>
-<span class="fc" id="L113">			changeImportDeclaration(junitHolder.getImportDeclaration(), importRewriter, group);</span>
+	protected String getTargetClass() {
+<span class="fc" id="L69">		return ORG_JUNIT_JUPITER_API_ASSERTIONS;</span>
+	}
+
+	@Override
+	protected String getTargetSimpleName() {
+<span class="fc" id="L74">		return ASSERTIONS;</span>
+	}
+
+	@Override
+	protected Set&lt;String&gt; getMethodNames() {
+<span class="fc" id="L79">		return ALL_ASSERTION_METHODS;</span>
+	}
+
+	@Override
+	protected void processMethodInvocation(TextEditGroup group, ASTRewrite rewriter, AST ast,
+			ImportRewrite importRewriter, MethodInvocation node) {
+		
+<span class="fc" id="L86">		Expression assertexpression = node.getExpression();</span>
+		
+		// Special handling for assertThat - delegate to Hamcrest
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">		if (&quot;assertThat&quot;.equals(node.getName().getIdentifier()) &amp;&amp;</span>
+<span class="nc bnc" id="L90" title="All 2 branches missed.">				assertexpression instanceof SimpleName &amp;&amp;</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">				&quot;Assert&quot;.equals(((SimpleName) assertexpression).getIdentifier())) {</span>
+<span class="nc" id="L92">			rewriter.set(node, MethodInvocation.EXPRESSION_PROPERTY, null, group);</span>
+<span class="nc" id="L93">			importRewriter.addStaticImport(&quot;org.hamcrest.MatcherAssert&quot;, &quot;assertThat&quot;, false);</span>
+<span class="nc" id="L94">			importRewriter.removeImport(&quot;org.junit.Assert&quot;);</span>
+<span class="nc" id="L95">		} else {</span>
+			// Standard assertion handling - use base class behavior
+<span class="fc" id="L97">			super.processMethodInvocation(group, rewriter, ast, importRewriter, node);</span>
 		}
-<span class="fc" id="L115">	}</span>
-	
-	/**
-	 * Changes import declarations for JUnit 4 Assert to JUnit 5 Assertions.
-	 * Delegates to base class implementation.
-	 * 
-	 * @param node the import declaration to change
-	 * @param importRewriter the import rewriter to use
-	 * @param group text edit group (unused - import rewrites are tracked separately)
-	 */
-	public void changeImportDeclaration(ImportDeclaration node, ImportRewrite importRewriter, TextEditGroup group) {
-<span class="fc" id="L126">		changeImportDeclaration(node, importRewriter, ORG_JUNIT_ASSERT, ORG_JUNIT_JUPITER_API_ASSERTIONS);</span>
-<span class="fc" id="L127">	}</span>
+<span class="fc" id="L99">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L131" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L132">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L104">			return &quot;&quot;&quot;</span>
 					Assertions.assertNotEquals(5,result, &quot;failuremessage&quot;);  // expected = 5, actual = result
 					Assertions.assertTrue(false,&quot;failuremessage&quot;);
 					&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L137">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L109">		return &quot;&quot;&quot;</span>
 				Assert.assertNotEquals(&quot;failuremessage&quot;,5, result);  // expected = 5, actual = result
 				Assert.assertTrue(&quot;failuremessage&quot;,false);
 				&quot;&quot;&quot;; //$NON-NLS-1$
@@ -142,7 +114,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 	@Override
 	public String toString() {
-<span class="fc" id="L145">		return &quot;Assert&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L117">		return &quot;Assert&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

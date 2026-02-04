@@ -39,29 +39,29 @@ public final class ImportHelper {
 	 */
 	public static void changeImportDeclaration(ImportDeclaration node, ImportRewrite importRewriter,
 			String sourceClass, String targetClass) {
-<span class="fc" id="L42">		String importName = node.getName().getFullyQualifiedName();</span>
+<span class="nc" id="L42">		String importName = node.getName().getFullyQualifiedName();</span>
 
 		// Handle static wildcard import (e.g., import static org.junit.Assert.*)
-<span class="fc bfc" id="L45" title="All 4 branches covered.">		if (node.isStatic() &amp;&amp; importName.equals(sourceClass)) {</span>
-<span class="fc" id="L46">			importRewriter.removeStaticImport(sourceClass + &quot;.*&quot;);</span>
-<span class="fc" id="L47">			importRewriter.addStaticImport(targetClass, &quot;*&quot;, false);</span>
-<span class="fc" id="L48">			return;</span>
+<span class="nc bnc" id="L45" title="All 4 branches missed.">		if (node.isStatic() &amp;&amp; importName.equals(sourceClass)) {</span>
+<span class="nc" id="L46">			importRewriter.removeStaticImport(sourceClass + &quot;.*&quot;);</span>
+<span class="nc" id="L47">			importRewriter.addStaticImport(targetClass, &quot;*&quot;, false);</span>
+<span class="nc" id="L48">			return;</span>
 		}
 
 		// Handle regular class import (e.g., import org.junit.Assert)
-<span class="fc bfc" id="L52" title="All 2 branches covered.">		if (importName.equals(sourceClass)) {</span>
-<span class="fc" id="L53">			importRewriter.removeImport(sourceClass);</span>
-<span class="fc" id="L54">			importRewriter.addImport(targetClass);</span>
-<span class="fc" id="L55">			return;</span>
+<span class="nc bnc" id="L52" title="All 2 branches missed.">		if (importName.equals(sourceClass)) {</span>
+<span class="nc" id="L53">			importRewriter.removeImport(sourceClass);</span>
+<span class="nc" id="L54">			importRewriter.addImport(targetClass);</span>
+<span class="nc" id="L55">			return;</span>
 		}
 
 		// Handle static method import (e.g., import static org.junit.Assert.assertEquals)
-<span class="pc bpc" id="L59" title="2 of 4 branches missed.">		if (node.isStatic() &amp;&amp; importName.startsWith(sourceClass + &quot;.&quot;)) {</span>
-<span class="fc" id="L60">			String methodName = importName.substring((sourceClass + &quot;.&quot;).length());</span>
-<span class="fc" id="L61">			importRewriter.removeStaticImport(sourceClass + &quot;.&quot; + methodName);</span>
-<span class="fc" id="L62">			importRewriter.addStaticImport(targetClass, methodName, false);</span>
+<span class="nc bnc" id="L59" title="All 4 branches missed.">		if (node.isStatic() &amp;&amp; importName.startsWith(sourceClass + &quot;.&quot;)) {</span>
+<span class="nc" id="L60">			String methodName = importName.substring((sourceClass + &quot;.&quot;).length());</span>
+<span class="nc" id="L61">			importRewriter.removeStaticImport(sourceClass + &quot;.&quot; + methodName);</span>
+<span class="nc" id="L62">			importRewriter.addStaticImport(targetClass, methodName, false);</span>
 		}
-<span class="fc" id="L64">	}</span>
+<span class="nc" id="L64">	}</span>
 
 	/**
 	 * Adds a JUnit 5 callback interface to a type's super interface list if not already present.

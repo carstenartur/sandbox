@@ -35,68 +35,35 @@ import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
  * #L%
  */
 
-import java.util.Set;
-
 import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
-import org.eclipse.jdt.core.dom.ITypeBinding;
-import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
-import org.sandbox.jdt.internal.common.HelperVisitor;
-import org.sandbox.jdt.internal.common.ReferenceHolder;
-import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
-import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractRuleFieldPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 /**
  * Plugin to migrate JUnit 4 TestName rule to JUnit 5 TestInfo parameter.
  */
-<span class="fc" id="L59">public class RuleTestnameJUnitPlugin extends AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; {</span>
+<span class="fc" id="L49">public class RuleTestnameJUnitPlugin extends AbstractRuleFieldPlugin {</span>
 
 	@Override
-	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
-			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="fc" id="L64">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder= new ReferenceHolder&lt;&gt;();</span>
-<span class="fc" id="L65">		HelperVisitor.forField()</span>
-<span class="fc" id="L66">			.withAnnotation(ORG_JUNIT_RULE)</span>
-<span class="fc" id="L67">			.ofType(ORG_JUNIT_RULES_TEST_NAME)</span>
-<span class="fc" id="L68">			.in(compilationUnit)</span>
-<span class="fc" id="L69">			.excluding(nodesprocessed)</span>
-<span class="fc" id="L70">			.processEach(dataHolder, (visited, aholder) -&gt; processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));</span>
-<span class="fc" id="L71">	}</span>
-
-	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
-			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, FieldDeclaration node,
-			ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder) {
-<span class="fc" id="L76">		JunitHolder mh= new JunitHolder();</span>
-<span class="fc" id="L77">		VariableDeclarationFragment fragment= (VariableDeclarationFragment) node.fragments().get(0);</span>
-<span class="fc" id="L78">		ITypeBinding binding= fragment.resolveBinding().getType();</span>
-<span class="pc bpc" id="L79" title="2 of 4 branches missed.">		if (binding != null &amp;&amp; ORG_JUNIT_RULES_TEST_NAME.equals(binding.getQualifiedName())) {</span>
-<span class="fc" id="L80">			mh.minv= node;</span>
-<span class="fc" id="L81">			dataHolder.put(dataHolder.size(), mh);</span>
-<span class="fc" id="L82">			operations.add(fixcore.rewrite(dataHolder));</span>
-		}
-		// Return true to continue processing other fields
-<span class="fc" id="L85">		return true;</span>
+	protected String getRuleType() {
+<span class="fc" id="L53">		return ORG_JUNIT_RULES_TEST_NAME;</span>
 	}
 
 	@Override
-	protected
-	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
-			JunitHolder junitHolder) {
-<span class="fc" id="L92">		FieldDeclaration node= junitHolder.getFieldDeclaration();</span>
-<span class="fc" id="L93">		refactorTestnameInClassAndSubclasses(group, rewriter, ast, importRewriter, node);</span>
-<span class="fc" id="L94">	}</span>
+	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
+			ImportRewrite importRewriter, JunitHolder junitHolder) {
+<span class="fc" id="L59">		FieldDeclaration node = junitHolder.getFieldDeclaration();</span>
+<span class="fc" id="L60">		refactorTestnameInClassAndSubclasses(group, rewriter, ast, importRewriter, node);</span>
+<span class="fc" id="L61">	}</span>
 	
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L98" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L99">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L66">			return &quot;&quot;&quot;</span>
 						private String testName;
 
 						@BeforeEach
@@ -109,7 +76,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 						}
 					&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L112">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L79">		return &quot;&quot;&quot;</span>
 					@Rule
 					public TestName tn = new TestName();
 
@@ -122,7 +89,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 	@Override
 	public String toString() {
-<span class="fc" id="L125">		return &quot;RuleTestname&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L92">		return &quot;RuleTestname&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

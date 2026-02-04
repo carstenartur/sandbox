@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>AbstractMethodMigrationPlugin.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper.lib</a> &gt; <span class="el_source">AbstractMethodMigrationPlugin.java</span></div><h1>AbstractMethodMigrationPlugin.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper.lib;
+
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
+
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
+
+/**
+ * Abstract base class for plugins that migrate method calls from one class to another.
+ * Used for Assert → Assertions and Assume → Assumptions migrations.
+ * 
+ * &lt;p&gt;Subclasses need to implement:&lt;/p&gt;
+ * &lt;ul&gt;
+ *   &lt;li&gt;{@link #getSourceClass()} - The JUnit 4 class (e.g., &quot;org.junit.Assert&quot;)&lt;/li&gt;
+ *   &lt;li&gt;{@link #getTargetClass()} - The JUnit 5 class (e.g., &quot;org.junit.jupiter.api.Assertions&quot;)&lt;/li&gt;
+ *   &lt;li&gt;{@link #getTargetSimpleName()} - Simple name of target class (e.g., &quot;Assertions&quot;)&lt;/li&gt;
+ *   &lt;li&gt;{@link #getMethodNames()} - Set of method names to migrate&lt;/li&gt;
+ *   &lt;li&gt;{@link #getPreview(boolean)} - Preview for UI&lt;/li&gt;
+ * &lt;/ul&gt;
+ * 
+ * &lt;p&gt;The base class handles:&lt;/p&gt;
+ * &lt;ul&gt;
+ *   &lt;li&gt;Finding method calls and static imports&lt;/li&gt;
+ *   &lt;li&gt;Replacing class references in qualified calls&lt;/li&gt;
+ *   &lt;li&gt;Updating imports&lt;/li&gt;
+ *   &lt;li&gt;Parameter reordering (message to last position)&lt;/li&gt;
+ * &lt;/ul&gt;
+ */
+<span class="fc" id="L57">public abstract class AbstractMethodMigrationPlugin extends AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; {</span>
+
+	/**
+	 * Returns the fully qualified name of the source class (JUnit 4).
+	 * @return e.g., &quot;org.junit.Assert&quot;
+	 */
+	protected abstract String getSourceClass();
+	
+	/**
+	 * Returns the fully qualified name of the target class (JUnit 5).
+	 * @return e.g., &quot;org.junit.jupiter.api.Assertions&quot;
+	 */
+	protected abstract String getTargetClass();
+	
+	/**
+	 * Returns the simple name of the target class.
+	 * @return e.g., &quot;Assertions&quot;
+	 */
+	protected abstract String getTargetSimpleName();
+	
+	/**
+	 * Returns the set of method names to migrate.
+	 * @return e.g., Set.of(&quot;assertEquals&quot;, &quot;assertTrue&quot;, &quot;assertFalse&quot;, ...)
+	 */
+	protected abstract Set&lt;String&gt; getMethodNames();
+	
+	/**
+	 * Returns methods that require parameter reordering (message moves to last).
+	 * Default implementation returns all methods.
+	 * @return set of method names that need parameter reordering
+	 */
+	protected Set&lt;String&gt; getMethodsRequiringReorder() {
+<span class="fc" id="L89">		return getMethodNames();</span>
+	}
+
+	@Override
+	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
+			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
+<span class="fc" id="L95">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder = new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L96">		HelperVisitor.forMethodCalls(getSourceClass(), getMethodNames())</span>
+<span class="fc" id="L97">			.andStaticImports()</span>
+<span class="fc" id="L98">			.andImportsOf(getSourceClass())</span>
+<span class="fc" id="L99">			.in(compilationUnit)</span>
+<span class="fc" id="L100">			.excluding(nodesprocessed)</span>
+<span class="fc" id="L101">			.processEach(dataHolder, (visited, aholder) -&gt; processFoundNode(fixcore, operations, visited, aholder));</span>
+<span class="fc" id="L102">	}</span>
+
+	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
+			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, ASTNode node,
+			ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder) {
+<span class="fc" id="L107">		return addStandardRewriteOperation(fixcore, operations, node, dataHolder);</span>
+	}
+
+	@Override
+	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
+			ImportRewrite importRewriter, JunitHolder junitHolder) {
+<span class="fc" id="L113">		ASTNode node = junitHolder.minv;</span>
+		
+<span class="fc bfc" id="L115" title="All 2 branches covered.">		if (node instanceof MethodInvocation) {</span>
+<span class="fc" id="L116">			processMethodInvocation(group, rewriter, ast, importRewriter, (MethodInvocation) node);</span>
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">		} else if (node instanceof ImportDeclaration) {</span>
+<span class="fc" id="L118">			processImportDeclaration(group, rewriter, ast, importRewriter, </span>
+<span class="fc" id="L119">				(ImportDeclaration) node);</span>
+		}
+<span class="fc" id="L121">	}</span>
+
+	/**
+	 * Processes a method invocation, updating the class reference and reordering parameters if needed.
+	 */
+	protected void processMethodInvocation(TextEditGroup group, ASTRewrite rewriter, AST ast,
+			ImportRewrite importRewriter, MethodInvocation methodInvocation) {
+		
+<span class="fc" id="L129">		String methodName = methodInvocation.getName().getIdentifier();</span>
+		
+		// Update qualified expression if present (e.g., Assert.assertEquals → Assertions.assertEquals)
+<span class="fc" id="L132">		Expression expression = methodInvocation.getExpression();</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">		if (expression instanceof SimpleName) {</span>
+<span class="fc" id="L134">			SimpleName simpleName = (SimpleName) expression;</span>
+<span class="fc" id="L135">			String sourceSimpleName = getSourceClass().substring(getSourceClass().lastIndexOf('.') + 1);</span>
+<span class="pc bpc" id="L136" title="1 of 2 branches missed.">			if (sourceSimpleName.equals(simpleName.getIdentifier())) {</span>
+<span class="fc" id="L137">				SimpleName newName = ast.newSimpleName(getTargetSimpleName());</span>
+<span class="fc" id="L138">				ASTNodes.replaceButKeepComment(rewriter, simpleName, newName, group);</span>
+<span class="fc" id="L139">				importRewriter.addImport(getTargetClass());</span>
+<span class="fc" id="L140">				importRewriter.removeImport(getSourceClass());</span>
+			}
+		}
+		
+		// Reorder parameters if needed (message moves to last position in JUnit 5)
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">		if (getMethodsRequiringReorder().contains(methodName)) {</span>
+<span class="fc" id="L146">			reorderMessageParameter(group, rewriter, methodInvocation);</span>
+		}
+<span class="fc" id="L148">	}</span>
+
+	/**
+	 * Processes an import declaration, replacing the source import with target import.
+	 * 
+	 * &lt;p&gt;Handles both specific and wildcard imports:&lt;/p&gt;
+	 * &lt;ul&gt;
+	 *   &lt;li&gt;Wildcard: import static org.junit.Assert.* → import static org.junit.jupiter.api.Assertions.*&lt;/li&gt;
+	 *   &lt;li&gt;Specific: import static org.junit.Assert.assertEquals → import static org.junit.jupiter.api.Assertions.assertEquals&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 */
+	protected void processImportDeclaration(TextEditGroup group, ASTRewrite rewriter, AST ast,
+			ImportRewrite importRewriter, ImportDeclaration importDecl) {
+		
+<span class="fc" id="L162">		String importName = importDecl.getName().getFullyQualifiedName();</span>
+		
+<span class="fc bfc" id="L164" title="All 2 branches covered.">		if (importDecl.isStatic()) {</span>
+			// Handle static imports
+<span class="fc bfc" id="L166" title="All 2 branches covered.">			if (importDecl.isOnDemand()) {</span>
+				// Wildcard import: import static org.junit.Assert.*
+				// Note: importName is &quot;org.junit.Assert&quot; (without .*)
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">				if (getSourceClass().equals(importName)) {</span>
+<span class="fc" id="L170">					importRewriter.removeStaticImport(importName + &quot;.*&quot;);</span>
+<span class="fc" id="L171">					importRewriter.addStaticImport(getTargetClass(), &quot;*&quot;, false);</span>
+				}
+<span class="fc" id="L173">			} else {</span>
+				// Specific import: import static org.junit.Assert.assertEquals
+				// Note: importName is &quot;org.junit.Assert.assertEquals&quot;
+<span class="pc bpc" id="L176" title="1 of 2 branches missed.">				if (importName.startsWith(getSourceClass() + &quot;.&quot;)) {</span>
+<span class="fc" id="L177">					String methodName = importName.substring(getSourceClass().length() + 1);</span>
+<span class="fc" id="L178">					importRewriter.removeStaticImport(importName);</span>
+<span class="fc" id="L179">					importRewriter.addStaticImport(getTargetClass(), methodName, false);</span>
+				}
+			}
+<span class="fc" id="L182">		} else {</span>
+			// Handle regular imports
+<span class="pc bpc" id="L184" title="1 of 2 branches missed.">			if (getSourceClass().equals(importName)) {</span>
+<span class="fc" id="L185">				importRewriter.removeImport(getSourceClass());</span>
+<span class="fc" id="L186">				importRewriter.addImport(getTargetClass());</span>
+			}
+		}
+<span class="fc" id="L189">	}</span>
+
+	/**
+	 * Reorders parameters so that the message parameter moves to the last position.
+	 * JUnit 4: assertEquals(String message, expected, actual)
+	 * JUnit 5: assertEquals(expected, actual, String message)
+	 * 
+	 * Delegates to existing {@link #reorderParameters} method.
+	 */
+	protected void reorderMessageParameter(TextEditGroup group, ASTRewrite rewriter,
+			MethodInvocation methodInvocation) {
+		// Delegate to existing reorderParameters method in AbstractTool
+		// which handles the parameter reordering logic
+<span class="fc" id="L202">		reorderParameters(methodInvocation, rewriter, group, ONEPARAM_ASSERTIONS, TWOPARAM_ASSERTIONS);</span>
+<span class="fc" id="L203">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

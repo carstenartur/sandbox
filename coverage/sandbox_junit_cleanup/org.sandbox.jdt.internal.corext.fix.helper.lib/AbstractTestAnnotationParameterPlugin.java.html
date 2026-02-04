@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>AbstractTestAnnotationParameterPlugin.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper.lib</a> &gt; <span class="el_source">AbstractTestAnnotationParameterPlugin.java</span></div><h1>AbstractTestAnnotationParameterPlugin.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper.lib;
+
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
+
+import java.util.List;
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.MemberValuePair;
+import org.eclipse.jdt.core.dom.NormalAnnotation;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
+
+/**
+ * Abstract base class for plugins that process @Test annotation parameters.
+ * Used for @Test(timeout=...) and @Test(expected=...) migrations.
+ * 
+ * &lt;p&gt;Subclasses need to implement:&lt;/p&gt;
+ * &lt;ul&gt;
+ *   &lt;li&gt;{@link #getParameterName()} - The parameter name (e.g., &quot;timeout&quot; or &quot;expected&quot;)&lt;/li&gt;
+ *   &lt;li&gt;{@link #process2Rewrite} - The transformation logic&lt;/li&gt;
+ *   &lt;li&gt;{@link #getPreview(boolean)} - Preview for UI&lt;/li&gt;
+ * &lt;/ul&gt;
+ */
+<span class="fc" id="L41">public abstract class AbstractTestAnnotationParameterPlugin extends AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; {</span>
+
+	/**
+	 * Returns the parameter name to look for in @Test annotation.
+	 * @return e.g., &quot;timeout&quot; or &quot;expected&quot;
+	 */
+	protected abstract String getParameterName();
+	
+	@Override
+	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
+			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
+<span class="fc" id="L52">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder = new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L53">		HelperVisitor.forAnnotation(ORG_JUNIT_TEST)</span>
+<span class="fc" id="L54">			.in(compilationUnit)</span>
+<span class="fc" id="L55">			.excluding(nodesprocessed)</span>
+<span class="fc" id="L56">			.processEach(dataHolder, (visited, aholder) -&gt; {</span>
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">				if (visited instanceof NormalAnnotation) {</span>
+<span class="fc" id="L58">					return processTestAnnotation(fixcore, operations, (NormalAnnotation) visited, aholder);</span>
+				}
+<span class="nc" id="L60">				return true;</span>
+			});
+<span class="fc" id="L62">	}</span>
+
+	private boolean processTestAnnotation(JUnitCleanUpFixCore fixcore,
+			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, NormalAnnotation node,
+			ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder) {
+		
+<span class="fc" id="L68">		MemberValuePair targetPair = null;</span>
+		
+		@SuppressWarnings(&quot;unchecked&quot;)
+<span class="fc" id="L71">		List&lt;MemberValuePair&gt; values = node.values();</span>
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">		for (MemberValuePair pair : values) {</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">			if (getParameterName().equals(pair.getName().getIdentifier())) {</span>
+<span class="fc" id="L74">				targetPair = pair;</span>
+<span class="fc" id="L75">				break;</span>
+			}
+		}
+		
+<span class="pc bpc" id="L79" title="2 of 4 branches missed.">		if (targetPair != null &amp;&amp; validateParameter(targetPair)) {</span>
+<span class="fc" id="L80">			JunitHolder mh = new JunitHolder();</span>
+<span class="fc" id="L81">			mh.minv = node;</span>
+<span class="fc" id="L82">			mh.additionalInfo = targetPair;</span>
+<span class="fc" id="L83">			dataHolder.put(dataHolder.size(), mh);</span>
+<span class="fc" id="L84">			operations.add(fixcore.rewrite(dataHolder));</span>
+		}
+		
+<span class="fc" id="L87">		return true;</span>
+	}
+	
+	/**
+	 * Validates the parameter value. Subclasses can override for specific validation.
+	 * Default implementation returns true (accept all values).
+	 */
+	protected boolean validateParameter(MemberValuePair pair) {
+<span class="nc" id="L95">		return true;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
