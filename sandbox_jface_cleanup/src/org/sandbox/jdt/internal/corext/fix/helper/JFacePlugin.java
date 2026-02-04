@@ -38,7 +38,8 @@ import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.SimpleName;
-import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodeFactory;
@@ -411,12 +412,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				 *
 				 */
 
-				SingleVariableDeclaration newVariableDeclarationStatement = ast.newSingleVariableDeclaration();
-
-				newVariableDeclarationStatement.setName(ast.newSimpleName(identifier));
-				newVariableDeclarationStatement
-				.setType(ast.newSimpleType(addImport(SubMonitor.class.getCanonicalName(), cuRewrite, ast)));
-
+				// Create the static call to SubMonitor.convert
 				MethodInvocation staticCall = ast.newMethodInvocation();
 				staticCall.setExpression(ASTNodeFactory.newName(ast, SubMonitor.class.getSimpleName()));
 				staticCall.setName(ast.newSimpleName("convert")); //$NON-NLS-1$
@@ -427,9 +423,18 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(arguments.get(0))));
 				staticCallArguments
 				.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(arguments.get(1))));
-				newVariableDeclarationStatement.setInitializer(staticCall);
 
-				ASTNodes.replaceButKeepComment(rewrite, minv, newVariableDeclarationStatement, group);
+				// Create the variable declaration fragment (name + initializer)
+				VariableDeclarationFragment fragment = ast.newVariableDeclarationFragment();
+				fragment.setName(ast.newSimpleName(identifier));
+				fragment.setInitializer(staticCall);
+
+				// Create the variable declaration statement (type + fragment)
+				VariableDeclarationStatement varDeclStmt = ast.newVariableDeclarationStatement(fragment);
+				varDeclStmt.setType(ast.newSimpleType(addImport(SubMonitor.class.getCanonicalName(), cuRewrite, ast)));
+
+				// Replace the entire ExpressionStatement (parent of beginTask), not just the MethodInvocation
+				ASTNodes.replaceButKeepComment(rewrite, minv.getParent(), varDeclStmt, group);
 				logDebug("Created SubMonitor.convert call: " + staticCall); //$NON-NLS-1$
 			}
 			
