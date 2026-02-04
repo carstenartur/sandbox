@@ -93,16 +93,47 @@ jobs:
     
     # Option 3: Detaillierte Fehlermeldungen als PR-Kommentar (für Copilot)
     - name: Extract Test Failures
-      if: always() && github.event_name == 'pull_request'
+      if: always()
       run: |
         python3 .github/scripts/extract_test_failures.py > test-failures.md
         
     - name: Post Test Failures as PR Comment
-      if: always() && github.event_name == 'pull_request'
+      if: always()
       uses: actions/github-script@v8
       with:
         script: |
           const fs = require('fs');
+          
+          // Determine PR number - either from event or by finding associated PR
+          let prNumber = context.issue?.number;
+          
+          // If not a direct PR event, try to find PR associated with this branch/commit
+          if (!prNumber && context.eventName === 'push') {
+            // For push events on non-main branches, find associated PR
+            const branch = context.ref.replace('refs/heads/', '');
+            if (branch !== 'main') {
+              try {
+                const { data: prs } = await github.rest.pulls.list({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  head: `${context.repo.owner}:${branch}`,
+                  state: 'open'
+                });
+                if (prs.length > 0) {
+                  prNumber = prs[0].number;
+                  console.log(`Found associated PR #${prNumber} for branch ${branch}`);
+                }
+              } catch (error) {
+                console.log(`Could not find PR for branch ${branch}:`, error.message);
+              }
+            }
+          }
+          
+          // Skip if no PR found
+          if (!prNumber) {
+            console.log('No associated PR found, skipping comment');
+            return;
+          }
           
           // Read the failures markdown
           let body;
@@ -121,7 +152,7 @@ jobs:
           const comments = await github.rest.issues.listComments({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            issue_number: context.issue.number,
+            issue_number: prNumber,
           });
           
           const botComment = comments.data.find(comment => 
@@ -143,7 +174,7 @@ jobs:
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: context.issue.number,
+              issue_number: prNumber,
               body: commentBody
             });
             console.log('Created new test failures comment');
