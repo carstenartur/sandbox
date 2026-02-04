@@ -11,8 +11,6 @@ The **JFace Cleanup** plugin modernizes Eclipse JFace code by migrating deprecat
 - 🔄 **SubProgressMonitor → SubMonitor** - Automatic migration to modern progress API
 - 🎯 **Style Flag Mapping** - Maps `SUPPRESS_SUBTASK_LABEL` to `SUPPRESS_SUBTASK`
 - 🗑️ **Flag Dropping** - Removes `PREPEND_MAIN_LABEL_TO_SUBTASK` (no SubMonitor equivalent)
-- 🔧 **Standalone Conversion** - Handles SubProgressMonitor without preceding beginTask()
-- 🧹 **Automatic done() Removal** - Removes redundant done() calls (SubMonitor handles cleanup automatically)
 - 📦 **Variable Name Management** - Generates unique variable names to avoid conflicts
 - ♻️ **Idempotent** - Running cleanup multiple times produces the same result
 - 🔌 **Eclipse Integration** - Works seamlessly with Eclipse RCP/JFace code
@@ -30,10 +28,12 @@ The **JFace Cleanup** plugin modernizes Eclipse JFace code by migrating deprecat
 **Basic Transformation:**
 ```java
 // Before
-SubProgressMonitor subMonitor = new SubProgressMonitor(monitor, 100);
+monitor.beginTask("Task", 100);
+IProgressMonitor subMonitor = new SubProgressMonitor(monitor, 50);
 
 // After
-SubMonitor subMonitor = SubMonitor.convert(monitor, 100);
+SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
+IProgressMonitor sub = subMonitor.split(50);
 ```
 
 **With SUPPRESS_SUBTASK_LABEL Flag:**
@@ -63,39 +63,26 @@ IProgressMonitor sub = subMonitor.split(50);
 **Unique Variable Names:**
 ```java
 // Before
-SubProgressMonitor sub = new SubProgressMonitor(monitor, 100);
-// ... later in code ...
-SubProgressMonitor sub = new SubProgressMonitor(otherMonitor, 50);
-
-// After
-SubMonitor sub = SubMonitor.convert(monitor, 100);
-// ... later in code ...
-SubMonitor sub2 = SubMonitor.convert(otherMonitor, 50);  // Unique name generated
-```
-
-**Automatic done() Removal:**
-```java
-// Before
+String subMonitor = "test";
 monitor.beginTask("Task", 100);
 IProgressMonitor sub = new SubProgressMonitor(monitor, 50);
-sub.worked(10);
-monitor.done();  // Redundant with SubMonitor
 
 // After
-SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
-IProgressMonitor sub = subMonitor.split(50);
-sub.worked(10);
-// done() call removed - SubMonitor handles cleanup automatically
+String subMonitor = "test";
+SubMonitor subMonitor2 = SubMonitor.convert(monitor, "Task", 100);
+IProgressMonitor sub = subMonitor2.split(50);  // Unique name generated
 ```
 
 ## Migration Pattern
 
-The cleanup transforms:
+The cleanup transforms `beginTask` + `SubProgressMonitor` to `SubMonitor.convert` + `split`:
 
 ```
+monitor.beginTask(msg, work);
 new SubProgressMonitor(monitor, ticks)
     ↓
-SubMonitor.convert(monitor, ticks)
+SubMonitor subMonitor = SubMonitor.convert(monitor, msg, work);
+subMonitor.split(ticks)
 ```
 
 With `SUPPRESS_SUBTASK_LABEL` flag:
@@ -176,9 +163,9 @@ xvfb-run --auto-servernum mvn test -pl sandbox_jface_cleanup_test
 
 ## Limitations
 
-- When converting standalone `SubProgressMonitor` instances (created without a surrounding `beginTask`), any style flags are silently ignored, as `SubMonitor.convert()` does not support flags
 - Combined flag expressions using bitwise OR (e.g., `FLAG1 | FLAG2`) or numeric flag literals are not automatically mapped and require manual review
 - Custom SubProgressMonitor subclasses require manual review
+- Only handles SubProgressMonitor instances with a corresponding beginTask call in the same scope
 - Some rare edge cases may need manual adjustment
 
 See [TODO.md](TODO.md) for planned improvements.

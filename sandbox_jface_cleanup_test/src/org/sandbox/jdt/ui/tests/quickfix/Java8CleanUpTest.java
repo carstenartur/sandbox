@@ -298,56 +298,6 @@ public class Test {
 	}
 }
 """), //$NON-NLS-1$
-	// Test standalone SubProgressMonitor (without beginTask)
-	StandaloneSubProgressMonitor(
-"""
-package test;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubProgressMonitor;
-public class Test {
-	public void doWork(IProgressMonitor monitor) {
-		IProgressMonitor sub = new SubProgressMonitor(monitor, 50);
-		// Use sub monitor
-		sub.worked(10);
-	}
-}
-""", //$NON-NLS-1$
-"""
-package test;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubMonitor;
-public class Test {
-	public void doWork(IProgressMonitor monitor) {
-		IProgressMonitor sub = SubMonitor.convert(monitor, 50);
-		// Use sub monitor
-		sub.worked(10);
-	}
-}
-"""), //$NON-NLS-1$
-	// Test standalone SubProgressMonitor with flags (flags are dropped)
-	StandaloneSubProgressMonitorWithFlags(
-"""
-package test;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubProgressMonitor;
-public class Test {
-	public void doWork(IProgressMonitor monitor) {
-		IProgressMonitor sub = new SubProgressMonitor(monitor, 50, SubProgressMonitor.SUPPRESS_SUBTASK_LABEL);
-		sub.worked(10);
-	}
-}
-""", //$NON-NLS-1$
-"""
-package test;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubMonitor;
-public class Test {
-	public void doWork(IProgressMonitor monitor) {
-		IProgressMonitor sub = SubMonitor.convert(monitor, 50);
-		sub.worked(10);
-	}
-}
-"""), //$NON-NLS-1$
 	// Test flag mapping: SUPPRESS_SUBTASK_LABEL -> SUPPRESS_SUBTASK
 	SuppressSubtaskLabelFlag(
 """
@@ -393,64 +343,6 @@ public class Test {
 	public void doWork(IProgressMonitor monitor) {
 		SubMonitor subMonitor=SubMonitor.convert(monitor,"Task",100);
 		IProgressMonitor sub = subMonitor.split(50);
-	}
-}
-"""), //$NON-NLS-1$
-	// Test done() call removal after beginTask conversion
-	DoneCallRemoval(
-"""
-package test;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubProgressMonitor;
-public class Test {
-	public void doWork(IProgressMonitor monitor) {
-		monitor.beginTask("Task", 100);
-		IProgressMonitor sub = new SubProgressMonitor(monitor, 50);
-		sub.worked(10);
-		monitor.done();
-	}
-}
-""", //$NON-NLS-1$
-"""
-package test;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubMonitor;
-public class Test {
-	public void doWork(IProgressMonitor monitor) {
-		SubMonitor subMonitor=SubMonitor.convert(monitor,"Task",100);
-		IProgressMonitor sub = subMonitor.split(50);
-		sub.worked(10);
-	}
-}
-"""), //$NON-NLS-1$
-	// Test multiple done() calls removal
-	MultipleDoneCalls(
-"""
-package test;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubProgressMonitor;
-public class Test {
-	public void doWork(IProgressMonitor monitor) {
-		monitor.beginTask("Task", 100);
-		IProgressMonitor sub1 = new SubProgressMonitor(monitor, 30);
-		sub1.worked(10);
-		IProgressMonitor sub2 = new SubProgressMonitor(monitor, 40);
-		sub2.worked(20);
-		monitor.done();
-	}
-}
-""", //$NON-NLS-1$
-"""
-package test;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubMonitor;
-public class Test {
-	public void doWork(IProgressMonitor monitor) {
-		SubMonitor subMonitor=SubMonitor.convert(monitor,"Task",100);
-		IProgressMonitor sub1 = subMonitor.split(30);
-		sub1.worked(10);
-		IProgressMonitor sub2 = subMonitor.split(40);
-		sub2.worked(20);
 	}
 }
 """), //$NON-NLS-1$

@@ -94,7 +94,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 	 * Tracks beginTask invocations and associated SubProgressMonitor instances.
 	 */
 	public static class MonitorHolder {
-		/** The beginTask method invocation to be converted (null for standalone SubProgressMonitor) */
+		/** The beginTask method invocation to be converted */
 		public MethodInvocation minv;
 		/** The monitor variable name from beginTask expression */
 		public String minvname;
@@ -102,12 +102,6 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 		public Set<ClassInstanceCreation> setofcic = new HashSet<>();
 		/** Nodes that have been processed to avoid duplicate transformations */
 		public Set<ASTNode> nodesprocessed;
-		/** Whether this is a standalone SubProgressMonitor (without beginTask) */
-		public boolean isStandalone = false;
-		/** Set of done() method invocations to be removed (SubMonitor handles cleanup automatically) */
-		public Set<MethodInvocation> doneInvocations = new HashSet<>();
-		/** The SubMonitor variable name created during conversion (for tracking done() calls) */
-		public String subMonitorVarName;
 	}
 
 	/**
@@ -162,7 +156,6 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed,
 			boolean createForOnlyIfVarUsed) {
 		ReferenceHolder<Integer, MonitorHolder> dataholder = new ReferenceHolder<>();
-		Set<ClassInstanceCreation> allSubProgressMonitors = new HashSet<>();
 		
 		AstProcessorBuilder.with(dataholder, nodesprocessed)
 			.processor()
@@ -193,14 +186,11 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 					mh.minv = node;
 					mh.minvname = name;
 					mh.nodesprocessed = nodesprocessed;
-					mh.isStandalone = false;
 					holder.put(holder.size(), mh);
 				}
 				return true;
 			}, s -> ASTNodes.getTypedAncestor(s, Block.class))
 			.callClassInstanceCreationVisitor(SubProgressMonitor.class, (node, holder) -> {
-				allSubProgressMonitors.add(node);
-				
 				List<?> arguments = node.arguments();
 				if (arguments.isEmpty()) {
 					return true;
@@ -217,44 +207,11 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				}
 				
 				// Check if this SubProgressMonitor is associated with a beginTask
-				boolean matchedWithBeginTask = false;
 				if (!holder.isEmpty() && firstArgName != null) {
 					MonitorHolder mh = holder.get(holder.size() - 1);
 					if (mh.minvname.equals(firstArgName)) {
 						logDebug("Found SubProgressMonitor construction at position " + node.getStartPosition() + " for variable '" + firstArgName + "' with beginTask"); //$NON-NLS-1$ //$NON-NLS-2$
 						mh.setofcic.add(node);
-						matchedWithBeginTask = true;
-					}
-				}
-				
-				// If not matched with beginTask, track as standalone
-				if (!matchedWithBeginTask) {
-					logDebug("Found standalone SubProgressMonitor construction at position " + node.getStartPosition()); //$NON-NLS-1$
-				}
-				
-				return true;
-			}, s -> ASTNodes.getTypedAncestor(s, Block.class))
-			.callMethodInvocationVisitor(IProgressMonitor.class, "done", (node, holder) -> { //$NON-NLS-1$
-				// Find done() calls on monitor variables that will be converted
-				Expression expr = node.getExpression();
-				if (expr == null) {
-					return true;
-				}
-				SimpleName sn = ASTNodes.as(expr, SimpleName.class);
-				if (sn == null) {
-					return true;
-				}
-				String varName = sn.getIdentifier();
-				
-				// Check if this done() is on a monitor we're converting
-				// Only track done() for monitors that have beginTask (not standalone)
-				// Search through all holders to find matching monitor
-				for (MonitorHolder mh : holder.values()) {
-					// Only track done() for non-standalone monitors (those with beginTask)
-					if (!mh.isStandalone && mh.minvname != null && mh.minvname.equals(varName)) {
-						logDebug("Found done() call at position " + node.getStartPosition() + " on monitor '" + varName + "'"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-						mh.doneInvocations.add(node);
-						break;
 					}
 				}
 				
@@ -265,31 +222,6 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 		// Add operations for beginTask-associated monitors
 		if (!dataholder.isEmpty()) {
 			operations.add(fixcore.rewrite(dataholder));
-		}
-		
-		// Add operations for standalone monitors (those not associated with any beginTask)
-		for (ClassInstanceCreation submon : allSubProgressMonitors) {
-			boolean isStandalone = true;
-			// Check if this monitor was associated with any beginTask
-			for (MonitorHolder mh : dataholder.values()) {
-				if (mh.setofcic.contains(submon)) {
-					isStandalone = false;
-					break;
-				}
-			}
-			
-			if (isStandalone) {
-				// Create a standalone holder for this
-				MonitorHolder mh = new MonitorHolder();
-				mh.minv = null;
-				mh.isStandalone = true;
-				mh.nodesprocessed = nodesprocessed;
-				mh.setofcic.add(submon);
-				
-				ReferenceHolder<Integer, MonitorHolder> standaloneHolder = new ReferenceHolder<>();
-				standaloneHolder.put(0, mh);
-				operations.add(fixcore.rewrite(standaloneHolder));
-			}
 		}
 	}
 
@@ -337,53 +269,6 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 		for (Entry<Integer, MonitorHolder> entry : hit.entrySet()) {
 
 			MonitorHolder mh = entry.getValue();
-			
-			// Handle standalone SubProgressMonitor (without beginTask)
-			if (mh.isStandalone) {
-				for (ClassInstanceCreation submon : mh.setofcic) {
-					if (nodesprocessed.contains(submon)) {
-						continue;
-					}
-					nodesprocessed.add(submon);
-					
-					List<?> arguments = submon.arguments();
-					if (arguments.size() < 2) {
-						continue;
-					}
-					
-					logDebug("Rewriting standalone SubProgressMonitor at position " + submon.getStartPosition()); //$NON-NLS-1$
-					
-					/**
-					 * Convert standalone SubProgressMonitor to SubMonitor.convert:
-					 * 
-					 * new SubProgressMonitor(monitor, work)
-					 *   -> SubMonitor.convert(monitor, work)
-					 * 
-					 * new SubProgressMonitor(monitor, work, flags)
-					 *   -> SubMonitor.convert(monitor, work) with mapped flags
-					 */
-					MethodInvocation convertCall = ast.newMethodInvocation();
-					convertCall.setExpression(ASTNodeFactory.newName(ast, SubMonitor.class.getSimpleName()));
-					convertCall.setName(ast.newSimpleName("convert")); //$NON-NLS-1$
-					List<ASTNode> convertArgs = convertCall.arguments();
-					
-					// Add monitor argument (first arg)
-					convertArgs.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression((Expression) arguments.get(0))));
-					
-					// Add work amount (second arg)
-					convertArgs.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression((Expression) arguments.get(1))));
-					
-					// Note: SubMonitor.convert() doesn't accept flags (only split() does).
-					// For standalone SubProgressMonitor instances, any flags in the 3rd argument
-					// are intentionally ignored since there's no split() call to apply them to.
-					// This is a known limitation documented in README.md.
-					
-					ASTNodes.replaceButKeepComment(rewrite, submon, convertCall, group);
-					importRemover.removeImport(SubProgressMonitor.class.getCanonicalName());
-					addImport(SubMonitor.class.getCanonicalName(), cuRewrite, ast);
-				}
-				continue;
-			}
 			
 			// Handle beginTask + SubProgressMonitor pattern
 			MethodInvocation minv = mh.minv;
@@ -487,26 +372,6 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				
 				ASTNodes.replaceButKeepComment(rewrite, submon, newMethodInvocation2, group);
 				importRemover.removeImport(SubProgressMonitor.class.getCanonicalName());
-			}
-			
-			// Remove redundant done() calls on the converted monitor
-			// SubMonitor handles cleanup automatically, so done() calls are not needed
-			for (MethodInvocation doneCall : mh.doneInvocations) {
-				if (nodesprocessed.contains(doneCall)) {
-					continue;
-				}
-				nodesprocessed.add(doneCall);
-				
-				// Check if the done() call is in an ExpressionStatement so we can remove the whole statement
-				ASTNode parent = doneCall.getParent();
-				if (parent instanceof ExpressionStatement) {
-					logDebug("Removing done() call at position " + doneCall.getStartPosition()); //$NON-NLS-1$
-					rewrite.remove(parent, group);
-				} else {
-					// If not in an ExpressionStatement, just remove the invocation
-					logDebug("Removing done() invocation at position " + doneCall.getStartPosition()); //$NON-NLS-1$
-					rewrite.remove(doneCall, group);
-				}
 			}
 		}
 	}
