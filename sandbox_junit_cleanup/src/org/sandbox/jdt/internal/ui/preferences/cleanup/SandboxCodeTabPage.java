@@ -206,7 +206,6 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_LOST_TESTS, MYCleanUpConstants.JUNIT_CLEANUP_4_LOST_TESTS,
 				FALSE_TRUE);
 		
-		// Add ThrowingRunnable checkbox
 		intent(junitGroup);
 		final CheckboxPreference junit_throwingrunnable= createCheckboxPref(junitGroup, numColumns-1,
 				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_THROWINGRUNNABLE, MYCleanUpConstants.JUNIT_CLEANUP_4_THROWINGRUNNABLE,
