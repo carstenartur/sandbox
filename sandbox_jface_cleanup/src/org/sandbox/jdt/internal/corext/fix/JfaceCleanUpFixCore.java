@@ -28,11 +28,14 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.helper.AbstractTool;
 import org.sandbox.jdt.internal.corext.fix.helper.JFacePlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.JFacePlugin.MonitorHolder;
+import org.sandbox.jdt.internal.corext.fix.helper.ViewerSorterPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.ViewerSorterPlugin.SorterHolder;
 import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
 public enum JfaceCleanUpFixCore {
 
-	MONITOR(new JFacePlugin());
+	MONITOR(new JFacePlugin()),
+	VIEWER_SORTER(new ViewerSorterPlugin());
 
 	AbstractTool<ReferenceHolder<Integer, MonitorHolder>> jfacefound;
 
@@ -75,7 +78,10 @@ public enum JfaceCleanUpFixCore {
 				} else {
 					rangeComputer= new TightSourceRangeComputer();
 				}
-				rangeComputer.addTightSourceNode( hit.get(0).minv);
+				// Only set tight source node for MONITOR cleanup that has minv
+				if (JfaceCleanUpFixCore.this == MONITOR && !hit.isEmpty() && hit.get(0) != null && hit.get(0).minv != null) {
+					rangeComputer.addTightSourceNode(hit.get(0).minv);
+				}
 				rewrite.setTargetSourceRangeComputer(rangeComputer);
 				jfacefound.rewrite(JfaceCleanUpFixCore.this, hit, cuRewrite, group);
 			}

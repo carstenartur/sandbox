@@ -14,6 +14,7 @@
 package org.sandbox.jdt.internal.ui.fix;
 
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.JFACE_CLEANUP;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.JFACE_CLEANUP_VIEWER_SORTER;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.JFaceCleanUpFix_refactor;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.JFaceCleanUp_description;
 
@@ -54,7 +55,7 @@ public class JFaceCleanUpCore extends AbstractCleanUp {
 	}
 
 	public boolean requireAST() {
-		return isEnabled(JFACE_CLEANUP);
+		return isEnabled(JFACE_CLEANUP) || isEnabled(JFACE_CLEANUP_VIEWER_SORTER);
 	}
 
 	@Override
@@ -64,7 +65,7 @@ public class JFaceCleanUpCore extends AbstractCleanUp {
 			return null;
 		}
 		EnumSet<JfaceCleanUpFixCore> computeFixSet= computeFixSet();
-		if (!isEnabled(JFACE_CLEANUP) || computeFixSet.isEmpty()
+		if ((!isEnabled(JFACE_CLEANUP) && !isEnabled(JFACE_CLEANUP_VIEWER_SORTER)) || computeFixSet.isEmpty()
 //				|| !JavaModelUtil.is1d8OrHigher(compilationUnit.getJavaElement().getJavaProject())
 				) {
 			return null;
@@ -83,7 +84,7 @@ public class JFaceCleanUpCore extends AbstractCleanUp {
 	@Override
 	public String[] getStepDescriptions() {
 		List<String> result= new ArrayList<>();
-		if (isEnabled(JFACE_CLEANUP)) {
+		if (isEnabled(JFACE_CLEANUP) || isEnabled(JFACE_CLEANUP_VIEWER_SORTER)) {
 			result.add(Messages.format(JFaceCleanUp_description, new Object[] { String.join(",", //$NON-NLS-1$
 					computeFixSet().stream().map(JfaceCleanUpFixCore::toString)
 					.collect(Collectors.toList())) }));
@@ -104,7 +105,10 @@ public class JFaceCleanUpCore extends AbstractCleanUp {
 		EnumSet<JfaceCleanUpFixCore> fixSet= EnumSet.noneOf(JfaceCleanUpFixCore.class);
 
 		if (isEnabled(JFACE_CLEANUP)) {
-			fixSet= EnumSet.allOf(JfaceCleanUpFixCore.class);
+			fixSet.add(JfaceCleanUpFixCore.MONITOR);
+		}
+		if (isEnabled(JFACE_CLEANUP_VIEWER_SORTER)) {
+			fixSet.add(JfaceCleanUpFixCore.VIEWER_SORTER);
 		}
 		return fixSet;
 	}

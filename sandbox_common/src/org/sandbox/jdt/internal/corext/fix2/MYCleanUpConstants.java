@@ -207,6 +207,21 @@ public class MYCleanUpConstants {
 	public static final String JFACE_CLEANUP= "cleanup.jfacecleanup"; //$NON-NLS-1$
 
 	/**
+	 * Migrate deprecated ViewerSorter classes to ViewerComparator equivalents.
+	 * <p>
+	 * Transforms:
+	 * <ul>
+	 * <li>ViewerSorter → ViewerComparator</li>
+	 * <li>TreePathViewerSorter → TreePathViewerComparator</li>
+	 * <li>CommonViewerSorter → CommonViewerComparator</li>
+	 * <li>getSorter() → getComparator()</li>
+	 * </ul>
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 */
+	public static final String JFACE_CLEANUP_VIEWER_SORTER= "cleanup.jfacecleanup_viewer_sorter"; //$NON-NLS-1$
+
+	/**
 	 *
 	 */
 	public static final String USEFUNCTIONALLOOP_CLEANUP= "cleanup.functionalloop"; //$NON-NLS-1$

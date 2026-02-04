@@ -383,4 +383,86 @@ public class Test {
 		context.enable(MYCleanUpConstants.JFACE_CLEANUP);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
+
+	enum ViewerSorterCleanupCases {
+		BasicViewerSorter(
+		"""
+		package test;
+		import org.eclipse.jface.viewers.ViewerSorter;
+		public class Test extends ViewerSorter {
+		}
+		""",
+		"""
+		package test;
+		import org.eclipse.jface.viewers.ViewerComparator;
+		public class Test extends ViewerComparator {
+		}
+		"""),
+		TreePathViewerSorter(
+		"""
+		package test;
+		import org.eclipse.jface.viewers.TreePathViewerSorter;
+		public class Test extends TreePathViewerSorter {
+		}
+		""",
+		"""
+		package test;
+		import org.eclipse.jface.viewers.TreePathViewerComparator;
+		public class Test extends TreePathViewerComparator {
+		}
+		"""),
+		CommonViewerSorter(
+		"""
+		package test;
+		import org.eclipse.ui.navigator.CommonViewerSorter;
+		public class Test {
+		    CommonViewerSorter sorter = new CommonViewerSorter();
+		}
+		""",
+		"""
+		package test;
+		import org.eclipse.ui.navigator.CommonViewerComparator;
+		public class Test {
+		    CommonViewerComparator sorter = new CommonViewerComparator();
+		}
+		"""),
+		GetSorterMethod(
+		"""
+		package test;
+		import org.eclipse.jface.viewers.StructuredViewer;
+		import org.eclipse.jface.viewers.ViewerSorter;
+		public class Test {
+		    void test(StructuredViewer viewer) {
+		        ViewerSorter s = viewer.getSorter();
+		    }
+		}
+		""",
+		"""
+		package test;
+		import org.eclipse.jface.viewers.StructuredViewer;
+		import org.eclipse.jface.viewers.ViewerComparator;
+		public class Test {
+		    void test(StructuredViewer viewer) {
+		        ViewerComparator s = viewer.getComparator();
+		    }
+		}
+		""");
+
+		String given;
+		String expected;
+
+		ViewerSorterCleanupCases(String given, String expected) {
+			this.given=given;
+			this.expected=expected;
+		}
+	}
+
+	@ParameterizedTest
+	@EnumSource(ViewerSorterCleanupCases.class)
+	public void testViewerSorterCleanupParametrized(ViewerSorterCleanupCases test) throws CoreException {
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
+		ICompilationUnit cu= pack.createCompilationUnit("Test.java", test.given, false, null); //$NON-NLS-1$
+		context.enable(MYCleanUpConstants.JFACE_CLEANUP_VIEWER_SORTER);
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
+	}
 }

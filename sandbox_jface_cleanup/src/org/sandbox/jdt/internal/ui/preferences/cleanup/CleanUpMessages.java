@@ -19,6 +19,7 @@ public class CleanUpMessages {
 	private static final String BUNDLE_NAME= "org.sandbox.jdt.internal.ui.preferences.cleanup.CleanUpMessages"; //$NON-NLS-1$
 	public static String JavaFeatureTabPage_GroupName_Java1d8;
 	public static String JavaFeatureTabPage_CheckboxName_JFACE_CLEANUP;
+	public static String JavaFeatureTabPage_CheckboxName_JFACE_CLEANUP_VIEWER_SORTER;
 
 	static {
 		// initialize resource bundle
