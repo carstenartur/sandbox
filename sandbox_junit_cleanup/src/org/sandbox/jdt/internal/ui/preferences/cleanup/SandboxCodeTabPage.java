@@ -206,6 +206,12 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_LOST_TESTS, MYCleanUpConstants.JUNIT_CLEANUP_4_LOST_TESTS,
 				FALSE_TRUE);
 		
+		// Add ThrowingRunnable checkbox
+		intent(junitGroup);
+		final CheckboxPreference junit_throwingrunnable= createCheckboxPref(junitGroup, numColumns-1,
+				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_THROWINGRUNNABLE, MYCleanUpConstants.JUNIT_CLEANUP_4_THROWINGRUNNABLE,
+				FALSE_TRUE);
+		
 		registerSlavePreference(junitcb, new CheckboxPreference[] {
 				junit_assert,
 				junit_assume,
@@ -223,7 +229,8 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				junit_runwith,
 				junit_category,
 				junit_fixmethodorder,
-				junit_lost_tests});
+				junit_lost_tests,
+				junit_throwingrunnable});
 		
 		// Add nested dependencies for @Test parameters
 		registerSlavePreference(junit_test, new CheckboxPreference[] {
