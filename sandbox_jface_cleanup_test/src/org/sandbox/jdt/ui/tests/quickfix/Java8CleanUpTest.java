@@ -178,9 +178,9 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.SubMonitor;
 public class Test {
 	public void doWork(IProgressMonitor monitor) {
-		SubMonitor subMonitor=SubMonitor.convert(monitor,"Task",100);
-		IProgressMonitor sub= subMonitor.split(50);
-		IProgressMonitor sub2= subMonitor.split(30);
+		SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
+		IProgressMonitor sub = subMonitor.split(50);
+		IProgressMonitor sub2 = subMonitor.split(30);
 	}
 }
 """, //$NON-NLS-1$
@@ -205,8 +205,8 @@ import org.eclipse.core.runtime.SubMonitor;
 public class Test {
 	// This method already uses SubMonitor - should not be modified
 	public void alreadyConverted(IProgressMonitor monitor) {
-		SubMonitor subMonitor=SubMonitor.convert(monitor,"Already converted",50);
-		IProgressMonitor sub= subMonitor.split(25);
+		SubMonitor subMonitor = SubMonitor.convert(monitor, "Already converted", 50);
+		IProgressMonitor sub = subMonitor.split(25);
 	}
 	// This method still uses SubProgressMonitor - should be converted
 	public void needsConversion(IProgressMonitor monitor) {
