@@ -232,7 +232,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				}
 				
 				return true;
-			}, s -> ASTNodes.getTypedAncestor(s, Block.class))
+			})
 			.callMethodInvocationVisitor(IProgressMonitor.class, "done", (node, holder) -> { //$NON-NLS-1$
 				// Find done() calls on monitor variables that will be converted
 				Expression expr = node.getExpression();
@@ -258,7 +258,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				}
 				
 				return true;
-			}, s -> ASTNodes.getTypedAncestor(s, Block.class))
+			})
 			.build(compilationUnit);
 		
 		// Add operations for beginTask-associated monitors
