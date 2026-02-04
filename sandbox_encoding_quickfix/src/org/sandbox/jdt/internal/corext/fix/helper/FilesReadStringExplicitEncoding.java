@@ -128,7 +128,7 @@ public class FilesReadStringExplicitEncoding extends AbstractExplicitEncoding<Me
 	 */
 	private static String extractStandardCharsetName(QualifiedName qualifiedName) {
 		String qualifier = qualifiedName.getQualifier().toString();
-		if ("StandardCharsets".equals(qualifier) || qualifier.endsWith(".StandardCharsets")) {
+		if ("StandardCharsets".equals(qualifier) || qualifier.endsWith(".StandardCharsets")) { //$NON-NLS-1$ //$NON-NLS-2$
 			String fieldName = qualifiedName.getName().getIdentifier();
 			// Convert field name format (UTF_8) to charset name format (UTF-8)
 			return fieldName.replace('_', '-');
@@ -141,7 +141,7 @@ public class FilesReadStringExplicitEncoding extends AbstractExplicitEncoding<Me
 	 */
 	private static String extractStandardCharsetName(FieldAccess fieldAccess) {
 		String expression = fieldAccess.getExpression().toString();
-		if ("StandardCharsets".equals(expression) || expression.endsWith(".StandardCharsets")) {
+		if ("StandardCharsets".equals(expression) || expression.endsWith(".StandardCharsets")) { //$NON-NLS-1$ //$NON-NLS-2$
 			String fieldName = fieldAccess.getName().getIdentifier();
 			// Convert field name format (UTF_8) to charset name format (UTF-8)
 			return fieldName.replace('_', '-');
