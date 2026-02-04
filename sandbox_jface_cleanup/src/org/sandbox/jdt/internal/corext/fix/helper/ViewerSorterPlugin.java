@@ -21,6 +21,7 @@ import java.util.Set;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.CastExpression;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.ITypeBinding;
@@ -49,7 +50,6 @@ import org.sandbox.jdt.internal.corext.fix.JfaceCleanUpFixCore;
  * <li>Converts {@code TreePathViewerSorter} to {@code TreePathViewerComparator}</li>
  * <li>Converts {@code CommonViewerSorter} to {@code CommonViewerComparator}</li>
  * <li>Converts {@code getSorter()} method calls to {@code getComparator()}</li>
- * <li>Updates variable names from "sorter" to "comparator"</li>
  * </ul>
  * 
  * <p><b>Migration Pattern:</b></p>
@@ -61,7 +61,7 @@ import org.sandbox.jdt.internal.corext.fix.JfaceCleanUpFixCore;
  * 
  * // After:
  * import org.eclipse.jface.viewers.ViewerComparator;
- * ViewerComparator comparator = new ViewerComparator();
+ * ViewerComparator sorter = new ViewerComparator();
  * viewer.getComparator();
  * </pre>
  * 
@@ -84,8 +84,10 @@ public class ViewerSorterPlugin extends AbstractTool<ReferenceHolder<Integer, Vi
 	 * Tracks nodes that need to be converted.
 	 */
 	public static class SorterHolder {
-		/** Nodes that use ViewerSorter types that need to be replaced */
-		public Set<ASTNode> nodesToReplace = new HashSet<>();
+		/** Types that use ViewerSorter types that need to be replaced */
+		public Set<Type> typesToReplace = new HashSet<>();
+		/** Method names that are getSorter() calls that need to be replaced */
+		public Set<Name> methodNamesToReplace = new HashSet<>();
 		/** Nodes that have been processed to avoid duplicate transformations */
 		public Set<ASTNode> nodesprocessed;
 	}
@@ -99,6 +101,7 @@ public class ViewerSorterPlugin extends AbstractTool<ReferenceHolder<Integer, Vi
 	 * <li>Method invocations of getSorter()</li>
 	 * <li>Class instance creations using these types</li>
 	 * <li>Variable declarations with these types</li>
+	 * <li>Cast expressions using these types</li>
 	 * </ul>
 	 * 
 	 * @param fixcore the cleanup fix core instance
@@ -123,7 +126,7 @@ public class ViewerSorterPlugin extends AbstractTool<ReferenceHolder<Integer, Vi
 				// Check if the class extends a ViewerSorter class
 				Type superclassType = node.getSuperclassType();
 				if (superclassType != null && isSorterType(superclassType)) {
-					holder.nodesToReplace.add(superclassType);
+					holder.typesToReplace.add(superclassType);
 				}
 				return true;
 			}
@@ -133,7 +136,7 @@ public class ViewerSorterPlugin extends AbstractTool<ReferenceHolder<Integer, Vi
 				// Check variable declarations
 				Type type = node.getType();
 				if (isSorterType(type)) {
-					holder.nodesToReplace.add(type);
+					holder.typesToReplace.add(type);
 				}
 				return true;
 			}
@@ -143,7 +146,17 @@ public class ViewerSorterPlugin extends AbstractTool<ReferenceHolder<Integer, Vi
 				// Check class instance creations
 				Type type = node.getType();
 				if (isSorterType(type)) {
-					holder.nodesToReplace.add(type);
+					holder.typesToReplace.add(type);
+				}
+				return true;
+			}
+			
+			@Override
+			public boolean visit(CastExpression node) {
+				// Check cast expressions
+				Type type = node.getType();
+				if (isSorterType(type)) {
+					holder.typesToReplace.add(type);
 				}
 				return true;
 			}
@@ -152,13 +165,13 @@ public class ViewerSorterPlugin extends AbstractTool<ReferenceHolder<Integer, Vi
 			public boolean visit(MethodInvocation node) {
 				// Check for getSorter() method calls
 				if (node.getName().getIdentifier().equals("getSorter") && node.arguments().isEmpty()) {
-					holder.nodesToReplace.add(node.getName());
+					holder.methodNamesToReplace.add(node.getName());
 				}
 				return true;
 			}
 		});
 		
-		if (!holder.nodesToReplace.isEmpty()) {
+		if (!holder.typesToReplace.isEmpty() || !holder.methodNamesToReplace.isEmpty()) {
 			operations.add(fixcore.rewrite(dataholder));
 		}
 	}
@@ -211,40 +224,67 @@ public class ViewerSorterPlugin extends AbstractTool<ReferenceHolder<Integer, Vi
 		AST ast = cuRewrite.getRoot().getAST();
 		ImportRewrite importRewrite = cuRewrite.getImportRewrite();
 		
-		for (ASTNode node : holder.nodesToReplace) {
-			if (holder.nodesprocessed.contains(node)) {
+		// Replace types
+		for (Type type : holder.typesToReplace) {
+			if (holder.nodesprocessed.contains(type)) {
 				continue;
 			}
-			holder.nodesprocessed.add(node);
+			holder.nodesprocessed.add(type);
 			
-			if (node instanceof SimpleType) {
-				SimpleType simpleType = (SimpleType) node;
-				ITypeBinding binding = simpleType.resolveBinding();
-				if (binding != null) {
-					String oldQualifiedName = binding.getQualifiedName();
-					String newQualifiedName = SORTER_TO_COMPARATOR_MAP.get(oldQualifiedName);
+			ITypeBinding binding = type.resolveBinding();
+			if (binding != null) {
+				String oldQualifiedName = binding.getQualifiedName();
+				String newQualifiedName = SORTER_TO_COMPARATOR_MAP.get(oldQualifiedName);
+				
+				if (newQualifiedName != null) {
+					// Create new type based on the type of the old type
+					Type newType = createReplacementType(type, newQualifiedName, cuRewrite, ast);
 					
-					if (newQualifiedName != null) {
-						// Create new type
-						Name newName = addImport(newQualifiedName, cuRewrite, ast);
-						SimpleType newType = ast.newSimpleType(newName);
-						
+					if (newType != null) {
 						// Replace the type
-						rewrite.replace(simpleType, newType, group);
+						rewrite.replace(type, newType, group);
 						
 						// Remove old import
 						importRewrite.removeImport(oldQualifiedName);
 					}
 				}
-			} else if (node instanceof Name && node.getParent() instanceof MethodInvocation) {
-				// Replace getSorter with getComparator
-				Name oldName = (Name) node;
-				if (oldName.toString().equals("getSorter")) {
-					Name newName = ast.newSimpleName("getComparator");
-					rewrite.replace(oldName, newName, group);
-				}
 			}
 		}
+		
+		// Replace method names
+		for (Name methodName : holder.methodNamesToReplace) {
+			if (holder.nodesprocessed.contains(methodName)) {
+				continue;
+			}
+			holder.nodesprocessed.add(methodName);
+			
+			Name newName = ast.newSimpleName("getComparator");
+			rewrite.replace(methodName, newName, group);
+		}
+	}
+	
+	/**
+	 * Creates a replacement type based on the original type structure.
+	 * 
+	 * @param originalType the original type to replace
+	 * @param newQualifiedName the qualified name of the new type
+	 * @param cuRewrite the compilation unit rewrite
+	 * @param ast the AST
+	 * @return the replacement type
+	 */
+	private Type createReplacementType(Type originalType, String newQualifiedName, CompilationUnitRewrite cuRewrite, AST ast) {
+		Name newName = addImport(newQualifiedName, cuRewrite, ast);
+		
+		if (originalType instanceof SimpleType) {
+			return ast.newSimpleType(newName);
+		} else if (originalType instanceof ParameterizedType) {
+			// For parameterized types, we need to preserve type arguments
+			// But ViewerSorter/ViewerComparator are not parameterized, so this should not happen
+			return ast.newSimpleType(newName);
+		}
+		
+		// Fallback: create a simple type
+		return ast.newSimpleType(newName);
 	}
 
 	@Override
