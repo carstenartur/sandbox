@@ -5,75 +5,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sandbox Test Reports</title>
   <style>
-    body { font-family: verdana, arial, helvetica; max-width: 1200px; margin: 0 auto; padding: 20px; }
+    body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
     h1 { color: #333; }
-    .module { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background: #f9f9f9; }
-    .module h2 { margin-top: 0; color: #0066cc; font-size: 1.2em; }
+    .module { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+    .module h2 { margin-top: 0; color: #0066cc; }
     a { color: #0066cc; text-decoration: none; }
     a:hover { text-decoration: underline; }
     .description { color: #666; margin: 10px 0; }
-    .stats { color: #666; font-size: 0.9em; }
-    .no-reports { background: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; }
+    .update-info { background: #f0f0f0; padding: 10px; border-radius: 5px; margin: 20px 0; }
   </style>
 </head>
 <body>
-  <h1>🧪 Sandbox Test Reports</h1>
+  <h1>Sandbox Test Reports</h1>
   <p class="description">
-    HTML test reports for all test modules. Click a module to see detailed results.
+    This page contains HTML test reports for all test modules in the Sandbox project.
+    Each module's report shows test results including passed, failed, and disabled tests.
   </p>
+  <div class="update-info">
+    <strong>Note:</strong> These reports are updated from the scheduled (daily) coverage build,
+    which includes all test results alongside code coverage metrics. 
+    For the most recent test-only results (updated on every main commit), see the main build workflow.
+  </div>
   <div class="modules">
-    <div class="module">
-      <h2><a href="sandbox_cleanup_application_test/surefire-report.html">sandbox_cleanup_application_test</a></h2>
-      <p class="stats">Tests: 20 | Errors: 0 | Failures: 0</p>
-    </div>
-    <div class="module">
-      <h2><a href="sandbox_common_test/surefire-report.html">sandbox_common_test</a></h2>
-      <p class="stats">Tests: 250 | Errors: 0 | Failures: 0</p>
-    </div>
-    <div class="module">
-      <h2><a href="sandbox_encoding_quickfix_test/surefire-report.html">sandbox_encoding_quickfix_test</a></h2>
-      <p class="stats">Tests: 93 | Errors: 0 | Failures: 0</p>
-    </div>
-    <div class="module">
-      <h2><a href="sandbox_functional_converter_test/surefire-report.html">sandbox_functional_converter_test</a></h2>
-      <p class="stats">Tests: 262 | Errors: 0 | Failures: 0</p>
-    </div>
-    <div class="module">
-      <h2><a href="sandbox_jface_cleanup_test/surefire-report.html">sandbox_jface_cleanup_test</a></h2>
-      <p class="stats">Tests: 10 | Errors: 0 | Failures: 0</p>
-    </div>
-    <div class="module">
-      <h2><a href="sandbox_junit_cleanup_test/surefire-report.html">sandbox_junit_cleanup_test</a></h2>
-      <p class="stats">Tests: 197 | Errors: 0 | Failures: 0</p>
-    </div>
-    <div class="module">
-      <h2><a href="sandbox_method_reuse_test/surefire-report.html">sandbox_method_reuse_test</a></h2>
-      <p class="stats">Tests: 3 | Errors: 0 | Failures: 0</p>
-    </div>
-    <div class="module">
-      <h2><a href="sandbox_platform_helper_test/surefire-report.html">sandbox_platform_helper_test</a></h2>
-      <p class="stats">Tests: 5 | Errors: 0 | Failures: 0</p>
-    </div>
-    <div class="module">
-      <h2><a href="sandbox_tools_test/surefire-report.html">sandbox_tools_test</a></h2>
-      <p class="stats">Tests: N/A | Errors: 0 | Failures: 0</p>
-    </div>
-    <div class="module">
-      <h2><a href="sandbox_triggerpattern_test/surefire-report.html">sandbox_triggerpattern_test</a></h2>
-      <p class="stats">Tests: 22 | Errors: 0 | Failures: 0</p>
-    </div>
-    <div class="module">
-      <h2><a href="sandbox_usage_view_test/surefire-report.html">sandbox_usage_view_test</a></h2>
-      <p class="stats">Tests: 5 | Errors: 0 | Failures: 0</p>
-    </div>
-    <div class="module">
-      <h2><a href="sandbox_xml_cleanup_test/surefire-report.html">sandbox_xml_cleanup_test</a></h2>
-      <p class="stats">Tests: 38 | Errors: 0 | Failures: 0</p>
-    </div>
-    <div class="module">
-      <h2><a href="sandbox-functional-converter-core/surefire-report.html">sandbox-functional-converter-core</a></h2>
-      <p class="stats">Tests: 147 | Errors: 0 | Failures: 0</p>
-    </div>
   </div>
   <hr>
   <p style="text-align: center; color: #666; margin-top: 30px;">
