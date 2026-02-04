@@ -36,6 +36,30 @@ The plugin focuses on JFace-specific cleanup opportunities such as:
 - Applies JFace best practices
 - Updates to newer JFace patterns
 
+### Supported Transformations
+
+#### 1. SubProgressMonitor → SubMonitor Migration
+
+**Plugin**: `JFacePlugin`
+
+Modernizes progress monitoring from deprecated `SubProgressMonitor` to `SubMonitor`:
+- Converts `beginTask()` + `SubProgressMonitor` → `SubMonitor.convert()` + `split()`
+- Handles 2-arg and 3-arg constructors (with style flags)
+- Generates unique variable names to avoid collisions
+- Preserves semantic behavior
+
+#### 2. ViewerSorter → ViewerComparator Migration
+
+**Plugin**: `ViewerSorterPlugin`
+
+Migrates deprecated viewer sorting classes to modern comparator equivalents:
+- `ViewerSorter` → `ViewerComparator`
+- `TreePathViewerSorter` → `TreePathViewerComparator`
+- `CommonViewerSorter` → `CommonViewerComparator`
+- `getSorter()` → `getComparator()`
+- Handles class declarations, variable types, cast expressions, and method calls
+- Updates imports automatically
+
 ## Package Structure
 
 - `org.sandbox.jdt.internal.corext.fix.*` - Core cleanup logic
@@ -109,12 +133,19 @@ The plugin integrates with Eclipse JFace framework:
    - Integrates with Eclipse jobs framework
    - Respects cancellation requests
 
-2. **JFace Dialogs and Wizards**: Cleanup applies to:
+2. **ViewerSorter API**: Modernizes deprecated sorting infrastructure
+   - `ViewerSorter` (deprecated) → `ViewerComparator` (modern)
+   - `TreePathViewerSorter` → `TreePathViewerComparator`
+   - `CommonViewerSorter` → `CommonViewerComparator`
+   - `getSorter()` → `getComparator()`
+   - Integrates with JFace viewers (TableViewer, TreeViewer, etc.)
+
+3. **JFace Dialogs and Wizards**: Cleanup applies to:
    - Dialog creation code
    - Wizard page progress tracking
    - Long-running operations in UI context
 
-3. **SWT/JFace Integration**: Understanding of:
+4. **SWT/JFace Integration**: Understanding of:
    - Display thread requirements
    - AsyncExec and SyncExec patterns
    - Resource disposal patterns

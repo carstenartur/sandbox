@@ -4,15 +4,17 @@
 
 ## Status Summary
 
-**Current State**: Experimental implementation for JFace code modernization
+**Current State**: Implementation for JFace code modernization with two major transformations
 
 ### Completed
 - ✅ Basic plugin structure
 - ✅ Test infrastructure
+- ✅ SubProgressMonitor → SubMonitor transformation
+- ✅ ViewerSorter → ViewerComparator transformation
 
 ### In Progress
-- [ ] Identify high-value JFace cleanup opportunities
-- [ ] Implement core transformations
+- [ ] Testing and validation of ViewerSorter cleanup
+- [ ] Additional JFace cleanup opportunities
 
 ### Pending
 - [ ] Comprehensive JFace API coverage
@@ -21,7 +23,23 @@
 
 ## Priority Tasks
 
-### 1. Identify High-Value Transformations
+### 1. Test and Validate ViewerSorter Cleanup
+**Priority**: High  
+**Effort**: 2-3 hours
+
+Validate ViewerSorter → ViewerComparator transformation:
+- Run unit tests in sandbox_jface_cleanup_test
+- Test with real-world Eclipse code samples
+- Verify import handling
+- Check edge cases (cast expressions, complex hierarchies)
+- Ensure idempotence
+
+**Approach**:
+- Run `mvn test -pl sandbox_jface_cleanup_test`
+- Review test failures and adjust implementation
+- Add additional test cases for edge cases
+
+### 2. Identify Additional High-Value Transformations
 **Priority**: High  
 **Effort**: 4-6 hours
 
@@ -38,13 +56,15 @@ Survey JFace codebases to identify common cleanup opportunities:
 
 ### 2. Implement Core Transformations
 **Priority**: High  
-**Effort**: 12-15 hours
+**Effort**: 8-10 hours
 
-Implement most valuable JFace cleanups:
+Continue implementing valuable JFace cleanups beyond the two already completed:
 - Dialog API modernization
-- Viewer pattern simplification
+- Viewer pattern simplification (beyond sorting)
 - Resource disposal patterns
 - JFace databinding updates
+
+**Status**: SubProgressMonitor and ViewerSorter cleanups completed. Additional transformations needed.
 
 ### 3. Test with Real-World Code
 **Priority**: Medium  
