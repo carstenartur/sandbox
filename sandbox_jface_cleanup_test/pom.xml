@@ -26,7 +26,6 @@
 				<version>${tycho-version}</version>
 				<configuration>
 					<useJDK>BREE</useJDK>
-					<skip>false</skip>
 					<useUIHarness>true</useUIHarness>
 					<dependencies>
 						<dependency>
