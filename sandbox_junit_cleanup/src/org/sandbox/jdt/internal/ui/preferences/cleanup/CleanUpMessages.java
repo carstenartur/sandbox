@@ -62,6 +62,7 @@ public final class CleanUpMessages {
 	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_FIX_METHOD_ORDER;
 	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_RULETIMEOUT;
 	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_LOST_TESTS;
+	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_THROWINGRUNNABLE;
 	public static String JavaFeatureTabPage_GroupName_JUnit3;
 	public static String JavaFeatureTabPage_CheckboxName_JUNIT3_CLEANUP;
 	public static String JavaFeatureTabPage_CheckboxName_JUNIT3_CLEANUP_TEST;
