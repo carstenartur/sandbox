@@ -81,7 +81,7 @@ public enum JfaceCleanUpFixCore {
 				}
 				
 				// Use instanceof pattern matching to handle different holder types
-				if (hit.get(0) instanceof MonitorHolder monitorHolder) {
+				if (!hit.isEmpty() && hit.values().stream().findFirst().orElse(null) instanceof MonitorHolder monitorHolder) {
 					// For standalone SubProgressMonitor, use the ClassInstanceCreation node instead of minv
 					if (monitorHolder.minv != null) {
 						rangeComputer.addTightSourceNode(monitorHolder.minv);
@@ -91,11 +91,12 @@ public enum JfaceCleanUpFixCore {
 					}
 					rewrite.setTargetSourceRangeComputer(rangeComputer);
 					((AbstractTool<ReferenceHolder<Integer, MonitorHolder>>) jfacefound).rewrite(JfaceCleanUpFixCore.this, (ReferenceHolder<Integer, MonitorHolder>) hit, cuRewrite, group);
-				} else if (hit.get(0) instanceof SorterHolder) {
+				} else if (!hit.isEmpty() && hit.values().stream().findFirst().orElse(null) instanceof SorterHolder) {
 					// For SorterHolder, we don't have a single source node, so skip rangeComputer setup
 					((AbstractTool<ReferenceHolder<Integer, SorterHolder>>) jfacefound).rewrite(JfaceCleanUpFixCore.this, (ReferenceHolder<Integer, SorterHolder>) hit, cuRewrite, group);
 				} else {
 					// Fallback for unknown types - just call rewrite without specific range computer setup
+					rewrite.setTargetSourceRangeComputer(rangeComputer);
 					((AbstractTool<ReferenceHolder<Integer, T>>) jfacefound).rewrite(JfaceCleanUpFixCore.this, hit, cuRewrite, group);
 				}
 			}
