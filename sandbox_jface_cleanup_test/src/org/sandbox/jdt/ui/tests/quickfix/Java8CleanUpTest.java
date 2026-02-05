@@ -77,8 +77,8 @@ import org.eclipse.jdt.internal.ui.wizards.NewWizardMessages;
 public class Test extends ArrayList<String> {
 	public void createPackageFragmentRoot(IProgressMonitor monitor) throws CoreException, InterruptedException {
 		SubMonitor subMonitor = SubMonitor.convert(monitor, NewWizardMessages.NewSourceFolderWizardPage_operation, 3);
-		IProgressMonitor subProgressMonitor = subMonitor.split(1);
-		IProgressMonitor subProgressMonitor2 = subMonitor.split(2);
+		IProgressMonitor subProgressMonitor= subMonitor.split(1);
+		IProgressMonitor subProgressMonitor2= subMonitor.split(2);
 	}
 }
 """), //$NON-NLS-1$
@@ -113,13 +113,13 @@ import org.eclipse.jdt.internal.ui.wizards.NewWizardMessages;
 public class Test extends ArrayList<String> {
 	public void createPackageFragmentRoot(IProgressMonitor monitor) throws CoreException, InterruptedException {
 		SubMonitor subMonitor = SubMonitor.convert(monitor, NewWizardMessages.NewSourceFolderWizardPage_operation, 3);
-		IProgressMonitor subProgressMonitor = subMonitor.split(1);
-		IProgressMonitor subProgressMonitor2 = subMonitor.split(2);
+		IProgressMonitor subProgressMonitor= subMonitor.split(1);
+		IProgressMonitor subProgressMonitor2= subMonitor.split(2);
 	}
 	public void createPackageFragmentRoot2(IProgressMonitor monitor) throws CoreException, InterruptedException {
 		SubMonitor subMonitor = SubMonitor.convert(monitor, NewWizardMessages.NewSourceFolderWizardPage_operation, 3);
-		IProgressMonitor subProgressMonitor3 = subMonitor.split(1);
-		IProgressMonitor subProgressMonitor4 = subMonitor.split(2);
+		IProgressMonitor subProgressMonitor3= subMonitor.split(1);
+		IProgressMonitor subProgressMonitor4= subMonitor.split(2);
 	}
 }
 """), //$NON-NLS-1$
@@ -142,7 +142,7 @@ import org.eclipse.core.runtime.SubMonitor;
 public class Test {
 	public void doWork(IProgressMonitor monitor) {
 		SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
-		IProgressMonitor sub = subMonitor.split(50, 1);
+		IProgressMonitor sub= subMonitor.split(50, 1);
 	}
 }
 """), //$NON-NLS-1$
@@ -167,7 +167,7 @@ public class Test {
 	public void doWork(IProgressMonitor monitor) {
 		String subMonitor = "test";
 		SubMonitor subMonitor2 = SubMonitor.convert(monitor, "Task", 100);
-		IProgressMonitor sub = subMonitor2.split(50);
+		IProgressMonitor sub= subMonitor2.split(50);
 	}
 }
 """), //$NON-NLS-1$
@@ -228,7 +228,7 @@ public class Test {
 	// This method still uses SubProgressMonitor - should be converted
 	public void needsConversion(IProgressMonitor monitor) {
 		SubMonitor subMonitor = SubMonitor.convert(monitor, "Needs conversion", 100);
-		IProgressMonitor sub = subMonitor.split(60);
+		IProgressMonitor sub= subMonitor.split(60);
 	}
 }
 """), //$NON-NLS-1$
@@ -257,12 +257,12 @@ import org.eclipse.core.runtime.SubMonitor;
 public class Test {
 	public void outerMethod(IProgressMonitor monitor) {
 		SubMonitor subMonitor = SubMonitor.convert(monitor, "Outer task", 50);
-		IProgressMonitor sub = subMonitor.split(25);
+		IProgressMonitor sub= subMonitor.split(25);
 	}
 	class InnerClass {
 		public void innerMethod(IProgressMonitor monitor) {
 			SubMonitor subMonitor = SubMonitor.convert(monitor, "Inner task", 100);
-			IProgressMonitor sub = subMonitor.split(50);
+			IProgressMonitor sub= subMonitor.split(50);
 		}
 	}
 }
@@ -370,7 +370,7 @@ public class Test {
 	public void doWork(IProgressMonitor monitor) {
 		SubMonitor subMonitor = SubMonitor.convert(monitor, "Task with both imports", 100);
 		// Only Eclipse's SubProgressMonitor should be converted
-		IProgressMonitor sub = subMonitor.split(50);
+		IProgressMonitor sub= subMonitor.split(50);
 	}
 }
 """); //$NON-NLS-1$
