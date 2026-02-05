@@ -41,7 +41,7 @@ Introduced to eliminate boilerplate in simple annotation migration plugins. Inst
     removeImports = {"org.junit.Before"},
     addImports = {"org.junit.jupiter.api.BeforeEach"}
 )
-public class BeforeJUnitPluginV2 extends TriggerPatternCleanupPlugin {
+public class BeforeJUnitPlugin extends TriggerPatternCleanupPlugin {
     // process2Rewrite() is now automatic!
     // Only getPreview() needed
 }
@@ -83,11 +83,11 @@ Alternative approaches considered but not implemented:
 - Would preserve compile-time safety but add class hierarchy complexity
 
 **Plugins Using @RewriteRule:**
-- `BeforeJUnitPluginV2` - @Before → @BeforeEach
-- `AfterJUnitPluginV2` - @After → @AfterEach
+- `BeforeJUnitPlugin` - @Before → @BeforeEach
+- `AfterJUnitPlugin` - @After → @AfterEach
 
 **Plugins Requiring Custom Implementation:**
-- `IgnoreJUnitPluginV2` - Handles three annotation types (marker, single-member, normal)
+- `IgnoreJUnitPlugin` - Handles three annotation types (marker, single-member, normal)
 - Any plugin dealing with NormalAnnotation with named parameters
 
 ### Pattern Matching Engine

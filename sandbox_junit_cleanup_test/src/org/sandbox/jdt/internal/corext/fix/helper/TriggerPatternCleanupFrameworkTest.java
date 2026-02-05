@@ -86,7 +86,7 @@ public class TriggerPatternCleanupFrameworkTest {
 		@Test
 		@DisplayName("Plugin with @RewriteRule is correctly processed")
 		void testPluginWithRewriteRule_isProcessedCorrectly() {
-			BeforeJUnitPluginV2 plugin = new BeforeJUnitPluginV2();
+			BeforeJUnitPlugin plugin = new BeforeJUnitPlugin();
 
 			RewriteRule rewriteRule = plugin.getClass().getAnnotation(RewriteRule.class);
 
@@ -123,7 +123,7 @@ public class TriggerPatternCleanupFrameworkTest {
 		@Test
 		@DisplayName("@RewriteRule works in conjunction with @CleanupPattern")
 		void testRewriteRuleWorksWithCleanupPattern() {
-			BeforeJUnitPluginV2 plugin = new BeforeJUnitPluginV2();
+			BeforeJUnitPlugin plugin = new BeforeJUnitPlugin();
 
 			// Both annotations should be present and work together
 			CleanupPattern cleanupPattern = plugin.getClass().getAnnotation(CleanupPattern.class);
@@ -530,7 +530,7 @@ public class TriggerPatternCleanupFrameworkTest {
 			ReferenceHolder<Integer, JunitHolder> dataHolder = new ReferenceHolder<>();
 
 			// Simulate what the plugin does
-			BeforeJUnitPluginV2 plugin = new BeforeJUnitPluginV2();
+			BeforeJUnitPlugin plugin = new BeforeJUnitPlugin();
 			// The find method would populate dataHolder in a real scenario
 			// Here we're verifying the holder can store data correctly
 			JunitHolder holder = new JunitHolder();
@@ -582,7 +582,7 @@ public class TriggerPatternCleanupFrameworkTest {
 		@DisplayName("createHolder() creates JunitHolder from Match correctly")
 		void testCreateHolder_createsJunitHolderFromMatch() {
 			// Create a mock plugin to test createHolder
-			BeforeJUnitPluginV2 plugin = new BeforeJUnitPluginV2();
+			BeforeJUnitPlugin plugin = new BeforeJUnitPlugin();
 
 			// We can't easily create a Match without the full engine, but we can verify
 			// that the method exists and has the correct signature
@@ -692,8 +692,8 @@ public class TriggerPatternCleanupFrameworkTest {
 		@Test
 		@DisplayName("Plugin with getPatterns() override works correctly")
 		void testPluginWithGetPatternsOverride_works() {
-			// IgnoreJUnitPluginV2 overrides getPatterns() instead of using single @CleanupPattern
-			IgnoreJUnitPluginV2 plugin = new IgnoreJUnitPluginV2();
+			// IgnoreJUnitPlugin overrides getPatterns() instead of using single @CleanupPattern
+			IgnoreJUnitPlugin plugin = new IgnoreJUnitPlugin();
 
 			// Should be able to get pattern (from annotation) without error
 			assertNotNull(plugin.getPattern(), "Plugin should have a pattern"); //$NON-NLS-1$
@@ -769,7 +769,7 @@ public class TriggerPatternCleanupFrameworkTest {
 		@Test
 		@DisplayName("validateQualifiedType correctly validates annotation types")
 		void testValidateQualifiedType_validatesAnnotationTypes() {
-			BeforeJUnitPluginV2 plugin = new BeforeJUnitPluginV2();
+			BeforeJUnitPlugin plugin = new BeforeJUnitPlugin();
 
 			// Verify the plugin has a qualified type defined
 			assertNotNull(plugin.getPattern(), "Plugin should have a pattern"); //$NON-NLS-1$
@@ -815,7 +815,7 @@ public class TriggerPatternCleanupFrameworkTest {
 		@Test
 		@DisplayName("shouldProcess() default implementation returns true")
 		void testShouldProcess_defaultReturnsTrue() {
-			BeforeJUnitPluginV2 plugin = new BeforeJUnitPluginV2();
+			BeforeJUnitPlugin plugin = new BeforeJUnitPlugin();
 
 			// Create a minimal match (in practice, this would come from TriggerPatternEngine)
 			// We can't easily test this without mocking, but we can verify the method exists

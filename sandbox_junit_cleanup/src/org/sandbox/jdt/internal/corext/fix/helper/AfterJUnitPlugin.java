@@ -23,7 +23,7 @@ import org.sandbox.jdt.triggerpattern.api.RewriteRule;
 /**
  * Migrates JUnit 4 @After annotations to JUnit 5 @AfterEach.
  * 
- * <p>This is a simplified version using TriggerPattern-based declarative architecture
+ * <p>Uses TriggerPattern-based declarative architecture
  * with @RewriteRule annotation to eliminate boilerplate code.</p>
  * 
  * <p><b>Before:</b></p>
@@ -61,7 +61,7 @@ import org.sandbox.jdt.triggerpattern.api.RewriteRule;
     removeImports = {ORG_JUNIT_AFTER},
     addImports = {ORG_JUNIT_JUPITER_API_AFTER_EACH}
 )
-public class AfterJUnitPluginV2 extends TriggerPatternCleanupPlugin {
+public class AfterJUnitPlugin extends TriggerPatternCleanupPlugin {
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
@@ -81,6 +81,6 @@ public class AfterJUnitPluginV2 extends TriggerPatternCleanupPlugin {
 
 	@Override
 	public String toString() {
-		return "After (TriggerPattern)"; //$NON-NLS-1$
+		return "After"; //$NON-NLS-1$
 	}
 }

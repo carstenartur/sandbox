@@ -34,9 +34,8 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
  * <p>This plugin only handles marker annotations (without expected/timeout attributes).
  * @Test annotations with expected or timeout are handled by separate plugins.</p>
  * 
- * <p>This is a simplified version using TriggerPattern-based declarative architecture
- * that replaces the original TestJUnitPlugin implementation and significantly reduces
- * boilerplate.</p>
+ * <p>Uses TriggerPattern-based declarative architecture
+ * to reduce boilerplate.</p>
  * 
  * <p><b>Before:</b></p>
  * <pre>
@@ -68,7 +67,7 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
     description = "Migrate @Test to JUnit 5",
     displayName = "JUnit 4 @Test → JUnit 5 @Test"
 )
-public class TestJUnitPluginV2 extends TriggerPatternCleanupPlugin {
+public class TestJUnitPlugin extends TriggerPatternCleanupPlugin {
 
 	@Override
 	protected JunitHolder createHolder(Match match) {
@@ -103,6 +102,6 @@ public class TestJUnitPluginV2 extends TriggerPatternCleanupPlugin {
 
 	@Override
 	public String toString() {
-		return "Test (TriggerPattern)"; //$NON-NLS-1$
+		return "Test"; //$NON-NLS-1$
 	}
 }

@@ -37,8 +37,8 @@ class RewriteRuleTest {
     AbstractEclipseJava context = new EclipseJava17();
     
     @Test
-    void testBeforeJUnitPluginV2_hasRewriteRuleAnnotation() {
-        BeforeJUnitPluginV2 plugin = new BeforeJUnitPluginV2();
+    void testBeforeJUnitPlugin_hasRewriteRuleAnnotation() {
+        BeforeJUnitPlugin plugin = new BeforeJUnitPlugin();
         
         RewriteRule rewriteRule = plugin.getClass().getAnnotation(RewriteRule.class);
         
@@ -49,8 +49,8 @@ class RewriteRuleTest {
     }
     
     @Test
-    void testAfterJUnitPluginV2_hasRewriteRuleAnnotation() {
-        AfterJUnitPluginV2 plugin = new AfterJUnitPluginV2();
+    void testAfterJUnitPlugin_hasRewriteRuleAnnotation() {
+        AfterJUnitPlugin plugin = new AfterJUnitPlugin();
         
         RewriteRule rewriteRule = plugin.getClass().getAnnotation(RewriteRule.class);
         
@@ -61,8 +61,8 @@ class RewriteRuleTest {
     }
     
     @Test
-    void testBeforeClassJUnitPluginV2_hasRewriteRuleAnnotation() {
-        BeforeClassJUnitPluginV2 plugin = new BeforeClassJUnitPluginV2();
+    void testBeforeClassJUnitPlugin_hasRewriteRuleAnnotation() {
+        BeforeClassJUnitPlugin plugin = new BeforeClassJUnitPlugin();
         
         RewriteRule rewriteRule = plugin.getClass().getAnnotation(RewriteRule.class);
         
@@ -73,8 +73,8 @@ class RewriteRuleTest {
     }
     
     @Test
-    void testAfterClassJUnitPluginV2_hasRewriteRuleAnnotation() {
-        AfterClassJUnitPluginV2 plugin = new AfterClassJUnitPluginV2();
+    void testAfterClassJUnitPlugin_hasRewriteRuleAnnotation() {
+        AfterClassJUnitPlugin plugin = new AfterClassJUnitPlugin();
         
         RewriteRule rewriteRule = plugin.getClass().getAnnotation(RewriteRule.class);
         
@@ -87,7 +87,7 @@ class RewriteRuleTest {
     @Test
     void testRewriteRule_defaultValues() {
         // Test that default values are properly defined
-        RewriteRule rewriteRule = BeforeJUnitPluginV2.class.getAnnotation(RewriteRule.class);
+        RewriteRule rewriteRule = BeforeJUnitPlugin.class.getAnnotation(RewriteRule.class);
         
         // removeStaticImports and addStaticImports should have empty defaults
         assertNotNull(rewriteRule.removeStaticImports());
@@ -99,7 +99,7 @@ class RewriteRuleTest {
     @Test
     void testRewriteRule_integrationWithCleanupPattern() {
         // Verify that both @CleanupPattern and @RewriteRule work together
-        BeforeJUnitPluginV2 plugin = new BeforeJUnitPluginV2();
+        BeforeJUnitPlugin plugin = new BeforeJUnitPlugin();
         
         assertNotNull(plugin.getPattern(), "Pattern should be extracted from @CleanupPattern");
         assertNotNull(plugin.getClass().getAnnotation(RewriteRule.class), 
