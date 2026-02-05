@@ -104,32 +104,50 @@ jobs:
         script: |
           const fs = require('fs');
           
-          // Determine PR number - either from event or by finding associated PR
+          // Determine PR number (available for pull_request events)
           let prNumber = context.issue?.number;
           
-          // If not a direct PR event, try to find PR associated with this branch/commit
+          // If not a direct PR event, try to find PR associated with this commit
+          // This handles cases where workflow is triggered on push to main but there
+          // are still open PRs that should be updated (e.g., for branch protection reruns)
           if (!prNumber && context.eventName === 'push') {
-            // For push events on non-main branches, find associated PR
             const branch = context.ref.replace('refs/heads/', '');
+            // Skip main branch as it won't have an associated PR
             if (branch !== 'main') {
               try {
-                const { data: prs } = await github.rest.pulls.list({
+                // Search for PRs that match this commit SHA
+                const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
-                  head: `${context.repo.owner}:${branch}`,
-                  state: 'open'
+                  commit_sha: context.sha
                 });
-                if (prs.length > 0) {
-                  prNumber = prs[0].number;
-                  console.log(`Found associated PR #${prNumber} for branch ${branch}`);
+                
+                // Filter to open PRs only
+                const openPrs = prs.filter(pr => pr.state === 'open');
+                
+                if (openPrs.length === 1) {
+                  prNumber = openPrs[0].number;
+                  console.log(`Found associated PR #${prNumber} for commit ${context.sha.substring(0, 7)}`);
+                } else if (openPrs.length > 1) {
+                  // Multiple PRs found - select the one with matching head SHA
+                  const matchingPr = openPrs.find(pr => pr.head && pr.head.sha === context.sha);
+                  if (matchingPr) {
+                    prNumber = matchingPr.number;
+                    console.log(`Found associated PR #${prNumber} matching head SHA among ${openPrs.length} open PRs`);
+                  } else {
+                    // Fall back to most recently updated PR for deterministic behavior
+                    openPrs.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+                    prNumber = openPrs[0].number;
+                    console.log(`Multiple (${openPrs.length}) open PRs found for commit. Selected most recently updated PR #${prNumber}`);
+                  }
                 }
               } catch (error) {
-                console.log(`Could not find PR for branch ${branch}:`, error.message);
+                console.log(`Could not find PR for commit ${context.sha.substring(0, 7)}:`, error.message);
               }
             }
           }
           
-          // Skip if no PR found
+          // Skip if no PR found (e.g., push to main without an associated PR)
           if (!prNumber) {
             console.log('No associated PR found, skipping comment');
             return;
