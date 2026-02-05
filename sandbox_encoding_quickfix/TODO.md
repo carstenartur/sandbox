@@ -4,9 +4,9 @@
 
 ## Status Summary
 
-**Current State**: Stable implementation with comprehensive test coverage for 17 different encoding-related API transformations
+**Current State**: Stable implementation with comprehensive test coverage for 22 different encoding-related API transformations
 
-### Completed - All 17 Implemented Transformations
+### Completed - All 22 Implemented Transformations
 
 The plugin now supports transformations for the following APIs:
 
@@ -27,6 +27,11 @@ The plugin now supports transformations for the following APIs:
 15. ✅ `URLEncoder.encode(s, "UTF-8")` → `URLEncoder.encode(s, StandardCharsets.UTF_8)` (Java 10+)
 16. ✅ `new Scanner(file, "UTF-8")` → `new Scanner(file, StandardCharsets.UTF_8)`
 17. ✅ `Properties.storeToXML(os, comment, "UTF-8")` → `Properties.storeToXML(os, comment, StandardCharsets.UTF_8)` (Java 10+)
+18. ✅ `Files.newBufferedReader(path)` → `Files.newBufferedReader(path, StandardCharsets.UTF_8)` (Java 8+)
+19. ✅ `Files.newBufferedWriter(path)` → `Files.newBufferedWriter(path, StandardCharsets.UTF_8)` (Java 8+)
+20. ✅ `Files.readAllLines(path)` → `Files.readAllLines(path, StandardCharsets.UTF_8)` (Java 8+)
+21. ✅ `Files.readString(path)` → `Files.readString(path, StandardCharsets.UTF_8)` (Java 11+)
+22. ✅ `Files.writeString(path, content)` → `Files.writeString(path, content, StandardCharsets.UTF_8)` (Java 11+)
 
 ### In Progress
 - None currently
@@ -108,19 +113,23 @@ The cleanup is Java-version-aware and only applies transformations compatible wi
 - [ ] Detection of existing charset parameters to avoid duplicate transformation
 - [ ] Performance optimization for large codebases
 
-## Potential Future API Coverage
+## Completed API Coverage
 
-The following APIs could potentially be added to the cleanup in future versions:
+### Files API Methods ✅
+All primary Files API methods now have charset transformations implemented:
 
-### Files API Methods
-These methods already have charset overloads in Java NIO:
+- ✅ `Files.newBufferedReader(path)` - Add charset parameter (Java 8+)
+- ✅ `Files.newBufferedWriter(path)` - Add charset parameter (Java 8+)
+- ✅ `Files.readAllLines(path)` - Add charset parameter (Java 8+)
+- ✅ `Files.readString(path)` - Add charset parameter (Java 11+)
+- ✅ `Files.writeString(path, content)` - Add charset parameter (Java 11+)
 
-- `Files.newBufferedReader(path)` - Add charset parameter
-- `Files.newBufferedWriter(path)` - Add charset parameter  
-- `Files.readAllLines(path)` - Add charset parameter (already implemented)
-- `Files.write(path, lines)` - Add charset parameter
+### Potential Future API Coverage
 
-**Note**: Some of these may already be partially implemented. Review the codebase before adding new implementations.
+Additional APIs that could be considered for future versions:
+
+- `Files.write(path, lines)` - Add charset parameter for Collections overload
+- `Files.lines(path)` - Add charset parameter for Stream<String> overload
 
 ### Stream-based APIs
 Additional stream-related encoding APIs that could be considered:
