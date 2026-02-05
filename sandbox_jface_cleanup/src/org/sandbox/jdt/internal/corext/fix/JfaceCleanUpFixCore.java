@@ -79,8 +79,11 @@ public enum JfaceCleanUpFixCore {
 					rangeComputer= new TightSourceRangeComputer();
 				}
 				// Only set tight source node for MONITOR cleanup that has minv
-				if (JfaceCleanUpFixCore.this == MONITOR && !hit.isEmpty() && hit.get(0) != null && hit.get(0).minv != null) {
-					rangeComputer.addTightSourceNode(hit.get(0).minv);
+				if (JfaceCleanUpFixCore.this == MONITOR && !hit.isEmpty()) {
+					Object first = hit.get(0);
+					if (first instanceof MonitorHolder monitorHolder && monitorHolder.minv != null) {
+						rangeComputer.addTightSourceNode(monitorHolder.minv);
+					}
 				}
 				rewrite.setTargetSourceRangeComputer(rangeComputer);
 				jfacefound.rewrite(JfaceCleanUpFixCore.this, hit, cuRewrite, group);

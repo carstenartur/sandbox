@@ -24,11 +24,15 @@ import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CastExpression;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.ParameterizedType;
 import org.eclipse.jdt.core.dom.SimpleType;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
@@ -100,7 +104,9 @@ public class ViewerSorterPlugin extends AbstractTool<ReferenceHolder<Integer, Vi
 	 * <li>Type references to ViewerSorter, TreePathViewerSorter, CommonViewerSorter</li>
 	 * <li>Method invocations of getSorter()</li>
 	 * <li>Class instance creations using these types</li>
-	 * <li>Variable declarations with these types</li>
+	 * <li>Variable declarations with these types (local and field)</li>
+	 * <li>Method parameter types using these types</li>
+	 * <li>Method return types using these types</li>
 	 * <li>Cast expressions using these types</li>
 	 * </ul>
 	 * 
@@ -132,8 +138,38 @@ public class ViewerSorterPlugin extends AbstractTool<ReferenceHolder<Integer, Vi
 			}
 			
 			@Override
+			public boolean visit(FieldDeclaration node) {
+				// Check field declarations
+				Type type = node.getType();
+				if (isSorterType(type)) {
+					holder.typesToReplace.add(type);
+				}
+				return true;
+			}
+			
+			@Override
 			public boolean visit(VariableDeclarationStatement node) {
 				// Check variable declarations
+				Type type = node.getType();
+				if (isSorterType(type)) {
+					holder.typesToReplace.add(type);
+				}
+				return true;
+			}
+			
+			@Override
+			public boolean visit(MethodDeclaration node) {
+				// Check method return types
+				Type returnType = node.getReturnType2();
+				if (returnType != null && isSorterType(returnType)) {
+					holder.typesToReplace.add(returnType);
+				}
+				return true;
+			}
+			
+			@Override
+			public boolean visit(SingleVariableDeclaration node) {
+				// Check method parameter types
 				Type type = node.getType();
 				if (isSorterType(type)) {
 					holder.typesToReplace.add(type);
@@ -165,7 +201,19 @@ public class ViewerSorterPlugin extends AbstractTool<ReferenceHolder<Integer, Vi
 			public boolean visit(MethodInvocation node) {
 				// Check for getSorter() method calls
 				if (node.getName().getIdentifier().equals("getSorter") && node.arguments().isEmpty()) {
-					holder.methodNamesToReplace.add(node.getName());
+					// Verify this is actually a viewer's getSorter method by checking the method binding
+					IMethodBinding methodBinding = node.resolveMethodBinding();
+					if (methodBinding != null) {
+						ITypeBinding declaringClass = methodBinding.getDeclaringClass();
+						if (declaringClass != null) {
+							String declaringClassName = declaringClass.getQualifiedName();
+							// Check if it's a JFace viewer class
+							if (declaringClassName.startsWith("org.eclipse.jface.viewers.") ||
+								declaringClassName.startsWith("org.eclipse.ui.navigator.")) {
+								holder.methodNamesToReplace.add(node.getName());
+							}
+						}
+					}
 				}
 				return true;
 			}
@@ -314,8 +362,8 @@ public class ViewerSorterPlugin extends AbstractTool<ReferenceHolder<Integer, Vi
 				public class TeamViewerComparator extends ViewerComparator {
 				    private final CommonViewerComparator sorter;
 				    
-				    public TeamViewerComparator(CommonViewerComparator comparator) {
-				        this.comparator = comparator;
+				    public TeamViewerComparator(CommonViewerComparator sorter) {
+				        this.sorter = sorter;
 				    }
 				    
 				    void test() {
