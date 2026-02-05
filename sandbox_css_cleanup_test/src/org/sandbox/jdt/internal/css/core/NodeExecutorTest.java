@@ -47,7 +47,7 @@ public class NodeExecutorTest {
 		boolean first = NodeExecutor.isNodeAvailable();
 		boolean second = NodeExecutor.isNodeAvailable();
 		
-		assertTrue(first == second, "Node availability check should be consistent"); //$NON-NLS-1$
+		assertEquals(first, second, "Node availability check should be consistent"); //$NON-NLS-1$
 	}
 
 	@Test
@@ -56,7 +56,7 @@ public class NodeExecutorTest {
 		boolean first = NodeExecutor.isNpxAvailable();
 		boolean second = NodeExecutor.isNpxAvailable();
 		
-		assertTrue(first == second, "Npx availability check should be consistent"); //$NON-NLS-1$
+		assertEquals(first, second, "Npx availability check should be consistent"); //$NON-NLS-1$
 	}
 
 	@Test

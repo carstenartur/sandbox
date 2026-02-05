@@ -82,13 +82,9 @@ public class CSSValidationResultTest {
 		
 		List<CSSValidationResult.Issue> returnedIssues = result.getIssues();
 		
-		try {
+		// Verify that attempting to modify the list throws UnsupportedOperationException
+		assertThrows(UnsupportedOperationException.class, () -> {
 			returnedIssues.add(new CSSValidationResult.Issue(2, 2, "error", "another", "another")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-			// If we reach here, the list is modifiable (which is unexpected)
-			assertFalse(true, "Issues list should be unmodifiable"); //$NON-NLS-1$
-		} catch (UnsupportedOperationException e) {
-			// Expected behavior - list is unmodifiable
-			assertTrue(true);
-		}
+		}, "Issues list should be unmodifiable"); //$NON-NLS-1$
 	}
 }
