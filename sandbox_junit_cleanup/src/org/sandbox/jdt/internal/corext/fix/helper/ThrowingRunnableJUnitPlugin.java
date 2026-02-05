@@ -15,6 +15,26 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
+/*-
+ * #%L
+ * Sandbox junit cleanup
+ * %%
+ * Copyright (C) 2026 hammer
+ * %%
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0.
+ * 
+ * This Source Code may also be made available under the following Secondary
+ * Licenses when the conditions for such availability set forth in the Eclipse
+ * Public License, v. 2.0 are satisfied: GNU General Public License, version 2
+ * with the GNU Classpath Exception which is
+ * available at https://www.gnu.org/software/classpath/license.html.
+ * 
+ * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+ * #L%
+ */
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -111,13 +131,28 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 				// Check if this is a .run() call on a ThrowingRunnable
 				if (RUN_METHOD.equals(node.getName().getIdentifier())) {
 					Expression expression = node.getExpression();
+					ITypeBinding typeBinding = null;
+					
 					if (expression != null) {
-						ITypeBinding typeBinding = expression.resolveTypeBinding();
-						if (typeBinding != null && ORG_JUNIT_FUNCTION_THROWING_RUNNABLE.equals(typeBinding.getQualifiedName())) {
-							if (!nodesprocessed.contains(node) && !found.contains(node)) {
-								found.add(node);
-								addStandardRewriteOperation(fixcore, operations, node, dataHolder);
-							}
+						// Explicit receiver: obj.run()
+						typeBinding = expression.resolveTypeBinding();
+					} else {
+						// Implicit this: run() or this.run()
+						// Check if the enclosing type implements ThrowingRunnable
+						ASTNode parent = node.getParent();
+						while (parent != null && !(parent instanceof org.eclipse.jdt.core.dom.TypeDeclaration)) {
+							parent = parent.getParent();
+						}
+						if (parent instanceof org.eclipse.jdt.core.dom.TypeDeclaration) {
+							org.eclipse.jdt.core.dom.TypeDeclaration typeDecl = (org.eclipse.jdt.core.dom.TypeDeclaration) parent;
+							typeBinding = typeDecl.resolveBinding();
+						}
+					}
+					
+					if (typeBinding != null && ORG_JUNIT_FUNCTION_THROWING_RUNNABLE.equals(typeBinding.getQualifiedName())) {
+						if (!nodesprocessed.contains(node) && !found.contains(node)) {
+							found.add(node);
+							addStandardRewriteOperation(fixcore, operations, node, dataHolder);
 						}
 					}
 				}
@@ -173,8 +208,7 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 	 * Processes import declarations, replacing ThrowingRunnable import with Executable import.
 	 */
 	private void processImportDeclaration(ImportRewrite importRewriter, ImportDeclaration importDecl) {
-		importRewriter.removeImport(ORG_JUNIT_FUNCTION_THROWING_RUNNABLE);
-		importRewriter.addImport(ORG_JUNIT_JUPITER_API_FUNCTION_EXECUTABLE);
+		ensureImports(importRewriter);
 	}
 	
 	/**
@@ -196,7 +230,7 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 		Type newType = createExecutableType(ast, type);
 		if (newType != null) {
 			ASTNodes.replaceButKeepComment(rewriter, type, newType, group);
-			importRewriter.addImport(ORG_JUNIT_JUPITER_API_FUNCTION_EXECUTABLE);
+			ensureImports(importRewriter);
 		}
 	}
 	
@@ -209,7 +243,7 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 		Type newType = createExecutableType(ast, type);
 		if (newType != null) {
 			ASTNodes.replaceButKeepComment(rewriter, type, newType, group);
-			importRewriter.addImport(ORG_JUNIT_JUPITER_API_FUNCTION_EXECUTABLE);
+			ensureImports(importRewriter);
 		}
 	}
 	
@@ -226,13 +260,23 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 			Type newType = createExecutableType(ast, type);
 			if (newType != null) {
 				ASTNodes.replaceButKeepComment(rewriter, type, newType, group);
-				importRewriter.addImport(ORG_JUNIT_JUPITER_API_FUNCTION_EXECUTABLE);
+				ensureImports(importRewriter);
 			}
 		}
 	}
 	
 	/**
+	 * Ensures the correct imports are present (removes old, adds new).
+	 * ImportRewrite handles deduplication automatically.
+	 */
+	private void ensureImports(ImportRewrite importRewriter) {
+		importRewriter.removeImport(ORG_JUNIT_FUNCTION_THROWING_RUNNABLE);
+		importRewriter.addImport(ORG_JUNIT_JUPITER_API_FUNCTION_EXECUTABLE);
+	}
+	
+	/**
 	 * Creates a new Executable type, handling both simple and parameterized types.
+	 * Recursively processes nested parameterized types.
 	 */
 	private Type createExecutableType(AST ast, Type originalType) {
 		if (originalType instanceof SimpleType) {
@@ -242,40 +286,55 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 			}
 		} else if (originalType instanceof ParameterizedType) {
 			// Handle generic types like AtomicReference<ThrowingRunnable>
+			// or nested types like Map<String, AtomicReference<ThrowingRunnable>>
 			ParameterizedType paramType = (ParameterizedType) originalType;
 			Type baseType = paramType.getType();
 			
-			// Check if any type argument is ThrowingRunnable
-			boolean hasThrowingRunnable = false;
+			// Check if any type argument needs transformation (recursive check)
+			boolean needsTransformation = false;
 			for (Object arg : paramType.typeArguments()) {
-				if (arg instanceof SimpleType) {
-					SimpleType argType = (SimpleType) arg;
-					if (THROWING_RUNNABLE_SIMPLE.equals(argType.getName().getFullyQualifiedName())) {
-						hasThrowingRunnable = true;
-						break;
-					}
+				if (containsThrowingRunnable((Type) arg)) {
+					needsTransformation = true;
+					break;
 				}
 			}
 			
-			if (hasThrowingRunnable) {
-				// Create new parameterized type with Executable instead
+			if (needsTransformation) {
+				// Create new parameterized type with transformed arguments
 				ParameterizedType newParamType = ast.newParameterizedType((Type) ASTNode.copySubtree(ast, baseType));
 				for (Object arg : paramType.typeArguments()) {
-					if (arg instanceof SimpleType) {
-						SimpleType argType = (SimpleType) arg;
-						if (THROWING_RUNNABLE_SIMPLE.equals(argType.getName().getFullyQualifiedName())) {
-							newParamType.typeArguments().add(ast.newSimpleType(ast.newName(EXECUTABLE_SIMPLE)));
-						} else {
-							newParamType.typeArguments().add(ASTNode.copySubtree(ast, argType));
-						}
+					Type argType = (Type) arg;
+					Type transformedArg = createExecutableType(ast, argType);
+					if (transformedArg != null) {
+						// Argument was transformed
+						newParamType.typeArguments().add(transformedArg);
 					} else {
-						newParamType.typeArguments().add(ASTNode.copySubtree(ast, (ASTNode) arg));
+						// Argument doesn't need transformation, copy as-is
+						newParamType.typeArguments().add(ASTNode.copySubtree(ast, argType));
 					}
 				}
 				return newParamType;
 			}
 		}
 		return null;
+	}
+	
+	/**
+	 * Checks if a type contains ThrowingRunnable anywhere in its structure.
+	 */
+	private boolean containsThrowingRunnable(Type type) {
+		if (type instanceof SimpleType) {
+			SimpleType simpleType = (SimpleType) type;
+			return THROWING_RUNNABLE_SIMPLE.equals(simpleType.getName().getFullyQualifiedName());
+		} else if (type instanceof ParameterizedType) {
+			ParameterizedType paramType = (ParameterizedType) type;
+			for (Object arg : paramType.typeArguments()) {
+				if (containsThrowingRunnable((Type) arg)) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	@Override
