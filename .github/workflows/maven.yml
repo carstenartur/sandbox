@@ -93,16 +93,65 @@ jobs:
     
     # Option 3: Detaillierte Fehlermeldungen als PR-Kommentar (für Copilot)
     - name: Extract Test Failures
-      if: always() && github.event_name == 'pull_request'
+      if: always()
       run: |
         python3 .github/scripts/extract_test_failures.py > test-failures.md
         
     - name: Post Test Failures as PR Comment
-      if: always() && github.event_name == 'pull_request'
+      if: always()
       uses: actions/github-script@v8
       with:
         script: |
           const fs = require('fs');
+          
+          // Determine PR number (available for pull_request events)
+          let prNumber = context.issue?.number;
+          
+          // If not a direct PR event, try to find PR associated with this commit
+          // This handles cases where workflow is triggered on push to main but there
+          // are still open PRs that should be updated (e.g., for branch protection reruns)
+          if (!prNumber && context.eventName === 'push') {
+            const branch = context.ref.replace('refs/heads/', '');
+            // Skip main branch as it won't have an associated PR
+            if (branch !== 'main') {
+              try {
+                // Search for PRs that match this commit SHA
+                const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  commit_sha: context.sha
+                });
+                
+                // Filter to open PRs only
+                const openPrs = prs.filter(pr => pr.state === 'open');
+                
+                if (openPrs.length === 1) {
+                  prNumber = openPrs[0].number;
+                  console.log(`Found associated PR #${prNumber} for commit ${context.sha.substring(0, 7)}`);
+                } else if (openPrs.length > 1) {
+                  // Multiple PRs found - select the one with matching head SHA
+                  const matchingPr = openPrs.find(pr => pr.head && pr.head.sha === context.sha);
+                  if (matchingPr) {
+                    prNumber = matchingPr.number;
+                    console.log(`Found associated PR #${prNumber} matching head SHA among ${openPrs.length} open PRs`);
+                  } else {
+                    // Fall back to most recently updated PR for deterministic behavior
+                    openPrs.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+                    prNumber = openPrs[0].number;
+                    console.log(`Multiple (${openPrs.length}) open PRs found for commit. Selected most recently updated PR #${prNumber}`);
+                  }
+                }
+              } catch (error) {
+                console.log(`Could not find PR for commit ${context.sha.substring(0, 7)}:`, error.message);
+              }
+            }
+          }
+          
+          // Skip if no PR found (e.g., push to main without an associated PR)
+          if (!prNumber) {
+            console.log('No associated PR found, skipping comment');
+            return;
+          }
           
           // Read the failures markdown
           let body;
@@ -121,7 +170,7 @@ jobs:
           const comments = await github.rest.issues.listComments({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            issue_number: context.issue.number,
+            issue_number: prNumber,
           });
           
           const botComment = comments.data.find(comment => 
@@ -143,7 +192,7 @@ jobs:
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: context.issue.number,
+              issue_number: prNumber,
               body: commentBody
             });
             console.log('Created new test failures comment');
