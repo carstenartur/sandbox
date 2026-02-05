@@ -862,7 +862,69 @@ public class E4 {
 						       }
 						    }
 						}
-						""");
+						"""),
+	FILES_READSTRING("""
+package test1;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+public class E1 {
+    void method() throws Exception {
+        Path path = Paths.get("file.txt");
+        String content = Files.readString(path);
+        String content2 = Files.readString(path, java.nio.charset.StandardCharsets.UTF_8);
+    }
+}
+""",
+"""
+package test1;
+
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+public class E1 {
+    void method() throws Exception {
+        Path path = Paths.get("file.txt");
+        String content = Files.readString(path, StandardCharsets.UTF_8);
+        String content2 = Files.readString(path, StandardCharsets.UTF_8);
+    }
+}
+"""),
+	FILES_WRITESTRING("""
+package test1;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+public class E1 {
+    void method() throws Exception {
+        Path path = Paths.get("file.txt");
+        Files.writeString(path, "content");
+        Files.writeString(path, "content", java.nio.charset.StandardCharsets.UTF_8);
+    }
+}
+""",
+"""
+package test1;
+
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+public class E1 {
+    void method() throws Exception {
+        Path path = Paths.get("file.txt");
+        Files.writeString(path, "content", StandardCharsets.UTF_8);
+        Files.writeString(path, "content", StandardCharsets.UTF_8);
+    }
+}
+""");
 
 		String given;
 		String expected;
