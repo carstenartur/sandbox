@@ -130,7 +130,8 @@ public class JUnitCleanUpCore extends AbstractCleanUp {
 			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETEMPORARYFOLDER, JUnitCleanUpFixCore.RULETEMPORARYFOLDER),
 			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETESTNAME, JUnitCleanUpFixCore.RULETESTNAME),
 			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE, JUnitCleanUpFixCore.RULEEXTERNALRESOURCE),
-			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_LOST_TESTS, JUnitCleanUpFixCore.LOSTTESTS)
+			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_LOST_TESTS, JUnitCleanUpFixCore.LOSTTESTS),
+			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_THROWINGRUNNABLE, JUnitCleanUpFixCore.THROWINGRUNNABLE)
 				);
 		EnumSet<JUnitCleanUpFixCore> fixSetcombined=EnumSet.copyOf(fixSetJunit4);
 		fixSetcombined.addAll(fixSetJunit3);

@@ -38,13 +38,11 @@ import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
-import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractMethodMigrationPlugin;
 

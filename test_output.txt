@@ -1,0 +1,14 @@
+[INFO] Scanning for projects...
+[INFO] Tycho Version:  5.0.2 (9f65dc09a72ee08f29cc8a4d5381a45b33dc7144)
+[INFO] Tycho Mode:     project
+[INFO] Tycho Builder:  maven
+[INFO] Build Threads:  1
+Downloading from local: file:///home/runner/.m2/repository/org/sandbox/sandbox_target/1.2.5-SNAPSHOT/maven-metadata.xml
+Downloading from local: file:///home/runner/.m2/repository/org/sandbox/sandbox_target/1.2.5-SNAPSHOT/sandbox_target-1.2.5-SNAPSHOT.target
+[ERROR] resolve target artifact org.sandbox:sandbox_target:1.2.5-SNAPSHOT:no classifier failed! Could not resolve target platform specification artifact org.sandbox:sandbox_target:target:1.2.5-SNAPSHOT: The following artifacts could not be resolved: org.sandbox:sandbox_target:target:1.2.5-SNAPSHOT (absent): Could not find artifact org.sandbox:sandbox_target:target:1.2.5-SNAPSHOT in local (file:///home/runner/.m2/repository/) -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MavenExecutionException

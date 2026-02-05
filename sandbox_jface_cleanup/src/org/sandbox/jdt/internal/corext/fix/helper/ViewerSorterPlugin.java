@@ -49,7 +49,7 @@ import org.sandbox.jdt.internal.corext.fix.JfaceCleanUpFixCore;
  * <li>Converts {@code ViewerSorter} to {@code ViewerComparator}</li>
  * <li>Converts {@code TreePathViewerSorter} to {@code TreePathViewerComparator}</li>
  * <li>Converts {@code CommonViewerSorter} to {@code CommonViewerComparator}</li>
- * <li>Converts {@code getSorter()} method calls to {@code getComparator()} (for JFace viewers only)</li>
+ * <li>Converts {@code getSorter()} and {@code setSorter()} method calls to {@code getComparator()} and {@code setComparator()} respectively (for JFace viewers only)</li>
  * </ul>
  * 
  * <p><b>Migration Pattern:</b></p>
@@ -104,7 +104,7 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 	public static class SorterHolder {
 		/** Types that need to be replaced */
 		public Set<Type> typesToReplace = new HashSet<>();
-		/** Method names that need to be replaced (getSorter -> getComparator) */
+		/** Method names that need to be replaced (e.g. getSorter -> getComparator, setSorter -> setComparator) */
 		public Set<Name> methodNamesToReplace = new HashSet<>();
 		/** Nodes that have been processed to avoid duplicate transformations */
 		public Set<ASTNode> nodesprocessed;
@@ -124,27 +124,6 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 		return VIEWER_SORTER.equals(qualifiedName) 
 				|| TREEPATH_VIEWER_SORTER.equals(qualifiedName)
 				|| COMMON_VIEWER_SORTER.equals(qualifiedName);
-	}
-
-	/**
-	 * Gets the replacement type name for a deprecated ViewerSorter type.
-	 * 
-	 * @param typeBinding the type binding of the deprecated type
-	 * @return the replacement type name (simple name)
-	 */
-	private static String getReplacementTypeName(ITypeBinding typeBinding) {
-		if (typeBinding == null) {
-			return null;
-		}
-		String qualifiedName = typeBinding.getQualifiedName();
-		if (VIEWER_SORTER.equals(qualifiedName)) {
-			return VIEWER_COMPARATOR_SIMPLE;
-		} else if (TREEPATH_VIEWER_SORTER.equals(qualifiedName)) {
-			return TREEPATH_VIEWER_COMPARATOR_SIMPLE;
-		} else if (COMMON_VIEWER_SORTER.equals(qualifiedName)) {
-			return COMMON_VIEWER_COMPARATOR_SIMPLE;
-		}
-		return null;
 	}
 
 	/**
@@ -169,23 +148,30 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 	}
 
 	/**
-	 * Checks if a method is a JFace viewer getSorter() method.
+	 * Checks if a method is a JFace viewer getSorter() or setSorter() method.
 	 * 
 	 * @param methodBinding the method binding to check
-	 * @return {@code true} if it's a JFace viewer getSorter() method, {@code false} otherwise
+	 * @return {@code true} if it's a JFace viewer getSorter() or setSorter() method, {@code false} otherwise
 	 */
-	private static boolean isJFaceViewerGetSorter(IMethodBinding methodBinding) {
+	private static boolean isJFaceViewerSorterMethod(IMethodBinding methodBinding) {
 		if (methodBinding == null) {
 			return false;
 		}
 		
-		// Check method name
-		if (!"getSorter".equals(methodBinding.getName())) { //$NON-NLS-1$
-			return false;
-		}
+		String methodName = methodBinding.getName();
 		
-		// Check that it has no parameters
-		if (methodBinding.getParameterTypes().length != 0) {
+		// Check method name is getSorter or setSorter
+		if ("getSorter".equals(methodName)) { //$NON-NLS-1$
+			// getSorter should have no parameters
+			if (methodBinding.getParameterTypes().length != 0) {
+				return false;
+			}
+		} else if ("setSorter".equals(methodName)) { //$NON-NLS-1$
+			// setSorter should have exactly one parameter
+			if (methodBinding.getParameterTypes().length != 1) {
+				return false;
+			}
+		} else {
 			return false;
 		}
 		
@@ -244,7 +230,7 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 	 * <li>Method return types and parameters using ViewerSorter types</li>
 	 * <li>ClassInstanceCreation of ViewerSorter types</li>
 	 * <li>Cast expressions to ViewerSorter types</li>
-	 * <li>getSorter() method invocations on JFace viewers</li>
+	 * <li>getSorter() and setSorter() method invocations on JFace viewers</li>
 	 * </ul>
 	 * 
 	 * @param fixcore the cleanup fix core instance
@@ -355,11 +341,15 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 			@Override
 			public boolean visit(MethodInvocation node) {
 				SimpleName methodName = node.getName();
-				if (methodName != null && "getSorter".equals(methodName.getIdentifier())) { //$NON-NLS-1$
-					IMethodBinding methodBinding = node.resolveMethodBinding();
-					if (isJFaceViewerGetSorter(methodBinding)) {
-						holder.methodNamesToReplace.add(methodName);
+				if (methodName != null) {
+					String name = methodName.getIdentifier();
+					if ("getSorter".equals(name) || "setSorter".equals(name)) { //$NON-NLS-1$ //$NON-NLS-2$
+						IMethodBinding methodBinding = node.resolveMethodBinding();
+						if (isJFaceViewerSorterMethod(methodBinding)) {
+							holder.methodNamesToReplace.add(methodName);
+						}
 					}
+				}
 				}
 				return true;
 			}
@@ -377,7 +367,7 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 	 * <p>Performs transformations on:</p>
 	 * <ol>
 	 * <li>All Type nodes that reference ViewerSorter classes</li>
-	 * <li>All method names that are getSorter() calls on JFace viewers</li>
+	 * <li>All method names that are getSorter() or setSorter() calls on JFace viewers</li>
 	 * </ol>
 	 * 
 	 * <p>The transformation ensures:</p>
@@ -385,7 +375,7 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 	 * <li>Correct type replacement based on the original type</li>
 	 * <li>Removal of old imports</li>
 	 * <li>Addition of new imports</li>
-	 * <li>Method name changes (getSorter → getComparator)</li>
+	 * <li>Method name changes (getSorter → getComparator, setSorter → setComparator)</li>
 	 * </ul>
 	 * 
 	 * @param upp the cleanup fix core instance
@@ -434,8 +424,20 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 			if (!holder.nodesprocessed.contains(methodNameToReplace)) {
 				holder.nodesprocessed.add(methodNameToReplace);
 				
-				// Create new method name "getComparator"
-				SimpleName newMethodName = ast.newSimpleName("getComparator"); //$NON-NLS-1$
+				// Determine the replacement method name based on the original
+				String originalName = methodNameToReplace.toString();
+				String replacementName;
+				if ("getSorter".equals(originalName)) { //$NON-NLS-1$
+					replacementName = "getComparator"; //$NON-NLS-1$
+				} else if ("setSorter".equals(originalName)) { //$NON-NLS-1$
+					replacementName = "setComparator"; //$NON-NLS-1$
+				} else {
+					// Should not happen, but keep original name as fallback
+					replacementName = originalName;
+				}
+				
+				// Create new method name
+				SimpleName newMethodName = ast.newSimpleName(replacementName);
 				
 				// Replace the method name
 				rewrite.replace(methodNameToReplace, newMethodName, group);

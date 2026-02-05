@@ -165,6 +165,33 @@ public class LibStandardNames {
 	public static final String METHOD_TOSTRING= "toString"; //$NON-NLS-1$
 	
 	/**
+	 * Method name for {@link java.nio.file.Files#newBufferedReader(java.nio.file.Path, java.nio.charset.Charset)}
+	 */
+	public static final String METHOD_NEW_BUFFERED_READER= "newBufferedReader"; //$NON-NLS-1$
+	
+	/**
+	 * Method name for {@link java.nio.file.Files#newBufferedWriter(java.nio.file.Path, java.nio.charset.Charset, java.nio.file.OpenOption...)}
+	 */
+	public static final String METHOD_NEW_BUFFERED_WRITER= "newBufferedWriter"; //$NON-NLS-1$
+	
+	/**
+	 * Method name for {@link java.nio.file.Files#readAllLines(java.nio.file.Path, java.nio.charset.Charset)}
+	 */
+	public static final String METHOD_READ_ALL_LINES= "readAllLines"; //$NON-NLS-1$
+	
+	/**
+	 * Method name for {@link java.nio.file.Files#readString(java.nio.file.Path, java.nio.charset.Charset)}
+	 * @since Java 11
+	 */
+	public static final String METHOD_READ_STRING= "readString"; //$NON-NLS-1$
+	
+	/**
+	 * Method name for {@link java.nio.file.Files#writeString(java.nio.file.Path, CharSequence, java.nio.charset.Charset, java.nio.file.OpenOption...)}
+	 * @since Java 11
+	 */
+	public static final String METHOD_WRITE_STRING= "writeString"; //$NON-NLS-1$
+	
+	/**
 	 * Field name for {@link java.nio.charset.StandardCharsets#UTF_8}
 	 */
 	public static final String FIELD_UTF8= "UTF_8"; //$NON-NLS-1$

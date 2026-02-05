@@ -82,7 +82,13 @@ public enum JfaceCleanUpFixCore {
 				
 				// Use instanceof pattern matching to handle different holder types
 				if (hit.get(0) instanceof MonitorHolder monitorHolder) {
-					rangeComputer.addTightSourceNode(monitorHolder.minv);
+					// For standalone SubProgressMonitor, use the ClassInstanceCreation node instead of minv
+					if (monitorHolder.minv != null) {
+						rangeComputer.addTightSourceNode(monitorHolder.minv);
+					} else if (!monitorHolder.setofcic.isEmpty()) {
+						// Use the first SubProgressMonitor creation for standalone case
+						rangeComputer.addTightSourceNode(monitorHolder.setofcic.iterator().next());
+					}
 					rewrite.setTargetSourceRangeComputer(rangeComputer);
 					((AbstractTool<ReferenceHolder<Integer, MonitorHolder>>) jfacefound).rewrite(JfaceCleanUpFixCore.this, (ReferenceHolder<Integer, MonitorHolder>) hit, cuRewrite, group);
 				} else if (hit.get(0) instanceof SorterHolder) {
