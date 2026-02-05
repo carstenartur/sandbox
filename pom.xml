@@ -388,6 +388,21 @@ See README.md for more information.
 			</dependency>
 			<dependency>
 				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_css_cleanup</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_css_cleanup_feature</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_css_cleanup_test</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_encoding_quickfix</artifactId>
 				<version>${project.version}</version>
 			</dependency>
