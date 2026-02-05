@@ -42,17 +42,13 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.ParameterizedType;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SimpleType;
-import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Type;
-import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
-import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
@@ -115,41 +111,53 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 				// Check if this is a ThrowingRunnable type reference
 				ITypeBinding binding = node.resolveBinding();
 				if (binding != null && ORG_JUNIT_FUNCTION_THROWING_RUNNABLE.equals(binding.getQualifiedName())) {
-					ASTNode parent = node.getParent();
-					// Collect the parent declaration node (variable, parameter, etc.)
-					ASTNode declarationNode = findDeclarationNode(parent);
-					if (declarationNode != null && !nodesprocessed.contains(declarationNode) && !found.contains(declarationNode)) {
-						found.add(declarationNode);
-						addStandardRewriteOperation(fixcore, operations, declarationNode, dataHolder);
+					// Store the SimpleType node directly for replacement
+					if (!nodesprocessed.contains(node) && !found.contains(node)) {
+						found.add(node);
+						addStandardRewriteOperation(fixcore, operations, node, dataHolder);
 					}
 				}
 				return true;
 			}
 			
 			@Override
+			public boolean visit(ParameterizedType node) {
+				// Check if this parameterized type contains ThrowingRunnable
+				// e.g., AtomicReference<ThrowingRunnable>
+				if (containsThrowingRunnable(node)) {
+					if (!nodesprocessed.contains(node) && !found.contains(node)) {
+						found.add(node);
+						addStandardRewriteOperation(fixcore, operations, node, dataHolder);
+					}
+				}
+				// Don't visit children - we handle the whole parameterized type
+				return false;
+			}
+			
+			@Override
 			public boolean visit(MethodInvocation node) {
 				// Check if this is a .run() call on a ThrowingRunnable
-				if (RUN_METHOD.equals(node.getName().getIdentifier())) {
-					Expression expression = node.getExpression();
-					ITypeBinding typeBinding = null;
+				if (RUN_METHOD.equals(node.getName().getIdentifier()) && node.arguments().isEmpty()) {
+					boolean isThrowingRunnableRun = false;
 					
-					if (expression != null) {
-						// Explicit receiver: obj.run()
-						typeBinding = expression.resolveTypeBinding();
-					} else {
-						// Implicit this: run() or this.run()
-						// Check if the enclosing type implements ThrowingRunnable
-						ASTNode parent = node.getParent();
-						while (parent != null && !(parent instanceof org.eclipse.jdt.core.dom.TypeDeclaration)) {
-							parent = parent.getParent();
-						}
-						if (parent instanceof org.eclipse.jdt.core.dom.TypeDeclaration) {
-							org.eclipse.jdt.core.dom.TypeDeclaration typeDecl = (org.eclipse.jdt.core.dom.TypeDeclaration) parent;
-							typeBinding = typeDecl.resolveBinding();
+					// First, try to check via method binding's declaring class
+					org.eclipse.jdt.core.dom.IMethodBinding methodBinding = node.resolveMethodBinding();
+					if (methodBinding != null) {
+						ITypeBinding declaringClass = methodBinding.getDeclaringClass();
+						if (declaringClass != null && ORG_JUNIT_FUNCTION_THROWING_RUNNABLE.equals(declaringClass.getQualifiedName())) {
+							isThrowingRunnableRun = true;
 						}
 					}
 					
-					if (typeBinding != null && ORG_JUNIT_FUNCTION_THROWING_RUNNABLE.equals(typeBinding.getQualifiedName())) {
+					// Fallback: check the receiver expression type (handles generic type arguments)
+					if (!isThrowingRunnableRun && node.getExpression() != null) {
+						ITypeBinding receiverType = node.getExpression().resolveTypeBinding();
+						if (receiverType != null && ORG_JUNIT_FUNCTION_THROWING_RUNNABLE.equals(receiverType.getQualifiedName())) {
+							isThrowingRunnableRun = true;
+						}
+					}
+					
+					if (isThrowingRunnableRun) {
 						if (!nodesprocessed.contains(node) && !found.contains(node)) {
 							found.add(node);
 							addStandardRewriteOperation(fixcore, operations, node, dataHolder);
@@ -162,27 +170,6 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 		
 		nodesprocessed.addAll(found);
 	}
-	
-	/**
-	 * Finds the declaration node for a type reference.
-	 * Walks up the AST to find the variable declaration, parameter, field, etc.
-	 */
-	private ASTNode findDeclarationNode(ASTNode node) {
-		while (node != null) {
-			if (node instanceof VariableDeclarationStatement ||
-				node instanceof SingleVariableDeclaration ||
-				node instanceof VariableDeclarationFragment) {
-				return node;
-			}
-			// For parameterized types, go up one more level
-			if (node instanceof ParameterizedType) {
-				node = node.getParent();
-				continue;
-			}
-			break;
-		}
-		return null;
-	}
 
 	@Override
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
@@ -194,13 +181,10 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 			processImportDeclaration(importRewriter, (ImportDeclaration) node);
 		} else if (node instanceof MethodInvocation) {
 			processMethodInvocation(group, rewriter, ast, (MethodInvocation) node);
-		} else if (node instanceof VariableDeclarationStatement) {
-			processVariableDeclaration(group, rewriter, ast, importRewriter, (VariableDeclarationStatement) node);
-		} else if (node instanceof SingleVariableDeclaration) {
-			processSingleVariableDeclaration(group, rewriter, ast, importRewriter, (SingleVariableDeclaration) node);
-		} else if (node instanceof VariableDeclarationFragment) {
-			// Handle field declarations
-			processVariableDeclarationFragment(group, rewriter, ast, importRewriter, (VariableDeclarationFragment) node);
+		} else if (node instanceof SimpleType) {
+			processSimpleType(group, rewriter, ast, importRewriter, (SimpleType) node);
+		} else if (node instanceof ParameterizedType) {
+			processParameterizedType(group, rewriter, ast, importRewriter, (ParameterizedType) node);
 		}
 	}
 	
@@ -222,46 +206,27 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 	}
 	
 	/**
-	 * Processes variable declarations, replacing ThrowingRunnable type with Executable.
+	 * Processes simple type nodes, replacing ThrowingRunnable with Executable.
 	 */
-	private void processVariableDeclaration(TextEditGroup group, ASTRewrite rewriter, AST ast,
-			ImportRewrite importRewriter, VariableDeclarationStatement node) {
-		Type type = node.getType();
-		Type newType = createExecutableType(ast, type);
-		if (newType != null) {
-			ASTNodes.replaceButKeepComment(rewriter, type, newType, group);
+	private void processSimpleType(TextEditGroup group, ASTRewrite rewriter, AST ast,
+			ImportRewrite importRewriter, SimpleType node) {
+		if (THROWING_RUNNABLE_SIMPLE.equals(node.getName().getFullyQualifiedName())) {
+			SimpleType newType = ast.newSimpleType(ast.newName(EXECUTABLE_SIMPLE));
+			ASTNodes.replaceButKeepComment(rewriter, node, newType, group);
 			ensureImports(importRewriter);
 		}
 	}
 	
 	/**
-	 * Processes single variable declarations (method parameters), replacing ThrowingRunnable with Executable.
+	 * Processes parameterized type nodes, replacing ThrowingRunnable in type arguments with Executable.
+	 * e.g., AtomicReference&lt;ThrowingRunnable&gt; -&gt; AtomicReference&lt;Executable&gt;
 	 */
-	private void processSingleVariableDeclaration(TextEditGroup group, ASTRewrite rewriter, AST ast,
-			ImportRewrite importRewriter, SingleVariableDeclaration node) {
-		Type type = node.getType();
-		Type newType = createExecutableType(ast, type);
+	private void processParameterizedType(TextEditGroup group, ASTRewrite rewriter, AST ast,
+			ImportRewrite importRewriter, ParameterizedType node) {
+		Type newType = createExecutableType(ast, node);
 		if (newType != null) {
-			ASTNodes.replaceButKeepComment(rewriter, type, newType, group);
+			ASTNodes.replaceButKeepComment(rewriter, node, newType, group);
 			ensureImports(importRewriter);
-		}
-	}
-	
-	/**
-	 * Processes variable declaration fragments (field declarations).
-	 */
-	private void processVariableDeclarationFragment(TextEditGroup group, ASTRewrite rewriter, AST ast,
-			ImportRewrite importRewriter, VariableDeclarationFragment node) {
-		// The parent should be a FieldDeclaration or VariableDeclarationStatement
-		ASTNode parent = node.getParent();
-		if (parent instanceof org.eclipse.jdt.core.dom.FieldDeclaration) {
-			org.eclipse.jdt.core.dom.FieldDeclaration fieldDecl = (org.eclipse.jdt.core.dom.FieldDeclaration) parent;
-			Type type = fieldDecl.getType();
-			Type newType = createExecutableType(ast, type);
-			if (newType != null) {
-				ASTNodes.replaceButKeepComment(rewriter, type, newType, group);
-				ensureImports(importRewriter);
-			}
 		}
 	}
 	
