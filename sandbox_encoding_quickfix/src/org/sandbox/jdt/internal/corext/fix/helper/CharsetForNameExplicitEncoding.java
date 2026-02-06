@@ -59,8 +59,10 @@ public class CharsetForNameExplicitEncoding extends AbstractExplicitEncoding<Met
 			return;
 		}
 		ReferenceHolder<ASTNode, Object> datah= ReferenceHolder.createForNodes();
-		HelperVisitor.callMethodInvocationVisitor(Charset.class, METHOD_FOR_NAME, compilationUnit, datah, nodesprocessed,
-				(visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));
+		HelperVisitor.forMethodCall(Charset.class, METHOD_FOR_NAME)
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(datah, (visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));
 	}
 
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore,

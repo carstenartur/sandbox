@@ -58,8 +58,10 @@ public class ChannelsNewWriterExplicitEncoding extends AbstractExplicitEncoding<
 			return;
 		}
 		ReferenceHolder<ASTNode, Object> datah= ReferenceHolder.createForNodes();
-		HelperVisitor.callMethodInvocationVisitor(Channels.class, METHOD_NEW_WRITER, compilationUnit, datah, nodesprocessed,
-				(visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));
+		HelperVisitor.forMethodCall(Channels.class, METHOD_NEW_WRITER)
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(datah, (visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));
 	}
 
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore,

@@ -168,6 +168,52 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	public static MethodCallVisitorBuilder forMethodCall(String typeFQN, String methodName) {
 		return new MethodCallVisitorBuilder(typeFQN, Set.of(methodName));
 	}
+	
+	/**
+	 * Creates a fluent builder for visiting a single method invocation using a Class object.
+	 * 
+	 * <p><b>Example:</b></p>
+	 * <pre>
+	 * HelperVisitor.forMethodCall(String.class, "getBytes")
+	 *     .in(compilationUnit)
+	 *     .excluding(nodesprocessed)
+	 *     .processEach((node, holder) -&gt; {
+	 *         processNode(node, holder);
+	 *         return true;
+	 *     });
+	 * </pre>
+	 * 
+	 * @param typeClass the class containing the method
+	 * @param methodName the method name to find
+	 * @return a fluent builder for method invocation visitors
+	 * @since 1.16
+	 */
+	public static MethodCallVisitorBuilder forMethodCall(Class<?> typeClass, String methodName) {
+		return new MethodCallVisitorBuilder(typeClass, Set.of(methodName));
+	}
+	
+	/**
+	 * Creates a fluent builder for visiting class instance creation expressions (new expressions).
+	 * 
+	 * <p><b>Example:</b></p>
+	 * <pre>
+	 * // Find all "new String(...)" constructions
+	 * HelperVisitor.forClassInstanceCreation(String.class)
+	 *     .in(compilationUnit)
+	 *     .excluding(nodesprocessed)
+	 *     .processEach(holder, (creation, h) -&gt; {
+	 *         processStringCreation(creation, h);
+	 *         return true;
+	 *     });
+	 * </pre>
+	 * 
+	 * @param targetClass the class to match (e.g., String.class, FileReader.class)
+	 * @return a fluent builder for class instance creation visitors
+	 * @since 1.16
+	 */
+	public static ClassInstanceCreationVisitorBuilder forClassInstanceCreation(Class<?> targetClass) {
+		return new ClassInstanceCreationVisitorBuilder(targetClass);
+	}
 
 	/**
 	 * Creates a fluent builder for visiting field declarations.

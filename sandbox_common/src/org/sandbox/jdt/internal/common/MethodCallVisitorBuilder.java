@@ -57,18 +57,32 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
 public class MethodCallVisitorBuilder extends HelperVisitorBuilder<MethodInvocation> {
     
     private final String typeFQN;
+    private final Class<?> typeClass;
     private final Set<String> methodNames;
     private String importFQN;
     private boolean includeStaticImports = false;
     
     /**
-     * Creates a new method call visitor builder.
+     * Creates a new method call visitor builder with a type name.
      * 
      * @param typeFQN the fully qualified name of the type containing the methods
      * @param methodNames the set of method names to find
      */
     public MethodCallVisitorBuilder(String typeFQN, Set<String> methodNames) {
         this.typeFQN = typeFQN;
+        this.typeClass = null;
+        this.methodNames = methodNames;
+    }
+    
+    /**
+     * Creates a new method call visitor builder with a Class object.
+     * 
+     * @param typeClass the class containing the methods
+     * @param methodNames the set of method names to find
+     */
+    public MethodCallVisitorBuilder(Class<?> typeClass, Set<String> methodNames) {
+        this.typeFQN = null;
+        this.typeClass = typeClass;
         this.methodNames = methodNames;
     }
     
@@ -98,23 +112,33 @@ public class MethodCallVisitorBuilder extends HelperVisitorBuilder<MethodInvocat
     protected <V, H> void executeVisitors(ReferenceHolder<V, H> holder, 
             BiPredicate<ASTNode, ReferenceHolder<V, H>> processor) {
         // Visit method invocations for each method name
-        methodNames.forEach(methodName -> {
-            HelperVisitor.callMethodInvocationVisitor(typeFQN, methodName, compilationUnit,
-                    holder, nodesprocessed, (node, h) -> processor.test(node, h));
-        });
-        
-        // Optionally include static imports for each method
-        if (includeStaticImports) {
+        if (typeFQN != null) {
             methodNames.forEach(methodName -> {
-                HelperVisitor.callImportDeclarationVisitor(typeFQN + "." + methodName, //$NON-NLS-1$
-                        compilationUnit, holder, nodesprocessed, (node, h) -> processor.test(node, h));
+                HelperVisitor.callMethodInvocationVisitor(typeFQN, methodName, compilationUnit,
+                        holder, nodesprocessed, (node, h) -> processor.test(node, h));
             });
-        }
-        
-        // Optionally include the regular import
-        if (importFQN != null) {
-            HelperVisitor.callImportDeclarationVisitor(importFQN, compilationUnit,
-                    holder, nodesprocessed, (node, h) -> processor.test(node, h));
+            
+            // Optionally include static imports for each method
+            if (includeStaticImports) {
+                methodNames.forEach(methodName -> {
+                    HelperVisitor.callImportDeclarationVisitor(typeFQN + "." + methodName, //$NON-NLS-1$
+                            compilationUnit, holder, nodesprocessed, (node, h) -> processor.test(node, h));
+                });
+            }
+            
+            // Optionally include the regular import
+            if (importFQN != null) {
+                HelperVisitor.callImportDeclarationVisitor(importFQN, compilationUnit,
+                        holder, nodesprocessed, (node, h) -> processor.test(node, h));
+            }
+        } else if (typeClass != null) {
+            methodNames.forEach(methodName -> {
+                HelperVisitor.callMethodInvocationVisitor(typeClass, methodName, compilationUnit,
+                        holder, nodesprocessed, (node, h) -> processor.test(node, h));
+            });
+            
+            // For Class<?> variant, static imports and regular imports are not supported
+            // since we don't have the FQN string
         }
     }
 }
