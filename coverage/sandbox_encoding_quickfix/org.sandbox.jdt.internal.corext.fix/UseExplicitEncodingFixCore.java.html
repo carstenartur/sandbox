@@ -33,6 +33,11 @@ import org.sandbox.jdt.internal.corext.fix.helper.ChannelsNewWriterExplicitEncod
 import org.sandbox.jdt.internal.corext.fix.helper.CharsetForNameExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.FileReaderExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.FileWriterExplicitEncoding;
+import org.sandbox.jdt.internal.corext.fix.helper.FilesNewBufferedReaderExplicitEncoding;
+import org.sandbox.jdt.internal.corext.fix.helper.FilesNewBufferedWriterExplicitEncoding;
+import org.sandbox.jdt.internal.corext.fix.helper.FilesReadAllLinesExplicitEncoding;
+import org.sandbox.jdt.internal.corext.fix.helper.FilesReadStringExplicitEncoding;
+import org.sandbox.jdt.internal.corext.fix.helper.FilesWriteStringExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.FormatterExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.InputStreamReaderExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.OutputStreamWriterExplicitEncoding;
@@ -49,41 +54,46 @@ import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCo
 
 public enum UseExplicitEncodingFixCore {
 
-<span class="fc" id="L52">	CHARSET(new CharsetForNameExplicitEncoding()),</span>
-<span class="fc" id="L53">	CHANNELSNEWREADER(new ChannelsNewReaderExplicitEncoding()),</span>
-<span class="fc" id="L54">	CHANNELSNEWWRITER(new ChannelsNewWriterExplicitEncoding()),</span>
-<span class="fc" id="L55">	STRING_GETBYTES(new StringGetBytesExplicitEncoding()),</span>
-<span class="fc" id="L56">	STRING(new StringExplicitEncoding()),</span>
-<span class="fc" id="L57">	INPUTSTREAMREADER(new InputStreamReaderExplicitEncoding()),</span>
-<span class="fc" id="L58">	OUTPUTSTREAMWRITER(new OutputStreamWriterExplicitEncoding()),</span>
-<span class="fc" id="L59">	FILEREADER(new FileReaderExplicitEncoding()),</span>
-<span class="fc" id="L60">	FILEWRITER(new FileWriterExplicitEncoding()),</span>
-<span class="fc" id="L61">	PRINTWRITER(new PrintWriterExplicitEncoding()),</span>
-<span class="fc" id="L62">	PRINTSTREAM(new PrintStreamExplicitEncoding()),</span>
-<span class="fc" id="L63">	BYTEARRAYOUTPUTSTREAM(new ByteArrayOutputStreamExplicitEncoding()),</span>
-<span class="fc" id="L64">	FORMATTER(new FormatterExplicitEncoding()),</span>
-<span class="fc" id="L65">	URLDECODER(new URLDecoderDecodeExplicitEncoding()),</span>
-<span class="fc" id="L66">	URLENCODER(new URLEncoderEncodeExplicitEncoding()),</span>
-<span class="fc" id="L67">	SCANNER(new ScannerExplicitEncoding()),</span>
-<span class="fc" id="L68">	PROPERTIES_STORETOXML(new PropertiesStoreToXMLExplicitEncoding());</span>
+<span class="fc" id="L57">	CHARSET(new CharsetForNameExplicitEncoding()),</span>
+<span class="fc" id="L58">	CHANNELSNEWREADER(new ChannelsNewReaderExplicitEncoding()),</span>
+<span class="fc" id="L59">	CHANNELSNEWWRITER(new ChannelsNewWriterExplicitEncoding()),</span>
+<span class="fc" id="L60">	STRING_GETBYTES(new StringGetBytesExplicitEncoding()),</span>
+<span class="fc" id="L61">	STRING(new StringExplicitEncoding()),</span>
+<span class="fc" id="L62">	INPUTSTREAMREADER(new InputStreamReaderExplicitEncoding()),</span>
+<span class="fc" id="L63">	OUTPUTSTREAMWRITER(new OutputStreamWriterExplicitEncoding()),</span>
+<span class="fc" id="L64">	FILEREADER(new FileReaderExplicitEncoding()),</span>
+<span class="fc" id="L65">	FILEWRITER(new FileWriterExplicitEncoding()),</span>
+<span class="fc" id="L66">	PRINTWRITER(new PrintWriterExplicitEncoding()),</span>
+<span class="fc" id="L67">	PRINTSTREAM(new PrintStreamExplicitEncoding()),</span>
+<span class="fc" id="L68">	BYTEARRAYOUTPUTSTREAM(new ByteArrayOutputStreamExplicitEncoding()),</span>
+<span class="fc" id="L69">	FORMATTER(new FormatterExplicitEncoding()),</span>
+<span class="fc" id="L70">	URLDECODER(new URLDecoderDecodeExplicitEncoding()),</span>
+<span class="fc" id="L71">	URLENCODER(new URLEncoderEncodeExplicitEncoding()),</span>
+<span class="fc" id="L72">	SCANNER(new ScannerExplicitEncoding()),</span>
+<span class="fc" id="L73">	PROPERTIES_STORETOXML(new PropertiesStoreToXMLExplicitEncoding()),</span>
+<span class="fc" id="L74">	FILES_NEWBUFFEREDREADER(new FilesNewBufferedReaderExplicitEncoding()),</span>
+<span class="fc" id="L75">	FILES_NEWBUFFEREDWRITER(new FilesNewBufferedWriterExplicitEncoding()),</span>
+<span class="fc" id="L76">	FILES_READALLLINES(new FilesReadAllLinesExplicitEncoding()),</span>
+<span class="fc" id="L77">	FILES_READSTRING(new FilesReadStringExplicitEncoding()),</span>
+<span class="fc" id="L78">	FILES_WRITESTRING(new FilesWriteStringExplicitEncoding());</span>
 
 	AbstractExplicitEncoding&lt;ASTNode&gt; explicitencoding;
 
 	@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L73">	UseExplicitEncodingFixCore(AbstractExplicitEncoding&lt;? extends ASTNode&gt; explicitencoding) {</span>
-<span class="fc" id="L74">		this.explicitencoding=(AbstractExplicitEncoding&lt;ASTNode&gt;) explicitencoding;</span>
-<span class="fc" id="L75">	}</span>
+<span class="fc" id="L83">	UseExplicitEncodingFixCore(AbstractExplicitEncoding&lt;? extends ASTNode&gt; explicitencoding) {</span>
+<span class="fc" id="L84">		this.explicitencoding=(AbstractExplicitEncoding&lt;ASTNode&gt;) explicitencoding;</span>
+<span class="fc" id="L85">	}</span>
 
 	public String getPreview(boolean i, ChangeBehavior cb) {
-<span class="nc bnc" id="L78" title="All 2 branches missed.">		long countother= explicitencoding.getPreview(!i, cb).lines().count();</span>
-<span class="nc" id="L79">		StringBuilder preview= new StringBuilder(explicitencoding.getPreview(i,cb));</span>
-<span class="nc" id="L80">		long countnow= preview.toString().lines().count();</span>
-<span class="nc bnc" id="L81" title="All 2 branches missed.">		if(countnow&lt;countother) {</span>
-<span class="nc bnc" id="L82" title="All 2 branches missed.">			for (long ii=0;ii&lt;countother-countnow;ii++) {</span>
-<span class="nc" id="L83">				preview.append(System.lineSeparator());</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">		long countother= explicitencoding.getPreview(!i, cb).lines().count();</span>
+<span class="nc" id="L89">		StringBuilder preview= new StringBuilder(explicitencoding.getPreview(i,cb));</span>
+<span class="nc" id="L90">		long countnow= preview.toString().lines().count();</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">		if(countnow&lt;countother) {</span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">			for (long ii=0;ii&lt;countother-countnow;ii++) {</span>
+<span class="nc" id="L93">				preview.append(System.lineSeparator());</span>
 			}
 		}
-<span class="nc" id="L86">		return preview.toString()+System.lineSeparator();</span>
+<span class="nc" id="L96">		return preview.toString()+System.lineSeparator();</span>
 	}
 	/**
 	 * Compute set of CompilationUnitRewriteOperation to refactor supported situations using default encoding to make use of explicit calls
@@ -94,33 +104,33 @@ public enum UseExplicitEncodingFixCore {
 	 * @param cb distinguish if you want to keep the same behavior or get code independent of environment
 	 */
 	public void findOperations(final CompilationUnit compilationUnit,final Set&lt;CompilationUnitRewriteOperation&gt; operations,final Set&lt;ASTNode&gt; nodesprocessed, ChangeBehavior cb) {
-<span class="fc" id="L97">		explicitencoding.find(this, compilationUnit, operations, nodesprocessed, cb);</span>
-<span class="fc" id="L98">	}</span>
+<span class="fc" id="L107">		explicitencoding.find(this, compilationUnit, operations, nodesprocessed, cb);</span>
+<span class="fc" id="L108">	}</span>
 
 	public CompilationUnitRewriteOperation rewrite(final ASTNode visited, ChangeBehavior cb, ReferenceHolder&lt;ASTNode, Object&gt; data) {
-<span class="fc" id="L101">		return new CompilationUnitRewriteOperation() {</span>
+<span class="fc" id="L111">		return new CompilationUnitRewriteOperation() {</span>
 			@Override
 			public void rewriteAST(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel) throws CoreException {
-<span class="fc" id="L104">				TextEditGroup group= createTextEditGroup(Messages.format(MultiFixMessages.ExplicitEncodingCleanUp_description,new Object[] {UseExplicitEncodingFixCore.this.toString(), cb.toString()}), cuRewrite);</span>
-<span class="fc" id="L105">				cuRewrite.getASTRewrite().setTargetSourceRangeComputer(computer);</span>
-<span class="fc" id="L106">				explicitencoding.rewrite(UseExplicitEncodingFixCore.this, visited, cuRewrite, group, cb, data);</span>
-<span class="fc" id="L107">			}</span>
+<span class="fc" id="L114">				TextEditGroup group= createTextEditGroup(Messages.format(MultiFixMessages.ExplicitEncodingCleanUp_description,new Object[] {UseExplicitEncodingFixCore.this.toString(), cb.toString()}), cuRewrite);</span>
+<span class="fc" id="L115">				cuRewrite.getASTRewrite().setTargetSourceRangeComputer(computer);</span>
+<span class="fc" id="L116">				explicitencoding.rewrite(UseExplicitEncodingFixCore.this, visited, cuRewrite, group, cb, data);</span>
+<span class="fc" id="L117">			}</span>
 		};
 	}
 
-<span class="fc" id="L111">	final static TargetSourceRangeComputer computer= new TargetSourceRangeComputer() {</span>
+<span class="fc" id="L121">	final static TargetSourceRangeComputer computer= new TargetSourceRangeComputer() {</span>
 		@Override
 		public SourceRange computeSourceRange(final ASTNode nodeWithComment) {
-<span class="fc bfc" id="L114" title="All 2 branches covered.">			if (Boolean.TRUE.equals(nodeWithComment.getProperty(ASTNodes.UNTOUCH_COMMENT))) {</span>
-<span class="fc" id="L115">				return new SourceRange(nodeWithComment.getStartPosition(), nodeWithComment.getLength());</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">			if (Boolean.TRUE.equals(nodeWithComment.getProperty(ASTNodes.UNTOUCH_COMMENT))) {</span>
+<span class="fc" id="L125">				return new SourceRange(nodeWithComment.getStartPosition(), nodeWithComment.getLength());</span>
 			}
-<span class="fc" id="L117">			return super.computeSourceRange(nodeWithComment);</span>
+<span class="fc" id="L127">			return super.computeSourceRange(nodeWithComment);</span>
 		}
-<span class="fc" id="L119">	};</span>
+<span class="fc" id="L129">	};</span>
 
 	@Override
 	public String toString() {
-<span class="fc" id="L123">		return explicitencoding.toString();</span>
+<span class="fc" id="L133">		return explicitencoding.toString();</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

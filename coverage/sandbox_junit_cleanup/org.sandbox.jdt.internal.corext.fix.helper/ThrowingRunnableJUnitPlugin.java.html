@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ThrowingRunnableJUnitPlugin.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">ThrowingRunnableJUnitPlugin.java</span></div><h1>ThrowingRunnableJUnitPlugin.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
+
+/*-
+ * #%L
+ * Sandbox junit cleanup
+ * %%
+ * Copyright (C) 2026 hammer
+ * %%
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0.
+ * 
+ * This Source Code may also be made available under the following Secondary
+ * Licenses when the conditions for such availability set forth in the Eclipse
+ * Public License, v. 2.0 are satisfied: GNU General Public License, version 2
+ * with the GNU Classpath Exception which is
+ * available at https://www.gnu.org/software/classpath/license.html.
+ * 
+ * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+ * #L%
+ */
+
+import java.util.HashSet;
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.ParameterizedType;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SimpleType;
+import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
+
+/**
+ * Migrates JUnit 4 ThrowingRunnable to JUnit 5 Executable.
+ * 
+ * &lt;p&gt;Transforms:&lt;/p&gt;
+ * &lt;ul&gt;
+ *   &lt;li&gt;org.junit.function.ThrowingRunnable → org.junit.jupiter.api.function.Executable&lt;/li&gt;
+ *   &lt;li&gt;ThrowingRunnable.run() → Executable.execute()&lt;/li&gt;
+ * &lt;/ul&gt;
+ * 
+ * &lt;p&gt;Handles:&lt;/p&gt;
+ * &lt;ul&gt;
+ *   &lt;li&gt;Variable declarations with ThrowingRunnable type&lt;/li&gt;
+ *   &lt;li&gt;Method parameters with ThrowingRunnable type&lt;/li&gt;
+ *   &lt;li&gt;Generic type parameters: AtomicReference&amp;lt;ThrowingRunnable&amp;gt;&lt;/li&gt;
+ *   &lt;li&gt;Method invocations: throwingRunnable.run()&lt;/li&gt;
+ *   &lt;li&gt;Import statements&lt;/li&gt;
+ * &lt;/ul&gt;
+ */
+<span class="fc" id="L80">public class ThrowingRunnableJUnitPlugin extends AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; {</span>
+
+	private static final String THROWING_RUNNABLE_SIMPLE = &quot;ThrowingRunnable&quot;;
+	private static final String EXECUTABLE_SIMPLE = &quot;Executable&quot;;
+	private static final String RUN_METHOD = &quot;run&quot;;
+	private static final String EXECUTE_METHOD = &quot;execute&quot;;
+
+	@Override
+	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
+			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
+		
+<span class="fc" id="L91">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder = new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L92">		Set&lt;ASTNode&gt; found = new HashSet&lt;&gt;();</span>
+		
+		// Visit the compilation unit to find ThrowingRunnable usages
+<span class="fc" id="L95">		compilationUnit.accept(new ASTVisitor() {</span>
+			
+			@Override
+			public boolean visit(ImportDeclaration node) {
+<span class="fc" id="L99">				String importName = node.getName().getFullyQualifiedName();</span>
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">				if (ORG_JUNIT_FUNCTION_THROWING_RUNNABLE.equals(importName)) {</span>
+<span class="pc bpc" id="L101" title="1 of 2 branches missed.">					if (!nodesprocessed.contains(node)) {</span>
+<span class="fc" id="L102">						found.add(node);</span>
+<span class="fc" id="L103">						addStandardRewriteOperation(fixcore, operations, node, dataHolder);</span>
+					}
+				}
+<span class="fc" id="L106">				return true;</span>
+			}
+			
+			@Override
+			public boolean visit(SimpleType node) {
+				// Check if this is a ThrowingRunnable type reference
+<span class="fc" id="L112">				ITypeBinding binding = node.resolveBinding();</span>
+<span class="pc bpc" id="L113" title="1 of 4 branches missed.">				if (binding != null &amp;&amp; ORG_JUNIT_FUNCTION_THROWING_RUNNABLE.equals(binding.getQualifiedName())) {</span>
+					// Store the SimpleType node directly for replacement
+<span class="pc bpc" id="L115" title="2 of 4 branches missed.">					if (!nodesprocessed.contains(node) &amp;&amp; !found.contains(node)) {</span>
+<span class="fc" id="L116">						found.add(node);</span>
+<span class="fc" id="L117">						addStandardRewriteOperation(fixcore, operations, node, dataHolder);</span>
+					}
+				}
+<span class="fc" id="L120">				return true;</span>
+			}
+			
+			@Override
+			public boolean visit(ParameterizedType node) {
+				// Check if this parameterized type contains ThrowingRunnable
+				// e.g., AtomicReference&lt;ThrowingRunnable&gt;
+<span class="nc bnc" id="L127" title="All 2 branches missed.">				if (containsThrowingRunnable(node)) {</span>
+<span class="nc bnc" id="L128" title="All 4 branches missed.">					if (!nodesprocessed.contains(node) &amp;&amp; !found.contains(node)) {</span>
+<span class="nc" id="L129">						found.add(node);</span>
+<span class="nc" id="L130">						addStandardRewriteOperation(fixcore, operations, node, dataHolder);</span>
+					}
+				}
+				// Don't visit children - we handle the whole parameterized type
+<span class="nc" id="L134">				return false;</span>
+			}
+			
+			@Override
+			public boolean visit(MethodInvocation node) {
+				// Check if this is a .run() call on a ThrowingRunnable
+<span class="pc bpc" id="L140" title="1 of 4 branches missed.">				if (RUN_METHOD.equals(node.getName().getIdentifier()) &amp;&amp; node.arguments().isEmpty()) {</span>
+<span class="fc" id="L141">					boolean isThrowingRunnableRun = false;</span>
+					
+					// First, try to check via method binding's declaring class
+<span class="fc" id="L144">					org.eclipse.jdt.core.dom.IMethodBinding methodBinding = node.resolveMethodBinding();</span>
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">					if (methodBinding != null) {</span>
+<span class="fc" id="L146">						ITypeBinding declaringClass = methodBinding.getDeclaringClass();</span>
+<span class="pc bpc" id="L147" title="2 of 4 branches missed.">						if (declaringClass != null &amp;&amp; ORG_JUNIT_FUNCTION_THROWING_RUNNABLE.equals(declaringClass.getQualifiedName())) {</span>
+<span class="fc" id="L148">							isThrowingRunnableRun = true;</span>
+						}
+					}
+					
+					// Fallback: check the receiver expression type (handles generic type arguments)
+<span class="pc bpc" id="L153" title="3 of 4 branches missed.">					if (!isThrowingRunnableRun &amp;&amp; node.getExpression() != null) {</span>
+<span class="nc" id="L154">						ITypeBinding receiverType = node.getExpression().resolveTypeBinding();</span>
+<span class="nc bnc" id="L155" title="All 4 branches missed.">						if (receiverType != null &amp;&amp; ORG_JUNIT_FUNCTION_THROWING_RUNNABLE.equals(receiverType.getQualifiedName())) {</span>
+<span class="nc" id="L156">							isThrowingRunnableRun = true;</span>
+						}
+					}
+					
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">					if (isThrowingRunnableRun) {</span>
+<span class="pc bpc" id="L161" title="2 of 4 branches missed.">						if (!nodesprocessed.contains(node) &amp;&amp; !found.contains(node)) {</span>
+<span class="fc" id="L162">							found.add(node);</span>
+<span class="fc" id="L163">							addStandardRewriteOperation(fixcore, operations, node, dataHolder);</span>
+						}
+					}
+				}
+<span class="fc" id="L167">				return true;</span>
+			}
+		});
+		
+<span class="fc" id="L171">		nodesprocessed.addAll(found);</span>
+<span class="fc" id="L172">	}</span>
+
+	@Override
+	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
+			ImportRewrite importRewriter, JunitHolder junitHolder) {
+		
+<span class="fc" id="L178">		ASTNode node = junitHolder.minv;</span>
+		
+<span class="fc bfc" id="L180" title="All 2 branches covered.">		if (node instanceof ImportDeclaration) {</span>
+<span class="fc" id="L181">			processImportDeclaration(importRewriter, (ImportDeclaration) node);</span>
+<span class="fc bfc" id="L182" title="All 2 branches covered.">		} else if (node instanceof MethodInvocation) {</span>
+<span class="fc" id="L183">			processMethodInvocation(group, rewriter, ast, (MethodInvocation) node);</span>
+<span class="pc bpc" id="L184" title="1 of 2 branches missed.">		} else if (node instanceof SimpleType) {</span>
+<span class="fc" id="L185">			processSimpleType(group, rewriter, ast, importRewriter, (SimpleType) node);</span>
+<span class="pc bnc" id="L186" title="All 2 branches missed.">		} else if (node instanceof ParameterizedType) {</span>
+<span class="nc" id="L187">			processParameterizedType(group, rewriter, ast, importRewriter, (ParameterizedType) node);</span>
+		}
+<span class="fc" id="L189">	}</span>
+	
+	/**
+	 * Processes import declarations, replacing ThrowingRunnable import with Executable import.
+	 */
+	private void processImportDeclaration(ImportRewrite importRewriter, ImportDeclaration importDecl) {
+<span class="fc" id="L195">		ensureImports(importRewriter);</span>
+<span class="fc" id="L196">	}</span>
+	
+	/**
+	 * Processes method invocations, replacing .run() with .execute().
+	 */
+	private void processMethodInvocation(TextEditGroup group, ASTRewrite rewriter, AST ast, MethodInvocation node) {
+<span class="pc bpc" id="L202" title="1 of 2 branches missed.">		if (RUN_METHOD.equals(node.getName().getIdentifier())) {</span>
+<span class="fc" id="L203">			SimpleName newName = ast.newSimpleName(EXECUTE_METHOD);</span>
+<span class="fc" id="L204">			ASTNodes.replaceButKeepComment(rewriter, node.getName(), newName, group);</span>
+		}
+<span class="fc" id="L206">	}</span>
+	
+	/**
+	 * Processes simple type nodes, replacing ThrowingRunnable with Executable.
+	 */
+	private void processSimpleType(TextEditGroup group, ASTRewrite rewriter, AST ast,
+			ImportRewrite importRewriter, SimpleType node) {
+<span class="pc bpc" id="L213" title="1 of 2 branches missed.">		if (THROWING_RUNNABLE_SIMPLE.equals(node.getName().getFullyQualifiedName())) {</span>
+<span class="fc" id="L214">			SimpleType newType = ast.newSimpleType(ast.newName(EXECUTABLE_SIMPLE));</span>
+<span class="fc" id="L215">			ASTNodes.replaceButKeepComment(rewriter, node, newType, group);</span>
+<span class="fc" id="L216">			ensureImports(importRewriter);</span>
+		}
+<span class="fc" id="L218">	}</span>
+	
+	/**
+	 * Processes parameterized type nodes, replacing ThrowingRunnable in type arguments with Executable.
+	 * e.g., AtomicReference&amp;lt;ThrowingRunnable&amp;gt; -&amp;gt; AtomicReference&amp;lt;Executable&amp;gt;
+	 */
+	private void processParameterizedType(TextEditGroup group, ASTRewrite rewriter, AST ast,
+			ImportRewrite importRewriter, ParameterizedType node) {
+<span class="nc" id="L226">		Type newType = createExecutableType(ast, node);</span>
+<span class="nc bnc" id="L227" title="All 2 branches missed.">		if (newType != null) {</span>
+<span class="nc" id="L228">			ASTNodes.replaceButKeepComment(rewriter, node, newType, group);</span>
+<span class="nc" id="L229">			ensureImports(importRewriter);</span>
+		}
+<span class="nc" id="L231">	}</span>
+	
+	/**
+	 * Ensures the correct imports are present (removes old, adds new).
+	 * ImportRewrite handles deduplication automatically.
+	 */
+	private void ensureImports(ImportRewrite importRewriter) {
+<span class="fc" id="L238">		importRewriter.removeImport(ORG_JUNIT_FUNCTION_THROWING_RUNNABLE);</span>
+<span class="fc" id="L239">		importRewriter.addImport(ORG_JUNIT_JUPITER_API_FUNCTION_EXECUTABLE);</span>
+<span class="fc" id="L240">	}</span>
+	
+	/**
+	 * Creates a new Executable type, handling both simple and parameterized types.
+	 * Recursively processes nested parameterized types.
+	 */
+	private Type createExecutableType(AST ast, Type originalType) {
+<span class="nc bnc" id="L247" title="All 2 branches missed.">		if (originalType instanceof SimpleType) {</span>
+<span class="nc" id="L248">			SimpleType simpleType = (SimpleType) originalType;</span>
+<span class="nc bnc" id="L249" title="All 2 branches missed.">			if (THROWING_RUNNABLE_SIMPLE.equals(simpleType.getName().getFullyQualifiedName())) {</span>
+<span class="nc" id="L250">				return ast.newSimpleType(ast.newName(EXECUTABLE_SIMPLE));</span>
+			}
+<span class="nc bnc" id="L252" title="All 2 branches missed.">		} else if (originalType instanceof ParameterizedType) {</span>
+			// Handle generic types like AtomicReference&lt;ThrowingRunnable&gt;
+			// or nested types like Map&lt;String, AtomicReference&lt;ThrowingRunnable&gt;&gt;
+<span class="nc" id="L255">			ParameterizedType paramType = (ParameterizedType) originalType;</span>
+<span class="nc" id="L256">			Type baseType = paramType.getType();</span>
+			
+			// Check if any type argument needs transformation (recursive check)
+<span class="nc" id="L259">			boolean needsTransformation = false;</span>
+<span class="nc bnc" id="L260" title="All 2 branches missed.">			for (Object arg : paramType.typeArguments()) {</span>
+<span class="nc bnc" id="L261" title="All 2 branches missed.">				if (containsThrowingRunnable((Type) arg)) {</span>
+<span class="nc" id="L262">					needsTransformation = true;</span>
+<span class="nc" id="L263">					break;</span>
+				}
+			}
+			
+<span class="nc bnc" id="L267" title="All 2 branches missed.">			if (needsTransformation) {</span>
+				// Create new parameterized type with transformed arguments
+<span class="nc" id="L269">				ParameterizedType newParamType = ast.newParameterizedType((Type) ASTNode.copySubtree(ast, baseType));</span>
+<span class="nc bnc" id="L270" title="All 2 branches missed.">				for (Object arg : paramType.typeArguments()) {</span>
+<span class="nc" id="L271">					Type argType = (Type) arg;</span>
+<span class="nc" id="L272">					Type transformedArg = createExecutableType(ast, argType);</span>
+<span class="nc bnc" id="L273" title="All 2 branches missed.">					if (transformedArg != null) {</span>
+						// Argument was transformed
+<span class="nc" id="L275">						newParamType.typeArguments().add(transformedArg);</span>
+<span class="nc" id="L276">					} else {</span>
+						// Argument doesn't need transformation, copy as-is
+<span class="nc" id="L278">						newParamType.typeArguments().add(ASTNode.copySubtree(ast, argType));</span>
+					}
+				}
+<span class="nc" id="L281">				return newParamType;</span>
+			}
+		}
+<span class="nc" id="L284">		return null;</span>
+	}
+	
+	/**
+	 * Checks if a type contains ThrowingRunnable anywhere in its structure.
+	 */
+	private boolean containsThrowingRunnable(Type type) {
+<span class="nc bnc" id="L291" title="All 2 branches missed.">		if (type instanceof SimpleType) {</span>
+<span class="nc" id="L292">			SimpleType simpleType = (SimpleType) type;</span>
+<span class="nc" id="L293">			return THROWING_RUNNABLE_SIMPLE.equals(simpleType.getName().getFullyQualifiedName());</span>
+<span class="nc bnc" id="L294" title="All 2 branches missed.">		} else if (type instanceof ParameterizedType) {</span>
+<span class="nc" id="L295">			ParameterizedType paramType = (ParameterizedType) type;</span>
+<span class="nc bnc" id="L296" title="All 2 branches missed.">			for (Object arg : paramType.typeArguments()) {</span>
+<span class="nc bnc" id="L297" title="All 2 branches missed.">				if (containsThrowingRunnable((Type) arg)) {</span>
+<span class="nc" id="L298">					return true;</span>
+				}
+			}
+		}
+<span class="nc" id="L302">		return false;</span>
+	}
+
+	@Override
+	public String getPreview(boolean afterRefactoring) {
+<span class="nc bnc" id="L307" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L308">			return &quot;&quot;&quot;</span>
+					import org.junit.jupiter.api.function.Executable;
+					
+					Executable runnable = () -&gt; {};
+					runnable.execute();
+					&quot;&quot;&quot;; //$NON-NLS-1$
+		}
+<span class="nc" id="L315">		return &quot;&quot;&quot;</span>
+				import org.junit.function.ThrowingRunnable;
+				
+				ThrowingRunnable runnable = () -&gt; {};
+				runnable.run();
+				&quot;&quot;&quot;; //$NON-NLS-1$
+	}
+
+	@Override
+	public String toString() {
+<span class="fc" id="L325">		return &quot;ThrowingRunnable&quot;; //$NON-NLS-1$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

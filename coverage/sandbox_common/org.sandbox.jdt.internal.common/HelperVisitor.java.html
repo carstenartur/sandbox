@@ -530,7 +530,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiPredicate assigned for nodetype
 	 */
 	public BiPredicate&lt;? extends ASTNode, E&gt; addClassInstanceCreation(BiPredicate&lt;ClassInstanceCreation, E&gt; bs) {
-<span class="nc" id="L533">		return predicatemap.put(VisitorEnum.ClassInstanceCreation, bs);</span>
+<span class="fc" id="L533">		return predicatemap.put(VisitorEnum.ClassInstanceCreation, bs);</span>
 	}
 
 	/**

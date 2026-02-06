@@ -91,6 +91,7 @@ public final class JUnitConstants {
 	public static final String ORG_JUNIT_ASSUME = &quot;org.junit.Assume&quot;;
 	public static final String ORG_JUNIT_FIX_METHOD_ORDER = &quot;org.junit.FixMethodOrder&quot;;
 	public static final String ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORY = &quot;org.junit.experimental.categories.Category&quot;;
+	public static final String ORG_JUNIT_FUNCTION_THROWING_RUNNABLE = &quot;org.junit.function.ThrowingRunnable&quot;;
 
 	// ===== JUnit 4 Runner Fully Qualified References =====
 	
@@ -131,6 +132,7 @@ public final class JUnitConstants {
 	public static final String ORG_JUNIT_JUPITER_TEST = &quot;org.junit.jupiter.api.Test&quot;;
 	public static final String ORG_JUNIT_JUPITER_API_TIMEOUT = &quot;org.junit.jupiter.api.Timeout&quot;;
 	public static final String ORG_JUNIT_JUPITER_API_ASSUMPTIONS = &quot;org.junit.jupiter.api.Assumptions&quot;;
+	public static final String ORG_JUNIT_JUPITER_API_FUNCTION_EXECUTABLE = &quot;org.junit.jupiter.api.function.Executable&quot;;
 	public static final String ORG_JUNIT_JUPITER_API_TAG = &quot;org.junit.jupiter.api.Tag&quot;;
 	public static final String ORG_JUNIT_JUPITER_API_NESTED = &quot;org.junit.jupiter.api.Nested&quot;;
 	public static final String ORG_JUNIT_JUPITER_API_TEST_METHOD_ORDER = &quot;org.junit.jupiter.api.TestMethodOrder&quot;;
@@ -168,13 +170,13 @@ public final class JUnitConstants {
 
 	// ===== Assertion Method Sets =====
 
-<span class="fc" id="L171">	public static final Set&lt;String&gt; TWOPARAM_ASSERTIONS = Set.of(&quot;assertEquals&quot;, &quot;assertNotEquals&quot;, &quot;assertArrayEquals&quot;,</span>
-<span class="fc" id="L172">			&quot;assertSame&quot;, &quot;assertNotSame&quot;, &quot;assertThat&quot;);</span>
-<span class="fc" id="L173">	public static final Set&lt;String&gt; ONEPARAM_ASSERTIONS = Set.of(&quot;assertTrue&quot;, &quot;assertFalse&quot;, &quot;assertNull&quot;, &quot;assertNotNull&quot;);</span>
-<span class="fc" id="L174">	public static final Set&lt;String&gt; NOPARAM_ASSERTIONS = Set.of(&quot;fail&quot;);</span>
-<span class="fc" id="L175">	public static final Set&lt;String&gt; ALL_ASSERTION_METHODS = Stream</span>
-<span class="fc" id="L176">			.of(TWOPARAM_ASSERTIONS, ONEPARAM_ASSERTIONS, NOPARAM_ASSERTIONS)</span>
-<span class="fc" id="L177">			.flatMap(Set::stream)</span>
-<span class="fc" id="L178">			.collect(Collectors.toSet());</span>
+<span class="fc" id="L173">	public static final Set&lt;String&gt; TWOPARAM_ASSERTIONS = Set.of(&quot;assertEquals&quot;, &quot;assertNotEquals&quot;, &quot;assertArrayEquals&quot;,</span>
+<span class="fc" id="L174">			&quot;assertSame&quot;, &quot;assertNotSame&quot;, &quot;assertThat&quot;);</span>
+<span class="fc" id="L175">	public static final Set&lt;String&gt; ONEPARAM_ASSERTIONS = Set.of(&quot;assertTrue&quot;, &quot;assertFalse&quot;, &quot;assertNull&quot;, &quot;assertNotNull&quot;);</span>
+<span class="fc" id="L176">	public static final Set&lt;String&gt; NOPARAM_ASSERTIONS = Set.of(&quot;fail&quot;);</span>
+<span class="fc" id="L177">	public static final Set&lt;String&gt; ALL_ASSERTION_METHODS = Stream</span>
+<span class="fc" id="L178">			.of(TWOPARAM_ASSERTIONS, ONEPARAM_ASSERTIONS, NOPARAM_ASSERTIONS)</span>
+<span class="fc" id="L179">			.flatMap(Set::stream)</span>
+<span class="fc" id="L180">			.collect(Collectors.toSet());</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

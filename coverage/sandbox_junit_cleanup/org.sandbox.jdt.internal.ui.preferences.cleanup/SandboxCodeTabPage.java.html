@@ -206,80 +206,86 @@ import org.sandbox.jdt.internal.ui.fix.JUnitCleanUp;
 <span class="nc" id="L206">				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_LOST_TESTS, MYCleanUpConstants.JUNIT_CLEANUP_4_LOST_TESTS,</span>
 <span class="nc" id="L207">				FALSE_TRUE);</span>
 		
-<span class="nc" id="L209">		registerSlavePreference(junitcb, new CheckboxPreference[] {</span>
-<span class="nc" id="L210">				junit_assert,</span>
-<span class="nc" id="L211">				junit_assume,</span>
-<span class="nc" id="L212">				junit_ignore,</span>
-<span class="nc" id="L213">				junit_test,</span>
-<span class="nc" id="L214">				junit_before,</span>
-<span class="nc" id="L215">				junit_after,</span>
-<span class="nc" id="L216">				junit_beforeclass,</span>
-<span class="nc" id="L217">				junit_afterclass,</span>
-<span class="nc" id="L218">				junit_ruletempfolder,</span>
-<span class="nc" id="L219">				junit_ruletestname,</span>
-<span class="nc" id="L220">				junit_ruleexternalresource,</span>
-<span class="nc" id="L221">				junit_externalresource,</span>
-<span class="nc" id="L222">				junit_ruletimeout,</span>
-<span class="nc" id="L223">				junit_runwith,</span>
-<span class="nc" id="L224">				junit_category,</span>
-<span class="nc" id="L225">				junit_fixmethodorder,</span>
-<span class="nc" id="L226">				junit_lost_tests});</span>
+<span class="nc" id="L209">		intent(junitGroup);</span>
+<span class="nc" id="L210">		final CheckboxPreference junit_throwingrunnable= createCheckboxPref(junitGroup, numColumns-1,</span>
+<span class="nc" id="L211">				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_THROWINGRUNNABLE, MYCleanUpConstants.JUNIT_CLEANUP_4_THROWINGRUNNABLE,</span>
+<span class="nc" id="L212">				FALSE_TRUE);</span>
+		
+<span class="nc" id="L214">		registerSlavePreference(junitcb, new CheckboxPreference[] {</span>
+<span class="nc" id="L215">				junit_assert,</span>
+<span class="nc" id="L216">				junit_assume,</span>
+<span class="nc" id="L217">				junit_ignore,</span>
+<span class="nc" id="L218">				junit_test,</span>
+<span class="nc" id="L219">				junit_before,</span>
+<span class="nc" id="L220">				junit_after,</span>
+<span class="nc" id="L221">				junit_beforeclass,</span>
+<span class="nc" id="L222">				junit_afterclass,</span>
+<span class="nc" id="L223">				junit_ruletempfolder,</span>
+<span class="nc" id="L224">				junit_ruletestname,</span>
+<span class="nc" id="L225">				junit_ruleexternalresource,</span>
+<span class="nc" id="L226">				junit_externalresource,</span>
+<span class="nc" id="L227">				junit_ruletimeout,</span>
+<span class="nc" id="L228">				junit_runwith,</span>
+<span class="nc" id="L229">				junit_category,</span>
+<span class="nc" id="L230">				junit_fixmethodorder,</span>
+<span class="nc" id="L231">				junit_lost_tests,</span>
+<span class="nc" id="L232">				junit_throwingrunnable});</span>
 		
 		// Add nested dependencies for @Test parameters
-<span class="nc" id="L229">		registerSlavePreference(junit_test, new CheckboxPreference[] {</span>
-<span class="nc" id="L230">				junit_test_timeout,</span>
-<span class="nc" id="L231">				junit_test_expected</span>
+<span class="nc" id="L235">		registerSlavePreference(junit_test, new CheckboxPreference[] {</span>
+<span class="nc" id="L236">				junit_test_timeout,</span>
+<span class="nc" id="L237">				junit_test_expected</span>
 		});
 		
 		// Add nested dependencies for assert/assume optimizations
-<span class="nc" id="L235">		registerSlavePreference(junit_assert, new CheckboxPreference[] {</span>
-<span class="nc" id="L236">				junit_assert_optimization</span>
+<span class="nc" id="L241">		registerSlavePreference(junit_assert, new CheckboxPreference[] {</span>
+<span class="nc" id="L242">				junit_assert_optimization</span>
 		});
-<span class="nc" id="L238">		registerSlavePreference(junit_assume, new CheckboxPreference[] {</span>
-<span class="nc" id="L239">				junit_assume_optimization</span>
+<span class="nc" id="L244">		registerSlavePreference(junit_assume, new CheckboxPreference[] {</span>
+<span class="nc" id="L245">				junit_assume_optimization</span>
 		});
 		
 		// Add nested dependencies for @RunWith variants
-<span class="nc" id="L243">		registerSlavePreference(junit_runwith, new CheckboxPreference[] {</span>
-<span class="nc" id="L244">				junit_suite,</span>
-<span class="nc" id="L245">				junit_parameterized</span>
+<span class="nc" id="L249">		registerSlavePreference(junit_runwith, new CheckboxPreference[] {</span>
+<span class="nc" id="L250">				junit_suite,</span>
+<span class="nc" id="L251">				junit_parameterized</span>
 		});
 		
 		// Add Quick Select combo selection listener
-<span class="nc" id="L249">		quickSelectCombo.addSelectionListener(new SelectionAdapter() {</span>
+<span class="nc" id="L255">		quickSelectCombo.addSelectionListener(new SelectionAdapter() {</span>
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-<span class="nc" id="L252">				int index = quickSelectCombo.getSelectionIndex();</span>
-<span class="nc" id="L253">				applyQuickSelection(index, junitcb, junit_assert, junit_assume, junit_ignore, junit_test,</span>
-<span class="nc" id="L254">						junit_test_timeout, junit_test_expected, junit_before, junit_after, </span>
-<span class="nc" id="L255">						junit_beforeclass, junit_afterclass, junit_ruletempfolder, junit_ruletestname,</span>
-<span class="nc" id="L256">						junit_ruleexternalresource, junit_externalresource, junit_runwith, </span>
-<span class="nc" id="L257">						junit_suite, junit_category, junit_ruletimeout);</span>
-<span class="nc" id="L258">			}</span>
+<span class="nc" id="L258">				int index = quickSelectCombo.getSelectionIndex();</span>
+<span class="nc" id="L259">				applyQuickSelection(index, junitcb, junit_assert, junit_assume, junit_ignore, junit_test,</span>
+<span class="nc" id="L260">						junit_test_timeout, junit_test_expected, junit_before, junit_after, </span>
+<span class="nc" id="L261">						junit_beforeclass, junit_afterclass, junit_ruletempfolder, junit_ruletestname,</span>
+<span class="nc" id="L262">						junit_ruleexternalresource, junit_externalresource, junit_runwith, </span>
+<span class="nc" id="L263">						junit_suite, junit_category, junit_ruletimeout);</span>
+<span class="nc" id="L264">			}</span>
 		});
 		
-<span class="nc" id="L261">		intent(junitGroup);</span>
-<span class="nc" id="L262">		registerPreference(junitcb);</span>
+<span class="nc" id="L267">		intent(junitGroup);</span>
+<span class="nc" id="L268">		registerPreference(junitcb);</span>
 		
-<span class="nc" id="L264">		Group junit3Group= createGroup(numColumns, composite, CleanUpMessages.JavaFeatureTabPage_GroupName_JUnit3);</span>
-<span class="nc" id="L265">		final CheckboxPreference junit3cb= createCheckboxPref(junit3Group, numColumns,</span>
-<span class="nc" id="L266">				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT3_CLEANUP, MYCleanUpConstants.JUNIT3_CLEANUP,</span>
-<span class="nc" id="L267">				FALSE_TRUE);</span>
-<span class="nc" id="L268">		intent(junit3Group);</span>
-		
-<span class="nc" id="L270">		final CheckboxPreference junit3_test= createCheckboxPref(junit3Group, numColumns-1,</span>
-<span class="nc" id="L271">				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT3_CLEANUP_TEST, MYCleanUpConstants.JUNIT_CLEANUP_3_TEST,</span>
-<span class="nc" id="L272">				FALSE_TRUE);</span>
-		
+<span class="nc" id="L270">		Group junit3Group= createGroup(numColumns, composite, CleanUpMessages.JavaFeatureTabPage_GroupName_JUnit3);</span>
+<span class="nc" id="L271">		final CheckboxPreference junit3cb= createCheckboxPref(junit3Group, numColumns,</span>
+<span class="nc" id="L272">				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT3_CLEANUP, MYCleanUpConstants.JUNIT3_CLEANUP,</span>
+<span class="nc" id="L273">				FALSE_TRUE);</span>
 <span class="nc" id="L274">		intent(junit3Group);</span>
 		
+<span class="nc" id="L276">		final CheckboxPreference junit3_test= createCheckboxPref(junit3Group, numColumns-1,</span>
+<span class="nc" id="L277">				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT3_CLEANUP_TEST, MYCleanUpConstants.JUNIT_CLEANUP_3_TEST,</span>
+<span class="nc" id="L278">				FALSE_TRUE);</span>
 		
-<span class="nc" id="L277">		registerSlavePreference(junit3cb, new CheckboxPreference[] {</span>
-<span class="nc" id="L278">				junit3_test</span>
-				});
 <span class="nc" id="L280">		intent(junit3Group);</span>
-<span class="nc" id="L281">		registerPreference(junit3cb);</span>
-<span class="nc" id="L282">	}</span>
+		
+		
+<span class="nc" id="L283">		registerSlavePreference(junit3cb, new CheckboxPreference[] {</span>
+<span class="nc" id="L284">				junit3_test</span>
+				});
+<span class="nc" id="L286">		intent(junit3Group);</span>
+<span class="nc" id="L287">		registerPreference(junit3cb);</span>
+<span class="nc" id="L288">	}</span>
 	
 	/**
 	 * Apply a quick selection preset to the JUnit cleanup checkboxes.
@@ -317,88 +323,88 @@ import org.sandbox.jdt.internal.ui.fix.JUnitCleanUp;
 			CheckboxPreference junit_category, CheckboxPreference junit_ruletimeout) {
 		
 		// Reset all checkboxes to unchecked first
-<span class="nc bnc" id="L320" title="All 2 branches missed.">		if (selectionIndex &gt; 0) {</span>
+<span class="nc bnc" id="L326" title="All 2 branches missed.">		if (selectionIndex &gt; 0) {</span>
 			// Enable main checkbox when any preset is selected
-<span class="nc" id="L322">			junitcb.setChecked(true);</span>
+<span class="nc" id="L328">			junitcb.setChecked(true);</span>
 			
 			// Reset all sub-options
-<span class="nc" id="L325">			junit_assert.setChecked(false);</span>
-<span class="nc" id="L326">			junit_assume.setChecked(false);</span>
-<span class="nc" id="L327">			junit_ignore.setChecked(false);</span>
-<span class="nc" id="L328">			junit_test.setChecked(false);</span>
-<span class="nc" id="L329">			junit_test_timeout.setChecked(false);</span>
-<span class="nc" id="L330">			junit_test_expected.setChecked(false);</span>
-<span class="nc" id="L331">			junit_before.setChecked(false);</span>
-<span class="nc" id="L332">			junit_after.setChecked(false);</span>
-<span class="nc" id="L333">			junit_beforeclass.setChecked(false);</span>
-<span class="nc" id="L334">			junit_afterclass.setChecked(false);</span>
-<span class="nc" id="L335">			junit_ruletempfolder.setChecked(false);</span>
-<span class="nc" id="L336">			junit_ruletestname.setChecked(false);</span>
-<span class="nc" id="L337">			junit_ruleexternalresource.setChecked(false);</span>
-<span class="nc" id="L338">			junit_externalresource.setChecked(false);</span>
-<span class="nc" id="L339">			junit_runwith.setChecked(false);</span>
-<span class="nc" id="L340">			junit_suite.setChecked(false);</span>
-<span class="nc" id="L341">			junit_category.setChecked(false);</span>
-<span class="nc" id="L342">			junit_ruletimeout.setChecked(false);</span>
+<span class="nc" id="L331">			junit_assert.setChecked(false);</span>
+<span class="nc" id="L332">			junit_assume.setChecked(false);</span>
+<span class="nc" id="L333">			junit_ignore.setChecked(false);</span>
+<span class="nc" id="L334">			junit_test.setChecked(false);</span>
+<span class="nc" id="L335">			junit_test_timeout.setChecked(false);</span>
+<span class="nc" id="L336">			junit_test_expected.setChecked(false);</span>
+<span class="nc" id="L337">			junit_before.setChecked(false);</span>
+<span class="nc" id="L338">			junit_after.setChecked(false);</span>
+<span class="nc" id="L339">			junit_beforeclass.setChecked(false);</span>
+<span class="nc" id="L340">			junit_afterclass.setChecked(false);</span>
+<span class="nc" id="L341">			junit_ruletempfolder.setChecked(false);</span>
+<span class="nc" id="L342">			junit_ruletestname.setChecked(false);</span>
+<span class="nc" id="L343">			junit_ruleexternalresource.setChecked(false);</span>
+<span class="nc" id="L344">			junit_externalresource.setChecked(false);</span>
+<span class="nc" id="L345">			junit_runwith.setChecked(false);</span>
+<span class="nc" id="L346">			junit_suite.setChecked(false);</span>
+<span class="nc" id="L347">			junit_category.setChecked(false);</span>
+<span class="nc" id="L348">			junit_ruletimeout.setChecked(false);</span>
 		}
 		
-<span class="nc bnc" id="L345" title="All 7 branches missed.">		switch (selectionIndex) {</span>
+<span class="nc bnc" id="L351" title="All 7 branches missed.">		switch (selectionIndex) {</span>
 			case 0: // Custom - do nothing
-<span class="nc" id="L347">				break;</span>
+<span class="nc" id="L353">				break;</span>
 				
 			case 1: // Full Migration
-<span class="nc" id="L350">				junit_assert.setChecked(true);</span>
-<span class="nc" id="L351">				junit_assume.setChecked(true);</span>
-<span class="nc" id="L352">				junit_ignore.setChecked(true);</span>
-<span class="nc" id="L353">				junit_test.setChecked(true);</span>
-<span class="nc" id="L354">				junit_test_timeout.setChecked(true);</span>
-<span class="nc" id="L355">				junit_test_expected.setChecked(true);</span>
-<span class="nc" id="L356">				junit_before.setChecked(true);</span>
-<span class="nc" id="L357">				junit_after.setChecked(true);</span>
-<span class="nc" id="L358">				junit_beforeclass.setChecked(true);</span>
-<span class="nc" id="L359">				junit_afterclass.setChecked(true);</span>
-<span class="nc" id="L360">				junit_ruletempfolder.setChecked(true);</span>
-<span class="nc" id="L361">				junit_ruletestname.setChecked(true);</span>
-<span class="nc" id="L362">				junit_ruleexternalresource.setChecked(true);</span>
-<span class="nc" id="L363">				junit_externalresource.setChecked(true);</span>
-<span class="nc" id="L364">				junit_runwith.setChecked(true);</span>
-<span class="nc" id="L365">				junit_suite.setChecked(true);</span>
-<span class="nc" id="L366">				junit_category.setChecked(true);</span>
-<span class="nc" id="L367">				junit_ruletimeout.setChecked(true);</span>
-<span class="nc" id="L368">				break;</span>
+<span class="nc" id="L356">				junit_assert.setChecked(true);</span>
+<span class="nc" id="L357">				junit_assume.setChecked(true);</span>
+<span class="nc" id="L358">				junit_ignore.setChecked(true);</span>
+<span class="nc" id="L359">				junit_test.setChecked(true);</span>
+<span class="nc" id="L360">				junit_test_timeout.setChecked(true);</span>
+<span class="nc" id="L361">				junit_test_expected.setChecked(true);</span>
+<span class="nc" id="L362">				junit_before.setChecked(true);</span>
+<span class="nc" id="L363">				junit_after.setChecked(true);</span>
+<span class="nc" id="L364">				junit_beforeclass.setChecked(true);</span>
+<span class="nc" id="L365">				junit_afterclass.setChecked(true);</span>
+<span class="nc" id="L366">				junit_ruletempfolder.setChecked(true);</span>
+<span class="nc" id="L367">				junit_ruletestname.setChecked(true);</span>
+<span class="nc" id="L368">				junit_ruleexternalresource.setChecked(true);</span>
+<span class="nc" id="L369">				junit_externalresource.setChecked(true);</span>
+<span class="nc" id="L370">				junit_runwith.setChecked(true);</span>
+<span class="nc" id="L371">				junit_suite.setChecked(true);</span>
+<span class="nc" id="L372">				junit_category.setChecked(true);</span>
+<span class="nc" id="L373">				junit_ruletimeout.setChecked(true);</span>
+<span class="nc" id="L374">				break;</span>
 				
 			case 2: // Annotations Only
-<span class="nc" id="L371">				junit_test.setChecked(true);</span>
-<span class="nc" id="L372">				junit_before.setChecked(true);</span>
-<span class="nc" id="L373">				junit_after.setChecked(true);</span>
-<span class="nc" id="L374">				junit_beforeclass.setChecked(true);</span>
-<span class="nc" id="L375">				junit_afterclass.setChecked(true);</span>
-<span class="nc" id="L376">				junit_ignore.setChecked(true);</span>
-<span class="nc" id="L377">				break;</span>
+<span class="nc" id="L377">				junit_test.setChecked(true);</span>
+<span class="nc" id="L378">				junit_before.setChecked(true);</span>
+<span class="nc" id="L379">				junit_after.setChecked(true);</span>
+<span class="nc" id="L380">				junit_beforeclass.setChecked(true);</span>
+<span class="nc" id="L381">				junit_afterclass.setChecked(true);</span>
+<span class="nc" id="L382">				junit_ignore.setChecked(true);</span>
+<span class="nc" id="L383">				break;</span>
 				
 			case 3: // Lifecycle Only
-<span class="nc" id="L380">				junit_before.setChecked(true);</span>
-<span class="nc" id="L381">				junit_after.setChecked(true);</span>
-<span class="nc" id="L382">				junit_beforeclass.setChecked(true);</span>
-<span class="nc" id="L383">				junit_afterclass.setChecked(true);</span>
-<span class="nc" id="L384">				break;</span>
+<span class="nc" id="L386">				junit_before.setChecked(true);</span>
+<span class="nc" id="L387">				junit_after.setChecked(true);</span>
+<span class="nc" id="L388">				junit_beforeclass.setChecked(true);</span>
+<span class="nc" id="L389">				junit_afterclass.setChecked(true);</span>
+<span class="nc" id="L390">				break;</span>
 				
 			case 4: // Assertions Only
-<span class="nc" id="L387">				junit_assert.setChecked(true);</span>
-<span class="nc" id="L388">				break;</span>
+<span class="nc" id="L393">				junit_assert.setChecked(true);</span>
+<span class="nc" id="L394">				break;</span>
 				
 			case 5: // Rules Only
-<span class="nc" id="L391">				junit_ruletempfolder.setChecked(true);</span>
-<span class="nc" id="L392">				junit_ruletestname.setChecked(true);</span>
-<span class="nc" id="L393">				junit_ruleexternalresource.setChecked(true);</span>
-<span class="nc" id="L394">				junit_externalresource.setChecked(true);</span>
-<span class="nc" id="L395">				junit_ruletimeout.setChecked(true);</span>
-<span class="nc" id="L396">				break;</span>
+<span class="nc" id="L397">				junit_ruletempfolder.setChecked(true);</span>
+<span class="nc" id="L398">				junit_ruletestname.setChecked(true);</span>
+<span class="nc" id="L399">				junit_ruleexternalresource.setChecked(true);</span>
+<span class="nc" id="L400">				junit_externalresource.setChecked(true);</span>
+<span class="nc" id="L401">				junit_ruletimeout.setChecked(true);</span>
+<span class="nc" id="L402">				break;</span>
 				
 			default:
 				// Unknown selection, do nothing
 				break;
 		}
-<span class="nc" id="L402">	}</span>
+<span class="nc" id="L408">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -130,29 +130,30 @@ public class JUnitCleanUpCore extends AbstractCleanUp {
 <span class="fc" id="L130">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETEMPORARYFOLDER, JUnitCleanUpFixCore.RULETEMPORARYFOLDER),</span>
 <span class="fc" id="L131">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETESTNAME, JUnitCleanUpFixCore.RULETESTNAME),</span>
 <span class="fc" id="L132">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE, JUnitCleanUpFixCore.RULEEXTERNALRESOURCE),</span>
-<span class="fc" id="L133">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_LOST_TESTS, JUnitCleanUpFixCore.LOSTTESTS)</span>
+<span class="fc" id="L133">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_LOST_TESTS, JUnitCleanUpFixCore.LOSTTESTS),</span>
+<span class="fc" id="L134">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_THROWINGRUNNABLE, JUnitCleanUpFixCore.THROWINGRUNNABLE)</span>
 				);
-<span class="fc" id="L135">		EnumSet&lt;JUnitCleanUpFixCore&gt; fixSetcombined=EnumSet.copyOf(fixSetJunit4);</span>
-<span class="fc" id="L136">		fixSetcombined.addAll(fixSetJunit3);</span>
+<span class="fc" id="L136">		EnumSet&lt;JUnitCleanUpFixCore&gt; fixSetcombined=EnumSet.copyOf(fixSetJunit4);</span>
+<span class="fc" id="L137">		fixSetcombined.addAll(fixSetJunit3);</span>
 
-<span class="fc" id="L138">		cleanupMappings.forEach((config, fix) -&gt; {</span>
-<span class="fc bfc" id="L139" title="All 2 branches covered.">			if (!isEnabled(config)) {</span>
-<span class="fc" id="L140">				fixSetcombined.remove(fix);</span>
+<span class="fc" id="L139">		cleanupMappings.forEach((config, fix) -&gt; {</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">			if (!isEnabled(config)) {</span>
+<span class="fc" id="L141">				fixSetcombined.remove(fix);</span>
 			}
-<span class="fc" id="L142">		});</span>
-<span class="fc" id="L143">		return fixSetcombined;</span>
+<span class="fc" id="L143">		});</span>
+<span class="fc" id="L144">		return fixSetcombined;</span>
 	}
 
 	private EnumSet&lt;JUnitCleanUpFixCore&gt; allOfJunit4() {
-<span class="fc" id="L147">		EnumSet&lt;JUnitCleanUpFixCore&gt; allOf= EnumSet.allOf(JUnitCleanUpFixCore.class);</span>
-<span class="fc" id="L148">		allOf.remove(JUnitCleanUpFixCore.TEST3);</span>
-<span class="fc" id="L149">		return allOf;</span>
+<span class="fc" id="L148">		EnumSet&lt;JUnitCleanUpFixCore&gt; allOf= EnumSet.allOf(JUnitCleanUpFixCore.class);</span>
+<span class="fc" id="L149">		allOf.remove(JUnitCleanUpFixCore.TEST3);</span>
+<span class="fc" id="L150">		return allOf;</span>
 	}
 	
 	private EnumSet&lt;JUnitCleanUpFixCore&gt; allOfJunit3() {
-<span class="nc" id="L153">		EnumSet&lt;JUnitCleanUpFixCore&gt; allOf= EnumSet.noneOf(JUnitCleanUpFixCore.class);</span>
-<span class="nc" id="L154">		allOf.add(JUnitCleanUpFixCore.TEST3);</span>
-<span class="nc" id="L155">		return allOf;</span>
+<span class="nc" id="L154">		EnumSet&lt;JUnitCleanUpFixCore&gt; allOf= EnumSet.noneOf(JUnitCleanUpFixCore.class);</span>
+<span class="nc" id="L155">		allOf.add(JUnitCleanUpFixCore.TEST3);</span>
+<span class="nc" id="L156">		return allOf;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

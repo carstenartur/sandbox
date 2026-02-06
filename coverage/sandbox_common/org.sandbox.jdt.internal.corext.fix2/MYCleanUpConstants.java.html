@@ -202,6 +202,20 @@
 	 */
 	public static final String JUNIT_CLEANUP_4_LOST_TESTS= &quot;cleanup.junitcleanup_4_lost_tests&quot;; //$NON-NLS-1$
 	/**
+	 * Migrate JUnit 4 ThrowingRunnable to JUnit 5 Executable.
+	 * &lt;p&gt;
+	 * Transforms:
+	 * &lt;ul&gt;
+	 * &lt;li&gt;org.junit.function.ThrowingRunnable → org.junit.jupiter.api.function.Executable&lt;/li&gt;
+	 * &lt;li&gt;ThrowingRunnable.run() → Executable.execute()&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * &lt;p&gt;
+	 * Possible values: {TRUE, FALSE}
+	 * &lt;p&gt;
+	 * @see &lt;a href=&quot;https://github.com/eclipse-platform/eclipse.platform/issues/903&quot;&gt;Eclipse Platform Issue #903&lt;/a&gt;
+	 */
+	public static final String JUNIT_CLEANUP_4_THROWINGRUNNABLE= &quot;cleanup.junitcleanup_4_throwingrunnable&quot;; //$NON-NLS-1$
+	/**
 	 *
 	 */
 	public static final String JFACE_CLEANUP= &quot;cleanup.jfacecleanup&quot;; //$NON-NLS-1$

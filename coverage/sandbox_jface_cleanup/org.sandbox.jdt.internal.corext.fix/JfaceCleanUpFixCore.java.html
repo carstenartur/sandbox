@@ -75,10 +75,22 @@ import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 <span class="nc" id="L75">				} else {</span>
 <span class="fc" id="L76">					rangeComputer= new TightSourceRangeComputer();</span>
 				}
-<span class="fc" id="L78">				rangeComputer.addTightSourceNode( hit.get(0).minv);</span>
-<span class="fc" id="L79">				rewrite.setTargetSourceRangeComputer(rangeComputer);</span>
-<span class="fc" id="L80">				jfacefound.rewrite(JfaceCleanUpFixCore.this, hit, cuRewrite, group);</span>
-<span class="fc" id="L81">			}</span>
+				
+				// Get the first MonitorHolder from the hit map (key might not be 0 due to scope grouping)
+<span class="fc" id="L80">				MonitorHolder mh = hit.values().stream().findFirst().orElse(null);</span>
+<span class="pc bpc" id="L81" title="1 of 2 branches missed.">				if (mh != null) {</span>
+					// For standalone SubProgressMonitor, use the ClassInstanceCreation node instead of minv
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">					if (mh.minv != null) {</span>
+<span class="fc" id="L84">						rangeComputer.addTightSourceNode(mh.minv);</span>
+<span class="pc bnc" id="L85" title="All 2 branches missed.">					} else if (!mh.setofcic.isEmpty()) {</span>
+						// Use the first SubProgressMonitor creation for standalone case
+<span class="nc" id="L87">						rangeComputer.addTightSourceNode(mh.setofcic.iterator().next());</span>
+					}
+				}
+				
+<span class="fc" id="L91">				rewrite.setTargetSourceRangeComputer(rangeComputer);</span>
+<span class="fc" id="L92">				jfacefound.rewrite(JfaceCleanUpFixCore.this, hit, cuRewrite, group);</span>
+<span class="fc" id="L93">			}</span>
 		};
 	}
 }
