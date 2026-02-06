@@ -24,10 +24,8 @@ import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
-import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
-import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -38,14 +36,18 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
-import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
 import org.sandbox.jdt.internal.corext.util.NamingUtils;
 
 /**
  * Abstract base class for JUnit migration tools.
  * Provides common functionality for transforming JUnit 3/4 tests to JUnit 5.
- * Delegates to specialized helper classes for most operations.
+ * 
+ * <p>After refactoring, this class contains only essential abstract methods and
+ * common utility methods. Plugin-specific helpers have been extracted to specialized
+ * classes like {@link ExternalResourceRefactorer}, {@link TestNameRefactorer},
+ * {@link AssertionRefactorer}, and {@link ImportHelper}. Plugins should call these
+ * helper classes directly instead of using delegation methods.</p>
  * 
  * @param <T> Type found in Visitor
  */
@@ -188,36 +190,6 @@ public abstract class AbstractTool<T> {
 	}
 
 	/**
-	 * Checks if a field is annotated with the specified annotation.
-	 * 
-	 * @param field the field declaration to check
-	 * @param annotationClass the fully qualified annotation class name
-	 * @return true if the field has the annotation
-	 */
-	protected boolean isFieldAnnotatedWith(FieldDeclaration field, String annotationClass) {
-		return AnnotationUtils.isFieldAnnotatedWith(field, annotationClass);
-	}
-
-	/**
-	 * Modifies a class that extends ExternalResource to use JUnit 5 extensions instead.
-	 * Delegates to {@link ExternalResourceRefactorer#modifyExternalResourceClass}.
-	 * 
-	 * @param node the type declaration to modify
-	 * @param field the field declaration with ExternalResource
-	 * @param fieldStatic whether the field is static (affects callback type)
-	 * @param rewriter the AST rewriter
-	 * @param ast the AST instance
-	 * @param group the text edit group
-	 * @param importRewriter the import rewriter
-	 */
-	protected void modifyExternalResourceClass(TypeDeclaration node, FieldDeclaration field, boolean fieldStatic,
-			ASTRewrite rewriter, AST ast, TextEditGroup group, ImportRewrite importRewriter) {
-		ExternalResourceRefactorer.modifyExternalResourceClass(node, field, fieldStatic, rewriter, ast, group,
-				importRewriter);
-	}
-
-
-	/**
 	 * Processes a JUnit migration by applying the necessary AST rewrites.
 	 * Implementations should transform the matched pattern into JUnit 5 compatible code.
 	 * 
@@ -229,55 +201,6 @@ public abstract class AbstractTool<T> {
 	 */
 	protected abstract void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder);
-
-	/**
-	 * Refactors an anonymous ExternalResource class to implement JUnit 5 callback interfaces.
-	 * Delegates to {@link ExternalResourceRefactorer#refactorAnonymousClassToImplementCallbacks}.
-	 * 
-	 * @param anonymousClass the anonymous class declaration to refactor
-	 * @param fieldDeclaration the field containing the anonymous class
-	 * @param fieldStatic whether the field is static
-	 * @param rewriter the AST rewriter
-	 * @param ast the AST instance
-	 * @param group the text edit group
-	 * @param importRewriter the import rewriter
-	 */
-	protected void refactorAnonymousClassToImplementCallbacks(AnonymousClassDeclaration anonymousClass,
-			FieldDeclaration fieldDeclaration, boolean fieldStatic, ASTRewrite rewriter, AST ast, TextEditGroup group,
-			ImportRewrite importRewriter) {
-		ExternalResourceRefactorer.refactorAnonymousClassToImplementCallbacks(anonymousClass, fieldDeclaration,
-				fieldStatic, rewriter, ast, group, importRewriter);
-	}
-
-	/**
-	 * Refactors TestName field usage in a class and all its subclasses.
-	 * Delegates to {@link TestNameRefactorer#refactorTestnameInClassAndSubclasses}.
-	 * 
-	 * @param group the text edit group
-	 * @param rewriter the AST rewriter
-	 * @param ast the AST instance
-	 * @param importRewrite the import rewriter
-	 * @param node the TestName field declaration to replace
-	 */
-	protected void refactorTestnameInClassAndSubclasses(TextEditGroup group, ASTRewrite rewriter, AST ast,
-			ImportRewrite importRewrite, FieldDeclaration node) {
-		TestNameRefactorer.refactorTestnameInClassAndSubclasses(group, rewriter, ast, importRewrite, node);
-	}
-
-	/**
-	 * Reorders parameters in a method invocation to match JUnit 5 assertion parameter order.
-	 * Delegates to {@link AssertionRefactorer#reorderParameters}.
-	 * 
-	 * @param node the method invocation to reorder
-	 * @param rewriter the AST rewriter
-	 * @param group the text edit group
-	 * @param oneparam assertion methods with one value parameter
-	 * @param twoparam assertion methods with two value parameters
-	 */
-	public void reorderParameters(MethodInvocation node, ASTRewrite rewriter, TextEditGroup group, Set<String> oneparam,
-			Set<String> twoparam) {
-		AssertionRefactorer.reorderParameters(node, rewriter, group, oneparam, twoparam);
-	}
 
 	/**
 	 * Standard helper for processing found nodes in the common pattern.
@@ -298,20 +221,6 @@ public abstract class AbstractTool<T> {
 		dataHolder.put(dataHolder.size(), mh);
 		operations.add(fixcore.rewrite(dataHolder));
 		return true;
-	}
-
-	/**
-	 * Handles import declaration changes for migrating JUnit 4 to JUnit 5.
-	 * Delegates to {@link ImportHelper#changeImportDeclaration}.
-	 * 
-	 * @param node the import declaration to change
-	 * @param importRewriter the import rewriter to use
-	 * @param sourceClass the JUnit 4 fully qualified class name
-	 * @param targetClass the JUnit 5 fully qualified class name
-	 */
-	protected void changeImportDeclaration(ImportDeclaration node, ImportRewrite importRewriter, String sourceClass,
-			String targetClass) {
-		ImportHelper.changeImportDeclaration(node, importRewriter, sourceClass, targetClass);
 	}
 
 	/**

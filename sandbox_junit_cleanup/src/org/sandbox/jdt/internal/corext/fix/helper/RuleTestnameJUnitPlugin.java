@@ -42,6 +42,7 @@ import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractRuleFieldPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.TestNameRefactorer;
 
 /**
  * Plugin to migrate JUnit 4 TestName rule to JUnit 5 TestInfo parameter.
@@ -57,7 +58,7 @@ public class RuleTestnameJUnitPlugin extends AbstractRuleFieldPlugin {
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
 			ImportRewrite importRewriter, JunitHolder junitHolder) {
 		FieldDeclaration node = junitHolder.getFieldDeclaration();
-		refactorTestnameInClassAndSubclasses(group, rewriter, ast, importRewriter, node);
+		TestNameRefactorer.refactorTestnameInClassAndSubclasses(group, rewriter, ast, importRewriter, node);
 	}
 	
 	@Override
