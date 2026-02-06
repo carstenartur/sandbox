@@ -107,7 +107,7 @@ public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<In
 		
 		nodesprocessed.add(node);
 		JunitHolder mh= new JunitHolder();
-		mh.minv= node;
+		mh.setMinv(node);
 		dataHolder.put(dataHolder.size(), mh);
 		operations.add(fixcore.rewrite(dataHolder));
 		return false;

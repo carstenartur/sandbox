@@ -92,14 +92,14 @@ public class CategoryJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, J
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Annotation node,
 			ReferenceHolder<Integer, JunitHolder> dataHolder) {
 		JunitHolder mh= new JunitHolder();
-		mh.minv= node;
-		mh.minvname= node.getTypeName().getFullyQualifiedName();
+		mh.setMinv(node);
+		mh.setMinvname(node.getTypeName().getFullyQualifiedName());
 		
 		if (node instanceof SingleMemberAnnotation mynode) {
 			Expression value= mynode.getValue();
 			List<String> categoryNames= extractCategoryNames(value);
 			if (!categoryNames.isEmpty()) {
-				mh.value= String.join(",", categoryNames);
+				mh.setValue(String.join(",", categoryNames));
 				dataHolder.put(dataHolder.size(), mh);
 				operations.add(fixcore.rewrite(dataHolder));
 			}

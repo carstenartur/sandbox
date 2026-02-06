@@ -99,9 +99,9 @@ public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<I
 						if (ORG_JUNIT_RUNNERS_PARAMETERIZED.equals(runnerQualifiedName)) {
 							// Found a parameterized test class
 							JunitHolder mh = new JunitHolder();
-							mh.minv = node;
-							mh.minvname = node.getTypeName().getFullyQualifiedName();
-							mh.value = ORG_JUNIT_RUNNERS_PARAMETERIZED;
+							mh.setMinv(node);
+							mh.setMinvname(node.getTypeName().getFullyQualifiedName());
+							mh.setValue(ORG_JUNIT_RUNNERS_PARAMETERIZED);
 							
 							// Get the containing type declaration to store for processing
 							ASTNode parent = node.getParent();
@@ -109,7 +109,7 @@ public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<I
 								parent = parent.getParent();
 							}
 							if (parent != null) {
-								mh.additionalInfo = parent;
+								mh.setAdditionalInfo(parent);
 							}
 							
 							dataHolder.put(dataHolder.size(), mh);

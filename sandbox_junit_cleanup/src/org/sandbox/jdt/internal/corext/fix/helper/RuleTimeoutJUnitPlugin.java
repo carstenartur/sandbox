@@ -103,9 +103,9 @@ public class RuleTimeoutJUnitPlugin extends TriggerPatternCleanupPlugin {
 		}
 		
 		JunitHolder holder = new JunitHolder();
-		holder.minv = fieldDecl;
-		holder.value = String.valueOf(info.value);
-		holder.minvname = info.unit;
+		holder.setMinv(fieldDecl);
+		holder.setValue(String.valueOf(info.value));
+		holder.setMinvname(info.unit);
 		return holder;
 	}
 

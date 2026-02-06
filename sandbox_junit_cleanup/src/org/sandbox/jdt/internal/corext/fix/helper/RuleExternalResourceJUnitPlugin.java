@@ -92,7 +92,7 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 				|| ORG_JUNIT_RULES_TEMPORARY_FOLDER.equals(binding.getQualifiedName())) {
 			return true; // Continue processing other fields
 		}
-		mh.minv= node;
+		mh.setMinv(node);
 		dataHolder.put(dataHolder.size(), mh);
 		operations.add(fixcore.rewrite(dataHolder));
 		// Return true to continue processing other fields

@@ -74,8 +74,8 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Annotation node,
 			ReferenceHolder<Integer, JunitHolder> dataHolder) {
 		JunitHolder mh= new JunitHolder();
-		mh.minv= node;
-		mh.minvname= node.getTypeName().getFullyQualifiedName();
+		mh.setMinv(node);
+		mh.setMinvname(node.getTypeName().getFullyQualifiedName());
 		if (node instanceof SingleMemberAnnotation mynode) {
 			Expression value= mynode.getValue();
 			if (value instanceof TypeLiteral myvalue) {
@@ -115,7 +115,7 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 				
 				// Handle Suite runner
 				if (ORG_JUNIT_SUITE.equals(runnerQualifiedName)) {
-					mh.value= ORG_JUNIT_RUNWITH;
+					mh.setValue(ORG_JUNIT_RUNWITH);
 					dataHolder.put(dataHolder.size(), mh);
 					operations.add(fixcore.rewrite(dataHolder));
 					return true; // Continue processing other annotations
@@ -124,7 +124,7 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 				// Handle Mockito runners - only check qualified names to avoid false positives
 				if (ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER.equals(runnerQualifiedName) ||
 						ORG_MOCKITO_RUNNERS_MOCKITO_JUNIT_RUNNER.equals(runnerQualifiedName)) {
-					mh.value= ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER;
+					mh.setValue(ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER);
 					dataHolder.put(dataHolder.size(), mh);
 					operations.add(fixcore.rewrite(dataHolder));
 					return true; // Continue processing other annotations
@@ -133,7 +133,7 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 				// Handle Spring runners - only check qualified names to avoid false positives
 				if (ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER.equals(runnerQualifiedName) ||
 						ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_JUNIT4_CLASS_RUNNER.equals(runnerQualifiedName)) {
-					mh.value= ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER;
+					mh.setValue(ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER);
 					dataHolder.put(dataHolder.size(), mh);
 					operations.add(fixcore.rewrite(dataHolder));
 					return true; // Continue processing other annotations
@@ -148,9 +148,9 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Annotation node,
 			ReferenceHolder<Integer, JunitHolder> dataHolder) {
 		JunitHolder mh= new JunitHolder();
-		mh.minv= node;
-		mh.minvname= node.getTypeName().getFullyQualifiedName();
-		mh.value= ORG_JUNIT_SUITE_SUITECLASSES;
+		mh.setMinv(node);
+		mh.setMinvname(node.getTypeName().getFullyQualifiedName());
+		mh.setValue(ORG_JUNIT_SUITE_SUITECLASSES);
 		dataHolder.put(dataHolder.size(), mh);
 		operations.add(fixcore.rewrite(dataHolder));
 		// Return true to continue processing other annotations

@@ -294,7 +294,7 @@ public abstract class AbstractTool<T> {
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, ASTNode node,
 			ReferenceHolder<Integer, JunitHolder> dataHolder) {
 		JunitHolder mh = new JunitHolder();
-		mh.minv = node;
+		mh.setMinv(node);
 		dataHolder.put(dataHolder.size(), mh);
 		operations.add(fixcore.rewrite(dataHolder));
 		return true;

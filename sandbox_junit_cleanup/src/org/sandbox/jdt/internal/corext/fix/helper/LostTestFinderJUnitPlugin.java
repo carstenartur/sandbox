@@ -149,7 +149,7 @@ public class LostTestFinderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 				
 				ReferenceHolder<Integer, JunitHolder> dataHolder = new ReferenceHolder<>();
 				JunitHolder mh = new JunitHolder();
-				mh.minv = method;
+				mh.setMinv(method);
 				dataHolder.put(0, mh);
 				operations.add(fixcore.rewrite(dataHolder));
 			}

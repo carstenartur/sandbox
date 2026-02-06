@@ -148,10 +148,10 @@ public class RunWithCategoriesJUnitPlugin extends AbstractTool<ReferenceHolder<I
 		}
 		
 		JunitHolder mh= new JunitHolder();
-		mh.minv= node;
-		mh.minvname= node.getTypeName().getFullyQualifiedName();
-		mh.value= ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORIES;
-		mh.additionalInfo= categoriesData;
+		mh.setMinv(node);
+		mh.setMinvname(node.getTypeName().getFullyQualifiedName());
+		mh.setValue(ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORIES);
+		mh.setAdditionalInfo(categoriesData);
 		dataHolder.put(dataHolder.size(), mh);
 		operations.add(fixcore.rewrite(dataHolder));
 		

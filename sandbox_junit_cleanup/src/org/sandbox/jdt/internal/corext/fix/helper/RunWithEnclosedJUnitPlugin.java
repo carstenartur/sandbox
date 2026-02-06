@@ -130,9 +130,9 @@ public class RunWithEnclosedJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 		// Found @RunWith(Enclosed.class), mark it for transformation
 		nodesprocessed.add(node);
 		JunitHolder mh= new JunitHolder();
-		mh.minv= node;
-		mh.minvname= node.getTypeName().getFullyQualifiedName();
-		mh.value= ORG_JUNIT_EXPERIMENTAL_RUNNERS_ENCLOSED;
+		mh.setMinv(node);
+		mh.setMinvname(node.getTypeName().getFullyQualifiedName());
+		mh.setValue(ORG_JUNIT_EXPERIMENTAL_RUNNERS_ENCLOSED);
 		dataHolder.put(dataHolder.size(), mh);
 		operations.add(fixcore.rewrite(dataHolder));
 		

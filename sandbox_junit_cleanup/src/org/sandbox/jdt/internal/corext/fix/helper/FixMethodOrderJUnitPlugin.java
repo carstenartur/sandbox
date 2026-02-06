@@ -66,14 +66,14 @@ public class FixMethodOrderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 			ReferenceHolder<Integer, JunitHolder> dataHolder) {
 		
 		JunitHolder mh= new JunitHolder();
-		mh.minv= node;
-		mh.minvname= node.getTypeName().getFullyQualifiedName();
+		mh.setMinv(node);
+		mh.setMinvname(node.getTypeName().getFullyQualifiedName());
 		
 		// Extract MethodSorter value from the annotation
 		Expression value= node.getValue();
 		if (value instanceof QualifiedName qn) {
 			String methodSorter= qn.getName().getIdentifier(); // "NAME_ASCENDING", "JVM", "DEFAULT"
-			mh.additionalInfo= methodSorter;
+			mh.setAdditionalInfo(methodSorter);
 			
 			dataHolder.put(dataHolder.size(), mh);
 			operations.add(fixcore.rewrite(dataHolder));
