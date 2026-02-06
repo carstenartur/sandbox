@@ -50,6 +50,7 @@ import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.ExternalResourceRefactorer;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 /**

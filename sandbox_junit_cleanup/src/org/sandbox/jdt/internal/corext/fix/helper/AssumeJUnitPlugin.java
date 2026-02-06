@@ -30,6 +30,7 @@ import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractMethodMigrationPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.AssertionRefactorer;
 
 /**
  * Migrates JUnit 4 Assume calls to JUnit 5 Assumptions.
@@ -144,7 +145,7 @@ public class AssumeJUnitPlugin extends AbstractMethodMigrationPlugin {
 	@Override
 	protected void reorderMessageParameter(TextEditGroup group, ASTRewrite rewriter, MethodInvocation methodInvocation) {
 		// Use specific parameter sets for assumptions
-		reorderParameters(methodInvocation, rewriter, group, ONEPARAM_ASSUMPTIONS, MULTI_PARAM_ASSUMPTIONS);
+		AssertionRefactorer.reorderParameters(methodInvocation, rewriter, group, ONEPARAM_ASSUMPTIONS, MULTI_PARAM_ASSUMPTIONS);
 	}
 
 	/**

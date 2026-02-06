@@ -183,7 +183,7 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 	                if ("junit.framework.Assert".equals(fullyQualifiedName) || "junit.framework.Assume".equals(fullyQualifiedName)) {
 //	                    correctAssertionOrder(node, rewriter, ast, group);
 
-	                    reorderParameters(node, rewriter, group, ONEPARAM_ASSERTIONS, TWOPARAM_ASSERTIONS);
+	                    AssertionRefactorer.reorderParameters(node, rewriter, group, ONEPARAM_ASSERTIONS, TWOPARAM_ASSERTIONS);
 //	    				SimpleName newQualifier= ast.newSimpleName(ASSERTIONS);
 //	    				Expression expression= assertexpression;
 //	    				if (expression != null) {
