@@ -155,23 +155,59 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 		
 		PreconditionsChecker pc = new PreconditionsChecker(visited, (CompilationUnit) visited.getRoot());
 		if (!pc.isSafeToRefactor()) {
-			// Loop cannot be safely refactored to functional style
-			// Return true to continue visiting children - inner loops may still be convertible
+			// If the only reason is nested loops, try to convert inner loops independently
+			if (pc.hasNestedLoop()) {
+				processInnerLoops(fixcore, operations, nodesprocessed, visited, dataHolder, sharedDataHolder);
+			}
 			return false;
 		}
 		// Check if the loop can be analyzed for stream conversion
 		StreamPipelineBuilder builder = new StreamPipelineBuilder(visited, pc);
 		if (!builder.analyze()) {
-			// Cannot convert this loop to functional style
-			// Return true to continue visiting children - inner loops may still be convertible
 			return false;
 		}
-		// V1 doesn't need to store data in the holder, but we pass it to maintain signature compatibility
 		operations.add(fixcore.rewrite(visited, sharedDataHolder));
 		nodesprocessed.add(visited);
-		// Return false to prevent visiting children since this loop was converted
-		// (children are now part of the lambda expression)
 		return false;
+	}
+
+	/**
+	 * When an outer loop cannot be converted (because it contains nested loops),
+	 * visit the body to find inner enhanced-for loops that can be converted independently.
+	 * Only direct children enhanced-for loops are processed (not deeper nested ones,
+	 * which will be handled by their own parent).
+	 */
+	private void processInnerLoops(UseFunctionalCallFixCore fixcore,
+			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed,
+			EnhancedForStatement outerLoop,
+			ReferenceHolder<Integer, FunctionalHolder> dataHolder,
+			ReferenceHolder<ASTNode, Object> sharedDataHolder) {
+		outerLoop.getBody().accept(new org.eclipse.jdt.core.dom.ASTVisitor() {
+			@Override
+			public boolean visit(EnhancedForStatement innerLoop) {
+				if (nodesprocessed.contains(innerLoop)) {
+					return false;
+				}
+				// Each inner loop gets its OWN fresh PreconditionsChecker
+				// WITHOUT nodesprocessed - so it will correctly detect if THIS
+				// inner loop itself has further nested loops
+				PreconditionsChecker innerPc = new PreconditionsChecker(innerLoop, (CompilationUnit) innerLoop.getRoot());
+				if (!innerPc.isSafeToRefactor()) {
+					// If this inner loop also has nested loops, recurse to try its children
+					if (innerPc.hasNestedLoop()) {
+						processInnerLoops(fixcore, operations, nodesprocessed, innerLoop, dataHolder, sharedDataHolder);
+					}
+					return false; // Don't visit children of unconvertible loop
+				}
+				StreamPipelineBuilder builder = new StreamPipelineBuilder(innerLoop, innerPc);
+				if (!builder.analyze()) {
+					return false;
+				}
+				operations.add(fixcore.rewrite(innerLoop, sharedDataHolder));
+				nodesprocessed.add(innerLoop);
+				return false; // Don't visit children since this loop was converted
+			}
+		});
 	}
 
 	@Override
