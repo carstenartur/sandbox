@@ -174,8 +174,13 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 	/**
 	 * When an outer loop cannot be converted (because it contains nested loops),
 	 * visit the body to find inner enhanced-for loops that can be converted independently.
-	 * Only direct children enhanced-for loops are processed (not deeper nested ones,
-	 * which will be handled by their own parent).
+	 * 
+	 * <p>
+	 * The visitor traverses the entire body of the outer loop and processes every nested
+	 * {@link EnhancedForStatement} it encounters. For each such inner loop, the visitor
+	 * does not descend into that loop's body (because {@code visit} returns {@code false}),
+	 * so deeper nested enhanced-for loops are handled when their own enclosing loop is visited.
+	 * </p>
 	 */
 	private void processInnerLoops(UseFunctionalCallFixCore fixcore,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed,
@@ -185,27 +190,13 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 		outerLoop.getBody().accept(new org.eclipse.jdt.core.dom.ASTVisitor() {
 			@Override
 			public boolean visit(EnhancedForStatement innerLoop) {
-				if (nodesprocessed.contains(innerLoop)) {
-					return false;
-				}
-				// Each inner loop gets its OWN fresh PreconditionsChecker
-				// WITHOUT nodesprocessed - so it will correctly detect if THIS
-				// inner loop itself has further nested loops
-				PreconditionsChecker innerPc = new PreconditionsChecker(innerLoop, (CompilationUnit) innerLoop.getRoot());
-				if (!innerPc.isSafeToRefactor()) {
-					// If this inner loop also has nested loops, recurse to try its children
-					if (innerPc.hasNestedLoop()) {
-						processInnerLoops(fixcore, operations, nodesprocessed, innerLoop, dataHolder, sharedDataHolder);
-					}
-					return false; // Don't visit children of unconvertible loop
-				}
-				StreamPipelineBuilder builder = new StreamPipelineBuilder(innerLoop, innerPc);
-				if (!builder.analyze()) {
-					return false;
-				}
-				operations.add(fixcore.rewrite(innerLoop, sharedDataHolder));
-				nodesprocessed.add(innerLoop);
-				return false; // Don't visit children since this loop was converted
+				// Delegate to the canonical processing path so that
+				// all precondition checks and conversions are handled
+				// consistently with top-level loops.
+				processFoundNode(fixcore, operations, nodesprocessed, innerLoop, dataHolder, sharedDataHolder);
+				// Do not visit children here: processFoundNode(...) is
+				// responsible for any further nested-loop handling.
+				return false;
 			}
 		});
 	}

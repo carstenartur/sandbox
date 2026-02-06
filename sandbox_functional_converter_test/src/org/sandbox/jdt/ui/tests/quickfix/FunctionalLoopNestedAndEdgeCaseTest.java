@@ -60,30 +60,15 @@ public class FunctionalLoopNestedAndEdgeCaseTest {
 		 * <p><b>Pattern:</b> Nested enhanced-for loops where inner loop is simple forEach</p>
 		 * 
 		 * <p><b>Expected Behavior:</b> The inner loop should be converted to {@code forEach()},
-		 * while the outer loop remains as an enhanced-for loop. This requires the cleanup
-		 * to identify and convert inner loops independently without being blocked by the
-		 * outer loop's nested structure.</p>
-		 * 
-		 * <p><b>Why not yet implemented:</b> The current implementation in
-		 * {@link org.sandbox.jdt.internal.corext.fix.helper.PreconditionsChecker} detects
-		 * nested loops and marks the outer loop as non-convertible (sets
-		 * {@code containsNestedLoop = true}). This prevents ANY conversion in the nested
-		 * context. To support this pattern, the implementation would need to:
-		 * <ul>
-		 * <li>Run multiple passes - first converting inner loops, then outer loops</li>
-		 * <li>Allow conversion of inner loops even when they're nested</li>
-		 * <li>Track which loop is being analyzed (inner vs outer) to apply different rules</li>
-		 * </ul>
-		 * </p>
+		 * while the outer loop remains as an enhanced-for loop. The cleanup identifies and
+		 * converts inner loops independently without being blocked by the outer loop's
+		 * nested structure.</p>
 		 * 
 		 * <p><b>Semantic equivalence:</b> Converting only the inner loop preserves the
 		 * exact semantics - the outer loop still iterates over the matrix, but the inner
 		 * iteration uses a functional style.</p>
-		 * 
-		 * <p><b>Future enhancement:</b> See TODO.md for nested loop conversion roadmap.</p>
 		 */
 		@Test
-		@Disabled("Inner loop conversion in nested context not yet implemented - requires multi-pass cleanup execution")
 		@DisplayName("Nested for-each loops should convert inner loop only")
 		void test_NestedForEach_ShouldConvertInnerOnly() throws CoreException {
 			String sourceCode = """
@@ -216,7 +201,6 @@ public class FunctionalLoopNestedAndEdgeCaseTest {
 		 * </p>
 		 */
 		@Test
-		@Disabled("Inner loop conversion in nested context not yet implemented")
 		@DisplayName("Inner loop in nested context can be converted")
 		void test_NestedForEach_InnerLoopConverts() throws CoreException {
 			String input = """
