@@ -93,11 +93,13 @@ public class NodeExecutorTest {
 
 	@Test
 	@EnabledIf("isNpxAvailable")
-	public void testExecuteNpxWithInvalidCommand() {
+	public void testExecuteNpxWithInvalidCommand() throws IOException, InterruptedException {
 		// Execute an npx command that should fail
-		assertThrows(Exception.class, () -> {
-			NodeExecutor.executeNpx("this-package-definitely-does-not-exist-12345"); //$NON-NLS-1$
-		});
+		NodeExecutor.ExecutionResult result = NodeExecutor.executeNpx("this-package-definitely-does-not-exist-12345"); //$NON-NLS-1$
+		
+		assertNotNull(result);
+		assertFalse(result.isSuccess(), "Invalid command should not succeed"); //$NON-NLS-1$
+		assertTrue(result.exitCode != 0, "Invalid command should have non-zero exit code"); //$NON-NLS-1$
 	}
 
 	/**
