@@ -60,7 +60,7 @@ public class FilesReadStringExplicitEncoding extends AbstractExplicitEncoding<Me
 			// For Java 10 and older, Files.readString() is not available
 			return;
 		}
-		ReferenceHolder<ASTNode, Object> datah = new ReferenceHolder<>();
+		ReferenceHolder<ASTNode, Object> datah = ReferenceHolder.createForNodes();
 		getCharsetConstants().clear();
 		HelperVisitor.callMethodInvocationVisitor(Files.class, METHOD_READ_STRING, compilationUnit, datah,
 				nodesprocessed, (visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));

@@ -56,7 +56,7 @@ public class FilesReadAllLinesExplicitEncoding extends AbstractExplicitEncoding<
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ChangeBehavior cb) {
-		ReferenceHolder<ASTNode, Object> datah = new ReferenceHolder<>();
+		ReferenceHolder<ASTNode, Object> datah = ReferenceHolder.createForNodes();
 		getCharsetConstants().clear();
 		HelperVisitor.callMethodInvocationVisitor(Files.class, METHOD_READ_ALL_LINES, compilationUnit, datah,
 				nodesprocessed, (visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));

@@ -67,7 +67,7 @@ public class ChannelsNewReaderExplicitEncoding extends AbstractExplicitEncoding<
 			 */
 			return;
 		}
-		ReferenceHolder<ASTNode, Object> datah= new ReferenceHolder<>();
+		ReferenceHolder<ASTNode, Object> datah= ReferenceHolder.createForNodes();
 		HelperVisitor.callMethodInvocationVisitor(Channels.class, METHOD_NEW_READER, compilationUnit, datah, nodesprocessed,
 				(visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));
 	}

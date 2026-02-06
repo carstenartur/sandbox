@@ -70,7 +70,7 @@ public class FormatterExplicitEncoding extends AbstractExplicitEncoding<ClassIns
 
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ChangeBehavior cb) {
-		ReferenceHolder<ASTNode, Object> datah= new ReferenceHolder<>();
+		ReferenceHolder<ASTNode, Object> datah= ReferenceHolder.createForNodes();
 		HelperVisitor.callClassInstanceCreationVisitor(Formatter.class, compilationUnit, datah, nodesprocessed, (visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));
 	}
 

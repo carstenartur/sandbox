@@ -84,7 +84,7 @@ public class MultiStatusSimplifyPlatformStatus extends AbstractSimplifyPlatformS
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed,
 			boolean preservePluginId) throws CoreException {
 		try {
-			ReferenceHolder<ASTNode, Object> dataholder= new ReferenceHolder<>();
+			ReferenceHolder<ASTNode, Object> dataholder= ReferenceHolder.createForNodes();
 			HelperVisitor.callClassInstanceCreationVisitor(MultiStatus.class, compilationUnit, dataholder, nodesprocessed, (visited, holder) -> {
 				if (nodesprocessed.contains(visited)) {
 					return false;

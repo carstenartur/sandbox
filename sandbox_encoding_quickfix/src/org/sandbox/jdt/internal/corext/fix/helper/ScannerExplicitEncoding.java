@@ -66,7 +66,7 @@ public class ScannerExplicitEncoding extends AbstractExplicitEncoding<ClassInsta
 			 */
 			return;
 		}
-		ReferenceHolder<ASTNode, Object> datah= new ReferenceHolder<>();
+		ReferenceHolder<ASTNode, Object> datah= ReferenceHolder.createForNodes();
 		HelperVisitor.callClassInstanceCreationVisitor(Scanner.class, compilationUnit, datah, nodesprocessed, (visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));
 	}
 

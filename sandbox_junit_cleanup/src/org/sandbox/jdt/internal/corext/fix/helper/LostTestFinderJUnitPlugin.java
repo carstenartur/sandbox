@@ -147,7 +147,7 @@ public class LostTestFinderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 			if (isLostTestMethod(method) && !nodesprocessed.contains(method)) {
 				nodesprocessed.add(method);
 				
-				ReferenceHolder<Integer, JunitHolder> dataHolder = new ReferenceHolder<>();
+				ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
 				JunitHolder mh = new JunitHolder();
 				mh.minv = method;
 				dataHolder.put(0, mh);
