@@ -27,7 +27,7 @@ class TriggerPatternCleanupPluginTest {
     
     @Test
     void testCleanupPatternAnnotation_isPresent() {
-        BeforeJUnitPluginV2 plugin = new BeforeJUnitPluginV2();
+        BeforeJUnitPlugin plugin = new BeforeJUnitPlugin();
         
         CleanupPattern annotation = plugin.getClass().getAnnotation(CleanupPattern.class);
         
@@ -40,7 +40,7 @@ class TriggerPatternCleanupPluginTest {
     
     @Test
     void testGetPattern_returnsCorrectPattern() {
-        BeforeJUnitPluginV2 plugin = new BeforeJUnitPluginV2();
+        BeforeJUnitPlugin plugin = new BeforeJUnitPlugin();
         
         Pattern pattern = plugin.getPattern();
         
@@ -52,7 +52,7 @@ class TriggerPatternCleanupPluginTest {
     
     @Test
     void testGetCleanupId_returnsIdFromAnnotation() {
-        BeforeJUnitPluginV2 plugin = new BeforeJUnitPluginV2();
+        BeforeJUnitPlugin plugin = new BeforeJUnitPlugin();
         
         String cleanupId = plugin.getCleanupId();
         
@@ -61,7 +61,7 @@ class TriggerPatternCleanupPluginTest {
     
     @Test
     void testGetDescription_returnsDescriptionFromAnnotation() {
-        BeforeJUnitPluginV2 plugin = new BeforeJUnitPluginV2();
+        BeforeJUnitPlugin plugin = new BeforeJUnitPlugin();
         
         String description = plugin.getDescription();
         
@@ -70,7 +70,7 @@ class TriggerPatternCleanupPluginTest {
     
     @Test
     void testGetPreview_beforeRefactoring() {
-        BeforeJUnitPluginV2 plugin = new BeforeJUnitPluginV2();
+        BeforeJUnitPlugin plugin = new BeforeJUnitPlugin();
         
         String preview = plugin.getPreview(false);
         
@@ -80,7 +80,7 @@ class TriggerPatternCleanupPluginTest {
     
     @Test
     void testGetPreview_afterRefactoring() {
-        BeforeJUnitPluginV2 plugin = new BeforeJUnitPluginV2();
+        BeforeJUnitPlugin plugin = new BeforeJUnitPlugin();
         
         String preview = plugin.getPreview(true);
         
@@ -91,8 +91,8 @@ class TriggerPatternCleanupPluginTest {
     }
     
     @Test
-    void testAfterJUnitPluginV2_annotation() {
-        AfterJUnitPluginV2 plugin = new AfterJUnitPluginV2();
+    void testAfterJUnitPlugin_annotation() {
+        AfterJUnitPlugin plugin = new AfterJUnitPlugin();
         
         CleanupPattern annotation = plugin.getClass().getAnnotation(CleanupPattern.class);
         
@@ -103,8 +103,8 @@ class TriggerPatternCleanupPluginTest {
     }
     
     @Test
-    void testBeforeClassJUnitPluginV2_annotation() {
-        BeforeClassJUnitPluginV2 plugin = new BeforeClassJUnitPluginV2();
+    void testBeforeClassJUnitPlugin_annotation() {
+        BeforeClassJUnitPlugin plugin = new BeforeClassJUnitPlugin();
         
         CleanupPattern annotation = plugin.getClass().getAnnotation(CleanupPattern.class);
         
@@ -115,8 +115,8 @@ class TriggerPatternCleanupPluginTest {
     }
     
     @Test
-    void testAfterClassJUnitPluginV2_annotation() {
-        AfterClassJUnitPluginV2 plugin = new AfterClassJUnitPluginV2();
+    void testAfterClassJUnitPlugin_annotation() {
+        AfterClassJUnitPlugin plugin = new AfterClassJUnitPlugin();
         
         CleanupPattern annotation = plugin.getClass().getAnnotation(CleanupPattern.class);
         
@@ -127,8 +127,8 @@ class TriggerPatternCleanupPluginTest {
     }
     
     @Test
-    void testTestJUnitPluginV2_annotation() {
-        TestJUnitPluginV2 plugin = new TestJUnitPluginV2();
+    void testTestJUnitPlugin_annotation() {
+        TestJUnitPlugin plugin = new TestJUnitPlugin();
         
         CleanupPattern annotation = plugin.getClass().getAnnotation(CleanupPattern.class);
         
@@ -139,8 +139,8 @@ class TriggerPatternCleanupPluginTest {
     }
     
     @Test
-    void testIgnoreJUnitPluginV2_annotation() {
-        IgnoreJUnitPluginV2 plugin = new IgnoreJUnitPluginV2();
+    void testIgnoreJUnitPlugin_annotation() {
+        IgnoreJUnitPlugin plugin = new IgnoreJUnitPlugin();
         
         CleanupPattern annotation = plugin.getClass().getAnnotation(CleanupPattern.class);
         
@@ -151,8 +151,8 @@ class TriggerPatternCleanupPluginTest {
     }
     
     @Test
-    void testIgnoreJUnitPluginV2_preview_withReason() {
-        IgnoreJUnitPluginV2 plugin = new IgnoreJUnitPluginV2();
+    void testIgnoreJUnitPlugin_preview_withReason() {
+        IgnoreJUnitPlugin plugin = new IgnoreJUnitPlugin();
         
         String previewBefore = plugin.getPreview(false);
         String previewAfter = plugin.getPreview(true);

@@ -91,6 +91,7 @@ public final class JUnitConstants {
 	public static final String ORG_JUNIT_ASSUME = "org.junit.Assume";
 	public static final String ORG_JUNIT_FIX_METHOD_ORDER = "org.junit.FixMethodOrder";
 	public static final String ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORY = "org.junit.experimental.categories.Category";
+	public static final String ORG_JUNIT_FUNCTION_THROWING_RUNNABLE = "org.junit.function.ThrowingRunnable";
 
 	// ===== JUnit 4 Runner Fully Qualified References =====
 	
@@ -131,6 +132,7 @@ public final class JUnitConstants {
 	public static final String ORG_JUNIT_JUPITER_TEST = "org.junit.jupiter.api.Test";
 	public static final String ORG_JUNIT_JUPITER_API_TIMEOUT = "org.junit.jupiter.api.Timeout";
 	public static final String ORG_JUNIT_JUPITER_API_ASSUMPTIONS = "org.junit.jupiter.api.Assumptions";
+	public static final String ORG_JUNIT_JUPITER_API_FUNCTION_EXECUTABLE = "org.junit.jupiter.api.function.Executable";
 	public static final String ORG_JUNIT_JUPITER_API_TAG = "org.junit.jupiter.api.Tag";
 	public static final String ORG_JUNIT_JUPITER_API_NESTED = "org.junit.jupiter.api.Nested";
 	public static final String ORG_JUNIT_JUPITER_API_TEST_METHOD_ORDER = "org.junit.jupiter.api.TestMethodOrder";

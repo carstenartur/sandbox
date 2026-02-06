@@ -43,6 +43,17 @@ jobs:
         java-version: '21'
         distribution: 'temurin'
 
+    - name: Set up Node.js
+      if: github.event_name != 'schedule' || steps.check_commits.outputs.has_commits == 'true'
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install CSS tools for testing
+      if: github.event_name != 'schedule' || steps.check_commits.outputs.has_commits == 'true'
+      run: |
+        npm install -g prettier stylelint stylelint-config-standard
+
     - name: Install Xvfb
       if: github.event_name != 'schedule' || steps.check_commits.outputs.has_commits == 'true'
       run: |

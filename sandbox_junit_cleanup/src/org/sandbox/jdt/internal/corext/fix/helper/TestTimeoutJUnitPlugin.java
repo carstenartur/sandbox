@@ -18,7 +18,6 @@ import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 import java.util.List;
 
 import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MemberValuePair;

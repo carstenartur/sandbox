@@ -179,16 +179,16 @@ Tests for edge cases in JUnit 4→5 migration.
 #### `TriggerPatternPluginTest.java`
 **Location**: `src/org/eclipse/jdt/ui/tests/quickfix/Java8/TriggerPatternPluginTest.java`
 
-Tests for V2 TriggerPattern-based JUnit migration plugins.
-- **Coverage**: V2 plugin implementations using declarative @RewriteRule annotations
+Tests for TriggerPattern-based JUnit migration plugins.
+- **Coverage**: Plugin implementations using declarative @RewriteRule annotations
 - **Tested plugins**:
-  - `BeforeJUnitPluginV2` - @Before → @BeforeEach
-  - `AfterJUnitPluginV2` - @After → @AfterEach
-  - `TestJUnitPluginV2` - @Test migration
-  - `BeforeClassJUnitPluginV2` - @BeforeClass → @BeforeAll
-  - `AfterClassJUnitPluginV2` - @AfterClass → @AfterAll
-  - `IgnoreJUnitPluginV2` - @Ignore → @Disabled (with and without reason)
-- **Purpose**: Verify that V2 TriggerPattern implementations produce correct migrations
+  - `BeforeJUnitPlugin` - @Before → @BeforeEach
+  - `AfterJUnitPlugin` - @After → @AfterEach
+  - `TestJUnitPlugin` - @Test migration
+  - `BeforeClassJUnitPlugin` - @BeforeClass → @BeforeAll
+  - `AfterClassJUnitPlugin` - @AfterClass → @AfterAll
+  - `IgnoreJUnitPlugin` - @Ignore → @Disabled (with and without reason)
+- **Purpose**: Verify that TriggerPattern implementations produce correct migrations
 
 ## Legacy Test Files
 

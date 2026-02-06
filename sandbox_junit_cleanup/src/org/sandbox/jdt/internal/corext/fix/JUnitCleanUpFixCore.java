@@ -26,18 +26,18 @@ import org.eclipse.jdt.internal.corext.refactoring.util.TightSourceRangeComputer
 import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
-import org.sandbox.jdt.internal.corext.fix.helper.AfterClassJUnitPluginV2;
-import org.sandbox.jdt.internal.corext.fix.helper.AfterJUnitPluginV2;
+import org.sandbox.jdt.internal.corext.fix.helper.AfterClassJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.AfterJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.AssertJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.AssertOptimizationJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.AssumeJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.AssumeOptimizationJUnitPlugin;
-import org.sandbox.jdt.internal.corext.fix.helper.BeforeClassJUnitPluginV2;
-import org.sandbox.jdt.internal.corext.fix.helper.BeforeJUnitPluginV2;
+import org.sandbox.jdt.internal.corext.fix.helper.BeforeClassJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.BeforeJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.CategoryJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.ExternalResourceJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.FixMethodOrderJUnitPlugin;
-import org.sandbox.jdt.internal.corext.fix.helper.IgnoreJUnitPluginV2;
+import org.sandbox.jdt.internal.corext.fix.helper.IgnoreJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.ParameterizedTestJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleErrorCollectorJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleExpectedExceptionJUnitPlugin;
@@ -50,9 +50,10 @@ import org.sandbox.jdt.internal.corext.fix.helper.RunWithEnclosedJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RunWithTheoriesJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RunWithCategoriesJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.TestJUnit3Plugin;
-import org.sandbox.jdt.internal.corext.fix.helper.TestJUnitPluginV2;
+import org.sandbox.jdt.internal.corext.fix.helper.TestJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.TestTimeoutJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.TestExpectedJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.ThrowingRunnableJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.LostTestFinderJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
@@ -60,15 +61,15 @@ import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
 public enum JUnitCleanUpFixCore {
 
-	BEFORE(new BeforeJUnitPluginV2()),
-	AFTER(new AfterJUnitPluginV2()),
-	TEST(new TestJUnitPluginV2()),
+	BEFORE(new BeforeJUnitPlugin()),
+	AFTER(new AfterJUnitPlugin()),
+	TEST(new TestJUnitPlugin()),
 	TEST3(new TestJUnit3Plugin()),
 	TEST_TIMEOUT(new TestTimeoutJUnitPlugin()),
 	TEST_EXPECTED(new TestExpectedJUnitPlugin()),
-	BEFORECLASS(new BeforeClassJUnitPluginV2()),
-	AFTERCLASS(new AfterClassJUnitPluginV2()),
-	IGNORE(new IgnoreJUnitPluginV2()),
+	BEFORECLASS(new BeforeClassJUnitPlugin()),
+	AFTERCLASS(new AfterClassJUnitPlugin()),
+	IGNORE(new IgnoreJUnitPlugin()),
 	CATEGORY(new CategoryJUnitPlugin()),
 	RUNWITH_ENCLOSED(new RunWithEnclosedJUnitPlugin()),
 	RUNWITH_THEORIES(new RunWithTheoriesJUnitPlugin()),
@@ -87,7 +88,8 @@ public enum JUnitCleanUpFixCore {
 	RULEERRORCOLLECTOR(new RuleErrorCollectorJUnitPlugin()),
 	EXTERNALRESOURCE(new ExternalResourceJUnitPlugin()),
 	LOSTTESTS(new LostTestFinderJUnitPlugin()),
-	PARAMETERIZED(new ParameterizedTestJUnitPlugin());
+	PARAMETERIZED(new ParameterizedTestJUnitPlugin()),
+	THROWINGRUNNABLE(new ThrowingRunnableJUnitPlugin());
 
 	AbstractTool<ReferenceHolder<Integer, JunitHolder>> junitfound;
 
