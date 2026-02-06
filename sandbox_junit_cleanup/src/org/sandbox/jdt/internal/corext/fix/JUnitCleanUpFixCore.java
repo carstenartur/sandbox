@@ -140,7 +140,7 @@ public enum JUnitCleanUpFixCore {
 				} else {
 					rangeComputer= new TightSourceRangeComputer();
 				}
-				rangeComputer.addTightSourceNode(hit.get(0).minv);
+				rangeComputer.addTightSourceNode(hit.get(0).getMinv());
 				rewrite.setTargetSourceRangeComputer(rangeComputer);
 				junitfound.rewrite(JUnitCleanUpFixCore.this, hit, cuRewrite, group);
 			}

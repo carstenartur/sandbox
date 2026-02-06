@@ -1,6 +1,6 @@
 # JUnit Cleanup Helper Directory Architecture
 
-> **Navigation**: [Main Plugin Architecture](../../../../ARCHITECTURE.md) | [Plugin README](../../../../README.md) | [TODO](../../../../TODO.md)
+> **Navigation**: [Main Plugin Architecture](../../../../../../../ARCHITECTURE.md) | [Plugin README](../../../../../../../README.md) | [TODO](../../../../../../../TODO.md)
 
 ## Overview
 
@@ -444,8 +444,8 @@ protected void process2Rewrite(...) {
 
 ## Related Documentation
 
-- [Main Architecture](../../../../ARCHITECTURE.md) - Overall plugin architecture
-- [TriggerPattern API](../../../../../sandbox_triggerpattern/ARCHITECTURE.md) - Pattern matching engine
+- [Main Architecture](../../../../../../../ARCHITECTURE.md) - Overall plugin architecture
+- [TriggerPattern API](../../../../../../../sandbox_triggerpattern/ARCHITECTURE.md) - Pattern matching engine
 - [JUnit 5 Migration Guide](https://junit.org/junit5/docs/current/user-guide/#migrating-from-junit4) - Official JUnit documentation
 
 ## Version History

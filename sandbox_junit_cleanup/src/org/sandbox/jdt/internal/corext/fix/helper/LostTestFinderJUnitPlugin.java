@@ -267,7 +267,7 @@ public class LostTestFinderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 	@Override
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
-		MethodDeclaration method = (MethodDeclaration) junitHolder.minv;
+		MethodDeclaration method = (MethodDeclaration) junitHolder.getMinv();
 		CompilationUnit cu = (CompilationUnit) method.getRoot();
 		
 		// Determine which @Test to use

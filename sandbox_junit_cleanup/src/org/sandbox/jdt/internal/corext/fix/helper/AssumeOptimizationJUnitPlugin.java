@@ -105,7 +105,7 @@ public class AssumeOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 	@Override
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
-		if (!(junitHolder.minv instanceof MethodInvocation)) {
+		if (!(junitHolder.getMinv() instanceof MethodInvocation)) {
 			return;
 		}
 		

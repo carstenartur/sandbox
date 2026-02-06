@@ -250,11 +250,11 @@ public class JunitHolder {
 	
 	/**
 	 * Sets the placeholder bindings map.
-	 * @param bindings the bindings map
+	 * @param bindings the bindings map, may be {@code null} to reset to an empty map
 	 * @return this holder for fluent API
 	 */
 	public JunitHolder setBindings(Map<String, Object> bindings) {
-		this.bindings = bindings;
+		this.bindings = bindings != null ? bindings : new HashMap<>();
 		return this;
 	}
 	
@@ -386,8 +386,12 @@ public class JunitHolder {
 		 * Sets the placeholder bindings map.
 		 * @param bindings the bindings map
 		 * @return this builder
+		 * @throws IllegalArgumentException if {@code bindings} is {@code null}
 		 */
 		public Builder bindings(Map<String, Object> bindings) {
+			if (bindings == null) {
+				throw new IllegalArgumentException("bindings must not be null");
+			}
 			holder.setBindings(bindings);
 			return this;
 		}
