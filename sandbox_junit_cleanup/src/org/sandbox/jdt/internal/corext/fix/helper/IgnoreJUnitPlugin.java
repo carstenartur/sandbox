@@ -37,7 +37,7 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
  * <p>This plugin handles both marker and single-member annotations, preserving
  * the ignore reason when present.</p>
  * 
- * <p>This refactored version uses the TriggerPattern-based declarative architecture.
+ * <p>Uses the TriggerPattern-based declarative architecture.
  * Note: @RewriteRule cannot be used here because we need to handle three different
  * annotation patterns (marker, single-member, and normal), so we keep the custom
  * process2Rewrite() implementation.</p>
@@ -82,7 +82,7 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
     description = "Migrate @Ignore to @Disabled",
     displayName = "JUnit 4 @Ignore → JUnit 5 @Disabled"
 )
-public class IgnoreJUnitPluginV2 extends TriggerPatternCleanupPlugin {
+public class IgnoreJUnitPlugin extends TriggerPatternCleanupPlugin {
 
 	@Override
 	protected List<Pattern> getPatterns() {
@@ -173,6 +173,6 @@ public class IgnoreJUnitPluginV2 extends TriggerPatternCleanupPlugin {
 
 	@Override
 	public String toString() {
-		return "Ignore (TriggerPattern)"; //$NON-NLS-1$
+		return "Ignore"; //$NON-NLS-1$
 	}
 }

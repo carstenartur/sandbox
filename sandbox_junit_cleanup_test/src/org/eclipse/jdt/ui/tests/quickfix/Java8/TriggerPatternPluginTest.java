@@ -26,18 +26,18 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava17;
 
 /**
- * Tests for V2 TriggerPattern-based JUnit migration plugins.
- * The V2 plugins use declarative @RewriteRule annotations with TriggerPattern framework
- * for simplified implementation. These tests verify that the V2 implementations
- * produce the same correct migrations as the original plugins.
+ * Tests for TriggerPattern-based JUnit migration plugins.
+ * The plugins use declarative @RewriteRule annotations with TriggerPattern framework
+ * for simplified implementation. These tests verify that the implementations
+ * produce the correct migrations.
  * 
- * Tested V2 Plugins:
- * - BeforeJUnitPluginV2
- * - AfterJUnitPluginV2
- * - TestJUnitPluginV2
- * - BeforeClassJUnitPluginV2
- * - AfterClassJUnitPluginV2
- * - IgnoreJUnitPluginV2
+ * Tested Plugins:
+ * - BeforeJUnitPlugin
+ * - AfterJUnitPlugin
+ * - TestJUnitPlugin
+ * - BeforeClassJUnitPlugin
+ * - AfterClassJUnitPlugin
+ * - IgnoreJUnitPlugin
  */
 public class TriggerPatternPluginTest {
 
@@ -52,7 +52,7 @@ public class TriggerPatternPluginTest {
 	}
 
 	@Test
-	public void beforeJUnitPluginV2_migrates_before_annotation() throws CoreException {
+	public void beforeJUnitPlugin_migrates_before_annotation() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
 				"""
@@ -97,7 +97,7 @@ public class TriggerPatternPluginTest {
 	}
 
 	@Test
-	public void afterJUnitPluginV2_migrates_after_annotation() throws CoreException {
+	public void afterJUnitPlugin_migrates_after_annotation() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
 				"""
@@ -142,7 +142,7 @@ public class TriggerPatternPluginTest {
 	}
 
 	@Test
-	public void testJUnitPluginV2_migrates_test_annotation() throws CoreException {
+	public void testJUnitPlugin_migrates_test_annotation() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
 				"""
@@ -174,7 +174,7 @@ public class TriggerPatternPluginTest {
 	}
 
 	@Test
-	public void beforeClassJUnitPluginV2_migrates_beforeClass_annotation() throws CoreException {
+	public void beforeClassJUnitPlugin_migrates_beforeClass_annotation() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
 				"""
@@ -219,7 +219,7 @@ public class TriggerPatternPluginTest {
 	}
 
 	@Test
-	public void afterClassJUnitPluginV2_migrates_afterClass_annotation() throws CoreException {
+	public void afterClassJUnitPlugin_migrates_afterClass_annotation() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
 				"""
@@ -264,7 +264,7 @@ public class TriggerPatternPluginTest {
 	}
 
 	@Test
-	public void ignoreJUnitPluginV2_preserves_reason() throws CoreException {
+	public void ignoreJUnitPlugin_preserves_reason() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
 				"""
@@ -301,7 +301,7 @@ public class TriggerPatternPluginTest {
 	}
 
 	@Test
-	public void ignoreJUnitPluginV2_migrates_without_reason() throws CoreException {
+	public void ignoreJUnitPlugin_migrates_without_reason() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
 				"""

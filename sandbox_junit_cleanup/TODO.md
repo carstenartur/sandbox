@@ -88,7 +88,7 @@ HelperVisitor.forMethodCalls(CLASS, Set.of("method1", "method2"))
 Added declarative `@RewriteRule` annotation to eliminate boilerplate in simple annotation migration plugins:
 
 **Problem Solved**:
-- All TriggerPattern V2 plugins had nearly identical `process2Rewrite()` implementations (~15-20 lines of boilerplate)
+- All TriggerPattern plugins had nearly identical `process2Rewrite()` implementations (~15-20 lines of boilerplate)
 - Only differences: annotation names and import statements
 - High risk of copy-paste errors
 
@@ -111,7 +111,7 @@ Added declarative `@RewriteRule` annotation to eliminate boilerplate in simple a
     removeImports = {"org.junit.Before"},
     addImports = {"org.junit.jupiter.api.BeforeEach"}
 )
-public class BeforeJUnitPluginV2 extends TriggerPatternCleanupPlugin {
+public class BeforeJUnitPlugin extends TriggerPatternCleanupPlugin {
     // process2Rewrite() now automatic - only getPreview() needed!
 }
 ```
@@ -128,8 +128,8 @@ public class BeforeJUnitPluginV2 extends TriggerPatternCleanupPlugin {
 - NormalAnnotation with named parameters requires custom implementation
 
 **Plugins Using @RewriteRule**:
-- `BeforeJUnitPluginV2` - @Before → @BeforeEach
-- `AfterJUnitPluginV2` - @After → @AfterEach
+- `BeforeJUnitPlugin` - @Before → @BeforeEach
+- `AfterJUnitPlugin` - @After → @AfterEach
 
 **Future Enhancements** (see Pending section):
 - Multi-placeholder support for complex transformations

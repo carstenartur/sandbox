@@ -21,66 +21,66 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 import org.sandbox.jdt.triggerpattern.api.RewriteRule;
 
 /**
- * Migrates JUnit 4 @AfterClass annotations to JUnit 5 @AfterAll.
+ * Migrates JUnit 4 @Before annotations to JUnit 5 @BeforeEach.
  * 
- * <p>This is a simplified version using TriggerPattern-based declarative architecture,
- * refactored from the original plugin to reduce boilerplate.</p>
+ * <p>Uses TriggerPattern-based declarative architecture
+ * with @RewriteRule annotation to eliminate boilerplate code.</p>
  * 
  * <p><b>Before:</b></p>
  * <pre>
- * import org.junit.AfterClass;
+ * import org.junit.Before;
  * 
  * public class MyTest {
- *     {@literal @}AfterClass
- *     public static void tearDownAfterClass() { }
+ *     {@literal @}Before
+ *     public void setUp() { }
  * }
  * </pre>
  * 
  * <p><b>After:</b></p>
  * <pre>
- * import org.junit.jupiter.api.AfterAll;
+ * import org.junit.jupiter.api.BeforeEach;
  * 
  * public class MyTest {
- *     {@literal @}AfterAll
- *     public static void tearDownAfterClass() { }
+ *     {@literal @}BeforeEach
+ *     public void setUp() { }
  * }
  * </pre>
  * 
  * @since 1.3.0
  */
 @CleanupPattern(
-    value = "@AfterClass",
+    value = "@Before",
     kind = PatternKind.ANNOTATION,
-    qualifiedType = ORG_JUNIT_AFTERCLASS,
-    cleanupId = "cleanup.junit.afterclass",
-    description = "Migrate @AfterClass to @AfterAll",
-    displayName = "JUnit 4 @AfterClass → JUnit 5 @AfterAll"
+    qualifiedType = ORG_JUNIT_BEFORE,
+    cleanupId = "cleanup.junit.before",
+    description = "Migrate @Before to @BeforeEach",
+    displayName = "JUnit 4 @Before → JUnit 5 @BeforeEach"
 )
 @RewriteRule(
-    replaceWith = "@AfterAll",
-    removeImports = {ORG_JUNIT_AFTERCLASS},
-    addImports = {ORG_JUNIT_JUPITER_API_AFTER_ALL}
+    replaceWith = "@BeforeEach",
+    removeImports = {ORG_JUNIT_BEFORE},
+    addImports = {ORG_JUNIT_JUPITER_API_BEFORE_EACH}
 )
-public class AfterClassJUnitPluginV2 extends TriggerPatternCleanupPlugin {
+public class BeforeJUnitPlugin extends TriggerPatternCleanupPlugin {
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {
 			return """
-				@AfterAll
-				public static void tearDownAfterClass() {
+				@BeforeEach
+				public void setUp() {
 				}
 				"""; //$NON-NLS-1$
 		}
 		return """
-			@AfterClass
-			public static void tearDownAfterClass() {
+			@Before
+			public void setUp() {
 			}
 			"""; //$NON-NLS-1$
 	}
 
 	@Override
 	public String toString() {
-		return "AfterClass (TriggerPattern)"; //$NON-NLS-1$
+		return "Before"; //$NON-NLS-1$
 	}
 }
