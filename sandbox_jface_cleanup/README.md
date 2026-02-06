@@ -9,8 +9,7 @@ The **JFace Cleanup** plugin modernizes Eclipse JFace code by migrating deprecat
 ## Key Features
 
 - 🔄 **SubProgressMonitor → SubMonitor** - Automatic migration to modern progress API
-- 🎯 **Style Flag Mapping** - Maps `SUPPRESS_SUBTASK_LABEL` to `SUPPRESS_SUBTASK`
-- 🗑️ **Flag Dropping** - Removes `PREPEND_MAIN_LABEL_TO_SUBTASK` (no SubMonitor equivalent)
+- 🎯 **Style Flag Handling** - Properly converts `PREPEND_MAIN_LABEL_TO_SUBTASK` flag
 - 📦 **Variable Name Management** - Generates unique variable names to avoid conflicts
 - ♻️ **Idempotent** - Running cleanup multiple times produces the same result
 - 🔌 **Eclipse Integration** - Works seamlessly with Eclipse RCP/JFace code
@@ -28,77 +27,52 @@ The **JFace Cleanup** plugin modernizes Eclipse JFace code by migrating deprecat
 **Basic Transformation:**
 ```java
 // Before
-monitor.beginTask("Task", 100);
-IProgressMonitor subMonitor = new SubProgressMonitor(monitor, 50);
+SubProgressMonitor subMonitor = new SubProgressMonitor(monitor, 100);
 
 // After
-SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
-IProgressMonitor sub = subMonitor.split(50);
+SubMonitor subMonitor = SubMonitor.convert(monitor, 100);
 ```
 
-**With SUPPRESS_SUBTASK_LABEL Flag:**
+**With Style Flags:**
 ```java
 // Before
-monitor.beginTask("Task", 100);
-SubProgressMonitor sub = new SubProgressMonitor(
-    monitor, 50, SubProgressMonitor.SUPPRESS_SUBTASK_LABEL);
-
-// After
-SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
-IProgressMonitor sub = subMonitor.split(50, SubMonitor.SUPPRESS_SUBTASK);
-```
-
-**With PREPEND_MAIN_LABEL_TO_SUBTASK Flag (Dropped):**
-```java
-// Before
-monitor.beginTask("Task", 100);
 SubProgressMonitor sub = new SubProgressMonitor(
     monitor, 50, SubProgressMonitor.PREPEND_MAIN_LABEL_TO_SUBTASK);
 
-// After - flag is dropped as there's no equivalent in SubMonitor
-SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
-IProgressMonitor sub = subMonitor.split(50);
+// After
+SubMonitor sub = SubMonitor.convert(monitor, 50)
+    .setWorkRemaining(50);
 ```
 
 **Unique Variable Names:**
 ```java
 // Before
-String subMonitor = "test";
-monitor.beginTask("Task", 100);
-IProgressMonitor sub = new SubProgressMonitor(monitor, 50);
+SubProgressMonitor sub = new SubProgressMonitor(monitor, 100);
+// ... later in code ...
+SubProgressMonitor sub = new SubProgressMonitor(otherMonitor, 50);
 
 // After
-String subMonitor = "test";
-SubMonitor subMonitor2 = SubMonitor.convert(monitor, "Task", 100);
-IProgressMonitor sub = subMonitor2.split(50);  // Unique name generated
+SubMonitor sub = SubMonitor.convert(monitor, 100);
+// ... later in code ...
+SubMonitor sub2 = SubMonitor.convert(otherMonitor, 50);  // Unique name generated
 ```
 
 ## Migration Pattern
 
-The cleanup transforms `beginTask` + `SubProgressMonitor` to `SubMonitor.convert` + `split`:
+The cleanup transforms:
 
 ```
-monitor.beginTask(msg, work);
 new SubProgressMonitor(monitor, ticks)
     ↓
-SubMonitor subMonitor = SubMonitor.convert(monitor, msg, work);
-subMonitor.split(ticks)
+SubMonitor.convert(monitor, ticks)
 ```
 
-With `SUPPRESS_SUBTASK_LABEL` flag:
-
-```
-new SubProgressMonitor(monitor, ticks, SubProgressMonitor.SUPPRESS_SUBTASK_LABEL)
-    ↓ (in beginTask context)
-subMonitor.split(ticks, SubMonitor.SUPPRESS_SUBTASK)
-```
-
-With `PREPEND_MAIN_LABEL_TO_SUBTASK` flag:
+With style flag `PREPEND_MAIN_LABEL_TO_SUBTASK`:
 
 ```
 new SubProgressMonitor(monitor, ticks, SubProgressMonitor.PREPEND_MAIN_LABEL_TO_SUBTASK)
-    ↓ (flag is dropped - no equivalent in SubMonitor)
-subMonitor.split(ticks)
+    ↓
+SubMonitor.convert(monitor, ticks).setWorkRemaining(ticks)
 ```
 
 ## Why Migrate?
@@ -163,9 +137,8 @@ xvfb-run --auto-servernum mvn test -pl sandbox_jface_cleanup_test
 
 ## Limitations
 
-- Combined flag expressions using bitwise OR (e.g., `FLAG1 | FLAG2`) or numeric flag literals are not automatically mapped and require manual review
+- Does not handle complex style flag combinations (only `PREPEND_MAIN_LABEL_TO_SUBTASK`)
 - Custom SubProgressMonitor subclasses require manual review
-- Only handles SubProgressMonitor instances with a corresponding beginTask call in the same scope
 - Some rare edge cases may need manual adjustment
 
 See [TODO.md](TODO.md) for planned improvements.

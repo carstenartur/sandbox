@@ -65,7 +65,6 @@ public class DefaultCleanUpOptionsInitializer implements ICleanUpOptionsInitiali
 		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP_4_FIX_METHOD_ORDER, CleanUpOptions.FALSE);
 		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETIMEOUT, CleanUpOptions.FALSE);
 		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP_4_LOST_TESTS, CleanUpOptions.FALSE);
-		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP_4_THROWINGRUNNABLE, CleanUpOptions.FALSE);
 
 		options.setOption(MYCleanUpConstants.JUNIT3_CLEANUP, CleanUpOptions.FALSE);
 		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP_3_TEST, CleanUpOptions.FALSE);

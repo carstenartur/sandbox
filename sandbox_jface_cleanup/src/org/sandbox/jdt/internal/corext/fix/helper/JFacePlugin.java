@@ -33,13 +33,10 @@ import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
-import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
-import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.SimpleName;
-import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
-import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodeFactory;
@@ -191,6 +188,11 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				return true;
 			}, s -> ASTNodes.getTypedAncestor(s, Block.class))
 			.callClassInstanceCreationVisitor(SubProgressMonitor.class, (node, holder) -> {
+				// Guard against empty holder
+				if (holder.isEmpty()) {
+					return true;
+				}
+				MonitorHolder mh = holder.get(holder.size() - 1);
 				List<?> arguments = node.arguments();
 				if (arguments.isEmpty()) {
 					return true;
@@ -206,23 +208,15 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 					firstArgName = sn.getIdentifier();
 				}
 				
-				// Check if this SubProgressMonitor is associated with a beginTask
-				if (!holder.isEmpty() && firstArgName != null) {
-					MonitorHolder mh = holder.get(holder.size() - 1);
-					if (mh.minvname.equals(firstArgName)) {
-						logDebug("Found SubProgressMonitor construction at position " + node.getStartPosition() + " for variable '" + firstArgName + "' with beginTask"); //$NON-NLS-1$ //$NON-NLS-2$
-						mh.setofcic.add(node);
-					}
+				if (firstArgName == null || !mh.minvname.equals(firstArgName)) {
+					return true;
 				}
-				
+				logDebug("Found SubProgressMonitor construction at position " + node.getStartPosition() + " for variable '" + firstArgName + "'"); //$NON-NLS-1$ //$NON-NLS-2$
+				mh.setofcic.add(node);
+				operations.add(fixcore.rewrite(holder));
 				return true;
-			}, s -> ASTNodes.getTypedAncestor(s, Block.class))
+			})
 			.build(compilationUnit);
-		
-		// Add operations for beginTask-associated monitors
-		if (!dataholder.isEmpty()) {
-			operations.add(fixcore.rewrite(dataholder));
-		}
 	}
 
 	/**
@@ -269,8 +263,6 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 		for (Entry<Integer, MonitorHolder> entry : hit.entrySet()) {
 
 			MonitorHolder mh = entry.getValue();
-			
-			// Handle beginTask + SubProgressMonitor pattern
 			MethodInvocation minv = mh.minv;
 			
 			// Generate unique identifier name for SubMonitor variable
@@ -297,7 +289,12 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				 *
 				 */
 
-				// Create the static call to SubMonitor.convert
+				SingleVariableDeclaration newVariableDeclarationStatement = ast.newSingleVariableDeclaration();
+
+				newVariableDeclarationStatement.setName(ast.newSimpleName(identifier));
+				newVariableDeclarationStatement
+				.setType(ast.newSimpleType(addImport(SubMonitor.class.getCanonicalName(), cuRewrite, ast)));
+
 				MethodInvocation staticCall = ast.newMethodInvocation();
 				staticCall.setExpression(ASTNodeFactory.newName(ast, SubMonitor.class.getSimpleName()));
 				staticCall.setName(ast.newSimpleName("convert")); //$NON-NLS-1$
@@ -308,27 +305,13 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(arguments.get(0))));
 				staticCallArguments
 				.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(arguments.get(1))));
+				newVariableDeclarationStatement.setInitializer(staticCall);
 
-				// Create the variable declaration fragment (name + initializer)
-				VariableDeclarationFragment fragment = ast.newVariableDeclarationFragment();
-				fragment.setName(ast.newSimpleName(identifier));
-				fragment.setInitializer(staticCall);
-
-				// Create the variable declaration statement (type + fragment)
-				VariableDeclarationStatement varDeclStmt = ast.newVariableDeclarationStatement(fragment);
-				varDeclStmt.setType(ast.newSimpleType(addImport(SubMonitor.class.getCanonicalName(), cuRewrite, ast)));
-
-				// Replace the entire ExpressionStatement (parent of beginTask), not just the MethodInvocation
-				ASTNodes.replaceButKeepComment(rewrite, minv.getParent(), varDeclStmt, group);
+				ASTNodes.replaceButKeepComment(rewrite, minv, newVariableDeclarationStatement, group);
 				logDebug("Created SubMonitor.convert call: " + staticCall); //$NON-NLS-1$
 			}
 			
 			for (ClassInstanceCreation submon : mh.setofcic) {
-				if (nodesprocessed.contains(submon)) {
-					continue;
-				}
-				nodesprocessed.add(submon);
-				
 				List<?> arguments = submon.arguments();
 				if (arguments.size() < 2) {
 					continue;
@@ -344,11 +327,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				 *   -> subMonitor.split(work)
 				 *   
 				 * 3-arg: new SubProgressMonitor(monitor, work, flags)
-				 *   -> subMonitor.split(work, mappedFlags)
-				 *   
-				 * Flag mapping:
-				 *   - SUPPRESS_SUBTASK_LABEL -> SUPPRESS_SUBTASK
-				 *   - PREPEND_MAIN_LABEL_TO_SUBTASK -> dropped (no equivalent)
+				 *   -> subMonitor.split(work, flags)
 				 */
 				MethodInvocation newMethodInvocation2 = ast.newMethodInvocation();
 				newMethodInvocation2.setName(ast.newSimpleName("split")); //$NON-NLS-1$
@@ -361,13 +340,8 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				
 				// Check for 3-arg constructor (with flags)
 				if (arguments.size() >= 3) {
-					Expression flagsArg = (Expression) arguments.get(2);
-					Expression mappedFlag = mapSubProgressMonitorFlags(flagsArg, ast, cuRewrite);
-					
-					// Only add the flag if it wasn't dropped (PREPEND_MAIN_LABEL_TO_SUBTASK is dropped)
-					if (mappedFlag != null) {
-						splitCallArguments.add(mappedFlag);
-					}
+					ASTNode flagsArg = (ASTNode) arguments.get(2);
+					splitCallArguments.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(flagsArg)));
 				}
 				
 				ASTNodes.replaceButKeepComment(rewrite, submon, newMethodInvocation2, group);
@@ -403,63 +377,6 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 			candidate = baseName + counter;
 		}
 		return candidate;
-	}
-
-	/**
-	 * Maps SubProgressMonitor flags to SubMonitor flags.
-	 * 
-	 * <p>Flag mappings:</p>
-	 * <ul>
-	 * <li>{@code SubProgressMonitor.SUPPRESS_SUBTASK_LABEL} → {@code SubMonitor.SUPPRESS_SUBTASK}</li>
-	 * <li>{@code SubProgressMonitor.PREPEND_MAIN_LABEL_TO_SUBTASK} → removed (no equivalent)</li>
-	 * </ul>
-	 * 
-	 * <p><b>Limitations:</b> This method only handles single flag constants. Combined flag expressions
-	 * using bitwise OR (e.g., {@code FLAG1 | FLAG2}) or numeric literals are not mapped and will be
-	 * passed through unchanged, which may result in incorrect behavior. Such cases require manual review.</p>
-	 * 
-	 * @param flagExpr the original flag expression from SubProgressMonitor constructor
-	 * @param ast the AST to create new nodes
-	 * @param cuRewrite the compilation unit rewrite context
-	 * @return the mapped flag expression for SubMonitor, or null if flag should be dropped
-	 */
-	private Expression mapSubProgressMonitorFlags(Expression flagExpr, AST ast, CompilationUnitRewrite cuRewrite) {
-		// Handle field access: SubProgressMonitor.SUPPRESS_SUBTASK_LABEL
-		if (flagExpr instanceof QualifiedName) {
-			QualifiedName qn = (QualifiedName) flagExpr;
-			String fieldName = qn.getName().getIdentifier();
-			
-			if ("SUPPRESS_SUBTASK_LABEL".equals(fieldName)) { //$NON-NLS-1$
-				// Map to SubMonitor.SUPPRESS_SUBTASK
-				QualifiedName newFlag = ast.newQualifiedName(
-					ast.newSimpleName(SubMonitor.class.getSimpleName()),
-					ast.newSimpleName("SUPPRESS_SUBTASK")); //$NON-NLS-1$
-				return newFlag;
-			} else if ("PREPEND_MAIN_LABEL_TO_SUBTASK".equals(fieldName)) { //$NON-NLS-1$
-				// Drop this flag - no equivalent in SubMonitor
-				return null;
-			}
-		}
-		
-		// Handle FieldAccess syntax (e.g., expression.FIELD_NAME)
-		if (flagExpr instanceof FieldAccess) {
-			FieldAccess fa = (FieldAccess) flagExpr;
-			String fieldName = fa.getName().getIdentifier();
-			
-			if ("SUPPRESS_SUBTASK_LABEL".equals(fieldName)) { //$NON-NLS-1$
-				// Map to SubMonitor.SUPPRESS_SUBTASK
-				FieldAccess newFlag = ast.newFieldAccess();
-				newFlag.setExpression(ast.newSimpleName(SubMonitor.class.getSimpleName()));
-				newFlag.setName(ast.newSimpleName("SUPPRESS_SUBTASK")); //$NON-NLS-1$
-				return newFlag;
-			} else if ("PREPEND_MAIN_LABEL_TO_SUBTASK".equals(fieldName)) { //$NON-NLS-1$
-				// Drop this flag - no equivalent in SubMonitor
-				return null;
-			}
-		}
-		
-		// For other expressions (constants, variables), pass through unchanged
-		return ASTNodes.createMoveTarget(cuRewrite.getASTRewrite(), ASTNodes.getUnparenthesedExpression(flagExpr));
 	}
 
 	@Override

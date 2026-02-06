@@ -202,20 +202,6 @@ public class MYCleanUpConstants {
 	 */
 	public static final String JUNIT_CLEANUP_4_LOST_TESTS= "cleanup.junitcleanup_4_lost_tests"; //$NON-NLS-1$
 	/**
-	 * Migrate JUnit 4 ThrowingRunnable to JUnit 5 Executable.
-	 * <p>
-	 * Transforms:
-	 * <ul>
-	 * <li>org.junit.function.ThrowingRunnable → org.junit.jupiter.api.function.Executable</li>
-	 * <li>ThrowingRunnable.run() → Executable.execute()</li>
-	 * </ul>
-	 * <p>
-	 * Possible values: {TRUE, FALSE}
-	 * <p>
-	 * @see <a href="https://github.com/eclipse-platform/eclipse.platform/issues/903">Eclipse Platform Issue #903</a>
-	 */
-	public static final String JUNIT_CLEANUP_4_THROWINGRUNNABLE= "cleanup.junitcleanup_4_throwingrunnable"; //$NON-NLS-1$
-	/**
 	 *
 	 */
 	public static final String JFACE_CLEANUP= "cleanup.jfacecleanup"; //$NON-NLS-1$
