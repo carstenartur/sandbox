@@ -33,6 +33,48 @@ mvn -T 1C verify                    # Standard (without Product/Updatesite)
 mvn -Pproduct,repo -T 1C verify     # Full build
 ```
 
+## Refactoring Guardrails
+
+⚠️ **CRITICAL**: This repository is designed for **easy porting to Eclipse JDT**. The following rules are **hard constraints** that MUST NOT be violated:
+
+### 1. ⚠️ Do NOT introduce new base classes that don't exist in Eclipse JDT
+
+Each cleanup class (e.g., `UseExplicitEncodingCleanUpCore`, `JFaceCleanUpCore`) directly extends Eclipse JDT's `AbstractCleanUp`. **Do NOT create intermediate base classes** like `AbstractSandboxCleanUpCore` — this would break the 1:1 porting correspondence with Eclipse JDT's internal structure.
+
+### 2. ⚠️ Do NOT "de-duplicate" boilerplate in `*CleanUpCore` classes
+
+The apparent code duplication across cleanup core classes (e.g., similar `createFix()`, `getStepDescriptions()`, `getRequirements()` patterns) is **intentional**. Each instance carries plugin-specific variation (different enum types, different parameters, different `nodesProcessed` patterns). The pattern matches how Eclipse JDT's internal cleanup classes work. **De-duplication would break the porting process.**
+
+### 3. ⚠️ Do NOT create shared interfaces for cleanup fix enums
+
+Each `*FixCore` enum (e.g., `JfaceCleanUpFixCore`, `UseExplicitEncodingFixCore`, `UseFunctionalCallFixCore`) has plugin-specific method signatures. **Do NOT try to unify them** behind a common interface — the differences are meaningful and reflect the diversity in Eclipse JDT's cleanup framework.
+
+### 4. ⚠️ Do NOT restructure package layout
+
+The `org.sandbox.jdt.internal.*` package structure maps directly to `org.eclipse.jdt.internal.*`. **Do NOT reorganize packages** for "better structure" — the current layout enables mechanical find/replace when porting to JDT. Example: `org.sandbox.jdt.internal.corext.fix` → `org.eclipse.jdt.internal.corext.fix`.
+
+### 5. ⚠️ Always read ARCHITECTURE.md before proposing changes to a plugin
+
+Each plugin directory contains an `ARCHITECTURE.md` that documents design decisions and constraints. **Before proposing any structural change, read this file first.** If the change conflicts with documented design decisions, **do NOT propose it**.
+
+### 6. ⚠️ The `MY` prefix in `MYCleanUpConstants` is intentional
+
+**Do NOT rename this class.** The `MY` prefix exists specifically to avoid naming conflicts with Eclipse JDT's `CleanUpConstants`. When porting to Eclipse JDT, constants are merged into the upstream `CleanUpConstants` class and the `MY` prefix is simply removed.
+
+### 7. ✅ What IS safe to refactor
+
+The following changes are acceptable and encouraged:
+
+- **Bug fixes** within existing classes
+- **New cleanup plugins** following the established pattern
+- **New helper/utility methods** within `sandbox_common` (if they apply to multiple plugins)
+- **Extracting logic into helper classes within the same plugin** (as was done with `AssertionRefactorer`, `ImportHelper`, etc. in `sandbox_junit_cleanup`)
+- **Test improvements** (new test cases, better coverage, parameterized tests)
+- **Documentation improvements** (README.md, ARCHITECTURE.md, TODO.md updates)
+- **Build/CI improvements** (GitHub Actions, Maven configuration)
+
+**Why These Guardrails Matter**: Without these explicit rules, AI assistants naturally see repeated patterns across cleanup modules and propose DRY refactoring — which is normally good practice but is harmful here because it breaks the JDT portability invariant. The sandbox project deliberately sacrifices some code elegance to maintain a structure that can be mechanically ported to Eclipse JDT with minimal friction.
+
 ## Repository Overview
 
 This is a sandbox repository for experimenting with Eclipse JDT cleanups, build strategies, and various Eclipse plugins. The project contains multiple Eclipse plugin modules focused on code quality improvements and automated refactoring.
