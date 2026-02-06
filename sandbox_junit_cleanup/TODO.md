@@ -88,7 +88,7 @@ HelperVisitor.forMethodCalls(CLASS, Set.of("method1", "method2"))
 Added declarative `@RewriteRule` annotation to eliminate boilerplate in simple annotation migration plugins:
 
 **Problem Solved**:
-- All TriggerPattern V2 plugins had nearly identical `process2Rewrite()` implementations (~15-20 lines of boilerplate)
+- All TriggerPattern plugins had nearly identical `process2Rewrite()` implementations (~15-20 lines of boilerplate)
 - Only differences: annotation names and import statements
 - High risk of copy-paste errors
 
