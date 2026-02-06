@@ -123,6 +123,21 @@ public final class PreconditionsChecker {
 	}
 
 	/**
+	 * Checks if the loop contains a nested loop.
+	 * 
+	 * <p>
+	 * This includes nested enhanced-for loops, traditional for loops, while loops,
+	 * and do-while loops. This flag is set during the loop analysis in
+	 * {@link #analyzeLoop()}.
+	 * </p>
+	 * 
+	 * @return true if a nested loop was detected, false otherwise
+	 */
+	public boolean hasNestedLoop() {
+		return containsNestedLoop;
+	}
+
+	/**
 	 * Checks if the loop contains a reducer pattern.
 	 * 
 	 * <p>

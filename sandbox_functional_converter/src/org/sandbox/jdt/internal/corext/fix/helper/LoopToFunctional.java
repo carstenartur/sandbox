@@ -156,7 +156,11 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 		PreconditionsChecker pc = new PreconditionsChecker(visited, (CompilationUnit) visited.getRoot());
 		if (!pc.isSafeToRefactor()) {
 			// Loop cannot be safely refactored to functional style
-			// Return true to continue visiting children - inner loops may still be convertible
+			// If it failed because of nested loops, try to process inner enhanced-for loops
+			if (pc.hasNestedLoop()) {
+				processInnerLoops(fixcore, operations, nodesprocessed, visited, dataHolder, sharedDataHolder);
+			}
+			// Return false - we don't visit children automatically, we handled it above
 			return false;
 		}
 		// Check if the loop can be analyzed for stream conversion
@@ -172,6 +176,39 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 		// Return false to prevent visiting children since this loop was converted
 		// (children are now part of the lambda expression)
 		return false;
+	}
+
+	/**
+	 * Processes inner enhanced-for loops when the outer loop cannot be converted
+	 * due to containing nested loops.
+	 * 
+	 * <p>This method visits the body of the outer loop to find inner EnhancedForStatements
+	 * and attempts to convert them independently. Each inner loop gets its own
+	 * PreconditionsChecker analysis.</p>
+	 * 
+	 * @param fixcore the fix core instance
+	 * @param operations the set to add operations to
+	 * @param nodesprocessed the set of already processed nodes
+	 * @param outerLoop the outer enhanced-for loop that contains nested loops
+	 * @param dataHolder the data holder for functional information
+	 * @param sharedDataHolder the shared data holder
+	 */
+	private void processInnerLoops(UseFunctionalCallFixCore fixcore,
+			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed,
+			EnhancedForStatement outerLoop, ReferenceHolder<Integer, FunctionalHolder> dataHolder,
+			ReferenceHolder<ASTNode, Object> sharedDataHolder) {
+		
+		// Visit the body of the outer loop to find inner EnhancedForStatements
+		outerLoop.getBody().accept(new ASTVisitor() {
+			@Override
+			public boolean visit(EnhancedForStatement innerLoop) {
+				// Process this inner loop
+				processFoundNode(fixcore, operations, nodesprocessed, innerLoop, dataHolder, sharedDataHolder);
+				// Return false to prevent automatic traversal of nested children
+				// (processFoundNode handles that)
+				return false;
+			}
+		});
 	}
 
 	@Override
