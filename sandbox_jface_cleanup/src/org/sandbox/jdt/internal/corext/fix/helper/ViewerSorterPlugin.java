@@ -75,27 +75,21 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 
 	/** Deprecated ViewerSorter class */
 	private static final String VIEWER_SORTER = "org.eclipse.jface.viewers.ViewerSorter"; //$NON-NLS-1$
-	private static final String VIEWER_SORTER_SIMPLE = "ViewerSorter"; //$NON-NLS-1$
 	
 	/** Replacement ViewerComparator class */
 	private static final String VIEWER_COMPARATOR = "org.eclipse.jface.viewers.ViewerComparator"; //$NON-NLS-1$
-	private static final String VIEWER_COMPARATOR_SIMPLE = "ViewerComparator"; //$NON-NLS-1$
 	
 	/** Deprecated TreePathViewerSorter class */
 	private static final String TREEPATH_VIEWER_SORTER = "org.eclipse.ui.navigator.TreePathViewerSorter"; //$NON-NLS-1$
-	private static final String TREEPATH_VIEWER_SORTER_SIMPLE = "TreePathViewerSorter"; //$NON-NLS-1$
 	
 	/** Replacement TreePathViewerComparator class */
 	private static final String TREEPATH_VIEWER_COMPARATOR = "org.eclipse.jface.viewers.TreePathViewerComparator"; //$NON-NLS-1$
-	private static final String TREEPATH_VIEWER_COMPARATOR_SIMPLE = "TreePathViewerComparator"; //$NON-NLS-1$
 	
 	/** Deprecated CommonViewerSorter class */
 	private static final String COMMON_VIEWER_SORTER = "org.eclipse.ui.navigator.CommonViewerSorter"; //$NON-NLS-1$
-	private static final String COMMON_VIEWER_SORTER_SIMPLE = "CommonViewerSorter"; //$NON-NLS-1$
 	
 	/** Replacement CommonViewerComparator class */
 	private static final String COMMON_VIEWER_COMPARATOR = "org.eclipse.ui.navigator.CommonViewerComparator"; //$NON-NLS-1$
-	private static final String COMMON_VIEWER_COMPARATOR_SIMPLE = "CommonViewerComparator"; //$NON-NLS-1$
 
 	/**
 	 * Holder for ViewerSorter-related transformation data.
@@ -349,7 +343,6 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 							holder.methodNamesToReplace.add(methodName);
 						}
 					}
-				}
 				}
 				return true;
 			}
