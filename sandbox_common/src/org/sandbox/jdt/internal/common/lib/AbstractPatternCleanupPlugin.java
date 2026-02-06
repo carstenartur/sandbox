@@ -27,7 +27,6 @@ import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
-import org.sandbox.jdt.triggerpattern.api.Match;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
 import org.sandbox.jdt.triggerpattern.api.RewriteRule;
 import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
