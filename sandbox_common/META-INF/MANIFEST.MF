@@ -23,6 +23,7 @@ Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.e4.core.services
 Automatic-Module-Name: sandbox.common
 Export-Package: org.sandbox.jdt.internal.common,
+ org.sandbox.jdt.internal.common.lib,
  org.sandbox.jdt.internal.corext.fix2,
  org.sandbox.jdt.internal.corext.util,
  org.sandbox.jdt.triggerpattern.api,

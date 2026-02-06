@@ -36,16 +36,20 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
  * Generic base class that connects TriggerPattern with any cleanup framework.
  * This class is framework-agnostic and can be used by any cleanup plugin, not just JUnit.
  * 
- * <p>Subclasses must:</p>
- * <ol>
- *   <li>Add {@link CleanupPattern} annotation to the class</li>
- *   <li>Implement {@link #createHolder(Match)} to create the appropriate holder</li>
- *   <li>Implement {@link #process2Rewrite} for the AST transformation</li>
- *   <li>Implement {@link #getPreview(boolean)} for UI preview</li>
- *   <li>Implement framework-specific {@link #find} method</li>
- * </ol>
+ * <p>It provides utilities for extracting {@link Pattern}s from {@link CleanupPattern}
+ * annotations and for driving the {@link TriggerPatternEngine}, but it does not
+ * define any framework-specific lifecycle methods.
  * 
- * <p>Alternative approach: Override {@link #getPatterns()} instead of using annotation.</p>
+ * <p>Typical usage:</p>
+ * <ul>
+ *   <li>Annotate a concrete cleanup class with {@link CleanupPattern}, or</li>
+ *   <li>Override {@link #getPatterns()} to supply one or more patterns programmatically.</li>
+ * </ul>
+ * 
+ * <p>Framework-specific integration (for example, mapping matches to UI previews or
+ * test framework hooks such as JUnit's {@code AbstractTool}) should be implemented
+ * in adapter or subclass layers that extend or use this utility class. Those adapter
+ * classes are responsible for defining and implementing their own lifecycle methods.</p>
  * 
  * @param <T> Type of holder used by the cleanup framework
  * @since 1.3.0
@@ -87,8 +91,8 @@ public abstract class AbstractPatternCleanupPlugin<T> {
             return List.of(pattern);
         }
         throw new IllegalStateException(
-            "Plugin " + getClass().getSimpleName() + 
-            " must either be annotated with @CleanupPattern or override getPatterns() method to define patterns");
+            "Plugin " + getClass().getSimpleName() +  //$NON-NLS-1$
+            " must either be annotated with @CleanupPattern or override getPatterns() method to define patterns"); //$NON-NLS-1$
     }
     
     /**
@@ -98,7 +102,7 @@ public abstract class AbstractPatternCleanupPlugin<T> {
      */
     public String getCleanupId() {
         CleanupPattern annotation = this.getClass().getAnnotation(CleanupPattern.class);
-        return annotation != null ? annotation.cleanupId() : "";
+        return annotation != null ? annotation.cleanupId() : ""; //$NON-NLS-1$
     }
     
     /**
@@ -108,7 +112,7 @@ public abstract class AbstractPatternCleanupPlugin<T> {
      */
     public String getDescription() {
         CleanupPattern annotation = this.getClass().getAnnotation(CleanupPattern.class);
-        return annotation != null ? annotation.description() : "";
+        return annotation != null ? annotation.description() : ""; //$NON-NLS-1$
     }
     
     /**
@@ -147,7 +151,7 @@ public abstract class AbstractPatternCleanupPlugin<T> {
     // - @AnnotationName or @AnnotationName($placeholder) or @AnnotationName($placeholder$)
     // - MethodName.method($args) or MethodName.method($args$)
     private static final java.util.regex.Pattern REPLACEMENT_PATTERN = 
-        java.util.regex.Pattern.compile("@?([A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*)(?:\\((.*)\\))?");
+        java.util.regex.Pattern.compile("@?([A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*)(?:\\((.*)\\))?"); //$NON-NLS-1$
     
     /**
      * Provides default implementation using @RewriteRule annotation.
@@ -161,6 +165,7 @@ public abstract class AbstractPatternCleanupPlugin<T> {
      * NormalAnnotation with named parameters like {@code @Ignore(value="reason")} is not supported.
      * Plugins that need such transformations must override this method.
      * 
+     * @param pluginClass the class to check for @RewriteRule annotation
      * @param group the text edit group for tracking changes
      * @param rewriter the AST rewriter
      * @param ast the AST instance
@@ -168,14 +173,14 @@ public abstract class AbstractPatternCleanupPlugin<T> {
      * @param holder the holder containing information for the transformation
      * @param oldAnnotation the annotation to be replaced
      */
-    protected void applyRewriteRule(TextEditGroup group, ASTRewrite rewriter, AST ast,
+    protected void applyRewriteRule(Class<?> pluginClass, TextEditGroup group, ASTRewrite rewriter, AST ast,
             ImportRewrite importRewriter, T holder, Annotation oldAnnotation) {
         
-        RewriteRule rewriteRule = this.getClass().getAnnotation(RewriteRule.class);
+        RewriteRule rewriteRule = pluginClass.getAnnotation(RewriteRule.class);
         if (rewriteRule == null) {
             throw new UnsupportedOperationException(
-                "Plugin " + getClass().getSimpleName() + 
-                " must be annotated with @RewriteRule or override the rewrite method");
+                "Plugin " + pluginClass.getSimpleName() +  //$NON-NLS-1$
+                " must be annotated with @RewriteRule or override the rewrite method"); //$NON-NLS-1$
         }
         
         // Process the replacement pattern
@@ -193,7 +198,7 @@ public abstract class AbstractPatternCleanupPlugin<T> {
             
             // Get the placeholder value from the holder
             String placeholder = replacementInfo.placeholderName;
-            Expression value = getBindingFromHolder(holder, "$" + placeholder);
+            Expression value = getBindingFromHolder(holder, "$" + placeholder); //$NON-NLS-1$
             
             /*
              * Fallback: if no binding is found for the placeholder, reuse the value from the
@@ -235,8 +240,8 @@ public abstract class AbstractPatternCleanupPlugin<T> {
                 String className = staticImportToAdd.substring(0, lastDot);
                 String methodName = staticImportToAdd.substring(lastDot + 1);
                 // Handle wildcard imports (*)
-                if ("*".equals(methodName)) {
-                    importRewriter.addStaticImport(className, "*", false);
+                if ("*".equals(methodName)) { //$NON-NLS-1$
+                    importRewriter.addStaticImport(className, "*", false); //$NON-NLS-1$
                 } else {
                     importRewriter.addStaticImport(className, methodName, false);
                 }
@@ -277,7 +282,7 @@ public abstract class AbstractPatternCleanupPlugin<T> {
             return new AnnotationReplacementInfo(name, placeholderPart);
         }
         
-        throw new IllegalArgumentException("Invalid replacement pattern: " + pattern);
+        throw new IllegalArgumentException("Invalid replacement pattern: " + pattern); //$NON-NLS-1$
     }
     
     /**

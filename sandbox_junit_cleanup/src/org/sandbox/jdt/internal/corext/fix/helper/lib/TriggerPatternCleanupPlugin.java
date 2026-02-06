@@ -28,18 +28,20 @@ import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.common.lib.AbstractPatternCleanupPlugin;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
+import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
 import org.sandbox.jdt.triggerpattern.api.Match;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
+import org.sandbox.jdt.triggerpattern.api.RewriteRule;
 
 /**
- * JUnit-specific extension of AbstractPatternCleanupPlugin that connects TriggerPattern with the JUnit Cleanup framework.
+ * JUnit-specific extension that connects TriggerPattern with the JUnit Cleanup framework.
  * Reduces boilerplate from ~80 lines to ~20 lines per plugin.
  * 
  * <p>Subclasses must:</p>
  * <ol>
- *   <li>Add {@link org.sandbox.jdt.triggerpattern.api.CleanupPattern} annotation to the class</li>
+ *   <li>Add {@link CleanupPattern} annotation to the class</li>
  *   <li>Implement {@link #createHolder(Match)} to create the JunitHolder</li>
- *   <li>Implement {@link #process2Rewrite} for the AST transformation</li>
+ *   <li>Implement {@link #process2Rewrite} for the AST transformation (or use {@link RewriteRule})</li>
  *   <li>Implement {@link #getPreview(boolean)} for UI preview</li>
  * </ol>
  * 
@@ -49,8 +51,8 @@ import org.sandbox.jdt.triggerpattern.api.Pattern;
  */
 public abstract class TriggerPatternCleanupPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
     
-    /** Delegate to the generic pattern cleanup plugin for pattern matching logic */
-    private final AbstractPatternCleanupPlugin<JunitHolder> delegate = new AbstractPatternCleanupPlugin<JunitHolder>() {
+    /** Access to the pattern matching engine */
+    private static final AbstractPatternCleanupPlugin<JunitHolder> PATTERN_HELPER = new AbstractPatternCleanupPlugin<JunitHolder>() {
         @Override
         protected Expression getBindingFromHolder(JunitHolder holder, String key) {
             return holder.getBindingAsExpression(key);
@@ -59,42 +61,54 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
     
     /**
      * Returns the Pattern extracted from the @CleanupPattern annotation.
-     * Delegates to the base class implementation.
      * 
      * @return the pattern for matching, or null if no @CleanupPattern annotation is present
      */
     public Pattern getPattern() {
-        return delegate.getPattern();
+        CleanupPattern annotation = this.getClass().getAnnotation(CleanupPattern.class);
+        if (annotation == null) {
+            return null; // Subclass uses getPatterns() instead
+        }
+        String qualifiedType = annotation.qualifiedType().isEmpty() ? null : annotation.qualifiedType();
+        return new Pattern(annotation.value(), annotation.kind(), qualifiedType);
     }
     
     /**
      * Returns the patterns to match in the compilation unit.
-     * Delegates to the base class implementation.
+     * Default implementation returns a single pattern from @CleanupPattern annotation.
+     * Subclasses can override to provide multiple patterns.
      * 
      * @return list of patterns to match
+     * @throws IllegalStateException if neither @CleanupPattern annotation is present nor getPatterns() is overridden
      */
     protected List<Pattern> getPatterns() {
-        return delegate.getPatterns();
+        Pattern pattern = getPattern();
+        if (pattern != null) {
+            return List.of(pattern);
+        }
+        throw new IllegalStateException(
+            "Plugin " + getClass().getSimpleName() +  //$NON-NLS-1$
+            " must either be annotated with @CleanupPattern or override getPatterns() method to define patterns"); //$NON-NLS-1$
     }
     
     /**
      * Returns the cleanup ID from the @CleanupPattern annotation.
-     * Delegates to the base class implementation.
      * 
      * @return the cleanup ID, or empty string if annotation is not present or cleanupId is not set
      */
     public String getCleanupId() {
-        return delegate.getCleanupId();
+        CleanupPattern annotation = this.getClass().getAnnotation(CleanupPattern.class);
+        return annotation != null ? annotation.cleanupId() : ""; //$NON-NLS-1$
     }
     
     /**
      * Returns the description from the @CleanupPattern annotation.
-     * Delegates to the base class implementation.
      * 
      * @return the description, or empty string if annotation is not present or description is not set
      */
     public String getDescription() {
-        return delegate.getDescription();
+        CleanupPattern annotation = this.getClass().getAnnotation(CleanupPattern.class);
+        return annotation != null ? annotation.description() : ""; //$NON-NLS-1$
     }
     
     /**
@@ -152,7 +166,7 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
         ReferenceHolder<Integer, JunitHolder> dataHolder = new ReferenceHolder<>();
         
         for (Pattern pattern : getPatterns()) {
-            List<Match> matches = delegate.getEngine().findMatches(compilationUnit, pattern);
+            List<Match> matches = PATTERN_HELPER.getEngine().findMatches(compilationUnit, pattern);
             
             for (Match match : matches) {
                 ASTNode node = match.getMatchedNode();
@@ -164,7 +178,7 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
                 
                 // Validate qualified type if specified
                 if (pattern.getQualifiedType() != null) {
-                    if (!delegate.validateQualifiedType(node, pattern.getQualifiedType())) {
+                    if (!PATTERN_HELPER.validateQualifiedType(node, pattern.getQualifiedType())) {
                         continue;
                     }
                 }
@@ -189,7 +203,6 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
     
     /**
      * Provides default implementation of process2Rewrite using @RewriteRule annotation.
-     * Delegates to the base class for annotation replacement logic.
      * Subclasses can override this method if they need custom rewrite logic.
      * 
      * @param group the text edit group for tracking changes
@@ -203,13 +216,13 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
             ImportRewrite importRewriter, JunitHolder junitHolder) {
         
         Annotation oldAnnotation = junitHolder.getAnnotation();
-        delegate.applyRewriteRule(group, rewriter, ast, importRewriter, junitHolder, oldAnnotation);
+        
+        // Delegate the actual rewrite to the helper, passing our class for annotation lookup
+        PATTERN_HELPER.applyRewriteRule(this.getClass(), group, rewriter, ast, importRewriter, junitHolder, oldAnnotation);
     }
     
     /**
      * Replaces a marker annotation with a new one and updates imports.
-     * This is a common operation for simple annotation migrations like
-     * {@code @Before → @BeforeEach}, {@code @After → @AfterEach}, etc.
      * Delegates to the base class implementation.
      * 
      * @param group the text edit group for tracking changes
@@ -231,7 +244,7 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
             String removeImport, 
             String addImport) {
         
-        delegate.replaceMarkerAnnotation(group, rewriter, ast, importRewriter, oldAnnotation, 
+        PATTERN_HELPER.replaceMarkerAnnotation(group, rewriter, ast, importRewriter, oldAnnotation, 
                 newAnnotationName, removeImport, addImport);
     }
 }
