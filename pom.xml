@@ -33,6 +33,7 @@
 		<module>sandbox_test_commons</module>
 		<module>sandbox_css_cleanup</module>
 		<module>sandbox_css_cleanup_feature</module>
+		<module>sandbox_css_cleanup_test</module>
 		<module>sandbox_encoding_quickfix</module>
 		<module>sandbox_encoding_quickfix_feature</module>
 		<module>sandbox_encoding_quickfix_test</module>
@@ -383,6 +384,21 @@ See README.md for more information.
 			<dependency>
 				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_test_commons</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_css_cleanup</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_css_cleanup_feature</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_css_cleanup_test</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
