@@ -36,6 +36,7 @@ import java.util.*;
 public final class PreconditionsChecker {
 	private final Statement loop;
 //    private final CompilationUnit compilationUnit;
+	private final Set<ASTNode> nodesprocessed;
 	private final Set<VariableDeclarationFragment> innerVariables = new HashSet<>();
 	private boolean containsBreak = false;
 	private boolean containsLabeledContinue = false;
@@ -52,16 +53,35 @@ public final class PreconditionsChecker {
 	private Statement collectStatement = null;
 	private String collectTargetVariable = null;
 	/**
-	 * Constructor for PreconditionsChecker.
+	 * Constructor for PreconditionsChecker (backward compatibility).
 	 * 
 	 * @param loop            the statement containing the loop to analyze (must not
 	 *                        be null)
 	 * @param compilationUnit the compilation unit containing the loop
 	 */
 	public PreconditionsChecker(Statement loop, CompilationUnit compilationUnit) {
+		this(loop, compilationUnit, null);
+	}
+
+	/**
+	 * Constructor for PreconditionsChecker with support for bottom-up processing.
+	 * 
+	 * <p>When processing loops bottom-up (via endVisit), inner loops are processed
+	 * before outer loops. Already-processed inner loops are added to {@code nodesprocessed}
+	 * and should not block conversion of the outer loop, since they will be converted
+	 * to forEach() during rewrite.</p>
+	 * 
+	 * @param loop            the statement containing the loop to analyze (must not
+	 *                        be null)
+	 * @param compilationUnit the compilation unit containing the loop
+	 * @param nodesprocessed  the set of already processed nodes (inner loops that
+	 *                        will be converted), or null if not using bottom-up processing
+	 */
+	public PreconditionsChecker(Statement loop, CompilationUnit compilationUnit, Set<ASTNode> nodesprocessed) {
 		// Set loop field first - if null, we'll handle it gracefully in the catch block
 		this.loop = loop;
 //        this.compilationUnit = compilationUnit;
+		this.nodesprocessed = nodesprocessed != null ? nodesprocessed : Collections.emptySet();
 
 		// Analyze the loop in a try-catch to prevent partial initialization
 		// if any exception occurs during analysis
@@ -302,7 +322,8 @@ public final class PreconditionsChecker {
 			// If we encounter another EnhancedForStatement inside the loop body,
 			// it's a nested loop - mark as not convertible
 			// We check that this is NOT the same node as the outer loop
-			if (node != loop) {
+			// AND that it hasn't already been processed (bottom-up processing)
+			if (node != loop && !nodesprocessed.contains(node)) {
 				containsNestedLoop = true;
 			}
 			return true;
