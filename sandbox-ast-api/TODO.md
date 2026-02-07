@@ -36,16 +36,29 @@
   - [x] Comprehensive tests (14 tests)
 - [x] Add expression-level tests (37 new tests, total 98 tests)
 
-## Phase 3: Statement Wrappers (PLANNED)
-- [ ] Create base ASTStmt interface
-- [ ] Implement EnhancedForWrapper
-  - [ ] Fluent iterable() access
-  - [ ] parameter() access
-  - [ ] body() access
-- [ ] Implement WhileLoopWrapper
-- [ ] Implement ForLoopWrapper
-- [ ] Implement IfStatementWrapper
-- [ ] Add statement-level tests
+## Phase 3: Statement Wrappers (COMPLETED)
+- [x] Create base ASTStmt interface
+- [x] Implement EnhancedForStmt wrapper
+  - [x] Fluent iterable() access
+  - [x] parameter() access
+  - [x] body() access
+  - [x] Comprehensive tests (10 tests)
+- [x] Implement WhileLoopStmt wrapper
+  - [x] Fluent condition() access
+  - [x] body() access
+  - [x] Comprehensive tests (10 tests)
+- [x] Implement ForLoopStmt wrapper
+  - [x] Fluent initializers() access
+  - [x] condition() access
+  - [x] updaters() access
+  - [x] body() access
+  - [x] Comprehensive tests (13 tests)
+- [x] Implement IfStatementStmt wrapper
+  - [x] Fluent condition() access
+  - [x] thenStatement() access
+  - [x] elseStatement() access
+  - [x] Comprehensive tests (12 tests)
+- [x] Add statement-level tests (45 new tests, total 143 tests)
 
 ## Phase 4: FluentVisitor Builder (PLANNED)
 - [ ] Design fluent visitor API
