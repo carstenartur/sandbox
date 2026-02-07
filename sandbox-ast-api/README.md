@@ -9,7 +9,7 @@ The `sandbox-ast-api` module provides a fluent, type-safe wrapper API for Abstra
 Replace verbose, error-prone instanceof checks and deeply nested visitor patterns with a modern, readable fluent API:
 
 ```java
-// Before: Verbose, error-prone
+// Before: Verbose, error-prone (16 lines)
 if (node.getExpression() instanceof SimpleName) {
     SimpleName name = (SimpleName) node.getExpression();
     IBinding binding = name.resolveBinding();
@@ -22,15 +22,22 @@ if (node.getExpression() instanceof SimpleName) {
     }
 }
 
-// After: Fluent, type-safe
-ASTNode.wrap(node)
-    .asMethodInvocation()
-    .receiver()
-    .filter(expr -> expr.isSimpleName())
-    .flatMap(ASTExpr::resolveVariable)
+// After: Fluent, type-safe (7 lines)
+node.asMethodInvocation()
+    .flatMap(MethodInvocationExpr::receiver)
+    .filter(ASTExpr::isSimpleName)
+    .flatMap(e -> e.asSimpleName())
+    .flatMap(SimpleNameExpr::resolveVariable)
     .filter(var -> var.hasType("java.util.List"))
     .ifPresent(var -> { /* logic */ });
 ```
+
+**Key Benefits:**
+- **50% less code** - Reduce boilerplate by half
+- **Type-safe** - No manual casting, compiler-checked types
+- **Composable** - Chain operations using Optional and Stream APIs
+- **Testable** - Pure Java records, easy to unit test
+- **Zero JDT dependencies** - Reusable outside Eclipse context
 
 ## Architecture
 
@@ -205,6 +212,42 @@ This module can be used:
 ## Performance
 
 See `sandbox-benchmarks` module for performance comparisons between old and new styles. The fluent API has minimal overhead compared to raw operations.
+
+## Real-World Examples
+
+The `org.sandbox.ast.api.examples` package contains practical examples demonstrating the API's value:
+
+**Example 1: Find List.add() calls**
+```java
+public static List<MethodInvocationExpr> findListAddCalls(List<ASTExpr> expressions) {
+    return expressions.stream()
+        .flatMap(expr -> expr.asMethodInvocation().stream())
+        .filter(mi -> mi.method().map(MethodInfo::isListAdd).orElse(false))
+        .toList();
+}
+```
+
+**Example 2: Find string concatenations**
+```java
+public static List<InfixExpr> findStringConcatenations(List<ASTExpr> expressions) {
+    return expressions.stream()
+        .flatMap(expr -> expr.asInfix().stream())
+        .filter(InfixExpr::isStringConcatenation)
+        .toList();
+}
+```
+
+**Example 3: Find static method calls**
+```java
+public static List<MethodInvocationExpr> findStaticMethodCalls(List<ASTExpr> expressions) {
+    return expressions.stream()
+        .flatMap(expr -> expr.asMethodInvocation().stream())
+        .filter(MethodInvocationExpr::isStatic)
+        .toList();
+}
+```
+
+See `FluentAPIExamples.java` for 10+ complete working examples.
 
 ## Future Enhancements
 
