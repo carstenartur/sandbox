@@ -80,7 +80,7 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataHolder = new ReferenceHolder<>();
+		ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
 		
 		// NOTE: We only process JUnit 5 (Assertions) calls here.
 		// JUnit 4 (Assert) calls are handled by AssertJUnitPlugin which does migration.

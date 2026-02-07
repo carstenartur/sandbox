@@ -47,7 +47,7 @@ public class FixMethodOrderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataHolder= new ReferenceHolder<>();
+		ReferenceHolder<Integer, JunitHolder> dataHolder= ReferenceHolder.createIndexed();
 		
 		// Use Fluent API to find @FixMethodOrder annotations
 		HelperVisitor.forAnnotation(ORG_JUNIT_FIX_METHOD_ORDER)

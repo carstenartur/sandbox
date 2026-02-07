@@ -77,7 +77,7 @@ public class IteratorLoopToFunctional extends AbstractFunctionalCall<ASTNode> {
                 nodesProcessed.add(previousStmt);
                 nodesProcessed.add(node);
                 
-                ReferenceHolder<ASTNode, Object> holder = new ReferenceHolder<>();
+                ReferenceHolder<ASTNode, Object> holder = ReferenceHolder.create();
                 holder.put(node, pattern);
                 
                 operations.add(fixCore.rewrite(node, holder));
@@ -102,7 +102,7 @@ public class IteratorLoopToFunctional extends AbstractFunctionalCall<ASTNode> {
                 
                 nodesProcessed.add(node);
                 
-                ReferenceHolder<ASTNode, Object> holder = new ReferenceHolder<>();
+                ReferenceHolder<ASTNode, Object> holder = ReferenceHolder.create();
                 holder.put(node, pattern);
                 
                 operations.add(fixCore.rewrite(node, holder));

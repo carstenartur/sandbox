@@ -88,7 +88,7 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		
-		ReferenceHolder<Integer, JunitHolder> dataHolder = new ReferenceHolder<>();
+		ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
 		Set<ASTNode> found = new HashSet<>();
 		
 		// Visit the compilation unit to find ThrowingRunnable usages

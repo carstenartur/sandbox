@@ -71,9 +71,11 @@ public class URLDecoderDecodeExplicitEncoding extends AbstractExplicitEncoding<M
 			 */
 			return;
 		}
-		ReferenceHolder<ASTNode, Object> datah= new ReferenceHolder<>();
-		HelperVisitor.callMethodInvocationVisitor(URLDecoder.class, METHOD_DECODE, compilationUnit, datah, nodesprocessed,
-				(visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));
+		ReferenceHolder<ASTNode, Object> datah= ReferenceHolder.createForNodes();
+		HelperVisitor.forMethodCall(URLDecoder.class, METHOD_DECODE)
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(datah, (visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));
 	}
 
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore,

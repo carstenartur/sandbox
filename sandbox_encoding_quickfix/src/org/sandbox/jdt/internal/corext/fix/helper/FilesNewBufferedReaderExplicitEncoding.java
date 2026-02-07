@@ -55,10 +55,12 @@ public class FilesNewBufferedReaderExplicitEncoding extends AbstractExplicitEnco
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ChangeBehavior cb) {
-		ReferenceHolder<ASTNode, Object> datah = new ReferenceHolder<>();
+		ReferenceHolder<ASTNode, Object> datah = ReferenceHolder.createForNodes();
 		getCharsetConstants().clear();
-		HelperVisitor.callMethodInvocationVisitor(Files.class, METHOD_NEW_BUFFERED_READER, compilationUnit, datah,
-				nodesprocessed, (visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));
+		HelperVisitor.forMethodCall(Files.class, METHOD_NEW_BUFFERED_READER)
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(datah, (visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));
 	}
 
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore,

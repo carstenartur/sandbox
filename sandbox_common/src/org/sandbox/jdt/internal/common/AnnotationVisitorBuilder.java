@@ -16,7 +16,6 @@ package org.sandbox.jdt.internal.common;
 import java.util.function.BiPredicate;
 
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.NormalAnnotation;
@@ -68,7 +67,7 @@ import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
  * @author Carsten Hammer
  * @since 1.15
  */
-public class AnnotationVisitorBuilder extends HelperVisitorBuilder<Annotation> {
+public class AnnotationVisitorBuilder extends HelperVisitorBuilder<ASTNode> {
     
     private final String annotationFQN;
     private boolean includeImports = false;
@@ -117,7 +116,7 @@ public class AnnotationVisitorBuilder extends HelperVisitorBuilder<Annotation> {
             if (!shouldContinue[0]) {
                 return false;
             }
-            boolean result = processor.test((ASTNode) node, h);
+            boolean result = processor.test(node, h);
             if (!result) {
                 shouldContinue[0] = false;
             }
@@ -132,7 +131,7 @@ public class AnnotationVisitorBuilder extends HelperVisitorBuilder<Annotation> {
             if (!shouldContinue[0]) {
                 return false;
             }
-            boolean result = processor.test((ASTNode) node, h);
+            boolean result = processor.test(node, h);
             if (!result) {
                 shouldContinue[0] = false;
             }
@@ -147,7 +146,7 @@ public class AnnotationVisitorBuilder extends HelperVisitorBuilder<Annotation> {
             if (!shouldContinue[0]) {
                 return false;
             }
-            boolean result = processor.test((ASTNode) node, h);
+            boolean result = processor.test(node, h);
             if (!result) {
                 shouldContinue[0] = false;
             }
@@ -162,7 +161,8 @@ public class AnnotationVisitorBuilder extends HelperVisitorBuilder<Annotation> {
             if (!shouldContinue[0]) {
                 return false;
             }
-            boolean result = processor.test((ASTNode) node, h);
+            // For imports, pass as ASTNode (polymorphic handling when imports are included)
+            boolean result = processor.test(node, h);
             if (!result) {
                 shouldContinue[0] = false;
             }

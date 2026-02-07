@@ -101,8 +101,8 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 		detectAndProcessConsecutiveLoops(fixcore, compilationUnit, operations, nodesprocessed);
 		
 		// Continue with individual loop processing for non-grouped loops
-		ReferenceHolder<Integer, FunctionalHolder> dataHolder= new ReferenceHolder<>();
-		ReferenceHolder<ASTNode, Object> sharedDataHolder = new ReferenceHolder<>();
+		ReferenceHolder<Integer, FunctionalHolder> dataHolder= ReferenceHolder.create();
+		ReferenceHolder<ASTNode, Object> sharedDataHolder = ReferenceHolder.create();
 		HelperVisitor.callEnhancedForStatementVisitor(compilationUnit, dataHolder, nodesprocessed,
 				(visited, aholder) -> processFoundNode(fixcore, operations, nodesprocessed, visited, aholder, sharedDataHolder),(visited, aholder) -> {});
 	}

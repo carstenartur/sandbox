@@ -76,7 +76,7 @@ public class CategoryJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, J
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataHolder= new ReferenceHolder<>();
+		ReferenceHolder<Integer, JunitHolder> dataHolder= ReferenceHolder.createIndexed();
 		HelperVisitor.forAnnotation(ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORY)
 			.in(compilationUnit)
 			.excluding(nodesprocessed)

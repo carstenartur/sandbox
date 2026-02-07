@@ -64,8 +64,11 @@ public class PrintWriterExplicitEncoding extends AbstractExplicitEncoding<ClassI
 			 */
 			return;
 		}
-		ReferenceHolder<ASTNode, Object> datah= new ReferenceHolder<>();
-		HelperVisitor.callClassInstanceCreationVisitor(PrintWriter.class, compilationUnit, datah, nodesprocessed, (visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));
+		ReferenceHolder<ASTNode, Object> datah= ReferenceHolder.createForNodes();
+		HelperVisitor.forClassInstanceCreation(PrintWriter.class)
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(datah, (visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));
 	}
 
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore, Set<CompilationUnitRewriteOperation> operations,

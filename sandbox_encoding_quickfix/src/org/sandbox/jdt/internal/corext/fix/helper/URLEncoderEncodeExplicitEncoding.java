@@ -71,10 +71,12 @@ public class URLEncoderEncodeExplicitEncoding extends AbstractExplicitEncoding<M
 			 */
 			return;
 		}
-		ReferenceHolder<ASTNode, Object> datah= new ReferenceHolder<>();
+		ReferenceHolder<ASTNode, Object> datah= ReferenceHolder.createForNodes();
 		getCharsetConstants().clear();
-		HelperVisitor.callMethodInvocationVisitor(URLEncoder.class, METHOD_ENCODE, compilationUnit, datah, nodesprocessed,
-				(visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));
+		HelperVisitor.forMethodCall(URLEncoder.class, METHOD_ENCODE)
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(datah, (visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));
 	}
 
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore,
