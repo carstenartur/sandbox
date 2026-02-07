@@ -15,9 +15,20 @@ package org.sandbox.jdt.internal.corext.fix;
 
 import java.util.Set;
 
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.jdt.internal.corext.refactoring.util.TightSourceRangeComputer;
+import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.sandbox.jdt.internal.corext.fix.helper.AbstractTool;
+import org.sandbox.jdt.internal.corext.fix.helper.IntToEnumHelper;
+import org.sandbox.jdt.internal.corext.fix.helper.IntToEnumHelper.IntConstantHolder;
+import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
 /**
  * Enum containing different types of int to enum transformations.
@@ -26,12 +37,17 @@ public enum IntToEnumFixCore {
 	/**
 	 * Convert if-else chains using int constants to switch with enum.
 	 */
-	IF_ELSE_TO_SWITCH("Convert if-else to switch with enum");
+	IF_ELSE_TO_SWITCH(new IntToEnumHelper());
 
-	private final String description;
+	AbstractTool<ReferenceHolder<Integer, IntConstantHolder>> intToEnumHelper;
 
-	IntToEnumFixCore(String description) {
-		this.description = description;
+	@SuppressWarnings("unchecked")
+	IntToEnumFixCore(AbstractTool<? extends ReferenceHolder<Integer, IntConstantHolder>> helper) {
+		this.intToEnumHelper = (AbstractTool<ReferenceHolder<Integer, IntConstantHolder>>) helper;
+	}
+
+	public String getPreview(boolean enabled) {
+		return intToEnumHelper.getPreview(enabled);
 	}
 
 	/**
@@ -41,63 +57,41 @@ public enum IntToEnumFixCore {
 	 * @param operations Set to add operations to
 	 * @param nodesProcessed Set of already processed nodes
 	 */
-	public void findOperations(CompilationUnit compilationUnit, 
-			Set<CompilationUnitRewriteOperation> operations,
-			Set<ASTNode> nodesProcessed) {
-		// TODO: Implement AST visitor to find int constant patterns
-		// For now, this is a placeholder implementation
-		
-		// The actual implementation would:
-		// 1. Visit all FieldDeclarations to find int constants
-		// 2. Visit IfStatements to find if-else chains
-		// 3. Analyze if the constants are used in the if-else chain
-		// 4. Create rewrite operations to:
-		//    - Create an enum type
-		//    - Replace constant declarations with enum constants
-		//    - Convert if-else to switch statement
-		//    - Update method signatures and variable types
+	public void findOperations(final CompilationUnit compilationUnit,
+			final Set<CompilationUnitRewriteOperationWithSourceRange> operations, 
+			final Set<ASTNode> nodesProcessed) {
+		intToEnumHelper.find(this, compilationUnit, operations, nodesProcessed);
 	}
 
-	/**
-	 * Get preview text for this transformation.
-	 * 
-	 * @param enabled Whether this transformation is enabled
-	 * @return Preview text
-	 */
-	public String getPreview(boolean enabled) {
-		if (!enabled) {
-			return "";
-		}
-		
-		return """
-				// Before:
-				public static final int STATUS_PENDING = 0;
-				public static final int STATUS_APPROVED = 1;
-				
-				if (status == STATUS_PENDING) {
-				    // handle pending
-				} else if (status == STATUS_APPROVED) {
-				    // handle approved
+	public CompilationUnitRewriteOperationWithSourceRange rewrite(final ReferenceHolder<Integer, IntConstantHolder> hit) {
+		return new CompilationUnitRewriteOperationWithSourceRange() {
+			@Override
+			public void rewriteASTInternal(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel)
+					throws CoreException {
+				TextEditGroup group = createTextEditGroup(MultiFixMessages.IntToEnumCleanUp_description, cuRewrite);
+				TightSourceRangeComputer rangeComputer;
+				ASTRewrite rewrite = cuRewrite.getASTRewrite();
+				if (rewrite.getExtendedSourceRangeComputer() instanceof TightSourceRangeComputer) {
+					rangeComputer = (TightSourceRangeComputer) rewrite.getExtendedSourceRangeComputer();
+				} else {
+					rangeComputer = new TightSourceRangeComputer();
 				}
 				
-				// After:
-				public enum Status {
-				    PENDING, APPROVED
+				// Get the first IntConstantHolder from the hit map
+				IntConstantHolder holder = hit.values().stream().findFirst().orElse(null);
+				if (holder != null) {
+					// TODO: Add tight source node when holder structure is complete
+					// rangeComputer.addTightSourceNode(holder.someNode);
 				}
 				
-				switch (status) {
-				    case PENDING:
-				        // handle pending
-				        break;
-				    case APPROVED:
-				        // handle approved
-				        break;
-				}
-				""";
+				rewrite.setTargetSourceRangeComputer(rangeComputer);
+				intToEnumHelper.rewrite(IntToEnumFixCore.this, hit, cuRewrite, group);
+			}
+		};
 	}
 
 	@Override
 	public String toString() {
-		return description;
+		return "Convert if-else to switch with enum";
 	}
 }

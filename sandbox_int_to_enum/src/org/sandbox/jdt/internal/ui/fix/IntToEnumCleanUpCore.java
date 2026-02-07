@@ -14,6 +14,8 @@
 package org.sandbox.jdt.internal.ui.fix;
 
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.INT_TO_ENUM_CLEANUP;
+import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.IntToEnumCleanUpFix_refactor;
+import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.IntToEnumCleanUp_description;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -28,7 +30,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
@@ -68,7 +70,7 @@ public class IntToEnumCleanUpCore extends AbstractCleanUp {
 			return null;
 		}
 
-		Set<CompilationUnitRewriteOperation> operations = new LinkedHashSet<>();
+		Set<CompilationUnitRewriteOperationWithSourceRange> operations = new LinkedHashSet<>();
 		Set<ASTNode> nodesProcessed = new HashSet<>();
 		computeFixSet.forEach(i -> i.findOperations(compilationUnit, operations, nodesProcessed));
 		
@@ -76,24 +78,19 @@ public class IntToEnumCleanUpCore extends AbstractCleanUp {
 			return null;
 		}
 
-		CompilationUnitRewriteOperation[] array = operations.toArray(new CompilationUnitRewriteOperation[0]);
-		return new CompilationUnitRewriteOperationsFixCore(
-				MultiFixMessages.IntToEnumCleanUpFix_refactor, 
-				compilationUnit, 
-				array);
+		CompilationUnitRewriteOperationWithSourceRange[] array = operations.toArray(
+				new CompilationUnitRewriteOperationWithSourceRange[0]);
+		return new CompilationUnitRewriteOperationsFixCore(IntToEnumCleanUpFix_refactor, compilationUnit, array);
 	}
 
 	@Override
 	public String[] getStepDescriptions() {
 		List<String> result = new ArrayList<>();
 		if (isEnabled(INT_TO_ENUM_CLEANUP)) {
-			result.add(Messages.format(
-					MultiFixMessages.IntToEnumCleanUp_description,
-					new Object[] {
-						String.join(",", computeFixSet().stream()
-								.map(IntToEnumFixCore::toString)
-								.collect(Collectors.toList()))
-					}));
+			result.add(Messages.format(IntToEnumCleanUp_description,
+					new Object[] { String.join(",", computeFixSet().stream()
+							.map(IntToEnumFixCore::toString)
+							.collect(Collectors.toList())) }));
 		}
 		return result.toArray(new String[0]);
 	}
