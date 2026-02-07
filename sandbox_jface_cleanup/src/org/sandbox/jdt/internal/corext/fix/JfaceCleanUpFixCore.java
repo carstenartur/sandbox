@@ -98,22 +98,7 @@ public enum JfaceCleanUpFixCore {
 					// Fallback for unknown types - just call rewrite without specific range computer setup
 					rewrite.setTargetSourceRangeComputer(rangeComputer);
 					((AbstractTool<ReferenceHolder<Integer, T>>) jfacefound).rewrite(JfaceCleanUpFixCore.this, hit, cuRewrite, group);
-				}        
-        
-				// Get the first MonitorHolder from the hit map (key might not be 0 due to scope grouping)
-				MonitorHolder mh = hit.values().stream().findFirst().orElse(null);
-				if (mh != null) {
-					// For standalone SubProgressMonitor, use the ClassInstanceCreation node instead of minv
-					if (mh.minv != null) {
-						rangeComputer.addTightSourceNode(mh.minv);
-					} else if (!mh.setofcic.isEmpty()) {
-						// Use the first SubProgressMonitor creation for standalone case
-						rangeComputer.addTightSourceNode(mh.setofcic.iterator().next());
-					}
 				}
-				
-				rewrite.setTargetSourceRangeComputer(rangeComputer);
-				jfacefound.rewrite(JfaceCleanUpFixCore.this, hit, cuRewrite, group);
 			}
 		};
 	}
