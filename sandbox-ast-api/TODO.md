@@ -60,12 +60,12 @@
   - [x] Comprehensive tests (12 tests)
 - [x] Add statement-level tests (45 new tests, total 143 tests)
 
-## Phase 4: FluentVisitor Builder (PLANNED)
-- [ ] Design fluent visitor API
-- [ ] Implement type-safe visitor builder
-- [ ] Support pattern matching on node types
-- [ ] Add visitor composition support
-- [ ] Add visitor tests and examples
+## Phase 4: FluentVisitor Builder (COMPLETED)
+- [x] Design fluent visitor API
+- [x] Implement type-safe visitor builder
+- [x] Support pattern matching on node types
+- [x] Add visitor composition support
+- [x] Add visitor tests and examples
 
 ## Phase 5: JDT Bridge Module (PLANNED)
 - [ ] Create sandbox-ast-api-jdt module
