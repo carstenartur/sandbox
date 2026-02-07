@@ -33,8 +33,6 @@ import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 
-import org.eclipse.jdt.internal.ui.JavaPlugin;
-
 /**
  * Tests for int to enum conversion cleanup.
  */
@@ -46,7 +44,6 @@ public class IntToEnumCleanUpTest {
 		defaultOptions.put(DefaultCodeFormatterConstants.FORMATTER_LINE_SPLIT, Integer.toString(120));
 		JavaCore.setOptions(defaultOptions);
 		TestOptions.initializeCodeGenerationOptions();
-		JavaPlugin.getDefault().getCodeTemplateStore().load();
 	}
 
 	@RegisterExtension
