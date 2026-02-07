@@ -4,85 +4,99 @@
 
 ## Overview
 
-The **Usage View** plugin provides a table-based view for detecting inconsistent naming conventions in Java codebases. It helps identify variables, methods, and classes that don't follow consistent naming patterns, improving code quality and maintainability.
+The **Usage View** plugin provides a table-based view for detecting naming conflicts in Java codebases. It analyzes Java code using AST (Abstract Syntax Tree) parsing to identify variables with the same name but different types across your codebase.
 
 ## Key Features
 
-- 📊 **Table View** - Display naming inconsistencies in organized tables
-- 🔍 **Pattern Detection** - Find violations of naming conventions
-- 🎯 **Customizable Rules** - Configure what constitutes "inconsistent" naming
-- 🔌 **Eclipse Integration** - View panel integrates with Eclipse IDE
+- 📊 **Table View** - Display all variables in organized, sortable tables
+- 🔍 **Naming Conflict Detection** - Find variables with the same name but different types
+- 🔄 **Automatic Updates** - View updates automatically when switching between files
+- 🎯 **Link with Selection** - Synchronize with Project Explorer and editor selections
+- 🔌 **Eclipse Integration** - Seamlessly integrated with Eclipse IDE
+- ⚙️ **Startup Control** - Optional auto-show at Eclipse startup via preferences
 
 ## Use Cases
 
-### Code Quality Audits
+### Naming Conflict Detection
 
-- Identify variables not following camelCase convention
-- Find constants not using UPPER_SNAKE_CASE
-- Detect classes not following PascalCase naming
+The primary use case is identifying naming conflicts where the same variable name is used with different types, which can lead to confusion and bugs:
 
-### Refactoring Planning
+```java
+// Example of naming conflict that will be detected:
+String userId = "123";          // Type: String
+int userId = 456;               // Type: int - CONFLICT!
+```
 
-- Generate list of names to standardize
-- Prioritize naming improvements
-- Track refactoring progress
+### Code Quality Review
 
-### Team Standards Enforcement
+- Identify potentially confusing variable naming patterns
+- Find variables that might benefit from more descriptive names
+- Support refactoring efforts by visualizing all variable bindings
 
-- Verify adherence to team naming conventions
-- Identify legacy code needing updates
-- Educate developers on standards
+### Codebase Exploration
+
+- Browse all variables in a project, package, or file
+- Navigate quickly to variable declarations
+- Understand variable usage patterns across the codebase
 
 ## Quick Start
 
 ### Opening the View
 
 1. Open **Window** → **Show View** → **Other...**
-2. Navigate to **Sandbox** category
-3. Select **Usage View**
+2. Navigate to **Java** category
+3. Select **JavaHelper View** (or **Usage View**)
 
-### Analyzing a Project
+Alternatively, the view can be configured to automatically show at Eclipse startup via preferences.
 
-1. Select a project or package in Project Explorer
-2. Right-click and choose **Analyze Naming** (if available)
-3. Review inconsistencies in the Usage View table
+### Analyzing Code
 
-## Naming Patterns Detected
+1. Select a project, package, or Java file in Project Explorer
+2. The view automatically updates when "Link with Selection" is enabled (default)
+3. View displays all variable bindings from the selected Java element
+4. Enable "Filter Naming Conflicts" to show only variables with the same name but different types
 
-### Variable Names
-- **camelCase** - Local variables and fields
-- **UPPER_SNAKE_CASE** - Constants (static final fields)
+## Detection Capabilities
 
-### Method Names
-- **camelCase** - All methods
-- Consistent verb prefixes (get, set, is, has, etc.)
+### Current Implementation
 
-### Class Names
-- **PascalCase** - All classes and interfaces
-- Meaningful, descriptive names
+The plugin currently detects **naming conflicts** - variables with the same name but different types. This helps identify potentially confusing naming patterns that could lead to bugs.
+
+### Variable Types Analyzed
+
+- **Local variables** - Variables declared within methods
+- **Fields** - Class and instance fields
+- **Parameters** - Method and constructor parameters
+
+All variable bindings are extracted through AST parsing with full type resolution.
 
 ## View Features
 
 ### Table Columns
 
-The view typically displays:
-- **Element Name** - The variable/method/class name
-- **Expected Pattern** - What naming convention should be used
-- **Location** - File and line number
-- **Suggestion** - Recommended name (if applicable)
+The view displays the following information for each variable binding:
+
+- **Name** - The variable name
+- **Qualified Name** - Full type information including package
+- **Package** - The package containing the variable
+- **Deprecated** - Indicates if the binding is marked as deprecated
+- **Declaring Method** - The method where the variable is declared (for local variables)
 
 ### Filtering and Sorting
 
-- Filter by pattern type
-- Sort by location, name, or severity
-- Group by project or package
+- **Link with Selection** - Toggle to enable/disable automatic updates based on selection
+- **Filter Naming Conflicts** - Show only variables with naming conflicts (same name, different type)
+- **Sort by Column** - Click any column header to sort the table
+- **Refresh** - Manually refresh the view content
 
 ## Configuration
 
-Configure naming rules through preferences:
-1. **Window** → **Preferences** → **Sandbox** → **Usage View**
-2. Customize patterns and rules
-3. Set severity levels for different violations
+Configure view behavior through preferences:
+
+1. **Window** → **Preferences** → **Java** → **Usage View**
+2. **Show View at Startup** - Enable/disable automatic view display when Eclipse starts
+
+Currently, the preference system supports controlling startup behavior. Additional configuration options for naming patterns and rules are planned for future releases (see [TODO.md](TODO.md)).
 
 ## Documentation
 
@@ -93,24 +107,60 @@ Configure naming rules through preferences:
 ## Integration
 
 The Usage View integrates with:
-- Eclipse Views framework
-- Java model API
-- AST analysis
+- **Eclipse Views framework** - Standard Eclipse view with toolbar and menu integration
+- **Java model API** - Uses IJavaElement for navigation
+- **AST analysis** - Full AST parsing with binding resolution via AstProcessorBuilder from sandbox_common
+- **IPartListener2** - Automatic updates when switching between editors
+- **IStartup** - Optional automatic display at Eclipse startup
+
+## Technical Implementation
+
+### AST Processing
+
+The view uses the `AstProcessorBuilder` API from `sandbox_common` for efficient AST traversal:
+
+```java
+AstProcessorBuilder.with(new ReferenceHolder<String, Object>())
+    .onSimpleName((simpleName, dataHolder) -> {
+        IBinding binding = simpleName.resolveBinding();
+        if (binding instanceof IVariableBinding variableBinding) {
+            collectedVariableBindings.add(variableBinding);
+        }
+        return true;
+    })
+    .build(astNode);
+```
+
+### Naming Conflict Detection
+
+The `NamingConflictFilter` analyzes variable bindings and identifies conflicts where:
+1. Multiple variables share the same name
+2. But have different types (different ITypeBinding)
+
+This helps developers identify potentially confusing naming patterns.
 
 ## Use with Other Tools
 
-Complements:
-- **Code formatters** - Enforce style after naming is corrected
-- **Refactoring tools** - Safely rename identified issues
-- **Extra Search** - Find all usages before renaming
+The Usage View complements:
+- **Refactoring tools** - Identify candidates for renaming before refactoring
+- **Extra Search** - Use together to find all usages before renaming
+- **JDT Cleanup** - Part of the broader sandbox cleanup ecosystem
+
+## Current Limitations
+
+- **Pattern Detection**: Currently only detects "same name, different type" conflicts
+- **No Quick Fixes**: Identifies issues but does not provide automatic refactoring
+- **No Export**: Cannot export results to CSV or other formats
+- **No Custom Rules**: Cannot define custom naming conventions or patterns
 
 ## Future Enhancements
 
 See [TODO.md](TODO.md) for planned features:
-- Quick fixes to automatically correct names
-- Export to CSV/Excel for reporting
-- Integration with save actions
-- Team-shared configuration profiles
+- **Configurable naming conventions** - Define custom naming rules
+- **Quick fixes** - Automatic refactoring suggestions
+- **Enhanced pattern detection** - Detect more subtle naming inconsistencies (case variations, abbreviations, etc.)
+- **Export functionality** - CSV/Excel export for reporting
+- **Batch operations** - Apply fixes to multiple variables at once
 
 ## License
 
