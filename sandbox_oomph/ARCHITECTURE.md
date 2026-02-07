@@ -214,9 +214,9 @@ Configures Eclipse workspace preferences:
 **Decision**: Make Eclipse version configurable through Oomph variable
 
 **Rationale**:
-- Allows users to update target Eclipse version after initial installation
+- Allows users to update Eclipse IDE provisioning version after initial installation
 - Provides flexibility for testing against different Eclipse releases
-- Eliminates need to edit setup files manually
+- Eliminates need to edit setup files manually for IDE provisioning
 - Aligns with Root README build instructions
 - [See Root README: Build Instructions](../README.md#build-instructions)
 
@@ -227,23 +227,28 @@ Configures Eclipse workspace preferences:
     value="2025-12"
     label="Eclipse Release Version"
     defaultValue="2025-12">
-  <description>The Eclipse release version to use...</description>
+  <description>The Eclipse release version to use for P2 repositories...</description>
 </setupTask>
 <repository url="https://download.eclipse.org/releases/${eclipse.target.version}"/>
 ```
 
 **Benefits**:
-- Users can change version in Oomph preferences at any time
-- Re-running setup will update to selected version
+- Users can change IDE provisioning version in Oomph preferences at any time
+- Re-running setup will update to selected version for IDE features
 - Consistent with multi-version support strategy
-- Simplifies testing against different Eclipse versions
+- Simplifies testing against different Eclipse releases
+
+**Important Note**:
+- This variable controls the Eclipse IDE provisioning (which Eclipse features are installed)
+- The workspace target platform is defined separately in `sandbox_target/eclipse.target`
+- To change the workspace target platform, you must also update the `.target` file manually
 
 **How to Update Version After Installation**:
 1. In Eclipse: Help → Perform Setup Tasks...
 2. Find "Eclipse Release Version" variable
 3. Change value (e.g., from "2025-12" to "2025-09")
 4. Click OK to re-trigger setup with new version
-5. Target platform automatically updates
+5. Oomph P2 repository configuration updates (update `sandbox_target/eclipse.target` manually to match the new version if needed)
 
 ### Eclipse Heap Size Configuration
 

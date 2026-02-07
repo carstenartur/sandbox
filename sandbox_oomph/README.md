@@ -124,7 +124,7 @@ To customize the setup:
 
 ### Updating Eclipse Target Version
 
-The Eclipse version can be changed even after initial installation:
+The Eclipse version used for IDE provisioning can be changed even after initial installation:
 
 **Method 1: Using Oomph Preferences (Recommended)**
 1. In Eclipse: `Help` → `Perform Setup Tasks...`
@@ -132,13 +132,14 @@ The Eclipse version can be changed even after initial installation:
 3. Change the value (e.g., from "2025-12" to "2025-09" or "2024-12")
 4. Click `OK` to re-trigger setup with the new version
 5. Restart Eclipse when prompted
-6. The target platform will automatically update to the new version
+6. The Eclipse installation and Oomph provisioning repository will use the new release; the PDE target definition in `sandbox_target/eclipse.target` must still be updated separately if you need a different workspace target platform.
 
 **Method 2: Edit Setup File**
 1. Open `sandbox.setup` in a text editor
 2. Locate the `eclipse.target.version` variable
-3. Change the default value
+3. Either change the `value` (and optionally `defaultValue`) for `eclipse.target.version` to the desired release (for example, from `2025-12` to `2025-09`), or remove the `value` attribute and update only `defaultValue` if you prefer to rely on Oomph defaults and user overrides
 4. Save and re-import the setup in Eclipse Installer
+5. Update `sandbox_target/eclipse.target` manually to match the new version if needed
 
 ### Updating Eclipse Heap Size
 

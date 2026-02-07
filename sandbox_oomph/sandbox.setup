@@ -78,7 +78,7 @@
       value="2025-12"
       label="Eclipse Release Version"
       defaultValue="2025-12">
-    <description>The Eclipse release version to use for P2 repositories (e.g., 2025-12, 2025-09, 2024-12). This can be changed to update the target platform even after initial installation.</description>
+    <description>The Eclipse release version to use for the P2 repositories that provision this IDE (e.g., 2025-12, 2025-09, 2024-12). Changing this value affects which Eclipse release is used for future provisioning, but does not automatically modify existing PDE target definitions.</description>
   </setupTask>
   <setupTask
       xsi:type="setup:VariableTask"
