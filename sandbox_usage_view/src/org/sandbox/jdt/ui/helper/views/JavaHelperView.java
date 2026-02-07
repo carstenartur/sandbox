@@ -13,6 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.ui.helper.views;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -22,6 +23,7 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.e4.core.services.log.Logger;
 import org.eclipse.jdt.core.IClassFile;
 import org.eclipse.jdt.core.ICodeAssist;
@@ -29,12 +31,14 @@ import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJarEntryResource;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaModel;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.IPackageFragment;
+import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.internal.core.SourceType;
-//import org.eclipse.jdt.jeview.views.JEResource;
-//import org.eclipse.jdt.jeview.views.JERoot;
-//import org.eclipse.jdt.jeview.views.JavaElement;
+import org.eclipse.jdt.ui.JavaUI;
 import org.eclipse.jdt.ui.JavaElementLabelProvider;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IMenuManager;
@@ -61,6 +65,7 @@ import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IFileEditorInput;
 import org.eclipse.ui.IPageLayout;
+import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.IStorageEditorInput;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbenchActionConstants;
@@ -79,6 +84,7 @@ import org.eclipse.ui.part.IShowInSource;
 import org.eclipse.ui.part.IShowInTarget;
 import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.part.ViewPart;
+import org.eclipse.ui.progress.IProgressService;
 import org.sandbox.jdt.ui.helper.views.colum.AbstractColumn;
 import org.sandbox.jdt.ui.helper.views.colum.DeclaringMethodColumn;
 import org.sandbox.jdt.ui.helper.views.colum.DeprecatedColumn;
@@ -101,6 +107,8 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 	private Action fCodeSelectAction;
 
 	private IPartListener2 partListener;
+
+	private ISelectionListener selectionListener;
 
 	private IJavaElement currentInput = null;
 
@@ -128,6 +136,7 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 		reset();
 		makeActions();
 		hookContextMenu();
+		hookDoubleClickAction();
 		getSite().setSelectionProvider(new JHViewSelectionProvider(tableViewer));
 		contributeToActionBars();
 		// tableViewer.addSelectionChangedListener(event -> fCopyAction.setEnabled(!
@@ -137,6 +146,8 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 		
 		// Add part listener to track editor changes
 		addPartListener();
+		// Add selection listener to track Package Explorer selections
+		addSelectionListener();
 	}
 
 	private void contributeToActionBars() {
@@ -394,6 +405,36 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 		getSite().registerContextMenu(menuMgr, tableViewer);
 	}
 
+	/**
+	 * Adds a double-click listener to the table viewer that navigates to the
+	 * declaration of the selected variable binding.
+	 */
+	private void hookDoubleClickAction() {
+		tableViewer.addDoubleClickListener(event -> {
+			IStructuredSelection selection = (IStructuredSelection) event.getSelection();
+			Object element = selection.getFirstElement();
+			if (element instanceof IVariableBinding variableBinding) {
+				openVariableDeclaration(variableBinding);
+			}
+		});
+	}
+
+	/**
+	 * Opens the editor and navigates to the declaration of the given variable binding.
+	 * 
+	 * @param variableBinding the variable binding whose declaration to open
+	 */
+	private void openVariableDeclaration(IVariableBinding variableBinding) {
+		IJavaElement javaElement = variableBinding.getJavaElement();
+		if (javaElement != null) {
+			try {
+				JavaUI.openInEditor(javaElement, true, true);
+			} catch (PartInitException | JavaModelException e) {
+				logger.error(e, "Could not open editor for variable: " + variableBinding.getName()); //$NON-NLS-1$
+			}
+		}
+	}
+
 	void fillContextMenu(IMenuManager manager) {
 		//		addFocusActionOrNot(manager);
 		manager.add(fResetAction);
@@ -644,8 +685,139 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 		}
 	}
 
+	/**
+	 * Adds a selection listener to track selections in views like Package Explorer.
+	 * When a package, source folder, or project is selected, the view will update
+	 * to show variables from all contained compilation units.
+	 */
+	private void addSelectionListener() {
+		if (selectionListener != null) {
+			return;
+		}
+
+		selectionListener = (part, selection) -> {
+			// Ignore selections from this view itself
+			if (part == JavaHelperView.this) {
+				return;
+			}
+
+			if (selection instanceof IStructuredSelection structuredSelection) {
+				Object firstElement = structuredSelection.getFirstElement();
+				if (firstElement instanceof IPackageFragment 
+						|| firstElement instanceof IPackageFragmentRoot
+						|| firstElement instanceof IJavaProject) {
+					IJavaElement javaElement = (IJavaElement) firstElement;
+					if (!javaElement.equals(currentInput)) {
+						currentInput = javaElement;
+						setInputWithProgress(javaElement);
+					}
+				} else if (firstElement instanceof ICompilationUnit cu) {
+					if (!cu.equals(currentInput)) {
+						currentInput = cu;
+						setSingleInput(cu);
+					}
+				}
+			}
+		};
+
+		getSite().getPage().addSelectionListener(selectionListener);
+	}
+
+	/**
+	 * Sets the input with a progress dialog for potentially long-running operations.
+	 * This is used when processing packages, source folders, or projects that may
+	 * contain many compilation units.
+	 * 
+	 * @param javaElement the Java element to process (package, source folder, or project)
+	 */
+	private void setInputWithProgress(IJavaElement javaElement) {
+		IProgressService progressService = PlatformUI.getWorkbench().getProgressService();
+		
+		try {
+			progressService.busyCursorWhile(monitor -> {
+				monitor.beginTask("Processing " + javaElement.getElementName() + "...", IProgressMonitor.UNKNOWN); //$NON-NLS-1$ //$NON-NLS-2$
+				
+				try {
+					int totalUnits = countCompilationUnits(javaElement);
+					if (totalUnits > 0) {
+						monitor.beginTask("Processing " + totalUnits + " compilation units...", totalUnits); //$NON-NLS-1$ //$NON-NLS-2$
+					}
+					
+					// Create a progress-aware content provider
+					JHViewContentProviderWithProgress provider = new JHViewContentProviderWithProgress(monitor);
+					final Object[] elements = provider.getElements(Collections.singletonList(javaElement));
+					
+					// Update UI on the display thread
+					getSite().getShell().getDisplay().asyncExec(() -> {
+						tableViewer.setInput(Collections.singletonList(javaElement));
+						// Manually set the elements since we already computed them
+						tableViewer.refresh();
+						if (elements.length > 0) {
+							tableViewer.setSelection(new StructuredSelection(elements[0]));
+						}
+					});
+				} finally {
+					monitor.done();
+				}
+			});
+		} catch (InvocationTargetException | InterruptedException e) {
+			logger.error(e, "Error processing Java element: " + javaElement.getElementName()); //$NON-NLS-1$
+		}
+	}
+
+	/**
+	 * Counts the number of compilation units in a Java element.
+	 * 
+	 * @param javaElement the Java element to count compilation units for
+	 * @return the number of compilation units
+	 */
+	private int countCompilationUnits(IJavaElement javaElement) {
+		try {
+			if (javaElement instanceof ICompilationUnit) {
+				return 1;
+			} else if (javaElement instanceof IPackageFragment pf) {
+				return pf.getCompilationUnits().length;
+			} else if (javaElement instanceof IPackageFragmentRoot pfr) {
+				int count = 0;
+				for (IJavaElement child : pfr.getChildren()) {
+					if (child instanceof IPackageFragment pf) {
+						count += pf.getCompilationUnits().length;
+					}
+				}
+				return count;
+			} else if (javaElement instanceof IJavaProject project) {
+				int count = 0;
+				for (IPackageFragmentRoot root : project.getPackageFragmentRoots()) {
+					if (root.getKind() == IPackageFragmentRoot.K_SOURCE) {
+						for (IJavaElement child : root.getChildren()) {
+							if (child instanceof IPackageFragment pf) {
+								count += pf.getCompilationUnits().length;
+							}
+						}
+					}
+				}
+				return count;
+			}
+		} catch (JavaModelException e) {
+			// Ignore and return 0
+		}
+		return 0;
+	}
+
 	@Override
 	public void dispose() {
+		// Remove selection listener when view is disposed
+		if (selectionListener != null) {
+			try {
+				IWorkbenchPage page = getSite().getPage();
+				if (page != null) {
+					page.removeSelectionListener(selectionListener);
+				}
+			} catch (Exception e) {
+				// Ignore errors during shutdown
+			}
+			selectionListener = null;
+		}
 		// Remove part listener when view is disposed
 		if (partListener != null) {
 			// Check if page is still available to prevent errors during workbench shutdown
