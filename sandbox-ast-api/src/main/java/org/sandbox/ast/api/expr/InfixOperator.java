@@ -135,14 +135,14 @@ public enum InfixOperator {
 	 * Gets an operator by its symbol.
 	 * 
 	 * @param symbol the operator symbol
-	 * @return the operator, or null if not found
+	 * @return the operator, or empty if not found
 	 */
-	public static InfixOperator fromSymbol(String symbol) {
+	public static java.util.Optional<InfixOperator> fromSymbol(String symbol) {
 		for (InfixOperator op : values()) {
 			if (op.symbol.equals(symbol)) {
-				return op;
+				return java.util.Optional.of(op);
 			}
 		}
-		return null;
+		return java.util.Optional.empty();
 	}
 }

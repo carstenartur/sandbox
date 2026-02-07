@@ -166,7 +166,7 @@ public record MethodInvocationExpr(
 	 */
 	public static class Builder {
 		private Optional<ASTExpr> receiver = Optional.empty();
-		private List<ASTExpr> arguments = List.of();
+		private java.util.ArrayList<ASTExpr> arguments = new java.util.ArrayList<>();
 		private Optional<MethodInfo> method = Optional.empty();
 		private Optional<TypeInfo> type = Optional.empty();
 		
@@ -188,7 +188,7 @@ public record MethodInvocationExpr(
 		 * @return this builder
 		 */
 		public Builder arguments(List<ASTExpr> arguments) {
-			this.arguments = arguments == null ? List.of() : arguments;
+			this.arguments = new java.util.ArrayList<>(arguments == null ? List.of() : arguments);
 			return this;
 		}
 		
@@ -199,8 +199,7 @@ public record MethodInvocationExpr(
 		 * @return this builder
 		 */
 		public Builder addArgument(ASTExpr argument) {
-			this.arguments = new java.util.ArrayList<>(this.arguments);
-			((java.util.ArrayList<ASTExpr>) this.arguments).add(argument);
+			this.arguments.add(argument);
 			return this;
 		}
 		

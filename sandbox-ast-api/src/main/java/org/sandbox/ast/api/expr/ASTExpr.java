@@ -31,7 +31,7 @@ import org.sandbox.ast.api.info.TypeInfo;
  * expr.asMethodInvocation()
  *     .flatMap(MethodInvocationExpr::receiver)
  *     .filter(receiver -&gt; receiver.isSimpleName())
- *     .ifPresent(name -&gt; { }});
+ *     .ifPresent(name -&gt; { });
  * </pre>
  */
 public interface ASTExpr extends ASTWrapper {

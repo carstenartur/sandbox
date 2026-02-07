@@ -146,7 +146,7 @@ public record InfixExpr(
 	public static class Builder {
 		private ASTExpr leftOperand;
 		private ASTExpr rightOperand;
-		private List<ASTExpr> extendedOperands = List.of();
+		private java.util.ArrayList<ASTExpr> extendedOperands = new java.util.ArrayList<>();
 		private InfixOperator operator;
 		private Optional<TypeInfo> type = Optional.empty();
 		
@@ -179,7 +179,7 @@ public record InfixExpr(
 		 * @return this builder
 		 */
 		public Builder extendedOperands(List<ASTExpr> extendedOperands) {
-			this.extendedOperands = extendedOperands == null ? List.of() : extendedOperands;
+			this.extendedOperands = new java.util.ArrayList<>(extendedOperands == null ? List.of() : extendedOperands);
 			return this;
 		}
 		
@@ -190,8 +190,7 @@ public record InfixExpr(
 		 * @return this builder
 		 */
 		public Builder addExtendedOperand(ASTExpr operand) {
-			this.extendedOperands = new java.util.ArrayList<>(this.extendedOperands);
-			((java.util.ArrayList<ASTExpr>) this.extendedOperands).add(operand);
+			this.extendedOperands.add(operand);
 			return this;
 		}
 		

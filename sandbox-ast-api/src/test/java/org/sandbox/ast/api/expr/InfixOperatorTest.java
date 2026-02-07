@@ -76,10 +76,10 @@ class InfixOperatorTest {
 	
 	@Test
 	void testFromSymbol() {
-		assertThat(InfixOperator.fromSymbol("+")).isEqualTo(InfixOperator.PLUS);
-		assertThat(InfixOperator.fromSymbol("-")).isEqualTo(InfixOperator.MINUS);
-		assertThat(InfixOperator.fromSymbol("==")).isEqualTo(InfixOperator.EQUALS);
-		assertThat(InfixOperator.fromSymbol("&&")).isEqualTo(InfixOperator.CONDITIONAL_AND);
-		assertThat(InfixOperator.fromSymbol("unknown")).isNull();
+		assertThat(InfixOperator.fromSymbol("+")).contains(InfixOperator.PLUS);
+		assertThat(InfixOperator.fromSymbol("-")).contains(InfixOperator.MINUS);
+		assertThat(InfixOperator.fromSymbol("==")).contains(InfixOperator.EQUALS);
+		assertThat(InfixOperator.fromSymbol("&&")).contains(InfixOperator.CONDITIONAL_AND);
+		assertThat(InfixOperator.fromSymbol("unknown")).isEmpty();
 	}
 }
