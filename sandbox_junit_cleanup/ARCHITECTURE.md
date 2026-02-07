@@ -4,7 +4,7 @@
 
 ## Overview
 
-The JUnit cleanup plugin provides automated migration from JUnit 3/4 to JUnit 5 (Jupiter). This document describes the architecture after the refactoring that extracted helper classes from the monolithic `AbstractTool` class, and the introduction of the declarative `@RewriteRule` annotation framework.
+The JUnit cleanup plugin provides automated migration from JUnit 3/4 to JUnit 5 (Jupiter). This document describes the architecture after the refactoring that extracted helper classes from the monolithic `AbstractTool` class, the introduction of the declarative `@RewriteRule` annotation framework, and the extraction of generic TriggerPattern infrastructure to `sandbox_common`.
 
 ## Design Goals
 
@@ -14,6 +14,7 @@ The JUnit cleanup plugin provides automated migration from JUnit 3/4 to JUnit 5 
 4. **Testability**: Smaller classes are easier to test in isolation
 5. **Backward Compatibility**: Public API remains unchanged
 6. **Declarative Transformations**: Simple annotation migrations use declarative patterns to eliminate boilerplate
+7. **Generic Infrastructure**: TriggerPattern framework extracted to `sandbox_common` for reuse by other cleanup modules
 
 ## TriggerPattern Framework with @RewriteRule
 
@@ -21,10 +22,33 @@ The JUnit cleanup plugin provides automated migration from JUnit 3/4 to JUnit 5 
 
 The TriggerPattern framework provides a declarative approach to JUnit cleanup plugins, allowing developers to specify transformations using annotations instead of implementing complex AST manipulation code manually.
 
+**Architecture Change (v1.3.0)**: The generic TriggerPattern infrastructure has been extracted from JUnit-specific code to `sandbox_common` under `org.sandbox.jdt.triggerpattern.cleanup`. This enables other cleanup modules to leverage the same pattern-based approach.
+
 **Key Components:**
 - `@CleanupPattern` - Defines what pattern to match (e.g., "@Before", "@Ignore($value)")
 - `@RewriteRule` - Defines how to transform the matched pattern (new annotation name, imports)
-- `TriggerPatternCleanupPlugin` - Base class that provides default implementation
+- `AbstractPatternCleanupPlugin` (in `sandbox_common`) - Generic base class with TriggerPattern integration
+- `PatternCleanupHelper` (in `sandbox_common`) - Helper for composition-based usage
+- `TriggerPatternCleanupPlugin` (in `sandbox_junit_cleanup`) - JUnit-specific implementation using composition
+
+### TriggerPatternCleanupPlugin Architecture
+
+**Inheritance Chain**:
+```
+AbstractTool (JUnit-specific base)
+    ↑
+TriggerPatternCleanupPlugin (bridges generic TriggerPattern with JUnit infrastructure)
+    ↑
+BeforeJUnitPlugin, AfterJUnitPlugin, etc. (concrete cleanup plugins)
+```
+
+**Composition**:
+`TriggerPatternCleanupPlugin` uses `PatternCleanupHelper` (from `sandbox_common`) via composition to delegate pattern matching logic while maintaining the `AbstractTool` inheritance chain required by JUnit cleanups.
+
+**Why Composition Instead of Inheritance?**
+- `TriggerPatternCleanupPlugin` must extend `AbstractTool` for JUnit cleanup integration
+- Java single inheritance prevents extending both `AbstractTool` and `AbstractPatternCleanupPlugin`
+- Composition pattern allows reusing generic TriggerPattern logic while keeping JUnit-specific inheritance intact
 
 ### @RewriteRule Annotation
 

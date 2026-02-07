@@ -12,8 +12,82 @@ The `sandbox_common` module provides shared utilities, constants, and base class
 - Provide shared constants for cleanup registration and configuration
 - Define reusable base classes and interfaces for cleanup implementations
 - Maintain consistency across all sandbox plugins
+- **Provide generic TriggerPattern cleanup infrastructure** for use by multiple cleanup modules
 
 ## Core Components
+
+### TriggerPattern Cleanup Framework
+
+**Since**: 1.3.0
+
+**Package**: `org.sandbox.jdt.triggerpattern.cleanup`
+
+The TriggerPattern cleanup framework provides generic infrastructure for implementing declarative, pattern-based cleanups. This framework was extracted from the JUnit-specific `TriggerPatternCleanupPlugin` to enable reuse across different cleanup modules.
+
+#### AbstractPatternCleanupPlugin<H>
+
+**Purpose**: Generic base class for cleanup plugins using TriggerPattern framework via inheritance.
+
+**Use When**: Creating a new cleanup module that doesn't have existing inheritance constraints.
+
+**Key Features**:
+- Pattern matching using `TriggerPatternEngine`
+- `@CleanupPattern` annotation processing
+- `@RewriteRule` annotation support for declarative transformations
+- Import management (add/remove imports and static imports)
+- Qualified type validation
+- Replacement pattern parsing
+
+**Type Parameters**:
+- `<H>` - The holder type for storing match information (e.g., `JunitHolder`)
+
+**Subclass Requirements**:
+1. Implement `createHolder(Match)` - Convert pattern matches to holder
+2. Implement `processRewrite(...)` - Apply AST transformations
+3. Implement `getPreview(boolean)` - Provide UI preview
+
+**Optional Overrides**:
+- `getPatterns()` - For multiple patterns
+- `shouldProcess(Match, Pattern)` - For additional validation
+- `processMatch(...)` - For custom match processing
+
+#### PatternCleanupHelper
+
+**Purpose**: Helper class providing TriggerPattern functionality via composition.
+
+**Use When**: Your cleanup plugin needs to maintain its own inheritance hierarchy (e.g., JUnit plugins extending `AbstractTool`).
+
+**Key Features**:
+- Pattern extraction from `@CleanupPattern` annotation
+- Pattern matching delegation to `TriggerPatternEngine`
+- Qualified type validation
+- No inheritance required - use via composition
+
+**Usage Pattern**:
+```java
+public class MyCleanupPlugin extends ExistingBaseClass {
+    private final PatternCleanupHelper helper = new PatternCleanupHelper(this.getClass());
+    
+    public Pattern getPattern() {
+        return helper.getPattern();
+    }
+    
+    protected boolean validateQualifiedType(ASTNode node, String type) {
+        return helper.validateQualifiedType(node, type);
+    }
+}
+```
+
+#### Design Pattern: Inheritance vs Composition
+
+The framework provides two approaches to accommodate different use cases:
+
+| Pattern | Class | Use Case |
+|---------|-------|----------|
+| **Inheritance** | `AbstractPatternCleanupPlugin` | New cleanup modules without existing base classes |
+| **Composition** | `PatternCleanupHelper` | Existing cleanup modules that already extend a base class (e.g., JUnit plugins) |
+
+**JUnit Example**: `TriggerPatternCleanupPlugin` extends `AbstractTool` (JUnit-specific) and uses `PatternCleanupHelper` via composition to access TriggerPattern functionality.
 
 ### MYCleanUpConstants
 
