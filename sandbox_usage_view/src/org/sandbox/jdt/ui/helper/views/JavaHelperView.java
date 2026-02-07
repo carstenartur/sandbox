@@ -52,6 +52,7 @@ import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
+import org.eclipse.jface.layout.TableColumnLayout;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.BusyIndicator;
 import org.eclipse.swt.graphics.Image;
@@ -95,91 +96,121 @@ import org.sandbox.jdt.ui.helper.views.colum.QualifiednameColumn;
 public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTarget {
 
 	Logger logger= PlatformUI.getWorkbench().getService(Logger.class);
-	TableViewer tableViewer;
-	private Table table;
+	TableViewer variableTableViewer;
+	private Table variableTable;
 	//	private JERoot fInput;
-	private Action fRefreshAction;
-	private Action fResetAction;
-	private Action fElementAtAction;
-	private Action fPropertiesAction;
+	private Action refreshAction;
+	private Action resetAction;
+	private Action setInputFromEditorLocationAction;
+	private Action propertiesAction;
 	//	private Action fFocusAction;
 
-	private Action fCodeSelectAction;
+	private Action setInputFromEditorSelectionAction;
+	
+	private Action linkWithSelectionAction;
+	
+	/** When true, the view automatically updates when selections change in other views */
+	private boolean linkWithSelectionEnabled = true;
 
-	private IPartListener2 partListener;
+	private IPartListener2 editorPartListener;
 
-	private ISelectionListener selectionListener;
+	private ISelectionListener workbenchSelectionListener;
 
-	private IJavaElement currentInput = null;
+	private IJavaElement currentJavaElementInput = null;
 
 	@Override
 	public void createPartControl(Composite parent) {
-		parent.setLayout(new GridLayout(1, false));
+		GridLayout layout = new GridLayout(1, false);
+		layout.marginWidth = 0;
+		layout.marginHeight = 0;
+		layout.horizontalSpacing = 0;
+		layout.verticalSpacing = 0;
+		parent.setLayout(layout);
 
-		tableViewer= new TableViewer(parent, SWT.BORDER | SWT.FULL_SELECTION);
-		tableViewer.setColumnProperties(new String[] {});
-		tableViewer.setUseHashlookup(true);
-		table= tableViewer.getTable();
-		table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
-		table.setHeaderVisible(true);
-		table.setHeaderBackground(parent.getDisplay().getSystemColor(SWT.COLOR_TITLE_BACKGROUND));
-		table.setLinesVisible(true);
-		tableViewer.setContentProvider(new JHViewContentProvider());
-		// This will create the columns for the table
-		AbstractColumn.addColumn(tableViewer, new NameColumn());
-		AbstractColumn.addColumn(tableViewer, new QualifiednameColumn());
-		AbstractColumn.addColumn(tableViewer, new PackageColumn());
-		AbstractColumn.addColumn(tableViewer, new DeprecatedColumn());
-		AbstractColumn.addColumn(tableViewer, new DeclaringMethodColumn());
+		// Create a composite to hold the table with TableColumnLayout
+		Composite tableComposite = new Composite(parent, SWT.NONE);
+		tableComposite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		TableColumnLayout tableColumnLayout = new TableColumnLayout();
+		tableComposite.setLayout(tableColumnLayout);
 
-		tableViewer.setComparator(AbstractColumn.getComparator());
+		variableTableViewer= new TableViewer(tableComposite, SWT.BORDER | SWT.FULL_SELECTION | SWT.H_SCROLL | SWT.V_SCROLL);
+		variableTableViewer.setColumnProperties(new String[] {});
+		variableTableViewer.setUseHashlookup(true);
+		variableTable= variableTableViewer.getTable();
+		variableTable.setHeaderVisible(true);
+		variableTable.setHeaderBackground(parent.getDisplay().getSystemColor(SWT.COLOR_TITLE_BACKGROUND));
+		variableTable.setLinesVisible(true);
+		variableTableViewer.setContentProvider(new JHViewContentProvider());
+		// This will create the columns for the table with proper weights
+		AbstractColumn.addColumn(variableTableViewer, new NameColumn(), tableColumnLayout);
+		AbstractColumn.addColumn(variableTableViewer, new QualifiednameColumn(), tableColumnLayout);
+		AbstractColumn.addColumn(variableTableViewer, new PackageColumn(), tableColumnLayout);
+		AbstractColumn.addColumn(variableTableViewer, new DeprecatedColumn(), tableColumnLayout);
+		AbstractColumn.addColumn(variableTableViewer, new DeclaringMethodColumn(), tableColumnLayout);
+
+		variableTableViewer.setComparator(AbstractColumn.getComparator());
 		reset();
 		makeActions();
 		hookContextMenu();
 		hookDoubleClickAction();
-		getSite().setSelectionProvider(new JHViewSelectionProvider(tableViewer));
+		getSite().setSelectionProvider(new JHViewSelectionProvider(variableTableViewer));
 		contributeToActionBars();
-		// tableViewer.addSelectionChangedListener(event -> fCopyAction.setEnabled(!
+		// variableTableViewer.addSelectionChangedListener(event -> fCopyAction.setEnabled(!
 		// event.getSelection().isEmpty()));
-		// tableViewer.addSelectionChangedListener(event -> fCopyAction.setEnabled(!
+		// variableTableViewer.addSelectionChangedListener(event -> fCopyAction.setEnabled(!
 		// event.getSelection().isEmpty()));
 		
 		// Add part listener to track editor changes
-		addPartListener();
+		addEditorPartListener();
 		// Add selection listener to track Package Explorer selections
-		addSelectionListener();
+		addWorkbenchSelectionListener();
 	}
 
 	private void contributeToActionBars() {
 		IActionBars bars= getViewSite().getActionBars();
 		fillLocalPullDown(bars.getMenuManager());
 		fillLocalToolBar(bars.getToolBarManager());
-		bars.setGlobalActionHandler(ActionFactory.REFRESH.getId(), fRefreshAction);
+		bars.setGlobalActionHandler(ActionFactory.REFRESH.getId(), refreshAction);
 		// bars.setGlobalActionHandler(ActionFactory.COPY.getId(), fCopyAction);
-		bars.setGlobalActionHandler(ActionFactory.PROPERTIES.getId(), fPropertiesAction);
+		bars.setGlobalActionHandler(ActionFactory.PROPERTIES.getId(), propertiesAction);
 	}
 
 	private void fillLocalToolBar(IToolBarManager manager) {
-		manager.add(fCodeSelectAction);
-		manager.add(fElementAtAction);
-		manager.add(fResetAction);
-		manager.add(fRefreshAction);
+		manager.add(linkWithSelectionAction);
+		manager.add(new Separator());
+		manager.add(setInputFromEditorSelectionAction);
+		manager.add(setInputFromEditorLocationAction);
+		manager.add(resetAction);
+		manager.add(refreshAction);
 		manager.add(new Separator());
 		// fDrillDownAdapter.addNavigationActions(manager);
 	}
 
 	private void fillLocalPullDown(IMenuManager manager) {
-		manager.add(fCodeSelectAction);
-		manager.add(fElementAtAction);
+		manager.add(linkWithSelectionAction);
+		manager.add(new Separator());
+		manager.add(setInputFromEditorSelectionAction);
+		manager.add(setInputFromEditorLocationAction);
 		// manager.add(fCreateFromHandleAction);
-		manager.add(fResetAction);
+		manager.add(resetAction);
 		// manager.add(fLogDeltasAction);
 		manager.add(new Separator());
-		manager.add(fRefreshAction);
+		manager.add(refreshAction);
 	}
 
 	private void makeActions() {
-		fCodeSelectAction= new Action("Set Input from Editor (&codeSelect)", JHPluginImages.IMG_SET_FOCUS_CODE_SELECT) { //$NON-NLS-1$
+		// Toggle action for linking with selection
+		linkWithSelectionAction = new Action("Link with Selection", Action.AS_CHECK_BOX) { //$NON-NLS-1$
+			@Override
+			public void run() {
+				linkWithSelectionEnabled = isChecked();
+			}
+		};
+		linkWithSelectionAction.setToolTipText("Link with Selection - when enabled, the view automatically updates based on the current selection"); //$NON-NLS-1$
+		linkWithSelectionAction.setImageDescriptor(JHPluginImages.IMG_SET_FOCUS);
+		linkWithSelectionAction.setChecked(linkWithSelectionEnabled);
+		
+		setInputFromEditorSelectionAction= new Action("Set Input from Editor (&codeSelect)", JHPluginImages.IMG_SET_FOCUS_CODE_SELECT) { //$NON-NLS-1$
 			@Override
 			public void run() {
 				IEditorPart editor= getSite().getPage().getActiveEditor();
@@ -221,11 +252,11 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 				setInput(asList);
 			}
 		};
-		fCodeSelectAction.setToolTipText("Set input from current editor's selection (codeSelect)"); //$NON-NLS-1$
+		setInputFromEditorSelectionAction.setToolTipText("Set input from current editor's selection (codeSelect)"); //$NON-NLS-1$
 		//		fFocusAction = new Action() {
 		//			@Override
 		//			public void run() {
-		//				Object selected = ((IStructuredSelection) tableViewer.getSelection()).getFirstElement();
+		//				Object selected = ((IStructuredSelection) variableTableViewer.getSelection()).getFirstElement();
 		//				if (selected instanceof JavaElement) {
 		//					setSingleInput((IJavaModel) ((JavaElement) selected).getJavaElement());
 		//				} else if (selected instanceof JEResource) {
@@ -234,7 +265,7 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 		//			}
 		//		};
 		//		fFocusAction.setToolTipText("Focus on Selection");
-		fPropertiesAction= new Action("&Properties", JHPluginImages.IMG_PROPERTIES) { //$NON-NLS-1$
+		propertiesAction= new Action("&Properties", JHPluginImages.IMG_PROPERTIES) { //$NON-NLS-1$
 			@Override
 			public void run() {
 				String viewId= IPageLayout.ID_PROP_SHEET;
@@ -249,23 +280,23 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 				}
 			}
 		};
-		fPropertiesAction.setActionDefinitionId(IWorkbenchCommandConstants.FILE_PROPERTIES);
-		fResetAction= new Action("&Reset View", getJavaModelImageDescriptor()) { //$NON-NLS-1$
+		propertiesAction.setActionDefinitionId(IWorkbenchCommandConstants.FILE_PROPERTIES);
+		resetAction= new Action("&Reset View", getJavaModelImageDescriptor()) { //$NON-NLS-1$
 			@Override
 			public void run() {
 				reset();
 			}
 		};
-		fResetAction.setToolTipText("Reset View to JavaModel"); //$NON-NLS-1$
-		fRefreshAction= new Action("Re&fresh", JHPluginImages.IMG_REFRESH) { //$NON-NLS-1$
+		resetAction.setToolTipText("Reset View to JavaModel"); //$NON-NLS-1$
+		refreshAction= new Action("Re&fresh", JHPluginImages.IMG_REFRESH) { //$NON-NLS-1$
 			@Override
 			public void run() {
-				BusyIndicator.showWhile(getSite().getShell().getDisplay(), () -> tableViewer.refresh());
+				BusyIndicator.showWhile(getSite().getShell().getDisplay(), () -> variableTableViewer.refresh());
 			}
 		};
-		fRefreshAction.setToolTipText("Refresh"); //$NON-NLS-1$
-		fRefreshAction.setActionDefinitionId("org.eclipse.ui.file.refresh"); //$NON-NLS-1$
-		fElementAtAction= new Action("Set Input from Editor location (&getElementAt)", JHPluginImages.IMG_SET_FOCUS) { //$NON-NLS-1$
+		refreshAction.setToolTipText("Refresh"); //$NON-NLS-1$
+		refreshAction.setActionDefinitionId("org.eclipse.ui.file.refresh"); //$NON-NLS-1$
+		setInputFromEditorLocationAction= new Action("Set Input from Editor location (&getElementAt)", JHPluginImages.IMG_SET_FOCUS) { //$NON-NLS-1$
 			@Override
 			public void run() {
 				IEditorPart editor= getSite().getPage().getActiveEditor();
@@ -308,7 +339,7 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 			}
 
 		};
-		fElementAtAction.setToolTipText("Set input from current editor's selection location (getElementAt)"); //$NON-NLS-1$
+		setInputFromEditorLocationAction.setToolTipText("Set input from current editor's selection location (getElementAt)"); //$NON-NLS-1$
 	}
 
 	void setEmptyInput() {
@@ -400,9 +431,9 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 		MenuManager menuMgr= new MenuManager("#PopupMenu"); //$NON-NLS-1$
 		menuMgr.setRemoveAllWhenShown(true);
 		menuMgr.addMenuListener(this::fillContextMenu);
-		Menu menu= menuMgr.createContextMenu(tableViewer.getControl());
-		tableViewer.getControl().setMenu(menu);
-		getSite().registerContextMenu(menuMgr, tableViewer);
+		Menu menu= menuMgr.createContextMenu(variableTableViewer.getControl());
+		variableTableViewer.getControl().setMenu(menu);
+		getSite().registerContextMenu(menuMgr, variableTableViewer);
 	}
 
 	/**
@@ -410,7 +441,7 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 	 * declaration of the selected variable binding.
 	 */
 	private void hookDoubleClickAction() {
-		tableViewer.addDoubleClickListener(event -> {
+		variableTableViewer.addDoubleClickListener(event -> {
 			IStructuredSelection selection = (IStructuredSelection) event.getSelection();
 			Object element = selection.getFirstElement();
 			if (element instanceof IVariableBinding variableBinding) {
@@ -421,12 +452,16 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 
 	/**
 	 * Opens the editor and navigates to the declaration of the given variable binding.
+	 * Automatically disables linking with selection to prevent the table from refreshing
+	 * when the editor is opened.
 	 * 
 	 * @param variableBinding the variable binding whose declaration to open
 	 */
 	private void openVariableDeclaration(IVariableBinding variableBinding) {
 		IJavaElement javaElement = variableBinding.getJavaElement();
 		if (javaElement != null) {
+			// Disable linking before opening the editor to prevent table refresh
+			disableLinkingWithSelection();
 			try {
 				JavaUI.openInEditor(javaElement, true, true);
 			} catch (PartInitException | JavaModelException e) {
@@ -434,11 +469,23 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 			}
 		}
 	}
+	
+	/**
+	 * Disables linking with selection and updates the toggle button state.
+	 * This is called when navigating from the table to prevent the view from
+	 * automatically refreshing and losing the current content.
+	 */
+	private void disableLinkingWithSelection() {
+		linkWithSelectionEnabled = false;
+		if (linkWithSelectionAction != null) {
+			linkWithSelectionAction.setChecked(false);
+		}
+	}
 
 	void fillContextMenu(IMenuManager manager) {
 		//		addFocusActionOrNot(manager);
-		manager.add(fResetAction);
-		manager.add(fRefreshAction);
+		manager.add(resetAction);
+		manager.add(refreshAction);
 		manager.add(new Separator());
 
 		if (!getSite().getSelectionProvider().getSelection().isEmpty()) {
@@ -459,7 +506,7 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 		manager.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
 		manager.add(new Separator());
 		// addCompareActionOrNot(manager);
-		manager.add(fPropertiesAction);
+		manager.add(propertiesAction);
 	}
 
 	private String getShowInMenuLabel() {
@@ -483,7 +530,7 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 	 */
 	@Override
 	public void setFocus() {
-		tableViewer.getControl().setFocus();
+		variableTableViewer.getControl().setFocus();
 	}
 
 	@Override
@@ -563,27 +610,27 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 
 	void setInput(List<?> javaElementsOrResources) {
 		//		fInput = new JERoot(javaElementsOrResources);
-		//		tableViewer.setInput(fInput);
-		tableViewer.setInput(javaElementsOrResources);
+		//		variableTableViewer.setInput(fInput);
+		variableTableViewer.setInput(javaElementsOrResources);
 		
 		// Clear the editor input cache if the input is not a single IJavaElement
 		// This ensures the view will refresh when switching back to an editor after
-		// actions like reset() or fElementAtAction that set IResource inputs
+		// actions like reset() or setInputFromEditorLocationAction that set IResource inputs
 		if (javaElementsOrResources != null && javaElementsOrResources.size() == 1) {
 			Object input = javaElementsOrResources.get(0);
 			if (!(input instanceof IJavaElement)) {
-				currentInput = null;
+				currentJavaElementInput = null;
 			}
 		} else {
-			currentInput = null;
+			currentJavaElementInput = null;
 		}
 		
-		JHViewContentProvider tcp= (JHViewContentProvider) tableViewer.getContentProvider();
-		Object[] elements= tcp.getElements(javaElementsOrResources);
+		JHViewContentProvider contentProvider= (JHViewContentProvider) variableTableViewer.getContentProvider();
+		Object[] elements= contentProvider.getElements(javaElementsOrResources);
 		if (elements.length > 0) {
-			tableViewer.setSelection(new StructuredSelection(elements[0]));
+			variableTableViewer.setSelection(new StructuredSelection(elements[0]));
 			// if (elements.length == 1) {
-			// tableViewer.setExpandedState(elements[0], true);
+			// variableTableViewer.setExpandedState(elements[0], true);
 			// }
 		}
 		// fDrillDownAdapter.reset();
@@ -601,16 +648,16 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 	 * Adds a part listener to track when editors are activated and automatically
 	 * refresh the view with the active editor's content.
 	 */
-	private void addPartListener() {
+	private void addEditorPartListener() {
 		// Check if listener is already registered to prevent duplicates
-		if (partListener != null) {
+		if (editorPartListener != null) {
 			return;
 		}
 		
-		partListener = new IPartListener2() {
+		editorPartListener = new IPartListener2() {
 			@Override
 			public void partActivated(IWorkbenchPartReference partRef) {
-				if (partRef.getPart(false) instanceof IEditorPart) {
+				if (linkWithSelectionEnabled && partRef.getPart(false) instanceof IEditorPart) {
 					// Update the view when an editor is activated
 					// Ensure UI updates happen on the UI thread
 					getSite().getShell().getDisplay().asyncExec(() -> updateViewFromActiveEditor());
@@ -634,7 +681,7 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 
 			@Override
 			public void partOpened(IWorkbenchPartReference partRef) {
-				if (partRef.getPart(false) instanceof IEditorPart) {
+				if (linkWithSelectionEnabled && partRef.getPart(false) instanceof IEditorPart) {
 					// Update the view when an editor is opened
 					// Ensure UI updates happen on the UI thread
 					getSite().getShell().getDisplay().asyncExec(() -> updateViewFromActiveEditor());
@@ -653,7 +700,7 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 
 			@Override
 			public void partInputChanged(IWorkbenchPartReference partRef) {
-				if (partRef.getPart(false) instanceof IEditorPart) {
+				if (linkWithSelectionEnabled && partRef.getPart(false) instanceof IEditorPart) {
 					// Update the view when editor input changes
 					// Ensure UI updates happen on the UI thread
 					getSite().getShell().getDisplay().asyncExec(() -> updateViewFromActiveEditor());
@@ -661,7 +708,7 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 			}
 		};
 
-		getSite().getPage().addPartListener(partListener);
+		getSite().getPage().addPartListener(editorPartListener);
 	}
 
 	/**
@@ -679,8 +726,8 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 		}
 
 		IJavaElement javaElement = input.getAdapter(IJavaElement.class);
-		if (javaElement != null && !javaElement.equals(currentInput)) {
-			currentInput = javaElement;
+		if (javaElement != null && !javaElement.equals(currentJavaElementInput)) {
+			currentJavaElementInput = javaElement;
 			setSingleInput(javaElement);
 		}
 	}
@@ -690,12 +737,17 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 	 * When a package, source folder, or project is selected, the view will update
 	 * to show variables from all contained compilation units.
 	 */
-	private void addSelectionListener() {
-		if (selectionListener != null) {
+	private void addWorkbenchSelectionListener() {
+		if (workbenchSelectionListener != null) {
 			return;
 		}
 
-		selectionListener = (part, selection) -> {
+		workbenchSelectionListener = (part, selection) -> {
+			// Skip if link with selection is disabled
+			if (!linkWithSelectionEnabled) {
+				return;
+			}
+			
 			// Ignore selections from this view itself
 			if (part == JavaHelperView.this) {
 				return;
@@ -707,20 +759,20 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 						|| firstElement instanceof IPackageFragmentRoot
 						|| firstElement instanceof IJavaProject) {
 					IJavaElement javaElement = (IJavaElement) firstElement;
-					if (!javaElement.equals(currentInput)) {
-						currentInput = javaElement;
+					if (!javaElement.equals(currentJavaElementInput)) {
+						currentJavaElementInput = javaElement;
 						setInputWithProgress(javaElement);
 					}
-				} else if (firstElement instanceof ICompilationUnit cu) {
-					if (!cu.equals(currentInput)) {
-						currentInput = cu;
-						setSingleInput(cu);
+				} else if (firstElement instanceof ICompilationUnit compilationUnit) {
+					if (!compilationUnit.equals(currentJavaElementInput)) {
+						currentJavaElementInput = compilationUnit;
+						setSingleInput(compilationUnit);
 					}
 				}
 			}
 		};
 
-		getSite().getPage().addSelectionListener(selectionListener);
+		getSite().getPage().addSelectionListener(workbenchSelectionListener);
 	}
 
 	/**
@@ -744,16 +796,16 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 					}
 					
 					// Create a progress-aware content provider
-					JHViewContentProviderWithProgress provider = new JHViewContentProviderWithProgress(monitor);
-					final Object[] elements = provider.getElements(Collections.singletonList(javaElement));
+					VariableBindingContentProviderWithProgress contentProvider = new VariableBindingContentProviderWithProgress(monitor);
+					final Object[] elements = contentProvider.getElements(Collections.singletonList(javaElement));
 					
 					// Update UI on the display thread
 					getSite().getShell().getDisplay().asyncExec(() -> {
-						tableViewer.setInput(Collections.singletonList(javaElement));
+						variableTableViewer.setInput(Collections.singletonList(javaElement));
 						// Manually set the elements since we already computed them
-						tableViewer.refresh();
+						variableTableViewer.refresh();
 						if (elements.length > 0) {
-							tableViewer.setSelection(new StructuredSelection(elements[0]));
+							variableTableViewer.setSelection(new StructuredSelection(elements[0]));
 						}
 					});
 				} finally {
@@ -806,30 +858,30 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 
 	@Override
 	public void dispose() {
-		// Remove selection listener when view is disposed
-		if (selectionListener != null) {
+		// Remove workbench selection listener when view is disposed
+		if (workbenchSelectionListener != null) {
 			try {
 				IWorkbenchPage page = getSite().getPage();
 				if (page != null) {
-					page.removeSelectionListener(selectionListener);
+					page.removeSelectionListener(workbenchSelectionListener);
 				}
 			} catch (Exception e) {
 				// Ignore errors during shutdown
 			}
-			selectionListener = null;
+			workbenchSelectionListener = null;
 		}
-		// Remove part listener when view is disposed
-		if (partListener != null) {
+		// Remove editor part listener when view is disposed
+		if (editorPartListener != null) {
 			// Check if page is still available to prevent errors during workbench shutdown
 			try {
 				IWorkbenchPage page = getSite().getPage();
 				if (page != null) {
-					page.removePartListener(partListener);
+					page.removePartListener(editorPartListener);
 				}
 			} catch (Exception e) {
 				// Ignore errors during shutdown
 			}
-			partListener = null;
+			editorPartListener = null;
 		}
 		super.dispose();
 	}

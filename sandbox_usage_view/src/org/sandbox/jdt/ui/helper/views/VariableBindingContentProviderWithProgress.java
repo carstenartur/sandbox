@@ -33,18 +33,19 @@ import org.eclipse.jdt.internal.core.JavaElement;
 /**
  * Content provider with progress monitoring support for processing large numbers
  * of compilation units in packages, source folders, or projects.
+ * Extracts variable bindings from AST nodes.
  */
-public class JHViewContentProviderWithProgress {
+public class VariableBindingContentProviderWithProgress {
 
-	private final IProgressMonitor monitor;
+	private final IProgressMonitor progressMonitor;
 
 	/**
 	 * Creates a new content provider with progress monitoring.
 	 * 
-	 * @param monitor the progress monitor to report progress to
+	 * @param progressMonitor the progress monitor to report progress to
 	 */
-	public JHViewContentProviderWithProgress(IProgressMonitor monitor) {
-		this.monitor = monitor;
+	public VariableBindingContentProviderWithProgress(IProgressMonitor progressMonitor) {
+		this.progressMonitor = progressMonitor;
 	}
 
 	/**
@@ -54,7 +55,7 @@ public class JHViewContentProviderWithProgress {
 	 * @return array of IVariableBinding objects
 	 */
 	public Object[] getElements(Object inputElement) {
-		VarVisitor visitor = new VarVisitor();
+		VariableBindingVisitor variableVisitor = new VariableBindingVisitor();
 		
 		if (inputElement instanceof List list) {
 			if (list.size() == 1) {
@@ -68,52 +69,52 @@ public class JHViewContentProviderWithProgress {
 					System.err.println(file.getName());
 				} else if (object instanceof JavaElement) {
 					IJavaElement javaElement = (IJavaElement) object;
-					processJavaElement(visitor, javaElement);
+					processJavaElement(variableVisitor, javaElement);
 				}
 			}
 		}
 		
-		for (IVariableBinding binding : visitor.getVars()) {
+		for (IVariableBinding binding : variableVisitor.getVariableBindings()) {
 			System.out.println("Var name: " + binding.getName() + " Return type: " + binding.toString()); //$NON-NLS-1$ //$NON-NLS-2$
 		}
-		return visitor.getVars().toArray();
+		return variableVisitor.getVariableBindings().toArray();
 	}
 
-	private void processJavaElement(VarVisitor visitor, IJavaElement javaElement) {
-		if (monitor.isCanceled()) {
+	private void processJavaElement(VariableBindingVisitor variableVisitor, IJavaElement javaElement) {
+		if (progressMonitor.isCanceled()) {
 			return;
 		}
 		
-		if (javaElement instanceof ICompilationUnit cu) {
-			processCompilationUnit(visitor, cu);
-		} else if (javaElement instanceof IJavaProject jproject) {
+		if (javaElement instanceof ICompilationUnit compilationUnit) {
+			processCompilationUnit(variableVisitor, compilationUnit);
+		} else if (javaElement instanceof IJavaProject javaProject) {
 			try {
-				for (IPackageFragmentRoot pfr : jproject.getAllPackageFragmentRoots()) {
-					if (monitor.isCanceled()) {
+				for (IPackageFragmentRoot packageRoot : javaProject.getAllPackageFragmentRoots()) {
+					if (progressMonitor.isCanceled()) {
 						return;
 					}
-					if (pfr.getKind() == IPackageFragmentRoot.K_SOURCE) {
-						processPackageFragmentRoot(visitor, pfr);
+					if (packageRoot.getKind() == IPackageFragmentRoot.K_SOURCE) {
+						processPackageFragmentRoot(variableVisitor, packageRoot);
 					}
 				}
 			} catch (JavaModelException e) {
 				e.printStackTrace();
 			}
-		} else if (javaElement instanceof IPackageFragment pf) {
-			processPackageFragment(visitor, pf);
-		} else if (javaElement instanceof IPackageFragmentRoot pfr) {
-			processPackageFragmentRoot(visitor, pfr);
+		} else if (javaElement instanceof IPackageFragment packageFragment) {
+			processPackageFragment(variableVisitor, packageFragment);
+		} else if (javaElement instanceof IPackageFragmentRoot packageRoot) {
+			processPackageFragmentRoot(variableVisitor, packageRoot);
 		}
 	}
 
-	private void processPackageFragmentRoot(VarVisitor visitor, IPackageFragmentRoot pfr) {
+	private void processPackageFragmentRoot(VariableBindingVisitor variableVisitor, IPackageFragmentRoot packageRoot) {
 		try {
-			for (IJavaElement child : pfr.getChildren()) {
-				if (monitor.isCanceled()) {
+			for (IJavaElement child : packageRoot.getChildren()) {
+				if (progressMonitor.isCanceled()) {
 					return;
 				}
-				if (child instanceof IPackageFragment pf) {
-					processPackageFragment(visitor, pf);
+				if (child instanceof IPackageFragment packageFragment) {
+					processPackageFragment(variableVisitor, packageFragment);
 				}
 			}
 		} catch (JavaModelException e) {
@@ -121,33 +122,33 @@ public class JHViewContentProviderWithProgress {
 		}
 	}
 
-	private void processPackageFragment(VarVisitor visitor, IPackageFragment pf) {
+	private void processPackageFragment(VariableBindingVisitor variableVisitor, IPackageFragment packageFragment) {
 		try {
-			if (!pf.containsJavaResources()) {
+			if (!packageFragment.containsJavaResources()) {
 				return;
 			}
-			for (ICompilationUnit unit : pf.getCompilationUnits()) {
-				if (monitor.isCanceled()) {
+			for (ICompilationUnit compilationUnit : packageFragment.getCompilationUnits()) {
+				if (progressMonitor.isCanceled()) {
 					return;
 				}
-				processCompilationUnit(visitor, unit);
+				processCompilationUnit(variableVisitor, compilationUnit);
 			}
 		} catch (JavaModelException e) {
 			e.printStackTrace();
 		}
 	}
 
-	private void processCompilationUnit(VarVisitor visitor, ICompilationUnit unit) {
-		monitor.subTask("Processing " + unit.getElementName()); //$NON-NLS-1$
-		CompilationUnit parse = parse(unit);
-		visitor.process(parse);
-		monitor.worked(1);
+	private void processCompilationUnit(VariableBindingVisitor variableVisitor, ICompilationUnit compilationUnit) {
+		progressMonitor.subTask("Processing " + compilationUnit.getElementName()); //$NON-NLS-1$
+		CompilationUnit astRoot = parseCompilationUnit(compilationUnit);
+		variableVisitor.process(astRoot);
+		progressMonitor.worked(1);
 	}
 
-	private static CompilationUnit parse(ICompilationUnit unit) {
+	private static CompilationUnit parseCompilationUnit(ICompilationUnit compilationUnit) {
 		ASTParser parser = ASTParser.newParser(AST.JLS_Latest);
 		parser.setKind(ASTParser.K_COMPILATION_UNIT);
-		parser.setSource(unit);
+		parser.setSource(compilationUnit);
 		parser.setResolveBindings(true);
 		return (CompilationUnit) parser.createAST(null);
 	}

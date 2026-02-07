@@ -29,72 +29,64 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.internal.core.JavaElement;
-//import org.eclipse.jdt.jeview.views.JEAttribute;
-//import org.eclipse.jdt.jeview.views.JERoot;
-//import org.eclipse.jdt.jeview.views.JavaElement;
 import org.eclipse.jface.viewers.IStructuredContentProvider;
 import org.eclipse.jface.viewers.Viewer;
 
+/**
+ * Content provider for the variable table viewer that extracts variable bindings
+ * from Java compilation units using AST parsing.
+ */
 public class JHViewContentProvider implements IStructuredContentProvider {
-
-	//	protected static final JEAttribute[] EMPTY = new JEAttribute[0];
 
 	@Override
 	public Object[] getElements(Object inputElement) {
-		VarVisitor visitor= new VarVisitor();
-		//		if (inputElement instanceof JEAttribute) {
-		//			JEAttribute jeAttribute = (JEAttribute) inputElement;
-		//			if (jeAttribute instanceof JERoot) {
-		//				JERoot wrappedObject = (JERoot) jeAttribute;
-		//				JEAttribute ja = wrappedObject.getChildren()[0];
-		//				JavaElement label = (JavaElement) ja;
+		VariableBindingVisitor variableVisitor = new VariableBindingVisitor();
+		
 		if (inputElement instanceof List list) {
 			if (list.size() == 1) {
-
-				Object object= list.get(0);
+				Object object = list.get(0);
 				if (object == null) {
 					return new Object[0];
 				}
 				if (object instanceof WorkspaceRoot root) {
 					System.err.println(root.getName());
-
 				} else if (object instanceof File file) {
 					System.err.println(file.getName());
 				} else if (object instanceof JavaElement) {
-					IJavaElement javaElement= (IJavaElement) object;
-					if (javaElement instanceof ICompilationUnit) {
+					IJavaElement javaElement = (IJavaElement) object;
+					if (javaElement instanceof ICompilationUnit compilationUnit) {
 						// now create the AST for the ICompilationUnits
-						CompilationUnit parse= parse((ICompilationUnit) javaElement);
-						visitor.process(parse);
-					} else if (javaElement instanceof IJavaProject jproject) {
+						CompilationUnit astRoot = parseCompilationUnit(compilationUnit);
+						variableVisitor.process(astRoot);
+					} else if (javaElement instanceof IJavaProject javaProject) {
 						// now create the AST for the ICompilationUnits
 						try {
-							Arrays.asList(jproject.getAllPackageFragmentRoots()).parallelStream().forEach(pfr -> {
-								extracted(visitor, pfr);
+							Arrays.asList(javaProject.getAllPackageFragmentRoots()).parallelStream().forEach(packageRoot -> {
+								processPackageFragmentRoot(variableVisitor, packageRoot);
 							});
 						} catch (JavaModelException e) {
 							e.printStackTrace();
 						}
-					} else if (javaElement instanceof IPackageFragment pf) {
-						extracted(visitor, pf);
-					} else if (javaElement instanceof IPackageFragmentRoot pf) {
-						extracted(visitor, pf);
+					} else if (javaElement instanceof IPackageFragment packageFragment) {
+						processPackageFragment(variableVisitor, packageFragment);
+					} else if (javaElement instanceof IPackageFragmentRoot packageRoot) {
+						processPackageFragmentRoot(variableVisitor, packageRoot);
 					}
 				}
 			}
 		}
-		for (IVariableBinding binding : visitor.getVars()) {
+		for (IVariableBinding binding : variableVisitor.getVariableBindings()) {
 			System.out.println("Var name: " + binding.getName() + " Return type: " + binding.toString()); //$NON-NLS-1$ //$NON-NLS-2$
 		}
-		return visitor.getVars().toArray();
+		return variableVisitor.getVariableBindings().toArray();
 	}
 
-	private void extracted(VarVisitor visitor, IPackageFragmentRoot pfr) {
+	private void processPackageFragmentRoot(VariableBindingVisitor variableVisitor, IPackageFragmentRoot packageRoot) {
 		try {
-			Arrays.asList(pfr.getJavaProject().getPackageFragments()).stream().forEach(pf -> {
+			Arrays.asList(packageRoot.getJavaProject().getPackageFragments()).stream().forEach(packageFragment -> {
 				try {
-					if (pf.containsJavaResources()) {
-						extracted(visitor, pf);
+					if (packageFragment.containsJavaResources()) {
+						processPackageFragment(variableVisitor, packageFragment);
 					}
 				} catch (JavaModelException e) {
 					e.printStackTrace();
@@ -105,24 +97,24 @@ public class JHViewContentProvider implements IStructuredContentProvider {
 		}
 	}
 
-	private void extracted(VarVisitor visitor, IPackageFragment pf) {
+	private void processPackageFragment(VariableBindingVisitor variableVisitor, IPackageFragment packageFragment) {
 		try {
-			for (ICompilationUnit unit : pf.getCompilationUnits()) {
+			for (ICompilationUnit compilationUnit : packageFragment.getCompilationUnits()) {
 				// now create the AST for the ICompilationUnits
-				CompilationUnit parse= parse(unit);
-				visitor.process(parse);
+				CompilationUnit astRoot = parseCompilationUnit(compilationUnit);
+				variableVisitor.process(astRoot);
 			}
 		} catch (JavaModelException e1) {
 			e1.printStackTrace();
 		}
 	}
 
-	private static CompilationUnit parse(ICompilationUnit unit) {
-		ASTParser parser= ASTParser.newParser(AST.JLS_Latest);
+	private static CompilationUnit parseCompilationUnit(ICompilationUnit compilationUnit) {
+		ASTParser parser = ASTParser.newParser(AST.JLS_Latest);
 		parser.setKind(ASTParser.K_COMPILATION_UNIT);
-		parser.setSource(unit);
+		parser.setSource(compilationUnit);
 		parser.setResolveBindings(true);
-		return (CompilationUnit) parser.createAST(null); // parse
+		return (CompilationUnit) parser.createAST(null);
 	}
 
 	@Override
