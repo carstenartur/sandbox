@@ -144,11 +144,24 @@ public class LoopBodyScopeScanner {
 	/**
 	 * Checks if a SimpleName node represents a modification of the variable.
 	 * 
+	 * <p>This method checks for direct modifications to the variable itself:
+	 * <ul>
+	 * <li>{@code x = 5} - MODIFICATION (x is directly the LHS)</li>
+	 * <li>{@code x++} or {@code ++x} - MODIFICATION</li>
+	 * <li>{@code arr[i] = 5} - NOT a modification of arr (only the element is modified)</li>
+	 * <li>{@code obj.field = 5} - NOT a modification of obj (only the field is modified)</li>
+	 * </ul>
+	 * 
+	 * <p>This is correct for lambda capture purposes: modifying array elements or
+	 * object fields doesn't make the variable non-effectively-final. Only direct
+	 * reassignment of the variable itself does.</p>
+	 * 
 	 * @param node the SimpleName node to check
-	 * @return true if the variable is being modified
+	 * @return true if the variable itself is being modified
 	 */
 	private boolean isModification(SimpleName node) {
-		// Check if node is the left-hand side of an assignment
+		// Check if node is the DIRECT left-hand side of an assignment
+		// (not part of a complex LHS like arr[i] or obj.field)
 		if (node.getParent() instanceof Assignment) {
 			Assignment assignment = (Assignment) node.getParent();
 			if (assignment.getLeftHandSide() == node) {
