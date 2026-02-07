@@ -6,6 +6,18 @@ A collection of experimental Eclipse JDT (Java Development Tools) cleanup plugin
 
 **Status:** Work in Progress – All plugins are experimental and intended for testing purposes.
 
+---
+
+## 🔗 CI Status & Resources
+
+[![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)  
+[![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)
+[![Eclipse Marketplace](https://img.shields.io/badge/Eclipse%20Marketplace-Sandbox-blue)](https://marketplace.eclipse.org/content/sandbox)
+
+📊 **[Test Results](https://carstenartur.github.io/sandbox/tests/)** | 📈 **[Code Coverage](https://carstenartur.github.io/sandbox/coverage/)** | ⚡ **[Performance Charts](https://carstenartur.github.io/sandbox/dev/bench/)**
+
+---
+
 ## Overview
 
 This project provides:
@@ -49,10 +61,6 @@ Use this to test the latest features. Updated automatically on every commit to `
 7. Restart Eclipse when prompted
 
 > **⚠️ Warning**: These plugins are experimental. Test them in a development environment before using in production.
-
-### Eclipse Marketplace
-
-The Sandbox plugins are also available on the [Eclipse Marketplace](https://marketplace.eclipse.org/content/sandbox).
 
 ## 📦 Release Process
 
@@ -460,111 +468,6 @@ The update sites provide:
 - **Latest Snapshots**: `https://carstenartur.github.io/sandbox/snapshots/latest/` - Latest development builds
 
 > **⚠️ Warning**: These plugins are experimental. Test them in a development environment before using in production.
-
----
-
-## CI Status
-
-### main (2025-12)
-
-[![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)  
-[![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)
-
-**Code Coverage Reports**: Available at [https://carstenartur.github.io/sandbox/coverage/](https://carstenartur.github.io/sandbox/coverage/) (updated daily via scheduled build when there are commits to main, or on manual trigger)
-
-**Test Results**: Available at [https://carstenartur.github.io/sandbox/tests/](https://carstenartur.github.io/sandbox/tests/) (updated on every push to main)
-
-### Report Details
-
-#### Coverage Reports
-The JaCoCo coverage reports show code coverage statistics for the entire codebase:
-- **Location**: `https://carstenartur.github.io/sandbox/coverage/`
-- **Content**: Line, branch, and method coverage for all modules
-- **Update Frequency**: Daily via scheduled build (only when there are commits in the last 24 hours) or manual trigger
-- **Build Profile**: Generated with full release build using `-Pjacoco,product,repo` profiles
-- **Local Generation**: Run `mvn -Pjacoco verify` to generate locally in `sandbox_coverage/target/site/jacoco-aggregate/`
-- **Note**: Coverage reports are NOT generated on normal push/PR builds to keep CI fast. They require the scheduled or manual coverage workflow.
-
-#### Test Results
-HTML test reports for all test modules, showing detailed test execution results:
-- **Location**: `https://carstenartur.github.io/sandbox/tests/`
-- **Content**: 
-  - Individual test module reports (e.g., `sandbox_encoding_quickfix_test`, `sandbox_functional_converter_test`)
-  - Test success/failure statistics
-  - Disabled tests (JUnit 5 `@Disabled` annotations)
-  - Detailed test execution information
-- **Update Frequency**: 
-  - **Primary**: Updated on every push to main branch (via normal CI build)
-  - **Secondary**: Also updated during scheduled coverage builds (includes full release build with all profiles)
-- **Build Profile**: 
-  - Normal builds (push/PR): No special profiles, fast build for quick feedback
-  - Scheduled builds: Uses `-Pjacoco,product,repo` profiles (full release build)
-- **Local Generation**: Run the full reactor build (`mvn verify`), and test reports will be automatically generated in each test module's `target/site/surefire-report.html` directory
-- **Structure**:
-  - Main index: Lists all test modules with links to their individual reports
-  - Module reports: Detailed test results for each module
-
-### CI Workflow Structure
-
-The project uses two distinct CI workflows for efficient publishing:
-
-#### 1. Normal Build Workflow (`maven.yml`)
-**Triggers**: On push/PR to main branch
-
-**Purpose**: Fast feedback and test result publishing
-
-**Build Command**: `mvn verify` (no jacoco, product, or repo profiles)
-
-**What it does**:
-- Runs standard Maven/Tycho build
-- Executes all tests
-- Generates Surefire/JUnit HTML reports automatically (via maven-surefire-report-plugin)
-- Collects test reports from all test modules
-- Deploys test reports to GitHub Pages at `/tests`
-
-**What it does NOT do**:
-- Does NOT generate code coverage (jacoco profile not active)
-- Does NOT build Eclipse product or P2 repository (kept lean for speed)
-
-**Update guarantee**: Test results are always current with the latest main branch commit
-
-#### 2. Scheduled Coverage Build Workflow (`coverage.yml`)
-**Triggers**: 
-- Daily at midnight UTC (only if there were commits in the last 24 hours)
-- Manual workflow dispatch
-
-**Purpose**: Full release build with comprehensive coverage metrics
-
-**Build Command**: `mvn -Pjacoco,product,repo verify`
-
-**What it does**:
-- Runs full release build with all profiles
-- Generates JaCoCo code coverage reports
-- Builds Eclipse product and P2 repository
-- Deploys coverage reports to GitHub Pages at `/coverage`
-- Deploys test reports to GitHub Pages at `/tests` (as backup)
-
-**Update guarantee**: Coverage reports are updated daily when there are new commits, but may be up to 24 hours behind the latest commit
-
-#### Why This Structure?
-
-**Performance**: Normal builds complete faster without heavy jacoco/product/repo profiles, providing quick feedback on PRs and commits
-
-**Separation of Concerns**: 
-- Test results = Always current (every commit)
-- Coverage metrics = Updated daily (comprehensive but not blocking fast feedback)
-
-**Resource Efficiency**: Full release builds with coverage are expensive; running them daily (instead of on every commit) reduces CI resource usage while still maintaining up-to-date coverage metrics
-
-### 2022-09
-
-[![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg?branch=2022-09)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)  
-[![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg?branch=2022-09)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)
-
-### 2022-06
-
-[![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg?branch=2022-06)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)  
-[![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg?branch=2022-06)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)
 
 ---
 
@@ -1577,6 +1480,23 @@ Each release produces:
 - Check workflow run logs in the Actions tab
 - Ensure the tag was pushed correctly: `git ls-remote --tags origin`
 - Verify permissions for GitHub Packages publishing
+
+---
+
+<details>
+<summary>Legacy Branch CI Status</summary>
+
+### 2022-09
+
+[![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg?branch=2022-09)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)  
+[![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg?branch=2022-09)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)
+
+### 2022-06
+
+[![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg?branch=2022-06)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)  
+[![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg?branch=2022-06)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)
+
+</details>
 
 ---
 
