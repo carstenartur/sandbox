@@ -2,7 +2,7 @@
 
 ## Overview
 
-This repository includes a **Docker-based GitHub Action** that provides automated Eclipse JDT code cleanup using the sandbox cleanup application. This allows you to apply configurable code cleanups directly in your GitHub workflows.
+This repository includes a **composite GitHub Action** that provides automated Eclipse JDT code cleanup using the sandbox cleanup application. This allows you to apply configurable code cleanups directly in your GitHub workflows.
 
 ## Quick Start
 
@@ -28,7 +28,7 @@ Run cleanup manually from the GitHub Actions UI:
 ✅ **Uses Sandbox Application** - All sandbox-specific cleanups included  
 ✅ **Auto-Commit** - Changes automatically committed to PR branch  
 ✅ **Manual Trigger** - Run on-demand with customizable options  
-✅ **Docker-Based** - Isolated environment with all dependencies  
+✅ **Composite Action** - Runs directly on GitHub Actions runner with caching for performance  
 
 ## What Gets Cleaned Up
 
@@ -72,11 +72,10 @@ Located in `.github/cleanup-profiles/`:
 ```
 .github/
 ├── actions/
-│   └── cleanup-action/           # Docker-based GitHub Action
-│       ├── Dockerfile            # Builds sandbox + Eclipse product
-│       ├── entrypoint.sh         # Runs cleanup application
-│       ├── action.yml            # Action definition
-│       └── README.md             # Action documentation
+│   └── cleanup-action/           # Composite GitHub Action
+│       ├── action.yml            # Action definition with build and cleanup steps
+│       ├── README.md             # Action documentation
+│       └── TODO.md               # Status and future enhancements
 ├── cleanup-profiles/             # Cleanup configurations
 │   ├── minimal.properties
 │   ├── standard.properties
@@ -139,35 +138,31 @@ Then use it:
 
 ## How It Works
 
-### Build Phase (Docker)
-1. Uses Java 21 base image
-2. Installs Xvfb and dependencies for headless Eclipse
-3. Builds the entire sandbox project with Maven/Tycho
-4. Extracts Eclipse product from `sandbox_product/target/products`
-5. Packages everything in a Docker image
-
-### Runtime Phase
-1. Starts virtual display (Xvfb) for Eclipse UI components
-2. Creates Eclipse workspace
-3. Runs sandbox cleanup application with specified configuration
-4. Processes all Java files in specified directory
-5. Applies all enabled cleanup transformations
+### Composite Action Flow
+1. **Setup Java 21** - Installs Java 21 with Maven dependency caching
+2. **Cache Eclipse Product** - Checks cache for previously built Eclipse product (saves 10-15 minutes on cache hit)
+3. **Install Dependencies** - Installs Xvfb and GTK libraries for headless Eclipse
+4. **Build (Cache Miss Only)** - Builds entire sandbox project with Maven/Tycho if not cached
+5. **Extract Product (Cache Miss Only)** - Extracts Eclipse product from `sandbox_product/target/products` if not cached
+6. **Run Cleanup** - Starts Xvfb, creates workspace, and runs cleanup application
+7. **Process Files** - Applies all enabled cleanup transformations to Java files in specified directory
 
 ## Performance Notes
 
-- **First Run**: ~10-15 minutes (builds entire sandbox project)
-- **Subsequent Runs**: Faster due to Docker layer caching
-- **Optimization**: Consider pre-building and publishing Docker image to GitHub Container Registry
+- **First Run (Cache Miss)**: ~10-15 minutes (builds entire sandbox project)
+- **Subsequent Runs (Cache Hit)**: ~2-3 minutes (uses cached Eclipse product, no build needed)
+- **Optimization**: Action automatically caches the built Eclipse product and Maven dependencies for optimal performance
 
 ## Troubleshooting
 
 ### Build Failures
-**Issue**: Docker build fails during Maven compilation
+**Issue**: Maven build fails during action execution
 
 **Solution**: 
 - Check Java version (must be Java 21)
-- Verify Maven dependencies are accessible
+- Verify Maven dependencies are accessible in Maven Central/Eclipse repositories
 - Check build logs for specific errors
+- Clear GitHub Actions cache if stale (Settings → Actions → Caches)
 
 ### No Changes Applied
 **Issue**: Cleanup runs but no files are modified
@@ -181,10 +176,12 @@ Then use it:
 
 ### Workflow Takes Too Long
 **Solutions**:
-- Use minimal profile for faster execution
+- Build time is only slow on first run or cache miss (10-15 minutes)
+- Eclipse product caching automatically speeds up subsequent runs (~2-3 minutes)
+- Check cache status in GitHub Actions workflow logs
+- Use minimal profile for faster cleanup execution
 - Limit to specific directories with `source-dir`
-- Pre-build and publish Docker image
-- Run only on specific file patterns
+- Run only on specific file patterns or PR labels
 
 See the [Action README](.github/actions/cleanup-action/README.md) for detailed troubleshooting.
 
@@ -219,7 +216,7 @@ Option 2: Disable workflow in GitHub UI (Actions → Auto PR Cleanup → ⋯ →
 | Feature | GitHub Action | Command-Line Tool |
 |---------|--------------|-------------------|
 | **Integration** | Automated in CI/CD | Manual execution |
-| **Setup** | Docker-based, self-contained | Requires Eclipse installation |
+| **Setup** | Composite action, builds on runner | Requires Eclipse installation |
 | **Configuration** | Properties files | Properties files |
 | **Cleanups** | All sandbox + JDT cleanups | All sandbox + JDT cleanups |
 | **Use Case** | Automated PR cleanup | Local development, scripts |
@@ -229,7 +226,7 @@ Both use the same underlying **sandbox cleanup application**.
 ## Contributing
 
 Improvements welcome:
-- Optimize Docker build time
+- Further optimize build and caching strategies
 - Add more cleanup profiles
 - Support incremental cleanup (changed files only)
 - Add dry-run mode for previewing changes
