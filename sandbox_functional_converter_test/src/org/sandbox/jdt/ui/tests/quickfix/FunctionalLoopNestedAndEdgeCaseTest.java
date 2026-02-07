@@ -84,7 +84,7 @@ public class FunctionalLoopNestedAndEdgeCaseTest {
 		 * <p><b>Future enhancement:</b> See TODO.md for nested loop conversion roadmap.</p>
 		 */
 		@Test
-		@Disabled("Inner loop conversion in nested context not yet implemented - requires multi-pass cleanup execution")
+		@Test
 		@DisplayName("Nested for-each loops should convert inner loop only")
 		void test_NestedForEach_ShouldConvertInnerOnly() throws CoreException {
 			String sourceCode = """
