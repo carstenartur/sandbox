@@ -76,7 +76,24 @@ class WhileLoopStmtTest {
 	}
 	
 	@Test
-	void testHasConstantCondition() {
+	void testHasBooleanTypedCondition() {
+		SimpleNameExpr condition = SimpleNameExpr.builder()
+				.identifier("flag")
+				.type(booleanType)
+				.build();
+		
+		WhileLoopStmt stmt = WhileLoopStmt.builder()
+				.condition(condition)
+				.build();
+		
+		assertThat(stmt.hasBooleanTypedCondition()).isTrue();
+	}
+	
+	@Test
+	@SuppressWarnings("deprecation")
+	void testHasConstantCondition_deprecated() {
+		// Note: hasConstantCondition() is deprecated and doesn't actually check for constants,
+		// only for boolean type. This test remains for backward compatibility.
 		SimpleNameExpr condition = SimpleNameExpr.builder()
 				.identifier("true")
 				.type(booleanType)

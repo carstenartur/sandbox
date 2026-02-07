@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.sandbox.ast.api.expr.SimpleNameExpr;
 import org.sandbox.ast.api.info.TypeInfo;
 
-class IfStatementStmtTest {
+class IfStmtTest {
 	
 	private final TypeInfo booleanType = TypeInfo.Builder.of("boolean").primitive().build();
 	
@@ -28,7 +28,7 @@ class IfStatementStmtTest {
 		SimpleNameExpr condition = SimpleNameExpr.of("flag");
 		WhileLoopStmt thenStmt = WhileLoopStmt.builder().build();
 		
-		IfStatementStmt stmt = IfStatementStmt.builder()
+		IfStmt stmt = IfStmt.builder()
 				.condition(condition)
 				.thenStatement(thenStmt)
 				.build();
@@ -45,7 +45,7 @@ class IfStatementStmtTest {
 				.type(booleanType)
 				.build();
 		
-		IfStatementStmt stmt = IfStatementStmt.builder()
+		IfStmt stmt = IfStmt.builder()
 				.condition(condition)
 				.build();
 		
@@ -56,7 +56,7 @@ class IfStatementStmtTest {
 	void testHasThenStatement() {
 		WhileLoopStmt thenStmt = WhileLoopStmt.builder().build();
 		
-		IfStatementStmt stmt = IfStatementStmt.builder()
+		IfStmt stmt = IfStmt.builder()
 				.thenStatement(thenStmt)
 				.build();
 		
@@ -67,7 +67,7 @@ class IfStatementStmtTest {
 	void testHasElseStatement() {
 		EnhancedForStmt elseStmt = EnhancedForStmt.builder().build();
 		
-		IfStatementStmt stmt = IfStatementStmt.builder()
+		IfStmt stmt = IfStmt.builder()
 				.elseStatement(elseStmt)
 				.build();
 		
@@ -81,7 +81,7 @@ class IfStatementStmtTest {
 				.type(booleanType)
 				.build();
 		
-		IfStatementStmt stmt = IfStatementStmt.builder()
+		IfStmt stmt = IfStmt.builder()
 				.condition(condition)
 				.build();
 		
@@ -96,12 +96,12 @@ class IfStatementStmtTest {
 		WhileLoopStmt thenStmt1 = WhileLoopStmt.builder().build();
 		WhileLoopStmt thenStmt2 = WhileLoopStmt.builder().build();
 		
-		IfStatementStmt elseIfStmt = IfStatementStmt.builder()
+		IfStmt elseIfStmt = IfStmt.builder()
 				.condition(condition2)
 				.thenStatement(thenStmt2)
 				.build();
 		
-		IfStatementStmt stmt = IfStatementStmt.builder()
+		IfStmt stmt = IfStmt.builder()
 				.condition(condition1)
 				.thenStatement(thenStmt1)
 				.elseStatement(elseIfStmt)
@@ -117,30 +117,30 @@ class IfStatementStmtTest {
 		SimpleNameExpr condition2 = SimpleNameExpr.of("x == 2");
 		SimpleNameExpr condition3 = SimpleNameExpr.of("x == 3");
 		
-		IfStatementStmt elseIf2 = IfStatementStmt.builder()
+		IfStmt elseIf2 = IfStmt.builder()
 				.condition(condition3)
 				.build();
 		
-		IfStatementStmt elseIf1 = IfStatementStmt.builder()
+		IfStmt elseIf1 = IfStmt.builder()
 				.condition(condition2)
 				.elseStatement(elseIf2)
 				.build();
 		
-		IfStatementStmt stmt = IfStatementStmt.builder()
+		IfStmt stmt = IfStmt.builder()
 				.condition(condition1)
 				.elseStatement(elseIf1)
 				.build();
 		
 		assertThat(stmt.hasElseIf()).isTrue();
 		assertThat(stmt.elseIf()).contains(elseIf1);
-		assertThat(stmt.elseIf().flatMap(IfStatementStmt::elseIf)).contains(elseIf2);
+		assertThat(stmt.elseIf().flatMap(IfStmt::elseIf)).contains(elseIf2);
 	}
 	
 	@Test
 	void testNoElseIf() {
 		WhileLoopStmt elseStmt = WhileLoopStmt.builder().build();
 		
-		IfStatementStmt stmt = IfStatementStmt.builder()
+		IfStmt stmt = IfStmt.builder()
 				.elseStatement(elseStmt)
 				.build();
 		
@@ -150,7 +150,7 @@ class IfStatementStmtTest {
 	
 	@Test
 	void testEmptyStmt() {
-		IfStatementStmt stmt = IfStatementStmt.builder().build();
+		IfStmt stmt = IfStmt.builder().build();
 		
 		assertThat(stmt.hasCondition()).isFalse();
 		assertThat(stmt.hasThenStatement()).isFalse();
@@ -160,7 +160,7 @@ class IfStatementStmtTest {
 	
 	@Test
 	void testNullHandling() {
-		IfStatementStmt stmt = new IfStatementStmt(null, null, null);
+		IfStmt stmt = new IfStmt(null, null, null);
 		
 		assertThat(stmt.condition()).isEmpty();
 		assertThat(stmt.thenStatement()).isEmpty();
@@ -176,7 +176,7 @@ class IfStatementStmtTest {
 		WhileLoopStmt thenStmt = WhileLoopStmt.builder().build();
 		EnhancedForStmt elseStmt = EnhancedForStmt.builder().build();
 		
-		IfStatementStmt stmt = IfStatementStmt.builder()
+		IfStmt stmt = IfStmt.builder()
 				.condition(condition)
 				.thenStatement(thenStmt)
 				.elseStatement(elseStmt)
@@ -190,7 +190,7 @@ class IfStatementStmtTest {
 	
 	@Test
 	void testAsIfStatement() {
-		IfStatementStmt stmt = IfStatementStmt.builder().build();
+		IfStmt stmt = IfStmt.builder().build();
 		
 		assertThat(stmt.asIfStatement()).contains(stmt);
 		assertThat(stmt.isIfStatement()).isTrue();

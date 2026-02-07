@@ -22,7 +22,7 @@ import org.sandbox.ast.api.core.ASTWrapper;
  * Provides fluent query methods for working with AST statements.
  * 
  * <p>This is a marker interface extended by specific statement types like
- * {@link EnhancedForStmt}, {@link WhileLoopStmt}, {@link ForLoopStmt}, and {@link IfStatementStmt}.</p>
+ * {@link EnhancedForStmt}, {@link WhileLoopStmt}, {@link ForLoopStmt}, and {@link IfStmt}.</p>
  * 
  * <p>Example usage:</p>
  * <pre>
@@ -63,12 +63,12 @@ public interface ASTStmt extends ASTWrapper {
 	}
 	
 	/**
-	 * Attempts to cast this statement to an {@link IfStatementStmt}.
+	 * Attempts to cast this statement to an {@link IfStmt}.
 	 * 
 	 * @return the if statement, or empty if this is not an if statement
 	 */
-	default Optional<IfStatementStmt> asIfStatement() {
-		return this instanceof IfStatementStmt is ? Optional.of(is) : Optional.empty();
+	default Optional<IfStmt> asIfStatement() {
+		return this instanceof IfStmt is ? Optional.of(is) : Optional.empty();
 	}
 	
 	/**
@@ -104,6 +104,6 @@ public interface ASTStmt extends ASTWrapper {
 	 * @return true if this is an if statement
 	 */
 	default boolean isIfStatement() {
-		return this instanceof IfStatementStmt;
+		return this instanceof IfStmt;
 	}
 }

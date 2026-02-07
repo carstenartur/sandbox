@@ -84,12 +84,28 @@ public record WhileLoopStmt(
 	}
 	
 	/**
-	 * Checks if the condition is a boolean constant.
+	 * Checks if the condition expression has the primitive boolean type.
 	 * 
-	 * @return true if condition is boolean
+	 * @return true if the condition is present and has type {@code boolean}
 	 */
-	public boolean hasConstantCondition() {
+	public boolean hasBooleanTypedCondition() {
 		return condition.map(c -> c.hasType("boolean")).orElse(false);
+	}
+	
+	/**
+	 * Checks if the condition expression has the primitive boolean type.
+	 * <p>
+	 * Note: despite its name, this method does <strong>not</strong> check whether
+	 * the condition is a compile-time constant; it only checks that the
+	 * condition is of type {@code boolean}.
+	 * </p>
+	 * 
+	 * @return true if the condition is present and has type {@code boolean}
+	 * @deprecated Use {@link #hasBooleanTypedCondition()} instead.
+	 */
+	@Deprecated
+	public boolean hasConstantCondition() {
+		return hasBooleanTypedCondition();
 	}
 	
 	/**

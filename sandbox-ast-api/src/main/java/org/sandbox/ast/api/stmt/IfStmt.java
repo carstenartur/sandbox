@@ -33,25 +33,25 @@ import org.sandbox.ast.api.expr.ASTExpr;
  * 
  * // New style:
  * stmt.asIfStatement()
- *     .flatMap(IfStatementStmt::condition)
+ *     .flatMap(IfStmt::condition)
  *     .filter(cond -&gt; cond.hasType("boolean"))
  *     .ifPresent(cond -&gt; { });
  * </pre>
  */
-public record IfStatementStmt(
+public record IfStmt(
 	Optional<ASTExpr> condition,
 	Optional<ASTStmt> thenStatement,
 	Optional<ASTStmt> elseStatement
 ) implements ASTStmt {
 	
 	/**
-	 * Creates an IfStatementStmt record.
+	 * Creates an IfStmt record.
 	 * 
 	 * @param condition the if condition
 	 * @param thenStatement the then-branch statement
 	 * @param elseStatement the else-branch statement (may be absent)
 	 */
-	public IfStatementStmt {
+	public IfStmt {
 		condition = condition == null ? Optional.empty() : condition;
 		thenStatement = thenStatement == null ? Optional.empty() : thenStatement;
 		elseStatement = elseStatement == null ? Optional.empty() : elseStatement;
@@ -110,12 +110,12 @@ public record IfStatementStmt(
 	 * 
 	 * @return the else-if statement, or empty if not an else-if
 	 */
-	public Optional<IfStatementStmt> elseIf() {
+	public Optional<IfStmt> elseIf() {
 		return elseStatement.flatMap(ASTStmt::asIfStatement);
 	}
 	
 	/**
-	 * Builder for creating IfStatementStmt instances.
+	 * Builder for creating IfStmt instances.
 	 */
 	public static class Builder {
 		private Optional<ASTExpr> condition = Optional.empty();
@@ -156,12 +156,12 @@ public record IfStatementStmt(
 		}
 		
 		/**
-		 * Builds the IfStatementStmt.
+		 * Builds the IfStmt.
 		 * 
 		 * @return the if statement
 		 */
-		public IfStatementStmt build() {
-			return new IfStatementStmt(condition, thenStatement, elseStatement);
+		public IfStmt build() {
+			return new IfStmt(condition, thenStatement, elseStatement);
 		}
 	}
 	
