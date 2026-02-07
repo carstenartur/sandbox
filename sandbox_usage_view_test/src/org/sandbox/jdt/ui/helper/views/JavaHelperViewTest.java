@@ -45,9 +45,10 @@ import org.junit.jupiter.api.Test;
  * Test class for JavaHelperView and related components.
  * 
  * Tests verify:
- * - VarVisitor correctly identifies variables and their types
+ * - VariableBindingVisitor correctly identifies variables and their types
  * - Detection of duplicate variable names with different types
  * - JHViewContentProvider returns expected variable bindings
+ * - NamingConflictFilter correctly identifies naming conflicts
  */
 public class JavaHelperViewTest {
 
@@ -70,10 +71,10 @@ public class JavaHelperViewTest {
 	}
 
 	/**
-	 * Test that VarVisitor correctly identifies variables from a compilation unit
+	 * Test that VariableBindingVisitor correctly identifies variables from a compilation unit
 	 */
 	@Test
-	public void testVarVisitorBasicFunctionality() throws Exception {
+	public void testVariableBindingVisitorBasicFunctionality() throws Exception {
 		// Create a simple Java file with some variables
 		String testCode = """
 			package test;
@@ -87,7 +88,7 @@ public class JavaHelperViewTest {
 			""";
 		
 		CompilationUnit cu = parseCode(testCode);
-		VarVisitor visitor = new VarVisitor();
+		VariableBindingVisitor visitor = new VariableBindingVisitor();
 		visitor.process(cu);
 		
 		Set<IVariableBinding> vars = visitor.getVars();
@@ -141,7 +142,7 @@ public class JavaHelperViewTest {
 			""";
 		
 		CompilationUnit cu = parseCode(testCode);
-		VarVisitor visitor = new VarVisitor();
+		VariableBindingVisitor visitor = new VariableBindingVisitor();
 		visitor.process(cu);
 		
 		Set<IVariableBinding> vars = visitor.getVars();
@@ -231,7 +232,7 @@ public class JavaHelperViewTest {
 			""";
 		
 		CompilationUnit cu = parseCode(testCode);
-		VarVisitor visitor = new VarVisitor();
+		VariableBindingVisitor visitor = new VariableBindingVisitor();
 		visitor.process(cu);
 		
 		Set<IVariableBinding> vars = visitor.getVars();
@@ -309,6 +310,90 @@ public class JavaHelperViewTest {
 		} finally {
 			provider.dispose();
 		}
+	}
+
+	/**
+	 * Test NamingConflictFilter correctly identifies variables with same name but different types.
+	 */
+	@Test
+	public void testNamingConflictFilterDetectsConflicts() throws Exception {
+		String testCode = """
+			package test;
+			public class TestClass {
+				public void method1() {
+					String data = "test";
+					System.out.println(data);
+				}
+				
+				public void method2() {
+					int data = 42;
+					System.out.println(data);
+				}
+				
+				public void method3() {
+					String uniqueName = "unique";
+					System.out.println(uniqueName);
+				}
+			}
+			""";
+		
+		CompilationUnit cu = parseCode(testCode);
+		VariableBindingVisitor visitor = new VariableBindingVisitor();
+		visitor.process(cu);
+		
+		Set<IVariableBinding> vars = visitor.getVars();
+		Object[] elements = vars.toArray();
+		
+		NamingConflictFilter filter = new NamingConflictFilter();
+		filter.analyzeElements(elements);
+		
+		Set<String> conflictingNames = filter.getConflictingNames();
+		
+		// 'data' should be detected as a conflict (String vs int)
+		assertTrue(conflictingNames.contains("data"), 
+			"'data' should be detected as a naming conflict (String vs int)");
+		
+		// 'uniqueName' should NOT be a conflict (only one type)
+		assertFalse(conflictingNames.contains("uniqueName"), 
+			"'uniqueName' should not be a conflict (only one type)");
+		
+		assertTrue(filter.hasConflicts(), "Filter should report having conflicts");
+	}
+
+	/**
+	 * Test NamingConflictFilter with no conflicts.
+	 */
+	@Test
+	public void testNamingConflictFilterNoConflicts() throws Exception {
+		String testCode = """
+			package test;
+			public class TestClass {
+				public void method1() {
+					String name1 = "test";
+					int count1 = 5;
+				}
+				
+				public void method2() {
+					String name2 = "test2";
+					int count2 = 10;
+				}
+			}
+			""";
+		
+		CompilationUnit cu = parseCode(testCode);
+		VariableBindingVisitor visitor = new VariableBindingVisitor();
+		visitor.process(cu);
+		
+		Set<IVariableBinding> vars = visitor.getVars();
+		Object[] elements = vars.toArray();
+		
+		NamingConflictFilter filter = new NamingConflictFilter();
+		filter.analyzeElements(elements);
+		
+		assertFalse(filter.hasConflicts(), 
+			"Filter should report no conflicts when all variable names are unique");
+		assertTrue(filter.getConflictingNames().isEmpty(), 
+			"Conflicting names set should be empty");
 	}
 
 	// Helper methods

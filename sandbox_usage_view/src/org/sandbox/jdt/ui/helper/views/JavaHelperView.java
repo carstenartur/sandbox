@@ -15,23 +15,22 @@ package org.sandbox.jdt.ui.helper.views;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.e4.core.services.log.Logger;
 import org.eclipse.jdt.core.IClassFile;
-import org.eclipse.jdt.core.ICodeAssist;
 import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IField;
 import org.eclipse.jdt.core.IJarEntryResource;
 import org.eclipse.jdt.core.IJavaElement;
-import org.eclipse.jdt.core.IJavaModel;
 import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.ILocalVariable;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaCore;
@@ -39,23 +38,22 @@ import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.internal.core.SourceType;
 import org.eclipse.jdt.ui.JavaUI;
-import org.eclipse.jdt.ui.JavaElementLabelProvider;
+import org.eclipse.jdt.ui.refactoring.RenameSupport;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
-import org.eclipse.jface.resource.ImageDescriptor;
-import org.eclipse.jface.text.ITextSelection;
+import org.eclipse.jface.dialogs.InputDialog;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.layout.TableColumnLayout;
+import org.eclipse.jface.window.Window;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.BusyIndicator;
-import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
@@ -87,6 +85,7 @@ import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.part.ViewPart;
 import org.eclipse.ui.progress.IProgressService;
 import org.sandbox.jdt.ui.helper.views.colum.AbstractColumn;
+import org.sandbox.jdt.ui.helper.views.colum.ConflictHighlightingLabelProvider;
 import org.sandbox.jdt.ui.helper.views.colum.DeclaringMethodColumn;
 import org.sandbox.jdt.ui.helper.views.colum.DeprecatedColumn;
 import org.sandbox.jdt.ui.helper.views.colum.NameColumn;
@@ -98,19 +97,23 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 	Logger logger= PlatformUI.getWorkbench().getService(Logger.class);
 	TableViewer variableTableViewer;
 	private Table variableTable;
-	//	private JERoot fInput;
 	private Action refreshAction;
-	private Action resetAction;
-	private Action setInputFromEditorLocationAction;
 	private Action propertiesAction;
-	//	private Action fFocusAction;
 
-	private Action setInputFromEditorSelectionAction;
-	
 	private Action linkWithSelectionAction;
+	
+	private Action filterConflictsAction;
+	
+	private Action renameVariableAction;
 	
 	/** When true, the view automatically updates when selections change in other views */
 	private boolean linkWithSelectionEnabled = true;
+	
+	/** When true, only shows variables with naming conflicts (same name, different type) */
+	private boolean filterConflictsEnabled = false;
+	
+	/** Filter for showing only naming conflicts */
+	private NamingConflictFilter namingConflictFilter = new NamingConflictFilter();
 
 	private IPartListener2 editorPartListener;
 
@@ -149,10 +152,10 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 		AbstractColumn.addColumn(variableTableViewer, new DeclaringMethodColumn(), tableColumnLayout);
 
 		variableTableViewer.setComparator(AbstractColumn.getComparator());
-		reset();
 		makeActions();
 		hookContextMenu();
 		hookDoubleClickAction();
+		hookConflictHighlighting();
 		getSite().setSelectionProvider(new JHViewSelectionProvider(variableTableViewer));
 		contributeToActionBars();
 		// variableTableViewer.addSelectionChangedListener(event -> fCopyAction.setEnabled(!
@@ -177,23 +180,15 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 
 	private void fillLocalToolBar(IToolBarManager manager) {
 		manager.add(linkWithSelectionAction);
+		manager.add(filterConflictsAction);
 		manager.add(new Separator());
-		manager.add(setInputFromEditorSelectionAction);
-		manager.add(setInputFromEditorLocationAction);
-		manager.add(resetAction);
 		manager.add(refreshAction);
-		manager.add(new Separator());
 		// fDrillDownAdapter.addNavigationActions(manager);
 	}
 
 	private void fillLocalPullDown(IMenuManager manager) {
 		manager.add(linkWithSelectionAction);
-		manager.add(new Separator());
-		manager.add(setInputFromEditorSelectionAction);
-		manager.add(setInputFromEditorLocationAction);
-		// manager.add(fCreateFromHandleAction);
-		manager.add(resetAction);
-		// manager.add(fLogDeltasAction);
+		manager.add(filterConflictsAction);
 		manager.add(new Separator());
 		manager.add(refreshAction);
 	}
@@ -210,61 +205,27 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 		linkWithSelectionAction.setImageDescriptor(JHPluginImages.IMG_SET_FOCUS);
 		linkWithSelectionAction.setChecked(linkWithSelectionEnabled);
 		
-		setInputFromEditorSelectionAction= new Action("Set Input from Editor (&codeSelect)", JHPluginImages.IMG_SET_FOCUS_CODE_SELECT) { //$NON-NLS-1$
+		// Toggle action for filtering naming conflicts
+		filterConflictsAction = new Action("Filter Naming Conflicts", Action.AS_CHECK_BOX) { //$NON-NLS-1$
 			@Override
 			public void run() {
-				IEditorPart editor= getSite().getPage().getActiveEditor();
-				if (editor == null) {
-					setEmptyInput();
-					return;
-				}
-				IEditorInput input= editor.getEditorInput();
-				ISelectionProvider selectionProvider= editor.getSite().getSelectionProvider();
-				if (input == null || selectionProvider == null) {
-					setEmptyInput();
-					return;
-				}
-				ISelection selection= selectionProvider.getSelection();
-				if (!(selection instanceof ITextSelection)) {
-					setEmptyInput();
-					return;
-				}
-				IJavaElement javaElement= input.getAdapter(IJavaElement.class);
-				if (javaElement == null) {
-					setEmptyInput();
-					return;
-				}
-
-				IJavaElement[] resolved;
-				try {
-					resolved= codeResolve(javaElement, (ITextSelection) selection);
-				} catch (JavaModelException e) {
-					setEmptyInput();
-					return;
-				}
-				if (resolved.length == 0) {
-					setEmptyInput();
-					return;
-				}
-
-				List<IJavaElement> asList= Arrays.asList(resolved);
-
-				setInput(asList);
+				filterConflictsEnabled = isChecked();
+				applyConflictFilter();
 			}
 		};
-		setInputFromEditorSelectionAction.setToolTipText("Set input from current editor's selection (codeSelect)"); //$NON-NLS-1$
-		//		fFocusAction = new Action() {
-		//			@Override
-		//			public void run() {
-		//				Object selected = ((IStructuredSelection) variableTableViewer.getSelection()).getFirstElement();
-		//				if (selected instanceof JavaElement) {
-		//					setSingleInput((IJavaModel) ((JavaElement) selected).getJavaElement());
-		//				} else if (selected instanceof JEResource) {
-		//					setSingleInput((IJavaModel) ((JEResource) selected).getResource());
-		//				}
-		//			}
-		//		};
-		//		fFocusAction.setToolTipText("Focus on Selection");
+		filterConflictsAction.setToolTipText("Filter Naming Conflicts - when enabled, only shows variables with the same name but different types"); //$NON-NLS-1$
+		filterConflictsAction.setImageDescriptor(JHPluginImages.IMG_FILTER_CONFLICTS);
+		filterConflictsAction.setChecked(filterConflictsEnabled);
+		
+		// Action to rename a variable with a suggested name based on type
+		renameVariableAction = new Action("Rename Variable with Type Suffix...") { //$NON-NLS-1$
+			@Override
+			public void run() {
+				renameSelectedVariable();
+			}
+		};
+		renameVariableAction.setToolTipText("Rename the selected variable with a suggested name based on its type"); //$NON-NLS-1$
+		
 		propertiesAction= new Action("&Properties", JHPluginImages.IMG_PROPERTIES) { //$NON-NLS-1$
 			@Override
 			public void run() {
@@ -281,13 +242,7 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 			}
 		};
 		propertiesAction.setActionDefinitionId(IWorkbenchCommandConstants.FILE_PROPERTIES);
-		resetAction= new Action("&Reset View", getJavaModelImageDescriptor()) { //$NON-NLS-1$
-			@Override
-			public void run() {
-				reset();
-			}
-		};
-		resetAction.setToolTipText("Reset View to JavaModel"); //$NON-NLS-1$
+		
 		refreshAction= new Action("Re&fresh", JHPluginImages.IMG_REFRESH) { //$NON-NLS-1$
 			@Override
 			public void run() {
@@ -296,110 +251,121 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 		};
 		refreshAction.setToolTipText("Refresh"); //$NON-NLS-1$
 		refreshAction.setActionDefinitionId("org.eclipse.ui.file.refresh"); //$NON-NLS-1$
-		setInputFromEditorLocationAction= new Action("Set Input from Editor location (&getElementAt)", JHPluginImages.IMG_SET_FOCUS) { //$NON-NLS-1$
-			@Override
-			public void run() {
-				IEditorPart editor= getSite().getPage().getActiveEditor();
-				if (editor == null) {
-					setEmptyInput();
-					return;
-				}
-				IEditorInput input= editor.getEditorInput();
-				ISelectionProvider selectionProvider= editor.getSite().getSelectionProvider();
-				if (input == null || selectionProvider == null) {
-					setEmptyInput();
-					return;
-				}
-				ISelection selection= selectionProvider.getSelection();
-				if (!(selection instanceof ITextSelection)) {
-					setEmptyInput();
-					return;
-				}
-				IJavaElement javaElement= input.getAdapter(IJavaElement.class);
-				if (javaElement == null) {
-					setEmptyInput();
-					return;
-				}
-
-				IJavaElement resolved;
-				try {
-					resolved= getElementAtOffset(javaElement, (ITextSelection) selection);
-				} catch (JavaModelException e) {
-					setEmptyInput();
-					return;
-				}
-				if (resolved == null) {
-					setEmptyInput();
-					return;
-				}
-
-				IResource correspondingResource= resolved.getResource();
-				setSingleInput(correspondingResource);
-
-			}
-
-		};
-		setInputFromEditorLocationAction.setToolTipText("Set input from current editor's selection location (getElementAt)"); //$NON-NLS-1$
 	}
-
-	void setEmptyInput() {
-		setInput(Collections.<IJavaModel>emptyList());
+	
+	/**
+	 * Applies or removes the naming conflict filter based on the filterConflictsEnabled flag.
+	 * When applying, analyzes all elements first to identify conflicts.
+	 */
+	private void applyConflictFilter() {
+		if (filterConflictsEnabled) {
+			// Analyze current elements to find conflicts
+			JHViewContentProvider contentProvider = (JHViewContentProvider) variableTableViewer.getContentProvider();
+			Object[] elements = contentProvider.getElements(variableTableViewer.getInput());
+			namingConflictFilter.analyzeElements(elements);
+			
+			// Add filter
+			variableTableViewer.addFilter(namingConflictFilter);
+		} else {
+			// Remove filter
+			variableTableViewer.removeFilter(namingConflictFilter);
+		}
 	}
-
-	static IJavaElement[] codeResolve(IJavaElement input, ITextSelection selection) throws JavaModelException {
-		if (input instanceof ICodeAssist) {
-			if (input instanceof ICompilationUnit) {
-				reconcile((ICompilationUnit) input);
-			}
-			IJavaElement[] elements= ((ICodeAssist) input).codeSelect(selection.getOffset(), selection.getLength());
-			if (elements != null && elements.length > 0) {
-				return elements;
+	
+	/**
+	 * Renames the currently selected variable with a suggested name based on its type.
+	 * Shows a dialog to allow the user to modify the suggested name before applying.
+	 */
+	private void renameSelectedVariable() {
+		IStructuredSelection selection = variableTableViewer.getStructuredSelection();
+		Object element = selection.getFirstElement();
+		
+		if (!(element instanceof IVariableBinding variableBinding)) {
+			return;
+		}
+		
+		IJavaElement javaElement = variableBinding.getJavaElement();
+		if (javaElement == null) {
+			return;
+		}
+		
+		String suggestedName = VariableNameSuggester.suggestName(variableBinding);
+		String currentName = variableBinding.getName();
+		
+		// Show input dialog with suggested name pre-filled
+		InputDialog dialog = new InputDialog(
+				getSite().getShell(),
+				"Rename Variable", //$NON-NLS-1$
+				"Enter new name for variable '" + currentName + "':", //$NON-NLS-1$ //$NON-NLS-2$
+				suggestedName,
+				newText -> {
+					if (newText == null || newText.trim().isEmpty()) {
+						return "Name cannot be empty"; //$NON-NLS-1$
+					}
+					if (!isValidJavaIdentifier(newText)) {
+						return "Invalid Java identifier"; //$NON-NLS-1$
+					}
+					return null;
+				});
+		
+		if (dialog.open() == Window.OK) {
+			String newName = dialog.getValue();
+			if (!newName.equals(currentName)) {
+				performRename(javaElement, newName);
 			}
 		}
-		return new IJavaElement[0];
 	}
-
-	static IJavaElement getElementAtOffset(IJavaElement input, ITextSelection selection) throws JavaModelException {
-		if (input instanceof ICompilationUnit cunit) {
-			reconcile(cunit);
-			IJavaElement ref= cunit.getElementAt(selection.getOffset());
-			if (ref == null) {
-				return input;
-			}
-			return ref;
+	
+	/**
+	 * Checks if a string is a valid Java identifier.
+	 * 
+	 * @param name the name to check
+	 * @return true if the name is a valid Java identifier
+	 */
+	private boolean isValidJavaIdentifier(String name) {
+		if (name == null || name.isEmpty()) {
+			return false;
 		}
-		if (input instanceof IClassFile) {
-			IJavaElement ref= ((IClassFile) input).getElementAt(selection.getOffset());
-			if (ref != null) {
-				return ref;
+		if (!Character.isJavaIdentifierStart(name.charAt(0))) {
+			return false;
+		}
+		for (int i = 1; i < name.length(); i++) {
+			if (!Character.isJavaIdentifierPart(name.charAt(i))) {
+				return false;
 			}
 		}
-		return input;
+		return true;
 	}
-
-	//	private void addFocusActionOrNot(IMenuManager manager) {
-	//		if (tableViewer.getSelection() instanceof IStructuredSelection) {
-	//			IStructuredSelection structuredSelection = (IStructuredSelection) tableViewer.getSelection();
-	//			if (structuredSelection.size() == 1) {
-	//				Object first = structuredSelection.getFirstElement();
-	//				if (first instanceof JavaElement) {
-	//					IJavaElement javaElement = ((JavaElement) first).getJavaElement();
-	//					if (javaElement != null) {
-	//						String name = javaElement.getElementName();
-	//						fFocusAction.setText("Fo&cus On '" + name + '\'');
-	//						manager.add(fFocusAction);
-	//					}
-	//				} else if (first instanceof JEResource) {
-	//					IResource resource = ((JEResource) first).getResource();
-	//					if (resource != null) {
-	//						String name = resource.getName();
-	//						fFocusAction.setText("Fo&cus On '" + name + '\'');
-	//						manager.add(fFocusAction);
-	//					}
-	//				}
-	//			}
-	//		}
-	//	}
+	
+	/**
+	 * Performs the rename refactoring using JDT's RenameSupport.
+	 * Opens the refactoring wizard dialog with preview option.
+	 * 
+	 * @param javaElement the Java element to rename
+	 * @param newName the new name
+	 */
+	private void performRename(IJavaElement javaElement, String newName) {
+		try {
+			RenameSupport renameSupport = null;
+			
+			if (javaElement instanceof IField field) {
+				renameSupport = RenameSupport.create(field, newName, 
+						RenameSupport.UPDATE_REFERENCES | RenameSupport.UPDATE_GETTER_METHOD | RenameSupport.UPDATE_SETTER_METHOD);
+			} else if (javaElement instanceof ILocalVariable localVariable) {
+				renameSupport = RenameSupport.create(localVariable, newName, RenameSupport.UPDATE_REFERENCES);
+			}
+			
+			if (renameSupport != null) {
+				// Check if refactoring is valid
+				if (renameSupport.preCheck().isOK()) {
+					// Open the refactoring wizard dialog with preview
+					renameSupport.openDialog(getSite().getShell(), true);
+				}
+			}
+		} catch (CoreException e) {
+			logger.error(e, "Error performing rename refactoring"); //$NON-NLS-1$
+		}
+	}
 
 	/* see JavaModelUtil.reconcile((ICompilationUnit) input) */
 	static void reconcile(ICompilationUnit unit) throws JavaModelException {
@@ -409,31 +375,25 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 		}
 	}
 
-	private ImageDescriptor getJavaModelImageDescriptor() {
-		JavaElementLabelProvider lp= new JavaElementLabelProvider(JavaElementLabelProvider.SHOW_SMALL_ICONS);
-		Image modelImage= lp.getImage(getJavaModel());
-		ImageDescriptor modelImageDescriptor= ImageDescriptor.createFromImage(modelImage);
-		lp.dispose();
-		return modelImageDescriptor;
-	}
-
-	void reset() {
-		setSingleInput(getJavaModel());
-	}
-
-	private IResource getJavaModel() {
-		//		return JavaCore.create(ResourcesPlugin.getWorkspace().getRoot());
-		return ResourcesPlugin.getWorkspace().getRoot();
-		//		return null;
-	}
-
 	private void hookContextMenu() {
 		MenuManager menuMgr= new MenuManager("#PopupMenu"); //$NON-NLS-1$
 		menuMgr.setRemoveAllWhenShown(true);
 		menuMgr.addMenuListener(this::fillContextMenu);
-		Menu menu= menuMgr.createContextMenu(variableTableViewer.getControl());
-		variableTableViewer.getControl().setMenu(menu);
+		Menu menu= menuMgr.createContextMenu(variableTable);
+		variableTable.setMenu(menu);
 		getSite().registerContextMenu(menuMgr, variableTableViewer);
+		
+		// Add mouse listener to select the row under cursor on right-click
+		variableTable.addListener(SWT.MenuDetect, event -> {
+			org.eclipse.swt.graphics.Point pt = variableTable.getDisplay().map(null, variableTable, event.x, event.y);
+			org.eclipse.swt.widgets.TableItem item = variableTable.getItem(pt);
+			if (item != null) {
+				Object data = item.getData();
+				if (data != null) {
+					variableTableViewer.setSelection(new StructuredSelection(data), true);
+				}
+			}
+		});
 	}
 
 	/**
@@ -448,6 +408,42 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 				openVariableDeclaration(variableBinding);
 			}
 		});
+	}
+
+	/**
+	 * Adds custom painting for conflict highlighting using SWT's EraseItem event.
+	 * This paints a light red background for rows where the variable name has type conflicts.
+	 */
+	private void hookConflictHighlighting() {
+		final org.eclipse.swt.graphics.Color conflictColor = new org.eclipse.swt.graphics.Color(
+				variableTable.getDisplay(), 255, 200, 200);
+		
+		variableTable.addListener(SWT.EraseItem, event -> {
+			// Only handle background painting
+			if ((event.detail & SWT.BACKGROUND) == 0) {
+				return;
+			}
+			
+			org.eclipse.swt.widgets.TableItem item = (org.eclipse.swt.widgets.TableItem) event.item;
+			Object data = item.getData();
+			
+			if (data instanceof IVariableBinding variableBinding) {
+				Set<String> conflicts = ConflictHighlightingLabelProvider.getConflictingNames();
+				if (conflicts != null && conflicts.contains(variableBinding.getName())) {
+					// Paint conflict background
+					org.eclipse.swt.graphics.GC gc = event.gc;
+					org.eclipse.swt.graphics.Color oldBackground = gc.getBackground();
+					gc.setBackground(conflictColor);
+					gc.fillRectangle(event.x, event.y, event.width, event.height);
+					gc.setBackground(oldBackground);
+					// Mark that we handled the background
+					event.detail &= ~SWT.BACKGROUND;
+				}
+			}
+		});
+		
+		// Dispose color when table is disposed
+		variableTable.addDisposeListener(e -> conflictColor.dispose());
 	}
 
 	/**
@@ -483,29 +479,31 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 	}
 
 	void fillContextMenu(IMenuManager manager) {
-		//		addFocusActionOrNot(manager);
-		manager.add(resetAction);
 		manager.add(refreshAction);
 		manager.add(new Separator());
 
-		if (!getSite().getSelectionProvider().getSelection().isEmpty()) {
+		// Add rename action when a variable is selected
+		IStructuredSelection selection = variableTableViewer.getStructuredSelection();
+		if (!selection.isEmpty()) {
+			Object selectedElement = selection.getFirstElement();
+			if (selectedElement instanceof IVariableBinding variableBinding) {
+				IJavaElement javaElement = variableBinding.getJavaElement();
+				// Enable rename only for fields and local variables
+				boolean canRename = javaElement instanceof IField || javaElement instanceof ILocalVariable;
+				renameVariableAction.setEnabled(canRename);
+				manager.add(renameVariableAction);
+				manager.add(new Separator());
+			}
+			
 			MenuManager showInSubMenu= new MenuManager(getShowInMenuLabel());
 			IWorkbenchWindow workbenchWindow= getSite().getWorkbenchWindow();
 			showInSubMenu.add(ContributionItemFactory.VIEWS_SHOW_IN.create(workbenchWindow));
 			manager.add(showInSubMenu);
 		}
-		// addElementActionsOrNot(manager);
-		manager.add(new Separator());
-
-		// manager.add(fCopyAction);
-		manager.add(new Separator());
-
-		// fDrillDownAdapter.addNavigationActions(manager);
 		manager.add(new Separator());
 		// Other plug-ins can contribute there actions here
 		manager.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
 		manager.add(new Separator());
-		// addCompareActionOrNot(manager);
 		manager.add(propertiesAction);
 	}
 
@@ -627,6 +625,14 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 		
 		JHViewContentProvider contentProvider= (JHViewContentProvider) variableTableViewer.getContentProvider();
 		Object[] elements= contentProvider.getElements(javaElementsOrResources);
+		
+		// Analyze elements for naming conflicts and update the highlighting
+		namingConflictFilter.analyzeElements(elements);
+		ConflictHighlightingLabelProvider.setConflictingNames(namingConflictFilter.getConflictingNames());
+		
+		// Refresh the table to apply the conflict highlighting
+		variableTableViewer.refresh();
+		
 		if (elements.length > 0) {
 			variableTableViewer.setSelection(new StructuredSelection(elements[0]));
 			// if (elements.length == 1) {

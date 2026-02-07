@@ -31,7 +31,7 @@ public class QualifiednameColumn extends AbstractColumn {
 
 	@Override
 	public void createColumn(TableViewer viewer, int pos) {
-		createTableViewerColumn(viewer, TITLE, MINIMUM_WIDTH, pos).setLabelProvider(new AlternatingColumnLabelProvider() {
+		createTableViewerColumn(viewer, TITLE, MINIMUM_WIDTH, pos).setLabelProvider(new ConflictHighlightingLabelProvider() {
 			@Override
 			public String getText(Object element) {
 				IVariableBinding binding = (IVariableBinding) element;
@@ -43,7 +43,7 @@ public class QualifiednameColumn extends AbstractColumn {
 	@Override
 	public void createColumn(TableViewer viewer, int pos, TableColumnLayout tableColumnLayout) {
 		TableViewerColumn viewerColumn = createTableViewerColumn(viewer, TITLE, MINIMUM_WIDTH, pos);
-		viewerColumn.setLabelProvider(new AlternatingColumnLabelProvider() {
+		viewerColumn.setLabelProvider(new ConflictHighlightingLabelProvider() {
 			@Override
 			public String getText(Object element) {
 				IVariableBinding binding = (IVariableBinding) element;

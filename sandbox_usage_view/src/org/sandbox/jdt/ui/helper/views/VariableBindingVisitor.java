@@ -26,8 +26,8 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
  * Visitor class that collects all variable bindings from SimpleName nodes
  * using the AstProcessorBuilder API for cleaner and more maintainable code.
  */
-final class VariableBindingVisitor {
-	Set<IVariableBinding> collectedVariableBindings = new HashSet<>();
+public final class VariableBindingVisitor {
+	private Set<IVariableBinding> collectedVariableBindings = new HashSet<>();
 
 	/**
 	 * Process the AST node and collect all variable bindings.
@@ -53,6 +53,16 @@ final class VariableBindingVisitor {
 	 * @return set of IVariableBinding instances found during processing
 	 */
 	public Set<IVariableBinding> getVariableBindings() {
+		return collectedVariableBindings;
+	}
+	
+	/**
+	 * Returns the set of collected variable bindings.
+	 * Alias for {@link #getVariableBindings()} for convenience.
+	 * 
+	 * @return set of IVariableBinding instances found during processing
+	 */
+	public Set<IVariableBinding> getVars() {
 		return collectedVariableBindings;
 	}
 }
