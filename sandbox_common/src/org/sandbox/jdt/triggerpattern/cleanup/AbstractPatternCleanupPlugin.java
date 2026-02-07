@@ -13,11 +13,14 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.cleanup;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
@@ -27,8 +30,10 @@ import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
+import org.sandbox.jdt.triggerpattern.api.HintContext;
 import org.sandbox.jdt.triggerpattern.api.Match;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
+import org.sandbox.jdt.triggerpattern.api.PatternKind;
 import org.sandbox.jdt.triggerpattern.api.RewriteRule;
 import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
 
@@ -235,21 +240,28 @@ public abstract class AbstractPatternCleanupPlugin<H> {
     /**
      * Provides default implementation of processRewrite using @RewriteRule annotation.
      * This method can be called by subclasses that want to use declarative @RewriteRule
-     * for simple annotation replacements.
+     * for pattern-based transformations.
      * 
-     * <p><b>Limitations:</b> This default implementation only supports:
+     * <p><b>Supported patterns:</b></p>
      * <ul>
-     *   <li>MarkerAnnotation (no parameters): {@code @BeforeEach}</li>
-     *   <li>SingleMemberAnnotation (single value): {@code @Disabled($value)}</li>
+     *   <li>ANNOTATION patterns: MarkerAnnotation, SingleMemberAnnotation</li>
+     *   <li>EXPRESSION patterns: Any expression replacement (delegates to FixUtilities.rewriteFix)</li>
+     *   <li>METHOD_CALL patterns: Method invocation replacement (delegates to FixUtilities.rewriteFix)</li>
+     *   <li>CONSTRUCTOR patterns: Constructor invocation replacement (delegates to FixUtilities.rewriteFix)</li>
+     *   <li>STATEMENT patterns: Statement replacement (delegates to FixUtilities.rewriteFix)</li>
+     *   <li>FIELD patterns: Field declaration replacement (delegates to FixUtilities.rewriteFix)</li>
      * </ul>
-     * NormalAnnotation with named parameters like {@code @Ignore(value="reason")} is not supported.
-     * </p>
+     * 
+     * <p><b>Limitations for ANNOTATION patterns:</b></p>
+     * <ul>
+     *   <li>NormalAnnotation with named parameters like {@code @Ignore(value="reason")} is not supported.</li>
+     * </ul>
      * 
      * @param group the text edit group for tracking changes
      * @param rewriter the AST rewriter
      * @param ast the AST instance
      * @param importRewriter the import rewriter
-     * @param holder the holder containing transformation information (must provide getAnnotation() and getBindingAsExpression() methods)
+     * @param holder the holder containing transformation information (must provide getMinv() and getBindings() methods)
      */
     protected void processRewriteWithRule(TextEditGroup group, ASTRewrite rewriter, AST ast,
             ImportRewrite importRewriter, Object holder) {
@@ -260,6 +272,28 @@ public abstract class AbstractPatternCleanupPlugin<H> {
                 "Plugin " + getClass().getSimpleName() +  //$NON-NLS-1$
                 " must be annotated with @RewriteRule because it does not override processRewrite()"); //$NON-NLS-1$
         }
+        
+        // Get the matched node from holder
+        ASTNode matchedNode = getMatchedNodeFromHolder(holder);
+        
+        // Determine the pattern kind from the matched node type
+        PatternKind patternKind = org.sandbox.jdt.triggerpattern.api.FixUtilities.determinePatternKindFromNode(matchedNode);
+        
+        // For ANNOTATION patterns, use the legacy annotation replacement logic
+        if (patternKind == PatternKind.ANNOTATION) {
+            processAnnotationRewriteWithRule(group, rewriter, ast, importRewriter, holder, rewriteRule);
+        } else {
+            // For all other patterns (EXPRESSION, METHOD_CALL, CONSTRUCTOR, STATEMENT, FIELD),
+            // delegate to FixUtilities.rewriteFix()
+            processGenericRewriteWithRule(group, rewriter, ast, importRewriter, holder, rewriteRule, matchedNode);
+        }
+    }
+    
+    /**
+     * Processes annotation rewrite using the legacy annotation replacement logic.
+     */
+    private void processAnnotationRewriteWithRule(TextEditGroup group, ASTRewrite rewriter, AST ast,
+            ImportRewrite importRewriter, Object holder, RewriteRule rewriteRule) {
         
         // Process the replacement pattern
         String replaceWith = rewriteRule.replaceWith();
@@ -302,6 +336,38 @@ public abstract class AbstractPatternCleanupPlugin<H> {
         ASTNodes.replaceButKeepComment(rewriter, oldAnnotation, newAnnotation, group);
         
         // Handle imports
+        processImports(importRewriter, rewriteRule);
+    }
+    
+    /**
+     * Processes generic pattern rewrite by delegating to FixUtilities.rewriteFix().
+     */
+    private void processGenericRewriteWithRule(TextEditGroup group, ASTRewrite rewriter, AST ast,
+            ImportRewrite importRewriter, Object holder, RewriteRule rewriteRule, ASTNode matchedNode) {
+        
+        // Get bindings from holder
+        Map<String, Object> bindings = getBindingsFromHolder(holder);
+        
+        // Create a Match from the holder data
+        Match match = new Match(matchedNode, bindings, matchedNode.getStartPosition(), matchedNode.getLength());
+        
+        // Create a HintContext for FixUtilities.rewriteFix()
+        CompilationUnit cu = (CompilationUnit) matchedNode.getRoot();
+        HintContext ctx = new HintContext(cu, null, match, rewriter);
+        ctx.setImportRewrite(importRewriter);
+        
+        // Use FixUtilities.rewriteFix() to perform the replacement
+        String replacementPattern = rewriteRule.replaceWith();
+        org.sandbox.jdt.triggerpattern.api.FixUtilities.rewriteFix(ctx, replacementPattern);
+        
+        // Handle imports
+        processImports(importRewriter, rewriteRule);
+    }
+    
+    /**
+     * Processes import additions and removals from RewriteRule.
+     */
+    private void processImports(ImportRewrite importRewriter, RewriteRule rewriteRule) {
         for (String importToRemove : rewriteRule.removeImports()) {
             importRewriter.removeImport(importToRemove);
         }
@@ -313,6 +379,39 @@ public abstract class AbstractPatternCleanupPlugin<H> {
         }
         for (String staticImportToAdd : rewriteRule.addStaticImports()) {
             addStaticImport(importRewriter, staticImportToAdd);
+        }
+    }
+    
+    /**
+     * Gets the matched node from holder using reflection.
+     * Subclasses can override if they have a type-safe way to access the matched node.
+     * 
+     * @param holder the holder object
+     * @return the matched AST node
+     */
+    protected ASTNode getMatchedNodeFromHolder(Object holder) {
+        try {
+            java.lang.reflect.Method method = holder.getClass().getMethod("getMinv"); //$NON-NLS-1$
+            return (ASTNode) method.invoke(holder);
+        } catch (NoSuchMethodException | IllegalAccessException | java.lang.reflect.InvocationTargetException e) {
+            throw new RuntimeException("Holder must provide getMinv() method", e); //$NON-NLS-1$
+        }
+    }
+    
+    /**
+     * Gets the bindings map from holder using reflection.
+     * Subclasses can override if they have a type-safe way to access bindings.
+     * 
+     * @param holder the holder object
+     * @return the bindings map
+     */
+    @SuppressWarnings("unchecked")
+    protected Map<String, Object> getBindingsFromHolder(Object holder) {
+        try {
+            java.lang.reflect.Method method = holder.getClass().getMethod("getBindings"); //$NON-NLS-1$
+            return (Map<String, Object>) method.invoke(holder);
+        } catch (NoSuchMethodException | IllegalAccessException | java.lang.reflect.InvocationTargetException e) {
+            return new HashMap<>(); // Return empty map if not found
         }
     }
     

@@ -20,6 +20,7 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
@@ -97,9 +98,20 @@ public final class FixUtilities {
 	 * @param node the matched node
 	 * @return the appropriate PatternKind
 	 */
+	public static PatternKind determinePatternKindFromNode(ASTNode node) {
+		return determinePatternKind(node);
+	}
+	
+	/**
+	 * Determines the PatternKind from a matched node type.
+	 * 
+	 * @param node the matched node
+	 * @return the appropriate PatternKind
+	 */
 	private static PatternKind determinePatternKind(ASTNode node) {
-		if (node instanceof Expression) {
-			return PatternKind.EXPRESSION;
+		// Check ClassInstanceCreation before Expression since it extends Expression
+		if (node instanceof ClassInstanceCreation) {
+			return PatternKind.CONSTRUCTOR;
 		} else if (node instanceof Annotation) {
 			return PatternKind.ANNOTATION;
 		} else if (node instanceof MethodInvocation) {
@@ -108,6 +120,8 @@ public final class FixUtilities {
 			return PatternKind.IMPORT;
 		} else if (node instanceof FieldDeclaration) {
 			return PatternKind.FIELD;
+		} else if (node instanceof Expression) {
+			return PatternKind.EXPRESSION;
 		}
 		return PatternKind.STATEMENT;
 	}

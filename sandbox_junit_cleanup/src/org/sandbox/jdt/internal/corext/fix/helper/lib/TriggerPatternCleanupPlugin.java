@@ -31,8 +31,10 @@ import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
+import org.sandbox.jdt.triggerpattern.api.HintContext;
 import org.sandbox.jdt.triggerpattern.api.Match;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
+import org.sandbox.jdt.triggerpattern.api.PatternKind;
 import org.sandbox.jdt.triggerpattern.api.RewriteRule;
 import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
 import org.sandbox.jdt.triggerpattern.cleanup.PatternCleanupHelper;
@@ -229,15 +231,22 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
     /**
      * Provides default implementation of process2Rewrite using @RewriteRule annotation.
      * Subclasses can override this method if they need custom rewrite logic,
-     * or they can use @RewriteRule for simple annotation replacements.
+     * or they can use @RewriteRule for pattern-based transformations.
      * 
-     * <p><b>Limitations:</b> This default implementation only supports:
+     * <p><b>Supported patterns:</b></p>
      * <ul>
-     *   <li>MarkerAnnotation (no parameters): {@code @BeforeEach}</li>
-     *   <li>SingleMemberAnnotation (single value): {@code @Disabled($value)}</li>
+     *   <li>ANNOTATION patterns: MarkerAnnotation, SingleMemberAnnotation</li>
+     *   <li>EXPRESSION patterns: Any expression replacement (delegates to FixUtilities.rewriteFix)</li>
+     *   <li>METHOD_CALL patterns: Method invocation replacement (delegates to FixUtilities.rewriteFix)</li>
+     *   <li>CONSTRUCTOR patterns: Constructor invocation replacement (delegates to FixUtilities.rewriteFix)</li>
+     *   <li>STATEMENT patterns: Statement replacement (delegates to FixUtilities.rewriteFix)</li>
+     *   <li>FIELD patterns: Field declaration replacement (delegates to FixUtilities.rewriteFix)</li>
      * </ul>
-     * NormalAnnotation with named parameters like {@code @Ignore(value="reason")} is not supported.
-     * Plugins that need such transformations must override this method.
+     * 
+     * <p><b>Limitations for ANNOTATION patterns:</b></p>
+     * <ul>
+     *   <li>NormalAnnotation with named parameters like {@code @Ignore(value="reason")} is not supported.</li>
+     * </ul>
      * 
      * @param group the text edit group for tracking changes
      * @param rewriter the AST rewriter
@@ -255,6 +264,28 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
                 "Plugin " + getClass().getSimpleName() + 
                 " must be annotated with @RewriteRule because it does not override process2Rewrite()");
         }
+        
+        // Get the matched node
+        ASTNode matchedNode = junitHolder.getMinv();
+        
+        // Determine the pattern kind from the matched node type
+        PatternKind patternKind = org.sandbox.jdt.triggerpattern.api.FixUtilities.determinePatternKindFromNode(matchedNode);
+        
+        // For ANNOTATION patterns, use the legacy annotation replacement logic
+        if (patternKind == PatternKind.ANNOTATION) {
+            processAnnotationRewriteWithRule(group, rewriter, ast, importRewriter, junitHolder, rewriteRule);
+        } else {
+            // For all other patterns (EXPRESSION, METHOD_CALL, CONSTRUCTOR, STATEMENT, FIELD),
+            // delegate to FixUtilities.rewriteFix()
+            processGenericRewriteWithRule(group, rewriter, ast, importRewriter, junitHolder, rewriteRule, matchedNode);
+        }
+    }
+    
+    /**
+     * Processes annotation rewrite using the legacy annotation replacement logic.
+     */
+    private void processAnnotationRewriteWithRule(TextEditGroup group, ASTRewrite rewriter, AST ast,
+            ImportRewrite importRewriter, JunitHolder junitHolder, RewriteRule rewriteRule) {
         
         // Process the replacement pattern
         String replaceWith = rewriteRule.replaceWith();
@@ -311,6 +342,38 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
         ASTNodes.replaceButKeepComment(rewriter, oldAnnotation, newAnnotation, group);
         
         // Handle imports
+        processImports(importRewriter, rewriteRule);
+    }
+    
+    /**
+     * Processes generic pattern rewrite by delegating to FixUtilities.rewriteFix().
+     */
+    private void processGenericRewriteWithRule(TextEditGroup group, ASTRewrite rewriter, AST ast,
+            ImportRewrite importRewriter, JunitHolder junitHolder, RewriteRule rewriteRule, ASTNode matchedNode) {
+        
+        // Get bindings from holder
+        java.util.Map<String, Object> bindings = junitHolder.getBindings();
+        
+        // Create a Match from the holder data
+        Match match = new Match(matchedNode, bindings, matchedNode.getStartPosition(), matchedNode.getLength());
+        
+        // Create a HintContext for FixUtilities.rewriteFix()
+        CompilationUnit cu = (CompilationUnit) matchedNode.getRoot();
+        HintContext ctx = new HintContext(cu, null, match, rewriter);
+        ctx.setImportRewrite(importRewriter);
+        
+        // Use FixUtilities.rewriteFix() to perform the replacement
+        String replacementPattern = rewriteRule.replaceWith();
+        org.sandbox.jdt.triggerpattern.api.FixUtilities.rewriteFix(ctx, replacementPattern);
+        
+        // Handle imports
+        processImports(importRewriter, rewriteRule);
+    }
+    
+    /**
+     * Processes import additions and removals from RewriteRule.
+     */
+    private void processImports(ImportRewrite importRewriter, RewriteRule rewriteRule) {
         for (String importToRemove : rewriteRule.removeImports()) {
             importRewriter.removeImport(importToRemove);
         }
