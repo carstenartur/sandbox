@@ -26,6 +26,9 @@ public class UsageViewPlugin extends AbstractUIPlugin {
 
 	// The plug-in ID
 	public static final String PLUGIN_ID = "sandbox_usage_view"; //$NON-NLS-1$
+	
+	// The view ID for the JavaHelper View
+	public static final String VIEW_ID = "org.eclipse.jdt.ui.helper.views.JavaHelperView"; //$NON-NLS-1$
 
 	// The shared instance
 	private static UsageViewPlugin plugin;

@@ -158,10 +158,6 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 		hookConflictHighlighting();
 		getSite().setSelectionProvider(new JHViewSelectionProvider(variableTableViewer));
 		contributeToActionBars();
-		// variableTableViewer.addSelectionChangedListener(event -> fCopyAction.setEnabled(!
-		// event.getSelection().isEmpty()));
-		// variableTableViewer.addSelectionChangedListener(event -> fCopyAction.setEnabled(!
-		// event.getSelection().isEmpty()));
 		
 		// Add part listener to track editor changes
 		addEditorPartListener();
@@ -174,7 +170,6 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 		fillLocalPullDown(bars.getMenuManager());
 		fillLocalToolBar(bars.getToolBarManager());
 		bars.setGlobalActionHandler(ActionFactory.REFRESH.getId(), refreshAction);
-		// bars.setGlobalActionHandler(ActionFactory.COPY.getId(), fCopyAction);
 		bars.setGlobalActionHandler(ActionFactory.PROPERTIES.getId(), propertiesAction);
 	}
 
@@ -183,7 +178,6 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 		manager.add(filterConflictsAction);
 		manager.add(new Separator());
 		manager.add(refreshAction);
-		// fDrillDownAdapter.addNavigationActions(manager);
 	}
 
 	private void fillLocalPullDown(IMenuManager manager) {
@@ -635,11 +629,7 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 		
 		if (elements.length > 0) {
 			variableTableViewer.setSelection(new StructuredSelection(elements[0]));
-			// if (elements.length == 1) {
-			// variableTableViewer.setExpandedState(elements[0], true);
-			// }
 		}
-		// fDrillDownAdapter.reset();
 	}
 
 	@Override

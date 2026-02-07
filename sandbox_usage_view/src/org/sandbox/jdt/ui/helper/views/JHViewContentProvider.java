@@ -18,6 +18,8 @@ import java.util.List;
 
 import org.eclipse.core.internal.resources.File;
 import org.eclipse.core.internal.resources.WorkspaceRoot;
+import org.eclipse.core.runtime.ILog;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
@@ -37,6 +39,8 @@ import org.eclipse.jface.viewers.Viewer;
  * from Java compilation units using AST parsing.
  */
 public class JHViewContentProvider implements IStructuredContentProvider {
+	
+	private static final ILog logger = UsageViewPlugin.getDefault().getLog();
 
 	@Override
 	public Object[] getElements(Object inputElement) {
@@ -49,9 +53,9 @@ public class JHViewContentProvider implements IStructuredContentProvider {
 					return new Object[0];
 				}
 				if (object instanceof WorkspaceRoot root) {
-					System.err.println(root.getName());
+					logger.log(new Status(Status.INFO, UsageViewPlugin.PLUGIN_ID, "Processing workspace root: " + root.getName()));
 				} else if (object instanceof File file) {
-					System.err.println(file.getName());
+					logger.log(new Status(Status.INFO, UsageViewPlugin.PLUGIN_ID, "Processing file: " + file.getName()));
 				} else if (object instanceof JavaElement) {
 					IJavaElement javaElement = (IJavaElement) object;
 					if (javaElement instanceof ICompilationUnit compilationUnit) {
@@ -65,7 +69,7 @@ public class JHViewContentProvider implements IStructuredContentProvider {
 								processPackageFragmentRoot(variableVisitor, packageRoot);
 							});
 						} catch (JavaModelException e) {
-							e.printStackTrace();
+							logger.log(new Status(Status.ERROR, UsageViewPlugin.PLUGIN_ID, "Failed to process package fragment roots", e));
 						}
 					} else if (javaElement instanceof IPackageFragment packageFragment) {
 						processPackageFragment(variableVisitor, packageFragment);
@@ -75,9 +79,7 @@ public class JHViewContentProvider implements IStructuredContentProvider {
 				}
 			}
 		}
-		for (IVariableBinding binding : variableVisitor.getVariableBindings()) {
-			System.out.println("Var name: " + binding.getName() + " Return type: " + binding.toString()); //$NON-NLS-1$ //$NON-NLS-2$
-		}
+		// Debug logging removed - use Eclipse Logger for debugging if needed
 		return variableVisitor.getVariableBindings().toArray();
 	}
 
@@ -89,11 +91,11 @@ public class JHViewContentProvider implements IStructuredContentProvider {
 						processPackageFragment(variableVisitor, packageFragment);
 					}
 				} catch (JavaModelException e) {
-					e.printStackTrace();
+					logger.log(new Status(Status.ERROR, UsageViewPlugin.PLUGIN_ID, "Failed to process package fragment", e));
 				}
 			});
 		} catch (JavaModelException e1) {
-			e1.printStackTrace();
+			logger.log(new Status(Status.ERROR, UsageViewPlugin.PLUGIN_ID, "Failed to get package fragments from root", e1));
 		}
 	}
 
@@ -105,7 +107,7 @@ public class JHViewContentProvider implements IStructuredContentProvider {
 				variableVisitor.process(astRoot);
 			}
 		} catch (JavaModelException e1) {
-			e1.printStackTrace();
+			logger.log(new Status(Status.ERROR, UsageViewPlugin.PLUGIN_ID, "Failed to process compilation units", e1));
 		}
 	}
 

@@ -17,7 +17,9 @@ import java.util.List;
 
 import org.eclipse.core.internal.resources.File;
 import org.eclipse.core.internal.resources.WorkspaceRoot;
+import org.eclipse.core.runtime.ILog;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
@@ -36,6 +38,8 @@ import org.eclipse.jdt.internal.core.JavaElement;
  * Extracts variable bindings from AST nodes.
  */
 public class VariableBindingContentProviderWithProgress {
+	
+	private static final ILog logger = UsageViewPlugin.getDefault().getLog();
 
 	private final IProgressMonitor progressMonitor;
 
@@ -64,9 +68,9 @@ public class VariableBindingContentProviderWithProgress {
 					return new Object[0];
 				}
 				if (object instanceof WorkspaceRoot root) {
-					System.err.println(root.getName());
+					logger.log(new Status(Status.INFO, UsageViewPlugin.PLUGIN_ID, "Processing workspace root: " + root.getName()));
 				} else if (object instanceof File file) {
-					System.err.println(file.getName());
+					logger.log(new Status(Status.INFO, UsageViewPlugin.PLUGIN_ID, "Processing file: " + file.getName()));
 				} else if (object instanceof JavaElement) {
 					IJavaElement javaElement = (IJavaElement) object;
 					processJavaElement(variableVisitor, javaElement);
@@ -74,9 +78,7 @@ public class VariableBindingContentProviderWithProgress {
 			}
 		}
 		
-		for (IVariableBinding binding : variableVisitor.getVariableBindings()) {
-			System.out.println("Var name: " + binding.getName() + " Return type: " + binding.toString()); //$NON-NLS-1$ //$NON-NLS-2$
-		}
+		// Debug logging removed - use Eclipse Logger for debugging if needed
 		return variableVisitor.getVariableBindings().toArray();
 	}
 
@@ -98,7 +100,7 @@ public class VariableBindingContentProviderWithProgress {
 					}
 				}
 			} catch (JavaModelException e) {
-				e.printStackTrace();
+				logger.log(new Status(Status.ERROR, UsageViewPlugin.PLUGIN_ID, "Failed to process package fragment roots", e));
 			}
 		} else if (javaElement instanceof IPackageFragment packageFragment) {
 			processPackageFragment(variableVisitor, packageFragment);
@@ -118,7 +120,7 @@ public class VariableBindingContentProviderWithProgress {
 				}
 			}
 		} catch (JavaModelException e) {
-			e.printStackTrace();
+			logger.log(new Status(Status.ERROR, UsageViewPlugin.PLUGIN_ID, "Failed to process package fragment root children", e));
 		}
 	}
 
@@ -134,7 +136,7 @@ public class VariableBindingContentProviderWithProgress {
 				processCompilationUnit(variableVisitor, compilationUnit);
 			}
 		} catch (JavaModelException e) {
-			e.printStackTrace();
+			logger.log(new Status(Status.ERROR, UsageViewPlugin.PLUGIN_ID, "Failed to process package fragment compilation units", e));
 		}
 	}
 
