@@ -419,14 +419,10 @@ public final class PreconditionsChecker {
 			return;
 		}
 		
-		// If this is a reducer pattern, the accumulator variable is allowed
-		// to be non-effectively-final since it will be part of the reduce operation
-		// and won't need to be captured by a lambda.
-		if (hasReducer) {
-			// For reducers, we don't check effectively final because the
-			// modified variable becomes the reduce accumulator, not a captured var
-			return;
-		}
+		// NOTE: For reducer patterns, we still need to check effectively-final variables
+		// EXCEPT for the accumulator variable itself. The accumulator is allowed to be
+		// modified because it becomes part of the reduce operation, but other captured
+		// variables must still be effectively final.
 		
 		EnhancedForStatement enhancedFor = (EnhancedForStatement) loop;
 		Statement body = enhancedFor.getBody();
