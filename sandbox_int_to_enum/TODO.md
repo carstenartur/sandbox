@@ -10,18 +10,62 @@
 - [x] Using ReferenceHolder from sandbox_common
 - [x] CompilationUnitRewriteOperationWithSourceRange implementation
 - [x] Proper static imports and code organization
+- [x] IntConstantHolder data structure defined
 
-### In Progress
-- [ ] Core transformation implementation in IntToEnumHelper
-  - [ ] Implement find() method to detect patterns
-  - [ ] Implement rewrite() method to perform transformations
-  - [ ] Complete IntConstantHolder data structure
-- [ ] Test cases
+### Implementation Complexity Note
 
-### Not Yet Started
-- [ ] AST visitor implementation for pattern detection
-- [ ] Enum generation logic
-- [ ] If-else to switch conversion logic
+**The actual transformation logic is marked as a placeholder for the following reasons:**
+
+1. **Complexity of Transformation**: Converting int constants to enum with switch statements requires:
+   - Complex AST pattern matching across multiple node types
+   - Sophisticated scope and type analysis
+   - Coordinated multi-step AST rewrites
+   - Careful handling of data flow and control flow
+   
+2. **Required Analysis**:
+   - Find all int constant declarations with common prefixes
+   - Analyze if-else chains to identify which constants are related
+   - Determine variable types and propagate enum type through code
+   - Handle edge cases (constants used in calculations, comparisons, etc.)
+   
+3. **Multiple Coordinated Changes**:
+   - Generate new enum declaration
+   - Remove or replace int constant fields
+   - Convert if-else to switch (with proper break statements)
+   - Update method parameters from `int` to enum type
+   - Update variable declarations
+   - Add imports if needed
+   
+4. **Edge Cases**:
+   - Constants used outside of if-else chains
+   - Mixed usage (some constants in if-else, others in calculations)
+   - Constants from different scopes or classes
+   - Integer values used without named constants
+
+### Current State
+- [ ] Core transformation implementation (Placeholder with extensive comments)
+  - Structure is in place but returns no operations
+  - Prevents incorrect transformations
+  - Demonstrates intended architecture
+
+### Next Steps for Full Implementation
+- [ ] Implement pattern detection in find() method
+  - [ ] Use AstProcessorBuilder for field and if-statement visitors
+  - [ ] Detect public static final int constants
+  - [ ] Find if-else chains comparing against constants
+  - [ ] Group related constants by common prefixes
+  
+- [ ] Implement transformation in rewrite() method
+  - [ ] Generate enum declaration from constants
+  - [ ] Create switch statement from if-else chain
+  - [ ] Update variable types
+  - [ ] Handle break statements and fall-through
+  
+- [ ] Comprehensive testing
+  - [ ] Test with various constant patterns
+  - [ ] Test edge cases
+  - [ ] Verify no regressions
+
 
 ## Known Limitations
 

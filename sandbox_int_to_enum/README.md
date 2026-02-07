@@ -4,6 +4,24 @@
 
 This Eclipse plugin provides an automated cleanup that transforms integer constant-based if-else chains into type-safe enum-based switch statements.
 
+## Implementation Status
+
+**Note:** This plugin has a complete structural implementation following repository patterns, but the actual transformation logic is currently a placeholder. The transformation from int constants to enums is a complex refactoring that requires:
+
+- Sophisticated AST pattern matching and analysis
+- Multi-step coordinated AST rewrites
+- Type propagation and scope analysis
+- Careful handling of edge cases
+
+The current implementation:
+- ✅ Follows all repository patterns (helper structure, ReferenceHolder, etc.)
+- ✅ Integrates with Eclipse cleanup framework
+- ✅ Has proper UI and configuration
+- ⚠️ Returns no transformation operations (prevents incorrect changes)
+- 📋 Includes extensive documentation for future implementation
+
+See [TODO.md](TODO.md) for detailed implementation notes and [ARCHITECTURE.md](ARCHITECTURE.md) for design details.
+
 ## Features
 
 - Detects integer constants used in if-else chains
