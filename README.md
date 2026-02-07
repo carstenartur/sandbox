@@ -178,24 +178,7 @@ make clean       # Clean all build artifacts
 make help        # Show all available targets
 ```
 
-#### Build Flags
-
-- `-T 1C`: Enables parallel builds with 1 thread per CPU core (faster builds)
-- `-DskipTests`: Skips test execution (faster iteration)
-- `-Pjacoco`: Enables JaCoCo code coverage
-- `-Pproduct`: Includes Eclipse product build
-- `-Prepo`: Includes p2 repository build
-
-#### Understanding the Profiles
-
-- **Default (no profiles)**: Fast development build - bundles, features, and tests only
-- **`product`**: Adds Eclipse product materialization (heavy step, takes time)
-- **`repo`**: Adds p2 update site repository assembly (heavy step, takes time)
-- **`jacoco`**: Adds code coverage reporting (includes `sandbox_coverage` module)
-- **`reports`**: Adds HTML test report generation (use without `-T 1C` to avoid thread-safety warning)
-- **`web`**: Adds WAR file with update site (requires `-Dinclude=web` property, also builds `sandbox_product`)
-
-**Backward Compatibility**: The command `mvn -Pproduct,repo verify` produces the same result as the previous full build behavior.
+**For advanced build optimization**: See [BUILD_ACCELERATION.md](BUILD_ACCELERATION.md) for detailed information on build profiles and performance optimization strategies.
 
 ### Troubleshooting
 
@@ -221,50 +204,7 @@ This usually indicates a Java version mismatch. Check that:
 
 ## Eclipse Version Configuration
 
-> **Note for Maintainers/Contributors**: This section contains technical details about Eclipse version migration. Regular users installing from the update site can skip this section.
-
-The Eclipse version (SimRel release) used by this project is **not centrally configured**. When updating to a new Eclipse release, you must update the version reference in **multiple files** throughout the repository.
-
-### Files to Update
-
-When migrating to a new Eclipse version, update the following files:
-
-1. **`pom.xml`** (root)
-   - Repository URLs in the `<repositories>` section
-   - Example: `https://download.eclipse.org/releases/2025-12/`
-   - Also update Orbit repository URL: `https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2025-12/`
-
-2. **`sandbox_target/eclipse.target`**
-   - Primary Eclipse release repository URL in first `<location>` block
-   - Example: `<repository location="https://download.eclipse.org/releases/2025-12/"/>`
-   - Also update Orbit repository URL
-
-3. **`sandbox_product/category.xml`**
-   - Repository reference location
-   - Example: `<repository-reference location="https://download.eclipse.org/releases/2025-12/" .../>`
-
-4. **`sandbox_product/sandbox.product`**
-   - Repository locations in `<repositories>` section
-   - Example: `<repository location="https://download.eclipse.org/releases/2025-12/" .../>`
-
-5. **`sandbox_oomph/sandbox.setup`**
-   - P2 repository URL in the version-specific `<setupTask>` block
-   - Example: `<repository url="https://download.eclipse.org/releases/2025-12"/>`
-
-### Version Consistency Guidelines
-
-- **Use HTTPS**: All Eclipse download URLs should use `https://` (not `http://`)
-- **Use explicit versions**: Prefer explicit version URLs (e.g., `2025-12`) over `latest` for reproducible builds
-- **Keep versions aligned**: All files should reference the same Eclipse SimRel version
-- **Git URLs**: Use HTTPS for git clone URLs (e.g., `https://github.com/...`, not `git://`)
-- **Main branch**: All Oomph setup files should reference the `main` branch, not `master`
-
-### Current Configuration
-
-- **Eclipse Version**: 2025-12
-- **Java Version**: 21
-- **Tycho Version**: 5.0.2
-- **Default Branch**: `main`
+> **For Maintainers**: See [CONTRIBUTING.md](CONTRIBUTING.md#eclipse-version-configuration) for instructions on updating Eclipse versions.
 
 ---
 
@@ -294,42 +234,19 @@ eclipse -nosplash -consolelog -debug \
 
 > **Note**: Replace `MyCleanupSettings.ini` with your cleanup configuration file and `MyClassToCleanup.java` with the Java file you want to process.
 
-### Installing as Eclipse Plugins
-
-You can install the cleanup plugins into your existing Eclipse installation using the P2 update site.
-
-**See the [Installation](#-installation) section above for detailed instructions and update site URLs.**
-
-The update sites provide:
-- **Stable Releases**: `https://carstenartur.github.io/sandbox/releases/` - Tested, stable versions
-- **Latest Snapshots**: `https://carstenartur.github.io/sandbox/snapshots/latest/` - Latest development builds
-
-> **⚠️ Warning**: These plugins are experimental. Test them in a development environment before using in production.
-
 ---
 
 ## What's Included
 
-### Java Version by Branch
+### Java Version Requirements
 
 | Branch          | Java Version | Tycho Version |
 |-----------------|--------------|---------------|
 | `main` (2025-12)| Java 21      | 5.0.2         |
-| `2024-06`+      | Java 21      | 5.0.x         |
-| `2022-12`+      | Java 17      | 4.x           |
-| Up to `2022-06` | Java 11      | 3.x           |
+
+**Legacy branches**: Older branches (`2022-06`, `2022-09`, `2022-12`) use Java 11-17 with Tycho 3.x-4.x.
 
 **Note**: Tycho 5.x requires Java 21+ at build time. Attempting to build with Java 17 will result in `UnsupportedClassVersionError`.
-
-### Topics Covered
-
-- Building for different Eclipse versions via GitHub Actions
-- Creating custom JDT cleanups
-- Setting up the SpotBugs Maven plugin to fail the build on issues
-- Writing JUnit 5-based tests for JDT cleanups
-- Configuring JaCoCo for test coverage
-- Building an Eclipse product including new features
-- Automatically building a WAR file including a P2 update site
 
 ---
 
@@ -411,21 +328,44 @@ Eclipse plugin for CSS validation and formatting using Prettier and Stylelint. P
 📖 **Full Documentation**: [Plugin README](sandbox_css_cleanup/README.md) | [Architecture](sandbox_css_cleanup/ARCHITECTURE.md) | [TODO](sandbox_css_cleanup/TODO.md)
 
 ---
-### 13. `sandbox_triggerpattern`
-
-Provides a powerful pattern matching engine for code transformations in Eclipse. Allows defining code patterns using simple syntax with placeholder support (`$x` for any expression), annotation-based hints using `@TriggerPattern` and `@Hint`, and automatic integration with Eclipse Quick Assist for creating custom hints and quick fixes with minimal boilerplate.
-
-📖 **Full Documentation**: [Plugin README](sandbox_triggerpattern/README.md) | [Architecture](sandbox_triggerpattern/ARCHITECTURE.md) | [TODO](sandbox_triggerpattern/TODO.md)
-
----
-### 14. `sandbox_common`
+### 13. `sandbox_common`
 
 Provides shared utilities, constants, and base classes used across all sandbox cleanup plugins. Serves as the foundation for the entire sandbox ecosystem with AST manipulation utilities, central cleanup constants repository (`MYCleanUpConstants`), reusable base classes, and Eclipse JDT compatibility structure for easy porting.
 
 📖 **Full Documentation**: [Plugin README](sandbox_common/README.md) | [Architecture](sandbox_common/ARCHITECTURE.md) | [TODO](sandbox_common/TODO.md)
 
 ---
-### 15. `sandbox_oomph`
+### 14. `sandbox_triggerpattern`
+
+Provides a powerful pattern matching engine for code transformations in Eclipse. Allows defining code patterns using simple syntax with placeholder support (`$x` for any expression), annotation-based hints using `@TriggerPattern` and `@Hint`, and automatic integration with Eclipse Quick Assist for creating custom hints and quick fixes with minimal boilerplate.
+
+📖 **Full Documentation**: [Plugin README](sandbox_triggerpattern/README.md) | [Architecture](sandbox_triggerpattern/ARCHITECTURE.md) | [TODO](sandbox_triggerpattern/TODO.md)
+
+---
+### 15. `sandbox-ast-api`
+
+Fluent, type-safe AST wrapper API using Java 21 features. Pure Maven module with no Eclipse dependencies, enabling reuse outside Eclipse context. Replaces verbose instanceof checks and nested visitor patterns with modern, readable fluent API for AST operations.
+
+📖 **Full Documentation**: [Plugin README](sandbox-ast-api/README.md)
+
+---
+### 16. `sandbox-benchmarks`
+
+JMH (Java Microbenchmark Harness) performance benchmarks for the Sandbox project. Provides continuous performance tracking and visualization through GitHub Actions and GitHub Pages. Includes benchmarks for AST parsing, pattern matching, and loop transformation performance.
+
+📖 **Full Documentation**: [Plugin README](sandbox-benchmarks/README.md)
+
+---
+### 17. `sandbox-functional-converter-core`
+
+Plain Java core module providing AST-independent representation of loop structures for transformation into functional/stream-based equivalents. Part of the Unified Loop Representation (ULR) implementation. No Eclipse/JDT dependencies - pure Java module reusable in any context.
+
+📖 **Full Documentation**: [Plugin README](sandbox-functional-converter-core/README.md)
+
+**Relationship**: This core module is used by `sandbox_functional_converter` (#8) to provide the underlying loop transformation logic without Eclipse dependencies.
+
+---
+### 18. `sandbox_oomph`
 
 Provides Eclipse Oomph setup configurations for automated workspace configuration. Enables one-click setup with pre-configured Eclipse settings, automatic installation of required plugins, Git repository cloning and branch setup, and seamless integration with Eclipse Installer.
 
@@ -437,101 +377,15 @@ Provides Eclipse Oomph setup configurations for automated workspace configuratio
 
 This repository contains extensive documentation organized at multiple levels to help you understand, use, and contribute to the project.
 
-### 📚 Documentation Index
+📚 **For a complete documentation index covering all plugins, architecture guides, and contributing information**, see [DOCUMENTATION_INVENTORY.md](DOCUMENTATION_INVENTORY.md).
 
-#### Getting Started
-- **[README.md](README.md)** (this file) - Project overview, build instructions, and plugin descriptions
+### Quick Documentation Links
+
+- **[Installation](#-installation)** - How to install plugins in Eclipse
 - **[Build Instructions](#build-instructions)** - How to build the project with Maven/Tycho
-- **[Quickstart](#quickstart)** - Quick introduction to using the plugins
-- **[Installation](#installation)** - How to install plugins in Eclipse
-
-#### Plugin-Specific Documentation
-
-Each plugin has dedicated documentation in its module directory:
-
-| Plugin | README | Architecture | TODO | Test Docs |
-|--------|--------|--------------|------|-----------|
-| [Cleanup Application](sandbox_cleanup_application) | [README.md](sandbox_cleanup_application/README.md) | [ARCHITECTURE.md](sandbox_cleanup_application/ARCHITECTURE.md) | [TODO.md](sandbox_cleanup_application/TODO.md) | - |
-| [Common Infrastructure](sandbox_common) | [README.md](sandbox_common/README.md) | [ARCHITECTURE.md](sandbox_common/ARCHITECTURE.md) | [TODO.md](sandbox_common/TODO.md) | [TESTING.md](sandbox_common_test/TESTING.md) |
-| [Coverage](sandbox_coverage) | [README.md](sandbox_coverage/README.md) | [ARCHITECTURE.md](sandbox_coverage/ARCHITECTURE.md) | [TODO.md](sandbox_coverage/TODO.md) | - |
-| [Encoding Quickfix](sandbox_encoding_quickfix) | [README.md](sandbox_encoding_quickfix/README.md) | [ARCHITECTURE.md](sandbox_encoding_quickfix/ARCHITECTURE.md) | [TODO.md](sandbox_encoding_quickfix/TODO.md) | - |
-| [Extra Search](sandbox_extra_search) | [README.md](sandbox_extra_search/README.md) | [ARCHITECTURE.md](sandbox_extra_search/ARCHITECTURE.md) | [TODO.md](sandbox_extra_search/TODO.md) | - |
-| [Functional Converter](sandbox_functional_converter) | [README.md](sandbox_functional_converter/README.md) | [ARCHITECTURE.md](sandbox_functional_converter/ARCHITECTURE.md) | [TODO.md](sandbox_functional_converter/TODO.md) | - |
-| [JFace Cleanup](sandbox_jface_cleanup) | [README.md](sandbox_jface_cleanup/README.md) | [ARCHITECTURE.md](sandbox_jface_cleanup/ARCHITECTURE.md) | [TODO.md](sandbox_jface_cleanup/TODO.md) | - |
-| [JUnit Cleanup](sandbox_junit_cleanup) | [README.md](sandbox_junit_cleanup/README.md) | [ARCHITECTURE.md](sandbox_junit_cleanup/ARCHITECTURE.md) | [TODO.md](sandbox_junit_cleanup/TODO.md) | [TESTING.md](sandbox_junit_cleanup_test/TESTING.md) |
-| [Method Reuse](sandbox_method_reuse) | [README.md](sandbox_method_reuse/README.md) | [ARCHITECTURE.md](sandbox_method_reuse/ARCHITECTURE.md) | [TODO.md](sandbox_method_reuse/TODO.md) | - |
-| [Oomph Setup](sandbox_oomph) | [README.md](sandbox_oomph/README.md) | [ARCHITECTURE.md](sandbox_oomph/ARCHITECTURE.md) | [TODO.md](sandbox_oomph/TODO.md) | - |
-| [Platform Helper](sandbox_platform_helper) | [README.md](sandbox_platform_helper/README.md) | [ARCHITECTURE.md](sandbox_platform_helper/ARCHITECTURE.md) | [TODO.md](sandbox_platform_helper/TODO.md) | - |
-| [Product](sandbox_product) | [README.md](sandbox_product/README.md) | [ARCHITECTURE.md](sandbox_product/ARCHITECTURE.md) | [TODO.md](sandbox_product/TODO.md) | - |
-| [Target Platform](sandbox_target) | [README.md](sandbox_target/README.md) | [ARCHITECTURE.md](sandbox_target/ARCHITECTURE.md) | [TODO.md](sandbox_target/TODO.md) | - |
-| [Test Commons](sandbox_test_commons) | [README.md](sandbox_test_commons/README.md) | [ARCHITECTURE.md](sandbox_test_commons/ARCHITECTURE.md) | [TODO.md](sandbox_test_commons/TODO.md) | - |
-| [Tools](sandbox_tools) | [README.md](sandbox_tools/README.md) | [ARCHITECTURE.md](sandbox_tools/ARCHITECTURE.md) | [TODO.md](sandbox_tools/TODO.md) | - |
-| [Trigger Pattern](sandbox_triggerpattern) | [README.md](sandbox_triggerpattern/README.md) | [ARCHITECTURE.md](sandbox_triggerpattern/ARCHITECTURE.md) | [TODO.md](sandbox_triggerpattern/TODO.md) | - |
-| [Usage View](sandbox_usage_view) | [README.md](sandbox_usage_view/README.md) | [ARCHITECTURE.md](sandbox_usage_view/ARCHITECTURE.md) | [TODO.md](sandbox_usage_view/TODO.md) | - |
-| [Web (P2 Update Site)](sandbox_web) | [README.md](sandbox_web/README.md) | [ARCHITECTURE.md](sandbox_web/ARCHITECTURE.md) | [TODO.md](sandbox_web/TODO.md) | - |
-| [XML Cleanup](sandbox_xml_cleanup) | [README.md](sandbox_xml_cleanup/README.md) | [ARCHITECTURE.md](sandbox_xml_cleanup/ARCHITECTURE.md) | [TODO.md](sandbox_xml_cleanup/TODO.md) | - |
-
-**Documentation Structure per Plugin:**
-- **README.md** - Quick start guide, features overview, and usage examples
-- **ARCHITECTURE.md** - Design overview, implementation details, patterns used
-- **TODO.md** - Pending features, known issues, future enhancements
-- **TESTING.md** (where applicable) - Test organization, coverage, and running instructions
-
-#### Test Infrastructure Documentation
-
-- **[HelperVisitor API Test Suite](sandbox_common_test/TESTING.md)** - Comprehensive guide to testing with HelperVisitor API
-- **[JUnit Migration Test Suite](sandbox_junit_cleanup_test/TESTING.md)** - Test organization for JUnit 4→5 migration
-- **[JUnit Migration Implementation Tracking](sandbox_junit_cleanup_test/TODO_TESTING.md)** - Missing features and bugs in migration cleanup
-
-#### Project Governance
-- **[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)** - Community guidelines
-- **[SECURITY.md](SECURITY.md)** - Security policy and vulnerability reporting
-- **[CONTRIBUTING.md](#contributing)** - How to contribute to this project
-- **[LICENSE.txt](LICENSE.txt)** - Eclipse Public License 2.0
-
-#### Additional Resources
-- **[TRIGGERPATTERN.md](sandbox_common/TRIGGERPATTERN.md)** - Pattern matching engine documentation
-- **[Eclipse Version Configuration](#eclipse-version-configuration)** - How to update Eclipse versions
-- **[Release Process](#release-process)** - How to create releases
-
-### 📖 Documentation Guidelines for Contributors
-
-When contributing to this project, please maintain documentation quality:
-
-1. **Plugin Requirements**: All plugin directories SHOULD contain:
-   - `README.md` - Quick start guide with features and usage examples
-   - `ARCHITECTURE.md` - Design and implementation overview
-   - `TODO.md` - Open tasks and future work
-   
-2. **Navigation Headers**: All plugin documentation files include navigation headers linking to:
-   - Main README (this file)
-   - Plugin's own README (for ARCHITECTURE and TODO files)
-   - Sibling documentation files (README ↔ ARCHITECTURE ↔ TODO)
-
-3. **Update Documentation**: When making code changes:
-   - Update `README.md` if features or usage changes
-   - Update `ARCHITECTURE.md` if design changes
-   - Update `TODO.md` when completing tasks or identifying new ones
-   - Update main README if adding/removing plugins
-
-4. **Test Documentation**: Test modules with substantial test organization should include:
-   - `TESTING.md` - Test structure and organization
-   - `TODO_TESTING.md` (if applicable) - Implementation tracking for features being tested
-
-### 🔍 Finding Documentation
-
-**By Topic:**
-- **Building & Setup**: [Build Instructions](#build-instructions), [Eclipse Version Configuration](#eclipse-version-configuration)
-- **Code Coverage**: [Coverage Deployment](COVERAGE_DEPLOYMENT.md) - JaCoCo reports on GitHub Pages
-- **Plugin Usage**: See [Projects](#projects) section for detailed descriptions of each plugin
-- **Architecture**: Check `ARCHITECTURE.md` in each plugin directory
-- **Testing**: [HelperVisitor API](sandbox_common_test/TESTING.md), [JUnit Migration](sandbox_junit_cleanup_test/TESTING.md)
-- **Contributing**: [Contributing](#contributing), [Release Process](#release-process)
-
-**By File Location:**
-- **Root level**: Project-wide documentation (this README, CODE_OF_CONDUCT, SECURITY)
-- **Plugin directories** (`sandbox_*/`): Plugin-specific ARCHITECTURE.md and TODO.md
-- **Test directories** (`sandbox_*_test/`): Test-specific TESTING.md and TODO_TESTING.md
+- **[Projects](#projects)** - Descriptions and documentation for all plugins
+- **[Contributing](CONTRIBUTING.md)** - How to contribute to this project
+- **[Eclipse Version Configuration](CONTRIBUTING.md#eclipse-version-configuration)** - Maintainer guide for updating Eclipse versions
 
 ---
 
@@ -539,39 +393,14 @@ When contributing to this project, please maintain documentation quality:
 
 Contributions are welcome! This is an experimental sandbox project for testing Eclipse JDT cleanup implementations.
 
-### How to Contribute
+**📖 For full contribution guidelines, reporting issues, and Eclipse version configuration**, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-1. **Fork the repository** on GitHub
-2. **Create a feature branch** from `main` (the default branch):
-   ```bash
-   git checkout -b feature/my-new-cleanup
-   ```
-3. **Make your changes** following the existing code structure and conventions
-4. **Test your changes** thoroughly:
-   ```bash
-   mvn -Pjacoco verify
-   ```
-5. **Commit your changes** with clear commit messages:
-   ```bash
-   git commit -m "feat: add new cleanup for XYZ pattern"
-   ```
-6. **Push to your fork** and **create a Pull Request** targeting the `main` branch
+### Quick Start
 
-### Guidelines
-
-- Follow existing code patterns and cleanup structures
-- Add comprehensive test cases for new cleanups
-- Update documentation (README, architecture.md, todo.md) as needed
-- Ensure SpotBugs, CodeQL, and all tests pass
-- Keep changes focused and minimal
-
-### Reporting Issues
-
-Found a bug or have a feature request? Please [open an issue](https://github.com/carstenartur/sandbox/issues) on GitHub with:
-- Clear description of the problem or suggestion
-- Steps to reproduce (for bugs)
-- Expected vs. actual behavior
-- Eclipse and Java version information
+1. Fork the repository and create a feature branch from `main`
+2. Make your changes following existing code structure
+3. Test thoroughly with `mvn -Pjacoco verify`
+4. Submit a Pull Request with clear description
 
 **Note**: This project primarily serves as an experimental playground. Features that prove stable and useful may be contributed upstream to Eclipse JDT.
 
