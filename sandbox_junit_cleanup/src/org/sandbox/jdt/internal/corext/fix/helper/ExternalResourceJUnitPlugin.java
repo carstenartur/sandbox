@@ -50,6 +50,7 @@ import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.ExternalResourceRefactorer;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 /**
@@ -91,7 +92,7 @@ public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<In
 		}
 		
 		// For indirect subclasses, only process if they have lifecycle methods
-		if (!isDirectlyExtendingExternalResource(node.resolveBinding())) {
+		if (!ExternalResourceRefactorer.isDirectlyExtendingExternalResource(node.resolveBinding())) {
 			boolean hasLifecycleMethod = false;
 			for (MethodDeclaration method : node.getMethods()) {
 				String methodName = method.getName().getIdentifier();
@@ -118,7 +119,7 @@ public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<In
 	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
 		TypeDeclaration node= junitHolder.getTypeDeclaration();
-		modifyExternalResourceClass(node, null, false, rewriter, ast, group, importRewriter);
+		ExternalResourceRefactorer.modifyExternalResourceClass(node, null, false, rewriter, ast, group, importRewriter);
 	}
 	
 	@Override

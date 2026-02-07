@@ -171,7 +171,7 @@ for (Match match : matches) {
 
 ### 1. AbstractTool (Orchestrator)
 
-**Location**: `org.sandbox.jdt.internal.corext.fix.helper.AbstractTool`
+**Location**: `org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool`
 
 **Responsibilities**:
 - Defines the public API for JUnit cleanup operations
@@ -183,7 +183,9 @@ for (Match match : matches) {
 - `rewrite()` - Applies transformations using AST rewriting
 - `process2Rewrite()` - Orchestrates helper classes for complex transformations
 
-**Size**: 502 lines (reduced from 1,629 lines - 69% reduction)
+**Size**: ~250 lines (reduced from 335 lines after moving ExternalResource-specific methods)
+
+**Design Note**: ExternalResource-specific utility methods have been moved to `ExternalResourceRefactorer` to keep the base class focused on orchestration and delegation. Only methods used by multiple plugins remain in `AbstractTool`.
 
 ### 2. JUnitConstants (Data)
 
@@ -263,19 +265,26 @@ assertEquals(expected, actual, "message");
 
 ### 6. ExternalResourceRefactorer (Service)
 
-**Location**: `org.sandbox.jdt.internal.corext.fix.helper.ExternalResourceRefactorer`
+**Location**: `org.sandbox.jdt.internal.corext.fix.helper.lib.ExternalResourceRefactorer`
 
 **Responsibilities**:
 - Migrates JUnit 4 `ExternalResource` to JUnit 5 extension callbacks
 - Handles both named classes and anonymous classes
 - Manages static vs. instance field distinctions
 - Implements appropriate callback interfaces based on field modifiers
+- Provides ExternalResource-specific utility methods for type checking and validation
 
 **Key Methods**:
 - `refactorExternalResource()` - Main entry point for migration
 - `refactorNamedClassToImplementCallbacks()` - Handles named class transformations
 - `refactorAnonymousClassToImplementCallbacks()` - Handles anonymous classes
 - `ensureClassInstanceRewrite()` - Updates superclass and imports
+- `getTypeDefinitionForField()` - Finds the type definition for a field (TypeDeclaration or AnonymousClassDeclaration)
+- `hasDefaultConstructorOrNoConstructor()` - Checks if a class has a default constructor or no constructors
+- `isAnonymousClass()` - Checks if a variable declaration fragment represents an anonymous class
+- `isDirectlyExtendingExternalResource()` - Checks if a type directly extends ExternalResource
+
+**Note**: Previously, some of these utility methods were in `AbstractTool`. They have been moved to `ExternalResourceRefactorer` as they are only used by ExternalResource-related plugins, improving separation of concerns and reducing the size of the base class.
 
 **Callback Selection Logic**:
 ```java
