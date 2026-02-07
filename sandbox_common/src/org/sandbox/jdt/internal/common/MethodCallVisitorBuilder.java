@@ -17,7 +17,6 @@ import java.util.Set;
 import java.util.function.BiPredicate;
 
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.MethodInvocation;
 
 /**
  * Fluent builder for visiting method invocations.
