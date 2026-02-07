@@ -168,6 +168,93 @@ Type-safe enum for binary operators:
 - `isArithmetic()`, `isComparison()`, `isLogical()` - Category checks
 - `fromSymbol(String)` - Parse operator from string
 
+### Statement Wrappers (Phase 3 - COMPLETED)
+
+#### EnhancedForStmt
+Immutable record for enhanced for loops:
+- `parameter()` - Loop variable
+- `iterable()` - Expression being iterated
+- `body()` - Optional loop body statements
+
+#### WhileLoopStmt
+Immutable record for while loops:
+- `condition()` - Loop condition
+- `body()` - Optional loop body statements
+
+#### ForLoopStmt
+Immutable record for traditional for loops:
+- `initializers()` - List of initialization expressions
+- `condition()` - Optional loop condition
+- `updaters()` - List of update expressions
+- `body()` - Optional loop body statements
+
+#### IfStmt
+Immutable record for if statements:
+- `condition()` - If condition
+- `thenStatement()` - Then branch body
+- `elseStatement()` - Optional else branch body
+
+### FluentVisitor (Phase 4 - COMPLETED)
+
+#### FluentVisitor
+Type-safe visitor builder for AST traversal without verbose instanceof checks:
+
+**Basic usage:**
+```java
+FluentVisitor visitor = FluentVisitor.builder()
+    .onMethodInvocation(mi -> {
+        System.out.println("Found method: " + mi.methodName());
+    })
+    .onSimpleName(sn -> {
+        System.out.println("Found name: " + sn.identifier());
+    })
+    .build();
+
+visitor.visit(expression);
+```
+
+**Conditional handlers with predicates:**
+```java
+FluentVisitor visitor = FluentVisitor.builder()
+    .onMethodInvocation()
+        .when(mi -> mi.methodName().equals(Optional.of("add")))
+        .when(mi -> mi.argumentCount() > 0)
+        .then(mi -> System.out.println("Found add call"))
+    .onSimpleName()
+        .filter(sn -> sn.identifier().startsWith("get"))
+        .then(sn -> System.out.println("Found getter"))
+    .build();
+```
+
+**Visitor composition:**
+```java
+FluentVisitor visitor1 = FluentVisitor.builder()
+    .onMethodInvocation(mi -> results.add("method"))
+    .build();
+
+FluentVisitor visitor2 = FluentVisitor.builder()
+    .onIfStatement(is -> results.add("if"))
+    .build();
+
+FluentVisitor combined = visitor1.andThen(visitor2);
+combined.visitAll(nodes);
+```
+
+**Available handlers:**
+- **Expression handlers**: `onMethodInvocation()`, `onSimpleName()`, `onFieldAccess()`, `onCast()`, `onInfix()`, `onExpression()`
+- **Statement handlers**: `onEnhancedFor()`, `onWhileLoop()`, `onForLoop()`, `onIfStatement()`, `onStatement()`
+- **Generic handler**: `onAny()` - matches all node types
+
+**Conditional methods:**
+- `when(predicate)` - Add condition that must be satisfied
+- `filter(predicate)` - Alias for `when()`
+- `then(handler)` - Register handler action when conditions are met
+
+**Visitor methods:**
+- `visit(node)` - Visit single node
+- `visitAll(nodes)` - Visit multiple nodes
+- `andThen(visitor)` - Combine with another visitor
+
 ## Design Patterns
 
 ### Immutability
@@ -247,7 +334,39 @@ public static List<MethodInvocationExpr> findStaticMethodCalls(List<ASTExpr> exp
 }
 ```
 
-See `FluentAPIExamples.java` for 10+ complete working examples.
+**Example 4: Using FluentVisitor for pattern matching**
+```java
+List<String> results = new ArrayList<>();
+
+FluentVisitor visitor = FluentVisitor.builder()
+    .onMethodInvocation()
+        .when(mi -> mi.methodName().equals(Optional.of("add")))
+        .when(mi -> mi.argumentCount() > 0)
+        .then(mi -> results.add("Found List.add() call"))
+    .onInfix()
+        .filter(InfixExpr::isStringConcatenation)
+        .then(ie -> results.add("Found string concatenation"))
+    .build();
+
+visitor.visitAll(expressions);
+```
+
+**Example 5: Combining multiple visitors**
+```java
+FluentVisitor methodAnalyzer = FluentVisitor.builder()
+    .onMethodInvocation(mi -> System.out.println("Method: " + mi.methodName()))
+    .build();
+
+FluentVisitor controlFlowAnalyzer = FluentVisitor.builder()
+    .onIfStatement(is -> System.out.println("If statement"))
+    .onWhileLoop(wl -> System.out.println("While loop"))
+    .build();
+
+FluentVisitor combined = methodAnalyzer.andThen(controlFlowAnalyzer);
+combined.visitAll(nodes);
+```
+
+See `FluentVisitorExamples.java` for 10+ complete working examples.
 
 ## Future Enhancements
 
