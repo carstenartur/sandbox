@@ -645,3 +645,118 @@ HTML test reports for all test modules, showing detailed test execution results:
 Eclipse Public License 2.0
 
 SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+
+---
+
+## Detailed Release Process
+
+This section describes how to create and publish a new release of the Sandbox project using the automated release workflow.
+
+### Prerequisites
+
+- Write access to the repository
+- All tests passing on the `main` branch
+- Decide on the release version number (e.g., `1.2.2`)
+- Decide on the next SNAPSHOT version (e.g., `1.2.3-SNAPSHOT`)
+
+### Automated Release Workflow
+
+The release process is **fully automated** through GitHub Actions. To create a release:
+
+#### 1. Trigger the Release Workflow
+
+1. Go to the [GitHub Actions tab](https://github.com/carstenartur/sandbox/actions)
+2. Select **"Release Workflow"** from the workflows list
+3. Click **"Run workflow"** button
+4. Fill in the required inputs:
+   - **Release version**: The version to release (e.g., `1.2.2`)
+   - **Next SNAPSHOT version**: The next development version (e.g., `1.2.3-SNAPSHOT`)
+5. Click **"Run workflow"** to start the automated release process
+
+#### 2. What the Workflow Does Automatically
+
+The workflow performs all release steps automatically:
+
+1. ✅ **Validates inputs** to ensure release_version has no `-SNAPSHOT` suffix and next_snapshot_version includes it
+2. ✅ **Updates version** in all `pom.xml`, `MANIFEST.MF`, `feature.xml`, and `*.product` files using `tycho-versions-plugin` for all modules **except** `sandbox-functional-converter-core`, which maintains independent versioning
+3. ✅ **Verifies** that no SNAPSHOT references remain (except in `sandbox-functional-converter-core`)
+4. ✅ **Commits** the release version changes
+5. ✅ **Builds and verifies** the release
+6. ✅ **Creates and pushes git tag** (`vX.Y.Z`) immediately
+7. ✅ **Creates and pushes maintenance branch** (`maintenance/X.Y.x`) immediately for potential backports
+8. ✅ **Generates release notes** from closed issues since the last release
+9. ✅ **Creates GitHub release** with auto-generated notes
+10. ✅ **Deploys** the P2 update site to GitHub Pages at `https://carstenartur.github.io/sandbox/releases/X.Y.Z/`
+11. ✅ **Updates composite metadata** to include the new release
+12. ✅ **Bumps version** to the next SNAPSHOT version
+13. ✅ **Commits and pushes** the SNAPSHOT version back to `main`
+14. ✅ **Reminds** to update Eclipse Marketplace listing
+
+#### 3. Post-Release Steps
+
+After the workflow completes successfully:
+
+1. **Verify the release**:
+   - Check the [Releases page](https://github.com/carstenartur/sandbox/releases) for the new release
+   - Verify the update site is available at `https://carstenartur.github.io/sandbox/releases/X.Y.Z/`
+
+2. **Update Eclipse Marketplace** (if applicable):
+   - Go to [Eclipse Marketplace](https://marketplace.eclipse.org/)
+   - Update the listing with the new update site URL
+
+3. **Test the release**:
+   - Install the plugins from the new update site in a clean Eclipse installation
+   - Verify core functionality works as expected
+
+### Workflow Inputs
+
+The automated workflow requires two inputs:
+
+- **`release_version`** (required): 
+  - The version number to release (e.g., `1.2.2`)
+  - Must NOT include `-SNAPSHOT` suffix
+  - Should follow [Semantic Versioning](https://semver.org/)
+
+- **`next_snapshot_version`** (required):
+  - The next development version (e.g., `1.2.3-SNAPSHOT`)
+  - MUST include `-SNAPSHOT` suffix
+  - Typically the next patch, minor, or major version
+
+### Example Release
+
+To release version `1.2.2` and prepare for `1.2.3-SNAPSHOT`:
+
+1. Navigate to Actions → Release Workflow → Run workflow
+2. Enter `release_version`: `1.2.2`
+3. Enter `next_snapshot_version`: `1.2.3-SNAPSHOT`
+4. Click "Run workflow"
+5. Monitor the workflow progress in the Actions tab
+6. Once complete, the main branch will be at `1.2.3-SNAPSHOT`, ready for development
+
+### Version Numbering
+
+This project follows [Semantic Versioning](https://semver.org/):
+
+- **MAJOR** version (X.0.0): Incompatible API changes
+- **MINOR** version (0.X.0): New functionality in a backward-compatible manner
+- **PATCH** version (0.0.X): Backward-compatible bug fixes
+
+### Release Artifacts
+
+Each release produces:
+- **Eclipse Product**: Installable Eclipse IDE with bundled plugins (`sandbox_product/target`)
+- **P2 Update Site**: For installing plugins into existing Eclipse (`sandbox_web/target`)
+- **WAR File**: Web-deployable update site
+- **Maven Artifacts**: Published to GitHub Packages
+
+### Troubleshooting
+
+**Build fails during release:**
+- Ensure all tests pass locally: `mvn clean verify -Pjacoco`
+- Check Java version: `java -version` (must be 21+)
+- Verify Maven version: `mvn -version` (3.9.x recommended)
+
+**GitHub Actions workflow fails:**
+- Check workflow run logs in the Actions tab
+- Ensure the tag was pushed correctly: `git ls-remote --tags origin`
+- Verify permissions for GitHub Packages publishing
