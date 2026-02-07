@@ -63,4 +63,17 @@ public @interface TriggerPattern {
 	 * @return the pattern ID or empty string
 	 */
 	String id() default "";
+	
+	/**
+	 * Type constraints for placeholder variables.
+	 * 
+	 * <p>Specifies that certain placeholders must match nodes of specific Java types.</p>
+	 * 
+	 * <p><b>Note:</b> Type constraint checking requires binding resolution,
+	 * which is currently disabled in TriggerPatternEngine. The infrastructure
+	 * is in place for future enhancement when bindings are available.</p>
+	 * 
+	 * @return array of type constraints
+	 */
+	ConstraintVariableType[] constraints() default {};
 }
