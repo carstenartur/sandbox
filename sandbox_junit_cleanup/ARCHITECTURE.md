@@ -14,6 +14,51 @@ The JUnit cleanup plugin provides automated migration from JUnit 3/4 to JUnit 5 
 4. **Testability**: Smaller classes are easier to test in isolation
 5. **Backward Compatibility**: Public API remains unchanged
 6. **Declarative Transformations**: Simple annotation migrations use declarative patterns to eliminate boilerplate
+7. **Generic Pattern Matching**: Pattern matching logic is framework-agnostic and can be reused by non-JUnit plugins
+
+## AbstractPatternCleanupPlugin - Generic Pattern Matching Base Class
+
+### Overview
+
+`AbstractPatternCleanupPlugin` is a new generic base class introduced in `sandbox_common` that provides reusable pattern matching capabilities for any cleanup plugin, not just JUnit.
+
+**Location**: `org.sandbox.jdt.internal.common.lib.AbstractPatternCleanupPlugin`
+
+**Key Features**:
+- **Framework-agnostic**: Can be used by any Eclipse cleanup plugin
+- **Pattern Matching**: Integrates with TriggerPattern engine for AST pattern matching
+- **Annotation Handling**: Provides default implementation for annotation replacements via `@RewriteRule`
+- **Type Validation**: Validates AST nodes against qualified type names
+- **Extensible**: Subclasses provide holder-specific binding access
+
+**Benefits**:
+- Eliminates code duplication across cleanup plugins
+- Provides single source of truth for pattern matching logic
+- Enables non-JUnit plugins to leverage TriggerPattern framework
+- Reduces plugin boilerplate by ~20-30 lines per plugin
+
+**Architecture**:
+```
+AbstractPatternCleanupPlugin<T>  (in sandbox_common - generic)
+         ↑
+         |
+TriggerPatternCleanupPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>>
+         ↑                   (in sandbox_junit_cleanup - JUnit-specific)
+         |
+    Plugin classes (@BeforeJUnitPlugin, @AfterJUnitPlugin, etc.)
+```
+
+### Relationship with TriggerPatternCleanupPlugin
+
+`TriggerPatternCleanupPlugin` now **delegates** to `AbstractPatternCleanupPlugin`:
+- Keeps JUnit-specific integration with `AbstractTool`
+- Provides `JunitHolder` binding access via `getBindingFromHolder()`
+- Maintains existing plugin API for backward compatibility
+
+**Design Rationale**:
+- Composition over inheritance for better separation of concerns
+- Allows `AbstractPatternCleanupPlugin` to remain in `sandbox_common` without JUnit dependencies
+- `TriggerPatternCleanupPlugin` acts as an adapter between generic pattern matching and JUnit cleanup framework
 
 ## TriggerPattern Framework with @RewriteRule
 
@@ -175,15 +220,35 @@ for (Match match : matches) {
 
 **Responsibilities**:
 - Defines the public API for JUnit cleanup operations
-- Coordinates helper classes to perform complex transformations
+- Provides essential abstract methods that all plugins must implement
 - Maintains the overall transformation workflow
+- **Simplified Design**: No longer contains delegation methods; plugins call helper classes directly
 
 **Key Methods**:
-- `find()` - Identifies transformation opportunities in the AST
-- `rewrite()` - Applies transformations using AST rewriting
-- `process2Rewrite()` - Orchestrates helper classes for complex transformations
+- `find()` - Identifies transformation opportunities in the AST (abstract)
+- `getPreview()` - Provides before/after code examples for UI (abstract)
+- `process2Rewrite()` - Transforms matched patterns (abstract)
+- `rewrite()` - Applies transformations using AST rewriting (concrete orchestrator)
+- `getUsedVariableNames()` - Static utility for scope analysis
+- `addStandardRewriteOperation()` - Helper for creating rewrite operations
+- `getTypeDefinitionForField()`, `hasDefaultConstructorOrNoConstructor()`, `isAnonymousClass()` - Common AST utilities
 
-**Size**: 502 lines (reduced from 1,629 lines - 69% reduction)
+**Design Changes (Post-Refactoring)**:
+- **Before**: 336 lines with 6 delegation methods
+- **After**: 244 lines (~27% reduction)
+- **Removed Delegation Methods** (plugins now call helper classes directly):
+  - ~~`modifyExternalResourceClass()`~~ → Use `ExternalResourceRefactorer.modifyExternalResourceClass()`
+  - ~~`refactorAnonymousClassToImplementCallbacks()`~~ → Use `ExternalResourceRefactorer.refactorAnonymousClassToImplementCallbacks()`
+  - ~~`refactorTestnameInClassAndSubclasses()`~~ → Use `TestNameRefactorer.refactorTestnameInClassAndSubclasses()`
+  - ~~`reorderParameters()`~~ → Use `AssertionRefactorer.reorderParameters()`
+  - ~~`changeImportDeclaration()`~~ → Use `ImportHelper.changeImportDeclaration()`
+  - ~~`isFieldAnnotatedWith()`~~ → Use `AnnotationUtils.isFieldAnnotatedWith()`
+
+**Benefits of Simplification**:
+- Clearer separation of concerns
+- Easier to understand which functionality belongs where
+- Reduced coupling between AbstractTool and helper classes
+- Plugins have direct visibility into which helper classes they're using
 
 ### 2. JUnitConstants (Data)
 

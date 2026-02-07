@@ -52,7 +52,9 @@ import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.ExternalResourceRefactorer;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
+import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 
 /**
  * Plugin to migrate JUnit 4 ExternalResource rules to JUnit 5 extensions.
@@ -102,17 +104,17 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
 		FieldDeclaration fieldDeclaration= junitHolder.getFieldDeclaration();
-		boolean fieldStatic= isFieldAnnotatedWith(fieldDeclaration, ORG_JUNIT_CLASS_RULE);
+		boolean fieldStatic= AnnotationUtils.isFieldAnnotatedWith(fieldDeclaration, ORG_JUNIT_CLASS_RULE);
 		CompilationUnit cu= (CompilationUnit) fieldDeclaration.getRoot();
 		String classNameFromField= extractClassNameFromField(fieldDeclaration);
 
 		ASTNode node2= getTypeDefinitionForField(fieldDeclaration, cu);
 
 		if (node2 instanceof TypeDeclaration) {
-			modifyExternalResourceClass((TypeDeclaration) node2, fieldDeclaration, fieldStatic, rewriter, ast, group,
+			ExternalResourceRefactorer.modifyExternalResourceClass((TypeDeclaration) node2, fieldDeclaration, fieldStatic, rewriter, ast, group,
 					importRewriter);
 		} else if (node2 instanceof AnonymousClassDeclaration typeNode) {
-			refactorAnonymousClassToImplementCallbacks(typeNode, fieldDeclaration, fieldStatic, rewriter, ast, group,
+			ExternalResourceRefactorer.refactorAnonymousClassToImplementCallbacks(typeNode, fieldDeclaration, fieldStatic, rewriter, ast, group,
 					importRewriter);
 		}
 		// If no matching type definition found, no action needed

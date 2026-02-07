@@ -32,6 +32,7 @@ import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.AssertionRefactorer;
 
 /**
  * Abstract base class for plugins that migrate method calls from one class to another.
@@ -193,12 +194,12 @@ public abstract class AbstractMethodMigrationPlugin extends AbstractTool<Referen
 	 * JUnit 4: assertEquals(String message, expected, actual)
 	 * JUnit 5: assertEquals(expected, actual, String message)
 	 * 
-	 * Delegates to existing {@link #reorderParameters} method.
+	 * Delegates to {@link AssertionRefactorer#reorderParameters} method.
 	 */
 	protected void reorderMessageParameter(TextEditGroup group, ASTRewrite rewriter,
 			MethodInvocation methodInvocation) {
-		// Delegate to existing reorderParameters method in AbstractTool
+		// Delegate to AssertionRefactorer helper class
 		// which handles the parameter reordering logic
-		reorderParameters(methodInvocation, rewriter, group, ONEPARAM_ASSERTIONS, TWOPARAM_ASSERTIONS);
+		AssertionRefactorer.reorderParameters(methodInvocation, rewriter, group, ONEPARAM_ASSERTIONS, TWOPARAM_ASSERTIONS);
 	}
 }
