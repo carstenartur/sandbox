@@ -104,7 +104,7 @@ The new release will be available at `https://carstenartur.github.io/sandbox/rel
 
 ## GitHub Actions Integration
 
-This repository includes a **Docker-based GitHub Action** for automated code cleanup on pull requests. The action uses the sandbox cleanup application to apply Eclipse JDT cleanups directly in your GitHub workflows.
+This repository includes a **composite GitHub Action** for automated code cleanup on pull requests. The action uses the sandbox cleanup application to apply Eclipse JDT cleanups directly in your GitHub workflows.
 
 ### Quick Start
 
