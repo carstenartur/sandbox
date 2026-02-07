@@ -10,22 +10,31 @@
 - [x] Add performance benchmarks
 - [x] Set up CI/CD workflows
 
-## Phase 2: Expression Wrappers (PLANNED)
-- [ ] Create base ASTExpr interface
-- [ ] Implement MethodInvocationExpr wrapper
-  - [ ] Fluent receiver() access
-  - [ ] arguments() access
-  - [ ] Method resolution to MethodInfo
-- [ ] Implement FieldAccessExpr wrapper
-  - [ ] Fluent field() access
-  - [ ] receiver() access
-  - [ ] Field resolution to VariableInfo
-- [ ] Implement SimpleName wrapper
-  - [ ] Binding resolution
-  - [ ] Type-safe binding access
-- [ ] Implement CastExpression wrapper
-- [ ] Implement InfixExpression wrapper
-- [ ] Add expression-level tests
+## Phase 2: Expression Wrappers (COMPLETED)
+- [x] Create base ASTExpr interface
+- [x] Implement MethodInvocationExpr wrapper
+  - [x] Fluent receiver() access
+  - [x] arguments() access
+  - [x] Method resolution to MethodInfo
+  - [x] Comprehensive tests (17 tests)
+- [x] Implement SimpleNameExpr wrapper
+  - [x] Binding resolution (variable/method/type)
+  - [x] Type-safe binding access
+  - [x] Comprehensive tests (13 tests)
+- [x] Implement FieldAccessExpr wrapper
+  - [x] Fluent field() access
+  - [x] receiver() access  
+  - [x] Field resolution to VariableInfo
+  - [x] Tests integrated with other tests
+- [x] Implement CastExpression wrapper
+  - [x] expression() access
+  - [x] type access
+  - [x] Tests integrated with other tests
+- [x] Implement InfixExpression wrapper
+  - [x] left/right operand access
+  - [x] operator access (InfixOperator enum)
+  - [x] Comprehensive tests (14 tests)
+- [x] Add expression-level tests (37 new tests, total 98 tests)
 
 ## Phase 3: Statement Wrappers (PLANNED)
 - [ ] Create base ASTStmt interface
