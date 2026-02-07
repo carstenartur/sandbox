@@ -115,26 +115,26 @@ public class MethodCallVisitorBuilder extends HelperVisitorBuilder<ASTNode> {
         if (typeFQN != null) {
             methodNames.forEach(methodName -> {
                 HelperVisitor.callMethodInvocationVisitor(typeFQN, methodName, compilationUnit,
-                        holder, nodesprocessed, processor);
+                        holder, nodesprocessed, (node, h) -> processor.test(node, h));
             });
             
             // Optionally include static imports for each method
             if (includeStaticImports) {
                 methodNames.forEach(methodName -> {
                     HelperVisitor.callImportDeclarationVisitor(typeFQN + "." + methodName, //$NON-NLS-1$
-                            compilationUnit, holder, nodesprocessed, processor);
+                            compilationUnit, holder, nodesprocessed, (node, h) -> processor.test(node, h));
                 });
             }
             
             // Optionally include the regular import
             if (importFQN != null) {
                 HelperVisitor.callImportDeclarationVisitor(importFQN, compilationUnit,
-                        holder, nodesprocessed, processor);
+                        holder, nodesprocessed, (node, h) -> processor.test(node, h));
             }
         } else if (typeClass != null) {
             methodNames.forEach(methodName -> {
                 HelperVisitor.callMethodInvocationVisitor(typeClass, methodName, compilationUnit,
-                        holder, nodesprocessed, processor);
+                        holder, nodesprocessed, (node, h) -> processor.test(node, h));
             });
             
             // For Class<?> variant, we can also support imports now using the FQN from Class
@@ -144,13 +144,13 @@ public class MethodCallVisitorBuilder extends HelperVisitorBuilder<ASTNode> {
                 if (includeStaticImports) {
                     methodNames.forEach(methodName -> {
                         HelperVisitor.callImportDeclarationVisitor(classFQN + "." + methodName, //$NON-NLS-1$
-                                compilationUnit, holder, nodesprocessed, processor);
+                                compilationUnit, holder, nodesprocessed, (node, h) -> processor.test(node, h));
                     });
                 }
                 
                 if (importFQN != null) {
                     HelperVisitor.callImportDeclarationVisitor(importFQN, compilationUnit,
-                            holder, nodesprocessed, processor);
+                            holder, nodesprocessed, (node, h) -> processor.test(node, h));
                 }
             }
         }
