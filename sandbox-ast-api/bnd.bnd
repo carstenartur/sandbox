@@ -3,4 +3,7 @@ Bundle-SymbolicName: org.sandbox.ast.api
 Bundle-Version: 1.2.5.qualifier
 Bundle-Vendor: Sandbox Project
 Export-Package: org.sandbox.ast.api.info,\
-                org.sandbox.ast.api.core
+                org.sandbox.ast.api.core,\
+                org.sandbox.ast.api.expr,\
+                org.sandbox.ast.api.stmt,\
+                org.sandbox.ast.api.visitor

@@ -1,0 +1,10 @@
+Bundle-Name: Sandbox AST API - JDT Bridge
+Bundle-SymbolicName: org.sandbox.ast.api.jdt
+Bundle-Version: ${version_cleanup;${project.version}}
+Bundle-Vendor: Sandbox Project
+
+Export-Package: org.sandbox.ast.api.jdt
+
+Import-Package: org.eclipse.jdt.core.dom;resolution:=optional,\
+                org.sandbox.ast.api.*,\
+                *
