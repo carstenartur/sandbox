@@ -94,7 +94,7 @@ public class AnnotationVisitorBuilder extends HelperVisitorBuilder<Annotation> {
     
     @Override
     protected <V, H> void executeVisitors(ReferenceHolder<V, H> holder, 
-            BiPredicate<Annotation, ReferenceHolder<V, H>> processor) {
+            BiPredicate<ASTNode, ReferenceHolder<V, H>> processor) {
         // Use the HelperVisitor stored in the ReferenceHolder to track continuation state
         // This ensures early termination works correctly when visiting multiple annotation types
         HelperVisitor<ReferenceHolder<V, H>, V, H> helperVisitor = holder.getHelperVisitor();
@@ -162,12 +162,8 @@ public class AnnotationVisitorBuilder extends HelperVisitorBuilder<Annotation> {
             if (!shouldContinue[0]) {
                 return false;
             }
-            // For imports, we need to cast to Annotation (even though ImportDeclaration is not an Annotation)
-            // This is for polymorphic handling when imports are included
-            @SuppressWarnings("unchecked")
-            BiPredicate<ASTNode, ReferenceHolder<V, H>> anyProcessor = 
-                (BiPredicate<ASTNode, ReferenceHolder<V, H>>) (BiPredicate<?, ?>) processor;
-            boolean result = anyProcessor.test(node, h);
+            // For imports, pass as ASTNode (polymorphic handling when imports are included)
+            boolean result = processor.test(node, h);
             if (!result) {
                 shouldContinue[0] = false;
             }
