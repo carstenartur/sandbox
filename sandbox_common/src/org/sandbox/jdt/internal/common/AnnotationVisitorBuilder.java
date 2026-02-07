@@ -68,7 +68,7 @@ import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
  * @author Carsten Hammer
  * @since 1.15
  */
-public class AnnotationVisitorBuilder extends HelperVisitorBuilder<Annotation> {
+public class AnnotationVisitorBuilder extends HelperVisitorBuilder<ASTNode> {
     
     private final String annotationFQN;
     private boolean includeImports = false;
