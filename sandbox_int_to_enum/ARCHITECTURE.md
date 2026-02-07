@@ -52,16 +52,21 @@ public void handleStatus(Status status) {
 
 ### Package Structure
 
-Following the standard Eclipse JDT cleanup plugin pattern:
+Following the standard Eclipse JDT cleanup plugin pattern with helper structure:
 
 - `org.sandbox.jdt.internal.corext.fix` - Core transformation logic
-  - `IntToEnumFixCore` - Enum containing transformation operations
-  - AST visitor to detect int constant patterns
-  - Rewrite operations to create enum and switch
+  - `IntToEnumFixCore` - Enum containing transformation operations following JfaceCleanUpFixCore pattern
+  - Uses helper pattern for transformation logic
+  - Uses ReferenceHolder from sandbox_common for tracking patterns
+
+- `org.sandbox.jdt.internal.corext.fix.helper` - Helper classes for transformation
+  - `AbstractTool<T>` - Base class with common helper methods (addImport, getUsedVariableNames)
+  - `IntToEnumHelper` - Main transformation logic extending AbstractTool
+  - `IntConstantHolder` - Data structure for tracking int constants and their usage
 
 - `org.sandbox.jdt.internal.ui.fix` - UI wrapper
   - `IntToEnumCleanUp` - Wrapper class extending AbstractCleanUpCoreWrapper
-  - `IntToEnumCleanUpCore` - Core cleanup implementation
+  - `IntToEnumCleanUpCore` - Core cleanup implementation using CompilationUnitRewriteOperationWithSourceRange
 
 - `org.sandbox.jdt.internal.ui.preferences.cleanup` - UI configuration
   - `SandboxCodeTabPage` - Configuration UI
@@ -77,12 +82,28 @@ The plugin detects:
 
 ### Transformation Steps
 
-1. **Detect Pattern**: Find int constants used in if-else chains
-2. **Analyze Scope**: Determine which constants belong together
-3. **Create Enum**: Generate enum with appropriate name and values
+1. **Detect Pattern**: IntToEnumHelper finds int constants used in if-else chains using AST visitors
+2. **Analyze Scope**: Determine which constants belong together and are used in the same context
+3. **Create Enum**: Generate enum type with appropriate name and values derived from constant names
 4. **Replace Constants**: Update constant references to enum values
-5. **Convert If-Else to Switch**: Transform if-else chain into switch statement
+5. **Convert If-Else to Switch**: Transform if-else chain into switch statement using enum
 6. **Update Variable Types**: Change parameter/variable types from int to enum
+
+### Helper Pattern Implementation
+
+Following the established pattern from JFaceCleanUpFixCore:
+
+- **IntToEnumFixCore enum** holds an AbstractTool instance (IntToEnumHelper)
+- **ReferenceHolder<Integer, IntConstantHolder>** from sandbox_common stores found patterns
+- **AbstractTool.find()** discovers patterns and creates CompilationUnitRewriteOperationWithSourceRange
+- **AbstractTool.rewrite()** performs the actual AST transformation
+- **TightSourceRangeComputer** ensures proper source range tracking for refactoring
+
+This pattern provides:
+- Clear separation of concerns (detection vs transformation)
+- Reusability of common utilities from sandbox_common
+- Consistency with other cleanup plugins in the repository
+- Type-safe tracking of transformation candidates
 
 ### Constraints and Limitations
 

@@ -4,16 +4,24 @@
 
 ### Completed
 - [x] Basic plugin structure created
-- [x] Documentation files (ARCHITECTURE.md, TODO.md)
+- [x] Documentation files (ARCHITECTURE.md, TODO.md, README.md)
+- [x] Refactored to follow repository patterns
+- [x] Helper structure (AbstractTool, IntToEnumHelper) following JFace pattern
+- [x] Using ReferenceHolder from sandbox_common
+- [x] CompilationUnitRewriteOperationWithSourceRange implementation
+- [x] Proper static imports and code organization
 
 ### In Progress
-- [ ] Core cleanup implementation
+- [ ] Core transformation implementation in IntToEnumHelper
+  - [ ] Implement find() method to detect patterns
+  - [ ] Implement rewrite() method to perform transformations
+  - [ ] Complete IntConstantHolder data structure
 - [ ] Test cases
 
 ### Not Yet Started
-- [ ] UI components
-- [ ] Feature module
-- [ ] Test module
+- [ ] AST visitor implementation for pattern detection
+- [ ] Enum generation logic
+- [ ] If-else to switch conversion logic
 
 ## Known Limitations
 
