@@ -479,15 +479,22 @@ public final class PreconditionsChecker {
 						return true;
 					}
 					
+					// For reducer patterns, skip the accumulator variable
+					// The accumulator is allowed to be modified because it becomes part of the reduce operation
+					if (hasReducer && reducerStatement != null) {
+						// Check if this variable is the accumulator in the reducer
+						if (isAccumulatorVariable(varBinding, reducerStatement)) {
+							return true;  // Skip the effectively-final check for accumulators
+						}
+					}
+					
 					// Check if the variable is effectively final
 					// Note: final variables and effectively final variables both return true
 					if (!varBinding.isEffectivelyFinal()) {
 						// This variable is captured from an outer scope but is not effectively final
 						// It cannot be used in a lambda
-						// However, we need to be careful: isEffectivelyFinal() can return false
-						// even for final variables in some contexts (e.g., when bindings aren't
-						// fully resolved during cleanup). So we double-check if the variable is
-						// explicitly marked as final using the modifiers.
+						// However, isEffectivelyFinal() can return false for final variables in some contexts
+						// So we double-check if the variable is explicitly marked as final
 						if ((varBinding.getModifiers() & Modifier.FINAL) == 0) {
 							containsNEFs = true;
 						}
@@ -527,6 +534,42 @@ public final class PreconditionsChecker {
 				collectTargetVariable = ((SimpleName) receiver).getIdentifier();
 			}
 		}
+	}
+	
+	/**
+	 * Checks if a variable is the accumulator in a reducer pattern.
+	 * 
+	 * <p>The accumulator is the variable that is being modified in a reducer pattern
+	 * (e.g., total in "total += item"). This variable is allowed to be non-effectively-final
+	 * because it will be part of the reduce operation, not captured by a lambda.</p>
+	 * 
+	 * @param varBinding the variable binding to check
+	 * @param reducerStmt the statement containing the reducer operation
+	 * @return true if this variable is the reducer accumulator
+	 */
+	private boolean isAccumulatorVariable(IVariableBinding varBinding, Statement reducerStmt) {
+		// Extract the variable name being assigned in the reducer statement
+		if (reducerStmt instanceof ExpressionStatement) {
+			Expression expr = ((ExpressionStatement) reducerStmt).getExpression();
+			if (expr instanceof Assignment) {
+				Expression lhs = ((Assignment) expr).getLeftHandSide();
+				if (lhs instanceof SimpleName) {
+					SimpleName name = (SimpleName) lhs;
+					IBinding lhsBinding = name.resolveBinding();
+					return varBinding.equals(lhsBinding);
+				}
+			} else if (expr instanceof PostfixExpression || expr instanceof PrefixExpression) {
+				Expression operand = (expr instanceof PostfixExpression) 
+					? ((PostfixExpression) expr).getOperand()
+					: ((PrefixExpression) expr).getOperand();
+				if (operand instanceof SimpleName) {
+					SimpleName name = (SimpleName) operand;
+					IBinding operandBinding = name.resolveBinding();
+					return varBinding.equals(operandBinding);
+				}
+			}
+		}
+		return false;
 	}
 
 	/**
