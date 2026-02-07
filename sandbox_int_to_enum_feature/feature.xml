@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="sandbox_int_to_enum_feature"
+      label="Sandbox int to enum feature"
+      version="1.2.5.qualifier"
+      provider-name="sandbox">
+
+   <description>
+      %description
+   </description>
+
+   <copyright>
+      %copyright
+   </copyright>
+
+   <license url="%licenseURL">
+      %license
+   </license>
+
+   <requires>
+      <import plugin="org.opentest4j"/>
+      <import plugin="sandbox_common"/>
+      <import plugin="org.junit"/>
+   </requires>
+
+   <plugin
+         id="sandbox_int_to_enum"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+</feature>
