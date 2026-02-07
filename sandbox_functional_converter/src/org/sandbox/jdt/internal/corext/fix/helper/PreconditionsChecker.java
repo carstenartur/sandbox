@@ -285,12 +285,16 @@ public final class PreconditionsChecker {
 			return true;
 		}).onEnhancedForStatement((node, h) -> {
 			// If we encounter another EnhancedForStatement inside the loop body,
-			// it's a nested loop - mark as not convertible
-			// We check that this is NOT the same node as the outer loop
-			if (node != loop) {
-				containsNestedLoop = true;
+			// it's a nested loop.
+			// PHASE 9: With LoopTree, nested loops are handled separately in the tree.
+			// We should NOT descend into them, as they'll be analyzed independently.
+			// Only mark as containsNestedLoop if this is the root loop we're analyzing.
+			if (node == loop) {
+				return true; // Continue analyzing this loop's body
 			}
-			return true;
+			// Found a nested loop - don't descend into it (return false)
+			// The LoopTree will handle this nested loop separately
+			return false;
 		}).onForStatement((node, h) -> {
 			// Traditional for loops inside the enhanced-for also prevent conversion
 			containsNestedLoop = true;
