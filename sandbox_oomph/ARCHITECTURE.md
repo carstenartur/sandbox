@@ -211,18 +211,87 @@ Configures Eclipse workspace preferences:
 
 ### Eclipse Version Targeting
 
-**Decision**: Hard-code Eclipse 2025-09 in setup file
+**Decision**: Make Eclipse version configurable through Oomph variable
 
 **Rationale**:
-- Sandbox main branch targets Eclipse 2025-09
-- Explicit version ensures consistent environment
+- Allows users to update Eclipse IDE provisioning version after initial installation
+- Provides flexibility for testing against different Eclipse releases
+- Eliminates need to edit setup files manually for IDE provisioning
 - Aligns with Root README build instructions
 - [See Root README: Build Instructions](../README.md#build-instructions)
 
-**Trade-off**:
-- Requires setup file update when upgrading Eclipse versions
-- Alternative (latest) would cause inconsistency across developers
-- Chosen for reproducibility over flexibility
+**Implementation**:
+```xml
+<setupTask xsi:type="setup:VariableTask"
+    name="eclipse.target.version"
+    value="2025-12"
+    label="Eclipse Release Version"
+    defaultValue="2025-12">
+  <description>The Eclipse release version to use for P2 repositories...</description>
+</setupTask>
+<repository url="https://download.eclipse.org/releases/${eclipse.target.version}"/>
+```
+
+**Benefits**:
+- Users can change IDE provisioning version in Oomph preferences at any time
+- Re-running setup will update to selected version for IDE features
+- Consistent with multi-version support strategy
+- Simplifies testing against different Eclipse releases
+
+**Important Note**:
+- This variable controls the Eclipse IDE provisioning (which Eclipse features are installed)
+- The workspace target platform is defined separately in `sandbox_target/eclipse.target`
+- To change the workspace target platform, you must also update the `.target` file manually
+
+**How to Update Version After Installation**:
+1. In Eclipse: Help → Perform Setup Tasks...
+2. Find "Eclipse Release Version" variable
+3. Change value (e.g., from "2025-12" to "2025-09")
+4. Click OK to re-trigger setup with new version
+5. Oomph P2 repository configuration updates (update `sandbox_target/eclipse.target` manually to match the new version if needed)
+
+### Eclipse Heap Size Configuration
+
+**Decision**: Make Eclipse heap size configurable through Oomph variable
+
+**Rationale**:
+- Different project sizes require different memory allocations
+- Allows users to adjust heap size based on available system memory
+- Eliminates need to manually edit eclipse.ini after installation
+- Provides flexibility for performance tuning
+
+**Implementation**:
+```xml
+<setupTask xsi:type="setup:VariableTask"
+    name="eclipse.heap.size"
+    value="2048m"
+    label="Eclipse Heap Size"
+    defaultValue="2048m">
+  <description>The maximum heap size for Eclipse IDE...</description>
+</setupTask>
+<setupTask xsi:type="setup:EclipseIniTask"
+    option="-Xmx"
+    value="${eclipse.heap.size}"
+    vm="true"/>
+```
+
+**Benefits**:
+- Users can adjust memory allocation without editing configuration files
+- Easy to increase heap size for large projects
+- Changes take effect after Eclipse restart
+- Prevents out-of-memory errors on large workspaces
+
+**Common Values**:
+- `2048m` (2 GB) - Default, suitable for most projects
+- `4096m` (4 GB) - Recommended for large projects
+- `8192m` (8 GB) - For very large projects or workspaces
+
+**How to Update Heap Size After Installation**:
+1. In Eclipse: Help → Perform Setup Tasks...
+2. Find "Eclipse Heap Size" variable
+3. Change value (e.g., from "2048m" to "4096m")
+4. Click OK to apply changes
+5. Restart Eclipse for new heap size to take effect
 
 ### Why No Automated Build Trigger?
 

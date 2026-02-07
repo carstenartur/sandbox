@@ -11,6 +11,8 @@
 - ✅ Branch selection (main)
 - ✅ P2 repository for Eclipse 2025-09
 - ✅ Basic project import
+- ✅ Configurable Eclipse target version (can be updated after installation)
+- ✅ Configurable Eclipse heap size (can be updated after installation)
 
 ### Pending
 - [ ] Automated workspace preferences
