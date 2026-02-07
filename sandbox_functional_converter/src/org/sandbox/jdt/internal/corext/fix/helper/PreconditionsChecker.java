@@ -484,7 +484,13 @@ public final class PreconditionsChecker {
 					if (!varBinding.isEffectivelyFinal()) {
 						// This variable is captured from an outer scope but is not effectively final
 						// It cannot be used in a lambda
-						containsNEFs = true;
+						// However, we need to be careful: isEffectivelyFinal() can return false
+						// even for final variables in some contexts (e.g., when bindings aren't
+						// fully resolved during cleanup). So we double-check if the variable is
+						// explicitly marked as final using the modifiers.
+						if ((varBinding.getModifiers() & Modifier.FINAL) == 0) {
+							containsNEFs = true;
+						}
 					}
 				}
 				return true;
