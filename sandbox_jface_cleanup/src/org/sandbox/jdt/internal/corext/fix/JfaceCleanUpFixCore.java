@@ -28,17 +28,20 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.helper.AbstractTool;
 import org.sandbox.jdt.internal.corext.fix.helper.JFacePlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.JFacePlugin.MonitorHolder;
+import org.sandbox.jdt.internal.corext.fix.helper.ViewerSorterPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.ViewerSorterPlugin.SorterHolder;
 import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
 public enum JfaceCleanUpFixCore {
 
-	MONITOR(new JFacePlugin());
+	MONITOR(new JFacePlugin()),
+	VIEWER_SORTER(new ViewerSorterPlugin());
 
-	AbstractTool<ReferenceHolder<Integer, MonitorHolder>> jfacefound;
+	AbstractTool<?> jfacefound;
 
 	@SuppressWarnings("unchecked")
-	JfaceCleanUpFixCore(AbstractTool<? extends ReferenceHolder<Integer, MonitorHolder>> xmlsimplify) {
-		this.jfacefound= (AbstractTool<ReferenceHolder<Integer, MonitorHolder>>) xmlsimplify;
+	JfaceCleanUpFixCore(AbstractTool<?> xmlsimplify) {
+		this.jfacefound= xmlsimplify;
 	}
 
 	public String getPreview(boolean i) {
@@ -62,7 +65,8 @@ public enum JfaceCleanUpFixCore {
 		jfacefound.find(this, compilationUnit, operations, nodesprocessed, createForOnlyIfVarUsed);
 	}
 
-	public CompilationUnitRewriteOperationWithSourceRange rewrite(final ReferenceHolder<Integer, MonitorHolder> hit) {
+	@SuppressWarnings("unchecked")
+	public <T> CompilationUnitRewriteOperationWithSourceRange rewrite(final ReferenceHolder<Integer, T> hit) {
 		return new CompilationUnitRewriteOperationWithSourceRange() {
 			@Override
 			public void rewriteASTInternal(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel)
@@ -75,21 +79,26 @@ public enum JfaceCleanUpFixCore {
 				} else {
 					rangeComputer= new TightSourceRangeComputer();
 				}
-				
-				// Get the first MonitorHolder from the hit map (key might not be 0 due to scope grouping)
-				MonitorHolder mh = hit.values().stream().findFirst().orElse(null);
-				if (mh != null) {
+	
+				// Use instanceof pattern matching to handle different holder types
+				if (!hit.isEmpty() && hit.values().stream().findFirst().orElse(null) instanceof MonitorHolder monitorHolder) {
 					// For standalone SubProgressMonitor, use the ClassInstanceCreation node instead of minv
-					if (mh.minv != null) {
-						rangeComputer.addTightSourceNode(mh.minv);
-					} else if (!mh.setofcic.isEmpty()) {
+					if (monitorHolder.minv != null) {
+						rangeComputer.addTightSourceNode(monitorHolder.minv);
+					} else if (!monitorHolder.setofcic.isEmpty()) {
 						// Use the first SubProgressMonitor creation for standalone case
-						rangeComputer.addTightSourceNode(mh.setofcic.iterator().next());
+						rangeComputer.addTightSourceNode(monitorHolder.setofcic.iterator().next());
 					}
+					rewrite.setTargetSourceRangeComputer(rangeComputer);
+					((AbstractTool<ReferenceHolder<Integer, MonitorHolder>>) jfacefound).rewrite(JfaceCleanUpFixCore.this, (ReferenceHolder<Integer, MonitorHolder>) hit, cuRewrite, group);
+				} else if (!hit.isEmpty() && hit.values().stream().findFirst().orElse(null) instanceof SorterHolder) {
+					// For SorterHolder, we don't have a single source node, so skip rangeComputer setup
+					((AbstractTool<ReferenceHolder<Integer, SorterHolder>>) jfacefound).rewrite(JfaceCleanUpFixCore.this, (ReferenceHolder<Integer, SorterHolder>) hit, cuRewrite, group);
+				} else {
+					// Fallback for unknown types - just call rewrite without specific range computer setup
+					rewrite.setTargetSourceRangeComputer(rangeComputer);
+					((AbstractTool<ReferenceHolder<Integer, T>>) jfacefound).rewrite(JfaceCleanUpFixCore.this, hit, cuRewrite, group);
 				}
-				
-				rewrite.setTargetSourceRangeComputer(rangeComputer);
-				jfacefound.rewrite(JfaceCleanUpFixCore.this, hit, cuRewrite, group);
 			}
 		};
 	}
