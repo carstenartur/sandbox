@@ -62,8 +62,10 @@ public class TriggerPatternEngineTest {
 		assertTrue(match.getLength() > 0);
 		
 		Map<String, Object> bindings = match.getBindings();
-		assertEquals(1, bindings.size());
+		assertEquals(3, bindings.size(), "Should have 3 bindings: $x, $_, $this");
 		assertTrue(bindings.containsKey("$x"));
+		assertTrue(bindings.containsKey("$_"), "Should have $_ auto-binding");
+		assertTrue(bindings.containsKey("$this"), "Should have $this auto-binding");
 		
 		ASTNode boundNode = match.getBinding("$x");
 		assertTrue(boundNode instanceof SimpleName);
@@ -89,11 +91,13 @@ public class TriggerPatternEngineTest {
 		
 		assertEquals(3, matches.size(), "Should find three matches");
 		
-		// Verify all matches have bindings
+		// Verify all matches have bindings (including auto-bindings)
 		for (Match match : matches) {
 			assertNotNull(match.getMatchedNode());
-			assertEquals(1, match.getBindings().size());
+			assertEquals(3, match.getBindings().size(), "Should have 3 bindings: $x, $_, $this");
 			assertTrue(match.getBindings().containsKey("$x"));
+			assertTrue(match.getBindings().containsKey("$_"), "Should have $_ auto-binding");
+			assertTrue(match.getBindings().containsKey("$this"), "Should have $this auto-binding");
 		}
 	}
 	
