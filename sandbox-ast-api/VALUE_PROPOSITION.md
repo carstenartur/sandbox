@@ -122,15 +122,15 @@ void testMethodInvocationDetection() {
 
 **Tests:** 37 tests, total 98 tests, 80% overall coverage
 
-### Phase 3: Statement Wrappers (PLANNED)
+### Phase 3: Statement Wrappers (COMPLETED)
 - ForStatement, WhileStatement, EnhancedFor, etc.
 - Block statements and control flow
 
-### Phase 4: FluentVisitor Builder (PLANNED)
+### Phase 4: FluentVisitor Builder (COMPLETED)
 - Type-safe visitor construction
 - Pattern matching on node types
 
-### Phase 5: JDT Bridge Module (PLANNED)
+### Phase 5: JDT Bridge Module (COMPLETED)
 - Convert JDT AST nodes to fluent API
 - Enable migration of existing cleanups
 
