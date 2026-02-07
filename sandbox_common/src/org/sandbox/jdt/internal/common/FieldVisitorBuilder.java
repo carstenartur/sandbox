@@ -15,7 +15,6 @@ package org.sandbox.jdt.internal.common;
 
 import java.util.function.BiPredicate;
 
-import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 
 /**
