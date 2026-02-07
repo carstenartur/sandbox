@@ -79,7 +79,7 @@ public abstract class HelperVisitorBuilder<T extends ASTNode> {
     
     /**
      * Terminal operation that processes each found node with the given processor.
-     * The processor accepts ASTNode to allow handling different node types polymorphically.
+     * The processor accepts the specific node type T (e.g., MethodInvocation, ClassInstanceCreation).
      * The processor returns a boolean - return false to stop visiting.
      * 
      * @param <V> the type of keys in the reference holder
@@ -87,7 +87,7 @@ public abstract class HelperVisitorBuilder<T extends ASTNode> {
      * @param processor the bi-predicate that processes each found node
      * @throws IllegalStateException if the compilation unit was not configured via {@code in(...)}
      */
-    public <V, H> void processEach(BiPredicate<ASTNode, ReferenceHolder<V, H>> processor) {
+    public <V, H> void processEach(BiPredicate<T, ReferenceHolder<V, H>> processor) {
         validateState();
         ReferenceHolder<V, H> holder = new ReferenceHolder<>();
         executeVisitors(holder, processor);
@@ -96,7 +96,7 @@ public abstract class HelperVisitorBuilder<T extends ASTNode> {
     /**
      * Terminal operation that processes each found node with the given processor,
      * using a pre-initialized ReferenceHolder for data collection.
-     * The processor accepts ASTNode to allow handling different node types polymorphically.
+     * The processor accepts the specific node type T (e.g., MethodInvocation, ClassInstanceCreation).
      * The processor returns a boolean - return false to stop visiting.
      * 
      * @param <V> the type of keys in the reference holder
@@ -105,7 +105,7 @@ public abstract class HelperVisitorBuilder<T extends ASTNode> {
      * @param processor the bi-predicate that processes each found node
      * @throws IllegalStateException if the compilation unit was not configured via {@code in(...)}
      */
-    public <V, H> void processEach(ReferenceHolder<V, H> holder, BiPredicate<ASTNode, ReferenceHolder<V, H>> processor) {
+    public <V, H> void processEach(ReferenceHolder<V, H> holder, BiPredicate<T, ReferenceHolder<V, H>> processor) {
         validateState();
         executeVisitors(holder, processor);
     }
@@ -150,5 +150,5 @@ public abstract class HelperVisitorBuilder<T extends ASTNode> {
      * @param processor the processor to call for each found node
      */
     protected abstract <V, H> void executeVisitors(ReferenceHolder<V, H> holder, 
-            BiPredicate<ASTNode, ReferenceHolder<V, H>> processor);
+            BiPredicate<T, ReferenceHolder<V, H>> processor);
 }

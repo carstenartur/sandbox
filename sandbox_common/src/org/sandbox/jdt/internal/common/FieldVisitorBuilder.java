@@ -77,8 +77,8 @@ public class FieldVisitorBuilder extends HelperVisitorBuilder<FieldDeclaration> 
     
     @Override
     protected <V, H> void executeVisitors(ReferenceHolder<V, H> holder, 
-            BiPredicate<ASTNode, ReferenceHolder<V, H>> processor) {
+            BiPredicate<FieldDeclaration, ReferenceHolder<V, H>> processor) {
         HelperVisitor.callFieldDeclarationVisitor(annotationFQN, typeFQN, compilationUnit,
-                holder, nodesprocessed, (node, h) -> processor.test(node, h));
+                holder, nodesprocessed, processor);
     }
 }

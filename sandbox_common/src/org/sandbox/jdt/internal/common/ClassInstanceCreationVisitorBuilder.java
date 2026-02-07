@@ -51,8 +51,8 @@ public class ClassInstanceCreationVisitorBuilder extends HelperVisitorBuilder<Cl
     
     @Override
     protected <V, H> void executeVisitors(ReferenceHolder<V, H> holder, 
-            BiPredicate<ASTNode, ReferenceHolder<V, H>> processor) {
+            BiPredicate<ClassInstanceCreation, ReferenceHolder<V, H>> processor) {
         HelperVisitor.callClassInstanceCreationVisitor(targetClass, compilationUnit,
-                holder, nodesprocessed, (node, h) -> processor.test(node, h));
+                holder, nodesprocessed, processor);
     }
 }

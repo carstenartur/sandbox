@@ -110,35 +110,72 @@ public class MethodCallVisitorBuilder extends HelperVisitorBuilder<MethodInvocat
     
     @Override
     protected <V, H> void executeVisitors(ReferenceHolder<V, H> holder, 
-            BiPredicate<ASTNode, ReferenceHolder<V, H>> processor) {
+            BiPredicate<MethodInvocation, ReferenceHolder<V, H>> processor) {
         // Visit method invocations for each method name
         if (typeFQN != null) {
             methodNames.forEach(methodName -> {
                 HelperVisitor.callMethodInvocationVisitor(typeFQN, methodName, compilationUnit,
-                        holder, nodesprocessed, (node, h) -> processor.test(node, h));
+                        holder, nodesprocessed, processor);
             });
             
             // Optionally include static imports for each method
             if (includeStaticImports) {
                 methodNames.forEach(methodName -> {
                     HelperVisitor.callImportDeclarationVisitor(typeFQN + "." + methodName, //$NON-NLS-1$
-                            compilationUnit, holder, nodesprocessed, (node, h) -> processor.test(node, h));
+                            compilationUnit, holder, nodesprocessed, (node, h) -> {
+                                // Cast ImportDeclaration to MethodInvocation (polymorphic pattern)
+                                // This is safe because the processor should handle ASTNode
+                                @SuppressWarnings("unchecked")
+                                BiPredicate<ASTNode, ReferenceHolder<V, H>> anyProcessor = 
+                                    (BiPredicate<ASTNode, ReferenceHolder<V, H>>) (BiPredicate<?, ?>) processor;
+                                return anyProcessor.test(node, h);
+                            });
                 });
             }
             
             // Optionally include the regular import
             if (importFQN != null) {
                 HelperVisitor.callImportDeclarationVisitor(importFQN, compilationUnit,
-                        holder, nodesprocessed, (node, h) -> processor.test(node, h));
+                        holder, nodesprocessed, (node, h) -> {
+                            // Cast ImportDeclaration to MethodInvocation (polymorphic pattern)
+                            @SuppressWarnings("unchecked")
+                            BiPredicate<ASTNode, ReferenceHolder<V, H>> anyProcessor = 
+                                (BiPredicate<ASTNode, ReferenceHolder<V, H>>) (BiPredicate<?, ?>) processor;
+                            return anyProcessor.test(node, h);
+                        });
             }
         } else if (typeClass != null) {
             methodNames.forEach(methodName -> {
                 HelperVisitor.callMethodInvocationVisitor(typeClass, methodName, compilationUnit,
-                        holder, nodesprocessed, (node, h) -> processor.test(node, h));
+                        holder, nodesprocessed, processor);
             });
             
-            // For Class<?> variant, static imports and regular imports are not supported
-            // since we don't have the FQN string
+            // For Class<?> variant, we can also support imports now using the FQN from Class
+            if (includeStaticImports || importFQN != null) {
+                String classFQN = typeClass.getName();
+                
+                if (includeStaticImports) {
+                    methodNames.forEach(methodName -> {
+                        HelperVisitor.callImportDeclarationVisitor(classFQN + "." + methodName, //$NON-NLS-1$
+                                compilationUnit, holder, nodesprocessed, (node, h) -> {
+                                    @SuppressWarnings("unchecked")
+                                    BiPredicate<ASTNode, ReferenceHolder<V, H>> anyProcessor = 
+                                        (BiPredicate<ASTNode, ReferenceHolder<V, H>>) (BiPredicate<?, ?>) processor;
+                                    return anyProcessor.test(node, h);
+                                });
+                    });
+                }
+                
+                if (importFQN != null) {
+                    HelperVisitor.callImportDeclarationVisitor(importFQN, compilationUnit,
+                            holder, nodesprocessed, (node, h) -> {
+                                @SuppressWarnings("unchecked")
+                                BiPredicate<ASTNode, ReferenceHolder<V, H>> anyProcessor = 
+                                    (BiPredicate<ASTNode, ReferenceHolder<V, H>>) (BiPredicate<?, ?>) processor;
+                                return anyProcessor.test(node, h);
+                            });
+                }
+            }
         }
     }
 }
