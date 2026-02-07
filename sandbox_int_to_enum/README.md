@@ -108,7 +108,7 @@ public class OrderProcessor {
 ## Requirements
 
 - Eclipse 2025-12 or later
-- Java 11 or later
+- Java 21 or later
 
 ## Limitations
 
