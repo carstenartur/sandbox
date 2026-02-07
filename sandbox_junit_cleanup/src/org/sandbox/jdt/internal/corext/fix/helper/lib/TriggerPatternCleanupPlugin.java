@@ -124,8 +124,8 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
      */
     protected JunitHolder createHolder(Match match) {
         JunitHolder holder = new JunitHolder();
-        holder.minv = match.getMatchedNode();
-        holder.bindings = match.getBindings();
+        holder.setMinv(match.getMatchedNode());
+        holder.setBindings(match.getBindings());
         return holder;
     }
     

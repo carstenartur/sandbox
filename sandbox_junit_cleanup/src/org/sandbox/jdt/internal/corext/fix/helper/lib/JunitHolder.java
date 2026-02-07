@@ -40,31 +40,101 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
  * Different plugins use this holder to pass different types of AST nodes
  * (annotations, method invocations, field declarations, etc.) to the rewrite operation.
  * </p>
+ * <p>
+ * Refactored to use private fields with fluent setters for better encapsulation.
+ * A Builder inner class is provided for convenient construction.
+ * </p>
  */
 public class JunitHolder {
 	/** The main AST node to be transformed (can be Annotation, MethodInvocation, FieldDeclaration, TypeDeclaration, or ImportDeclaration) */
-	public ASTNode minv;
+	private ASTNode minv;
 	
 	/** Name or identifier associated with the node (e.g., annotation name, method name) */
-	public String minvname;
+	private String minvname;
 	
 	/** Set of already processed nodes to avoid duplicate transformations */
-	public Set<ASTNode> nodesprocessed;
+	private Set<ASTNode> nodesprocessed;
 	
 	/** Additional string value for the transformation */
-	public String value;
+	private String value;
 	
 	/** Method invocation reference (if applicable) */
-	public MethodInvocation method;
+	private MethodInvocation method;
 	
 	/** Counter for tracking multiple transformations */
-	public int count;
+	private int count;
 	
 	/** Additional context information for complex transformations */
-	public Object additionalInfo;
+	private Object additionalInfo;
 	
 	/** Placeholder bindings from TriggerPattern (e.g., "$x" -> ASTNode or "$args$" -> List<ASTNode>) */
-	public Map<String, Object> bindings = new HashMap<>();
+	private Map<String, Object> bindings = new HashMap<>();
+
+	// ========== Getters ==========
+	
+	/**
+	 * Gets the main AST node.
+	 * @return the AST node
+	 */
+	public ASTNode getMinv() {
+		return minv;
+	}
+	
+	/**
+	 * Gets the name or identifier associated with the node.
+	 * @return the name
+	 */
+	public String getMinvname() {
+		return minvname;
+	}
+	
+	/**
+	 * Gets the set of already processed nodes.
+	 * @return the set of processed nodes
+	 */
+	public Set<ASTNode> getNodesprocessed() {
+		return nodesprocessed;
+	}
+	
+	/**
+	 * Gets the additional string value.
+	 * @return the value
+	 */
+	public String getValue() {
+		return value;
+	}
+	
+	/**
+	 * Gets the method invocation reference.
+	 * @return the method invocation
+	 */
+	public MethodInvocation getMethod() {
+		return method;
+	}
+	
+	/**
+	 * Gets the counter.
+	 * @return the count
+	 */
+	public int getCount() {
+		return count;
+	}
+	
+	/**
+	 * Gets the additional context information.
+	 * @return the additional info
+	 */
+	public Object getAdditionalInfo() {
+		return additionalInfo;
+	}
+	
+	/**
+	 * Gets the placeholder bindings map.
+	 * @return the bindings map
+	 */
+	public Map<String, Object> getBindings() {
+		return bindings;
+	}
 
 	/**
 	 * Gets the node as an Annotation.
@@ -106,6 +176,88 @@ public class JunitHolder {
 		return (TypeDeclaration) minv;
 	}
 	
+	// ========== Fluent Setters for Backward Compatibility ==========
+	
+	/**
+	 * Sets the main AST node.
+	 * @param minv the AST node
+	 * @return this holder for fluent API
+	 */
+	public JunitHolder setMinv(ASTNode minv) {
+		this.minv = minv;
+		return this;
+	}
+	
+	/**
+	 * Sets the name or identifier.
+	 * @param minvname the name
+	 * @return this holder for fluent API
+	 */
+	public JunitHolder setMinvname(String minvname) {
+		this.minvname = minvname;
+		return this;
+	}
+	
+	/**
+	 * Sets the set of already processed nodes.
+	 * @param nodesprocessed the set of processed nodes
+	 * @return this holder for fluent API
+	 */
+	public JunitHolder setNodesprocessed(Set<ASTNode> nodesprocessed) {
+		this.nodesprocessed = nodesprocessed;
+		return this;
+	}
+	
+	/**
+	 * Sets the additional string value.
+	 * @param value the value
+	 * @return this holder for fluent API
+	 */
+	public JunitHolder setValue(String value) {
+		this.value = value;
+		return this;
+	}
+	
+	/**
+	 * Sets the method invocation reference.
+	 * @param method the method invocation
+	 * @return this holder for fluent API
+	 */
+	public JunitHolder setMethod(MethodInvocation method) {
+		this.method = method;
+		return this;
+	}
+	
+	/**
+	 * Sets the counter.
+	 * @param count the count
+	 * @return this holder for fluent API
+	 */
+	public JunitHolder setCount(int count) {
+		this.count = count;
+		return this;
+	}
+	
+	/**
+	 * Sets the additional context information.
+	 * @param additionalInfo the additional info
+	 * @return this holder for fluent API
+	 */
+	public JunitHolder setAdditionalInfo(Object additionalInfo) {
+		this.additionalInfo = additionalInfo;
+		return this;
+	}
+	
+	/**
+	 * Sets the placeholder bindings map.
+	 * @param bindings the bindings map, may be {@code null} to reset to an empty map
+	 * @return this holder for fluent API
+	 */
+	public JunitHolder setBindings(Map<String, Object> bindings) {
+		this.bindings = bindings != null ? bindings : new HashMap<>();
+		return this;
+	}
+	
 	/**
 	 * Gets a placeholder binding as an Expression.
 	 * 
@@ -142,5 +294,122 @@ public class JunitHolder {
 	 */
 	public boolean hasBinding(String placeholder) {
 		return bindings.containsKey(placeholder);
+	}
+	
+	// ========== Builder ==========
+	
+	/**
+	 * Builder for creating JunitHolder instances with a fluent API.
+	 * Provides a type-safe way to construct holders with only the required fields set.
+	 */
+	public static class Builder {
+		private final JunitHolder holder;
+		
+		/**
+		 * Creates a new builder instance.
+		 */
+		public Builder() {
+			this.holder = new JunitHolder();
+		}
+		
+		/**
+		 * Sets the main AST node.
+		 * @param minv the AST node
+		 * @return this builder
+		 */
+		public Builder minv(ASTNode minv) {
+			holder.setMinv(minv);
+			return this;
+		}
+		
+		/**
+		 * Sets the name or identifier.
+		 * @param minvname the name
+		 * @return this builder
+		 */
+		public Builder minvname(String minvname) {
+			holder.setMinvname(minvname);
+			return this;
+		}
+		
+		/**
+		 * Sets the set of already processed nodes.
+		 * @param nodesprocessed the set of processed nodes
+		 * @return this builder
+		 */
+		public Builder nodesprocessed(Set<ASTNode> nodesprocessed) {
+			holder.setNodesprocessed(nodesprocessed);
+			return this;
+		}
+		
+		/**
+		 * Sets the additional string value.
+		 * @param value the value
+		 * @return this builder
+		 */
+		public Builder value(String value) {
+			holder.setValue(value);
+			return this;
+		}
+		
+		/**
+		 * Sets the method invocation reference.
+		 * @param method the method invocation
+		 * @return this builder
+		 */
+		public Builder method(MethodInvocation method) {
+			holder.setMethod(method);
+			return this;
+		}
+		
+		/**
+		 * Sets the counter.
+		 * @param count the count
+		 * @return this builder
+		 */
+		public Builder count(int count) {
+			holder.setCount(count);
+			return this;
+		}
+		
+		/**
+		 * Sets the additional context information.
+		 * @param additionalInfo the additional info
+		 * @return this builder
+		 */
+		public Builder additionalInfo(Object additionalInfo) {
+			holder.setAdditionalInfo(additionalInfo);
+			return this;
+		}
+		
+		/**
+		 * Sets the placeholder bindings map.
+		 * @param bindings the bindings map
+		 * @return this builder
+		 * @throws IllegalArgumentException if {@code bindings} is {@code null}
+		 */
+		public Builder bindings(Map<String, Object> bindings) {
+			if (bindings == null) {
+				throw new IllegalArgumentException("bindings must not be null");
+			}
+			holder.setBindings(bindings);
+			return this;
+		}
+		
+		/**
+		 * Builds the JunitHolder instance.
+		 * @return the constructed holder
+		 */
+		public JunitHolder build() {
+			return holder;
+		}
+	}
+	
+	/**
+	 * Creates a new builder instance.
+	 * @return a new builder
+	 */
+	public static Builder builder() {
+		return new Builder();
 	}
 }

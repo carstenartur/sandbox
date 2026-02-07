@@ -126,10 +126,10 @@ public class RunWithTheoriesJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 		nodesprocessed.add(theoriesData.theoryMethod);
 		
 		JunitHolder mh= new JunitHolder();
-		mh.minv= node;
-		mh.minvname= node.getTypeName().getFullyQualifiedName();
-		mh.value= ORG_JUNIT_EXPERIMENTAL_THEORIES_THEORIES;
-		mh.additionalInfo= theoriesData;
+		mh.setMinv(node);
+		mh.setMinvname(node.getTypeName().getFullyQualifiedName());
+		mh.setValue(ORG_JUNIT_EXPERIMENTAL_THEORIES_THEORIES);
+		mh.setAdditionalInfo(theoriesData);
 		dataHolder.put(dataHolder.size(), mh);
 		operations.add(fixcore.rewrite(dataHolder));
 		
@@ -205,7 +205,7 @@ public class RunWithTheoriesJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 	@Override
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
-		TheoriesData theoriesData = (TheoriesData) junitHolder.additionalInfo;
+		TheoriesData theoriesData = (TheoriesData) junitHolder.getAdditionalInfo();
 		
 		// Remove @RunWith(Theories.class) annotation
 		rewriter.remove(theoriesData.runWithAnnotation, group);

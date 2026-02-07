@@ -175,7 +175,7 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
 			ImportRewrite importRewriter, JunitHolder junitHolder) {
 		
-		ASTNode node = junitHolder.minv;
+		ASTNode node = junitHolder.getMinv();
 		
 		if (node instanceof ImportDeclaration) {
 			processImportDeclaration(importRewriter, (ImportDeclaration) node);

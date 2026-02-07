@@ -93,7 +93,7 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 
 			nodesprocessed.add(node);
 			JunitHolder mh= new JunitHolder();
-			mh.minv= node;
+			mh.setMinv(node);
 			dataHolder.put(dataHolder.size(), mh);
 			operations.add(fixcore.rewrite(dataHolder));
 		}

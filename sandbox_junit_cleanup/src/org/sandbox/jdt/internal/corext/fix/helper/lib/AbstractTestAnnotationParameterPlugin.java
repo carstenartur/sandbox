@@ -78,8 +78,8 @@ public abstract class AbstractTestAnnotationParameterPlugin extends AbstractTool
 		
 		if (targetPair != null && validateParameter(targetPair)) {
 			JunitHolder mh = new JunitHolder();
-			mh.minv = node;
-			mh.additionalInfo = targetPair;
+			mh.setMinv(node);
+			mh.setAdditionalInfo(targetPair);
 			dataHolder.put(dataHolder.size(), mh);
 			operations.add(fixcore.rewrite(dataHolder));
 		}

@@ -64,7 +64,7 @@ public class TestTimeoutJUnitPlugin extends AbstractTestAnnotationParameterPlugi
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
 		NormalAnnotation testAnnotation = (NormalAnnotation) junitHolder.getAnnotation();
-		MemberValuePair timeoutPair = (MemberValuePair) junitHolder.additionalInfo;
+		MemberValuePair timeoutPair = (MemberValuePair) junitHolder.getAdditionalInfo();
 		
 		if (timeoutPair == null) {
 			return;

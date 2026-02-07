@@ -148,10 +148,10 @@ public class RunWithCategoriesJUnitPlugin extends AbstractTool<ReferenceHolder<I
 		}
 		
 		JunitHolder mh= new JunitHolder();
-		mh.minv= node;
-		mh.minvname= node.getTypeName().getFullyQualifiedName();
-		mh.value= ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORIES;
-		mh.additionalInfo= categoriesData;
+		mh.setMinv(node);
+		mh.setMinvname(node.getTypeName().getFullyQualifiedName());
+		mh.setValue(ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORIES);
+		mh.setAdditionalInfo(categoriesData);
 		dataHolder.put(dataHolder.size(), mh);
 		operations.add(fixcore.rewrite(dataHolder));
 		
@@ -217,7 +217,7 @@ public class RunWithCategoriesJUnitPlugin extends AbstractTool<ReferenceHolder<I
 	@Override
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
-		CategoriesData categoriesData = (CategoriesData) junitHolder.additionalInfo;
+		CategoriesData categoriesData = (CategoriesData) junitHolder.getAdditionalInfo();
 		TypeDeclaration typeDecl = categoriesData.typeDeclaration;
 		ListRewrite modifiersRewrite = rewriter.getListRewrite(typeDecl, TypeDeclaration.MODIFIERS2_PROPERTY);
 		
