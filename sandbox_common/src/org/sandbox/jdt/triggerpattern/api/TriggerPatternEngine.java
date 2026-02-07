@@ -25,6 +25,7 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
@@ -81,6 +82,8 @@ public class TriggerPatternEngine {
 				} else if (pattern.getKind() == PatternKind.IMPORT && node instanceof ImportDeclaration) {
 					checkMatch(node, patternNode, matches);
 				} else if (pattern.getKind() == PatternKind.FIELD && node instanceof FieldDeclaration) {
+					checkMatch(node, patternNode, matches);
+				} else if (pattern.getKind() == PatternKind.CONSTRUCTOR && node instanceof ClassInstanceCreation) {
 					checkMatch(node, patternNode, matches);
 				}
 			}
