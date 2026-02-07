@@ -122,6 +122,24 @@ To customize the setup:
 
 ## Maintenance
 
+### Updating Eclipse Target Version
+
+The Eclipse version can be changed even after initial installation:
+
+**Method 1: Using Oomph Preferences (Recommended)**
+1. In Eclipse: `Help` → `Perform Setup Tasks...`
+2. In the dialog, find the "Eclipse Release Version" variable
+3. Change the value (e.g., from "2025-12" to "2025-09" or "2024-12")
+4. Click `OK` to re-trigger setup with the new version
+5. Restart Eclipse when prompted
+6. The target platform will automatically update to the new version
+
+**Method 2: Edit Setup File**
+1. Open `sandbox.setup` in a text editor
+2. Locate the `eclipse.target.version` variable
+3. Change the default value
+4. Save and re-import the setup in Eclipse Installer
+
 ### Updating Setup
 
 When project structure changes:

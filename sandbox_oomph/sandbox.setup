@@ -74,6 +74,14 @@
   </setupTask>
   <setupTask
       xsi:type="setup:VariableTask"
+      name="eclipse.target.version"
+      value="2025-12"
+      label="Eclipse Release Version"
+      defaultValue="2025-12">
+    <description>The Eclipse release version to use for P2 repositories (e.g., 2025-12, 2025-09, 2024-12). This can be changed to update the target platform even after initial installation.</description>
+  </setupTask>
+  <setupTask
+      xsi:type="setup:VariableTask"
       name="product.location"
       value="${installation.location/}${installation.relativeProductFolder}"/>
   <version name="latest"
@@ -219,7 +227,7 @@
       <requirement
           name="org.eclipse.emf.edapt.runtime.feature.feature.group"/>
       <repository
-          url="https://download.eclipse.org/releases/2025-12"/>
+          url="https://download.eclipse.org/releases/${eclipse.target.version}"/>
     </setupTask>
     <description></description>
   </version>

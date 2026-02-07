@@ -211,18 +211,39 @@ Configures Eclipse workspace preferences:
 
 ### Eclipse Version Targeting
 
-**Decision**: Hard-code Eclipse 2025-09 in setup file
+**Decision**: Make Eclipse version configurable through Oomph variable
 
 **Rationale**:
-- Sandbox main branch targets Eclipse 2025-09
-- Explicit version ensures consistent environment
+- Allows users to update target Eclipse version after initial installation
+- Provides flexibility for testing against different Eclipse releases
+- Eliminates need to edit setup files manually
 - Aligns with Root README build instructions
 - [See Root README: Build Instructions](../README.md#build-instructions)
 
-**Trade-off**:
-- Requires setup file update when upgrading Eclipse versions
-- Alternative (latest) would cause inconsistency across developers
-- Chosen for reproducibility over flexibility
+**Implementation**:
+```xml
+<setupTask xsi:type="setup:VariableTask"
+    name="eclipse.target.version"
+    value="2025-12"
+    label="Eclipse Release Version"
+    defaultValue="2025-12">
+  <description>The Eclipse release version to use...</description>
+</setupTask>
+<repository url="https://download.eclipse.org/releases/${eclipse.target.version}"/>
+```
+
+**Benefits**:
+- Users can change version in Oomph preferences at any time
+- Re-running setup will update to selected version
+- Consistent with multi-version support strategy
+- Simplifies testing against different Eclipse versions
+
+**How to Update Version After Installation**:
+1. In Eclipse: Help → Perform Setup Tasks...
+2. Find "Eclipse Release Version" variable
+3. Change value (e.g., from "2025-12" to "2025-09")
+4. Click OK to re-trigger setup with new version
+5. Target platform automatically updates
 
 ### Why No Automated Build Trigger?
 
