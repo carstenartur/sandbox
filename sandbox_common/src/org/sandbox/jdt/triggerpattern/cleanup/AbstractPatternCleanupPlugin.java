@@ -213,7 +213,7 @@ public abstract class AbstractPatternCleanupPlugin<H> {
     // - @AnnotationName or @AnnotationName($placeholder) or @AnnotationName($placeholder$)
     // - MethodName.method($args) or MethodName.method($args$)
     private static final java.util.regex.Pattern REPLACEMENT_PATTERN = 
-        java.util.regex.Pattern.compile("@?([A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*)(?:\\((.*)\\))?");
+        java.util.regex.Pattern.compile("@?([A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*)(?:\\((.*)\\))?"); //$NON-NLS-1$
     
     /**
      * Processes AST rewrite operations.

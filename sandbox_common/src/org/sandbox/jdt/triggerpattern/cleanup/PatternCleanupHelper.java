@@ -83,7 +83,7 @@ public class PatternCleanupHelper {
      */
     public String getCleanupId() {
         CleanupPattern annotation = pluginClass.getAnnotation(CleanupPattern.class);
-        return annotation != null ? annotation.cleanupId() : "";
+        return annotation != null ? annotation.cleanupId() : ""; //$NON-NLS-1$
     }
     
     /**
@@ -93,7 +93,7 @@ public class PatternCleanupHelper {
      */
     public String getDescription() {
         CleanupPattern annotation = pluginClass.getAnnotation(CleanupPattern.class);
-        return annotation != null ? annotation.description() : "";
+        return annotation != null ? annotation.description() : ""; //$NON-NLS-1$
     }
     
     /**
