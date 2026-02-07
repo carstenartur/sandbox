@@ -92,15 +92,13 @@ The new release will be available at `https://carstenartur.github.io/sandbox/rel
 - [📦 Release Process](#-release-process)
 - [GitHub Actions Integration](#github-actions-integration)
 - [Build Instructions](#build-instructions)
+  - [Troubleshooting](#troubleshooting)
 - [Eclipse Version Configuration](#eclipse-version-configuration)
 - [Quickstart](#quickstart)
 - [What's Included](#whats-included)
 - [Projects](#projects)
-  - [Cleanup Plugins](#cleanup-plugins)
 - [Documentation](#documentation)
 - [Contributing](#contributing)
-- [License](#license)
-  - [Troubleshooting](#troubleshooting)
 - [License](#license)
   - [Eclipse Public License 2.0](#eclipse-public-license-20)
 
@@ -165,86 +163,19 @@ The project supports Maven profiles to optimize build speed:
 | `mvn -Pjacoco,product,repo -T 1C verify` | Full CI build with coverage |
 | `mvn -T 1C -DskipTests verify` | Skip tests for local iteration |
 
-The project supports different build profiles for different purposes. Choose the appropriate command based on your needs:
-
-#### Quick Development Build (Fastest)
-
-For rapid iteration during development, use the default build which excludes heavy product materialization and p2 repository assembly:
-
-```bash
-mvn -T 1C verify
-```
-
-- **Builds**: All bundles, features, and tests
-- **Skips**: Product materialization (`sandbox_product`) and p2 repository assembly (`sandbox_updatesite`)
-- **Use case**: Fast feedback during development, testing code changes
-- **Time**: Significantly faster than full build
-
-You can skip tests for even faster iteration:
-
-```bash
-mvn -T 1C -DskipTests verify
-```
-
-#### Build with Eclipse Product
-
-To build the Eclipse product with p2-director materialization (creates installable Eclipse distributions):
-
-```bash
-mvn -Pproduct -T 1C verify
-```
-
-- **Builds**: Everything in default build + Eclipse product
-- **Output**: `sandbox_product/target/products/`
-- **Use case**: Testing the Eclipse product locally
-
-#### Build with P2 Update Site Repository
-
-To build the p2 update site repository (for plugin distribution):
-
-```bash
-mvn -Prepo -T 1C verify
-```
-
-- **Builds**: Everything in default build + p2 update site
-- **Output**: `sandbox_updatesite/target/repository/`
-- **Use case**: Creating update site for plugin distribution
-
-#### Full Release Build
-
-For complete builds including product, repository, and code coverage:
-
-```bash
-mvn -Pproduct,repo,jacoco -T 1C verify
-```
-
-- **Builds**: Everything (bundles, features, tests, product, repository, coverage)
-- **Output**: Complete release artifacts in respective module `target/` directories
-- **Coverage Report**: `sandbox_coverage/target/site/jacoco-aggregate/`
-- **Use case**: Release builds, CI main branch builds
-
-#### Build with WAR File (Legacy)
-
-To build a WAR file that contains the update site:
-
-```bash
-mvn -Dinclude=web -Pproduct,jacoco -T 1C verify
-```
-
-- The WAR file will be located in `sandbox_web/target`
-
 #### Using Make (Convenience)
 
 A Makefile is provided for easier build commands:
 
 ```bash
-make dev       # Fast development build (skips tests)
-make product   # Build with product (requires xvfb for tests)
-make repo      # Build with repository (requires xvfb for tests)
-make release   # Full release build with coverage (requires xvfb for tests)
-make test      # Run tests with coverage (requires xvfb)
-make clean     # Clean all build artifacts
-make help      # Show all available targets
+make dev         # Fast development build with tests
+make dev-notests # Fast development build without tests
+make product     # Build with product (requires xvfb for tests)
+make repo        # Build with repository (requires xvfb for tests)
+make release     # Full release build with coverage (requires xvfb for tests)
+make test        # Run tests with coverage (requires xvfb)
+make clean       # Clean all build artifacts
+make help        # Show all available targets
 ```
 
 #### Build Flags
@@ -289,6 +220,8 @@ This usually indicates a Java version mismatch. Check that:
 ---
 
 ## Eclipse Version Configuration
+
+> **Note for Maintainers/Contributors**: This section contains technical details about Eclipse version migration. Regular users installing from the update site can skip this section.
 
 The Eclipse version (SimRel release) used by this project is **not centrally configured**. When updating to a new Eclipse release, you must update the version reference in **multiple files** throughout the repository.
 
@@ -416,24 +349,7 @@ See: https://bugs.eclipse.org/bugs/show_bug.cgi?id=75333
 
 ### 2. `sandbox_encoding_quickfix`
 
-Replaces platform-dependent or implicit encoding usage with explicit, safe alternatives using `StandardCharsets.UTF_8` or equivalent constants. Improves code portability and prevents encoding-related bugs across different platforms.
-
-**Key Features:**
-- Three cleanup strategies: Prefer UTF-8, Keep Behavior, or Aggregate UTF-8
-- Java version-aware transformations (Java 7-21+)
-- Supports FileReader, FileWriter, Files methods, Scanner, PrintWriter, and more
-- Automatically adds imports and removes unnecessary exceptions
-
-**Quick Example:**
-```java
-// Before
-Reader r = new FileReader(file);
-List<String> lines = Files.readAllLines(path);
-
-// After
-Reader r = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8);
-List<String> lines = Files.readAllLines(path, StandardCharsets.UTF_8);
-```
+Replaces platform-dependent or implicit encoding usage with explicit, safe alternatives using `StandardCharsets.UTF_8` or equivalent constants. Improves code portability and prevents encoding-related bugs across different platforms. Supports three cleanup strategies with Java version-aware transformations for FileReader, FileWriter, Files methods, Scanner, PrintWriter, and more.
 
 📖 **Full Documentation**: [Plugin README](sandbox_encoding_quickfix/README.md) | [Architecture](sandbox_encoding_quickfix/ARCHITECTURE.md) | [TODO](sandbox_encoding_quickfix/TODO.md)
 
@@ -447,22 +363,7 @@ Provides a table view of code objects, sorted by name, to detect inconsistent na
 
 ### 5. `sandbox_platform_helper`
 
-Simplifies Eclipse Platform `Status` object creation by replacing verbose `new Status(...)` constructor calls with cleaner factory methods (Java 11+ / Eclipse 4.20+) or StatusHelper pattern (Java 8).
-
-**Key Features:**
-- Java version-aware transformations
-- Reduces boilerplate in Status object creation
-- Automatic selection between StatusHelper or factory methods
-- Cleaner, more readable code
-
-**Quick Example:**
-```java
-// Before
-IStatus status = new Status(IStatus.ERROR, "plugin.id", "Error message", exception);
-
-// After (Java 11+ / Eclipse 4.20+)
-IStatus status = Status.error("Error message", exception);
-```
+Simplifies Eclipse Platform `Status` object creation by replacing verbose `new Status(...)` constructor calls with cleaner factory methods (Java 11+ / Eclipse 4.20+) or StatusHelper pattern (Java 8). Reduces boilerplate and provides more readable code through automatic selection between StatusHelper or factory methods based on Java version.
 
 📖 **Full Documentation**: [Plugin README](sandbox_platform_helper/README.md) | [Architecture](sandbox_platform_helper/ARCHITECTURE.md) | [TODO](sandbox_platform_helper/TODO.md)
 
@@ -472,24 +373,7 @@ IStatus status = Status.error("Error message", exception);
 
 ### 7. `sandbox_jface_cleanup`
 
-Automates migration from deprecated `SubProgressMonitor` to modern `SubMonitor` API. The cleanup is idempotent and handles variable name collisions.
-
-**Key Features:**
-- Transforms `beginTask()` + `SubProgressMonitor` to `SubMonitor.convert()` + `split()`
-- Handles style flags and multiple monitor instances
-- Idempotent - safe to run multiple times
-- Automatic variable name conflict resolution
-
-**Quick Example:**
-```java
-// Before
-monitor.beginTask("Task", 100);
-IProgressMonitor sub = new SubProgressMonitor(monitor, 60);
-
-// After
-SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
-IProgressMonitor sub = subMonitor.split(60);
-```
+Automates migration from deprecated `SubProgressMonitor` to modern `SubMonitor` API. Transforms `beginTask()` + `SubProgressMonitor` to `SubMonitor.convert()` + `split()` with automatic handling of style flags, multiple monitor instances, and variable name collision resolution. The cleanup is idempotent and safe to run multiple times.
 
 📖 **Full Documentation**: [Plugin README](sandbox_jface_cleanup/README.md) | [Architecture](sandbox_jface_cleanup/ARCHITECTURE.md) | [TODO](sandbox_jface_cleanup/TODO.md)
 
@@ -499,43 +383,9 @@ Transforms imperative Java loops into functional Java 8 Stream equivalents (`for
 
 📖 **Full Documentation**: [Plugin README](sandbox_functional_converter/README.md) | [Architecture](sandbox_functional_converter/ARCHITECTURE.md) | [TODO](sandbox_functional_converter/TODO.md)
 
-### 9. `sandbox_junit`
+### 9. `sandbox_junit_cleanup`
 
-Automates migration of legacy tests from JUnit 3 and JUnit 4 to JUnit 5 (Jupiter). Transforms test classes, methods, annotations, assertions, and lifecycle hooks to use the modern JUnit 5 API.
-
-**Key Features:**
-- JUnit 3 → 5: Remove `extends TestCase`, convert naming conventions to annotations
-- JUnit 4 → 5: Update annotations (`@Before` → `@BeforeEach`, `@Ignore` → `@Disabled`)
-- Assertion parameter reordering (message-last pattern)
-- Lifecycle method transformations
-- Rule migration (`@Rule` → `@RegisterExtension`)
-- Test suite conversion
-
-**Quick Example:**
-```java
-// Before (JUnit 3)
-public class MyTest extends TestCase {
-    protected void setUp() throws Exception {
-        super.setUp();
-    }
-    
-    public void testSomething() {
-        assertEquals("message", expected, actual);
-    }
-}
-
-// After (JUnit 5)
-public class MyTest {
-    @BeforeEach
-    void setUp() {
-    }
-    
-    @Test
-    void testSomething() {
-        assertEquals(expected, actual, "message");
-    }
-}
-```
+Automates migration of legacy tests from JUnit 3 and JUnit 4 to JUnit 5 (Jupiter). Transforms test classes, methods, annotations, assertions, and lifecycle hooks to use the modern JUnit 5 API. Handles removing `extends TestCase`, converting naming conventions to annotations, assertion parameter reordering, rule migration, and test suite conversion.
 
 📖 **Full Documentation**: [Plugin README](sandbox_junit_cleanup/README.md) | [Architecture](sandbox_junit_cleanup/ARCHITECTURE.md) | [TODO](sandbox_junit_cleanup/TODO.md) | [Testing Guide](sandbox_junit_cleanup_test/TESTING.md)
 
@@ -552,6 +402,34 @@ Identifies opportunities to reuse existing methods instead of duplicating logic.
 Optimizes Eclipse PDE XML files (plugin.xml, feature.xml, etc.) by reducing whitespace and optionally converting leading spaces to tabs. Uses secure XSLT transformation, normalizes excessive empty lines, and only processes PDE-relevant files in project root, OSGI-INF, or META-INF locations. Idempotent and preserves semantic integrity.
 
 📖 **Full Documentation**: [Plugin README](sandbox_xml_cleanup/README.md) | [Architecture](sandbox_xml_cleanup/ARCHITECTURE.md) | [TODO](sandbox_xml_cleanup/TODO.md)
+
+---
+### 12. `sandbox_css_cleanup`
+
+Eclipse plugin for CSS validation and formatting using Prettier and Stylelint. Provides automatic formatting, linting, right-click menu integration for .css, .scss, and .less files, and a preferences page for configuration with graceful fallback when npm tools are not installed.
+
+📖 **Full Documentation**: [Plugin README](sandbox_css_cleanup/README.md) | [Architecture](sandbox_css_cleanup/ARCHITECTURE.md) | [TODO](sandbox_css_cleanup/TODO.md)
+
+---
+### 13. `sandbox_triggerpattern`
+
+Provides a powerful pattern matching engine for code transformations in Eclipse. Allows defining code patterns using simple syntax with placeholder support (`$x` for any expression), annotation-based hints using `@TriggerPattern` and `@Hint`, and automatic integration with Eclipse Quick Assist for creating custom hints and quick fixes with minimal boilerplate.
+
+📖 **Full Documentation**: [Plugin README](sandbox_triggerpattern/README.md) | [Architecture](sandbox_triggerpattern/ARCHITECTURE.md) | [TODO](sandbox_triggerpattern/TODO.md)
+
+---
+### 14. `sandbox_common`
+
+Provides shared utilities, constants, and base classes used across all sandbox cleanup plugins. Serves as the foundation for the entire sandbox ecosystem with AST manipulation utilities, central cleanup constants repository (`MYCleanUpConstants`), reusable base classes, and Eclipse JDT compatibility structure for easy porting.
+
+📖 **Full Documentation**: [Plugin README](sandbox_common/README.md) | [Architecture](sandbox_common/ARCHITECTURE.md) | [TODO](sandbox_common/TODO.md)
+
+---
+### 15. `sandbox_oomph`
+
+Provides Eclipse Oomph setup configurations for automated workspace configuration. Enables one-click setup with pre-configured Eclipse settings, automatic installation of required plugins, Git repository cloning and branch setup, and seamless integration with Eclipse Installer.
+
+📖 **Full Documentation**: [Plugin README](sandbox_oomph/README.md) | [Architecture](sandbox_oomph/ARCHITECTURE.md) | [TODO](sandbox_oomph/TODO.md)
 
 ---
 
@@ -696,8 +574,6 @@ Found a bug or have a feature request? Please [open an issue](https://github.com
 - Eclipse and Java version information
 
 **Note**: This project primarily serves as an experimental playground. Features that prove stable and useful may be contributed upstream to Eclipse JDT.
-
----
 
 ---
 
