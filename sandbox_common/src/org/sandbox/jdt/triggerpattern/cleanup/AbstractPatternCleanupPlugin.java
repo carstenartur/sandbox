@@ -350,7 +350,7 @@ public abstract class AbstractPatternCleanupPlugin<H> {
         try {
             java.lang.reflect.Method method = holder.getClass().getMethod("getAnnotation"); //$NON-NLS-1$
             return (Annotation) method.invoke(holder);
-        } catch (Exception e) {
+        } catch (NoSuchMethodException | IllegalAccessException | java.lang.reflect.InvocationTargetException e) {
             throw new RuntimeException("Holder must provide getAnnotation() method", e); //$NON-NLS-1$
         }
     }
@@ -368,7 +368,7 @@ public abstract class AbstractPatternCleanupPlugin<H> {
         try {
             java.lang.reflect.Method method = holder.getClass().getMethod("getBindingAsExpression", String.class); //$NON-NLS-1$
             return (Expression) method.invoke(holder, placeholder);
-        } catch (Exception e) {
+        } catch (NoSuchMethodException | IllegalAccessException | java.lang.reflect.InvocationTargetException e) {
             return null; // Binding not found is not an error
         }
     }
