@@ -18,14 +18,18 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Assignment;
+import org.eclipse.jdt.core.dom.DoStatement;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
+import org.eclipse.jdt.core.dom.ForStatement;
 import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.PostfixExpression;
 import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.WhileStatement;
 import org.sandbox.functional.core.tree.ScopeInfo;
 
 /**
@@ -84,9 +88,34 @@ public class LoopBodyScopeScanner {
 			}
 			
 			@Override
+			public boolean visit(SingleVariableDeclaration node) {
+				String varName = node.getName().getIdentifier();
+				localVariables.add(varName);
+				return true;
+			}
+			
+			@Override
 			public boolean visit(EnhancedForStatement node) {
 				// Don't descend into nested loops - they'll be analyzed separately
 				return node == loop;
+			}
+			
+			@Override
+			public boolean visit(ForStatement node) {
+				// Don't descend into nested loops
+				return false;
+			}
+			
+			@Override
+			public boolean visit(WhileStatement node) {
+				// Don't descend into nested loops
+				return false;
+			}
+			
+			@Override
+			public boolean visit(DoStatement node) {
+				// Don't descend into nested loops
+				return false;
 			}
 		});
 		
@@ -137,6 +166,24 @@ public class LoopBodyScopeScanner {
 			public boolean visit(EnhancedForStatement node) {
 				// Don't descend into nested loops - they'll be analyzed separately
 				return node == loop;
+			}
+			
+			@Override
+			public boolean visit(ForStatement node) {
+				// Don't descend into nested loops
+				return false;
+			}
+			
+			@Override
+			public boolean visit(WhileStatement node) {
+				// Don't descend into nested loops
+				return false;
+			}
+			
+			@Override
+			public boolean visit(DoStatement node) {
+				// Don't descend into nested loops
+				return false;
 			}
 		});
 	}
