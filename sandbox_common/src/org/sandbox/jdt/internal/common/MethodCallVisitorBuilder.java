@@ -54,7 +54,7 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
  * @author Carsten Hammer
  * @since 1.15
  */
-public class MethodCallVisitorBuilder extends HelperVisitorBuilder<MethodInvocation> {
+public class MethodCallVisitorBuilder extends HelperVisitorBuilder<ASTNode> {
     
     private final String typeFQN;
     private final Class<?> typeClass;
@@ -110,7 +110,7 @@ public class MethodCallVisitorBuilder extends HelperVisitorBuilder<MethodInvocat
     
     @Override
     protected <V, H> void executeVisitors(ReferenceHolder<V, H> holder, 
-            BiPredicate<MethodInvocation, ReferenceHolder<V, H>> processor) {
+            BiPredicate<ASTNode, ReferenceHolder<V, H>> processor) {
         // Visit method invocations for each method name
         if (typeFQN != null) {
             methodNames.forEach(methodName -> {
@@ -122,27 +122,14 @@ public class MethodCallVisitorBuilder extends HelperVisitorBuilder<MethodInvocat
             if (includeStaticImports) {
                 methodNames.forEach(methodName -> {
                     HelperVisitor.callImportDeclarationVisitor(typeFQN + "." + methodName, //$NON-NLS-1$
-                            compilationUnit, holder, nodesprocessed, (node, h) -> {
-                                // Cast ImportDeclaration to MethodInvocation (polymorphic pattern)
-                                // This is safe because the processor should handle ASTNode
-                                @SuppressWarnings("unchecked")
-                                BiPredicate<ASTNode, ReferenceHolder<V, H>> anyProcessor = 
-                                    (BiPredicate<ASTNode, ReferenceHolder<V, H>>) (BiPredicate<?, ?>) processor;
-                                return anyProcessor.test(node, h);
-                            });
+                            compilationUnit, holder, nodesprocessed, processor);
                 });
             }
             
             // Optionally include the regular import
             if (importFQN != null) {
                 HelperVisitor.callImportDeclarationVisitor(importFQN, compilationUnit,
-                        holder, nodesprocessed, (node, h) -> {
-                            // Cast ImportDeclaration to MethodInvocation (polymorphic pattern)
-                            @SuppressWarnings("unchecked")
-                            BiPredicate<ASTNode, ReferenceHolder<V, H>> anyProcessor = 
-                                (BiPredicate<ASTNode, ReferenceHolder<V, H>>) (BiPredicate<?, ?>) processor;
-                            return anyProcessor.test(node, h);
-                        });
+                        holder, nodesprocessed, processor);
             }
         } else if (typeClass != null) {
             methodNames.forEach(methodName -> {
@@ -157,23 +144,13 @@ public class MethodCallVisitorBuilder extends HelperVisitorBuilder<MethodInvocat
                 if (includeStaticImports) {
                     methodNames.forEach(methodName -> {
                         HelperVisitor.callImportDeclarationVisitor(classFQN + "." + methodName, //$NON-NLS-1$
-                                compilationUnit, holder, nodesprocessed, (node, h) -> {
-                                    @SuppressWarnings("unchecked")
-                                    BiPredicate<ASTNode, ReferenceHolder<V, H>> anyProcessor = 
-                                        (BiPredicate<ASTNode, ReferenceHolder<V, H>>) (BiPredicate<?, ?>) processor;
-                                    return anyProcessor.test(node, h);
-                                });
+                                compilationUnit, holder, nodesprocessed, processor);
                     });
                 }
                 
                 if (importFQN != null) {
                     HelperVisitor.callImportDeclarationVisitor(importFQN, compilationUnit,
-                            holder, nodesprocessed, (node, h) -> {
-                                @SuppressWarnings("unchecked")
-                                BiPredicate<ASTNode, ReferenceHolder<V, H>> anyProcessor = 
-                                    (BiPredicate<ASTNode, ReferenceHolder<V, H>>) (BiPredicate<?, ?>) processor;
-                                return anyProcessor.test(node, h);
-                            });
+                            holder, nodesprocessed, processor);
                 }
             }
         }
