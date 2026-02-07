@@ -320,38 +320,43 @@ Optimizes Eclipse PDE XML files (plugin.xml, feature.xml, etc.) by reducing whit
 
 📖 **Full Documentation**: [Plugin README](sandbox_xml_cleanup/README.md) | [Architecture](sandbox_xml_cleanup/ARCHITECTURE.md) | [TODO](sandbox_xml_cleanup/TODO.md)
 
+---
+### 12. `sandbox_css_cleanup`
 
+Eclipse plugin for CSS validation and formatting using Prettier and Stylelint. Provides automatic formatting, linting, right-click menu integration for .css, .scss, and .less files, and a preferences page for configuration with graceful fallback when npm tools are not installed.
+
+📖 **Full Documentation**: [Plugin README](sandbox_css_cleanup/README.md) | [Architecture](sandbox_css_cleanup/ARCHITECTURE.md) | [TODO](sandbox_css_cleanup/TODO.md)
 
 ---
-### 12. `sandbox_common`
+### 13. `sandbox_common`
 
 Provides shared utilities, constants, and base classes used across all sandbox cleanup plugins. Serves as the foundation for the entire sandbox ecosystem with AST manipulation utilities, central cleanup constants repository (`MYCleanUpConstants`), reusable base classes, and Eclipse JDT compatibility structure for easy porting.
 
 📖 **Full Documentation**: [Plugin README](sandbox_common/README.md) | [Architecture](sandbox_common/ARCHITECTURE.md) | [TODO](sandbox_common/TODO.md)
 
 ---
-### 13. `sandbox_triggerpattern`
+### 14. `sandbox_triggerpattern`
 
 Provides a powerful pattern matching engine for code transformations in Eclipse. Allows defining code patterns using simple syntax with placeholder support (`$x` for any expression), annotation-based hints using `@TriggerPattern` and `@Hint`, and automatic integration with Eclipse Quick Assist for creating custom hints and quick fixes with minimal boilerplate.
 
 📖 **Full Documentation**: [Plugin README](sandbox_triggerpattern/README.md) | [Architecture](sandbox_triggerpattern/ARCHITECTURE.md) | [TODO](sandbox_triggerpattern/TODO.md)
 
 ---
-### 14. `sandbox-ast-api`
+### 15. `sandbox-ast-api`
 
 Fluent, type-safe AST wrapper API using Java 21 features. Pure Maven module with no Eclipse dependencies, enabling reuse outside Eclipse context. Replaces verbose instanceof checks and nested visitor patterns with modern, readable fluent API for AST operations.
 
 📖 **Full Documentation**: [Plugin README](sandbox-ast-api/README.md)
 
 ---
-### 15. `sandbox-benchmarks`
+### 16. `sandbox-benchmarks`
 
 JMH (Java Microbenchmark Harness) performance benchmarks for the Sandbox project. Provides continuous performance tracking and visualization through GitHub Actions and GitHub Pages. Includes benchmarks for AST parsing, pattern matching, and loop transformation performance.
 
 📖 **Full Documentation**: [Plugin README](sandbox-benchmarks/README.md)
 
 ---
-### 16. `sandbox-functional-converter-core`
+### 17. `sandbox-functional-converter-core`
 
 Plain Java core module providing AST-independent representation of loop structures for transformation into functional/stream-based equivalents. Part of the Unified Loop Representation (ULR) implementation. No Eclipse/JDT dependencies - pure Java module reusable in any context.
 
@@ -360,7 +365,7 @@ Plain Java core module providing AST-independent representation of loop structur
 **Relationship**: This core module is used by `sandbox_functional_converter` (#8) to provide the underlying loop transformation logic without Eclipse dependencies.
 
 ---
-### 17. `sandbox_oomph`
+### 18. `sandbox_oomph`
 
 Provides Eclipse Oomph setup configurations for automated workspace configuration. Enables one-click setup with pre-configured Eclipse settings, automatic installation of required plugins, Git repository cloning and branch setup, and seamless integration with Eclipse Installer.
 
