@@ -101,9 +101,11 @@ public class OrderProcessor {
 
 ## Configuration Options
 
-- **Minimum Constants**: Minimum number of constants required to trigger transformation (default: 2)
-- **Scope**: Whether to transform public/package/private constants
-- **Preserve Original**: Option to keep original constants as @Deprecated
+Currently, this cleanup exposes a single boolean option in the Eclipse Clean Up profile:
+
+- **Convert int constants to enum/switch**: Enables or disables the int-to-enum/switch refactoring.
+
+More fine-grained options such as minimum number of constants, scope filtering, or preserving original constants are planned enhancements and are tracked in [TODO.md](TODO.md).
 
 ## Requirements
 

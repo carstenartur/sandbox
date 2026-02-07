@@ -43,10 +43,14 @@
    - Integer values used without named constants
 
 ### Current State
-- [ ] Core transformation implementation (Placeholder with extensive comments)
+- [x] Core transformation structure (Placeholder implementation with extensive comments)
   - Structure is in place but returns no operations
   - Prevents incorrect transformations
   - Demonstrates intended architecture
+- [ ] Actual transformation logic implementation
+  - [ ] AST visitor for pattern detection
+  - [ ] Enum generation logic
+  - [ ] If-else to switch conversion
 
 ### Next Steps for Full Implementation
 - [ ] Implement pattern detection in find() method

@@ -5,7 +5,15 @@ Bundle-SymbolicName: sandbox_int_to_enum_test;singleton:=true
 Bundle-Version: 1.2.5.qualifier
 Fragment-Host: sandbox_int_to_enum
 Bundle-RequiredExecutionEnvironment: JavaSE-21
-Require-Bundle: org.eclipse.jdt.ui.tests,
- org.junit.jupiter.api,
- org.junit.jupiter.params,
+Require-Bundle: org.junit,
  sandbox_test_commons
+Bundle-ActivationPolicy: lazy
+Eclipse-BundleShape: dir
+Eclipse-BuddyPolicy: global
+Import-Package: org.junit.jupiter.api,
+ org.junit.jupiter.api.extension,
+ org.junit.jupiter.params,
+ org.opentest4j,
+ org.sandbox.jdt.internal.common,
+ org.sandbox.jdt.internal.corext.fix2
+Automatic-Module-Name: sandbox.int.to.enum.test
