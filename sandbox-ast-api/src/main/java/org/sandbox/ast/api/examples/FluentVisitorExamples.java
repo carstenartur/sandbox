@@ -141,7 +141,9 @@ List<IfStmt> results = new ArrayList<>();
 
 FluentVisitor visitor = FluentVisitor.builder()
 .onIfStatement()
-.when(is -> is.condition().isSimpleName())
+.when(is -> is.condition()
+.map(expr -> expr instanceof SimpleNameExpr)
+.orElse(false))
 .then(results::add)
 .build();
 
