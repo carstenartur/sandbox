@@ -101,10 +101,14 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 		detectAndProcessConsecutiveLoops(fixcore, compilationUnit, operations, nodesprocessed);
 		
 		// Continue with individual loop processing for non-grouped loops
+		// Use bottom-up processing via endVisit callback to handle nested loops
 		ReferenceHolder<Integer, FunctionalHolder> dataHolder= new ReferenceHolder<>();
 		ReferenceHolder<ASTNode, Object> sharedDataHolder = new ReferenceHolder<>();
 		HelperVisitor.callEnhancedForStatementVisitor(compilationUnit, dataHolder, nodesprocessed,
-				(visited, aholder) -> processFoundNode(fixcore, operations, nodesprocessed, visited, aholder, sharedDataHolder),(visited, aholder) -> {});
+				(visited, aholder) -> true,  // visit: just descend, don't process yet
+				(visited, aholder) -> {      // endVisit: process bottom-up
+					processFoundNode(fixcore, operations, nodesprocessed, visited, aholder, sharedDataHolder);
+				});
 	}
 	
 	/**
@@ -145,33 +149,28 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 		});
 	}
 
-	private boolean processFoundNode(UseFunctionalCallFixCore fixcore,
+	private void processFoundNode(UseFunctionalCallFixCore fixcore,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, EnhancedForStatement visited,
 			ReferenceHolder<Integer, FunctionalHolder> dataHolder, ReferenceHolder<ASTNode, Object> sharedDataHolder) {
 		// Skip loops that have already been processed (e.g., as part of a consecutive loop group)
 		if (nodesprocessed.contains(visited)) {
-			return false; // Don't visit children of already-processed loops
+			return; // Already processed
 		}
 		
-		PreconditionsChecker pc = new PreconditionsChecker(visited, (CompilationUnit) visited.getRoot());
+		PreconditionsChecker pc = new PreconditionsChecker(visited, (CompilationUnit) visited.getRoot(), nodesprocessed);
 		if (!pc.isSafeToRefactor()) {
 			// Loop cannot be safely refactored to functional style
-			// Return true to continue visiting children - inner loops may still be convertible
-			return false;
+			return;
 		}
 		// Check if the loop can be analyzed for stream conversion
 		StreamPipelineBuilder builder = new StreamPipelineBuilder(visited, pc);
 		if (!builder.analyze()) {
 			// Cannot convert this loop to functional style
-			// Return true to continue visiting children - inner loops may still be convertible
-			return false;
+			return;
 		}
 		// V1 doesn't need to store data in the holder, but we pass it to maintain signature compatibility
 		operations.add(fixcore.rewrite(visited, sharedDataHolder));
 		nodesprocessed.add(visited);
-		// Return false to prevent visiting children since this loop was converted
-		// (children are now part of the lambda expression)
-		return false;
 	}
 
 	@Override
