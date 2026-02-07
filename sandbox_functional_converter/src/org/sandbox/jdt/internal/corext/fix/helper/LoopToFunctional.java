@@ -224,8 +224,14 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 			CompilationUnit compilationUnit) {
 		// Get the LoopTree from the holder
 		LoopTree tree = (LoopTree) treeHolder.get("tree");
-		if (tree == null) {
+		if (tree == null || !tree.isInsideLoop()) {
 			return;
+		}
+		
+		// Verify this is the correct node to pop (guard against stack corruption)
+		LoopTreeNode currentNode = tree.current();
+		if (currentNode == null || currentNode.getAstNodeReference() != visited) {
+			return; // Stack mismatch - visitLoop must have returned false, so no pushLoop occurred
 		}
 		
 		// Pop the current loop node
