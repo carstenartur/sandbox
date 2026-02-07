@@ -159,7 +159,7 @@ public class CategoryJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, J
 	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
 		Annotation minv= junitHolder.getAnnotation();
-		String[] categoryNames= junitHolder.value.split(",");
+		String[] categoryNames= junitHolder.getValue().split(",");
 		
 		// Determine if annotation is on a method or class and get the appropriate ListRewrite
 		ListRewrite listRewrite= null;

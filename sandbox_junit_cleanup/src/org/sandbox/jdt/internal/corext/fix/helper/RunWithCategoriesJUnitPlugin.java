@@ -217,7 +217,7 @@ public class RunWithCategoriesJUnitPlugin extends AbstractTool<ReferenceHolder<I
 	@Override
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
-		CategoriesData categoriesData = (CategoriesData) junitHolder.additionalInfo;
+		CategoriesData categoriesData = (CategoriesData) junitHolder.getAdditionalInfo();
 		TypeDeclaration typeDecl = categoriesData.typeDeclaration;
 		ListRewrite modifiersRewrite = rewriter.getListRewrite(typeDecl, TypeDeclaration.MODIFIERS2_PROPERTY);
 		

@@ -130,7 +130,7 @@ public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<I
 			JunitHolder junitHolder) {
 		
 		Annotation runWithAnnotation = junitHolder.getAnnotation();
-		TypeDeclaration typeDecl = (TypeDeclaration) junitHolder.additionalInfo;
+		TypeDeclaration typeDecl = (TypeDeclaration) junitHolder.getAdditionalInfo();
 		
 		if (typeDecl == null) {
 			return; // Cannot proceed without type declaration

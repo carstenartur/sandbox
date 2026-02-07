@@ -90,7 +90,7 @@ public class FixMethodOrderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 			JunitHolder junitHolder) {
 		
 		Annotation oldAnnotation= junitHolder.getAnnotation();
-		String methodSorter= (String) junitHolder.additionalInfo;
+		String methodSorter= (String) junitHolder.getAdditionalInfo();
 		
 		// Validate methodSorter is not null
 		if (methodSorter == null) {

@@ -202,8 +202,8 @@ public class RuleTimeoutJUnitPlugin extends TriggerPatternCleanupPlugin {
 		long timeoutValue;
 		String timeUnit;
 		try {
-			timeoutValue = Long.parseLong(junitHolder.value);
-			timeUnit = junitHolder.minvname;
+			timeoutValue = Long.parseLong(junitHolder.getValue());
+			timeUnit = junitHolder.getMinvname();
 		} catch (NumberFormatException e) {
 			// Cannot determine timeout value, skip refactoring
 			return;

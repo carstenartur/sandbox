@@ -75,7 +75,7 @@ public class TestExpectedJUnitPlugin extends AbstractTestAnnotationParameterPlug
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
 		NormalAnnotation testAnnotation = (NormalAnnotation) junitHolder.getAnnotation();
-		MemberValuePair expectedPair = (MemberValuePair) junitHolder.additionalInfo;
+		MemberValuePair expectedPair = (MemberValuePair) junitHolder.getAdditionalInfo();
 		
 		if (expectedPair == null) {
 			return;

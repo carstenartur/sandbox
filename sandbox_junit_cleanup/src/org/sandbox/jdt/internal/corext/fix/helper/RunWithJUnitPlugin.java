@@ -164,7 +164,7 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 		Annotation minv= junitHolder.getAnnotation();
 		Annotation newAnnotation= null;
 		
-		if (ORG_JUNIT_SUITE_SUITECLASSES.equals(junitHolder.value)) {
+		if (ORG_JUNIT_SUITE_SUITECLASSES.equals(junitHolder.getValue())) {
 			// Handle @Suite.SuiteClasses migration
 			SingleMemberAnnotation mynode= (SingleMemberAnnotation) minv;
 			newAnnotation= ast.newSingleMemberAnnotation();
@@ -174,7 +174,7 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 			importRewriter.addImport(ORG_JUNIT_PLATFORM_SUITE_API_SELECT_CLASSES);
 			importRewriter.removeImport(ORG_JUNIT_SUITE_SUITECLASSES);
 			importRewriter.removeImport(ORG_JUNIT_SUITE);
-		} else if (ORG_JUNIT_RUNWITH.equals(junitHolder.value)) {
+		} else if (ORG_JUNIT_RUNWITH.equals(junitHolder.getValue())) {
 			// Handle @RunWith(Suite.class) migration
 			newAnnotation= ast.newMarkerAnnotation();
 			newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_SUITE));
@@ -182,7 +182,7 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 			importRewriter.addImport(ORG_JUNIT_JUPITER_SUITE);
 			importRewriter.removeImport(ORG_JUNIT_SUITE);
 			importRewriter.removeImport(ORG_JUNIT_RUNWITH);
-		} else if (ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER.equals(junitHolder.value)) {
+		} else if (ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER.equals(junitHolder.getValue())) {
 			// Handle @RunWith(MockitoJUnitRunner.class) migration
 			SingleMemberAnnotation extendWithAnnotation= ast.newSingleMemberAnnotation();
 			extendWithAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_EXTEND_WITH));
@@ -194,7 +194,7 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 			importRewriter.addImport(ORG_MOCKITO_JUNIT_JUPITER_MOCKITO_EXTENSION);
 			importRewriter.removeImport(ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER);
 			importRewriter.removeImport(ORG_MOCKITO_RUNNERS_MOCKITO_JUNIT_RUNNER);
-		} else if (ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER.equals(junitHolder.value)) {
+		} else if (ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER.equals(junitHolder.getValue())) {
 			// Handle @RunWith(SpringRunner.class) migration
 			SingleMemberAnnotation extendWithAnnotation= ast.newSingleMemberAnnotation();
 			extendWithAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_EXTEND_WITH));

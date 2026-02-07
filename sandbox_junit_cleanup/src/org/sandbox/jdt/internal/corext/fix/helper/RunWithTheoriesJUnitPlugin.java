@@ -205,7 +205,7 @@ public class RunWithTheoriesJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 	@Override
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
-		TheoriesData theoriesData = (TheoriesData) junitHolder.additionalInfo;
+		TheoriesData theoriesData = (TheoriesData) junitHolder.getAdditionalInfo();
 		
 		// Remove @RunWith(Theories.class) annotation
 		rewriter.remove(theoriesData.runWithAnnotation, group);
