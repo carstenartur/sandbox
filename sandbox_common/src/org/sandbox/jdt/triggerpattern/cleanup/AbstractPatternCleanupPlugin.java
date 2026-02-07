@@ -106,8 +106,8 @@ public abstract class AbstractPatternCleanupPlugin<H> {
             return List.of(pattern);
         }
         throw new IllegalStateException(
-            "Plugin " + getClass().getSimpleName() + 
-            " must either be annotated with @CleanupPattern or override getPatterns() method to define patterns");
+            "Plugin " + getClass().getSimpleName() +  //$NON-NLS-1$
+            " must either be annotated with @CleanupPattern or override getPatterns() method to define patterns"); //$NON-NLS-1$
     }
     
     /**
@@ -117,7 +117,7 @@ public abstract class AbstractPatternCleanupPlugin<H> {
      */
     public String getCleanupId() {
         CleanupPattern annotation = this.getClass().getAnnotation(CleanupPattern.class);
-        return annotation != null ? annotation.cleanupId() : "";
+        return annotation != null ? annotation.cleanupId() : ""; //$NON-NLS-1$
     }
     
     /**
@@ -127,7 +127,7 @@ public abstract class AbstractPatternCleanupPlugin<H> {
      */
     public String getDescription() {
         CleanupPattern annotation = this.getClass().getAnnotation(CleanupPattern.class);
-        return annotation != null ? annotation.description() : "";
+        return annotation != null ? annotation.description() : ""; //$NON-NLS-1$
     }
     
     /**
@@ -257,8 +257,8 @@ public abstract class AbstractPatternCleanupPlugin<H> {
         RewriteRule rewriteRule = this.getClass().getAnnotation(RewriteRule.class);
         if (rewriteRule == null) {
             throw new UnsupportedOperationException(
-                "Plugin " + getClass().getSimpleName() + 
-                " must be annotated with @RewriteRule because it does not override processRewrite()");
+                "Plugin " + getClass().getSimpleName() +  //$NON-NLS-1$
+                " must be annotated with @RewriteRule because it does not override processRewrite()"); //$NON-NLS-1$
         }
         
         // Process the replacement pattern
@@ -279,7 +279,7 @@ public abstract class AbstractPatternCleanupPlugin<H> {
             
             // Get the placeholder value from bindings
             String placeholder = replacementInfo.placeholderName;
-            Expression value = getBindingAsExpressionFromHolder(holder, "$" + placeholder);
+            Expression value = getBindingAsExpressionFromHolder(holder, "$" + placeholder); //$NON-NLS-1$
             
             // Fallback: if no binding is found, reuse the value from existing annotation
             if (value == null && oldAnnotation instanceof SingleMemberAnnotation) {
@@ -330,8 +330,8 @@ public abstract class AbstractPatternCleanupPlugin<H> {
             String className = staticImport.substring(0, lastDot);
             String methodName = staticImport.substring(lastDot + 1);
             // Handle wildcard imports (*)
-            if ("*".equals(methodName)) {
-                importRewriter.addStaticImport(className, "*", false);
+            if ("*".equals(methodName)) { //$NON-NLS-1$
+                importRewriter.addStaticImport(className, "*", false); //$NON-NLS-1$
             } else {
                 importRewriter.addStaticImport(className, methodName, false);
             }
@@ -348,10 +348,10 @@ public abstract class AbstractPatternCleanupPlugin<H> {
     @SuppressWarnings("unused")
     protected Annotation getAnnotationFromHolder(Object holder) {
         try {
-            java.lang.reflect.Method method = holder.getClass().getMethod("getAnnotation");
+            java.lang.reflect.Method method = holder.getClass().getMethod("getAnnotation"); //$NON-NLS-1$
             return (Annotation) method.invoke(holder);
         } catch (Exception e) {
-            throw new RuntimeException("Holder must provide getAnnotation() method", e);
+            throw new RuntimeException("Holder must provide getAnnotation() method", e); //$NON-NLS-1$
         }
     }
     
@@ -366,7 +366,7 @@ public abstract class AbstractPatternCleanupPlugin<H> {
     @SuppressWarnings("unused")
     protected Expression getBindingAsExpressionFromHolder(Object holder, String placeholder) {
         try {
-            java.lang.reflect.Method method = holder.getClass().getMethod("getBindingAsExpression", String.class);
+            java.lang.reflect.Method method = holder.getClass().getMethod("getBindingAsExpression", String.class); //$NON-NLS-1$
             return (Expression) method.invoke(holder, placeholder);
         } catch (Exception e) {
             return null; // Binding not found is not an error
@@ -398,7 +398,7 @@ public abstract class AbstractPatternCleanupPlugin<H> {
             return new AnnotationReplacementInfo(name, placeholderPart);
         }
         
-        throw new IllegalArgumentException("Invalid replacement pattern: " + pattern);
+        throw new IllegalArgumentException("Invalid replacement pattern: " + pattern); //$NON-NLS-1$
     }
     
     /**
