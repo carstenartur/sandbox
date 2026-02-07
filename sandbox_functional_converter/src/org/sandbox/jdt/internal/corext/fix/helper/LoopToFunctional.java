@@ -155,23 +155,50 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 		
 		PreconditionsChecker pc = new PreconditionsChecker(visited, (CompilationUnit) visited.getRoot());
 		if (!pc.isSafeToRefactor()) {
-			// Loop cannot be safely refactored to functional style
-			// Return true to continue visiting children - inner loops may still be convertible
+			// If the only reason is nested loops, try to convert inner loops independently
+			if (pc.hasNestedLoop()) {
+				processInnerLoops(fixcore, operations, nodesprocessed, visited, dataHolder, sharedDataHolder);
+			}
 			return false;
 		}
 		// Check if the loop can be analyzed for stream conversion
 		StreamPipelineBuilder builder = new StreamPipelineBuilder(visited, pc);
 		if (!builder.analyze()) {
-			// Cannot convert this loop to functional style
-			// Return true to continue visiting children - inner loops may still be convertible
 			return false;
 		}
-		// V1 doesn't need to store data in the holder, but we pass it to maintain signature compatibility
 		operations.add(fixcore.rewrite(visited, sharedDataHolder));
 		nodesprocessed.add(visited);
-		// Return false to prevent visiting children since this loop was converted
-		// (children are now part of the lambda expression)
 		return false;
+	}
+
+	/**
+	 * When an outer loop cannot be converted (because it contains nested loops),
+	 * visit the body to find inner enhanced-for loops that can be converted independently.
+	 * 
+	 * <p>
+	 * The visitor traverses the entire body of the outer loop and processes every nested
+	 * {@link EnhancedForStatement} it encounters. For each such inner loop, the visitor
+	 * does not descend into that loop's body (because {@code visit} returns {@code false}),
+	 * so deeper nested enhanced-for loops are handled when their own enclosing loop is visited.
+	 * </p>
+	 */
+	private void processInnerLoops(UseFunctionalCallFixCore fixcore,
+			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed,
+			EnhancedForStatement outerLoop,
+			ReferenceHolder<Integer, FunctionalHolder> dataHolder,
+			ReferenceHolder<ASTNode, Object> sharedDataHolder) {
+		outerLoop.getBody().accept(new org.eclipse.jdt.core.dom.ASTVisitor() {
+			@Override
+			public boolean visit(EnhancedForStatement innerLoop) {
+				// Delegate to the canonical processing path so that
+				// all precondition checks and conversions are handled
+				// consistently with top-level loops.
+				processFoundNode(fixcore, operations, nodesprocessed, innerLoop, dataHolder, sharedDataHolder);
+				// Do not visit children here: processFoundNode(...) is
+				// responsible for any further nested-loop handling.
+				return false;
+			}
+		});
 	}
 
 	@Override

@@ -123,6 +123,13 @@ public final class PreconditionsChecker {
 	}
 
 	/**
+	 * Checks if the loop contains a nested loop.
+	 */
+	public boolean hasNestedLoop() {
+		return containsNestedLoop;
+	}
+
+	/**
 	 * Checks if the loop contains a reducer pattern.
 	 * 
 	 * <p>
