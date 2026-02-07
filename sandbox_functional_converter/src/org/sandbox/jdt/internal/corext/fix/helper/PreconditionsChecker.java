@@ -484,7 +484,7 @@ public final class PreconditionsChecker {
 					if (!varBinding.isEffectivelyFinal()) {
 						// This variable is captured from an outer scope but is not effectively final
 						// It cannot be used in a lambda
-//						containsNEFs = true;
+						containsNEFs = true;
 					}
 				}
 				return true;
