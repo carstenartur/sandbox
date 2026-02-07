@@ -14,7 +14,9 @@
 package org.sandbox.jdt.triggerpattern.api;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.dom.AST;
@@ -28,6 +30,7 @@ import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.sandbox.jdt.triggerpattern.internal.PatternParser;
 import org.sandbox.jdt.triggerpattern.internal.PlaceholderAstMatcher;
 
@@ -108,6 +111,12 @@ public class TriggerPatternEngine {
 	
 	/**
 	 * Checks if a candidate node matches the pattern node and adds a Match if it does.
+	 * 
+	 * <p>Auto-bindings are added:</p>
+	 * <ul>
+	 *   <li>{@code $_} - the matched node itself</li>
+	 *   <li>{@code $this} - the enclosing TypeDeclaration</li>
+	 * </ul>
 	 */
 	private void checkMatch(ASTNode candidate, ASTNode patternNode, List<Match> matches) {
 		PlaceholderAstMatcher matcher = new PlaceholderAstMatcher();
@@ -117,8 +126,35 @@ public class TriggerPatternEngine {
 			int offset = candidate.getStartPosition();
 			int length = candidate.getLength();
 			
-			Match match = new Match(candidate, matcher.getBindings(), offset, length);
+			// Add auto-bindings
+			Map<String, Object> bindings = new HashMap<>(matcher.getBindings());
+			bindings.put("$_", candidate); //$NON-NLS-1$
+			
+			// Find enclosing type declaration
+			TypeDeclaration enclosingType = findEnclosingType(candidate);
+			if (enclosingType != null) {
+				bindings.put("$this", enclosingType); //$NON-NLS-1$
+			}
+			
+			Match match = new Match(candidate, bindings, offset, length);
 			matches.add(match);
 		}
+	}
+	
+	/**
+	 * Finds the enclosing TypeDeclaration for a given node.
+	 * 
+	 * @param node the node to start from
+	 * @return the enclosing TypeDeclaration, or null if none found
+	 */
+	private TypeDeclaration findEnclosingType(ASTNode node) {
+		ASTNode current = node;
+		while (current != null) {
+			if (current instanceof TypeDeclaration) {
+				return (TypeDeclaration) current;
+			}
+			current = current.getParent();
+		}
+		return null;
 	}
 }

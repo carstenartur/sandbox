@@ -52,9 +52,46 @@ public @interface Hint {
 	boolean enabledByDefault() default true;
 	
 	/**
-	 * Severity level (e.g., "warning", "info", "error").
+	 * Severity level.
 	 * 
 	 * @return the severity
 	 */
-	String severity() default "info";
+	Severity severity() default Severity.INFO;
+	
+	/**
+	 * Optional unique identifier for the hint.
+	 * 
+	 * @return the hint ID or empty string
+	 */
+	String id() default "";
+	
+	/**
+	 * Category for grouping related hints.
+	 * 
+	 * @return the category or empty string
+	 */
+	String category() default "";
+	
+	/**
+	 * SuppressWarnings keys that can be used to suppress this hint.
+	 * 
+	 * @return array of suppress warnings keys
+	 */
+	String[] suppressWarnings() default {};
+	
+	/**
+	 * The kind of hint (inspection or action).
+	 * 
+	 * @return the hint kind
+	 */
+	HintKind hintKind() default HintKind.INSPECTION;
+	
+	/**
+	 * Minimum Java source version required for this hint.
+	 * 
+	 * <p>Examples: "1.8", "11", "17"</p>
+	 * 
+	 * @return the minimum source version or empty string if no minimum
+	 */
+	String minSourceVersion() default "";
 }
