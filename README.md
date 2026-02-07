@@ -100,6 +100,7 @@ The new release will be available at `https://carstenartur.github.io/sandbox/rel
 - [Documentation](#documentation)
 - [Contributing](#contributing)
 - [License](#license)
+  - [Eclipse Public License 2.0](#eclipse-public-license-20)
 
 ## GitHub Actions Integration
 
@@ -167,13 +168,14 @@ The project supports Maven profiles to optimize build speed:
 A Makefile is provided for easier build commands:
 
 ```bash
-make dev       # Fast development build (skips tests)
-make product   # Build with product (requires xvfb for tests)
-make repo      # Build with repository (requires xvfb for tests)
-make release   # Full release build with coverage (requires xvfb for tests)
-make test      # Run tests with coverage (requires xvfb)
-make clean     # Clean all build artifacts
-make help      # Show all available targets
+make dev         # Fast development build with tests
+make dev-notests # Fast development build without tests
+make product     # Build with product (requires xvfb for tests)
+make repo        # Build with repository (requires xvfb for tests)
+make release     # Full release build with coverage (requires xvfb for tests)
+make test        # Run tests with coverage (requires xvfb)
+make clean       # Clean all build artifacts
+make help        # Show all available targets
 ```
 
 #### Build Flags
@@ -381,7 +383,7 @@ Transforms imperative Java loops into functional Java 8 Stream equivalents (`for
 
 📖 **Full Documentation**: [Plugin README](sandbox_functional_converter/README.md) | [Architecture](sandbox_functional_converter/ARCHITECTURE.md) | [TODO](sandbox_functional_converter/TODO.md)
 
-### 9. `sandbox_junit`
+### 9. `sandbox_junit_cleanup`
 
 Automates migration of legacy tests from JUnit 3 and JUnit 4 to JUnit 5 (Jupiter). Transforms test classes, methods, annotations, assertions, and lifecycle hooks to use the modern JUnit 5 API. Handles removing `extends TestCase`, converting naming conventions to annotations, assertion parameter reordering, rule migration, and test suite conversion.
 
@@ -400,6 +402,34 @@ Identifies opportunities to reuse existing methods instead of duplicating logic.
 Optimizes Eclipse PDE XML files (plugin.xml, feature.xml, etc.) by reducing whitespace and optionally converting leading spaces to tabs. Uses secure XSLT transformation, normalizes excessive empty lines, and only processes PDE-relevant files in project root, OSGI-INF, or META-INF locations. Idempotent and preserves semantic integrity.
 
 📖 **Full Documentation**: [Plugin README](sandbox_xml_cleanup/README.md) | [Architecture](sandbox_xml_cleanup/ARCHITECTURE.md) | [TODO](sandbox_xml_cleanup/TODO.md)
+
+---
+### 12. `sandbox_css_cleanup`
+
+Eclipse plugin for CSS validation and formatting using Prettier and Stylelint. Provides automatic formatting, linting, right-click menu integration for .css, .scss, and .less files, and a preferences page for configuration with graceful fallback when npm tools are not installed.
+
+📖 **Full Documentation**: [Plugin README](sandbox_css_cleanup/README.md) | [Architecture](sandbox_css_cleanup/ARCHITECTURE.md) | [TODO](sandbox_css_cleanup/TODO.md)
+
+---
+### 13. `sandbox_triggerpattern`
+
+Provides a powerful pattern matching engine for code transformations in Eclipse. Allows defining code patterns using simple syntax with placeholder support (`$x` for any expression), annotation-based hints using `@TriggerPattern` and `@Hint`, and automatic integration with Eclipse Quick Assist for creating custom hints and quick fixes with minimal boilerplate.
+
+📖 **Full Documentation**: [Plugin README](sandbox_triggerpattern/README.md) | [Architecture](sandbox_triggerpattern/ARCHITECTURE.md) | [TODO](sandbox_triggerpattern/TODO.md)
+
+---
+### 14. `sandbox_common`
+
+Provides shared utilities, constants, and base classes used across all sandbox cleanup plugins. Serves as the foundation for the entire sandbox ecosystem with AST manipulation utilities, central cleanup constants repository (`MYCleanUpConstants`), reusable base classes, and Eclipse JDT compatibility structure for easy porting.
+
+📖 **Full Documentation**: [Plugin README](sandbox_common/README.md) | [Architecture](sandbox_common/ARCHITECTURE.md) | [TODO](sandbox_common/TODO.md)
+
+---
+### 15. `sandbox_oomph`
+
+Provides Eclipse Oomph setup configurations for automated workspace configuration. Enables one-click setup with pre-configured Eclipse settings, automatic installation of required plugins, Git repository cloning and branch setup, and seamless integration with Eclipse Installer.
+
+📖 **Full Documentation**: [Plugin README](sandbox_oomph/README.md) | [Architecture](sandbox_oomph/ARCHITECTURE.md) | [TODO](sandbox_oomph/TODO.md)
 
 ---
 
