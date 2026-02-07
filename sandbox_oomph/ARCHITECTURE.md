@@ -245,6 +245,49 @@ Configures Eclipse workspace preferences:
 4. Click OK to re-trigger setup with new version
 5. Target platform automatically updates
 
+### Eclipse Heap Size Configuration
+
+**Decision**: Make Eclipse heap size configurable through Oomph variable
+
+**Rationale**:
+- Different project sizes require different memory allocations
+- Allows users to adjust heap size based on available system memory
+- Eliminates need to manually edit eclipse.ini after installation
+- Provides flexibility for performance tuning
+
+**Implementation**:
+```xml
+<setupTask xsi:type="setup:VariableTask"
+    name="eclipse.heap.size"
+    value="2048m"
+    label="Eclipse Heap Size"
+    defaultValue="2048m">
+  <description>The maximum heap size for Eclipse IDE...</description>
+</setupTask>
+<setupTask xsi:type="setup:EclipseIniTask"
+    option="-Xmx"
+    value="${eclipse.heap.size}"
+    vm="true"/>
+```
+
+**Benefits**:
+- Users can adjust memory allocation without editing configuration files
+- Easy to increase heap size for large projects
+- Changes take effect after Eclipse restart
+- Prevents out-of-memory errors on large workspaces
+
+**Common Values**:
+- `2048m` (2 GB) - Default, suitable for most projects
+- `4096m` (4 GB) - Recommended for large projects
+- `8192m` (8 GB) - For very large projects or workspaces
+
+**How to Update Heap Size After Installation**:
+1. In Eclipse: Help → Perform Setup Tasks...
+2. Find "Eclipse Heap Size" variable
+3. Change value (e.g., from "2048m" to "4096m")
+4. Click OK to apply changes
+5. Restart Eclipse for new heap size to take effect
+
 ### Why No Automated Build Trigger?
 
 **Decision**: Setup configures environment but doesn't trigger initial build

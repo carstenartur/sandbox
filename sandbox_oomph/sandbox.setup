@@ -28,7 +28,7 @@
   <setupTask
       xsi:type="setup:EclipseIniTask"
       option="-Xmx"
-      value="2048m"
+      value="${eclipse.heap.size}"
       vm="true"/>
   <setupTask
       xsi:type="setup:InstallationTask"
@@ -79,6 +79,14 @@
       label="Eclipse Release Version"
       defaultValue="2025-12">
     <description>The Eclipse release version to use for P2 repositories (e.g., 2025-12, 2025-09, 2024-12). This can be changed to update the target platform even after initial installation.</description>
+  </setupTask>
+  <setupTask
+      xsi:type="setup:VariableTask"
+      name="eclipse.heap.size"
+      value="2048m"
+      label="Eclipse Heap Size"
+      defaultValue="2048m">
+    <description>The maximum heap size for Eclipse IDE (e.g., 2048m, 4096m, 8192m). Adjust this based on your available memory and project size. This can be changed after installation.</description>
   </setupTask>
   <setupTask
       xsi:type="setup:VariableTask"

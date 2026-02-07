@@ -140,6 +140,23 @@ The Eclipse version can be changed even after initial installation:
 3. Change the default value
 4. Save and re-import the setup in Eclipse Installer
 
+### Updating Eclipse Heap Size
+
+The Eclipse heap size can be changed even after initial installation:
+
+**Using Oomph Preferences**
+1. In Eclipse: `Help` → `Perform Setup Tasks...`
+2. In the dialog, find the "Eclipse Heap Size" variable
+3. Change the value (e.g., from "2048m" to "4096m" or "8192m")
+4. Click `OK` to re-trigger setup
+5. Restart Eclipse when prompted
+6. Eclipse will now use the new heap size
+
+**Common Heap Size Values**:
+- `2048m` (2 GB) - Default, suitable for most projects
+- `4096m` (4 GB) - Recommended for large projects
+- `8192m` (8 GB) - For very large projects or workspaces
+
 ### Updating Setup
 
 When project structure changes:
