@@ -64,25 +64,7 @@ Use this to test the latest features. Updated automatically on every commit to `
 
 ## 📦 Release Process
 
-The Sandbox project uses an **automated release workflow**:
-
-1. Navigate to **Actions** → **Release Workflow** → **Run workflow**
-2. Enter the release version (e.g., `1.2.2`)
-3. Enter the next SNAPSHOT version (e.g., `1.2.3-SNAPSHOT`)
-4. Click **Run workflow**
-
-The workflow automatically:
-- Updates all version files using `tycho-versions-plugin` (except `sandbox-functional-converter-core`)
-- Builds and verifies the release
-- Creates git tag and maintenance branch
-- Deploys to GitHub Pages
-- Generates release notes from closed issues
-- Creates GitHub release
-- Bumps to next SNAPSHOT version
-
-The new release will be available at `https://carstenartur.github.io/sandbox/releases/X.Y.Z/` within a few minutes.
-
-📖 **Detailed Release Documentation**: [GitHub Workflows README](.github/workflows/README.md#detailed-release-process)
+> **For Maintainers**: See [Release Process](CONTRIBUTING.md#release-process) in CONTRIBUTING.md for instructions on creating and publishing releases.
 
 ## Table of Contents
 
@@ -91,9 +73,7 @@ The new release will be available at `https://carstenartur.github.io/sandbox/rel
 - [🚀 Installation](#-installation)
 - [📦 Release Process](#-release-process)
 - [GitHub Actions Integration](#github-actions-integration)
-- [Build Instructions](#build-instructions)
-  - [Troubleshooting](#troubleshooting)
-- [Eclipse Version Configuration](#eclipse-version-configuration)
+- [Building from Source](#building-from-source)
 - [Quickstart](#quickstart)
 - [What's Included](#whats-included)
 - [Projects](#projects)
@@ -122,117 +102,34 @@ This repository includes a **composite GitHub Action** for automated code cleanu
 
 **[📖 Full Documentation](GITHUB_ACTIONS.md)** | **[Workflows Guide](.github/workflows/README.md)** | **[Action Details](.github/actions/cleanup-action/README.md)**
 
-## Build Instructions
+## Building from Source
 
-### Prerequisites
+> **For Contributors/Developers**: Want to build the project locally? See [Building from Source](CONTRIBUTING.md#building-from-source) in CONTRIBUTING.md for complete build instructions.
 
-**IMPORTANT**: This project (main branch, targeting Eclipse 2025-12) requires **Java 21** or later.
+**Quick Start:**
+- **Requires**: Java 21 or later
+- **Quick Build**: `mvn -T 1C verify`
+- **Full Build**: `mvn -Pproduct,repo -T 1C verify`
 
-The project uses Tycho 5.0.2 which requires Java 21. Building with Java 17 or earlier will fail with:
-```
-UnsupportedClassVersionError: ... has been compiled by a more recent version of the Java Runtime (class file version 65.0)
-```
-
-Verify your Java version:
-```bash
-java -version  # Should show Java 21 or later
-```
-
-### Building
-
-#### Build Profiles
-
-The project supports Maven profiles to optimize build speed:
-
-| Profile | Modules Built | Use Case |
-|---------|---------------|----------|
-| `dev` (default) | All bundles, features, tests | Fast local development |
-| `product` | + Eclipse Product (`sandbox_product`) | Building distributable product |
-| `repo` | + P2 Update Site (`sandbox_updatesite`) | Building update site |
-| `jacoco` | + Coverage reports | CI/Coverage builds |
-| `reports` | + HTML test reports | CI/Test report builds |
-
-#### Build Commands
-
-| Command | Description |
-|---------|-------------|
-| `mvn -T 1C verify` | Quick dev build (fastest) |
-| `mvn -Pproduct -T 1C verify` | Build with Eclipse product |
-| `mvn -Prepo -T 1C verify` | Build with P2 update site |
-| `mvn -Pproduct,repo -T 1C verify` | Full release build |
-| `mvn -Pjacoco,product,repo -T 1C verify` | Full CI build with coverage |
-| `mvn -T 1C -DskipTests verify` | Skip tests for local iteration |
-
-#### Using Make (Convenience)
-
-A Makefile is provided for easier build commands:
-
-```bash
-make dev         # Fast development build with tests
-make dev-notests # Fast development build without tests
-make product     # Build with product (requires xvfb for tests)
-make repo        # Build with repository (requires xvfb for tests)
-make release     # Full release build with coverage (requires xvfb for tests)
-make test        # Run tests with coverage (requires xvfb)
-make clean       # Clean all build artifacts
-make help        # Show all available targets
-```
-
-**For advanced build optimization**: See [BUILD_ACCELERATION.md](BUILD_ACCELERATION.md) for detailed information on build profiles and performance optimization strategies.
-
-### Troubleshooting
-
-#### Build fails with `UnsupportedClassVersionError` or `TypeNotPresentException`
-
-This error occurs when building with Java 17 or earlier:
-
-```
-TypeNotPresentException: Type P2ArtifactRepositoryLayout not present
-...class file version 65.0, this version only recognizes class file versions up to 61.0
-```
-
-**Solution**: Upgrade to Java 21 or later. Verify with `java -version`.
-
-#### Build fails with `Unable to provision` errors
-
-This usually indicates a Java version mismatch. Check that:
-1. `JAVA_HOME` is set to Java 21+
-2. `java -version` shows Java 21+
-3. Maven is using the correct Java version: `mvn -version`
-
----
-
-## Eclipse Version Configuration
-
-> **For Maintainers**: See [CONTRIBUTING.md](CONTRIBUTING.md#eclipse-version-configuration) for instructions on updating Eclipse versions.
+**Note**: Building with Java 17 or earlier will fail. This project requires Java 21.
 
 ---
 
 ## Quickstart
 
-### Using the Eclipse Product
+### For Users
 
-After building the project, you can run the Eclipse product with the bundled cleanup plugins:
+1. **Install the plugins** via Eclipse update site (see [Installation](#-installation) above)
+2. **Open Eclipse** and navigate to **Source** → **Clean Up...** or use **Preferences** → **Java** → **Code Style** → **Clean Up**
+3. **Configure cleanups**: Select the sandbox cleanup profiles you want to enable
+4. **Apply cleanups**: Run cleanup on your Java files
 
-```bash
-# Navigate to the product directory
-cd sandbox_product/target/products/org.sandbox.product/
+### For Contributors/Developers
 
-# Launch Eclipse
-./eclipse
-```
-
-### Using Cleanup Plugins via Command Line
-
-You can apply cleanup transformations using the Eclipse JDT formatter application pattern:
-
-```bash
-eclipse -nosplash -consolelog -debug \
-  -application org.eclipse.jdt.core.JavaCodeFormatter \
-  -verbose -config MyCleanupSettings.ini MyClassToCleanup.java
-```
-
-> **Note**: Replace `MyCleanupSettings.ini` with your cleanup configuration file and `MyClassToCleanup.java` with the Java file you want to process.
+Want to build and run the Eclipse product with bundled plugins? See the [Building from Source](CONTRIBUTING.md#building-from-source) section in CONTRIBUTING.md for:
+- Building the Eclipse product locally
+- Running the built Eclipse product
+- Using command-line cleanup tools
 
 ---
 
@@ -382,9 +279,10 @@ This repository contains extensive documentation organized at multiple levels to
 ### Quick Documentation Links
 
 - **[Installation](#-installation)** - How to install plugins in Eclipse
-- **[Build Instructions](#build-instructions)** - How to build the project with Maven/Tycho
+- **[Building from Source](CONTRIBUTING.md#building-from-source)** - How to build the project with Maven/Tycho
 - **[Projects](#projects)** - Descriptions and documentation for all plugins
 - **[Contributing](CONTRIBUTING.md)** - How to contribute to this project
+- **[Release Process](CONTRIBUTING.md#release-process)** - Maintainer guide for creating releases
 - **[Eclipse Version Configuration](CONTRIBUTING.md#eclipse-version-configuration)** - Maintainer guide for updating Eclipse versions
 
 ---
@@ -393,7 +291,7 @@ This repository contains extensive documentation organized at multiple levels to
 
 Contributions are welcome! This is an experimental sandbox project for testing Eclipse JDT cleanup implementations.
 
-**📖 For full contribution guidelines, reporting issues, and Eclipse version configuration**, see [CONTRIBUTING.md](CONTRIBUTING.md).
+**📖 For full contribution guidelines, building instructions, reporting issues, release process, and Eclipse version configuration**, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ### Quick Start
 
