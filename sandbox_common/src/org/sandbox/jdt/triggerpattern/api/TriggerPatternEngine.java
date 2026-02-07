@@ -23,6 +23,7 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
@@ -30,7 +31,6 @@ import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Statement;
-import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.sandbox.jdt.triggerpattern.internal.PatternParser;
 import org.sandbox.jdt.triggerpattern.internal.PlaceholderAstMatcher;
 
@@ -110,48 +110,127 @@ public class TriggerPatternEngine {
 	}
 	
 	/**
+	 * Finds all AST nodes of the given types in the compilation unit.
+	 * 
+	 * <p>This method is used for @TriggerTreeKind hints that match based on
+	 * AST node types rather than patterns.</p>
+	 * 
+	 * @param cu the compilation unit to search
+	 * @param nodeTypes array of AST node type constants (e.g., ASTNode.METHOD_DECLARATION)
+	 * @return a list of all matches (may be empty)
+	 */
+	public List<Match> findMatchesByNodeType(CompilationUnit cu, int... nodeTypes) {
+		if (cu == null || nodeTypes == null || nodeTypes.length == 0) {
+			return List.of();
+		}
+		
+		List<Match> matches = new ArrayList<>();
+		
+		cu.accept(new ASTVisitor() {
+			@Override
+			public void preVisit(ASTNode node) {
+				int nodeType = node.getNodeType();
+				for (int targetType : nodeTypes) {
+					if (nodeType == targetType) {
+						createMatchWithAutoBindings(node, matches);
+						break;
+					}
+				}
+			}
+		});
+		
+		return matches;
+	}
+	
+	/**
+	 * Finds all AST nodes of the given types in the compilation unit.
+	 * 
+	 * <p>This method is used for @TriggerTreeKind hints that match based on
+	 * AST node types rather than patterns.</p>
+	 * 
+	 * @param icu the ICompilationUnit to search
+	 * @param nodeTypes array of AST node type constants (e.g., ASTNode.METHOD_DECLARATION)
+	 * @return a list of all matches (may be empty)
+	 */
+	public List<Match> findMatchesByNodeType(ICompilationUnit icu, int... nodeTypes) {
+		if (icu == null || nodeTypes == null || nodeTypes.length == 0) {
+			return List.of();
+		}
+		
+		ASTParser astParser = ASTParser.newParser(AST.getJLSLatest());
+		astParser.setSource(icu);
+		astParser.setResolveBindings(false);
+		CompilationUnit cu = (CompilationUnit) astParser.createAST(null);
+		
+		return findMatchesByNodeType(cu, nodeTypes);
+	}
+	
+	/**
 	 * Checks if a candidate node matches the pattern node and adds a Match if it does.
 	 * 
 	 * <p>Auto-bindings are added:</p>
 	 * <ul>
 	 *   <li>{@code $_} - the matched node itself</li>
-	 *   <li>{@code $this} - the enclosing TypeDeclaration</li>
+	 *   <li>{@code $this} - the enclosing AbstractTypeDeclaration</li>
 	 * </ul>
 	 */
 	private void checkMatch(ASTNode candidate, ASTNode patternNode, List<Match> matches) {
 		PlaceholderAstMatcher matcher = new PlaceholderAstMatcher();
 		
 		if (patternNode.subtreeMatch(matcher, candidate)) {
-			// We have a match! Create a Match object with bindings and position
-			int offset = candidate.getStartPosition();
-			int length = candidate.getLength();
-			
-			// Add auto-bindings
+			// We have a match! Create a Match object with pattern bindings and auto-bindings
 			Map<String, Object> bindings = new HashMap<>(matcher.getBindings());
-			bindings.put("$_", candidate); //$NON-NLS-1$
-			
-			// Find enclosing type declaration
-			TypeDeclaration enclosingType = findEnclosingType(candidate);
-			if (enclosingType != null) {
-				bindings.put("$this", enclosingType); //$NON-NLS-1$
-			}
-			
-			Match match = new Match(candidate, bindings, offset, length);
-			matches.add(match);
+			createMatchWithAutoBindings(candidate, bindings, matches);
 		}
 	}
 	
 	/**
-	 * Finds the enclosing TypeDeclaration for a given node.
+	 * Creates a Match with auto-bindings for a matched node.
+	 * 
+	 * @param node the matched node
+	 * @param matches the list to add the match to
+	 */
+	private void createMatchWithAutoBindings(ASTNode node, List<Match> matches) {
+		createMatchWithAutoBindings(node, new HashMap<>(), matches);
+	}
+	
+	/**
+	 * Creates a Match with auto-bindings for a matched node.
+	 * 
+	 * @param node the matched node
+	 * @param bindings existing bindings (e.g., from pattern matching)
+	 * @param matches the list to add the match to
+	 */
+	private void createMatchWithAutoBindings(ASTNode node, Map<String, Object> bindings, List<Match> matches) {
+		int offset = node.getStartPosition();
+		int length = node.getLength();
+		
+		// Add auto-bindings
+		bindings.put("$_", node); //$NON-NLS-1$
+		
+		// Find enclosing type declaration
+		ASTNode enclosingType = findEnclosingType(node);
+		if (enclosingType != null) {
+			bindings.put("$this", enclosingType); //$NON-NLS-1$
+		}
+		
+		Match match = new Match(node, bindings, offset, length);
+		matches.add(match);
+	}
+	
+	/**
+	 * Finds the enclosing type declaration for a given node.
+	 * 
+	 * <p>This includes classes, interfaces, enums, annotation types, and records.</p>
 	 * 
 	 * @param node the node to start from
-	 * @return the enclosing TypeDeclaration, or null if none found
+	 * @return the enclosing AbstractTypeDeclaration, or null if none found
 	 */
-	private TypeDeclaration findEnclosingType(ASTNode node) {
+	private ASTNode findEnclosingType(ASTNode node) {
 		ASTNode current = node;
 		while (current != null) {
-			if (current instanceof TypeDeclaration) {
-				return (TypeDeclaration) current;
+			if (current instanceof AbstractTypeDeclaration) {
+				return current;
 			}
 			current = current.getParent();
 		}

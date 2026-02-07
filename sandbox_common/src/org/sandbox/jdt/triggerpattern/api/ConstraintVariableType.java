@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.api;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
@@ -35,6 +37,7 @@ import java.lang.annotation.Target;
  * 
  * @since 1.2.2
  */
+@Retention(RetentionPolicy.RUNTIME)
 @Target({})
 public @interface ConstraintVariableType {
 	

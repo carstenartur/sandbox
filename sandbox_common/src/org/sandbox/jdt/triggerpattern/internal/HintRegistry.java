@@ -17,6 +17,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExtensionRegistry;
@@ -125,10 +126,10 @@ public class HintRegistry {
 				return Severity.INFO;
 			}
 			try {
-				return Severity.valueOf(severityStr.toUpperCase());
+				return Severity.valueOf(severityStr.toUpperCase(Locale.ROOT));
 			} catch (IllegalArgumentException e) {
 				// Map common string values to enum
-				return switch (severityStr.toLowerCase()) {
+				return switch (severityStr.toLowerCase(Locale.ROOT)) {
 					case "error" -> Severity.ERROR; //$NON-NLS-1$
 					case "warning" -> Severity.WARNING; //$NON-NLS-1$
 					case "hint" -> Severity.HINT; //$NON-NLS-1$
@@ -178,7 +179,7 @@ public class HintRegistry {
 		 */
 		@Deprecated
 		public String getSeverityString() {
-			return severity.name().toLowerCase();
+			return severity.name().toLowerCase(Locale.ROOT);
 		}
 		
 		/**

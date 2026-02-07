@@ -13,16 +13,22 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.api;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.Expression;
-import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.StructuralPropertyDescriptor;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.sandbox.jdt.triggerpattern.internal.PatternParser;
-import org.sandbox.jdt.triggerpattern.internal.PlaceholderAstMatcher;
 
 /**
  * Utilities for creating declarative fix templates.
@@ -67,9 +73,11 @@ public final class FixUtilities {
 		ASTRewrite rewrite = ctx.getASTRewrite();
 		ASTNode matchedNode = match.getMatchedNode();
 		
+		// Determine pattern kind from matched node type
+		PatternKind kind = determinePatternKind(matchedNode);
+		
 		// Parse the replacement pattern
 		PatternParser parser = new PatternParser();
-		PatternKind kind = matchedNode instanceof Expression ? PatternKind.EXPRESSION : PatternKind.STATEMENT;
 		Pattern pattern = new Pattern(replacementPattern, kind, null, null);
 		ASTNode replacementNode = parser.parse(pattern);
 		
@@ -85,6 +93,27 @@ public final class FixUtilities {
 	}
 	
 	/**
+	 * Determines the PatternKind from a matched node type.
+	 * 
+	 * @param node the matched node
+	 * @return the appropriate PatternKind
+	 */
+	private static PatternKind determinePatternKind(ASTNode node) {
+		if (node instanceof Expression) {
+			return PatternKind.EXPRESSION;
+		} else if (node instanceof Annotation) {
+			return PatternKind.ANNOTATION;
+		} else if (node instanceof MethodInvocation) {
+			return PatternKind.METHOD_CALL;
+		} else if (node instanceof ImportDeclaration) {
+			return PatternKind.IMPORT;
+		} else if (node instanceof FieldDeclaration) {
+			return PatternKind.FIELD;
+		}
+		return PatternKind.STATEMENT;
+	}
+	
+	/**
 	 * Substitutes placeholders in a template node with actual bindings.
 	 * 
 	 * @param template the template node with placeholders
@@ -93,9 +122,6 @@ public final class FixUtilities {
 	 * @return a new node with placeholders replaced
 	 */
 	private static ASTNode substitutePlaceholders(ASTNode template, Map<String, Object> bindings, AST ast) {
-		// Create a matcher to identify placeholders in the template
-		PlaceholderAstMatcher matcher = new PlaceholderAstMatcher();
-		
 		// For simple cases, if the entire template is a placeholder, return its binding directly
 		String placeholderName = extractPlaceholderName(template);
 		if (placeholderName != null) {
@@ -106,10 +132,41 @@ public final class FixUtilities {
 		}
 		
 		// For complex templates, perform a recursive substitution
-		// This is a simplified implementation - a full implementation would need
-		// to traverse the template tree and replace all placeholder nodes
 		ASTNode copy = ASTNode.copySubtree(ast, template);
-		return substituteInTree(copy, bindings, ast);
+		
+		// Build a map of placeholder SimpleNames to their replacements
+		Map<SimpleName, ASTNode> replacements = new HashMap<>();
+		
+		copy.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(SimpleName node) {
+				String name = node.getIdentifier();
+				if (name.startsWith("$")) { //$NON-NLS-1$
+					Object binding = bindings.get(name);
+					if (binding instanceof ASTNode) {
+						replacements.put(node, (ASTNode) binding);
+					}
+					// Multi-placeholders are handled separately as they need list context
+				}
+				return true;
+			}
+		});
+		
+		// Apply replacements using structural replace
+		for (Map.Entry<SimpleName, ASTNode> entry : replacements.entrySet()) {
+			SimpleName placeholder = entry.getKey();
+			ASTNode replacement = entry.getValue();
+			ASTNode parent = placeholder.getParent();
+			
+			if (parent != null) {
+				StructuralPropertyDescriptor location = placeholder.getLocationInParent();
+				if (location.isChildProperty()) {
+					parent.setStructuralProperty(location, ASTNode.copySubtree(ast, replacement));
+				}
+			}
+		}
+		
+		return copy;
 	}
 	
 	/**
@@ -127,32 +184,5 @@ public final class FixUtilities {
 			}
 		}
 		return null;
-	}
-	
-	/**
-	 * Recursively substitutes placeholders in a tree.
-	 * 
-	 * @param node the node to process
-	 * @param bindings the bindings map
-	 * @param ast the AST for creating nodes
-	 * @return the processed node (possibly replaced)
-	 */
-	private static ASTNode substituteInTree(ASTNode node, Map<String, Object> bindings, AST ast) {
-		// Check if this node itself is a placeholder
-		String placeholderName = extractPlaceholderName(node);
-		if (placeholderName != null) {
-			Object binding = bindings.get(placeholderName);
-			if (binding instanceof ASTNode) {
-				return ASTNode.copySubtree(ast, (ASTNode) binding);
-			} else if (binding instanceof List<?>) {
-				// Multi-placeholder - for now, return the node as-is
-				// Full implementation would need context about where to insert the list
-				return node;
-			}
-		}
-		
-		// For other nodes, we would recursively process children
-		// This is a simplified version - full implementation would use visitor pattern
-		return node;
 	}
 }

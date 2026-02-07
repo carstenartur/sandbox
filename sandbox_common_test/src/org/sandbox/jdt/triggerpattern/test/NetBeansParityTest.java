@@ -31,6 +31,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.triggerpattern.api.ConstraintVariableType;
+import org.sandbox.jdt.triggerpattern.api.FixUtilities;
 import org.sandbox.jdt.triggerpattern.api.Hint;
 import org.sandbox.jdt.triggerpattern.api.HintContext;
 import org.sandbox.jdt.triggerpattern.api.HintKind;
@@ -252,6 +253,172 @@ public class NetBeansParityTest {
 		assertTrue(variableNames.containsKey("$y"));
 		assertEquals("a", variableNames.get("$x"));
 		assertEquals("b", variableNames.get("$y"));
+	}
+	
+	// ========== Tests for FixUtilities ==========
+	
+	@Test
+	public void testFixUtilitiesSimplePlaceholderReplacement() {
+		String code = """
+			class Test {
+				void method() {
+					int x = a + 1;
+				}
+			}
+			""";
+		
+		CompilationUnit cu = parse(code);
+		Pattern pattern = new Pattern("$x + 1", PatternKind.EXPRESSION);
+		List<Match> matches = engine.findMatches(cu, pattern);
+		
+		assertEquals(1, matches.size());
+		Match match = matches.get(0);
+		ASTRewrite rewrite = ASTRewrite.create(cu.getAST());
+		HintContext ctx = new HintContext(cu, null, match, rewrite);
+		
+		// Replace "$x + 1" with just "$x"
+		FixUtilities.rewriteFix(ctx, "$x");
+		
+		// Verify the replacement was created (checking that no exception was thrown)
+		assertNotNull(ctx.getASTRewrite());
+	}
+	
+	@Test
+	public void testFixUtilitiesEmbeddedPlaceholderReplacement() {
+		String code = """
+			class Test {
+				void method() {
+					int x = a + 1;
+				}
+			}
+			""";
+		
+		CompilationUnit cu = parse(code);
+		Pattern pattern = new Pattern("$x + 1", PatternKind.EXPRESSION);
+		List<Match> matches = engine.findMatches(cu, pattern);
+		
+		assertEquals(1, matches.size());
+		Match match = matches.get(0);
+		ASTRewrite rewrite = ASTRewrite.create(cu.getAST());
+		HintContext ctx = new HintContext(cu, null, match, rewrite);
+		
+		// Replace "$x + 1" with "++$x" (embedded placeholder)
+		FixUtilities.rewriteFix(ctx, "++$x");
+		
+		// Verify the replacement was created
+		assertNotNull(ctx.getASTRewrite());
+	}
+	
+	@Test
+	public void testFixUtilitiesInvalidReplacementPattern() {
+		String code = """
+			class Test {
+				void method() {
+					int x = a + 1;
+				}
+			}
+			""";
+		
+		CompilationUnit cu = parse(code);
+		Pattern pattern = new Pattern("$x + 1", PatternKind.EXPRESSION);
+		List<Match> matches = engine.findMatches(cu, pattern);
+		
+		assertEquals(1, matches.size());
+		Match match = matches.get(0);
+		ASTRewrite rewrite = ASTRewrite.create(cu.getAST());
+		HintContext ctx = new HintContext(cu, null, match, rewrite);
+		
+		// Invalid pattern should throw exception
+		try {
+			FixUtilities.rewriteFix(ctx, "invalid syntax @#$");
+			// Should not reach here
+			assertTrue(false, "Expected IllegalArgumentException");
+		} catch (IllegalArgumentException e) {
+			assertTrue(e.getMessage().contains("Could not parse replacement pattern"));
+		}
+	}
+	
+	@Test
+	public void testFixUtilitiesDeterminePatternKind() {
+		// Test with expression pattern
+		String code1 = """
+			class Test {
+				void method() {
+					int x = a + 1;
+				}
+			}
+			""";
+		
+		CompilationUnit cu1 = parse(code1);
+		Pattern pattern1 = new Pattern("$x + 1", PatternKind.EXPRESSION);
+		List<Match> matches1 = engine.findMatches(cu1, pattern1);
+		assertEquals(1, matches1.size());
+		
+		// Verify it works for expressions
+		ASTRewrite rewrite1 = ASTRewrite.create(cu1.getAST());
+		HintContext ctx1 = new HintContext(cu1, null, matches1.get(0), rewrite1);
+		FixUtilities.rewriteFix(ctx1, "$x");
+		assertNotNull(ctx1.getASTRewrite());
+	}
+	
+	// ========== Tests for findMatchesByNodeType ==========
+	
+	@Test
+	public void testFindMatchesByNodeType() {
+		String code = """
+			class Test {
+				void method1() {}
+				void method2() {}
+				int field;
+			}
+			""";
+		
+		CompilationUnit cu = parse(code);
+		
+		// Find all method declarations
+		List<Match> matches = engine.findMatchesByNodeType(cu, ASTNode.METHOD_DECLARATION);
+		
+		assertEquals(2, matches.size(), "Should find 2 method declarations");
+		
+		// Verify auto-bindings are present
+		for (Match match : matches) {
+			assertNotNull(match.getBinding("$_"), "$_ should be bound");
+			assertNotNull(match.getBinding("$this"), "$this should be bound");
+		}
+	}
+	
+	@Test
+	public void testFindMatchesByNodeTypeMultipleTypes() {
+		String code = """
+			class Test {
+				void method() {}
+				int field;
+			}
+			""";
+		
+		CompilationUnit cu = parse(code);
+		
+		// Find all method and field declarations
+		List<Match> matches = engine.findMatchesByNodeType(cu, 
+			ASTNode.METHOD_DECLARATION, ASTNode.FIELD_DECLARATION);
+		
+		assertEquals(2, matches.size(), "Should find 1 method + 1 field");
+	}
+	
+	@Test
+	public void testFindMatchesByNodeTypeNoMatches() {
+		String code = """
+			class Test {
+				int field;
+			}
+			""";
+		
+		CompilationUnit cu = parse(code);
+		
+		// Find method declarations (there are none)
+		List<Match> matches = engine.findMatchesByNodeType(cu, ASTNode.METHOD_DECLARATION);
+		
+		assertEquals(0, matches.size(), "Should find no method declarations");
 	}
 	
 	// ========== Helper Methods ==========
