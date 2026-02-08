@@ -149,13 +149,17 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	/**
 	 * Creates a fluent builder for visiting a single method invocation.
 	 * 
+	 * <p>This method returns a type-safe builder where the processor receives 
+	 * {@code MethodInvocation} directly, without requiring casts.</p>
+	 * 
 	 * <p><b>Example:</b></p>
 	 * <pre>
 	 * HelperVisitor.forMethodCall("org.junit.Assert", "assertTrue")
 	 *     .in(compilationUnit)
 	 *     .excluding(nodesprocessed)
-	 *     .processEach((node, holder) -&gt; {
-	 *         processNode(node, holder);
+	 *     .processEach((methodInv, holder) -&gt; {
+	 *         // methodInv is MethodInvocation - no cast needed!
+	 *         processNode(methodInv, holder);
 	 *         return true;
 	 *     });
 	 * </pre>
@@ -165,20 +169,24 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	 * @return a fluent builder for method invocation visitors
 	 * @since 1.15
 	 */
-	public static MethodCallVisitorBuilder forMethodCall(String typeFQN, String methodName) {
-		return new MethodCallVisitorBuilder(typeFQN, Set.of(methodName));
+	public static SimpleMethodCallVisitorBuilder forMethodCall(String typeFQN, String methodName) {
+		return new SimpleMethodCallVisitorBuilder(typeFQN, methodName);
 	}
 	
 	/**
 	 * Creates a fluent builder for visiting a single method invocation using a Class object.
+	 * 
+	 * <p>This method returns a type-safe builder where the processor receives 
+	 * {@code MethodInvocation} directly, without requiring casts.</p>
 	 * 
 	 * <p><b>Example:</b></p>
 	 * <pre>
 	 * HelperVisitor.forMethodCall(String.class, "getBytes")
 	 *     .in(compilationUnit)
 	 *     .excluding(nodesprocessed)
-	 *     .processEach((node, holder) -&gt; {
-	 *         processNode(node, holder);
+	 *     .processEach((methodInv, holder) -&gt; {
+	 *         // methodInv is MethodInvocation - no cast needed!
+	 *         processNode(methodInv, holder);
 	 *         return true;
 	 *     });
 	 * </pre>
@@ -188,8 +196,8 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	 * @return a fluent builder for method invocation visitors
 	 * @since 1.16
 	 */
-	public static MethodCallVisitorBuilder forMethodCall(Class<?> typeClass, String methodName) {
-		return new MethodCallVisitorBuilder(typeClass, Set.of(methodName));
+	public static SimpleMethodCallVisitorBuilder forMethodCall(Class<?> typeClass, String methodName) {
+		return new SimpleMethodCallVisitorBuilder(typeClass, methodName);
 	}
 	
 	/**
