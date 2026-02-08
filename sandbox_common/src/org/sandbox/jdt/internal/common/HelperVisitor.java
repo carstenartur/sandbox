@@ -50,6 +50,13 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	public static final String TYPEOF = "typeof"; //$NON-NLS-1$
 
 	/**
+	 * Key used to match type by fully qualified class name (as String) instead of Class object.
+	 * This avoids deprecation warnings when the type being matched is deprecated.
+	 * @since 1.2.5
+	 */
+	public static final String TYPEOF_BYNAME = "typeof_byname"; //$NON-NLS-1$
+
+	/**
 	 *
 	 */
 	public static final String METHODNAME = "methodname"; //$NON-NLS-1$
@@ -542,6 +549,25 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	public BiPredicate<? extends ASTNode, E> addClassInstanceCreation(Class<?> typeof, BiPredicate<ClassInstanceCreation, E> bs) {
 		Map<String, Object> map = Map.ofEntries(
 				new AbstractMap.SimpleEntry<>(TYPEOF, typeof)
+				);
+		predicatedata.put(VisitorEnum.ClassInstanceCreation, map);
+		return predicatemap.put(VisitorEnum.ClassInstanceCreation, bs);
+	}
+
+	/**
+	 * Adds a visitor for ClassInstanceCreation nodes filtered by fully qualified type name.
+	 * 
+	 * <p>This overload accepts a String instead of a Class to avoid deprecation warnings
+	 * when the class being filtered is deprecated (e.g., SubProgressMonitor).</p>
+	 *
+	 * @param qualifiedTypeName the fully qualified class name to filter for
+	 * @param bs the predicate to test each matching node
+	 * @return old BiPredicate assigned for nodetype
+	 * @since 1.2.5
+	 */
+	public BiPredicate<? extends ASTNode, E> addClassInstanceCreation(String qualifiedTypeName, BiPredicate<ClassInstanceCreation, E> bs) {
+		Map<String, Object> map = Map.ofEntries(
+				new AbstractMap.SimpleEntry<>(TYPEOF_BYNAME, qualifiedTypeName)
 				);
 		predicatedata.put(VisitorEnum.ClassInstanceCreation, map);
 		return predicatemap.put(VisitorEnum.ClassInstanceCreation, bs);

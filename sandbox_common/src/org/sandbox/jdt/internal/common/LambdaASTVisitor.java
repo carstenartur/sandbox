@@ -237,7 +237,17 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 				Class<?> typeof=(Class<?>) map.get(HelperVisitor.TYPEOF);
 				if(typeof!=null) {
 					ITypeBinding binding= node.resolveTypeBinding();
-					if (!typeof.getSimpleName().equals(binding.getName())) {
+					if (binding == null || !typeof.getSimpleName().equals(binding.getName())) {
+						return true;
+					}
+				}
+				// Support filtering by fully qualified type name (String) to avoid deprecation warnings
+				String typeofByName=(String) map.get(HelperVisitor.TYPEOF_BYNAME);
+				if(typeofByName!=null) {
+					// Extract simple name for comparison (same approach as TYPEOF)
+					String simpleName = typeofByName.substring(typeofByName.lastIndexOf('.') + 1);
+					ITypeBinding binding= node.resolveTypeBinding();
+					if (binding == null || !simpleName.equals(binding.getName())) {
 						return true;
 					}
 				}

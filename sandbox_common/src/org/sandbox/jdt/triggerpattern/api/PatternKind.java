@@ -51,5 +51,11 @@ public enum PatternKind {
 	 * Pattern represents a field declaration (e.g., {@code @Rule public TemporaryFolder $name})
 	 * @since 1.2.3
 	 */
-	FIELD
+	FIELD,
+	
+	/**
+	 * Pattern represents a constructor invocation (e.g., {@code new String($bytes, $enc)})
+	 * @since 1.2.5
+	 */
+	CONSTRUCTOR
 }

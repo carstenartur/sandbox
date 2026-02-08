@@ -31,6 +31,7 @@ import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.sandbox.jdt.triggerpattern.cleanup.MatchHolder;
 
 /**
  * Data holder for JUnit migration operations.
@@ -44,8 +45,12 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
  * Refactored to use private fields with fluent setters for better encapsulation.
  * A Builder inner class is provided for convenient construction.
  * </p>
+ * <p>
+ * Implements {@link MatchHolder} interface for type-safe integration with
+ * {@link org.sandbox.jdt.triggerpattern.cleanup.AbstractPatternCleanupPlugin}.
+ * </p>
  */
-public class JunitHolder {
+public class JunitHolder implements MatchHolder {
 	/** The main AST node to be transformed (can be Annotation, MethodInvocation, FieldDeclaration, TypeDeclaration, or ImportDeclaration) */
 	private ASTNode minv;
 	
@@ -76,6 +81,7 @@ public class JunitHolder {
 	 * Gets the main AST node.
 	 * @return the AST node
 	 */
+	@Override
 	public ASTNode getMinv() {
 		return minv;
 	}
@@ -132,6 +138,7 @@ public class JunitHolder {
 	 * Gets the placeholder bindings map.
 	 * @return the bindings map
 	 */
+	@Override
 	public Map<String, Object> getBindings() {
 		return bindings;
 	}
@@ -140,6 +147,7 @@ public class JunitHolder {
 	 * Gets the node as an Annotation.
 	 * @return the AST node cast to Annotation
 	 */
+	@Override
 	public Annotation getAnnotation() {
 		return (Annotation) minv;
 	}
@@ -264,6 +272,7 @@ public class JunitHolder {
 	 * @param placeholder the placeholder name (e.g., "$x")
 	 * @return the bound expression, or null if not found or if it's a list binding
 	 */
+	@Override
 	public Expression getBindingAsExpression(String placeholder) {
 		Object value = bindings.get(placeholder);
 		if (value instanceof Expression) {

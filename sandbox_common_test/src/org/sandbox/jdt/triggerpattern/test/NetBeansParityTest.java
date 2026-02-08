@@ -361,6 +361,36 @@ public class NetBeansParityTest {
 		assertNotNull(ctx1.getASTRewrite());
 	}
 	
+	@Test
+	public void testFixUtilitiesConstructorReplacement() {
+		String code = """
+			class Test {
+				void method() {
+					String s = new String(bytes, "UTF-8");
+				}
+			}
+			""";
+		
+		CompilationUnit cu = parse(code);
+		Pattern pattern = new Pattern("new String($bytes, $enc)", PatternKind.CONSTRUCTOR);
+		List<Match> matches = engine.findMatches(cu, pattern);
+		
+		assertEquals(1, matches.size(), "Should find one constructor match");
+		Match match = matches.get(0);
+		ASTRewrite rewrite = ASTRewrite.create(cu.getAST());
+		HintContext ctx = new HintContext(cu, null, match, rewrite);
+		
+		// Replace constructor with StandardCharsets version
+		FixUtilities.rewriteFix(ctx, "new String($bytes, StandardCharsets.UTF_8)");
+		
+		// Verify the rewrite was created
+		assertNotNull(ctx.getASTRewrite());
+		
+		// Verify placeholders are bound
+		assertTrue(match.getBindings().containsKey("$bytes"));
+		assertTrue(match.getBindings().containsKey("$enc"));
+	}
+	
 	// ========== Tests for findMatchesByNodeType ==========
 	
 	@Test

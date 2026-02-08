@@ -18,6 +18,7 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
@@ -66,6 +67,8 @@ public class PatternParser {
 			return parseImport(patternValue);
 		} else if (kind == PatternKind.FIELD) {
 			return parseField(patternValue);
+		} else if (kind == PatternKind.CONSTRUCTOR) {
+			return parseConstructor(patternValue);
 		}
 		
 		return null;
@@ -294,5 +297,56 @@ public class PatternParser {
 		}
 		
 		return typeDecl.getFields()[0];
+	}
+	
+	/**
+	 * Parses a constructor pattern.
+	 * 
+	 * @param constructorSnippet the constructor snippet (e.g., {@code "new String($bytes, $enc)"})
+	 * @return the parsed ClassInstanceCreation node, or {@code null} if parsing fails
+	 * @since 1.2.5
+	 */
+	private ClassInstanceCreation parseConstructor(String constructorSnippet) {
+		// Wrap the constructor expression in a minimal method context
+		String source = "class _Pattern { void _method() { Object _result = " + constructorSnippet + "; } }"; //$NON-NLS-1$ //$NON-NLS-2$
+		
+		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
+		parser.setSource(source.toCharArray());
+		parser.setKind(ASTParser.K_COMPILATION_UNIT);
+		parser.setCompilerOptions(JavaCore.getOptions());
+		
+		CompilationUnit cu = (CompilationUnit) parser.createAST(null);
+		
+		// Navigate to the constructor: CompilationUnit -> TypeDeclaration -> MethodDeclaration -> Block -> VariableDeclarationStatement -> VariableDeclarationFragment -> initializer (ClassInstanceCreation)
+		if (cu.types().isEmpty()) {
+			return null;
+		}
+		
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		if (typeDecl.getMethods().length == 0) {
+			return null;
+		}
+		
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		if (method.getBody() == null || method.getBody().statements().isEmpty()) {
+			return null;
+		}
+		
+		Statement stmt = (Statement) method.getBody().statements().get(0);
+		if (stmt instanceof org.eclipse.jdt.core.dom.VariableDeclarationStatement) {
+			org.eclipse.jdt.core.dom.VariableDeclarationStatement varDeclStmt = (org.eclipse.jdt.core.dom.VariableDeclarationStatement) stmt;
+			if (!varDeclStmt.fragments().isEmpty()) {
+				Object fragment = varDeclStmt.fragments().get(0);
+				if (fragment instanceof org.eclipse.jdt.core.dom.VariableDeclarationFragment) {
+					org.eclipse.jdt.core.dom.VariableDeclarationFragment varFrag = (org.eclipse.jdt.core.dom.VariableDeclarationFragment) fragment;
+					Expression initializer = varFrag.getInitializer();
+					if (initializer instanceof ClassInstanceCreation) {
+						return (ClassInstanceCreation) initializer;
+					}
+				}
+			}
+		}
+		
+		return null;
 	}
 }

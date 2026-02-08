@@ -577,7 +577,120 @@ protected boolean shouldProcess(Match match, Pattern pattern) {
 }
 ```
 
-## Contributing
+### Declarative Rewrite with @RewriteRule
+
+For simple transformations, you can eliminate the `process2Rewrite()` method entirely using `@RewriteRule`:
+
+#### Example: Encoding Cleanup Plugins
+
+The `sandbox_triggerpattern` module includes declarative encoding cleanup plugins that demonstrate this approach:
+
+##### String Constructor with UTF-8
+
+```java
+@CleanupPattern(
+    value = "new String($bytes, \"UTF-8\")",
+    kind = PatternKind.CONSTRUCTOR,
+    qualifiedType = "java.lang.String",
+    cleanupId = "cleanup.encoding.string.utf8",
+    description = "Replace String constructor with UTF-8 literal with StandardCharsets.UTF_8"
+)
+@RewriteRule(
+    replaceWith = "new String($bytes, StandardCharsets.UTF_8)",
+    addImports = {"java.nio.charset.StandardCharsets"}
+)
+public class StringConstructorEncodingPlugin extends AbstractPatternCleanupPlugin<EncodingHolder> {
+    
+    @Override
+    protected EncodingHolder createHolder(Match match) {
+        EncodingHolder holder = new EncodingHolder();
+        holder.setMinv(match.getMatchedNode());
+        holder.setBindings(match.getBindings());
+        return holder;
+    }
+    
+    @Override
+    protected void processRewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
+            ImportRewrite importRewriter, EncodingHolder holder) {
+        // Delegate to declarative @RewriteRule processing - no manual AST code needed!
+        processRewriteWithRule(group, rewriter, ast, importRewriter, holder);
+    }
+    
+    @Override
+    public String getPreview(boolean afterRefactoring) {
+        // ... preview code
+    }
+}
+```
+
+**Result:**
+```java
+// Before
+String text = new String(bytes, "UTF-8");
+
+// After
+import java.nio.charset.StandardCharsets;
+String text = new String(bytes, StandardCharsets.UTF_8);
+```
+
+##### Charset.forName() Replacement
+
+```java
+@CleanupPattern(
+    value = "Charset.forName(\"UTF-8\")",
+    kind = PatternKind.METHOD_CALL,
+    qualifiedType = "java.nio.charset.Charset"
+)
+@RewriteRule(
+    replaceWith = "StandardCharsets.UTF_8",
+    addImports = {"java.nio.charset.StandardCharsets"}
+)
+public class CharsetForNameEncodingPlugin extends AbstractPatternCleanupPlugin<EncodingHolder> {
+    // ... minimal implementation
+}
+```
+
+##### String.getBytes() with Placeholder Preservation
+
+```java
+@CleanupPattern(
+    value = "$str.getBytes(\"UTF-8\")",
+    kind = PatternKind.METHOD_CALL,
+    qualifiedType = "java.lang.String"
+)
+@RewriteRule(
+    replaceWith = "$str.getBytes(StandardCharsets.UTF_8)",
+    addImports = {"java.nio.charset.StandardCharsets"}
+)
+public class StringGetBytesEncodingPlugin extends AbstractPatternCleanupPlugin<EncodingHolder> {
+    // ... minimal implementation
+}
+```
+
+#### @RewriteRule Annotation Parameters
+
+| Parameter | Description | Example |
+|-----------|-------------|---------|
+| `replaceWith` | Replacement pattern with placeholders | `"new String($bytes, StandardCharsets.UTF_8)"` |
+| `addImports` | Imports to add | `{"java.nio.charset.StandardCharsets"}` |
+| `removeImports` | Imports to remove | `{"java.nio.charset.Charset"}` |
+| `addStaticImports` | Static imports to add | `{"org.junit.jupiter.api.Assertions.*"}` |
+| `removeStaticImports` | Static imports to remove | `{"org.junit.Assert.*"}` |
+
+#### When to Use @RewriteRule vs Manual Implementation
+
+| Transformation Type | Approach |
+|---------------------|----------|
+| Simple replacement with placeholder preservation | `@RewriteRule` ✅ |
+| Annotation migration | `@RewriteRule` ✅ |
+| Method call with same structure | `@RewriteRule` ✅ |
+| Constructor replacement (same args) | `@RewriteRule` ✅ |
+| Structural changes (add/remove args) | Manual `processRewrite()` |
+| Conditional transformations | Manual `processRewrite()` |
+| Value mapping ("UTF-8" → UTF_8) | Manual (future: `@ValueMapping`) |
+| Java version constraints | Manual (future: `@MinJavaVersion`) |
+
+See the `org.sandbox.jdt.triggerpattern.encoding` package for complete examples.
 
 To add new hints to the TriggerPattern engine:
 
