@@ -28,6 +28,7 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.helper.AbstractTool;
 import org.sandbox.jdt.internal.corext.fix.helper.IntToEnumHelper;
 import org.sandbox.jdt.internal.corext.fix.helper.IntToEnumHelper.IntConstantHolder;
+import org.sandbox.jdt.internal.corext.fix.helper.SwitchIntToEnumHelper;
 import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
 /**
@@ -37,7 +38,12 @@ public enum IntToEnumFixCore {
 	/**
 	 * Convert if-else chains using int constants to switch with enum.
 	 */
-	IF_ELSE_TO_SWITCH(new IntToEnumHelper());
+	IF_ELSE_TO_SWITCH(new IntToEnumHelper()),
+
+	/**
+	 * Convert switch statements using int constants to switch with enum.
+	 */
+	SWITCH_INT_TO_ENUM(new SwitchIntToEnumHelper());
 
 	AbstractTool<ReferenceHolder<Integer, IntConstantHolder>> intToEnumHelper;
 
@@ -80,8 +86,12 @@ public enum IntToEnumFixCore {
 				// Get the first IntConstantHolder from the hit map
 				IntConstantHolder holder = hit.values().stream().findFirst().orElse(null);
 				if (holder != null) {
-					// TODO: Add tight source node when holder structure is complete
-					// rangeComputer.addTightSourceNode(holder.someNode);
+					if (holder.switchStatement != null) {
+						rangeComputer.addTightSourceNode(holder.switchStatement);
+					}
+					if (holder.ifStatement != null) {
+						rangeComputer.addTightSourceNode(holder.ifStatement);
+					}
 				}
 				
 				rewrite.setTargetSourceRangeComputer(rangeComputer);
@@ -92,6 +102,6 @@ public enum IntToEnumFixCore {
 
 	@Override
 	public String toString() {
-		return "Convert if-else to switch with enum";
+		return name();
 	}
 }

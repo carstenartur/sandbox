@@ -134,4 +134,84 @@ public class IntToEnumCleanUpTest {
 		// For now, just verify no exceptions are thrown
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
+
+	@Test
+	public void testSwitchIntToEnumBasic() throws CoreException {
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+		String given = """
+				package test1;
+				
+				public class E3 {
+				    public static final int STATUS_PENDING = 0;
+				    public static final int STATUS_APPROVED = 1;
+				    public static final int STATUS_REJECTED = 2;
+				
+				    public void process(int status) {
+				        switch (status) {
+				        case STATUS_PENDING:
+				            System.out.println("Pending");
+				            break;
+				        case STATUS_APPROVED:
+				            System.out.println("Approved");
+				            break;
+				        case STATUS_REJECTED:
+				            System.out.println("Rejected");
+				            break;
+				        }
+				    }
+				}
+				""";
+		ICompilationUnit cu = pack.createCompilationUnit("E3.java", given, false, null);
+		context.enable(MYCleanUpConstants.INT_TO_ENUM_CLEANUP);
+
+		// Verify transformation produces expected result
+		String expected = """
+				package test1;
+				
+				public class E3 {
+				    public enum Status {
+				        PENDING, APPROVED, REJECTED
+				    }
+				
+				    public void process(Status status) {
+				        switch (status) {
+				        case PENDING:
+				            System.out.println("Pending");
+				            break;
+				        case APPROVED:
+				            System.out.println("Approved");
+				            break;
+				        case REJECTED:
+				            System.out.println("Rejected");
+				            break;
+				        }
+				    }
+				}
+				""";
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+	}
+
+	@Test
+	public void testNoTransformSwitchWithSingleConstant() throws CoreException {
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+		String given = """
+				package test1;
+				
+				public class E4 {
+				    public static final int STATUS_PENDING = 0;
+				
+				    public void process(int status) {
+				        switch (status) {
+				        case STATUS_PENDING:
+				            System.out.println("Pending");
+				            break;
+				        }
+				    }
+				}
+				""";
+		ICompilationUnit cu = pack.createCompilationUnit("E4.java", given, false, null);
+		context.enable(MYCleanUpConstants.INT_TO_ENUM_CLEANUP);
+
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+	}
 }
