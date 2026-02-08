@@ -210,6 +210,11 @@ public abstract class ReflectivePatternCleanupPlugin extends AbstractPatternClea
 	}
 	
 	// Store matches that need processing
+	// Note: Not thread-safe. This is acceptable because Eclipse cleanup operations
+	// are single-threaded per compilation unit. The framework expects:
+	// 1. findAllMatches() called once to discover matches
+	// 2. createHolder() called once per match 
+	// 3. processRewrite() called once with all context
 	private final List<Match> pendingMatches = new ArrayList<>();
 	
 	/**
