@@ -55,7 +55,7 @@ public enum PatternKind {
 	
 	/**
 	 * Pattern represents a constructor invocation (e.g., {@code new String($bytes, $enc)})
-	 * @since 1.3.1
+	 * @since 1.2.5
 	 */
 	CONSTRUCTOR
 }
