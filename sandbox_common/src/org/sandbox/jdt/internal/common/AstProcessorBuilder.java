@@ -185,6 +185,22 @@ public final class AstProcessorBuilder<V, T> {
 	}
 
 	/**
+	 * Registers a visitor for ClassInstanceCreation nodes with a specific class type by name.
+	 * 
+	 * <p>This overload accepts a String instead of a Class to avoid deprecation warnings
+	 * when the class being filtered is deprecated (e.g., SubProgressMonitor).</p>
+	 *
+	 * @param qualifiedTypeName the fully qualified class name to match (e.g., "org.eclipse.core.runtime.SubProgressMonitor")
+	 * @param predicate the predicate to test and process matching nodes
+	 * @return this builder for method chaining
+	 * @since 1.2.5
+	 */
+	public AstProcessorBuilder<V, T> onClassInstanceCreation(String qualifiedTypeName, BiPredicate<ClassInstanceCreation, ReferenceHolder<V, T>> predicate) {
+		processor.callClassInstanceCreationVisitor(qualifiedTypeName, predicate);
+		return this;
+	}
+
+	/**
 	 * Registers a visitor for VariableDeclarationFragment nodes.
 	 *
 	 * @param predicate the predicate to test and process matching nodes

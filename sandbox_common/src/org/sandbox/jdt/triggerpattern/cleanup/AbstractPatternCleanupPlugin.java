@@ -71,7 +71,7 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
  * </ul>
  * 
  * @param <H> the holder type for storing match information
- * @since 1.3.0
+ * @since 1.2.5
  */
 public abstract class AbstractPatternCleanupPlugin<H> {
     

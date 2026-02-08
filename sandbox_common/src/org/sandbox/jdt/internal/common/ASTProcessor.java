@@ -547,6 +547,25 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	}
 
 	/**
+	 * Filters ClassInstanceCreation nodes by the fully qualified type name being instantiated.
+	 * 
+	 * <p>This overload accepts a String instead of a Class to avoid deprecation warnings
+	 * when the class being filtered is deprecated (e.g., SubProgressMonitor).</p>
+	 *
+	 * @param qualifiedTypeName the fully qualified class name to filter for (e.g., "org.eclipse.core.runtime.SubProgressMonitor")
+	 * @param bs the predicate to test each matching node
+	 * @return a reference to this object.
+	 * @since 1.2.5
+	 */
+	public ASTProcessor<E, V, T> callClassInstanceCreationVisitor(String qualifiedTypeName, BiPredicate<ClassInstanceCreation, E> bs) {
+		Map<String, Object> map = Map.ofEntries(
+				new AbstractMap.SimpleEntry<>(HelperVisitor.TYPEOF_BYNAME, qualifiedTypeName)
+				);
+		nodetypelist.put(VisitorEnum.ClassInstanceCreation, new NodeHolder(bs, null, map));
+		return this;
+	}
+
+	/**
 	 *
 	 * @param bs
 	 * @param navigate
@@ -570,6 +589,27 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 			Function<ASTNode, ASTNode> navigate) {
 		Map<String, Object> map = Map.ofEntries(
 				new AbstractMap.SimpleEntry<>(HelperVisitor.TYPEOF, typeof)
+				);
+		nodetypelist.put(VisitorEnum.ClassInstanceCreation, new NodeHolder(bs, navigate, map));
+		return this;
+	}
+
+	/**
+	 * Filters ClassInstanceCreation nodes by the fully qualified type name being instantiated.
+	 * 
+	 * <p>This overload accepts a String instead of a Class to avoid deprecation warnings
+	 * when the class being filtered is deprecated (e.g., SubProgressMonitor).</p>
+	 *
+	 * @param qualifiedTypeName the fully qualified class name to filter for (e.g., "org.eclipse.core.runtime.SubProgressMonitor")
+	 * @param bs the predicate to test each matching node
+	 * @param navigate optional function to navigate to a different node before the next visitor in the chain
+	 * @return a reference to this object.
+	 * @since 1.2.5
+	 */
+	public ASTProcessor<E, V, T> callClassInstanceCreationVisitor(String qualifiedTypeName, BiPredicate<ClassInstanceCreation, E> bs,
+			Function<ASTNode, ASTNode> navigate) {
+		Map<String, Object> map = Map.ofEntries(
+				new AbstractMap.SimpleEntry<>(HelperVisitor.TYPEOF_BYNAME, qualifiedTypeName)
 				);
 		nodetypelist.put(VisitorEnum.ClassInstanceCreation, new NodeHolder(bs, navigate, map));
 		return this;

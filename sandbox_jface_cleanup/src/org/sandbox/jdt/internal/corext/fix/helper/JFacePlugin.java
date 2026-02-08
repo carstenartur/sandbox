@@ -25,7 +25,6 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubMonitor;
-import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Block;
@@ -53,7 +52,7 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JfaceCleanUpFixCore;
 
 /**
- * Cleanup transformation for migrating from deprecated {@link SubProgressMonitor} to {@link SubMonitor}.
+ * Cleanup transformation for migrating from deprecated {@code SubProgressMonitor} to {@link SubMonitor}.
  * 
  * <p>This helper transforms progress monitor usage patterns in Eclipse JDT code:</p>
  * <ul>
@@ -190,7 +189,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				}
 				return true;
 			}, s -> ASTNodes.getTypedAncestor(s, Block.class))
-			.callClassInstanceCreationVisitor(SubProgressMonitor.class, (node, holder) -> {
+			.callClassInstanceCreationVisitor("org.eclipse.core.runtime.SubProgressMonitor", (node, holder) -> { //$NON-NLS-1$
 				List<?> arguments = node.arguments();
 				if (arguments.isEmpty()) {
 					return true;
@@ -371,7 +370,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				}
 				
 				ASTNodes.replaceButKeepComment(rewrite, submon, newMethodInvocation2, group);
-				importRemover.removeImport(SubProgressMonitor.class.getCanonicalName());
+				importRemover.removeImport("org.eclipse.core.runtime.SubProgressMonitor"); //$NON-NLS-1$
 			}
 		}
 	}

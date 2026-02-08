@@ -30,7 +30,7 @@ import org.eclipse.jdt.core.dom.Expression;
  * <p>Implementations should store the matched AST node and any placeholder bindings
  * from the pattern match.</p>
  * 
- * @since 1.3.1
+ * @since 1.2.5
  */
 public interface MatchHolder {
     

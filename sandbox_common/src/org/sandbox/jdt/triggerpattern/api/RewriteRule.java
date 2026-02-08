@@ -46,7 +46,7 @@ import java.lang.annotation.Target;
  * public class IgnoreJUnitPluginV2 extends TriggerPatternCleanupPlugin { }
  * </pre>
  * 
- * @since 1.3.0
+ * @since 1.2.5
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
