@@ -78,8 +78,14 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
         for (LoopTreeNode node : convertibleNodes) {
             EnhancedForStatement loopStatement = (EnhancedForStatement) node.getAstNodeReference();
             if (loopStatement != null && !nodesprocessed.contains(loopStatement)) {
-                // Extract LoopModel AND original body from AST
-                JdtLoopExtractor.ExtractedLoop extracted = extractor.extract(loopStatement);
+                // Reuse cached ExtractedLoop from endVisitLoop to avoid duplicate extraction
+                JdtLoopExtractor.ExtractedLoop extracted = 
+                    (JdtLoopExtractor.ExtractedLoop) treeHolder.get("extracted_" + System.identityHashCode(loopStatement));
+                
+                // Fallback: if not cached (shouldn't happen), extract now
+                if (extracted == null) {
+                    extracted = extractor.extract(loopStatement);
+                }
                 
                 // Store extracted loop (model + body) for later rewrite
                 dataHolder.put(loopStatement, extracted);
@@ -136,7 +142,7 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
      * @param visited the EnhancedForStatement being visited
      * @param treeHolder the holder containing the LoopTree
      * @param nodesprocessed the set of already processed nodes
-     * @param holder the data holder for storing extracted loops
+     * @param holder the data holder (unused here but required by BiPredicate signature)
      * @return true to continue visiting children, false to skip
      */
     private boolean visitLoop(EnhancedForStatement visited, 
@@ -231,6 +237,11 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
         
         // Extract LoopModel and check if convertible using V2's ULR-based analysis
         JdtLoopExtractor.ExtractedLoop extracted = extractor.extract(visited);
+        
+        // Cache the extracted loop so that later phases (e.g., rewrite construction)
+        // can reuse it without re-running the extraction on the same AST node.
+        treeHolder.put("extracted_" + System.identityHashCode(visited), extracted);
+        
         if (!isConvertible(extracted.model)) {
             node.setDecision(ConversionDecision.NOT_CONVERTIBLE);
             return;
