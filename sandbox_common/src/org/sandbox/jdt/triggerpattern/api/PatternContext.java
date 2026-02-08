@@ -102,12 +102,15 @@ public class PatternContext {
      * <p>For example, if the pattern is {@code "if ($condition) { $body }"},
      * the bindings map will contain entries for {@code "$condition"} and {@code "$body"}.</p>
      * 
-     * @return map of placeholder names to matched AST nodes
+     * <p><b>Note:</b> Bindings can be either single {@link ASTNode} instances or 
+     * {@link java.util.List List&lt;ASTNode&gt;} for multi-placeholders (e.g., {@code $args$}).
+     * Use {@link #getBinding(String)} or {@link #getBindingAsExpression(String)} for type-safe
+     * access to single-node bindings.</p>
+     * 
+     * @return map of placeholder names to matched values (ASTNode or List&lt;ASTNode&gt;)
      */
-    public Map<String, ASTNode> getBindings() {
-        @SuppressWarnings("unchecked")
-        Map<String, ASTNode> bindings = (Map<String, ASTNode>) (Map<String, ?>) match.getBindings();
-        return bindings;
+    public Map<String, Object> getBindings() {
+        return match.getBindings();
     }
     
     /**
@@ -130,6 +133,24 @@ public class PatternContext {
     public Expression getBindingAsExpression(String placeholder) {
         ASTNode node = getBinding(placeholder);
         return node instanceof Expression ? (Expression) node : null;
+    }
+    
+    /**
+     * Returns the matched value as a list of ASTNodes for multi-placeholders.
+     * 
+     * <p>Multi-placeholders (e.g., {@code $args$}) can match multiple nodes and
+     * are stored as lists in the bindings map.</p>
+     * 
+     * @param placeholder the placeholder name (e.g., "$args$")
+     * @return the list of matched nodes, or null if not found or not a list
+     */
+    @SuppressWarnings("unchecked")
+    public java.util.List<ASTNode> getBindingAsList(String placeholder) {
+        Object binding = match.getBindings().get(placeholder);
+        if (binding instanceof java.util.List) {
+            return (java.util.List<ASTNode>) binding;
+        }
+        return null;
     }
     
     /**

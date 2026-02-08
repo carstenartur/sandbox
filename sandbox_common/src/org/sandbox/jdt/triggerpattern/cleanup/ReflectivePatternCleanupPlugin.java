@@ -223,7 +223,7 @@ public abstract class ReflectivePatternCleanupPlugin extends AbstractPatternClea
         }
         // Generate a default cleanup ID from the class name
         String className = this.getClass().getSimpleName();
-        return "cleanup.reflective." + className.toLowerCase(); //$NON-NLS-1$
+        return "cleanup.reflective." + className.toLowerCase(java.util.Locale.ROOT); //$NON-NLS-1$
     }
     
     /**

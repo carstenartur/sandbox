@@ -84,8 +84,9 @@ public @interface PatternHandler {
     /**
      * Optional priority for ordering multiple pattern handlers.
      * 
-     * <p>Handlers are invoked in ascending priority order. Handlers with
-     * the same priority are invoked in declaration order.</p>
+     * <p>Handlers are invoked in ascending priority order. The relative order
+     * of handlers with the same priority is unspecified and must not be
+     * relied upon.</p>
      * 
      * @return the handler priority (default: 0)
      */
