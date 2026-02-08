@@ -362,9 +362,12 @@ public class MYCleanUpConstants {
 	/**
 	 * Replace out-of-range shift amounts with the effective masked value.
 	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 * <p>
 	 *
 	 * @see CleanUpOptionsCore#TRUE
 	 * @see CleanUpOptionsCore#FALSE
+	 * @since 1.2.5
 	 */
 	public static final String SHIFT_OUT_OF_RANGE_CLEANUP= "cleanup.shift_out_of_range"; //$NON-NLS-1$
 }

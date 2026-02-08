@@ -111,15 +111,24 @@ public class ShiftOutOfRangeFixCore {
 			return;
 		}
 
-		String typeName = typeBinding.getName();
+		String qualifiedName = typeBinding.getQualifiedName();
 		long maskedValue;
-		if ("int".equals(typeName) || "byte".equals(typeName) //$NON-NLS-1$ //$NON-NLS-2$
-				|| "short".equals(typeName) || "char".equals(typeName)) { //$NON-NLS-1$ //$NON-NLS-2$
+		boolean isIntLike = "int".equals(qualifiedName) //$NON-NLS-1$
+				|| "byte".equals(qualifiedName) //$NON-NLS-1$
+				|| "short".equals(qualifiedName) //$NON-NLS-1$
+				|| "char".equals(qualifiedName) //$NON-NLS-1$
+				|| "java.lang.Integer".equals(qualifiedName) //$NON-NLS-1$
+				|| "java.lang.Byte".equals(qualifiedName) //$NON-NLS-1$
+				|| "java.lang.Short".equals(qualifiedName) //$NON-NLS-1$
+				|| "java.lang.Character".equals(qualifiedName); //$NON-NLS-1$
+		boolean isLongLike = "long".equals(qualifiedName) //$NON-NLS-1$
+				|| "java.lang.Long".equals(qualifiedName); //$NON-NLS-1$
+		if (isIntLike) {
 			if (shiftAmount >= 0 && shiftAmount <= INT_SHIFT_MASK) {
 				return; // in range
 			}
 			maskedValue = shiftAmount & INT_SHIFT_MASK;
-		} else if ("long".equals(typeName)) { //$NON-NLS-1$
+		} else if (isLongLike) {
 			if (shiftAmount >= 0 && shiftAmount <= LONG_SHIFT_MASK) {
 				return; // in range
 			}

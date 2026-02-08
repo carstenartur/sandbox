@@ -179,7 +179,7 @@ public class ShiftOutOfRangeCleanUpTest {
 
 	@ParameterizedTest
 	@EnumSource(ShiftOutOfRangePatterns.class)
-	public void testShiftOutOfRangeParametrized(ShiftOutOfRangePatterns test) throws CoreException {
+	public void testShiftOutOfRangeParameterized(ShiftOutOfRangePatterns test) throws CoreException {
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("E1.java", test.given, false, null);
 		context.enable(MYCleanUpConstants.SHIFT_OUT_OF_RANGE_CLEANUP);

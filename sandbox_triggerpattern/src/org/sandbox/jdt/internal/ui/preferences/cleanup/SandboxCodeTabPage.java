@@ -25,7 +25,8 @@ import org.sandbox.jdt.internal.ui.fix.ShiftOutOfRangeCleanUp;
 import org.sandbox.jdt.internal.ui.fix.StringSimplificationCleanUp;
 
 /**
- * Preference tab page for string simplification cleanup options.
+ * Preference tab page for TriggerPattern-based cleanup options
+ * (string simplification, shift out of range, etc.).
  * 
  * @since 1.2.2
  */
@@ -39,7 +40,7 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 			CleanUpOptions.TRUE
 	};
 	
-	public static final String ID = "org.sandbox.jdt.ui.cleanup.tabpage.string_simplification"; //$NON-NLS-1$
+	public static final String ID = "org.sandbox.jdt.ui.cleanup.tabpage.triggerpattern"; //$NON-NLS-1$
 	
 	@Override
 	protected AbstractCleanUp[] createPreviewCleanUps(Map<String, String> values) {
