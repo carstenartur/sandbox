@@ -76,14 +76,6 @@
       location="${jre.location-21}">
     <description>Define the JRE needed to compile and run the Java projects of ${scope.project.label}</description>
   </setupTask>
-  <!-- Memory settings for Eclipse IDE -->
-  <setupTask
-      xsi:type="setup:EclipseIniTask"
-      option="-Xmx"
-      value="${eclipse.heap.size}"
-      vm="true">
-    <description>Set the heap space needed to work with the projects of ${scope.project.label}</description>
-  </setupTask>
   <!-- Package Explorer initialization: show working sets as root -->
   <setupTask
       xsi:type="setup:ResourceCreationTask"
@@ -110,21 +102,6 @@
       id="git.clone.sandbox"
       remoteURI="https://github.com/carstenartur/sandbox.git"
       checkoutBranch="main">
-    <annotation
-        source="http://www.eclipse.org/oomph/setup/InducedChoices">
-      <detail
-          key="inherit">
-        <value>github.remoteURIs</value>
-      </detail>
-      <detail
-          key="label">
-        <value>${scope.project.label} Git repository</value>
-      </detail>
-      <detail
-          key="target">
-        <value>remoteURI</value>
-      </detail>
-    </annotation>
     <description>Clone the ${scope.project.label} repository from GitHub</description>
   </setupTask>
   <!-- Import all Eclipse projects from the cloned repository -->
