@@ -55,7 +55,7 @@ public class ThreadingFixCore {
 			Set<CompilationUnitRewriteOperation> operations) {
 
 		// Pattern 1: $thread.run() -> $thread.start()
-		// Calling Thread.run() directly executes in the current thread instead of starting a new one
+		// Calling Thread.run() directly executes on the current thread instead of starting a new one
 		Pattern threadRunPattern = new Pattern("$thread.run()", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> threadRunMatches = ENGINE.findMatches(compilationUnit, threadRunPattern);
 		for (Match match : threadRunMatches) {
