@@ -1,4 +1,4 @@
-# TriggerPattern String Simplification Plugin - TODO
+# TriggerPattern Plugin - TODO
 
 > **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#triggerpattern) | [Architecture](ARCHITECTURE.md)
 
@@ -17,6 +17,7 @@
 - ✅ UI preferences for cleanup configuration
 - ✅ Batch apply to entire project support
 - ✅ Fixed preference registration (v1.2.2) - Added missing `registerPreference()` call to properly count checkbox in cleanup UI
+- ✅ Double-checked locking detection (concurrency hint, inspired by NetBeans DoubleCheck)
 
 ### In Progress
 - [ ] Test module implementation (in progress)
