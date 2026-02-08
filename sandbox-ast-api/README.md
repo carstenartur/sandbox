@@ -255,6 +255,78 @@ combined.visitAll(nodes);
 - `visitAll(nodes)` - Visit multiple nodes
 - `andThen(visitor)` - Combine with another visitor
 
+### JDT Bridge (Phase 5 - COMPLETED)
+
+The `sandbox-ast-api-jdt` module provides a bridge between Eclipse JDT AST nodes
+and sandbox-ast-api fluent types. This enables sandbox plugins to use the fluent API
+without changing their existing JDT-based infrastructure.
+
+**Module:** `sandbox-ast-api-jdt` (standard Maven JAR with OSGi bundle)
+**Bundle:** `org.sandbox.ast.api.jdt`
+
+#### JDTConverter
+Static utility class for converting JDT nodes to fluent wrappers:
+
+**Expression conversion:**
+```java
+// Convert any JDT expression
+Expression jdtExpr = ...;
+Optional<ASTExpr> expr = JDTConverter.convertExpression(jdtExpr);
+
+// Convert specific expression types
+MethodInvocation mi = ...;
+MethodInvocationExpr fluentMi = JDTConverter.convert(mi);
+
+SimpleName sn = ...;
+SimpleNameExpr fluentSn = JDTConverter.convert(sn);
+```
+
+**Statement conversion:**
+```java
+EnhancedForStatement efs = ...;
+EnhancedForStmt fluentEfs = JDTConverter.convert(efs);
+
+IfStatement is = ...;
+IfStmt fluentIs = JDTConverter.convert(is);
+```
+
+**Binding conversion:**
+```java
+ITypeBinding typeBinding = ...;
+Optional<TypeInfo> type = JDTConverter.convertTypeBinding(typeBinding);
+
+IMethodBinding methodBinding = ...;
+Optional<MethodInfo> method = JDTConverter.convertMethodBinding(methodBinding);
+
+IVariableBinding varBinding = ...;
+Optional<VariableInfo> var = JDTConverter.convertVariableBinding(varBinding);
+```
+
+**Usage in a sandbox plugin cleanup:**
+```java
+// In a JDT ASTVisitor:
+@Override
+public boolean visit(MethodInvocation node) {
+    MethodInvocationExpr mi = JDTConverter.convert(node);
+    if (mi.isMethodCall("add", 1) && mi.receiverHasType("java.util.List")) {
+        // Apply transformation using fluent API
+    }
+    return true;
+}
+```
+
+**Supported conversions:**
+- **Expressions**: MethodInvocation, SimpleName, FieldAccess, CastExpression, InfixExpression
+- **Statements**: EnhancedForStatement, WhileStatement, ForStatement, IfStatement
+- **Bindings**: ITypeBinding → TypeInfo, IMethodBinding → MethodInfo, IVariableBinding → VariableInfo
+- **Operators**: InfixExpression.Operator → InfixOperator
+
+**Plugin consumption (MANIFEST.MF):**
+```
+Require-Bundle: org.sandbox.ast.api,
+                org.sandbox.ast.api.jdt
+```
+
 ## Design Patterns
 
 ### Immutability

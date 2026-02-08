@@ -67,12 +67,13 @@
 - [x] Add visitor composition support
 - [x] Add visitor tests and examples
 
-## Phase 5: JDT Bridge Module (PLANNED)
-- [ ] Create sandbox-ast-api-jdt module
-- [ ] Implement converters from JDT AST to sandbox-ast-api
-- [ ] Implement binding resolution using JDT
-- [ ] Add integration tests with JDT
-- [ ] Document migration path from JDT to fluent API
+## Phase 5: JDT Bridge Module (COMPLETED)
+- [x] Create sandbox-ast-api-jdt module
+- [x] Implement converters from JDT AST to sandbox-ast-api
+- [x] Implement binding resolution using JDT
+- [x] Add unit tests with synthetic JDT nodes and stub bindings
+- [ ] Add integration tests with JDT (binding-resolving via ASTParser + classpath)
+- [x] Document migration path from JDT to fluent API
 
 ## Known Issues
 - None currently
