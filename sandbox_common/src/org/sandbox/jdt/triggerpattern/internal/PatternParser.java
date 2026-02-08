@@ -317,7 +317,7 @@ public class PatternParser {
 		
 		CompilationUnit cu = (CompilationUnit) parser.createAST(null);
 		
-		// Navigate to the constructor: CompilationUnit -> TypeDeclaration -> MethodDeclaration -> Block -> ExpressionStatement -> Assignment -> right-hand side
+		// Navigate to the constructor: CompilationUnit -> TypeDeclaration -> MethodDeclaration -> Block -> VariableDeclarationStatement -> VariableDeclarationFragment -> initializer (ClassInstanceCreation)
 		if (cu.types().isEmpty()) {
 			return null;
 		}
