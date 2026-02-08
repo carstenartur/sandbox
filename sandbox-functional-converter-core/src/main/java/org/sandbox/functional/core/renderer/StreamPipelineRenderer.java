@@ -15,6 +15,7 @@ package org.sandbox.functional.core.renderer;
 
 import java.util.List;
 import org.sandbox.functional.core.model.*;
+import org.sandbox.functional.core.operation.*;
 import org.sandbox.functional.core.terminal.*;
 
 /**
@@ -42,9 +43,35 @@ public interface StreamPipelineRenderer<T> {
     T renderFilter(T pipeline, String expression, String variableName);
     
     /**
+     * Renders a filter operation with full Operation context (for comment preservation).
+     * Default implementation delegates to the simple renderFilter method.
+     * 
+     * @param pipeline the current pipeline
+     * @param filterOp the filter operation (may contain comments)
+     * @param variableName the variable name for the lambda
+     * @return the pipeline with filter appended
+     */
+    default T renderFilterOp(T pipeline, FilterOp filterOp, String variableName) {
+        return renderFilter(pipeline, filterOp.expression(), variableName);
+    }
+    
+    /**
      * Renders a map operation.
      */
     T renderMap(T pipeline, String expression, String variableName, String targetType);
+    
+    /**
+     * Renders a map operation with full Operation context (for comment preservation).
+     * Default implementation delegates to the simple renderMap method.
+     * 
+     * @param pipeline the current pipeline
+     * @param mapOp the map operation (may contain comments)
+     * @param variableName the variable name for the lambda
+     * @return the pipeline with map appended
+     */
+    default T renderMapOp(T pipeline, MapOp mapOp, String variableName) {
+        return renderMap(pipeline, mapOp.expression(), variableName, mapOp.targetType());
+    }
     
     /**
      * Renders a flatMap operation.
