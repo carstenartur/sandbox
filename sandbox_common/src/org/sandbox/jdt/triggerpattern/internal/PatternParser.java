@@ -304,7 +304,7 @@ public class PatternParser {
 	 * 
 	 * @param constructorSnippet the constructor snippet (e.g., {@code "new String($bytes, $enc)"})
 	 * @return the parsed ClassInstanceCreation node, or {@code null} if parsing fails
-	 * @since 1.3.1
+	 * @since 1.2.5
 	 */
 	private ClassInstanceCreation parseConstructor(String constructorSnippet) {
 		// Wrap the constructor expression in a minimal method context
