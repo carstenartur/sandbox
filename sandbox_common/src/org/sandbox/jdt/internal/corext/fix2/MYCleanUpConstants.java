@@ -358,4 +358,13 @@ public class MYCleanUpConstants {
 	 * @see CleanUpOptionsCore#FALSE
 	 */
 	public static final String INT_TO_ENUM_CLEANUP= "cleanup.int_to_enum"; //$NON-NLS-1$
+
+	/**
+	 * Replace out-of-range shift amounts with the effective masked value.
+	 * <p>
+	 *
+	 * @see CleanUpOptionsCore#TRUE
+	 * @see CleanUpOptionsCore#FALSE
+	 */
+	public static final String SHIFT_OUT_OF_RANGE_CLEANUP= "cleanup.shift_out_of_range"; //$NON-NLS-1$
 }
