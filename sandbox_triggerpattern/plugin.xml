@@ -6,6 +6,9 @@
       <hintProvider
             class="org.sandbox.jdt.triggerpattern.string.StringSimplificationHintProvider">
       </hintProvider>
+      <hintProvider
+            class="org.sandbox.jdt.triggerpattern.concurrency.DoubleCheckLockingHintProvider">
+      </hintProvider>
    </extension>
    
    <extension point="org.eclipse.jdt.ui.cleanUps">
