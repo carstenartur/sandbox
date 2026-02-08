@@ -22,8 +22,6 @@ import org.sandbox.jdt.triggerpattern.api.Match;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
 import org.sandbox.jdt.triggerpattern.api.RewriteRule;
 import org.sandbox.jdt.triggerpattern.cleanup.AbstractPatternCleanupPlugin;
-import org.sandbox.jdt.triggerpattern.cleanup.MatchHolder;
-
 /**
  * Declarative cleanup plugin that transforms:
  * <pre>
