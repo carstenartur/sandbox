@@ -159,11 +159,10 @@ public class DoubleCheckLockingHintProvider {
 		if (statement instanceof SynchronizedStatement syncStatement) {
 			return syncStatement;
 		}
-		if (statement instanceof Block block) {
-			if (block.statements().size() == 1
-					&& block.statements().get(0) instanceof SynchronizedStatement syncStatement) {
-				return syncStatement;
-			}
+		if (statement instanceof Block block
+				&& block.statements().size() == 1
+				&& block.statements().get(0) instanceof SynchronizedStatement syncStatement) {
+			return syncStatement;
 		}
 		return null;
 	}
