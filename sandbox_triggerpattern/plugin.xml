@@ -26,5 +26,8 @@
       <cleanUp 
             class="org.sandbox.jdt.internal.ui.fix.StringSimplificationCleanUp" 
             id="org.eclipse.jdt.ui.cleanup.stringsimplification" />
+      <cleanUp 
+            class="org.sandbox.jdt.internal.ui.fix.ThreadingCleanUp" 
+            id="org.eclipse.jdt.ui.cleanup.threading" />
    </extension>
 </plugin>

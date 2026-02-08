@@ -20,6 +20,8 @@ public class CleanUpMessages extends NLS {
 
 	public static String StringSimplificationTabPage_GroupName;
 	public static String StringSimplificationTabPage_CheckboxName_StringSimplification;
+	public static String ThreadingTabPage_GroupName;
+	public static String ThreadingTabPage_CheckboxName_Threading;
 
 	static {
 		// initialize resource bundle
