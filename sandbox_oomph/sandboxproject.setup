@@ -107,7 +107,7 @@
   <!-- Create instructions for building core Maven modules -->
   <setupTask
       xsi:type="setup:ResourceCreationTask"
-      excludedTriggers="STARTUP MANUAL"
+      excludedTriggers="STARTUP"
       targetURL="${git.clone.sandbox.location|uri}/BUILD_CORE_MODULES_FIRST.txt"
       encoding="UTF-8">
     <description>Create instructions for building core Maven modules that must be built before importing projects</description>
