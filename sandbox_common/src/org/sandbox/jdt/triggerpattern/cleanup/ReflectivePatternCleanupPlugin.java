@@ -192,81 +192,65 @@ public abstract class ReflectivePatternCleanupPlugin extends AbstractPatternClea
 		return allMatches;
 	}
 	
-	// Internal holder that stores the match for later retrieval
-	private static class MatchHolder {
-		final Match match;
-		
-		MatchHolder(Match match) {
-			this.match = match;
-		}
-	}
-	
 	/**
-	 * Creates a holder that wraps the match.
+	 * Creates a minimal holder for a match.
 	 * 
-	 * <p>The holder is a simple wrapper that stores the match until processRewrite is called.</p>
+	 * <p>We can't create a full PatternContext here because ASTRewrite, AST, etc. aren't
+	 * available yet. We store the match for later retrieval in processRewrite.</p>
 	 * 
 	 * @param match the pattern match
-	 * @return a holder wrapping the match
+	 * @return null (actual context created in processRewrite)
 	 */
 	@Override
 	protected PatternContext createHolder(Match match) {
-		// We can't create a full PatternContext here because we don't have ASTRewrite etc yet.
-		// Instead, we return a special marker that will be recognized in processRewrite.
-		// Actually, PatternContext is our holder type, but we can't create it yet.
-		// This is a design issue with AbstractPatternCleanupPlugin - it expects holder
-		// to be created before rewrite context is available.
-		
-		// Workaround: Store the match in a map keyed by the matched node
-		// and retrieve it in processRewrite
-		holderToMatch.put(System.identityHashCode(match), match);
-		return null; // We'll create the actual context in processRewrite
+		// Store match for later processing
+		// We return null because PatternContext requires ASTRewrite which isn't available yet
+		pendingMatches.add(match);
+		return null;
 	}
 	
-	// Map to track matches (using identity hash code as key since we can't use the holder itself)
-	private final Map<Integer, Match> holderToMatch = new HashMap<>();
+	// Store matches that need processing
+	private final List<Match> pendingMatches = new ArrayList<>();
 	
 	/**
-	 * Processes a rewrite by invoking the appropriate handler method.
+	 * Processes rewrites by invoking appropriate handler methods for all pending matches.
 	 * 
-	 * <p>This method creates a {@link PatternContext} and reflectively invokes
-	 * the handler method registered for the pattern.</p>
+	 * <p>This method is called by the cleanup framework with the full AST rewriting context.
+	 * It creates a {@link PatternContext} for each pending match and invokes the registered handler.</p>
 	 * 
 	 * @param group the text edit group
 	 * @param rewriter the AST rewriter
 	 * @param ast the AST instance
 	 * @param importRewriter the import rewriter
-	 * @param holder the pattern context (will be null from createHolder)
+	 * @param holder the pattern context (not used, will be null)
 	 */
 	@Override
 	protected void processRewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
 			ImportRewrite importRewriter, PatternContext holder) {
 		
-		// Since holder is null from createHolder, we need to find the match another way.
-		// This is the fundamental design challenge - processRewrite is called per holder,
-		// but we don't know which match it corresponds to.
-		
-		// For now, we'll process all matches that haven't been processed yet.
-		// This is not ideal but works for the initial implementation.
-		for (Map.Entry<Match, Method> entry : matchToHandler.entrySet()) {
-			Match match = entry.getKey();
-			Method method = entry.getValue();
+		// Process all pending matches
+		for (Match match : pendingMatches) {
+			// Look up the handler for this match
+			Method handler = matchToHandler.get(match);
+			if (handler == null) {
+				continue; // Skip if no handler found
+			}
 			
-			// Create the full context now that we have all the pieces
+			// Create the context with full rewriting capabilities
 			PatternContext context = new PatternContext(match, rewriter, ast, importRewriter, group);
 			
 			// Invoke the handler
 			try {
-				method.invoke(this, context);
+				handler.invoke(this, context);
 			} catch (Exception e) {
 				throw new RuntimeException(
-					"Failed to invoke pattern handler " + method.getName() +  //$NON-NLS-1$
+					"Failed to invoke pattern handler " + handler.getName() +  //$NON-NLS-1$
 					" for match at offset " + match.getOffset(), e); //$NON-NLS-1$
 			}
 		}
 		
-		// Clear after processing
-		holderToMatch.clear();
+		// Clear pending matches after processing
+		pendingMatches.clear();
 	}
 	
 	/**
