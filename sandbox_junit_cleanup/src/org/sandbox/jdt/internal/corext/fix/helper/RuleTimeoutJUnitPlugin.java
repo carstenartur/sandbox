@@ -121,7 +121,6 @@ public class RuleTimeoutJUnitPlugin extends TriggerPatternCleanupPlugin {
 			MethodInvocation mi = (MethodInvocation) initializer;
 			String methodName = mi.getName().getIdentifier();
 			
-			@SuppressWarnings("unchecked")
 			List<Expression> args = mi.arguments();
 			if (args.size() == 1 && args.get(0) instanceof NumberLiteral) {
 				long value = parseLong((NumberLiteral) args.get(0));
@@ -133,7 +132,6 @@ public class RuleTimeoutJUnitPlugin extends TriggerPatternCleanupPlugin {
 			}
 		} else if (initializer instanceof ClassInstanceCreation) {
 			ClassInstanceCreation cic = (ClassInstanceCreation) initializer;
-			@SuppressWarnings("unchecked")
 			List<Expression> args = cic.arguments();
 			
 			if (args.size() == 1 && args.get(0) instanceof NumberLiteral) {

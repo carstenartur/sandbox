@@ -43,7 +43,7 @@
 				<version>${tycho-version}</version>
 				<executions>
 					<execution>
-						<?m2e execute?>
+						<?m2e ignore?>
 						<phase>validate</phase>
 						<goals>
 							<goal>validate-target-platform</goal>

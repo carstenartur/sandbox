@@ -115,7 +115,6 @@ public class IgnoreJUnitPlugin extends TriggerPatternCleanupPlugin {
 			// Handle NormalAnnotation (e.g., @Ignore(value="reason"))
 			// Convert to SingleMemberAnnotation for @Disabled
 			org.eclipse.jdt.core.dom.NormalAnnotation oldAnnotation = (org.eclipse.jdt.core.dom.NormalAnnotation) annotation;
-			@SuppressWarnings("unchecked")
 			java.util.List<org.eclipse.jdt.core.dom.MemberValuePair> values = oldAnnotation.values();
 			
 			// Find the "value" member specifically

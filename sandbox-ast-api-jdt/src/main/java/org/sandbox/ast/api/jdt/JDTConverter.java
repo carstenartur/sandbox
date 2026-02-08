@@ -120,7 +120,6 @@ public final class JDTConverter {
 			throw new IllegalArgumentException("MethodInvocation must not be null");
 		}
 		Optional<ASTExpr> receiver = convertExpression(node.getExpression());
-		@SuppressWarnings("unchecked")
 		List<Expression> jdtArgs = node.arguments();
 		List<ASTExpr> arguments = jdtArgs.stream()
 				.map(JDTConverter::convertExpressionNonNull)
@@ -211,7 +210,6 @@ public final class JDTConverter {
 		ASTExpr right = convertExpressionNonNull(node.getRightOperand());
 		InfixOperator operator = convertOperator(node.getOperator());
 
-		@SuppressWarnings("unchecked")
 		List<Expression> jdtExtended = node.extendedOperands();
 		List<ASTExpr> extended = jdtExtended.stream()
 				.map(JDTConverter::convertExpressionNonNull)
@@ -279,13 +277,11 @@ public final class JDTConverter {
 		if (node == null) {
 			throw new IllegalArgumentException("ForStatement must not be null");
 		}
-		@SuppressWarnings("unchecked")
 		List<Expression> jdtInits = node.initializers();
 		List<ASTExpr> initializers = jdtInits.stream()
 				.map(JDTConverter::convertExpressionNonNull)
 				.toList();
 		Optional<ASTExpr> condition = convertExpression(node.getExpression());
-		@SuppressWarnings("unchecked")
 		List<Expression> jdtUpdaters = node.updaters();
 		List<ASTExpr> updaters = jdtUpdaters.stream()
 				.map(JDTConverter::convertExpressionNonNull)

@@ -123,7 +123,6 @@ public class InlineCodeSequenceFinder {
 	/**
 	 * Extract statements from a block (helper method)
 	 */
-	@SuppressWarnings("unchecked")
 	private static List<Statement> getStatements(Block block) {
 		return block.statements();
 	}

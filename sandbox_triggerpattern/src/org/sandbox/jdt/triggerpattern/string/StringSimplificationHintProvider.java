@@ -82,7 +82,6 @@ public class StringSimplificationHintProvider {
 
 		// Create the replacement: String.valueOf(valueExpression)
 		AST ast = ctx.getASTRewrite().getAST();
-		ImportRewrite importRewrite = ctx.getImportRewrite();
 		
 		MethodInvocation methodInvocation = ast.newMethodInvocation();
 		methodInvocation.setExpression(ast.newName("String")); //$NON-NLS-1$

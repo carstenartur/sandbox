@@ -17,6 +17,7 @@ package org.sandbox.jdt.ui.tests.quickfix.mock;
  * Mock class for testing ClassInstanceCreation visitor patterns.
  * Mimics the deprecated SubProgressMonitor pattern without JFace dependencies.
  */
+@SuppressWarnings("unused") // Fields are intentionally unused - this is a mock object mimicking SubProgressMonitor's constructor signature
 public class MockSubProgressMonitor implements MockProgressMonitor {
 	
 	private final MockProgressMonitor monitor;

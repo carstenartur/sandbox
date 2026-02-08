@@ -15,6 +15,8 @@
 package org.sandbox.jdt.ui.helper.views;
 
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 
 import org.eclipse.jface.resource.ImageDescriptor;
@@ -45,8 +47,8 @@ public class JHPluginImages {
 
 	private static ImageDescriptor create(String name) {
 		try {
-			return ImageDescriptor.createFromURL(new URL(fgIconBaseURL, name));
-		} catch (MalformedURLException e) {
+			return ImageDescriptor.createFromURL(fgIconBaseURL.toURI().resolve(name).toURL());
+		} catch (MalformedURLException | URISyntaxException e) {
 			return ImageDescriptor.getMissingImageDescriptor();
 		}
 	}
@@ -57,7 +59,7 @@ public class JHPluginImages {
 	 */
 	private static ImageDescriptor createFilterConflictsIcon() {
 		try {
-			URL iconURL = new URL(fgIconBaseURL, FILTER_CONFLICTS);
+			URL iconURL = fgIconBaseURL.toURI().resolve(FILTER_CONFLICTS).toURL();
 			// Check if file exists by trying to open it
 			iconURL.openStream().close();
 			return ImageDescriptor.createFromURL(iconURL);

@@ -46,7 +46,6 @@ public class NodeMatcherTest {
 		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
 		parser.setSource(source.toCharArray());
 		parser.setKind(ASTParser.K_COMPILATION_UNIT);
-		@SuppressWarnings("unchecked")
 		java.util.Map<String, String> options = JavaCore.getOptions();
 		JavaCore.setComplianceOptions(JavaCore.VERSION_21, options);
 		parser.setCompilerOptions(options);

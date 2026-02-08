@@ -225,6 +225,13 @@ public class HintRegistry {
 		}
 		
 		/**
+		 * @return the provider class that contains the hint method
+		 */
+		public Class<?> getProviderClass() {
+			return providerClass;
+		}
+		
+		/**
 		 * Invokes the hint method with the given context.
 		 * 
 		 * @param context the hint context

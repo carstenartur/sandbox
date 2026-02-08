@@ -132,7 +132,6 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 			boolean preservePluginId) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
-		ImportRewrite importRewrite= cuRewrite.getImportRewrite();
 		ImportRemover remover= cuRewrite.getImportRemover();
 
 		/**

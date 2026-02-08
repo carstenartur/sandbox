@@ -163,7 +163,6 @@ public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<I
 			// Typically, parameterized tests have only one constructor that accepts the test parameters.
 			if (method.isConstructor()) {
 				constructor = method;
-				@SuppressWarnings("unchecked")
 				List<SingleVariableDeclaration> params = method.parameters();
 				constructorParams.addAll(params);
 				

@@ -168,11 +168,10 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 				}
 				// If it's a list binding, that's an error - shouldn't happen for SimpleName
 				return false;
-			} else {
-				// First occurrence - bind the placeholder to this node
-				bindings.put(placeholderName, otherNode);
-				return true;
 			}
+			// First occurrence - bind the placeholder to this node
+			bindings.put(placeholderName, otherNode);
+			return true;
 		}
 		
 		// Not a placeholder - use default matching
@@ -483,11 +482,10 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 							return true;
 						}
 						return false;
-					} else {
-						// First occurrence - bind to list
-						bindings.put(placeholderName, new ArrayList<>(otherArgs));
-						return true;
 					}
+					// First occurrence - bind to list
+					bindings.put(placeholderName, new ArrayList<>(otherArgs));
+					return true;
 				}
 			}
 		}

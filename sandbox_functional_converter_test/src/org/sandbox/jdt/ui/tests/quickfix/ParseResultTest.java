@@ -99,7 +99,7 @@ public class ParseResultTest {
 			LoopBodyParser.ParseResult result1 = LoopBodyParser.ParseResult.abort();
 			LoopBodyParser.ParseResult result2 = LoopBodyParser.ParseResult.abort();
 			
-			assertEquals(result1.shouldAbort(), result2.shouldAbort());
+			assertTrue(result1.shouldAbort() == result2.shouldAbort());
 			assertEquals(result1.getCurrentVarName(), result2.getCurrentVarName());
 			assertEquals(result1.getSkipToIndex(), result2.getSkipToIndex());
 		}

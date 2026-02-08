@@ -117,7 +117,7 @@ public class AnnotationVisitorBuilder extends HelperVisitorBuilder<Annotation> {
             if (!shouldContinue[0]) {
                 return false;
             }
-            boolean result = processor.test((ASTNode) node, h);
+            boolean result = processor.test(node, h);
             if (!result) {
                 shouldContinue[0] = false;
             }
@@ -132,7 +132,7 @@ public class AnnotationVisitorBuilder extends HelperVisitorBuilder<Annotation> {
             if (!shouldContinue[0]) {
                 return false;
             }
-            boolean result = processor.test((ASTNode) node, h);
+            boolean result = processor.test(node, h);
             if (!result) {
                 shouldContinue[0] = false;
             }
@@ -147,7 +147,7 @@ public class AnnotationVisitorBuilder extends HelperVisitorBuilder<Annotation> {
             if (!shouldContinue[0]) {
                 return false;
             }
-            boolean result = processor.test((ASTNode) node, h);
+            boolean result = processor.test(node, h);
             if (!result) {
                 shouldContinue[0] = false;
             }
@@ -162,7 +162,7 @@ public class AnnotationVisitorBuilder extends HelperVisitorBuilder<Annotation> {
             if (!shouldContinue[0]) {
                 return false;
             }
-            boolean result = processor.test((ASTNode) node, h);
+            boolean result = processor.test(node, h);
             if (!result) {
                 shouldContinue[0] = false;
             }
