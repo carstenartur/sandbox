@@ -8,29 +8,28 @@ The usage view plugin provides a table view for detecting inconsistent naming pa
 
 ## Purpose
 
-- Detect inconsistent naming patterns across codebase
-- Display naming violations in table view
-- Help maintain consistent naming conventions
+- Detect naming conflicts where the same variable name is used with different types
+- Display all variable bindings in a sortable table view
+- Help identify potentially confusing naming patterns
 - Support code quality and maintainability
 - **Automatically show view at startup** based on user preference
 - **Auto-update view** when editor selection changes
 
 ## Use Cases
 
-### Detecting Naming Inconsistencies
+### Detecting Naming Conflicts
 
-The plugin can identify patterns such as:
-- Variables named similarly but inconsistently (e.g., `userId` vs `userID`)
-- Method names not following conventions
-- Class names with inconsistent patterns
-- Field naming violations
+The plugin identifies specific patterns where naming conflicts occur:
+- Variables with the same name but different types (e.g., `String userId` vs `int userId`)
+- Helps catch potential confusion where similar names refer to different types
+- Aids in refactoring by visualizing all variable bindings
 
 ### Table View Features
 
-- Display naming issues in sortable table
-- Group by violation type
+- Display all variable bindings in sortable table
+- Filter to show only naming conflicts
 - Navigate to code location from table
-- Filter and search capabilities
+- Automatic view updates when navigating between files
 - **Automatic view updates** when navigating between files
 - **Preference-based auto-show** at Eclipse startup
 
@@ -83,6 +82,53 @@ The plugin can identify patterns such as:
 - Integrated into Eclipse preferences under Java category
 - User-friendly configuration interface
 
+### NamingConflictFilter
+
+**Location**: `org.sandbox.jdt.ui.helper.views.NamingConflictFilter`
+
+**Purpose**: ViewFilter that identifies variables with naming conflicts
+
+**Key Features**:
+- Analyzes variable bindings to find same name with different types
+- Implements ViewerFilter interface for table filtering
+- Dynamically analyzes elements when filter is enabled
+- Provides focused view of only conflicting names
+
+### VariableBindingVisitor
+
+**Location**: `org.sandbox.jdt.ui.helper.views.VariableBindingVisitor`
+
+**Purpose**: AST visitor that collects all variable bindings using sandbox_common's AstProcessorBuilder
+
+**Key Features**:
+- Uses AstProcessorBuilder API for clean AST traversal
+- Collects IVariableBinding from SimpleName nodes
+- Processes entire AST trees to find all variable declarations
+- Leverages sandbox_common utilities for maintainable code
+
+### VariableNameSuggester
+
+**Location**: `org.sandbox.jdt.ui.helper.views.VariableNameSuggester`
+
+**Purpose**: Utility for generating type-aware variable name suggestions
+
+**Key Features**:
+- Suggests names based on variable type (e.g., `userId` → `stringUserId`)
+- Helps developers rename variables to avoid conflicts
+- Provides type-based naming conventions
+
+### JHViewContentProvider
+
+**Location**: `org.sandbox.jdt.ui.helper.views.JHViewContentProvider`
+
+**Purpose**: Content provider that extracts variable bindings from Java elements
+
+**Key Features**:
+- Processes ICompilationUnit, IJavaProject, IPackageFragment, IPackageFragmentRoot
+- Uses AST parsing with full binding resolution
+- Parallel processing for large projects
+- Proper error logging using Eclipse ILog
+
 ### NamingAnalyzer
 
 **Purpose**: Analyzes code to detect naming patterns
@@ -96,12 +142,20 @@ The plugin can identify patterns such as:
 ## Package Structure
 
 - `org.sandbox.jdt.ui.helper.views` - View components and plugin activator
+  - `JavaHelperView` - Main view implementation
+  - `UsageViewPlugin` - Plugin activator with VIEW_ID constant
+  - `UsageViewStartup` - IStartup implementation
+  - `NamingConflictFilter` - ViewerFilter for conflict detection
+  - `VariableBindingVisitor` - AST visitor using AstProcessorBuilder
+  - `VariableNameSuggester` - Name suggestion utility
+  - `JHViewContentProvider` - Content provider with proper logging
 - `org.sandbox.jdt.ui.helper.views.preferences` - Preference page and constants
 - `org.sandbox.jdt.ui.helper.views.colum` - Table column implementations
 
 **Eclipse JDT Correspondence**:
 - Could integrate with Eclipse's code analysis framework
 - Similar to Eclipse's marker views for displaying issues
+- Uses standard Eclipse ViewPart and preference frameworks
 
 ## Design Patterns
 
@@ -252,41 +306,30 @@ Uses Eclipse's preference framework:
 
 ### Naming Pattern Detection Algorithm
 
-**Decision**: Use heuristic-based pattern matching
+**Decision**: Use AST-based binding analysis to detect naming conflicts
 
-**Patterns Detected**:
+**Current Implementation**:
 ```
-1. Inconsistent Case:
-   - userId vs userID
-   - XML vs xml
-   - HTTP vs Http
-
-2. Abbreviation Inconsistencies:
-   - id vs identifier
-   - num vs number
-   - temp vs temporary
-
-3. Prefix/Suffix Mismatches:
-   - m_field vs field
-   - _field vs field
-   - fieldName vs name_field
+1. Collect all IVariableBindings from AST using AstProcessorBuilder
+2. Group bindings by variable name
+3. Within each group, check if ITypeBinding differs
+4. Flag as conflict if same name has different types
 ```
 
-**Algorithm**:
+**Example Conflict**:
+```java
+String userId = "123";    // Type: String
+int userId = 456;         // Type: int - CONFLICT DETECTED
 ```
-1. Collect all identifiers (variables, methods, fields)
-2. Group by semantic similarity (e.g., edit distance or other heuristics)
-3. Within each group, check casing consistency
-4. Flag items that deviate from group pattern
-5. Rank violations by severity
-```
-
-**Note**: The algorithm description above is conceptual. The actual implementation may use different similarity metrics and should be verified in the source code.
 
 **Rationale**:
-- Catches common naming mistakes
-- Helps enforce team coding standards
-- Identifies potential confusion sources
+- Precise detection using Eclipse JDT's type system
+- Leverages binding resolution for accurate type information
+- Focuses on real conflicts rather than style violations
+
+**Future Enhancement**: The architecture supports extending this to detect additional patterns like case inconsistencies (userId vs userID) and abbreviation variations. See TODO.md for planned enhancements.
+
+**Note**: The conceptual algorithm described in previous versions (edit distance, semantic similarity) represents future planned functionality, not current implementation.
 
 ### Why Table View Instead of Markers?
 
@@ -321,7 +364,9 @@ This architecture document relates to:
 
 ### Related Modules
 
-- **sandbox_common** - Could share naming analysis utilities
+- **sandbox_common** - Provides AstProcessorBuilder for AST traversal
+  - `AstProcessorBuilder` - Used by VariableBindingVisitor
+  - `ReferenceHolder` - Thread-safe map for AST node references
 - **sandbox_extra_search** - Similar view-based plugin architecture
 - **Eclipse JDT UI** - Editor integration APIs
 - **Eclipse Workbench** - ViewPart and IStartup frameworks
@@ -370,19 +415,20 @@ Testing focuses on naming analysis accuracy, view functionality, and preference 
 
 ## Known Limitations
 
-1. **Pattern-Based**: Uses pattern matching which may have false positives
-2. **Manual Configuration**: Requires manual configuration of naming rules
-3. **Limited Scope**: Only detects specific naming patterns
-4. **No Auto-Fix**: Identifies issues but doesn't provide automatic fixes
+1. **Pattern-Based**: Currently only detects "same name, different type" conflicts
+2. **No Configurable Rules**: Does not support custom naming pattern configuration
+3. **Limited Scope**: Does not detect case variations (userId vs userID) or other subtle inconsistencies
+4. **No Auto-Fix**: Identifies issues but doesn't provide automatic refactoring (quick fixes planned)
 
 ## Future Enhancements
 
-- Configurable naming conventions
-- Quick fixes for common violations
-- Integration with refactoring tools
-- Batch renaming capabilities
-- Export reports of naming issues
-- IDE-wide naming consistency checks
+- **Configurable naming conventions** - Support custom pattern definitions
+- **Quick fixes** - Integrate with refactoring tools for automatic renaming
+- **Enhanced pattern detection** - Detect case variations, abbreviations, and other inconsistencies
+- **Integration with refactoring tools** - Use RenameSupport for safe variable renaming
+- **Batch renaming capabilities** - Apply fixes to multiple variables at once
+- **Export reports** - CSV/Excel export for naming issue reports
+- **IDE-wide naming consistency checks** - Analyze entire workspace
 - **Enhanced auto-update triggers** (e.g., on file save, on build)
 - **Multiple view instances** with different filters
 

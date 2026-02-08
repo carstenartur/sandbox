@@ -110,7 +110,7 @@ public abstract class AbstractMethodMigrationPlugin extends AbstractTool<Referen
 	@Override
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
 			ImportRewrite importRewriter, JunitHolder junitHolder) {
-		ASTNode node = junitHolder.minv;
+		ASTNode node = junitHolder.getMinv();
 		
 		if (node instanceof MethodInvocation) {
 			processMethodInvocation(group, rewriter, ast, importRewriter, (MethodInvocation) node);

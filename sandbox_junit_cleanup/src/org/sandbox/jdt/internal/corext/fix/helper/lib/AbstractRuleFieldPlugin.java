@@ -95,7 +95,7 @@ public abstract class AbstractRuleFieldPlugin extends AbstractTool<ReferenceHold
 		ITypeBinding binding = fragment.resolveBinding().getType();
 		if (binding != null && getRuleType().equals(binding.getQualifiedName())) {
 			JunitHolder mh = new JunitHolder();
-			mh.minv = node;
+			mh.setMinv(node);
 			dataHolder.put(dataHolder.size(), mh);
 			operations.add(fixcore.rewrite(dataHolder));
 		}

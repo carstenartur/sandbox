@@ -4,7 +4,7 @@
 
 ## Overview
 
-The JUnit cleanup plugin provides automated migration from JUnit 3/4 to JUnit 5 (Jupiter). This document describes the architecture after the refactoring that extracted helper classes from the monolithic `AbstractTool` class, and the introduction of the declarative `@RewriteRule` annotation framework.
+The JUnit cleanup plugin provides automated migration from JUnit 3/4 to JUnit 5 (Jupiter). This document describes the architecture after the refactoring that extracted helper classes from the monolithic `AbstractTool` class, the introduction of the declarative `@RewriteRule` annotation framework, and the extraction of generic TriggerPattern infrastructure to `sandbox_common`.
 
 ## Design Goals
 
@@ -14,6 +14,7 @@ The JUnit cleanup plugin provides automated migration from JUnit 3/4 to JUnit 5 
 4. **Testability**: Smaller classes are easier to test in isolation
 5. **Backward Compatibility**: Public API remains unchanged
 6. **Declarative Transformations**: Simple annotation migrations use declarative patterns to eliminate boilerplate
+7. **Generic Infrastructure**: TriggerPattern framework extracted to `sandbox_common` for reuse by other cleanup modules
 
 ## TriggerPattern Framework with @RewriteRule
 
@@ -21,10 +22,33 @@ The JUnit cleanup plugin provides automated migration from JUnit 3/4 to JUnit 5 
 
 The TriggerPattern framework provides a declarative approach to JUnit cleanup plugins, allowing developers to specify transformations using annotations instead of implementing complex AST manipulation code manually.
 
+**Architecture Change (v1.3.0)**: The generic TriggerPattern infrastructure has been extracted from JUnit-specific code to `sandbox_common` under `org.sandbox.jdt.triggerpattern.cleanup`. This enables other cleanup modules to leverage the same pattern-based approach.
+
 **Key Components:**
 - `@CleanupPattern` - Defines what pattern to match (e.g., "@Before", "@Ignore($value)")
 - `@RewriteRule` - Defines how to transform the matched pattern (new annotation name, imports)
-- `TriggerPatternCleanupPlugin` - Base class that provides default implementation
+- `AbstractPatternCleanupPlugin` (in `sandbox_common`) - Generic base class with TriggerPattern integration
+- `PatternCleanupHelper` (in `sandbox_common`) - Helper for composition-based usage
+- `TriggerPatternCleanupPlugin` (in `sandbox_junit_cleanup`) - JUnit-specific implementation using composition
+
+### TriggerPatternCleanupPlugin Architecture
+
+**Inheritance Chain**:
+```
+AbstractTool (JUnit-specific base)
+    ↑
+TriggerPatternCleanupPlugin (bridges generic TriggerPattern with JUnit infrastructure)
+    ↑
+BeforeJUnitPlugin, AfterJUnitPlugin, etc. (concrete cleanup plugins)
+```
+
+**Composition**:
+`TriggerPatternCleanupPlugin` uses `PatternCleanupHelper` (from `sandbox_common`) via composition to delegate pattern matching logic while maintaining the `AbstractTool` inheritance chain required by JUnit cleanups.
+
+**Why Composition Instead of Inheritance?**
+- `TriggerPatternCleanupPlugin` must extend `AbstractTool` for JUnit cleanup integration
+- Java single inheritance prevents extending both `AbstractTool` and `AbstractPatternCleanupPlugin`
+- Composition pattern allows reusing generic TriggerPattern logic while keeping JUnit-specific inheritance intact
 
 ### @RewriteRule Annotation
 
@@ -171,7 +195,7 @@ for (Match match : matches) {
 
 ### 1. AbstractTool (Orchestrator)
 
-**Location**: `org.sandbox.jdt.internal.corext.fix.helper.AbstractTool`
+**Location**: `org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool`
 
 **Responsibilities**:
 - Defines the public API for JUnit cleanup operations
@@ -183,7 +207,9 @@ for (Match match : matches) {
 - `rewrite()` - Applies transformations using AST rewriting
 - `process2Rewrite()` - Orchestrates helper classes for complex transformations
 
-**Size**: 502 lines (reduced from 1,629 lines - 69% reduction)
+**Size**: ~250 lines (reduced from 335 lines after moving ExternalResource-specific methods)
+
+**Design Note**: ExternalResource-specific utility methods have been moved to `ExternalResourceRefactorer` to keep the base class focused on orchestration and delegation. Only methods used by multiple plugins remain in `AbstractTool`.
 
 ### 2. JUnitConstants (Data)
 
@@ -263,19 +289,26 @@ assertEquals(expected, actual, "message");
 
 ### 6. ExternalResourceRefactorer (Service)
 
-**Location**: `org.sandbox.jdt.internal.corext.fix.helper.ExternalResourceRefactorer`
+**Location**: `org.sandbox.jdt.internal.corext.fix.helper.lib.ExternalResourceRefactorer`
 
 **Responsibilities**:
 - Migrates JUnit 4 `ExternalResource` to JUnit 5 extension callbacks
 - Handles both named classes and anonymous classes
 - Manages static vs. instance field distinctions
 - Implements appropriate callback interfaces based on field modifiers
+- Provides ExternalResource-specific utility methods for type checking and validation
 
 **Key Methods**:
 - `refactorExternalResource()` - Main entry point for migration
 - `refactorNamedClassToImplementCallbacks()` - Handles named class transformations
 - `refactorAnonymousClassToImplementCallbacks()` - Handles anonymous classes
 - `ensureClassInstanceRewrite()` - Updates superclass and imports
+- `getTypeDefinitionForField()` - Finds the type definition for a field (TypeDeclaration or AnonymousClassDeclaration)
+- `hasDefaultConstructorOrNoConstructor()` - Checks if a class has a default constructor or no constructors
+- `isAnonymousClass()` - Checks if a variable declaration fragment represents an anonymous class
+- `isDirectlyExtendingExternalResource()` - Checks if a type directly extends ExternalResource
+
+**Note**: Previously, some of these utility methods were in `AbstractTool`. They have been moved to `ExternalResourceRefactorer` as they are only used by ExternalResource-related plugins, improving separation of concerns and reducing the size of the base class.
 
 **Callback Selection Logic**:
 ```java

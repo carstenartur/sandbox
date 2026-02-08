@@ -49,7 +49,6 @@ public class HelperVisitorFluentApiTest {
         ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
         parser.setSource(source.toCharArray());
         parser.setKind(ASTParser.K_COMPILATION_UNIT);
-        @SuppressWarnings("unchecked")
         java.util.Map<String, String> options = org.eclipse.jdt.core.JavaCore.getOptions();
         org.eclipse.jdt.core.JavaCore.setComplianceOptions(org.eclipse.jdt.core.JavaCore.VERSION_21, options);
         parser.setCompilerOptions(options);

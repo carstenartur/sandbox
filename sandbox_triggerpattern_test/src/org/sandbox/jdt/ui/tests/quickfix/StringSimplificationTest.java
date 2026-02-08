@@ -61,8 +61,10 @@ public class StringSimplificationTest {
 
 		Match match = matches.get(0);
 		Map<String, Object> bindings = match.getBindings();
-		assertEquals(1, bindings.size(), "Should have one binding for $x");
+		assertEquals(3, bindings.size(), "Should have 3 bindings: $x, $_, $this");
 		assertTrue(bindings.containsKey("$x"), "Should have binding for $x");
+		assertTrue(bindings.containsKey("$_"), "Should have $_ auto-binding");
+		assertTrue(bindings.containsKey("$this"), "Should have $this auto-binding");
 	}
 
 	/**
@@ -87,8 +89,10 @@ public class StringSimplificationTest {
 
 		Match match = matches.get(0);
 		Map<String, Object> bindings = match.getBindings();
-		assertEquals(1, bindings.size(), "Should have one binding for $x");
+		assertEquals(3, bindings.size(), "Should have 3 bindings: $x, $_, $this");
 		assertTrue(bindings.containsKey("$x"), "Should have binding for $x");
+		assertTrue(bindings.containsKey("$_"), "Should have $_ auto-binding");
+		assertTrue(bindings.containsKey("$this"), "Should have $this auto-binding");
 	}
 
 	/**
@@ -113,8 +117,10 @@ public class StringSimplificationTest {
 
 		Match match = matches.get(0);
 		Map<String, Object> bindings = match.getBindings();
-		assertEquals(1, bindings.size(), "Should have one binding for $str");
+		assertEquals(3, bindings.size(), "Should have 3 bindings: $str, $_, $this");
 		assertTrue(bindings.containsKey("$str"), "Should have binding for $str");
+		assertTrue(bindings.containsKey("$_"), "Should have $_ auto-binding");
+		assertTrue(bindings.containsKey("$this"), "Should have $this auto-binding");
 	}
 
 	/**
@@ -139,8 +145,10 @@ public class StringSimplificationTest {
 
 		Match match = matches.get(0);
 		Map<String, Object> bindings = match.getBindings();
-		assertEquals(1, bindings.size(), "Should have one binding for $str");
+		assertEquals(3, bindings.size(), "Should have 3 bindings: $str, $_, $this");
 		assertTrue(bindings.containsKey("$str"), "Should have binding for $str");
+		assertTrue(bindings.containsKey("$_"), "Should have $_ auto-binding");
+		assertTrue(bindings.containsKey("$this"), "Should have $this auto-binding");
 	}
 
 	/**
@@ -167,8 +175,10 @@ public class StringSimplificationTest {
 
 		Match match = matches.get(0);
 		Map<String, Object> bindings = match.getBindings();
-		assertEquals(1, bindings.size(), "Should have one binding for $x");
+		assertEquals(3, bindings.size(), "Should have 3 bindings: $x, $_, $this");
 		assertTrue(bindings.containsKey("$x"), "Should have binding for $x");
+		assertTrue(bindings.containsKey("$_"), "Should have $_ auto-binding");
+		assertTrue(bindings.containsKey("$this"), "Should have $this auto-binding");
 	}
 
 	/**
@@ -195,8 +205,10 @@ public class StringSimplificationTest {
 
 		Match match = matches.get(0);
 		Map<String, Object> bindings = match.getBindings();
-		assertEquals(1, bindings.size(), "Should have one binding for $x");
+		assertEquals(3, bindings.size(), "Should have 3 bindings: $x, $_, $this");
 		assertTrue(bindings.containsKey("$x"), "Should have binding for $x");
+		assertTrue(bindings.containsKey("$_"), "Should have $_ auto-binding");
+		assertTrue(bindings.containsKey("$this"), "Should have $this auto-binding");
 	}
 
 	/**
@@ -221,8 +233,10 @@ public class StringSimplificationTest {
 
 		Match match = matches.get(0);
 		Map<String, Object> bindings = match.getBindings();
-		assertEquals(1, bindings.size(), "Should have one binding for $cond");
+		assertEquals(3, bindings.size(), "Should have 3 bindings: $cond, $_, $this");
 		assertTrue(bindings.containsKey("$cond"), "Should have binding for $cond");
+		assertTrue(bindings.containsKey("$_"), "Should have $_ auto-binding");
+		assertTrue(bindings.containsKey("$this"), "Should have $this auto-binding");
 	}
 
 	/**
@@ -247,8 +261,10 @@ public class StringSimplificationTest {
 
 		Match match = matches.get(0);
 		Map<String, Object> bindings = match.getBindings();
-		assertEquals(1, bindings.size(), "Should have one binding for $cond");
+		assertEquals(3, bindings.size(), "Should have 3 bindings: $cond, $_, $this");
 		assertTrue(bindings.containsKey("$cond"), "Should have binding for $cond");
+		assertTrue(bindings.containsKey("$_"), "Should have $_ auto-binding");
+		assertTrue(bindings.containsKey("$this"), "Should have $this auto-binding");
 	}
 
 	/**
@@ -516,6 +532,8 @@ public class StringSimplificationTest {
 		Match match = matches.get(0);
 		Map<String, Object> bindings = match.getBindings();
 		assertTrue(bindings.containsKey("$x"), "Should have binding for $x");
+		assertTrue(bindings.containsKey("$_"), "Should have $_ auto-binding");
+		assertTrue(bindings.containsKey("$this"), "Should have $this auto-binding");
 	}
 
 	/**
@@ -541,6 +559,8 @@ public class StringSimplificationTest {
 		Match match = matches.get(0);
 		Map<String, Object> bindings = match.getBindings();
 		assertTrue(bindings.containsKey("$x"), "Should have binding for $x");
+		assertTrue(bindings.containsKey("$_"), "Should have $_ auto-binding");
+		assertTrue(bindings.containsKey("$this"), "Should have $this auto-binding");
 	}
 
 	/**
@@ -565,8 +585,10 @@ public class StringSimplificationTest {
 		
 		Match match = matches.get(0);
 		Map<String, Object> bindings = match.getBindings();
-		assertEquals(2, bindings.size(), "Should have bindings for $x and $y");
+		assertEquals(4, bindings.size(), "Should have 4 bindings: $x, $y, $_, $this");
 		assertTrue(bindings.containsKey("$x"), "Should have binding for $x");
+		assertTrue(bindings.containsKey("$_"), "Should have $_ auto-binding");
+		assertTrue(bindings.containsKey("$this"), "Should have $this auto-binding");
 		assertTrue(bindings.containsKey("$y"), "Should have binding for $y");
 	}
 
@@ -592,8 +614,10 @@ public class StringSimplificationTest {
 		
 		Match match = matches.get(0);
 		Map<String, Object> bindings = match.getBindings();
-		assertEquals(2, bindings.size(), "Should have bindings for $x and $default");
+		assertEquals(4, bindings.size(), "Should have 4 bindings: $x, $default, $_, $this");
 		assertTrue(bindings.containsKey("$x"), "Should have binding for $x");
+		assertTrue(bindings.containsKey("$_"), "Should have $_ auto-binding");
+		assertTrue(bindings.containsKey("$this"), "Should have $this auto-binding");
 		assertTrue(bindings.containsKey("$default"), "Should have binding for $default");
 	}
 

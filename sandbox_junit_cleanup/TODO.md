@@ -17,8 +17,9 @@ This file was missing from the sandbox_junit_cleanup plugin. It has been created
 - ✅ Quick Select presets for easier preference configuration (SandboxCodeTabPage)
 - ✅ Parameterized test migration (ParameterizedTestJUnitPlugin)
 - ✅ @Category to @Tag migration (CategoryJUnitPlugin)
-- ✅ @Rule TemporaryFolder migration to @TempDir
-- ✅ @Rule ExpectedException migration to assertThrows()
+- ✅ @Rule TemporaryFolder migration to @TempDir (RuleTemporaryFolderJUnitPlugin)
+- ✅ @Rule ExpectedException migration to assertThrows() (RuleExpectedExceptionJUnitPlugin)
+- ✅ **@Rule Timeout migration to class-level @Timeout** (RuleTimeoutJUnitPlugin)
 - ✅ **@RewriteRule annotation framework** - Declarative transformation for simple annotation migrations
 
 ### In Progress
@@ -68,7 +69,6 @@ HelperVisitor.forMethodCalls(CLASS, Set.of("method1", "method2"))
 ```
 
 ### Pending
-- [ ] @Rule Timeout migration (constant exists but RuleTimeoutJUnitPlugin not implemented)
 - [ ] @Rule ErrorCollector migration to multiple assertions
 - [ ] Additional JUnit 5 features support
 - [ ] Performance optimization for large test suites
@@ -216,14 +216,18 @@ Migrate @Test(expected) parameter to assertThrows():
 Generalize ExternalResourceRefactorer to handle other JUnit 4 rules:
 - ~~`TemporaryFolder` → `@TempDir`~~ ✅ **COMPLETED**
 - ~~`ExpectedException` → `assertThrows()`~~ ✅ **COMPLETED**
-- `@Rule Timeout` → `@Timeout` annotation - ⚠️ **PENDING** (constant exists but no RuleTimeoutJUnitPlugin implementation)
+- ~~`@Rule Timeout` → `@Timeout` annotation~~ ✅ **COMPLETED**
 - `ErrorCollector` → multiple assertions - **PENDING**
 - Custom rules → extension implementations - **PENDING**
 
 **Status**: 
 - ✅ TemporaryFolder migration fully implemented
 - ✅ ExpectedException migration fully implemented (handles basic expect() and expectMessage() patterns; cause/matchers not yet supported)
-- ⚠️ Timeout Rule: `JUNIT_CLEANUP_4_RULETIMEOUT` constant exists in `MYCleanUpConstants`, but `RuleTimeoutJUnitPlugin` class has not been implemented yet
+- ✅ **Timeout Rule migration fully implemented** (RuleTimeoutJUnitPlugin)
+  - Handles @Rule and @ClassRule variants
+  - Extracts timeout values from Timeout.seconds(), Timeout.millis(), and constructor patterns
+  - Converts to class-level @Timeout annotation with proper TimeUnit
+  - Comprehensive test coverage in MigrationRulesToExtensionsTest
 - ❌ ErrorCollector migration not yet implemented
 - ❌ Custom rules migration not yet implemented
 

@@ -6,6 +6,18 @@ A collection of experimental Eclipse JDT (Java Development Tools) cleanup plugin
 
 **Status:** Work in Progress – All plugins are experimental and intended for testing purposes.
 
+---
+
+## 🔗 CI Status & Resources
+
+[![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)  
+[![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)
+[![Eclipse Marketplace](https://img.shields.io/badge/Eclipse%20Marketplace-Sandbox-blue)](https://marketplace.eclipse.org/content/sandbox)
+
+📊 **[Test Results](https://carstenartur.github.io/sandbox/tests/)** | 📈 **[Code Coverage](https://carstenartur.github.io/sandbox/coverage/)** | ⚡ **[Performance Charts](https://carstenartur.github.io/sandbox/dev/bench/)**
+
+---
+
 ## Overview
 
 This project provides:
@@ -50,151 +62,29 @@ Use this to test the latest features. Updated automatically on every commit to `
 
 > **⚠️ Warning**: These plugins are experimental. Test them in a development environment before using in production.
 
-### Eclipse Marketplace
-
-The Sandbox plugins are also available on the [Eclipse Marketplace](https://marketplace.eclipse.org/content/sandbox).
-
 ## 📦 Release Process
 
-The Sandbox project uses an **automated release workflow**:
-
-1. Navigate to **Actions** → **Release Workflow** → **Run workflow**
-2. Enter the release version (e.g., `1.2.2`)
-3. Enter the next SNAPSHOT version (e.g., `1.2.3-SNAPSHOT`)
-4. Click **Run workflow**
-
-The workflow automatically:
-- Updates all version files using `tycho-versions-plugin` (except `sandbox-functional-converter-core`)
-- Builds and verifies the release
-- Creates git tag and maintenance branch
-- Deploys to GitHub Pages
-- Generates release notes from closed issues
-- Creates GitHub release
-- Bumps to next SNAPSHOT version
-
-The new release will be available at `https://carstenartur.github.io/sandbox/releases/X.Y.Z/` within a few minutes.
+> **For Maintainers**: See [Release Process](CONTRIBUTING.md#release-process) in CONTRIBUTING.md for instructions on creating and publishing releases.
 
 ## Table of Contents
 
+- [🔗 CI Status & Resources](#-ci-status--resources)
 - [Overview](#overview)
 - [🚀 Installation](#-installation)
-  - [Update Site URLs](#update-site-urls)
-  - [Installation Steps](#installation-steps)
-  - [Eclipse Marketplace](#eclipse-marketplace)
 - [📦 Release Process](#-release-process)
 - [GitHub Actions Integration](#github-actions-integration)
-  - [Quick Start](#quick-start)
-  - [Features](#features)
-- [Build Instructions](#build-instructions)
-  - [Prerequisites](#prerequisites)
-  - [Building](#building)
-  - [Troubleshooting](#troubleshooting)
-    - [Build fails with `UnsupportedClassVersionError` or `TypeNotPresentException`](#build-fails-with-unsupportedclassversionerror-or-typenotpresentexception)
-    - [Build fails with `Unable to provision` errors](#build-fails-with-unable-to-provision-errors)
-- [Eclipse Version Configuration](#eclipse-version-configuration)
-  - [Files to Update](#files-to-update)
-  - [Version Consistency Guidelines](#version-consistency-guidelines)
-  - [Current Configuration](#current-configuration)
+- [Building from Source](#building-from-source)
 - [Quickstart](#quickstart)
-  - [Using the Eclipse Product](#using-the-eclipse-product)
-  - [Using Cleanup Plugins via Command Line](#using-cleanup-plugins-via-command-line)
-  - [Installing as Eclipse Plugins](#installing-as-eclipse-plugins)
-- [CI Status](#ci-status)
-  - [main (2025-12)](#main-2025-12)
-  - [2022-09](#2022-09)
-  - [2022-06](#2022-06)
 - [What's Included](#whats-included)
-  - [Java Version by Branch](#java-version-by-branch)
-  - [Topics Covered](#topics-covered)
 - [Projects](#projects)
-  - [1. `sandbox_cleanup_application`](#1-sandbox_cleanup_application)
-  - [2. `sandbox_encoding_quickfix`](#2-sandbox_encoding_quickfix)
-  - [3. `sandbox_extra_search`](#3-sandbox_extra_search)
-  - [4. `sandbox_usage_view`](#4-sandbox_usage_view)
-  - [5. `sandbox_platform_helper`](#5-sandbox_platform_helper)
-  - [6. `sandbox_tools`](#6-sandbox_tools)
-  - [7. `sandbox_jface_cleanup`](#7-sandbox_jface_cleanup)
-  - [8. `sandbox_functional_converter`](#8-sandbox_functional_converter)
-    - [Functional Converter Cleanup – Transform Imperative Loops into Functional Java 8 Streams](#functional-converter-cleanup-transform-imperative-loops-into-functional-java-8-streams)
-    - [Source and Test Basis](#source-and-test-basis)
-    - [Supported Transformations](#supported-transformations)
-    - [Examples](#examples)
-      - [Simple forEach Conversion](#simple-foreach-conversion)
-      - [Filter + Map + forEach Chain](#filter-map-foreach-chain)
-      - [Null Safety with Objects::nonNull](#null-safety-with-objectsnonnull)
-      - [AnyMatch Pattern (Early Return)](#anymatch-pattern-early-return)
-      - [AllMatch Pattern (Check All Valid)](#allmatch-pattern-check-all-valid)
-      - [MAX/MIN Reduction](#maxmin-reduction)
-      - [MAX/MIN with Expression Mapping](#maxmin-with-expression-mapping)
-      - [Nested Conditional Filters](#nested-conditional-filters)
-    - [Reductions (Accumulators)](#reductions-accumulators)
-      - [Increment Counter](#increment-counter)
-      - [Mapped Reduction](#mapped-reduction)
-    - [Not Yet Supported (Disabled Tests)](#not-yet-supported-disabled-tests)
-    - [Ignored Cases – No Cleanup Triggered](#ignored-cases-no-cleanup-triggered)
-    - [Java Version Compatibility](#java-version-compatibility)
-    - [Cleanup Name & Activation](#cleanup-name-activation)
-    - [Limitations](#limitations)
-    - [Summary](#summary)
-  - [9. `sandbox_junit`](#9-sandbox_junit)
-  - [10. `sandbox_method_reuse`](#10-sandbox_method_reuse)
-    - [Method Reusability Finder – Code Duplication Detection](#method-reusability-finder-code-duplication-detection)
-    - [Purpose](#purpose)
-    - [Key Features](#key-features)
-      - [Similarity Analysis](#similarity-analysis)
-      - [Inline Code Detection](#inline-code-detection)
-      - [Safety Analysis](#safety-analysis)
-    - [Components](#components)
-    - [Configuration](#configuration)
-    - [Usage](#usage)
-    - [Implementation Status](#implementation-status)
-  - [11. `sandbox_xml_cleanup`](#11-sandbox_xml_cleanup)
-    - [XML Cleanup – PDE File Optimization](#xml-cleanup-pde-file-optimization)
-    - [Purpose](#purpose)
-    - [Supported XML Types (PDE Files Only)](#supported-xml-types-pde-files-only)
-    - [Transformation Process](#transformation-process)
-      - [1. XSLT Transformation](#1-xslt-transformation)
-      - [2. Whitespace Normalization](#2-whitespace-normalization)
-      - [3. Change Detection](#3-change-detection)
-    - [Configuration](#configuration)
-    - [Security Features](#security-features)
-    - [Tab Conversion Rule](#tab-conversion-rule)
-    - [Usage](#usage)
-    - [Limitations](#limitations)
-    - [Test Coverage](#test-coverage)
-- [Installation](#installation)
 - [Documentation](#documentation)
-  - [📚 Documentation Index](#documentation-index)
-    - [Getting Started](#getting-started)
-    - [Plugin-Specific Documentation](#plugin-specific-documentation)
-    - [Test Infrastructure Documentation](#test-infrastructure-documentation)
-    - [Project Governance](#project-governance)
-    - [Additional Resources](#additional-resources)
-  - [📖 Documentation Guidelines for Contributors](#documentation-guidelines-for-contributors)
-  - [🔍 Finding Documentation](#finding-documentation)
 - [Contributing](#contributing)
-  - [How to Contribute](#how-to-contribute)
-  - [Guidelines](#guidelines)
-  - [Reporting Issues](#reporting-issues)
-- [Release Process](#release-process)
-  - [Prerequisites](#prerequisites)
-  - [Release Steps](#release-steps)
-    - [1. Update Version Numbers](#1-update-version-numbers)
-    - [2. Verify the Build](#2-verify-the-build)
-    - [3. Commit Version Changes](#3-commit-version-changes)
-    - [4. Create a Git Tag](#4-create-a-git-tag)
-    - [5. Create GitHub Release](#5-create-github-release)
-    - [6. Automated Publishing](#6-automated-publishing)
-    - [7. Prepare for Next Development Iteration](#7-prepare-for-next-development-iteration)
-  - [Version Numbering](#version-numbering)
-  - [Release Artifacts](#release-artifacts)
-  - [Troubleshooting](#troubleshooting)
 - [License](#license)
   - [Eclipse Public License 2.0](#eclipse-public-license-20)
 
 ## GitHub Actions Integration
 
-This repository includes a **Docker-based GitHub Action** for automated code cleanup on pull requests. The action uses the sandbox cleanup application to apply Eclipse JDT cleanups directly in your GitHub workflows.
+This repository includes a **composite GitHub Action** for automated code cleanup on pull requests. The action uses the sandbox cleanup application to apply Eclipse JDT cleanups directly in your GitHub workflows.
 
 ### Quick Start
 
@@ -212,349 +102,210 @@ This repository includes a **Docker-based GitHub Action** for automated code cle
 
 **[📖 Full Documentation](GITHUB_ACTIONS.md)** | **[Workflows Guide](.github/workflows/README.md)** | **[Action Details](.github/actions/cleanup-action/README.md)**
 
-## Build Instructions
+## Building from Source
 
-### Prerequisites
+> **For Contributors/Developers**: Want to build the project locally? See [Building from Source](CONTRIBUTING.md#building-from-source) in CONTRIBUTING.md for complete build instructions.
 
-**IMPORTANT**: This project (main branch, targeting Eclipse 2025-12) requires **Java 21** or later.
+**Quick Start:**
+- **Requires**: Java 21 or later
+- **Quick Build**: `mvn -T 1C verify`
+- **Full Build**: `mvn -Pproduct,repo -T 1C verify`
 
-The project uses Tycho 5.0.2 which requires Java 21. Building with Java 17 or earlier will fail with:
-```
-UnsupportedClassVersionError: ... has been compiled by a more recent version of the Java Runtime (class file version 65.0)
-```
-
-Verify your Java version:
-```bash
-java -version  # Should show Java 21 or later
-```
-
-### Building
-
-#### Build Profiles
-
-The project supports Maven profiles to optimize build speed:
-
-| Profile | Modules Built | Use Case |
-|---------|---------------|----------|
-| `dev` (default) | All bundles, features, tests | Fast local development |
-| `product` | + Eclipse Product (`sandbox_product`) | Building distributable product |
-| `repo` | + P2 Update Site (`sandbox_updatesite`) | Building update site |
-| `jacoco` | + Coverage reports | CI/Coverage builds |
-| `reports` | + HTML test reports | CI/Test report builds |
-
-#### Build Commands
-
-| Command | Description |
-|---------|-------------|
-| `mvn -T 1C verify` | Quick dev build (fastest) |
-| `mvn -Pproduct -T 1C verify` | Build with Eclipse product |
-| `mvn -Prepo -T 1C verify` | Build with P2 update site |
-| `mvn -Pproduct,repo -T 1C verify` | Full release build |
-| `mvn -Pjacoco,product,repo -T 1C verify` | Full CI build with coverage |
-| `mvn -T 1C -DskipTests verify` | Skip tests for local iteration |
-
-The project supports different build profiles for different purposes. Choose the appropriate command based on your needs:
-
-#### Quick Development Build (Fastest)
-
-For rapid iteration during development, use the default build which excludes heavy product materialization and p2 repository assembly:
-
-```bash
-mvn -T 1C verify
-```
-
-- **Builds**: All bundles, features, and tests
-- **Skips**: Product materialization (`sandbox_product`) and p2 repository assembly (`sandbox_updatesite`)
-- **Use case**: Fast feedback during development, testing code changes
-- **Time**: Significantly faster than full build
-
-You can skip tests for even faster iteration:
-
-```bash
-mvn -T 1C -DskipTests verify
-```
-
-#### Build with Eclipse Product
-
-To build the Eclipse product with p2-director materialization (creates installable Eclipse distributions):
-
-```bash
-mvn -Pproduct -T 1C verify
-```
-
-- **Builds**: Everything in default build + Eclipse product
-- **Output**: `sandbox_product/target/products/`
-- **Use case**: Testing the Eclipse product locally
-
-#### Build with P2 Update Site Repository
-
-To build the p2 update site repository (for plugin distribution):
-
-```bash
-mvn -Prepo -T 1C verify
-```
-
-- **Builds**: Everything in default build + p2 update site
-- **Output**: `sandbox_updatesite/target/repository/`
-- **Use case**: Creating update site for plugin distribution
-
-#### Full Release Build
-
-For complete builds including product, repository, and code coverage:
-
-```bash
-mvn -Pproduct,repo,jacoco -T 1C verify
-```
-
-- **Builds**: Everything (bundles, features, tests, product, repository, coverage)
-- **Output**: Complete release artifacts in respective module `target/` directories
-- **Coverage Report**: `sandbox_coverage/target/site/jacoco-aggregate/`
-- **Use case**: Release builds, CI main branch builds
-
-#### Build with WAR File (Legacy)
-
-To build a WAR file that contains the update site:
-
-```bash
-mvn -Dinclude=web -Pproduct,jacoco -T 1C verify
-```
-
-- The WAR file will be located in `sandbox_web/target`
-
-#### Using Make (Convenience)
-
-A Makefile is provided for easier build commands:
-
-```bash
-make dev       # Fast development build (skips tests)
-make product   # Build with product (requires xvfb for tests)
-make repo      # Build with repository (requires xvfb for tests)
-make release   # Full release build with coverage (requires xvfb for tests)
-make test      # Run tests with coverage (requires xvfb)
-make clean     # Clean all build artifacts
-make help      # Show all available targets
-```
-
-#### Build Flags
-
-- `-T 1C`: Enables parallel builds with 1 thread per CPU core (faster builds)
-- `-DskipTests`: Skips test execution (faster iteration)
-- `-Pjacoco`: Enables JaCoCo code coverage
-- `-Pproduct`: Includes Eclipse product build
-- `-Prepo`: Includes p2 repository build
-
-#### Understanding the Profiles
-
-- **Default (no profiles)**: Fast development build - bundles, features, and tests only
-- **`product`**: Adds Eclipse product materialization (heavy step, takes time)
-- **`repo`**: Adds p2 update site repository assembly (heavy step, takes time)
-- **`jacoco`**: Adds code coverage reporting (includes `sandbox_coverage` module)
-- **`reports`**: Adds HTML test report generation (use without `-T 1C` to avoid thread-safety warning)
-- **`web`**: Adds WAR file with update site (requires `-Dinclude=web` property, also builds `sandbox_product`)
-
-**Backward Compatibility**: The command `mvn -Pproduct,repo verify` produces the same result as the previous full build behavior.
-
-### Troubleshooting
-
-#### Build fails with `UnsupportedClassVersionError` or `TypeNotPresentException`
-
-This error occurs when building with Java 17 or earlier:
-
-```
-TypeNotPresentException: Type P2ArtifactRepositoryLayout not present
-...class file version 65.0, this version only recognizes class file versions up to 61.0
-```
-
-**Solution**: Upgrade to Java 21 or later. Verify with `java -version`.
-
-#### Build fails with `Unable to provision` errors
-
-This usually indicates a Java version mismatch. Check that:
-1. `JAVA_HOME` is set to Java 21+
-2. `java -version` shows Java 21+
-3. Maven is using the correct Java version: `mvn -version`
-
----
-
-## Eclipse Version Configuration
-
-The Eclipse version (SimRel release) used by this project is **not centrally configured**. When updating to a new Eclipse release, you must update the version reference in **multiple files** throughout the repository.
-
-### Files to Update
-
-When migrating to a new Eclipse version, update the following files:
-
-1. **`pom.xml`** (root)
-   - Repository URLs in the `<repositories>` section
-   - Example: `https://download.eclipse.org/releases/2025-12/`
-   - Also update Orbit repository URL: `https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2025-12/`
-
-2. **`sandbox_target/eclipse.target`**
-   - Primary Eclipse release repository URL in first `<location>` block
-   - Example: `<repository location="https://download.eclipse.org/releases/2025-12/"/>`
-   - Also update Orbit repository URL
-
-3. **`sandbox_product/category.xml`**
-   - Repository reference location
-   - Example: `<repository-reference location="https://download.eclipse.org/releases/2025-12/" .../>`
-
-4. **`sandbox_product/sandbox.product`**
-   - Repository locations in `<repositories>` section
-   - Example: `<repository location="https://download.eclipse.org/releases/2025-12/" .../>`
-
-5. **`sandbox_oomph/sandbox.setup`**
-   - P2 repository URL in the version-specific `<setupTask>` block
-   - Example: `<repository url="https://download.eclipse.org/releases/2025-12"/>`
-
-### Version Consistency Guidelines
-
-- **Use HTTPS**: All Eclipse download URLs should use `https://` (not `http://`)
-- **Use explicit versions**: Prefer explicit version URLs (e.g., `2025-12`) over `latest` for reproducible builds
-- **Keep versions aligned**: All files should reference the same Eclipse SimRel version
-- **Git URLs**: Use HTTPS for git clone URLs (e.g., `https://github.com/...`, not `git://`)
-- **Main branch**: All Oomph setup files should reference the `main` branch, not `master`
-
-### Current Configuration
-
-- **Eclipse Version**: 2025-12
-- **Java Version**: 21
-- **Tycho Version**: 5.0.2
-- **Default Branch**: `main`
+**Note**: Building with Java 17 or earlier will fail. This project requires Java 21.
 
 ---
 
 ## Quickstart
 
-### Using the Eclipse Product
+### For Users
 
-After building the project, you can run the Eclipse product with the bundled cleanup plugins:
+1. **Install the plugins** via Eclipse update site (see [Installation](#-installation) above)
+2. **Open Eclipse** and navigate to **Source** → **Clean Up...** or use **Preferences** → **Java** → **Code Style** → **Clean Up**
+3. **Configure cleanups**: Select the sandbox cleanup profiles you want to enable
+4. **Apply cleanups**: Run cleanup on your Java files
 
-```bash
-# Navigate to the product directory
-cd sandbox_product/target/products/org.sandbox.product/
+### For Contributors/Developers
 
-# Launch Eclipse
-./eclipse
-```
-
-### Using Cleanup Plugins via Command Line
-
-You can apply cleanup transformations using the Eclipse JDT formatter application pattern:
-
-```bash
-eclipse -nosplash -consolelog -debug \
-  -application org.eclipse.jdt.core.JavaCodeFormatter \
-  -verbose -config MyCleanupSettings.ini MyClassToCleanup.java
-```
-
-> **Note**: Replace `MyCleanupSettings.ini` with your cleanup configuration file and `MyClassToCleanup.java` with the Java file you want to process.
-
-### Installing as Eclipse Plugins
-
-You can install the cleanup plugins into your existing Eclipse installation using the P2 update site.
-
-**See the [Installation](#-installation) section above for detailed instructions and update site URLs.**
-
-The update sites provide:
-- **Stable Releases**: `https://carstenartur.github.io/sandbox/releases/` - Tested, stable versions
-- **Latest Snapshots**: `https://carstenartur.github.io/sandbox/snapshots/latest/` - Latest development builds
-
-> **⚠️ Warning**: These plugins are experimental. Test them in a development environment before using in production.
+Want to build and run the Eclipse product with bundled plugins? See the [Building from Source](CONTRIBUTING.md#building-from-source) section in CONTRIBUTING.md for:
+- Building the Eclipse product locally
+- Running the built Eclipse product
+- Using command-line cleanup tools
 
 ---
 
-## CI Status
+## What's Included
 
-### main (2025-12)
+### Java Version Requirements
 
-[![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)  
-[![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)
+| Branch          | Java Version | Tycho Version |
+|-----------------|--------------|---------------|
+| `main` (2025-12)| Java 21      | 5.0.2         |
 
-**Code Coverage Reports**: Available at [https://carstenartur.github.io/sandbox/coverage/](https://carstenartur.github.io/sandbox/coverage/) (updated daily via scheduled build when there are commits to main, or on manual trigger)
+**Legacy branches**: Older branches (`2022-06`, `2022-09`, `2022-12`) use Java 11-17 with Tycho 3.x-4.x.
 
-**Test Results**: Available at [https://carstenartur.github.io/sandbox/tests/](https://carstenartur.github.io/sandbox/tests/) (updated on every push to main)
+**Note**: Tycho 5.x requires Java 21+ at build time. Attempting to build with Java 17 will result in `UnsupportedClassVersionError`.
 
-### Report Details
+---
 
-#### Coverage Reports
-The JaCoCo coverage reports show code coverage statistics for the entire codebase:
-- **Location**: `https://carstenartur.github.io/sandbox/coverage/`
-- **Content**: Line, branch, and method coverage for all modules
-- **Update Frequency**: Daily via scheduled build (only when there are commits in the last 24 hours) or manual trigger
-- **Build Profile**: Generated with full release build using `-Pjacoco,product,repo` profiles
-- **Local Generation**: Run `mvn -Pjacoco verify` to generate locally in `sandbox_coverage/target/site/jacoco-aggregate/`
-- **Note**: Coverage reports are NOT generated on normal push/PR builds to keep CI fast. They require the scheduled or manual coverage workflow.
+## Projects
 
-#### Test Results
-HTML test reports for all test modules, showing detailed test execution results:
-- **Location**: `https://carstenartur.github.io/sandbox/tests/`
-- **Content**: 
-  - Individual test module reports (e.g., `sandbox_encoding_quickfix_test`, `sandbox_functional_converter_test`)
-  - Test success/failure statistics
-  - Disabled tests (JUnit 5 `@Disabled` annotations)
-  - Detailed test execution information
-- **Update Frequency**: 
-  - **Primary**: Updated on every push to main branch (via normal CI build)
-  - **Secondary**: Also updated during scheduled coverage builds (includes full release build with all profiles)
-- **Build Profile**: 
-  - Normal builds (push/PR): No special profiles, fast build for quick feedback
-  - Scheduled builds: Uses `-Pjacoco,product,repo` profiles (full release build)
-- **Local Generation**: Run the full reactor build (`mvn verify`), and test reports will be automatically generated in each test module's `target/site/surefire-report.html` directory
-- **Structure**:
-  - Main index: Lists all test modules with links to their individual reports
-  - Module reports: Detailed test results for each module
+> All projects are considered work in progress unless otherwise noted.
 
-### CI Workflow Structure
+### 1. Cleanup CLI Application (`sandbox_cleanup_application`)
 
-The project uses two distinct CI workflows for efficient publishing:
+Placeholder for a CLI-based cleanup application, similar to the Java code formatting tool:
 
-#### 1. Normal Build Workflow (`maven.yml`)
-**Triggers**: On push/PR to main branch
+```bash
+eclipse -nosplash -consolelog -debug -application org.eclipse.jdt.core.JavaCodeFormatter -verbose -config MyCodingStandards.ini MyClassToBeFormatted.java
+```
 
-**Purpose**: Fast feedback and test result publishing
+See: https://bugs.eclipse.org/bugs/show_bug.cgi?id=75333
 
-**Build Command**: `mvn verify` (no jacoco, product, or repo profiles)
+### 2. Encoding Cleanup (`sandbox_encoding_quickfix`)
 
-**What it does**:
-- Runs standard Maven/Tycho build
-- Executes all tests
-- Generates Surefire/JUnit HTML reports automatically (via maven-surefire-report-plugin)
-- Collects test reports from all test modules
-- Deploys test reports to GitHub Pages at `/tests`
+Replaces platform-dependent or implicit encoding usage with explicit, safe alternatives using `StandardCharsets.UTF_8` or equivalent constants. Improves code portability and prevents encoding-related bugs across different platforms. Supports three cleanup strategies with Java version-aware transformations for FileReader, FileWriter, Files methods, Scanner, PrintWriter, and more.
 
-**What it does NOT do**:
-- Does NOT generate code coverage (jacoco profile not active)
-- Does NOT build Eclipse product or P2 repository (kept lean for speed)
+📖 **Full Documentation**: [Plugin README](sandbox_encoding_quickfix/README.md) | [Architecture](sandbox_encoding_quickfix/ARCHITECTURE.md) | [TODO](sandbox_encoding_quickfix/TODO.md)
 
-**Update guarantee**: Test results are always current with the latest main branch commit
+### 3. Extra Search (`sandbox_extra_search`)
 
-#### 2. Scheduled Coverage Build Workflow (`coverage.yml`)
-**Triggers**: 
-- Daily at midnight UTC (only if there were commits in the last 24 hours)
-- Manual workflow dispatch
+Experimental search tool for identifying critical classes when upgrading Eclipse or Java versions.
 
-**Purpose**: Full release build with comprehensive coverage metrics
+### 4. Usage View (`sandbox_usage_view`)
 
-**Build Command**: `mvn -Pjacoco,product,repo verify`
+Provides a table view of code objects, sorted by name, to detect inconsistent naming that could confuse developers.
 
-**What it does**:
-- Runs full release build with all profiles
-- Generates JaCoCo code coverage reports
-- Builds Eclipse product and P2 repository
-- Deploys coverage reports to GitHub Pages at `/coverage`
-- Deploys test reports to GitHub Pages at `/tests` (as backup)
+### 5. Platform Status Helper (`sandbox_platform_helper`)
 
-**Update guarantee**: Coverage reports are updated daily when there are new commits, but may be up to 24 hours behind the latest commit
+Simplifies Eclipse Platform `Status` object creation by replacing verbose `new Status(...)` constructor calls with cleaner factory methods (Java 11+ / Eclipse 4.20+) or StatusHelper pattern (Java 8). Reduces boilerplate and provides more readable code through automatic selection between StatusHelper or factory methods based on Java version.
 
-#### Why This Structure?
+📖 **Full Documentation**: [Plugin README](sandbox_platform_helper/README.md) | [Architecture](sandbox_platform_helper/ARCHITECTURE.md) | [TODO](sandbox_platform_helper/TODO.md)
 
-**Performance**: Normal builds complete faster without heavy jacoco/product/repo profiles, providing quick feedback on PRs and commits
+### 6. While-to-For Converter (`sandbox_tools`)
 
-**Separation of Concerns**: 
-- Test results = Always current (every commit)
-- Coverage metrics = Updated daily (comprehensive but not blocking fast feedback)
+**While-to-For** loop converter — already merged into Eclipse JDT.
 
-**Resource Efficiency**: Full release builds with coverage are expensive; running them daily (instead of on every commit) reduces CI resource usage while still maintaining up-to-date coverage metrics
+### 7. JFace SubMonitor Migration (`sandbox_jface_cleanup`)
+
+Automates migration from deprecated `SubProgressMonitor` to modern `SubMonitor` API. Transforms `beginTask()` + `SubProgressMonitor` to `SubMonitor.convert()` + `split()` with automatic handling of style flags, multiple monitor instances, and variable name collision resolution. The cleanup is idempotent and safe to run multiple times.
+
+📖 **Full Documentation**: [Plugin README](sandbox_jface_cleanup/README.md) | [Architecture](sandbox_jface_cleanup/ARCHITECTURE.md) | [TODO](sandbox_jface_cleanup/TODO.md)
+
+### 8. Functional Loop Converter (`sandbox_functional_converter`)
+
+Transforms imperative Java loops into functional Java 8 Stream equivalents (`forEach`, `map`, `filter`, `reduce`, `anyMatch`, `allMatch`, etc.). Supports 25+ tested transformation patterns including max/min reductions, nested filters, and compound operations. Maintains semantic safety by excluding complex patterns with labeled breaks, throws, or multiple mutable accumulators.
+
+📖 **Full Documentation**: [Plugin README](sandbox_functional_converter/README.md) | [Architecture](sandbox_functional_converter/ARCHITECTURE.md) | [TODO](sandbox_functional_converter/TODO.md)
+
+### 9. JUnit 5 Migration Cleanup (`sandbox_junit_cleanup`)
+
+Automates migration of legacy tests from JUnit 3 and JUnit 4 to JUnit 5 (Jupiter). Transforms test classes, methods, annotations, assertions, and lifecycle hooks to use the modern JUnit 5 API. Handles removing `extends TestCase`, converting naming conventions to annotations, assertion parameter reordering, rule migration, and test suite conversion.
+
+📖 **Full Documentation**: [Plugin README](sandbox_junit_cleanup/README.md) | [Architecture](sandbox_junit_cleanup/ARCHITECTURE.md) | [TODO](sandbox_junit_cleanup/TODO.md) | [Testing Guide](sandbox_junit_cleanup_test/TESTING.md)
+
+---
+### 10. Method Reuse Detector (`sandbox_method_reuse`)
+
+Identifies opportunities to reuse existing methods instead of duplicating logic. Uses token-based and AST-based analysis to find code duplication, suggests method calls to replace repeated patterns, and promotes DRY principles. Currently under development with initial focus on method similarity detection and Eclipse cleanup integration.
+
+📖 **Full Documentation**: [Plugin README](sandbox_method_reuse/README.md) | [Architecture](sandbox_method_reuse/ARCHITECTURE.md) | [TODO](sandbox_method_reuse/TODO.md)
+
+---
+### 11. PDE XML Cleanup (`sandbox_xml_cleanup`)
+
+Optimizes Eclipse PDE XML files (plugin.xml, feature.xml, etc.) by reducing whitespace and optionally converting leading spaces to tabs. Uses secure XSLT transformation, normalizes excessive empty lines, and only processes PDE-relevant files in project root, OSGI-INF, or META-INF locations. Idempotent and preserves semantic integrity.
+
+📖 **Full Documentation**: [Plugin README](sandbox_xml_cleanup/README.md) | [Architecture](sandbox_xml_cleanup/ARCHITECTURE.md) | [TODO](sandbox_xml_cleanup/TODO.md)
+
+---
+### 12. CSS Cleanup (`sandbox_css_cleanup`)
+
+Eclipse plugin for CSS validation and formatting using Prettier and Stylelint. Provides automatic formatting, linting, right-click menu integration for .css, .scss, and .less files, and a preferences page for configuration with graceful fallback when npm tools are not installed.
+
+📖 **Full Documentation**: [Plugin README](sandbox_css_cleanup/README.md) | [Architecture](sandbox_css_cleanup/ARCHITECTURE.md) | [TODO](sandbox_css_cleanup/TODO.md)
+
+---
+### 13. Common Utilities (`sandbox_common`)
+
+Provides shared utilities, constants, and base classes used across all sandbox cleanup plugins. Serves as the foundation for the entire sandbox ecosystem with AST manipulation utilities, central cleanup constants repository (`MYCleanUpConstants`), reusable base classes, and Eclipse JDT compatibility structure for easy porting.
+
+📖 **Full Documentation**: [Plugin README](sandbox_common/README.md) | [Architecture](sandbox_common/ARCHITECTURE.md) | [TODO](sandbox_common/TODO.md)
+
+---
+### 14. TriggerPattern Engine (`sandbox_triggerpattern`)
+
+Provides a powerful pattern matching engine for code transformations in Eclipse. Allows defining code patterns using simple syntax with placeholder support (`$x` for any expression), annotation-based hints using `@TriggerPattern` and `@Hint`, and automatic integration with Eclipse Quick Assist for creating custom hints and quick fixes with minimal boilerplate.
+
+📖 **Full Documentation**: [Plugin README](sandbox_triggerpattern/README.md) | [Architecture](sandbox_triggerpattern/ARCHITECTURE.md) | [TODO](sandbox_triggerpattern/TODO.md)
+
+---
+### 15. Fluent AST API (`sandbox-ast-api`)
+
+Fluent, type-safe AST wrapper API using Java 21 features. Pure Maven module with no Eclipse dependencies, enabling reuse outside Eclipse context. Replaces verbose instanceof checks and nested visitor patterns with modern, readable fluent API for AST operations.
+
+📖 **Full Documentation**: [Plugin README](sandbox-ast-api/README.md)
+
+---
+### 16. JMH Performance Benchmarks (`sandbox-benchmarks`)
+
+JMH (Java Microbenchmark Harness) performance benchmarks for the Sandbox project. Provides continuous performance tracking and visualization through GitHub Actions and GitHub Pages. Includes benchmarks for AST parsing, pattern matching, and loop transformation performance.
+
+📖 **Full Documentation**: [Plugin README](sandbox-benchmarks/README.md)
+
+---
+### 17. Functional Converter Core (`sandbox-functional-converter-core`)
+
+Plain Java core module providing AST-independent representation of loop structures for transformation into functional/stream-based equivalents. Part of the Unified Loop Representation (ULR) implementation. No Eclipse/JDT dependencies - pure Java module reusable in any context.
+
+📖 **Full Documentation**: [Plugin README](sandbox-functional-converter-core/README.md)
+
+**Relationship**: This core module is used by `sandbox_functional_converter` (#8) to provide the underlying loop transformation logic without Eclipse dependencies.
+
+---
+### 18. Oomph Workspace Setup (`sandbox_oomph`)
+
+Provides Eclipse Oomph setup configurations for automated workspace configuration. Enables one-click setup with pre-configured Eclipse settings, automatic installation of required plugins, Git repository cloning and branch setup, and seamless integration with Eclipse Installer.
+
+📖 **Full Documentation**: [Plugin README](sandbox_oomph/README.md) | [Architecture](sandbox_oomph/ARCHITECTURE.md) | [TODO](sandbox_oomph/TODO.md)
+
+---
+
+## Documentation
+
+This repository contains extensive documentation organized at multiple levels to help you understand, use, and contribute to the project.
+
+📚 **For a complete documentation index covering all plugins, architecture guides, and contributing information**, see [DOCUMENTATION_INVENTORY.md](DOCUMENTATION_INVENTORY.md).
+
+### Quick Documentation Links
+
+- **[Installation](#-installation)** - How to install plugins in Eclipse
+- **[Building from Source](CONTRIBUTING.md#building-from-source)** - How to build the project with Maven/Tycho
+- **[Projects](#projects)** - Descriptions and documentation for all plugins
+- **[Contributing](CONTRIBUTING.md)** - How to contribute to this project
+- **[Release Process](CONTRIBUTING.md#release-process)** - Maintainer guide for creating releases
+- **[Eclipse Version Configuration](CONTRIBUTING.md#eclipse-version-configuration)** - Maintainer guide for updating Eclipse versions
+
+---
+
+## Contributing
+
+Contributions are welcome! This is an experimental sandbox project for testing Eclipse JDT cleanup implementations.
+
+**📖 For full contribution guidelines, building instructions, reporting issues, release process, and Eclipse version configuration**, see [CONTRIBUTING.md](CONTRIBUTING.md).
+
+### Quick Start
+
+1. Fork the repository and create a feature branch from `main`
+2. Make your changes following existing code structure
+3. Test thoroughly with `mvn -Pjacoco verify`
+4. Submit a Pull Request with clear description
+
+**Note**: This project primarily serves as an experimental playground. Features that prove stable and useful may be contributed upstream to Eclipse JDT.
+
+---
+
+<details>
+<summary>Legacy Branch CI Status</summary>
 
 ### 2022-09
 
@@ -566,1017 +317,7 @@ The project uses two distinct CI workflows for efficient publishing:
 [![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg?branch=2022-06)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)  
 [![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg?branch=2022-06)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)
 
----
-
-## What's Included
-
-### Java Version by Branch
-
-| Branch          | Java Version | Tycho Version |
-|-----------------|--------------|---------------|
-| `main` (2025-12)| Java 21      | 5.0.2         |
-| `2024-06`+      | Java 21      | 5.0.x         |
-| `2022-12`+      | Java 17      | 4.x           |
-| Up to `2022-06` | Java 11      | 3.x           |
-
-**Note**: Tycho 5.x requires Java 21+ at build time. Attempting to build with Java 17 will result in `UnsupportedClassVersionError`.
-
-### Topics Covered
-
-- Building for different Eclipse versions via GitHub Actions
-- Creating custom JDT cleanups
-- Setting up the SpotBugs Maven plugin to fail the build on issues
-- Writing JUnit 5-based tests for JDT cleanups
-- Configuring JaCoCo for test coverage
-- Building an Eclipse product including new features
-- Automatically building a WAR file including a P2 update site
-
----
-
-## Projects
-
-> All projects are considered work in progress unless otherwise noted.
-
-### 1. `sandbox_cleanup_application`
-
-Placeholder for a CLI-based cleanup application, similar to the Java code formatting tool:
-
-```bash
-eclipse -nosplash -consolelog -debug -application org.eclipse.jdt.core.JavaCodeFormatter -verbose -config MyCodingStandards.ini MyClassToBeFormatted.java
-```
-
-See: https://bugs.eclipse.org/bugs/show_bug.cgi?id=75333
-
-### 2. `sandbox_encoding_quickfix`
-
-Replaces platform-dependent or implicit encoding usage with explicit, safe alternatives using `StandardCharsets.UTF_8` or equivalent constants. Improves code portability and prevents encoding-related bugs across different platforms.
-
-**Key Features:**
-- Three cleanup strategies: Prefer UTF-8, Keep Behavior, or Aggregate UTF-8
-- Java version-aware transformations (Java 7-21+)
-- Supports FileReader, FileWriter, Files methods, Scanner, PrintWriter, and more
-- Automatically adds imports and removes unnecessary exceptions
-
-**Quick Example:**
-```java
-// Before
-Reader r = new FileReader(file);
-List<String> lines = Files.readAllLines(path);
-
-// After
-Reader r = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8);
-List<String> lines = Files.readAllLines(path, StandardCharsets.UTF_8);
-```
-
-📖 **Full Documentation**: [Plugin README](sandbox_encoding_quickfix/README.md) | [Architecture](sandbox_encoding_quickfix/ARCHITECTURE.md) | [TODO](sandbox_encoding_quickfix/TODO.md)
-
-### 3. `sandbox_extra_search`
-
-Experimental search tool for identifying critical classes when upgrading Eclipse or Java versions.
-
-### 4. `sandbox_usage_view`
-
-Provides a table view of code objects, sorted by name, to detect inconsistent naming that could confuse developers.
-
-### 5. `sandbox_platform_helper`
-
-Simplifies Eclipse Platform `Status` object creation by replacing verbose `new Status(...)` constructor calls with cleaner factory methods (Java 11+ / Eclipse 4.20+) or StatusHelper pattern (Java 8).
-
-**Key Features:**
-- Java version-aware transformations
-- Reduces boilerplate in Status object creation
-- Automatic selection between StatusHelper or factory methods
-- Cleaner, more readable code
-
-**Quick Example:**
-```java
-// Before
-IStatus status = new Status(IStatus.ERROR, "plugin.id", "Error message", exception);
-
-// After (Java 11+ / Eclipse 4.20+)
-IStatus status = Status.error("Error message", exception);
-```
-
-📖 **Full Documentation**: [Plugin README](sandbox_platform_helper/README.md) | [Architecture](sandbox_platform_helper/ARCHITECTURE.md) | [TODO](sandbox_platform_helper/TODO.md)
-
-### 6. `sandbox_tools`
-
-**While-to-For** loop converter — already merged into Eclipse JDT.
-
-### 7. `sandbox_jface_cleanup`
-
-Automates migration from deprecated `SubProgressMonitor` to modern `SubMonitor` API. The cleanup is idempotent and handles variable name collisions.
-
-**Key Features:**
-- Transforms `beginTask()` + `SubProgressMonitor` to `SubMonitor.convert()` + `split()`
-- Handles style flags and multiple monitor instances
-- Idempotent - safe to run multiple times
-- Automatic variable name conflict resolution
-
-**Quick Example:**
-```java
-// Before
-monitor.beginTask("Task", 100);
-IProgressMonitor sub = new SubProgressMonitor(monitor, 60);
-
-// After
-SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
-IProgressMonitor sub = subMonitor.split(60);
-```
-
-📖 **Full Documentation**: [Plugin README](sandbox_jface_cleanup/README.md) | [Architecture](sandbox_jface_cleanup/ARCHITECTURE.md) | [TODO](sandbox_jface_cleanup/TODO.md)
-
-### 8. `sandbox_functional_converter`
-
-#### Functional Converter Cleanup – Transform Imperative Loops into Functional Java 8 Streams
-
-This cleanup modernizes imperative Java loop constructs by transforming them into functional-style equivalents using Java 8 Streams, `map`, `filter`, `reduce`, and `forEach`.
-
-> **📐 Architecture Documentation**: See [ARCHITECTURE.md](sandbox_functional_converter/ARCHITECTURE.md) for detailed implementation details, design patterns, and internal components.
-
----
-
-#### Source and Test Basis
-
-This cleanup is fully tested in:
-
-- `sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/Java8CleanUpTest.java`
-
-The test class defines:
-
-- **25 enabled test cases** covering fully supported loop transformation patterns
-- A list of `@Disabled` scenarios representing future features and unsupported patterns
-- A set of `@ValueSource` cases where no transformation should be applied (edge cases)
-
----
-
-#### Supported Transformations
-
-The cleanup currently supports the following patterns:
-
-| Pattern                                 | Transformed To                                      |
-|----------------------------------------|-----------------------------------------------------|
-| Simple enhanced for-loops              | `list.forEach(...)` or `list.stream().forEach(...)` |
-| Mapping inside loops                   | `.stream().map(...)`                                |
-| Filtering via `if` or `continue`       | `.stream().filter(...)`                             |
-| Null safety checks                     | `.filter(l -> l != null).map(...)`                  |
-| Reductions (sum/counter)               | `.stream().map(...).reduce(...)`                    |
-| **MAX/MIN reductions**                 | `.reduce(init, Math::max)` or `.reduce(init, Math::min)` |
-| `String` concatenation in loops        | `.reduce(..., String::concat)`                      |
-| Conditional early `return true`        | `.anyMatch(...)`                                    |
-| Conditional early `return false`       | `.noneMatch(...)`                                   |
-| **Conditional check all valid**        | `.allMatch(...)`                                    |
-| Method calls inside mapping/filtering  | `map(x -> method(x))`, `filter(...)`                |
-| Combined `filter`, `map`, `forEach`    | Chained stream transformations                      |
-| **Nested conditionals**                | Multiple `.filter(...)` operations                  |
-| Increment/decrement reducers           | `.map(_item -> 1).reduce(0, Integer::sum)`          |
-| Compound assignment reducers           | `.map(expr).reduce(init, operator)`                 |
-
-**Enabled Test Cases** (25 total):
-- `SIMPLECONVERT`, `CHAININGMAP`, `ChainingFilterMapForEachConvert`
-- `SmoothLongerChaining`, `MergingOperations`, `BeautificationWorks`, `BeautificationWorks2`
-- `NonFilteringIfChaining`, `ContinuingIfFilterSingleStatement`
-- `SimpleReducer`, `ChainedReducer`, `IncrementReducer`, `AccumulatingMapReduce`
-- `DOUBLEINCREMENTREDUCER`, `DecrementingReducer`, `ChainedReducerWithMerging`, `StringConcat`
-- `ChainedAnyMatch`, `ChainedNoneMatch`
-- `NoNeededVariablesMerging`, `SomeChainingWithNoNeededVar`
-- **`MaxReducer`, `MinReducer`, `MaxWithExpression`, `MinWithExpression`**
-- **`FilteredMaxReduction`, `ChainedMapWithMinReduction`, `ComplexFilterMapMaxReduction`**
-- **`ContinueWithMapAndForEach`**
-- **`SimpleAllMatch`, `AllMatchWithNullCheck`, `ChainedAllMatch`**
-- **`NestedFilterCombination`**
-
----
-
-#### Examples
-
-##### Simple forEach Conversion
-**Before:**
-```java
-for (Integer l : list) {
-    System.out.println(l);
-}
-```
-
-**After:**
-```java
-list.forEach(l -> System.out.println(l));
-```
-
----
-
-##### Filter + Map + forEach Chain
-**Before:**
-```java
-for (Integer l : list) {
-    if (l != null) {
-        String s = l.toString();
-        System.out.println(s);
-    }
-}
-```
-
-**After:**
-```java
-list.stream()
-    .filter(l -> (l != null))
-    .map(l -> l.toString())
-    .forEachOrdered(s -> {
-        System.out.println(s);
-    });
-```
-
----
-
-##### Null Safety with Objects::nonNull
-**Before:**
-```java
-for (Integer l : list) {
-    if (l == null) {
-        continue;
-    }
-    String s = l.toString();
-    System.out.println(s);
-}
-```
-
-**After:**
-```java
-list.stream()
-    .filter(l -> !(l == null))
-    .map(l -> l.toString())
-    .forEachOrdered(s -> {
-        System.out.println(s);
-    });
-```
-
----
-
-##### AnyMatch Pattern (Early Return)
-**Before:**
-```java
-for (Integer l : list) {
-    String s = l.toString();
-    Object o = foo(s);
-    if (o == null)
-        return true;
-}
-return false;
-```
-
-**After:**
-```java
-if (list.stream()
-        .map(l -> l.toString())
-        .map(s -> foo(s))
-        .anyMatch(o -> (o == null))) {
-    return true;
-}
-return false;
-```
-
----
-
-##### AllMatch Pattern (Check All Valid)
-**Before:**
-```java
-for (String item : items) {
-    if (!item.startsWith("valid")) {
-        return false;
-    }
-}
-return true;
-```
-
-**After:**
-```java
-if (!items.stream().allMatch(item -> item.startsWith("valid"))) {
-    return false;
-}
-return true;
-```
-
----
-
-##### MAX/MIN Reduction
-**Before:**
-```java
-int max = Integer.MIN_VALUE;
-for (Integer num : numbers) {
-    max = Math.max(max, num);
-}
-```
-
-**After:**
-```java
-int max = Integer.MIN_VALUE;
-max = numbers.stream().reduce(max, Math::max);
-```
-
-Similarly for `Math.min()` → `.reduce(min, Math::min)`
-
----
-
-##### MAX/MIN with Expression Mapping
-**Before:**
-```java
-int maxLen = 0;
-for (String str : strings) {
-    maxLen = Math.max(maxLen, str.length());
-}
-```
-
-**After:**
-```java
-int maxLen = 0;
-maxLen = strings.stream()
-    .map(str -> str.length())
-    .reduce(maxLen, Math::max);
-```
-
----
-
-##### Nested Conditional Filters
-**Before:**
-```java
-for (String item : items) {
-    if (item != null) {
-        if (item.length() > 5) {
-            System.out.println(item);
-        }
-    }
-}
-```
-
-**After:**
-```java
-items.stream()
-    .filter(item -> (item != null))
-    .filter(item -> (item.length() > 5))
-    .forEachOrdered(item -> {
-        System.out.println(item);
-    });
-```
-
----
-
-#### Reductions (Accumulators)
-
-##### Increment Counter
-**Before:**
-```java
-int count = 0;
-for (String s : list) {
-    count += 1;
-}
-```
-
-**After:**
-```java
-int count = list.stream()
-    .map(_item -> 1)
-    .reduce(0, Integer::sum);
-```
-
----
-
-##### Mapped Reduction
-**Before:**
-```java
-int sum = 0;
-for (Integer l : list) {
-    sum += foo(l);
-}
-```
-
-**After:**
-```java
-int sum = list.stream()
-    .map(l -> foo(l))
-    .reduce(0, Integer::sum);
-```
-
-Also supported:
-
-- **Decrementing**: `i -= 1` → `.reduce(i, (a, b) -> a - b)`
-- **Type-aware literals**: `1` for int, `1L` for long, `1.0` for double, `1.0f` for float
-- **String concatenation**: `.reduce("", String::concat)`
-
----
-
-#### Not Yet Supported (Disabled Tests)
-
-The following patterns are currently **not supported** and are marked `@Disabled` in the test suite:
-
-| Pattern Description                                 | Reason / Required Feature                          |
-|-----------------------------------------------------|-----------------------------------------------------|
-| `Map.put(...)` inside loop                          | Needs `Collectors.toMap(...)` support               |
-| Early `break` inside loop body                      | Requires stream short-circuit modeling (`findFirst()`) |
-| Labeled `continue` or `break` (`label:`)            | Not expressible via Stream API                     |
-| Complex `if-else-return` branches                   | Requires flow graph and branching preservation      |
-| `throw` inside loop                                 | Non-convertible – not compatible with Stream flow  |
-| Multiple accumulators in one loop                   | State mutation not easily transferable              |
-
-These patterns are intentionally **excluded from transformation** to maintain semantic correctness and safety.
-
----
-
-#### Ignored Cases – No Cleanup Triggered
-
-The cleanup **does not modify** code in the following edge cases (validated by `@ValueSource` tests):
-
-- Non-loop constructs
-- Loops over arrays instead of `List` or `Iterable`
-- Loops with early `return`, `throw`, or labeled `continue`
-- Loops mixing multiple mutable accumulators
-- Loops with side effects that cannot be safely preserved
-
----
-
-#### Java Version Compatibility
-
-| API Used                      | Requires Java |
-|-------------------------------|---------------|
-| `Stream`, `map`, `filter`     | Java 8+       |
-| `forEach`, `forEachOrdered`   | Java 8+       |
-| `anyMatch`, `noneMatch`       | Java 8+       |
-| `reduce`                      | Java 8+       |
-| `Collectors.toList()`         | Java 8+       |
-
-This cleanup is designed for **Java 8+** projects and uses only APIs available since Java 8.
-
----
-
-#### Cleanup Name & Activation
-
-| Eclipse Cleanup ID                          | Value                       |
-|---------------------------------------------|-----------------------------|
-| `MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP` | `true` (enable this feature) |
-
-**Usage:**
-- Via **Eclipse Clean Up...** under the appropriate cleanup category
-- Via **JDT Batch tooling** or **Save Actions**
-
----
-
-#### Limitations
-
-- Does not preserve external loop-scoped variables (e.g., index tracking, multiple accumulators)
-- Cannot convert control structures with `return`, `break`, `continue label`, or `throw`
-- Does not support loops producing `Map<K,V>` outputs or grouping patterns (future feature)
-- Does not merge consecutive filters/maps (could be optimized in future versions)
-
----
-
-#### Summary
-
-The Functional Converter Cleanup:
-
-- **Applies safe and proven transformations** across 21 tested patterns
-- **Targets common loop structures** found in legacy codebases
-- **Modernizes Java 5/6/7-style loops** to Java 8 stream-based idioms
-- **Uses an extensive test suite** for coverage and correctness
-- **Maintains semantic safety** by excluding complex patterns
-
----
-
-**Further Reading:**
-- **Implementation Details**: [ARCHITECTURE.md](sandbox_functional_converter/ARCHITECTURE.md) – In-depth architecture documentation
-- **Test Coverage**: `Java8CleanUpTest.java` in the `sandbox_functional_converter_test` module
-- **Wiki**: [Functional Converter](https://github.com/carstenartur/sandbox/wiki/Functional-Converter) – Converts `Iterator` loops to functional loops
-
-### 9. `sandbox_junit`
-
-Automates migration of legacy tests from JUnit 3 and JUnit 4 to JUnit 5 (Jupiter). Transforms test classes, methods, annotations, assertions, and lifecycle hooks to use the modern JUnit 5 API.
-
-**Key Features:**
-- JUnit 3 → 5: Remove `extends TestCase`, convert naming conventions to annotations
-- JUnit 4 → 5: Update annotations (`@Before` → `@BeforeEach`, `@Ignore` → `@Disabled`)
-- Assertion parameter reordering (message-last pattern)
-- Lifecycle method transformations
-- Rule migration (`@Rule` → `@RegisterExtension`)
-- Test suite conversion
-
-**Quick Example:**
-```java
-// Before (JUnit 3)
-public class MyTest extends TestCase {
-    protected void setUp() throws Exception {
-        super.setUp();
-    }
-    
-    public void testSomething() {
-        assertEquals("message", expected, actual);
-    }
-}
-
-// After (JUnit 5)
-public class MyTest {
-    @BeforeEach
-    void setUp() {
-    }
-    
-    @Test
-    void testSomething() {
-        assertEquals(expected, actual, "message");
-    }
-}
-```
-
-📖 **Full Documentation**: [Plugin README](sandbox_junit_cleanup/README.md) | [Architecture](sandbox_junit_cleanup/ARCHITECTURE.md) | [TODO](sandbox_junit_cleanup/TODO.md) | [Testing Guide](sandbox_junit_cleanup_test/TESTING.md)
-
----
-### 10. `sandbox_method_reuse`
-
-#### Method Reusability Finder – Code Duplication Detection
-
-The **Method Reusability Finder** is an Eclipse JDT cleanup plugin that analyzes selected methods to identify potentially reusable code patterns across the codebase. It helps developers discover duplicate or similar code that could be refactored to improve code quality and maintainability.
-
----
-
-#### Purpose
-
-- **Code Duplication Detection**: Identify similar code patterns using both token-based and AST-based analysis
-- **Intelligent Matching**: Recognize code similarity even when variable names differ
-- **Eclipse Integration**: Seamlessly integrate as a cleanup action in Eclipse JDT
-- **Performance**: Efficient analysis that scales to large codebases
-
----
-
-#### Key Features
-
-##### Similarity Analysis
-- **Token-based similarity**: Compares normalized token sequences
-- **AST-based similarity**: Compares abstract syntax tree structures
-- **Variable name normalization**: Ignores variable name differences
-- **Control flow analysis**: Matches similar control structures
-
-##### Inline Code Detection
-- Searches method bodies for inline code sequences
-- Finds code that matches a target method's body
-- Identifies refactoring opportunities within methods
-
-##### Safety Analysis
-- Analyzes semantic safety of replacements
-- Detects field modifications and side effects
-- Checks for complex control flow
-
----
-
-#### Components
-
-| Component                      | Purpose                                           |
-|--------------------------------|---------------------------------------------------|
-| `MethodReuseFinder`            | Searches project for similar methods             |
-| `MethodSignatureAnalyzer`      | Analyzes and compares method signatures          |
-| `CodePatternMatcher`           | AST-based pattern matching                        |
-| `InlineCodeSequenceFinder`     | Finds inline code sequences                       |
-| `CodeSequenceMatcher`          | Matches statement sequences with normalization    |
-| `VariableMapping`              | Tracks variable name mappings                     |
-| `MethodCallReplacer`           | Generates method invocation replacement code      |
-| `SideEffectAnalyzer`           | Analyzes safety of replacements                   |
-
----
-
-#### Configuration
-
-Cleanup options are defined in `MYCleanUpConstants`:
-- `METHOD_REUSE_CLEANUP` - Enable/disable the cleanup
-- `METHOD_REUSE_INLINE_SEQUENCES` - Enable inline code sequence detection
-
----
-
-#### Usage
-
-This cleanup is available as part of the JDT Clean Up framework:
-- **Eclipse UI** → Source → Clean Up
-- **Automated build tools** using Eclipse JDT APIs
-
----
-
-#### Implementation Status
-
-This is a new plugin currently under development. The initial implementation focuses on:
-- Basic method similarity detection
-- AST-based pattern matching
-- Integration with Eclipse cleanup framework
-
-See `sandbox_method_reuse/TODO.md` for pending features and improvements.
-
----
-
-### 11. `sandbox_xml_cleanup`
-
-#### XML Cleanup – PDE File Optimization
-
-The **XML Cleanup** plugin provides automated refactoring and optimization for PDE-relevant XML files in Eclipse projects. It focuses on reducing file size while maintaining semantic integrity through XSLT transformation, whitespace normalization, and optional indentation.
-
----
-
-#### Purpose
-
-- Optimize PDE XML configuration files for size and consistency
-- Apply secure XSLT transformations with whitespace normalization
-- Convert leading spaces to tabs (4 spaces → 1 tab)
-- Provide optional indentation control (default: OFF for size reduction)
-- Integrate with Eclipse workspace APIs for safe file updates
-
----
-
-#### Supported XML Types (PDE Files Only)
-
-The plugin **only** processes PDE-relevant XML files:
-
-**Supported File Names:**
-- `plugin.xml` - Eclipse plugin manifests
-- `feature.xml` - Eclipse feature definitions
-- `fragment.xml` - Eclipse fragment manifests
-
-**Supported File Extensions:**
-- `*.exsd` - Extension point schema definitions
-- `*.xsd` - XML schema definitions
-
-**Supported Locations:**
-Files must be in one of these locations:
-- **Project root** - Files directly in project folder
-- **OSGI-INF** - OSGi declarative services directory
-- **META-INF** - Manifest and metadata directory
-
-> **Note**: All other XML files (e.g., `pom.xml`, `build.xml`) are **ignored** to avoid unintended transformations.
-
----
-
-#### Transformation Process
-
-##### 1. XSLT Transformation
-- Uses secure XML processing (external DTD/entities disabled)
-- Preserves XML structure, comments, and content
-- **Default: `indent="no"`** - Produces compact output for size reduction
-- **Optional: `indent="yes"`** - Enabled via `XML_CLEANUP_INDENT` preference
-
-##### 2. Whitespace Normalization
-- **Reduce excessive empty lines** - Maximum 2 consecutive empty lines
-- **Leading space to tab conversion** - Only at line start (not inline text)
-  - Converts groups of 4 leading spaces to 1 tab
-  - Preserves remainder spaces (e.g., 5 spaces → 1 tab + 1 space)
-  - **Does NOT touch inline text or content nodes**
-
-##### 3. Change Detection
-- Only writes file if content actually changed
-- Uses Eclipse workspace APIs (`IFile.setContents()`)
-- Maintains file history (`IResource.KEEP_HISTORY`)
-- Refreshes resource after update
-
----
-
-#### Configuration
-
-**Default Behavior** (when `XML_CLEANUP` is enabled):
-- `indent="no"` - Compact output, no extra whitespace
-- Reduces file size by removing unnecessary whitespace
-- Converts leading spaces to tabs
-- Preserves semantic content
-
-**Optional Behavior** (when `XML_CLEANUP_INDENT` is enabled):
-- `indent="yes"` - Minimal indentation applied
-- Still converts leading spaces to tabs
-- Slightly larger file size but more readable
-
-**Constants** (defined in `MYCleanUpConstants`):
-- `XML_CLEANUP` - Enable XML cleanup (default: OFF)
-- `XML_CLEANUP_INDENT` - Enable indentation (default: OFF)
-
----
-
-#### Security Features
-
-The plugin implements secure XML processing:
-- External DTD access disabled
-- External entity resolution disabled
-- DOCTYPE declarations disallowed
-- Secure processing mode enabled
-
----
-
-#### Tab Conversion Rule
-
-Tab conversion is **only** applied to leading whitespace:
-
-✅ **Converted**:
-```xml
-    <element>  <!-- 4 leading spaces → 1 tab -->
-```
-
-❌ **Not Converted**:
-```xml
-<element attr="value    with    spaces"/>  <!-- Inline spaces preserved -->
-```
-
-This ensures that:
-- Indentation is normalized to tabs
-- XML attribute values are not modified
-- Text content spacing is preserved
-- Only structural whitespace is affected
-
----
-
-#### Usage
-
-This cleanup is available as part of the JDT Clean Up framework:
-- **Eclipse UI** → Source → Clean Up
-- Configure via cleanup preferences: `XML_CLEANUP` and `XML_CLEANUP_INDENT`
-
----
-
-#### Limitations
-
-1. **PDE Files Only**: Only processes plugin.xml, feature.xml, fragment.xml, *.exsd, *.xsd
-2. **Location Restricted**: Files must be in project root, OSGI-INF, or META-INF
-3. **Leading Tabs Only**: Tab conversion only applies to leading whitespace, not inline content
-4. **No Schema Validation**: Doesn't validate against XML schemas (relies on Eclipse PDE validation)
-
----
-
-#### Test Coverage
-
-The `sandbox_xml_cleanup_test` module contains comprehensive test cases for:
-- Size reduction verification
-- Semantic equality (using XMLUnit, ignoring whitespace)
-- Idempotency (second run produces no change)
-- Leading-indent-only tab conversion
-- PDE file filtering accuracy
-
----
-
-## Installation
-
-You can use the P2 update site:
-
-```
-https://github.com/carstenartur/sandbox/raw/main
-```
-
-> **Warning:**  
-> Use only with a fresh Eclipse installation that can be discarded after testing.  
-> It may break your setup. Don’t say you weren’t warned...
----
-
-## Documentation
-
-This repository contains extensive documentation organized at multiple levels to help you understand, use, and contribute to the project.
-
-### 📚 Documentation Index
-
-#### Getting Started
-- **[README.md](README.md)** (this file) - Project overview, build instructions, and plugin descriptions
-- **[Build Instructions](#build-instructions)** - How to build the project with Maven/Tycho
-- **[Quickstart](#quickstart)** - Quick introduction to using the plugins
-- **[Installation](#installation)** - How to install plugins in Eclipse
-
-#### Plugin-Specific Documentation
-
-Each plugin has dedicated documentation in its module directory:
-
-| Plugin | README | Architecture | TODO | Test Docs |
-|--------|--------|--------------|------|-----------|
-| [Cleanup Application](sandbox_cleanup_application) | [README.md](sandbox_cleanup_application/README.md) | [ARCHITECTURE.md](sandbox_cleanup_application/ARCHITECTURE.md) | [TODO.md](sandbox_cleanup_application/TODO.md) | - |
-| [Common Infrastructure](sandbox_common) | [README.md](sandbox_common/README.md) | [ARCHITECTURE.md](sandbox_common/ARCHITECTURE.md) | [TODO.md](sandbox_common/TODO.md) | [TESTING.md](sandbox_common_test/TESTING.md) |
-| [Coverage](sandbox_coverage) | [README.md](sandbox_coverage/README.md) | [ARCHITECTURE.md](sandbox_coverage/ARCHITECTURE.md) | [TODO.md](sandbox_coverage/TODO.md) | - |
-| [Encoding Quickfix](sandbox_encoding_quickfix) | [README.md](sandbox_encoding_quickfix/README.md) | [ARCHITECTURE.md](sandbox_encoding_quickfix/ARCHITECTURE.md) | [TODO.md](sandbox_encoding_quickfix/TODO.md) | - |
-| [Extra Search](sandbox_extra_search) | [README.md](sandbox_extra_search/README.md) | [ARCHITECTURE.md](sandbox_extra_search/ARCHITECTURE.md) | [TODO.md](sandbox_extra_search/TODO.md) | - |
-| [Functional Converter](sandbox_functional_converter) | [README.md](sandbox_functional_converter/README.md) | [ARCHITECTURE.md](sandbox_functional_converter/ARCHITECTURE.md) | [TODO.md](sandbox_functional_converter/TODO.md) | - |
-| [JFace Cleanup](sandbox_jface_cleanup) | [README.md](sandbox_jface_cleanup/README.md) | [ARCHITECTURE.md](sandbox_jface_cleanup/ARCHITECTURE.md) | [TODO.md](sandbox_jface_cleanup/TODO.md) | - |
-| [JUnit Cleanup](sandbox_junit_cleanup) | [README.md](sandbox_junit_cleanup/README.md) | [ARCHITECTURE.md](sandbox_junit_cleanup/ARCHITECTURE.md) | [TODO.md](sandbox_junit_cleanup/TODO.md) | [TESTING.md](sandbox_junit_cleanup_test/TESTING.md) |
-| [Method Reuse](sandbox_method_reuse) | [README.md](sandbox_method_reuse/README.md) | [ARCHITECTURE.md](sandbox_method_reuse/ARCHITECTURE.md) | [TODO.md](sandbox_method_reuse/TODO.md) | - |
-| [Oomph Setup](sandbox_oomph) | [README.md](sandbox_oomph/README.md) | [ARCHITECTURE.md](sandbox_oomph/ARCHITECTURE.md) | [TODO.md](sandbox_oomph/TODO.md) | - |
-| [Platform Helper](sandbox_platform_helper) | [README.md](sandbox_platform_helper/README.md) | [ARCHITECTURE.md](sandbox_platform_helper/ARCHITECTURE.md) | [TODO.md](sandbox_platform_helper/TODO.md) | - |
-| [Product](sandbox_product) | [README.md](sandbox_product/README.md) | [ARCHITECTURE.md](sandbox_product/ARCHITECTURE.md) | [TODO.md](sandbox_product/TODO.md) | - |
-| [Target Platform](sandbox_target) | [README.md](sandbox_target/README.md) | [ARCHITECTURE.md](sandbox_target/ARCHITECTURE.md) | [TODO.md](sandbox_target/TODO.md) | - |
-| [Test Commons](sandbox_test_commons) | [README.md](sandbox_test_commons/README.md) | [ARCHITECTURE.md](sandbox_test_commons/ARCHITECTURE.md) | [TODO.md](sandbox_test_commons/TODO.md) | - |
-| [Tools](sandbox_tools) | [README.md](sandbox_tools/README.md) | [ARCHITECTURE.md](sandbox_tools/ARCHITECTURE.md) | [TODO.md](sandbox_tools/TODO.md) | - |
-| [Trigger Pattern](sandbox_triggerpattern) | [README.md](sandbox_triggerpattern/README.md) | [ARCHITECTURE.md](sandbox_triggerpattern/ARCHITECTURE.md) | [TODO.md](sandbox_triggerpattern/TODO.md) | - |
-| [Usage View](sandbox_usage_view) | [README.md](sandbox_usage_view/README.md) | [ARCHITECTURE.md](sandbox_usage_view/ARCHITECTURE.md) | [TODO.md](sandbox_usage_view/TODO.md) | - |
-| [Web (P2 Update Site)](sandbox_web) | [README.md](sandbox_web/README.md) | [ARCHITECTURE.md](sandbox_web/ARCHITECTURE.md) | [TODO.md](sandbox_web/TODO.md) | - |
-| [XML Cleanup](sandbox_xml_cleanup) | [README.md](sandbox_xml_cleanup/README.md) | [ARCHITECTURE.md](sandbox_xml_cleanup/ARCHITECTURE.md) | [TODO.md](sandbox_xml_cleanup/TODO.md) | - |
-
-**Documentation Structure per Plugin:**
-- **README.md** - Quick start guide, features overview, and usage examples
-- **ARCHITECTURE.md** - Design overview, implementation details, patterns used
-- **TODO.md** - Pending features, known issues, future enhancements
-- **TESTING.md** (where applicable) - Test organization, coverage, and running instructions
-
-#### Test Infrastructure Documentation
-
-- **[HelperVisitor API Test Suite](sandbox_common_test/TESTING.md)** - Comprehensive guide to testing with HelperVisitor API
-- **[JUnit Migration Test Suite](sandbox_junit_cleanup_test/TESTING.md)** - Test organization for JUnit 4→5 migration
-- **[JUnit Migration Implementation Tracking](sandbox_junit_cleanup_test/TODO_TESTING.md)** - Missing features and bugs in migration cleanup
-
-#### Project Governance
-- **[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)** - Community guidelines
-- **[SECURITY.md](SECURITY.md)** - Security policy and vulnerability reporting
-- **[CONTRIBUTING.md](#contributing)** - How to contribute to this project
-- **[LICENSE.txt](LICENSE.txt)** - Eclipse Public License 2.0
-
-#### Additional Resources
-- **[TRIGGERPATTERN.md](sandbox_common/TRIGGERPATTERN.md)** - Pattern matching engine documentation
-- **[Eclipse Version Configuration](#eclipse-version-configuration)** - How to update Eclipse versions
-- **[Release Process](#release-process)** - How to create releases
-
-### 📖 Documentation Guidelines for Contributors
-
-When contributing to this project, please maintain documentation quality:
-
-1. **Plugin Requirements**: All plugin directories SHOULD contain:
-   - `README.md` - Quick start guide with features and usage examples
-   - `ARCHITECTURE.md` - Design and implementation overview
-   - `TODO.md` - Open tasks and future work
-   
-2. **Navigation Headers**: All plugin documentation files include navigation headers linking to:
-   - Main README (this file)
-   - Plugin's own README (for ARCHITECTURE and TODO files)
-   - Sibling documentation files (README ↔ ARCHITECTURE ↔ TODO)
-
-3. **Update Documentation**: When making code changes:
-   - Update `README.md` if features or usage changes
-   - Update `ARCHITECTURE.md` if design changes
-   - Update `TODO.md` when completing tasks or identifying new ones
-   - Update main README if adding/removing plugins
-
-4. **Test Documentation**: Test modules with substantial test organization should include:
-   - `TESTING.md` - Test structure and organization
-   - `TODO_TESTING.md` (if applicable) - Implementation tracking for features being tested
-
-### 🔍 Finding Documentation
-
-**By Topic:**
-- **Building & Setup**: [Build Instructions](#build-instructions), [Eclipse Version Configuration](#eclipse-version-configuration)
-- **Code Coverage**: [Coverage Deployment](COVERAGE_DEPLOYMENT.md) - JaCoCo reports on GitHub Pages
-- **Plugin Usage**: See [Projects](#projects) section for detailed descriptions of each plugin
-- **Architecture**: Check `ARCHITECTURE.md` in each plugin directory
-- **Testing**: [HelperVisitor API](sandbox_common_test/TESTING.md), [JUnit Migration](sandbox_junit_cleanup_test/TESTING.md)
-- **Contributing**: [Contributing](#contributing), [Release Process](#release-process)
-
-**By File Location:**
-- **Root level**: Project-wide documentation (this README, CODE_OF_CONDUCT, SECURITY)
-- **Plugin directories** (`sandbox_*/`): Plugin-specific ARCHITECTURE.md and TODO.md
-- **Test directories** (`sandbox_*_test/`): Test-specific TESTING.md and TODO_TESTING.md
-
----
-
-## Contributing
-
-Contributions are welcome! This is an experimental sandbox project for testing Eclipse JDT cleanup implementations.
-
-### How to Contribute
-
-1. **Fork the repository** on GitHub
-2. **Create a feature branch** from `main` (the default branch):
-   ```bash
-   git checkout -b feature/my-new-cleanup
-   ```
-3. **Make your changes** following the existing code structure and conventions
-4. **Test your changes** thoroughly:
-   ```bash
-   mvn -Pjacoco verify
-   ```
-5. **Commit your changes** with clear commit messages:
-   ```bash
-   git commit -m "feat: add new cleanup for XYZ pattern"
-   ```
-6. **Push to your fork** and **create a Pull Request** targeting the `main` branch
-
-### Guidelines
-
-- Follow existing code patterns and cleanup structures
-- Add comprehensive test cases for new cleanups
-- Update documentation (README, architecture.md, todo.md) as needed
-- Ensure SpotBugs, CodeQL, and all tests pass
-- Keep changes focused and minimal
-
-### Reporting Issues
-
-Found a bug or have a feature request? Please [open an issue](https://github.com/carstenartur/sandbox/issues) on GitHub with:
-- Clear description of the problem or suggestion
-- Steps to reproduce (for bugs)
-- Expected vs. actual behavior
-- Eclipse and Java version information
-
-**Note**: This project primarily serves as an experimental playground. Features that prove stable and useful may be contributed upstream to Eclipse JDT.
-
----
-
-## Release Process
-
-This section describes how to create and publish a new release of the Sandbox project using the automated release workflow.
-
-### Prerequisites
-
-- Write access to the repository
-- All tests passing on the `main` branch
-- Decide on the release version number (e.g., `1.2.2`)
-- Decide on the next SNAPSHOT version (e.g., `1.2.3-SNAPSHOT`)
-
-### Automated Release Workflow
-
-The release process is **fully automated** through GitHub Actions. To create a release:
-
-#### 1. Trigger the Release Workflow
-
-1. Go to the [GitHub Actions tab](https://github.com/carstenartur/sandbox/actions)
-2. Select **"Release Workflow"** from the workflows list
-3. Click **"Run workflow"** button
-4. Fill in the required inputs:
-   - **Release version**: The version to release (e.g., `1.2.2`)
-   - **Next SNAPSHOT version**: The next development version (e.g., `1.2.3-SNAPSHOT`)
-5. Click **"Run workflow"** to start the automated release process
-
-#### 2. What the Workflow Does Automatically
-
-The workflow performs all release steps automatically:
-
-1. ✅ **Validates inputs** to ensure release_version has no `-SNAPSHOT` suffix and next_snapshot_version includes it
-2. ✅ **Updates version** in all `pom.xml`, `MANIFEST.MF`, `feature.xml`, and `*.product` files using `tycho-versions-plugin` for all modules **except** `sandbox-functional-converter-core`, which maintains independent versioning
-3. ✅ **Verifies** that no SNAPSHOT references remain (except in `sandbox-functional-converter-core`)
-4. ✅ **Commits** the release version changes
-5. ✅ **Builds and verifies** the release
-6. ✅ **Creates and pushes git tag** (`vX.Y.Z`) immediately
-7. ✅ **Creates and pushes maintenance branch** (`maintenance/X.Y.x`) immediately for potential backports
-8. ✅ **Generates release notes** from closed issues since the last release
-9. ✅ **Creates GitHub release** with auto-generated notes
-10. ✅ **Deploys** the P2 update site to GitHub Pages at `https://carstenartur.github.io/sandbox/releases/X.Y.Z/`
-11. ✅ **Updates composite metadata** to include the new release
-12. ✅ **Bumps version** to the next SNAPSHOT version
-13. ✅ **Commits and pushes** the SNAPSHOT version back to `main`
-14. ✅ **Reminds** to update Eclipse Marketplace listing
-
-#### 3. Post-Release Steps
-
-After the workflow completes successfully:
-
-1. **Verify the release**:
-   - Check the [Releases page](https://github.com/carstenartur/sandbox/releases) for the new release
-   - Verify the update site is available at `https://carstenartur.github.io/sandbox/releases/X.Y.Z/`
-
-2. **Update Eclipse Marketplace** (if applicable):
-   - Go to [Eclipse Marketplace](https://marketplace.eclipse.org/)
-   - Update the listing with the new update site URL
-
-3. **Test the release**:
-   - Install the plugins from the new update site in a clean Eclipse installation
-   - Verify core functionality works as expected
-
-### Workflow Inputs
-
-The automated workflow requires two inputs:
-
-- **`release_version`** (required): 
-  - The version number to release (e.g., `1.2.2`)
-  - Must NOT include `-SNAPSHOT` suffix
-  - Should follow [Semantic Versioning](https://semver.org/)
-
-- **`next_snapshot_version`** (required):
-  - The next development version (e.g., `1.2.3-SNAPSHOT`)
-  - MUST include `-SNAPSHOT` suffix
-  - Typically the next patch, minor, or major version
-
-### Example Release
-
-To release version `1.2.2` and prepare for `1.2.3-SNAPSHOT`:
-
-1. Navigate to Actions → Release Workflow → Run workflow
-2. Enter `release_version`: `1.2.2`
-3. Enter `next_snapshot_version`: `1.2.3-SNAPSHOT`
-4. Click "Run workflow"
-5. Monitor the workflow progress in the Actions tab
-6. Once complete, the main branch will be at `1.2.3-SNAPSHOT`, ready for development
-
-### Version Numbering
-
-This project follows [Semantic Versioning](https://semver.org/):
-
-- **MAJOR** version (X.0.0): Incompatible API changes
-- **MINOR** version (0.X.0): New functionality in a backward-compatible manner
-- **PATCH** version (0.0.X): Backward-compatible bug fixes
-
-### Release Artifacts
-
-Each release produces:
-- **Eclipse Product**: Installable Eclipse IDE with bundled plugins (`sandbox_product/target`)
-- **P2 Update Site**: For installing plugins into existing Eclipse (`sandbox_web/target`)
-- **WAR File**: Web-deployable update site
-- **Maven Artifacts**: Published to GitHub Packages
-
-### Troubleshooting
-
-**Build fails during release:**
-- Ensure all tests pass locally: `mvn clean verify -Pjacoco`
-- Check Java version: `java -version` (must be 21+)
-- Verify Maven version: `mvn -version` (3.9.x recommended)
-
-**GitHub Actions workflow fails:**
-- Check workflow run logs in the Actions tab
-- Ensure the tag was pushed correctly: `git ls-remote --tags origin`
-- Verify permissions for GitHub Packages publishing
+</details>
 
 ---
 

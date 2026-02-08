@@ -84,7 +84,7 @@ public class RuleTemporayFolderJUnitPlugin extends AbstractTool<ReferenceHolder<
 		VariableDeclarationFragment fragment= (VariableDeclarationFragment) node.fragments().get(0);
 		ITypeBinding binding= fragment.resolveBinding().getType();
 		if (binding != null && ORG_JUNIT_RULES_TEMPORARY_FOLDER.equals(binding.getQualifiedName())) {
-			mh.minv= node;
+			mh.setMinv(node);
 			dataHolder.put(dataHolder.size(), mh);
 			operations.add(fixcore.rewrite(dataHolder));
 		}

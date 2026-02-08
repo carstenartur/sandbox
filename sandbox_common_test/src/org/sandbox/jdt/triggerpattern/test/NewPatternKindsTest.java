@@ -168,10 +168,12 @@ public class NewPatternKindsTest {
 		
 		Match match = matches.get(0);
 		Map<String, Object> bindings = match.getBindings();
-		assertEquals(3, bindings.size(), "Should have 3 bindings");
+		assertEquals(5, bindings.size(), "Should have 5 bindings: $msg, $expected, $actual, $_, $this");
 		assertTrue(bindings.containsKey("$msg"));
 		assertTrue(bindings.containsKey("$expected"));
 		assertTrue(bindings.containsKey("$actual"));
+		assertTrue(bindings.containsKey("$_"), "Should have $_ auto-binding");
+		assertTrue(bindings.containsKey("$this"), "Should have $this auto-binding");
 	}
 	
 	@Test

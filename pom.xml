@@ -24,6 +24,7 @@
 	<modules>
 		<module>sandbox-functional-converter-core</module>
 		<module>sandbox-ast-api</module>
+		<module>sandbox-ast-api-jdt</module>
 		<module>sandbox_target</module>
 		<module>sandbox_cleanup_application</module>
 		<module>sandbox_cleanup_application_feature</module>
@@ -66,6 +67,9 @@
 		<module>sandbox_usage_view</module>
 		<module>sandbox_usage_view_feature</module>
 		<module>sandbox_usage_view_test</module>
+		<module>sandbox_int_to_enum</module>
+		<module>sandbox_int_to_enum_feature</module>
+		<module>sandbox_int_to_enum_test</module>
 		<!-- Heavy modules (sandbox_product, sandbox_updatesite) moved to profiles below -->
 	</modules>
 	<repositories>
@@ -183,9 +187,6 @@ See README.md for more information.
 				<configuration>
 					<source>${java-version}</source>
 					<target>${java-version}</target>
-          <targetPlatformConfiguration>
-          <pomDependencies>wrapAsBundle</pomDependencies>
-          </targetPlatformConfiguration>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -193,6 +194,7 @@ See README.md for more information.
 				<artifactId>target-platform-configuration</artifactId>
 				<version>${tycho-version}</version>
 				<configuration>
+					<pomDependencies>consider</pomDependencies>
 					<executionEnvironment>${java-execenv}</executionEnvironment>
 					<target>
 						<artifact>
@@ -559,6 +561,21 @@ See README.md for more information.
 			<dependency>
 				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_usage_view_test</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_int_to_enum</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_int_to_enum_feature</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_int_to_enum_test</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>

@@ -90,7 +90,6 @@ public enum StatementHandlerType {
 			VariableDeclarationStatement varDecl = (VariableDeclarationStatement) stmt;
 			String currentVarName = context.getCurrentVariableName();
 
-			@SuppressWarnings("unchecked")
 			List<VariableDeclarationFragment> fragments = varDecl.fragments();
 			if (fragments.isEmpty()) {
 				return new LoopBodyParser.ParseResult(currentVarName);

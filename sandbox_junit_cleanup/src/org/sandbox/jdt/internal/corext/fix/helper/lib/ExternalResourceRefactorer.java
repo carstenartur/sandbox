@@ -52,6 +52,106 @@ public final class ExternalResourceRefactorer {
 	}
 
 	/**
+	 * Finds the type definition (TypeDeclaration or AnonymousClassDeclaration) for a field.
+	 * Checks the field's initializer and type binding to locate the definition.
+	 * 
+	 * @param fieldDeclaration the field declaration to analyze
+	 * @param cu the compilation unit containing the field
+	 * @return the type definition node, or null if not found
+	 */
+	public static ASTNode getTypeDefinitionForField(FieldDeclaration fieldDeclaration, org.eclipse.jdt.core.dom.CompilationUnit cu) {
+		return (ASTNode) fieldDeclaration.fragments().stream()
+				.filter(VariableDeclarationFragment.class::isInstance)
+				.map(VariableDeclarationFragment.class::cast)
+				.map(fragment -> getTypeDefinitionFromFragment((VariableDeclarationFragment) fragment, cu))
+				.filter(java.util.Objects::nonNull)
+				.findFirst()
+				.orElse(null);
+	}
+
+	/**
+	 * Helper method to extract type definition from a variable declaration fragment.
+	 * 
+	 * @param fragment the variable declaration fragment to analyze
+	 * @param cu the compilation unit containing the fragment
+	 * @return the type definition node, or null if not found
+	 */
+	private static ASTNode getTypeDefinitionFromFragment(VariableDeclarationFragment fragment, org.eclipse.jdt.core.dom.CompilationUnit cu) {
+		// Check initializer
+		org.eclipse.jdt.core.dom.Expression initializer = fragment.getInitializer();
+		if (initializer instanceof org.eclipse.jdt.core.dom.ClassInstanceCreation) {
+			org.eclipse.jdt.core.dom.ClassInstanceCreation classInstanceCreation = (org.eclipse.jdt.core.dom.ClassInstanceCreation) initializer;
+
+			// Check for anonymous class
+			AnonymousClassDeclaration anonymousClass = classInstanceCreation.getAnonymousClassDeclaration();
+			if (anonymousClass != null) {
+				return anonymousClass;
+			}
+
+			// Check type binding
+			ITypeBinding typeBinding = classInstanceCreation.resolveTypeBinding();
+			return ASTNavigationUtils.findTypeDeclarationForBinding(typeBinding, cu);
+		}
+
+		// Check field type if no initialization is present
+		org.eclipse.jdt.core.dom.IVariableBinding fieldBinding = fragment.resolveBinding();
+		if (fieldBinding != null) {
+			ITypeBinding fieldTypeBinding = fieldBinding.getType();
+			return ASTNavigationUtils.findTypeDeclarationForBinding(fieldTypeBinding, cu);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Checks if a class has either a default constructor or no constructors at all.
+	 * Used to determine if ExternalResource subclasses can be easily migrated.
+	 * 
+	 * @param classNode the class to check
+	 * @return true if the class has a default constructor or no constructors
+	 */
+	public static boolean hasDefaultConstructorOrNoConstructor(TypeDeclaration classNode) {
+		boolean hasConstructor = false;
+
+		for (Object bodyDecl : classNode.bodyDeclarations()) {
+			if (bodyDecl instanceof org.eclipse.jdt.core.dom.MethodDeclaration) {
+				org.eclipse.jdt.core.dom.MethodDeclaration method = (org.eclipse.jdt.core.dom.MethodDeclaration) bodyDecl;
+				if (method.isConstructor()) {
+					hasConstructor = true;
+					if (method.parameters().isEmpty() && method.getBody() != null
+							&& method.getBody().statements().isEmpty()) {
+						return true;
+					}
+				}
+			}
+		}
+		return !hasConstructor;
+	}
+
+	/**
+	 * Checks if a variable declaration fragment represents an anonymous class.
+	 * 
+	 * @param fragment the variable declaration fragment to check
+	 * @return true if the fragment's initializer is an anonymous class
+	 */
+	public static boolean isAnonymousClass(VariableDeclarationFragment fragment) {
+		org.eclipse.jdt.core.dom.Expression initializer = fragment.getInitializer();
+		return initializer instanceof org.eclipse.jdt.core.dom.ClassInstanceCreation
+				&& ((org.eclipse.jdt.core.dom.ClassInstanceCreation) initializer).getAnonymousClassDeclaration() != null;
+	}
+
+	/**
+	 * Checks if the given type binding directly extends ExternalResource.
+	 * 
+	 * @param binding the type binding to check
+	 * @return true if the type's superclass is ExternalResource
+	 */
+	public static boolean isDirectlyExtendingExternalResource(ITypeBinding binding) {
+		ITypeBinding superclass = binding.getSuperclass();
+		return superclass != null && ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(superclass.getQualifiedName());
+	}
+
+	/**
 	 * Modifies a class that extends ExternalResource to use JUnit 5 extensions instead.
 	 * 
 	 * @param node the type declaration to modify
@@ -586,10 +686,7 @@ public final class ExternalResourceRefactorer {
 		return org.sandbox.jdt.internal.corext.util.TypeCheckingUtils.isTypeOrSubtype(typeBinding, typeToLookup);
 	}
 
-	private static boolean isDirectlyExtendingExternalResource(ITypeBinding binding) {
-		ITypeBinding superclass = binding.getSuperclass();
-		return superclass != null && ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(superclass.getQualifiedName());
-	}
+
 
 	private static boolean isLifecycleMethod(MethodDeclaration method, String methodName) {
 		return methodName.equals(method.getName().getIdentifier());

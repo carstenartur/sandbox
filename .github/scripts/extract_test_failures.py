@@ -38,8 +38,14 @@ def extract_failures(reports_dir="."):
     """Extract all test failures from JUnit XML reports."""
     failures = []
     
-    # Find all TEST-*.xml files
-    for xml_path in Path(reports_dir).rglob("**/target/surefire-reports/TEST-*.xml"):
+    # Find all TEST-*.xml files (rglob already does recursive matching, no need for **)
+    xml_files = list(Path(reports_dir).rglob("target/surefire-reports/TEST-*.xml"))
+    
+    # Warn if no files found
+    if not xml_files:
+        print("Warning: No TEST-*.xml files found in surefire-reports directories!", file=sys.stderr)
+    
+    for xml_path in xml_files:
         try:
             tree = ET.parse(xml_path)
             root = tree.getroot()

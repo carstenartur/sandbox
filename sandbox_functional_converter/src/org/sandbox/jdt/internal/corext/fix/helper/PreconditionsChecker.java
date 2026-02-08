@@ -357,7 +357,6 @@ public final class PreconditionsChecker {
 		ASTNode parent = loop.getParent();
 		if (parent instanceof Block) {
 			Block block = (Block) parent;
-			@SuppressWarnings("unchecked")
 			List<Statement> statements = block.statements();
 			int loopIndex = statements.indexOf(loop);
 			if (loopIndex != -1 && loopIndex + 1 < statements.size()) {

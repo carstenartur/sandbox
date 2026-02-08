@@ -17,6 +17,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExtensionRegistry;
@@ -26,9 +27,13 @@ import org.eclipse.core.runtime.Status;
 import org.osgi.framework.Bundle;
 import org.sandbox.jdt.triggerpattern.api.Hint;
 import org.sandbox.jdt.triggerpattern.api.HintContext;
+import org.sandbox.jdt.triggerpattern.api.HintKind;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
+import org.sandbox.jdt.triggerpattern.api.Severity;
 import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
+import org.sandbox.jdt.triggerpattern.api.TriggerPatterns;
+import org.sandbox.jdt.triggerpattern.api.TriggerTreeKind;
 
 /**
  * Registry for trigger pattern hints.
@@ -57,63 +62,173 @@ public class HintRegistry {
 		private final String displayName;
 		private final String description;
 		private final boolean enabledByDefault;
-		private final String severity;
+		private final Severity severity;
+		private final String id;
+		private final String category;
+		private final String[] suppressWarnings;
+		private final HintKind hintKind;
+		private final String minSourceVersion;
+		private final Integer[] treeKinds;  // For @TriggerTreeKind
 		private final Class<?> providerClass;
 		private final Method method;
 		
 		/**
-		 * @param pattern
-		 * @param displayName
-		 * @param description
-		 * @param enabledByDefault
-		 * @param severity
-		 * @param providerClass
-		 * @param method
+		 * Full constructor with all hint attributes.
+		 * 
+		 * @param pattern the pattern to match (may be null for @TriggerTreeKind)
+		 * @param displayName hint display name
+		 * @param description hint description
+		 * @param enabledByDefault whether enabled by default
+		 * @param severity severity level
+		 * @param id hint identifier
+		 * @param category hint category
+		 * @param suppressWarnings suppress warnings keys
+		 * @param hintKind inspection or action
+		 * @param minSourceVersion minimum Java version
+		 * @param treeKinds AST node types to match (for @TriggerTreeKind)
+		 * @param providerClass the provider class
+		 * @param method the hint method
 		 */
 		public HintDescriptor(Pattern pattern, String displayName, String description,
-				boolean enabledByDefault, String severity, Class<?> providerClass, Method method) {
+				boolean enabledByDefault, Severity severity, String id, String category,
+				String[] suppressWarnings, HintKind hintKind, String minSourceVersion,
+				Integer[] treeKinds, Class<?> providerClass, Method method) {
 			this.pattern = pattern;
 			this.displayName = displayName;
 			this.description = description;
 			this.enabledByDefault = enabledByDefault;
 			this.severity = severity;
+			this.id = id;
+			this.category = category;
+			this.suppressWarnings = suppressWarnings;
+			this.hintKind = hintKind;
+			this.minSourceVersion = minSourceVersion;
+			this.treeKinds = treeKinds;
 			this.providerClass = providerClass;
 			this.method = method;
 		}
 		
 		/**
-		 * @return
+		 * Legacy constructor for backward compatibility.
+		 * 
+		 * @deprecated Use the full constructor instead
+		 */
+		@Deprecated
+		public HintDescriptor(Pattern pattern, String displayName, String description,
+				boolean enabledByDefault, String severity, Class<?> providerClass, Method method) {
+			this(pattern, displayName, description, enabledByDefault,
+				parseSeverity(severity), "", "", new String[0], //$NON-NLS-1$ //$NON-NLS-2$
+				HintKind.INSPECTION, "", null, providerClass, method); //$NON-NLS-1$
+		}
+		
+		private static Severity parseSeverity(String severityStr) {
+			if (severityStr == null) {
+				return Severity.INFO;
+			}
+			try {
+				return Severity.valueOf(severityStr.toUpperCase(Locale.ROOT));
+			} catch (IllegalArgumentException e) {
+				// Map common string values to enum
+				return switch (severityStr.toLowerCase(Locale.ROOT)) {
+					case "error" -> Severity.ERROR; //$NON-NLS-1$
+					case "warning" -> Severity.WARNING; //$NON-NLS-1$
+					case "hint" -> Severity.HINT; //$NON-NLS-1$
+					default -> Severity.INFO;
+				};
+			}
+		}
+		
+		/**
+		 * @return the hint pattern (may be null for tree kind hints)
 		 */
 		public Pattern getPattern() {
 			return pattern;
 		}
 		
 		/**
-		 * @return
+		 * @return the display name
 		 */
 		public String getDisplayName() {
 			return displayName;
 		}
 		
 		/**
-		 * @return
+		 * @return the description
 		 */
 		public String getDescription() {
 			return description;
 		}
 		
 		/**
-		 * @return
+		 * @return whether enabled by default
 		 */
 		public boolean isEnabledByDefault() {
 			return enabledByDefault;
 		}
 		
 		/**
-		 * @return
+		 * @return the severity level
 		 */
-		public String getSeverity() {
+		public Severity getSeverity() {
 			return severity;
+		}
+		
+		/**
+		 * @return the severity as string (for backward compatibility)
+		 * @deprecated Use {@link #getSeverity()} instead
+		 */
+		@Deprecated
+		public String getSeverityString() {
+			return severity.name().toLowerCase(Locale.ROOT);
+		}
+		
+		/**
+		 * @return the hint ID
+		 */
+		public String getId() {
+			return id;
+		}
+		
+		/**
+		 * @return the category
+		 */
+		public String getCategory() {
+			return category;
+		}
+		
+		/**
+		 * @return suppress warnings keys
+		 */
+		public String[] getSuppressWarnings() {
+			return suppressWarnings;
+		}
+		
+		/**
+		 * @return the hint kind
+		 */
+		public HintKind getHintKind() {
+			return hintKind;
+		}
+		
+		/**
+		 * @return minimum source version
+		 */
+		public String getMinSourceVersion() {
+			return minSourceVersion;
+		}
+		
+		/**
+		 * @return tree kinds for @TriggerTreeKind hints (null for pattern hints)
+		 */
+		public Integer[] getTreeKinds() {
+			return treeKinds;
+		}
+		
+		/**
+		 * @return the provider class that contains the hint method
+		 */
+		public Class<?> getProviderClass() {
+			return providerClass;
 		}
 		
 		/**
@@ -193,32 +308,87 @@ public class HintRegistry {
 		
 		Class<?> providerClass = bundle.loadClass(className);
 		
-		// Find all methods annotated with @TriggerPattern
+		// Find all methods with hint annotations
 		for (Method method : providerClass.getDeclaredMethods()) {
+			// Check for @TriggerPattern
 			TriggerPattern triggerPattern = method.getAnnotation(TriggerPattern.class);
 			if (triggerPattern != null) {
-				validateHintMethod(method);
-				
-				Pattern pattern = new Pattern(
-					triggerPattern.value(),
-					triggerPattern.kind(),
-					triggerPattern.id().isEmpty() ? null : triggerPattern.id(),
-					null
-				);
-				
-				// Check for @Hint annotation
-				Hint hintAnnotation = method.getAnnotation(Hint.class);
-				String displayName = hintAnnotation != null ? hintAnnotation.displayName() : ""; //$NON-NLS-1$
-				String description = hintAnnotation != null ? hintAnnotation.description() : ""; //$NON-NLS-1$
-				boolean enabledByDefault = hintAnnotation == null || hintAnnotation.enabledByDefault();
-				String severity = hintAnnotation != null ? hintAnnotation.severity() : "info"; //$NON-NLS-1$
-				
-				HintDescriptor descriptor = new HintDescriptor(
-					pattern, displayName, description, enabledByDefault, severity, providerClass, method
-				);
-				loadedHints.add(descriptor);
+				loadTriggerPatternHint(method, triggerPattern, providerClass, loadedHints);
+			}
+			
+			// Check for @TriggerPatterns (container)
+			TriggerPatterns triggerPatterns = method.getAnnotation(TriggerPatterns.class);
+			if (triggerPatterns != null) {
+				for (TriggerPattern tp : triggerPatterns.value()) {
+					loadTriggerPatternHint(method, tp, providerClass, loadedHints);
+				}
+			}
+			
+			// Check for @TriggerTreeKind
+			TriggerTreeKind treeKind = method.getAnnotation(TriggerTreeKind.class);
+			if (treeKind != null) {
+				loadTreeKindHint(method, treeKind, providerClass, loadedHints);
 			}
 		}
+	}
+	
+	/**
+	 * Loads a single @TriggerPattern hint.
+	 */
+	private void loadTriggerPatternHint(Method method, TriggerPattern triggerPattern,
+			Class<?> providerClass, List<HintDescriptor> loadedHints) throws Exception {
+		validateHintMethod(method);
+		
+		Pattern pattern = new Pattern(
+			triggerPattern.value(),
+			triggerPattern.kind(),
+			triggerPattern.id().isEmpty() ? null : triggerPattern.id(),
+			null
+		);
+		
+		HintDescriptor descriptor = createHintDescriptor(pattern, null, method, providerClass);
+		loadedHints.add(descriptor);
+	}
+	
+	/**
+	 * Loads a @TriggerTreeKind hint.
+	 */
+	private void loadTreeKindHint(Method method, TriggerTreeKind treeKind,
+			Class<?> providerClass, List<HintDescriptor> loadedHints) throws Exception {
+		validateHintMethod(method);
+		
+		// Convert int[] to Integer[]
+		int[] kinds = treeKind.value();
+		Integer[] treeKinds = new Integer[kinds.length];
+		for (int i = 0; i < kinds.length; i++) {
+			treeKinds[i] = kinds[i];
+		}
+		
+		HintDescriptor descriptor = createHintDescriptor(null, treeKinds, method, providerClass);
+		loadedHints.add(descriptor);
+	}
+	
+	/**
+	 * Creates a HintDescriptor from a method and its @Hint annotation.
+	 */
+	private HintDescriptor createHintDescriptor(Pattern pattern, Integer[] treeKinds,
+			Method method, Class<?> providerClass) {
+		// Check for @Hint annotation
+		Hint hintAnnotation = method.getAnnotation(Hint.class);
+		
+		String displayName = hintAnnotation != null ? hintAnnotation.displayName() : ""; //$NON-NLS-1$
+		String description = hintAnnotation != null ? hintAnnotation.description() : ""; //$NON-NLS-1$
+		boolean enabledByDefault = hintAnnotation == null || hintAnnotation.enabledByDefault();
+		Severity severity = hintAnnotation != null ? hintAnnotation.severity() : Severity.INFO;
+		String id = hintAnnotation != null ? hintAnnotation.id() : ""; //$NON-NLS-1$
+		String category = hintAnnotation != null ? hintAnnotation.category() : ""; //$NON-NLS-1$
+		String[] suppressWarnings = hintAnnotation != null ? hintAnnotation.suppressWarnings() : new String[0];
+		HintKind hintKind = hintAnnotation != null ? hintAnnotation.hintKind() : HintKind.INSPECTION;
+		String minSourceVersion = hintAnnotation != null ? hintAnnotation.minSourceVersion() : ""; //$NON-NLS-1$
+		
+		return new HintDescriptor(pattern, displayName, description, enabledByDefault,
+			severity, id, category, suppressWarnings, hintKind, minSourceVersion,
+			treeKinds, providerClass, method);
 	}
 	
 	/**
@@ -250,7 +420,9 @@ public class HintRegistry {
 		validateHintMethod(method);
 		
 		HintDescriptor descriptor = new HintDescriptor(
-			pattern, displayName != null ? displayName : "", "", true, "info", providerClass, method //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			pattern, displayName != null ? displayName : "", "", true, //$NON-NLS-1$ //$NON-NLS-2$
+			Severity.INFO, "", "", new String[0], //$NON-NLS-1$ //$NON-NLS-2$
+			HintKind.INSPECTION, "", null, providerClass, method //$NON-NLS-1$
 		);
 		loadedHints.add(descriptor);
 	}

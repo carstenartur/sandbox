@@ -780,9 +780,9 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	}
 
 	/**
-	 * @param importname
-	 * @param bs
-	 * @return
+	 * @param importname the import name to match
+	 * @param bs the BiPredicate to assign for ImportDeclaration
+	 * @return old BiPredicate assigned for nodetype
 	 */
 	public BiPredicate<? extends ASTNode, E> addImportDeclaration(String importname, BiPredicate<ImportDeclaration, E> bs) {
 		predicatedata.put(VisitorEnum.ImportDeclaration, Map.ofEntries(
@@ -985,11 +985,11 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	}
 
 	/**
-	 * @param typeof
-	 * @param methodname
-	 * @param bs
-	 * @param params
-	 * @return
+	 * @param typeof the type of the method invocation
+	 * @param methodname the method name to match
+	 * @param bs the BiPredicate to assign for MethodInvocation
+	 * @param params the parameter type names
+	 * @return old BiPredicate assigned for nodetype
 	 */
 	public BiPredicate<? extends ASTNode, E> addMethodInvocation(String typeof, String methodname,
 			BiPredicate<MethodInvocation, E> bs, String[] params) {
@@ -1047,9 +1047,9 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	}
 
 	/**
-	 * @param name
-	 * @param bs
-	 * @return
+	 * @param name the annotation name to match
+	 * @param bs the BiPredicate to assign for NormalAnnotation
+	 * @return old BiPredicate assigned for nodetype
 	 */
 	public BiPredicate<? extends ASTNode, E> addNormalAnnotation(String name, BiPredicate<NormalAnnotation, E> bs) {
 		predicatedata.put(VisitorEnum.NormalAnnotation, Map.ofEntries(
@@ -1406,9 +1406,9 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	}
 
 	/**
-	 * @param derivedfrom
-	 * @param bs
-	 * @return
+	 * @param derivedfrom the superclass name to match
+	 * @param bs the BiPredicate to assign for TypeDeclaration
+	 * @return old BiPredicate assigned for nodetype
 	 */
 	public BiPredicate<? extends ASTNode, E> addTypeDeclaration(String derivedfrom, BiPredicate<TypeDeclaration, E> bs) {
 		predicatedata.put(VisitorEnum.TypeDeclaration, Map.ofEntries(

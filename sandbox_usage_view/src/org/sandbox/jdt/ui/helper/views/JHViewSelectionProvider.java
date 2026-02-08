@@ -18,9 +18,6 @@ import java.util.List;
 
 import org.eclipse.core.runtime.ListenerList;
 import org.eclipse.jdt.core.IJavaElement;
-//import org.eclipse.jdt.jeview.views.JEAttribute;
-//import org.eclipse.jdt.jeview.views.JEResource;
-//import org.eclipse.jdt.jeview.views.JavaElement;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.ISelectionProvider;
@@ -29,34 +26,38 @@ import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
 
+/**
+ * Selection provider for the variable table viewer that bridges the internal
+ * table selection to the workbench selection mechanism.
+ */
 class JHViewSelectionProvider implements ISelectionProvider {
-	private final TableViewer fViewer;
+	private final TableViewer tableViewer;
 
-	ListenerList<ISelectionChangedListener> fSelectionChangedListeners= new ListenerList<>();
-	private IStructuredSelection fLastSelection;
+	ListenerList<ISelectionChangedListener> selectionChangedListeners = new ListenerList<>();
+	private IStructuredSelection lastSelection;
 
-	public JHViewSelectionProvider(TableViewer viewer) {
-		fViewer= viewer;
-		fViewer.addSelectionChangedListener(event -> fireSelectionChanged());
+	public JHViewSelectionProvider(TableViewer tableViewer) {
+		this.tableViewer = tableViewer;
+		this.tableViewer.addSelectionChangedListener(event -> fireSelectionChanged());
 	}
 
 	void fireSelectionChanged() {
-		if (fSelectionChangedListeners != null) {
-			IStructuredSelection selection= getSelection();
+		if (selectionChangedListeners != null) {
+			IStructuredSelection selection = getSelection();
 
-			if (fLastSelection != null) {
-				List<?> newSelection= selection.toList();
-				List<?> oldSelection= fLastSelection.toList();
-				int size= newSelection.size();
+			if (lastSelection != null) {
+				List<?> newSelection = selection.toList();
+				List<?> oldSelection = lastSelection.toList();
+				int size = newSelection.size();
 				if (size == oldSelection.size()) {
-					for (int i= 0; i < size; i++) {
-						Object newElement= newSelection.get(i);
-						Object oldElement= oldSelection.get(i);
+					for (int i = 0; i < size; i++) {
+						Object newElement = newSelection.get(i);
+						Object oldElement = oldSelection.get(i);
 						if (newElement != oldElement && newElement.equals(oldElement)
 								&& newElement instanceof IJavaElement) {
 							// send out a fake selection event to make the Properties view update getKey():
-							SelectionChangedEvent event= new SelectionChangedEvent(this, StructuredSelection.EMPTY);
-							for (ISelectionChangedListener listener : fSelectionChangedListeners) {
+							SelectionChangedEvent event = new SelectionChangedEvent(this, StructuredSelection.EMPTY);
+							for (ISelectionChangedListener listener : selectionChangedListeners) {
 								listener.selectionChanged(event);
 							}
 							break;
@@ -64,11 +65,11 @@ class JHViewSelectionProvider implements ISelectionProvider {
 					}
 				}
 			}
-			fLastSelection= selection;
+			lastSelection = selection;
 
-			SelectionChangedEvent event= new SelectionChangedEvent(this, selection);
+			SelectionChangedEvent event = new SelectionChangedEvent(this, selection);
 
-			for (ISelectionChangedListener listener : fSelectionChangedListeners) {
+			for (ISelectionChangedListener listener : selectionChangedListeners) {
 				listener.selectionChanged(event);
 			}
 		}
@@ -76,41 +77,24 @@ class JHViewSelectionProvider implements ISelectionProvider {
 
 	@Override
 	public void addSelectionChangedListener(ISelectionChangedListener listener) {
-		fSelectionChangedListeners.add(listener);
+		selectionChangedListeners.add(listener);
 	}
 
 	@Override
 	public IStructuredSelection getSelection() {
-		IStructuredSelection selection= (IStructuredSelection) fViewer.getSelection();
-		System.out.println("out:" + selection); //$NON-NLS-1$
-		ArrayList<Object> externalSelection= new ArrayList<>();
+		IStructuredSelection selection = (IStructuredSelection) tableViewer.getSelection();
+		// Debug logging removed - uncomment if needed: logger.log(new Status(Status.INFO, UsageViewPlugin.PLUGIN_ID, "Selection: " + selection));
+		ArrayList<Object> externalSelection = new ArrayList<>();
 		for (Object element : selection) {
-			//			if (element instanceof JavaElement) {
-			//				IJavaElement javaElement = ((JavaElement) element).getJavaElement();
-			//				if (javaElement != null && !(javaElement instanceof IJavaModel)) {
-			//					// assume getJavaProject() is
-			//					// non-null
-			//					externalSelection.add(javaElement);
-			//				}
-			//			} else if (element instanceof JEResource) {
-			//				IResource resource = ((JEResource) element).getResource();
-			//				if (resource != null && !(resource instanceof IWorkspaceRoot)) {
-			//					// getProject() is non-null
-			//					externalSelection.add(resource);
-			//				}
-			//			} else if (element instanceof JEAttribute) {
-			//				Object wrappedObject = ((JEAttribute) element).getWrappedObject();
-			//				if (wrappedObject != null) {
-			//					externalSelection.add(wrappedObject);
-			//				}
-			//			}
+			// Variable bindings from the table can be added to external selection
+			// if needed for integration with other views
 		}
 		return new StructuredSelection(externalSelection);
 	}
 
 	@Override
 	public void removeSelectionChangedListener(ISelectionChangedListener listener) {
-		fSelectionChangedListeners.remove(listener);
+		selectionChangedListeners.remove(listener);
 	}
 
 	@Override

@@ -15,9 +15,13 @@
 package org.sandbox.jdt.ui.helper.views;
 
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.ui.ISharedImages;
+import org.eclipse.ui.PlatformUI;
 import org.osgi.framework.FrameworkUtil;
 
 public class JHPluginImages {
@@ -30,6 +34,7 @@ public class JHPluginImages {
 	public static final String REFRESH= "refresh.png"; //$NON-NLS-1$
 	public static final String SET_FOCUS= "setfocus.png"; //$NON-NLS-1$
 	public static final String CODE_SELECT= "codeSelect.png"; //$NON-NLS-1$
+	public static final String FILTER_CONFLICTS= "filterConflicts.png"; //$NON-NLS-1$
 
 	public static final ImageDescriptor IMG_CHILDREN= create(CHILDREN);
 	public static final ImageDescriptor IMG_INFO= create(INFO);
@@ -38,12 +43,29 @@ public class JHPluginImages {
 	public static final ImageDescriptor IMG_REFRESH= create(REFRESH);
 	public static final ImageDescriptor IMG_SET_FOCUS= create(SET_FOCUS);
 	public static final ImageDescriptor IMG_SET_FOCUS_CODE_SELECT= create(CODE_SELECT);
+	public static final ImageDescriptor IMG_FILTER_CONFLICTS= createFilterConflictsIcon();
 
 	private static ImageDescriptor create(String name) {
 		try {
-			return ImageDescriptor.createFromURL(new URL(fgIconBaseURL, name));
-		} catch (MalformedURLException e) {
+			return ImageDescriptor.createFromURL(fgIconBaseURL.toURI().resolve(name).toURL());
+		} catch (MalformedURLException | URISyntaxException e) {
 			return ImageDescriptor.getMissingImageDescriptor();
+		}
+	}
+
+	/**
+	 * Creates the filter conflicts icon descriptor.
+	 * Falls back to a platform warning icon if custom icon is not available.
+	 */
+	private static ImageDescriptor createFilterConflictsIcon() {
+		try {
+			URL iconURL = fgIconBaseURL.toURI().resolve(FILTER_CONFLICTS).toURL();
+			// Check if file exists by trying to open it
+			iconURL.openStream().close();
+			return ImageDescriptor.createFromURL(iconURL);
+		} catch (Exception e) {
+			// Fall back to platform warning icon
+			return PlatformUI.getWorkbench().getSharedImages().getImageDescriptor(ISharedImages.IMG_OBJS_WARN_TSK);
 		}
 	}
 

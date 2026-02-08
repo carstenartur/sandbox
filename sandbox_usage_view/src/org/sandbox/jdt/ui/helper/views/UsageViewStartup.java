@@ -45,7 +45,7 @@ public class UsageViewStartup implements IStartup {
 					IWorkbenchPage page = window.getActivePage();
 					if (page != null) {
 						try {
-							page.showView("org.eclipse.jdt.ui.helper.views.JavaHelperView");
+							page.showView(UsageViewPlugin.VIEW_ID);
 						} catch (PartInitException e) {
 							// Log error but don't fail startup
 							plugin.getLog().error("Failed to show JavaHelper View at startup", e);

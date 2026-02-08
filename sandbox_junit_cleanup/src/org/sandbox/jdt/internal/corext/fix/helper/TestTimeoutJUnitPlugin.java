@@ -64,7 +64,7 @@ public class TestTimeoutJUnitPlugin extends AbstractTestAnnotationParameterPlugi
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
 		NormalAnnotation testAnnotation = (NormalAnnotation) junitHolder.getAnnotation();
-		MemberValuePair timeoutPair = (MemberValuePair) junitHolder.additionalInfo;
+		MemberValuePair timeoutPair = (MemberValuePair) junitHolder.getAdditionalInfo();
 		
 		if (timeoutPair == null) {
 			return;
@@ -128,7 +128,6 @@ public class TestTimeoutJUnitPlugin extends AbstractTestAnnotationParameterPlugi
 		// Remove the timeout parameter from @Test annotation
 		// If the timeout is the only parameter, replace the NormalAnnotation with a MarkerAnnotation
 		// to avoid leaving an empty @Test() annotation.
-		@SuppressWarnings("unchecked")
 		List<MemberValuePair> testValues = testAnnotation.values();
 		if (testValues.size() == 1 && testValues.get(0) == timeoutPair) {
 			MarkerAnnotation markerTestAnnotation = ast.newMarkerAnnotation();

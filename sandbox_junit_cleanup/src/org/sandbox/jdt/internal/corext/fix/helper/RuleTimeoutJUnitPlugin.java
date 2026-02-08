@@ -103,9 +103,9 @@ public class RuleTimeoutJUnitPlugin extends TriggerPatternCleanupPlugin {
 		}
 		
 		JunitHolder holder = new JunitHolder();
-		holder.minv = fieldDecl;
-		holder.value = String.valueOf(info.value);
-		holder.minvname = info.unit;
+		holder.setMinv(fieldDecl);
+		holder.setValue(String.valueOf(info.value));
+		holder.setMinvname(info.unit);
 		return holder;
 	}
 
@@ -121,7 +121,6 @@ public class RuleTimeoutJUnitPlugin extends TriggerPatternCleanupPlugin {
 			MethodInvocation mi = (MethodInvocation) initializer;
 			String methodName = mi.getName().getIdentifier();
 			
-			@SuppressWarnings("unchecked")
 			List<Expression> args = mi.arguments();
 			if (args.size() == 1 && args.get(0) instanceof NumberLiteral) {
 				long value = parseLong((NumberLiteral) args.get(0));
@@ -133,7 +132,6 @@ public class RuleTimeoutJUnitPlugin extends TriggerPatternCleanupPlugin {
 			}
 		} else if (initializer instanceof ClassInstanceCreation) {
 			ClassInstanceCreation cic = (ClassInstanceCreation) initializer;
-			@SuppressWarnings("unchecked")
 			List<Expression> args = cic.arguments();
 			
 			if (args.size() == 1 && args.get(0) instanceof NumberLiteral) {
@@ -202,8 +200,8 @@ public class RuleTimeoutJUnitPlugin extends TriggerPatternCleanupPlugin {
 		long timeoutValue;
 		String timeUnit;
 		try {
-			timeoutValue = Long.parseLong(junitHolder.value);
-			timeUnit = junitHolder.minvname;
+			timeoutValue = Long.parseLong(junitHolder.getValue());
+			timeUnit = junitHolder.getMinvname();
 		} catch (NumberFormatException e) {
 			// Cannot determine timeout value, skip refactoring
 			return;

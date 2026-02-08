@@ -52,6 +52,7 @@ import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.ExternalResourceRefactorer;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 /**
@@ -92,7 +93,7 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 				|| ORG_JUNIT_RULES_TEMPORARY_FOLDER.equals(binding.getQualifiedName())) {
 			return true; // Continue processing other fields
 		}
-		mh.minv= node;
+		mh.setMinv(node);
 		dataHolder.put(dataHolder.size(), mh);
 		operations.add(fixcore.rewrite(dataHolder));
 		// Return true to continue processing other fields
@@ -104,15 +105,14 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 		FieldDeclaration fieldDeclaration= junitHolder.getFieldDeclaration();
 		boolean fieldStatic= isFieldAnnotatedWith(fieldDeclaration, ORG_JUNIT_CLASS_RULE);
 		CompilationUnit cu= (CompilationUnit) fieldDeclaration.getRoot();
-		String classNameFromField= extractClassNameFromField(fieldDeclaration);
 
-		ASTNode node2= getTypeDefinitionForField(fieldDeclaration, cu);
+		ASTNode node2= ExternalResourceRefactorer.getTypeDefinitionForField(fieldDeclaration, cu);
 
 		if (node2 instanceof TypeDeclaration) {
-			modifyExternalResourceClass((TypeDeclaration) node2, fieldDeclaration, fieldStatic, rewriter, ast, group,
+			ExternalResourceRefactorer.modifyExternalResourceClass((TypeDeclaration) node2, fieldDeclaration, fieldStatic, rewriter, ast, group,
 					importRewriter);
 		} else if (node2 instanceof AnonymousClassDeclaration typeNode) {
-			refactorAnonymousClassToImplementCallbacks(typeNode, fieldDeclaration, fieldStatic, rewriter, ast, group,
+			ExternalResourceRefactorer.refactorAnonymousClassToImplementCallbacks(typeNode, fieldDeclaration, fieldStatic, rewriter, ast, group,
 					importRewriter);
 		}
 		// If no matching type definition found, no action needed

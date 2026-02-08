@@ -10,47 +10,70 @@
 - [x] Add performance benchmarks
 - [x] Set up CI/CD workflows
 
-## Phase 2: Expression Wrappers (PLANNED)
-- [ ] Create base ASTExpr interface
-- [ ] Implement MethodInvocationExpr wrapper
-  - [ ] Fluent receiver() access
-  - [ ] arguments() access
-  - [ ] Method resolution to MethodInfo
-- [ ] Implement FieldAccessExpr wrapper
-  - [ ] Fluent field() access
-  - [ ] receiver() access
-  - [ ] Field resolution to VariableInfo
-- [ ] Implement SimpleName wrapper
-  - [ ] Binding resolution
-  - [ ] Type-safe binding access
-- [ ] Implement CastExpression wrapper
-- [ ] Implement InfixExpression wrapper
-- [ ] Add expression-level tests
+## Phase 2: Expression Wrappers (COMPLETED)
+- [x] Create base ASTExpr interface
+- [x] Implement MethodInvocationExpr wrapper
+  - [x] Fluent receiver() access
+  - [x] arguments() access
+  - [x] Method resolution to MethodInfo
+  - [x] Comprehensive tests (17 tests)
+- [x] Implement SimpleNameExpr wrapper
+  - [x] Binding resolution (variable/method/type)
+  - [x] Type-safe binding access
+  - [x] Comprehensive tests (13 tests)
+- [x] Implement FieldAccessExpr wrapper
+  - [x] Fluent field() access
+  - [x] receiver() access  
+  - [x] Field resolution to VariableInfo
+  - [x] Tests integrated with other tests
+- [x] Implement CastExpression wrapper
+  - [x] expression() access
+  - [x] type access
+  - [x] Tests integrated with other tests
+- [x] Implement InfixExpression wrapper
+  - [x] left/right operand access
+  - [x] operator access (InfixOperator enum)
+  - [x] Comprehensive tests (14 tests)
+- [x] Add expression-level tests (37 new tests, total 98 tests)
 
-## Phase 3: Statement Wrappers (PLANNED)
-- [ ] Create base ASTStmt interface
-- [ ] Implement EnhancedForWrapper
-  - [ ] Fluent iterable() access
-  - [ ] parameter() access
-  - [ ] body() access
-- [ ] Implement WhileLoopWrapper
-- [ ] Implement ForLoopWrapper
-- [ ] Implement IfStatementWrapper
-- [ ] Add statement-level tests
+## Phase 3: Statement Wrappers (COMPLETED)
+- [x] Create base ASTStmt interface
+- [x] Implement EnhancedForStmt wrapper
+  - [x] Fluent iterable() access
+  - [x] parameter() access
+  - [x] body() access
+  - [x] Comprehensive tests (10 tests)
+- [x] Implement WhileLoopStmt wrapper
+  - [x] Fluent condition() access
+  - [x] body() access
+  - [x] Comprehensive tests (10 tests)
+- [x] Implement ForLoopStmt wrapper
+  - [x] Fluent initializers() access
+  - [x] condition() access
+  - [x] updaters() access
+  - [x] body() access
+  - [x] Comprehensive tests (13 tests)
+- [x] Implement IfStatementStmt wrapper
+  - [x] Fluent condition() access
+  - [x] thenStatement() access
+  - [x] elseStatement() access
+  - [x] Comprehensive tests (12 tests)
+- [x] Add statement-level tests (45 new tests, total 143 tests)
 
-## Phase 4: FluentVisitor Builder (PLANNED)
-- [ ] Design fluent visitor API
-- [ ] Implement type-safe visitor builder
-- [ ] Support pattern matching on node types
-- [ ] Add visitor composition support
-- [ ] Add visitor tests and examples
+## Phase 4: FluentVisitor Builder (COMPLETED)
+- [x] Design fluent visitor API
+- [x] Implement type-safe visitor builder
+- [x] Support pattern matching on node types
+- [x] Add visitor composition support
+- [x] Add visitor tests and examples
 
-## Phase 5: JDT Bridge Module (PLANNED)
-- [ ] Create sandbox-ast-api-jdt module
-- [ ] Implement converters from JDT AST to sandbox-ast-api
-- [ ] Implement binding resolution using JDT
-- [ ] Add integration tests with JDT
-- [ ] Document migration path from JDT to fluent API
+## Phase 5: JDT Bridge Module (COMPLETED)
+- [x] Create sandbox-ast-api-jdt module
+- [x] Implement converters from JDT AST to sandbox-ast-api
+- [x] Implement binding resolution using JDT
+- [x] Add unit tests with synthetic JDT nodes and stub bindings
+- [ ] Add integration tests with JDT (binding-resolving via ASTParser + classpath)
+- [x] Document migration path from JDT to fluent API
 
 ## Known Issues
 - None currently

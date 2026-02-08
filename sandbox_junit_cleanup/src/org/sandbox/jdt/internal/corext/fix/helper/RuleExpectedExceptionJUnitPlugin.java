@@ -96,7 +96,7 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 		}
 		ITypeBinding binding = fragment.resolveBinding().getType();
 		if (binding != null && ORG_JUNIT_RULES_EXPECTED_EXCEPTION.equals(binding.getQualifiedName())) {
-			mh.minv = node;
+			mh.setMinv(node);
 			dataHolder.put(dataHolder.size(), mh);
 			operations.add(fixcore.rewrite(dataHolder));
 		}

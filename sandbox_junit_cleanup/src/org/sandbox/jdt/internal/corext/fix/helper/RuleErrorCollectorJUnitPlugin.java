@@ -82,7 +82,7 @@ public class RuleErrorCollectorJUnitPlugin extends AbstractTool<ReferenceHolder<
 		ITypeBinding binding = fragment.resolveBinding().getType();
 		if (binding != null && ORG_JUNIT_RULES_ERROR_COLLECTOR.equals(binding.getQualifiedName())) {
 			JunitHolder mh = new JunitHolder();
-			mh.minv = node;
+			mh.setMinv(node);
 			dataHolder.put(dataHolder.size(), mh);
 			operations.add(fixcore.rewrite(dataHolder));
 		}

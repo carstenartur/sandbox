@@ -13,8 +13,6 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper.lib;
 
-import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
-
 import java.util.Collection;
 import java.util.Set;
 
@@ -22,14 +20,10 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
-import org.eclipse.jdt.core.dom.ITypeBinding;
-import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
-import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
@@ -39,7 +33,6 @@ import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
-import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
 import org.sandbox.jdt.internal.corext.util.NamingUtils;
 
 /**
@@ -93,99 +86,6 @@ public abstract class AbstractTool<T> {
 	 * @return a code snippet showing the transformation (formatted as Java source code)
 	 */
 	public abstract String getPreview(boolean afterRefactoring);
-
-	/**
-	 * Finds the type definition (TypeDeclaration or AnonymousClassDeclaration) for a field.
-	 * Checks the field's initializer and type binding to locate the definition.
-	 * 
-	 * @param fieldDeclaration the field declaration to analyze
-	 * @param cu the compilation unit containing the field
-	 * @return the type definition node, or null if not found
-	 */
-	protected ASTNode getTypeDefinitionForField(FieldDeclaration fieldDeclaration, CompilationUnit cu) {
-		return (ASTNode) fieldDeclaration.fragments().stream()
-				.filter(VariableDeclarationFragment.class::isInstance)
-				.map(VariableDeclarationFragment.class::cast)
-				.map(fragment -> getTypeDefinitionFromFragment((VariableDeclarationFragment) fragment, cu))
-				.filter(java.util.Objects::nonNull)
-				.findFirst()
-				.orElse(null);
-	}
-
-	private ASTNode getTypeDefinitionFromFragment(VariableDeclarationFragment fragment, CompilationUnit cu) {
-		// Check initializer
-		Expression initializer = fragment.getInitializer();
-		if (initializer instanceof org.eclipse.jdt.core.dom.ClassInstanceCreation) {
-			org.eclipse.jdt.core.dom.ClassInstanceCreation classInstanceCreation = (org.eclipse.jdt.core.dom.ClassInstanceCreation) initializer;
-
-			// Check for anonymous class
-			AnonymousClassDeclaration anonymousClass = classInstanceCreation.getAnonymousClassDeclaration();
-			if (anonymousClass != null) {
-				return anonymousClass;
-			}
-
-			// Check type binding
-			ITypeBinding typeBinding = classInstanceCreation.resolveTypeBinding();
-			return ASTNavigationUtils.findTypeDeclarationForBinding(typeBinding, cu);
-		}
-
-		// Check field type if no initialization is present
-		IVariableBinding fieldBinding = fragment.resolveBinding();
-		if (fieldBinding != null) {
-			ITypeBinding fieldTypeBinding = fieldBinding.getType();
-			return ASTNavigationUtils.findTypeDeclarationForBinding(fieldTypeBinding, cu);
-		}
-
-		return null;
-	}
-
-	/**
-	 * Checks if a class has either a default constructor or no constructors at all.
-	 * Used to determine if ExternalResource subclasses can be easily migrated.
-	 * 
-	 * @param classNode the class to check
-	 * @return true if the class has a default constructor or no constructors
-	 */
-	protected boolean hasDefaultConstructorOrNoConstructor(TypeDeclaration classNode) {
-		boolean hasConstructor = false;
-
-		for (Object bodyDecl : classNode.bodyDeclarations()) {
-			if (bodyDecl instanceof org.eclipse.jdt.core.dom.MethodDeclaration) {
-				org.eclipse.jdt.core.dom.MethodDeclaration method = (org.eclipse.jdt.core.dom.MethodDeclaration) bodyDecl;
-				if (method.isConstructor()) {
-					hasConstructor = true;
-					if (method.parameters().isEmpty() && method.getBody() != null
-							&& method.getBody().statements().isEmpty()) {
-						return true;
-					}
-				}
-			}
-		}
-		return !hasConstructor;
-	}
-
-	/**
-	 * Checks if a variable declaration fragment represents an anonymous class.
-	 * 
-	 * @param fragment the variable declaration fragment to check
-	 * @return true if the fragment's initializer is an anonymous class
-	 */
-	public boolean isAnonymousClass(VariableDeclarationFragment fragment) {
-		Expression initializer = fragment.getInitializer();
-		return initializer instanceof org.eclipse.jdt.core.dom.ClassInstanceCreation
-				&& ((org.eclipse.jdt.core.dom.ClassInstanceCreation) initializer).getAnonymousClassDeclaration() != null;
-	}
-
-	/**
-	 * Checks if the given type binding directly extends ExternalResource.
-	 * 
-	 * @param binding the type binding to check
-	 * @return true if the type's superclass is ExternalResource
-	 */
-	protected boolean isDirectlyExtendingExternalResource(ITypeBinding binding) {
-		ITypeBinding superclass = binding.getSuperclass();
-		return superclass != null && ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(superclass.getQualifiedName());
-	}
 
 	/**
 	 * Checks if a field is annotated with the specified annotation.
@@ -294,7 +194,7 @@ public abstract class AbstractTool<T> {
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, ASTNode node,
 			ReferenceHolder<Integer, JunitHolder> dataHolder) {
 		JunitHolder mh = new JunitHolder();
-		mh.minv = node;
+		mh.setMinv(node);
 		dataHolder.put(dataHolder.size(), mh);
 		operations.add(fixcore.rewrite(dataHolder));
 		return true;

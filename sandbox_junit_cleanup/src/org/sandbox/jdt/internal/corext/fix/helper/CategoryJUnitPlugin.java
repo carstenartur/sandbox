@@ -92,14 +92,14 @@ public class CategoryJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, J
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Annotation node,
 			ReferenceHolder<Integer, JunitHolder> dataHolder) {
 		JunitHolder mh= new JunitHolder();
-		mh.minv= node;
-		mh.minvname= node.getTypeName().getFullyQualifiedName();
+		mh.setMinv(node);
+		mh.setMinvname(node.getTypeName().getFullyQualifiedName());
 		
 		if (node instanceof SingleMemberAnnotation mynode) {
 			Expression value= mynode.getValue();
 			List<String> categoryNames= extractCategoryNames(value);
 			if (!categoryNames.isEmpty()) {
-				mh.value= String.join(",", categoryNames);
+				mh.setValue(String.join(",", categoryNames));
 				dataHolder.put(dataHolder.size(), mh);
 				operations.add(fixcore.rewrite(dataHolder));
 			}
@@ -124,7 +124,6 @@ public class CategoryJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, J
 			}
 		} else if (value instanceof ArrayInitializer arrayInit) {
 			// Multiple categories: @Category({Fast.class, Slow.class})
-			@SuppressWarnings("unchecked")
 			List<Expression> expressions= arrayInit.expressions();
 			for (Expression expr : expressions) {
 				if (expr instanceof TypeLiteral typeLiteral) {
@@ -159,7 +158,7 @@ public class CategoryJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, J
 	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
 		Annotation minv= junitHolder.getAnnotation();
-		String[] categoryNames= junitHolder.value.split(",");
+		String[] categoryNames= junitHolder.getValue().split(",");
 		
 		// Determine if annotation is on a method or class and get the appropriate ListRewrite
 		ListRewrite listRewrite= null;

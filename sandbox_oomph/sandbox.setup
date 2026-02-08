@@ -28,7 +28,7 @@
   <setupTask
       xsi:type="setup:EclipseIniTask"
       option="-Xmx"
-      value="2048m"
+      value="${eclipse.heap.size}"
       vm="true"/>
   <setupTask
       xsi:type="setup:InstallationTask"
@@ -71,6 +71,22 @@
       Terminal=false
       Categories=Development;IDE;
     </content>
+  </setupTask>
+  <setupTask
+      xsi:type="setup:VariableTask"
+      name="eclipse.target.version"
+      value="2025-12"
+      label="Eclipse Release Version"
+      defaultValue="2025-12">
+    <description>The Eclipse release version to use for the P2 repositories that provision this IDE (e.g., 2025-12, 2025-09, 2024-12). Changing this value affects which Eclipse release is used for future provisioning, but does not automatically modify existing PDE target definitions.</description>
+  </setupTask>
+  <setupTask
+      xsi:type="setup:VariableTask"
+      name="eclipse.heap.size"
+      value="8g"
+      label="Eclipse Heap Size"
+      defaultValue="8g">
+    <description>The maximum heap size for Eclipse IDE (e.g., 2048m, 4096m, 8192m, 8g). Values can use either megabytes (m) or gigabytes (g). Adjust this based on your available memory and project size. This can be changed after installation.</description>
   </setupTask>
   <setupTask
       xsi:type="setup:VariableTask"
@@ -219,7 +235,7 @@
       <requirement
           name="org.eclipse.emf.edapt.runtime.feature.feature.group"/>
       <repository
-          url="https://download.eclipse.org/releases/2025-12"/>
+          url="https://download.eclipse.org/releases/${eclipse.target.version}"/>
     </setupTask>
     <description></description>
   </version>

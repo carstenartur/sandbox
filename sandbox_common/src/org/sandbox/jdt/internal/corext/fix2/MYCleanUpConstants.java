@@ -346,4 +346,16 @@ public class MYCleanUpConstants {
 	 * @since 1.2.2
 	 */
 	public static final String TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP= "cleanup.string_simplification"; //$NON-NLS-1$
+
+	/**
+	 * Convert integer constants used in if-else chains to enum with switch statement.
+	 * Improves type safety and code maintainability.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 * <p>
+	 *
+	 * @see CleanUpOptionsCore#TRUE
+	 * @see CleanUpOptionsCore#FALSE
+	 */
+	public static final String INT_TO_ENUM_CLEANUP= "cleanup.int_to_enum"; //$NON-NLS-1$
 }

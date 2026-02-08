@@ -42,7 +42,6 @@ public class MethodCallReplacer {
 	 * @param variableMapping The mapping from method parameters to inline expressions
 	 * @return A method invocation node
 	 */
-	@SuppressWarnings("unchecked")
 	public static MethodInvocation createMethodCall(AST ast, MethodDeclaration targetMethod, VariableMapping variableMapping) {
 		if (ast == null || targetMethod == null || variableMapping == null) {
 			return null;
@@ -64,7 +63,6 @@ public class MethodCallReplacer {
 	/**
 	 * Create the argument list for the method call
 	 */
-	@SuppressWarnings("unchecked")
 	private static List<Expression> createArguments(AST ast, MethodDeclaration targetMethod, VariableMapping variableMapping) {
 		List<Expression> arguments = new ArrayList<>();
 		Map<String, String> nameMappings = variableMapping.getMappings();
@@ -153,7 +151,6 @@ public class MethodCallReplacer {
 	 * @param variableMapping The variable mapping
 	 * @return true if all parameters can be mapped
 	 */
-	@SuppressWarnings("unchecked")
 	public static boolean canCreateMethodCall(MethodDeclaration targetMethod, VariableMapping variableMapping) {
 		if (targetMethod == null || variableMapping == null) {
 			return false;

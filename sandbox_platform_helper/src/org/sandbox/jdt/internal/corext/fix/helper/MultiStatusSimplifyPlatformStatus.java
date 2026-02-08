@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.MultiStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.dom.AST;
@@ -130,7 +129,6 @@ public class MultiStatusSimplifyPlatformStatus extends AbstractSimplifyPlatformS
 			boolean preservePluginId) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
-		ImportRewrite importRewrite= cuRewrite.getImportRewrite();
 		ImportRemover remover= cuRewrite.getImportRemover();
 
 		// Create a new MultiStatus construction with IStatus.OK as the code parameter

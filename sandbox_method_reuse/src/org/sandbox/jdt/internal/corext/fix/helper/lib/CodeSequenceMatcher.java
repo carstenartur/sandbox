@@ -62,7 +62,6 @@ public class CodeSequenceMatcher {
 	/**
 	 * Match two statements with variable mapping
 	 */
-	@SuppressWarnings("unchecked")
 	private static boolean matchStatement(Statement target, Statement candidate, VariableMapping mapping) {
 		if (target == null || candidate == null) {
 			return false;

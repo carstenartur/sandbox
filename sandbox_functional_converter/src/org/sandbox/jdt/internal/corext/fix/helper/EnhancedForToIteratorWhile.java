@@ -137,7 +137,6 @@ public class EnhancedForToIteratorWhile extends AbstractFunctionalCall<ASTNode> 
 		ASTNode parent = forStmt.getParent();
 		if (parent instanceof Block) {
 			Block parentBlock = (Block) parent;
-			int index = parentBlock.statements().indexOf(forStmt);
 			
 			org.eclipse.jdt.core.dom.rewrite.ListRewrite listRewrite = rewrite.getListRewrite(parentBlock, Block.STATEMENTS_PROPERTY);
 			listRewrite.insertBefore(iteratorDecl, forStmt, group);

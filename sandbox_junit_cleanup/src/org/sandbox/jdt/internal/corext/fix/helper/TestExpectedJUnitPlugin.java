@@ -75,7 +75,7 @@ public class TestExpectedJUnitPlugin extends AbstractTestAnnotationParameterPlug
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
 		NormalAnnotation testAnnotation = (NormalAnnotation) junitHolder.getAnnotation();
-		MemberValuePair expectedPair = (MemberValuePair) junitHolder.additionalInfo;
+		MemberValuePair expectedPair = (MemberValuePair) junitHolder.getAdditionalInfo();
 		
 		if (expectedPair == null) {
 			return;
@@ -100,7 +100,6 @@ public class TestExpectedJUnitPlugin extends AbstractTestAnnotationParameterPlug
 			return;
 		}
 		
-		@SuppressWarnings("unchecked")
 		List<Statement> statements = methodBody.statements();
 		
 		// Create assertThrows method invocation
@@ -139,7 +138,6 @@ public class TestExpectedJUnitPlugin extends AbstractTestAnnotationParameterPlug
 		
 		// Remove the expected parameter from @Test annotation
 		// If expected is the only parameter remaining, replace with marker annotation
-		@SuppressWarnings("unchecked")
 		List<MemberValuePair> testValues = testAnnotation.values();
 		
 		// Count how many parameters will remain after removing expected
