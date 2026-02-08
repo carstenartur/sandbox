@@ -257,11 +257,17 @@ public abstract class AbstractPatternCleanupPlugin<H> {
      *   <li>NormalAnnotation with named parameters like {@code @Ignore(value="reason")} is not supported.</li>
      * </ul>
      * 
+     * <p><b>Required holder methods:</b></p>
+     * <ul>
+     *   <li>For ANNOTATION patterns: {@code getAnnotation()}, {@code getBindingAsExpression(String)} (when using placeholders)</li>
+     *   <li>For non-ANNOTATION patterns: {@code getMinv()}, {@code getBindings()}</li>
+     * </ul>
+     * 
      * @param group the text edit group for tracking changes
      * @param rewriter the AST rewriter
      * @param ast the AST instance
      * @param importRewriter the import rewriter
-     * @param holder the holder containing transformation information (must provide getMinv() and getBindings() methods)
+     * @param holder the holder containing transformation information
      */
     protected void processRewriteWithRule(TextEditGroup group, ASTRewrite rewriter, AST ast,
             ImportRewrite importRewriter, Object holder) {
@@ -273,13 +279,28 @@ public abstract class AbstractPatternCleanupPlugin<H> {
                 " must be annotated with @RewriteRule because it does not override processRewrite()"); //$NON-NLS-1$
         }
         
-        // Get the matched node from holder
+        // Try to detect if this is an annotation pattern by checking for getAnnotation() method
+        // This allows annotation-only holders to work without requiring getMinv()
+        boolean isAnnotationPattern = false;
+        try {
+            java.lang.reflect.Method method = holder.getClass().getMethod("getAnnotation"); //$NON-NLS-1$
+            Annotation annotation = (Annotation) method.invoke(holder);
+            if (annotation != null) {
+                isAnnotationPattern = true;
+                processAnnotationRewriteWithRule(group, rewriter, ast, importRewriter, holder, rewriteRule);
+                return;
+            }
+        } catch (Exception e) {
+            // Not an annotation pattern, continue to check for getMinv()
+        }
+        
+        // For non-annotation patterns, get the matched node
         ASTNode matchedNode = getMatchedNodeFromHolder(holder);
         
         // Determine the pattern kind from the matched node type
         PatternKind patternKind = org.sandbox.jdt.triggerpattern.api.FixUtilities.determinePatternKindFromNode(matchedNode);
         
-        // For ANNOTATION patterns, use the legacy annotation replacement logic
+        // For ANNOTATION patterns detected via node type, use the legacy annotation replacement logic
         if (patternKind == PatternKind.ANNOTATION) {
             processAnnotationRewriteWithRule(group, rewriter, ast, importRewriter, holder, rewriteRule);
         } else {
@@ -404,6 +425,7 @@ public abstract class AbstractPatternCleanupPlugin<H> {
      * 
      * @param holder the holder object
      * @return the bindings map
+     * @throws RuntimeException if the holder does not provide getBindings() method
      */
     @SuppressWarnings("unchecked")
     protected Map<String, Object> getBindingsFromHolder(Object holder) {
@@ -411,7 +433,7 @@ public abstract class AbstractPatternCleanupPlugin<H> {
             java.lang.reflect.Method method = holder.getClass().getMethod("getBindings"); //$NON-NLS-1$
             return (Map<String, Object>) method.invoke(holder);
         } catch (NoSuchMethodException | IllegalAccessException | java.lang.reflect.InvocationTargetException e) {
-            return new HashMap<>(); // Return empty map if not found
+            throw new RuntimeException("Holder must provide getBindings() method for non-annotation rewrites", e); //$NON-NLS-1$
         }
     }
     

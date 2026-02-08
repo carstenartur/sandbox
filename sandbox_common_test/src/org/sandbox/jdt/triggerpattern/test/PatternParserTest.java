@@ -17,12 +17,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.IfStatement;
 import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Statement;
-import org.eclipse.jdt.core.dom.IfStatement;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
@@ -94,5 +95,32 @@ public class PatternParserTest {
 		
 		assertNotNull(node, "Parser should return a non-null node");
 		assertTrue(node instanceof Statement, "Node should be a Statement");
+	}
+	
+	@Test
+	public void testParseConstructorWithPlaceholders() {
+		Pattern pattern = new Pattern("new String($bytes, $enc)", PatternKind.CONSTRUCTOR);
+		ASTNode node = parser.parse(pattern);
+		
+		assertNotNull(node, "Parser should return a non-null node");
+		assertTrue(node instanceof ClassInstanceCreation, "Node should be a ClassInstanceCreation");
+	}
+	
+	@Test
+	public void testParseConstructorWithoutArguments() {
+		Pattern pattern = new Pattern("new StringBuilder()", PatternKind.CONSTRUCTOR);
+		ASTNode node = parser.parse(pattern);
+		
+		assertNotNull(node, "Parser should return a non-null node");
+		assertTrue(node instanceof ClassInstanceCreation, "Node should be a ClassInstanceCreation");
+	}
+	
+	@Test
+	public void testParseConstructorWithComplexArguments() {
+		Pattern pattern = new Pattern("new OutputStreamWriter($stream, StandardCharsets.UTF_8)", PatternKind.CONSTRUCTOR);
+		ASTNode node = parser.parse(pattern);
+		
+		assertNotNull(node, "Parser should return a non-null node");
+		assertTrue(node instanceof ClassInstanceCreation, "Node should be a ClassInstanceCreation");
 	}
 }

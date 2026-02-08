@@ -175,6 +175,51 @@ public class TriggerPatternEngineTest {
 		assertEquals(1, matches.size(), "Should find only one match (a + a)");
 	}
 	
+	@Test
+	public void testConstructorPatternWithPlaceholders() {
+		String code = """
+			class Test {
+				void method() {
+					String s = new String(bytes, "UTF-8");
+					String t = new String(data, StandardCharsets.UTF_8);
+				}
+			}
+			""";
+		
+		CompilationUnit cu = parse(code);
+		Pattern pattern = new Pattern("new String($bytes, $enc)", PatternKind.CONSTRUCTOR);
+		
+		List<Match> matches = engine.findMatches(cu, pattern);
+		
+		assertEquals(2, matches.size(), "Should find two constructor matches");
+		
+		Match match = matches.get(0);
+		assertNotNull(match.getMatchedNode());
+		assertEquals(4, match.getBindings().size(), "Should have 4 bindings: $bytes, $enc, $_, $this");
+		assertTrue(match.getBindings().containsKey("$bytes"));
+		assertTrue(match.getBindings().containsKey("$enc"));
+		assertTrue(match.getBindings().containsKey("$_"), "Should have $_ auto-binding");
+		assertTrue(match.getBindings().containsKey("$this"), "Should have $this auto-binding");
+	}
+	
+	@Test
+	public void testConstructorPatternNoArgs() {
+		String code = """
+			class Test {
+				void method() {
+					StringBuilder sb = new StringBuilder();
+				}
+			}
+			""";
+		
+		CompilationUnit cu = parse(code);
+		Pattern pattern = new Pattern("new StringBuilder()", PatternKind.CONSTRUCTOR);
+		
+		List<Match> matches = engine.findMatches(cu, pattern);
+		
+		assertEquals(1, matches.size(), "Should find one constructor match");
+	}
+	
 	private CompilationUnit parse(String code) {
 		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
 		parser.setSource(code.toCharArray());
