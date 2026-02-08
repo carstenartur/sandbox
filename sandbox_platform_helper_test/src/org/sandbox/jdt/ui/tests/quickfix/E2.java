@@ -5,7 +5,9 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 public class E2 {
 	static void bla(Throwable e) throws UnsupportedEncodingException {
+		@SuppressWarnings("unused")
 		IStatus status = new Status(IStatus.WARNING, "plugin id","important message",null);
+		@SuppressWarnings("unused")
 		byte[] bytes = "asdf".getBytes("Utf-8");
 	}
 }

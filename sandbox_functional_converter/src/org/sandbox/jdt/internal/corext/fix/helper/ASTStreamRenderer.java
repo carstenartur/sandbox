@@ -18,6 +18,8 @@ import java.util.function.Supplier;
 import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.sandbox.functional.core.model.SourceDescriptor;
+import org.sandbox.functional.core.operation.FilterOp;
+import org.sandbox.functional.core.operation.MapOp;
 import org.sandbox.functional.core.renderer.ASTAwareRenderer;
 import org.sandbox.functional.core.renderer.StreamPipelineRenderer;
 import org.sandbox.functional.core.terminal.*;
@@ -119,6 +121,16 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
     }
     
     @Override
+    public Expression renderFilterOp(Expression pipeline, FilterOp filterOp, String variableName) {
+        // Check if operation has comments - if so, use block lambda
+        if (filterOp.hasComments()) {
+            return renderFilterWithComments(pipeline, filterOp, variableName);
+        }
+        // Otherwise use simple expression lambda
+        return renderFilter(pipeline, filterOp.expression(), variableName);
+    }
+    
+    @Override
     public Expression renderMap(Expression pipeline, String expression, String variableName, String targetType) {
         // pipeline.map(var -> expression)
         MethodInvocation mapCall = ast.newMethodInvocation();
@@ -126,6 +138,16 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         mapCall.setName(ast.newSimpleName("map"));
         mapCall.arguments().add(createLambda(variableName, expression));
         return mapCall;
+    }
+    
+    @Override
+    public Expression renderMapOp(Expression pipeline, MapOp mapOp, String variableName) {
+        // Check if operation has comments - if so, use block lambda
+        if (mapOp.hasComments()) {
+            return renderMapWithComments(pipeline, mapOp, variableName);
+        }
+        // Otherwise use simple expression lambda
+        return renderMap(pipeline, mapOp.expression(), variableName, mapOp.targetType());
     }
     
     @Override
@@ -638,5 +660,89 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
      */
     public AST getAST() {
         return ast;
+    }
+    
+    /**
+     * Renders a filter operation with comments using a block lambda.
+     * 
+     * @param pipeline the current pipeline
+     * @param filterOp the filter operation with comments
+     * @param variableName the variable name for the lambda
+     * @return the pipeline with filter appended
+     */
+    private Expression renderFilterWithComments(Expression pipeline, FilterOp filterOp, String variableName) {
+        // Create: pipeline.filter(var -> { /* comment */ return expression; })
+        MethodInvocation filterCall = ast.newMethodInvocation();
+        filterCall.setExpression(pipeline);
+        filterCall.setName(ast.newSimpleName("filter"));
+        
+        // Create block lambda with comments
+        LambdaExpression lambda = ast.newLambdaExpression();
+        VariableDeclarationFragment param = ast.newVariableDeclarationFragment();
+        param.setName(ast.newSimpleName(variableName));
+        lambda.parameters().add(param);
+        lambda.setParentheses(false); // Single parameter without type
+        
+        // Create block body
+        Block block = ast.newBlock();
+        
+        // TODO: Full comment insertion requires ASTRewrite integration to properly
+        // insert comment text into the source. For now, we just generate a block lambda
+        // to show the structure is in place. When ASTRewrite is available:
+        // 1. Create LineComment or BlockComment nodes
+        // 2. Use ASTRewrite to insert comment text at the correct position
+        // 3. Attach comments before the return statement
+        
+        // Add return statement with the filter expression
+        ReturnStatement returnStmt = ast.newReturnStatement();
+        returnStmt.setExpression(createExpression(filterOp.expression()));
+        block.statements().add(returnStmt);
+        
+        lambda.setBody(block);
+        filterCall.arguments().add(lambda);
+        
+        return filterCall;
+    }
+    
+    /**
+     * Renders a map operation with comments using a block lambda.
+     * 
+     * @param pipeline the current pipeline
+     * @param mapOp the map operation with comments
+     * @param variableName the variable name for the lambda
+     * @return the pipeline with map appended
+     */
+    private Expression renderMapWithComments(Expression pipeline, MapOp mapOp, String variableName) {
+        // Create: pipeline.map(var -> { /* comment */ return expression; })
+        MethodInvocation mapCall = ast.newMethodInvocation();
+        mapCall.setExpression(pipeline);
+        mapCall.setName(ast.newSimpleName("map"));
+        
+        // Create block lambda with comments
+        LambdaExpression lambda = ast.newLambdaExpression();
+        VariableDeclarationFragment param = ast.newVariableDeclarationFragment();
+        param.setName(ast.newSimpleName(variableName));
+        lambda.parameters().add(param);
+        lambda.setParentheses(false); // Single parameter without type
+        
+        // Create block body
+        Block block = ast.newBlock();
+        
+        // TODO: Full comment insertion requires ASTRewrite integration to properly
+        // insert comment text into the source. For now, we just generate a block lambda
+        // to show the structure is in place. When ASTRewrite is available:
+        // 1. Create LineComment or BlockComment nodes
+        // 2. Use ASTRewrite to insert comment text at the correct position
+        // 3. Attach comments before the return statement
+        
+        // Add return statement with the map expression
+        ReturnStatement returnStmt = ast.newReturnStatement();
+        returnStmt.setExpression(createExpression(mapOp.expression()));
+        block.statements().add(returnStmt);
+        
+        lambda.setBody(block);
+        mapCall.arguments().add(lambda);
+        
+        return mapCall;
     }
 }

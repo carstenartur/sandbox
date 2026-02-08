@@ -26,7 +26,7 @@ import org.eclipse.jdt.internal.ui.fix.AbstractCleanUpCoreWrapper;
 public class UseFunctionalCallCleanUpV2 extends AbstractCleanUpCoreWrapper<UseFunctionalCallCleanUpCoreV2> {
 	
 	public UseFunctionalCallCleanUpV2(final Map<String, String> options) {
-		super(options, new UseFunctionalCallCleanUpCoreV2());
+		super(options, new UseFunctionalCallCleanUpCoreV2(options));
 	}
 
 	public UseFunctionalCallCleanUpV2() {

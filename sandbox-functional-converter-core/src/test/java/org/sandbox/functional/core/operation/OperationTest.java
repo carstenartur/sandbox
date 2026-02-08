@@ -103,4 +103,86 @@ class OperationTest {
         assertThat(skip.expression()).isEqualTo("5");
         assertThat(skip.operationType()).isEqualTo("skip");
     }
+    
+    @Test
+    void testFilterOpComments() {
+        FilterOp filter = new FilterOp("item != null");
+        
+        // Initially no comments
+        assertThat(filter.hasComments()).isFalse();
+        assertThat(filter.getComments()).isEmpty();
+        
+        // Add a single comment
+        filter.addComment("Check for null values");
+        assertThat(filter.hasComments()).isTrue();
+        assertThat(filter.getComments()).hasSize(1);
+        assertThat(filter.getComments()).containsExactly("Check for null values");
+        
+        // Add another comment
+        filter.addComment("This is important");
+        assertThat(filter.getComments()).hasSize(2);
+        assertThat(filter.getComments()).containsExactly("Check for null values", "This is important");
+    }
+    
+    @Test
+    void testFilterOpCommentsIgnoreNull() {
+        FilterOp filter = new FilterOp("item != null");
+        
+        filter.addComment(null);
+        assertThat(filter.hasComments()).isFalse();
+        
+        filter.addComment("");
+        assertThat(filter.hasComments()).isFalse();
+    }
+    
+    @Test
+    void testFilterOpAddCommentsList() {
+        FilterOp filter = new FilterOp("item != null");
+        
+        filter.addComments(java.util.List.of("Comment 1", "Comment 2", "Comment 3"));
+        assertThat(filter.hasComments()).isTrue();
+        assertThat(filter.getComments()).hasSize(3);
+        assertThat(filter.getComments()).containsExactly("Comment 1", "Comment 2", "Comment 3");
+    }
+    
+    @Test
+    void testMapOpComments() {
+        MapOp map = new MapOp("item.toUpperCase()");
+        
+        // Initially no comments
+        assertThat(map.hasComments()).isFalse();
+        assertThat(map.getComments()).isEmpty();
+        
+        // Add comments
+        map.addComment("Convert to uppercase");
+        map.addComment("For display purposes");
+        
+        assertThat(map.hasComments()).isTrue();
+        assertThat(map.getComments()).hasSize(2);
+        assertThat(map.getComments()).containsExactly("Convert to uppercase", "For display purposes");
+    }
+    
+    @Test
+    void testMapOpAddCommentsList() {
+        MapOp map = new MapOp("item.toString()");
+        
+        map.addComments(java.util.List.of("Convert to string", "Debugging aid"));
+        assertThat(map.hasComments()).isTrue();
+        assertThat(map.getComments()).hasSize(2);
+    }
+    
+    @Test
+    void testCommentsAreImmutable() {
+        FilterOp filter = new FilterOp("item != null");
+        filter.addComment("Comment 1");
+        
+        java.util.List<String> comments = filter.getComments();
+        assertThat(comments).hasSize(1);
+        
+        // Try to modify returned list - should throw exception
+        org.junit.jupiter.api.Assertions.assertThrows(
+            UnsupportedOperationException.class,
+            () -> comments.add("Should not work")
+        );
+    }
 }

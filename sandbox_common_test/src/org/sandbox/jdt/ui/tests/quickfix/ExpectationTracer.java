@@ -31,11 +31,13 @@ public class ExpectationTracer extends ConcurrentHashMap<ASTNode,SimpleName> imp
 		this.hv=hv;
 	}
 
+	@SuppressWarnings("unused") // Required by Serializable contract
 	private static void writeObject(ObjectOutputStream stream)
 			throws IOException {
 		stream.defaultWriteObject();
 	}
 
+	@SuppressWarnings("unused") // Required by Serializable contract
 	private static void readObject(ObjectInputStream stream)
 			throws IOException, ClassNotFoundException {
 		stream.defaultReadObject();

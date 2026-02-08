@@ -100,6 +100,7 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 		return false;
 	}
 
+	@SuppressWarnings("unused") // Method intended for future assertion order correction feature
 	private void correctAssertionOrder(MethodInvocation node, ASTRewrite rewriter, AST ast, TextEditGroup group) {
 	    String methodName = node.getName().getIdentifier();
 

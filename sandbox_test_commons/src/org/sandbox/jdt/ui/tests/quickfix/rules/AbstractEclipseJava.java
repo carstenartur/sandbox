@@ -749,6 +749,21 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	}
 
 	/**
+	 * Sets a cleanup option to a specific value in the current profile.
+	 * <p>
+	 * This is useful for non-boolean options like target format selections.
+	 * </p>
+	 * 
+	 * @param key the cleanup option key (from MYCleanUpConstants or CleanUpConstants)
+	 * @param value the value to set
+	 * @throws CoreException if the profile cannot be updated
+	 */
+	public void set(final String key, final String value) throws CoreException {
+		cleanUpProfile.getSettings().put(key, value);
+		commitProfile();
+	}
+
+	/**
 	 * Disables a cleanup option in the current profile.
 	 * 
 	 * @param key the cleanup option key (from MYCleanUpConstants or CleanUpConstants)

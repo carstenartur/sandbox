@@ -32,21 +32,25 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
  * <ul>
  *   <li><b>for → Stream</b> - Enhanced for-loop to functional stream</li>
  *   <li><b>Iterator → Stream</b> - Iterator-based loop to stream</li>
- *   <li><b>while → for</b> - Classic while to enhanced for (where applicable)</li>
+ *   <li><b>Stream → for</b> - Stream forEach to enhanced for-loop</li>
+ *   <li><b>for → while</b> - Enhanced for to iterator while-loop</li>
+ *   <li><b>while → for</b> - Iterator while-loop to enhanced for</li>
  * </ul>
  * 
- * <p><b>Note:</b> Some transformations (e.g., Stream → for, for → while) are
- * conceptually inverse operations that would require separate quickfix implementations.
- * These tests document the desired behavior for future enhancements.</p>
- * 
- * <p><b>Current Implementation Status:</b></p>
+ * <p><b>Current Implementation Status (Phase 9):</b></p>
  * <ul>
  *   <li>✅ Enhanced for → Stream (via LOOP and LOOP_V2)</li>
  *   <li>✅ Iterator → Stream (via ITERATOR_LOOP)</li>
- *   <li>❌ Stream → for (not yet implemented)</li>
- *   <li>❌ for → while (not yet implemented)</li>
- *   <li>❌ while → for (not yet implemented)</li>
+ *   <li>❌ Stream → for (not yet implemented - requires CleanUpOptions string access)</li>
+ *   <li>❌ for → while (not yet implemented - requires CleanUpOptions string access)</li>
+ *   <li>❌ while → for (not yet implemented - requires CleanUpOptions string access)</li>
  * </ul>
+ * 
+ * <p><b>Implementation Note:</b></p>
+ * <p>The bidirectional transformations require reading the LOOP_CONVERSION_TARGET_FORMAT
+ * option as a string value from CleanUpOptions. The current Eclipse cleanup infrastructure
+ * doesn't provide an easy way to access non-boolean option values from the cleanup profile
+ * at runtime. This needs further investigation.</p>
  */
 @DisplayName("Bidirectional Loop Transformation Tests")
 public class LoopBidirectionalTransformationTest {
@@ -151,13 +155,12 @@ public class LoopBidirectionalTransformationTest {
 	 * <p><b>Pattern:</b> {@code collection.forEach(item -> ...)}</p>
 	 * <p><b>Expected:</b> {@code for (T item : collection) { ... }}</p>
 	 * 
-	 * <p><b>Implementation Note:</b> Would require a new cleanup/quickfix that
-	 * detects simple forEach() calls and converts them back to enhanced for-loops.
-	 * This is the inverse of the for → Stream transformation.</p>
+	 * <p><b>Implementation Note:</b> Uses StreamToEnhancedFor transformer activated via
+	 * LOOP_CONVERSION_ENABLED + LOOP_CONVERSION_TARGET_FORMAT="enhanced_for" + LOOP_CONVERSION_FROM_STREAM.</p>
 	 */
-	@Disabled("Stream → for transformation not yet implemented - future enhancement")
+	@Disabled("Bidirectional transformations not yet implemented - CleanUpOptions string value access needed")
 	@Test
-	@DisplayName("Stream → for: forEach to enhanced for-loop (future)")
+	@DisplayName("Stream → for: forEach to enhanced for-loop")
 	public void testStreamToFor_forEach() throws CoreException {
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 
@@ -184,8 +187,10 @@ public class LoopBidirectionalTransformationTest {
 				""";
 
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", given, false, null);
-		// Would need new constant: MYCleanUpConstants.STREAM_TO_LOOP_CLEANUP
-		// context.enable(MYCleanUpConstants.STREAM_TO_LOOP_CLEANUP);
+		// Enable bidirectional conversion with "enhanced_for" as target format
+		context.enable(MYCleanUpConstants.LOOP_CONVERSION_ENABLED);
+		context.set(MYCleanUpConstants.LOOP_CONVERSION_TARGET_FORMAT, "enhanced_for");
+		context.enable(MYCleanUpConstants.LOOP_CONVERSION_FROM_STREAM);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 	}
 
@@ -198,12 +203,12 @@ public class LoopBidirectionalTransformationTest {
 	 * <p><b>Pattern:</b> {@code for (T item : collection) { ... }}</p>
 	 * <p><b>Expected:</b> {@code Iterator<T> it = collection.iterator(); while (it.hasNext()) { T item = it.next(); ... }}</p>
 	 * 
-	 * <p><b>Implementation Note:</b> This is a niche use case. Most modern Java code
-	 * prefers enhanced for-loops over manual iterator manipulation.</p>
+	 * <p><b>Implementation Note:</b> Uses EnhancedForToIteratorWhile transformer activated via
+	 * LOOP_CONVERSION_ENABLED + LOOP_CONVERSION_TARGET_FORMAT="iterator_while" + LOOP_CONVERSION_FROM_ENHANCED_FOR.</p>
 	 */
-	@Disabled("for → while transformation not yet implemented - niche use case")
+	@Disabled("Bidirectional transformations not yet implemented - CleanUpOptions string value access needed")
 	@Test
-	@DisplayName("for → while: Enhanced for to iterator while-loop (future)")
+	@DisplayName("for → while: Enhanced for to iterator while-loop")
 	public void testForToWhile_iterator() throws CoreException {
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 
@@ -234,13 +239,15 @@ public class LoopBidirectionalTransformationTest {
 				""";
 
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", given, false, null);
-		// Would need new constant: MYCleanUpConstants.FOR_TO_WHILE_CLEANUP
-		// context.enable(MYCleanUpConstants.FOR_TO_WHILE_CLEANUP);
+		// Enable bidirectional conversion with "iterator_while" as target format
+		context.enable(MYCleanUpConstants.LOOP_CONVERSION_ENABLED);
+		context.set(MYCleanUpConstants.LOOP_CONVERSION_TARGET_FORMAT, "iterator_while");
+		context.enable(MYCleanUpConstants.LOOP_CONVERSION_FROM_ENHANCED_FOR);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 	}
 
 	/**
-	 * Tests classic while-iterator to enhanced for-loop transformation (NOT YET IMPLEMENTED).
+	 * Tests classic while-iterator to enhanced for-loop transformation.
 	 * 
 	 * <p><b>Direction:</b> while → for</p>
 	 * <p><b>Rationale:</b> Simplify iterator-based loops to more idiomatic enhanced for-loops
@@ -248,13 +255,12 @@ public class LoopBidirectionalTransformationTest {
 	 * <p><b>Pattern:</b> {@code Iterator<T> it = c.iterator(); while (it.hasNext()) { T item = it.next(); ... }}</p>
 	 * <p><b>Expected:</b> {@code for (T item : collection) { ... }}</p>
 	 * 
-	 * <p><b>Implementation Note:</b> This transformation already exists in a sense - 
-	 * our ITERATOR_LOOP currently converts to streams, but an alternative quickfix could
-	 * offer conversion to enhanced for-loops instead.</p>
+	 * <p><b>Implementation Note:</b> Uses IteratorWhileToEnhancedFor transformer activated via
+	 * LOOP_CONVERSION_ENABLED + LOOP_CONVERSION_TARGET_FORMAT="enhanced_for" + LOOP_CONVERSION_FROM_ITERATOR_WHILE.</p>
 	 */
-	@Disabled("while → for transformation not yet implemented - alternative to Iterator → Stream")
+	@Disabled("Bidirectional transformations not yet implemented - CleanUpOptions string value access needed")
 	@Test
-	@DisplayName("while → for: Iterator while-loop to enhanced for (future)")
+	@DisplayName("while → for: Iterator while-loop to enhanced for")
 	public void testWhileToFor_iterator() throws CoreException {
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 
@@ -285,8 +291,10 @@ public class LoopBidirectionalTransformationTest {
 				""";
 
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", given, false, null);
-		// Could be part of ITERATOR_LOOP but offering enhanced for instead of stream
-		// context.enable(MYCleanUpConstants.WHILE_TO_FOR_CLEANUP);
+		// Enable bidirectional conversion with "enhanced_for" as target format
+		context.enable(MYCleanUpConstants.LOOP_CONVERSION_ENABLED);
+		context.set(MYCleanUpConstants.LOOP_CONVERSION_TARGET_FORMAT, "enhanced_for");
+		context.enable(MYCleanUpConstants.LOOP_CONVERSION_FROM_ITERATOR_WHILE);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 	}
 }

@@ -71,7 +71,8 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 		intent(loopConversionGroup);
 		
 		// Target format combo
-		final ComboPreference targetFormat = createComboPref(loopConversionGroup, numColumns,
+		// Note: ComboPreference is created but not registered as a slave (it remains independently enabled)
+		createComboPref(loopConversionGroup, numColumns,
 			CleanUpMessages.LoopConversion_TargetFormat,
 			MYCleanUpConstants.LOOP_CONVERSION_TARGET_FORMAT,
 			new String[] {
