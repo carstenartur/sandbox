@@ -63,7 +63,7 @@ public final class MapOp implements Operation {
      * @param comment the comment text
      */
     public void addComment(String comment) {
-        if (comment != null && !comment.isEmpty()) {
+        if (comment != null && !comment.isBlank()) {
             this.associatedComments.add(comment);
         }
     }

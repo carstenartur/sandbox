@@ -13,7 +13,12 @@
  *******************************************************************************/
 package org.sandbox.jdt.ui.tests.quickfix;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.List;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
@@ -83,14 +88,14 @@ public class CommentPreservationIntegrationTest {
             }
         });
         
-        assertThat(forLoop[0]).isNotNull();
+        assertNotNull(forLoop[0]);
         
         // Extract loop with compilation unit to enable comment extraction
         JdtLoopExtractor extractor = new JdtLoopExtractor();
         JdtLoopExtractor.ExtractedLoop extracted = extractor.extract(forLoop[0], compilationUnit);
         
-        assertThat(extracted).isNotNull();
-        assertThat(extracted.model).isNotNull();
+        assertNotNull(extracted);
+        assertNotNull(extracted.model);
         
         // Comment extraction is implemented but not yet wired to operations
         // This test validates the infrastructure is in place
@@ -108,12 +113,12 @@ public class CommentPreservationIntegrationTest {
         filter.addComment("Only process positive integers");
         
         // Verify comments are stored
-        assertThat(filter.hasComments()).isTrue();
-        assertThat(filter.getComments()).hasSize(2);
-        assertThat(filter.getComments()).containsExactly(
+        assertTrue(filter.hasComments());
+        assertEquals(2, filter.getComments().size());
+        assertEquals(List.of(
             "Filter out negative values",
             "Only process positive integers"
-        );
+        ), filter.getComments());
         
         // The renderer will check hasComments() and generate block lambda
         // This test validates the comment storage mechanism works
@@ -131,12 +136,12 @@ public class CommentPreservationIntegrationTest {
         map.addComment("For display purposes");
         
         // Verify comments are stored
-        assertThat(map.hasComments()).isTrue();
-        assertThat(map.getComments()).hasSize(2);
-        assertThat(map.getComments()).containsExactly(
+        assertTrue(map.hasComments());
+        assertEquals(2, map.getComments().size());
+        assertEquals(List.of(
             "Convert to uppercase",
             "For display purposes"
-        );
+        ), map.getComments());
     }
     
     /**
@@ -172,8 +177,8 @@ public class CommentPreservationIntegrationTest {
         CompilationUnit compilationUnit = (CompilationUnit) parser.createAST(null);
         
         // Verify comment list is available
-        assertThat(compilationUnit.getCommentList()).isNotEmpty();
-        assertThat(compilationUnit.getCommentList()).hasSize(2);
+        assertFalse(compilationUnit.getCommentList().isEmpty());
+        assertEquals(2, compilationUnit.getCommentList().size());
     }
     
     /**
@@ -187,8 +192,8 @@ public class CommentPreservationIntegrationTest {
         MapOp map = new MapOp("x * 2");
         
         // Verify no comments
-        assertThat(filter.hasComments()).isFalse();
-        assertThat(map.hasComments()).isFalse();
+        assertFalse(filter.hasComments());
+        assertFalse(map.hasComments());
         
         // The renderer will generate compact expression lambdas
         // This test validates the default behavior is preserved
@@ -222,7 +227,7 @@ public class CommentPreservationIntegrationTest {
         CompilationUnit compilationUnit = (CompilationUnit) parser.createAST(null);
         
         // Verify comment is detected
-        assertThat(compilationUnit.getCommentList()).isNotEmpty();
+        assertFalse(compilationUnit.getCommentList().isEmpty());
     }
     
     /**
@@ -238,8 +243,8 @@ public class CommentPreservationIntegrationTest {
         filter.addComment("  ");
         
         // Empty comments should not be stored
-        assertThat(filter.hasComments()).isFalse();
-        assertThat(filter.getComments()).isEmpty();
+        assertFalse(filter.hasComments());
+        assertTrue(filter.getComments().isEmpty());
     }
     
     /**
@@ -258,13 +263,13 @@ public class CommentPreservationIntegrationTest {
         filter2.addComment("Only long strings");
         
         // Each operation has its own comments
-        assertThat(filter1.hasComments()).isTrue();
-        assertThat(filter1.getComments()).containsExactly("Remove null values");
+        assertTrue(filter1.hasComments());
+        assertEquals(List.of("Remove null values"), filter1.getComments());
         
-        assertThat(map.hasComments()).isTrue();
-        assertThat(map.getComments()).containsExactly("Get string length");
+        assertTrue(map.hasComments());
+        assertEquals(List.of("Get string length"), map.getComments());
         
-        assertThat(filter2.hasComments()).isTrue();
-        assertThat(filter2.getComments()).containsExactly("Only long strings");
+        assertTrue(filter2.hasComments());
+        assertEquals(List.of("Only long strings"), filter2.getComments());
     }
 }
