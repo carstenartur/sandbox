@@ -23,6 +23,9 @@ import org.eclipse.jdt.core.dom.CastExpression;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.ForStatement;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.IfStatement;
 import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
@@ -42,6 +45,9 @@ import org.sandbox.ast.api.expr.InfixExpr;
 import org.sandbox.ast.api.expr.InfixOperator;
 import org.sandbox.ast.api.expr.MethodInvocationExpr;
 import org.sandbox.ast.api.expr.SimpleNameExpr;
+import org.sandbox.ast.api.info.MethodInfo;
+import org.sandbox.ast.api.info.TypeInfo;
+import org.sandbox.ast.api.info.VariableInfo;
 import org.sandbox.ast.api.stmt.ASTStmt;
 import org.sandbox.ast.api.stmt.EnhancedForStmt;
 import org.sandbox.ast.api.stmt.ForLoopStmt;
@@ -490,6 +496,236 @@ class JDTConverterTest {
 		@DisplayName("convertVariableBinding returns empty for null")
 		void convertVariableBindingNull() {
 			assertThat(JDTConverter.convertVariableBinding(null)).isEmpty();
+		}
+
+		@Test
+		@DisplayName("convertTypeBinding converts simple class type")
+		void convertTypeBindingSimpleClass() {
+			ITypeBinding binding = typeBinding("java.util.List", "List",
+					false, false, 0, new ITypeBinding[0]);
+
+			Optional<TypeInfo> result = JDTConverter.convertTypeBinding(binding);
+
+			assertThat(result).isPresent();
+			assertThat(result.get().qualifiedName()).isEqualTo("java.util.List");
+			assertThat(result.get().simpleName()).isEqualTo("List");
+			assertThat(result.get().isPrimitive()).isFalse();
+			assertThat(result.get().isArray()).isFalse();
+		}
+
+		@Test
+		@DisplayName("convertTypeBinding converts primitive type")
+		void convertTypeBindingPrimitive() {
+			ITypeBinding binding = typeBinding("int", "int",
+					true, false, 0, new ITypeBinding[0]);
+
+			Optional<TypeInfo> result = JDTConverter.convertTypeBinding(binding);
+
+			assertThat(result).isPresent();
+			assertThat(result.get().qualifiedName()).isEqualTo("int");
+			assertThat(result.get().isPrimitive()).isTrue();
+		}
+
+		@Test
+		@DisplayName("convertTypeBinding converts array type")
+		void convertTypeBindingArray() {
+			ITypeBinding binding = typeBinding("java.lang.String[]", "String[]",
+					false, true, 1, new ITypeBinding[0]);
+
+			Optional<TypeInfo> result = JDTConverter.convertTypeBinding(binding);
+
+			assertThat(result).isPresent();
+			assertThat(result.get().isArray()).isTrue();
+			assertThat(result.get().arrayDimensions()).isEqualTo(1);
+		}
+
+		@Test
+		@DisplayName("convertTypeBinding converts generic type with type arguments")
+		void convertTypeBindingGeneric() {
+			ITypeBinding stringBinding = typeBinding("java.lang.String", "String",
+					false, false, 0, new ITypeBinding[0]);
+			ITypeBinding binding = typeBinding("java.util.List", "List",
+					false, false, 0, new ITypeBinding[]{stringBinding});
+
+			Optional<TypeInfo> result = JDTConverter.convertTypeBinding(binding);
+
+			assertThat(result).isPresent();
+			assertThat(result.get().hasTypeArguments()).isTrue();
+			assertThat(result.get().typeArguments()).hasSize(1);
+			assertThat(result.get().firstTypeArgument().get().qualifiedName())
+					.isEqualTo("java.lang.String");
+		}
+
+		@Test
+		@DisplayName("convertMethodBinding converts method with parameters and modifiers")
+		void convertMethodBindingWithParams() {
+			ITypeBinding stringType = typeBinding("java.lang.String", "String",
+					false, false, 0, new ITypeBinding[0]);
+			ITypeBinding intType = typeBinding("int", "int",
+					true, false, 0, new ITypeBinding[0]);
+			ITypeBinding listType = typeBinding("java.util.List", "List",
+					false, false, 0, new ITypeBinding[0]);
+
+			IMethodBinding binding = methodBinding("add", listType, stringType,
+					new ITypeBinding[]{intType, stringType},
+					org.eclipse.jdt.core.dom.Modifier.PUBLIC);
+
+			Optional<MethodInfo> result = JDTConverter.convertMethodBinding(binding);
+
+			assertThat(result).isPresent();
+			assertThat(result.get().name()).isEqualTo("add");
+			assertThat(result.get().declaringType().qualifiedName()).isEqualTo("java.util.List");
+			assertThat(result.get().returnType().qualifiedName()).isEqualTo("java.lang.String");
+			assertThat(result.get().parameters()).hasSize(2);
+			assertThat(result.get().parameters().get(0).type().qualifiedName()).isEqualTo("int");
+			assertThat(result.get().parameters().get(1).type().qualifiedName()).isEqualTo("java.lang.String");
+			assertThat(result.get().isPublic()).isTrue();
+		}
+
+		@Test
+		@DisplayName("convertMethodBinding converts static method")
+		void convertMethodBindingStatic() {
+			ITypeBinding mathType = typeBinding("java.lang.Math", "Math",
+					false, false, 0, new ITypeBinding[0]);
+			ITypeBinding intType = typeBinding("int", "int",
+					true, false, 0, new ITypeBinding[0]);
+
+			IMethodBinding binding = methodBinding("max", mathType, intType,
+					new ITypeBinding[]{intType, intType},
+					org.eclipse.jdt.core.dom.Modifier.PUBLIC | org.eclipse.jdt.core.dom.Modifier.STATIC);
+
+			Optional<MethodInfo> result = JDTConverter.convertMethodBinding(binding);
+
+			assertThat(result).isPresent();
+			assertThat(result.get().isStatic()).isTrue();
+			assertThat(result.get().isPublic()).isTrue();
+		}
+
+		@Test
+		@DisplayName("convertMethodBinding handles null declaring class")
+		void convertMethodBindingNullDeclaringClass() {
+			ITypeBinding voidType = typeBinding("void", "void",
+					true, false, 0, new ITypeBinding[0]);
+
+			IMethodBinding binding = methodBinding("lambda", null, voidType,
+					new ITypeBinding[0], 0);
+
+			Optional<MethodInfo> result = JDTConverter.convertMethodBinding(binding);
+
+			assertThat(result).isPresent();
+			assertThat(result.get().name()).isEqualTo("lambda");
+			assertThat(result.get().declaringType().qualifiedName()).isEqualTo("<unresolved>");
+		}
+
+		@Test
+		@DisplayName("convertVariableBinding converts field")
+		void convertVariableBindingField() {
+			ITypeBinding stringType = typeBinding("java.lang.String", "String",
+					false, false, 0, new ITypeBinding[0]);
+
+			IVariableBinding binding = variableBinding("name", stringType,
+					org.eclipse.jdt.core.dom.Modifier.PRIVATE | org.eclipse.jdt.core.dom.Modifier.FINAL,
+					true, false);
+
+			Optional<VariableInfo> result = JDTConverter.convertVariableBinding(binding);
+
+			assertThat(result).isPresent();
+			assertThat(result.get().name()).isEqualTo("name");
+			assertThat(result.get().type().qualifiedName()).isEqualTo("java.lang.String");
+			assertThat(result.get().isField()).isTrue();
+			assertThat(result.get().isParameter()).isFalse();
+			assertThat(result.get().isPrivate()).isTrue();
+			assertThat(result.get().isFinal()).isTrue();
+		}
+
+		@Test
+		@DisplayName("convertVariableBinding converts parameter")
+		void convertVariableBindingParameter() {
+			ITypeBinding intType = typeBinding("int", "int",
+					true, false, 0, new ITypeBinding[0]);
+
+			IVariableBinding binding = variableBinding("index", intType,
+					0, false, true);
+
+			Optional<VariableInfo> result = JDTConverter.convertVariableBinding(binding);
+
+			assertThat(result).isPresent();
+			assertThat(result.get().name()).isEqualTo("index");
+			assertThat(result.get().isField()).isFalse();
+			assertThat(result.get().isParameter()).isTrue();
+			assertThat(result.get().type().isPrimitive()).isTrue();
+		}
+
+		// -----------------------------------------------------------
+		// Proxy-based stubs for JDT binding interfaces
+		// -----------------------------------------------------------
+
+		private ITypeBinding typeBinding(String qualifiedName, String simpleName,
+				boolean isPrimitive, boolean isArray, int dimensions,
+				ITypeBinding[] typeArguments) {
+			return (ITypeBinding) java.lang.reflect.Proxy.newProxyInstance(
+					getClass().getClassLoader(),
+					new Class[]{ITypeBinding.class},
+					(proxy, method, args) -> switch (method.getName()) {
+						case "getQualifiedName" -> qualifiedName;
+						case "getName" -> simpleName;
+						case "isPrimitive" -> isPrimitive;
+						case "isArray" -> isArray;
+						case "getDimensions" -> dimensions;
+						case "getTypeArguments" -> typeArguments;
+						case "toString" -> qualifiedName;
+						case "hashCode" -> System.identityHashCode(proxy);
+						case "equals" -> proxy == args[0];
+						default -> defaultValue(method.getReturnType());
+					});
+		}
+
+		private IMethodBinding methodBinding(String name, ITypeBinding declaringClass,
+				ITypeBinding returnType, ITypeBinding[] paramTypes, int modifiers) {
+			return (IMethodBinding) java.lang.reflect.Proxy.newProxyInstance(
+					getClass().getClassLoader(),
+					new Class[]{IMethodBinding.class},
+					(proxy, method, args) -> switch (method.getName()) {
+						case "getName" -> name;
+						case "getDeclaringClass" -> declaringClass;
+						case "getReturnType" -> returnType;
+						case "getParameterTypes" -> paramTypes;
+						case "getModifiers" -> modifiers;
+						case "toString" -> name;
+						case "hashCode" -> System.identityHashCode(proxy);
+						case "equals" -> proxy == args[0];
+						default -> defaultValue(method.getReturnType());
+					});
+		}
+
+		private IVariableBinding variableBinding(String name, ITypeBinding type,
+				int modifiers, boolean isField, boolean isParameter) {
+			return (IVariableBinding) java.lang.reflect.Proxy.newProxyInstance(
+					getClass().getClassLoader(),
+					new Class[]{IVariableBinding.class},
+					(proxy, method, args) -> switch (method.getName()) {
+						case "getName" -> name;
+						case "getType" -> type;
+						case "getModifiers" -> modifiers;
+						case "isField" -> isField;
+						case "isParameter" -> isParameter;
+						case "toString" -> name;
+						case "hashCode" -> System.identityHashCode(proxy);
+						case "equals" -> proxy == args[0];
+						default -> defaultValue(method.getReturnType());
+					});
+		}
+
+		private Object defaultValue(Class<?> type) {
+			if (type == boolean.class) return false;
+			if (type == int.class) return 0;
+			if (type == long.class) return 0L;
+			if (type == byte.class) return (byte) 0;
+			if (type == short.class) return (short) 0;
+			if (type == char.class) return '\0';
+			if (type == float.class) return 0.0f;
+			if (type == double.class) return 0.0;
+			return null;
 		}
 	}
 

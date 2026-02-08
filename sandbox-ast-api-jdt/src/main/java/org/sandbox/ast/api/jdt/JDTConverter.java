@@ -72,8 +72,8 @@ import org.sandbox.ast.api.stmt.WhileLoopStmt;
  *
  * // Convert any expression:
  * Expression expr = ...;
- * ASTExpr fluentExpr = JDTConverter.convertExpression(expr);
- * fluentExpr.asMethodInvocation()
+ * Optional&lt;ASTExpr&gt; fluentExpr = JDTConverter.convertExpression(expr);
+ * fluentExpr.flatMap(ASTExpr::asMethodInvocation)
  *     .filter(m -&gt; m.isStatic())
  *     .ifPresent(m -&gt; { ... });
  * </pre>

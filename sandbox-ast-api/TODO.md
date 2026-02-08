@@ -71,7 +71,8 @@
 - [x] Create sandbox-ast-api-jdt module
 - [x] Implement converters from JDT AST to sandbox-ast-api
 - [x] Implement binding resolution using JDT
-- [x] Add integration tests with JDT
+- [x] Add unit tests with synthetic JDT nodes and stub bindings
+- [ ] Add integration tests with JDT (binding-resolving via ASTParser + classpath)
 - [x] Document migration path from JDT to fluent API
 
 ## Known Issues

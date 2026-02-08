@@ -5,6 +5,6 @@ Bundle-Vendor: Sandbox Project
 
 Export-Package: org.sandbox.ast.api.jdt
 
-Import-Package: org.eclipse.jdt.core.dom;resolution:=optional,\
+Import-Package: org.eclipse.jdt.core.dom,\
                 org.sandbox.ast.api.*,\
                 *
