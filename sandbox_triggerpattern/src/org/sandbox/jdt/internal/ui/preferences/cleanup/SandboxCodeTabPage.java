@@ -21,6 +21,7 @@ import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
+import org.sandbox.jdt.internal.ui.fix.ShiftOutOfRangeCleanUp;
 import org.sandbox.jdt.internal.ui.fix.StringSimplificationCleanUp;
 
 /**
@@ -43,7 +44,8 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 	@Override
 	protected AbstractCleanUp[] createPreviewCleanUps(Map<String, String> values) {
 		return new AbstractCleanUp[] {
-				new StringSimplificationCleanUp(values)
+				new StringSimplificationCleanUp(values),
+				new ShiftOutOfRangeCleanUp(values)
 		};
 	}
 	
@@ -55,5 +57,12 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				MYCleanUpConstants.TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP, FALSE_TRUE);
 		intent(stringGroup);
 		registerPreference(stringSimplification);
+
+		Group shiftGroup = createGroup(numColumns, composite, CleanUpMessages.ShiftOutOfRangeTabPage_GroupName);
+		final CheckboxPreference shiftOutOfRange = createCheckboxPref(shiftGroup, numColumns,
+				CleanUpMessages.ShiftOutOfRangeTabPage_CheckboxName_ShiftOutOfRange,
+				MYCleanUpConstants.SHIFT_OUT_OF_RANGE_CLEANUP, FALSE_TRUE);
+		intent(shiftGroup);
+		registerPreference(shiftOutOfRange);
 	}
 }

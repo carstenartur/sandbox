@@ -6,6 +6,9 @@
       <hintProvider
             class="org.sandbox.jdt.triggerpattern.string.StringSimplificationHintProvider">
       </hintProvider>
+      <hintProvider
+            class="org.sandbox.jdt.triggerpattern.shift.ShiftOutOfRangeHintProvider">
+      </hintProvider>
    </extension>
    
    <extension point="org.eclipse.jdt.ui.cleanUps">
@@ -26,5 +29,8 @@
       <cleanUp 
             class="org.sandbox.jdt.internal.ui.fix.StringSimplificationCleanUp" 
             id="org.eclipse.jdt.ui.cleanup.stringsimplification" />
+      <cleanUp 
+            class="org.sandbox.jdt.internal.ui.fix.ShiftOutOfRangeCleanUp" 
+            id="org.eclipse.jdt.ui.cleanup.shift_out_of_range" />
    </extension>
 </plugin>

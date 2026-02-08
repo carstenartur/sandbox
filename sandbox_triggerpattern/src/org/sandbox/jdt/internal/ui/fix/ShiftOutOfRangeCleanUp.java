@@ -19,10 +19,14 @@ import java.util.Map;
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUpCoreWrapper;
 
 /**
- * Cleanup that detects shift operations with out-of-range shift amounts
- * and replaces them with the effective masked value.
+ * Wrapper for shift out of range cleanup.
+ *
+ * <p>Detects shift operations with out-of-range amounts using TriggerPattern-based hints.</p>
+ *
+ * @since 1.2.5
  */
 public class ShiftOutOfRangeCleanUp extends AbstractCleanUpCoreWrapper<ShiftOutOfRangeCleanUpCore> {
+
 	public ShiftOutOfRangeCleanUp(final Map<String, String> options) {
 		super(options, new ShiftOutOfRangeCleanUpCore());
 	}

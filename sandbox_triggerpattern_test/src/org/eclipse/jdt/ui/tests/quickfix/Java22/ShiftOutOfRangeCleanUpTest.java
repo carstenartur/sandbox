@@ -13,22 +13,15 @@
  *******************************************************************************/
 package org.eclipse.jdt.ui.tests.quickfix.Java22;
 
-import java.util.Hashtable;
-
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import org.eclipse.jdt.testplugin.TestOptions;
-
 import org.eclipse.core.runtime.CoreException;
 
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
-import org.eclipse.jdt.core.JavaCore;
-import org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants;
 
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
@@ -38,14 +31,6 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
  * Tests for shift out of range cleanup.
  */
 public class ShiftOutOfRangeCleanUpTest {
-
-	@BeforeEach
-	protected void setUp() throws Exception {
-		Hashtable<String, String> defaultOptions = TestOptions.getDefaultOptions();
-		defaultOptions.put(DefaultCodeFormatterConstants.FORMATTER_LINE_SPLIT, Integer.toString(120));
-		JavaCore.setOptions(defaultOptions);
-		TestOptions.initializeCodeGenerationOptions();
-	}
 
 	@RegisterExtension
 	AbstractEclipseJava context = new EclipseJava22();

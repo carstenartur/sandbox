@@ -70,9 +70,6 @@
 		<module>sandbox_int_to_enum</module>
 		<module>sandbox_int_to_enum_feature</module>
 		<module>sandbox_int_to_enum_test</module>
-		<module>sandbox_shift_check</module>
-		<module>sandbox_shift_check_feature</module>
-		<module>sandbox_shift_check_test</module>
 		<!-- Heavy modules (sandbox_product, sandbox_updatesite) moved to profiles below -->
 	</modules>
 	<repositories>
@@ -579,21 +576,6 @@ See README.md for more information.
 			<dependency>
 				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_int_to_enum_test</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.sandbox</groupId>
-				<artifactId>sandbox_shift_check</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.sandbox</groupId>
-				<artifactId>sandbox_shift_check_feature</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.sandbox</groupId>
-				<artifactId>sandbox_shift_check_test</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
