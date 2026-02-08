@@ -74,7 +74,11 @@ String message = String.valueOf(count);
 
 ### Double-Checked Locking (Concurrency)
 
-**Pattern**: `if ($field == null) { synchronized ($lock) { if ($field == null) { $stmt; } } }`
+**Trigger Pattern**: `$field == null` (expression-level)
+
+**Detection**: Uses the expression pattern as an entry point, then walks up the AST tree
+to verify the full double-checked locking structure — an outer `if` wrapping a `synchronized`
+block containing an inner `if` with the same null check condition.
 
 **Before**:
 ```java
@@ -97,7 +101,7 @@ synchronized (MyClass.class) {
 ```
 
 **Benefits**:
-- Eliminates broken double-checked locking idiom
+- Eliminates double-checked locking idiom
 - Ensures thread-safe lazy initialization
 - Inspired by [NetBeans DoubleCheck hint](https://github.com/apache/netbeans/blob/master/java/java.hints/src/org/netbeans/modules/java/hints/DoubleCheck.java)
 
@@ -123,14 +127,16 @@ Each method:
 
 **Location**: `org.sandbox.jdt.triggerpattern.concurrency.DoubleCheckLockingHintProvider`
 
-**Purpose**: Detects the double-checked locking anti-pattern using a statement-level TriggerPattern
+**Purpose**: Detects the double-checked locking anti-pattern using an expression-level
+TriggerPattern as the entry point, with manual AST tree walking for structural validation
 
 **Key Methods**:
 - `detectDoubleCheckLocking(HintContext)` - Detects the double-checked locking pattern and suggests removing the outer null check
 
-This demonstrates TriggerPattern's ability to match complex statement-level patterns
-with placeholder consistency checks (the `$field` placeholder must match the same
-expression in both the outer and inner if-conditions).
+This demonstrates a hybrid approach where TriggerPattern's expression matching is
+combined with manual AST tree walking to detect complex structural patterns.
+The expression pattern `$field == null` triggers on null checks, then the method
+validates the enclosing if/synchronized/if structure.
 
 ### Pattern Registration
 

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2025 Carsten Hammer.
+ * Copyright (c) 2026 Carsten Hammer.
  *
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
@@ -16,8 +16,9 @@ package org.sandbox.jdt.triggerpattern.concurrency;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Block;
-import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.IfStatement;
+import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.NullLiteral;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.SynchronizedStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -34,15 +35,15 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
  *
  * <p>Double-checked locking is a concurrency pattern where a field is checked
  * for null, then a synchronized block is entered, and the field is checked
- * again. This pattern is broken in Java unless the field is declared
- * {@code volatile} (Java 5+).</p>
+ * again. This pattern can be problematic in Java without proper memory
+ * visibility guarantees.</p>
  *
  * <p>Inspired by the
  * <a href="https://github.com/apache/netbeans/blob/master/java/java.hints/src/org/netbeans/modules/java/hints/DoubleCheck.java">
  * NetBeans DoubleCheck hint</a>.</p>
  *
  * <h3>Detected Pattern</h3>
- * <pre>{@code
+ * <pre>
  * if (field == null) {
  *     synchronized (lock) {
  *         if (field == null) {
@@ -50,19 +51,19 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
  *         }
  *     }
  * }
- * }</pre>
+ * </pre>
  *
  * <h3>Suggested Fix</h3>
  * <p>The fix removes the outer null check, keeping only the synchronized block
  * with the inner null check. This eliminates the double-checked locking pattern
  * at the cost of always entering the synchronized block:</p>
- * <pre>{@code
+ * <pre>
  * synchronized (lock) {
  *     if (field == null) {
  *         field = new Something();
  *     }
  * }
- * }</pre>
+ * </pre>
  *
  * @since 1.2.5
  * @see <a href="https://en.wikipedia.org/wiki/Double-checked_locking">Double-checked locking (Wikipedia)</a>
@@ -73,12 +74,14 @@ public class DoubleCheckLockingHintProvider {
 	 * Detects the double-checked locking pattern and suggests removing the outer
 	 * null check to eliminate the anti-pattern.
 	 *
-	 * <p>The pattern matches an {@code if} statement that checks a variable for
-	 * null, contains a {@code synchronized} block, which in turn contains another
-	 * {@code if} statement checking the same variable for null.</p>
+	 * <p>The expression-level pattern {@code $field == null} is used as the entry
+	 * point. When a null check is found, the method walks up the AST tree to verify
+	 * the full double-checked locking structure: an outer {@code if} wrapping a
+	 * {@code synchronized} block that contains an inner {@code if} with the same
+	 * null check condition.</p>
 	 *
 	 * <p><b>Before:</b></p>
-	 * <pre>{@code
+	 * <pre>
 	 * if (field == null) {
 	 *     synchronized (lock) {
 	 *         if (field == null) {
@@ -86,44 +89,53 @@ public class DoubleCheckLockingHintProvider {
 	 *         }
 	 *     }
 	 * }
-	 * }</pre>
+	 * </pre>
 	 *
 	 * <p><b>After:</b></p>
-	 * <pre>{@code
+	 * <pre>
 	 * synchronized (lock) {
 	 *     if (field == null) {
 	 *         field = new Something();
 	 *     }
 	 * }
-	 * }</pre>
+	 * </pre>
 	 *
 	 * @param ctx the hint context containing the match and AST information
 	 * @return a completion proposal, or null if the pattern doesn't match
 	 */
-	@TriggerPattern(value = "if ($field == null) { synchronized ($lock) { if ($field == null) { $stmt; } } }", kind = PatternKind.STATEMENT)
+	@TriggerPattern(value = "$field == null", kind = PatternKind.EXPRESSION)
 	@Hint(displayName = "Double-checked locking",
-	      description = "Detects double-checked locking pattern which is unsafe without volatile. "
+	      description = "Detects double-checked locking pattern. "
 	                   + "Suggests removing the outer null check to use plain synchronization instead.",
 	      category = "concurrency",
 	      suppressWarnings = "DoubleCheckedLocking")
 	public static IJavaCompletionProposal detectDoubleCheckLocking(HintContext ctx) {
 		ASTNode matchedNode = ctx.getMatch().getMatchedNode();
 
-		if (!(matchedNode instanceof IfStatement)) {
+		if (!(matchedNode instanceof InfixExpression)) {
 			return null;
 		}
 
-		IfStatement outerIf = (IfStatement) matchedNode;
-
-		// Validate: outer if should have no else branch
-		if (outerIf.getElseStatement() != null) {
+		// Walk up to find the enclosing IfStatement
+		IfStatement innerIf = findEnclosingIf(matchedNode);
+		if (innerIf == null || innerIf.getElseStatement() != null) {
 			return null;
 		}
 
-		// Extract the synchronized statement from the outer if body
-		Statement outerBody = outerIf.getThenStatement();
-		SynchronizedStatement syncStmt = extractSynchronizedStatement(outerBody);
+		// Check that this inner if is inside a synchronized block
+		SynchronizedStatement syncStmt = findEnclosingSynchronized(innerIf);
 		if (syncStmt == null) {
+			return null;
+		}
+
+		// Check that the synchronized block is inside an outer if with the same condition
+		IfStatement outerIf = findEnclosingIf(syncStmt);
+		if (outerIf == null || outerIf.getElseStatement() != null) {
+			return null;
+		}
+
+		// Verify both if conditions are null checks on the same expression
+		if (!isSameNullCheck(outerIf.getExpression(), innerIf.getExpression())) {
 			return null;
 		}
 
@@ -148,22 +160,78 @@ public class DoubleCheckLockingHintProvider {
 	}
 
 	/**
-	 * Extracts a {@link SynchronizedStatement} from a statement that may be
-	 * either a direct synchronized statement or a block containing exactly one
-	 * synchronized statement.
+	 * Finds the nearest enclosing {@link IfStatement} for a given node.
 	 *
-	 * @param statement the statement to extract from
-	 * @return the synchronized statement, or null if not found
+	 * @param node the starting node
+	 * @return the enclosing IfStatement, or null if not found
 	 */
-	private static SynchronizedStatement extractSynchronizedStatement(Statement statement) {
-		if (statement instanceof SynchronizedStatement syncStatement) {
-			return syncStatement;
-		}
-		if (statement instanceof Block block
-				&& block.statements().size() == 1
-				&& block.statements().get(0) instanceof SynchronizedStatement syncStatement) {
-			return syncStatement;
+	private static IfStatement findEnclosingIf(ASTNode node) {
+		ASTNode current = node.getParent();
+		while (current != null) {
+			if (current instanceof IfStatement ifStatement) {
+				return ifStatement;
+			}
+			if (current instanceof Block) {
+				current = current.getParent();
+				continue;
+			}
+			// Stop at other statement types
+			if (current instanceof Statement) {
+				return null;
+			}
+			current = current.getParent();
 		}
 		return null;
+	}
+
+	/**
+	 * Finds the nearest enclosing {@link SynchronizedStatement} for a given node.
+	 *
+	 * @param node the starting node
+	 * @return the enclosing SynchronizedStatement, or null if not found
+	 */
+	private static SynchronizedStatement findEnclosingSynchronized(ASTNode node) {
+		ASTNode current = node.getParent();
+		while (current != null) {
+			if (current instanceof SynchronizedStatement syncStatement) {
+				return syncStatement;
+			}
+			if (current instanceof Block) {
+				current = current.getParent();
+				continue;
+			}
+			// Stop at other statement types
+			if (current instanceof Statement) {
+				return null;
+			}
+			current = current.getParent();
+		}
+		return null;
+	}
+
+	/**
+	 * Checks whether two expressions represent the same null check
+	 * ({@code expr == null}).
+	 *
+	 * @param expr1 the first expression
+	 * @param expr2 the second expression
+	 * @return true if both are null checks on the same variable
+	 */
+	private static boolean isSameNullCheck(org.eclipse.jdt.core.dom.Expression expr1,
+			org.eclipse.jdt.core.dom.Expression expr2) {
+		if (!(expr1 instanceof InfixExpression infix1) || !(expr2 instanceof InfixExpression infix2)) {
+			return false;
+		}
+		if (infix1.getOperator() != InfixExpression.Operator.EQUALS
+				|| infix2.getOperator() != InfixExpression.Operator.EQUALS) {
+			return false;
+		}
+		// Check null on right side for both
+		if (!(infix1.getRightOperand() instanceof NullLiteral)
+				|| !(infix2.getRightOperand() instanceof NullLiteral)) {
+			return false;
+		}
+		// Compare the left operand (the field being checked) by their string representation
+		return infix1.getLeftOperand().toString().equals(infix2.getLeftOperand().toString());
 	}
 }
