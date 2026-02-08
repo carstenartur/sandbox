@@ -206,6 +206,9 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 		scanner.scan();
 		scanner.populateScopeInfo(node.getScopeInfo());
 		
+		// Store the scanner for access in endVisitLoop (to check referenced variables)
+		treeHolder.put("scanner_" + System.identityHashCode(visited), scanner);
+		
 		// Continue visiting children (nested loops)
 		return true;
 	}
@@ -250,10 +253,26 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 			return;
 		}
 		
-		// Check ScopeInfo: if any child uses variables modified in this loop, 
-		// the child cannot be safely converted (or already would have been marked)
-		// This is already handled by the child's PreconditionsChecker checking
-		// for effectively final variables, so we don't need additional logic here.
+		// Check ScopeInfo: if this loop references variables that are modified
+		// in an ANCESTOR loop's scope, it cannot be converted (lambda capture requires
+		// effectively final variables).
+		// NOTE: We only check PARENT scopes, not the current loop's own scope.
+		// Reducer patterns (like sum += item) modify variables in their own scope,
+		// which is handled correctly by PreconditionsChecker and converted to .reduce().
+		LoopBodyScopeScanner scanner = (LoopBodyScopeScanner) treeHolder.get("scanner_" + System.identityHashCode(visited));
+		if (scanner != null && node.getParent() != null) {
+			// Walk up the tree and check if any referenced variable is modified in ancestor scopes
+			LoopTreeNode parent = node.getParent();
+			while (parent != null) {
+				for (String referencedVar : scanner.getReferencedVariables()) {
+					if (parent.getScopeInfo().getModifiedVariables().contains(referencedVar)) {
+						node.setDecision(ConversionDecision.NOT_CONVERTIBLE);
+						return;
+					}
+				}
+				parent = parent.getParent();
+			}
+		}
 		
 		// Check preconditions for conversion
 		PreconditionsChecker pc = new PreconditionsChecker(visited, compilationUnit);
